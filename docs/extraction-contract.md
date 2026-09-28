@@ -91,12 +91,26 @@ contradicts them; discrepancies become `TODO(product)`.
 
 ## `spec/data/*.json`
 
-- `foods.json` — `{ no, food, amount, unit, calories, protein, carbs, fats, state, category,
-  normalized?, sourceRow }` (source fields from the Nutrition Database).
-- `exercises.json` — `{ id, name, muscleGroup, primaryTarget, additionalTargets, equipment,
-  movementPattern, positionSetup, cues, videoLink, sourceRow }`.
+Committed reference databases (safe: no client health data). Columns are resolved from
+the real header labels, not assumed.
 
-Expected counts are ~599 foods and ~546 exercises; a difference is a warning, not a failure.
+- `foods.json` — `{ version, sourceFile, count, skippedNumberedRows, records }` where each
+  record is `{ no, food, amount, unit, calories, protein, carbs, fats, state, category,
+  normalized?, sourceRow }`.
+- `exercises.json` — `{ version, sourceFile, count, records }` where each record is
+  `{ id, name, muscleGroup, primaryTarget, additionalTargets, equipment, movementPattern,
+  positionSetup, cues, videoLink, sourceRow }`.
+
+Rules: source text preserved exactly (German commas included) with additive `normalized`
+only when unambiguous; empty fields preserved as `""` (never fabricated); records keep
+source-row order and `sourceRow` for traceability. Numbered-but-empty placeholder rows
+(e.g. Nutrition IDs 601–660) and non-numeric footer rows are skipped (counted in
+`skippedNumberedRows`). Expected counts are ~599 foods and ~546 exercises; a difference is
+a warning, not a failure.
+
+```sh
+npm run extract:sheets -- --data-only   # writes only spec/data/foods.json + exercises.json
+```
 
 ## `spec/theme.json`
 

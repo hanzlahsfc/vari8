@@ -15,7 +15,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
+import type { ExerciseArtifact, FoodArtifact } from "../lib/extraction/contracts";
 import { parseCssDeclarations, type ClassDeclarations } from "../lib/extraction/css";
+import { extractExercises, extractFoods } from "../lib/extraction/databases";
 import { parseSheetHtml, type ParsedSheet } from "../lib/extraction/parse";
 import {
   assertRawDirIsIgnored,
@@ -24,14 +26,26 @@ import {
   validateSheetsSourceDir,
 } from "../lib/extraction/source";
 
-type Options = { dryRun: boolean; raw: boolean };
+type Options = { dryRun: boolean; raw: boolean; dataOnly: boolean };
 
-const KNOWN_FLAGS = new Set(["--dry-run", "--raw"]);
+const KNOWN_FLAGS = new Set(["--dry-run", "--raw", "--data-only"]);
+const EXPECTED_FOODS = 599;
+const EXPECTED_EXERCISES = 546;
+const FOODS_FILE = "Nutrition Database.html";
+const EXERCISES_FILE = "Exercise Database.html";
 
 function parseArgs(argv: string[]): Options {
   const unknown = argv.filter((arg) => arg.startsWith("--") && !KNOWN_FLAGS.has(arg));
   if (unknown.length > 0) throw new Error(`Unknown argument(s): ${unknown.join(", ")}`);
-  return { dryRun: argv.includes("--dry-run"), raw: argv.includes("--raw") };
+  const options = {
+    dryRun: argv.includes("--dry-run"),
+    raw: argv.includes("--raw"),
+    dataOnly: argv.includes("--data-only"),
+  };
+  if (options.raw && options.dataOnly) {
+    throw new Error("--raw and --data-only cannot be combined");
+  }
+  return options;
 }
 
 function loadBaseClasses(dir: string): Record<string, ClassDeclarations> {
@@ -90,6 +104,62 @@ function writeJson(path: string, value: unknown): void {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
+function runDataOnly(sourceDir: string): number {
+  if (!existsSync(join(sourceDir, FOODS_FILE)) || !existsSync(join(sourceDir, EXERCISES_FILE))) {
+    console.error(
+      `[extract:sheets] --data-only requires ${FOODS_FILE} and ${EXERCISES_FILE} in the source dir`,
+    );
+    return 1;
+  }
+
+  const foods = extractFoods(readFileSync(join(sourceDir, FOODS_FILE), "utf8"));
+  const exercises = extractExercises(readFileSync(join(sourceDir, EXERCISES_FILE), "utf8"));
+
+  const foodArtifact: FoodArtifact = {
+    version: 1,
+    sourceFile: FOODS_FILE,
+    count: foods.records.length,
+    skippedNumberedRows: foods.skippedNumberedRows,
+    records: foods.records,
+  };
+  const exerciseArtifact: ExerciseArtifact = {
+    version: 1,
+    sourceFile: EXERCISES_FILE,
+    count: exercises.records.length,
+    records: exercises.records,
+  };
+
+  const outDir = join(process.cwd(), "spec", "data");
+  mkdirSync(outDir, { recursive: true });
+  writeJson(join(outDir, "foods.json"), foodArtifact);
+  writeJson(join(outDir, "exercises.json"), exerciseArtifact);
+
+  console.log(
+    `[extract:sheets] foods: ${foods.records.length} records (skipped ${foods.skippedNumberedRows} numbered-empty rows)`,
+  );
+  console.log(`[extract:sheets] exercises: ${exercises.records.length} records`);
+  if (foods.records.length !== EXPECTED_FOODS) {
+    console.warn(
+      `[extract:sheets] WARN foods count ${foods.records.length} != expected ~${EXPECTED_FOODS}`,
+    );
+  }
+  if (exercises.records.length !== EXPECTED_EXERCISES) {
+    console.warn(
+      `[extract:sheets] WARN exercises count ${exercises.records.length} != expected ~${EXPECTED_EXERCISES}`,
+    );
+  }
+  if (foods.missingHeaders.length > 0) {
+    console.warn(`[extract:sheets] WARN missing food headers: ${foods.missingHeaders.join(", ")}`);
+  }
+  if (exercises.missingHeaders.length > 0) {
+    console.warn(
+      `[extract:sheets] WARN missing exercise headers: ${exercises.missingHeaders.join(", ")}`,
+    );
+  }
+  console.log("[extract:sheets] wrote spec/data/foods.json and spec/data/exercises.json");
+  return 0;
+}
+
 function main(): number {
   let options: Options;
   try {
@@ -103,7 +173,8 @@ function main(): number {
   const sourceDir = resolveSheetsSourceDir(process.env.SHEETS_SOURCE_DIR);
   const rawDir = (process.env.RAW_EXTRACTION_DIR ?? "").trim();
 
-  console.log(`[extract:sheets] mode: ${options.raw ? "raw-write" : "dry-run (non-writing)"}`);
+  const mode = options.dataOnly ? "data-only" : options.raw ? "raw-write" : "dry-run (non-writing)";
+  console.log(`[extract:sheets] mode: ${mode}`);
   console.log(`[extract:sheets] SHEETS_SOURCE_DIR: ${sourceDir}`);
 
   let source;
@@ -115,6 +186,11 @@ function main(): number {
       return 1;
     }
     throw error;
+  }
+
+  if (options.dataOnly) {
+    for (const slug of source.unexpected) console.warn(`  unexpected sheet: ${slug}`);
+    return runDataOnly(source.dir);
   }
 
   if (source.missing.length > 0) {

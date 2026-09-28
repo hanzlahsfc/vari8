@@ -104,11 +104,17 @@ Raw source exports and unredacted extraction output are **never** committed (see
 `.gitignore` and `docs/redaction-policy.md`). Real client identifiers and health values are
 redacted from committed artifacts.
 
-## Extraction (Phases 7–8)
+## Extraction (Phases 7–9)
 
 `npm run extract:sheets` reads the read-only source folder from `SHEETS_SOURCE_DIR`, which
 defaults to `/Users/apple/Downloads/PRGRSS 2.0 extracted/Copy of PRGRSS 2.0` and is
-overridable via the environment. It parses all 11 exports and prints a coverage report
-without writing. Unredacted output requires opt-in `RAW_EXTRACTION_DIR` and fails closed
-unless the destination is git-ignored. Committed, redacted `spec/sheets/**` artifacts and
-the food/exercise datasets arrive in later phases. See `docs/extraction-contract.md`.
+overridable via the environment.
+
+- default / `--dry-run` — parse all 11 exports and print a coverage report (no writes).
+- `--data-only` — write the committed reference databases `spec/data/foods.json` (599
+  records) and `spec/data/exercises.json` (546 records).
+- `--raw` — write **unredacted** artifacts to a git-ignored `RAW_EXTRACTION_DIR` (fails
+  closed otherwise).
+
+Committed, redacted `spec/sheets/**` artifacts and the summaries/theme/cross-sheet outputs
+arrive in later phases. See `docs/extraction-contract.md`.

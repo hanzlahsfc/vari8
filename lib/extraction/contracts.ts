@@ -135,6 +135,15 @@ export type FoodRecord = {
   category: string;
   normalized?: NormalizedMacros;
   sourceRow: number;
+  todo?: string;
+};
+
+export type FoodArtifact = {
+  version: number;
+  sourceFile: string;
+  count: number;
+  skippedNumberedRows: number;
+  records: FoodRecord[];
 };
 
 export type ExerciseRecord = {
@@ -149,6 +158,14 @@ export type ExerciseRecord = {
   cues: string;
   videoLink: string;
   sourceRow: number;
+  todo?: string;
+};
+
+export type ExerciseArtifact = {
+  version: number;
+  sourceFile: string;
+  count: number;
+  records: ExerciseRecord[];
 };
 
 // ---------------------------------------------------------------------------
