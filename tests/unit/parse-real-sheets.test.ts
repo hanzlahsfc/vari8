@@ -75,9 +75,11 @@ describe.skipIf(!SOURCE_EXISTS)("real sheet parsing coverage", () => {
   });
 
   it("preserves German decimal-comma text and normalizes it additively", () => {
-    const cell = sheet("daily-tracker").cells.find((c) => c.text === "4,5");
-    expect(cell?.text).toBe("4,5");
-    expect(cell?.normalized).toBe(4.5);
+    // Do not hardcode a specific source value; assert the property generally.
+    const cell = sheet("daily-tracker").cells.find((c) => /^\d+,\d$/.test(c.text));
+    expect(cell).toBeDefined();
+    expect(cell?.text).toContain(",");
+    expect(cell?.normalized).toBe(Number(cell?.text.replace(",", ".")));
   });
 
   it("finds known DASHBOARD content from the real export", () => {

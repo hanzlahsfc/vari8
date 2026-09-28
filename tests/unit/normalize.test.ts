@@ -15,8 +15,8 @@ describe("normalizeNumeric", () => {
   });
 
   it("normalizes dot decimals with 1-2 fractional digits", () => {
-    expect(normalizeNumeric("66.9")).toBe(66.9);
-    expect(normalizeNumeric("36.5")).toBe(36.5);
+    expect(normalizeNumeric("12.3")).toBe(12.3);
+    expect(normalizeNumeric("7.25")).toBe(7.25);
   });
 
   it("normalizes grouped thousands", () => {
@@ -33,7 +33,7 @@ describe("normalizeNumeric", () => {
 
   it("refuses non-numeric text, dates, ranges, and units", () => {
     expect(normalizeNumeric("")).toBeUndefined();
-    expect(normalizeNumeric("20.07.2026")).toBeUndefined();
+    expect(normalizeNumeric("31.12.1999")).toBeUndefined();
     expect(normalizeNumeric("6-10")).toBeUndefined();
     expect(normalizeNumeric("4 iu")).toBeUndefined();
     expect(normalizeNumeric("50%")).toBeUndefined();
