@@ -134,11 +134,34 @@ Anything missing, ambiguous, or unsupported is recorded as `TODO(product)` (in `
 and/or `docs/open-questions.md`) rather than guessed. This includes lost formulas, ambiguous
 checkbox state, unresolved structure, and any value not derivable from the export.
 
-## Dry-run
+## Implementation status (Phase 8)
+
+The generic parser (`lib/extraction/parse.ts`, `css.ts`, `normalize.ts`) is implemented
+and exercised against all 11 real exports:
+
+- resolves merged cells to a stable top-left anchor (no fabricated blanks);
+- skips `<th>` chrome and `freezebar-cell` spacers so columns align with A/B/C…;
+- preserves original text (German decimal commas included) and adds additive
+  `normalized` values only when unambiguous;
+- decodes checkbox state from the exported SVG, flagging unrecognised/conflicting
+  state as `TODO(product)`;
+- captures used source classes and their declarations from the inline `<style>` and
+  `resources/sheet.css`.
+
+**Committed, redacted `spec/sheets/**` artifacts are intentionally deferred** until the
+redaction ruleset (identifiers/health values → placeholders) is implemented in a later
+phase. Committing parsed sheet text now would expose real client data.
+
+## Commands
 
 ```sh
+# Non-writing: validate the source, parse all 11 sheets, print a coverage report.
 npm run extract:sheets -- --dry-run
+
+# Opt-in: write UNREDACTED artifacts to a git-ignored RAW_EXTRACTION_DIR (fail-closed).
+RAW_EXTRACTION_DIR=.local-raw npm run extract:sheets -- --raw
 ```
 
-Resolves and validates the source folder, confirms the 11 sheets, validates
-`RAW_EXTRACTION_DIR` when set, and prints a deterministic plan. It writes **nothing**.
+Both modes validate the source folder and the 11 sheets. `--raw` additionally requires a
+git-ignored `RAW_EXTRACTION_DIR`; otherwise the run fails closed. Neither mode ever writes
+into the source directory. Output is deterministic (stable ordering, LF, trailing newline).

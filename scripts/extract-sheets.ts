@@ -1,14 +1,22 @@
 /**
  * Sheet extraction entry point.
  *
- * Phase 7 implements input resolution, validation, and a NON-WRITING dry-run.
- * Full parsing and artifact emission land in Phase 8+.
+ * Phase 8 parses all 11 exports into the canonical in-memory artifact shape.
+ * By default it is NON-WRITING: it validates the source and prints a coverage
+ * report. Unredacted output is written only with `--raw` into a git-ignored
+ * `RAW_EXTRACTION_DIR` (fail-closed). Committed, redacted `spec/sheets/**`
+ * artifacts are produced in a later phase once the redaction ruleset lands.
  *
  * Usage:
- *   npm run extract:sheets -- --dry-run
+ *   npm run extract:sheets -- --dry-run          # validate + parse, no writes
+ *   RAW_EXTRACTION_DIR=.local-raw npm run extract:sheets -- --raw
  */
 
-import { EXPECTED_SHEETS } from "../lib/extraction/contracts";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
+import { parseCssDeclarations, type ClassDeclarations } from "../lib/extraction/css";
+import { parseSheetHtml, type ParsedSheet } from "../lib/extraction/parse";
 import {
   assertRawDirIsIgnored,
   resolveSheetsSourceDir,
@@ -16,16 +24,70 @@ import {
   validateSheetsSourceDir,
 } from "../lib/extraction/source";
 
-type Options = { dryRun: boolean };
+type Options = { dryRun: boolean; raw: boolean };
 
-const KNOWN_FLAGS = new Set(["--dry-run"]);
+const KNOWN_FLAGS = new Set(["--dry-run", "--raw"]);
 
 function parseArgs(argv: string[]): Options {
   const unknown = argv.filter((arg) => arg.startsWith("--") && !KNOWN_FLAGS.has(arg));
-  if (unknown.length > 0) {
-    throw new Error(`Unknown argument(s): ${unknown.join(", ")}`);
+  if (unknown.length > 0) throw new Error(`Unknown argument(s): ${unknown.join(", ")}`);
+  return { dryRun: argv.includes("--dry-run"), raw: argv.includes("--raw") };
+}
+
+function loadBaseClasses(dir: string): Record<string, ClassDeclarations> {
+  const sheetCss = join(dir, "resources", "sheet.css");
+  if (!existsSync(sheetCss)) return {};
+  return parseCssDeclarations(readFileSync(sheetCss, "utf8"));
+}
+
+type Coverage = {
+  slug: string;
+  file: string;
+  cells: number;
+  spanned: number;
+  checked: number;
+  unchecked: number;
+  ambiguousCheckbox: number;
+  normalized: number;
+  classes: number;
+  todos: number;
+};
+
+function summarize(slug: string, file: string, parsed: ParsedSheet): Coverage {
+  let spanned = 0;
+  let checked = 0;
+  let unchecked = 0;
+  let ambiguousCheckbox = 0;
+  let normalized = 0;
+  for (const cell of parsed.cells) {
+    if (cell.rowSpan > 1 || cell.colSpan > 1) spanned += 1;
+    if (cell.checkbox === "checked") checked += 1;
+    if (cell.checkbox === "unchecked") unchecked += 1;
+    if (cell.todo) ambiguousCheckbox += 1;
+    if (cell.normalized !== undefined) normalized += 1;
   }
-  return { dryRun: argv.includes("--dry-run") };
+  return {
+    slug,
+    file,
+    cells: parsed.cells.length,
+    spanned,
+    checked,
+    unchecked,
+    ambiguousCheckbox,
+    normalized,
+    classes: Object.keys(parsed.classes).length,
+    todos: parsed.todos.length,
+  };
+}
+
+function stableArtifact(slug: string, file: string, parsed: ParsedSheet) {
+  const classes: Record<string, ClassDeclarations> = {};
+  for (const name of Object.keys(parsed.classes).sort()) classes[name] = parsed.classes[name];
+  return { slug, sourceFile: file, cells: parsed.cells, classes, todos: parsed.todos };
+}
+
+function writeJson(path: string, value: unknown): void {
+  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
 function main(): number {
@@ -39,14 +101,14 @@ function main(): number {
 
   const repoRoot = process.cwd();
   const sourceDir = resolveSheetsSourceDir(process.env.SHEETS_SOURCE_DIR);
+  const rawDir = (process.env.RAW_EXTRACTION_DIR ?? "").trim();
 
-  console.log("[extract:sheets] mode: dry-run (non-writing)");
-  console.log(`[extract:sheets] repo root: ${repoRoot}`);
+  console.log(`[extract:sheets] mode: ${options.raw ? "raw-write" : "dry-run (non-writing)"}`);
   console.log(`[extract:sheets] SHEETS_SOURCE_DIR: ${sourceDir}`);
 
-  let result;
+  let source;
   try {
-    result = validateSheetsSourceDir(sourceDir, repoRoot);
+    source = validateSheetsSourceDir(sourceDir, repoRoot);
   } catch (error) {
     if (error instanceof SourceConfigError) {
       console.error(`[extract:sheets] ${error.message}`);
@@ -55,45 +117,64 @@ function main(): number {
     throw error;
   }
 
-  console.log(
-    `[extract:sheets] found ${result.sheets.length}/${EXPECTED_SHEETS.length} expected sheets`,
-  );
-  for (const sheet of result.sheets) {
-    console.log(`  ok        ${sheet.slug} <- ${sheet.file}`);
+  if (source.missing.length > 0) {
+    for (const file of source.missing) console.error(`  MISSING   ${file}`);
+    console.error(`[extract:sheets] missing ${source.missing.length} expected sheet(s); aborting`);
+    return 1;
   }
-  for (const file of result.missing) {
-    console.error(`  MISSING   ${file}`);
-  }
-  for (const slug of result.unexpected) {
-    console.warn(`  unexpected sheet: ${slug}`);
-  }
+  for (const slug of source.unexpected) console.warn(`  unexpected sheet: ${slug}`);
 
-  const rawDir = (process.env.RAW_EXTRACTION_DIR ?? "").trim();
-  if (rawDir.length > 0) {
+  if (options.raw) {
+    if (rawDir.length === 0) {
+      console.error("[extract:sheets] --raw requires RAW_EXTRACTION_DIR to be set");
+      return 1;
+    }
     try {
       assertRawDirIsIgnored(rawDir, repoRoot);
-      console.log(`[extract:sheets] RAW_EXTRACTION_DIR is git-ignored: ${rawDir}`);
     } catch (error) {
       console.error(`[extract:sheets] ${(error as Error).message}`);
       return 1;
     }
-  } else {
-    console.log("[extract:sheets] RAW_EXTRACTION_DIR: not set (unredacted output disabled)");
   }
 
-  if (result.missing.length > 0) {
-    console.error(
-      `[extract:sheets] missing ${result.missing.length} expected sheet(s); aborting without writing`,
-    );
-    return 1;
+  const baseClasses = loadBaseClasses(source.dir);
+  const coverages: Coverage[] = [];
+
+  for (const sheet of source.sheets) {
+    const filePath = join(source.dir, sheet.file);
+    let parsed: ParsedSheet;
+    try {
+      parsed = parseSheetHtml(readFileSync(filePath, "utf8"), { baseClasses });
+    } catch (error) {
+      console.error(`[extract:sheets] failed to parse ${sheet.file}: ${(error as Error).message}`);
+      return 1;
+    }
+    coverages.push(summarize(sheet.slug, sheet.file, parsed));
+
+    if (options.raw) {
+      const outDir = join(repoRoot, rawDir, "sheets");
+      mkdirSync(outDir, { recursive: true });
+      writeJson(join(outDir, `${sheet.slug}.json`), stableArtifact(sheet.slug, sheet.file, parsed));
+    }
   }
 
-  if (!options.dryRun) {
+  console.log("");
+  console.log("sheet                 cells  spans  checked  unchecked  norm  classes  todos");
+  for (const c of coverages) {
     console.log(
-      "[extract:sheets] artifact emission is not implemented until Phase 8; nothing was written.",
+      `${c.slug.padEnd(20)} ${String(c.cells).padStart(5)} ${String(c.spanned).padStart(6)} ` +
+        `${String(c.checked).padStart(8)} ${String(c.unchecked).padStart(10)} ` +
+        `${String(c.normalized).padStart(5)} ${String(c.classes).padStart(8)} ${String(c.todos).padStart(6)}`,
     );
   }
-  console.log("[extract:sheets] dry-run complete; no files written.");
+  const totalCells = coverages.reduce((sum, c) => sum + c.cells, 0);
+  console.log(`[extract:sheets] parsed ${coverages.length} sheets, ${totalCells} cells total`);
+
+  if (options.raw) {
+    console.log(`[extract:sheets] wrote raw artifacts to ${rawDir}/sheets/ (git-ignored)`);
+  } else {
+    console.log("[extract:sheets] dry-run complete; no files written");
+  }
   return 0;
 }
 

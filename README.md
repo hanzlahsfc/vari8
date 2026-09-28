@@ -96,6 +96,7 @@ Prisma client generation and engine availability are verified by the Phase 6 che
 | `npm run verify` | `typecheck` + `lint` + `test` |
 | `npm run test` | Vitest unit tests |
 | `npm run test:e2e` | Playwright e2e (needs PostgreSQL up) |
+| `npm run extract:sheets` | Validate + parse the 11 source sheets (non-writing by default) |
 
 ## Privacy
 
@@ -103,10 +104,11 @@ Raw source exports and unredacted extraction output are **never** committed (see
 `.gitignore` and `docs/redaction-policy.md`). Real client identifiers and health values are
 redacted from committed artifacts.
 
-## Roadmap note (Phase 7, not yet implemented)
+## Extraction (Phases 7–8)
 
-The future sheet extractor reads the read-only source folder from `SHEETS_SOURCE_DIR`,
-which defaults to `/Users/apple/Downloads/PRGRSS 2.0 extracted/Copy of PRGRSS 2.0/` and is
-overridable via the environment. Unredacted output requires opt-in `RAW_EXTRACTION_DIR`
-and fails closed unless the destination is git-ignored. See
-`docs/implementation-plan.md`.
+`npm run extract:sheets` reads the read-only source folder from `SHEETS_SOURCE_DIR`, which
+defaults to `/Users/apple/Downloads/PRGRSS 2.0 extracted/Copy of PRGRSS 2.0` and is
+overridable via the environment. It parses all 11 exports and prints a coverage report
+without writing. Unredacted output requires opt-in `RAW_EXTRACTION_DIR` and fails closed
+unless the destination is git-ignored. Committed, redacted `spec/sheets/**` artifacts and
+the food/exercise datasets arrive in later phases. See `docs/extraction-contract.md`.
