@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/*
+ * Theme tokens (colors, spacing, fonts) are intentionally NOT defined here.
+ * Tokenized theming with `data-theme` on <html> is Phase 6 scope.
+ */
