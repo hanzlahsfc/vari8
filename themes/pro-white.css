@@ -1,0 +1,41 @@
+/*
+ * Theme: pro-white (light counterpart)
+ * Same token names as pro-dark. Color values are adjusted from the source
+ * palette for WCAG AA contrast on the light base (see docs/ or tests); the
+ * accent and success/phase colors use darker variants so they remain legible
+ * as text. This is the ONLY place these hex values are allowed.
+ * Applied via <html data-theme="pro-white">.
+ */
+[data-theme="pro-white"] {
+  /* Colors */
+  --color-base: #f7f7f5;
+  --color-surface: #ffffff;
+  --color-surface-2: #ececea;
+  --color-text-primary: #191919;
+  --color-text-secondary: #4a4a4a;
+  --color-accent: #b23325;
+  --color-success: #2f7550;
+  --color-phase-1: #3f5a8a;
+  --color-phase-2: #8a3f3f;
+  --color-phase-3: #6b3f8a;
+  --color-phase-4: #6f5f2a;
+  --color-border: #d7d7d3;
+
+  /* Typography */
+  --font-sans: "Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-2xl: 1.5rem;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  /* Radius */
+  --radius-md: 0.5rem;
+}

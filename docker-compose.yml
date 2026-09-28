@@ -1,0 +1,26 @@
+name: app
+
+# Local development PostgreSQL only. Credentials here are local development
+# placeholders and are overridable via the environment (see .env.example).
+# Never use these values in a real deployment.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-app_dev}
+    ports:
+      # Host port 5433 to avoid clashing with any other local PostgreSQL on 5432.
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - app-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  app-postgres:

@@ -1,0 +1,39 @@
+/*
+ * Theme: pro-dark (default)
+ * Source colors from the PRGRSS 2.0 exports. This is the ONLY place these hex
+ * values are allowed; application styles/components must use the tokens.
+ * Applied via <html data-theme="pro-dark">.
+ */
+[data-theme="pro-dark"] {
+  /* Colors */
+  --color-base: #191919;
+  --color-surface: #282828;
+  --color-surface-2: #2d2d2d;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #b7b7b7;
+  --color-accent: #e34332;
+  --color-success: #3e9465;
+  --color-phase-1: #5270a7;
+  --color-phase-2: #a75252;
+  --color-phase-3: #8652a7;
+  --color-phase-4: #a79952;
+  --color-border: #2d2d2d;
+
+  /* Typography */
+  --font-sans: "Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-2xl: 1.5rem;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  /* Radius */
+  --radius-md: 0.5rem;
+}

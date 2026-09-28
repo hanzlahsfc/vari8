@@ -1,8 +1,8 @@
 export default function HomePage() {
   return (
-    <main className="p-8">
-      <h1 className="text-2xl font-semibold">App</h1>
-      <p className="mt-2">Foundation scaffold.</p>
+    <main className="app-main">
+      <h1 className="app-title">App</h1>
+      <p className="app-lede">Foundation scaffold.</p>
     </main>
   );
 }

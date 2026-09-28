@@ -1,6 +1,69 @@
 @import "tailwindcss";
+@import "../themes/pro-dark.css";
+@import "../themes/pro-white.css";
 
 /*
- * Theme tokens (colors, spacing, fonts) are intentionally NOT defined here.
- * Tokenized theming with `data-theme` on <html> is Phase 6 scope.
+ * Application base styles. Colors and spacing come exclusively from the theme
+ * custom properties (see themes/). No hex values belong here.
  */
+body {
+  margin: 0;
+  background-color: var(--color-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+}
+
+.app-main {
+  padding: var(--space-8);
+}
+
+.app-title {
+  margin: 0;
+  font-size: var(--font-size-2xl);
+  color: var(--color-text-primary);
+}
+
+.app-lede {
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.auth-form {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  max-width: 24rem;
+}
+
+.auth-field {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.auth-input {
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.auth-button {
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-radius: var(--radius-md);
+  background-color: var(--color-accent);
+  color: var(--color-text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.auth-error {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: var(--font-size-sm);
+}
