@@ -1,0 +1,43 @@
+# Dependencies
+/node_modules
+
+# Next.js build output
+/.next/
+/out/
+/build/
+next-env.d.ts
+*.tsbuildinfo
+
+# Environment / secrets (never commit real values)
+.env
+.env.*
+!.env.example
+
+# Raw source exports / inputs. These contain real client PII and health data and
+# must never be committed. Rules are root-anchored (leading "/") so they do NOT
+# affect the committed, redacted extraction output under spec/sheets/.
+/sources/
+/exports/
+/sheets/
+/local-sources/
+
+# Unredacted raw extraction output (opt-in via RAW_EXTRACTION_DIR). The extractor
+# must fail closed unless `git check-ignore` confirms the destination is ignored.
+/raw/
+/.raw-extraction/
+/.local-raw/
+
+# Test / tooling artifacts
+/test-results/
+/playwright-report/
+/coverage/
+
+# Explicit allow-rule: the redacted extraction output IS committed. (Root-anchored
+# ignores above already leave it alone; this documents the intent and is defensive.)
+!/spec/sheets/
+!/spec/sheets/**
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

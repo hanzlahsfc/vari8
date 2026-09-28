@@ -1,0 +1,162 @@
+{
+  "version": 1,
+  "policy": "docs/redaction-policy.md",
+  "placeholderConvention": "[REDACTED:<category>]",
+  "note": "One entry per redacted occurrence in a committed artifact. Never stores the original value. Extended by the extraction pipeline in later phases.",
+  "redactions": [
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "DAILY TRACKER",
+      "fieldCategory": "client.start_date",
+      "placeholder": "[REDACTED:date-range]",
+      "reason": "Program date range begins at the dashboard START DATE (client personal date)"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "DAILY TRACKER",
+      "fieldCategory": "menses.e2_dose",
+      "placeholder": "[REDACTED:dose]",
+      "reason": "E2 hormone dose value"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "DAILY TRACKER",
+      "fieldCategory": "menses.prog_dose",
+      "placeholder": "[REDACTED:dose]",
+      "reason": "PROG hormone dose value"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "DAILY TRACKER",
+      "fieldCategory": "prescribed_target",
+      "placeholder": "[REDACTED:prescribed-target]",
+      "reason": "Client-specific weekly prescribed targets (steps/cardio/salt/water)"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "DAILY TRACKER",
+      "fieldCategory": "weekly_average",
+      "placeholder": "[REDACTED:average-value]",
+      "reason": "Client-specific weekly average values"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "DAILY TRACKER",
+      "fieldCategory": "client_identifier.name",
+      "placeholder": "[REDACTED:client-name]",
+      "reason": "Real client full name"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "TIMELINE",
+      "fieldCategory": "ped_protocol.dose",
+      "placeholder": "[REDACTED:dose]",
+      "reason": "PED protocol weekly dose values"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "MEALPLAN",
+      "fieldCategory": "plan_totals",
+      "placeholder": "[REDACTED:plan-totals]",
+      "reason": "Client-specific meal-plan macro totals"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "MEALPLAN",
+      "fieldCategory": "prescribed_target",
+      "placeholder": "[REDACTED:prescribed-target]",
+      "reason": "Client-specific calorie targets"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "MENSES",
+      "fieldCategory": "menses.cycle_day",
+      "placeholder": "[REDACTED:cycle-day]",
+      "reason": "Client cycle day value"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "MENSES",
+      "fieldCategory": "menses.cycle_phase",
+      "placeholder": "[REDACTED:cycle-phase]",
+      "reason": "Client current cycle phase"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "MENSES",
+      "fieldCategory": "menses.average_cycle_length",
+      "placeholder": "[REDACTED:cycle-length]",
+      "reason": "Client average cycle length"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "MENSES",
+      "fieldCategory": "menses.next_period_estimate",
+      "placeholder": "[REDACTED:date]",
+      "reason": "Client next-period estimate"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "MENSES",
+      "fieldCategory": "menses.ovulation_estimate",
+      "placeholder": "[REDACTED:date]",
+      "reason": "Client ovulation estimate"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "MENSES",
+      "fieldCategory": "menses.cycle_progress",
+      "placeholder": "[REDACTED:cycle-progress]",
+      "reason": "Client cycle progress value"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "MENSES",
+      "fieldCategory": "menses.cycle_history",
+      "placeholder": "[REDACTED:cycle-history]",
+      "reason": "Client cycle-length history entries"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "MENSES",
+      "fieldCategory": "hrt.dose",
+      "placeholder": "[REDACTED:dose]",
+      "reason": "HRT dose values"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "MENSES",
+      "fieldCategory": "hrt.cycle_day_range",
+      "placeholder": "[REDACTED:cycle-day-range]",
+      "reason": "HRT from/to cycle-day ranges"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "TRAINING",
+      "fieldCategory": "program.goal",
+      "placeholder": "[REDACTED:program-goal]",
+      "reason": "Client-specific program goal text"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "SHOWDAY",
+      "fieldCategory": "show.name",
+      "placeholder": "[REDACTED:show-name]",
+      "reason": "Client competition name"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "SHOWDAY",
+      "fieldCategory": "show.date",
+      "placeholder": "[REDACTED:show-date]",
+      "reason": "Client competition date"
+    },
+    {
+      "artifact": "docs/source-inventory.md",
+      "section": "PEAKING",
+      "fieldCategory": "demo_week.date_range",
+      "placeholder": "[REDACTED:date-range]",
+      "reason": "Client-specific dated demo week range"
+    }
+  ]
+}
