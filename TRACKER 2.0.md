@@ -13,9 +13,9 @@ deployment, production-data change, or external-service change.
 - Current product name: undecided. `App`, `The-great-tracker-`, `Prime Tracker Pro`, and
   `PRGRSS 2.0` are placeholders or source names, not an approved product name.
 - Current branch: `main`
-- Current reviewed HEAD: `c6ca23f` (S1-C guarded client ownership & assignment services,
-  independently reviewed; committed locally, **not pushed**). Last pushed `origin/main`:
-  `f4ebac094a773d86808a8d1d442575f1dcabca6d`
+- Current reviewed HEAD: `fd2954b` (S1-D versioned consent; gates pass, **independent
+  different-model review PENDING** — see §12; committed locally, **not pushed**). Last pushed
+  `origin/main`: `f4ebac094a773d86808a8d1d442575f1dcabca6d`
 - Reference implementation: `nexuslinkproductions/PRIME-STATE-TRACKER`, branch `hanzlah`,
   reviewed at `aa59905`. Reuse applicable engineering patterns, not its product data,
   formulas, visual identity, or assumptions.
@@ -140,8 +140,11 @@ threshold, health-data policy, workflow, or layout.
 ### Important limitations
 
 - The application is a research/extraction foundation, not the target product yet.
-- The Prisma schema has only a minimal `User`; there are no workspaces, memberships, roles,
-  clients, assignments, consent records, audit records, or domain persistence.
+- The Prisma schema now has identity/tenancy (S1-A: `User` platform fields, `Workspace`,
+  `WorkspaceMember`, `CoachProfile`, `ClientProfile`, `ClientAssignment`), authorization
+  (S1-B guard/matrix), client/assignment services (S1-C), and versioned consent (S1-D:
+  `ConsentRecord`). It still has **no** audit records, tokens, GDPR/storage tables, health or
+  Daily Tracker persistence, or food/exercise/PED domain models.
 - Credentials authentication is provisional. There is no registration, password reset,
   seeded account, route middleware, or complete protected product shell.
 - The current Daily Tracker is a generic fieldset prototype, not a faithful production UI,
@@ -253,14 +256,15 @@ schematic/scripts arrive:
 
 ## 8. Current next action
 
-Stage 0, the Stage 1 plan, and slices S1-A (schema), S1-B (authorization core), and S1-C
-(client ownership & assignments) are complete and independently reviewed; S1-C is committed
-locally at `c6ca23f`. Next: **S1-D** (versioned consent model + consent gates, per
-`docs/security/consent-audit.md` §1) — plan and implement it test-first, after which **S1-E**
-must wire metadata-only audit writing (including transactionally coupled assignment audit)
-before the S1-C mutations may be exposed anywhere. Tokens (S1-F), GDPR (S1-G), and the
-workspace shell (S1-H) remain later slices; no health records or product UI. All local commits
-remain unpushed; do not push.
+Stage 1 slices S1-A (schema), S1-B (authorization core), S1-C (client ownership & assignments)
+are complete and independently reviewed; S1-D (versioned consent) is implemented at `fd2954b`
+with all focused/full gates green, but its **independent different-model review is still
+PENDING** (only the builder's own model was available). Next: obtain that review (and repair any
+findings), then implement **S1-E** (metadata-only `AuditEvent` logging with transactionally
+coupled audit writes for consent + assignment mutations) before any consent/assignment mutation
+is exposed through a route/action. Tokens (S1-F), GDPR (S1-G), and the workspace shell (S1-H)
+remain later slices; no health records or product UI. All local commits remain unpushed; do not
+push.
 
 ## 9. Human inputs still required
 
@@ -365,6 +369,49 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-29 — Stage 1 slice S1-D: versioned consent (implementation + gates; independent review PENDING)
+
+- Scope: S1-D only — versioned `ConsentRecord` schema/migration + `lib/consent.ts` services/gate.
+  No routes/UI/health/audit/tokens/GDPR/storage.
+- Starting state: branch `main`, commit `85feade`, `origin/main` `f4ebac0`, tree clean.
+- Plan/acceptance source: `docs/tasks/s1-d-versioned-consent.md`;
+  `docs/security/consent-audit.md` §1.
+- Files changed: `db/schema.prisma`, `db/migrations/20260929150000_stage1_versioned_consent/`,
+  `lib/consent.ts`, `tests/unit/consent.test.ts`, `tests/integration/s1-d-consent.test.ts`,
+  `tests/integration/s1-a-identity.test.ts` (table-set assertion updated for `consent_record`),
+  `docs/security/consent-audit.md` ("append-only" wording reconciled).
+- RED evidence: with `lib/consent.ts` absent, unit tests failed (`Cannot find module`); with the
+  consent migration absent, integration failed (`relation "consent_record" does not exist`).
+- Focused verification: `npx vitest run tests/unit/consent.test.ts` → 0; 12 passed.
+  `npm run test:integration` → 0; 44 passed (S1-A/S1-B/S1-C/S1-D), real PostgreSQL.
+- Full gates: `git diff --check` 0; `npm ci` 0; `prisma format/validate/generate` 0;
+  `migrate deploy/status` 0; `format:check` 0; `typecheck` 0; `lint` 0; `test` 184;
+  `build` 0; `test:e2e` 21 passed.
+- Migration inspection: additive only — **no `DROP` statements**; required FKs; raw partial
+  unique index `consent_record_active_version_key ... WHERE revoked_at IS NULL`.
+- Behavioral test: S1-D adds no routes/UI; the real PostgreSQL consent suite is the behavioral
+  gate. No browser evidence claimed.
+- Test strength: mutation-proved (1) dropping the revokedAt check fails a unit test; (2) ignoring
+  the version fails a unit test; (3) removing workspace scoping (guard adapter + consent helper)
+  fails the cross-workspace test; (4) bypassing the guard in the health gate fails the
+  unassigned-coach test; (5) dropping the partial unique index fails its regression test.
+- Same-model review: fresh-context but **same underlying model — NOT independent**. It found a
+  HIGH fail-open: `authorizeHealthOperation` with workspace scope and no `clientProfileId` dropped
+  the Prisma filter and crossed tenants. Repaired: the gate now requires a non-empty
+  `clientProfileId` (`invalid_input`) and re-checks client-in-workspace before consent lookup;
+  regression tests added Unit + integration. Also enforced the previously-dead
+  `coach_attested_unsupported` path and fixed a mapping-test typo. Re-ran affected gates green.
+- **Independent different-model review: PENDING** (not available in this environment). S1-D is
+  NOT marked complete until that review passes; do not expose any S1-D/ S1-C mutation.
+- Commit/push/deploy: plan `f63bbc4`; implementation `fd2954b`; this handoff commit. **Not pushed.**
+- Decisions/TODO(human): approved consent policy versions/text remain undecided (registry stays
+  unconfigured/fail-closed); offline coach-attested consent policy unapproved.
+- Known risks/blockers: consent is app-enforced (no RLS); assign/consent mutations not externally
+  exposable until S1-E; Prisma `migrate dev` drift would propose dropping raw-SQL constraints
+  (composite FKs, partial indexes) — keep `migrate deploy`.
+- Next action: obtain the independent review of S1-D (or proceed to S1-E audit logging) per
+  stakeholder direction.
 
 ### 2026-09-29 — Stage 1 slice S1-C: client ownership & assignments (local, not pushed)
 

@@ -8,7 +8,11 @@ versioning, audit field shape, log redaction); not its product kinds/values.
 
 ### Model
 
-`ConsentRecord` (append-only), owned by a `ClientProfile`:
+`ConsentRecord` (history-preserving, **not strictly append-only**), owned by a `ClientProfile`.
+Grants are never deleted; **revocation is the one permitted mutation** (`revokedAt` null →
+timestamp). No other grant field may change. A revoked grant permits a later re-grant as a new
+row. A raw partial unique index enforces at most one unrevoked row per
+`(client_profile_id, kind, version)`.
 
 | Field                                                   | Type                | Notes                                                                               |
 | ------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------- |

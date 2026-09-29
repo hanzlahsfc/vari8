@@ -4,6 +4,22 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-29 — Stage 1 / S1-D (versioned consent) — gates PASS; independent review PENDING
+
+- Built: `ConsentRecord` + `ConsentKind`/`ConsentSource` schema/migration (partial unique index
+  where `revoked_at IS NULL`); `lib/consent.ts` (fail-closed policy registry, grant/revoke/read
+  own consent in Serializable tx with tx-bound auth, exact-version gate, closed protected
+  mapping, PED/HRT + coach-attested fail-closed, audit exposure assertion). No routes/UI/audit.
+- Verified: `npm run test` → 184 passed; `npm run test:integration` → 44 passed (real PostgreSQL).
+  Full gates: `git diff --check` 0; `npm ci` 0; prisma format/validate/generate 0; migrate
+  deploy/status 0; `format:check` 0; `typecheck` 0; `lint` 0; `build` 0; `test:e2e` 21. Migration
+  is additive (no DROP). Mutation-proved 5 invariants.
+- Review: fresh-context but **same model (NOT independent)**; found a HIGH fail-open (workspace
+  scope with omitted clientProfileId dropped the query filter). Repaired + regression tests;
+  affected gates re-run green. **Independent different-model review PENDING** — S1-D not marked
+  complete; mutations remain unexposed.
+- Not pushed. Next action: independent review of S1-D, then S1-E (metadata-only audit logging).
+
 ## 2026-09-29 — Stage 1 / S1-C (client ownership & assignments) — PASS (local, not pushed)
 
 - Built: `lib/workspace/clients.ts` (guarded client-profile list/read/create/update; assignment
