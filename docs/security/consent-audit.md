@@ -1,9 +1,12 @@
 # Consent and audit design (Stage 1)
 
 Concrete, testable designs for versioned health-data consent and metadata-only audit logging.
-Consent is implemented in S1-D (migration `20260929150000_stage1_versioned_consent`); the audit
-logger remains a plan until S1-E. Reuses Prime State's **patterns** only (consent versioning,
-audit field shape, log redaction); not its product kinds/values.
+Consent is implemented in S1-D (migration `20260929150000_stage1_versioned_consent`,
+independently reviewed **PASS** by SWE-2 High at `3415812`); the metadata-only audit
+logger is implemented in S1-E (migration `20260929160000_stage1_audit_events`,
+`lib/audit.ts`; gates green, **independent review pending**). Reuses Prime State's
+**patterns** only (consent versioning, audit field shape, log redaction); not its
+product kinds/values.
 
 ## 1. Consent
 
@@ -112,10 +115,24 @@ presigned URLs. A redaction deny-list (recursive key + value-shape patterns) app
 - Reads and writes of health resources (daily, cycle, nutrition, training, check-ins, bloodwork,
   PED/HRT, notes, media), batched per request where possible.
 - Exports and erasures (with counts only).
-- Consent grant/revoke/version changes.
-- Membership/invitation changes and **client assignment changes**.
+- Consent grant/revoke/version changes. **Implemented in S1-E**: `GRANT`/`REVOKE`
+  events commit inside the same Serializable transaction as the mutation (only for
+  `changed: true`; idempotent and denied attempts write nothing).
+- Membership/invitation changes and **client assignment changes**. **Implemented in
+  S1-E**: `ASSIGN` (assign/reactivate) and `UPDATE` (set-primary, removal) events in
+  the mutation transaction.
 - **Every denied attempt** (role/assignment/consent/tenant), with `result: DENY` + reason.
-- Login outcomes (allow/deny; no existence oracle).
+  **Not yet implemented** — denials occur before/outside the mutation transaction, so
+  they cannot share it; deferred to the routing slice with an abuse-volume policy
+  (`TODO(human)`).
+- Login outcomes (allow/deny; no existence oracle). Not yet implemented.
+
+S1-E writes only `ALLOW` events describing committed mutations. `meta` is constrained
+by a closed runtime allowlist (`kind`, `version`, `changed`, `count`, `role`,
+`status`) — unknown keys and forbidden value shapes are rejected before write.
+Audit reads: `listAuditEvents` is workspace-owner scoped, bounded (default 25,
+max 100, `id`-cursor); platform-admin read is matrix-permitted but has no plumbing
+yet.
 
 ### Access & retention
 

@@ -241,5 +241,29 @@ review pending** — never independently reviewed by the builder.
 
 ## Status
 
-Plan written and self-reviewed against `stage-1-plan.md` and `consent-audit.md`;
-implementation not started.
+**Implemented (builder: SWE-2 High); gates green; independent review PENDING.**
+
+- Plan commit `45752bc`; schema/code/tests commit `87a4d0a`.
+- RED evidence: `npx vitest run tests/unit/audit.test.ts` → exit 1 (module
+  `../../lib/audit` absent); focused integration run → exit 1 (`audit_event`
+  table absent, s1-a table-set test failed) on a fresh disposable database.
+- Mutation evidence (each temporary edit restored byte-for-byte): removing the
+  grant audit write → 3 integration failures; skipping meta value validators →
+  11 unit failures; writing via the non-transaction client → 4 integration
+  failures; dropping `workspaceId` from the list `where` → 1 integration
+  failure; emitting REVOKE on a no-change path → 1 integration failure;
+  removing the removal audit write → 1 integration failure.
+- Gates on the final tree (disposable `s1e_final_db`, dropped after):
+  `git diff --check` 0; `npm ci` 0; `prisma format` 0 (no diff); `validate` 0;
+  `generate` 0; `migrate deploy` 0 (4 migrations); `migrate status` 0;
+  `format:check` 0; `typecheck` 0; `lint` 0; `npm run test` 0 (239 passed);
+  `test:integration` 0 (56 passed, real PostgreSQL — forced audit failure
+  rolled back the grant; concurrent grants left one row + one GRANT event);
+  `build` 0; `test:e2e` 0 (21 passed). `npm audit`: 1 moderate + 4 high
+  (previously recorded advisories, unchanged; no `--force`).
+- `prisma migrate diff` deployed-DB↔datamodel shows only the two known raw
+  composite-FK DROPs (the documented S1-A drift hazard; constraints remain live,
+  asserted by the S1-A regression tests).
+- No route/action/UI/API exposure was added; `assert*ExternallyExposable` still
+  fails closed. **S1-E is not independently reviewed** — a fresh different-model
+  review is required before S1-F or any external exposure.

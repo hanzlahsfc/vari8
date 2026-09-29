@@ -4,6 +4,33 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-29 — Stage 1 / S1-E (metadata-only audit) — implemented; gates green; independent review PENDING
+
+- Built by SWE-2 High: `AuditEvent` + `AuditAction`/`AuditResult` enums, additive
+  migration `20260929160000_stage1_audit_events` (no DROP; Restrict/SetNull FKs;
+  `workspace_id, at` index); `lib/audit.ts` (closed meta allowlist + value-shape
+  rejection, transaction-client-only `writeAuditEvent`, owner-scoped bounded
+  `listAuditEvents` 25/100 cursor); audit writes coupled inside the S1-D consent
+  and S1-C assignment Serializable transactions (`GRANT`, `REVOKE`, `ASSIGN`,
+  `UPDATE`; `changed:true` only; audit failure rolls the mutation back; denied/
+  failed/idempotent paths write nothing). No routes/actions/UI; assertions still
+  fail closed.
+- RED: unit suite exit 1 (module absent); integration exit 1 (table absent).
+- Mutation evidence (restored byte-for-byte): missing grant audit → 3 failures;
+  meta-validator bypass → 11; non-tx audit write → 4; dropped workspace scope →
+  1; audit on no-change revoke → 1; missing removal audit → 1.
+- Gates (fresh disposable `s1e_final_db`, dropped): `git diff --check` 0;
+  `npm ci` 0; prisma format/validate/generate 0; `migrate deploy` 0 (4);
+  `migrate status` 0; `format:check` 0; `typecheck` 0; `lint` 0;
+  `npm run test` 0 (239); `test:integration` 0 (56); `build` 0; `test:e2e` 0
+  (21). `npm audit`: 1 moderate + 4 high (unchanged recorded advisories).
+- Deferred (`TODO(human)`-class): DENY audit for denied attempts (pre-tx denials
+  cannot share the mutation transaction; needs abuse policy), audit retention
+  period, SUPPORT audit-read policy, platform-admin audit read plumbing.
+- Commits: plan `45752bc`; implementation `87a4d0a`; this handoff commit follows.
+  **Not pushed. Independent different-model review required before S1-F or any
+  external exposure.**
+
 ## 2026-09-29 — S1-D independent re-review — PASS (SWE-2 High)
 
 - **SWE-2 High** independently re-reviewed the complete S1-D tree at `3415812`

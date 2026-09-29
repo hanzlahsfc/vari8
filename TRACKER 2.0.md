@@ -16,8 +16,10 @@ deployment, production-data change, or external-service change.
 - Last independently reviewed HEAD: `3415812` (S1-D, **SWE-2 High** verdict **PASS**).
   History: `gpt-6-astra` independently FAILED `ec8250c` on five findings; builder repair
   landed in `6e8e2e6`/`942879e`/`3415812`; SWE-2 High then re-reviewed the exact repaired
-  tree `3415812` (range `85feade..3415812`) read-only and passed it. S1-E unblocked for
-  implementation planning. See §12 and `docs/tasks/s1-d-versioned-consent.md`.
+  tree `3415812` (range `85feade..3415812`) read-only and passed it. S1-E was then
+  implemented (plan `45752bc`, code `87a4d0a`, docs `docs/tasks/s1-e-audit.md`) with gates
+  green — **independent S1-E review pending**; `3415812` remains the last reviewed tree.
+  See §12 and `docs/tasks/s1-d-versioned-consent.md`.
 - Reference implementation: `nexuslinkproductions/PRIME-STATE-TRACKER`, branch `hanzlah`,
   reviewed at `aa59905`. Reuse applicable engineering patterns, not its product data,
   formulas, visual identity, or assumptions.
@@ -137,16 +139,26 @@ threshold, health-data policy, workflow, or layout.
   client-profile list/read/create/update and assignment list/assign/set-primary/remove;
   workspace-scoped queries, bounded cursor lists, coach-capable target rules, Serializable
   transactions, structural errors) plus `authorizeCollection` in the guard. Assignment
-  mutations are **not externally exposable** until S1-E wires audit (`assertAssignmentMutationsExternallyExposable`).
+  mutations are **not externally exposable** even with S1-E audit wired
+  (`assertAssignmentMutationsExternallyExposable` still fails closed).
+- **Stage 1 / S1-D versioned consent:** `ConsentRecord` model + `lib/consent.ts`
+  services/gate; independently reviewed **PASS** (SWE-2 High, `3415812`).
+- **Stage 1 / S1-E metadata-only audit:** `AuditEvent` + migration
+  `20260929160000_stage1_audit_events`, `lib/audit.ts` (closed meta allowlist,
+  transaction-bound writer, owner-scoped bounded reader). Consent grant/revoke and
+  assignment mutations write their audit event inside the same Serializable
+  transaction. Gates green; **independent review PENDING**. No route/UI/API exposes
+  audit or the audited mutations.
 
 ### Important limitations
 
 - The application is a research/extraction foundation, not the target product yet.
 - The Prisma schema now has identity/tenancy (S1-A: `User` platform fields, `Workspace`,
   `WorkspaceMember`, `CoachProfile`, `ClientProfile`, `ClientAssignment`), authorization
-  (S1-B guard/matrix), client/assignment services (S1-C), and versioned consent (S1-D:
-  `ConsentRecord`). It still has **no** audit records, tokens, GDPR/storage tables, health or
-  Daily Tracker persistence, or food/exercise/PED domain models.
+  (S1-B guard/matrix), client/assignment services (S1-C), versioned consent (S1-D:
+  `ConsentRecord`), and metadata-only audit (S1-E: `AuditEvent`). It still has **no**
+  tokens, GDPR/storage tables, health or Daily Tracker persistence, or
+  food/exercise/PED domain models.
 - Credentials authentication is provisional. There is no registration, password reset,
   seeded account, route middleware, or complete protected product shell.
 - The current Daily Tracker is a generic fieldset prototype, not a faithful production UI,
@@ -259,15 +271,15 @@ schematic/scripts arrive:
 ## 8. Current next action
 
 Stage 1 slices S1-A (schema), S1-B (authorization core), S1-C (client ownership & assignments)
-are complete, and **S1-D (versioned consent) is now independently PASS**: after the
-`gpt-6-astra` FAIL at `ec8250c` and the `942879e` repair, SWE-2 High independently
-re-reviewed the full S1-D range `85feade..3415812` read-only — code, migration, tests,
-documentation, and real PostgreSQL evidence — and returned **PASS** (see §12).
-Next: plan and implement **S1-E** (metadata-only `AuditEvent` logging transactionally
-coupled to consent and assignment mutations), test-first, with its own independent
-different-model review before any external exposure. No consent/assignment mutation is
-externally exposed yet; tokens (S1-F), GDPR (S1-G), and workspace shell (S1-H) remain
-later slices.
+are complete, **S1-D (versioned consent) is independently PASS** (SWE-2 High re-review of
+`85feade..3415812` after the `gpt-6-astra` FAIL and `942879e` repair), and **S1-E
+(metadata-only audit) is implemented**: `AuditEvent` + `lib/audit.ts`, consent and
+assignment mutations write audit inside their Serializable transactions, gates green
+(unit 239, integration 56, E2E 21) — but S1-E is **NOT independently reviewed** (SWE-2
+High built it; self-review does not count). Next: obtain a fresh different-model
+independent S1-E review before S1-F (tokens) or any external exposure. No consent/
+assignment mutation is exposed; GDPR (S1-G) and workspace shell (S1-H) remain later
+slices.
 
 ## 9. Human inputs still required
 
@@ -372,6 +384,65 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-29 — Stage 1 slice S1-E: metadata-only audit (implemented; independent review PENDING)
+
+- Scope: S1-E only — `AuditEvent` schema/migration + `lib/audit.ts` + coupled audit
+  writes in the S1-D consent and S1-C assignment mutation services. No
+  routes/actions/UI, health records, tokens, GDPR, storage, product formulas. Builder:
+  SWE-2 High. **Not independently reviewed.**
+- Starting state: branch `main`, commit `3415812` + docs commits `27f9603`/`45752bc`,
+  worktree clean; `origin/main` `3415812`.
+- Plan/acceptance source: `docs/tasks/s1-e-audit.md` (committed `45752bc`);
+  `docs/security/consent-audit.md` §2; `docs/tasks/stage-1-plan.md` §5/§9.
+- Files changed: `db/schema.prisma` (`AuditAction`, `AuditResult`, `AuditEvent`,
+  relations), `db/migrations/20260929160000_stage1_audit_events/migration.sql`
+  (additive only — no DROP; Restrict/SetNull FKs; `[workspaceId, at]` index),
+  `lib/audit.ts` (new), `lib/consent.ts`, `lib/workspace/clients.ts`,
+  `tests/unit/audit.test.ts` (new, 35 tests), `tests/integration/s1-e-audit.test.ts`
+  (new, 8 tests), `tests/integration/s1-a-identity.test.ts` (table set),
+  `tests/unit/consent.test.ts` (fake tx gained the `auditEvent` delegate),
+  `docs/security/consent-audit.md`, `docs/tasks/s1-e-audit.md`, `docs/STATUS.md`,
+  `TRACKER 2.0.md`.
+- RED evidence: `npx vitest run tests/unit/audit.test.ts` → exit 1 (module absent);
+  focused integration → exit 1 (`audit_event` table absent; S1-A table-set test
+  failed) on fresh disposable DB.
+- Mutation evidence (each restored byte-for-byte, verified green after): remove grant
+  audit write → 3 integration failures; skip meta value validators → 11 unit
+  failures; write audit via non-tx client → 4 integration failures; drop
+  `workspaceId` from `listAuditEvents` where → 1; emit REVOKE on no-change → 1;
+  remove removal audit → 1.
+- Focused verification: `npx vitest run tests/unit/audit.test.ts` → 0 (35);
+  `npx vitest run --config vitest.integration.config.ts
+tests/integration/s1-e-audit.test.ts` → 0 (8, real PostgreSQL).
+- Full gates on final tree (fresh disposable `s1e_final_db`, dropped after):
+  `git diff --check` 0; `npm ci` 0; `prisma format` 0 (no diff); `prisma validate` 0;
+  `prisma generate` 0; `prisma migrate deploy` 0 (4 migrations); `prisma migrate
+status` 0; `format:check` 0; `typecheck` 0; `lint` 0; `npm run test` 0 (239);
+  `npm run test:integration` 0 (56); `npm run build` 0; `npm run test:e2e` 0 (21).
+  `npm audit`: 1 moderate + 4 high — unchanged recorded advisories (no `--force`).
+- Real-PostgreSQL evidence: forced `auditEvent.create` failure inside the tx ⇒
+  `grantOwnConsent` rejects and leaves zero consent rows and zero audit rows;
+  denied/failed/cross-workspace attempts write nothing; concurrent duplicate grants
+  leave exactly one consent row and one GRANT event; `listAuditEvents` owner-only,
+  tenant-scoped, 100/25 bounded over 101 fixture rows.
+- Migration validation: `prisma migrate deploy`/`status` clean on a disposable DB;
+  deployed-DB↔datamodel `migrate diff` shows only the two known S1-A raw composite-FK
+  drift DROPs (constraints still live; regression-tested). Additive — no unintended
+  DROP in the migration file.
+- Behavioral test: S1-E adds no UI; real PostgreSQL audit suite is the behavioral
+  gate; existing E2E 21/21 is regression coverage only. No browser claims.
+- Commit/push/deploy: plan `45752bc`, implementation `87a4d0a`, this documentation
+  commit. Push follows per instruction; no PR, no deploy, no route added.
+- Decisions/TODO(human): denied-attempt (`DENY`) audit deferred (denials occur before
+  the mutation transaction; needs abuse-volume policy); audit retention period;
+  SUPPORT audit-read triage; platform-admin audit read plumbing; erasure-time
+  identifier nulling arrives with S1-G (schema already `SetNull`-ready).
+- Known risks/blockers: audit access is app-enforced (no RLS); `meta` discipline is
+  enforced write-side only (no CHECK constraint) — reviewed surface is small;
+  `assert*ExternallyExposable` still throws until a later routing slice + review.
+- Next action: obtain a fresh **different-model** independent S1-E review before
+  S1-F (tokens) or any external exposure.
 
 ### 2026-09-29 — S1-D independent re-review by SWE-2 High: PASS
 
