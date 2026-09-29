@@ -8,6 +8,7 @@ import {
   listAuditEvents,
   sanitizeAuditMeta,
   writeAuditEvent,
+  type AuditMeta,
 } from "../../lib/audit";
 
 const ctx = (
@@ -105,6 +106,77 @@ describe("sanitizeAuditMeta", () => {
     expect(() => sanitizeAuditMeta(42 as never)).toThrowError(
       /audit_metadata_forbidden/,
     );
+  });
+
+  // P1 repair: validator lookup must be own-key only — Object.prototype
+  // members must never resolve as validators, and exceptions normalize to
+  // structural AuditError.
+  it.each<{ meta: Record<string, unknown>; label: string }>([
+    { meta: { constructor: { health: "bp 120/80" } }, label: "constructor" },
+    { meta: { toString: "canary-secret" }, label: "toString" },
+    { meta: { valueOf: { nested: true } }, label: "valueOf" },
+    { meta: { hasOwnProperty: "x" }, label: "hasOwnProperty" },
+    { meta: { isPrototypeOf: ["a"] }, label: "isPrototypeOf" },
+    { meta: { propertyIsEnumerable: { leak: 1 } }, label: "propertyIsEnum" },
+    { meta: { toLocaleString: "canary" }, label: "toLocaleString" },
+  ])("rejects own prototype-member key $label", ({ meta }) => {
+    expect(() => sanitizeAuditMeta(meta as never)).toThrowError(AuditError);
+    expect(() => sanitizeAuditMeta(meta as never)).toThrowError(
+      /audit_metadata_forbidden/,
+    );
+    // No raw TypeError may leak.
+    expect(() => sanitizeAuditMeta(meta as never)).not.toThrowError(TypeError);
+  });
+
+  it("rejects an own __proto__ key and never mutates prototypes", () => {
+    const meta = JSON.parse('{"__proto__":{"health":"canary"}}');
+    expect(() => sanitizeAuditMeta(meta as never)).toThrowError(
+      /audit_metadata_forbidden/,
+    );
+    const probe: Record<string, unknown> = {};
+    expect(probe.health).toBeUndefined();
+    expect(probe.polluted).toBeUndefined();
+  });
+
+  it("rejects inherited enumerable properties", () => {
+    const proto = { kind: "HEALTH_DATA" };
+    const meta = Object.create(proto);
+    meta.version = "v1";
+    expect(() => sanitizeAuditMeta(meta as never)).toThrowError(
+      /audit_metadata_forbidden/,
+    );
+  });
+
+  it("accepts null-prototype input with valid keys only", () => {
+    const meta = Object.create(null) as Record<string, unknown>;
+    meta.kind = "CYCLE";
+    meta.version = "test-v1";
+    expect(sanitizeAuditMeta(meta as AuditMeta)).toEqual({
+      kind: "CYCLE",
+      version: "test-v1",
+    });
+    meta.password = "x";
+    expect(() => sanitizeAuditMeta(meta as AuditMeta)).toThrowError(
+      /audit_metadata_forbidden/,
+    );
+  });
+
+  it("normalizes getter/validator exceptions to structural AuditError", () => {
+    const meta = {
+      get kind() {
+        throw new TypeError("getter boom");
+      },
+    };
+    expect(() => sanitizeAuditMeta(meta as never)).toThrowError(AuditError);
+    expect(() => sanitizeAuditMeta(meta as never)).not.toThrowError(TypeError);
+  });
+
+  it("returns no partial result when a later key is forbidden", () => {
+    expect(() =>
+      sanitizeAuditMeta({ kind: "CYCLE", password: "x" } as never),
+    ).toThrowError(/audit_metadata_forbidden/);
+    // The throw is the only observable outcome; nothing partially sanitized
+    // can be returned or persisted.
   });
 });
 

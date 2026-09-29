@@ -94,19 +94,28 @@ function isStructuralString(value: unknown): value is string {
   return !FORBIDDEN_VALUE_SHAPES.some((shape) => shape.test(value));
 }
 
-const META_VALIDATORS: Record<keyof AuditMeta, (v: unknown) => boolean> = {
-  kind: isStructuralString,
-  version: isStructuralString,
-  changed: (v) => typeof v === "boolean",
-  count: (v) =>
-    typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 1_000_000,
-  role: (v) => v === "PRIMARY" || v === "COACH",
-  status: (v) => v === "ACTIVE" || v === "REMOVED",
-};
+// Map, not a plain object: `get` is intrinsically own-key only, so
+// `Object.prototype` members (constructor, toString, hasOwnProperty, …) can
+// never resolve as validators.
+const META_VALIDATORS = new Map<keyof AuditMeta, (v: unknown) => boolean>([
+  ["kind", isStructuralString],
+  ["version", isStructuralString],
+  ["changed", (v) => typeof v === "boolean"],
+  [
+    "count",
+    (v) =>
+      typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 1_000_000,
+  ],
+  ["role", (v) => v === "PRIMARY" || v === "COACH"],
+  ["status", (v) => v === "ACTIVE" || v === "REMOVED"],
+]);
 
 /**
- * Fail-closed metadata allowlist. Unknown keys, forbidden value shapes, nested
- * objects, and non-plain inputs all throw `audit_metadata_forbidden`.
+ * Fail-closed metadata allowlist. Unknown keys — including `Object.prototype`
+ * member names supplied as own keys — forbidden value shapes, nested objects,
+ * and non-plain inputs all throw `audit_metadata_forbidden`. Any exception
+ * raised while enumerating or validating (e.g. a throwing getter) is normalized
+ * to the same structural error; no raw `TypeError` escapes.
  */
 export function sanitizeAuditMeta(meta?: AuditMeta): AuditMeta | undefined {
   if (meta === undefined) return undefined;
@@ -115,16 +124,26 @@ export function sanitizeAuditMeta(meta?: AuditMeta): AuditMeta | undefined {
   const proto = Object.getPrototypeOf(meta);
   if (proto !== Object.prototype && proto !== null)
     throw new AuditError("audit_metadata_forbidden");
-  const clean: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(meta)) {
-    const validator = (META_VALIDATORS as Record<string, unknown>)[key];
-    if (typeof validator !== "function")
-      throw new AuditError("audit_metadata_forbidden");
-    if (!(validator as (v: unknown) => boolean)(value))
-      throw new AuditError("audit_metadata_forbidden");
-    clean[key] = value;
+  try {
+    const clean: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(meta)) {
+      const validator = META_VALIDATORS.get(key as keyof AuditMeta);
+      if (validator === undefined || validator(value) !== true)
+        throw new AuditError("audit_metadata_forbidden");
+      // defineProperty avoids `__proto__`/setter semantics: the key is already
+      // allowlisted, but the clean object must never mutate its prototype.
+      Object.defineProperty(clean, key, {
+        value,
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      });
+    }
+    return clean as AuditMeta;
+  } catch (error) {
+    if (error instanceof AuditError) throw error;
+    throw new AuditError("audit_metadata_forbidden");
   }
-  return clean as AuditMeta;
 }
 
 /** Pure event construction from the authorized context (never caller fields). */

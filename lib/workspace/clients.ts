@@ -522,6 +522,26 @@ export async function setPrimaryCoach(
           "PRIMARY",
         );
 
+        const existing = await tx.clientAssignment.findUnique({
+          where: {
+            clientProfileId_coachMemberId: {
+              clientProfileId: input.clientProfileId,
+              coachMemberId: input.coachMemberId,
+            },
+          },
+          select: ASSIGNMENT_SELECT,
+        });
+
+        // No-op fast path: the requested coach is already PRIMARY+ACTIVE. The
+        // `client_assignment_one_active_primary_key` partial unique index
+        // guarantees no other ACTIVE PRIMARY can exist for this client, so no
+        // state change is possible — return changed:false, write no audit
+        // event, and skip the writes entirely (an update writing identical
+        // values is not a state change).
+        if (existing?.status === "ACTIVE" && existing.role === "PRIMARY") {
+          return { ...toMutationResult(existing), changed: false };
+        }
+
         // Demote the current different ACTIVE PRIMARY (to COACH, still active).
         await tx.clientAssignment.updateMany({
           where: {
@@ -534,15 +554,6 @@ export async function setPrimaryCoach(
           data: { role: "COACH" },
         });
 
-        const existing = await tx.clientAssignment.findUnique({
-          where: {
-            clientProfileId_coachMemberId: {
-              clientProfileId: input.clientProfileId,
-              coachMemberId: input.coachMemberId,
-            },
-          },
-          select: { id: true },
-        });
         const row = existing
           ? await tx.clientAssignment.update({
               where: { id: existing.id },

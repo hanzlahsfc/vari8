@@ -4,7 +4,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { AccessDeniedError } from "../../lib/auth/guard";
-import { listAuditEvents } from "../../lib/audit";
+import { AuditError, listAuditEvents, writeAuditEvent } from "../../lib/audit";
 import {
   createStaticConsentPolicy,
   grantOwnConsent,
@@ -492,5 +492,260 @@ describe.skipIf(!enabled)("S1-E metadata-only audit", () => {
     await expect(
       listAuditEvents(s(cu.id), { workspaceId: ws.id }, prisma),
     ).rejects.toBeInstanceOf(AccessDeniedError);
+  });
+
+  it("prototype-key canary metadata can never reach the database", async () => {
+    const { ws, u, cp } = await clientFixture();
+    const ctx = {
+      userId: u.id,
+      platformRole: "USER" as const,
+      workspaceId: ws.id,
+      workspaceMemberId: "m1",
+      workspaceRole: "CLIENT" as const,
+      grantedScope: "own" as const,
+      clientProfileId: cp.id,
+    };
+    const canary = `canary-${Date.now()}-health-marker`;
+    for (const key of [
+      "constructor",
+      "toString",
+      "valueOf",
+      "hasOwnProperty",
+      "__proto__",
+    ]) {
+      const meta = JSON.parse(`{"${key}":{"note":"${canary}"}}`);
+      await expect(
+        prisma.$transaction(async (tx) =>
+          writeAuditEvent(tx, ctx, {
+            action: "GRANT",
+            resourceType: "consent",
+            subjectClientProfileId: cp.id,
+            meta,
+          }),
+        ),
+      ).rejects.toBeInstanceOf(AuditError);
+    }
+    const leaked = await prisma.$queryRawUnsafe<Array<{ c: number }>>(
+      `SELECT COUNT(*)::int AS c FROM "audit_event" WHERE "meta"::text LIKE $1`,
+      `%${canary}%`,
+    );
+    expect(leaked[0]?.c).toBe(0);
+    expect(
+      await prisma.auditEvent.count({ where: { workspaceId: ws.id } }),
+    ).toBe(0);
+  });
+
+  it("setPrimaryCoach is a no-op when the coach is already the sole active primary", async () => {
+    const { ws, owner, cp } = await ownerFixture();
+    const c1 = await user();
+    const m1 = await member(ws.id, c1.id, "COACH");
+    const c2 = await user();
+    const m2 = await member(ws.id, c2.id, "COACH");
+
+    const first = await setPrimaryCoach(
+      s(owner.id),
+      { workspaceId: ws.id, clientProfileId: cp.id, coachMemberId: m1.id },
+      prisma,
+    );
+    expect(first.changed).toBe(true);
+    expect(
+      await prisma.auditEvent.count({ where: { workspaceId: ws.id } }),
+    ).toBe(1);
+
+    // Repeat: no state change, no second event.
+    const again = await setPrimaryCoach(
+      s(owner.id),
+      { workspaceId: ws.id, clientProfileId: cp.id, coachMemberId: m1.id },
+      prisma,
+    );
+    expect(again).toMatchObject({
+      changed: false,
+      role: "PRIMARY",
+      status: "ACTIVE",
+      coachMemberId: m1.id,
+    });
+    const third = await setPrimaryCoach(
+      s(owner.id),
+      { workspaceId: ws.id, clientProfileId: cp.id, coachMemberId: m1.id },
+      prisma,
+    );
+    expect(third.changed).toBe(false);
+    expect(
+      await prisma.auditEvent.count({ where: { workspaceId: ws.id } }),
+    ).toBe(1);
+    const row = await prisma.clientAssignment.findUnique({
+      where: {
+        clientProfileId_coachMemberId: {
+          clientProfileId: cp.id,
+          coachMemberId: m1.id,
+        },
+      },
+    });
+    expect(row).toMatchObject({ role: "PRIMARY", status: "ACTIVE" });
+
+    // Genuine change to a different eligible coach: one new event.
+    const second = await setPrimaryCoach(
+      s(owner.id),
+      { workspaceId: ws.id, clientProfileId: cp.id, coachMemberId: m2.id },
+      prisma,
+    );
+    expect(second.changed).toBe(true);
+    const events = await prisma.auditEvent.findMany({
+      where: { workspaceId: ws.id, action: "UPDATE" },
+    });
+    expect(events).toHaveLength(2);
+    const primary = await prisma.clientAssignment.findMany({
+      where: {
+        workspaceId: ws.id,
+        clientProfileId: cp.id,
+        role: "PRIMARY",
+        status: "ACTIVE",
+      },
+    });
+    expect(primary).toHaveLength(1);
+    expect(primary[0].coachMemberId).toBe(m2.id);
+  });
+
+  it("setPrimaryCoach denials write no mutation and no audit event", async () => {
+    const { ws, owner, cp } = await ownerFixture();
+    const base = await prisma.auditEvent.count({
+      where: { workspaceId: ws.id },
+    });
+
+    // Ineligible target (assistant cannot be PRIMARY).
+    const assistant = await user();
+    const am = await member(ws.id, assistant.id, "ASSISTANT_COACH");
+    await expect(
+      setPrimaryCoach(
+        s(owner.id),
+        { workspaceId: ws.id, clientProfileId: cp.id, coachMemberId: am.id },
+        prisma,
+      ),
+    ).rejects.toMatchObject({ code: "member_not_eligible" });
+
+    // Cross-workspace client.
+    const wsB = await workspace();
+    const foreignClient = await clientProfile(wsB.id);
+    await expect(
+      setPrimaryCoach(
+        s(owner.id),
+        {
+          workspaceId: ws.id,
+          clientProfileId: foreignClient.id,
+          coachMemberId: am.id,
+        },
+        prisma,
+      ),
+    ).rejects.toMatchObject({ code: "client_not_accessible" });
+
+    // Cross-workspace coach member.
+    const foreignCoach = await user();
+    const fcm = await member(wsB.id, foreignCoach.id, "COACH");
+    await expect(
+      setPrimaryCoach(
+        s(owner.id),
+        { workspaceId: ws.id, clientProfileId: cp.id, coachMemberId: fcm.id },
+        prisma,
+      ),
+    ).rejects.toMatchObject({ code: "member_not_eligible" });
+
+    expect(
+      await prisma.auditEvent.count({ where: { workspaceId: ws.id } }),
+    ).toBe(base);
+    expect(
+      await prisma.clientAssignment.count({ where: { workspaceId: ws.id } }),
+    ).toBe(0);
+  });
+
+  it("forced audit failure rolls back a genuine primary change", async () => {
+    const { ws, owner, cp } = await ownerFixture();
+    const coach = await user();
+    const cm = await member(ws.id, coach.id, "COACH");
+    const failing = auditFailClient(prisma);
+    await expect(
+      setPrimaryCoach(
+        s(owner.id),
+        { workspaceId: ws.id, clientProfileId: cp.id, coachMemberId: cm.id },
+        failing,
+      ),
+    ).rejects.toThrow();
+    expect(
+      await prisma.clientAssignment.count({
+        where: { workspaceId: ws.id, status: "ACTIVE" },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.auditEvent.count({ where: { workspaceId: ws.id } }),
+    ).toBe(0);
+  });
+
+  it("concurrent primary changes resolve to exactly one audited primary", async () => {
+    const { ws, owner, cp } = await ownerFixture();
+    const c1 = await user();
+    const m1 = await member(ws.id, c1.id, "COACH");
+    const c2 = await user();
+    const m2 = await member(ws.id, c2.id, "COACH");
+
+    const outcomes = await Promise.allSettled([
+      setPrimaryCoach(
+        s(owner.id),
+        { workspaceId: ws.id, clientProfileId: cp.id, coachMemberId: m1.id },
+        prisma,
+      ),
+      setPrimaryCoach(
+        s(owner.id),
+        { workspaceId: ws.id, clientProfileId: cp.id, coachMemberId: m2.id },
+        prisma,
+      ),
+    ]);
+    const committed = outcomes.filter(
+      (o) => o.status === "fulfilled" && o.value.changed,
+    ).length;
+    // Losers fail structurally (no raw errors, no partial state).
+    for (const o of outcomes) {
+      if (o.status === "rejected")
+        expect(String((o.reason as Error).name)).toMatch(
+          /WorkspaceServiceError|AuditError/,
+        );
+    }
+    const primaries = await prisma.clientAssignment.findMany({
+      where: {
+        workspaceId: ws.id,
+        clientProfileId: cp.id,
+        role: "PRIMARY",
+        status: "ACTIVE",
+      },
+    });
+    expect(primaries).toHaveLength(1);
+    expect(
+      await prisma.auditEvent.count({
+        where: { workspaceId: ws.id, action: "UPDATE" },
+      }),
+    ).toBe(committed);
+    expect(committed).toBe(1);
+  });
+
+  it("the workspace/id read index and all prior raw constraints coexist", async () => {
+    const rows = await prisma.$queryRawUnsafe<Array<{ indexname: string }>>(
+      `SELECT indexname FROM pg_indexes WHERE indexname IN (
+         'audit_event_workspace_id_at_idx',
+         'audit_event_workspace_id_id_idx',
+         'consent_record_active_version_key',
+         'client_assignment_one_active_primary_key'
+       )`,
+    );
+    expect(rows.map((r) => r.indexname).sort()).toEqual([
+      "audit_event_workspace_id_at_idx",
+      "audit_event_workspace_id_id_idx",
+      "client_assignment_one_active_primary_key",
+      "consent_record_active_version_key",
+    ]);
+    const fks = await prisma.$queryRawUnsafe<Array<{ conname: string }>>(
+      `SELECT conname FROM pg_constraint WHERE conname IN (
+         'client_assignment_client_workspace_fkey',
+         'client_assignment_member_workspace_fkey'
+       )`,
+    );
+    expect(fks).toHaveLength(2);
   });
 });

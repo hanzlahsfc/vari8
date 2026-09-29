@@ -238,7 +238,9 @@ model AuditEvent {
   actor                User?          @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
   subjectClientProfile ClientProfile? @relation(fields: [subjectClientProfileId], references: [id], onDelete: SetNull)
 
-  // Only read path: tenant-scoped, time-ordered listing for the workspace owner.
+  // Read paths: tenant-scoped, time-ordered listing ([workspaceId, at]) and
+  // tenant-scoped id-cursor pagination used by listAuditEvents ([workspaceId, id]).
   @@index([workspaceId, at])
+  @@index([workspaceId, id])
   @@map("audit_event")
 }
