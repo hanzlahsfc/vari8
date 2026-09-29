@@ -4,6 +4,17 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-29 — Phase A (product UI) — PASS
+- Built: read-only Foods/Exercises libraries (`spec/data/*.json`) and a read-only viewer for
+  all 11 sheets (`spec/sheets/<slug>.json` + summaries); sparse grid rendering (empty cells not
+  rendered, spans/coords preserved); redacted cells show a neutral `▨` marker; tokenized theme.
+- Modules: `lib/catalog.ts`, `lib/spec-artifacts.ts`, `components/app-nav.tsx`; routes
+  `/sheets`, `/sheets/[slug]`, `/library/foods`, `/library/exercises`.
+- Verified: `npm run verify` → 0 (123 tests); `npm run build` → 0; `npm run test:e2e` → 0
+  (16 passed incl. a11y + 390px mobile). Read-only; no auth/exposure change.
+- Caveats: licensing/exposure decision unresolved; no formulas/estimation/roles/writes.
+- Next action: await approval for Phase B (source-clear daily entry) — not started.
+
 ## 2026-09-29 — Phase 12 — PASS
 - Final audit: local == remote == `e6cdcb7` before the Phase 12 fix; all 11 redacted cell
   artifacts + 11 summaries + `theme.json` + `cross-sheet.md` + `spec/data/*.json` + manifest
