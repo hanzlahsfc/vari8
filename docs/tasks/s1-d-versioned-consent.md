@@ -38,17 +38,23 @@ the offline-consent policy is approved. `PED_HRT` stays fail-closed regardless o
 
 - `grantOwnConsent(session, { workspaceId, clientProfileId, kind })`
 - `revokeOwnConsent(session, { workspaceId, clientProfileId, kind })`
-- `readOwnConsentStatus(session, { workspaceId, clientProfileId })`
+- `readOwnConsentStatus(session, { workspaceId, clientProfileId, limit?, cursor? })` → `{ items, nextCursor }`
 - `hasExactActiveConsent(rows, kind, version)` (pure)
 - `authorizeHealthOperation(session, { resource, action, workspaceId, clientProfileId })`
 
 Grant/revoke/read call the S1-B guard with resource `consent` (client `own` only) inside a
-Serializable transaction with a tx-bound repo; consent lookups always include the workspace.
-Idempotent grant (exact active row exists) and idempotent revoke (nothing active). Errors are
-structural (`ConsentError` codes) with no ids/names/versions/values.
+Serializable transaction with a tx-bound repo; **authorization runs first**, before any
+policy/version resolution or consent lookup. Every `ConsentRecord` query embeds the workspace
+relation predicate (`clientProfile: { workspaceId }`) as defense in depth. `grantedByUserId`
+comes from the authorized context, not the session. Idempotent grant (exact active row exists)
+and idempotent revoke (nothing active). Errors are structural (`ConsentError` codes) with no
+ids/names/versions/values. `readOwnConsentStatus` is bounded: default 25, max 100, stable
+`id` ascending order, cursor-paginated.
 
 Authorization order for protected operations: user/workspace/membership → RBAC scope →
-exact-version consent → (audit later in S1-E). Consent never grants authorization by itself.
+client/workspace confirmation → exact-required-version consent (querying only the required
+active `(kind, version)` rows) → (audit later in S1-E). Consent never grants authorization by
+itself.
 
 ## Protected mapping (closed)
 
@@ -62,6 +68,30 @@ base = `PRIVACY_NOTICE + HEALTH_DATA`.
 No audit table/no-op logger. `assertConsentMutationsExternallyExposable()` throws
 `audit_not_wired_for_external_use` until S1-E couples audit transactionally; no route/action may
 expose consent mutations.
+
+## Hardening (builder repair from preliminary findings)
+
+Not an independent review. Repairs applied on top of `bd911f1`:
+
+1. **Authorization precedes policy.** `grantOwnConsent` no longer resolves the registry version
+   before `authorize`; only basic kind parsing happens first. Order inside the Serializable tx:
+   authorize → client/workspace → source policy → registry version → existing grant → mutation.
+   `grantedByUserId` uses the authorized context `userId`. Unauthorized `COACH_ATTESTED` input is
+   denied by RBAC, not by the source check; `PED_HRT` granting is denied even with a registry
+   version.
+2. **Workspace predicate embedded** in every consent read/update (active-grant lookup, revoke,
+   own-status history, health gate, P2002 verification), independent of the prior client check.
+   `requireClientInWorkspace` preserves the real requested resource/action in `AccessDeniedError`
+   (a `dailyTracking/write` failure is not reported as `consent/read`).
+3. **Bounded reads.** `authorizeHealthOperation` resolves the required exact versions, then loads
+   only unrevoked rows matching those `(kind, version)` pairs (workspace-scoped, no full history).
+4. **P2002 verified.** A racing `P2002` is idempotent only when the exact active
+   `(workspace, client, kind, version)` row now exists; otherwise `consent_conflict`.
+5. **Docs corrected.** `docs/security/consent-audit.md` now describes the raw partial unique
+   index instead of the absent four-column `@@unique`.
+
+Status: **S1-D implementation hardened; gates green; independent different-model review PENDING.**
+Not complete, not independently reviewed.
 
 ## RED tests
 
@@ -77,6 +107,11 @@ deleting history; partial-index regression; synthetic-only fixtures.
 
 (1) drop `revokedAt IS NULL`; (2) accept old version; (3) remove workspace scoping; (4) bypass
 RBAC; (5) drop the partial unique index. Restore exactly and re-run.
+
+Hardening mutations (each restored exactly): (1) move registry resolution before authorization;
+(2) remove the workspace relation predicate; (3) make the health gate load unrestricted consent
+history; (4) return `changed:false` on any P2002 without verifying the exact row; (5) enable
+`PED_HRT` granting.
 
 ## Commands
 

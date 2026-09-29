@@ -1,8 +1,9 @@
 # Consent and audit design (Stage 1)
 
 Concrete, testable designs for versioned health-data consent and metadata-only audit logging.
-This is a plan; no migration exists yet. Reuses Prime State's **patterns** only (consent
-versioning, audit field shape, log redaction); not its product kinds/values.
+Consent is implemented in S1-D (migration `20260929150000_stage1_versioned_consent`); the audit
+logger remains a plan until S1-E. Reuses Prime State's **patterns** only (consent versioning,
+audit field shape, log redaction); not its product kinds/values.
 
 ## 1. Consent
 
@@ -14,17 +15,23 @@ timestamp). No other grant field may change. A revoked grant permits a later re-
 row. A raw partial unique index enforces at most one unrevoked row per
 `(client_profile_id, kind, version)`.
 
-| Field                                                   | Type                | Notes                                                                               |
-| ------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------- |
-| `id`                                                    | uuid                |                                                                                     |
-| `clientProfileId`                                       | uuid (FK, required) | owner                                                                               |
-| `kind`                                                  | enum                | `PRIVACY_NOTICE`, `HEALTH_DATA`, `CYCLE`, `PHOTOS`, `BLOODWORK`, `PED_HRT`_(gated)_ |
-| `version`                                               | string              | exact accepted version (e.g. `"2026-09-29"`); compared exactly                      |
-| `grantedAt`                                             | timestamptz         |                                                                                     |
-| `revokedAt`                                             | timestamptz?        | null while active                                                                   |
-| `grantedByUserId`                                       | uuid?               | who recorded the grant                                                              |
-| `source`                                                | enum                | `CLIENT_SELF` \| `COACH_ATTESTED` (offline) — _offline policy TODO(human)_          |
-| `@@unique([clientProfileId, kind, version, grantedAt])` |                     | re-grants coexist; revoke keeps the row                                             |
+| Field             | Type                | Notes                                                                               |
+| ----------------- | ------------------- | ----------------------------------------------------------------------------------- |
+| `id`              | uuid                |                                                                                     |
+| `clientProfileId` | uuid (FK, required) | owner                                                                               |
+| `kind`            | enum                | `PRIVACY_NOTICE`, `HEALTH_DATA`, `CYCLE`, `PHOTOS`, `BLOODWORK`, `PED_HRT`_(gated)_ |
+| `version`         | string              | exact accepted version (e.g. `"2026-09-29"`); compared exactly                      |
+| `grantedAt`       | timestamptz         |                                                                                     |
+| `revokedAt`       | timestamptz?        | null while active                                                                   |
+| `grantedByUserId` | uuid?               | who recorded the grant                                                              |
+| `source`          | enum                | `CLIENT_SELF` \| `COACH_ATTESTED` (offline) — _offline policy TODO(human)_          |
+
+The only uniqueness constraint is the **raw partial unique index**
+`consent_record_active_version_key` on `(client_profile_id, kind, version) WHERE revoked_at IS NULL`
+(Prisma cannot model partial indexes, so it lives in the migration only, guarded by a regression
+test). There is deliberately no four-column `(clientProfileId, kind, version, grantedAt)` unique
+constraint: it is unnecessary beside the partial active-version index, and the stale documentation
+that listed it did not describe the actual enforcement.
 
 Rules:
 

@@ -13,9 +13,9 @@ deployment, production-data change, or external-service change.
 - Current product name: undecided. `App`, `The-great-tracker-`, `Prime Tracker Pro`, and
   `PRGRSS 2.0` are placeholders or source names, not an approved product name.
 - Current branch: `main`
-- Current reviewed HEAD: `fd2954b` (S1-D versioned consent; gates pass, **independent
-  different-model review PENDING** — see §12; committed locally, **not pushed**). Last pushed
-  `origin/main`: `f4ebac094a773d86808a8d1d442575f1dcabca6d`
+- Current reviewed HEAD: `207a9e4` (S1-D versioned consent, **hardened** from preliminary
+  findings; gates pass, **independent different-model review PENDING** — see §12; committed
+  locally, **not pushed**). Last pushed `origin/main`: `f4ebac094a773d86808a8d1d442575f1dcabca6d`
 - Reference implementation: `nexuslinkproductions/PRIME-STATE-TRACKER`, branch `hanzlah`,
   reviewed at `aa59905`. Reuse applicable engineering patterns, not its product data,
   formulas, visual identity, or assumptions.
@@ -258,13 +258,15 @@ schematic/scripts arrive:
 
 Stage 1 slices S1-A (schema), S1-B (authorization core), S1-C (client ownership & assignments)
 are complete and independently reviewed; S1-D (versioned consent) is implemented at `fd2954b`
-with all focused/full gates green, but its **independent different-model review is still
-PENDING** (only the builder's own model was available). Next: obtain that review (and repair any
-findings), then implement **S1-E** (metadata-only `AuditEvent` logging with transactionally
-coupled audit writes for consent + assignment mutations) before any consent/assignment mutation
-is exposed through a route/action. Tokens (S1-F), GDPR (S1-G), and the workspace shell (S1-H)
-remain later slices; no health records or product UI. All local commits remain unpushed; do not
-push.
+and **hardened at `207a9e4`** (authorization-before-policy, embedded workspace predicate, bounded
+consent reads, verified P2002, PED/HRT grant denial, doc correction) with all focused/full gates
+green, but its **independent different-model review is still PENDING** (only the builder's own
+model was available; the hardening repair is explicitly not a review). Next: obtain that fresh
+different-model review (and repair any findings), then implement **S1-E** (metadata-only
+`AuditEvent` logging with transactionally coupled audit writes for consent + assignment
+mutations) before any consent/assignment mutation is exposed through a route/action. Tokens
+(S1-F), GDPR (S1-G), and the workspace shell (S1-H) remain later slices; no health records or
+product UI. All local commits remain unpushed; do not push.
 
 ## 9. Human inputs still required
 
@@ -369,6 +371,47 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-29 — Stage 1 slice S1-D hardening repair (builder; independent review PENDING)
+
+- Scope: repair `lib/consent.ts` + S1-D tests only. **Builder work from preliminary findings —
+  explicitly NOT an independent review.** No S1-E audit model, no routes/actions/UI, no health
+  persistence, no policy versions/text, no provider/Supabase changes.
+- Starting state: branch `main`, commit `bd911f1`, `origin/main` `f4ebac0`, tree clean.
+- Repairs: (1) `grantOwnConsent` order is authorize → client/workspace → source policy → registry
+  version → existing grant → mutation; `grantedByUserId` from the authorized context; PED/HRT
+  granting denied even with a registry version. (2) Every consent read/update embeds
+  `clientProfile: { workspaceId }`; `requireClientInWorkspace` preserves the real resource/action.
+  (3) `authorizeHealthOperation` loads only the required active `(kind, version)` rows;
+  `readOwnConsentStatus` bounded (default 25, max 100), `id`-ascending, cursor-paginated.
+  (4) Racing `P2002` is idempotent only when the exact active `(workspace, client, kind, version)`
+  row exists, else `consent_conflict`. (5) `docs/security/consent-audit.md` now describes the raw
+  partial unique index, not the absent four-column `@@unique`.
+- Files changed: `lib/consent.ts`, `tests/unit/consent.test.ts`,
+  `tests/integration/s1-d-consent.test.ts`, `docs/security/consent-audit.md`,
+  `docs/tasks/s1-d-versioned-consent.md`, `docs/STATUS.md`, `TRACKER 2.0.md`.
+- RED evidence: with the pre-repair `lib/consent.ts`, 5 new tests failed — "denies unauthorized
+  callers before the registry is consulted", "denies unauthorized COACH_ATTESTED input by RBAC
+  before the source policy", "denies PED_HRT granting even when the registry supplies a version",
+  "treats P2002 as idempotent only when the exact active row exists", "loads only the required
+  active (kind, version) rows with the workspace predicate".
+- Mutation evidence (each restored exactly): (1) move registry resolution before authorization →
+  1 failed; (2) remove the workspace relation predicate → 1 failed; (3) health gate loads
+  unrestricted history → 1 failed; (4) P2002 returns `changed:false` without verifying the exact
+  row → 1 failed; (5) enable PED/HRT granting → 1 failed.
+- Focused verification: `npx vitest run tests/unit/consent.test.ts` → 0; 17 passed.
+  `npm run test:integration` → 0; 46 passed (S1-A/S1-B/S1-C/S1-D), real PostgreSQL.
+- Full gates: `git diff --check` 0; `npm ci` 0; `prisma format/validate/generate` 0;
+  `migrate deploy/status` 0; `format:check` 0; `typecheck` 0; `lint` 0; `test` 189;
+  `build` 0; `test:e2e` 21 passed.
+- Migration: unchanged (additive, no DROP); partial unique index preserved with its regression test.
+- Behavioral test: S1-D adds no routes/UI; the real PostgreSQL consent suite remains the gate.
+  Existing E2E is regression coverage only; no new browser evidence claimed.
+- Commit/push/deploy: repair `207a9e4`; documentation/handoff commit (this entry). **Not pushed;
+  `origin/main` unchanged at `f4ebac0`.**
+- Status: **S1-D implementation hardened; gates green; independent different-model review
+  PENDING.** Not complete, not independently reviewed.
+- Next action: fresh different-model S1-D review; then S1-E only after PASS.
 
 ### 2026-09-29 — Stage 1 slice S1-D: versioned consent (implementation + gates; independent review PENDING)
 
