@@ -48,6 +48,9 @@ function fakePrisma(overrides: Record<string, unknown> = {}) {
       create: vi.fn(async () => ({ id: "r1" })),
       updateMany: vi.fn(async () => ({ count: 0 })),
     },
+    auditEvent: {
+      create: vi.fn(async () => ({ id: "e1" })),
+    },
     ...overrides,
   };
   const client = {

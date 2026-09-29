@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 
 import { prisma } from "./db";
+import { writeAuditEvent } from "./audit";
 import { AccessDeniedError, authorize, type SessionLike } from "./auth/guard";
 import { type Resource } from "./auth/rbac";
 import {
@@ -21,8 +22,9 @@ import { normalizeLimit } from "./workspace/clients";
  * (`clientProfile: { workspaceId }`) as defense in depth, so a lookup cannot
  * cross tenants even if a prior check were bypassed.
  *
- * No audit table/logger here: consent mutations must not be exposed by any route
- * until S1-E couples audit writing transactionally.
+ * Audit writes (S1-E) are transaction-bound to each committed mutation: a failed
+ * audit write rolls the grant/revoke back. Consent mutations are still not
+ * exposed by any route; see `assertConsentMutationsExternallyExposable`.
  */
 
 export type ConsentKind =
@@ -134,8 +136,10 @@ export function hasExactActiveConsent(
 }
 
 export function assertConsentMutationsExternallyExposable(): never {
-  // S1-E must transactionally couple audit writing before any route/action exposes
-  // consent mutations. This is not a no-op auditor; it fails closed.
+  // S1-E now couples audit writing transactionally, but that alone does not
+  // authorize exposure: no route/action may expose consent mutations until the
+  // routing slice and its independent review. This is not a no-op auditor; it
+  // fails closed.
   throw new ConsentError("audit_not_wired_for_external_use");
 }
 
@@ -322,8 +326,9 @@ export async function grantOwnConsent(
         });
         if (existing) return { kind: input.kind, changed: false };
 
-        // 6. Mutation (actor id comes from the authorized context, not the session).
-        await tx.consentRecord.create({
+        // 6. Mutation + coupled audit event (actor id comes from the authorized
+        // context, not the session). Audit failure rolls the grant back.
+        const created = await tx.consentRecord.create({
           data: {
             clientProfileId: input.clientProfileId,
             kind: input.kind,
@@ -331,6 +336,14 @@ export async function grantOwnConsent(
             grantedByUserId: context.userId,
             source: "CLIENT_SELF",
           },
+          select: { id: true },
+        });
+        await writeAuditEvent(tx, context, {
+          action: "GRANT",
+          resourceType: "consent",
+          resourceId: created.id,
+          subjectClientProfileId: input.clientProfileId,
+          meta: { kind: input.kind, version },
         });
         return { kind: input.kind, changed: true };
       },
@@ -416,7 +429,7 @@ export async function revokeOwnConsent(
   try {
     return await client.$transaction(
       async (tx) => {
-        await authorize(
+        const context = await authorize(
           session,
           {
             resource: "consent",
@@ -442,6 +455,15 @@ export async function revokeOwnConsent(
           },
           data: { revokedAt: new Date() },
         });
+        if (result.count > 0) {
+          // Coupled audit: REVOKE commits iff the revocation does.
+          await writeAuditEvent(tx, context, {
+            action: "REVOKE",
+            resourceType: "consent",
+            subjectClientProfileId: input.clientProfileId,
+            meta: { kind: input.kind, count: result.count },
+          });
+        }
         return { kind: input.kind, changed: result.count > 0 };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },

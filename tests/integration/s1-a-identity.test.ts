@@ -286,10 +286,11 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
     ]) {
       expect(names.some((n) => n.includes(forbidden))).toBe(false);
     }
-    // Identity/tenancy (S1-A) plus the versioned consent table (S1-D).
+    // Identity/tenancy (S1-A), versioned consent (S1-D), audit events (S1-E).
     expect(names.sort()).toEqual(
       [
         "_prisma_migrations",
+        "audit_event",
         "client_assignment",
         "client_profile",
         "coach_profile",

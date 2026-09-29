@@ -65,6 +65,25 @@ enum ConsentSource {
   COACH_ATTESTED
 }
 
+enum AuditAction {
+  READ
+  CREATE
+  UPDATE
+  DELETE
+  EXPORT
+  GRANT
+  REVOKE
+  INVITE
+  ASSIGN
+  DENY
+  LOGIN
+}
+
+enum AuditResult {
+  ALLOW
+  DENY
+}
+
 model User {
   id           String       @id @default(cuid())
   email        String       @unique
@@ -78,6 +97,7 @@ model User {
   memberships     WorkspaceMember[]
   clientProfiles  ClientProfile[]
   consentsGranted ConsentRecord[]
+  auditEvents     AuditEvent[]
 
   @@map("users")
 }
@@ -92,6 +112,7 @@ model Workspace {
 
   members        WorkspaceMember[]
   clientProfiles ClientProfile[]
+  auditEvents    AuditEvent[]
 
   @@map("workspace")
 }
@@ -143,8 +164,9 @@ model ClientProfile {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  assignments ClientAssignment[] @relation("ClientAssignmentClient")
-  consents    ConsentRecord[]
+  assignments        ClientAssignment[] @relation("ClientAssignmentClient")
+  consents           ConsentRecord[]
+  auditSubjectEvents AuditEvent[]
 
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
   @@unique([workspaceId, userId])
@@ -195,4 +217,28 @@ model ConsentRecord {
   // (Prisma cannot express partial indexes).
   @@index([clientProfileId, kind, version, revokedAt])
   @@map("consent_record")
+}
+
+model AuditEvent {
+  id                     String      @id @default(cuid())
+  workspaceId            String      @map("workspace_id")
+  actorUserId            String?     @map("actor_user_id")
+  actorRole              MemberRole? @map("actor_role")
+  action                 AuditAction
+  resourceType           String      @map("resource_type")
+  resourceId             String?     @map("resource_id")
+  subjectClientProfileId String?     @map("subject_client_profile_id")
+  result                 AuditResult
+  reason                 String?
+  at                     DateTime    @default(now()) @db.Timestamptz(6)
+  ip                     String?
+  meta                   Json?
+
+  workspace            Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  actor                User?          @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  subjectClientProfile ClientProfile? @relation(fields: [subjectClientProfileId], references: [id], onDelete: SetNull)
+
+  // Only read path: tenant-scoped, time-ordered listing for the workspace owner.
+  @@index([workspaceId, at])
+  @@map("audit_event")
 }

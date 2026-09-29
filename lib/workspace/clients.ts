@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 
 import { prisma } from "../db";
+import { writeAuditEvent } from "../audit";
 import {
   AccessDeniedError,
   authorize,
@@ -15,8 +16,9 @@ import { createPrismaAuthorizationRepo, type PrismaLike } from "./access";
  * S1-C guarded client-ownership and assignment services.
  *
  * Every operation authorizes through the S1-B guard first; every query includes
- * workspace scope directly in its `where`. No route/UI exposes these mutations
- * until S1-E couples audit writing transactionally (see
+ * workspace scope directly in its `where`. Assignment mutations write a
+ * transaction-coupled audit event (S1-E) — a failed audit write rolls the
+ * mutation back. No route/UI exposes these mutations (see
  * `assertAssignmentMutationsExternallyExposable`).
  */
 
@@ -129,8 +131,10 @@ export function coachTargetRoleIsEligible(
 }
 
 export function assertAssignmentMutationsExternallyExposable(): never {
-  // S1-E must add transactionally coupled audit writing before any route/action
-  // exposes these mutations. This is not a no-op auditor; it fails closed.
+  // S1-E now couples audit writing transactionally, but that alone does not
+  // authorize exposure: no route/action may expose these mutations until the
+  // routing slice and its independent review. This is not a no-op auditor; it
+  // fails closed.
   throw new WorkspaceServiceError("audit_not_wired_for_external_use");
 }
 
@@ -387,7 +391,7 @@ export async function assignCoach(
   try {
     return await client.$transaction(
       async (tx) => {
-        await authorize(
+        const context = await authorize(
           session,
           {
             resource: "clientAssignments",
@@ -437,6 +441,13 @@ export async function assignCoach(
             },
             select: ASSIGNMENT_SELECT,
           });
+          await writeAuditEvent(tx, context, {
+            action: "ASSIGN",
+            resourceType: "client_assignment",
+            resourceId: created.id,
+            subjectClientProfileId: input.clientProfileId,
+            meta: { role, status: "ACTIVE" },
+          });
           return { ...toMutationResult(created), changed: true };
         }
 
@@ -462,6 +473,13 @@ export async function assignCoach(
           data: { role, status: "ACTIVE" },
           select: ASSIGNMENT_SELECT,
         });
+        await writeAuditEvent(tx, context, {
+          action: "ASSIGN",
+          resourceType: "client_assignment",
+          resourceId: updated.id,
+          subjectClientProfileId: input.clientProfileId,
+          meta: { role, status: "ACTIVE" },
+        });
         return { ...toMutationResult(updated), changed: true };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
@@ -483,7 +501,7 @@ export async function setPrimaryCoach(
   try {
     return await client.$transaction(
       async (tx) => {
-        await authorize(
+        const context = await authorize(
           session,
           {
             resource: "clientAssignments",
@@ -541,6 +559,13 @@ export async function setPrimaryCoach(
               },
               select: ASSIGNMENT_SELECT,
             });
+        await writeAuditEvent(tx, context, {
+          action: "UPDATE",
+          resourceType: "client_assignment",
+          resourceId: row.id,
+          subjectClientProfileId: input.clientProfileId,
+          meta: { role: "PRIMARY", status: "ACTIVE" },
+        });
         return { ...toMutationResult(row), changed: true };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
@@ -562,7 +587,7 @@ export async function removeClientAssignment(
   try {
     return await client.$transaction(
       async (tx) => {
-        await authorize(
+        const context = await authorize(
           session,
           {
             resource: "clientAssignments",
@@ -600,6 +625,13 @@ export async function removeClientAssignment(
           where: { id: existing.id },
           data: { status: "REMOVED" },
           select: ASSIGNMENT_SELECT,
+        });
+        await writeAuditEvent(tx, context, {
+          action: "UPDATE",
+          resourceType: "client_assignment",
+          resourceId: updated.id,
+          subjectClientProfileId: input.clientProfileId,
+          meta: { role: updated.role, status: "REMOVED" },
         });
         return { ...toMutationResult(updated), changed: true };
       },
