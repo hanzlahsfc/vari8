@@ -1,0 +1,63 @@
+{
+  "slug": "menses",
+  "sourceFile": "MENSES.html",
+  "cellCount": 128827,
+  "rowCount": 1002,
+  "colCount": 129,
+  "spannedCellCount": 72,
+  "sections": [
+    {
+      "label": "CURRENT CYCLE DAY",
+      "row": 7,
+      "col": 2
+    },
+    {
+      "label": "CURRENT PHASE",
+      "row": 7,
+      "col": 11
+    },
+    {
+      "label": "AVG CYCLE LENGTH",
+      "row": 7,
+      "col": 20
+    },
+    {
+      "label": "NEXT PERIOD EST.",
+      "row": 7,
+      "col": 29
+    },
+    {
+      "label": "EST. OVULATION",
+      "row": 7,
+      "col": 38
+    },
+    {
+      "label": "CYCLE PHASE GUIDE",
+      "row": 14,
+      "col": 25
+    },
+    {
+      "label": "LAST CYCLES",
+      "row": 26,
+      "col": 2
+    },
+    {
+      "label": "HRT SETUP",
+      "row": 38,
+      "col": 2
+    }
+  ],
+  "repeatedBlocks": [
+    {
+      "kind": "phase-guide-day",
+      "marker": "Day n",
+      "count": 2,
+      "distinctValues": 1,
+      "firstRow": 17,
+      "lastRow": 22
+    }
+  ],
+  "todos": [
+    "TODO(product): formulas, data validations, hidden rows/sheets, and named ranges are not present in the HTML export"
+  ]
+}

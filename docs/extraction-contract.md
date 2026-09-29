@@ -81,13 +81,27 @@ Rules:
 type SheetSummaryArtifact = {
   slug: string;
   sourceFile: string;
-  sections: { label: string; kind: string; startRow: number; endRow: number | null; evidence: string }[];
+  cellCount: number;
+  rowCount: number;
+  colCount: number;
+  spannedCellCount: number;
+  sections: { label: string; row: number; col: number }[]; // curated static labels only
+  repeatedBlocks: {
+    kind: string;
+    marker: string;
+    count: number;
+    distinctValues?: number;
+    firstRow: number | null;
+    lastRow: number | null;
+  }[];
   todos: string[];
 };
 ```
 
-Evidence-based section/block map only. Patterns are never forced onto a sheet whose source
-contradicts them; discrepancies become `TODO(product)`.
+Evidence-based section/block map only. `sections` contains a **curated** set of static
+template labels (never arbitrary cell text); `repeatedBlocks` reports safe marker counts
+(e.g. `Averages` week-blocks, `WEEK n` column groups, `MEAL n`, `DAY n`). Patterns are never
+forced onto a sheet whose source contradicts them; discrepancies become `TODO(product)`.
 
 ## `spec/data/*.json`
 
@@ -118,7 +132,14 @@ npm run extract:sheets -- --data-only   # writes only spec/data/foods.json + exe
 type ThemeArtifact = {
   version: number;
   derivation: string;
-  combinations: { background: string; text: string; border: string | null; font: string | null; seenIn: string[]; count: number }[];
+  combinations: {
+    background: string | null;
+    text: string | null;
+    border: string | null;
+    font: string | null;
+    seenIn: string[]; // sheet slugs
+    count: number; // cells using the combination
+  }[];
 };
 ```
 
@@ -128,7 +149,10 @@ documented derivation.
 ## `spec/cross-sheet.md`
 
 Values appearing verbatim in two or more sheets, as **candidate** links only. A text match
-does not prove a semantic relationship; links are labelled candidates.
+does not prove a semantic relationship; links are labelled candidates. Only two safe value
+classes are matched — reference-data names (foods, exercises) and curated static labels —
+and locations are written as `slug:rROWcCOL`. Arbitrary values from client-bearing sheets are
+never matched or printed (deferred until redaction in Phase 11).
 
 ## Redaction and `spec/redaction-manifest.json`
 
@@ -171,6 +195,12 @@ phase. Committing parsed sheet text now would expose real client data.
 ```sh
 # Non-writing: validate the source, parse all 11 sheets, print a coverage report.
 npm run extract:sheets -- --dry-run
+
+# Safe artifacts only: summaries + theme + cross-sheet (no cell dumps).
+npm run extract:sheets -- --spec-only
+
+# Reference databases only: spec/data/foods.json + spec/data/exercises.json.
+npm run extract:sheets -- --data-only
 
 # Opt-in: write UNREDACTED artifacts to a git-ignored RAW_EXTRACTION_DIR (fail-closed).
 RAW_EXTRACTION_DIR=.local-raw npm run extract:sheets -- --raw

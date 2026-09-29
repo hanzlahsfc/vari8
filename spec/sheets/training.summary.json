@@ -1,0 +1,62 @@
+{
+  "slug": "training",
+  "sourceFile": "TRAINING.html",
+  "cellCount": 270989,
+  "rowCount": 780,
+  "colCount": 450,
+  "spannedCellCount": 28719,
+  "sections": [
+    {
+      "label": "PROGRAMMING",
+      "row": 2,
+      "col": 17
+    },
+    {
+      "label": "SCHEDULE",
+      "row": 7,
+      "col": 17
+    },
+    {
+      "label": "SPLIT",
+      "row": 10,
+      "col": 5
+    },
+    {
+      "label": "ADDITIONAL INFO",
+      "row": 14,
+      "col": 17
+    },
+    {
+      "label": "ROTATION LENGTH",
+      "row": 15,
+      "col": 5
+    },
+    {
+      "label": "GOAL",
+      "row": 20,
+      "col": 5
+    }
+  ],
+  "repeatedBlocks": [
+    {
+      "kind": "week-column-group",
+      "marker": "WEEK n",
+      "count": 170,
+      "distinctValues": 17,
+      "firstRow": 25,
+      "lastRow": 277
+    },
+    {
+      "kind": "day-block",
+      "marker": "DAY n",
+      "count": 10,
+      "distinctValues": 10,
+      "firstRow": 9,
+      "lastRow": 9
+    }
+  ],
+  "todos": [
+    "TODO(product): formulas, data validations, hidden rows/sheets, and named ranges are not present in the HTML export",
+    "TODO(product): week-block boundaries are inferred from 'WEEK'/'Averages' markers and are not confirmed against the xlsx"
+  ]
+}

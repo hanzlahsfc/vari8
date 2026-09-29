@@ -1,0 +1,71 @@
+{
+  "slug": "daily-tracker",
+  "sourceFile": "DAILY TRACKER.html",
+  "cellCount": 38762,
+  "rowCount": 1002,
+  "colCount": 54,
+  "spannedCellCount": 5334,
+  "sections": [
+    {
+      "label": "DATE & PHASE",
+      "row": 8,
+      "col": 3
+    },
+    {
+      "label": "BODYWEIGHT",
+      "row": 8,
+      "col": 7
+    },
+    {
+      "label": "MENSES",
+      "row": 8,
+      "col": 11
+    },
+    {
+      "label": "SLEEP",
+      "row": 8,
+      "col": 17
+    },
+    {
+      "label": "ACTIVITY",
+      "row": 8,
+      "col": 22
+    },
+    {
+      "label": "BIOFEEDBACK",
+      "row": 8,
+      "col": 30
+    },
+    {
+      "label": "BIOMETRICS",
+      "row": 8,
+      "col": 36
+    },
+    {
+      "label": "NOTES",
+      "row": 8,
+      "col": 51
+    }
+  ],
+  "repeatedBlocks": [
+    {
+      "kind": "week-block",
+      "marker": "Averages",
+      "count": 82,
+      "firstRow": 18,
+      "lastRow": 990
+    },
+    {
+      "kind": "week-header",
+      "marker": "WEEK n",
+      "count": 165,
+      "distinctValues": 82,
+      "firstRow": 3,
+      "lastRow": 982
+    }
+  ],
+  "todos": [
+    "TODO(product): formulas, data validations, hidden rows/sheets, and named ranges are not present in the HTML export",
+    "TODO(product): week-block boundaries are inferred from 'WEEK'/'Averages' markers and are not confirmed against the xlsx"
+  ]
+}

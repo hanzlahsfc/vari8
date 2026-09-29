@@ -1,0 +1,29 @@
+{
+  "slug": "showday",
+  "sourceFile": "SHOWDAY.html",
+  "cellCount": 27717,
+  "rowCount": 996,
+  "colCount": 28,
+  "spannedCellCount": 87,
+  "sections": [
+    {
+      "label": "SHOW DAY INFO",
+      "row": 7,
+      "col": 2
+    },
+    {
+      "label": "TIME",
+      "row": 18,
+      "col": 2
+    },
+    {
+      "label": "INSTRUCTIONS",
+      "row": 18,
+      "col": 5
+    }
+  ],
+  "repeatedBlocks": [],
+  "todos": [
+    "TODO(product): formulas, data validations, hidden rows/sheets, and named ranges are not present in the HTML export"
+  ]
+}

@@ -98,16 +98,28 @@ export type SheetArtifact = {
 
 export type SummarySection = {
   label: string;
+  row: number;
+  col: number;
+};
+
+export type SummaryBlock = {
   kind: string;
-  startRow: number;
-  endRow: number | null;
-  evidence: string;
+  marker: string;
+  count: number;
+  distinctValues?: number;
+  firstRow: number | null;
+  lastRow: number | null;
 };
 
 export type SheetSummaryArtifact = {
   slug: string;
   sourceFile: string;
+  cellCount: number;
+  rowCount: number;
+  colCount: number;
+  spannedCellCount: number;
   sections: SummarySection[];
+  repeatedBlocks: SummaryBlock[];
   todos: string[];
 };
 
@@ -173,8 +185,8 @@ export type ExerciseArtifact = {
 // ---------------------------------------------------------------------------
 
 export type ThemeCombination = {
-  background: string;
-  text: string;
+  background: string | null;
+  text: string | null;
   border: string | null;
   font: string | null;
   seenIn: string[];

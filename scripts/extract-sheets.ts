@@ -15,7 +15,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import type { ExerciseArtifact, FoodArtifact } from "../lib/extraction/contracts";
+import { buildCrossSheetData, renderCrossSheetMarkdown } from "../lib/extraction/crosssheet";
+import type { ExerciseArtifact, ExpectedSheet, FoodArtifact } from "../lib/extraction/contracts";
 import { parseCssDeclarations, type ClassDeclarations } from "../lib/extraction/css";
 import { extractExercises, extractFoods } from "../lib/extraction/databases";
 import { parseSheetHtml, type ParsedSheet } from "../lib/extraction/parse";
@@ -25,14 +26,17 @@ import {
   SourceConfigError,
   validateSheetsSourceDir,
 } from "../lib/extraction/source";
+import { buildSheetSummary, SUMMARY_CONFIG } from "../lib/extraction/summaries";
+import { buildThemeArtifact } from "../lib/extraction/theme";
 
-type Options = { dryRun: boolean; raw: boolean; dataOnly: boolean };
+type Options = { dryRun: boolean; raw: boolean; dataOnly: boolean; specOnly: boolean };
 
-const KNOWN_FLAGS = new Set(["--dry-run", "--raw", "--data-only"]);
+const KNOWN_FLAGS = new Set(["--dry-run", "--raw", "--data-only", "--spec-only"]);
 const EXPECTED_FOODS = 599;
 const EXPECTED_EXERCISES = 546;
 const FOODS_FILE = "Nutrition Database.html";
 const EXERCISES_FILE = "Exercise Database.html";
+const SPEC_DIR = "spec";
 
 function parseArgs(argv: string[]): Options {
   const unknown = argv.filter((arg) => arg.startsWith("--") && !KNOWN_FLAGS.has(arg));
@@ -41,9 +45,11 @@ function parseArgs(argv: string[]): Options {
     dryRun: argv.includes("--dry-run"),
     raw: argv.includes("--raw"),
     dataOnly: argv.includes("--data-only"),
+    specOnly: argv.includes("--spec-only"),
   };
-  if (options.raw && options.dataOnly) {
-    throw new Error("--raw and --data-only cannot be combined");
+  const selected = [options.raw, options.dataOnly, options.specOnly].filter(Boolean).length;
+  if (selected > 1) {
+    throw new Error("--raw, --data-only and --spec-only are mutually exclusive");
   }
   return options;
 }
@@ -160,6 +166,56 @@ function runDataOnly(sourceDir: string): number {
   return 0;
 }
 
+function runSpecOnly(sourceDir: string, sheets: ExpectedSheet[]): number {
+  const baseClasses = loadBaseClasses(sourceDir);
+  const parsedSheets = sheets.map((sheet) => ({
+    sheet,
+    parsed: parseSheetHtml(readFileSync(join(sourceDir, sheet.file), "utf8"), { baseClasses }),
+  }));
+
+  const sheetsDir = join(process.cwd(), SPEC_DIR, "sheets");
+  mkdirSync(sheetsDir, { recursive: true });
+  for (const { sheet, parsed } of parsedSheets) {
+    writeJson(
+      join(sheetsDir, `${sheet.slug}.summary.json`),
+      buildSheetSummary(sheet.slug, sheet.file, parsed.cells),
+    );
+  }
+
+  const theme = buildThemeArtifact(
+    parsedSheets.map(({ sheet, parsed }) => ({
+      slug: sheet.slug,
+      cells: parsed.cells,
+      classes: parsed.classes,
+    })),
+  );
+  writeJson(join(process.cwd(), SPEC_DIR, "theme.json"), theme);
+
+  const foods = extractFoods(readFileSync(join(sourceDir, FOODS_FILE), "utf8"));
+  const exercises = extractExercises(readFileSync(join(sourceDir, EXERCISES_FILE), "utf8"));
+  const safeLabels = new Set(Object.values(SUMMARY_CONFIG).flatMap((config) => config.labels));
+  const crossSheet = buildCrossSheetData({
+    sheets: parsedSheets.map(({ sheet, parsed }) => ({ slug: sheet.slug, cells: parsed.cells })),
+    foodNames: new Set(foods.records.map((record) => record.food)),
+    exerciseNames: new Set(exercises.records.map((record) => record.name)),
+    safeLabels,
+  });
+  writeFileSync(
+    join(process.cwd(), SPEC_DIR, "cross-sheet.md"),
+    renderCrossSheetMarkdown(crossSheet),
+    "utf8",
+  );
+
+  console.log(
+    `[extract:sheets] wrote ${parsedSheets.length} sheet summaries, spec/theme.json, spec/cross-sheet.md`,
+  );
+  console.log(`[extract:sheets] theme combinations: ${theme.combinations.length}`);
+  console.log(
+    `[extract:sheets] cross-sheet: foods=${crossSheet.totals.foods} exercises=${crossSheet.totals.exercises} labels=${crossSheet.totals.labels}`,
+  );
+  return 0;
+}
+
 function main(): number {
   let options: Options;
   try {
@@ -173,7 +229,13 @@ function main(): number {
   const sourceDir = resolveSheetsSourceDir(process.env.SHEETS_SOURCE_DIR);
   const rawDir = (process.env.RAW_EXTRACTION_DIR ?? "").trim();
 
-  const mode = options.dataOnly ? "data-only" : options.raw ? "raw-write" : "dry-run (non-writing)";
+  const mode = options.dataOnly
+    ? "data-only"
+    : options.specOnly
+      ? "spec-only (safe artifacts)"
+      : options.raw
+        ? "raw-write"
+        : "dry-run (non-writing)";
   console.log(`[extract:sheets] mode: ${mode}`);
   console.log(`[extract:sheets] SHEETS_SOURCE_DIR: ${sourceDir}`);
 
@@ -199,6 +261,10 @@ function main(): number {
     return 1;
   }
   for (const slug of source.unexpected) console.warn(`  unexpected sheet: ${slug}`);
+
+  if (options.specOnly) {
+    return runSpecOnly(source.dir, source.sheets);
+  }
 
   if (options.raw) {
     if (rawDir.length === 0) {

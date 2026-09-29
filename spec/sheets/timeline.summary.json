@@ -1,0 +1,44 @@
+{
+  "slug": "timeline",
+  "sourceFile": "TIMELINE.html",
+  "cellCount": 96979,
+  "rowCount": 1001,
+  "colCount": 97,
+  "spannedCellCount": 6,
+  "sections": [
+    {
+      "label": "DATE & PHASE MAPPING",
+      "row": 7,
+      "col": 3
+    },
+    {
+      "label": "COMP SETUP",
+      "row": 7,
+      "col": 12
+    },
+    {
+      "label": "BODYWEIGHT",
+      "row": 7,
+      "col": 18
+    },
+    {
+      "label": "TARGETS",
+      "row": 7,
+      "col": 23
+    },
+    {
+      "label": "CHANGES",
+      "row": 7,
+      "col": 32
+    },
+    {
+      "label": "PED'S",
+      "row": 7,
+      "col": 38
+    }
+  ],
+  "repeatedBlocks": [],
+  "todos": [
+    "TODO(product): formulas, data validations, hidden rows/sheets, and named ranges are not present in the HTML export"
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "slug": "dashboard",
+  "sourceFile": "DASHBOARD.html",
+  "cellCount": 54645,
+  "rowCount": 547,
+  "colCount": 102,
+  "spannedCellCount": 92,
+  "sections": [
+    {
+      "label": "CURRENT WEEK",
+      "row": 2,
+      "col": 32
+    },
+    {
+      "label": "CURRENT PHASE",
+      "row": 2,
+      "col": 41
+    },
+    {
+      "label": "CHECK-IN",
+      "row": 2,
+      "col": 50
+    },
+    {
+      "label": "CLIENT & COACHING INFORMATION",
+      "row": 7,
+      "col": 2
+    },
+    {
+      "label": "NUTRITION",
+      "row": 7,
+      "col": 17
+    },
+    {
+      "label": "EXPENDITURE",
+      "row": 7,
+      "col": 38
+    },
+    {
+      "label": "BODY COMPOSITION",
+      "row": 16,
+      "col": 2
+    },
+    {
+      "label": "HOW TO USE",
+      "row": 16,
+      "col": 27
+    },
+    {
+      "label": "COMPETITION SETUP",
+      "row": 27,
+      "col": 2
+    }
+  ],
+  "repeatedBlocks": [],
+  "todos": [
+    "TODO(product): formulas, data validations, hidden rows/sheets, and named ranges are not present in the HTML export"
+  ]
+}

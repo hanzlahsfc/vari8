@@ -1,0 +1,34 @@
+{
+  "slug": "supplementation",
+  "sourceFile": "SUPPLEMENTATION.html",
+  "cellCount": 25981,
+  "rowCount": 1000,
+  "colCount": 26,
+  "spannedCellCount": 1,
+  "sections": [
+    {
+      "label": "TIME",
+      "row": 7,
+      "col": 2
+    },
+    {
+      "label": "SUPPLEMENT",
+      "row": 7,
+      "col": 3
+    },
+    {
+      "label": "DOSAGE",
+      "row": 7,
+      "col": 4
+    },
+    {
+      "label": "STATUS",
+      "row": 7,
+      "col": 5
+    }
+  ],
+  "repeatedBlocks": [],
+  "todos": [
+    "TODO(product): formulas, data validations, hidden rows/sheets, and named ranges are not present in the HTML export"
+  ]
+}

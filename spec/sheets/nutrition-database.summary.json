@@ -1,0 +1,64 @@
+{
+  "slug": "nutrition-database",
+  "sourceFile": "Nutrition Database.html",
+  "cellCount": 24582,
+  "rowCount": 1172,
+  "colCount": 21,
+  "spannedCellCount": 1,
+  "sections": [
+    {
+      "label": "NO.",
+      "row": 2,
+      "col": 2
+    },
+    {
+      "label": "FOOD",
+      "row": 2,
+      "col": 3
+    },
+    {
+      "label": "AMOUNT",
+      "row": 2,
+      "col": 4
+    },
+    {
+      "label": "UNIT",
+      "row": 2,
+      "col": 5
+    },
+    {
+      "label": "CALORIES (kcal)",
+      "row": 2,
+      "col": 6
+    },
+    {
+      "label": "PROTEIN (g)",
+      "row": 2,
+      "col": 7
+    },
+    {
+      "label": "CARBS (g)",
+      "row": 2,
+      "col": 8
+    },
+    {
+      "label": "FATS (g)",
+      "row": 2,
+      "col": 9
+    },
+    {
+      "label": "COOKED/RAW/DRY",
+      "row": 2,
+      "col": 10
+    },
+    {
+      "label": "CAT",
+      "row": 2,
+      "col": 11
+    }
+  ],
+  "repeatedBlocks": [],
+  "todos": [
+    "TODO(product): formulas, data validations, hidden rows/sheets, and named ranges are not present in the HTML export"
+  ]
+}

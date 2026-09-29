@@ -1,0 +1,994 @@
+{
+  "version": 1,
+  "derivation": "Distinct (background, text, border, font) declaration combinations from each export's per-cell classes in the inline <style> block and resources/sheet.css. No cell text is included.",
+  "combinations": [
+    {
+      "background": "#000000",
+      "text": "#000000",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "menses",
+        "timeline"
+      ],
+      "count": 2009
+    },
+    {
+      "background": "#000000",
+      "text": "#666666",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "exercise-database",
+        "mealplan",
+        "menses",
+        "peaking",
+        "showday",
+        "supplementation",
+        "timeline",
+        "training"
+      ],
+      "count": 9
+    },
+    {
+      "background": "#000000",
+      "text": "#b7b7b7",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "dashboard"
+      ],
+      "count": 85
+    },
+    {
+      "background": "#000000",
+      "text": "#e34332",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "exercise-database",
+        "peaking",
+        "showday",
+        "timeline"
+      ],
+      "count": 1246
+    },
+    {
+      "background": "#000000",
+      "text": "#e34332",
+      "border": "3px SOLID #000000",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "peaking"
+      ],
+      "count": 324
+    },
+    {
+      "background": "#000000",
+      "text": "#eaeaea",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "dashboard",
+        "mealplan",
+        "menses",
+        "peaking",
+        "supplementation",
+        "timeline",
+        "training"
+      ],
+      "count": 305
+    },
+    {
+      "background": "#000000",
+      "text": "#ffffff",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "dashboard",
+        "exercise-database",
+        "mealplan",
+        "menses",
+        "peaking",
+        "showday",
+        "supplementation",
+        "timeline",
+        "training"
+      ],
+      "count": 677601
+    },
+    {
+      "background": "#000000",
+      "text": "#ffffff",
+      "border": "3px SOLID #191919",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "menses",
+        "training"
+      ],
+      "count": 4340
+    },
+    {
+      "background": "#181818",
+      "text": "#e34332",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "training"
+      ],
+      "count": 4
+    },
+    {
+      "background": "#181818",
+      "text": "#ff4fa3",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "training"
+      ],
+      "count": 11
+    },
+    {
+      "background": "#181818",
+      "text": "#ffffff",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "training"
+      ],
+      "count": 9
+    },
+    {
+      "background": "#181818",
+      "text": "#ffffff",
+      "border": null,
+      "font": "Arial",
+      "seenIn": [
+        "menses"
+      ],
+      "count": 1
+    },
+    {
+      "background": "#191919",
+      "text": "#3e9465",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "dashboard"
+      ],
+      "count": 2
+    },
+    {
+      "background": "#191919",
+      "text": "#5270a7",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "menses"
+      ],
+      "count": 3
+    },
+    {
+      "background": "#191919",
+      "text": "#666666",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "peaking",
+        "timeline"
+      ],
+      "count": 3173
+    },
+    {
+      "background": "#191919",
+      "text": "#666666",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "peaking",
+        "timeline",
+        "training"
+      ],
+      "count": 10398
+    },
+    {
+      "background": "#191919",
+      "text": "#666666",
+      "border": "3px SOLID #000000",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "peaking"
+      ],
+      "count": 202
+    },
+    {
+      "background": "#191919",
+      "text": "#666666",
+      "border": "3px SOLID #191919",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "training"
+      ],
+      "count": 4100
+    },
+    {
+      "background": "#191919",
+      "text": "#8652a7",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "menses"
+      ],
+      "count": 3
+    },
+    {
+      "background": "#191919",
+      "text": "#989898",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "menses",
+        "training"
+      ],
+      "count": 18
+    },
+    {
+      "background": "#191919",
+      "text": "#a75252",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "menses"
+      ],
+      "count": 3
+    },
+    {
+      "background": "#191919",
+      "text": "#a79952",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "menses"
+      ],
+      "count": 3
+    },
+    {
+      "background": "#191919",
+      "text": "#b7b7b7",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "dashboard",
+        "menses"
+      ],
+      "count": 94
+    },
+    {
+      "background": "#191919",
+      "text": "#b7b7b7",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "dashboard",
+        "timeline"
+      ],
+      "count": 383
+    },
+    {
+      "background": "#191919",
+      "text": "#e34332",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "dashboard",
+        "exercise-database",
+        "mealplan",
+        "menses",
+        "peaking",
+        "supplementation",
+        "timeline",
+        "training"
+      ],
+      "count": 3373
+    },
+    {
+      "background": "#191919",
+      "text": "#e34332",
+      "border": null,
+      "font": "Arial",
+      "seenIn": [
+        "timeline"
+      ],
+      "count": 1
+    },
+    {
+      "background": "#191919",
+      "text": "#e34332",
+      "border": null,
+      "font": "docs-Prompt,Arial",
+      "seenIn": [
+        "menses"
+      ],
+      "count": 2
+    },
+    {
+      "background": "#191919",
+      "text": "#e34332",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "exercise-database",
+        "timeline",
+        "training"
+      ],
+      "count": 1104
+    },
+    {
+      "background": "#191919",
+      "text": "#e34332",
+      "border": "3px SOLID #000000",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "mealplan",
+        "peaking",
+        "showday",
+        "training"
+      ],
+      "count": 2369
+    },
+    {
+      "background": "#191919",
+      "text": "#e34332",
+      "border": "3px SOLID #191919",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "dashboard",
+        "training"
+      ],
+      "count": 11
+    },
+    {
+      "background": "#191919",
+      "text": "#e34332",
+      "border": "3px SOLID #191919",
+      "font": "docs-Prompt,Arial",
+      "seenIn": [
+        "menses"
+      ],
+      "count": 4
+    },
+    {
+      "background": "#191919",
+      "text": "#eaeaea",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "timeline"
+      ],
+      "count": 11
+    },
+    {
+      "background": "#191919",
+      "text": "#ffffff",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "dashboard",
+        "exercise-database",
+        "mealplan",
+        "menses",
+        "peaking",
+        "showday",
+        "supplementation",
+        "timeline",
+        "training"
+      ],
+      "count": 4046
+    },
+    {
+      "background": "#191919",
+      "text": "#ffffff",
+      "border": null,
+      "font": "Arial",
+      "seenIn": [
+        "timeline"
+      ],
+      "count": 2
+    },
+    {
+      "background": "#191919",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "dashboard",
+        "exercise-database",
+        "mealplan",
+        "peaking",
+        "showday",
+        "supplementation",
+        "timeline",
+        "training"
+      ],
+      "count": 47558
+    },
+    {
+      "background": "#191919",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "docs-Prompt,Arial",
+      "seenIn": [
+        "menses"
+      ],
+      "count": 8
+    },
+    {
+      "background": "#191919",
+      "text": "#ffffff",
+      "border": "3px SOLID #000000",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "mealplan",
+        "peaking",
+        "showday"
+      ],
+      "count": 4346
+    },
+    {
+      "background": "#191919",
+      "text": "#ffffff",
+      "border": "3px SOLID #191919",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "dashboard",
+        "menses",
+        "training"
+      ],
+      "count": 546
+    },
+    {
+      "background": "#191919",
+      "text": "#ffffff",
+      "border": "3px SOLID #191919",
+      "font": "docs-Prompt,Arial",
+      "seenIn": [
+        "menses"
+      ],
+      "count": 2
+    },
+    {
+      "background": "#243539",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "peaking",
+        "timeline"
+      ],
+      "count": 8
+    },
+    {
+      "background": "#272e1e",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker"
+      ],
+      "count": 2
+    },
+    {
+      "background": "#273925",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "peaking",
+        "timeline"
+      ],
+      "count": 2
+    },
+    {
+      "background": "#282439",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "peaking",
+        "timeline"
+      ],
+      "count": 3
+    },
+    {
+      "background": "#282828",
+      "text": "#b7b7b7",
+      "border": "3px SOLID #191919",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "dashboard"
+      ],
+      "count": 3
+    },
+    {
+      "background": "#282828",
+      "text": "#e34332",
+      "border": "3px SOLID #191919",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "training"
+      ],
+      "count": 16320
+    },
+    {
+      "background": "#282828",
+      "text": "#ffffff",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "dashboard",
+        "mealplan"
+      ],
+      "count": 12
+    },
+    {
+      "background": "#282828",
+      "text": "#ffffff",
+      "border": "3px SOLID #000000",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "mealplan"
+      ],
+      "count": 135
+    },
+    {
+      "background": "#282828",
+      "text": "#ffffff",
+      "border": "3px SOLID #191919",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "dashboard",
+        "mealplan",
+        "showday"
+      ],
+      "count": 899
+    },
+    {
+      "background": "#282828",
+      "text": "#ffffff",
+      "border": "3px SOLID #191919",
+      "font": "docs-Prompt,Arial",
+      "seenIn": [
+        "menses"
+      ],
+      "count": 14
+    },
+    {
+      "background": "#2a2f1e",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "peaking"
+      ],
+      "count": 4
+    },
+    {
+      "background": "#2b301d",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker"
+      ],
+      "count": 4
+    },
+    {
+      "background": "#2d2d2d",
+      "text": "#b7b7b7",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker"
+      ],
+      "count": 1968
+    },
+    {
+      "background": "#2d301e",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "peaking"
+      ],
+      "count": 2
+    },
+    {
+      "background": "#2d301e",
+      "text": "#ffffff",
+      "border": "3px SOLID #000000",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "peaking"
+      ],
+      "count": 2
+    },
+    {
+      "background": "#2f311d",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker"
+      ],
+      "count": 3
+    },
+    {
+      "background": "#30311d",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "peaking"
+      ],
+      "count": 4
+    },
+    {
+      "background": "#33331c",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker"
+      ],
+      "count": 3
+    },
+    {
+      "background": "#33331c",
+      "text": "#ffffff",
+      "border": "3px SOLID #000000",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker"
+      ],
+      "count": 2
+    },
+    {
+      "background": "#341b1a",
+      "text": "#666666",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "timeline"
+      ],
+      "count": 1
+    },
+    {
+      "background": "#341b1a",
+      "text": "#b7b7b7",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "timeline"
+      ],
+      "count": 1
+    },
+    {
+      "background": "#341b1a",
+      "text": "#ffffff",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "peaking",
+        "showday"
+      ],
+      "count": 8
+    },
+    {
+      "background": "#341b1a",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "peaking",
+        "showday",
+        "timeline"
+      ],
+      "count": 56
+    },
+    {
+      "background": "#34201a",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker"
+      ],
+      "count": 3
+    },
+    {
+      "background": "#35221b",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "peaking"
+      ],
+      "count": 2
+    },
+    {
+      "background": "#35251a",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker"
+      ],
+      "count": 4
+    },
+    {
+      "background": "#352a1b",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker"
+      ],
+      "count": 2
+    },
+    {
+      "background": "#352a1b",
+      "text": "#ffffff",
+      "border": "3px SOLID #000000",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker"
+      ],
+      "count": 2
+    },
+    {
+      "background": "#36281b",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "peaking"
+      ],
+      "count": 2
+    },
+    {
+      "background": "#362f1b",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker"
+      ],
+      "count": 6
+    },
+    {
+      "background": "#37341c",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "peaking"
+      ],
+      "count": 8
+    },
+    {
+      "background": "#382323",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "timeline"
+      ],
+      "count": 30
+    },
+    {
+      "background": "#382335",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "timeline"
+      ],
+      "count": 4
+    },
+    {
+      "background": "#393023",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "timeline"
+      ],
+      "count": 1
+    },
+    {
+      "background": "#393825",
+      "text": "#ffffff",
+      "border": "1px SOLID #2d2d2d",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "peaking"
+      ],
+      "count": 1
+    },
+    {
+      "background": "#5270a7",
+      "text": "#ffffff",
+      "border": "3px SOLID #191919",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "menses"
+      ],
+      "count": 1
+    },
+    {
+      "background": "#8652a7",
+      "text": "#ffffff",
+      "border": "3px SOLID #191919",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "menses"
+      ],
+      "count": 1
+    },
+    {
+      "background": "#a75252",
+      "text": "#ffffff",
+      "border": "3px SOLID #191919",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "menses"
+      ],
+      "count": 1
+    },
+    {
+      "background": "#a79952",
+      "text": "#181818",
+      "border": "3px SOLID #191919",
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "menses"
+      ],
+      "count": 1
+    },
+    {
+      "background": "#d61c29",
+      "text": "#ffffff",
+      "border": null,
+      "font": "docs-Montserrat,Arial",
+      "seenIn": [
+        "nutrition-database"
+      ],
+      "count": 5522
+    },
+    {
+      "background": "#d61c29",
+      "text": "#ffffff",
+      "border": null,
+      "font": "docs-Quicksand,Arial",
+      "seenIn": [
+        "nutrition-database"
+      ],
+      "count": 5011
+    },
+    {
+      "background": "#d61c29",
+      "text": "#ffffff",
+      "border": "1px SOLID #000000",
+      "font": "docs-Montserrat,Arial",
+      "seenIn": [
+        "nutrition-database"
+      ],
+      "count": 10
+    },
+    {
+      "background": "#e34332",
+      "text": "#ffffff",
+      "border": null,
+      "font": "\"docs-Golos Text\",Arial",
+      "seenIn": [
+        "daily-tracker",
+        "peaking"
+      ],
+      "count": 122
+    },
+    {
+      "background": "#f3f3f3",
+      "text": "#000000",
+      "border": "1px DASHED #000000",
+      "font": "docs-Montserrat,Arial",
+      "seenIn": [
+        "nutrition-database"
+      ],
+      "count": 3282
+    },
+    {
+      "background": "#f3f3f3",
+      "text": "#ffffff",
+      "border": "1px DASHED #000000",
+      "font": "docs-Montserrat,Arial",
+      "seenIn": [
+        "nutrition-database"
+      ],
+      "count": 8
+    },
+    {
+      "background": "#ffffff",
+      "text": "#000000",
+      "border": null,
+      "font": "docs-Montserrat,Arial",
+      "seenIn": [
+        "nutrition-database"
+      ],
+      "count": 7418
+    },
+    {
+      "background": "#ffffff",
+      "text": "#000000",
+      "border": "1px DASHED #000000",
+      "font": "docs-Montserrat,Arial",
+      "seenIn": [
+        "nutrition-database"
+      ],
+      "count": 3276
+    },
+    {
+      "background": "#ffffff",
+      "text": "#000000",
+      "border": "2px SOLID #000000",
+      "font": "docs-Montserrat,Arial",
+      "seenIn": [
+        "nutrition-database"
+      ],
+      "count": 20
+    },
+    {
+      "background": "#ffffff",
+      "text": "#000000",
+      "border": "3px SOLID #000000",
+      "font": "docs-Montserrat,Arial",
+      "seenIn": [
+        "nutrition-database"
+      ],
+      "count": 21
+    },
+    {
+      "background": "#ffffff",
+      "text": "#ffffff",
+      "border": "1px DASHED #000000",
+      "font": "docs-Montserrat,Arial",
+      "seenIn": [
+        "nutrition-database"
+      ],
+      "count": 14
+    }
+  ]
+}

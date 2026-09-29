@@ -1,0 +1,57 @@
+{
+  "slug": "mealplan",
+  "sourceFile": "MEALPLAN.html",
+  "cellCount": 94859,
+  "rowCount": 1004,
+  "colCount": 95,
+  "spannedCellCount": 78,
+  "sections": [
+    {
+      "label": "OVERVIEW",
+      "row": 7,
+      "col": 2
+    },
+    {
+      "label": "LOW DAY",
+      "row": 7,
+      "col": 23
+    },
+    {
+      "label": "MEDIUM DAY",
+      "row": 7,
+      "col": 33
+    },
+    {
+      "label": "HIGH DAY",
+      "row": 7,
+      "col": 43
+    }
+  ],
+  "repeatedBlocks": [
+    {
+      "kind": "meal",
+      "marker": "MEAL n",
+      "count": 26,
+      "distinctValues": 9,
+      "firstRow": 10,
+      "lastRow": 90
+    },
+    {
+      "kind": "day-type-table",
+      "marker": "LOW/MEDIUM/HIGH DAY",
+      "count": 3,
+      "firstRow": 7,
+      "lastRow": 7
+    },
+    {
+      "kind": "pre-slot",
+      "marker": "PRE",
+      "count": 1,
+      "firstRow": 10,
+      "lastRow": 10
+    }
+  ],
+  "todos": [
+    "TODO(product): formulas, data validations, hidden rows/sheets, and named ranges are not present in the HTML export"
+  ]
+}

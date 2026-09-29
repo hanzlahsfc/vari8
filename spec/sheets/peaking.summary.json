@@ -1,0 +1,56 @@
+{
+  "slug": "peaking",
+  "sourceFile": "PEAKING.html",
+  "cellCount": 26685,
+  "rowCount": 973,
+  "colCount": 32,
+  "spannedCellCount": 1241,
+  "sections": [
+    {
+      "label": "DATE",
+      "row": 7,
+      "col": 3
+    },
+    {
+      "label": "NOTES",
+      "row": 7,
+      "col": 5
+    },
+    {
+      "label": "BODYWEIGHT",
+      "row": 7,
+      "col": 7
+    },
+    {
+      "label": "STEPS",
+      "row": 7,
+      "col": 15
+    },
+    {
+      "label": "TRAINING",
+      "row": 7,
+      "col": 17
+    }
+  ],
+  "repeatedBlocks": [
+    {
+      "kind": "week-block",
+      "marker": "Averages",
+      "count": 40,
+      "firstRow": 16,
+      "lastRow": 445
+    },
+    {
+      "kind": "week-header",
+      "marker": "WEEK n",
+      "count": 40,
+      "distinctValues": 40,
+      "firstRow": 7,
+      "lastRow": 436
+    }
+  ],
+  "todos": [
+    "TODO(product): formulas, data validations, hidden rows/sheets, and named ranges are not present in the HTML export",
+    "TODO(product): week-block boundaries are inferred from 'WEEK'/'Averages' markers and are not confirmed against the xlsx"
+  ]
+}
