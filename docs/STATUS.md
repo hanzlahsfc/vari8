@@ -4,6 +4,22 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-30 — S1-F (invites/recovery) — plan written; implementation BLOCKED on human decisions
+
+- `docs/tasks/s1-f-invites-recovery-plan.md` written (plan only): 15-area decision
+  checklist with options + unapproved recommendations, proposed safe invariants,
+  proposed `AccessToken` field-by-field design (one purpose-scoped table
+  recommended), service boundary matrix, and the RED test plan for implementation.
+- Key reality captured: Auth.js uses **JWT sessions** — existing sessions cannot be
+  revoked after password reset without new infrastructure (decision flagged);
+  `AuditEvent.workspaceId` is required so user-owned reset/login audit rows need a
+  schema decision (open design point §4.2 of the plan).
+- No schema change, migration, `lib/tokens.ts`, route, UI, or token code was added —
+  documentation only. Verification: `git diff --check` 0; `format:check` 0;
+  `typecheck` 0; `lint` 0; `npm run test` 0.
+- **Next: collect Marcel/Aleks's answers, record them in `product-decisions.md`/
+  `open-questions.md`, then write the S1-F implementation prompt.**
+
 ## 2026-09-30 — S1-E independent re-review — PASS (opencode-go/deepseek-v4.1-flash)
 
 - Re-reviewed the repaired S1-E tree at `9f02983` (full range `3415812..9f02983`;

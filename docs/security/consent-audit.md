@@ -3,8 +3,10 @@
 Concrete, testable designs for versioned health-data consent and metadata-only audit logging.
 Consent is implemented in S1-D (migration `20260929150000_stage1_versioned_consent`,
 independently reviewed **PASS** by SWE-2 High at `3415812`); the metadata-only audit
-logger is implemented in S1-E (migration `20260929160000_stage1_audit_events`,
-`lib/audit.ts`; gates green, **independent review pending**). Reuses Prime State's
+logger is implemented in S1-E (migrations `20260929160000_stage1_audit_events` +
+`20260929170000_stage1_audit_read_index`, `lib/audit.ts`; gates green, independently
+reviewed **PASS** by `opencode-go/deepseek-v4.1-flash` on repaired `9f02983`, range
+`3415812..9f02983`, record `80caad0`). Reuses Prime State's
 **patterns** only (consent versioning, audit field shape, log redaction); not its
 product kinds/values.
 

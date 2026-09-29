@@ -154,9 +154,13 @@ threshold, health-data policy, workflow, or layout.
   validators, exception normalization; transaction-bound writer; owner-scoped
   bounded reader). Consent grant/revoke and assignment mutations write their audit
   event inside the same Serializable transaction; `setPrimaryCoach` is a true no-op
-  when already primary. Independently FAILED by DeepSeek (`3415812..b97c5b5`, four
-  findings) then repaired — gates green; **independent re-review PENDING**. No
-  route/UI/API exposes audit or the audited mutations.
+  when already primary. **Independently PASS** (DeepSeek re-review of repaired
+  `9f02983`, range `3415812..9f02983`). No route/UI/API exposes audit or the
+  audited mutations.
+- **Stage 1 / S1-F invites & recovery — plan only:** `docs/tasks/s1-f-invites-recovery-plan.md`
+  (decision checklist, proposed invariants, `AccessToken` design, service matrix, test
+  plan). **Blocked on human decisions** (`docs/open-questions.md` #16–27). No S1-F
+  production code or migration exists.
 
 ### Important limitations
 
@@ -288,9 +292,15 @@ write audit inside their Serializable transactions; gates green (unit 251, integ
 62, E2E 21). **S1-E still adds no external exposure** (`assert*ExternallyExposable`
 fails closed) and several audit requirements remain explicitly deferred (`DENY` events,
 login outcomes, platform-admin reads, health-operation wrapper, retention/support policy
-— see `docs/security/consent-audit.md`). Next: plan **S1-F (tokens: invites/recovery)**
-only, which remains **BLOCKED on the outstanding `TODO(human)` invite/recovery policy**
-(it must not be implemented or exposed until those policy decisions are recorded). GDPR
+— see `docs/security/consent-audit.md`). **S1-F (tokens: invites/recovery) is planned**
+(`docs/tasks/s1-f-invites-recovery-plan.md`, `80caad0` tree) — a decision checklist plus
+proposed invariants/`AccessToken` design/service matrix/test plan — and remains
+**BLOCKED on the `TODO(human)` invite/recovery decisions** (`docs/open-questions.md`
+#16–27; it must not be implemented or exposed until those decisions are recorded).
+Notable new constraint discovered in planning: Auth.js JWT sessions cannot be revoked
+after password reset without new infrastructure, and `AuditEvent.workspaceId` being
+NOT NULL means user-owned reset/login audit rows need a schema decision. Next: collect
+Marcel/Aleks's answers, record them, then write the S1-F implementation prompt. GDPR
 (S1-G) and workspace shell (S1-H) remain later slices; no health records or product UI.
 
 ## 9. Human inputs still required
@@ -396,6 +406,30 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-30 — S1-F invites/recovery plan written (documentation only; implementation BLOCKED)
+
+- Scope: plan only — `docs/tasks/s1-f-invites-recovery-plan.md`. No schema change, no
+  migration, no `lib/tokens.ts`, no routes/UI, no token/reset code, no email provider.
+- Tree: branch `main`, started at `80caad0` (S1-E independently PASS at `9f02983`,
+  review record `80caad0` by `opencode-go/deepseek-v4.1-flash`).
+- Plan contents: 15-area human-decision checklist with options + unapproved
+  recommendations; proposed safe invariants (hash-only tokens, purpose-scoped,
+  expiring, single-use, atomic consume, no token leakage); proposed one-table
+  `AccessToken` design with per-field ownership/nullability/PII/tenant analysis;
+  service boundary matrix; RED test plan for later implementation.
+- Reality captured: JWT sessions are not revocable (reset-session revocation needs new
+  infra); `AuditEvent.workspaceId` NOT NULL → user-owned audit rows need a schema
+  decision (§4.2); `membersInvitations` matrix answer is owner-only;
+  `MemberStatus.INVITED`/`UserStatus.INVITED` already exist; scrypt hashing approved.
+- `docs/open-questions.md` gained items #16–27 for the S1-F decision set.
+- Same-model fresh-context self-check: no product answer invented, no implementation
+  in the diff, every proposed operation is tenant-scoped or user-scoped, raw tokens
+  unpersisted — flagged honestly; a different-model review is still possible later.
+- Verification (docs-only tree): `git diff --check` 0; `format:check` 0; `typecheck` 0;
+  `lint` 0; `npm run test` 0. No DB/build/E2E claimed (docs only).
+- Next action: collect Marcel/Aleks's answers → record in `product-decisions.md` /
+  `open-questions.md` → write the S1-F implementation prompt.
 
 ### 2026-09-30 — S1-E independent re-review PASS (reviewer: opencode-go/deepseek-v4.1-flash)
 

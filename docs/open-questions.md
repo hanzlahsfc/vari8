@@ -59,6 +59,39 @@ CK-2026-K8M3 · Redistribution, resale or sublicensing prohibited`).
     extracted folder and it is overridable via the environment; the extractor must fail clearly
     if missing and never write into the source directory.
 
+## S1-F invite/recovery decisions (detailed options in `docs/tasks/s1-f-invites-recovery-plan.md` §2)
+
+All of these are `TODO(human)` and block S1-F implementation:
+
+16. **`TODO(human)` — Registration model:** invite-only vs public self-registration vs both
+    (recommended: invite-only; unapproved).
+17. **`TODO(human)` — Who may invite** (owner only per current matrix vs broader), and **which
+    roles may be invited** (coaching/client roles vs OWNER/SUPPORT, which are flagged
+    dangerous).
+18. **`TODO(human)` — Existing users:** may one account join multiple workspaces; must the
+    invite be accepted while signed in as the invited email.
+19. **`TODO(human)` — Client invites:** whether acceptance links a pre-existing unlinked
+    `ClientProfile` chosen by the owner (recommended) or creates one.
+20. **`TODO(human)` — Invite lifetime/semantics:** expiry duration, resend-invalidates-prior,
+    one-active-per-target, owner revocation.
+21. **`TODO(human)` — Invite acceptance:** password set during acceptance; invite possession =
+    email verification; `INVITED → ACTIVE` transitions; behavior for SUSPENDED/REMOVED rows.
+22. **`TODO(human)` — Recovery eligibility:** ACTIVE-only recommended; INVITED/DEACTIVATED
+    handling; always-generic public response (recommended).
+23. **`TODO(human)` — Reset token invalidation:** expiry duration; new-request-invalidates-
+    previous; success-invalidates-all; **whether sessions must be revoked — current Auth.js
+    JWT sessions cannot be revoked without new infrastructure.**
+24. **`TODO(human)` — Password policy:** min length / complexity / breach-check / reuse —
+    not invented.
+25. **`TODO(human)` — Email delivery:** no approved provider, sender identity, or app base URL;
+    recommended to build domain services + send-port seam only.
+26. **`TODO(human)` — Abuse protection:** rate limits/cooldowns/lockouts; no rate-limit infra
+    exists; no existence oracles.
+27. **`TODO(human)` — Token/audit specifics:** which invite/recovery outcomes are audited;
+    how user-owned (non-workspace) audit rows are stored given `AuditEvent.workspaceId` is
+    required; DENY-event volume policy; token-row retention + cleanup cadence; whether
+    standalone `EMAIL_VERIFICATION` is in scope.
+
 ## Resolved (recorded for traceability)
 
 - **Privacy policy:** committed artifacts preserve structure and redact identifiers/health
