@@ -241,7 +241,73 @@ review pending** — never independently reviewed by the builder.
 
 ## Status
 
-**Implemented (builder: SWE-2 High); gates green; independent review PENDING.**
+**Implemented then independently FAILED; repaired (builder: SWE-2 High); gates green;
+independent re-review PENDING.**
+
+### Independent review outcome (opencode-go/deepseek-v4.1-flash)
+
+Reviewed range `3415812..b97c5b5`. Verdict: **FAIL** on four findings:
+
+- **P1 — fail-open metadata allowlist.** `META_VALIDATORS` was a plain object; lookups
+  for keys like `constructor`/`toString`/`valueOf`/`hasOwnProperty` resolved inherited
+  `Object.prototype` functions, passed the `typeof === "function"` check, and were
+  invoked as validators — returning truthy for nested/secret values and persisting
+  them (reviewer reproduced a sensitive canary in `audit_event.meta`). Validator
+  exceptions (e.g. bare `hasOwnProperty`) also leaked raw `TypeError`.
+- **P2 — non-idempotent `setPrimaryCoach`.** Re-asserting an already-active PRIMARY
+  returned `changed: true` and wrote a second `UPDATE` event with no state change.
+- **P3 — documentation drift.** DENY auditing, login outcomes, platform-admin reads,
+  health-operation auditing, and "recursive deny-list" wording did not match the
+  implemented subset.
+- **P4 — read-path index mismatch.** `listAuditEvents` orders/paginates by `id` under
+  `workspaceId`, but only `(workspace_id, at)` existed.
+
+### Repair plan (written before production changes)
+
+**P1 — own-key-only allowlist**
+
+- Replace the `META_VALIDATORS` object with a `Map` (intrinsically own-key lookup;
+  `get` never traverses a prototype).
+- Iterate `Object.entries(meta)`; a missing validator throws
+  `AuditError("audit_metadata_forbidden")`.
+- Wrap the iteration in `try/catch`: non-`AuditError` throws (getter throws,
+  validator throws) normalize to `audit_metadata_forbidden` — no raw `TypeError`
+  escapes.
+- Build the clean object with `Object.defineProperty` (no `__proto__` setter
+  semantics); an invalid key aborts before return, so no partial result can persist.
+- Keep: flat values only, per-key type/shape validators, size bounds, forbidden
+  value shapes (email/JWT/Bearer/hex-token), plain-or-null-prototype input check.
+
+**P2 — `setPrimaryCoach` no-op detection (inside the Serializable tx)**
+
+- Fetch the target assignment first (full `ASSIGNMENT_SELECT`).
+- If it is already `role: PRIMARY` + `status: ACTIVE`, the partial unique index
+  `client_assignment_one_active_primary_key` already guarantees it is the _sole_
+  active primary — return `changed: false` with no writes and no audit event.
+- Otherwise demote the other ACTIVE PRIMARY, upsert the row, write exactly one
+  `UPDATE` event, `changed: true`. Concurrency stays structural (P2002 →
+  `assignment_conflict`, P2034 → `serialization_conflict`).
+
+**P3 — reconcile docs.** Update `consent-audit.md`, `s1-e-audit.md`, `STATUS.md`,
+`TRACKER 2.0.md`: explicit deferred-items list (DENY events — denials happen
+before/outside the mutation tx; login outcomes — no auth-flow instrumentation in
+scope; platform-admin reads — no plumbing; health-operation audit wrapper — lands
+with health slices; retention — `TODO(human)`; support access — `TODO(human)`);
+idempotent `changed:false` writes no event; closed allowlist (not recursive
+denylist); exposure assertions still fail closed.
+
+**P4 — read index.** New additive migration adding `(workspace_id, id)` index
+(`@@index([workspaceId, id])`), keep `(workspace_id, at)`; regression assertion that
+all four indexes/constraints coexist; record a real `EXPLAIN` observation without
+overclaiming.
+
+RED intent: the new tests must fail against `b97c5b5` (P1 bypass + TypeError leak,
+P2 duplicate event, P4 missing index), then pass after repair. Mutation checks:
+prototype-chain lookup, accepting unknown keys, raw exception escape, unconditional
+`changed:true`/audit, non-tx audit write, missing workspace predicate, missing
+index regression assertion — each verified failing then restored byte-for-byte.
+
+### Implementation evidence (pre-repair baseline, retained)
 
 - Plan commit `45752bc`; schema/code/tests commit `87a4d0a`.
 - RED evidence: `npx vitest run tests/unit/audit.test.ts` → exit 1 (module
