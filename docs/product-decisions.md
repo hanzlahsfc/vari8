@@ -16,9 +16,12 @@ stakeholder decisions). This document does not authorize a push, PR, deploy, or 
    sheet-derived databases (`spec/data/foods.json`, `spec/data/exercises.json`).
 6. **Prime State formulas are irrelevant.** Formula behavior must come from Lilly's schematic,
    the Google scripts, or another approved source — never from Prime State or guesswork.
-7. **Unknown formulas wait.** Formulas/estimation not derivable from the HTML (calorie column,
-   averages/trends, MEALPLAN subtotals, T-minus, MENSES estimation) remain blocked until Lilly's
-   schematic/scripts and/or the original `.xlsx` arrive.
+7. **Unknown formulas wait.** PRGRSS 2.0 formulas/estimation not derivable from the HTML
+   (calorie column, averages/trends, MEALPLAN subtotals, T-minus, MENSES estimation) remain
+   blocked until the PRGRSS scripts and/or the original `.xlsx` arrive. The received CRE8
+   input-flow overview (`CRE8_Input_Flow_Overview.html`, 2026-09-29) is a **different workbook
+   that explicitly excludes PRGRSS 2.0**; it documents CRE8 wiring only and does not resolve
+   PRGRSS 2.0 behavior.
 8. **Use permission confirmed.** Aleks and Marcel confirmed the supplied workbook and the
    existing application may be used for implementation. Exact redistribution/licensing language
    still needs pre-release legal/product review; that review is **not** a blocker for local
@@ -29,3 +32,10 @@ stakeholder decisions). This document does not authorize a push, PR, deploy, or 
     do not migrate providers without an explicit decision and migration plan.
 11. **No data migration.** No existing Prime State client accounts or records are migrated unless
     explicitly requested later.
+12. **CRE8 schematic received (reference only, not PRGRSS 2.0).** `CRE8_Input_Flow_Overview.html`
+    (received 2026-09-29) documents CRE8 formula/script paths (Tracker→Backend, bodyweight
+    averages/trends, Mealplan→Target Log snapshots, Timeline→Dashboard targets, cycle
+    calculations, check-in submit/review, Programming→Logbook, PED Protocol→PED Change Log,
+    Apps Script inventory). It **excludes PRGRSS 2.0** and has unresolved gaps of its own; it is
+    not a substitute for the PRGRSS 2.0 formulas. `SCRIPT_CRE8.gs` is referenced but was not
+    supplied.

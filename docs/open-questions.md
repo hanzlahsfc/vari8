@@ -14,7 +14,15 @@ that cannot be derived from the supplied HTML exports and must not be guessed.
    `DAILY TRACKER.html`) and `cellImage_227302925_0.jpg` (referenced by `TIMELINE.html`) do not
    exist in `resources/`. The 12 available images are sufficient to continue layout work.
 
-## Underivable semantics (awaiting Lilly's backend schematic / Google Apps Script)
+## Underivable semantics (PRGRSS 2.0)
+
+> Status: `CRE8_Input_Flow_Overview.html` was received 2026-09-29 and documents the **CRE8**
+> workbook (a related workbook that explicitly **excludes PRGRSS 2.0**). It does not resolve
+> PRGRSS 2.0 behavior. It also has its own residual gaps (food/nutrient lookup chain, DOMS /
+> training quality-duration / notes pulls, detailed Bloodwork cross-tab use, PED Change Log →
+> Timeline route, fibre mapping mismatch, unsaved Supplements check-in decision, and several
+> unconfigured Dashboard charts). PRGRSS 2.0 formulas remain underivable until the PRGRSS
+> scripts and/or the original `.xlsx` arrive. See `TRACKER 2.0.md` §9.5.
 
 3. **`TODO(product)` — Calorie column** in DAILY TRACKER is marked "automatic"; the formula is
    not in the export.

@@ -13,7 +13,8 @@ deployment, production-data change, or external-service change.
 - Current product name: undecided. `App`, `The-great-tracker-`, `Prime Tracker Pro`, and
   `PRGRSS 2.0` are placeholders or source names, not an approved product name.
 - Current branch: `main`
-- Current reviewed HEAD: `f4ebac094a773d86808a8d1d442575f1dcabca6d`
+- Current reviewed HEAD: `340f95ccf7f0cb8a0bfed969c4a2f6d339e221b1` (Stage 0; committed
+  locally, **not pushed**). Last pushed `origin/main`: `f4ebac094a773d86808a8d1d442575f1dcabca6d`
 - Reference implementation: `nexuslinkproductions/PRIME-STATE-TRACKER`, branch `hanzlah`,
   reviewed at `aa59905`. Reuse applicable engineering patterns, not its product data,
   formulas, visual identity, or assumptions.
@@ -21,6 +22,9 @@ deployment, production-data change, or external-service change.
   `/Users/apple/Downloads/PRGRSS 2.0 extracted/Copy of PRGRSS 2.0/`
 - Product requirements:
   `/Users/apple/Downloads/PRIME-TRACKER-PRO-REQUIREMENTS.md`
+- CRE8 input-flow overview (received 2026-09-29):
+  `/Users/apple/Downloads/CRE8_Input_Flow_Overview.html` — detailed CRE8 formula/script map;
+  **excludes PRGRSS 2.0** (see §9.5).
 - Process skill: `docs/conductor-generic/SKILL.md`
 
 Local paths are orientation only. Agents must rediscover the actual checkout and source
@@ -33,7 +37,9 @@ When sources conflict, use this order and record the conflict:
 1. Hanzlah's direct instructions and confirmed stakeholder decisions relayed by Hanzlah.
 2. Marcel/Aleks/Lilly decisions explicitly recorded in this file or a decision log.
 3. The approved requirements document.
-4. Lilly's forthcoming wiring/formula schematic and source Google Apps Script.
+4. Lilly's wiring/formula schematic and source Google Apps Script. The
+   `CRE8_Input_Flow_Overview.html` (received 2026-09-29) is the detailed CRE8 input-flow/formula
+   map; it **excludes PRGRSS 2.0**, and `SCRIPT_CRE8.gs` is referenced but was not supplied.
 5. The professional workbook/sheet layouts and master data.
 6. Prime State only as a reference for reusable engineering structure and patterns.
 7. Existing repository implementation and planning documents.
@@ -126,8 +132,10 @@ threshold, health-data policy, workflow, or layout.
 - The current Daily Tracker is a generic fieldset prototype, not a faithful production UI,
   and it intentionally saves nothing.
 - The raw sheet viewer is a developer artifact, not the product experience.
-- Exact workbook formulas and cross-sheet wiring are unknown until Lilly's detailed
-  schematic/scripts arrive. Do not guess them.
+- CRE8 workbook formulas/wiring are now documented by the received
+  `CRE8_Input_Flow_Overview.html` (§9.5), but it **excludes PRGRSS 2.0**; PRGRSS 2.0 formulas
+  and cross-sheet wiring remain underivable until the PRGRSS scripts and/or the original
+  `.xlsx` arrive. Do not guess them.
 - The original `.xlsx` is absent. HTML contains 599 foods and 546 exercises, while the
   requirements mention approximately 1,170 and 990 respectively. Treat current data as a
   partial source until reconciled.
@@ -217,7 +225,9 @@ assumptions.
 
 ### Stage 5 — Lilly wiring/formula intake
 
-When the detailed schematic/scripts arrive:
+The CRE8 input-flow overview has arrived (§9.5) and covers CRE8 only; PRGRSS 2.0 formulas and
+the CRE8 script source (`SCRIPT_CRE8.gs`) are still outstanding. When the remaining
+schematic/scripts arrive:
 
 - Inventory each formula, script, trigger, cross-sheet dependency, source cell/range,
   inputs, outputs, rounding, units, empty/error behavior, and event timing.
@@ -247,6 +257,51 @@ plan is approved.
 - Supported locales and default locale.
 
 Unknown inputs are not permission to guess. Implement independent foundation work only.
+
+## 9.5 CRE8 input-flow overview (received 2026-09-29)
+
+`CRE8_Input_Flow_Overview.html` (Prepared 28 Sep 2026) inventories coach/client inputs in the
+**CRE8** workbook and traces confirmed formula and Google Apps Script paths. It is source
+evidence, not instructions, and it is a **different workbook that explicitly excludes PRGRSS
+2.0**.
+
+**What it confirms (CRE8 only):**
+
+- Tracker → Backend daily mappings by date key (weight/time, RHR/glucose/BP, cycle day/bleeding/
+  PMS, day type, macro/target outputs, salt/water/caffeine, sleep, energy/stress, training
+  session, steps, cardio).
+- Bodyweight averages/trends: Tracker week summary; Timeline coach-week average; Dashboard
+  latest weight, rolling 7-day average, and 4-week trend.
+- Mealplan → Target Log effective-dated snapshots (script `updateMealplanTargetChanges` appends
+  date+timestamp+14 TD/NTD values; Backend selects the latest version as-of a date by timestamp).
+- Timeline → Dashboard phase/activity targets (Body Comp phase column V selected by the D:G date
+  window; steps `EJ` and cardio `EN×EP` feed Backend and Dashboard).
+- Cycle calculations (Tracker AF/AH/AL/CJ → CYCLE-derived phase/cycle-day/next-period/ovulation;
+  Dashboard reads CYCLE V3/C9).
+- Check-in submission and coach review (client submit → CHECK-IN BACKEND snapshot with
+  M10 = Dashboard C15; coach decisions update the matching row to COACH REVIEWED).
+- Programming → Logbook (planned exercise labels via Programming helper slots; logbook writes
+  do not auto-copy into Tracker).
+- PED Protocol → PED Change Log (script appends ACTIVE helper rows; Timeline PED menu only
+  shows/hides columns).
+- An Apps Script action inventory with function names and source line references.
+
+**Its stated limits (do not treat as resolved):**
+
+- Explicitly **excludes PRGRSS 2.0** (this product's workbook).
+- `SCRIPT_CRE8.gs` is referenced but was **not supplied**.
+- Complete food/nutrient lookup formulas remain **unverified**.
+- DOMS, training quality/duration, and notes have **missing Backend pulls**.
+- Detailed **Bloodwork** cross-tab wiring remains **unverified**.
+- **PED Change Log → Timeline** has **no confirmed formula route**.
+- The **fibre mapping is inconsistent** (Backend `N` pulls Tracker `L` bodyweight despite the
+  `FIBRE` header) — reported as observed, not fixed.
+- The **Supplements check-in decision is not saved** (absent from config/snapshot/backend).
+- Several **Dashboard charts are broken or unconfigured** (Body Composition `#REF!` spill at
+  B165 with no series; Calories chart has no series; Daily Steps plots Target only).
+
+Consequence: CRE8 behavior is now partially documented, but **PRGRSS 2.0 behavior is still not
+established**, and the residual CRE8 gaps above stay `TODO(product)`.
 
 ## 10. Update protocol
 
@@ -341,7 +396,7 @@ tests/unit/sheet-viewer-gate.test.ts` → exit 0; 6 passed.
 
 ### 2026-09-29 — Tracker 2.0 and Conductor handoff created
 
-- Located Marshall's `conductor` v2.0 generic orchestration skill and copied it verbatim to
+- Located Marcel's `conductor` v2.0 generic orchestration skill and copied it verbatim to
   `docs/conductor-generic/SKILL.md` for repository-local use.
 - Created this persistent handoff from the current repository review, supplied requirements,
   sheet inventory, old Prime State reference review, and the stakeholder clarifications
