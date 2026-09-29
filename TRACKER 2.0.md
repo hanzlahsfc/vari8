@@ -17,9 +17,12 @@ deployment, production-data change, or external-service change.
   History: `gpt-6-astra` independently FAILED `ec8250c` on five findings; builder repair
   landed in `6e8e2e6`/`942879e`/`3415812`; SWE-2 High then re-reviewed the exact repaired
   tree `3415812` (range `85feade..3415812`) read-only and passed it. S1-E was then
-  implemented (plan `45752bc`, code `87a4d0a`, docs `docs/tasks/s1-e-audit.md`) with gates
-  green — **independent S1-E review pending**; `3415812` remains the last reviewed tree.
-  See §12 and `docs/tasks/s1-d-versioned-consent.md`.
+  implemented (`45752bc`/`87a4d0a`/`b97c5b5`), independently reviewed by
+  `opencode-go/deepseek-v4.1-flash` → **FAIL** (P1 fail-open metadata allowlist, P2
+  `setPrimaryCoach` idempotency, P3 doc drift, P4 read index) and repaired by SWE-2
+  High (plan `b52848c`) — **independent re-review pending**; `3415812` remains the
+  last reviewed tree. See §12, `docs/tasks/s1-d-versioned-consent.md`, and
+  `docs/tasks/s1-e-audit.md`.
 - Reference implementation: `nexuslinkproductions/PRIME-STATE-TRACKER`, branch `hanzlah`,
   reviewed at `aa59905`. Reuse applicable engineering patterns, not its product data,
   formulas, visual identity, or assumptions.
@@ -143,12 +146,15 @@ threshold, health-data policy, workflow, or layout.
   (`assertAssignmentMutationsExternallyExposable` still fails closed).
 - **Stage 1 / S1-D versioned consent:** `ConsentRecord` model + `lib/consent.ts`
   services/gate; independently reviewed **PASS** (SWE-2 High, `3415812`).
-- **Stage 1 / S1-E metadata-only audit:** `AuditEvent` + migration
-  `20260929160000_stage1_audit_events`, `lib/audit.ts` (closed meta allowlist,
-  transaction-bound writer, owner-scoped bounded reader). Consent grant/revoke and
-  assignment mutations write their audit event inside the same Serializable
-  transaction. Gates green; **independent review PENDING**. No route/UI/API exposes
-  audit or the audited mutations.
+- **Stage 1 / S1-E metadata-only audit:** `AuditEvent` + migrations
+  `20260929160000_stage1_audit_events` + `20260929170000_stage1_audit_read_index`,
+  `lib/audit.ts` (closed meta allowlist — `Map` own-key lookup, strict-true
+  validators, exception normalization; transaction-bound writer; owner-scoped
+  bounded reader). Consent grant/revoke and assignment mutations write their audit
+  event inside the same Serializable transaction; `setPrimaryCoach` is a true no-op
+  when already primary. Independently FAILED by DeepSeek (`3415812..b97c5b5`, four
+  findings) then repaired — gates green; **independent re-review PENDING**. No
+  route/UI/API exposes audit or the audited mutations.
 
 ### Important limitations
 
@@ -273,13 +279,14 @@ schematic/scripts arrive:
 Stage 1 slices S1-A (schema), S1-B (authorization core), S1-C (client ownership & assignments)
 are complete, **S1-D (versioned consent) is independently PASS** (SWE-2 High re-review of
 `85feade..3415812` after the `gpt-6-astra` FAIL and `942879e` repair), and **S1-E
-(metadata-only audit) is implemented**: `AuditEvent` + `lib/audit.ts`, consent and
-assignment mutations write audit inside their Serializable transactions, gates green
-(unit 239, integration 56, E2E 21) — but S1-E is **NOT independently reviewed** (SWE-2
-High built it; self-review does not count). Next: obtain a fresh different-model
-independent S1-E review before S1-F (tokens) or any external exposure. No consent/
-assignment mutation is exposed; GDPR (S1-G) and workspace shell (S1-H) remain later
-slices.
+(metadata-only audit) is implemented and repaired** after a DeepSeek independent FAIL:
+`AuditEvent` + `lib/audit.ts`, consent and assignment mutations write audit inside
+their Serializable transactions, gates green (unit 251, integration 62, E2E 21) — but
+S1-E is **NOT independently reviewed**: the builder never grades its own work, and the
+DeepSeek findings were repaired by SWE-2 High, not re-verified. Next: obtain a fresh
+different-model independent S1-E re-review of the repaired tree before S1-F (tokens)
+or any external exposure. No consent/assignment mutation is exposed; GDPR (S1-G) and
+workspace shell (S1-H) remain later slices.
 
 ## 9. Human inputs still required
 
@@ -384,6 +391,52 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-30 — S1-E independent DeepSeek FAIL repaired (builder: SWE-2 High; re-review PENDING)
+
+- Scope: repair the four independent-review findings on `3415812..b97c5b5`. Builder
+  repair only — **not** an independent verdict; S1-E remains gates-green /
+  re-review-pending. No routes/actions/UI, no S1-F.
+- Starting state: branch `main`, HEAD `b97c5b5` = `origin/main`, clean worktree.
+- Findings repaired:
+  - **P1** — `META_VALIDATORS` plain object let `constructor`/`toString` etc.
+    resolve inherited `Object.prototype` functions as validators (reviewer persisted
+    a sensitive canary through `writeAuditEvent`). Fixed: `Map` own-key lookup,
+    strict `=== true`, try/catch normalizing any enumeration/validator exception to
+    `audit_metadata_forbidden`, `Object.defineProperty` clean-object build.
+  - **P2** — `setPrimaryCoach` now detects "already the sole ACTIVE PRIMARY" inside
+    the Serializable tx and returns `changed:false` with no writes/no event
+    (sole-ness guaranteed by `client_assignment_one_active_primary_key`).
+  - **P3** — `consent-audit.md` + `stage-1-plan.md` reconciled: explicit deferred
+    table (DENY events → routing slice + abuse policy `TODO(human)`; login outcomes;
+    platform-admin reads; health-op audit wrapper; retention; support read —
+    `TODO(human)`); closed-allowlist wording replaces "recursive deny-list";
+    `changed:false` writes no events; exposure assertions still fail closed.
+  - **P4** — additive migration `20260929170000_stage1_audit_read_index` adds
+    `(workspace_id, id)`; `(workspace_id, at)` retained; EXPLAIN on real PG shows
+    Index Only Scan on `audit_event_workspace_id_id_idx` for the cursor read path.
+- Files: `lib/audit.ts`, `lib/workspace/clients.ts`, `db/schema.prisma`,
+  `db/migrations/20260929170000_stage1_audit_read_index/migration.sql`,
+  `tests/unit/audit.test.ts` (+12 tests → 47), `tests/integration/s1-e-audit.test.ts`
+  (+6 tests → 14), `docs/security/consent-audit.md`, `docs/tasks/stage-1-plan.md`,
+  `docs/tasks/s1-e-audit.md`, `docs/STATUS.md`, `TRACKER 2.0.md`.
+- RED on `b97c5b5`: unit exit 1 (8/47 failed); focused integration exit 1 (3/14 —
+  canary resolved instead of rejecting on real PG, `changed:true` on repeat, index
+  absent).
+- Mutation evidence (restored byte-for-byte): prototype-chain lookup → 2 unit +
+  canary PG failure; unknown-key acceptance → 24; no exception normalization → 1;
+  unconditional primary audit → 1; non-tx audit write → 6; missing workspace
+  predicate → 1; index omitted from migration → 1.
+- Gates (fresh disposable `s1e_verify_db`, dropped): `git diff --check` 0; `npm ci`
+  0; prisma format/validate/generate/deploy/status 0 (5 migrations); `format:check`
+  0; `typecheck` 0; `lint` 0; `npm run test` 0 (251); `test:integration` 0 (62, real
+  PG — forced audit failure rolls back primary change; concurrent primary changes
+  yield one audited primary); `build` 0; `test:e2e` 0 (21). `npm audit` 1 moderate +
+  4 high (unchanged advisories; no `--force`, no upgrades).
+- Commits: plan `b52848c`; repair `4f8c939`, this docs commit. Push per instructions;
+  no PR, no deploy.
+- Next action: fresh different-model independent S1-E re-review of the repaired
+  tree before S1-F or external exposure.
 
 ### 2026-09-29 — Stage 1 slice S1-E: metadata-only audit (implemented; independent review PENDING)
 

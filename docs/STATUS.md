@@ -4,6 +4,39 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-30 — S1-E independent review FAIL (DeepSeek) repaired; re-review PENDING
+
+- `opencode-go/deepseek-v4.1-flash` independently reviewed `3415812..b97c5b5` and
+  returned **FAIL** on four findings (see `docs/tasks/s1-e-audit.md`):
+  P1 fail-open metadata allowlist (`Object.prototype` members resolved as
+  validators — reviewer persisted a sensitive canary); P2 `setPrimaryCoach`
+  returned `changed:true` + duplicate `UPDATE` event when already primary; P3
+  documentation drift (DENY/login/platform-admin/health-audit claims vs the
+  implemented subset; recursive deny-list wording); P4 read-path index mismatch
+  (`(workspace_id, at)` vs `id`-cursor pagination).
+- Repair by SWE-2 High (builder, not reviewer): `META_VALIDATORS` is now a `Map`
+  (own-key `get`) + strict `=== true` + exception normalization to
+  `audit_metadata_forbidden` + `Object.defineProperty` clean-object build;
+  `setPrimaryCoach` early-returns `changed:false` with no writes/event when the
+  target is already the sole ACTIVE PRIMARY (index-guaranteed); additive
+  migration `20260929170000_stage1_audit_read_index` adds `(workspace_id, id)`
+  (EXPLAIN shows Index Only Scan on the read path; `(workspace_id, at)` kept);
+  docs reconciled with an explicit deferred-items table.
+- RED on `b97c5b5`: unit exit 1 (8/47 failed — prototype keys bypassed,
+  TypeError leaked); integration exit 1 (3/14 — canary persisted, duplicate
+  event, missing index).
+- Mutation evidence (restored byte-for-byte): prototype-chain lookup → 2 unit +
+  canary PG failure; unknown keys → 24; no normalization → 1; unconditional
+  primary audit → 1; non-tx audit → 6; missing workspace predicate → 1; index
+  omitted from migration → 1.
+- Gates on repaired tree (fresh disposable `s1e_verify_db`, dropped): all green —
+  unit 251, integration 62 (real PG), E2E 21, build 0, typecheck/lint/
+  format/prisma 0; `npm audit` unchanged (1 moderate + 4 high).
+- Commits: plan `b52848c`; repair `4f8c939`; this handoff commit.
+- **S1-E is NOT independently reviewed.** Builder repair only; a fresh
+  different-model re-review is required before S1-F or any external exposure.
+  S1-F remains blocked.
+
 ## 2026-09-29 — Stage 1 / S1-E (metadata-only audit) — implemented; gates green; independent review PENDING
 
 - Built by SWE-2 High: `AuditEvent` + `AuditAction`/`AuditResult` enums, additive

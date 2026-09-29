@@ -307,6 +307,44 @@ prototype-chain lookup, accepting unknown keys, raw exception escape, unconditio
 `changed:true`/audit, non-tx audit write, missing workspace predicate, missing
 index regression assertion — each verified failing then restored byte-for-byte.
 
+### Repair evidence (builder: SWE-2 High; NOT an independent verdict)
+
+- **RED on `b97c5b5`:** `npx vitest run tests/unit/audit.test.ts` → exit 1, 8
+  failures/47 (own `constructor`/`toString`/`valueOf`/`hasOwnProperty`/
+  `isPrototypeOf`/`propertyIsEnumerable`/`toLocaleString` bypass + raw `TypeError`
+  leak on throwing getter). Focused integration on fresh `s1e_repair_db` → exit 1,
+  3 failures/14: prototype-key canary **resolved instead of rejecting** (the
+  `constructor` bypass persisted an event on real PostgreSQL), `setPrimaryCoach`
+  returned `changed:true` on repeat, `audit_event_workspace_id_id_idx` absent.
+- **P1 fix:** `META_VALIDATORS` is now a `Map` (own-key `get`), validators must
+  return exactly `true`, the whole enumeration/validation is wrapped so any
+  non-`AuditError` exception normalizes to `audit_metadata_forbidden`, and the
+  clean object is built via `Object.defineProperty` (no `__proto__` setter).
+- **P2 fix:** `setPrimaryCoach` fetches the target assignment inside the tx first;
+  `ACTIVE`+`PRIMARY` ⇒ `changed:false` with no writes and no event (the
+  `client_assignment_one_active_primary_key` index guarantees sole-ness).
+- **P4 fix:** additive migration `20260929170000_stage1_audit_read_index` adds
+  `(workspace_id, id)`; `(workspace_id, at)` retained. `EXPLAIN` on real PG after
+  ANALYZE shows `Index Only Scan using audit_event_workspace_id_id_idx` for the
+  `workspace_id = ? AND id > ? ORDER BY id LIMIT` read path (no performance
+  claim beyond plan shape on a synthetic table).
+- **Mutation evidence (each restored byte-for-byte, suites green after):**
+  prototype-chain lookup + truthy check → 2 unit failures + canary integration
+  failure on real PG; accepting unknown keys → 24 unit failures; exception
+  normalization removed → 1 unit failure (raw `TypeError` escaped); unconditional
+  `setPrimaryCoach` audit → 1 integration failure; non-transactional audit write →
+  6 integration failures; dropped workspace predicate → 1 integration failure;
+  index omitted from migration → 1 integration failure on a fresh scratch DB.
+- **Gates on the repaired tree** (fresh disposable `s1e_verify_db`, dropped):
+  `git diff --check` 0; `npm ci` 0; prisma format/validate/generate 0;
+  `migrate deploy` 0 (5 migrations); `migrate status` 0; `format:check` 0;
+  `typecheck` 0; `lint` 0; `npm run test` 0 (251 passed); `test:integration` 0
+  (62 passed); `build` 0; `test:e2e` 0 (21 passed). `npm audit`: 1 moderate + 4
+  high (unchanged recorded advisories; fixes need breaking upgrades — none made).
+- **S1-E status: repaired, gates green, independent re-review PENDING.** This is
+  builder repair, not an independent verdict. A fresh different-model re-review
+  is required before S1-F or external exposure.
+
 ### Implementation evidence (pre-repair baseline, retained)
 
 - Plan commit `45752bc`; schema/code/tests commit `87a4d0a`.

@@ -108,28 +108,44 @@ consent policy, and the PED/HRT consent/policy text.
 | `meta`                   | JSON of **structural** data only                                                   |
 
 **Never** in `meta`: health values, note bodies, credentials, tokens, file contents, or
-presigned URLs. A redaction deny-list (recursive key + value-shape patterns) applies to logs.
+presigned URLs. Enforcement is a **closed key allowlist** (not a denylist): only the
+structural keys `kind`, `version`, `changed`, `count`, `role`, `status` are accepted —
+each with a per-key type/shape validator — and every other key, including
+`Object.prototype` member names (`constructor`, `toString`, `__proto__`, …), is rejected
+with `audit_metadata_forbidden` before write. Value-shape patterns additionally reject
+email/JWT/Bearer/hex-token-like strings and oversized values; enumeration or validator
+exceptions normalize to the same structural error.
 
 ### What is audited
 
-- Reads and writes of health resources (daily, cycle, nutrition, training, check-ins, bloodwork,
-  PED/HRT, notes, media), batched per request where possible.
-- Exports and erasures (with counts only).
-- Consent grant/revoke/version changes. **Implemented in S1-E**: `GRANT`/`REVOKE`
-  events commit inside the same Serializable transaction as the mutation (only for
-  `changed: true`; idempotent and denied attempts write nothing).
-- Membership/invitation changes and **client assignment changes**. **Implemented in
-  S1-E**: `ASSIGN` (assign/reactivate) and `UPDATE` (set-primary, removal) events in
-  the mutation transaction.
-- **Every denied attempt** (role/assignment/consent/tenant), with `result: DENY` + reason.
-  **Not yet implemented** — denials occur before/outside the mutation transaction, so
-  they cannot share it; deferred to the routing slice with an abuse-volume policy
-  (`TODO(human)`).
-- Login outcomes (allow/deny; no existence oracle). Not yet implemented.
+**Implemented in S1-E** (the only events written today):
+
+- Consent grant/revoke/version changes: `GRANT`/`REVOKE` events committed inside the
+  same Serializable transaction as the mutation.
+- Client assignment changes: `ASSIGN` (assign/reactivate) and `UPDATE` (set-primary,
+  removal) events in the mutation transaction.
+- Only `changed: true` outcomes produce events (`result: ALLOW`); idempotent
+  `changed: false` calls — including `setPrimaryCoach` on the already-active sole
+  primary — write no event. Denied/failed/cross-workspace attempts write no event.
+
+**Deferred (required later, not silently dropped):**
+
+| Requirement                                           | Why deferred                                                                                                                   | Prerequisite/slice                              |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| DENY events for denied attempts (role/consent/tenant) | Denials occur before/outside the mutation transaction; needs a post-denial write path plus abuse-volume policy (`TODO(human)`) | Routing slice (S1-H) — required before exposure |
+| Login outcome auditing                                | No auth-flow instrumentation exists yet                                                                                        | Auth slice / S1-H                               |
+| Platform-admin audit reads                            | Matrix permits it, but no platform session/plumbing exists                                                                     | Platform-admin path                             |
+| Audit wrapper on `authorizeHealthOperation`           | No health resources exist yet to audit                                                                                         | Health slices (Stage 2+)                        |
+| Health-resource read/write auditing                   | Same — no persisted health resources                                                                                           | Health slices (Stage 2+)                        |
+| Retention period                                      | Human policy decision                                                                                                          | `TODO(human)`                                   |
+| `SUPPORT` audit read for triage                       | Human policy decision                                                                                                          | `TODO(human)`                                   |
+
+External exposure of any audited mutation additionally requires the routing slice and
+a fresh independent review; `assert*ExternallyExposable` still fails closed.
 
 S1-E writes only `ALLOW` events describing committed mutations. `meta` is constrained
 by a closed runtime allowlist (`kind`, `version`, `changed`, `count`, `role`,
-`status`) — unknown keys and forbidden value shapes are rejected before write.
+`status`) — every other key and forbidden value shapes are rejected before write.
 Audit reads: `listAuditEvents` is workspace-owner scoped, bounded (default 25,
 max 100, `id`-cursor); platform-admin read is matrix-permitted but has no plumbing
 yet.
@@ -144,8 +160,18 @@ yet.
 
 ### Tests
 
-- Denied cross-workspace / unassigned / no-consent attempts each write one `DENY` audit row.
-- Export/erasure/consent/assignment changes each write the expected audit action.
-- Audit `meta` contains no health values, note bodies, tokens, credentials, or file contents
-  (asserted with a synthetic leak canary).
-- Erasure nulls actor/subject identifiers but preserves structural audit rows.
+Implemented now (real PostgreSQL, `tests/integration/s1-e-audit.test.ts`):
+
+- Successful consent/assignment mutations commit exactly one `ALLOW` event in the
+  same transaction; forced audit failure rolls the mutation back; failed mutations,
+  cross-workspace attempts, and idempotent `changed:false` calls write no event.
+- Prototype-member metadata keys and a synthetic leak canary can never be persisted.
+- Owner-scoped bounded `listAuditEvents` (default 25, max 100, `id` cursor).
+
+Target end-state (deferred slices):
+
+- Denied cross-workspace / unassigned / no-consent attempts each write one `DENY`
+  audit row (lands with DENY auditing).
+- Export/erasure audit actions (land with S1-G).
+- Erasure nulls actor/subject identifiers but preserves structural audit rows (S1-G;
+  schema is already `SetNull`-ready).
