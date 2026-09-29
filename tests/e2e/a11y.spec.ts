@@ -9,17 +9,24 @@ const ROUTES = [
   "/daily", // dev-only prototype, enabled for the test server
 ];
 
-test("each page has a single h1 and labelled primary navigation", async ({ page }) => {
+test("each page has a single h1 and labelled primary navigation", async ({
+  page,
+}) => {
   for (const route of ROUTES) {
     await page.goto(route);
     await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
-    await expect(page.getByRole("navigation", { name: "Primary" })).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "Primary" }),
+    ).toBeVisible();
   }
 });
 
 test("library tables expose scoped column headers", async ({ page }) => {
   await page.goto("/library/foods");
-  await expect(page.locator(".library-table thead th").first()).toHaveAttribute("scope", "col");
+  await expect(page.locator(".library-table thead th").first()).toHaveAttribute(
+    "scope",
+    "col",
+  );
 });
 
 test("sheet grid region is focusable and labelled", async ({ page }) => {

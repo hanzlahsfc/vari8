@@ -11,7 +11,12 @@ import type { ExtractionCell } from "./contracts";
  */
 
 export type SheetCells = { slug: string; cells: ExtractionCell[] };
-export type MatchLocation = { slug: string; row: number; col: number; count: number };
+export type MatchLocation = {
+  slug: string;
+  row: number;
+  col: number;
+  count: number;
+};
 export type MatchEntry = { value: string; locations: MatchLocation[] };
 
 export type CrossSheetInput = {
@@ -43,7 +48,13 @@ function collect(
       if (!names.has(value)) continue;
       const existing = bySheet.get(value);
       if (existing) existing.count += 1;
-      else bySheet.set(value, { slug: sheet.slug, row: cell.row, col: cell.col, count: 1 });
+      else
+        bySheet.set(value, {
+          slug: sheet.slug,
+          row: cell.row,
+          col: cell.col,
+          count: 1,
+        });
     }
     for (const [value, location] of bySheet) {
       const entry = map.get(value) ?? new Map<string, MatchLocation>();
@@ -54,8 +65,12 @@ function collect(
 
   const result: MatchEntry[] = [];
   for (const [value, locations] of map) {
-    const list = [...locations.values()].sort((a, b) => a.slug.localeCompare(b.slug) || a.row - b.row || a.col - b.col);
-    const touchesOther = list.some((location) => location.slug !== excludeSourceSlug);
+    const list = [...locations.values()].sort(
+      (a, b) => a.slug.localeCompare(b.slug) || a.row - b.row || a.col - b.col,
+    );
+    const touchesOther = list.some(
+      (location) => location.slug !== excludeSourceSlug,
+    );
     if (!touchesOther) continue;
     result.push({ value, locations: list });
   }
@@ -63,7 +78,10 @@ function collect(
   return result;
 }
 
-function collectLabels(sheets: SheetCells[], labels: ReadonlySet<string>): MatchEntry[] {
+function collectLabels(
+  sheets: SheetCells[],
+  labels: ReadonlySet<string>,
+): MatchEntry[] {
   const map = new Map<string, Map<string, MatchLocation>>();
   for (const sheet of sheets) {
     for (const cell of sheet.cells) {
@@ -72,13 +90,21 @@ function collectLabels(sheets: SheetCells[], labels: ReadonlySet<string>): Match
       const entry = map.get(value) ?? new Map<string, MatchLocation>();
       const existing = entry.get(sheet.slug);
       if (existing) existing.count += 1;
-      else entry.set(sheet.slug, { slug: sheet.slug, row: cell.row, col: cell.col, count: 1 });
+      else
+        entry.set(sheet.slug, {
+          slug: sheet.slug,
+          row: cell.row,
+          col: cell.col,
+          count: 1,
+        });
       map.set(value, entry);
     }
   }
   const result: MatchEntry[] = [];
   for (const [value, locations] of map) {
-    const list = [...locations.values()].sort((a, b) => a.slug.localeCompare(b.slug) || a.row - b.row);
+    const list = [...locations.values()].sort(
+      (a, b) => a.slug.localeCompare(b.slug) || a.row - b.row,
+    );
     if (list.length >= 2) result.push({ value, locations: list });
   }
   result.sort((a, b) => a.value.localeCompare(b.value));
@@ -87,13 +113,21 @@ function collectLabels(sheets: SheetCells[], labels: ReadonlySet<string>): Match
 
 export function buildCrossSheetData(input: CrossSheetInput): CrossSheetData {
   const foods = collect(input.sheets, input.foodNames, "nutrition-database");
-  const exercises = collect(input.sheets, input.exerciseNames, "exercise-database");
+  const exercises = collect(
+    input.sheets,
+    input.exerciseNames,
+    "exercise-database",
+  );
   const labels = collectLabels(input.sheets, input.safeLabels);
   return {
     foods,
     exercises,
     labels,
-    totals: { foods: foods.length, exercises: exercises.length, labels: labels.length },
+    totals: {
+      foods: foods.length,
+      exercises: exercises.length,
+      labels: labels.length,
+    },
   };
 }
 
@@ -101,19 +135,31 @@ function renderEntries(entries: MatchEntry[]): string {
   const lines: string[] = [];
   for (const entry of entries.slice(0, MAX_LIST)) {
     const where = entry.locations
-      .map((location) => `${location.slug}:r${location.row}c${location.col}${location.count > 1 ? ` (+${location.count - 1})` : ""}`)
+      .map(
+        (location) =>
+          `${location.slug}:r${location.row}c${location.col}${location.count > 1 ? ` (+${location.count - 1})` : ""}`,
+      )
       .join(", ");
     lines.push(`- \`${entry.value}\` — ${where}`);
   }
   if (entries.length > MAX_LIST) {
-    lines.push(`- … ${entries.length - MAX_LIST} more (list truncated; counts above are complete)`);
+    lines.push(
+      `- … ${entries.length - MAX_LIST} more (list truncated; counts above are complete)`,
+    );
   }
   if (lines.length === 0) lines.push("- _(none found)_");
   return lines.join("\n");
 }
 
 export function renderCrossSheetMarkdown(data: CrossSheetData): string {
-  const clientSheets = ["daily-tracker", "dashboard", "timeline", "menses", "peaking", "showday"];
+  const clientSheets = [
+    "daily-tracker",
+    "dashboard",
+    "timeline",
+    "menses",
+    "peaking",
+    "showday",
+  ];
   return `# Cross-sheet candidate links
 
 Generated by the sheet extractor. **Candidate** links only: a verbatim text match

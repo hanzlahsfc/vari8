@@ -7,3 +7,6 @@ playwright-report
 test-results
 package-lock.json
 next-env.d.ts
+docs/conductor-generic/SKILL.md
+# Generated, committed extraction artifacts — must not be reformatted.
+spec/

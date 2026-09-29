@@ -36,10 +36,13 @@ that cannot be derived from the supplied HTML exports and must not be guessed.
 
 11. **`TODO(product)` — Product name and branding** are undecided; "App" is a placeholder. The
     repository slug is not the product name.
-12. **`TODO(product)` — Licensing terms** for a shipped multi-tenant web app. The workbook is
-    licensed material (`© 2026 INFINITYCRE8 · Licensed to PRGRSS GmbH · License ID
-    CK-2026-K8M3 · Redistribution, resale or sublicensing prohibited`); stakeholder-approved
-    reuse does not settle shipping terms.
+12. **`TODO(product)` — Pre-release redistribution/licensing review** for a shipped web app.
+    Aleks and Marcel **confirmed permission to use the supplied workbook and the existing
+    application for implementation** (see `docs/product-decisions.md` #8), so permission to
+    implement is **not** open. What remains open is the separate pre-release legal/product
+    determination of redistribution/licensing terms for distributing the app (the workbook is
+    licensed material: `© 2026 INFINITYCRE8 · Licensed to PRGRSS GmbH · License ID
+CK-2026-K8M3 · Redistribution, resale or sublicensing prohibited`).
 13. **`TODO(product)` — PED/HRT data policy and legal review** before shipping any module that
     surfaces this data.
 14. **`TODO(product)` — Localization.** Prime State has de/en localization; localization is

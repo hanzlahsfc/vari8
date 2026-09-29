@@ -1,4 +1,8 @@
-import type { ExerciseRecord, ExtractionCell, FoodRecord } from "./extraction/contracts";
+import type {
+  ExerciseRecord,
+  ExtractionCell,
+  FoodRecord,
+} from "./extraction/contracts";
 
 /**
  * Pure, read-only catalog helpers shared by the reference libraries and the
@@ -32,7 +36,8 @@ export const EXERCISE_FIELDS = [
   "videoLink",
 ] as const;
 
-const includes = (value: string, query: string) => value.toLowerCase().includes(query);
+const includes = (value: string, query: string) =>
+  value.toLowerCase().includes(query);
 
 export function searchFoods(
   records: FoodRecord[],
@@ -53,7 +58,11 @@ export function searchFoods(
 }
 
 export function foodCategories(records: FoodRecord[]): string[] {
-  return [...new Set(records.map((record) => record.category).filter((value) => value !== ""))].sort();
+  return [
+    ...new Set(
+      records.map((record) => record.category).filter((value) => value !== ""),
+    ),
+  ].sort();
 }
 
 export function searchExercises(
@@ -63,8 +72,10 @@ export function searchExercises(
 ): ExerciseRecord[] {
   const q = query.trim().toLowerCase();
   return records.filter((record) => {
-    if (filters.muscleGroup && record.muscleGroup !== filters.muscleGroup) return false;
-    if (filters.equipment && record.equipment !== filters.equipment) return false;
+    if (filters.muscleGroup && record.muscleGroup !== filters.muscleGroup)
+      return false;
+    if (filters.equipment && record.equipment !== filters.equipment)
+      return false;
     if (q === "") return true;
     return (
       includes(record.name, q) ||
@@ -80,7 +91,8 @@ export function exerciseFacets(records: ExerciseRecord[]): {
   muscleGroups: string[];
   equipment: string[];
 } {
-  const unique = (values: string[]) => [...new Set(values.filter((value) => value !== ""))].sort();
+  const unique = (values: string[]) =>
+    [...new Set(values.filter((value) => value !== ""))].sort();
   return {
     muscleGroups: unique(records.map((record) => record.muscleGroup)),
     equipment: unique(records.map((record) => record.equipment)),

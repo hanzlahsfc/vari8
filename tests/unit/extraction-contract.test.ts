@@ -35,7 +35,9 @@ describe("sheet slug mapping", () => {
   });
 
   it("normalizes case, spaces, and punctuation deterministically", () => {
-    expect(slugifySheetFileName("  Exercise Database.HTML ")).toBe("exercise-database");
+    expect(slugifySheetFileName("  Exercise Database.HTML ")).toBe(
+      "exercise-database",
+    );
     expect(slugifySheetFileName("DAILY TRACKER.html")).toBe("daily-tracker");
     expect(slugifySheetFileName("A  B___C!.html")).toBe("a-b-c");
   });
@@ -44,6 +46,8 @@ describe("sheet slug mapping", () => {
 describe("redaction placeholder", () => {
   it("builds the documented placeholder form without the value", () => {
     expect(redactedPlaceholder("client-name")).toBe("[REDACTED:client-name]");
-    expect(redactedPlaceholder("ped_protocol.dose")).toBe("[REDACTED:ped_protocol.dose]");
+    expect(redactedPlaceholder("ped_protocol.dose")).toBe(
+      "[REDACTED:ped_protocol.dose]",
+    );
   });
 });

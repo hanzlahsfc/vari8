@@ -14,11 +14,18 @@ export function FoodLibrary({
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
-  const results = useMemo(() => searchFoods(records, query, category), [records, query, category]);
+  const results = useMemo(
+    () => searchFoods(records, query, category),
+    [records, query, category],
+  );
 
   return (
     <>
-      <form className="library-form" role="search" onSubmit={(event) => event.preventDefault()}>
+      <form
+        className="library-form"
+        role="search"
+        onSubmit={(event) => event.preventDefault()}
+      >
         <label className="library-field">
           <span>Search</span>
           <input

@@ -18,13 +18,21 @@ export function ExerciseLibrary({
   const [muscleGroup, setMuscleGroup] = useState("");
   const [equipmentFilter, setEquipmentFilter] = useState("");
   const results = useMemo(
-    () => searchExercises(records, query, { muscleGroup, equipment: equipmentFilter }),
+    () =>
+      searchExercises(records, query, {
+        muscleGroup,
+        equipment: equipmentFilter,
+      }),
     [records, query, muscleGroup, equipmentFilter],
   );
 
   return (
     <>
-      <form className="library-form" role="search" onSubmit={(event) => event.preventDefault()}>
+      <form
+        className="library-form"
+        role="search"
+        onSubmit={(event) => event.preventDefault()}
+      >
         <label className="library-field">
           <span>Search</span>
           <input

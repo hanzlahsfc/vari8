@@ -44,13 +44,13 @@ npm run dev            # http://127.0.0.1:3000
 
 ### Environment variables
 
-| Variable | Purpose |
-|---|---|
-| `DATABASE_URL` | Prisma connection string for local PostgreSQL |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Used by `docker-compose.yml` |
-| `AUTH_SECRET` | Auth.js signing secret (`openssl rand -base64 32`) |
-| `AUTH_URL` | Base URL Auth.js is served from |
-| `AUTH_TRUST_HOST` | Trust the host header (local/simple deployments) |
+| Variable                                              | Purpose                                            |
+| ----------------------------------------------------- | -------------------------------------------------- |
+| `DATABASE_URL`                                        | Prisma connection string for local PostgreSQL      |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Used by `docker-compose.yml`                       |
+| `AUTH_SECRET`                                         | Auth.js signing secret (`openssl rand -base64 32`) |
+| `AUTH_URL`                                            | Base URL Auth.js is served from                    |
+| `AUTH_TRUST_HOST`                                     | Trust the host header (local/simple deployments)   |
 
 Local defaults in `docker-compose.yml` and `.env.example` are development placeholders
 only. Override them for any real environment and never commit `.env`.
@@ -88,14 +88,15 @@ Prisma client generation and engine availability are verified by the Phase 6 che
 
 ## Scripts
 
-| Script | Purpose |
-|---|---|
-| `npm run dev` | Next dev server |
-| `npm run build` | Production build |
-| `npm run start` | Start production server |
-| `npm run verify` | `typecheck` + `lint` + `test` |
-| `npm run test` | Vitest unit tests |
-| `npm run test:e2e` | Playwright e2e (needs PostgreSQL up) |
+| Script                   | Purpose                                                        |
+| ------------------------ | -------------------------------------------------------------- |
+| `npm run dev`            | Next dev server                                                |
+| `npm run build`          | Production build                                               |
+| `npm run start`          | Start production server                                        |
+| `npm run verify`         | `typecheck` + `lint` + `test`                                  |
+| `npm run format:check`   | Prettier format check                                          |
+| `npm run test`           | Vitest unit tests                                              |
+| `npm run test:e2e`       | Playwright e2e (needs PostgreSQL up)                           |
 | `npm run extract:sheets` | Validate + parse the 11 source sheets (non-writing by default) |
 
 ## Privacy
@@ -118,6 +119,17 @@ overridable via the environment.
 
 Committed, redacted `spec/sheets/**` artifacts and the summaries/theme/cross-sheet outputs
 arrive in later phases. See `docs/extraction-contract.md`.
+
+## Development-only viewers
+
+The raw sheet viewer (`/sheets`, `/sheets/[slug]`) and the Daily Tracker prototype (`/daily`)
+are **development/reference tools**, not product pages. Both fail closed (404) unless their flag
+is set:
+
+- `ENABLE_SHEET_VIEWER=1` — raw/redacted workbook viewer.
+- `ENABLE_DAILY_PROTOTYPE=1` — in-memory Daily Tracker prototype.
+
+They are reached directly (not linked in navigation) so no dead links are baked into builds.
 
 ## Daily Tracker prototype (development-only, Phase B0)
 

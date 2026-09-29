@@ -20,24 +20,42 @@ let totalRedacted = 0;
 
 beforeAll(() => {
   const baseClasses = parseCssDeclarations(
-    readFileSync(join(DEFAULT_SHEETS_SOURCE_DIR, "resources", "sheet.css"), "utf8"),
+    readFileSync(
+      join(DEFAULT_SHEETS_SOURCE_DIR, "resources", "sheet.css"),
+      "utf8",
+    ),
   );
   results = EXPECTED_SHEETS.map((sheet) => {
-    const parsed = parseSheetHtml(readFileSync(join(DEFAULT_SHEETS_SOURCE_DIR, sheet.file), "utf8"), {
-      baseClasses,
-    });
+    const parsed = parseSheetHtml(
+      readFileSync(join(DEFAULT_SHEETS_SOURCE_DIR, sheet.file), "utf8"),
+      {
+        baseClasses,
+      },
+    );
     return {
       slug: sheet.slug,
-      result: redactSheet(sheet.slug, sheet.file, parsed.cells, parsed.classes, parsed.todos),
+      result: redactSheet(
+        sheet.slug,
+        sheet.file,
+        parsed.cells,
+        parsed.classes,
+        parsed.todos,
+      ),
     };
   });
-  totalRedacted = results.reduce((sum, item) => sum + item.result.redactedCells, 0);
+  totalRedacted = results.reduce(
+    (sum, item) => sum + item.result.redactedCells,
+    0,
+  );
 }, 300_000);
 
 describe.skipIf(!SOURCE_EXISTS)("phase 11 redaction over real exports", () => {
   it("redacts a substantial number of client-bearing cells", () => {
     expect(totalRedacted).toBeGreaterThan(15_000);
-    expect(results.find((r) => r.slug === "nutrition-database")?.result.redactedCells).toBeGreaterThanOrEqual(1);
+    expect(
+      results.find((r) => r.slug === "nutrition-database")?.result
+        .redactedCells,
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it("never leaves a normalized value on a redacted cell", () => {
@@ -62,15 +80,23 @@ describe.skipIf(!SOURCE_EXISTS)("phase 11 redaction over real exports", () => {
   it("records exactly one manifest entry per redacted cell and matches the committed manifest", () => {
     const generated = new Set(
       results.flatMap(({ slug, result }) =>
-        result.redactions.map((entry) => `${slug}:${entry.cell?.row}:${entry.cell?.col}`),
+        result.redactions.map(
+          (entry) => `${slug}:${entry.cell?.row}:${entry.cell?.col}`,
+        ),
       ),
     );
-    const manifest = JSON.parse(readFileSync(join(SPEC, "spec", "redaction-manifest.json"), "utf8"));
-    const cellEntries = manifest.redactions.filter((entry: { artifact: string }) =>
-      entry.artifact.startsWith("spec/sheets/"),
+    const manifest = JSON.parse(
+      readFileSync(join(SPEC, "spec", "redaction-manifest.json"), "utf8"),
+    );
+    const cellEntries = manifest.redactions.filter(
+      (entry: { artifact: string }) =>
+        entry.artifact.startsWith("spec/sheets/"),
     );
     const fromManifest = new Set(
-      cellEntries.map((entry: { sheet: string; cell: { row: number; col: number } }) => `${entry.sheet}:${entry.cell.row}:${entry.cell.col}`),
+      cellEntries.map(
+        (entry: { sheet: string; cell: { row: number; col: number } }) =>
+          `${entry.sheet}:${entry.cell.row}:${entry.cell.col}`,
+      ),
     );
     expect(fromManifest).toEqual(generated);
     expect(JSON.stringify(manifest)).not.toContain("@");
@@ -82,9 +108,11 @@ describe.skipIf(!SOURCE_EXISTS)("phase 11 redaction over real exports", () => {
 
   it("matches the committed artifacts byte-for-byte (determinism lock)", () => {
     for (const { slug, result } of results) {
-      const committed = readFileSync(join(SPEC, "spec", "sheets", `${slug}.json`), "utf8");
+      const committed = readFileSync(
+        join(SPEC, "spec", "sheets", `${slug}.json`),
+        "utf8",
+      );
       expect(`${JSON.stringify(result.artifact, null, 2)}\n`).toBe(committed);
     }
   });
-
 });

@@ -13,10 +13,13 @@ export default function FoodsLibraryPage() {
       <AppNav />
       <h1 className="app-title">Foods</h1>
       <p className="app-lede">
-        Read-only reference library · {foods.count} rows from the Nutrition Database, in source
-        order.
+        Read-only reference library · {foods.count} rows from the Nutrition
+        Database, in source order.
       </p>
-      <FoodLibrary records={foods.records} categories={foodCategories(foods.records)} />
+      <FoodLibrary
+        records={foods.records}
+        categories={foodCategories(foods.records)}
+      />
     </main>
   );
 }

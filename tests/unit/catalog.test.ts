@@ -8,7 +8,11 @@ import {
   sheetDisplayName,
   toSparseGrid,
 } from "../../lib/catalog";
-import type { ExerciseRecord, ExtractionCell, FoodRecord } from "../../lib/extraction/contracts";
+import type {
+  ExerciseRecord,
+  ExtractionCell,
+  FoodRecord,
+} from "../../lib/extraction/contracts";
 
 function food(over: Partial<FoodRecord>): FoodRecord {
   return {
@@ -45,20 +49,62 @@ function exercise(over: Partial<ExerciseRecord>): ExerciseRecord {
 }
 
 const FOODS = [
-  food({ no: "1", food: "Oats", category: "CHO", state: "Dry Weight", sourceRow: 4 }),
-  food({ no: "2", food: "Chicken Breast", category: "PRO", unit: "g", sourceRow: 5 }),
-  food({ no: "3", food: "Olive Oil", category: "FAT", unit: "ml", sourceRow: 6 }),
+  food({
+    no: "1",
+    food: "Oats",
+    category: "CHO",
+    state: "Dry Weight",
+    sourceRow: 4,
+  }),
+  food({
+    no: "2",
+    food: "Chicken Breast",
+    category: "PRO",
+    unit: "g",
+    sourceRow: 5,
+  }),
+  food({
+    no: "3",
+    food: "Olive Oil",
+    category: "FAT",
+    unit: "ml",
+    sourceRow: 6,
+  }),
 ];
 
 const EXERCISES = [
-  exercise({ id: "1", name: "Ab Wheel Rollout", muscleGroup: "Core", equipment: "Ab Wheel", sourceRow: 4 }),
-  exercise({ id: "2", name: "Cable Crunch", muscleGroup: "Core", equipment: "Cable", movementPattern: "Trunk Flexion", sourceRow: 5 }),
-  exercise({ id: "3", name: "Bench Press", muscleGroup: "Chest", equipment: "Barbell", movementPattern: "Horizontal Press", sourceRow: 6 }),
+  exercise({
+    id: "1",
+    name: "Ab Wheel Rollout",
+    muscleGroup: "Core",
+    equipment: "Ab Wheel",
+    sourceRow: 4,
+  }),
+  exercise({
+    id: "2",
+    name: "Cable Crunch",
+    muscleGroup: "Core",
+    equipment: "Cable",
+    movementPattern: "Trunk Flexion",
+    sourceRow: 5,
+  }),
+  exercise({
+    id: "3",
+    name: "Bench Press",
+    muscleGroup: "Chest",
+    equipment: "Barbell",
+    movementPattern: "Horizontal Press",
+    sourceRow: 6,
+  }),
 ];
 
 describe("searchFoods", () => {
   it("preserves source order when no query is given", () => {
-    expect(searchFoods(FOODS, "").map((r) => r.food)).toEqual(["Oats", "Chicken Breast", "Olive Oil"]);
+    expect(searchFoods(FOODS, "").map((r) => r.food)).toEqual([
+      "Oats",
+      "Chicken Breast",
+      "Olive Oil",
+    ]);
   });
   it("matches name, category, state, and unit (case-insensitive)", () => {
     expect(searchFoods(FOODS, "oats").map((r) => r.no)).toEqual(["1"]);
@@ -67,28 +113,37 @@ describe("searchFoods", () => {
     expect(searchFoods(FOODS, "ml").map((r) => r.no)).toEqual(["3"]);
   });
   it("filters by category", () => {
-    expect(searchFoods(FOODS, "", "PRO").map((r) => r.food)).toEqual(["Chicken Breast"]);
+    expect(searchFoods(FOODS, "", "PRO").map((r) => r.food)).toEqual([
+      "Chicken Breast",
+    ]);
   });
 });
 
 describe("foodCategories", () => {
   it("returns unique, sorted, non-empty categories", () => {
-    expect(foodCategories([...FOODS, food({ category: "" })])).toEqual(["CHO", "FAT", "PRO"]);
+    expect(foodCategories([...FOODS, food({ category: "" })])).toEqual([
+      "CHO",
+      "FAT",
+      "PRO",
+    ]);
   });
 });
 
 describe("searchExercises", () => {
   it("filters by muscle group and equipment", () => {
-    expect(searchExercises(EXERCISES, "", { muscleGroup: "Core" }).map((r) => r.name)).toEqual([
-      "Ab Wheel Rollout",
-      "Cable Crunch",
-    ]);
-    expect(searchExercises(EXERCISES, "", { equipment: "Cable" }).map((r) => r.name)).toEqual([
-      "Cable Crunch",
-    ]);
+    expect(
+      searchExercises(EXERCISES, "", { muscleGroup: "Core" }).map(
+        (r) => r.name,
+      ),
+    ).toEqual(["Ab Wheel Rollout", "Cable Crunch"]);
+    expect(
+      searchExercises(EXERCISES, "", { equipment: "Cable" }).map((r) => r.name),
+    ).toEqual(["Cable Crunch"]);
   });
   it("matches query across name/target/equipment/pattern", () => {
-    expect(searchExercises(EXERCISES, "press").map((r) => r.name)).toEqual(["Bench Press"]);
+    expect(searchExercises(EXERCISES, "press").map((r) => r.name)).toEqual([
+      "Bench Press",
+    ]);
     expect(searchExercises(EXERCISES, "abdominals")).toHaveLength(3);
   });
 });
@@ -103,13 +158,26 @@ describe("exerciseFacets", () => {
 });
 
 function cell(over: Partial<ExtractionCell>): ExtractionCell {
-  return { row: 1, col: 1, rowSpan: 1, colSpan: 1, class: "s0", text: "", ...over };
+  return {
+    row: 1,
+    col: 1,
+    rowSpan: 1,
+    colSpan: 1,
+    class: "s0",
+    text: "",
+    ...over,
+  };
 }
 
 describe("toSparseGrid", () => {
   const cells: ExtractionCell[] = [
     cell({ row: 1, col: 1, text: "BODYWEIGHT" }),
-    cell({ row: 2, col: 1, text: "[REDACTED:client.daily-entry]", normalized: 5 }),
+    cell({
+      row: 2,
+      col: 1,
+      text: "[REDACTED:client.daily-entry]",
+      normalized: 5,
+    }),
     cell({ row: 3, col: 1, text: "", checkbox: "checked" }),
     cell({ row: 4, col: 1, text: "" }), // empty -> omitted
     cell({ row: 5, col: 2, text: "merged", rowSpan: 2, colSpan: 3 }),
@@ -124,7 +192,9 @@ describe("toSparseGrid", () => {
     expect(grid.cols).toBe(4);
   });
   it("never drops checkbox state, even when text is present", () => {
-    const withText = toSparseGrid([cell({ row: 1, col: 1, text: "note", checkbox: "unchecked" })]);
+    const withText = toSparseGrid([
+      cell({ row: 1, col: 1, text: "note", checkbox: "unchecked" }),
+    ]);
     expect(withText.cells[0]).toMatchObject({
       kind: "checkbox",
       checkbox: "unchecked",
@@ -138,14 +208,22 @@ describe("toSparseGrid", () => {
     expect(grid.redactedCount).toBe(1);
   });
   it("preserves checkboxes, coordinates, and merged spans", () => {
-    expect(grid.cells.find((c) => c.row === 3)).toMatchObject({ kind: "checkbox", checkbox: "checked" });
-    expect(grid.cells.find((c) => c.row === 5)).toMatchObject({ rowSpan: 2, colSpan: 3 });
+    expect(grid.cells.find((c) => c.row === 3)).toMatchObject({
+      kind: "checkbox",
+      checkbox: "checked",
+    });
+    expect(grid.cells.find((c) => c.row === 5)).toMatchObject({
+      rowSpan: 2,
+      colSpan: 3,
+    });
   });
 });
 
 describe("sheetDisplayName", () => {
   it("strips the html extension", () => {
     expect(sheetDisplayName("DAILY TRACKER.html")).toBe("DAILY TRACKER");
-    expect(sheetDisplayName("Exercise Database.html")).toBe("Exercise Database");
+    expect(sheetDisplayName("Exercise Database.html")).toBe(
+      "Exercise Database",
+    );
   });
 });

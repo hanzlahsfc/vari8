@@ -1,9 +1,13 @@
 import { expect, test } from "@playwright/test";
 
 // The test server enables ENABLE_DAILY_PROTOTYPE=1 (see playwright.config.ts).
-test("prototype shows the not-saved notice and only in-scope fields", async ({ page }) => {
+test("prototype shows the not-saved notice and only in-scope fields", async ({
+  page,
+}) => {
   await page.goto("/daily");
-  await expect(page.getByRole("heading", { name: "Daily Tracker (prototype)", level: 1 })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Daily Tracker (prototype)", level: 1 }),
+  ).toBeVisible();
   await expect(page.getByRole("note")).toContainText("not saved");
 
   await expect(page.getByLabel("Weight (kg)")).toBeVisible();
@@ -60,8 +64,15 @@ test.describe("mobile", () => {
   test.use({ viewport: { width: 390, height: 844 } });
   test("the form is usable at mobile width", async ({ page }) => {
     await page.goto("/daily");
-    await expect(page.getByRole("heading", { name: "Daily Tracker (prototype)", level: 1 })).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: "Daily Tracker (prototype)",
+        level: 1,
+      }),
+    ).toBeVisible();
     await expect(page.getByLabel("Weight (kg)")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Add to week view" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Add to week view" }),
+    ).toBeVisible();
   });
 });

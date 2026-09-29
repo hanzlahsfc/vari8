@@ -24,13 +24,24 @@ describe("Phase B0 field schema", () => {
   });
 
   it("uses the source labels and units as written", () => {
-    expect(byKey.get("weightKg")).toMatchObject({ label: "Weight", unit: "kg" });
+    expect(byKey.get("weightKg")).toMatchObject({
+      label: "Weight",
+      unit: "kg",
+    });
     expect(byKey.get("bbtC")).toMatchObject({ label: "BBT", unit: "°C" });
-    expect(byKey.get("glucoseMmol")).toMatchObject({ label: "Blood glucose", unit: "mmol/L" });
-    expect(byKey.get("cardioMin")).toMatchObject({ label: "Cardio", unit: "min" });
+    expect(byKey.get("glucoseMmol")).toMatchObject({
+      label: "Blood glucose",
+      unit: "mmol/L",
+    });
+    expect(byKey.get("cardioMin")).toMatchObject({
+      label: "Cardio",
+      unit: "min",
+    });
     expect(byKey.get("saltG")).toMatchObject({ label: "Salt", unit: "g" });
     expect(byKey.get("waterL")).toMatchObject({ label: "Water", unit: "L" });
-    expect(byKey.get("dayLabel")).toMatchObject({ options: ["HIGH", "MEDIUM", "LOW"] });
+    expect(byKey.get("dayLabel")).toMatchObject({
+      options: ["HIGH", "MEDIUM", "LOW"],
+    });
   });
 
   it("defines the eight biofeedback fields with a 1-10 range", () => {
@@ -60,15 +71,21 @@ describe("validateDailyEntry", () => {
   });
 
   it("enforces the source-confirmed biofeedback 1-10 range", () => {
-    expect(validateDailyEntry({ ...base, date: "2026-01-05", desireToTrain: "11" })).toContainEqual({
+    expect(
+      validateDailyEntry({ ...base, date: "2026-01-05", desireToTrain: "11" }),
+    ).toContainEqual({
       field: "desireToTrain",
       message: "Desire to train must be 1-10",
     });
-    expect(validateDailyEntry({ ...base, date: "2026-01-05", desireToTrain: "5" })).toEqual([]);
+    expect(
+      validateDailyEntry({ ...base, date: "2026-01-05", desireToTrain: "5" }),
+    ).toEqual([]);
   });
 
   it("enforces the day-label enum", () => {
-    expect(validateDailyEntry({ ...base, date: "2026-01-05", dayLabel: "HUGE" })).toContainEqual({
+    expect(
+      validateDailyEntry({ ...base, date: "2026-01-05", dayLabel: "HUGE" }),
+    ).toContainEqual({
       field: "dayLabel",
       message: "Day label must be one of HIGH/MEDIUM/LOW",
     });
@@ -76,7 +93,9 @@ describe("validateDailyEntry", () => {
 
   it("does not invent constraints for other fields", () => {
     // steps has no source range; a non-numeric value is not rejected here.
-    expect(validateDailyEntry({ ...base, date: "2026-01-05", steps: "abc" })).toEqual([]);
+    expect(
+      validateDailyEntry({ ...base, date: "2026-01-05", steps: "abc" }),
+    ).toEqual([]);
   });
 });
 

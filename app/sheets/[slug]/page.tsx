@@ -4,7 +4,12 @@ import { notFound } from "next/navigation";
 import { AppNav } from "@/components/app-nav";
 import { toSparseGrid } from "@/lib/catalog";
 import { EXPECTED_SHEETS } from "@/lib/extraction/contracts";
-import { getSheetArtifact, getSheetSummary, isSheetSlug } from "@/lib/spec-artifacts";
+import { requireSheetViewer } from "@/lib/sheet-viewer";
+import {
+  getSheetArtifact,
+  getSheetSummary,
+  isSheetSlug,
+} from "@/lib/spec-artifacts";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +22,7 @@ export default async function SheetViewerPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  requireSheetViewer(process.env.ENABLE_SHEET_VIEWER);
   const { slug } = await params;
   if (!isSheetSlug(slug)) notFound();
 
@@ -25,7 +31,10 @@ export default async function SheetViewerPage({
   const grid = toSparseGrid(artifact.cells);
   const index = EXPECTED_SHEETS.findIndex((sheet) => sheet.slug === slug);
   const previous = index > 0 ? EXPECTED_SHEETS[index - 1] : undefined;
-  const next = index >= 0 && index < EXPECTED_SHEETS.length - 1 ? EXPECTED_SHEETS[index + 1] : undefined;
+  const next =
+    index >= 0 && index < EXPECTED_SHEETS.length - 1
+      ? EXPECTED_SHEETS[index + 1]
+      : undefined;
   const name = nameOf(summary.sourceFile);
 
   return (
@@ -33,27 +42,47 @@ export default async function SheetViewerPage({
       <AppNav />
       <h1 className="app-title">{name}</h1>
       <p className="app-lede">
-        Read-only, redacted. {grid.cells.length} rendered cells out of {summary.cellCount} ({grid.redactedCount}{" "}
-        redacted, {grid.emptyOmitted} empty not rendered), grid {grid.rows}×{grid.cols}.
+        Read-only, redacted. {grid.cells.length} rendered cells out of{" "}
+        {summary.cellCount} ({grid.redactedCount} redacted, {grid.emptyOmitted}{" "}
+        empty not rendered), grid {grid.rows}×{grid.cols}.
       </p>
       <nav className="sheet-nav" aria-label="Sheet navigation">
-        {previous ? <Link href={`/sheets/${previous.slug}`}>← {nameOf(previous.file)}</Link> : null}
+        {previous ? (
+          <Link href={`/sheets/${previous.slug}`}>
+            ← {nameOf(previous.file)}
+          </Link>
+        ) : null}
         <Link href="/sheets">All sheets</Link>
-        {next ? <Link href={`/sheets/${next.slug}`}>{nameOf(next.file)} →</Link> : null}
+        {next ? (
+          <Link href={`/sheets/${next.slug}`}>{nameOf(next.file)} →</Link>
+        ) : null}
       </nav>
 
       <section className="sheet-sections" aria-label="Sheet sections">
         {summary.sections.map((section) => (
-          <span key={`${section.label}-${section.row}-${section.col}`} className="sheet-chip">
-            {section.label} <span className="sheet-chip__coord">r{section.row}c{section.col}</span>
+          <span
+            key={`${section.label}-${section.row}-${section.col}`}
+            className="sheet-chip"
+          >
+            {section.label}{" "}
+            <span className="sheet-chip__coord">
+              r{section.row}c{section.col}
+            </span>
           </span>
         ))}
       </section>
 
-      <div className="sheet-scroll" role="region" aria-label={`${name} grid`} tabIndex={0}>
+      <div
+        className="sheet-scroll"
+        role="region"
+        aria-label={`${name} grid`}
+        tabIndex={0}
+      >
         <div
           className="sheet-grid"
-          style={{ gridTemplateColumns: `repeat(${grid.cols}, var(--sheet-col-w))` }}
+          style={{
+            gridTemplateColumns: `repeat(${grid.cols}, var(--sheet-col-w))`,
+          }}
         >
           {grid.cells.map((cell) => (
             <div
@@ -69,7 +98,9 @@ export default async function SheetViewerPage({
                 <span aria-label="redacted value">▨</span>
               ) : cell.kind === "checkbox" ? (
                 <>
-                  <span aria-hidden="true">{cell.checkbox === "checked" ? "☑" : "☐"}</span>
+                  <span aria-hidden="true">
+                    {cell.checkbox === "checked" ? "☑" : "☐"}
+                  </span>
                   {cell.text ? ` ${cell.text}` : ""}
                 </>
               ) : (
@@ -80,8 +111,8 @@ export default async function SheetViewerPage({
         </div>
       </div>
       <p className="app-lede">
-        Safe labels and structural markers are shown; redacted cells show a neutral marker; empty
-        cells are not rendered.
+        Safe labels and structural markers are shown; redacted cells show a
+        neutral marker; empty cells are not rendered.
       </p>
     </main>
   );

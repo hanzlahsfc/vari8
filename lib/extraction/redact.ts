@@ -77,7 +77,12 @@ export function safeLabelSet(slug: SheetSlug): SafeLabels {
   return new Set(SUMMARY_CONFIG[slug].labels);
 }
 
-type Region = { rowStart: number; rowEnd: number; colStart: number; colEnd: number };
+type Region = {
+  rowStart: number;
+  rowEnd: number;
+  colStart: number;
+  colEnd: number;
+};
 
 /**
  * Source-aware bounds of the MENSES `CYCLE PHASE GUIDE` block, located from its
@@ -86,11 +91,18 @@ type Region = { rowStart: number; rowEnd: number; colStart: number; colEnd: numb
  * history, HRT) sit outside these bounds and stay redacted.
  */
 function mensesGuideRegion(cells: ExtractionCell[]): Region | null {
-  const label = cells.find((cell) => cell.row < 40 && cell.text.trim() === "CYCLE PHASE GUIDE");
+  const label = cells.find(
+    (cell) => cell.row < 40 && cell.text.trim() === "CYCLE PHASE GUIDE",
+  );
   if (!label) return null;
   // The guide block spans ~10 rows and ~16 resolved columns from its label
   // (labels, day ranges, phase names, descriptions, glyphs).
-  return { rowStart: label.row, rowEnd: label.row + 10, colStart: label.col, colEnd: label.col + 16 };
+  return {
+    rowStart: label.row,
+    rowEnd: label.row + 10,
+    colStart: label.col,
+    colEnd: label.col + 16,
+  };
 }
 
 function inRegion(cell: ExtractionCell, region: Region): boolean {
@@ -102,10 +114,15 @@ function inRegion(cell: ExtractionCell, region: Region): boolean {
   );
 }
 
-export function isSafeCellText(slug: SheetSlug, text: string, labels: SafeLabels): boolean {
+export function isSafeCellText(
+  slug: SheetSlug,
+  text: string,
+  labels: SafeLabels,
+): boolean {
   const trimmed = text.trim();
   const lower = trimmed.toLowerCase();
-  if (EMAIL_PATTERN.test(trimmed) || lower.includes(CREDIT_MARKER)) return false;
+  if (EMAIL_PATTERN.test(trimmed) || lower.includes(CREDIT_MARKER))
+    return false;
   if (SAFE_SHEETS.has(slug)) return true;
   if (trimmed === "") return true;
   if (labels.has(trimmed)) return true;
@@ -146,7 +163,10 @@ export function redactSheet(
       emptyCells += 1;
       return { ...cell };
     }
-    if ((guideRegion !== null && inRegion(cell, guideRegion)) || isSafeCellText(slug, cell.text, labels)) {
+    if (
+      (guideRegion !== null && inRegion(cell, guideRegion)) ||
+      isSafeCellText(slug, cell.text, labels)
+    ) {
       keptCells += 1;
       return { ...cell };
     }

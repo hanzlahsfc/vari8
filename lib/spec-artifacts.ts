@@ -20,7 +20,9 @@ const cache = new Map<string, unknown>();
 function load<T>(relativePath: string): T {
   const cached = cache.get(relativePath);
   if (cached !== undefined) return cached as T;
-  const value = JSON.parse(readFileSync(join(SPEC_DIR, relativePath), "utf8")) as T;
+  const value = JSON.parse(
+    readFileSync(join(SPEC_DIR, relativePath), "utf8"),
+  ) as T;
   cache.set(relativePath, value);
   return value;
 }

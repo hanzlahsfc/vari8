@@ -12,5 +12,7 @@ test("invalid credentials show a generic error", async ({ page }) => {
   await page.getByLabel("Email").fill("nobody@example.invalid");
   await page.getByLabel("Password").fill("not-the-right-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.locator(".auth-error")).toHaveText("Invalid email or password.");
+  await expect(page.locator(".auth-error")).toHaveText(
+    "Invalid email or password.",
+  );
 });

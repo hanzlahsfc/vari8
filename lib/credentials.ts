@@ -33,7 +33,8 @@ export async function authorizeCredentials(
   lookup: UserLookup,
 ): Promise<AuthorizedUser | null> {
   const email = normalizeEmail(credentials?.email);
-  const password = typeof credentials?.password === "string" ? credentials.password : "";
+  const password =
+    typeof credentials?.password === "string" ? credentials.password : "";
   if (!email || !password) return null;
 
   const user = await lookup(email);

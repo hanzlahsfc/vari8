@@ -8,6 +8,25 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app_dev_password
+          POSTGRES_DB: app_dev
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U app -d app_dev"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://app:app_dev_password@127.0.0.1:5432/app_dev?schema=public
+      AUTH_SECRET: ci-test-only-auth-secret-not-for-production
+      AUTH_URL: http://127.0.0.1:3000
+      AUTH_TRUST_HOST: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -15,4 +34,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run verify
+      - run: npx prisma generate
+      - run: npx prisma validate
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e

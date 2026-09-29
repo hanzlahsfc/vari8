@@ -86,17 +86,21 @@ The-great-tracker-/
 ## 6. The 12 phases (preserved) with gates
 
 ### Phase 1 — Repository safety and setup — DONE
+
 Remote verified empty; cloned to a new local working dir; branch `main`; Prime State
 untouched.
 
 ### Phase 2 — Source-file audit — DONE
+
 All 11 exports + resources confirmed; xlsx absent; PII/health content flagged; missing images
 identified.
 
 ### Phase 3 — Prime State reuse assessment and plan — DONE
+
 `docs/reuse-assessment.md` produced; this plan drafted.
 
 ### Phase 4 — New-repo foundation transfer (documentation only)
+
 Steps: confirm working tree; write `docs/` artifacts + `spec/redaction-manifest.json` +
 `.gitignore`; **commit the plan before any implementation code**.
 Acceptance: all docs exist and contain no real client identifiers/health values; every
@@ -105,6 +109,7 @@ redaction is manifested without its original value; raw source dirs ignored and
 Prime State unchanged.
 
 ### Phase 5 — Application/toolchain scaffold
+
 Steps: Next.js 15 app shell, React 19, strict TS, Tailwind 4, Vitest, Playwright, ESLint,
 Prettier, npm scripts; port only the Phase 3-approved foundation (`tsconfig`, lint/format,
 vitest/playwright, `lib/db.ts` singleton, script shape).
@@ -113,6 +118,7 @@ Paths: `package.json`, `app/{layout,page,globals.css}`, config files.
 Acceptance: `npm install && npm run verify; echo EXIT:$?` → `0`; minimal App shell renders.
 
 ### Phase 6 — DB, auth, themes, Part A gate
+
 Steps: `docker-compose.yml` (Postgres only) + `db/schema.prisma` minimal `User` migration;
 Auth.js v5 **Credentials** with hashed passwords (no plaintext, no hard-coded accounts/secrets;
 documented JWT session strategy); tokenized themes with `data-theme` on `<html>`
@@ -132,6 +138,7 @@ Do not begin Phase 7 until the migration applies and `npm run verify` passes on 
 tree.
 
 ### Phase 7 — Extraction contract and input configuration
+
 Steps: inspect actual export markup; define deterministic output schemas and stable sheet
 slugs; implement `SHEETS_SOURCE_DIR` resolution (default = ruling 2), missing-dir failure,
 never-write-to-source guard, and `RAW_EXTRACTION_DIR` fail-closed `git check-ignore` guard.
@@ -141,6 +148,7 @@ Acceptance: contract documented in this file; `scripts/extract-sheets.ts` dry-ru
 11 inputs; missing-source and non-ignored-raw-dir each fail with a clear message (tested).
 
 ### Phase 8 — Generic sheet parsing
+
 Steps: parse `<table class="waffle">`; emit `spec/sheets/<slug>.json` with 1-based
 `{row,col,rowSpan,colSpan,class,text}` cells; resolve spans to unambiguous grid locations
 without fabricating blank cells; preserve source text exactly (German decimal commas) and add
@@ -151,6 +159,7 @@ Acceptance: all 11 sheets emit; merged spans resolved; comma decimals preserved;
 checkbox state flagged not guessed.
 
 ### Phase 9 — Food and exercise datasets
+
 Steps: emit `spec/data/foods.json` (NO., FOOD, AMOUNT, UNIT, CALORIES, PROTEIN, CARBS, FATS,
 COOKED/RAW/DRY, CAT) and `spec/data/exercises.json` (ID, name, muscle group, primary/additional
 targets, equipment, movement pattern, position/setup, cues, video link).
@@ -158,6 +167,7 @@ Acceptance: report actual counts (~599 foods, ~546 exercises); warn (do not fail
 difference; discrepancy explained.
 
 ### Phase 10 — Sheet structure and cross-sheet artifacts
+
 Steps: emit `spec/sheets/<slug>.summary.json` (evidence-based section/block map),
 `spec/theme.json` (distinct background/text/border/font combinations + derivation notes),
 `spec/cross-sheet.md` (verbatim values in ≥2 sheets as **candidate** links), extend
@@ -166,6 +176,7 @@ Acceptance: no semantic links or formulas inferred from coincidence; every maske
 recorded; discrepancies captured as `TODO(product)`.
 
 ### Phase 11 — Test, determinism, privacy pass
+
 Steps/tests: merged-cell spans; German-decimal preservation + safe normalization; checkbox
 state; deterministic output (two runs, no diff); graceful missing/ambiguous handling; redaction
 recorded and **no sensitive leak** into committed artifacts/logs/demo data; a unit test that
@@ -175,6 +186,7 @@ Acceptance: `npm run extract:sheets` twice → second run produces no changes; `
 green.
 
 ### Phase 12 — Final verification and delivery
+
 Steps: re-run applicable gates on the frozen tree; inspect diff; commit locally; report the
 exact tested commit hash and evidence.
 Acceptance: Phase 6 gate passed before Phase 7; `npm run verify` passes; deterministic `spec/`

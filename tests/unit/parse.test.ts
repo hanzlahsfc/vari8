@@ -105,6 +105,8 @@ describe("parseSheetHtml", () => {
   });
 
   it("throws clearly when there is no waffle table", () => {
-    expect(() => parseSheetHtml("<html><body>nope</body></html>")).toThrow(/waffle/);
+    expect(() => parseSheetHtml("<html><body>nope</body></html>")).toThrow(
+      /waffle/,
+    );
   });
 });

@@ -7,6 +7,7 @@ artifact, demo fixture, test, log line, and documentation file in this repositor
 ## Scope
 
 Applies to:
+
 - `docs/source-inventory.md` (redacted document)
 - `spec/sheets/*.json` and `spec/sheets/*.summary.json` (committed, redacted)
 - `spec/data/*.json`, `spec/theme.json`, `spec/cross-sheet.md`
@@ -15,6 +16,7 @@ Applies to:
 - logs and error messages
 
 Does **not** apply to:
+
 - the **disclaimer**, **license**, and **footer** text — these are reproduced **verbatim and
   unredacted** (explicitly allowed).
 - the unredacted raw extraction, which stays **outside tracked files** under
@@ -55,6 +57,7 @@ structure and diffing remain meaningful.
 ## Manifest
 
 Every redaction is recorded in `spec/redaction-manifest.json` with:
+
 - `artifact`: the committed file path;
 - `section` (or `line`): where in the artifact;
 - `fieldCategory`: e.g. `client_identifier.name`, `menses.cycle_day`, `ped_protocol.dose`;

@@ -15,9 +15,17 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
     env: {
-      // Phase B0 prototype is development-only; enable it for the test server.
-      // A normal production build leaves this unset and /daily returns 404.
+      // Development-only viewers are enabled for the test server only.
+      // A normal production build leaves these unset and the routes return 404.
       ENABLE_DAILY_PROTOTYPE: "1",
+      ENABLE_SHEET_VIEWER: "1",
+      // Deterministic test-only secret (NOT a real credential). CI/local may
+      // override AUTH_SECRET; the fallback keeps the suite self-contained.
+      AUTH_SECRET:
+        process.env.AUTH_SECRET ?? "test-only-auth-secret-not-for-production",
+      DATABASE_URL:
+        process.env.DATABASE_URL ??
+        "postgresql://app:app_dev_password@127.0.0.1:5433/app_dev?schema=public",
     },
   },
 });

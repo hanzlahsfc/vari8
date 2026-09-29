@@ -1,5 +1,9 @@
 import type { ClassDeclarations } from "./css";
-import type { ExtractionCell, ThemeArtifact, ThemeCombination } from "./contracts";
+import type {
+  ExtractionCell,
+  ThemeArtifact,
+  ThemeCombination,
+} from "./contracts";
 
 /** Minimal per-sheet input needed to aggregate theme combinations. */
 export type SheetClasses = {
@@ -27,17 +31,28 @@ export function buildThemeArtifact(sheets: SheetClasses[]): ThemeArtifact {
 
   for (const sheet of sheets) {
     for (const cell of sheet.cells) {
-      const tokens = (cell.class ?? "").split(/\s+/).filter((token) => token.length > 0);
-      const token = tokens.find((candidate) => sheet.classes[candidate] !== undefined);
+      const tokens = (cell.class ?? "")
+        .split(/\s+/)
+        .filter((token) => token.length > 0);
+      const token = tokens.find(
+        (candidate) => sheet.classes[candidate] !== undefined,
+      );
       if (token === undefined) continue;
       const declarations = sheet.classes[token];
       const background = declarations["background-color"] ?? null;
       const text = declarations["color"] ?? null;
-      const border = declarations["border-bottom"] ?? declarations["border"] ?? null;
+      const border =
+        declarations["border-bottom"] ?? declarations["border"] ?? null;
       const font = declarations["font-family"] ?? null;
       const key = JSON.stringify([background, text, border, font]);
-      const entry =
-        combinations.get(key) ?? { background, text, border, font, sheets: new Set<string>(), count: 0 };
+      const entry = combinations.get(key) ?? {
+        background,
+        text,
+        border,
+        font,
+        sheets: new Set<string>(),
+        count: 0,
+      };
       entry.count += 1;
       entry.sheets.add(sheet.slug);
       combinations.set(key, entry);

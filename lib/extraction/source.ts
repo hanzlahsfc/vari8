@@ -2,7 +2,11 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
 
-import { EXPECTED_SHEETS, type ExpectedSheet, slugifySheetFileName } from "./contracts";
+import {
+  EXPECTED_SHEETS,
+  type ExpectedSheet,
+  slugifySheetFileName,
+} from "./contracts";
 
 /**
  * Source handling for the sheet extractor (Phase 7).
@@ -48,7 +52,10 @@ export type ValidatedSource = {
  * directory, inside the repo). Missing/unexpected *files* are reported in the
  * result so the caller can surface them instead of silently skipping a sheet.
  */
-export function validateSheetsSourceDir(dir: string, repoRoot: string): ValidatedSource {
+export function validateSheetsSourceDir(
+  dir: string,
+  repoRoot: string,
+): ValidatedSource {
   const resolved = resolve(dir);
 
   if (isInsideRepo(resolved, repoRoot)) {
@@ -58,10 +65,14 @@ export function validateSheetsSourceDir(dir: string, repoRoot: string): Validate
     );
   }
   if (!existsSync(resolved)) {
-    throw new SourceConfigError(`SHEETS_SOURCE_DIR does not exist: ${resolved}`);
+    throw new SourceConfigError(
+      `SHEETS_SOURCE_DIR does not exist: ${resolved}`,
+    );
   }
   if (!statSync(resolved).isDirectory()) {
-    throw new SourceConfigError(`SHEETS_SOURCE_DIR is not a directory: ${resolved}`);
+    throw new SourceConfigError(
+      `SHEETS_SOURCE_DIR is not a directory: ${resolved}`,
+    );
   }
 
   const present = new Set(
@@ -84,7 +95,9 @@ export function validateSheetsSourceDir(dir: string, repoRoot: string): Validate
   // Anything left over does not match an expected export file name: report it
   // (never silently skip). Detection is by original filename, so a
   // differently-named file that slugs to a known value is still surfaced.
-  const unexpected = [...new Set([...present].map((name) => slugifySheetFileName(name)))].sort();
+  const unexpected = [
+    ...new Set([...present].map((name) => slugifySheetFileName(name))),
+  ].sort();
 
   return { dir: resolved, sheets, missing, unexpected };
 }
@@ -107,9 +120,8 @@ export function isPathGitIgnored(target: string, cwd: string): boolean {
  * git-ignored. Throws otherwise.
  */
 export function assertRawDirIsIgnored(rawDir: string, repoRoot: string): void {
-  const candidate = (isAbsolute(rawDir)
-    ? relative(resolve(repoRoot), resolve(rawDir))
-    : rawDir
+  const candidate = (
+    isAbsolute(rawDir) ? relative(resolve(repoRoot), resolve(rawDir)) : rawDir
   ).replace(/\/+$/, "");
   // Check the directory itself and a sentinel child: a directory-only ignore
   // rule (e.g. "/.local-raw/") does not match a bare, non-existent dir name.

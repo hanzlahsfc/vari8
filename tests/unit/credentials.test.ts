@@ -20,7 +20,11 @@ describe("authorizeCredentials", () => {
       { email: "user@example.com", password: "right-password" },
       lookup,
     );
-    expect(result).toEqual({ id: "u1", email: "user@example.com", name: "Test User" });
+    expect(result).toEqual({
+      id: "u1",
+      email: "user@example.com",
+      name: "Test User",
+    });
     expect(result).not.toHaveProperty("passwordHash");
   });
 
@@ -58,9 +62,18 @@ describe("authorizeCredentials", () => {
   it("returns null without calling the lookup when fields are missing", async () => {
     const spy = vi.fn(lookup);
     expect(await authorizeCredentials(undefined, spy)).toBeNull();
-    expect(await authorizeCredentials({ email: "", password: "x" }, spy)).toBeNull();
-    expect(await authorizeCredentials({ email: "user@example.com" }, spy)).toBeNull();
-    expect(await authorizeCredentials({ email: "user@example.com", password: 123 }, spy)).toBeNull();
+    expect(
+      await authorizeCredentials({ email: "", password: "x" }, spy),
+    ).toBeNull();
+    expect(
+      await authorizeCredentials({ email: "user@example.com" }, spy),
+    ).toBeNull();
+    expect(
+      await authorizeCredentials(
+        { email: "user@example.com", password: 123 },
+        spy,
+      ),
+    ).toBeNull();
     expect(spy).not.toHaveBeenCalled();
   });
 });

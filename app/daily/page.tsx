@@ -24,8 +24,9 @@ export default function DailyPrototypePage() {
         <strong>not saved</strong> and disappear on refresh.
       </p>
       <p className="app-lede">
-        Source-backed fields only. Computed columns show <code>{TODO_MARKER}</code> and are not
-        calculated. E2/PROG, PED/HRT, coach notes, targets, calories and averages are excluded.
+        Source-backed fields only. Computed columns show{" "}
+        <code>{TODO_MARKER}</code> and are not calculated. E2/PROG, PED/HRT,
+        coach notes, targets, calories and averages are excluded.
       </p>
       <DailyTrackerPrototype />
     </main>

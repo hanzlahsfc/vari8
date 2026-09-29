@@ -1,9 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import type { ExtractionCell } from "../../lib/extraction/contracts";
-import { isSafeCellText, redactSheet, safeLabelSet, sortRedactions } from "../../lib/extraction/redact";
+import {
+  isSafeCellText,
+  redactSheet,
+  safeLabelSet,
+  sortRedactions,
+} from "../../lib/extraction/redact";
 
-function cell(row: number, col: number, text: string, extra: Partial<ExtractionCell> = {}): ExtractionCell {
+function cell(
+  row: number,
+  col: number,
+  text: string,
+  extra: Partial<ExtractionCell> = {},
+): ExtractionCell {
   return { row, col, rowSpan: 1, colSpan: 1, class: "s1", text, ...extra };
 }
 
@@ -23,8 +33,16 @@ const CELLS: ExtractionCell[] = [
 ];
 
 describe("redactSheet", () => {
-  const result = redactSheet("daily-tracker", "DAILY TRACKER.html", CELLS, {}, []);
-  const byKey = new Map(result.artifact.cells.map((c) => [`${c.row}:${c.col}`, c]));
+  const result = redactSheet(
+    "daily-tracker",
+    "DAILY TRACKER.html",
+    CELLS,
+    {},
+    [],
+  );
+  const byKey = new Map(
+    result.artifact.cells.map((c) => [`${c.row}:${c.col}`, c]),
+  );
 
   it("redacts person-specific values and replaces text with the placeholder", () => {
     expect(byKey.get("4:3")?.text).toBe("[REDACTED:client.daily-entry]");
@@ -39,7 +57,13 @@ describe("redactSheet", () => {
   });
 
   it("preserves coordinates, spans, class, empty cells, and checkbox state", () => {
-    expect(byKey.get("4:3")).toMatchObject({ row: 4, col: 3, rowSpan: 1, colSpan: 1, class: "s1" });
+    expect(byKey.get("4:3")).toMatchObject({
+      row: 4,
+      col: 3,
+      rowSpan: 1,
+      colSpan: 1,
+      class: "s1",
+    });
     expect(byKey.get("7:3")).toMatchObject({ text: "", rowSpan: 2 });
     expect(byKey.get("9:3")).toMatchObject({ text: "", checkbox: "checked" });
   });
@@ -59,13 +83,22 @@ describe("redactSheet", () => {
       expect(entry.placeholder).toMatch(/^\[REDACTED:/);
       expect(entry.cell?.row).toBeGreaterThan(0);
       expect(Object.keys(entry).sort()).toEqual(
-        ["artifact", "cell", "fieldCategory", "placeholder", "reason", "sheet"].sort(),
+        [
+          "artifact",
+          "cell",
+          "fieldCategory",
+          "placeholder",
+          "reason",
+          "sheet",
+        ].sort(),
       );
     }
   });
 
   it("records a TODO(product) for the fail-closed policy", () => {
-    expect(result.artifact.todos.some((t) => t.startsWith("TODO(product)"))).toBe(true);
+    expect(
+      result.artifact.todos.some((t) => t.startsWith("TODO(product)")),
+    ).toBe(true);
   });
 });
 
@@ -104,28 +137,56 @@ describe("isSafeCellText", () => {
   it("keeps safe labels, patterns, and product copy", () => {
     expect(isSafeCellText("dashboard", "CURRENT WEEK", labels)).toBe(true);
     expect(isSafeCellText("dashboard", "WEEK 11", labels)).toBe(true);
-    expect(isSafeCellText("dashboard", "© 2026 INFINITYCRE8", labels)).toBe(true);
+    expect(isSafeCellText("dashboard", "© 2026 INFINITYCRE8", labels)).toBe(
+      true,
+    );
   });
 
   it("fails closed for ambiguous client text and contacts", () => {
     expect(isSafeCellText("dashboard", "felt tired today", labels)).toBe(false);
-    expect(isSafeCellText("dashboard", "vendor@example.com", labels)).toBe(false);
+    expect(isSafeCellText("dashboard", "vendor@example.com", labels)).toBe(
+      false,
+    );
   });
 
   it("treats reference databases as safe but still blocks contacts", () => {
-    expect(isSafeCellText("nutrition-database", "Chicken Breast", new Set())).toBe(true);
-    expect(isSafeCellText("nutrition-database", "a@b.com", new Set())).toBe(false);
+    expect(
+      isSafeCellText("nutrition-database", "Chicken Breast", new Set()),
+    ).toBe(true);
+    expect(isSafeCellText("nutrition-database", "a@b.com", new Set())).toBe(
+      false,
+    );
   });
 });
 
 describe("sortRedactions", () => {
   it("orders deterministically by artifact, row, col, category", () => {
     const sorted = sortRedactions([
-      { artifact: "spec/sheets/b.json", cell: { row: 2, col: 1 }, fieldCategory: "c", placeholder: "p", reason: "r" },
-      { artifact: "spec/sheets/a.json", cell: { row: 5, col: 1 }, fieldCategory: "c", placeholder: "p", reason: "r" },
-      { artifact: "spec/sheets/a.json", cell: { row: 1, col: 2 }, fieldCategory: "c", placeholder: "p", reason: "r" },
+      {
+        artifact: "spec/sheets/b.json",
+        cell: { row: 2, col: 1 },
+        fieldCategory: "c",
+        placeholder: "p",
+        reason: "r",
+      },
+      {
+        artifact: "spec/sheets/a.json",
+        cell: { row: 5, col: 1 },
+        fieldCategory: "c",
+        placeholder: "p",
+        reason: "r",
+      },
+      {
+        artifact: "spec/sheets/a.json",
+        cell: { row: 1, col: 2 },
+        fieldCategory: "c",
+        placeholder: "p",
+        reason: "r",
+      },
     ]);
-    expect(sorted.map((e) => `${e.artifact}:${e.cell?.row}:${e.cell?.col}`)).toEqual([
+    expect(
+      sorted.map((e) => `${e.artifact}:${e.cell?.row}:${e.cell?.col}`),
+    ).toEqual([
       "spec/sheets/a.json:1:2",
       "spec/sheets/a.json:5:1",
       "spec/sheets/b.json:2:1",

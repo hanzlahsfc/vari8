@@ -36,8 +36,14 @@ export function parseCssDeclarations(
     for (const rawSelector of match[1].split(",")) {
       // Use the subject compound (the last one before a combinator) so scoped
       // rules like ".ritz .waffle .s25" and "td.s25" resolve to "s25".
-      const lastCompound = rawSelector.trim().split(/[\s>+~]+/).pop() ?? "";
-      const classes = [...lastCompound.matchAll(/\.([A-Za-z0-9_-]+)/g)].map((m) => m[1]);
+      const lastCompound =
+        rawSelector
+          .trim()
+          .split(/[\s>+~]+/)
+          .pop() ?? "";
+      const classes = [...lastCompound.matchAll(/\.([A-Za-z0-9_-]+)/g)].map(
+        (m) => m[1],
+      );
       for (const name of classes) {
         if (wanted && !wanted.has(name)) continue;
         result[name] = { ...(result[name] ?? {}), ...declarations };

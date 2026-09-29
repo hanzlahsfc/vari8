@@ -4,7 +4,10 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { extractExercises, extractFoods } from "../../lib/extraction/databases";
-import type { ExerciseExtraction, FoodExtraction } from "../../lib/extraction/databases";
+import type {
+  ExerciseExtraction,
+  FoodExtraction,
+} from "../../lib/extraction/databases";
 import { DEFAULT_SHEETS_SOURCE_DIR } from "../../lib/extraction/source";
 
 const SOURCE_EXISTS = existsSync(DEFAULT_SHEETS_SOURCE_DIR);
@@ -12,9 +15,17 @@ let foods: FoodExtraction;
 let exercises: ExerciseExtraction;
 
 beforeAll(() => {
-  foods = extractFoods(readFileSync(join(DEFAULT_SHEETS_SOURCE_DIR, "Nutrition Database.html"), "utf8"));
+  foods = extractFoods(
+    readFileSync(
+      join(DEFAULT_SHEETS_SOURCE_DIR, "Nutrition Database.html"),
+      "utf8",
+    ),
+  );
   exercises = extractExercises(
-    readFileSync(join(DEFAULT_SHEETS_SOURCE_DIR, "Exercise Database.html"), "utf8"),
+    readFileSync(
+      join(DEFAULT_SHEETS_SOURCE_DIR, "Exercise Database.html"),
+      "utf8",
+    ),
   );
 }, 120_000);
 
@@ -38,11 +49,17 @@ describe.skipIf(!SOURCE_EXISTS)("real database extraction", () => {
   });
 
   it("has non-empty identity fields and preserved empties", () => {
-    expect(foods.records.every((r) => /^\d+$/.test(r.no) && r.food !== "")).toBe(true);
-    expect(exercises.records.every((r) => /^\d+$/.test(r.id) && r.name !== "")).toBe(true);
+    expect(
+      foods.records.every((r) => /^\d+$/.test(r.no) && r.food !== ""),
+    ).toBe(true);
+    expect(
+      exercises.records.every((r) => /^\d+$/.test(r.id) && r.name !== ""),
+    ).toBe(true);
     // empty fields stay empty strings, never fabricated
     expect(foods.records.some((r) => r.category === "")).toBe(true);
-    expect(exercises.records.some((r) => r.additionalTargets === "")).toBe(true);
+    expect(exercises.records.some((r) => r.additionalTargets === "")).toBe(
+      true,
+    );
   });
 
   it("normalizes comma decimals additively without altering source text", () => {
@@ -64,7 +81,12 @@ describe.skipIf(!SOURCE_EXISTS)("real database extraction", () => {
   });
 
   it("is deterministic", () => {
-    const html = readFileSync(join(DEFAULT_SHEETS_SOURCE_DIR, "Nutrition Database.html"), "utf8");
-    expect(JSON.stringify(extractFoods(html))).toBe(JSON.stringify(extractFoods(html)));
+    const html = readFileSync(
+      join(DEFAULT_SHEETS_SOURCE_DIR, "Nutrition Database.html"),
+      "utf8",
+    );
+    expect(JSON.stringify(extractFoods(html))).toBe(
+      JSON.stringify(extractFoods(html)),
+    );
   });
 });

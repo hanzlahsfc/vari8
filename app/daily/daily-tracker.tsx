@@ -27,7 +27,12 @@ function FieldInput({
   onChange: (value: string) => void;
 }) {
   const label = field.unit ? `${field.label} (${field.unit})` : field.label;
-  const common = { id: `f-${field.key}`, className: "auth-input", value, onChange: (e: { target: { value: string } }) => onChange(e.target.value) };
+  const common = {
+    id: `f-${field.key}`,
+    className: "auth-input",
+    value,
+    onChange: (e: { target: { value: string } }) => onChange(e.target.value),
+  };
 
   return (
     <label className="daily-field" htmlFor={`f-${field.key}`}>
@@ -46,7 +51,15 @@ function FieldInput({
       ) : (
         <input
           {...common}
-          type={field.type === "number" ? "number" : field.type === "time" ? "time" : field.type === "date" ? "date" : "text"}
+          type={
+            field.type === "number"
+              ? "number"
+              : field.type === "time"
+                ? "time"
+                : field.type === "date"
+                  ? "date"
+                  : "text"
+          }
           min={field.min}
           max={field.max}
         />
@@ -58,7 +71,9 @@ function FieldInput({
 export function DailyTrackerPrototype() {
   const [values, setValues] = useState<Values>(emptyValues);
   const [entries, setEntries] = useState<Record<string, Values>>({});
-  const [errors, setErrors] = useState<{ field: string; message: string }[]>([]);
+  const [errors, setErrors] = useState<{ field: string; message: string }[]>(
+    [],
+  );
 
   function setField(key: string, value: string) {
     setValues((current) => ({ ...current, [key]: value }));
@@ -87,14 +102,16 @@ export function DailyTrackerPrototype() {
           <fieldset key={group} className="daily-group">
             <legend>{group}</legend>
             <div className="daily-grid">
-              {DAILY_FIELDS.filter((field) => field.group === group).map((field) => (
-                <FieldInput
-                  key={field.key}
-                  field={field}
-                  value={values[field.key] ?? ""}
-                  onChange={(value) => setField(field.key, value)}
-                />
-              ))}
+              {DAILY_FIELDS.filter((field) => field.group === group).map(
+                (field) => (
+                  <FieldInput
+                    key={field.key}
+                    field={field}
+                    value={values[field.key] ?? ""}
+                    onChange={(value) => setField(field.key, value)}
+                  />
+                ),
+              )}
             </div>
           </fieldset>
         ))}
@@ -126,15 +143,23 @@ export function DailyTrackerPrototype() {
 
       <h2 className="app-title">Week view (in memory)</h2>
       {rows.length === 0 ? (
-        <p className="app-lede">No entries yet. Add a day above — nothing is saved.</p>
+        <p className="app-lede">
+          No entries yet. Add a day above — nothing is saved.
+        </p>
       ) : (
-        <div className="library-scroll" role="region" aria-label="In-memory week view">
+        <div
+          className="library-scroll"
+          role="region"
+          aria-label="In-memory week view"
+        >
           <table className="library-table">
             <thead>
               <tr>
                 {DAILY_FIELDS.map((field) => (
                   <th key={field.key} scope="col">
-                    {field.unit ? `${field.label} (${field.unit})` : field.label}
+                    {field.unit
+                      ? `${field.label} (${field.unit})`
+                      : field.label}
                   </th>
                 ))}
                 {COMPUTED_COLUMNS.map((column) => (

@@ -41,10 +41,11 @@ function contrast(a: string, b: string): number {
 }
 
 function filesUnder(dir: string): string[] {
-  return readdirSync(join(ROOT, dir), { withFileTypes: true }).flatMap((entry) =>
-    entry.isDirectory()
-      ? filesUnder(join(dir, entry.name))
-      : [join(dir, entry.name)],
+  return readdirSync(join(ROOT, dir), { withFileTypes: true }).flatMap(
+    (entry) =>
+      entry.isDirectory()
+        ? filesUnder(join(dir, entry.name))
+        : [join(dir, entry.name)],
   );
 }
 
@@ -74,7 +75,9 @@ describe("pro-white theme", () => {
   });
 
   it("is a distinct light theme", () => {
-    expect(tokenValue(PRO_WHITE, "color-base")).not.toBe(tokenValue(PRO_DARK, "color-base"));
+    expect(tokenValue(PRO_WHITE, "color-base")).not.toBe(
+      tokenValue(PRO_DARK, "color-base"),
+    );
     expect(luminance(tokenValue(PRO_WHITE, "color-base"))).toBeGreaterThan(0.7);
     expect(luminance(tokenValue(PRO_DARK, "color-base"))).toBeLessThan(0.1);
   });
@@ -82,9 +85,15 @@ describe("pro-white theme", () => {
   it("meets WCAG AA contrast for body text and success", () => {
     for (const css of [PRO_DARK, PRO_WHITE]) {
       const base = tokenValue(css, "color-base");
-      expect(contrast(tokenValue(css, "color-text-primary"), base)).toBeGreaterThanOrEqual(4.5);
-      expect(contrast(tokenValue(css, "color-text-secondary"), base)).toBeGreaterThanOrEqual(4.5);
-      expect(contrast(tokenValue(css, "color-success"), base)).toBeGreaterThanOrEqual(4.5);
+      expect(
+        contrast(tokenValue(css, "color-text-primary"), base),
+      ).toBeGreaterThanOrEqual(4.5);
+      expect(
+        contrast(tokenValue(css, "color-text-secondary"), base),
+      ).toBeGreaterThanOrEqual(4.5);
+      expect(
+        contrast(tokenValue(css, "color-success"), base),
+      ).toBeGreaterThanOrEqual(4.5);
     }
   });
 });
@@ -100,7 +109,9 @@ describe("theme application", () => {
     expect(appFiles.length).toBeGreaterThan(0);
     for (const file of appFiles) {
       const content = readFileSync(join(ROOT, file), "utf8");
-      expect(HEX.test(content), `${file} contains a hard-coded hex color`).toBe(false);
+      expect(HEX.test(content), `${file} contains a hard-coded hex color`).toBe(
+        false,
+      );
       HEX.lastIndex = 0;
     }
   });

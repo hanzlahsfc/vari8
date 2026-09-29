@@ -46,7 +46,9 @@ describe("committed reference artifacts", () => {
 describe("committed sheet artifacts", () => {
   it("summarises safe section labels", () => {
     const summary = getSheetSummary("daily-tracker");
-    expect(summary.sections.some((section) => section.label === "BODYWEIGHT")).toBe(true);
+    expect(
+      summary.sections.some((section) => section.label === "BODYWEIGHT"),
+    ).toBe(true);
   });
 
   it("builds a sparse grid that distinguishes redacted from empty", () => {

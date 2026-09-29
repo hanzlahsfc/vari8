@@ -41,10 +41,20 @@ export async function hashPassword(password: string): Promise<string> {
   }
   const salt = randomBytes(SALT_LENGTH);
   const hash = await derive(password, salt, KEY_LENGTH, { N, r: R, p: P });
-  return [PREFIX, N, R, P, salt.toString("base64"), hash.toString("base64")].join("$");
+  return [
+    PREFIX,
+    N,
+    R,
+    P,
+    salt.toString("base64"),
+    hash.toString("base64"),
+  ].join("$");
 }
 
-export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+export async function verifyPassword(
+  password: string,
+  stored: string,
+): Promise<boolean> {
   if (typeof password !== "string" || typeof stored !== "string") return false;
   const parts = stored.split("$");
   if (parts.length !== 6 || parts[0] !== PREFIX) return false;
@@ -52,7 +62,8 @@ export async function verifyPassword(password: string, stored: string): Promise<
   const n = Number(parts[1]);
   const r = Number(parts[2]);
   const p = Number(parts[3]);
-  if (![n, r, p].every((value) => Number.isInteger(value) && value > 0)) return false;
+  if (![n, r, p].every((value) => Number.isInteger(value) && value > 0))
+    return false;
 
   let salt: Buffer;
   let expected: Buffer;
@@ -65,8 +76,14 @@ export async function verifyPassword(password: string, stored: string): Promise<
   if (salt.length === 0 || expected.length === 0) return false;
 
   try {
-    const actual = await derive(password, salt, expected.length, { N: n, r, p });
-    return actual.length === expected.length && timingSafeEqual(actual, expected);
+    const actual = await derive(password, salt, expected.length, {
+      N: n,
+      r,
+      p,
+    });
+    return (
+      actual.length === expected.length && timingSafeEqual(actual, expected)
+    );
   } catch {
     return false;
   }

@@ -2,7 +2,11 @@ import * as cheerio from "cheerio";
 import type { AnyNode } from "domhandler";
 
 import type { ExtractionCell } from "./contracts";
-import { parseCssDeclarations, pickClasses, type ClassDeclarations } from "./css";
+import {
+  parseCssDeclarations,
+  pickClasses,
+  type ClassDeclarations,
+} from "./css";
 import { normalizeNumeric } from "./normalize";
 
 export type ParsedSheet = {
@@ -25,7 +29,11 @@ export type ParsedSheet = {
  *   unrecognised/conflicting SVG state becomes a `TODO(product)` note.
  */
 
-const SKIP_CLASS_MARKERS = ["freezebar", "row-header", "column-headers-background"];
+const SKIP_CLASS_MARKERS = [
+  "freezebar",
+  "row-header",
+  "column-headers-background",
+];
 const CHECKED_HREF = "#checked-checkbox-id";
 const UNCHECKED_HREF = "#unchecked-checkbox-id";
 const TODO_CONFLICT = "TODO(product): conflicting checkbox states in one cell";
@@ -55,11 +63,13 @@ export function parseSheetHtml(
   const $ = cheerio.load(html);
   const table = $("table.waffle").first();
   if (table.length === 0) {
-    throw new Error("parseSheetHtml: no <table class=\"waffle\"> found");
+    throw new Error('parseSheetHtml: no <table class="waffle"> found');
   }
 
   const tbody = table.children("tbody");
-  const rowElements = (tbody.length > 0 ? tbody : table).children("tr").toArray();
+  const rowElements = (tbody.length > 0 ? tbody : table)
+    .children("tr")
+    .toArray();
 
   const occupied = new Set<string>();
   const cells: ExtractionCell[] = [];
@@ -69,7 +79,9 @@ export function parseSheetHtml(
 
   for (const rowElement of rowElements) {
     const cellElements = $(rowElement).children("td, th").toArray();
-    const hasDataCell = cellElements.some((el) => (el as { tagName?: string }).tagName?.toLowerCase() === "td");
+    const hasDataCell = cellElements.some(
+      (el) => (el as { tagName?: string }).tagName?.toLowerCase() === "td",
+    );
     if (!hasDataCell) continue; // column-header / chrome row
 
     dataRow += 1;
@@ -133,7 +145,9 @@ export function parseSheetHtml(
     .map((el) => $(el).text())
     .join("\n");
   const inlineClasses = parseCssDeclarations(inlineCss, usedClasses);
-  const base = options.baseClasses ? pickClasses(options.baseClasses, usedClasses) : {};
+  const base = options.baseClasses
+    ? pickClasses(options.baseClasses, usedClasses)
+    : {};
 
   return {
     cells,

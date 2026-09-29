@@ -6,13 +6,13 @@ non-writing dry-run; parsing and artifact emission begin in Phase 8.
 
 ## Source handling
 
-| Rule | Behavior |
-|---|---|
-| Source directory | `SHEETS_SOURCE_DIR`, defaulting to `/Users/apple/Downloads/PRGRSS 2.0 extracted/Copy of PRGRSS 2.0` (a trailing slash is normalized) |
-| Override | Any non-empty `SHEETS_SOURCE_DIR` env var wins |
-| Location | Must exist, be a directory, and be **outside the repository** — otherwise fail clearly (`SourceConfigError`) |
-| Sheet coverage | All 11 expected exports must be present; missing files are reported and the run aborts, never silently skipped; unexpected `.html` files are reported |
-| Writes | The extractor never writes into the source directory |
+| Rule             | Behavior                                                                                                                                              |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Source directory | `SHEETS_SOURCE_DIR`, defaulting to `/Users/apple/Downloads/PRGRSS 2.0 extracted/Copy of PRGRSS 2.0` (a trailing slash is normalized)                  |
+| Override         | Any non-empty `SHEETS_SOURCE_DIR` env var wins                                                                                                        |
+| Location         | Must exist, be a directory, and be **outside the repository** — otherwise fail clearly (`SourceConfigError`)                                          |
+| Sheet coverage   | All 11 expected exports must be present; missing files are reported and the run aborts, never silently skipped; unexpected `.html` files are reported |
+| Writes           | The extractor never writes into the source directory                                                                                                  |
 
 Raw/unredacted output is **opt-in** via `RAW_EXTRACTION_DIR`, must be git-ignored, and the
 extractor fails closed (`git check-ignore`) otherwise.
@@ -23,33 +23,33 @@ Deterministic mapping from file name to slug: trim, drop the `.html` extension, 
 and collapse every run of non-alphanumeric characters to a single hyphen
 (`slugifySheetFileName`).
 
-| File | Slug |
-|---|---|
-| `DAILY TRACKER.html` | `daily-tracker` |
-| `DASHBOARD.html` | `dashboard` |
-| `TIMELINE.html` | `timeline` |
-| `MEALPLAN.html` | `mealplan` |
-| `SUPPLEMENTATION.html` | `supplementation` |
-| `MENSES.html` | `menses` |
-| `TRAINING.html` | `training` |
-| `PEAKING.html` | `peaking` |
-| `SHOWDAY.html` | `showday` |
-| `Exercise Database.html` | `exercise-database` |
+| File                      | Slug                 |
+| ------------------------- | -------------------- |
+| `DAILY TRACKER.html`      | `daily-tracker`      |
+| `DASHBOARD.html`          | `dashboard`          |
+| `TIMELINE.html`           | `timeline`           |
+| `MEALPLAN.html`           | `mealplan`           |
+| `SUPPLEMENTATION.html`    | `supplementation`    |
+| `MENSES.html`             | `menses`             |
+| `TRAINING.html`           | `training`           |
+| `PEAKING.html`            | `peaking`            |
+| `SHOWDAY.html`            | `showday`            |
+| `Exercise Database.html`  | `exercise-database`  |
 | `Nutrition Database.html` | `nutrition-database` |
 
 ## `spec/sheets/<slug>.json` — cell artifact
 
 ```ts
 type ExtractionCell = {
-  row: number;      // 1-based, top-left anchor
-  col: number;      // 1-based, top-left anchor
+  row: number; // 1-based, top-left anchor
+  col: number; // 1-based, top-left anchor
   rowSpan: number;
   colSpan: number;
-  class: string | null;            // source class attribute, or null
-  text: string;                    // original text, preserved exactly
-  normalized?: number;             // additive; ONLY when unambiguously numeric
+  class: string | null; // source class attribute, or null
+  text: string; // original text, preserved exactly
+  normalized?: number; // additive; ONLY when unambiguously numeric
   checkbox?: "checked" | "unchecked"; // ONLY when reliably derived from SVG markup
-  todo?: string;                   // e.g. "TODO(product): ambiguous checkbox state"
+  todo?: string; // e.g. "TODO(product): ambiguous checkbox state"
 };
 
 type SheetArtifact = {
@@ -62,6 +62,7 @@ type SheetArtifact = {
 ```
 
 Rules:
+
 - **1-based** coordinates.
 - **Merged cells:** a merged region is represented **once**, at its top-left anchor, with
   its `rowSpan`/`colSpan`. No cells are fabricated for the covered area; blank areas stay
@@ -118,10 +119,10 @@ the real header labels, not assumed.
 
 - `foods.json` — `{ version, sourceFile, count, skippedNumberedRows, records }` where each
   record is `{ no, food, amount, unit, calories, protein, carbs, fats, state, category,
-  normalized?, sourceRow }`.
+normalized?, sourceRow }`.
 - `exercises.json` — `{ version, sourceFile, count, records }` where each record is
   `{ id, name, muscleGroup, primaryTarget, additionalTargets, equipment, movementPattern,
-  positionSetup, cues, videoLink, sourceRow }`.
+positionSetup, cues, videoLink, sourceRow }`.
 
 Rules: source text preserved exactly (German commas included) with additive `normalized`
 only when unambiguous; empty fields preserved as `""` (never fabricated); records keep

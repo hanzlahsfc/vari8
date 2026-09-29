@@ -103,9 +103,9 @@ describe("extractExercises", () => {
 
 describe("header handling", () => {
   it("throws clearly when the header row is missing", () => {
-    expect(() => extractFoods("<table class=\"waffle\"><tr><td>x</td></tr></table>")).toThrow(
-      /header/i,
-    );
+    expect(() =>
+      extractFoods('<table class="waffle"><tr><td>x</td></tr></table>'),
+    ).toThrow(/header/i);
   });
 
   it("maps by header label, not column position", () => {

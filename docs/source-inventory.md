@@ -26,10 +26,10 @@ artifact only).
 
 **Row counts vs. requirements claims (material gap):**
 
-| Claimed | Export contains |
-|---|---|
-| ~990 exercises | **546** data rows (IDs 1–546), data ends at sheet row 549 |
-| ~1,170 foods | **599** foods (rows 4–602); rows 603+ are numbered but empty |
+| Claimed        | Export contains                                              |
+| -------------- | ------------------------------------------------------------ |
+| ~990 exercises | **546** data rows (IDs 1–546), data ends at sheet row 549    |
+| ~1,170 foods   | **599** foods (rows 4–602); rows 603+ are numbered but empty |
 
 Either the xlsx genuinely holds ~half the claimed data, or rows were hidden/filtered at
 export time. **The original `Copy of PRGRSS 2.0.xlsx` is required** to resolve this and to
@@ -39,6 +39,7 @@ recover formulas/validation. It is not currently available. Tracked as `TODO(pro
 ## Sheet-by-sheet inventory
 
 ### DASHBOARD (727 non-empty cells; mostly a fixed layout over ~45 rows)
+
 - Header strip: CURRENT WEEK (non-sensitive demo week label "WEEK 11", retained because the
   required Phase 11 test asserts it; the week range is not reproduced), CURRENT PHASE (demo
   phase label), CHECK-IN (weekday / TODAY).
@@ -54,6 +55,7 @@ recover formulas/validation. It is not currently available. Tracked as `TODO(pro
 - Mostly computed/linked cells — everything here is downstream of other sheets.
 
 ### DAILY TRACKER (11,894 non-empty cells; ~80 week blocks Mon–Sun, [REDACTED:date-range])
+
 - Repeating block: `WEEK n` header → phase label row (HOLDING/REVERSE/RECOVERY/
   PRE PREP/PREP observed) → instruction row → 7 dated day rows → `Averages` row.
 - Day columns (col index → field):
@@ -84,6 +86,7 @@ recover formulas/validation. It is not currently available. Tracked as `TODO(pro
 - Checkboxes exist (CHECK-IN column area) — rendered as SVG, state preserved.
 
 ### TIMELINE (3,617 non-empty cells; ~40 week rows)
+
 - Per-week columns: W counters (3 numbering systems: calendar wk, phase wk, total wk),
   FROM–TO dates, PHASE, ENERGY BALANCE (DEFICITE/MAINTENANCE observed), HORMON LEVELS
   (HRT/TRT+/TRT/PHYS./SUPRA labels), NOTES, COMP SETUP (show name, T-minus),
@@ -97,6 +100,7 @@ recover formulas/validation. It is not currently available. Tracked as `TODO(pro
 - Header: "NEXT SHOW — Regional x 14 Weeks out +1 more Show".
 
 ### MEALPLAN (1,390 non-empty cells; 3 side-by-side day-type tables)
+
 - OVERVIEW strip: target CALS/CHO/PRO/FAT/WATER per day type (HIGH/MEDIUM/LOW values
   [REDACTED:plan-totals] — these look like live plan sums, not the round target numbers
   seen in TIMELINE [REDACTED:prescribed-target]; flag discrepancy).
@@ -106,6 +110,7 @@ recover formulas/validation. It is not currently available. Tracked as `TODO(pro
 - Per-meal subtotal row (e.g. "C | P | F | kcal" summary format) — computed, formula lost.
 
 ### MENSES (1,202 non-empty cells; mostly dashboard)
+
 - Status strip: CURRENT CYCLE DAY ([REDACTED:cycle-day]), CURRENT PHASE
   ([REDACTED:cycle-phase]), AVG CYCLE LENGTH ([REDACTED:cycle-length]), NEXT PERIOD EST.
   ([REDACTED:date]), EST. OVULATION ([REDACTED:date]), [REDACTED:cycle-progress] progress +
@@ -118,6 +123,7 @@ recover formulas/validation. It is not currently available. Tracked as `TODO(pro
 - All derived from DAILY TRACKER cycle columns — formulas lost; estimation logic unknown.
 
 ### TRAINING (7,095 non-empty cells; widest sheet, ~452 cols)
+
 - PROGRAMMING header: name/nr, SCHEDULE 10-day rotation (DAY 1 PUSH, 2 PULL, 3 LEGS,
   4–5 rest?, 6 UPPER, 7 LOWER, 8 LEGS…), SPLIT "UPPER / LOWER", ROTATION LENGTH "10 DAYS",
   GOAL ([REDACTED:program-goal]), ADDITIONAL INFO with "MRP*1" markers (probably myo-rep notes).
@@ -129,6 +135,7 @@ recover formulas/validation. It is not currently available. Tracked as `TODO(pro
   (WT row / REP row).
 
 ### PEAKING (3,601 non-empty cells; ~52 identical week blocks)
+
 - Same week-block pattern as DAILY TRACKER but columns: DATE, NOTES, BODYWEIGHT→SETUP
   (enum TAPER/BASELINE/LOAD/DEPLETE/REFUEL/SHOW), CHECK-IN AM/PW/PM, AM WEIGHT, PM WEIGHT,
   WATER, SALT, STEPS, CARDIO, TRAINING, INTENSITY %, BIOFEEDBACK (stress, hunger only),
@@ -137,19 +144,23 @@ recover formulas/validation. It is not currently available. Tracked as `TODO(pro
 - HOW TO USE: "If water or salt is not prescribed, record actual intake."
 
 ### SHOWDAY (1,082 cells; near-empty template)
+
 - SHOW DAY INFO: NAME ([REDACTED:show-name]), DATE OF THE SHOW ([REDACTED:show-date]),
   DIVISION(S) (Fitmodel), EST. STAGE TIME (15:00), TANNING (07:00), HAIR/MAKE-UP (11:00),
   NOTES.
 - TIME / INSTRUCTIONS run-sheet table — empty in export.
 
 ### SUPPLEMENTATION (1,056 cells; near-empty template)
+
 - Columns: TIME / SUPPLEMENT / DOSAGE / STATUS; single "ACTIVE" status value shown.
 
 ### Exercise Database (4,974 cells; 546 rows)
+
 - ID, Exercise Name, Muscle Group, Primary Target, Additional Target(s), Equipment,
   Movement Pattern, Position/Setup, Coaching Notes/Cues, Video Link (sparse).
 
 ### Nutrition Database (6,796 cells; 599 rows)
+
 - NO., FOOD, AMOUNT, UNIT, CALORIES, PROTEIN, CARBS, FATS, COOKED/RAW/DRY
   (Cooked/Raw/Drained Weight), CAT (PRO/CHO/FAT/… categories).
 

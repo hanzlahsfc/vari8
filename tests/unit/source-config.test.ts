@@ -50,19 +50,23 @@ describe("assertRawDirIsIgnored", () => {
   });
 
   it("fails closed for a non-ignored destination", () => {
-    expect(() => assertRawDirIsIgnored("spec/sheets", REPO)).toThrow(SourceConfigError);
+    expect(() => assertRawDirIsIgnored("spec/sheets", REPO)).toThrow(
+      SourceConfigError,
+    );
   });
 });
 
 describe("validateSheetsSourceDir", () => {
   it("rejects a missing directory", () => {
-    expect(() => validateSheetsSourceDir("/no/such/dir/anywhere", REPO)).toThrow(
-      SourceConfigError,
-    );
+    expect(() =>
+      validateSheetsSourceDir("/no/such/dir/anywhere", REPO),
+    ).toThrow(SourceConfigError);
   });
 
   it("rejects a source directory inside the repository", () => {
-    expect(() => validateSheetsSourceDir(REPO, REPO)).toThrow(SourceConfigError);
+    expect(() => validateSheetsSourceDir(REPO, REPO)).toThrow(
+      SourceConfigError,
+    );
   });
 
   it("reports all expected sheets missing in an empty directory", () => {
@@ -88,25 +92,28 @@ describe("validateSheetsSourceDir", () => {
     }
   });
 
-  it.skipIf(!SOURCE_EXISTS)("finds all 11 sheets in the supplied folder", () => {
-    const result = validateSheetsSourceDir(DEFAULT_SHEETS_SOURCE_DIR, REPO);
-    expect(result.missing).toEqual([]);
-    expect(result.sheets).toHaveLength(11);
-    expect(result.sheets.map((sheet) => sheet.slug).sort()).toEqual(
-      [
-        "daily-tracker",
-        "dashboard",
-        "exercise-database",
-        "mealplan",
-        "menses",
-        "nutrition-database",
-        "peaking",
-        "showday",
-        "supplementation",
-        "timeline",
-        "training",
-      ].sort(),
-    );
-    expect(result.unexpected).toEqual([]);
-  });
+  it.skipIf(!SOURCE_EXISTS)(
+    "finds all 11 sheets in the supplied folder",
+    () => {
+      const result = validateSheetsSourceDir(DEFAULT_SHEETS_SOURCE_DIR, REPO);
+      expect(result.missing).toEqual([]);
+      expect(result.sheets).toHaveLength(11);
+      expect(result.sheets.map((sheet) => sheet.slug).sort()).toEqual(
+        [
+          "daily-tracker",
+          "dashboard",
+          "exercise-database",
+          "mealplan",
+          "menses",
+          "nutrition-database",
+          "peaking",
+          "showday",
+          "supplementation",
+          "timeline",
+          "training",
+        ].sort(),
+      );
+      expect(result.unexpected).toEqual([]);
+    },
+  );
 });

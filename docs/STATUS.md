@@ -4,7 +4,28 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-29 — Stage 0 (repository/process correction) — PASS (local, not pushed)
+
+- Built: root `AGENTS.md`; `docs/product-decisions.md`; corrected `docs/open-questions.md`
+  licensing wording; `docs/tasks/stage-0.md` plan; `lib/sheet-viewer.ts` dev gate for
+  `/sheets*`; `package.json` `format:check`; expanded CI (Postgres service + prisma
+  generate/validate + format/typecheck/lint/test/build/e2e); `.prettierignore` ignores
+  generated `spec/`; Playwright `webServer.env` supplies a deterministic test-only
+  `AUTH_SECRET` + `DATABASE_URL`; mechanical Prettier normalization.
+- Verified (final tree): `git diff --check` 0; `npm ci` 0; `format:check` 0; `typecheck` 0;
+  `lint` 0; `test` → 21 files / 139 tests; `npx prisma validate` 0; `build` 0;
+  `test:e2e` → 21 passed; `npm audit` → 1 (1 moderate + 4 high, no safe fix).
+- Behavioral: flags OFF → `/sheets*` 404; flags ON → `/sheets*` and `/daily` 200; invalid login
+  generic error, no crash; 390px/1440px no document overflow; no console errors.
+- Review: independent fresh-context subagent (shares the builder's model — diversity not
+  claimed), PASS with 2 non-blocking findings, both repaired.
+- Risks: audit advisories unresolved (next→16 major, prisma→6.12.0 downgrade); 99 MB cell
+  artifacts stay out of production request paths; large formatting-only diff.
+- Not pushed. Next action: prepare/review the Stage 1 multi-tenant security plan before any
+  migration.
+
 ## 2026-09-29 — Phase B0 (Daily Tracker prototype) — PASS
+
 - Built: dev-only, client-side, in-memory Daily Tracker entry prototype at `/daily`
   (`lib/daily-prototype.ts`, `app/daily/*`) with a visible "not saved" notice and
   an in-memory week view. Source-backed fields only; computed column shows `TODO(product)`.
@@ -17,6 +38,7 @@ extraction) only, not the workbook UI itself.
 - Next action: none — await decisions before Phase B1.
 
 ## 2026-09-29 — Phase A (product UI) — PASS
+
 - Built: read-only Foods/Exercises libraries (`spec/data/*.json`) and a read-only viewer for
   all 11 sheets (`spec/sheets/<slug>.json` + summaries); sparse grid rendering (empty cells not
   rendered, spans/coords preserved); redacted cells show a neutral `▨` marker; tokenized theme.
@@ -28,6 +50,7 @@ extraction) only, not the workbook UI itself.
 - Next action: await approval for Phase B (source-clear daily entry) — not started.
 
 ## 2026-09-29 — Phase 12 — PASS
+
 - Final audit: local == remote == `e6cdcb7` before the Phase 12 fix; all 11 redacted cell
   artifacts + 11 summaries + `theme.json` + `cross-sheet.md` + `spec/data/*.json` + manifest
   present and schema-valid; manifest bijective with redacted cells (20,856); 0 leaked
@@ -43,6 +66,7 @@ extraction) only, not the workbook UI itself.
 - Next action: none (awaiting direction); product roadmap is separate (see final report).
 
 ## 2026-09-29 — Phase 11 — PASS
+
 - Built: `lib/extraction/redact.ts` (fail-closed, source-aware redaction); `--redacted` mode
   in `scripts/extract-sheets.ts`; committed `spec/sheets/<slug>.json` ×11 (811,938 cells
   total) and `spec/redaction-manifest.json`. Final counts (post Phase 12 fix): 11,052 kept,
@@ -58,6 +82,7 @@ extraction) only, not the workbook UI itself.
 - Next action: Phase 12 (final verification and delivery), then the separate product roadmap.
 
 ## 2026-09-29 — Phase 10 — PASS
+
 - Built: `lib/extraction/{summaries,theme,crosssheet}.ts`; `--spec-only` mode in
   `scripts/extract-sheets.ts`; committed `spec/sheets/<slug>.summary.json` (11),
   `spec/theme.json`, `spec/cross-sheet.md`; tests for summaries/theme/cross-sheet/privacy.
@@ -70,42 +95,52 @@ extraction) only, not the workbook UI itself.
 - Next action: Phase 11 (test, determinism, privacy pass).
 
 ## 2026-09-29 — Phase 9 — PASS
+
 - Built: `lib/extraction/databases.ts`; `spec/data/foods.json` (599), `spec/data/exercises.json`
   (546); `--data-only` mode.
 - Verified: `npm run verify` → exit 0; `--data-only` twice → no diff.
 
 ## 2026-09-29 — Phase 8 — PASS
+
 - Built: `lib/extraction/{parse,css,normalize}.ts`; parse all 11 sheets; `--raw` opt-in.
 - Verified: 811,938 cells parsed; checkbox counts match markup; determinism via diff.
 
 ## 2026-09-29 — Phase 7 — PASS
+
 - Built: extraction contract (`docs/extraction-contract.md`, `lib/extraction/{contracts,source}.ts`)
   and non-writing `--dry-run`.
 
 ## 2026-09-29 — Phase 6 — PASS
+
 - Built: Docker Postgres, minimal Prisma `User` migration, Auth.js Credentials (JWT, scrypt),
   tokenized `pro-dark`/`pro-white` themes, `.env.example`, README. Part A gate passed before
   Phase 7.
 
 ## 2026-09-29 — Phase 5 — PASS
+
 - Built: Next.js 15 / React 19 / strict TS / Tailwind 4 / Vitest / Playwright / ESLint /
   Prettier scaffold; neutral "app" identity; smoke test.
 
 ## 2026-09-29 — Phase 4 — PASS
+
 - Built: redacted `docs/source-inventory.md`, `docs/reuse-assessment.md`,
   `docs/implementation-plan.md`, `docs/redaction-policy.md`, `docs/open-questions.md`,
   `spec/redaction-manifest.json`. Plan committed before code.
 
 ## 2026-09-29 — Phase 3 — PASS
+
 - Reuse/adapt/omit assessment of Prime State (technical foundation only).
 
 ## 2026-09-29 — Phase 2 — PASS
+
 - Audited 11 exports + resources; flagged PII; confirmed xlsx absent.
 
 ## 2026-09-29 — Phase 1 — PASS
+
 - Cloned the empty new repository; Prime State untouched.
 
 ## Open TODO(product) items
+
 - Missing `Copy of PRGRSS 2.0.xlsx` (formulas/validations/hidden rows unrecoverable).
 - Missing images `cellImage_2050288505_0.jpg`, `cellImage_227302925_0.jpg`.
 - Formula semantics (calories, averages, cycle estimation, T-minus, meal subtotals),

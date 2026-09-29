@@ -1,4 +1,9 @@
-import type { ExerciseRecord, ExtractionCell, FoodRecord, NormalizedMacros } from "./contracts";
+import type {
+  ExerciseRecord,
+  ExtractionCell,
+  FoodRecord,
+  NormalizedMacros,
+} from "./contracts";
 import { normalizeNumeric } from "./normalize";
 import { parseSheetHtml } from "./parse";
 
@@ -85,7 +90,8 @@ function headerIndex<Field extends string>(
 ): Map<string, Field> {
   const index = new Map<string, Field>();
   for (const field of Object.keys(aliases) as Field[]) {
-    for (const alias of aliases[field]) index.set(normalizeHeader(alias), field);
+    for (const alias of aliases[field])
+      index.set(normalizeHeader(alias), field);
   }
   return index;
 }
@@ -123,7 +129,9 @@ function valueAt(rowCells: ExtractionCell[], col: number | undefined): string {
   return cell ? cell.text : "";
 }
 
-function normalizeFields(raw: Partial<Record<string, string>>): NormalizedMacros | undefined {
+function normalizeFields(
+  raw: Partial<Record<string, string>>,
+): NormalizedMacros | undefined {
   const normalized: NormalizedMacros = {};
   let any = false;
   for (const key of ["calories", "protein", "carbs", "fats"] as const) {
@@ -149,7 +157,11 @@ export type FoodExtraction = {
 export function extractFoods(html: string): FoodExtraction {
   const { cells } = parseSheetHtml(html);
   const rows = groupByRow(cells);
-  const { row: headerRow, columns } = findHeader<FoodField>(rows, FOOD_ALIASES, ["no", "food"]);
+  const { row: headerRow, columns } = findHeader<FoodField>(
+    rows,
+    FOOD_ALIASES,
+    ["no", "food"],
+  );
 
   const missingHeaders = (Object.keys(FOOD_ALIASES) as FoodField[]).filter(
     (field) => columns[field] === undefined,
@@ -213,14 +225,15 @@ export type ExerciseExtraction = {
 export function extractExercises(html: string): ExerciseExtraction {
   const { cells } = parseSheetHtml(html);
   const rows = groupByRow(cells);
-  const { row: headerRow, columns } = findHeader<ExerciseField>(rows, EXERCISE_ALIASES, [
-    "id",
-    "name",
-  ]);
-
-  const missingHeaders = (Object.keys(EXERCISE_ALIASES) as ExerciseField[]).filter(
-    (field) => columns[field] === undefined,
+  const { row: headerRow, columns } = findHeader<ExerciseField>(
+    rows,
+    EXERCISE_ALIASES,
+    ["id", "name"],
   );
+
+  const missingHeaders = (
+    Object.keys(EXERCISE_ALIASES) as ExerciseField[]
+  ).filter((field) => columns[field] === undefined);
   const todo =
     missingHeaders.length > 0
       ? `TODO(product): source is missing column(s): ${missingHeaders.join(", ")}`

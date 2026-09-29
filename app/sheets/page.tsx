@@ -1,19 +1,24 @@
 import Link from "next/link";
 
 import { AppNav } from "@/components/app-nav";
+import { requireSheetViewer } from "@/lib/sheet-viewer";
 import { getSheetSummary, listSheets } from "@/lib/spec-artifacts";
 
-export const metadata = { title: "Workbook sheets — App" };
+// Development/reference tool only: fail closed (404) unless explicitly enabled.
+export const dynamic = "force-dynamic";
+
+export const metadata = { title: "Workbook sheets (dev) — App" };
 
 export default function SheetsIndexPage() {
+  requireSheetViewer(process.env.ENABLE_SHEET_VIEWER);
   const sheets = listSheets();
   return (
     <main className="app-main">
       <AppNav />
       <h1 className="app-title">Workbook sheets</h1>
       <p className="app-lede">
-        Read-only view of the 11 PRGRSS 2.0 sheets. Structure is reproduced from the
-        redacted extraction artifacts; client values are redacted.
+        Read-only view of the 11 PRGRSS 2.0 sheets. Structure is reproduced from
+        the redacted extraction artifacts; client values are redacted.
       </p>
       <ul className="sheet-list">
         {sheets.map((sheet) => {
@@ -25,8 +30,8 @@ export default function SheetsIndexPage() {
             <li key={sheet.slug}>
               <Link href={`/sheets/${sheet.slug}`}>{sheet.name}</Link>
               <span className="sheet-list__meta">
-                {summary.cellCount} cells · {summary.rowCount}×{summary.colCount} ·{" "}
-                {blocks || "no repeated blocks"}
+                {summary.cellCount} cells · {summary.rowCount}×
+                {summary.colCount} · {blocks || "no repeated blocks"}
               </span>
             </li>
           );
