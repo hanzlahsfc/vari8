@@ -4,6 +4,21 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-29 — Stage 1 / S1-B (authorization core) — PASS (local, not pushed)
+
+- Built: reviewed RBAC matrix (`lib/auth/rbac.ts`); default-deny, DB-resolved guard
+  (`lib/auth/guard.ts` + `AccessDeniedError`); narrow workspace-constrained Prisma adapter
+  (`lib/workspace/access.ts`); inactive-login denial. No routes/UI/consent/audit/tokens/GDPR/
+  schema.
+- Verified: `npm run test` → 158 passed (rbac 4, guard 14, credentials +inactive);
+  `npm run test:integration` → 26 passed (real PostgreSQL: S1-A 13 + S1-B 13). Full gates:
+  `git diff --check` 0; `npm ci` 0; prisma validate/generate/deploy/status 0; `format:check` 0;
+  `typecheck` 0; `lint` 0; `build` 0; `test:e2e` 21; `git diff eb33a4d -- db/` empty.
+- Review: independent fresh-context subagent (shares the builder's model — diversity not claimed)
+  PASS; one minor stale-comment finding fixed and re-checked. Mutation-proved the SUPPORT denial
+  and the workspace-scoped client query.
+- Not pushed. Next action: S1-C (client ownership & assignment services).
+
 ## 2026-09-29 — Stage 1 / S1-A (identity & multi-tenant schema) — PASS (local, not pushed)
 
 - Built: `User.platformRole`/`status` (safe defaults); `Workspace`, `WorkspaceMember`,

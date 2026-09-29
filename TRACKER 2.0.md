@@ -13,8 +13,8 @@ deployment, production-data change, or external-service change.
 - Current product name: undecided. `App`, `The-great-tracker-`, `Prime Tracker Pro`, and
   `PRGRSS 2.0` are placeholders or source names, not an approved product name.
 - Current branch: `main`
-- Current reviewed HEAD: `6d81732` (S1-A identity/multi-tenant schema, independently reviewed;
-  committed locally, **not pushed**). Last pushed `origin/main`:
+- Current reviewed HEAD: `22e3f6e` (S1-B authorization core, independently reviewed; committed
+  locally, **not pushed**). Last pushed `origin/main`:
   `f4ebac094a773d86808a8d1d442575f1dcabca6d`
 - Reference implementation: `nexuslinkproductions/PRIME-STATE-TRACKER`, branch `hanzlah`,
   reviewed at `aa59905`. Reuse applicable engineering patterns, not its product data,
@@ -127,6 +127,10 @@ threshold, health-data policy, workflow, or layout.
   same-workspace composite FKs and a single-active-primary partial index (migration
   `20260929120000_stage1_identity_tenancy`). Authorization/consent/audit/tokens/GDPR are NOT
   implemented yet.
+- **Stage 1 / S1-B authorization core:** `lib/auth/rbac.ts` (reviewed 18×6×2 matrix),
+  `lib/auth/guard.ts` (default-deny `authorize`, DB-resolved per call, typed `AccessDeniedError`),
+  `lib/workspace/access.ts` (narrow workspace-constrained Prisma adapter), and inactive-login
+  denial. Consent/audit/tokens/GDPR/routes/UI are NOT implemented yet.
 
 ### Important limitations
 
@@ -244,12 +248,13 @@ schematic/scripts arrive:
 
 ## 8. Current next action
 
-Stage 0 and the Stage 1 security plan are complete and independently reviewed. **S1-A
-(identity/multi-tenant schema) is implemented, reviewed (PASS), and committed locally at
-`6d81732`.** Next: **S1-B** (authorization core: `lib/auth/rbac.ts` + default-deny guard) — plan
-and implement it test-first against the S1-A schema. S1-B may add guard/RBAC code only; consent
-(S1-D), audit (S1-E), tokens (S1-F), GDPR (S1-G), and the workspace shell (S1-H) remain later
-slices; no health records or product UI. All local commits remain unpushed; do not push.
+Stage 0, the Stage 1 plan, S1-A (identity/tenancy schema), and S1-B (authorization core) are
+complete and independently reviewed; S1-B is committed locally at `22e3f6e`. Next: **S1-C**
+(client ownership & assignment services: read/manage `ClientProfile` and `ClientAssignment`
+through the guard, with cross-workspace/assignment tests). S1-C may add server-side client/
+assignment services only; consent (S1-D), audit (S1-E), tokens (S1-F), GDPR (S1-G), and the
+workspace shell (S1-H) remain later slices; no health records or product UI. All local commits
+remain unpushed; do not push.
 
 ## 9. Human inputs still required
 
@@ -354,6 +359,41 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-29 — Stage 1 slice S1-B: authorization core (local, not pushed)
+
+- Scope: S1-B only — RBAC matrix, DB-resolved principal, default-deny guard, workspace/client
+  scope enforcement. No client-management services/assignment mutations/consent/audit/tokens/
+  GDPR/routes/UI/schema.
+- Starting state: branch `main`, commit `eb33a4d`, `origin/main` `f4ebac0`, tree clean.
+- Plan/acceptance source: `docs/tasks/stage-1-plan.md` §3; `docs/security/authorization-model.md`.
+- Files changed: `lib/auth/rbac.ts`, `lib/auth/guard.ts`, `lib/workspace/access.ts`,
+  `lib/credentials.ts`, `auth.ts`, `tests/unit/{rbac,guard,credentials}.test.ts`,
+  `tests/integration/s1-b-authorization.test.ts`, `tests/integration/s1-a-identity.test.ts`
+  (status select + env rename), `vitest.integration.config.ts`, `.github/workflows/ci.yml`,
+  `docs/tasks/s1-b-authorization-core.md`.
+- RED evidence: new unit tests failed to import missing modules; integration suite failed
+  before the guard/adapter existed.
+- Focused verification: `npx vitest run tests/unit/{rbac,guard,credentials}.test.ts` → 0; 25
+  passed. `npm run test:integration` → 0; 26 passed (S1-A 13 + S1-B 13), real PostgreSQL.
+- Full gates: `git diff --check` 0; `npm ci` 0; `prisma validate/generate/migrate deploy/status`
+  0; `format:check` 0; `typecheck` 0; `lint` 0; `test` 158; `build` 0; `test:e2e` 21 passed;
+  `git diff eb33a4d -- db/` empty.
+- Behavioral test: S1-B adds no routes/UI; the behavioral gate is the real database-backed
+  authorization suite. No browser evidence claimed.
+- Test strength: mutation-proved (a) SUPPORT dailyTracking denied→workspace fails the matrix/
+  guard tests; (b) removing the workspace condition from the assigned-client query fails the
+  cross-workspace test. Both restored byte-for-byte and re-run green.
+- Independent review: fresh-context `general` subagent (shares the builder's model — diversity
+  not claimed) → **PASS**; one minor finding (stale env-var comment in the S1-A test) fixed and
+  re-checked.
+- Commit/push/deploy: implementation `22e3f6e`; this documentation handoff references it.
+  **Not pushed.**
+- Decisions/TODO(human): unchanged (owner/assistant cycle+bloodwork, support access, assistant
+  write scope, PED/HRT policy, consent granularity, retention, locales).
+- Known risks/blockers: authorization is application-enforced (no RLS); `not_owner`/`assigned`
+  reasons are structural and id-free; integration uses a dedicated DB.
+- Next action: implement **S1-C** (client ownership & assignment services through the guard).
 
 ### 2026-09-29 — Stage 1 slice S1-A: identity & multi-tenant schema (local, not pushed)
 
