@@ -109,13 +109,13 @@ describe.skipIf(!enabled)("S1-D versioned consent", () => {
       { client: prisma, registry: V1 },
     );
     expect(result).toEqual({ kind: "HEALTH_DATA", changed: true });
-    const rows = await readOwnConsentStatus(
+    const page = await readOwnConsentStatus(
       s(u.id),
       { workspaceId: ws.id, clientProfileId: cp.id },
       { client: prisma },
     );
     expect(
-      rows.some(
+      page.items.some(
         (r) =>
           r.kind === "HEALTH_DATA" &&
           r.version === "test-v1" &&
@@ -166,6 +166,79 @@ describe.skipIf(!enabled)("S1-D versioned consent", () => {
       if (r.status === "rejected")
         expect(r.reason).toBeInstanceOf(ConsentError);
     }
+  });
+
+  it("denies PED_HRT self-grant even when the registry supplies a version", async () => {
+    const { ws, u, cp } = await clientWithConsent();
+    await expect(
+      grantOwnConsent(
+        s(u.id),
+        { workspaceId: ws.id, clientProfileId: cp.id, kind: "PED_HRT" },
+        {
+          client: prisma,
+          registry: createStaticConsentPolicy({ PED_HRT: "test-v1" }),
+        },
+      ),
+    ).rejects.toMatchObject({ code: "ped_hrt_not_approved" });
+    expect(
+      await prisma.consentRecord.count({ where: { clientProfileId: cp.id } }),
+    ).toBe(0);
+  });
+
+  it("readOwnConsentStatus is bounded, deterministic, and cursor-paginated", async () => {
+    const { ws, u, cp } = await clientWithConsent();
+    for (const kind of [
+      "PRIVACY_NOTICE",
+      "HEALTH_DATA",
+      "CYCLE",
+      "PHOTOS",
+      "BLOODWORK",
+    ] as const) {
+      await grantOwnConsent(
+        s(u.id),
+        { workspaceId: ws.id, clientProfileId: cp.id, kind },
+        { client: prisma, registry: V1 },
+      );
+    }
+    const first = await readOwnConsentStatus(
+      s(u.id),
+      { workspaceId: ws.id, clientProfileId: cp.id, limit: 2 },
+      { client: prisma },
+    );
+    expect(first.items).toHaveLength(2);
+    expect(first.nextCursor).toBe(first.items[1].id);
+    const second = await readOwnConsentStatus(
+      s(u.id),
+      {
+        workspaceId: ws.id,
+        clientProfileId: cp.id,
+        limit: 2,
+        cursor: first.nextCursor as string,
+      },
+      { client: prisma },
+    );
+    expect(second.items).toHaveLength(2);
+    const ids = [...first.items, ...second.items].map((r) => r.id);
+    expect(new Set(ids).size).toBe(4);
+    expect([...ids].sort()).toEqual(ids);
+    const third = await readOwnConsentStatus(
+      s(u.id),
+      {
+        workspaceId: ws.id,
+        clientProfileId: cp.id,
+        limit: 2,
+        cursor: second.nextCursor as string,
+      },
+      { client: prisma },
+    );
+    expect(third.items).toHaveLength(1);
+    expect(third.nextCursor).toBeNull();
+    const clamped = await readOwnConsentStatus(
+      s(u.id),
+      { workspaceId: ws.id, clientProfileId: cp.id, limit: 999 },
+      { client: prisma },
+    );
+    expect(clamped.items.length).toBeLessThanOrEqual(100);
   });
 
   it("revoke applies across versions; re-grant creates a new historical row; old version fails after a bump", async () => {

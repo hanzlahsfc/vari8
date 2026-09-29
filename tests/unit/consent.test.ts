@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import type { PrismaClient } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 
@@ -204,6 +205,124 @@ describe("grantOwnConsent", () => {
     );
     expect(again).toEqual({ kind: "HEALTH_DATA", changed: false });
   });
+
+  it("denies unauthorized callers before the registry is consulted", async () => {
+    const { client } = fakePrisma({
+      workspaceMember: {
+        findUnique: vi.fn(async () => ({
+          id: "m1",
+          role: "SUPPORT",
+          status: "ACTIVE",
+        })),
+        findFirst: vi.fn(async () => null),
+      },
+    });
+    const currentVersion = vi.fn(() => "test-v1");
+    await expect(
+      grantOwnConsent(
+        session(),
+        { workspaceId: ws, clientProfileId: cp, kind: "HEALTH_DATA" },
+        { client, registry: { currentVersion } },
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+    expect(currentVersion).not.toHaveBeenCalled();
+  });
+
+  it("denies unauthorized COACH_ATTESTED input by RBAC before the source policy", async () => {
+    const { client } = fakePrisma({
+      workspaceMember: {
+        findUnique: vi.fn(async () => ({
+          id: "m1",
+          role: "SUPPORT",
+          status: "ACTIVE",
+        })),
+        findFirst: vi.fn(async () => null),
+      },
+    });
+    await expect(
+      grantOwnConsent(
+        session(),
+        {
+          workspaceId: ws,
+          clientProfileId: cp,
+          kind: "HEALTH_DATA",
+          source: "COACH_ATTESTED",
+        } as never,
+        {
+          client,
+          registry: createStaticConsentPolicy({ HEALTH_DATA: "test-v1" }),
+        },
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+  });
+
+  it("denies PED_HRT granting even when the registry supplies a version", async () => {
+    const { client, delegates } = fakePrisma();
+    await expect(
+      grantOwnConsent(
+        session(),
+        { workspaceId: ws, clientProfileId: cp, kind: "PED_HRT" },
+        { client, registry: createStaticConsentPolicy({ PED_HRT: "test-v1" }) },
+      ),
+    ).rejects.toMatchObject({ code: "ped_hrt_not_approved" });
+    expect(delegates.consentRecord.create).not.toHaveBeenCalled();
+  });
+
+  it("treats P2002 as idempotent only when the exact active row exists", async () => {
+    const dup = () =>
+      new Prisma.PrismaClientKnownRequestError("dup", {
+        code: "P2002",
+        clientVersion: "test",
+      });
+    const racingCreate = () =>
+      fakePrisma({
+        consentRecord: {
+          findFirst: vi
+            .fn()
+            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce({ id: "r1" }),
+          findMany: vi.fn(async () => []),
+          create: vi.fn(async () => {
+            throw dup();
+          }),
+          updateMany: vi.fn(),
+        },
+      });
+    await expect(
+      grantOwnConsent(
+        session(),
+        { workspaceId: ws, clientProfileId: cp, kind: "HEALTH_DATA" },
+        {
+          client: racingCreate().client,
+          registry: createStaticConsentPolicy({ HEALTH_DATA: "v1" }),
+        },
+      ),
+    ).resolves.toEqual({ kind: "HEALTH_DATA", changed: false });
+
+    const unresolved = fakePrisma({
+      consentRecord: {
+        findFirst: vi
+          .fn()
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce(null),
+        findMany: vi.fn(async () => []),
+        create: vi.fn(async () => {
+          throw dup();
+        }),
+        updateMany: vi.fn(),
+      },
+    });
+    await expect(
+      grantOwnConsent(
+        session(),
+        { workspaceId: ws, clientProfileId: cp, kind: "HEALTH_DATA" },
+        {
+          client: unresolved.client,
+          registry: createStaticConsentPolicy({ HEALTH_DATA: "v1" }),
+        },
+      ),
+    ).rejects.toMatchObject({ code: "consent_conflict" });
+  });
 });
 
 describe("authorizeHealthOperation", () => {
@@ -366,6 +485,48 @@ describe("authorizeHealthOperation", () => {
       ),
     ).rejects.toBeInstanceOf(AccessDeniedError);
     expect(delegates.consentRecord.findMany).not.toHaveBeenCalled();
+  });
+
+  it("loads only the required active (kind, version) rows with the workspace predicate", async () => {
+    const findMany = vi.fn(async (_args?: unknown) => [
+      { kind: "PRIVACY_NOTICE", version: "v1", revokedAt: null },
+      { kind: "HEALTH_DATA", version: "v1", revokedAt: null },
+    ]);
+    const { client } = fakePrisma({
+      consentRecord: {
+        findMany,
+        findFirst: vi.fn(),
+        create: vi.fn(),
+        updateMany: vi.fn(),
+      },
+    });
+    await authorizeHealthOperation(
+      session(),
+      {
+        resource: "mealPlans",
+        action: "read",
+        workspaceId: ws,
+        clientProfileId: cp,
+      },
+      {
+        client,
+        registry: createStaticConsentPolicy({
+          PRIVACY_NOTICE: "v1",
+          HEALTH_DATA: "v1",
+        }),
+      },
+    );
+    const call = findMany.mock.calls[0] as unknown[] | undefined;
+    const where = (call?.[0] as { where: Record<string, unknown> }).where;
+    expect(where).toMatchObject({
+      clientProfileId: cp,
+      clientProfile: { workspaceId: ws },
+      revokedAt: null,
+    });
+    expect(where.OR).toEqual([
+      { kind: "PRIVACY_NOTICE", version: "v1" },
+      { kind: "HEALTH_DATA", version: "v1" },
+    ]);
   });
 });
 
