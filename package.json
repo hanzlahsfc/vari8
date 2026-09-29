@@ -13,6 +13,7 @@
     "lint": "eslint",
     "format:check": "prettier --check .",
     "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "playwright test",
     "extract:sheets": "tsx scripts/extract-sheets.ts",
     "verify": "npm run typecheck && npm run lint && npm run test"

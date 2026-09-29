@@ -1,5 +1,5 @@
-// Minimal authentication-only schema for the App foundation.
-// Workbook-domain models are intentionally NOT defined here (later phases).
+// Authentication/identity + multi-tenant structure (Stage 1, slice S1-A).
+// Workbook/health-domain models are intentionally NOT defined here (later slices).
 
 generator client {
   provider = "prisma-client-js"
@@ -10,13 +10,153 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum PlatformRole {
+  USER
+  PLATFORM_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  DEACTIVATED
+  INVITED
+}
+
+enum WorkspaceStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum MemberRole {
+  WORKSPACE_OWNER
+  COACH
+  ASSISTANT_COACH
+  SUPPORT
+  CLIENT
+}
+
+enum MemberStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  REMOVED
+}
+
+enum AssignmentRole {
+  PRIMARY
+  COACH
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  REMOVED
+}
+
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String   @map("password_hash")
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String       @map("password_hash")
   name         String?
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  platformRole PlatformRole @default(USER) @map("platform_role")
+  status       UserStatus   @default(ACTIVE)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  memberships    WorkspaceMember[]
+  clientProfiles ClientProfile[]
 
   @@map("users")
+}
+
+model Workspace {
+  id        String          @id @default(cuid())
+  name      String
+  slug      String          @unique
+  status    WorkspaceStatus @default(ACTIVE)
+  createdAt DateTime        @default(now()) @map("created_at")
+  updatedAt DateTime        @updatedAt @map("updated_at")
+
+  members        WorkspaceMember[]
+  clientProfiles ClientProfile[]
+
+  @@map("workspace")
+}
+
+model WorkspaceMember {
+  id          String       @id @default(cuid())
+  workspaceId String       @map("workspace_id")
+  userId      String       @map("user_id")
+  role        MemberRole
+  status      MemberStatus @default(INVITED)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  coachProfile CoachProfile?
+  assignments  ClientAssignment[] @relation("ClientAssignmentCoach")
+
+  @@unique([workspaceId, userId])
+  // Composite target for the ClientAssignment same-workspace foreign key (raw SQL).
+  @@unique([id, workspaceId])
+  @@index([workspaceId, status])
+  @@index([workspaceId, role])
+  @@index([userId])
+  @@map("workspace_member")
+}
+
+model CoachProfile {
+  id                String   @id @default(cuid())
+  workspaceMemberId String   @unique @map("workspace_member_id")
+  displayName       String   @map("display_name")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  workspaceMember WorkspaceMember @relation(fields: [workspaceMemberId], references: [id], onDelete: Cascade)
+
+  @@map("coach_profile")
+}
+
+model ClientProfile {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  userId      String?  @map("user_id")
+  name        String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  assignments ClientAssignment[] @relation("ClientAssignmentClient")
+
+  // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
+  @@unique([workspaceId, userId])
+  // Composite target for the ClientAssignment same-workspace foreign key (raw SQL).
+  @@unique([id, workspaceId])
+  @@index([workspaceId])
+  @@map("client_profile")
+}
+
+model ClientAssignment {
+  id              String           @id @default(cuid())
+  workspaceId     String           @map("workspace_id")
+  clientProfileId String           @map("client_profile_id")
+  coachMemberId   String           @map("coach_member_id")
+  role            AssignmentRole
+  status          AssignmentStatus @default(ACTIVE)
+  assignedAt      DateTime         @default(now()) @map("assigned_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  clientProfile ClientProfile  @relation("ClientAssignmentClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  coachMember   WorkspaceMember @relation("ClientAssignmentCoach", fields: [coachMemberId], references: [id], onDelete: Restrict)
+
+  // Same-workspace invariant is enforced at the database level by composite foreign keys
+  // added in the migration's raw SQL (Prisma cannot express two relations sharing workspace_id).
+  @@unique([clientProfileId, coachMemberId])
+  @@index([workspaceId])
+  @@index([coachMemberId, status])
+  @@index([clientProfileId, status])
+  @@map("client_assignment")
 }
