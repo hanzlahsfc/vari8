@@ -16,10 +16,17 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { buildCrossSheetData, renderCrossSheetMarkdown } from "../lib/extraction/crosssheet";
-import type { ExerciseArtifact, ExpectedSheet, FoodArtifact } from "../lib/extraction/contracts";
+import type {
+  ExerciseArtifact,
+  ExpectedSheet,
+  FoodArtifact,
+  RedactionEntry,
+  RedactionManifest,
+} from "../lib/extraction/contracts";
 import { parseCssDeclarations, type ClassDeclarations } from "../lib/extraction/css";
 import { extractExercises, extractFoods } from "../lib/extraction/databases";
 import { parseSheetHtml, type ParsedSheet } from "../lib/extraction/parse";
+import { redactSheet, sortRedactions } from "../lib/extraction/redact";
 import {
   assertRawDirIsIgnored,
   resolveSheetsSourceDir,
@@ -29,9 +36,15 @@ import {
 import { buildSheetSummary, SUMMARY_CONFIG } from "../lib/extraction/summaries";
 import { buildThemeArtifact } from "../lib/extraction/theme";
 
-type Options = { dryRun: boolean; raw: boolean; dataOnly: boolean; specOnly: boolean };
+type Options = {
+  dryRun: boolean;
+  raw: boolean;
+  dataOnly: boolean;
+  specOnly: boolean;
+  redacted: boolean;
+};
 
-const KNOWN_FLAGS = new Set(["--dry-run", "--raw", "--data-only", "--spec-only"]);
+const KNOWN_FLAGS = new Set(["--dry-run", "--raw", "--data-only", "--spec-only", "--redacted"]);
 const EXPECTED_FOODS = 599;
 const EXPECTED_EXERCISES = 546;
 const FOODS_FILE = "Nutrition Database.html";
@@ -46,10 +59,13 @@ function parseArgs(argv: string[]): Options {
     raw: argv.includes("--raw"),
     dataOnly: argv.includes("--data-only"),
     specOnly: argv.includes("--spec-only"),
+    redacted: argv.includes("--redacted"),
   };
-  const selected = [options.raw, options.dataOnly, options.specOnly].filter(Boolean).length;
+  const selected = [options.raw, options.dataOnly, options.specOnly, options.redacted].filter(
+    Boolean,
+  ).length;
   if (selected > 1) {
-    throw new Error("--raw, --data-only and --spec-only are mutually exclusive");
+    throw new Error("--raw, --data-only, --spec-only and --redacted are mutually exclusive");
   }
   return options;
 }
@@ -216,6 +232,53 @@ function runSpecOnly(sourceDir: string, sheets: ExpectedSheet[]): number {
   return 0;
 }
 
+function runRedacted(sourceDir: string, sheets: ExpectedSheet[]): number {
+  const baseClasses = loadBaseClasses(sourceDir);
+  const sheetsDir = join(process.cwd(), SPEC_DIR, "sheets");
+  mkdirSync(sheetsDir, { recursive: true });
+
+  const generated: RedactionEntry[] = [];
+  let totalRedacted = 0;
+  let totalKept = 0;
+  let totalEmpty = 0;
+
+  for (const sheet of sheets) {
+    const parsed = parseSheetHtml(readFileSync(join(sourceDir, sheet.file), "utf8"), {
+      baseClasses,
+    });
+    const result = redactSheet(sheet.slug, sheet.file, parsed.cells, parsed.classes, parsed.todos);
+    writeJson(join(sheetsDir, `${sheet.slug}.json`), result.artifact);
+    generated.push(...result.redactions);
+    totalRedacted += result.redactedCells;
+    totalKept += result.keptCells;
+    totalEmpty += result.emptyCells;
+  }
+
+  const manifestPath = join(process.cwd(), SPEC_DIR, "redaction-manifest.json");
+  const existing: RedactionManifest | null = existsSync(manifestPath)
+    ? (JSON.parse(readFileSync(manifestPath, "utf8")) as RedactionManifest)
+    : null;
+  const documentRedactions = (existing?.redactions ?? []).filter(
+    (entry) => !entry.artifact.startsWith("spec/sheets/"),
+  );
+  const manifest: RedactionManifest = {
+    version: existing?.version ?? 1,
+    policy: existing?.policy ?? "docs/redaction-policy.md",
+    placeholderConvention: existing?.placeholderConvention ?? "[REDACTED:<category>]",
+    redactions: sortRedactions([...documentRedactions, ...generated]),
+  };
+  writeJson(manifestPath, manifest);
+
+  console.log(`[extract:sheets] wrote ${sheets.length} redacted sheet artifacts to spec/sheets/`);
+  console.log(
+    `[extract:sheets] cells: kept=${totalKept} redacted=${totalRedacted} empty=${totalEmpty}`,
+  );
+  console.log(
+    `[extract:sheets] manifest: ${manifest.redactions.length} entries (${generated.length} cell-level)`,
+  );
+  return 0;
+}
+
 function main(): number {
   let options: Options;
   try {
@@ -233,9 +296,11 @@ function main(): number {
     ? "data-only"
     : options.specOnly
       ? "spec-only (safe artifacts)"
-      : options.raw
-        ? "raw-write"
-        : "dry-run (non-writing)";
+      : options.redacted
+        ? "redacted (committed cell artifacts)"
+        : options.raw
+          ? "raw-write"
+          : "dry-run (non-writing)";
   console.log(`[extract:sheets] mode: ${mode}`);
   console.log(`[extract:sheets] SHEETS_SOURCE_DIR: ${sourceDir}`);
 
@@ -264,6 +329,10 @@ function main(): number {
 
   if (options.specOnly) {
     return runSpecOnly(source.dir, source.sheets);
+  }
+
+  if (options.redacted) {
+    return runRedacted(source.dir, source.sheets);
   }
 
   if (options.raw) {

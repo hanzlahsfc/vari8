@@ -103,6 +103,14 @@ template labels (never arbitrary cell text); `repeatedBlocks` reports safe marke
 (e.g. `Averages` week-blocks, `WEEK n` column groups, `MEAL n`, `DAY n`). Patterns are never
 forced onto a sheet whose source contradicts them; discrepancies become `TODO(product)`.
 
+## `spec/sheets/<slug>.json` — redacted cell artifact
+
+The committed, redacted cell-level layout. Same `SheetArtifact` shape as the raw parse
+(`slug`, `sourceFile`, `cells`, `classes`, `todos`) but with person-specific text replaced by
+`[REDACTED:<category>]` (see `docs/redaction-policy.md`). Redacted cells carry no `normalized`,
+keep their coordinates/spans/class/checkbox state, and empty cells stay empty. Produced by
+`npm run extract:sheets -- --redacted`.
+
 ## `spec/data/*.json`
 
 Committed reference databases (safe: no client health data). Columns are resolved from
@@ -195,6 +203,9 @@ phase. Committing parsed sheet text now would expose real client data.
 ```sh
 # Non-writing: validate the source, parse all 11 sheets, print a coverage report.
 npm run extract:sheets -- --dry-run
+
+# Redacted cell-level artifacts: spec/sheets/<slug>.json + redaction manifest.
+npm run extract:sheets -- --redacted
 
 # Safe artifacts only: summaries + theme + cross-sheet (no cell dumps).
 npm run extract:sheets -- --spec-only

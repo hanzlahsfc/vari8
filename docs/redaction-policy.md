@@ -76,10 +76,41 @@ extractor **fails closed** unless `git check-ignore <dest>` confirms the destina
 ignored. The raw source HTML directory (`SHEETS_SOURCE_DIR`) is read-only input and is never
 written to.
 
+## Cell-level sheet artifacts (Phase 11)
+
+`spec/sheets/<slug>.json` is the committed, redacted cell-level layout for each of the 11
+sheets, produced by `npm run extract:sheets -- --redacted`.
+
+Rules (implemented in `lib/extraction/redact.ts`):
+
+- **Safe sheets kept in full:** the two reference databases (`exercise-database`,
+  `nutrition-database`) and the empty `supplementation` template.
+- **Client-bearing sheets** (`daily-tracker`, `dashboard`, `timeline`, `mealplan`, `menses`,
+  `peaking`, `showday`): a cell survives only if its trimmed text is a curated static label, a
+  safe structural marker (`WEEK n` / `MEAL n` / `DAY n` / `PRE` / `Averages`), or safe product
+  copy (HOW-TO-USE body, disclaimer, license). Everything else — including ambiguous free text
+  — is **redacted fail-closed**.
+- **Contact identifiers are never safe**, even inside reference sheets (vendor credit/email).
+- A redacted cell keeps its coordinates, spans, class, and checkbox state; its text becomes
+  `[REDACTED:<category>]`, and any derived `normalized` value and `todo` are dropped.
+- Genuinely empty cells stay empty (not redacted).
+- Each redaction adds exactly one deterministic manifest entry (`artifact`, `sheet`,
+  `cell{row,col}`, `fieldCategory`, `placeholder`, `reason`) and never the original value.
+
+Categories: `client.daily-entry`, `client.profile`, `client.plan`, `client.mealplan`,
+`client.menses`, `client.peaking`, `client.show`, and `vendor.contact`.
+
+Known limitation (`TODO(product)`): the MENSES cycle-phase **guide** copy is over-redacted
+because phase words (menstrual/follicular/ovulation/luteal) also appear as client values, so
+keeping them would leak the client's cycle phase. The guide can be re-allowed once its
+coordinates are confirmed against the xlsx/backend schematic.
+
 ## Enforcement
 
-- A test scans committed artifacts for known sensitive markers and fails on any match.
-- A test asserts the disclaimer/license/footer text is present verbatim (proving it was not
-  incorrectly redacted).
+- A test redacts all 11 real sheets and asserts every redacted cell has exactly one manifest
+  entry with no original value, that redacted cells carry no `normalized`, that no artifact
+  contains `@`-like contacts, and that the artifacts equal the committed files byte-for-byte.
+- Synthetic unit tests cover redaction, structure/checkbox/empty preservation, normalized
+  removal, manifest shape, and deterministic ordering.
 - If a source value cannot be safely redacted without destroying useful non-sensitive
   structure, stop and report the exact issue rather than guessing.

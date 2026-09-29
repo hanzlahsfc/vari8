@@ -4,6 +4,21 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-29 — Phase 11 — PASS
+- Built: `lib/extraction/redact.ts` (fail-closed, source-aware redaction); `--redacted` mode
+  in `scripts/extract-sheets.ts`; committed `spec/sheets/<slug>.json` ×11 (811,938 cells
+  total: 11,029 kept, 20,879 redacted, 780,030 empty) and `spec/redaction-manifest.json`
+  (20,901 entries: 20,879 cell-level + 22 document-level).
+- Redacted categories: `client.daily-entry`, `client.profile`, `client.plan`,
+  `client.mealplan`, `client.menses`, `client.peaking`, `client.show`, and `vendor.contact`
+  (1 vendor credit in the Nutrition reference sheet). No original values in artifacts or
+  manifest; redacted cells carry no `normalized`; contacts blocked everywhere.
+- Verified: `npm run verify` → exit 0 (104 tests). `--redacted` twice → byte-identical
+  (sheets + manifest diffs exit 0). Source dir untouched. `--raw` guard intact.
+- Caveats: committed artifacts are large (~99 MB, dominated by 780k empty cells); the MENSES
+  cycle-phase guide is over-redacted (phase words also appear as client values).
+- Next action: Phase 12 (final verification and delivery), then the separate product roadmap.
+
 ## 2026-09-29 — Phase 10 — PASS
 - Built: `lib/extraction/{summaries,theme,crosssheet}.ts`; `--spec-only` mode in
   `scripts/extract-sheets.ts`; committed `spec/sheets/<slug>.summary.json` (11),
