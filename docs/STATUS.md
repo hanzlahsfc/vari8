@@ -4,6 +4,22 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-29 — Stage 1 / S1-A (identity & multi-tenant schema) — PASS (local, not pushed)
+
+- Built: `User.platformRole`/`status` (safe defaults); `Workspace`, `WorkspaceMember`,
+  `CoachProfile`, `ClientProfile`, `ClientAssignment` + enums/indexes; migration
+  `20260929120000_stage1_identity_tenancy` with composite same-workspace FKs and an
+  active-primary partial unique index. Schema only.
+- Verified (real disposable PostgreSQL): integration `npm run test:integration` → 0; 13 passed
+  (migration on existing user + auth preserved; cross-workspace rejected; multiple coaches;
+  single active primary; removal keeps client; no forbidden tables; constraint-presence).
+  Full gates: `git diff --check` 0; `npm ci` 0; prisma validate/generate/deploy/status 0;
+  `format:check` 0; `typecheck` 0; `lint` 0; `test` 139; `build` 0; `test:e2e` 21.
+- Review: independent fresh-context subagent (shares the builder's model — diversity not claimed)
+  PASS with 4 findings, all fixed, re-check PASS. Behavioral gate = real migration/constraint
+  suite (no UI; no browser evidence).
+- Not pushed. Next action: S1-B (RBAC + default-deny guard), test-first.
+
 ## 2026-09-29 — Stage 1 planning (multi-tenant security) — plan reviewed; implementation NOT started
 
 - Part A (docs reconciliation): updated TRACKER HEAD to `f40d9a8` + local-only status; replaced

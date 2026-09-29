@@ -13,7 +13,7 @@ deployment, production-data change, or external-service change.
 - Current product name: undecided. `App`, `The-great-tracker-`, `Prime Tracker Pro`, and
   `PRGRSS 2.0` are placeholders or source names, not an approved product name.
 - Current branch: `main`
-- Current reviewed HEAD: `8005196` (CRE8 reconciliation + reviewed Stage 1 security plan;
+- Current reviewed HEAD: `6d81732` (S1-A identity/multi-tenant schema, independently reviewed;
   committed locally, **not pushed**). Last pushed `origin/main`:
   `f4ebac094a773d86808a8d1d442575f1dcabca6d`
 - Reference implementation: `nexuslinkproductions/PRIME-STATE-TRACKER`, branch `hanzlah`,
@@ -122,6 +122,11 @@ threshold, health-data policy, workflow, or layout.
 - Read-only raw/redacted sheet viewer.
 - Development-only, client-side, in-memory Daily Tracker prototype behind
   `ENABLE_DAILY_PROTOTYPE=1`.
+- **Stage 1 / S1-A identity + multi-tenant schema:** `User.platformRole`/`status`, `Workspace`,
+  `WorkspaceMember`, `CoachProfile`, `ClientProfile`, `ClientAssignment`, with DB-level
+  same-workspace composite FKs and a single-active-primary partial index (migration
+  `20260929120000_stage1_identity_tenancy`). Authorization/consent/audit/tokens/GDPR are NOT
+  implemented yet.
 
 ### Important limitations
 
@@ -239,13 +244,12 @@ schematic/scripts arrive:
 
 ## 8. Current next action
 
-Stage 0 is complete and independently reviewed. The Stage 1 multi-tenant security plan is
-committed and independently reviewed (`docs/tasks/stage-1-plan.md`). **S1-A implementation now:
-add the identity/multi-tenant database structure** (`User` platform fields, `Workspace`,
-`WorkspaceMember`, `CoachProfile`, `ClientProfile`, `ClientAssignment`, enums, constraints, one
-forward migration, and constraint tests). S1-A adds schema only — no guards, consent, audit,
-tokens, GDPR, health records, or product UI (those are later slices). All local commits remain
-unpushed; do not push.
+Stage 0 and the Stage 1 security plan are complete and independently reviewed. **S1-A
+(identity/multi-tenant schema) is implemented, reviewed (PASS), and committed locally at
+`6d81732`.** Next: **S1-B** (authorization core: `lib/auth/rbac.ts` + default-deny guard) — plan
+and implement it test-first against the S1-A schema. S1-B may add guard/RBAC code only; consent
+(S1-D), audit (S1-E), tokens (S1-F), GDPR (S1-G), and the workspace shell (S1-H) remain later
+slices; no health records or product UI. All local commits remain unpushed; do not push.
 
 ## 9. Human inputs still required
 
@@ -350,6 +354,40 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-29 — Stage 1 slice S1-A: identity & multi-tenant schema (local, not pushed)
+
+- Scope: S1-A only — identity/multi-tenant DB structure. No guards/consent/audit/tokens/GDPR/
+  health/UI.
+- Starting state: branch `main`, commit `418c2d4`, `origin/main` `f4ebac0`, tree clean.
+- Plan/acceptance source: `docs/tasks/stage-1-plan.md` §2/§9; `docs/tasks/s1-a-identity-tenancy.md`.
+- Files changed: `db/schema.prisma`, `db/migrations/20260929120000_stage1_identity_tenancy/`,
+  `tests/integration/s1-a-identity.test.ts`, `vitest.integration.config.ts`, `package.json`
+  (`test:integration`), `.github/workflows/ci.yml`, `docs/tasks/s1-a-identity-tenancy.md`.
+- RED evidence: with the S1-A migration removed, the integration suite failed
+  (`relation "client_assignment" does not exist`), exit 1. GREEN after the migration.
+- Focused verification: `npm run test:integration` → 0; 13 passed (real migrated PostgreSQL).
+- Full gates: `git diff --check` 0; `npm ci` 0; `prisma validate/generate/migrate deploy/status`
+  0; `format:check` 0; `typecheck` 0; `lint` 0; `test` 139; `build` 0; `test:e2e` 21 passed.
+- Behavioral test: not applicable — S1-A has no UI. The behavioral gate is the real PostgreSQL
+  migration + constraint suite; no browser evidence is claimed.
+- Test strength: mutation-proved both key constraints on the disposable DB (dropped the partial
+  unique index → the active-primary test failed; dropped the composite same-workspace FKs → the
+  cross-workspace test failed; restored both, suite green).
+- Independent review: fresh-context `general` subagent (shares the builder's model — diversity
+  not claimed) → **PASS** with 4 actionable findings (unused test imports; missing independent
+  client-workspace FK test; regression assertions for raw-SQL constraints; CI used one DB).
+  All fixed; focused re-check **PASS**.
+- Commit/push/deploy: implementation `6d81732`; this documentation handoff commit references it.
+  **Not pushed.**
+- Decisions/TODO(human): unchanged; `CoachProfile` role-capability and assignment coach-capability
+  are application invariants left to S1-B/S1-C; composite FKs/partial index live only in migration
+  raw SQL (a future `prisma migrate dev` would propose dropping them — use `migrate deploy` and
+  keep the regression test).
+- Known risks/blockers: no RLS/vendor protections (app-enforced later); PRGRSS 2.0 formulas still
+  underivable.
+- Next action: implement **S1-B** (RBAC matrix + default-deny guard) test-first against the S1-A
+  schema.
 
 ### 2026-09-29 — CRE8 reconciliation + Stage 1 security plan (plan only; local, not pushed)
 
