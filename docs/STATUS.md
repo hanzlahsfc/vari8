@@ -4,6 +4,23 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-29 — Stage 1 / S1-C (client ownership & assignments) — PASS (local, not pushed)
+
+- Built: `lib/workspace/clients.ts` (guarded client-profile list/read/create/update; assignment
+  list/assign/set-primary/remove), `authorizeCollection` (guard), tx-client adapter type.
+  Workspace-scoped queries, bounded cursor lists (25/100), coach-capable target rules, Serializable
+  transactions, structural errors. Schema only additions: none.
+- Verified: `npm run test` → 172 passed; `npm run test:integration` → 35 passed (S1-A/S1-B/S1-C,
+  real PostgreSQL). Full gates: `git diff --check` 0; `npm ci` 0; prisma validate/generate/deploy/
+  status 0; `format:check` 0; `typecheck` 0; `lint` 0; `build` 0; `test:e2e` 21;
+  `git diff 3adb56f -- db/` empty. Mutation-proved the workspace predicate, REMOVED-assignment
+  handling, and assistant-primary denial.
+- Review: independent fresh-context subagent (shares the builder's model — diversity not claimed)
+  PASS with 2 non-blocking observations, both hardened; re-check PASS.
+- Audit-wiring limitation: assignment mutations cannot be externally exposed until S1-E couples
+  audit writing (`assertAssignmentMutationsExternallyExposable`).
+- Not pushed. Next action: S1-D (versioned consent).
+
 ## 2026-09-29 — Stage 1 / S1-B (authorization core) — PASS (local, not pushed)
 
 - Built: reviewed RBAC matrix (`lib/auth/rbac.ts`); default-deny, DB-resolved guard

@@ -13,8 +13,8 @@ deployment, production-data change, or external-service change.
 - Current product name: undecided. `App`, `The-great-tracker-`, `Prime Tracker Pro`, and
   `PRGRSS 2.0` are placeholders or source names, not an approved product name.
 - Current branch: `main`
-- Current reviewed HEAD: `22e3f6e` (S1-B authorization core, independently reviewed; committed
-  locally, **not pushed**). Last pushed `origin/main`:
+- Current reviewed HEAD: `c6ca23f` (S1-C guarded client ownership & assignment services,
+  independently reviewed; committed locally, **not pushed**). Last pushed `origin/main`:
   `f4ebac094a773d86808a8d1d442575f1dcabca6d`
 - Reference implementation: `nexuslinkproductions/PRIME-STATE-TRACKER`, branch `hanzlah`,
   reviewed at `aa59905`. Reuse applicable engineering patterns, not its product data,
@@ -131,6 +131,11 @@ threshold, health-data policy, workflow, or layout.
   `lib/auth/guard.ts` (default-deny `authorize`, DB-resolved per call, typed `AccessDeniedError`),
   `lib/workspace/access.ts` (narrow workspace-constrained Prisma adapter), and inactive-login
   denial. Consent/audit/tokens/GDPR/routes/UI are NOT implemented yet.
+- **Stage 1 / S1-C client ownership & assignments:** `lib/workspace/clients.ts` (guarded
+  client-profile list/read/create/update and assignment list/assign/set-primary/remove;
+  workspace-scoped queries, bounded cursor lists, coach-capable target rules, Serializable
+  transactions, structural errors) plus `authorizeCollection` in the guard. Assignment
+  mutations are **not externally exposable** until S1-E wires audit (`assertAssignmentMutationsExternallyExposable`).
 
 ### Important limitations
 
@@ -248,11 +253,12 @@ schematic/scripts arrive:
 
 ## 8. Current next action
 
-Stage 0, the Stage 1 plan, S1-A (identity/tenancy schema), and S1-B (authorization core) are
-complete and independently reviewed; S1-B is committed locally at `22e3f6e`. Next: **S1-C**
-(client ownership & assignment services: read/manage `ClientProfile` and `ClientAssignment`
-through the guard, with cross-workspace/assignment tests). S1-C may add server-side client/
-assignment services only; consent (S1-D), audit (S1-E), tokens (S1-F), GDPR (S1-G), and the
+Stage 0, the Stage 1 plan, and slices S1-A (schema), S1-B (authorization core), and S1-C
+(client ownership & assignments) are complete and independently reviewed; S1-C is committed
+locally at `c6ca23f`. Next: **S1-D** (versioned consent model + consent gates, per
+`docs/security/consent-audit.md` §1) — plan and implement it test-first, after which **S1-E**
+must wire metadata-only audit writing (including transactionally coupled assignment audit)
+before the S1-C mutations may be exposed anywhere. Tokens (S1-F), GDPR (S1-G), and the
 workspace shell (S1-H) remain later slices; no health records or product UI. All local commits
 remain unpushed; do not push.
 
@@ -359,6 +365,41 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-29 — Stage 1 slice S1-C: client ownership & assignments (local, not pushed)
+
+- Scope: S1-C only — guarded client-profile and assignment services. No routes/UI/health/consent/
+  audit/GDPR/schema.
+- Starting state: branch `main`, commit `3adb56f`, `origin/main` `f4ebac0`, tree clean.
+- Plan/acceptance source: `docs/tasks/s1-c-client-ownership-assignments.md`;
+  `docs/security/authorization-model.md`; `docs/security/data-ownership.md`.
+- Files changed: `lib/workspace/clients.ts`, `lib/auth/guard.ts` (`authorizeCollection`),
+  `lib/workspace/access.ts` (tx client type), `tests/unit/clients-service.test.ts`,
+  `tests/integration/s1-c-client-assignments.test.ts`, `docs/tasks/s1-c-client-ownership-assignments.md`.
+- RED evidence: focused unit/integration tests failed before the service module existed.
+- Focused verification: `npx vitest run tests/unit/clients-service.test.ts` → 0; 14 passed.
+  `npm run test:integration` → 0; 35 passed (S1-A 13 + S1-B 13 + S1-C 9), real PostgreSQL.
+- Full gates: `git diff --check` 0; `npm ci` 0; prisma validate/generate/migrate deploy/status 0;
+  `format:check` 0; `typecheck` 0; `lint` 0; `test` 172; `build` 0; `test:e2e` 21 passed;
+  `git diff 3adb56f -- db/` empty.
+- Behavioral test: S1-C adds no routes/UI; the real database-backed service/authorization suite
+  is the behavioral gate. No browser evidence claimed.
+- Test strength: mutation-proved (a) dropping the workspaceId predicate from a profile query
+  fails the cross-workspace test; (b) treating REMOVED assignments as active fails an access/list
+  test; (c) allowing ASSISTANT_COACH as PRIMARY fails the target-role test. All restored and re-run green.
+- Independent review: fresh-context `general` subagent (shares the builder's model — diversity
+  not claimed) → **PASS** with 2 non-blocking observations (profile writes not transactional;
+  assignment-list scope not asserted). Both hardened: profile writes now run in a Serializable
+  transaction with a tx-bound auth repo; assignment list fails closed on non-workspace scope.
+  Focused re-check **PASS**.
+- Commit/push/deploy: implementation `c6ca23f`; this documentation handoff references it.
+  **Not pushed.**
+- Decisions/TODO(human): unchanged.
+- Audit-wiring limitation: assignment mutation services **must not be externally exposed** until
+  S1-E adds transactionally coupled audit writing; `assertAssignmentMutationsExternallyExposable`
+  fails closed (`audit_not_wired_for_external_use`).
+- Known risks/blockers: authorization remains application-enforced (no RLS).
+- Next action: implement **S1-D** (versioned consent model + gates), test-first.
 
 ### 2026-09-29 — Stage 1 slice S1-B: authorization core (local, not pushed)
 
