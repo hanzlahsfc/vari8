@@ -105,8 +105,62 @@ export type AuthorizationRepo = {
 export type SessionLike =
   { user?: { id?: string | null } | null } | null | undefined;
 
+/** Collection (list) authorization — read-only, never returns profile data. */
+export type CollectionScope = "workspace" | "assigned" | "own";
+
+export type CollectionContext = {
+  userId: string;
+  platformRole: PlatformRole;
+  workspaceId: string;
+  workspaceMemberId: string;
+  workspaceRole: WorkspaceRole;
+  grantedScope: CollectionScope;
+};
+
 function deny(reason: DenialReason, resource: string, action: string): never {
   throw new AccessDeniedError(reason, resource, action);
+}
+
+/**
+ * Authorize a workspace collection read. Re-reads DB state, resolves the matrix,
+ * and returns only `workspace | assigned | own` scope. Denies write, unknown
+ * inputs, platform scope, and anything not explicitly a listable scope.
+ */
+export async function authorizeCollection(
+  session: SessionLike,
+  request: { resource: Resource; action: Action; workspaceId?: string },
+  repo: AuthorizationRepo = prismaAuthorizationRepo,
+): Promise<CollectionContext> {
+  const { resource, action } = request;
+  const userId = session?.user?.id;
+  if (!userId) deny("unauthenticated", resource, action);
+  if (action !== "read") deny("invalid_action", resource, action);
+  if (!isResource(resource)) deny("invalid_resource", resource, action);
+
+  const user = await repo.getUser(userId);
+  if (!user) deny("user_missing", resource, action);
+  if (user.status !== "ACTIVE") deny("user_inactive", resource, action);
+
+  if (!request.workspaceId) deny("workspace_required", resource, action);
+  const workspace = await repo.getWorkspace(request.workspaceId);
+  if (!workspace || workspace.status !== "ACTIVE")
+    deny("workspace_missing_or_inactive", resource, action);
+  const membership = await repo.getMembership(userId, request.workspaceId);
+  if (!membership || membership.status !== "ACTIVE")
+    deny("membership_missing_or_inactive", resource, action);
+
+  const scope = resolveScope(resource, "read", membership.role);
+  if (!scope || scope === "denied" || scope === "platform")
+    deny("role_denied", resource, action);
+
+  return {
+    userId,
+    platformRole: user.platformRole,
+    workspaceId: request.workspaceId,
+    workspaceMemberId: membership.id,
+    workspaceRole: membership.role,
+    grantedScope: scope as CollectionScope,
+  };
 }
 
 export async function authorize(

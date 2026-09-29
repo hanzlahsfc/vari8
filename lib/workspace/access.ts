@@ -1,7 +1,10 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 import { prisma } from "../db";
 import type { AuthorizationRepo } from "../auth/guard";
+
+/** Prisma client or transaction client (both expose the needed delegates). */
+export type PrismaLike = PrismaClient | Prisma.TransactionClient;
 
 /**
  * Prisma-backed authorization adapter (S1-B).
@@ -11,7 +14,7 @@ import type { AuthorizationRepo } from "../auth/guard";
  * unscoped client collection for in-memory filtering.
  */
 export function createPrismaAuthorizationRepo(
-  client: PrismaClient = prisma,
+  client: PrismaLike = prisma,
 ): AuthorizationRepo {
   return {
     getUser: (id) =>
