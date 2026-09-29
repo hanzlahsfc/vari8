@@ -13,9 +13,10 @@ deployment, production-data change, or external-service change.
 - Current product name: undecided. `App`, `The-great-tracker-`, `Prime Tracker Pro`, and
   `PRGRSS 2.0` are placeholders or source names, not an approved product name.
 - Current branch: `main`
-- Current reviewed HEAD: `207a9e4` (S1-D versioned consent, **hardened** from preliminary
-  findings; gates pass, **independent different-model review PENDING** — see §12; committed
-  locally, **not pushed**). Last pushed `origin/main`: `f4ebac094a773d86808a8d1d442575f1dcabca6d`
+- Last independently reviewed HEAD: `ec8250c` (S1-D, `gpt-6-astra` verdict **FAIL**).
+  Repair plan `6e8e2e6` and production/tests repair `942879e`; documentation handoff
+  follows. Starting `origin/main` for this repair was `ec8250c`. **Astra re-review pending**;
+  S1-E blocked. See §12 and `docs/tasks/s1-d-independent-review-repair.md`.
 - Reference implementation: `nexuslinkproductions/PRIME-STATE-TRACKER`, branch `hanzlah`,
   reviewed at `aa59905`. Reuse applicable engineering patterns, not its product data,
   formulas, visual identity, or assumptions.
@@ -257,16 +258,15 @@ schematic/scripts arrive:
 ## 8. Current next action
 
 Stage 1 slices S1-A (schema), S1-B (authorization core), S1-C (client ownership & assignments)
-are complete and independently reviewed; S1-D (versioned consent) is implemented at `fd2954b`
-and **hardened at `207a9e4`** (authorization-before-policy, embedded workspace predicate, bounded
-consent reads, verified P2002, PED/HRT grant denial, doc correction) with all focused/full gates
-green, but its **independent different-model review is still PENDING** (only the builder's own
-model was available; the hardening repair is explicitly not a review). Next: obtain that fresh
-different-model review (and repair any findings), then implement **S1-E** (metadata-only
-`AuditEvent` logging with transactionally coupled audit writes for consent + assignment
-mutations) before any consent/assignment mutation is exposed through a route/action. Tokens
-(S1-F), GDPR (S1-G), and the workspace shell (S1-H) remain later slices; no health records or
-product UI. All local commits remain unpushed; do not push.
+are complete. S1-D (versioned consent) was independently reviewed by `gpt-6-astra` at
+`ec8250c` and **FAILED** on five findings. The focused repair is implemented at `942879e`:
+fresh transaction-bound authorization and version check before P2002 recovery reads,
+classification limited to the observed raw-index metadata, and a meaningful 137-row
+pagination test. Transaction and identifier documentation was corrected. The repair gates
+are green, but builder work cannot approve itself. Next: obtain independent Astra re-review.
+**Do not start S1-E** (metadata-only audit) until that review passes. No consent/assignment
+mutation is externally exposed; tokens (S1-F), GDPR (S1-G), and workspace shell (S1-H)
+remain later slices.
 
 ## 9. Human inputs still required
 
@@ -371,6 +371,40 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-29 — S1-D independent Astra FAIL repaired; re-review pending
+
+- Starting state: `main`, local HEAD and `origin/main` `ec8250c`, clean worktree.
+  `gpt-6-astra` independently reviewed that HEAD and returned **FAIL**: (1) stale
+  authorization in P2002 recovery; (2) unrelated P2002 targets accepted; (3) a five-row
+  fixture could not prove the 100-item bound; (4) docs incorrectly said all reads used
+  Serializable transactions; (5) docs mislabeled PostgreSQL `TEXT`/CUID IDs as UUIDs.
+- Scoped plan commit `6e8e2e6`, production/tests repair `942879e`.
+  `lib/consent.ts` now accepts only the observed `ConsentRecord` three-column P2002
+  metadata for the raw active index and re-runs `consent/write` S1-B authorization,
+  client/workspace validation and policy-version comparison in a new Serializable
+  transaction before querying an exact active row. Other metadata and changed policy
+  fail closed. PED/HRT and coach-attested grants remain denied.
+- RED: focused unit suite on pre-repair production code → exit 1, 16 failed / 16 passed.
+  GREEN: focused unit 32/32; full unit 204/204; PostgreSQL integration 48/48.
+  Raw-index duplicate gave P2002 metadata
+  `{modelName:"ConsentRecord",target:["client_profile_id","kind","version"]}`.
+  Synchronized concurrent production grants gave underlying P2034, one successful
+  grant, one structural `consent_conflict`, and one active row. Callers may retry.
+- The history bound test creates 137 synthetic revoked rows and verifies exactly 100
+  items, a non-null cursor, the remaining 37, unique deterministic IDs, and default 25.
+  Mutation checks failed as expected and were restored: skip recovery auth (8 failed),
+  read consent before auth (10), accept any P2002 (5), accept missing metadata (2),
+  accept unknown target (1), infer target from an exact row (15), remove max clamp
+  (1 integration), reduce fixture below 101 (1 integration).
+- Gates: `git diff --check` 0; `npm ci` 0; Prisma format/validate/generate 0;
+  migrate deploy/status 0; format/typecheck/lint 0; `npm run test` 204 passed;
+  `npm run test:integration` 48 passed; build 0; E2E 21 passed (invalid login generic).
+  Schema/migrations unchanged; S1-A/S1-D raw constraints preserved. No route, UI,
+  audit table, S1-E code, PR or deployment. No mutation externally exposed.
+- **Status: S1-D repaired after independent Astra FAIL; gates green; Astra re-review
+  pending.** This repair is builder work, not an independent PASS. S1-E remains blocked.
+  Next action: independent Astra re-review of the repair commit/handoff.
 
 ### 2026-09-29 — Stage 1 slice S1-D hardening repair (builder; independent review PENDING)
 

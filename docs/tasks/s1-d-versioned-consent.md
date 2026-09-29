@@ -42,13 +42,17 @@ the offline-consent policy is approved. `PED_HRT` stays fail-closed regardless o
 - `hasExactActiveConsent(rows, kind, version)` (pure)
 - `authorizeHealthOperation(session, { resource, action, workspaceId, clientProfileId })`
 
-Grant/revoke/read call the S1-B guard with resource `consent` (client `own` only) inside a
-Serializable transaction with a tx-bound repo; **authorization runs first**, before any
-policy/version resolution or consent lookup. Every `ConsentRecord` query embeds the workspace
-relation predicate (`clientProfile: { workspaceId }`) as defense in depth. `grantedByUserId`
-comes from the authorized context, not the session. Idempotent grant (exact active row exists)
+Grant and revoke call the S1-B guard with resource `consent` (client `own` only) inside
+Serializable transactions with transaction-bound repositories. Grant's recognized P2002
+recovery also uses a new Serializable transaction and repeats authorization. Authorization
+runs before policy/version resolution or consent lookup in each grant transaction.
+`readOwnConsentStatus` calls the same guard and confirms the client/workspace relationship,
+then makes a separate workspace-scoped history query; it does **not** currently use a
+Serializable transaction. Every `ConsentRecord` query embeds the workspace relation
+predicate (`clientProfile: { workspaceId }`) as defense in depth. `grantedByUserId` comes
+from the authorized context, not the session. Idempotent grant (exact active row exists)
 and idempotent revoke (nothing active). Errors are structural (`ConsentError` codes) with no
-ids/names/versions/values. `readOwnConsentStatus` is bounded: default 25, max 100, stable
+ids/names/versions/values. The history query is bounded: default 25, max 100, stable
 `id` ascending order, cursor-paginated.
 
 Authorization order for protected operations: user/workspace/membership → RBAC scope →
@@ -85,13 +89,39 @@ Not an independent review. Repairs applied on top of `bd911f1`:
    (a `dailyTracking/write` failure is not reported as `consent/read`).
 3. **Bounded reads.** `authorizeHealthOperation` resolves the required exact versions, then loads
    only unrevoked rows matching those `(kind, version)` pairs (workspace-scoped, no full history).
-4. **P2002 verified.** A racing `P2002` is idempotent only when the exact active
-   `(workspace, client, kind, version)` row now exists; otherwise `consent_conflict`.
+4. **Pre-review P2002 behavior (superseded).** This version checked for an exact active
+   `(workspace, client, kind, version)` row after any P2002, outside the failed transaction.
+   Astra found that authorization could change before this read and that unrelated P2002
+   errors could be misclassified. See the independent review repair below.
 5. **Docs corrected.** `docs/security/consent-audit.md` now describes the raw partial unique
    index instead of the absent four-column `@@unique`.
 
-Status: **S1-D implementation hardened; gates green; independent different-model review PENDING.**
-Not complete, not independently reviewed.
+Status at that handoff: **implementation hardened; independent different-model review pending.**
+The later Astra review failed; see below. S1-D is not approved.
+
+## Independent Astra review and repair
+
+`gpt-6-astra` reviewed `ec8250c` and returned **FAIL** with five findings: recovery lacked
+fresh authorization; unrelated/malformed P2002 targets could be treated as idempotent; the
+100-item bound used only five fixture rows; this record overstated transaction coverage; and
+`consent-audit.md` incorrectly called `TEXT`/CUID identifiers UUIDs. Plan: `docs/tasks/
+s1-d-independent-review-repair.md`; implementation/test repair: `942879e`.
+
+The repaired recovery accepts only Prisma's observed raw-index metadata
+`{modelName:"ConsentRecord",target:["client_profile_id","kind","version"]}`. It repeats
+`consent/write` S1-B authorization and client/workspace checks inside a new Serializable
+transaction, checks the current trusted policy version against the failed attempt, and only
+then queries the exact active row. Other P2002 metadata, absent rows and version drift return
+`consent_conflict`; P2034 remains a structural conflict. A real synchronized PostgreSQL race
+returned P2034; the raw-index duplicate returned the metadata above. Concurrent callers may
+retry a conflict.
+
+New unit regressions were RED on `ec8250c` (16 failed), then 32/32 passed after repair.
+The PostgreSQL suite passed 48/48, including 137 synthetic revoked history rows proving
+100-item max, 25-item default, cursor remainder and stable unique ordering. Eight temporary
+mutations covered the requested cases; each failed tests and was restored. No migration, route, UI,
+audit table or S1-E implementation changed. **S1-D repaired after independent Astra FAIL;
+gates green; Astra re-review pending.** S1-E remains blocked and mutations unexposed.
 
 ## RED tests
 

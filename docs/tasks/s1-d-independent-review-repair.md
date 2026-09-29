@@ -54,3 +54,34 @@ blocked and no consent mutation is externally exposed.
 Revert the three scoped repair commits in reverse order if this repair must be
 undone; do not roll back the already-applied additive consent migration. The
 independent Astra re-review remains required before S1-D can pass or S1-E starts.
+
+## Repair evidence and handoff
+
+- Independent Astra verdict on `ec8250c`: **FAIL**, covering all five findings in the
+  review request. Plan commit `6e8e2e6`; production/tests commit `942879e`.
+- RED before production changes: focused unit suite exit 1, 16 failed / 16 passed.
+  GREEN after repair: 32/32 focused unit tests; full unit 204/204; PostgreSQL
+  integration 48/48. The bounding fixture has 137 synthetic revoked records.
+- Real PostgreSQL raw-index duplicate: P2002 metadata exactly
+  `{ "modelName": "ConsentRecord", "target": ["client_profile_id", "kind", "version"] }`.
+  A synchronized pair of production `grantOwnConsent` calls returned one successful
+  grant and one `consent_conflict`; the underlying concurrent Prisma error was P2034
+  with `{ "modelName": "ConsentRecord" }`, and the database retained one active row.
+  P2034 callers may retry. No index-name inference is made from an existing row.
+- Mutation results (each temporary edit restored byte-for-byte): skipping recovery
+  authorization 8 failures; querying consent before it 10; accepting any P2002 target
+  5; accepting missing metadata 2; accepting an unknown target 1; treating an exact
+  row alone as target proof 15; removing the pagination maximum 1 integration failure;
+  reducing the fixture below 101 rows 1 integration failure.
+- Required gates: `git diff --check` 0; `npm ci` 0; `npx prisma format` 0;
+  `npx prisma validate` 0; `npx prisma generate` 0; `npx prisma migrate deploy` 0;
+  `npx prisma migrate status` 0; `npm run format:check` 0; `npm run typecheck` 0;
+  `npm run lint` 0; `npm run test` 0 (204); `npm run test:integration` 0 (48);
+  `npm run build` 0; `npm run test:e2e` 0 (21). Prisma format and build initially
+  hit sandbox permission errors and passed with authorized local cache/process access.
+- Schema and migrations remained byte-for-byte unchanged; the S1-A same-workspace
+  foreign keys and active-primary index, and S1-D active-consent index remain.
+  Invalid login was generic in E2E. No routes, UI, audit table, S1-E code, PR or
+  deployment were added. No mutation is externally exposed.
+- **S1-D repaired after independent Astra FAIL; gates green; Astra re-review pending.**
+  S1-E is blocked until the independent re-review passes.

@@ -15,16 +15,16 @@ timestamp). No other grant field may change. A revoked grant permits a later re-
 row. A raw partial unique index enforces at most one unrevoked row per
 `(client_profile_id, kind, version)`.
 
-| Field             | Type                | Notes                                                                               |
-| ----------------- | ------------------- | ----------------------------------------------------------------------------------- |
-| `id`              | uuid                |                                                                                     |
-| `clientProfileId` | uuid (FK, required) | owner                                                                               |
-| `kind`            | enum                | `PRIVACY_NOTICE`, `HEALTH_DATA`, `CYCLE`, `PHOTOS`, `BLOODWORK`, `PED_HRT`_(gated)_ |
-| `version`         | string              | exact accepted version (e.g. `"2026-09-29"`); compared exactly                      |
-| `grantedAt`       | timestamptz         |                                                                                     |
-| `revokedAt`       | timestamptz?        | null while active                                                                   |
-| `grantedByUserId` | uuid?               | who recorded the grant                                                              |
-| `source`          | enum                | `CLIENT_SELF` \| `COACH_ATTESTED` (offline) — _offline policy TODO(human)_          |
+| Field             | Type               | Notes                                                                               |
+| ----------------- | ------------------ | ----------------------------------------------------------------------------------- |
+| `id`              | String (`TEXT`)    | generated application ID uses CUID semantics                                        |
+| `clientProfileId` | String (`TEXT`) FK | required owner; `ClientProfile.id` uses CUID semantics                              |
+| `kind`            | enum               | `PRIVACY_NOTICE`, `HEALTH_DATA`, `CYCLE`, `PHOTOS`, `BLOODWORK`, `PED_HRT`_(gated)_ |
+| `version`         | string             | exact accepted version (e.g. `"2026-09-29"`); compared exactly                      |
+| `grantedAt`       | timestamptz        |                                                                                     |
+| `revokedAt`       | timestamptz?       | null while active                                                                   |
+| `grantedByUserId` | String (`TEXT`)?   | actor; `User.id` uses CUID semantics; nullable                                      |
+| `source`          | enum               | `CLIENT_SELF` \| `COACH_ATTESTED` (offline) — _offline policy TODO(human)_          |
 
 The only uniqueness constraint is the **raw partial unique index**
 `consent_record_active_version_key` on `(client_profile_id, kind, version) WHERE revoked_at IS NULL`

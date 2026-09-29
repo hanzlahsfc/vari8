@@ -4,11 +4,33 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-29 — S1-D repaired after independent Astra FAIL; gates green; Astra re-review pending
+
+- `gpt-6-astra` reviewed `ec8250c` and failed five items: stale authorization in P2002
+  recovery; unrelated P2002 accepted; ineffective five-row pagination bound; inaccurate
+  read-transaction documentation; UUID wording for PostgreSQL `TEXT`/CUID identifiers.
+- Plan `6e8e2e6`, production/tests repair `942879e`. Recovery now verifies the observed
+  raw-index P2002 metadata and repeats `consent/write` authorization inside a new Serializable
+  transaction before any consent read; version drift and unrelated conflicts fail closed.
+- RED: `npx vitest run tests/unit/consent.test.ts` → exit 1, 16 failed / 16 passed before
+  production repair. PostgreSQL raw-index P2002 target was
+  `["client_profile_id","kind","version"]` with `modelName:"ConsentRecord"`; synchronized
+  production-service duplicate race returned P2034, one active row, one structural conflict.
+  The bound now uses 137 synthetic revoked rows. Eight temporary mutations across the
+  requested cases each caused a test failure and were restored.
+- Gates on repair tree: `git diff --check` 0; `npm ci` 0; Prisma format/validate/generate 0;
+  migrate deploy/status 0; format/typecheck/lint 0; unit 204/204; integration 48/48;
+  build 0; E2E 21/21. Invalid login remained generic. Migration and S1-A/S1-D raw
+  constraints unchanged. No route, UI, audit table or S1-E code added.
+- This is builder repair, not independent approval. S1-E remains blocked; no consent or
+  assignment mutation is externally exposed. Next action: independent Astra re-review.
+
 ## 2026-09-29 — Stage 1 / S1-D (versioned consent) — implementation hardened; gates PASS; independent review PENDING
 
 - Built: `ConsentRecord` + `ConsentKind`/`ConsentSource` schema/migration (partial unique index
   where `revoked_at IS NULL`); `lib/consent.ts` (fail-closed policy registry, grant/revoke/read
-  own consent in Serializable tx with tx-bound auth, exact-version gate, closed protected
+  own consent (grant/revoke in Serializable transactions; read guarded separately),
+  exact-version gate, closed protected
   mapping, PED/HRT + coach-attested fail-closed, audit exposure assertion). No routes/UI/audit.
 - Hardening (builder repair from preliminary findings, NOT an independent review): authorization
   now precedes policy/version resolution; workspace relation predicate embedded in every consent
