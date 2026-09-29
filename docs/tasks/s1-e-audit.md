@@ -241,10 +241,58 @@ review pending** — never independently reviewed by the builder.
 
 ## Status
 
-**Implemented then independently FAILED; repaired (builder: SWE-2 High); gates green;
-independent re-review PENDING.**
+**Implemented → independently FAILED → repaired (builder: SWE-2 High) → independently
+re-reviewed and PASSED (`opencode-go/deepseek-v4.1-flash`, `9f02983`).**
 
-### Independent review outcome (opencode-go/deepseek-v4.1-flash)
+### Independent re-review outcome (opencode-go/deepseek-v4.1-flash) — PASS
+
+Re-reviewed the repaired tree `9f0298388a9a749948980a26d4ff913781a2b8eb` (full range
+`3415812..9f02983`; repair-only `b97c5b5..9f02983`), read-only. Independence basis:
+S1-E and its repair were implemented by SWE-2 High; this reviewer is not the builder
+(it authored the earlier FAIL and re-verified rather than trusting the builder report).
+Verdict: **PASS** after verifying P1–P4 on real PostgreSQL plus a full S1-E re-check.
+
+- **P1 (metadata allowlist) — verified.** `META_VALIDATORS` is a `Map` (own-key `get`);
+  validators must return exactly `true`; enumeration/validator exceptions normalize to
+  `audit_metadata_forbidden`; the clean object is built via `Object.defineProperty`.
+  Reproduced on real PostgreSQL: own `constructor`/`toString`/`valueOf`/`__proto__` keys
+  and a throwing getter all reject with `AuditError("audit_metadata_forbidden")` and no
+  raw `TypeError` leaked; a synthetic canary left **0** rows. Tests bite: reverting the
+  own-key protection failed the new `constructor`/`toString` tests (restored
+  byte-for-byte).
+- **P2 (`setPrimaryCoach` idempotency) — verified.** Within the Serializable tx after
+  authorization/validation, an already ACTIVE PRIMARY target returns `changed:false`
+  with no write and no event. Real PG: `[true,false,false,true]`; UPDATE events stayed
+  1 after two no-op repeats and became 2 only on a genuine switch; exactly one ACTIVE
+  PRIMARY. Forced audit failure rolled back a genuine change (0 assignments/0 events).
+  `client_assignment_one_active_primary_key` guarantees sole-ness.
+- **P3 (documentation/deferred scope) — verified.** `consent-audit.md` now describes the
+  closed allowlist (not a recursive deny-list) and lists deferred requirements (DENY
+  events, login outcomes, platform-admin reads, health-operation wrapper, retention,
+  SUPPORT access) with rationale and prerequisite/later slices; `stage-1-plan.md` S1-E
+  row updated consistently. Deferrals remain tracked requirements, not dropped; no
+  document claims denied attempts are already logged.
+- **P4 (audit read index) — verified.** Additive migration
+  `20260929170000_stage1_audit_read_index` adds `audit_event_workspace_id_id_idx
+(workspace_id, id)`; `(workspace_id, at)` retained; S1-A composite FKs and both
+  S1-A/S1-D partial unique indexes remain live. `listAuditEvents` filters by
+  `workspaceId` and orders/cursors by `id`, matching the index shape. (The builder's
+  `EXPLAIN` "Index Only Scan" claim was not reproduced on a small fixture — planner
+  chose `audit_event_pkey`; support-evidence caveat only, not a defect.)
+- **Gates (fresh disposable DBs, dropped):** `git diff --check` 0; `npm ci` 0; prisma
+  format/validate/generate 0; `migrate deploy` 0 (5 migrations); `migrate status` 0;
+  `format:check` 0; `typecheck` 0; `lint` 0; `npm run test` 0 (251); `test:integration`
+  0 (62, real PostgreSQL); `build` 0; `test:e2e` 0 (21). `npm audit`: 1 moderate + 4
+  high (unchanged recorded advisories; fixes need breaking upgrades — none made).
+- **Non-blocking observations:** actor/subject audit indexes remain deferred to S1-G;
+  `(workspace_id, at)` is not used by the current `id`-cursor read path; the
+  `listAuditEvents` platform-admin path stays deferred (matrix-permitted, no plumbing).
+- **No external exposure:** no route/action/UI/API was added;
+  `assert*ExternallyExposable` still fails closed; no S1-F code. **S1-F is eligible for
+  planning only, and remains BLOCKED on the outstanding invite/recovery `TODO(human)`
+  policy.**
+
+### Independent review outcome (opencode-go/deepseek-v4.1-flash) — FAIL (historical, pre-repair)
 
 Reviewed range `3415812..b97c5b5`. Verdict: **FAIL** on four findings:
 
@@ -341,9 +389,10 @@ index regression assertion — each verified failing then restored byte-for-byte
   `typecheck` 0; `lint` 0; `npm run test` 0 (251 passed); `test:integration` 0
   (62 passed); `build` 0; `test:e2e` 0 (21 passed). `npm audit`: 1 moderate + 4
   high (unchanged recorded advisories; fixes need breaking upgrades — none made).
-- **S1-E status: repaired, gates green, independent re-review PENDING.** This is
-  builder repair, not an independent verdict. A fresh different-model re-review
-  is required before S1-F or external exposure.
+- **S1-E status at repair time: repaired, gates green, independent re-review
+  pending.** This repair block is builder evidence, not an independent verdict; the
+  subsequent independent re-review (see the PASS outcome above) passed the repaired
+  tree `9f02983`.
 
 ### Implementation evidence (pre-repair baseline, retained)
 

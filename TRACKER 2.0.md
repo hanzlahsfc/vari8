@@ -13,16 +13,18 @@ deployment, production-data change, or external-service change.
 - Current product name: undecided. `App`, `The-great-tracker-`, `Prime Tracker Pro`, and
   `PRGRSS 2.0` are placeholders or source names, not an approved product name.
 - Current branch: `main`
-- Last independently reviewed HEAD: `3415812` (S1-D, **SWE-2 High** verdict **PASS**).
-  History: `gpt-6-astra` independently FAILED `ec8250c` on five findings; builder repair
-  landed in `6e8e2e6`/`942879e`/`3415812`; SWE-2 High then re-reviewed the exact repaired
-  tree `3415812` (range `85feade..3415812`) read-only and passed it. S1-E was then
-  implemented (`45752bc`/`87a4d0a`/`b97c5b5`), independently reviewed by
-  `opencode-go/deepseek-v4.1-flash` → **FAIL** (P1 fail-open metadata allowlist, P2
-  `setPrimaryCoach` idempotency, P3 doc drift, P4 read index) and repaired by SWE-2
-  High (plan `b52848c`) — **independent re-review pending**; `3415812` remains the
-  last reviewed tree. See §12, `docs/tasks/s1-d-versioned-consent.md`, and
-  `docs/tasks/s1-e-audit.md`.
+- Last independently reviewed HEAD: `9f0298388a9a749948980a26d4ff913781a2b8eb` (S1-E,
+  **opencode-go/deepseek-v4.1-flash** verdict **PASS**). History: `gpt-6-astra`
+  independently FAILED S1-D `ec8250c` on five findings; builder repair landed in
+  `6e8e2e6`/`942879e`/`3415812`; SWE-2 High independently passed S1-D at `3415812`
+  (range `85feade..3415812`). S1-E was then implemented (`45752bc`/`87a4d0a`/`b97c5b5`)
+  and FAILED the first DeepSeek independent review (P1 fail-open metadata allowlist, P2
+  `setPrimaryCoach` idempotency, P3 doc drift, P4 read index); SWE-2 High repaired it
+  (`b52848c`/`4f8c939`/`9f02983`) and DeepSeek independently re-reviewed the repaired
+  tree `9f02983` (range `3415812..9f02983`) read-only and passed it. S1-E is
+  independently PASS; S1-F is eligible for planning but has not started (still gated on
+  invite/recovery `TODO(human)` policy). See §12, `docs/tasks/s1-d-versioned-consent.md`,
+  and `docs/tasks/s1-e-audit.md`.
 - Reference implementation: `nexuslinkproductions/PRIME-STATE-TRACKER`, branch `hanzlah`,
   reviewed at `aa59905`. Reuse applicable engineering patterns, not its product data,
   formulas, visual identity, or assumptions.
@@ -277,16 +279,19 @@ schematic/scripts arrive:
 ## 8. Current next action
 
 Stage 1 slices S1-A (schema), S1-B (authorization core), S1-C (client ownership & assignments)
-are complete, **S1-D (versioned consent) is independently PASS** (SWE-2 High re-review of
-`85feade..3415812` after the `gpt-6-astra` FAIL and `942879e` repair), and **S1-E
-(metadata-only audit) is implemented and repaired** after a DeepSeek independent FAIL:
-`AuditEvent` + `lib/audit.ts`, consent and assignment mutations write audit inside
-their Serializable transactions, gates green (unit 251, integration 62, E2E 21) — but
-S1-E is **NOT independently reviewed**: the builder never grades its own work, and the
-DeepSeek findings were repaired by SWE-2 High, not re-verified. Next: obtain a fresh
-different-model independent S1-E re-review of the repaired tree before S1-F (tokens)
-or any external exposure. No consent/assignment mutation is exposed; GDPR (S1-G) and
-workspace shell (S1-H) remain later slices.
+are complete; **S1-D (versioned consent) is independently PASS** (SWE-2 High re-review of
+`85feade..3415812` after the `gpt-6-astra` FAIL and `942879e` repair); **S1-E
+(metadata-only audit) is independently PASS** — `opencode-go/deepseek-v4.1-flash`
+re-reviewed the repaired tree `9f02983` (range `3415812..9f02983`) read-only after its
+own earlier FAIL, verified P1–P4 fixes, and passed it. Consent and assignment mutations
+write audit inside their Serializable transactions; gates green (unit 251, integration
+62, E2E 21). **S1-E still adds no external exposure** (`assert*ExternallyExposable`
+fails closed) and several audit requirements remain explicitly deferred (`DENY` events,
+login outcomes, platform-admin reads, health-operation wrapper, retention/support policy
+— see `docs/security/consent-audit.md`). Next: plan **S1-F (tokens: invites/recovery)**
+only, which remains **BLOCKED on the outstanding `TODO(human)` invite/recovery policy**
+(it must not be implemented or exposed until those policy decisions are recorded). GDPR
+(S1-G) and workspace shell (S1-H) remain later slices; no health records or product UI.
 
 ## 9. Human inputs still required
 
@@ -391,6 +396,51 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-30 — S1-E independent re-review PASS (reviewer: opencode-go/deepseek-v4.1-flash)
+
+- Independently re-reviewed the repaired S1-E tree at `9f0298388a9a749948980a26d4ff913781a2b8eb`
+  (full range `3415812..9f02983`; repair-only range `b97c5b5..9f02983`), read-only, and
+  returned **PASS**. Independence basis: S1-E and its repair were built by SWE-2 High;
+  this reviewer (`opencode-go/deepseek-v4.1-flash`) is not the builder (it authored the
+  earlier S1-E FAIL, and re-verified rather than trusting the builder's report).
+- P1 verified: `META_VALIDATORS` is a `Map` (own-key `get`), validators must return
+  exactly `true`, enumeration/validator exceptions normalize to `audit_metadata_forbidden`,
+  and the clean object is built with `Object.defineProperty`. Reproduced on real
+  PostgreSQL: own `constructor`/`toString`/`valueOf`/`__proto__` keys and a throwing
+  getter all reject with `AuditError("audit_metadata_forbidden")` (no raw `TypeError`),
+  and a synthetic canary left **0** leaked rows. Mutation check: reverting the own-key
+  protection failed the new `constructor`/`toString` tests (restored byte-for-byte).
+- P2 verified on real PostgreSQL: `setPrimaryCoach` on the already-active sole primary
+  returns `changed:false` with no event (`[true,false,false,true]`; UPDATE events
+  1 → 2 only on the genuine switch; exactly one ACTIVE PRIMARY). Forced audit failure
+  rolled back a genuine change (0 assignments, 0 events). Validation (workspace,
+  membership, coach-capable role, user status, client-in-workspace) precedes the early
+  return; the `client_assignment_one_active_primary_key` partial index guarantees
+  sole-ness.
+- P3 verified: `consent-audit.md` now describes the closed allowlist (not a recursive
+  denylist) and lists deferred requirements (DENY events, login outcomes, platform-admin
+  reads, health-operation wrapper, retention, SUPPORT access) with rationale and
+  prerequisite slices. `stage-1-plan.md` S1-E row updated consistently. Deferrals are
+  retained as tracked requirements, not dropped.
+- P4 verified: additive migration `20260929170000_stage1_audit_read_index` adds
+  `audit_event_workspace_id_id_idx (workspace_id, id)`; `(workspace_id, at)` retained;
+  S1-A composite FKs and both S1-A/S1-D partial unique indexes remain live. `listAuditEvents`
+  filters by `workspaceId` and orders/cursors by `id`, matching the index shape.
+- Gates (fresh disposable DBs, dropped): `git diff --check` 0; `npm ci` 0;
+  `prisma format/validate/generate` 0; `migrate deploy` 0 (5 migrations);
+  `migrate status` 0; `format:check` 0; `typecheck` 0; `lint` 0; `npm run test` 0
+  (251 passed); `test:integration` 0 (62 passed); `build` 0; `test:e2e` 0
+  (21 passed). `npm audit`: 1 moderate + 4 high (unchanged recorded advisories; no force-fix).
+- Non-blocking observations: the builder's `EXPLAIN` "Index Only Scan" claim was not
+  reproduced on a small fixture (planner chose `audit_event_pkey`); the composite index
+  exists and matches the query shape, so this is a support-evidence caveat, not a defect.
+  `(workspace_id, at)` remains for chronological reads but is not used by the current
+  `listAuditEvents` path; actor/subject indexes remain deferred to S1-G.
+- **S1-E is independently PASS at `9f02983`.** No external exposure; mutations remain
+  closed (`assert*ExternallyExposable` still throws). S1-F is eligible for planning but
+  has not started and remains BLOCKED on the outstanding invite/recovery `TODO(human)`
+  policy.
 
 ### 2026-09-30 — S1-E independent DeepSeek FAIL repaired (builder: SWE-2 High; re-review PENDING)
 

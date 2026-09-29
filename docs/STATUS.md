@@ -4,6 +4,37 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-30 — S1-E independent re-review — PASS (opencode-go/deepseek-v4.1-flash)
+
+- Re-reviewed the repaired S1-E tree at `9f02983` (full range `3415812..9f02983`;
+  repair-only `b97c5b5..9f02983`), read-only. Independence: S1-E + repair built by
+  SWE-2 High; reviewer authored the earlier FAIL and re-verified independently.
+  **PASS** after verifying all four findings.
+- P1 (metadata allowlist): `Map`-based own-key lookup + strict `=== true` +
+  exception normalization + `Object.defineProperty`. Real PostgreSQL: own
+  `constructor`/`toString`/`valueOf`/`__proto__` keys and a throwing getter all
+  reject `audit_metadata_forbidden` (no raw `TypeError`); canary leaked 0 rows.
+  Mutation check (own-key protection reverted → 2 unit failures) restored
+  byte-for-byte.
+- P2 (`setPrimaryCoach`): already-active sole primary → `changed:false`, no write,
+  no event (`[true,false,false,true]`; UPDATE events 1→2 only on the real switch;
+  one ACTIVE PRIMARY). Forced audit failure rolled back a genuine change.
+- P3 (docs): closed allowlist wording corrected; deferred items (DENY events,
+  login, platform-admin reads, health wrapper, retention, SUPPORT access) retained
+  with rationale/prerequisite slices — not dropped.
+- P4 (index): additive `20260929170000_stage1_audit_read_index` adds
+  `(workspace_id, id)`; `(workspace_id, at)`, S1-A composite FKs, and both partial
+  unique indexes remain live.
+- Gates (fresh disposable DBs, dropped): `git diff --check` 0; `npm ci` 0;
+  prisma format/validate/generate 0; `migrate deploy` 0 (5); `migrate status` 0;
+  `format:check` 0; `typecheck` 0; `lint` 0; `npm run test` 0 (251);
+  `test:integration` 0 (62, real PG); `build` 0; `test:e2e` 0 (21).
+  `npm audit`: 1 moderate + 4 high (unchanged advisories; no force-fix).
+- **S1-E is independently PASS at `9f02983`.** No external exposure
+  (`assert*ExternallyExposable` still throws). Next: S1-F is eligible for planning
+  only, still BLOCKED on the invite/recovery `TODO(human)` policy; S1-G/S1-H remain
+  later.
+
 ## 2026-09-30 — S1-E independent review FAIL (DeepSeek) repaired; re-review PENDING
 
 - `opencode-go/deepseek-v4.1-flash` independently reviewed `3415812..b97c5b5` and
