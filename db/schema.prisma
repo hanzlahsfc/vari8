@@ -51,6 +51,20 @@ enum AssignmentStatus {
   REMOVED
 }
 
+enum ConsentKind {
+  PRIVACY_NOTICE
+  HEALTH_DATA
+  CYCLE
+  PHOTOS
+  BLOODWORK
+  PED_HRT
+}
+
+enum ConsentSource {
+  CLIENT_SELF
+  COACH_ATTESTED
+}
+
 model User {
   id           String       @id @default(cuid())
   email        String       @unique
@@ -61,8 +75,9 @@ model User {
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
-  memberships    WorkspaceMember[]
-  clientProfiles ClientProfile[]
+  memberships     WorkspaceMember[]
+  clientProfiles  ClientProfile[]
+  consentsGranted ConsentRecord[]
 
   @@map("users")
 }
@@ -129,6 +144,7 @@ model ClientProfile {
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   assignments ClientAssignment[] @relation("ClientAssignmentClient")
+  consents    ConsentRecord[]
 
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
   @@unique([workspaceId, userId])
@@ -149,7 +165,7 @@ model ClientAssignment {
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime         @updatedAt @map("updated_at")
 
-  clientProfile ClientProfile  @relation("ClientAssignmentClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile   @relation("ClientAssignmentClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
   coachMember   WorkspaceMember @relation("ClientAssignmentCoach", fields: [coachMemberId], references: [id], onDelete: Restrict)
 
   // Same-workspace invariant is enforced at the database level by composite foreign keys
@@ -159,4 +175,24 @@ model ClientAssignment {
   @@index([coachMemberId, status])
   @@index([clientProfileId, status])
   @@map("client_assignment")
+}
+
+model ConsentRecord {
+  id              String        @id @default(cuid())
+  clientProfileId String        @map("client_profile_id")
+  kind            ConsentKind
+  version         String
+  grantedAt       DateTime      @default(now()) @map("granted_at") @db.Timestamptz(6)
+  revokedAt       DateTime?     @map("revoked_at") @db.Timestamptz(6)
+  grantedByUserId String?       @map("granted_by_user_id")
+  source          ConsentSource @default(CLIENT_SELF)
+
+  clientProfile ClientProfile @relation(fields: [clientProfileId], references: [id], onDelete: Restrict)
+  grantedBy     User?         @relation(fields: [grantedByUserId], references: [id], onDelete: SetNull)
+
+  // Exact-version active-consent lookup. The "at most one unrevoked row per
+  // (client, kind, version)" invariant is a raw partial unique index in the migration
+  // (Prisma cannot express partial indexes).
+  @@index([clientProfileId, kind, version, revokedAt])
+  @@map("consent_record")
 }

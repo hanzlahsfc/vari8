@@ -270,31 +270,30 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
     ).not.toBeNull();
   });
 
-  it("introduces no health/consent/audit/token/product tables", async () => {
+  it("introduces no health/audit/token/product tables", async () => {
     const rows = await prisma.$queryRawUnsafe<Array<{ table_name: string }>>(
       "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'",
     );
     const names = rows.map((r) => r.table_name);
     for (const forbidden of [
-      "consent",
       "audit_log",
       "access_token",
       "daily_entry",
       "food",
       "exercise",
-      "ped",
       "meal",
       "program",
     ]) {
       expect(names.some((n) => n.includes(forbidden))).toBe(false);
     }
-    // Only the expected S1-A tables exist (plus _prisma_migrations).
+    // Identity/tenancy (S1-A) plus the versioned consent table (S1-D).
     expect(names.sort()).toEqual(
       [
         "_prisma_migrations",
         "client_assignment",
         "client_profile",
         "coach_profile",
+        "consent_record",
         "users",
         "workspace",
         "workspace_member",
