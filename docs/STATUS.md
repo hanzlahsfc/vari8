@@ -4,6 +4,18 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-29 — Phase B0 (Daily Tracker prototype) — PASS
+- Built: dev-only, client-side, in-memory Daily Tracker entry prototype at `/daily`
+  (`lib/daily-prototype.ts`, `app/daily/*`) with a visible "not saved" notice and
+  an in-memory week view. Source-backed fields only; computed column shows `TODO(product)`.
+- No persistence of any kind (no DB/schema/server actions/localStorage/cookies). Gated by
+  `ENABLE_DAILY_PROTOTYPE=1` (reached directly at `/daily`, not linked); production default returns 404.
+- Verified: `npm run verify` → 0 (133 tests); `npm run build` → 0; `npm run test:e2e` → 0
+  (21 passed; asserts no write network request + refresh clears state).
+- Blocked: persistence requires stakeholder decisions (roles/ownership, access scoping,
+  retention/deletion, consent/audit, exposure/licensing).
+- Next action: none — await decisions before Phase B1.
+
 ## 2026-09-29 — Phase A (product UI) — PASS
 - Built: read-only Foods/Exercises libraries (`spec/data/*.json`) and a read-only viewer for
   all 11 sheets (`spec/sheets/<slug>.json` + summaries); sparse grid rendering (empty cells not

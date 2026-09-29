@@ -1,6 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-const ROUTES = ["/", "/sheets", "/sheets/daily-tracker", "/library/foods", "/library/exercises"];
+const ROUTES = [
+  "/",
+  "/sheets",
+  "/sheets/daily-tracker",
+  "/library/foods",
+  "/library/exercises",
+  "/daily", // dev-only prototype, enabled for the test server
+];
 
 test("each page has a single h1 and labelled primary navigation", async ({ page }) => {
   for (const route of ROUTES) {

@@ -118,3 +118,14 @@ overridable via the environment.
 
 Committed, redacted `spec/sheets/**` artifacts and the summaries/theme/cross-sheet outputs
 arrive in later phases. See `docs/extraction-contract.md`.
+
+## Daily Tracker prototype (development-only, Phase B0)
+
+`/daily` is a **client-side, in-memory** Daily Tracker entry prototype. It performs no
+persistence (no DB, storage, cookies, or network writes) and entries disappear on refresh.
+
+It is enabled **only** when `ENABLE_DAILY_PROTOTYPE=1`; otherwise the route returns 404. It is
+reached directly at `/daily` (not linked in navigation, so no dead link is baked into static
+builds). Leave the flag unset in any real deployment — persistent health data,
+roles/ownership, consent/audit, and access policy are undecided (see
+`docs/tasks/phase-b0.md`).

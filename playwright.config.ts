@@ -14,5 +14,10 @@ export default defineConfig({
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
+    env: {
+      // Phase B0 prototype is development-only; enable it for the test server.
+      // A normal production build leaves this unset and /daily returns 404.
+      ENABLE_DAILY_PROTOTYPE: "1",
+    },
   },
 });

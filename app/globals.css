@@ -227,3 +227,60 @@ body {
   color: var(--color-text-secondary);
   background-color: var(--color-surface);
 }
+
+.notice {
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface);
+  font-size: var(--font-size-sm);
+}
+
+.daily-form {
+  margin-top: var(--space-6);
+}
+
+.daily-group {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+}
+
+.daily-group legend {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  padding: 0 var(--space-1);
+}
+
+.daily-grid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+}
+
+.daily-field {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.daily-errors {
+  color: var(--color-accent);
+  font-size: var(--font-size-sm);
+  margin: var(--space-2) 0;
+}
+
+.daily-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: var(--space-3) 0;
+}
+
+.daily-todo {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
