@@ -13,8 +13,9 @@ deployment, production-data change, or external-service change.
 - Current product name: undecided. `App`, `The-great-tracker-`, `Prime Tracker Pro`, and
   `PRGRSS 2.0` are placeholders or source names, not an approved product name.
 - Current branch: `main`
-- Current reviewed HEAD: `340f95ccf7f0cb8a0bfed969c4a2f6d339e221b1` (Stage 0; committed
-  locally, **not pushed**). Last pushed `origin/main`: `f4ebac094a773d86808a8d1d442575f1dcabca6d`
+- Current reviewed HEAD: `f40d9a8` (Part A CRE8 documentation reconciliation; committed
+  locally, **not pushed**; the Stage 1 plan commit follows — see §12). Last pushed `origin/main`:
+  `f4ebac094a773d86808a8d1d442575f1dcabca6d`
 - Reference implementation: `nexuslinkproductions/PRIME-STATE-TRACKER`, branch `hanzlah`,
   reviewed at `aa59905`. Reuse applicable engineering patterns, not its product data,
   formulas, visual identity, or assumptions.
@@ -346,6 +347,34 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-29 — CRE8 reconciliation + Stage 1 security plan (plan only; local, not pushed)
+
+- Scope: Part A documentation reconciliation; Part B Stage 1 multi-tenant security **plan only**.
+- Starting state: branch `main`, commit `340f95c`, `origin/main` `f4ebac0`, tree clean.
+- Plan/acceptance source: `TRACKER 2.0.md` §7 Stage 1; this task's plan-only boundaries.
+- Files changed: `AGENTS.md`, `TRACKER 2.0.md`, `docs/open-questions.md`,
+  `docs/product-decisions.md` (Part A, commit `f40d9a8`); added `docs/tasks/stage-1-plan.md`,
+  `docs/security/{data-ownership,authorization-model,consent-audit}.md`, `docs/STATUS.md`.
+- RED evidence: not applicable (documentation/plan only; no production behavior changed).
+- Focused verification: `git diff --check` → 0; `npm run format:check` → 0;
+  `git grep -nI forthcoming` → none; referenced artifact paths exist.
+- Full gates: `npm run verify` → 0; 21 files / 139 tests (unchanged by docs).
+- Behavioral test: n/a (no UI/runtime change).
+- Independent review: fresh-context `general` subagent (shares the builder's model — diversity
+  not claimed). First verdict **FAIL** with 14 findings (tenant-isolation gaps, unsafe
+  owner/assistant scopes, missing assignment/consent matrix rows, undefined cells, token/master
+  owner gaps, cross-workspace assignment invariant, platform-admin export scope, i18n conflict,
+  stale Part A wording). All 14 repaired; re-check verdict **PASS**.
+- Commit/push/deploy: Part A `f40d9a8`; Stage 1 plan commit follows. **Not pushed.**
+- Decisions/TODO(human): final role matrix & multi-coach policy; owner/assistant access to
+  cycle/bloodwork; support access; assistant write scope; invite/registration/reset policy;
+  PED/HRT consent/legal policy; retention durations; consent granularity/offline attestation;
+  audit retention; locales.
+- Known risks/blockers: PRGRSS 2.0 formulas remain underivable (CRE8 schematic excludes PRGRSS
+  2.0; `SCRIPT_CRE8.gs` unsupplied); Stage 1 authorization is application-enforced (no RLS yet).
+- Next action: implement **Stage 1 slice S1-A** (identity/tenancy schema) only after the plan is
+  approved.
 
 ### 2026-09-29 — Stage 0 repository/process correction (local, not pushed)
 

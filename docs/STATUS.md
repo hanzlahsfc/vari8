@@ -4,6 +4,22 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-29 — Stage 1 planning (multi-tenant security) — plan reviewed; implementation NOT started
+
+- Part A (docs reconciliation): updated TRACKER HEAD to `f40d9a8` + local-only status; replaced
+  "Marshall" with "Marcel"; recorded the received `CRE8_Input_Flow_Overview.html`, its confirmed
+  CRE8 mappings, and its stated limits; removed "forthcoming schematic" wording; noted it
+  explicitly excludes PRGRSS 2.0.
+- Part B (plan): `docs/tasks/stage-1-plan.md`, `docs/security/data-ownership.md`,
+  `docs/security/authorization-model.md`, `docs/security/consent-audit.md` — tenant/identity
+  model, default-deny authorization matrix (10+ denial cases), versioned consent, metadata-only
+  audit, invite/recovery tokens, GDPR/storage boundaries, and an 8-slice implementation sequence.
+- Verified: `git diff --check` 0; `npm run format:check` 0; `npm run verify` 0 (139 tests);
+  `npm run test` unaffected. No migration, no `db/schema.prisma` change, no Stage 1 code.
+- Review: independent fresh-context subagent (shares the builder's model — diversity not claimed)
+  FAILED first with 14 findings; all 14 fixed and re-checked to PASS.
+- Not pushed. Next action: implement Stage 1 slice S1-A only after plan approval.
+
 ## 2026-09-29 — Stage 0 (repository/process correction) — PASS (local, not pushed)
 
 - Built: root `AGENTS.md`; `docs/product-decisions.md`; corrected `docs/open-questions.md`
