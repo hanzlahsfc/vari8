@@ -13,8 +13,8 @@ deployment, production-data change, or external-service change.
 - Current product name: undecided. `App`, `The-great-tracker-`, `Prime Tracker Pro`, and
   `PRGRSS 2.0` are placeholders or source names, not an approved product name.
 - Current branch: `main`
-- Current reviewed HEAD: `f40d9a8` (Part A CRE8 documentation reconciliation; committed
-  locally, **not pushed**; the Stage 1 plan commit follows — see §12). Last pushed `origin/main`:
+- Current reviewed HEAD: `8005196` (CRE8 reconciliation + reviewed Stage 1 security plan;
+  committed locally, **not pushed**). Last pushed `origin/main`:
   `f4ebac094a773d86808a8d1d442575f1dcabca6d`
 - Reference implementation: `nexuslinkproductions/PRIME-STATE-TRACKER`, branch `hanzlah`,
   reviewed at `aa59905`. Reuse applicable engineering patterns, not its product data,
@@ -239,10 +239,13 @@ schematic/scripts arrive:
 
 ## 8. Current next action
 
-Stage 0 is complete and independently reviewed (see the log entry above); the Stage 0 commit
-is local only and was not pushed. Prepare the **Stage 1** multi-tenant security plan and review
-it before any migration is created. Do not begin Stage 1 schema/authorization work until that
-plan is approved.
+Stage 0 is complete and independently reviewed. The Stage 1 multi-tenant security plan is
+committed and independently reviewed (`docs/tasks/stage-1-plan.md`). **S1-A implementation now:
+add the identity/multi-tenant database structure** (`User` platform fields, `Workspace`,
+`WorkspaceMember`, `CoachProfile`, `ClientProfile`, `ClientAssignment`, enums, constraints, one
+forward migration, and constraint tests). S1-A adds schema only — no guards, consent, audit,
+tokens, GDPR, health records, or product UI (those are later slices). All local commits remain
+unpushed; do not push.
 
 ## 9. Human inputs still required
 
