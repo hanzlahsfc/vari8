@@ -69,6 +69,35 @@ describe("redactSheet", () => {
   });
 });
 
+describe("MENSES cycle-phase guide (source-aware region)", () => {
+  const cells = [
+    cell(7, 11, "Luteal"), // client current phase, OUTSIDE the guide region
+    cell(14, 25, "CYCLE PHASE GUIDE"), // static label
+    cell(17, 26, "Days 1-5"),
+    cell(17, 39, "Days 15-28"),
+    cell(18, 26, "MENSTRUAL"),
+    cell(18, 39, "LUTEAL"),
+    cell(20, 34, "Shedding phase. Focus on rest, recovery movement."),
+    cell(26, 2, "synthetic cycle history value 99"), // below the region
+  ];
+  const result = redactSheet("menses", "MENSES.html", cells, {}, []);
+  const at = (row: number, col: number) =>
+    result.artifact.cells.find((c) => c.row === row && c.col === col);
+
+  it("keeps the full guide block (labels, day ranges, phase names, descriptions)", () => {
+    expect(at(17, 26)?.text).toBe("Days 1-5");
+    expect(at(17, 39)?.text).toBe("Days 15-28");
+    expect(at(18, 26)?.text).toBe("MENSTRUAL");
+    expect(at(18, 39)?.text).toBe("LUTEAL");
+    expect(at(20, 34)?.text).toContain("Shedding phase");
+  });
+
+  it("still redacts client values outside the region", () => {
+    expect(at(7, 11)?.text).toBe("[REDACTED:client.menses]");
+    expect(at(26, 2)?.text).toBe("[REDACTED:client.menses]");
+  });
+});
+
 describe("isSafeCellText", () => {
   const labels = safeLabelSet("dashboard");
 

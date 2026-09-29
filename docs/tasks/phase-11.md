@@ -26,8 +26,10 @@ raw output only via the existing `RAW_EXTRACTION_DIR` opt-in.
   `client.menses`, `client.peaking`, `client.show`, `vendor.contact`.
 
 ## Counts (never originals)
-- Cells: 811,938 total — 11,029 kept, 20,879 redacted, 780,030 empty.
-- Manifest: 20,901 entries (20,879 cell-level; 22 document-level from Phase 4).
+- Cells: 811,938 total — 11,052 kept, 20,856 redacted, 780,030 empty.
+- Manifest: 20,878 entries (20,856 cell-level; 22 document-level from Phase 4).
+- (Counts updated in Phase 12 after the narrow MENSES guide-region correction; see
+  `docs/tasks/phase-12.md`.)
 
 ## Commands + real exit codes
 ```
@@ -49,6 +51,6 @@ Independent fresh-context review recorded in the phase report. Limitation: revie
 builder's underlying model — not model-diverse.
 
 ## Remaining TODO(product)
-- MENSES cycle-phase guide over-redacted (phase words collide with client values).
-- ~99 MB artifacts dominated by empty cells; consider a compact representation later.
+- MENSES cycle-phase guide: RESOLVED in Phase 12 via a source-located region rule.
+- ~99 MB artifacts dominated by empty cells; left unchanged (contract fidelity).
 - Safe-label/copy allowlist to be confirmed against the xlsx/backend schematic.

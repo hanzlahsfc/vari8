@@ -100,10 +100,11 @@ Rules (implemented in `lib/extraction/redact.ts`):
 Categories: `client.daily-entry`, `client.profile`, `client.plan`, `client.mealplan`,
 `client.menses`, `client.peaking`, `client.show`, and `vendor.contact`.
 
-Known limitation (`TODO(product)`): the MENSES cycle-phase **guide** copy is over-redacted
-because phase words (menstrual/follicular/ovulation/luteal) also appear as client values, so
-keeping them would leak the client's cycle phase. The guide can be re-allowed once its
-coordinates are confirmed against the xlsx/backend schematic.
+The MENSES `CYCLE PHASE GUIDE` block is generic static product copy (phase names, day ranges,
+generic descriptions). Because phase words also appear as DAILY TRACKER/TIMELINE client
+values, they are **not** matched globally; instead the guide is kept via a source-located
+region anchored on its static label (`mensesGuideRegion` in `lib/extraction/redact.ts`). Client
+values outside that region (current phase, cycle history, HRT) stay redacted.
 
 ## Enforcement
 

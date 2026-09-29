@@ -4,11 +4,26 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-29 — Phase 12 — PASS
+- Final audit: local == remote == `e6cdcb7` before the Phase 12 fix; all 11 redacted cell
+  artifacts + 11 summaries + `theme.json` + `cross-sheet.md` + `spec/data/*.json` + manifest
+  present and schema-valid; manifest bijective with redacted cells (20,856); 0 leaked
+  `normalized`/`todo`; no client/DOB/secret in tracked files or published history.
+- Narrow fix: MENSES `CYCLE PHASE GUIDE` kept via a source-located region (`mensesGuideRegion`),
+  since it is generic static product copy; client values outside the region stay redacted.
+  Counts now 11,052 kept / 20,856 redacted / 780,030 empty; manifest 20,878.
+- Verified: `npm run verify` → exit 0 (106 tests); `--redacted` twice → byte-identical; guards
+  (`--raw` no dir, `--raw` into `spec/sheets`) exit 1; source untouched; size 99 MB (reported,
+  left unchanged).
+- Deliverable scope: foundation + extraction artifacts only — NOT the workbook UI or formulas
+  absent from the HTML export.
+- Next action: none (awaiting direction); product roadmap is separate (see final report).
+
 ## 2026-09-29 — Phase 11 — PASS
 - Built: `lib/extraction/redact.ts` (fail-closed, source-aware redaction); `--redacted` mode
   in `scripts/extract-sheets.ts`; committed `spec/sheets/<slug>.json` ×11 (811,938 cells
-  total: 11,029 kept, 20,879 redacted, 780,030 empty) and `spec/redaction-manifest.json`
-  (20,901 entries: 20,879 cell-level + 22 document-level).
+  total) and `spec/redaction-manifest.json`. Final counts (post Phase 12 fix): 11,052 kept,
+  20,856 redacted, 780,030 empty; manifest 20,878 (20,856 cell-level + 22 document-level).
 - Redacted categories: `client.daily-entry`, `client.profile`, `client.plan`,
   `client.mealplan`, `client.menses`, `client.peaking`, `client.show`, and `vendor.contact`
   (1 vendor credit in the Nutrition reference sheet). No original values in artifacts or

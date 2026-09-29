@@ -15072,7 +15072,7 @@
       "rowSpan": 1,
       "colSpan": 5,
       "class": "s16",
-      "text": "[REDACTED:client.menses]"
+      "text": "Days 1-5 "
     },
     {
       "row": 17,
@@ -15080,7 +15080,7 @@
       "rowSpan": 1,
       "colSpan": 5,
       "class": "s16",
-      "text": "[REDACTED:client.menses]"
+      "text": "Days 6-13 "
     },
     {
       "row": 17,
@@ -15096,7 +15096,7 @@
       "rowSpan": 1,
       "colSpan": 6,
       "class": "s16",
-      "text": "[REDACTED:client.menses]"
+      "text": "Days 15-28 "
     },
     {
       "row": 17,
@@ -15984,7 +15984,7 @@
       "rowSpan": 1,
       "colSpan": 5,
       "class": "s18",
-      "text": "[REDACTED:client.menses]"
+      "text": "MENSTRUAL"
     },
     {
       "row": 18,
@@ -15992,7 +15992,7 @@
       "rowSpan": 1,
       "colSpan": 5,
       "class": "s19",
-      "text": "[REDACTED:client.menses]"
+      "text": "FOLLICULAR"
     },
     {
       "row": 18,
@@ -16000,7 +16000,7 @@
       "rowSpan": 1,
       "colSpan": 3,
       "class": "s20",
-      "text": "[REDACTED:client.menses]"
+      "text": "OVULATION"
     },
     {
       "row": 18,
@@ -16008,7 +16008,7 @@
       "rowSpan": 1,
       "colSpan": 6,
       "class": "s21",
-      "text": "[REDACTED:client.menses]"
+      "text": "LUTEAL"
     },
     {
       "row": 18,
@@ -16920,7 +16920,7 @@
       "rowSpan": 1,
       "colSpan": 6,
       "class": "s25",
-      "text": "[REDACTED:client.menses]"
+      "text": "✦"
     },
     {
       "row": 19,
@@ -17808,7 +17808,7 @@
       "rowSpan": 1,
       "colSpan": 1,
       "class": "s26",
-      "text": "[REDACTED:client.menses]"
+      "text": "꧞"
     },
     {
       "row": 20,
@@ -17816,7 +17816,7 @@
       "rowSpan": 1,
       "colSpan": 4,
       "class": "s27",
-      "text": "[REDACTED:client.menses]"
+      "text": "MENSTRUAL"
     },
     {
       "row": 20,
@@ -17824,7 +17824,7 @@
       "rowSpan": 1,
       "colSpan": 3,
       "class": "s28",
-      "text": "[REDACTED:client.menses]"
+      "text": "Days 1-5 "
     },
     {
       "row": 20,
@@ -17832,7 +17832,7 @@
       "rowSpan": 1,
       "colSpan": 11,
       "class": "s29",
-      "text": "[REDACTED:client.menses]"
+      "text": " Shedding phase. Focus on rest, recovery movement."
     },
     {
       "row": 20,
@@ -18720,7 +18720,7 @@
       "rowSpan": 1,
       "colSpan": 1,
       "class": "s30",
-      "text": "[REDACTED:client.menses]"
+      "text": "𖧧"
     },
     {
       "row": 21,
@@ -18728,7 +18728,7 @@
       "rowSpan": 1,
       "colSpan": 4,
       "class": "s31",
-      "text": "[REDACTED:client.menses]"
+      "text": "FOLLICULAR"
     },
     {
       "row": 21,
@@ -18736,7 +18736,7 @@
       "rowSpan": 1,
       "colSpan": 3,
       "class": "s28",
-      "text": "[REDACTED:client.menses]"
+      "text": "Days 6-13 "
     },
     {
       "row": 21,
@@ -18744,7 +18744,7 @@
       "rowSpan": 1,
       "colSpan": 11,
       "class": "s29",
-      "text": "[REDACTED:client.menses]"
+      "text": " Energy rises. Great time for workouts, productivity goals."
     },
     {
       "row": 21,
@@ -19632,7 +19632,7 @@
       "rowSpan": 1,
       "colSpan": 1,
       "class": "s32",
-      "text": "[REDACTED:client.menses]"
+      "text": "✦"
     },
     {
       "row": 22,
@@ -19640,7 +19640,7 @@
       "rowSpan": 1,
       "colSpan": 4,
       "class": "s33",
-      "text": "[REDACTED:client.menses]"
+      "text": "OVULATION"
     },
     {
       "row": 22,
@@ -19656,7 +19656,7 @@
       "rowSpan": 1,
       "colSpan": 11,
       "class": "s29",
-      "text": "[REDACTED:client.menses]"
+      "text": " Peak fertility. Confidence and energy at your highest."
     },
     {
       "row": 22,
@@ -20544,7 +20544,7 @@
       "rowSpan": 1,
       "colSpan": 1,
       "class": "s34",
-      "text": "[REDACTED:client.menses]"
+      "text": "⏾"
     },
     {
       "row": 23,
@@ -20552,7 +20552,7 @@
       "rowSpan": 1,
       "colSpan": 4,
       "class": "s35",
-      "text": "[REDACTED:client.menses]"
+      "text": "LUTEAL"
     },
     {
       "row": 23,
@@ -20560,7 +20560,7 @@
       "rowSpan": 1,
       "colSpan": 3,
       "class": "s28",
-      "text": "[REDACTED:client.menses]"
+      "text": "Days 15-28 "
     },
     {
       "row": 23,
@@ -20568,7 +20568,7 @@
       "rowSpan": 1,
       "colSpan": 11,
       "class": "s29",
-      "text": "[REDACTED:client.menses]"
+      "text": " Focus on balance, nourishment and slowing down."
     },
     {
       "row": 23,
@@ -1031192,6 +1031192,6 @@
     }
   },
   "todos": [
-    "TODO(product): 60 client-bearing cells redacted by fail-closed sheet policy; expand the safe-label/copy allowlist once the xlsx/backend schematic is available"
+    "TODO(product): 37 client-bearing cells redacted by fail-closed sheet policy; expand the safe-label/copy allowlist once the xlsx/backend schematic is available"
   ]
 }

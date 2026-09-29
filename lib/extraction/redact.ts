@@ -44,10 +44,9 @@ const SAFE_COPY_MARKERS: string[] = [
   "infinitycre8",
   "licensed to prgrss",
   "redistribution, resale",
-  // NOTE: cycle-phase words (menstrual/follicular/ovulation/luteal) are NOT kept:
-  // they appear both as MENSES guide copy AND as DAILY TRACKER/TIMELINE client
-  // values, so keeping them would leak the client's cycle phase. This
-  // over-redacts the MENSES phase guide (documented TODO).
+  // NOTE: cycle-phase words (menstrual/follicular/ovulation/luteal) are NOT matched
+  // globally: they also appear as DAILY TRACKER/TIMELINE client values. The MENSES
+  // guide is instead kept via its source-located region (see mensesGuideRegion).
 ];
 
 const CATEGORY: Record<SheetSlug, string> = {
@@ -78,6 +77,31 @@ export function safeLabelSet(slug: SheetSlug): SafeLabels {
   return new Set(SUMMARY_CONFIG[slug].labels);
 }
 
+type Region = { rowStart: number; rowEnd: number; colStart: number; colEnd: number };
+
+/**
+ * Source-aware bounds of the MENSES `CYCLE PHASE GUIDE` block, located from its
+ * static label. This is generic product copy (phase names, day ranges, generic
+ * descriptions) and is kept verbatim; client values (current phase, cycle
+ * history, HRT) sit outside these bounds and stay redacted.
+ */
+function mensesGuideRegion(cells: ExtractionCell[]): Region | null {
+  const label = cells.find((cell) => cell.row < 40 && cell.text.trim() === "CYCLE PHASE GUIDE");
+  if (!label) return null;
+  // The guide block spans ~10 rows and ~16 resolved columns from its label
+  // (labels, day ranges, phase names, descriptions, glyphs).
+  return { rowStart: label.row, rowEnd: label.row + 10, colStart: label.col, colEnd: label.col + 16 };
+}
+
+function inRegion(cell: ExtractionCell, region: Region): boolean {
+  return (
+    cell.row >= region.rowStart &&
+    cell.row <= region.rowEnd &&
+    cell.col >= region.colStart &&
+    cell.col <= region.colEnd
+  );
+}
+
 export function isSafeCellText(slug: SheetSlug, text: string, labels: SafeLabels): boolean {
   const trimmed = text.trim();
   const lower = trimmed.toLowerCase();
@@ -106,6 +130,7 @@ export function redactSheet(
 ): RedactedSheet {
   const labels = safeLabelSet(slug);
   const isSafeSheet = SAFE_SHEETS.has(slug);
+  const guideRegion = slug === "menses" ? mensesGuideRegion(cells) : null;
   const category = isSafeSheet ? "vendor.contact" : CATEGORY[slug];
   const reason = isSafeSheet ? CONTACT_REASON : REDACTION_REASON;
   const placeholder = redactedPlaceholder(category);
@@ -121,7 +146,7 @@ export function redactSheet(
       emptyCells += 1;
       return { ...cell };
     }
-    if (isSafeCellText(slug, cell.text, labels)) {
+    if ((guideRegion !== null && inRegion(cell, guideRegion)) || isSafeCellText(slug, cell.text, labels)) {
       keptCells += 1;
       return { ...cell };
     }
