@@ -11,7 +11,13 @@ beforeAll(async () => {
 
 const lookup = async (email: string) =>
   email === "user@example.com"
-    ? { id: "u1", email: "user@example.com", name: "Test User", passwordHash }
+    ? {
+        id: "u1",
+        email: "user@example.com",
+        name: "Test User",
+        passwordHash,
+        status: "ACTIVE",
+      }
     : null;
 
 describe("authorizeCredentials", () => {
@@ -57,6 +63,27 @@ describe("authorizeCredentials", () => {
     );
     expect(unknown).toBeNull();
     expect(wrongPassword).toBeNull();
+  });
+
+  it("denies inactive accounts with the same generic result", async () => {
+    for (const status of ["DEACTIVATED", "INVITED"]) {
+      const inactive = async (email: string) =>
+        email === "user@example.com"
+          ? {
+              id: "u1",
+              email: "user@example.com",
+              name: "Test User",
+              passwordHash,
+              status,
+            }
+          : null;
+      expect(
+        await authorizeCredentials(
+          { email: "user@example.com", password: "right-password" },
+          inactive,
+        ),
+      ).toBeNull();
+    }
   });
 
   it("returns null without calling the lookup when fields are missing", async () => {

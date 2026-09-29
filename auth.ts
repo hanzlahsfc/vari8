@@ -26,7 +26,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return authorizeCredentials(credentials, (email) =>
           prisma.user.findUnique({
             where: { email },
-            select: { id: true, email: true, name: true, passwordHash: true },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              passwordHash: true,
+              status: true,
+            },
           }),
         );
       },

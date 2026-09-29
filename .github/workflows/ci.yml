@@ -24,8 +24,8 @@ jobs:
           --health-retries 12
     env:
       DATABASE_URL: postgresql://app:app_dev_password@127.0.0.1:5432/app_dev?schema=public
-      # Dedicated disposable DB for the migration/constraint integration tests (S1-A).
-      S1A_TEST_DATABASE_URL: postgresql://app:app_dev_password@127.0.0.1:5432/app_s1a_test?schema=public
+      # Dedicated disposable DB for integration tests (separate from the app/E2E DB).
+      INTEGRATION_DATABASE_URL: postgresql://app:app_dev_password@127.0.0.1:5432/app_integration_test?schema=public
       AUTH_SECRET: ci-test-only-auth-secret-not-for-production
       AUTH_URL: http://127.0.0.1:3000
       AUTH_TRUST_HOST: "true"
@@ -43,7 +43,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run test
-      - run: PGPASSWORD=app_dev_password psql -h 127.0.0.1 -U app -d postgres -c 'CREATE DATABASE app_s1a_test'
+      - run: PGPASSWORD=app_dev_password psql -h 127.0.0.1 -U app -d postgres -c 'CREATE DATABASE app_integration_test'
       - run: npm run test:integration
       - run: npm run build
       - run: npx playwright install --with-deps chromium

@@ -7,10 +7,11 @@ import { authorizeCredentials } from "../../lib/credentials";
 
 /**
  * S1-A identity/tenancy tests. These run against the REAL migrated PostgreSQL
- * schema in a disposable database supplied via `S1A_TEST_DATABASE_URL`. Synthetic
- * fixtures only. No shared/development database is reset or dropped here.
+ * schema in a dedicated disposable database supplied via `INTEGRATION_DATABASE_URL`
+ * (never the application/E2E database). Synthetic fixtures only; no shared or
+ * development database is reset or dropped here.
  */
-const baseUrl = process.env.S1A_TEST_DATABASE_URL;
+const baseUrl = process.env.INTEGRATION_DATABASE_URL;
 const enabled = typeof baseUrl === "string" && baseUrl.length > 0;
 
 const INIT_MIGRATION = "db/migrations/20260929000000_init/migration.sql";
@@ -381,7 +382,13 @@ describe.skipIf(!enabled)(
         (lookupEmail) =>
           scratch.user.findUnique({
             where: { email: lookupEmail },
-            select: { id: true, email: true, name: true, passwordHash: true },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              passwordHash: true,
+              status: true,
+            },
           }),
       );
       expect(result?.email).toBe(email);
@@ -391,7 +398,13 @@ describe.skipIf(!enabled)(
           (lookupEmail) =>
             scratch.user.findUnique({
               where: { email: lookupEmail },
-              select: { id: true, email: true, name: true, passwordHash: true },
+              select: {
+                id: true,
+                email: true,
+                name: true,
+                passwordHash: true,
+                status: true,
+              },
             }),
         ),
       ).toBeNull();

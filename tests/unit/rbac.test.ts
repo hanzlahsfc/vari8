@@ -1,0 +1,259 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  type Action,
+  type PrincipalRole,
+  type Resource,
+  RBAC_MATRIX,
+  RESOURCES,
+  resolveScope,
+  WORKSPACE_ROLES,
+} from "../../lib/auth/rbac";
+
+type Cell = [string, string];
+
+// Exact reviewed matrix from docs/security/authorization-model.md (R / W).
+const EXPECTED: Record<Resource, Record<string, Cell>> = {
+  workspaceSettings: {
+    PLATFORM_ADMIN: ["platform", "denied"],
+    WORKSPACE_OWNER: ["workspace", "workspace"],
+    COACH: ["workspace", "denied"],
+    ASSISTANT_COACH: ["workspace", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["denied", "denied"],
+  },
+  membersInvitations: {
+    PLATFORM_ADMIN: ["platform", "denied"],
+    WORKSPACE_OWNER: ["workspace", "workspace"],
+    COACH: ["denied", "denied"],
+    ASSISTANT_COACH: ["denied", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["denied", "denied"],
+  },
+  clientAssignments: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "workspace"],
+    COACH: ["denied", "denied"],
+    ASSISTANT_COACH: ["denied", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["denied", "denied"],
+  },
+  clientProfiles: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "workspace"],
+    COACH: ["assigned", "assigned"],
+    ASSISTANT_COACH: ["assigned", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "own"],
+  },
+  dailyTracking: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "denied"],
+    COACH: ["assigned", "assigned"],
+    ASSISTANT_COACH: ["assigned", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "own"],
+  },
+  mealPlans: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "denied"],
+    COACH: ["assigned", "assigned"],
+    ASSISTANT_COACH: ["assigned", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "denied"],
+  },
+  trainingPlansLogs: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "denied"],
+    COACH: ["assigned", "assigned"],
+    ASSISTANT_COACH: ["assigned", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "own"],
+  },
+  checkinsCoachReviews: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "denied"],
+    COACH: ["assigned", "assigned"],
+    ASSISTANT_COACH: ["assigned", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "own"],
+  },
+  cycleData: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["denied", "denied"],
+    COACH: ["assigned", "assigned"],
+    ASSISTANT_COACH: ["denied", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "own"],
+  },
+  bloodwork: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["denied", "denied"],
+    COACH: ["assigned", "assigned"],
+    ASSISTANT_COACH: ["denied", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "own"],
+  },
+  pedHrt: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["denied", "denied"],
+    COACH: ["denied", "denied"],
+    ASSISTANT_COACH: ["denied", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["denied", "denied"],
+  },
+  coachNotes: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "denied"],
+    COACH: ["assigned", "assigned"],
+    ASSISTANT_COACH: ["assigned", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["denied", "denied"],
+  },
+  clientNotes: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "denied"],
+    COACH: ["assigned", "assigned"],
+    ASSISTANT_COACH: ["assigned", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "own"],
+  },
+  consent: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["denied", "denied"],
+    COACH: ["denied", "denied"],
+    ASSISTANT_COACH: ["denied", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "own"],
+  },
+  foodExerciseMasterData: {
+    PLATFORM_ADMIN: ["platform", "platform"],
+    WORKSPACE_OWNER: ["workspace", "denied"],
+    COACH: ["workspace", "denied"],
+    ASSISTANT_COACH: ["workspace", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["workspace", "denied"],
+  },
+  exportsErasure: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "workspace"],
+    COACH: ["assigned", "denied"],
+    ASSISTANT_COACH: ["denied", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "own"],
+  },
+  auditLog: {
+    PLATFORM_ADMIN: ["platform", "denied"],
+    WORKSPACE_OWNER: ["workspace", "denied"],
+    COACH: ["denied", "denied"],
+    ASSISTANT_COACH: ["denied", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["denied", "denied"],
+  },
+  privateMediaFiles: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "denied"],
+    COACH: ["assigned", "assigned"],
+    ASSISTANT_COACH: ["assigned", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "own"],
+  },
+};
+
+const PRINCIPAL_ROLES: PrincipalRole[] = [
+  "PLATFORM_ADMIN",
+  "WORKSPACE_OWNER",
+  "COACH",
+  "ASSISTANT_COACH",
+  "SUPPORT",
+  "CLIENT",
+];
+
+describe("RBAC matrix", () => {
+  it("covers every resource × principal role × action", () => {
+    expect(RESOURCES).toHaveLength(18);
+    for (const resource of RESOURCES) {
+      for (const role of PRINCIPAL_ROLES) {
+        const cell = RBAC_MATRIX[resource]?.[role];
+        expect(cell, `${resource}/${role}`).toBeDefined();
+        for (const action of ["read", "write"] as Action[]) {
+          expect([
+            "own",
+            "assigned",
+            "workspace",
+            "platform",
+            "denied",
+          ]).toContain(cell[action]);
+        }
+      }
+    }
+    expect(WORKSPACE_ROLES).toEqual([
+      "WORKSPACE_OWNER",
+      "COACH",
+      "ASSISTANT_COACH",
+      "SUPPORT",
+      "CLIENT",
+    ]);
+  });
+
+  it("matches the reviewed matrix exactly", () => {
+    for (const resource of RESOURCES) {
+      for (const role of PRINCIPAL_ROLES) {
+        const expected = EXPECTED[resource][role];
+        expect(
+          [RBAC_MATRIX[resource][role].read, RBAC_MATRIX[resource][role].write],
+          `${resource}/${role}`,
+        ).toEqual(expected);
+      }
+    }
+  });
+
+  it("fails closed for unknown resource/action/role", () => {
+    expect(resolveScope("nope" as Resource, "read", "COACH")).toBeUndefined();
+    expect(
+      resolveScope("dailyTracking", "delete" as Action, "COACH"),
+    ).toBeUndefined();
+    expect(
+      resolveScope("dailyTracking", "read", "GHOST" as PrincipalRole),
+    ).toBeUndefined();
+  });
+
+  it("pins the security-critical denials", () => {
+    const ws = (r: Resource, a: Action) =>
+      resolveScope(r, a, "WORKSPACE_OWNER");
+    const asst = (r: Resource, a: Action) =>
+      resolveScope(r, a, "ASSISTANT_COACH");
+    const support = (r: Resource, a: Action) => resolveScope(r, a, "SUPPORT");
+    const client = (r: Resource, a: Action) => resolveScope(r, a, "CLIENT");
+    const plat = (r: Resource, a: Action) =>
+      resolveScope(r, a, "PLATFORM_ADMIN");
+    // SUPPORT denied client data
+    for (const r of [
+      "dailyTracking",
+      "clientProfiles",
+      "cycleData",
+      "bloodwork",
+      "privateMediaFiles",
+    ] as Resource[]) {
+      expect(support(r, "read")).toBe("denied");
+      expect(support(r, "write")).toBe("denied");
+    }
+    // ASSISTANT writes denied
+    for (const r of RESOURCES) expect(asst(r, "write")).toBe("denied");
+    // Owner/assistant cycle & bloodwork denied
+    expect(ws("cycleData", "read")).toBe("denied");
+    expect(ws("bloodwork", "write")).toBe("denied");
+    expect(asst("cycleData", "read")).toBe("denied");
+    // PED/HRT denied to everyone
+    for (const role of PRINCIPAL_ROLES) {
+      expect(RBAC_MATRIX.pedHrt[role].read).toBe("denied");
+      expect(RBAC_MATRIX.pedHrt[role].write).toBe("denied");
+    }
+    // Client cannot read coach notes
+    expect(client("coachNotes", "read")).toBe("denied");
+    // Platform admin cannot read health or exports
+    expect(plat("dailyTracking", "read")).toBe("denied");
+    expect(plat("exportsErasure", "read")).toBe("denied");
+    expect(plat("pedHrt", "read")).toBe("denied");
+  });
+});

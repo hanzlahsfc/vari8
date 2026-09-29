@@ -6,6 +6,8 @@ export type CredentialRecord = {
   email: string;
   name: string | null;
   passwordHash: string;
+  /** Account status; only ACTIVE accounts may authenticate (S1-B). */
+  status: string;
 };
 
 /** Looks up a user by normalized (lowercase) email. */
@@ -42,6 +44,10 @@ export async function authorizeCredentials(
 
   const valid = await verifyPassword(password, user.passwordHash);
   if (!valid) return null;
+
+  // Inactive accounts fail with the same generic result as unknown email/wrong
+  // password, so account status is never revealed.
+  if (user.status !== "ACTIVE") return null;
 
   return { id: user.id, email: user.email, name: user.name };
 }
