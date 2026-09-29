@@ -171,6 +171,30 @@ function mapConsentConflict(error: unknown): never {
   throw error;
 }
 
+/** Prisma 6/PostgreSQL reports the raw partial index by its exact column target.
+ * This is the observed P2002 metadata for consent_record_active_version_key;
+ * any other or ambiguous shape must not enable idempotent recovery.
+ */
+function isActiveConsentIndexConflict(error: unknown): boolean {
+  if (
+    !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+    error.code !== "P2002"
+  )
+    return false;
+  const meta = error.meta;
+  if (!meta || Object.keys(meta).sort().join(",") !== "modelName,target")
+    return false;
+  const target = meta.target;
+  return (
+    meta.modelName === "ConsentRecord" &&
+    Array.isArray(target) &&
+    target.length === 3 &&
+    target[0] === "client_profile_id" &&
+    target[1] === "kind" &&
+    target[2] === "version"
+  );
+}
+
 /** Relation predicate tying a consent row's client to the requested workspace. */
 function consentWhere(
   workspaceId: string,
@@ -244,7 +268,6 @@ export async function grantOwnConsent(
   const client = deps.client ?? prisma;
   const registry = deps.registry ?? unconfiguredConsentPolicy;
   let resolvedVersion: string | null = null;
-  let authorizedUserId: string | null = null;
 
   try {
     return await client.$transaction(
@@ -260,7 +283,6 @@ export async function grantOwnConsent(
           },
           createPrismaAuthorizationRepo(tx),
         );
-        authorizedUserId = context.userId;
 
         // 2. Client/workspace relationship.
         await requireClientInWorkspace(
@@ -306,7 +328,7 @@ export async function grantOwnConsent(
             clientProfileId: input.clientProfileId,
             kind: input.kind,
             version,
-            grantedByUserId: authorizedUserId,
+            grantedByUserId: context.userId,
             source: "CLIENT_SELF",
           },
         });
@@ -317,24 +339,68 @@ export async function grantOwnConsent(
   } catch (error) {
     if (error instanceof AccessDeniedError || error instanceof ConsentError)
       throw error;
-    // A racing duplicate: only idempotent if the exact active row exists now.
+    // Only the observed raw active-consent index target can enter recovery.
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      if (
-        resolvedVersion &&
-        (await isActiveConsentRowPresent(
-          client,
-          input.workspaceId,
-          input.clientProfileId,
-          input.kind,
-          resolvedVersion,
-        ))
-      ) {
-        return { kind: input.kind, changed: false };
+      if (!isActiveConsentIndexConflict(error) || !resolvedVersion)
+        throw new ConsentError("consent_conflict");
+      try {
+        return await client.$transaction(
+          async (tx) => {
+            // The failed transaction's authorization is stale. Re-read every
+            // S1-B input through this new transaction before any consent query.
+            await authorize(
+              session,
+              {
+                resource: "consent",
+                action: "write",
+                workspaceId: input.workspaceId,
+                clientProfileId: input.clientProfileId,
+              },
+              createPrismaAuthorizationRepo(tx),
+            );
+            await requireClientInWorkspace(
+              tx,
+              input.workspaceId,
+              input.clientProfileId,
+              "consent",
+              "write",
+            );
+            const requestedSource = (input as { source?: unknown }).source;
+            if (
+              requestedSource !== undefined &&
+              requestedSource !== "CLIENT_SELF"
+            )
+              throw new ConsentError("coach_attested_unsupported");
+            if (input.kind === "PED_HRT")
+              throw new ConsentError("ped_hrt_not_approved");
+            const currentVersion = registry.currentVersion(input.kind);
+            if (!currentVersion || currentVersion !== resolvedVersion)
+              throw new ConsentError("consent_conflict");
+            if (
+              !(await isActiveConsentRowPresent(
+                tx,
+                input.workspaceId,
+                input.clientProfileId,
+                input.kind,
+                currentVersion,
+              ))
+            )
+              throw new ConsentError("consent_conflict");
+            return { kind: input.kind, changed: false };
+          },
+          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+        );
+      } catch (recoveryError) {
+        if (
+          recoveryError instanceof AccessDeniedError ||
+          recoveryError instanceof ConsentError
+        )
+          throw recoveryError;
+        mapConsentConflict(recoveryError);
       }
-      throw new ConsentError("consent_conflict");
     }
     mapConsentConflict(error);
   }

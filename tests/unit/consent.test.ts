@@ -58,6 +58,39 @@ function fakePrisma(overrides: Record<string, unknown> = {}) {
   return { client: client as unknown as PrismaClient, delegates };
 }
 
+const ACTIVE_INDEX_META = {
+  modelName: "ConsentRecord",
+  target: ["client_profile_id", "kind", "version"],
+};
+function p2002(meta?: unknown) {
+  return new Prisma.PrismaClientKnownRequestError("synthetic conflict", {
+    code: "P2002",
+    clientVersion: "test",
+    ...(meta === undefined ? {} : { meta: meta as Record<string, unknown> }),
+  });
+}
+
+function racingPrisma(meta?: unknown, overrides: Record<string, unknown> = {}) {
+  const conflictMeta = arguments.length === 0 ? ACTIVE_INDEX_META : meta;
+  const findFirst = vi
+    .fn()
+    .mockResolvedValueOnce(null)
+    .mockResolvedValue({ id: "r1" });
+  const create = vi.fn(async () => {
+    throw p2002(conflictMeta);
+  });
+  const fake = fakePrisma({
+    consentRecord: {
+      findFirst,
+      findMany: vi.fn(async () => []),
+      create,
+      updateMany: vi.fn(),
+    },
+    ...overrides,
+  });
+  return { ...fake, findFirst, create };
+}
+
 describe("protected-operation mapping", () => {
   it("maps every consent-protected resource and nothing else", () => {
     const protectedResources: Resource[] = [
@@ -268,61 +301,175 @@ describe("grantOwnConsent", () => {
     expect(delegates.consentRecord.create).not.toHaveBeenCalled();
   });
 
-  it("treats P2002 as idempotent only when the exact active row exists", async () => {
-    const dup = () =>
-      new Prisma.PrismaClientKnownRequestError("dup", {
-        code: "P2002",
-        clientVersion: "test",
-      });
-    const racingCreate = () =>
-      fakePrisma({
-        consentRecord: {
-          findFirst: vi
-            .fn()
-            .mockResolvedValueOnce(null)
-            .mockResolvedValueOnce({ id: "r1" }),
-          findMany: vi.fn(async () => []),
-          create: vi.fn(async () => {
-            throw dup();
-          }),
-          updateMany: vi.fn(),
-        },
-      });
-    await expect(
-      grantOwnConsent(
-        session(),
-        { workspaceId: ws, clientProfileId: cp, kind: "HEALTH_DATA" },
-        {
-          client: racingCreate().client,
-          registry: createStaticConsentPolicy({ HEALTH_DATA: "v1" }),
-        },
-      ),
-    ).resolves.toEqual({ kind: "HEALTH_DATA", changed: false });
+  const grant = (
+    client: PrismaClient,
+    registry = createStaticConsentPolicy({ HEALTH_DATA: "v1" }),
+  ) =>
+    grantOwnConsent(
+      session(),
+      { workspaceId: ws, clientProfileId: cp, kind: "HEALTH_DATA" },
+      { client, registry },
+    );
 
-    const unresolved = fakePrisma({
-      consentRecord: {
-        findFirst: vi
-          .fn()
-          .mockResolvedValueOnce(null)
-          .mockResolvedValueOnce(null),
-        findMany: vi.fn(async () => []),
-        create: vi.fn(async () => {
-          throw dup();
-        }),
-        updateMany: vi.fn(),
-      },
+  it("recovers an exact raw-index race only after fresh transaction-bound authorization", async () => {
+    const { client, delegates, findFirst } = racingPrisma();
+    await expect(grant(client)).resolves.toEqual({
+      kind: "HEALTH_DATA",
+      changed: false,
     });
-    await expect(
-      grantOwnConsent(
-        session(),
-        { workspaceId: ws, clientProfileId: cp, kind: "HEALTH_DATA" },
-        {
-          client: unresolved.client,
-          registry: createStaticConsentPolicy({ HEALTH_DATA: "v1" }),
-        },
-      ),
-    ).rejects.toMatchObject({ code: "consent_conflict" });
+    expect(client.$transaction).toHaveBeenCalledTimes(2);
+    expect(delegates.user.findUnique).toHaveBeenCalledTimes(2);
+    expect(delegates.workspace.findUnique).toHaveBeenCalledTimes(2);
+    expect(delegates.workspaceMember.findUnique).toHaveBeenCalledTimes(2);
+    expect(findFirst).toHaveBeenCalledTimes(2);
+    expect(findFirst).toHaveBeenLastCalledWith({
+      where: {
+        clientProfileId: cp,
+        clientProfile: { workspaceId: ws },
+        kind: "HEALTH_DATA",
+        version: "v1",
+        revokedAt: null,
+      },
+      select: { id: true },
+    });
   });
+
+  it.each(["DEACTIVATED", "INVITED"] as const)(
+    "does not query consent when user becomes %s before recovery",
+    async (status) => {
+      const userFind = vi
+        .fn()
+        .mockResolvedValueOnce({
+          id: "u1",
+          platformRole: "USER",
+          status: "ACTIVE",
+        })
+        .mockResolvedValue({ id: "u1", platformRole: "USER", status });
+      const { client, findFirst } = racingPrisma(ACTIVE_INDEX_META, {
+        user: { findUnique: userFind },
+      });
+      await expect(grant(client)).rejects.toMatchObject({
+        reason: "user_inactive",
+        resource: "consent",
+        action: "write",
+      });
+      expect(client.$transaction).toHaveBeenCalledTimes(2);
+      expect(findFirst).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it.each(["SUSPENDED", "REMOVED", null] as const)(
+    "does not query consent when membership becomes %s before recovery",
+    async (status) => {
+      const membershipFind = vi
+        .fn()
+        .mockResolvedValueOnce({ id: "m1", role: "CLIENT", status: "ACTIVE" })
+        .mockResolvedValue(
+          status === null ? null : { id: "m1", role: "CLIENT", status },
+        );
+      const { client, findFirst } = racingPrisma(ACTIVE_INDEX_META, {
+        workspaceMember: { findUnique: membershipFind, findFirst: vi.fn() },
+      });
+      await expect(grant(client)).rejects.toMatchObject({
+        reason: "membership_missing_or_inactive",
+        resource: "consent",
+        action: "write",
+      });
+      expect(findFirst).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it.each([
+    [
+      "ownership",
+      { id: cp, workspaceId: ws, userId: "someone-else" },
+      "not_owner",
+    ],
+    ["workspace", null, "client_outside_workspace"],
+  ] as const)(
+    "does not query consent when client %s changes before recovery",
+    async (_, changed, reason) => {
+      const clientFind = vi
+        .fn()
+        .mockResolvedValueOnce({ id: cp, workspaceId: ws, userId: "u1" })
+        .mockResolvedValueOnce({ id: cp, workspaceId: ws, userId: "u1" })
+        .mockResolvedValue(changed);
+      const { client, findFirst } = racingPrisma(ACTIVE_INDEX_META, {
+        clientProfile: { findFirst: clientFind },
+      });
+      await expect(grant(client)).rejects.toMatchObject({
+        reason,
+        resource: "consent",
+        action: "write",
+      });
+      expect(findFirst).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("does not query consent when the workspace becomes suspended before recovery", async () => {
+    const workspaceFind = vi
+      .fn()
+      .mockResolvedValueOnce({ id: ws, status: "ACTIVE" })
+      .mockResolvedValue({ id: ws, status: "SUSPENDED" });
+    const { client, findFirst } = racingPrisma(ACTIVE_INDEX_META, {
+      workspace: { findUnique: workspaceFind },
+    });
+    await expect(grant(client)).rejects.toMatchObject({
+      reason: "workspace_missing_or_inactive",
+      resource: "consent",
+      action: "write",
+    });
+    expect(findFirst).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects policy version drift before the recovery consent query", async () => {
+    const currentVersion = vi
+      .fn()
+      .mockReturnValueOnce("v1")
+      .mockReturnValue("v2");
+    const { client, findFirst } = racingPrisma();
+    await expect(grant(client, { currentVersion })).rejects.toMatchObject({
+      code: "consent_conflict",
+    });
+    expect(currentVersion).toHaveBeenCalledTimes(2);
+    expect(findFirst).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects an exact-target P2002 when no active row appears after authorization", async () => {
+    const { client, findFirst } = racingPrisma();
+    findFirst.mockResolvedValue(null);
+    await expect(grant(client)).rejects.toMatchObject({
+      code: "consent_conflict",
+    });
+    expect(client.$transaction).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ["unrelated target", { modelName: "ConsentRecord", target: ["id"] }],
+    ["missing metadata", undefined],
+    [
+      "malformed metadata",
+      { modelName: "ConsentRecord", target: "client_profile_id,kind,version" },
+    ],
+    [
+      "unknown index",
+      { modelName: "ConsentRecord", target: ["consent_record_other_key"] },
+    ],
+    [
+      "ambiguous metadata",
+      { ...ACTIVE_INDEX_META, constraint: "some_other_key" },
+    ],
+  ])(
+    "rejects %s without any recovery consent query, even with an exact row",
+    async (_, meta) => {
+      const { client, findFirst } = racingPrisma(meta);
+      await expect(grant(client)).rejects.toMatchObject({
+        code: "consent_conflict",
+      });
+      expect(client.$transaction).toHaveBeenCalledTimes(1);
+      expect(findFirst).toHaveBeenCalledTimes(1);
+    },
+  );
 });
 
 describe("authorizeHealthOperation", () => {
@@ -488,7 +635,7 @@ describe("authorizeHealthOperation", () => {
   });
 
   it("loads only the required active (kind, version) rows with the workspace predicate", async () => {
-    const findMany = vi.fn(async (_args?: unknown) => [
+    const findMany = vi.fn(async () => [
       { kind: "PRIVACY_NOTICE", version: "v1", revokedAt: null },
       { kind: "HEALTH_DATA", version: "v1", revokedAt: null },
     ]);

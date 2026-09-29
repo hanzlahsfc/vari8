@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { AccessDeniedError } from "../../lib/auth/guard";
@@ -187,19 +187,15 @@ describe.skipIf(!enabled)("S1-D versioned consent", () => {
 
   it("readOwnConsentStatus is bounded, deterministic, and cursor-paginated", async () => {
     const { ws, u, cp } = await clientWithConsent();
-    for (const kind of [
-      "PRIVACY_NOTICE",
-      "HEALTH_DATA",
-      "CYCLE",
-      "PHOTOS",
-      "BLOODWORK",
-    ] as const) {
-      await grantOwnConsent(
-        s(u.id),
-        { workspaceId: ws.id, clientProfileId: cp.id, kind },
-        { client: prisma, registry: V1 },
-      );
-    }
+    const total = 137;
+    await prisma.consentRecord.createMany({
+      data: Array.from({ length: total }, (_, i) => ({
+        clientProfileId: cp.id,
+        kind: "HEALTH_DATA" as const,
+        version: `historical-${String(i).padStart(3, "0")}`,
+        revokedAt: new Date("2026-01-01T00:00:00.000Z"),
+      })),
+    });
     const first = await readOwnConsentStatus(
       s(u.id),
       { workspaceId: ws.id, clientProfileId: cp.id, limit: 2 },
@@ -231,14 +227,166 @@ describe.skipIf(!enabled)("S1-D versioned consent", () => {
       },
       { client: prisma },
     );
-    expect(third.items).toHaveLength(1);
-    expect(third.nextCursor).toBeNull();
+    expect(third.items).toHaveLength(2);
     const clamped = await readOwnConsentStatus(
       s(u.id),
       { workspaceId: ws.id, clientProfileId: cp.id, limit: 999 },
       { client: prisma },
     );
-    expect(clamped.items.length).toBeLessThanOrEqual(100);
+    expect(clamped.items).toHaveLength(100);
+    expect(clamped.nextCursor).not.toBeNull();
+    const remaining = await readOwnConsentStatus(
+      s(u.id),
+      {
+        workspaceId: ws.id,
+        clientProfileId: cp.id,
+        limit: 999,
+        cursor: clamped.nextCursor as string,
+      },
+      { client: prisma },
+    );
+    expect(remaining.items).toHaveLength(total - 100);
+    expect(remaining.nextCursor).toBeNull();
+    const allIds = [...clamped.items, ...remaining.items].map((r) => r.id);
+    expect(new Set(allIds).size).toBe(total);
+    expect(allIds).toEqual([...allIds].sort());
+    const defaultPage = await readOwnConsentStatus(
+      s(u.id),
+      { workspaceId: ws.id, clientProfileId: cp.id },
+      { client: prisma },
+    );
+    expect(defaultPage.items).toHaveLength(25);
+    expect(defaultPage.nextCursor).not.toBeNull();
+    expect(defaultPage.items.map((r) => r.id)).toEqual(allIds.slice(0, 25));
+  });
+
+  it("reports the real raw-index P2002 metadata", async () => {
+    const { cp } = await clientWithConsent();
+    const data = {
+      clientProfileId: cp.id,
+      kind: "CYCLE" as const,
+      version: "raw-index-metadata-v1",
+    };
+    await prisma.consentRecord.create({ data });
+    try {
+      await prisma.consentRecord.create({ data });
+      throw new Error("duplicate insert unexpectedly succeeded");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Prisma.PrismaClientKnownRequestError);
+      const known = error as Prisma.PrismaClientKnownRequestError;
+      expect(known.code).toBe("P2002");
+      // Deliberately visible evidence from the real PostgreSQL raw partial index.
+      console.info(
+        "S1-D raw-index P2002 metadata:",
+        JSON.stringify(known.meta),
+      );
+      expect(known.meta).toEqual({
+        modelName: "ConsentRecord",
+        target: ["client_profile_id", "kind", "version"],
+      });
+    }
+  });
+
+  it("runs a genuine concurrent duplicate grant through the production service", async () => {
+    const { ws, u, cp } = await clientWithConsent();
+    let arrived = 0;
+    let release!: () => void;
+    const bothRead = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const observed: Array<{ code: string; meta: unknown }> = [];
+    // Synchronize only the test's two real transaction clients after both
+    // initial PostgreSQL reads. All authorization, reads and writes still use
+    // grantOwnConsent and Prisma against the real database.
+    const raceClient = new Proxy(prisma, {
+      get(target, property) {
+        if (property !== "$transaction") return Reflect.get(target, property);
+        return async (
+          callback: (tx: Prisma.TransactionClient) => Promise<unknown>,
+          options: unknown,
+        ) => {
+          try {
+            return await target.$transaction(
+              async (tx) => {
+                const txClient = new Proxy(tx, {
+                  get(transaction, key) {
+                    if (key !== "consentRecord")
+                      return Reflect.get(transaction, key);
+                    return new Proxy(transaction.consentRecord, {
+                      get(delegate, operation) {
+                        if (operation === "findFirst") {
+                          return async (
+                            args: Parameters<typeof delegate.findFirst>[0],
+                          ) => {
+                            const row = await delegate.findFirst(args);
+                            if (arrived < 2) {
+                              arrived++;
+                              if (arrived === 2) release();
+                              await bothRead;
+                            }
+                            return row;
+                          };
+                        }
+                        return Reflect.get(delegate, operation);
+                      },
+                    });
+                  },
+                });
+                return callback(txClient);
+              },
+              options as Parameters<typeof target.$transaction>[1],
+            );
+          } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError)
+              observed.push({ code: error.code, meta: error.meta });
+            throw error;
+          }
+        };
+      },
+    });
+    const input = {
+      workspaceId: ws.id,
+      clientProfileId: cp.id,
+      kind: "CYCLE" as const,
+    };
+    const outcomes = await Promise.allSettled([
+      grantOwnConsent(s(u.id), input, { client: raceClient, registry: V1 }),
+      grantOwnConsent(s(u.id), input, { client: raceClient, registry: V1 }),
+    ]);
+    expect(arrived).toBe(2);
+    expect(
+      await prisma.consentRecord.count({
+        where: {
+          clientProfileId: cp.id,
+          kind: "CYCLE",
+          version: "test-v1",
+          revokedAt: null,
+        },
+      }),
+    ).toBe(1);
+    expect(
+      outcomes.some(
+        (outcome) => outcome.status === "fulfilled" && outcome.value.changed,
+      ),
+    ).toBe(true);
+    expect(observed).toHaveLength(1);
+    expect(["P2002", "P2034"]).toContain(observed[0].code);
+    if (observed[0].code === "P2002")
+      expect(observed[0].meta).toEqual({
+        modelName: "ConsentRecord",
+        target: ["client_profile_id", "kind", "version"],
+      });
+    console.info("S1-D concurrent grant errors:", JSON.stringify(observed));
+    console.info(
+      "S1-D concurrent grant outcomes:",
+      JSON.stringify(
+        outcomes.map((outcome) =>
+          outcome.status === "fulfilled"
+            ? outcome.value
+            : { code: (outcome.reason as ConsentError).code },
+        ),
+      ),
+    );
   });
 
   it("revoke applies across versions; re-grant creates a new historical row; old version fails after a bump", async () => {
