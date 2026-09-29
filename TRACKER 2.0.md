@@ -13,10 +13,11 @@ deployment, production-data change, or external-service change.
 - Current product name: undecided. `App`, `The-great-tracker-`, `Prime Tracker Pro`, and
   `PRGRSS 2.0` are placeholders or source names, not an approved product name.
 - Current branch: `main`
-- Last independently reviewed HEAD: `ec8250c` (S1-D, `gpt-6-astra` verdict **FAIL**).
-  Repair plan `6e8e2e6` and production/tests repair `942879e`; documentation handoff
-  follows. Starting `origin/main` for this repair was `ec8250c`. **Astra re-review pending**;
-  S1-E blocked. See §12 and `docs/tasks/s1-d-independent-review-repair.md`.
+- Last independently reviewed HEAD: `3415812` (S1-D, **SWE-2 High** verdict **PASS**).
+  History: `gpt-6-astra` independently FAILED `ec8250c` on five findings; builder repair
+  landed in `6e8e2e6`/`942879e`/`3415812`; SWE-2 High then re-reviewed the exact repaired
+  tree `3415812` (range `85feade..3415812`) read-only and passed it. S1-E unblocked for
+  implementation planning. See §12 and `docs/tasks/s1-d-versioned-consent.md`.
 - Reference implementation: `nexuslinkproductions/PRIME-STATE-TRACKER`, branch `hanzlah`,
   reviewed at `aa59905`. Reuse applicable engineering patterns, not its product data,
   formulas, visual identity, or assumptions.
@@ -258,15 +259,15 @@ schematic/scripts arrive:
 ## 8. Current next action
 
 Stage 1 slices S1-A (schema), S1-B (authorization core), S1-C (client ownership & assignments)
-are complete. S1-D (versioned consent) was independently reviewed by `gpt-6-astra` at
-`ec8250c` and **FAILED** on five findings. The focused repair is implemented at `942879e`:
-fresh transaction-bound authorization and version check before P2002 recovery reads,
-classification limited to the observed raw-index metadata, and a meaningful 137-row
-pagination test. Transaction and identifier documentation was corrected. The repair gates
-are green, but builder work cannot approve itself. Next: obtain independent Astra re-review.
-**Do not start S1-E** (metadata-only audit) until that review passes. No consent/assignment
-mutation is externally exposed; tokens (S1-F), GDPR (S1-G), and workspace shell (S1-H)
-remain later slices.
+are complete, and **S1-D (versioned consent) is now independently PASS**: after the
+`gpt-6-astra` FAIL at `ec8250c` and the `942879e` repair, SWE-2 High independently
+re-reviewed the full S1-D range `85feade..3415812` read-only — code, migration, tests,
+documentation, and real PostgreSQL evidence — and returned **PASS** (see §12).
+Next: plan and implement **S1-E** (metadata-only `AuditEvent` logging transactionally
+coupled to consent and assignment mutations), test-first, with its own independent
+different-model review before any external exposure. No consent/assignment mutation is
+externally exposed yet; tokens (S1-F), GDPR (S1-G), and workspace shell (S1-H) remain
+later slices.
 
 ## 9. Human inputs still required
 
@@ -371,6 +372,44 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-29 — S1-D independent re-review by SWE-2 High: PASS
+
+- Scope: read-only independent re-review of the complete S1-D implementation
+  (`git diff 85feade..3415812`), with focused attention on the repair range
+  `ec8250c..3415812`. Reviewer: **SWE-2 High** (independent of the DeepSeek builder
+  and the `gpt-6-astra` reviewer). No files were modified during review.
+- Starting state: branch `main`, HEAD and `origin/main` `3415812`, worktree clean;
+  remote fetched and confirmed not diverged.
+- Reviewed: `db/schema.prisma` + `db/migrations/20260929150000_stage1_versioned_consent`
+  (additive, no DROP; S1-A composite FKs and both partial unique indexes verified live
+  on a freshly migrated disposable database); `lib/consent.ts` ordering, tenant
+  predicates, fail-closed registry, PED/HRT + coach-attested denials, structural errors;
+  narrowed P2002 classifier (exact observed `ConsentRecord`/`client_profile_id,kind,
+version` metadata only, no extra keys), fresh-transaction re-authorization, version
+  drift and exact-row checks in recovery, P2034 → `consent_conflict`; bounded
+  `readOwnConsentStatus` (default 25, max 100, `id`-asc cursor); `lib/auth/guard.ts`,
+  `lib/auth/rbac.ts`, `lib/workspace/access.ts`, `lib/workspace/clients.ts`; both S1-D
+  test files; all S1-D docs.
+- Fresh gate evidence on this tree (disposable DB `s1d_review_db`, since dropped):
+  `git diff --check` 0; `npm ci` 0; `prisma format` 0 (no diff); `prisma validate` 0;
+  `prisma generate` 0; `migrate deploy` 0 (3 applied); `migrate status` 0;
+  `format:check` 0; `typecheck` 0; `lint` 0; `npm run test` 0 (204 passed);
+  `test:integration` 0 (48 passed, real PostgreSQL — reproduced raw-index P2002
+  metadata and a genuine concurrent grant yielding P2034 → `consent_conflict` with
+  exactly one active row); `build` 0; `test:e2e` 0 (21 passed).
+  `npm audit` exit 0 output: 1 moderate + 4 high — the already-recorded advisories,
+  unchanged in scope (no `--force`, no major bumps).
+- Non-blocking observations (no action required): the S1-A forbidden-substring list no
+  longer includes `ped`/`consent`, but the exact table-set equality still catches any
+  extra table; `assert*ExternallyExposable` helpers are currently unreferenced —
+  non-exposure is enforced by the absence of routes/actions.
+- Verdict: **PASS**. This supersedes the earlier `gpt-6-astra` FAIL at `ec8250c`;
+  that history and the builder repair remain recorded above and in
+  `docs/tasks/s1-d-versioned-consent.md`. S1-D is complete; S1-E may be planned.
+- Commit/push/deploy: this documentation commit only; nothing pushed, no PR, no deploy.
+- Next action: write and review `docs/tasks/s1-e-audit.md`, then implement S1-E
+  test-first.
 
 ### 2026-09-29 — S1-D independent Astra FAIL repaired; re-review pending
 

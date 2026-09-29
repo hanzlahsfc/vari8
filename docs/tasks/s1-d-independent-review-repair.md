@@ -83,5 +83,6 @@ independent Astra re-review remains required before S1-D can pass or S1-E starts
   foreign keys and active-primary index, and S1-D active-consent index remain.
   Invalid login was generic in E2E. No routes, UI, audit table, S1-E code, PR or
   deployment were added. No mutation is externally exposed.
-- **S1-D repaired after independent Astra FAIL; gates green; Astra re-review pending.**
-  S1-E is blocked until the independent re-review passes.
+- **Re-review outcome: SWE-2 High independently re-reviewed `3415812` and returned
+  PASS** (see `docs/tasks/s1-d-versioned-consent.md` and `TRACKER 2.0.md` §12). S1-E
+  is unblocked for planning; its own independent review is still required.

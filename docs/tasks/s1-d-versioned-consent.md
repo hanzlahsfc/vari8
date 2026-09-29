@@ -120,8 +120,21 @@ New unit regressions were RED on `ec8250c` (16 failed), then 32/32 passed after 
 The PostgreSQL suite passed 48/48, including 137 synthetic revoked history rows proving
 100-item max, 25-item default, cursor remainder and stable unique ordering. Eight temporary
 mutations covered the requested cases; each failed tests and was restored. No migration, route, UI,
-audit table or S1-E implementation changed. **S1-D repaired after independent Astra FAIL;
-gates green; Astra re-review pending.** S1-E remains blocked and mutations unexposed.
+audit table or S1-E implementation changed.
+
+## Independent re-review — SWE-2 High: PASS
+
+**SWE-2 High** re-reviewed the complete repaired tree `3415812` (`85feade..3415812`)
+read-only and returned **PASS**: migration additive with all raw constraints live on a
+fresh disposable PostgreSQL; narrowed P2002 recovery (exact observed metadata, fresh
+Serializable re-authorization, version-drift and exact-row checks, P2034 →
+`consent_conflict`) verified in code and reproduced against the real database;
+concurrency, bounds (137-row fixture), tenant isolation, and documentation accuracy
+confirmed; full gates green (unit 204, integration 48, E2E 21). Two non-blocking
+observations only (S1-A forbidden-substring list narrowed but table-set equality still
+guards; `assert*ExternallyExposable` unreferenced while non-exposure rests on absent
+routes). **S1-D: PASS. S1-E may now be planned and implemented; it needs its own
+independent review before any external exposure.**
 
 ## RED tests
 

@@ -4,6 +4,29 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-29 — S1-D independent re-review — PASS (SWE-2 High)
+
+- **SWE-2 High** independently re-reviewed the complete S1-D tree at `3415812`
+  (range `85feade..3415812`, repair `ec8250c..3415812`), read-only, and returned
+  **PASS**. The earlier `gpt-6-astra` FAIL at `ec8250c` and its repair history are
+  preserved below and in `docs/tasks/s1-d-versioned-consent.md`.
+- Verified on a fresh disposable PostgreSQL (`s1d_review_db`, dropped after): migration
+  additive (no DROP); S1-A composite FKs + `client_assignment_one_active_primary_key`
+  - `consent_record_active_version_key` live; P2002 recovery accepts only the observed
+    raw-index metadata and re-authorizes in a fresh Serializable transaction; P2034 →
+    `consent_conflict`; real concurrent grant left exactly one active row; 137-row
+    history test proves 100-item max / 25 default / cursor traversal; every consent query
+    workspace-scoped; authorization precedes policy/registry/consent reads; PED_HRT and
+    COACH_ATTESTED denied; no route/UI/API exposure, no audit table, no S1-E code.
+- Gates (real exit codes): `git diff --check` 0; `npm ci` 0; `prisma format` 0;
+  `prisma validate` 0; `prisma generate` 0; `migrate deploy` 0; `migrate status` 0;
+  `format:check` 0; `typecheck` 0; `lint` 0; `npm run test` 0 (204);
+  `test:integration` 0 (48); `build` 0; `test:e2e` 0 (21). `npm audit`: 1 moderate +
+  4 high (unchanged recorded advisories; no force-fix).
+- **S1-D is PASS.** Next: plan `docs/tasks/s1-e-audit.md`, then implement S1-E
+  test-first; S1-E still requires its own independent different-model review and does
+  not by itself authorize exposing mutations.
+
 ## 2026-09-29 — S1-D repaired after independent Astra FAIL; gates green; Astra re-review pending
 
 - `gpt-6-astra` reviewed `ec8250c` and failed five items: stale authorization in P2002
