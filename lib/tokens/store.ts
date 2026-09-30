@@ -55,7 +55,14 @@ export class TokenStoreError extends Error {
 
 type AccessTokenRecord = Pick<
   AccessToken,
-  "id" | "purpose" | "workspaceId" | "userId" | "targetEmail" | "intendedRole"
+  | "id"
+  | "purpose"
+  | "workspaceId"
+  | "userId"
+  | "targetEmail"
+  | "intendedRole"
+  | "createdByUserId"
+  | "createdAt"
 >;
 
 function normalizedTargetEmail(value: unknown): string {
@@ -238,6 +245,8 @@ export async function claimAccessToken(
       userId: true,
       targetEmail: true,
       intendedRole: true,
+      createdByUserId: true,
+      createdAt: true,
     },
   });
   return { ok: true, token };

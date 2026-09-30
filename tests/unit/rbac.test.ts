@@ -30,6 +30,16 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
     SUPPORT: ["denied", "denied"],
     CLIENT: ["denied", "denied"],
   },
+  // S1-F2C: coach→client invitation gets a distinct resource so the staff-
+  // invitation permission above is never accidentally broadened.
+  clientInvitations: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["denied", "workspace"],
+    COACH: ["denied", "workspace"],
+    ASSISTANT_COACH: ["denied", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["denied", "denied"],
+  },
   clientAssignments: {
     PLATFORM_ADMIN: ["denied", "denied"],
     WORKSPACE_OWNER: ["workspace", "workspace"],
@@ -171,7 +181,7 @@ const PRINCIPAL_ROLES: PrincipalRole[] = [
 
 describe("RBAC matrix", () => {
   it("covers every resource × principal role × action", () => {
-    expect(RESOURCES).toHaveLength(18);
+    expect(RESOURCES).toHaveLength(19);
     for (const resource of RESOURCES) {
       for (const role of PRINCIPAL_ROLES) {
         const cell = RBAC_MATRIX[resource]?.[role];

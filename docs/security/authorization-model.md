@@ -26,6 +26,7 @@ Every cell is written `read / write`; `—/—` means both denied.
 | ------------------------- | ------------- | ------- | ----------- | --------- | ------- | --------- |
 | workspace settings        | plat / —      | ws / ws | ws / —      | ws / —    | — / —   | — / —     |
 | members & invitations     | plat / —      | ws / ws | — / —       | — / —     | — / —   | — / —     |
+| client invitations        | — / —         | — / ws  | — / ws      | — / —     | — / —   | — / —     |
 | client assignments        | — / —         | ws / ws | — / —       | — / —     | — / —   | — / —     |
 | client profiles           | — / —         | ws / ws | asg / asg   | asg / —   | — / —   | own / own |
 | daily tracking            | — / —         | ws / —  | asg / asg   | asg / —   | — / —   | own / own |
@@ -56,6 +57,14 @@ Legend / decisions:
 - ⚠ **Coach notes → client is denied** pending an approved shared-visibility model
   (`TODO(human)`); internal notes must never be client-visible.
 - **Consent** is a client-only resource (`own/own`); see `consent-audit.md`.
+- **Invitations** (S1-F2C): `members & invitations` covers staff invitation
+  creation (COACH/ASSISTANT_COACH), owner-only listing, and owner-only
+  revocation — deliberately owner-exclusive. `client invitations` is a distinct
+  resource so a COACH's CLIENT-invite write can never widen staff invitation
+  permission. Owner may invite COACH/ASSISTANT_COACH/CLIENT; COACH may invite
+  CLIENT only; WORKSPACE_OWNER/SUPPORT/platform-admin invitations do not
+  exist. Every invite write requires an ACTIVE workspace + ACTIVE membership
+  (re-read at mutation time).
 - **Client assignments** are managed by the workspace OWNER. Rules: assignments never cross
   workspaces; a COACH cannot self-assign; every assignment change is audited. Creating an
   assignment **does not** bypass the cycle/bloodwork/PED policy gates above.

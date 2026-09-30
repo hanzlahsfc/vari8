@@ -84,6 +84,8 @@ export type AuditMeta = {
   count?: number;
   role?: "PRIMARY" | "COACH";
   status?: "ACTIVE" | "REMOVED";
+  /** S1-F2C: the invited member role on invitation events (invitable roles only). */
+  targetRole?: "COACH" | "ASSISTANT_COACH" | "CLIENT";
 };
 
 export type AuditEventInput = {
@@ -122,6 +124,10 @@ const META_VALIDATORS = new Map<keyof AuditMeta, (v: unknown) => boolean>([
   ],
   ["role", (v) => v === "PRIMARY" || v === "COACH"],
   ["status", (v) => v === "ACTIVE" || v === "REMOVED"],
+  [
+    "targetRole",
+    (v) => v === "COACH" || v === "ASSISTANT_COACH" || v === "CLIENT",
+  ],
 ]);
 
 /**

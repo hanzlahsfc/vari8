@@ -30,6 +30,7 @@ export type PrincipalRole = (typeof PRINCIPAL_ROLES)[number];
 export const RESOURCES = [
   "workspaceSettings",
   "membersInvitations",
+  "clientInvitations",
   "clientAssignments",
   "clientProfiles",
   "dailyTracking",
@@ -68,6 +69,19 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
     PLATFORM_ADMIN: c("platform", "denied"),
     WORKSPACE_OWNER: c("workspace", "workspace"),
     COACH: D,
+    ASSISTANT_COACH: D,
+    SUPPORT: D,
+    CLIENT: D,
+  },
+  // S1-F2C: a coach may create CLIENT invitations, but the staff-invitation
+  // cell above stays untouched — widening `membersInvitations` for coaches is
+  // exactly the accidental-authorization failure this split prevents.
+  // Invitation listing/revocation is owner-only and lives on
+  // `membersInvitations` (all read cells here are denied).
+  clientInvitations: {
+    PLATFORM_ADMIN: D,
+    WORKSPACE_OWNER: c("denied", "workspace"),
+    COACH: c("denied", "workspace"),
     ASSISTANT_COACH: D,
     SUPPORT: D,
     CLIENT: D,
