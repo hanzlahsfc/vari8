@@ -4,6 +4,38 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-30 — S1-F0 token-crypto — independent review PASS (opencode-go/deepseek-v4.1-flash)
+
+- Independently reviewed range `96c6380..4f713e9` (HEAD `4f713e9`), read-only,
+  each commit inspected separately. Independence: S1-F0 built by SWE-2 High;
+  reviewer is a different model. **PASS**.
+- Randomness: `crypto.randomBytes(32)` (256-bit CSPRNG, fail closed), no
+  `Math.random`/UUID/timestamp/secret/fallback/injectable seam.
+- Canonical encoding independently verified: alphabet indices ≡ 0 mod 4 →
+  `AEIMQUYcgkosw048`; 200,000 random 32-byte base64url values were all 43 chars
+  with a canonical final char; 50,000 `generateAccessToken()` outputs all
+  validate. The final-char restriction is mathematically correct and does not
+  reject generator output.
+- Hashing: SHA-256 lowercase hex; the known-answer `sha256("A"*43)` was
+  recomputed independently and matches (algorithm genuinely pinned).
+- Secret handling: no module state/logging; `TokenError("token_invalid")` only;
+  message and stack contain no input. Proxies/boxed/symbol/array/`Buffer`/padded/
+  alternative/oversized/unicode all rejected structurally.
+- Runtime boundary: `node:crypto` only; no `server-only` convention in this repo;
+  no production callers yet; no mutable global state.
+- Scope held: only `lib/tokens/crypto.ts` + its unit test + docs — no
+  schema/migration/db/invite/reset/membership/role/session/email/route/UI/audit
+  changes. S1-F remains crypto-only and BLOCKED; founder answers not recorded.
+- Gates (reviewer-run): `git diff --check` 0; `npm ci` 0; `format:check` 0;
+  `typecheck` 0; `lint` 0; `npm run test` 0 (275 passed / 27 files; token-crypto
+  24/24); `npm run build` 0; `npm run test:e2e` 0 (21 passed). `npm audit`:
+  1 moderate + 4 high (unchanged advisories; no force-fix).
+- Non-blocking: plain `string` type aliases (raw/hash interchangeable at compile
+  time; no callers, named fields — F3); redundant `≤128` bound beside the 43-char
+  pattern; stale "21 tests" counts corrected to 24.
+- Next: record the founder answers, then implement the separately reviewed S1-F
+  Phase 1 schema foundation (still no routes/email until the flow decisions land).
+
 ## 2026-09-30 — S1-F0 token-crypto foundation — implemented; gates green; independent review PENDING
 
 - `lib/tokens/crypto.ts` (policy-neutral primitives only): `generateAccessToken()`

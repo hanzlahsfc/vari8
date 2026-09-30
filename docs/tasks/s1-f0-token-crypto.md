@@ -25,7 +25,7 @@ the separate, unchanged password-hashing mechanism).
 - `lib/tokens/crypto.ts` — `generateAccessToken()`, `hashAccessToken()`,
   `TokenError`, and the `RawAccessToken` / `AccessTokenHash` /
   `GeneratedAccessToken` types.
-- `tests/unit/token-crypto.test.ts` — 21 unit tests (pure, no DB).
+- `tests/unit/token-crypto.test.ts` — 24 unit tests (pure, no DB).
 
 No other production file was touched. `db/schema.prisma`, `db/migrations/**`,
 routes, and all existing services are unchanged.
@@ -153,7 +153,52 @@ diversity-satisfying independent review) returned **PASS WITH FINDINGS**:
 
 ## Status
 
-**Implemented; review repairs landed; gates green; independent different-model
-review REQUIRED.** The fresh-context review above shares the builder's model
-and is therefore **not** independent. Next action: independent different-model
-review of S1-F0 while awaiting the S1-F product decisions.
+**Implemented; review repairs landed; gates green; independently reviewed PASS
+(`opencode-go/deepseek-v4.1-flash`, 2026-09-30).** Full S1-F remains BLOCKED on the
+unanswered product decisions.
+
+### Independent different-model review — PASS (opencode-go/deepseek-v4.1-flash)
+
+Read-only review of range `96c6380..4f713e9` (HEAD
+`4f713e986c1a05b9c808c8fb9f76b2aeb1dc29c1`), inspecting each commit independently
+(`bc436d3` implementation, `cae7621` docs, `0c97ce2` repairs, `4f713e9` record).
+Independence basis: S1-F0 was implemented by SWE-2 High; the reviewer
+`opencode-go/deepseek-v4.1-flash` is a different model and did not build this slice.
+
+- **Randomness:** `crypto.randomBytes(32)` (CSPRNG, 256 bits); an OS RNG failure
+  throws (fail closed); no `Math.random`, UUID, timestamp, application secret,
+  deterministic fallback, or injectable seam (`generateAccessToken.length === 0`).
+- **Canonical encoding (independently verified):** the reviewer computed the
+  base64url alphabet indices ≡ 0 mod 4 → `AEIMQUYcgkosw048`, generated 200,000
+  `randomBytes(32).toString("base64url")` values (all exactly 43 chars, all final
+  characters in that set), and confirmed 50,000 `generateAccessToken()` outputs all
+  validate. The final-character restriction is mathematically correct and does not
+  reject generator output.
+- **Hashing:** SHA-256 over the canonical ASCII string, 64-char lowercase hex. The
+  hardcoded known-answer vector `sha256("A"*43) =
+0f007385b6f9d4b7eeb2748605afe1a984a0a3bfa3f014d09e2a784ce9e5cd1a` was
+  independently recomputed and matches (algorithm genuinely pinned, not a re-run of
+  the implementation).
+- **Secret handling:** no module state, no logging; errors are
+  `TokenError("token_invalid")` with `message === "token_invalid"`; the reviewer
+  confirmed neither the message nor the stack contains submitted input, and that
+  proxies, boxed strings, symbols, arrays, `Buffer`, padded/alternative encodings,
+  oversized input (1,000,000 chars), and unicode are all rejected with the
+  structural code.
+- **Runtime boundary:** `node:crypto` only (no browser fallback); the repo has no
+  `server-only` marker convention, and the module has no production callers yet — a
+  future client import would fail to bundle rather than leak. No mutable global state.
+- **Scope:** the range contains only `lib/tokens/crypto.ts`, its unit test, and docs
+  — no schema/migration/database/invite/reset/membership/role/session-revocation/
+  email/route/UI/audit changes. S1-F stays crypto-only and BLOCKED; the newly received
+  founder answers are not recorded here.
+- **Gates (reviewer-run):** `git diff --check` 0; `npm ci` 0; `format:check` 0;
+  `typecheck` 0; `lint` 0; `npm run test` 0 (275 passed / 27 files; token-crypto
+  24/24); `npm run build` 0; `npm run test:e2e` 0 (21 passed). `npm audit`: 1 moderate
+  - 4 high (unchanged advisories; no `--force`).
+
+Non-blocking observations: `RawAccessToken`/`AccessTokenHash` are plain `string`
+aliases (compile-time interchangeable; acceptable given no callers and named
+`{rawToken, tokenHash}` fields — see F3); the `≤128` bound is redundant for
+correctness beside the fixed 43-char pattern but a harmless cheap abuse guard; the
+stale "21 tests" counts in this file/tracker were corrected to 24 during this review.

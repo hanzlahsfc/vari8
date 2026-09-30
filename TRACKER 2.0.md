@@ -13,18 +13,19 @@ deployment, production-data change, or external-service change.
 - Current product name: undecided. `App`, `The-great-tracker-`, `Prime Tracker Pro`, and
   `PRGRSS 2.0` are placeholders or source names, not an approved product name.
 - Current branch: `main`
-- Last independently reviewed HEAD: `9f0298388a9a749948980a26d4ff913781a2b8eb` (S1-E,
-  **opencode-go/deepseek-v4.1-flash** verdict **PASS**). History: `gpt-6-astra`
-  independently FAILED S1-D `ec8250c` on five findings; builder repair landed in
+- Last independently reviewed HEAD: `4f713e986c1a05b9c808c8fb9f76b2aeb1dc29c1` (S1-F0
+  token-crypto, **opencode-go/deepseek-v4.1-flash** verdict **PASS**). History:
+  `gpt-6-astra` independently FAILED S1-D `ec8250c`; builder repair landed in
   `6e8e2e6`/`942879e`/`3415812`; SWE-2 High independently passed S1-D at `3415812`
-  (range `85feade..3415812`). S1-E was then implemented (`45752bc`/`87a4d0a`/`b97c5b5`)
-  and FAILED the first DeepSeek independent review (P1 fail-open metadata allowlist, P2
-  `setPrimaryCoach` idempotency, P3 doc drift, P4 read index); SWE-2 High repaired it
-  (`b52848c`/`4f8c939`/`9f02983`) and DeepSeek independently re-reviewed the repaired
-  tree `9f02983` (range `3415812..9f02983`) read-only and passed it. S1-E is
-  independently PASS; S1-F is eligible for planning but has not started (still gated on
-  invite/recovery `TODO(human)` policy). See §12, `docs/tasks/s1-d-versioned-consent.md`,
-  and `docs/tasks/s1-e-audit.md`.
+  (range `85feade..3415812`). S1-E was implemented (`45752bc`/`87a4d0a`/`b97c5b5`),
+  FAILED the first DeepSeek independent review (P1 fail-open metadata allowlist, P2
+  `setPrimaryCoach` idempotency, P3 doc drift, P4 read index), was repaired by
+  SWE-2 High (`b52848c`/`4f8c939`/`9f02983`), and DeepSeek then passed the repaired
+  tree `9f02983` (range `3415812..9f02983`). S1-F0 token-crypto
+  (`bc436d3`/`cae7621`/`0c97ce2`/`4f713e9`) was independently reviewed by DeepSeek
+  (range `96c6380..4f713e9`) and **passed**. S1-F0 is crypto-only; full S1-F
+  (invites/recovery) remains BLOCKED on the `TODO(human)` policy decisions. See §12,
+  `docs/tasks/s1-e-audit.md`, and `docs/tasks/s1-f0-token-crypto.md`.
 - Reference implementation: `nexuslinkproductions/PRIME-STATE-TRACKER`, branch `hanzlah`,
   reviewed at `aa59905`. Reuse applicable engineering patterns, not its product data,
   formulas, visual identity, or assumptions.
@@ -304,6 +305,11 @@ login outcomes, platform-admin reads, health-operation wrapper, retention/suppor
 proposed invariants/`AccessToken` design/service matrix/test plan — and remains
 **BLOCKED on the `TODO(human)` invite/recovery decisions** (`docs/open-questions.md`
 #16–27; it must not be implemented or exposed until those decisions are recorded).
+The policy-neutral prerequisite **S1-F0 token-crypto** (`lib/tokens/crypto.ts`:
+generation/hashing/validation only) is **independently PASS** (DeepSeek,
+`96c6380..4f713e9`). Next: record the founder answers, then implement the separately
+reviewed **S1-F Phase 1** schema foundation (`AccessToken` model, hash-only) — still no
+routes/email/reset behavior until the flow decisions land.
 The policy-neutral prerequisite **S1-F0** (`lib/tokens/crypto.ts` — CSPRNG
 generation, strict validation, SHA-256 storage digest only) has landed with gates
 green; it resolved none of the decisions and itself still requires an independent
@@ -419,6 +425,42 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 
 ## 12. Change log (newest first)
 
+### 2026-09-30 — S1-F0 token-crypto independent review PASS (opencode-go/deepseek-v4.1-flash)
+
+- Independently reviewed range `96c6380..4f713e9` (HEAD `4f713e9`), read-only, each
+  commit inspected separately (`bc436d3` implementation, `cae7621` docs, `0c97ce2`
+  repairs, `4f713e9` record). Independence basis: built by SWE-2 High; reviewer is a
+  different model. **PASS**.
+- Cryptographic randomness: `crypto.randomBytes(32)` (256-bit CSPRNG; OS RNG failure
+  throws → fail closed); no `Math.random`/UUID/timestamp/app-secret/deterministic
+  fallback/injectable seam.
+- Canonical encoding independently verified: alphabet indices ≡ 0 mod 4 →
+  `AEIMQUYcgkosw048`; 200,000 random 32-byte base64url values were all 43 chars with a
+  canonical final char; 50,000 `generateAccessToken()` outputs all validate. The
+  final-char restriction is mathematically correct and never rejects generator output.
+- Hashing: SHA-256 lowercase hex; independently recomputed `sha256("A"*43) =
+0f007385b6f9d4b7eeb2748605afe1a984a0a3bfa3f014d09e2a784ce9e5cd1a` matches the
+  known-answer test (algorithm genuinely pinned). Password scrypt (`lib/password.ts`)
+  remains separate and unchanged.
+- Secret handling: no module state/logging; `TokenError("token_invalid")` only; message
+  and stack contain no submitted input. Independent adversarial checks rejected proxies,
+  boxed strings, symbols, arrays, `Buffer`, padded/alternative encodings, 1,000,000-char
+  input, and unicode — all structural, no raw errors.
+- Runtime boundary: `node:crypto` only (no browser fallback); no `server-only` marker
+  convention exists in this repo; no production callers yet; no mutable global state.
+- Scope: only `lib/tokens/crypto.ts`, its unit test, and docs. No schema/migration/db/
+  invite/reset/membership/role/session-revocation/email/route/UI/audit changes. Full
+  S1-F stays BLOCKED; founder answers not recorded.
+- Gates (reviewer-run): `git diff --check` 0; `npm ci` 0; `format:check` 0;
+  `typecheck` 0; `lint` 0; `npm run test` 0 (275 passed / 27 files; token-crypto
+  24/24); `npm run build` 0; `npm run test:e2e` 0 (21 passed). `npm audit`: 1 moderate
+  - 4 high (unchanged advisories; no force-fix).
+- Non-blocking observations: plain `string` aliases for raw/hash (F3; acceptable with no
+  callers and named fields); redundant `≤128` bound; stale "21 tests" counts corrected
+  to 24.
+- Next: record the founder answers, then implement the separately reviewed S1-F Phase 1
+  schema foundation (`AccessToken`, hash-only) before any flow/route/email work.
+
 ### 2026-09-30 — S1-F0 token-crypto foundation (implemented; gates green; independent review REQUIRED)
 
 - Scope: policy-neutral cryptographic prerequisite for S1-F only —
@@ -435,7 +477,7 @@ Copy this block, fill it in, and insert it immediately above the previous log en
   `docs/tasks/s1-f-invites-recovery-plan.md` §3 (hash-only storage, CSPRNG
   material, no token leakage); `stage-1-plan.md` §6 (`tokenHash`, never raw).
 - Files changed: `lib/tokens/crypto.ts` (new), `tests/unit/token-crypto.test.ts`
-  (new, 21 tests), `docs/tasks/s1-f0-token-crypto.md` (new),
+  (new, 24 tests), `docs/tasks/s1-f0-token-crypto.md` (new),
   `docs/tasks/s1-f-invites-recovery-plan.md` (status note only),
   `docs/STATUS.md`, `TRACKER 2.0.md`.
 - RED evidence: `npx vitest run tests/unit/token-crypto.test.ts` → exit 1
