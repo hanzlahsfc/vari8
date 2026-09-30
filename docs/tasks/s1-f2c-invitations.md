@@ -182,3 +182,77 @@ file may import the service — enforced by a static import-scan test.
 Full required set on fresh disposable PostgreSQL; docs + tracker updated;
 scoped commits; normal push; **independent different-model review pending**
 (builder never self-approves).
+
+---
+
+## Implementation record (2026-09-30)
+
+**Status: implemented — gates green — independent different-model review
+PENDING.** Builder: SWE-2 High (builder only, no self-approval).
+
+### Delivered surface
+
+- `lib/workspace/invitations.ts`: `createWorkspaceInvitation`,
+  `revokeWorkspaceInvitation`, `listWorkspaceInvitations`,
+  `acceptWorkspaceInvitation`, `assertInvitationOrchestrationExternallyExposable`
+  (fail-closed). Structural `InvitationError` codes only.
+- `lib/auth/rbac.ts`: new `clientInvitations` resource; `membersInvitations`
+  unchanged (owner-only staff invites/list/revoke).
+- `lib/audit.ts`: closed `targetRole` meta key (invitable roles only).
+- `lib/tokens/store.ts`: `claimAccessToken` record now also selects
+  `createdByUserId` + `createdAt` (issuer re-authorization + freshness).
+- No migration needed — the F2B index set already serves every query; the
+  owner list uses `access_token_invite_target_idx`
+  (workspaceId, purpose, …) for filtering + bounded id ordering.
+- `authorization-model.md` updated (new matrix row + rules).
+
+### Key semantics proven on real PostgreSQL (21 integration tests)
+
+- Owner invites COACH/ASSISTANT_COACH/CLIENT; coach CLIENT-only; all other
+  roles + platform admin denied; inactive user/membership/workspace denied.
+- Replacement revokes exactly the active (workspace, email, role) tuple;
+  `pg_advisory_xact_lock` serializes same-tuple creates — concurrent
+  replacement leaves exactly one active row.
+- Forced audit failure (DB trigger) rolls the whole create back — previous
+  invite survives, no partial token/audit rows.
+- Listing: owner-only, 25/100 bound, id cursor, tenant-locked, minimal fields
+  with derived `active|consumed|revoked|expired` status (no hash/user id).
+- Revocation: owner-only, conditional update only for live rows, idempotent
+  `{changed:false}` for terminal/foreign/missing, audit only on change.
+- Acceptance: atomic claim (one winner under `Promise.all` race); issuer
+  re-authorization (client=owner-or-coach, staff=owner); new-user path creates
+  ACTIVE user + member + exactly one profile type (policy-validated,
+  scrypt-hashed password verified); existing-user path requires session for
+  the exact invited email and never touches the password; same user joins
+  multiple workspaces with no data crossing; INVITED→ACTIVE; ACTIVE same-role
+  idempotent; ACTIVE other-role closed; SUSPENDED/REMEMBER-restoration gated
+  on `token.createdAt > member.updatedAt` (fresh-invite invariant).
+
+### RED → GREEN
+
+Tests written first; initial failures fixed were test-shape issues (fixture
+names, role-filtered counting, expiry CHECK). Service behavior verified
+against the spec throughout.
+
+### Mutation evidence (14, all caught, restored byte-exact)
+
+authz bypass (20 fails) · resource-mapping collapse→coach invites staff (1+1)
+· assistant grant (1+2) · list workspace predicate drop (1) · replacement
+tuple widened (2) · audit write removed (2) · raw token in audit (1) · issuer
+re-auth removed (1) · session/email match removed (1) · claim revokedAt
+dropped (1) · freshness check removed (1) · profile workspace predicate (1) ·
+unconditional claim (2) · list bound removed (1 — caught only after both
+`take`+`slice` dropped; documented).
+
+### Gates
+
+diff-check 0 · ci 0 · format/validate/generate 0 · deploy 0 · status 0 ·
+format:check 0 · typecheck 0 · lint 0 · unit 315 · integration 152/12 files ·
+build 0 · e2e 21 · audit: 1 mod + 4 high (unchanged, no --force).
+
+### Boundaries kept
+
+No routes/UI/actions, no email provider/URL/domain, no rate limiting, no
+ClientAssignment auto-creation (unapproved), no cross-workspace copying, no
+S1-F2D work. `assertTokenFlowsExternallyExposable` +
+`assertInvitationOrchestrationExternallyExposable` fail closed.

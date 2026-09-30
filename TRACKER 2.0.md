@@ -214,6 +214,20 @@ threshold, health-data policy, workflow, or layout.
     plus supporting indexes for the account listing and cleanup query. No
     orchestration, routes, or email. Record:
     `docs/tasks/s1-f2b-account-security.md`.
+  - **S1-F2C** (implemented; independent different-model review PENDING):
+    `lib/workspace/invitations.ts` — `createWorkspaceInvitation` (owner→
+    COACH/ASSISTANT_COACH/CLIENT via `membersInvitations`, coach→CLIENT via new
+    `clientInvitations` resource; advisory-lock serialized replacement of the
+    exact active tuple; audit-coupled; raw token returned only post-commit in
+    a provider-neutral `delivery` payload), owner-only
+    `listWorkspaceInvitations` (25/100, id cursor, structural status),
+    owner-only `revokeWorkspaceInvitation` (idempotent `{changed}`),
+    `acceptWorkspaceInvitation` (atomic claim → issuer re-authorization →
+    exact-identity binding → membership state machine incl. fresh-invite-only
+    restoration → single profile type → user binding → audit; one Serializable
+    tx). `AuditMeta.targetRole` closed extension. No routes/UI/email —
+    `assertInvitationOrchestrationExternallyExposable` fails closed. Record:
+    `docs/tasks/s1-f2c-invitations.md`.
   - **Policy reconciliation + orchestration plan (docs only, 2026-09-30):**
     Aleks's final S1-F answers recorded in `product-decisions.md` #20–28 —
     invite acceptance rules, ACTIVE-only reset, min-10 password (below the
@@ -396,8 +410,11 @@ cleanup) is implemented with 14 mutation proofs; DeepSeek's independent
 review FAILed the session boundary, and the repair (jwt-callback
 invalidation, supporting indexes, deliberate callback composition) was
 independently re-reviewed **PASS** at `ae7c6d5`
-(`opencode-go/deepseek-v4.1-flash`, range `ac9857e..ae7c6d5`), then S1-F2C
-invitations. No orchestration service exists yet. GDPR
+(`opencode-go/deepseek-v4.1-flash`, range `ac9857e..ae7c6d5`).
+**S1-F2C invitation orchestration is now implemented** (see §6 + task record)
+with gates green (unit 315, integration 152 real-PG, E2E 21) and 14 mutation
+proofs — **its independent different-model review is pending**, then S1-F2D
+password-reset orchestration. No routes/UI/email exist. GDPR
 (S1-G) and workspace shell (S1-H) remain later slices; no health records or
 product UI.
 
@@ -502,6 +519,23 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 - Known risks/blockers:
 - Next action: `<one exact next action>`.
 ```
+
+## 12. Change log (newest first)
+
+### 2026-09-30 — S1-F2C invitation orchestration implemented (review pending)
+
+- Plan `518c234`; implementation `feat` commit; record+handoff commit.
+- New `clientInvitations` RBAC resource (coach→CLIENT only); owner staff
+  invites/list/revoke via `membersInvitations`; `AuditMeta.targetRole` closed
+  extension; `claimAccessToken` record gains `createdByUserId`/`createdAt`.
+- Real-PG evidence (21 tests): full matrix denies, exact-tuple replacement
+  (advisory-lock serialized), audit-failure rollback, owner-only bounded
+  list/revoke, new/existing-user acceptance, membership state machine with
+  timestamp-based freshness, issuer re-authorization, single-winner atomic
+  claim, structural errors, no raw token persisted.
+- 14 mutations caught, restored byte-exact. Gates: unit 315, integration
+  152/12, build 0, e2e 21; `npm audit` unchanged.
+- **Next: independent different-model review of S1-F2C → then S1-F2D.**
 
 ## 12. Change log (newest first)
 

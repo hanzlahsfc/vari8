@@ -160,6 +160,18 @@ extraction) only, not the workbook UI itself.
 - Next: record the founder answers, then implement the separately reviewed S1-F
   Phase 1 schema foundation (still no routes/email until the flow decisions land).
 
+## 2026-09-30 — S1-F2C invitation orchestration implemented; independent review PENDING
+
+- `lib/workspace/invitations.ts`: create/replace (owner→staff|client,
+  coach→client), owner-only list/revoke, atomic acceptance for new + existing
+  users, membership state machine incl. fresh-invite restoration, tx-coupled
+  audit, post-commit provider-neutral delivery. No routes/UI/email.
+- RBAC: new `clientInvitations` resource; matrix exact-tested.
+- Gates: unit 315, integration 152/12 real-PG files, build 0, e2e 21; 14
+  mutations caught + restored byte-exact. Plan+record:
+  `docs/tasks/s1-f2c-invitations.md`.
+- **Next: independent different-model review of S1-F2C → then S1-F2D.**
+
 ## 2026-09-30 — S1-F2B REPAIRED after DeepSeek independent FAIL; re-review PENDING
 
 - DeepSeek review of `ac9857e`: **FAIL** — session-callback `null` was

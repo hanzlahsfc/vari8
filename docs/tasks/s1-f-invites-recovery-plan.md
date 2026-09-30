@@ -3,7 +3,11 @@
 **Plan only.** No schema change, no migration, no `lib/tokens.ts` service, no routes/UI, no
 token or reset code, no email provider. (The separately-scoped S1-F0 crypto primitives —
 `lib/tokens/crypto.ts`, generation + hashing only — exist but contain no invite/reset
-behavior.) S1-F implementation is **blocked** on the human decisions in §2.
+behavior.) S1-F implementation is **no longer blocked**: founder answers landed in
+`docs/product-decisions.md`, and S1-F0/F1/F2A/F2B are independently PASS.
+S1-F2C invitation orchestration is implemented (review pending) —
+`docs/tasks/s1-f2c-invitations.md`. This document remains the authority for
+the underlying invite/recovery decisions.
 Sources: `stage-1-plan.md` §6/§9, `data-ownership.md`, `authorization-model.md`,
 `consent-audit.md`, `lib/auth/rbac.ts`, `lib/credentials.ts`, `lib/password.ts`, `auth.ts`,
 `auth.config.ts`, `db/schema.prisma`, and the S1-A–S1-E review records.
