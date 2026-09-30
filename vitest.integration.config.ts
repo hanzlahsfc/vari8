@@ -36,6 +36,8 @@ export default defineConfig({
         : {}),
       // Test-only JWT secret for the real Auth.js cookie pipeline. Synthetic.
       AUTH_SECRET: "integration-test-auth-secret-not-for-production",
+      // Keep local integration runs on the same request-rewrite path as CI.
+      AUTH_URL: "http://127.0.0.1:3000",
       AUTH_TRUST_HOST: "true",
     },
   },

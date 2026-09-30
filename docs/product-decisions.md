@@ -1,7 +1,8 @@
 # Product decisions
 
-Locked decisions for the new PRGRSS-derived product. Source: `TRACKER 2.0.md` §3 (relayed
-stakeholder decisions). This document does not authorize a push, PR, deploy, or external change.
+Locked decisions for the new PRGRSS-derived product, relayed by Hanzlah from the stakeholders.
+This document is the repository's authoritative decision record; it does not authorize a push,
+PR, deploy, or external change.
 
 1. **New repository, new product.** This is a new repository and a completely different final
    product name. `App`, `The-great-tracker-`, `Prime Tracker Pro`, and `PRGRSS 2.0` are

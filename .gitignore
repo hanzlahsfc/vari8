@@ -13,6 +13,9 @@ next-env.d.ts
 .env.*
 !.env.example
 
+# Private local AI handoff. The canonical copy lives outside the repository.
+/TRACKER 2.0.md
+
 # Raw source exports / inputs. These contain real client PII and health data and
 # must never be committed. Rules are root-anchored (leading "/") so they do NOT
 # affect the committed, redacted extraction output under spec/sheets/.

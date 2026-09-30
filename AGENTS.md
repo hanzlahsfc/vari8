@@ -1,9 +1,10 @@
 # AGENTS.md — read this first
 
-This is the new PRGRSS-derived product. Read these two files completely before any work:
+This is the new PRGRSS-derived product. Read these files completely before any work:
 
-1. `TRACKER 2.0.md` — the persistent build handoff, locked decisions, and current next action.
-2. `docs/conductor-generic/SKILL.md` — the required orchestration loop.
+1. `docs/conductor-generic/SKILL.md` — the required orchestration loop.
+2. `docs/product-decisions.md` — locked product decisions.
+3. `docs/STATUS.md` and the task-specific plan/record — implementation state and next action.
 
 Do not rely on chat history. Do not invent formulas, permissions, thresholds, health-data
 policy, workflows, or layouts.
@@ -11,7 +12,7 @@ policy, workflows, or layouts.
 ## Source authority (highest first)
 
 1. Hanzlah's direct instructions and confirmed stakeholder decisions.
-2. Decisions recorded in `TRACKER 2.0.md` / decision docs.
+2. Decisions recorded in `docs/product-decisions.md` and the relevant security/design docs.
 3. The approved requirements document.
 4. Lilly's wiring/formula schematic and source scripts. The received
    `CRE8_Input_Flow_Overview.html` documents CRE8 only and explicitly excludes PRGRSS 2.0;
@@ -33,8 +34,9 @@ policy, workflows, or layouts.
   exercise the actual running flow in a browser at desktop and mobile widths.
 - **Independent review:** the builder never approves its own work. A different agent/model does
   read-only review; the builder repairs findings and re-runs affected gates.
-- **Update `TRACKER 2.0.md`** after every meaningful change, verification, review, commit, or
-  blocker, newest entry first, with real commands/exit codes/commit state.
+- **Update `docs/STATUS.md` and the task-specific record** after every meaningful change,
+  verification, review, commit, or blocker, newest entry first, with real commands/exit codes
+  and commit state. Keep private/local handoff files outside version control.
 
 ## Boundaries
 

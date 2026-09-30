@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 
 import { encode } from "@auth/core/jwt";
 import { PrismaClient } from "@prisma/client";
+import { NextRequest } from "next/server";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { auth, handlers } from "../../auth";
@@ -55,9 +56,9 @@ async function authForCookie(cookie: string) {
 
 async function sessionEndpoint(cookie: string) {
   return handlers.GET(
-    new Request("http://localhost/api/auth/session", {
+    new NextRequest("http://localhost/api/auth/session", {
       headers: { cookie },
-    }) as never,
+    }),
   );
 }
 
@@ -185,11 +186,11 @@ describe.skipIf(!enabled)(
       });
       // Client sends {data:{sv:1}} — the update path must NOT trust it.
       const res = await handlers.POST(
-        new Request("http://localhost/api/auth/session", {
+        new NextRequest("http://localhost/api/auth/session", {
           method: "POST",
           headers: { cookie, "content-type": "application/json" },
           body: JSON.stringify({ data: { sv: 1 } }),
-        }) as never,
+        }),
       );
       const body = await res.json().catch(() => null);
       // Either the update is rejected or the session stays unauthenticated —

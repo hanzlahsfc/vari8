@@ -77,4 +77,4 @@ User ──(platform identity; 0..n)── WorkspaceMember ── 1 ── Works
 
 Every row in the "sensitive record inventory" has exactly one owner; no row is owned by a coach,
 member, or user; ownership always resolves to a single `ClientProfile` (health) or a single
-`Workspace` (audit/tenant). See `TRACKER 2.0.md` Stage 1 and `docs/security/authorization-model.md`.
+`Workspace` (audit/tenant). See `docs/security/authorization-model.md`.

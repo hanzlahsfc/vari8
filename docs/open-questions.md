@@ -22,7 +22,7 @@ that cannot be derived from the supplied HTML exports and must not be guessed.
 > training quality-duration / notes pulls, detailed Bloodwork cross-tab use, PED Change Log →
 > Timeline route, fibre mapping mismatch, unsaved Supplements check-in decision, and several
 > unconfigured Dashboard charts). PRGRSS 2.0 formulas remain underivable until the PRGRSS
-> scripts and/or the original `.xlsx` arrive. See `TRACKER 2.0.md` §9.5.
+> scripts and/or the original `.xlsx` arrive. See `docs/product-decisions.md` #7 and #12.
 
 3. **`TODO(product)` — Calorie column** in DAILY TRACKER is marked "automatic"; the formula is
    not in the export.
