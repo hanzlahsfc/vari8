@@ -190,6 +190,17 @@ describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
     expect(active).toHaveLength(1);
     expect(active[0].id).toBe(second.invitationId);
     expect((await activeTokensFor(ws.id, "other@example.test")).length).toBe(1);
+    // Same workspace, same email, DIFFERENT role: untouched by the replacement.
+    const coachRow = await prisma.accessToken.findMany({
+      where: {
+        workspaceId: ws.id,
+        targetEmail: "r@example.test",
+        intendedRole: "COACH",
+        revokedAt: null,
+        consumedAt: null,
+      },
+    });
+    expect(coachRow).toHaveLength(1);
 
     // Forced audit failure: the replacement revocation rolls back too.
     const prev = await invite(sess, ws.id, "rollback@example.test", "CLIENT");
@@ -375,9 +386,18 @@ describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
     expect(token.userId).toBe(u.id);
     expect(token.consumedAt).not.toBeNull();
     const audit = await prisma.auditEvent.findFirstOrThrow({
-      where: { workspaceId: ws.id, action: "CREATE", resourceId: u.id },
+      where: {
+        workspaceId: ws.id,
+        action: "INVITE",
+        resourceType: "access_token",
+        resourceId: r.invitationId,
+        meta: { path: ["acceptedAs"], equals: "NEW_USER" },
+      },
     });
     expect(audit.actorUserId).toBe(u.id);
+    expect((audit.meta as { acceptedAs?: string })?.acceptedAs).toBe(
+      "NEW_USER",
+    );
   });
 
   it("new COACH/ASSISTANT_COACH acceptance creates member + CoachProfile only", async () => {
@@ -521,15 +541,16 @@ describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
     const { ws, session: sess } = await ownerFixture();
     const u = await user({ email: "suspend@example.test" });
     await member(ws.id, u.id, "CLIENT", "ACTIVE");
-    // Invite issued BEFORE the suspension.
+    // Invite issued BEFORE the suspension — it snapshots generation 0.
     const stale = await invite(sess, ws.id, "suspend@example.test", "CLIENT");
-    // Suspend the member AFTER the invite was issued — membership.updatedAt
-    // moves past the invite's createdAt, making that invite stale.
-    await new Promise((r) => setTimeout(r, 10));
-    await prisma.workspaceMember.updateMany({
-      where: { workspaceId: ws.id, userId: u.id },
-      data: { status: "SUSPENDED" },
-    });
+    // Suspend via raw SQL: no app clock is involved; the DB trigger bumps
+    // state_version 0 → 1 in the same statement, making the invite stale.
+    await prisma.$executeRawUnsafe(
+      `UPDATE "workspace_member" SET status='SUSPENDED'
+       WHERE workspace_id=$1 AND user_id=$2`,
+      ws.id,
+      u.id,
+    );
     await expect(
       acceptAs(session(u.id), ws.id, stale.delivery.rawToken),
     ).rejects.toThrow("invalid_token");
@@ -537,9 +558,8 @@ describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
       where: { workspaceId_userId: { workspaceId: ws.id, userId: u.id } },
     });
     expect(stillSuspended.status).toBe("SUSPENDED");
-    // A FRESH explicit re-invitation (issued after the state change) restores
-    // the exact intended membership.
-    await new Promise((r) => setTimeout(r, 10));
+    // A FRESH explicit re-invitation snapshots generation 1 and restores the
+    // exact intended membership.
     const fresh = await invite(sess, ws.id, "suspend@example.test", "CLIENT");
     const res = await acceptAs(session(u.id), ws.id, fresh.delivery.rawToken);
     expect(res.outcome).toBe("accepted");
@@ -550,35 +570,133 @@ describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
     expect(restored.role).toBe("CLIENT");
   });
 
-  it("issuer losing authorization invalidates outstanding invitations", async () => {
+  it("issuer re-authorization: guard-denied issuers invalidate outstanding invites", async () => {
     const { ws, session: sess, owner } = await ownerFixture();
+    const acceptClient = (token: string) =>
+      acceptAs(null, ws.id, token, { name: "V", password: PASSWORD });
+
+    // Issuer membership removed / suspended → invalid.
     const coach = await user();
     const cm = await member(ws.id, coach.id, "COACH");
-    const r = await invite(
+    const r1 = await invite(
       session(coach.id),
       ws.id,
-      "victim@example.test",
+      "victim1@example.test",
       "CLIENT",
     );
-    // Coach's membership removed before acceptance.
     await prisma.workspaceMember.update({
       where: { id: cm.id },
       data: { status: "REMOVED" },
     });
+    await expect(acceptClient(r1.delivery.rawToken)).rejects.toThrow(
+      "invalid_token",
+    );
+    await prisma.workspaceMember.update({
+      where: { id: cm.id },
+      data: { status: "ACTIVE" },
+    });
+    const r2 = await invite(
+      session(coach.id),
+      ws.id,
+      "victim2@example.test",
+      "CLIENT",
+    );
+    await prisma.workspaceMember.update({
+      where: { id: cm.id },
+      data: { status: "SUSPENDED" },
+    });
+    await expect(acceptClient(r2.delivery.rawToken)).rejects.toThrow(
+      "invalid_token",
+    );
+
+    // Issuer User DEACTIVATED or INVITED with an ACTIVE membership → invalid.
+    for (const status of ["DEACTIVATED", "INVITED"] as const) {
+      const cu = await user();
+      const cmx = await member(ws.id, cu.id, "WORKSPACE_OWNER");
+      const rx = await invite(
+        session(cu.id),
+        ws.id,
+        `victim-${status}@example.test`,
+        "CLIENT",
+      );
+      await prisma.user.update({
+        where: { id: cu.id },
+        data: { status },
+      });
+      await expect(acceptClient(rx.delivery.rawToken)).rejects.toThrow(
+        "invalid_token",
+      );
+      void cmx;
+    }
+
+    // Issuer deletion is impossible while invites are outstanding — the FK is
+    // ON DELETE RESTRICT, so the guard's missing-user denial is unreachable in
+    // practice; prove the FK holds and the invite still works.
+    const d = await user();
+    await member(ws.id, d.id, "COACH");
+    const rd = await invite(
+      session(d.id),
+      ws.id,
+      "victim-del@example.test",
+      "CLIENT",
+    );
+    await expect(prisma.user.delete({ where: { id: d.id } })).rejects.toThrow();
+    const resDel = await acceptAs(null, ws.id, rd.delivery.rawToken, {
+      name: "DL",
+      password: PASSWORD,
+    });
+    expect(resDel.outcome).toBe("accepted");
+
+    // Role demotion: owner → coach can no longer sustain a STAFF invite.
+    const staffInvite = await invite(
+      sess,
+      ws.id,
+      "demote@example.test",
+      "COACH",
+    );
+    await prisma.workspaceMember.update({
+      where: {
+        workspaceId_userId: { workspaceId: ws.id, userId: owner.id },
+      },
+      data: { role: "COACH" },
+    });
     await expect(
-      acceptAs(null, ws.id, r.delivery.rawToken, {
-        name: "V",
+      acceptAs(null, ws.id, staffInvite.delivery.rawToken, {
+        name: "D",
         password: PASSWORD,
       }),
     ).rejects.toThrow("invalid_token");
-    // Owner-issued invite still works.
-    const ok = await invite(sess, ws.id, "fine@example.test", "CLIENT");
-    const res = await acceptAs(null, ws.id, ok.delivery.rawToken, {
-      name: "Fine",
+    // …but the demoted owner (now COACH) can still have issued CLIENT invites.
+    const clientInvite = await invite(
+      session(owner.id),
+      ws.id,
+      "demoted-ok@example.test",
+      "CLIENT",
+    );
+    const res = await acceptAs(null, ws.id, clientInvite.delivery.rawToken, {
+      name: "Ok",
       password: PASSWORD,
     });
     expect(res.outcome).toBe("accepted");
-    void owner;
+
+    // Suspended workspace invalidates acceptance.
+    const ws2 = await ownerFixture();
+    const r3 = await invite(
+      ws2.session,
+      ws2.ws.id,
+      "sus@example.test",
+      "CLIENT",
+    );
+    await prisma.workspace.update({
+      where: { id: ws2.ws.id },
+      data: { status: "SUSPENDED" },
+    });
+    await expect(
+      acceptAs(null, ws2.ws.id, r3.delivery.rawToken, {
+        name: "S",
+        password: PASSWORD,
+      }),
+    ).rejects.toThrow("invalid_token");
   });
 
   it("wrong-workspace/purpose/expired/revoked/consumed tokens fail identically", async () => {
@@ -699,6 +817,405 @@ describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
     }
   });
 
+  // --- repair: causal generation -----------------------------------------------
+
+  it("state_version is DB-owned: direct SQL can never forge or reset it", async () => {
+    const { ws } = await ownerFixture();
+    const u = await user();
+    const m = await member(ws.id, u.id, "CLIENT", "ACTIVE");
+    expect(m.stateVersion).toBe(0);
+    // Direct INSERT cannot forge a generation.
+    const u2 = await user();
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO "workspace_member"
+         (id, workspace_id, user_id, role, status, state_version, created_at, updated_at)
+       VALUES ($1, $2, $3, 'CLIENT', 'ACTIVE', 99, now(), now())`,
+      `forged-${uid()}`,
+      ws.id,
+      u2.id,
+    );
+    const m2 = await prisma.workspaceMember.findUniqueOrThrow({
+      where: {
+        workspaceId_userId: { workspaceId: ws.id, userId: u2.id },
+      },
+    });
+    expect(m2.stateVersion).toBe(0);
+    // Suspend → generation 1.
+    await prisma.$executeRawUnsafe(
+      `UPDATE "workspace_member" SET status='SUSPENDED' WHERE id=$1`,
+      m.id,
+    );
+    expect(
+      (await prisma.workspaceMember.findUniqueOrThrow({ where: { id: m.id } }))
+        .stateVersion,
+    ).toBe(1);
+    // A direct write trying to reset it is overridden by the trigger.
+    await prisma.$executeRawUnsafe(
+      `UPDATE "workspace_member" SET state_version=0 WHERE id=$1`,
+      m.id,
+    );
+    expect(
+      (await prisma.workspaceMember.findUniqueOrThrow({ where: { id: m.id } }))
+        .stateVersion,
+    ).toBe(1);
+    // Non-state writes (updatedAt) do NOT bump the generation.
+    await prisma.$executeRawUnsafe(
+      `UPDATE "workspace_member" SET updated_at=now() WHERE id=$1`,
+      m.id,
+    );
+    expect(
+      (await prisma.workspaceMember.findUniqueOrThrow({ where: { id: m.id } }))
+        .stateVersion,
+    ).toBe(1);
+  });
+
+  it("concurrent transition vs issuance never misclassifies freshness", async () => {
+    const { ws, session: sess } = await ownerFixture();
+    const u = await user({ email: "racegen@example.test" });
+    const m = await member(ws.id, u.id, "CLIENT", "ACTIVE");
+    // Race invite issuance against a suspension. Either serialization is
+    // causally correct: pre-transition snapshot → accept fails; post-transition
+    // snapshot → fresh invite → accept succeeds. Never misclassified.
+    const [inv] = await Promise.all([
+      invite(sess, ws.id, "racegen@example.test", "CLIENT"),
+      prisma.$executeRawUnsafe(
+        `UPDATE "workspace_member" SET status='SUSPENDED' WHERE id=$1`,
+        m.id,
+      ),
+    ]);
+    const memberAfter = await prisma.workspaceMember.findUniqueOrThrow({
+      where: { id: m.id },
+    });
+    const token = await prisma.accessToken.findUniqueOrThrow({
+      where: { id: inv.invitationId },
+    });
+    const accepted = await acceptAs(session(u.id), ws.id, inv.delivery.rawToken)
+      .then(() => "accepted")
+      .catch((e: Error) => e.message);
+    if (token.targetMemberStateVersion === memberAfter.stateVersion) {
+      expect(accepted).toBe("accepted");
+    } else {
+      expect(accepted).toBe("invalid_token");
+    }
+  });
+
+  // --- repair: profile coherence ------------------------------------------------
+
+  it("cross-role restoration with an opposite profile fails closed", async () => {
+    const { ws, session: sess } = await ownerFixture();
+    // suspended COACH w/ CoachProfile accepting a CLIENT invite → conflict
+    const c1 = await user({ email: "x1@example.test" });
+    const m1 = await member(ws.id, c1.id, "COACH", "SUSPENDED");
+    await prisma.coachProfile.create({
+      data: { workspaceMemberId: m1.id, displayName: "C1" },
+    });
+    const r1 = await invite(sess, ws.id, "x1@example.test", "CLIENT");
+    await expect(
+      acceptAs(session(c1.id), ws.id, r1.delivery.rawToken),
+    ).rejects.toThrow("membership_conflict");
+    // Nothing mutated: member still suspended, no ClientProfile, token live.
+    expect(
+      (await prisma.workspaceMember.findUniqueOrThrow({ where: { id: m1.id } }))
+        .status,
+    ).toBe("SUSPENDED");
+    expect(
+      await prisma.clientProfile.findFirst({
+        where: { workspaceId: ws.id, userId: c1.id },
+      }),
+    ).toBeNull();
+    expect(
+      (
+        await prisma.accessToken.findUniqueOrThrow({
+          where: { id: r1.invitationId },
+        })
+      ).consumedAt,
+    ).toBeNull();
+
+    // removed COACH w/ CoachProfile + CLIENT invite → conflict
+    const c2 = await user({ email: "x2@example.test" });
+    const m2 = await member(ws.id, c2.id, "COACH", "REMOVED");
+    await prisma.coachProfile.create({
+      data: { workspaceMemberId: m2.id, displayName: "C2" },
+    });
+    const r2 = await invite(sess, ws.id, "x2@example.test", "CLIENT");
+    await expect(
+      acceptAs(session(c2.id), ws.id, r2.delivery.rawToken),
+    ).rejects.toThrow("membership_conflict");
+
+    // suspended CLIENT w/ ClientProfile + COACH invite → conflict
+    const c3 = await user({ email: "x3@example.test" });
+    await member(ws.id, c3.id, "CLIENT", "SUSPENDED");
+    await prisma.clientProfile.create({
+      data: { workspaceId: ws.id, userId: c3.id, name: "C3" },
+    });
+    const r3 = await invite(sess, ws.id, "x3@example.test", "COACH");
+    await expect(
+      acceptAs(session(c3.id), ws.id, r3.delivery.rawToken),
+    ).rejects.toThrow("membership_conflict");
+
+    // removed CLIENT w/ ClientProfile + ASSISTANT_COACH invite → conflict
+    const c4 = await user({ email: "x4@example.test" });
+    await member(ws.id, c4.id, "CLIENT", "REMOVED");
+    await prisma.clientProfile.create({
+      data: { workspaceId: ws.id, userId: c4.id, name: "C4" },
+    });
+    const r4 = await invite(sess, ws.id, "x4@example.test", "ASSISTANT_COACH");
+    await expect(
+      acceptAs(session(c4.id), ws.id, r4.delivery.rawToken),
+    ).rejects.toThrow("membership_conflict");
+
+    // Inconsistent dual-profile state fails closed on ANY acceptance.
+    const c5 = await user({ email: "x5@example.test" });
+    const m5 = await member(ws.id, c5.id, "CLIENT", "SUSPENDED");
+    await prisma.clientProfile.create({
+      data: { workspaceId: ws.id, userId: c5.id, name: "C5" },
+    });
+    await prisma.coachProfile.create({
+      data: { workspaceMemberId: m5.id, displayName: "C5x" },
+    });
+    for (const role of ["CLIENT", "COACH"] as const) {
+      const r5 = await invite(sess, ws.id, "x5@example.test", role);
+      await expect(
+        acceptAs(session(c5.id), ws.id, r5.delivery.rawToken),
+      ).rejects.toThrow("membership_conflict");
+    }
+
+    // Same-role restoration still works and reuses the profile.
+    const c6 = await user({ email: "x6@example.test" });
+    await member(ws.id, c6.id, "CLIENT", "SUSPENDED");
+    await prisma.clientProfile.create({
+      data: { workspaceId: ws.id, userId: c6.id, name: "Kept Name" },
+    });
+    const r6 = await invite(sess, ws.id, "x6@example.test", "CLIENT");
+    const ok = await acceptAs(session(c6.id), ws.id, r6.delivery.rawToken, {
+      name: "Do Not Overwrite",
+    });
+    expect(ok.outcome).toBe("accepted");
+    const prof = await prisma.clientProfile.findFirstOrThrow({
+      where: { workspaceId: ws.id, userId: c6.id },
+    });
+    expect(prof.name).toBe("Kept Name");
+    expect(
+      await prisma.coachProfile.findMany({
+        where: { workspaceMember: { workspaceId: ws.id, userId: c6.id } },
+      }),
+    ).toHaveLength(0);
+  });
+
+  // --- repair: truthful acceptance audit ----------------------------------------
+
+  it("acceptance audit is INVITE/access_token with a structural outcome", async () => {
+    const { ws, session: sess } = await ownerFixture();
+    // JOINED — existing user, no membership.
+    const ju = await user({ email: "join@example.test" });
+    const j = await invite(sess, ws.id, "join@example.test", "CLIENT");
+    await acceptAs(session(ju.id), ws.id, j.delivery.rawToken);
+    // ALREADY_MEMBER — same-role ACTIVE.
+    const am = await invite(sess, ws.id, "join@example.test", "CLIENT");
+    await acceptAs(session(ju.id), ws.id, am.delivery.rawToken);
+    // RESTORED — suspend then fresh re-invite.
+    await prisma.$executeRawUnsafe(
+      `UPDATE "workspace_member" SET status='SUSPENDED' WHERE workspace_id=$1 AND user_id=$2`,
+      ws.id,
+      ju.id,
+    );
+    const rs = await invite(sess, ws.id, "join@example.test", "CLIENT");
+    await acceptAs(session(ju.id), ws.id, rs.delivery.rawToken);
+    // ACTIVATED — INVITED membership.
+    const iu = await user({ email: "inv@example.test" });
+    await member(ws.id, iu.id, "CLIENT", "INVITED");
+    const iv = await invite(sess, ws.id, "inv@example.test", "CLIENT");
+    await acceptAs(session(iu.id), ws.id, iv.delivery.rawToken);
+
+    const events = await prisma.auditEvent.findMany({
+      where: {
+        workspaceId: ws.id,
+        action: "INVITE",
+        resourceType: "access_token",
+      },
+      orderBy: { id: "asc" },
+    });
+    // Issuance and acceptance share action/resourceType/resourceId — select
+    // the acceptance event via its acceptedAs marker.
+    const byResource = (id: string) =>
+      events.find(
+        (e) =>
+          e.resourceId === id &&
+          typeof (e.meta as { acceptedAs?: string })?.acceptedAs === "string",
+      );
+    expect(
+      (byResource(j.invitationId)!.meta as { acceptedAs: string }).acceptedAs,
+    ).toBe("JOINED");
+    expect(
+      (byResource(am.invitationId)!.meta as { acceptedAs: string }).acceptedAs,
+    ).toBe("ALREADY_MEMBER");
+    expect(
+      (byResource(rs.invitationId)!.meta as { acceptedAs: string }).acceptedAs,
+    ).toBe("RESTORED");
+    expect(
+      (byResource(iv.invitationId)!.meta as { acceptedAs: string }).acceptedAs,
+    ).toBe("ACTIVATED");
+    // Actor = the accepted user; no emails/tokens anywhere.
+    expect(byResource(rs.invitationId)!.actorUserId).toBe(ju.id);
+    const blob = JSON.stringify(events);
+    expect(blob).not.toContain("join@example.test");
+    expect(blob).not.toContain(j.delivery.rawToken);
+  });
+
+  it("forced audit failure rolls back the ENTIRE acceptance", async () => {
+    const { ws, session: sess } = await ownerFixture();
+    const r = await invite(sess, ws.id, "auditroll@example.test", "CLIENT");
+    await prisma.$executeRawUnsafe(
+      `CREATE OR REPLACE FUNCTION f2c_audit_fail() RETURNS trigger AS $$
+         BEGIN RAISE EXCEPTION 'forced'; END; $$ LANGUAGE plpgsql`,
+    );
+    await prisma.$executeRawUnsafe(
+      `CREATE TRIGGER f2c_audit_accept_fail BEFORE INSERT ON "audit_event"
+         FOR EACH ROW WHEN (NEW.resource_id = '${r.invitationId}')
+         EXECUTE FUNCTION f2c_audit_fail()`,
+    );
+    try {
+      await expect(
+        acceptAs(null, ws.id, r.delivery.rawToken, {
+          name: "AR",
+          password: PASSWORD,
+        }),
+      ).rejects.toThrow();
+      const token = await prisma.accessToken.findUniqueOrThrow({
+        where: { id: r.invitationId },
+      });
+      expect(token.consumedAt).toBeNull(); // claim rolled back
+      expect(token.userId).toBeNull(); // binding rolled back
+      expect(
+        await prisma.user.findUnique({
+          where: { email: "auditroll@example.test" },
+        }),
+      ).toBeNull();
+      expect(
+        await prisma.workspaceMember.findMany({
+          where: {
+            workspaceId: ws.id,
+            user: { email: "auditroll@example.test" },
+          },
+        }),
+      ).toHaveLength(0);
+      expect(
+        await prisma.clientProfile.findFirst({
+          where: { workspaceId: ws.id, name: "AR" },
+        }),
+      ).toBeNull();
+    } finally {
+      await prisma.$executeRawUnsafe(
+        'DROP TRIGGER f2c_audit_accept_fail ON "audit_event"',
+      );
+    }
+  });
+
+  // --- repair: lock ordering ------------------------------------------------------
+
+  it("authorization precedes the tuple lock; revocation during wait is caught", async () => {
+    const { ws, session: sess, owner } = await ownerFixture();
+    const key = `${ws.id}|lockorder@example.test|CLIENT`;
+    const lockSql = "SELECT pg_advisory_xact_lock(hashtextextended($1,0))";
+
+    // (a) Unauthorized caller rejects while the lock is held — no wait.
+    let release1!: () => void;
+    const held1 = prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(lockSql, key);
+      await new Promise<void>((res) => {
+        release1 = res;
+      });
+    });
+    await new Promise((r) => setTimeout(r, 150));
+    const denied = await invite(
+      { user: { id: "no-such-user" } },
+      ws.id,
+      "lockorder@example.test",
+      "CLIENT",
+    ).then(
+      () => "ok",
+      (e) => e,
+    );
+    expect(denied).toBeInstanceOf(AccessDeniedError);
+    release1();
+    await held1;
+
+    // (b) Authorized caller waits on the lock; a suspension committed during
+    // the wait is detected (the member row lock forces P2034 → retry → deny).
+    const held2 = prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(lockSql, key);
+      await tx.$executeRawUnsafe(
+        `UPDATE "workspace_member" SET status='SUSPENDED'
+         WHERE workspace_id=$1 AND user_id=$2`,
+        ws.id,
+        owner.id,
+      );
+      await new Promise((r) => setTimeout(r, 300));
+    });
+    await new Promise((r) => setTimeout(r, 100));
+    await expect(
+      invite(sess, ws.id, "lockorder@example.test", "CLIENT"),
+    ).rejects.toThrow(AccessDeniedError);
+    await held2;
+    expect(await activeTokensFor(ws.id, "lockorder@example.test")).toHaveLength(
+      0,
+    );
+  });
+
+  // --- repair: list index ---------------------------------------------------------
+
+  it("listing uses (workspace_id,purpose,id) — index exists, no Sort node", async () => {
+    const idx = await prisma.$queryRawUnsafe<Array<{ indexdef: string }>>(
+      `SELECT indexdef FROM pg_indexes
+       WHERE indexname = 'access_token_ws_invite_list_idx'`,
+    );
+    expect(idx).toHaveLength(1);
+    expect(idx[0].indexdef).toContain("workspace_id");
+    expect(idx[0].indexdef).toContain("purpose");
+    expect(idx[0].indexdef.replace(/\s+/g, " ")).toContain(
+      "(workspace_id, purpose, id)",
+    );
+
+    // Realistic interleaved fixture, analyzed.
+    const wsA = await workspace();
+    const wsB = await workspace();
+    const wsC = await workspace();
+    const issuer = await user();
+    // Skewed fixture: wsA owns only ~2% of invite rows, so the composite
+    // (workspace_id, purpose, id) index beats a pkey ordering scan + filter.
+    const rows = [
+      ...Array.from({ length: 300 }, (_, i) => ({
+        purpose: "WORKSPACE_INVITE" as const,
+        tokenHash: `1${i.toString(16).padStart(7, "0")}${"a".repeat(56)}`,
+        workspaceId: wsA.id,
+        targetEmail: `ixa${i}@example.test`,
+        intendedRole: "CLIENT" as const,
+        createdByUserId: issuer.id,
+        expiresAt: new Date(Date.now() + 3600_000),
+      })),
+      ...Array.from({ length: 12000 }, (_, i) => ({
+        purpose: "WORKSPACE_INVITE" as const,
+        tokenHash: `2${i.toString(16).padStart(7, "0")}${"a".repeat(56)}`,
+        workspaceId: i % 2 === 0 ? wsB.id : wsC.id,
+        targetEmail: `ixb${i}@example.test`,
+        intendedRole: "CLIENT" as const,
+        createdByUserId: issuer.id,
+        expiresAt: new Date(Date.now() + 3600_000),
+      })),
+    ];
+    await prisma.accessToken.createMany({ data: rows });
+    await prisma.$executeRawUnsafe("ANALYZE access_token");
+    const plan = await prisma.$queryRawUnsafe<Array<{ line: string }>>(
+      `EXPLAIN (ANALYZE, BUFFERS) SELECT "id","target_email","intended_role","expires_at","consumed_at","revoked_at"
+       FROM "access_token" WHERE "workspace_id" = $1 AND "purpose"='WORKSPACE_INVITE'
+       ORDER BY "id" ASC LIMIT 26`,
+      wsA.id,
+    );
+    const text = plan.map((r) => r.line ?? Object.values(r)[0]).join("\n");
+    expect(text).toContain("access_token_ws_invite_list_idx");
+    expect(text).not.toMatch(/Sort/);
+  });
+
   it("all earlier raw constraints and indexes remain live", async () => {
     const checks = await prisma.$queryRawUnsafe<Array<{ conname: string }>>(
       `SELECT conname FROM pg_constraint WHERE contype='c' AND conrelid='"access_token"'::regclass`,
@@ -708,8 +1225,13 @@ describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
         "access_token_invite_shape",
         "access_token_reset_shape",
         "access_token_token_hash_sha256_hex",
+        "access_token_invite_member_state_shape",
       ]),
     );
+    const trg = await prisma.$queryRawUnsafe<Array<{ tgname: string }>>(
+      `SELECT tgname FROM pg_trigger WHERE tgname='workspace_member_state_version_guard'`,
+    );
+    expect(trg).toHaveLength(1);
     const idx = await prisma.$queryRawUnsafe<Array<{ indexname: string }>>(
       `SELECT indexname FROM pg_indexes WHERE tablename='access_token'`,
     );
@@ -717,6 +1239,7 @@ describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
       expect.arrayContaining([
         "access_token_invite_target_idx",
         "access_token_terminal_cleanup_idx",
+        "access_token_ws_invite_list_idx",
       ]),
     );
   });

@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, type MemberRole } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 import { writeAuditEvent } from "../audit";
 import {
@@ -84,13 +84,6 @@ export function invitationResource(
   return intendedRole === "CLIENT" ? "clientInvitations" : "membersInvitations";
 }
 
-/** Roles still authorized to have issued an invitation of `intendedRole`. */
-function issuerRolesFor(intendedRole: InvitableRole): readonly MemberRole[] {
-  return intendedRole === "CLIENT"
-    ? ["WORKSPACE_OWNER", "COACH"]
-    : ["WORKSPACE_OWNER"];
-}
-
 function normalizedEmail(value: unknown): string {
   const email = normalizeEmail(value);
   if (!email || email.length > MAX_TARGET_EMAIL_LENGTH)
@@ -98,11 +91,70 @@ function normalizedEmail(value: unknown): string {
   return email;
 }
 
-function isRetryableConflict(error: unknown): boolean {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    (error.code === "P2002" || error.code === "P2034")
+/**
+ * Expected acceptance races — the ONLY P2002 shapes that may be retried.
+ * Pinned against observed Prisma metadata (raw column-name targets):
+ *   User            ["email"]                       concurrent user create
+ *   WorkspaceMember ["workspace_id","user_id"]      concurrent member create
+ *   ClientProfile   ["workspace_id","user_id"]      concurrent client profile
+ *   CoachProfile    ["workspace_member_id"]         concurrent coach profile
+ * Any other P2002 (e.g. AccessToken.token_hash, unknown/missing/malformed
+ * metadata) is NOT a serialization artifact — it maps to `invitation_failed`.
+ */
+const EXPECTED_P2002: ReadonlyArray<{ model: string; target: string[] }> = [
+  { model: "User", target: ["email"] },
+  { model: "WorkspaceMember", target: ["workspace_id", "user_id"] },
+  { model: "ClientProfile", target: ["workspace_id", "user_id"] },
+  { model: "CoachProfile", target: ["workspace_member_id"] },
+];
+
+/** Exported for unit tests pinning observed Prisma P2002 metadata. */
+export function isExpectedUniqueRace(
+  error: Prisma.PrismaClientKnownRequestError,
+) {
+  const meta = error.meta;
+  if (
+    !meta ||
+    typeof meta.modelName !== "string" ||
+    !Array.isArray(meta.target)
+  )
+    return false;
+  const keys = Object.keys(meta).sort();
+  if (keys.join(",") !== "modelName,target") return false;
+  const target = meta.target;
+  return EXPECTED_P2002.some(
+    ({ model, target: expected }) =>
+      meta.modelName === model &&
+      target.length === expected.length &&
+      expected.every((t, i) => target[i] === t),
   );
+}
+
+/** SQLSTATEs that are genuine serialization artifacts when surfaced through
+ * raw SQL (Prisma wraps those as P2010 rather than P2034). */
+const RAW_SERIALIZATION_SQLSTATES = new Set(["40001", "40P01"]);
+
+function isSerializationFailure(
+  error: Prisma.PrismaClientKnownRequestError,
+): boolean {
+  if (error.code === "P2034") return true;
+  // Raw-query path: serialization failure / deadlock arrive as P2010.
+  if (error.code === "P2010") {
+    const meta = error.meta;
+    return (
+      !!meta &&
+      typeof meta === "object" &&
+      typeof (meta as { code?: unknown }).code === "string" &&
+      RAW_SERIALIZATION_SQLSTATES.has((meta as { code: string }).code)
+    );
+  }
+  return false;
+}
+
+function isRetryableConflict(error: unknown): boolean {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
+  if (isSerializationFailure(error)) return true;
+  return error.code === "P2002" && isExpectedUniqueRace(error);
 }
 
 /** At most two attempts — never an unbounded retry loop. */
@@ -147,20 +199,53 @@ export async function createWorkspaceInvitation(
     try {
       return await client.$transaction(
         async (tx) => {
-          // Serialize concurrent replacements of the same tuple deterministically.
+          const repo = createPrismaAuthorizationRepo(tx);
+          const authReq = {
+            resource,
+            action: "write" as const,
+            workspaceId: input.workspaceId,
+          };
+          // 1. Authorize BEFORE acquiring the tuple lock — an unauthorized
+          //    caller must never wait on or hold the lock.
+          const ctx = await authorize(session, authReq, repo);
+          // 2. Serialize concurrent replacements of the same tuple
+          //    deterministically (transaction-scoped advisory lock).
           await tx.$executeRawUnsafe(
             "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
             `${input.workspaceId}|${targetEmail}|${intendedRole}`,
           );
-          const ctx = await authorize(
-            session,
-            {
-              resource,
-              action: "write",
-              workspaceId: input.workspaceId,
-            },
-            createPrismaAuthorizationRepo(tx),
+          // 3. Re-authorize after the wait. Under Serializable the tx
+          //    snapshot is fixed at first read, so a plain re-read can miss a
+          //    revocation committed while we waited — instead take a row lock
+          //    on the actor's membership: a concurrent status/role change
+          //    forces P2034 (retry → fresh snapshot → deny), and an unchanged
+          //    row returns its current state. THEN re-run the guard so the
+          //    whole authorization is re-evaluated on visible state.
+          const actorUserId = ctx.userId;
+          await tx.$queryRawUnsafe(
+            `SELECT "id" FROM "workspace_member"
+             WHERE "workspace_id" = $1 AND "user_id" = $2 FOR UPDATE`,
+            input.workspaceId,
+            actorUserId,
           );
+          await authorize(session, authReq, repo);
+          // 4. Snapshot the target membership's CURRENT state generation
+          //    inside this serialized tx — causal freshness, no clocks.
+          const targetUser = await tx.user.findUnique({
+            where: { email: targetEmail },
+            select: { id: true },
+          });
+          const targetMember = targetUser
+            ? await tx.workspaceMember.findUnique({
+                where: {
+                  workspaceId_userId: {
+                    workspaceId: input.workspaceId,
+                    userId: targetUser.id,
+                  },
+                },
+                select: { stateVersion: true },
+              })
+            : null;
           await revokeMatchingInviteTokens(tx, {
             workspaceId: input.workspaceId,
             targetEmail,
@@ -171,6 +256,7 @@ export async function createWorkspaceInvitation(
             targetEmail,
             intendedRole,
             createdByUserId: ctx.userId,
+            targetMemberStateVersion: targetMember?.stateVersion ?? null,
           });
           await writeAuditEvent(tx, ctx, {
             action: "INVITE",
@@ -383,24 +469,31 @@ export async function acceptWorkspaceInvitation(
           const token = claim.token;
           const intendedRole = token.intendedRole as InvitableRole;
 
-          // Re-read workspace + issuer state — the issuer must STILL be able
-          // to have issued this invitation (fresh DB read at consumption).
-          const workspace = await tx.workspace.findUnique({
-            where: { id: token.workspaceId as string },
-            select: { id: true, status: true },
-          });
-          if (!workspace || workspace.status !== "ACTIVE")
+          // Issuer re-authorization through the REVIEWED S1-B guard + the
+          // transaction-bound repo — the issuer must still be able to issue
+          // this exact invitation type right now (user ACTIVE, workspace
+          // ACTIVE, membership ACTIVE, current role grants the resource).
+          // Any denial/failure maps to the generic invalid_token surface so
+          // token holders cannot inspect issuer state.
+          const issuerId = token.createdByUserId;
+          if (typeof issuerId !== "string" || issuerId.length === 0)
             throw new InvitationError("invalid_token");
-          const issuer = await tx.workspaceMember.findFirst({
-            where: {
-              workspaceId: workspace.id,
-              userId: token.createdByUserId as string,
-              status: "ACTIVE",
-              role: { in: [...issuerRolesFor(intendedRole)] },
-            },
-            select: { id: true },
-          });
-          if (!issuer) throw new InvitationError("invalid_token");
+          try {
+            await authorize(
+              { user: { id: issuerId } },
+              {
+                resource: invitationResource(intendedRole),
+                action: "write",
+                workspaceId: input.workspaceId,
+              },
+              createPrismaAuthorizationRepo(tx),
+            );
+          } catch {
+            throw new InvitationError("invalid_token");
+          }
+          // The claim constrained the token to input.workspaceId; the guard's
+          // workspace re-read above is the ACTIVE check.
+          const workspace = { id: input.workspaceId };
 
           const targetEmail = normalizeEmail(token.targetEmail);
           const byEmail = await tx.user.findUnique({
@@ -466,9 +559,47 @@ export async function acceptWorkspaceInvitation(
                 userId: user.id,
               },
             },
-            select: { id: true, role: true, status: true, updatedAt: true },
+            select: { id: true, role: true, status: true, stateVersion: true },
           });
-          const tokenCreatedAt = token.createdAt;
+          // CAUSAL freshness — no clocks. The invitation carries the
+          // membership generation snapshot taken at issuance (NULL = the
+          // member row did not exist then). If the member's current
+          // state_version differs — a status/role transition happened since —
+          // the invitation is stale and dies as `invalid_token`. This applies
+          // to every existing-member branch, so a pre-suspension invite can
+          // never restore and a pre-activation invite can't activate a member
+          // that was re-shaped meanwhile.
+          const snapshot = token.targetMemberStateVersion;
+          if (member) {
+            if (snapshot !== member.stateVersion)
+              throw new InvitationError("invalid_token");
+          } else if (snapshot !== null) {
+            throw new InvitationError("invalid_token");
+          }
+
+          // Profile coherence gate — checked BEFORE any membership mutation.
+          // A role-class change may never produce a member holding an
+          // incompatible opposite-class profile, and both profile types may
+          // never coexist (no deletion/migration policy is approved).
+          const clientProfile = await tx.clientProfile.findFirst({
+            where: { workspaceId: workspace.id, userId: user.id },
+            select: { id: true },
+          });
+          const coachProfile = member
+            ? await tx.coachProfile.findUnique({
+                where: { workspaceMemberId: member.id },
+                select: { id: true },
+              })
+            : null;
+          if (intendedRole === "CLIENT" ? coachProfile : clientProfile)
+            throw new InvitationError("membership_conflict");
+
+          let acceptedAs:
+            | "NEW_USER"
+            | "JOINED"
+            | "ALREADY_MEMBER"
+            | "ACTIVATED"
+            | "RESTORED" = byEmail === null ? "NEW_USER" : "JOINED";
           let outcome: AcceptanceOutcome = "accepted";
           let membershipId: string;
           if (!member) {
@@ -488,32 +619,29 @@ export async function acceptWorkspaceInvitation(
               data: { status: "ACTIVE", role: intendedRole },
             });
             membershipId = member.id;
+            acceptedAs = "ACTIVATED";
           } else if (member.status === "ACTIVE") {
             if (member.role !== intendedRole)
               throw new InvitationError("membership_conflict");
             outcome = "already_member";
+            acceptedAs = "ALREADY_MEMBER";
             membershipId = member.id;
           } else {
-            // SUSPENDED/REMOVED may return to ACTIVE only through a FRESH
-            // explicit re-invitation: the token must have been issued after
-            // the membership's last state change. An older invite is dead.
-            if (!(tokenCreatedAt > member.updatedAt))
-              throw new InvitationError("invalid_token");
+            // SUSPENDED/REMOVED: the snapshot check above already proves this
+            // invitation was issued at the member's CURRENT generation — i.e.
+            // a fresh explicit re-invitation after the state change.
             await tx.workspaceMember.update({
               where: { id: member.id },
               data: { status: "ACTIVE", role: intendedRole },
             });
             membershipId = member.id;
+            acceptedAs = "RESTORED";
           }
 
-          // Exactly one profile type per invite; never overwrite an existing
-          // profile's name/displayName (idempotent accept).
+          // Ensure exactly one coherent profile type; never overwrite an
+          // existing name/displayName (idempotent accept).
           if (intendedRole === "CLIENT") {
-            const existing = await tx.clientProfile.findFirst({
-              where: { workspaceId: workspace.id, userId: user.id },
-              select: { id: true },
-            });
-            if (!existing) {
+            if (!clientProfile) {
               const name =
                 input.name !== undefined ? validateName(input.name) : user.name;
               if (!name) throw new InvitationError("invalid_input");
@@ -522,23 +650,17 @@ export async function acceptWorkspaceInvitation(
                 select: { id: true },
               });
             }
-          } else {
-            const existing = await tx.coachProfile.findUnique({
-              where: { workspaceMemberId: membershipId },
+          } else if (!coachProfile) {
+            const name =
+              input.name !== undefined ? validateName(input.name) : user.name;
+            if (!name) throw new InvitationError("invalid_input");
+            await tx.coachProfile.create({
+              data: {
+                workspaceMemberId: membershipId,
+                displayName: name,
+              },
               select: { id: true },
             });
-            if (!existing) {
-              const name =
-                input.name !== undefined ? validateName(input.name) : user.name;
-              if (!name) throw new InvitationError("invalid_input");
-              await tx.coachProfile.create({
-                data: {
-                  workspaceMemberId: membershipId,
-                  displayName: name,
-                },
-                select: { id: true },
-              });
-            }
           }
 
           // Bind the consumed token to the accepting user (S1-F1 CHECK only
@@ -547,6 +669,9 @@ export async function acceptWorkspaceInvitation(
             where: { id: token.id },
             data: { userId: user.id },
           });
+          // Truthful acceptance event: the consumed invitation is the
+          // resource; the accepted user (DB-derived) is the actor; meta names
+          // only the structural outcome — never names/emails/tokens.
           await writeAuditEvent(
             tx,
             {
@@ -558,10 +683,10 @@ export async function acceptWorkspaceInvitation(
               grantedScope: "workspace",
             },
             {
-              action: "CREATE",
-              resourceType: "user",
-              resourceId: user.id,
-              meta: { targetRole: intendedRole, status: "ACTIVE" },
+              action: "INVITE",
+              resourceType: "access_token",
+              resourceId: token.id,
+              meta: { targetRole: intendedRole, acceptedAs },
             },
           );
           return {
@@ -596,8 +721,14 @@ const STRUCTURAL_ERRORS = new Set([
 /** Structural codes only — never a raw Prisma/SQL message or input echo. */
 function mapInvitationError(error: unknown): never {
   if (error instanceof Error && STRUCTURAL_ERRORS.has(error.name)) throw error;
-  if (isRetryableConflict(error))
+  // Retries exhausted: only genuine serialization failures earn this code.
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    isSerializationFailure(error)
+  )
     throw new InvitationError("serialization_conflict");
+  // Unrelated P2002 (incl. unknown/missing metadata) and every other database
+  // failure map to the accurate generic structural code.
   throw new InvitationError("invitation_failed");
 }
 

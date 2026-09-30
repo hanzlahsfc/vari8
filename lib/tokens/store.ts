@@ -63,6 +63,7 @@ type AccessTokenRecord = Pick<
   | "intendedRole"
   | "createdByUserId"
   | "createdAt"
+  | "targetMemberStateVersion"
 >;
 
 function normalizedTargetEmail(value: unknown): string {
@@ -92,12 +93,20 @@ export async function issueWorkspaceInviteToken(
     targetEmail: string;
     intendedRole: MemberRole;
     createdByUserId: string;
+    /** S1-F2C repair: generation of the target membership at issuance
+     * (null = no member existed). Acceptance requires it to equal the
+     * member's current state_version — causal freshness, clock-independent. */
+    targetMemberStateVersion?: number | null;
   },
 ): Promise<{ tokenId: string; rawToken: RawAccessToken; expiresAt: Date }> {
   const workspaceId = requireId(input.workspaceId);
   const targetEmail = normalizedTargetEmail(input.targetEmail);
   const createdByUserId = requireId(input.createdByUserId);
   if (!INVITABLE_ROLES.includes(input.intendedRole)) {
+    throw new TokenStoreError("invalid_input");
+  }
+  const snapshot = input.targetMemberStateVersion ?? null;
+  if (snapshot !== null && (!Number.isInteger(snapshot) || snapshot < 0)) {
     throw new TokenStoreError("invalid_input");
   }
   const { rawToken, tokenHash } = generateAccessToken();
@@ -109,6 +118,7 @@ export async function issueWorkspaceInviteToken(
       targetEmail,
       intendedRole: input.intendedRole,
       createdByUserId,
+      targetMemberStateVersion: snapshot,
       expiresAt: new Date(Date.now() + ACCESS_TOKEN_TTL_MS),
     },
     select: { id: true, expiresAt: true },
@@ -247,6 +257,7 @@ export async function claimAccessToken(
       intendedRole: true,
       createdByUserId: true,
       createdAt: true,
+      targetMemberStateVersion: true,
     },
   });
   return { ok: true, token };

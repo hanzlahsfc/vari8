@@ -138,13 +138,17 @@ model Workspace {
 }
 
 model WorkspaceMember {
-  id          String       @id @default(cuid())
-  workspaceId String       @map("workspace_id")
-  userId      String       @map("user_id")
-  role        MemberRole
-  status      MemberStatus @default(INVITED)
-  createdAt   DateTime     @default(now()) @map("created_at")
-  updatedAt   DateTime     @updatedAt @map("updated_at")
+  id           String       @id @default(cuid())
+  workspaceId  String       @map("workspace_id")
+  userId       String       @map("user_id")
+  role         MemberRole
+  status       MemberStatus @default(INVITED)
+  // S1-F2C repair: DB-owned membership-state generation. The raw trigger
+  // (migration 20260930190000) sets it to 0 on insert and increments it iff
+  // status/role change — callers must never write it directly.
+  stateVersion Int          @default(0) @map("state_version")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
@@ -285,21 +289,25 @@ model AuditEvent {
 // Raw bearer tokens are NEVER stored — only the SHA-256 hex digest
 // (lib/tokens/crypto.ts) may land in token_hash.
 model AccessToken {
-  id              String             @id @default(cuid())
-  purpose         AccessTokenPurpose
-  tokenHash       String             @unique @map("token_hash")
-  workspaceId     String?            @map("workspace_id")
-  userId          String?            @map("user_id")
+  id                       String             @id @default(cuid())
+  purpose                  AccessTokenPurpose
+  tokenHash                String             @unique @map("token_hash")
+  workspaceId              String?            @map("workspace_id")
+  userId                   String?            @map("user_id")
   // Normalized plaintext invite address — personal data, deliberately not
   // standalone-indexed; no approved HMAC secret exists and an unsalted hash
   // would be enumerable.
-  targetEmail     String?            @map("target_email")
-  intendedRole    MemberRole?        @map("intended_role")
-  createdByUserId String?            @map("created_by_user_id")
-  expiresAt       DateTime           @map("expires_at") @db.Timestamptz(6)
-  consumedAt      DateTime?          @map("consumed_at") @db.Timestamptz(6)
-  revokedAt       DateTime?          @map("revoked_at") @db.Timestamptz(6)
-  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  targetEmail              String?            @map("target_email")
+  intendedRole             MemberRole?        @map("intended_role")
+  createdByUserId          String?            @map("created_by_user_id")
+  // S1-F2C repair: generation of the target (workspace,email→user) membership
+  // at issuance — NULL = no member existed. Acceptance requires equality with
+  // the member's current state_version (causal freshness, clock-independent).
+  targetMemberStateVersion Int?               @map("target_member_state_version")
+  expiresAt                DateTime           @map("expires_at") @db.Timestamptz(6)
+  consumedAt               DateTime?          @map("consumed_at") @db.Timestamptz(6)
+  revokedAt                DateTime?          @map("revoked_at") @db.Timestamptz(6)
+  createdAt                DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
 
   // workspaceId: Restrict — tenant boundary; a workspace cannot disappear with
   // outstanding invite rows. userId: Cascade — user-owned reset rows are
@@ -315,8 +323,12 @@ model AccessToken {
   @@index([workspaceId, purpose, targetEmail, intendedRole], map: "access_token_invite_target_idx")
   @@index([userId, purpose], map: "access_token_user_id_purpose_idx")
   @@index([expiresAt], map: "access_token_expires_at_idx")
+  // Owner-only invitation listing: WHERE workspace+purpose ORDER BY id.
+  @@index([workspaceId, purpose, id], map: "access_token_ws_invite_list_idx")
   // Expression index (raw SQL only — Prisma cannot model it):
   // "access_token_terminal_cleanup_idx" on (effective-terminal-ts, id) backs
   // cleanupTerminalAccessTokens; see migration 20260930180000.
+  // Member-state-generation column/trigger/CHECK are raw SQL; see migration
+  // 20260930190000.
   @@map("access_token")
 }
