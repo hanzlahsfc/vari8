@@ -292,23 +292,25 @@ export const ACCESS_TOKEN_TERMINAL_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 /** Hard batch bound for a single cleanup call. */
 export const ACCESS_TOKEN_CLEANUP_BATCH_LIMIT = 1000;
 
+// The effective terminal timestamp T — MUST stay textually identical to the
+// `access_token_terminal_cleanup_idx` expression index
+// (migration 20260930180000_stage1_f2b_review_indexes) so the planner can use
+// it for the WHERE range scan AND the ORDER BY … LIMIT bound.
+const TERMINAL_TS_SQL = `GREATEST(
+    COALESCE("consumed_at", 'epoch'::timestamptz),
+    COALESCE("revoked_at", 'epoch'::timestamptz),
+    CASE
+      WHEN "consumed_at" IS NULL AND "revoked_at" IS NULL
+      THEN "expires_at"
+      ELSE 'epoch'::timestamptz
+    END
+  )`;
+
 const CLEANUP_VICTIMS_SQL = `
 WITH victims AS (
   SELECT "id" FROM "access_token"
-  WHERE (
-    "consumed_at" IS NOT NULL AND "revoked_at" IS NOT NULL
-    AND GREATEST("consumed_at", "revoked_at") < $1
-  ) OR (
-    "consumed_at" IS NOT NULL AND "revoked_at" IS NULL
-    AND "consumed_at" < $1
-  ) OR (
-    "consumed_at" IS NULL AND "revoked_at" IS NOT NULL
-    AND "revoked_at" < $1
-  ) OR (
-    "consumed_at" IS NULL AND "revoked_at" IS NULL
-    AND "expires_at" < $1
-  )
-  ORDER BY "id"
+  WHERE (${TERMINAL_TS_SQL}) < $1
+  ORDER BY (${TERMINAL_TS_SQL}), "id"
   LIMIT ${ACCESS_TOKEN_CLEANUP_BATCH_LIMIT}
 )
 DELETE FROM "access_token" WHERE "id" IN (SELECT "id" FROM victims)

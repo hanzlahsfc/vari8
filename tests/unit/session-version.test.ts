@@ -80,43 +80,93 @@ describe("S1-F2B session-version gate", () => {
   });
 
   it("jwt stamps sv only at sign-in (never from client/token input)", async () => {
-    const callbacks = createSessionCallbacks(base as never, async () => null);
+    const good = { id: "u1", status: "ACTIVE", sessionVersion: 5 };
+    const callbacks = createSessionCallbacks(base as never, async (id) =>
+      id === "u1" ? good : null,
+    );
     // Sign-in shape: user object carries the DB sessionVersion.
     const issued = await callbacks.jwt({
       token: {} as never,
       user: { id: "u1", sessionVersion: 5 } as never,
     });
     expect((issued as Record<string, unknown>).sv).toBe(5);
-    // A refresh call (no user) must not create or alter sv — a client can't
-    // inject it: the only source is the server-issued user record.
+    // Refresh with a matching claim passes the gate untouched.
     const refreshed = await callbacks.jwt({
-      token: { sv: 5 } as never,
+      token: { sub: "u1", sv: 5 } as never,
       user: undefined,
     });
-    expect((refreshed as Record<string, unknown>).sv).toBe(5);
+    expect((refreshed as Record<string, unknown>)?.sv).toBe(5);
+    // An update-trigger call carries a client payload — it can NEVER inject
+    // sv: the payload is ignored and the token's sv is still DB-gated.
+    const updateAttempt = await callbacks.jwt({
+      token: { sub: "u1", sv: 4 } as never, // stale after a reset
+      user: undefined,
+      trigger: "update",
+      session: { sv: 5, sub: "u1" } as never,
+    });
+    expect(updateAttempt).toBeNull();
     const injected = await callbacks.jwt({
       token: { sv: 999 } as never,
       user: { id: "u1", sessionVersion: 5 } as never,
     });
     // A re-sign-in re-stamps from the authoritative record, not token input.
-    expect((injected as Record<string, unknown>).sv).toBe(5);
+    expect((injected as Record<string, unknown>)?.sv).toBe(5);
   });
 
-  it("session returns null for every rejection — indistinguishable", async () => {
+  it("jwt returns null for every rejection — the supported invalidation", async () => {
     const good = { id: "u1", status: "ACTIVE", sessionVersion: 2 };
     const callbacks = createSessionCallbacks(base as never, async (id) =>
       id === "u1" ? good : null,
     );
     const mk = (token: Record<string, unknown>) => ({
-      session: { user: {}, expires: "" } as never,
       token: token as never,
+      user: undefined,
     });
-    expect(await callbacks.session(mk({ sub: "u1", sv: 2 }))).not.toBeNull();
-    expect(await callbacks.session(mk({ sub: "u1", sv: 1 }))).toBeNull();
-    expect(await callbacks.session(mk({ sub: "u1" }))).toBeNull();
-    expect(await callbacks.session(mk({ sub: "u1", sv: "2" }))).toBeNull();
-    expect(await callbacks.session(mk({ sub: "ghost", sv: 2 }))).toBeNull();
-    expect(await callbacks.session(mk({}))).toBeNull();
+    expect(await callbacks.jwt(mk({ sub: "u1", sv: 2 }))).not.toBeNull();
+    expect(await callbacks.jwt(mk({ sub: "u1", sv: 1 }))).toBeNull();
+    expect(await callbacks.jwt(mk({ sub: "u1" }))).toBeNull();
+    expect(await callbacks.jwt(mk({ sub: "u1", sv: "2" }))).toBeNull();
+    expect(await callbacks.jwt(mk({ sub: "ghost", sv: 2 }))).toBeNull();
+    expect(await callbacks.jwt(mk({}))).toBeNull();
+    // A null token means the runtime drops the session entirely — the session
+    // callback never runs and cannot resurrect an invalid session.
+  });
+
+  it("composes with base callbacks: extra keys survive, base jwt/session run", async () => {
+    const good = { id: "u1", status: "ACTIVE", sessionVersion: 0 };
+    const decorated = {
+      ...base,
+      authorized: () => true,
+      customMarker: "kept",
+      jwt: async ({ token, user }: never) => {
+        const t = (await base.jwt({ token, user } as never)) as Record<
+          string,
+          unknown
+        >;
+        t.fromBase = true;
+        return t;
+      },
+    };
+    const callbacks = createSessionCallbacks(decorated as never, async (id) =>
+      id === "u1" ? good : null,
+    );
+    // Non-jwt/session keys pass through verbatim.
+    expect((callbacks as Record<string, unknown>).authorized).toBe(
+      decorated.authorized,
+    );
+    expect((callbacks as Record<string, unknown>).customMarker).toBe("kept");
+    // Base jwt effects are preserved inside the composed jwt.
+    const tok = await callbacks.jwt({
+      token: { sub: "u1", sv: 0 } as never,
+      user: undefined,
+    });
+    expect((tok as Record<string, unknown>)?.fromBase).toBe(true);
+    // Base session mapping still applies on the happy path.
+    const s = await callbacks.session({
+      session: { user: {}, expires: "" } as never,
+      token: { sub: "u1", sv: 0 } as never,
+    });
+    expect((s as { user: { id: string } }).user.id).toBe("u1");
   });
 
   it("auth.config.ts stays edge-safe — no Prisma/db imports", () => {

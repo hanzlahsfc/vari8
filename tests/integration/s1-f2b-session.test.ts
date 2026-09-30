@@ -82,11 +82,21 @@ describe.skipIf(!enabled)("S1-F2B session version (real PostgreSQL)", () => {
       },
     });
 
-  const session = (token: Record<string, unknown>) =>
-    sessionCallbacks.session({
+  // The gate lives in the jwt callback now: a non-sign-in invocation with an
+  // invalid sub/sv returns null (which the Auth.js runtime treats as a revoked
+  // session — null body + cleared cookie). The session callback is pure base
+  // delegation and only ever sees a gate-passed token.
+  const gate = (token: Record<string, unknown>) =>
+    sessionCallbacks.jwt({ token: token as never, user: undefined });
+
+  const session = async (token: Record<string, unknown>) => {
+    const gated = await gate(token);
+    if (gated === null) return null;
+    return sessionCallbacks.session({
       session: { user: {}, expires: "" } as never,
-      token: token as never,
+      token: gated as never,
     });
+  };
 
   it("sign-in embeds the DB sessionVersion; matching sv yields a session", async () => {
     const u = await createUser(prisma);
@@ -116,7 +126,7 @@ describe.skipIf(!enabled)("S1-F2B session version (real PostgreSQL)", () => {
       token: {} as never,
       user: authorized as never,
     });
-    expect(await session({ sub: u.id, sv: token.sv })).not.toBeNull();
+    expect(await session({ sub: u.id, sv: token!.sv })).not.toBeNull();
 
     // The reset path's core: bump the version (what S1-F2D will do atomically).
     await prisma.user.update({
@@ -125,7 +135,7 @@ describe.skipIf(!enabled)("S1-F2B session version (real PostgreSQL)", () => {
     });
 
     // Old JWT now stale — same as an expired session (null, no reason given).
-    expect(await session({ sub: u.id, sv: token.sv })).toBeNull();
+    expect(await session({ sub: u.id, sv: token!.sv })).toBeNull();
 
     // A fresh sign-in embeds version 1 and works again.
     const reauthorized = await authorizeCredentials(
@@ -137,7 +147,7 @@ describe.skipIf(!enabled)("S1-F2B session version (real PostgreSQL)", () => {
       user: reauthorized as never,
     });
     expect((fresh as Record<string, unknown>).sv).toBe(1);
-    expect(await session({ sub: u.id, sv: fresh.sv })).not.toBeNull();
+    expect(await session({ sub: u.id, sv: fresh!.sv })).not.toBeNull();
   });
 
   it("DEACTIVATED and INVITED users are rejected even with a matching sv", async () => {

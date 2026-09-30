@@ -178,4 +178,63 @@ describe.skipIf(!enabled)("S1-F2B token cleanup (real PostgreSQL)", () => {
       expect(String(error)).not.toContain("internal://db");
     }
   });
+
+  it("cleanup index exists and serves the bounded victim scan on an analyzed fixture", async () => {
+    const idx = await prisma.$queryRawUnsafe<Array<{ indexname: string }>>(
+      `SELECT indexname FROM pg_indexes WHERE tablename='access_token'`,
+    );
+    expect(idx.map((i) => i.indexname)).toContain(
+      "access_token_terminal_cleanup_idx",
+    );
+
+    // Sized + ANALYZEd fixture — the planner is free to choose otherwise on
+    // small tables; this proves the index serves the query when it matters.
+    for (let i = 0; i < 4000; i += 500) {
+      await prisma.accessToken.createMany({
+        data: Array.from({ length: 500 }, (_, k) => ({
+          tokenHash: `e${String(i + k).padStart(8, "0")}${"c".repeat(55)}`,
+          purpose: "PASSWORD_RESET" as const,
+          userId: subjectUserId,
+          expiresAt: daysAgo(40),
+          createdAt: daysAgo(100),
+          consumedAt: daysAgo(40),
+        })),
+      });
+    }
+    for (let i = 0; i < 2000; i += 500) {
+      await prisma.accessToken.createMany({
+        data: Array.from({ length: 500 }, (_, k) => ({
+          tokenHash: `f${String(i + k).padStart(8, "0")}${"c".repeat(55)}`,
+          purpose: "PASSWORD_RESET" as const,
+          userId: subjectUserId,
+          expiresAt: new Date(NOW.getTime() + DAY_MS),
+          createdAt: daysAgo(2),
+        })),
+      });
+    }
+    await prisma.$executeRawUnsafe('ANALYZE "access_token"');
+
+    // Same predicate expression + ordering + bound as CLEANUP_VICTIMS_SQL.
+    const plan = await prisma.$queryRawUnsafe<Array<{ "QUERY PLAN": string }>>(
+      `EXPLAIN SELECT "id" FROM "access_token"
+       WHERE (GREATEST(
+         COALESCE("consumed_at", 'epoch'::timestamptz),
+         COALESCE("revoked_at", 'epoch'::timestamptz),
+         CASE WHEN "consumed_at" IS NULL AND "revoked_at" IS NULL
+              THEN "expires_at" ELSE 'epoch'::timestamptz END
+       )) < $1
+       ORDER BY (GREATEST(
+         COALESCE("consumed_at", 'epoch'::timestamptz),
+         COALESCE("revoked_at", 'epoch'::timestamptz),
+         CASE WHEN "consumed_at" IS NULL AND "revoked_at" IS NULL
+              THEN "expires_at" ELSE 'epoch'::timestamptz END
+       )), "id"
+       LIMIT 1000`,
+      daysAgo(30),
+    );
+    const planText = plan.map((r) => r["QUERY PLAN"]).join("\n");
+    expect(planText).toContain("access_token_terminal_cleanup_idx");
+    expect(planText).not.toContain("Seq Scan");
+    await prisma.$executeRawUnsafe('TRUNCATE "access_token" RESTART IDENTITY');
+  });
 });

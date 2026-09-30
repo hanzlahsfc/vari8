@@ -16,10 +16,14 @@ import { prisma } from "./lib/db";
  * logged.
  *
  * S1-F2B: the Node-side callbacks in `lib/auth/session.ts` (Prisma is allowed
- * there) wrap the edge-safe base callbacks. `jwt` stamps `token.sv` from the
- * database `sessionVersion` at sign-in; `session` re-reads the user's status +
- * version on every request and rejects stale/malformed/missing versions
- * exactly like an expired session. auth.config.ts itself stays Prisma-free.
+ * there) COMPOSE with the edge-safe base callbacks — `...authConfig` plus a
+ * callbacks object that preserves every base key and overrides only `jwt`/
+ * `session`. `jwt` stamps `token.sv` from the database `sessionVersion` at
+ * sign-in and returns `null` (the supported Auth.js invalidation: null body +
+ * cleared cookie) whenever the token's `sv` does not match the user's CURRENT
+ * database status+version on every later request. Returning null from the
+ * `session` callback is NOT used — `auth()`/`getSession` would coalesce it
+ * back to a default authenticated session. auth.config.ts stays Prisma-free.
  */
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,

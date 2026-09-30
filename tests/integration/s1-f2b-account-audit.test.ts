@@ -119,8 +119,11 @@ describe.skipIf(!enabled)(
       const idx = await prisma.$queryRawUnsafe<Array<{ indexname: string }>>(
         `SELECT indexname FROM pg_indexes WHERE tablename='audit_event'`,
       );
-      expect(idx.map((i) => i.indexname)).toContain(
-        "audit_event_subject_user_id_at_idx",
+      expect(idx.map((i) => i.indexname)).toEqual(
+        expect.arrayContaining([
+          "audit_event_subject_user_id_at_idx",
+          "audit_event_subject_user_id_id_idx",
+        ]),
       );
       const fk = await prisma.$queryRawUnsafe<
         Array<{ conname: string; confdeltype: string }>
@@ -329,6 +332,42 @@ describe.skipIf(!enabled)(
           "access_token_token_hash_sha256_hex",
         ]),
       );
+    });
+
+    it("the subject listing plan uses the (subject_user_id, id) index on an analyzed fixture", async () => {
+      // The planner freely chooses a seqscan on tiny tables — this fixture is
+      // sized + ANALYZEd so the observed plan is meaningful, not guaranteed.
+      const a = await user();
+      const b = await user();
+      for (const [subj, count] of [
+        [a.id, 3000],
+        [b.id, 3000],
+      ] as const) {
+        for (let i = 0; i < count; i += 500) {
+          await prisma.auditEvent.createMany({
+            data: Array.from({ length: Math.min(500, count - i) }, (_, k) => ({
+              scope: "ACCOUNT" as const,
+              subjectUserId: subj,
+              action: "PASSWORD_RESET" as const,
+              resourceType: "user",
+              resourceId: `r-${i + k}`,
+              result: "ALLOW" as const,
+            })),
+          });
+        }
+      }
+      await prisma.$executeRawUnsafe('ANALYZE "audit_event"');
+      const plan = await prisma.$queryRawUnsafe<
+        Array<{ "QUERY PLAN": string }>
+      >(
+        `EXPLAIN SELECT "id" FROM "audit_event"
+         WHERE "scope" = 'ACCOUNT' AND "subject_user_id" = $1 AND "id" > $2
+         ORDER BY "id" ASC LIMIT 26`,
+        a.id,
+        "a",
+      );
+      const planText = plan.map((r) => r["QUERY PLAN"]).join("\n");
+      expect(planText).toContain("audit_event_subject_user_id_id_idx");
     });
   },
 );

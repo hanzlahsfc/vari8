@@ -4,14 +4,24 @@
  *
  * `User.sessionVersion` is the revocation counter: a successful password reset
  * (S1-F2D) increments it so every JWT issued before the reset becomes stale.
- * The `session` callback re-reads the current row on EVERY authenticated
- * request — the JWT-carried `sv` claim is never trusted on its own — and the
- * session is rejected indistinguishably (same as expired) on: missing user,
- * non-ACTIVE status, missing/malformed/non-integer/negative `sv`, or a
- * version mismatch. Legacy JWTs without `sv` are stale by design.
  *
- * Cost: one indexed primary-key read per session validation. No caching —
- * caching reintroduces a revocation lag and defeats the mechanism.
+ * Mechanism (verified against next-auth@5.0.0-beta.32 / @auth/core@0.41.3):
+ * the gate lives in the `jwt` callback, whose return type is
+ * `Awaitable<JWT | null>`. Returning `null` is the supported invalidation —
+ * `actions.session` sees `token === null`, pushes `sessionStore.clean()`
+ * (expired-cookie headers) and returns a null body for BOTH the
+ * `/api/auth/session` endpoint and the server `auth()`/`getSession` path.
+ * Returning `null` from the `session` callback is NOT safe: `getSession`
+ * coalesces it back to the token-derived default session (`?? args[0].session`)
+ * and `auth()` stays authenticated — the independent-review bypass this file
+ * was repaired for. The `session` callback therefore only delegates to the
+ * base callbacks; a null token never reaches it.
+ *
+ * Rejections (all → `jwt` returns `null`): missing/empty `sub`, missing or
+ * malformed `sv`, non-integer/negative `sv`, version mismatch vs the CURRENT
+ * database row, non-ACTIVE status, unknown/deleted user, lookup error. Legacy
+ * JWTs without `sv` are stale by design. One indexed PK read per validation;
+ * no caching — a cache reintroduces revocation lag.
  */
 import type { Session, User } from "next-auth";
 import type { JWT } from "next-auth/jwt";
@@ -78,29 +88,62 @@ export const prismaSessionUserLookup: SessionUserGateLookup = (id) =>
     select: { id: true, status: true, sessionVersion: true },
   });
 
+export type JwtCallbackParams = {
+  token: JWT;
+  user?: User;
+  trigger?: string;
+  /** Client-sent update payload (`useSession().update`) — never trusted. */
+  session?: unknown;
+};
+
 export type BaseCallbacks = {
-  jwt(params: { token: JWT; user?: User }): JWT | Promise<JWT>;
+  jwt(params: JwtCallbackParams): JWT | null | Promise<JWT | null>;
   session(params: { session: Session; token: JWT }): Session | Promise<Session>;
+  /** Any other callback keys (e.g. `authorized`) pass through untouched. */
+  [key: string]: unknown;
 };
 
 /**
- * Composes the edge-safe `auth.config.ts` callbacks with the DB gate. The jwt
- * callback stamps `sv` from the just-authenticated user record (never from
- * client input); the session callback validates it against fresh DB state and
- * returns `null` — indistinguishable from an expired/invalid session — on any
- * rejection.
+ * Deliberately COMPOSES with the base callbacks rather than replacing them:
+ * every key on `base` (`authorized`, future callbacks) survives via spread;
+ * only `jwt` and `session` are overridden — `jwt` wraps the base result with
+ * the version gate, `session` delegates to the base mapping.
+ *
+ * `jwt` behavior:
+ * - sign-in (`user` present): stamp `sv` from the just-authenticated record —
+ *   client/session input is never a source. An implausible `sessionVersion`
+ *   leaves `sv` unset, which the gate then rejects on every use (fail-closed).
+ * - every other invocation (session read, `update` trigger, refresh): run the
+ *   DB gate on `token.sub`/`token.sv`; `null` → invalidated session.
+ *   A `trigger === "update"` client payload (`session`) is never read.
  */
 export function createSessionCallbacks(
   base: BaseCallbacks,
   lookup: SessionUserGateLookup,
 ) {
   return {
-    async jwt({ token, user }: { token: JWT; user?: User }): Promise<JWT> {
-      const next = await base.jwt({ token, user });
-      if (user && isValidSessionVersionClaim(user.sessionVersion)) {
-        next.sv = user.sessionVersion;
+    ...base,
+    async jwt({
+      token,
+      user,
+      trigger,
+      session: updatePayload,
+    }: JwtCallbackParams): Promise<JWT | null> {
+      const next = await base.jwt({
+        token,
+        user,
+        trigger,
+        session: updatePayload,
+      });
+      if (next === null) return null;
+      if (user) {
+        if (isValidSessionVersionClaim(user.sessionVersion)) {
+          next.sv = user.sessionVersion;
+        }
+        return next;
       }
-      return next;
+      const allowed = await sessionVersionAllowed(next.sub, next.sv, lookup);
+      return allowed ? next : null;
     },
     async session({
       session,
@@ -109,11 +152,7 @@ export function createSessionCallbacks(
       session: Session;
       token: JWT;
     }): Promise<Session> {
-      const next = await base.session({ session, token });
-      if (!(await sessionVersionAllowed(token.sub, token.sv, lookup))) {
-        return null as unknown as Session;
-      }
-      return next;
+      return base.session({ session, token });
     },
   };
 }

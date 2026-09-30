@@ -267,10 +267,13 @@ model AuditEvent {
 
   // Read paths: tenant-scoped, time-ordered listing ([workspaceId, at]) and
   // tenant-scoped id-cursor pagination used by listAuditEvents ([workspaceId, id]).
-  // Account path: internal subject-user listing ([subjectUserId, at]).
+  // Account path: internal subject listing supports BOTH time order
+  // ([subjectUserId, at]) and the id-cursor pagination used by
+  // listAccountAuditEvents ([subjectUserId, id]).
   @@index([workspaceId, at])
   @@index([workspaceId, id])
   @@index([subjectUserId, at])
+  @@index([subjectUserId, id], map: "audit_event_subject_user_id_id_idx")
   @@map("audit_event")
 }
 
@@ -312,5 +315,8 @@ model AccessToken {
   @@index([workspaceId, purpose, targetEmail, intendedRole], map: "access_token_invite_target_idx")
   @@index([userId, purpose], map: "access_token_user_id_purpose_idx")
   @@index([expiresAt], map: "access_token_expires_at_idx")
+  // Expression index (raw SQL only — Prisma cannot model it):
+  // "access_token_terminal_cleanup_idx" on (effective-terminal-ts, id) backs
+  // cleanupTerminalAccessTokens; see migration 20260930180000.
   @@map("access_token")
 }
