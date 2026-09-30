@@ -118,3 +118,14 @@ function validatePasswordPolicySafe(candidate: unknown): unknown {
     return error;
   }
 }
+
+describe("hash boundary normalization", () => {
+  it("hashPassword canonicalizes even when called without the policy", async () => {
+    // A future caller could hash a decomposed string directly — the stored
+    // credential must still verify the canonically equivalent login input.
+    const stored = await hashPassword("cafe\u0301-passw0rd");
+    await expect(verifyPassword("caf\u00e9-passw0rd", stored)).resolves.toBe(
+      true,
+    );
+  });
+});

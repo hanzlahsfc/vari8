@@ -400,10 +400,7 @@ describe.skipIf(!enabled)(
       );
       expect(result?.email).toBe(email);
       expect(
-        await authorizeCredentials(
-          { email, password: "wrong" },
-          legacyLookup,
-        ),
+        await authorizeCredentials({ email, password: "wrong" }, legacyLookup),
       ).toBeNull();
     });
   },

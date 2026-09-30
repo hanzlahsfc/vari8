@@ -4,7 +4,9 @@ import type { AuthorizationContext } from "../../lib/auth/guard";
 import { AccessDeniedError } from "../../lib/auth/guard";
 import {
   AuditError,
+  buildAccountAuditEvent,
   buildAuditEvent,
+  listAccountAuditEvents,
   listAuditEvents,
   sanitizeAuditMeta,
   writeAuditEvent,
@@ -317,7 +319,12 @@ describe("listAuditEvents", () => {
       take: number;
       orderBy: unknown;
     };
-    expect(call.where).toMatchObject({ workspaceId: "w1" });
+    expect(call.where).toMatchObject({
+      workspaceId: "w1",
+      // S1-F2B: workspace listings are scope-locked — ACCOUNT rows can never
+      // enter a tenant listing even if a future scope allowed workspace_id.
+      scope: "WORKSPACE",
+    });
     expect(call.take).toBe(101);
     expect(call.orderBy).toEqual({ id: "asc" });
   });
@@ -335,5 +342,89 @@ describe("listAuditEvents", () => {
     await expect(
       listAuditEvents({ user: { id: "u1" } }, { workspaceId: "w1" }, client),
     ).rejects.toBeInstanceOf(AccessDeniedError);
+  });
+});
+
+describe("listAccountAuditEvents (S1-F2B internal primitive)", () => {
+  it("is subject-scoped, ACCOUNT-locked, bounded, and minimal", async () => {
+    const findMany = vi.fn(async () => []);
+    const client = { auditEvent: { findMany } } as never;
+    await listAccountAuditEvents(
+      { subjectUserId: "subj-1", limit: 500 },
+      client,
+    );
+    const call = (findMany.mock.calls[0] as unknown[])[0] as {
+      where: Record<string, unknown>;
+      take: number;
+      orderBy: unknown;
+      select: Record<string, unknown>;
+    };
+    expect(call.where).toMatchObject({
+      scope: "ACCOUNT",
+      subjectUserId: "subj-1",
+    });
+    // No workspace predicate exists on the account path at all.
+    expect(call.where).not.toHaveProperty("workspaceId");
+    expect(call.take).toBe(101); // limit capped at 100 → take+1
+    expect(call.orderBy).toEqual({ id: "asc" });
+    // Minimal field selection — no meta, no workspace, no hashes.
+    expect(Object.keys(call.select)).toEqual(
+      expect.arrayContaining([
+        "id",
+        "actorUserId",
+        "action",
+        "resourceType",
+        "resourceId",
+        "result",
+        "at",
+      ]),
+    );
+    expect(call.select).not.toHaveProperty("meta");
+    expect(call.select).not.toHaveProperty("workspaceId");
+    await expect(
+      listAccountAuditEvents({ subjectUserId: "" }, client),
+    ).rejects.toBeInstanceOf(AuditError);
+  });
+});
+
+describe("buildAccountAuditEvent (S1-F2B)", () => {
+  it("emits an ACCOUNT-scoped row with null workspace and no fabricated actor", () => {
+    const row = buildAccountAuditEvent(
+      { subjectUserId: "subj-1" },
+      { action: "PASSWORD_RESET", resourceType: "user", resourceId: "r1" },
+    );
+    expect(row).toMatchObject({
+      scope: "ACCOUNT",
+      workspaceId: null,
+      subjectUserId: "subj-1",
+      actorUserId: null,
+      actorRole: null,
+      action: "PASSWORD_RESET",
+      resourceType: "user",
+      result: "ALLOW",
+    });
+    expect(row).not.toHaveProperty("meta");
+  });
+
+  it("rejects non-account actions/resources and missing subject", () => {
+    for (const args of [
+      [{ subjectUserId: "s" }, { action: "INVITE", resourceType: "user" }],
+      [
+        { subjectUserId: "s" },
+        { action: "PASSWORD_RESET", resourceType: "consent" },
+      ],
+      [
+        { subjectUserId: "s" },
+        { action: "PASSWORD_RESET", resourceType: "unknown" },
+      ],
+      [
+        { subjectUserId: "" },
+        { action: "PASSWORD_RESET", resourceType: "user" },
+      ],
+    ] as const) {
+      expect(() =>
+        buildAccountAuditEvent(args[0] as never, args[1] as never),
+      ).toThrow(AuditError);
+    }
   });
 });
