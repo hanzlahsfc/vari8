@@ -94,6 +94,14 @@ describe("hashAccessToken", () => {
     expect(hashAccessToken(rawToken)).toMatch(HASH_PATTERN);
   });
 
+  it("matches a known SHA-256 answer (algorithm is pinned)", () => {
+    // sha256("A" * 43) — an independently computed digest, not a re-run of
+    // the production code path.
+    expect(hashAccessToken("A".repeat(43))).toBe(
+      "0f007385b6f9d4b7eeb2748605afe1a984a0a3bfa3f014d09e2a784ce9e5cd1a",
+    );
+  });
+
   it("never returns the raw token as its own hash", () => {
     const { rawToken, tokenHash } = generateAccessToken();
     expect(tokenHash).not.toBe(rawToken);
@@ -155,6 +163,22 @@ describe("hashAccessToken", () => {
     const { rawToken } = generateAccessToken();
     expectTokenError(`${rawToken}a`);
     expectTokenError("a".repeat(44));
+  });
+
+  it("rejects a final character that base64url of 32 bytes cannot produce", () => {
+    // The 43rd char encodes 4 bits; only indices ≡ 0 mod 4 are canonical.
+    expectTokenError(`${"a".repeat(42)}B`);
+    expectTokenError(`${"a".repeat(42)}a`);
+    expectTokenError(`${"a".repeat(42)}z`);
+    expectTokenError(`${"a".repeat(42)}-`);
+    // Same body with a canonical final character is accepted.
+    expect(hashAccessToken(`${"a".repeat(42)}A`)).toMatch(HASH_PATTERN);
+  });
+
+  it("rejects unicode and non-ASCII characters", () => {
+    expectTokenError(`${"a".repeat(41)}🔒`);
+    expectTokenError(`${"a".repeat(42)}Ａ`); // fullwidth A
+    expectTokenError(`${"a".repeat(41)} `);
   });
 
   it("rejects unreasonably large input before hashing", () => {

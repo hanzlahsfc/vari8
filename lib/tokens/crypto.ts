@@ -57,8 +57,12 @@ export type GeneratedAccessToken = {
 };
 
 const TOKEN_BYTE_LENGTH = 32; // 256 bits of CSPRNG entropy
-// Unpadded base64url encodes 32 bytes as exactly 43 characters.
-const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+// Unpadded base64url encodes 32 bytes as exactly 43 characters. The final
+// character carries only the last 4 bits, so its 6-bit index is always a
+// multiple of 4 — just 16 of the 64 alphabet characters can appear there.
+// Restricting it keeps validation to the single canonical format the
+// generator emits; nothing else is ever a real token.
+const TOKEN_PATTERN = /^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/;
 // Conservative input bound. Valid tokens are exactly 43 characters; anything
 // larger is malformed — this bound additionally rejects oversized input cheaply
 // before any further work.
