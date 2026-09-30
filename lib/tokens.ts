@@ -31,3 +31,21 @@ export class TokenFlowNotExposableError extends Error {
 export function assertTokenFlowsExternallyExposable(): never {
   throw new TokenFlowNotExposableError("token_flows_not_exposable");
 }
+
+export class TokenPrimitivesNotExposableError extends Error {
+  constructor(readonly code: "token_primitives_not_exposable") {
+    super(code);
+    this.name = "TokenPrimitivesNotExposableError";
+  }
+}
+
+/**
+ * S1-F2A: `lib/tokens/store.ts` adds transaction-bound internal primitives, but
+ * primitives alone are not a product surface — all of the following are still
+ * absent: authorization orchestration, invite acceptance, password policy,
+ * password reset, session invalidation, audit coupling, email delivery, abuse
+ * controls, and reviewed routes. No app or route file may import the store.
+ */
+export function assertTokenPrimitivesExternallyExposable(): never {
+  throw new TokenPrimitivesNotExposableError("token_primitives_not_exposable");
+}
