@@ -396,7 +396,11 @@ logout-other-devices.
 on the remaining OPEN items.** The policy-neutral prerequisite **S1-F0**
 (`lib/tokens/crypto.ts`) is implemented and independently PASS. The **S1-F1**
 schema/session foundation (`AccessToken` + `User.sessionVersion`, additive
-migration, no lifecycle services) is the current slice — see
-`docs/tasks/s1-f1-token-schema.md`. Next step: implement the S1-F1 schema
-foundation, independent different-model review, then implement token services only
-for the answered policy surface.
+migrations incl. the `token_hash` canonical-format CHECK added after independent
+FAIL/repair) is implemented and independently PASS — see
+`docs/tasks/s1-f1-token-schema.md`. **S1-F2A** adds internal transaction-bound
+store primitives (`lib/tokens/store.ts`: issue/revoke/claim/inspect) — no product
+flow, authorization, audit coupling, or delivery exists; see
+`docs/tasks/s1-f2a-token-primitives.md`. Independent different-model review of
+S1-F2A is required before any orchestration service; token services implement
+only the answered policy surface.

@@ -75,6 +75,33 @@ extraction) only, not the workbook UI itself.
 - Next: record the founder answers, then implement the separately reviewed S1-F
   Phase 1 schema foundation (still no routes/email until the flow decisions land).
 
+## 2026-09-30 — S1-F2A internal token primitives landed; independent review PENDING
+
+- `lib/tokens/store.ts`: internal, transaction-bound primitives only —
+  `issueWorkspaceInviteToken`, `issuePasswordResetToken`,
+  `revokeMatchingInviteTokens`, `revokeUserResetTokens`, `claimAccessToken`
+  (conditional `updateMany` — atomic single-claim), `inspectAccessToken`
+  (minimal validity shape). Every state-changing call requires a caller's
+  `Prisma.TransactionClient`; nothing uses the global client or opens its own
+  transaction. Raw tokens returned once, never stored/logged; expiry =
+  `ACCESS_TOKEN_TTL_MS` (12 h, founder-decided). Email via shared
+  `normalizeEmail` (same rule as credential login).
+- `assertTokenPrimitivesExternallyExposable` added to `lib/tokens.ts`; both
+  assertions fail closed. No app/route file imports the store (grep-verified).
+- No schema/migration change. No invite/reset service, acceptance, eligibility,
+  password change, sessionVersion wiring, audit event, email, route, UI, RBAC
+  change, retention, or rate limiting — those encode open `TODO(human)` items.
+- RED: both new test files failed (module absent). GREEN: unit 10, integration
+  14 on disposable `s1f2a_verify`. Mutation-proved ×11 (hash-only storage, TTL,
+  claim/revoke predicates, atomic claim, tx binding, error hygiene) — all
+  restored byte-for-byte. A coupled-scope test weakness was found and fixed
+  mid-build (wrong-purpose claim must keep a matching owner scope).
+- Gates (fresh `s1f2a_final`, dropped): unit 287 · integration 102 · format,
+  typecheck, lint, build, e2e 21 all 0.
+- **Independent different-model review of S1-F2A is required before any
+  orchestration service.** Full S1-F remains blocked on open founder items.
+- Record: `docs/tasks/s1-f2a-token-primitives.md`.
+
 ## 2026-09-30 — S1-F1 review FAIL repaired — token_hash format CHECK; re-review PENDING
 
 - Independent DeepSeek review of `bedbe12`: **FAIL** — `token_hash` TEXT enforced

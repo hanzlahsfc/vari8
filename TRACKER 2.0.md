@@ -187,6 +187,15 @@ threshold, health-data policy, workflow, or layout.
   `docs/tasks/s1-f1-token-schema.md`. **Independently PASS**
   (`opencode-go/deepseek-v4.1-flash`, repaired HEAD `8331bc5`, range
   `3e7733a..8331bc5`). **No token lifecycle service exists.**
+  - **S1-F2A** (`lib/tokens/store.ts`): internal transaction-bound primitives —
+    invite/reset issue, scoped active-only revoke (replacement policy), atomic
+    conditional-`updateMany` claim, minimal read-only inspection. Every
+    state-changing call requires a caller `Prisma.TransactionClient`; no global
+    client, no service orchestration, no audit, no email, no routes.
+    `assertTokenPrimitivesExternallyExposable()` fails closed alongside the
+    flows assertion. 12 h expiry via `ACCESS_TOKEN_TTL_MS`; shared
+    `normalizeEmail`. Record: `docs/tasks/s1-f2a-token-primitives.md`.
+    **Independent review pending — no product flow exists.**
 
 ### Important limitations
 
@@ -343,10 +352,14 @@ NULL still means user-owned reset/login audit rows need the §4.2 schema decisio
 The S1-F1 independent review FAILED on `token_hash` format enforcement; the
 additive repair (`access_token_token_hash_sha256_hex` CHECK) landed, and a fresh
 different-model independent **re**-review then **PASSed** the repaired tree at
-`8331bc5` (DeepSeek, range `3e7733a..8331bc5`). S1-F1 is independently PASS;
-next is to begin token lifecycle services **only** for the policy surface that is
-recorded, still blocked by the open `TODO(human)` items. GDPR (S1-G) and
-workspace shell (S1-H) remain later slices; no health records or product UI.
+`8331bc5` (DeepSeek, range `3e7733a..8331bc5`). S1-F1 is independently PASS.
+S1-F2A then landed the internal transaction-bound token-store primitives
+(`lib/tokens/store.ts` — issue/revoke/claim/inspect only) with gates green
+(unit 287, integration 102 real-PG, E2E 21) and 11 mutation proofs; a fresh
+different-model independent review of S1-F2A is required before any
+orchestration service, still blocked by the open `TODO(human)` items. GDPR
+(S1-G) and workspace shell (S1-H) remain later slices; no health records or
+product UI.
 
 ## 9. Human inputs still required
 
@@ -451,6 +464,43 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-30 — S1-F2A internal token-store primitives (independent review PENDING)
+
+- Scope: internal transaction-bound primitives over the S1-F1 schema only —
+  `lib/tokens/store.ts` (`issueWorkspaceInviteToken`, `issuePasswordResetToken`,
+  `revokeMatchingInviteTokens`, `revokeUserResetTokens`, `claimAccessToken`,
+  `inspectAccessToken`) + `assertTokenPrimitivesExternallyExposable` in
+  `lib/tokens.ts`. No services, routes, UI, email, audit, RBAC, schema, or
+  migration changes.
+- Files changed: `lib/tokens/store.ts` (new), `lib/tokens.ts` (second fail-closed
+  assertion), `tests/unit/token-store.test.ts` (new, 10 tests),
+  `tests/integration/s1-f2a-token-store.test.ts` (new, 14 tests), docs.
+- RED: both test files failed on the absent module (exit 1).
+- Evidence: hash-only storage (raw token absent from every stored column);
+  expiry exactly +12 h under a faked `Date`; replacement revocation touches only
+  active matching tuples (byte-identical comparison of all other rows);
+  conditional `updateMany` claim → concurrency test yields exactly one success;
+  tx rollback restores consumed/inserted state; zero audit events; all S1-A–F1
+  raw constraints/indexes still live; no app/route file imports the module.
+- Mutations (11, all restored byte-for-byte, `shasum` verified): raw-token
+  storage → 10; TTL change → 1; claim `revokedAt`/`consumedAt`/`expiresAt`/
+  `purpose` predicates → 1/2/1/1; revoke workspace/user predicates → 1/1;
+  read-then-unconditional-update claim → 4; global client instead of tx → 10;
+  input echoed in error → 1. (A coupled-scope test weakness for the purpose
+  predicate was found and fixed mid-build.)
+- Gates (fresh disposable `s1f2a_final`, dropped): `git diff --check` 0;
+  `npm ci` 0 (audit 1 mod + 4 high unchanged); `prisma format/validate/generate`
+  0; `migrate deploy` 0 (7 migrations); `migrate status` 0; `format:check` 0;
+  `typecheck` 0; `lint` 0; `npm run test` 0 (287); `test:integration` 0 (102);
+  `build` 0; `test:e2e` 0 (21).
+- **Independent different-model review PENDING** — the builder (SWE-2 High)
+  does not approve its own work; full S1-F remains blocked on open founder
+  items.
+- Next action: fresh different-model review of S1-F2A before any orchestration
+  service; continue awaiting founder answers.
+
+### 2026-09-30 — S1-F1 independent re-review PASS (reviewer: opencode-go/deepseek-v4.1-flash)
 
 ### 2026-09-30 — S1-F1 independent re-review PASS (reviewer: opencode-go/deepseek-v4.1-flash)
 
