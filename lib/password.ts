@@ -8,6 +8,10 @@ import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
  *
  * Only the derived hash and a random salt are stored. The plaintext password is
  * never stored and never logged.
+ *
+ * S1-F2B: both boundaries NFC-normalize the input before hashing/verifying, so
+ * canonically equivalent user intent (composed vs decomposed input methods)
+ * produces identical credentials. NFC only — no trimming, no case folding.
  */
 
 const PREFIX = "scrypt";
@@ -40,7 +44,11 @@ export async function hashPassword(password: string): Promise<string> {
     throw new Error("Password must be a non-empty string");
   }
   const salt = randomBytes(SALT_LENGTH);
-  const hash = await derive(password, salt, KEY_LENGTH, { N, r: R, p: P });
+  const hash = await derive(password.normalize("NFC"), salt, KEY_LENGTH, {
+    N,
+    r: R,
+    p: P,
+  });
   return [
     PREFIX,
     N,
@@ -76,11 +84,16 @@ export async function verifyPassword(
   if (salt.length === 0 || expected.length === 0) return false;
 
   try {
-    const actual = await derive(password, salt, expected.length, {
-      N: n,
-      r,
-      p,
-    });
+    const actual = await derive(
+      password.normalize("NFC"),
+      salt,
+      expected.length,
+      {
+        N: n,
+        r,
+        p,
+      },
+    );
     return (
       actual.length === expected.length && timingSafeEqual(actual, expected)
     );

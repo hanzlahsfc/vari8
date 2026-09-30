@@ -8,6 +8,11 @@ export type CredentialRecord = {
   passwordHash: string;
   /** Account status; only ACTIVE accounts may authenticate (S1-B). */
   status: string;
+  /**
+   * S1-F2B: current session-generation counter — embedded in the issued JWT so
+   * password-reset/other invalidation can stale already-issued sessions.
+   */
+  sessionVersion: number;
 };
 
 /** Looks up a user by normalized (lowercase) email. */
@@ -17,6 +22,8 @@ export type AuthorizedUser = {
   id: string;
   email: string;
   name: string | null;
+  /** S1-F2B: session version at sign-in time — becomes the JWT `sv` claim. */
+  sessionVersion: number;
 };
 
 export function normalizeEmail(value: unknown): string {
@@ -49,5 +56,10 @@ export async function authorizeCredentials(
   // password, so account status is never revealed.
   if (user.status !== "ACTIVE") return null;
 
-  return { id: user.id, email: user.email, name: user.name };
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    sessionVersion: user.sessionVersion,
+  };
 }

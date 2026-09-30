@@ -7,14 +7,13 @@
  * yet** — nothing here issues, lists, revokes, inspects, or consumes tokens.
  *
  * External token flows (invite creation/acceptance, password-reset
- * request/consume) must stay unreachable until every one of these is complete:
+ * request/consume) must stay unreachable until every one of these is complete.
+ * S1-F2B landed the password policy, account-scoped audit storage, session-
+ * version JWT enforcement, and bounded cleanup — still missing:
  *
- * - issuance and consumption services with atomic consume + replacement
- *   revocation semantics;
- * - the approved password policy (still `TODO(human)`);
+ * - invitation orchestration and reset orchestration (services, acceptance,
+ *   atomic consume + replacement revocation);
  * - email provider, sender identity, and application base URL (undecided);
- * - session-version embed/compare inside JWT validation (logout-on-reset);
- * - the user-scoped audit-ownership decision (plan §4.2) and audit writes;
  * - rate limiting / abuse protection;
  * - route/action security review (S1-H) plus independent review of the flows.
  *
@@ -48,4 +47,23 @@ export class TokenPrimitivesNotExposableError extends Error {
  */
 export function assertTokenPrimitivesExternallyExposable(): never {
   throw new TokenPrimitivesNotExposableError("token_primitives_not_exposable");
+}
+
+export class AccountSecurityNotExposableError extends Error {
+  constructor(readonly code: "account_security_not_exposable") {
+    super(code);
+    this.name = "AccountSecurityNotExposableError";
+  }
+}
+
+/**
+ * S1-F2B: the account-security surface (account-audit reader/writer, password
+ * policy, session-version internals, token cleanup) is internal primitives
+ * only — the following remain absent: invitation orchestration, reset
+ * orchestration, provider configuration, rate limiting, reviewed routes/
+ * actions, and UI/E2E exposure review. No app or route file may import this
+ * surface.
+ */
+export function assertAccountSecurityExternallyExposable(): never {
+  throw new AccountSecurityNotExposableError("account_security_not_exposable");
 }

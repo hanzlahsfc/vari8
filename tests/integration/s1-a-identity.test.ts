@@ -378,35 +378,31 @@ describe.skipIf(!enabled)(
     });
 
     it("still authorizes the existing credentials", async () => {
+      // Scratch has only the initial + S1-A migrations — no session_version
+      // column yet. A pre-S1-F1 row maps to version 0, exactly what a
+      // migrated table stores for it.
+      const legacyLookup = async (lookupEmail: string) => {
+        const row = await scratch.user.findUnique({
+          where: { email: lookupEmail },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            passwordHash: true,
+            status: true,
+          },
+        });
+        return row && { ...row, sessionVersion: 0 };
+      };
       const result = await authorizeCredentials(
         { email, password },
-        (lookupEmail) =>
-          scratch.user.findUnique({
-            where: { email: lookupEmail },
-            select: {
-              id: true,
-              email: true,
-              name: true,
-              passwordHash: true,
-              status: true,
-            },
-          }),
+        legacyLookup,
       );
       expect(result?.email).toBe(email);
       expect(
         await authorizeCredentials(
           { email, password: "wrong" },
-          (lookupEmail) =>
-            scratch.user.findUnique({
-              where: { email: lookupEmail },
-              select: {
-                id: true,
-                email: true,
-                name: true,
-                passwordHash: true,
-                status: true,
-              },
-            }),
+          legacyLookup,
         ),
       ).toBeNull();
     });

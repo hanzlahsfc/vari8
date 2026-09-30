@@ -44,7 +44,7 @@ const INVITABLE_ROLES: readonly MemberRole[] = [
   "CLIENT",
 ];
 
-export type TokenStoreErrorCode = "invalid_input";
+export type TokenStoreErrorCode = "invalid_input" | "token_store_failed";
 
 export class TokenStoreError extends Error {
   constructor(readonly code: TokenStoreErrorCode) {
@@ -284,4 +284,75 @@ export async function inspectAccessToken(
     return { valid: false };
   }
   return { valid: true, purpose: row.purpose, expiresAt: row.expiresAt };
+}
+
+/** S1-F2B: founder-approved retention — terminal rows deletable after 30 days. */
+export const ACCESS_TOKEN_TERMINAL_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** Hard batch bound for a single cleanup call. */
+export const ACCESS_TOKEN_CLEANUP_BATCH_LIMIT = 1000;
+
+const CLEANUP_VICTIMS_SQL = `
+WITH victims AS (
+  SELECT "id" FROM "access_token"
+  WHERE (
+    "consumed_at" IS NOT NULL AND "revoked_at" IS NOT NULL
+    AND GREATEST("consumed_at", "revoked_at") < $1
+  ) OR (
+    "consumed_at" IS NOT NULL AND "revoked_at" IS NULL
+    AND "consumed_at" < $1
+  ) OR (
+    "consumed_at" IS NULL AND "revoked_at" IS NOT NULL
+    AND "revoked_at" < $1
+  ) OR (
+    "consumed_at" IS NULL AND "revoked_at" IS NULL
+    AND "expires_at" < $1
+  )
+  ORDER BY "id"
+  LIMIT ${ACCESS_TOKEN_CLEANUP_BATCH_LIMIT}
+)
+DELETE FROM "access_token" WHERE "id" IN (SELECT "id" FROM victims)
+RETURNING "id"
+`;
+
+/**
+ * S1-F2B bounded 30-day token cleanup — internal, not a route or a job.
+ *
+ * Deletes at most `ACCESS_TOKEN_CLEANUP_BATCH_LIMIT` terminal rows per call.
+ * "Terminal" uses the most recent applicable terminal timestamp: the LATER of
+ * consumed_at/revoked_at when both exist, consumed_at alone, revoked_at alone,
+ * or expires_at for rows that expired without consumption/revocation. Each
+ * must be older than `now − retention`. An active row (unconsumed, unrevoked,
+ * unexpired) is structurally un-selectable — the predicate cannot match it.
+ *
+ * Retryable and concurrency-safe: two overlapping calls may race on the same
+ * victims — each `DELETE … RETURNING` claims its rows once; the loser simply
+ * deletes fewer. Repeat calls drain remaining eligible rows. The caller may
+ * pass any Prisma client or transaction — nothing here opens a hidden global
+ * connection. Errors are structural (`token_store_failed`); P2034 conflict
+ * errors propagate for the caller's retry.
+ */
+export async function cleanupTerminalAccessTokens(
+  db: PrismaClient | Prisma.TransactionClient,
+  options?: { now?: Date; retentionMs?: number },
+): Promise<{ deletedCount: number }> {
+  const now = options?.now ?? new Date();
+  const retention = options?.retentionMs ?? ACCESS_TOKEN_TERMINAL_RETENTION_MS;
+  if (!(now instanceof Date) || Number.isNaN(now.getTime()))
+    throw new TokenStoreError("invalid_input");
+  const cutoff = new Date(now.getTime() - retention);
+  try {
+    const deleted = await db.$queryRawUnsafe<Array<{ id: string }>>(
+      CLEANUP_VICTIMS_SQL,
+      cutoff,
+    );
+    return { deletedCount: deleted.length };
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2034"
+    )
+      throw error;
+    throw new TokenStoreError("token_store_failed");
+  }
 }

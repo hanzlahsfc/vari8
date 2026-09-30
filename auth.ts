@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
 import { authConfig } from "./auth.config";
+import { authNodeCallbacks } from "./lib/auth/session";
 import { authorizeCredentials } from "./lib/credentials";
 import { prisma } from "./lib/db";
 
@@ -13,6 +14,12 @@ import { prisma } from "./lib/db";
  * Session strategy is JWT (see `auth.config.ts`). Passwords are compared using
  * scrypt-based hashing in `lib/password.ts`; plaintext is never stored or
  * logged.
+ *
+ * S1-F2B: the Node-side callbacks in `lib/auth/session.ts` (Prisma is allowed
+ * there) wrap the edge-safe base callbacks. `jwt` stamps `token.sv` from the
+ * database `sessionVersion` at sign-in; `session` re-reads the user's status +
+ * version on every request and rejects stale/malformed/missing versions
+ * exactly like an expired session. auth.config.ts itself stays Prisma-free.
  */
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -32,10 +39,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               name: true,
               passwordHash: true,
               status: true,
+              sessionVersion: true,
             },
           }),
         );
       },
     }),
   ],
+  callbacks: authNodeCallbacks,
 });

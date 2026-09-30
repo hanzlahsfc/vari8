@@ -17,6 +17,7 @@ const lookup = async (email: string) =>
         name: "Test User",
         passwordHash,
         status: "ACTIVE",
+        sessionVersion: 0,
       }
     : null;
 
@@ -30,6 +31,7 @@ describe("authorizeCredentials", () => {
       id: "u1",
       email: "user@example.com",
       name: "Test User",
+      sessionVersion: 0,
     });
     expect(result).not.toHaveProperty("passwordHash");
   });
@@ -75,6 +77,7 @@ describe("authorizeCredentials", () => {
               name: "Test User",
               passwordHash,
               status,
+              sessionVersion: 0,
             }
           : null;
       expect(
