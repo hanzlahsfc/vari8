@@ -277,7 +277,6 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
     const names = rows.map((r) => r.table_name);
     for (const forbidden of [
       "audit_log",
-      "access_token",
       "daily_entry",
       "food",
       "exercise",
@@ -286,10 +285,12 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
     ]) {
       expect(names.some((n) => n.includes(forbidden))).toBe(false);
     }
-    // Identity/tenancy (S1-A), versioned consent (S1-D), audit events (S1-E).
+    // Identity/tenancy (S1-A), versioned consent (S1-D), audit events (S1-E),
+    // access tokens (S1-F1).
     expect(names.sort()).toEqual(
       [
         "_prisma_migrations",
+        "access_token",
         "audit_event",
         "client_assignment",
         "client_profile",

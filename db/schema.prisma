@@ -84,20 +84,31 @@ enum AuditResult {
   DENY
 }
 
-model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
-  passwordHash String       @map("password_hash")
-  name         String?
-  platformRole PlatformRole @default(USER) @map("platform_role")
-  status       UserStatus   @default(ACTIVE)
-  createdAt    DateTime     @default(now()) @map("created_at")
-  updatedAt    DateTime     @updatedAt @map("updated_at")
+enum AccessTokenPurpose {
+  WORKSPACE_INVITE
+  PASSWORD_RESET
+}
 
-  memberships     WorkspaceMember[]
-  clientProfiles  ClientProfile[]
-  consentsGranted ConsentRecord[]
-  auditEvents     AuditEvent[]
+model User {
+  id             String       @id @default(cuid())
+  email          String       @unique
+  passwordHash   String       @map("password_hash")
+  name           String?
+  platformRole   PlatformRole @default(USER) @map("platform_role")
+  status         UserStatus   @default(ACTIVE)
+  // S1-F1: bumped at password-reset consumption so already-issued JWT sessions
+  // become stale (founder decision: reset logs out other devices). Not yet
+  // embedded in or compared by JWT validation — no auth behavior change yet.
+  sessionVersion Int          @default(0) @map("session_version")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  memberships        WorkspaceMember[]
+  clientProfiles     ClientProfile[]
+  consentsGranted    ConsentRecord[]
+  auditEvents        AuditEvent[]
+  accessTokens       AccessToken[]     @relation("AccessTokenUser")
+  issuedAccessTokens AccessToken[]     @relation("AccessTokenCreator")
 
   @@map("users")
 }
@@ -113,6 +124,7 @@ model Workspace {
   members        WorkspaceMember[]
   clientProfiles ClientProfile[]
   auditEvents    AuditEvent[]
+  accessTokens   AccessToken[]
 
   @@map("workspace")
 }
@@ -243,4 +255,45 @@ model AuditEvent {
   @@index([workspaceId, at])
   @@index([workspaceId, id])
   @@map("audit_event")
+}
+
+// S1-F1: purpose-scoped, hash-only access tokens (invitations / password reset).
+// Ephemeral security records — not audit rows. Purpose-dependent nullability is
+// enforced by named CHECK constraints in the migration (Prisma cannot express
+// it): invites require workspace/email/role/issuer and may carry user_id only
+// once consumed; resets require user_id and forbid every invite field.
+// Raw bearer tokens are NEVER stored — only the SHA-256 hex digest
+// (lib/tokens/crypto.ts) may land in token_hash.
+model AccessToken {
+  id              String             @id @default(cuid())
+  purpose         AccessTokenPurpose
+  tokenHash       String             @unique @map("token_hash")
+  workspaceId     String?            @map("workspace_id")
+  userId          String?            @map("user_id")
+  // Normalized plaintext invite address — personal data, deliberately not
+  // standalone-indexed; no approved HMAC secret exists and an unsalted hash
+  // would be enumerable.
+  targetEmail     String?            @map("target_email")
+  intendedRole    MemberRole?        @map("intended_role")
+  createdByUserId String?            @map("created_by_user_id")
+  expiresAt       DateTime           @map("expires_at") @db.Timestamptz(6)
+  consumedAt      DateTime?          @map("consumed_at") @db.Timestamptz(6)
+  revokedAt       DateTime?          @map("revoked_at") @db.Timestamptz(6)
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  // workspaceId: Restrict — tenant boundary; a workspace cannot disappear with
+  // outstanding invite rows. userId: Cascade — user-owned reset rows are
+  // meaningless without the user (SetNull would violate reset_shape).
+  // createdByUserId: Restrict — issuer deletion must not silently sever issued
+  // invites; erasure flows must revoke/delete them first.
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  user      User?      @relation("AccessTokenUser", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User?      @relation("AccessTokenCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  // (workspace_id, purpose, target_email, intended_role) supports the future
+  // replacement-invalidates-matching lookup without indexing the email alone.
+  @@index([workspaceId, purpose, targetEmail, intendedRole], map: "access_token_invite_target_idx")
+  @@index([userId, purpose], map: "access_token_user_id_purpose_idx")
+  @@index([expiresAt], map: "access_token_expires_at_idx")
+  @@map("access_token")
 }
