@@ -333,7 +333,7 @@ assumptions.
 - Snapshot nutrition/macros into historical plans/logs so later catalog changes do not
   rewrite history.
 
-### Stage 3 — Sheet-faithful product shell
+### Stage 3 — Product shell (per-form-factor UI; sheet-derived information architecture)
 
 - Build the dashboard and Daily Tracker first using synthetic fixtures.
 - Reproduce sheet hierarchy, grouping, density, section order, labels, and dark/light
@@ -420,9 +420,9 @@ review FAILed the session boundary, and the repair (jwt-callback
 invalidation, supporting indexes, deliberate callback composition) was
 independently re-reviewed **PASS** at `ae7c6d5`
 (`opencode-go/deepseek-v4.1-flash`, range `ac9857e..ae7c6d5`).
-**S1-F2C invitation orchestration is implemented and REPAIRED after an
-independent DeepSeek FAIL** (see §6 + task records) with gates green (unit
-318, integration 159 real-PG, E2E 21) and 29 mutation proofs total — **its
+**S1-F2C invitation orchestration is implemented and repaired after TWO
+independent DeepSeek FAILs** (see §6 + task records) with gates green (unit
+319, integration 162 real-PG, E2E 21) and 34 mutation proofs total — **its
 independent different-model re-review is pending**, then S1-F2D
 password-reset orchestration. No routes/UI/email exist. GDPR
 (S1-G) and workspace shell (S1-H) remain later slices; no health records or
@@ -529,6 +529,32 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 - Known risks/blockers:
 - Next action: `<one exact next action>`.
 ```
+
+## 12. Change log (newest first)
+
+### 2026-09-30 — S1-F2C second repair (second DeepSeek FAIL → fixed; re-review pending)
+
+- Post-lock freshness barrier extended: after the tuple advisory lock, the
+  create path row-locks `users → workspace → workspace_member` (FOR UPDATE,
+  fixed order) then re-runs the guard — user/workspace/membership changes
+  committed during the wait force serialization retry → deny; 6 mid-wait
+  race proofs (DEACTIVATED, INVITED, SUSPENDED workspace, SUSPENDED member,
+  owner→coach on staff invite, coach→assistant on client invite).
+- Role-generation pinned: +1 status / +1 role / +1 combined / +0 unrelated /
+  forge-proof; role change invalidates prior invite; fresh invite snapshots
+  new generation. Migration bytes unchanged.
+- 5 repair mutations caught + restored (3 row locks, second authorize,
+  trigger role-increment). Gates: unit 319, integration 162, e2e 21.
+- Commits: `c1e4e0a` plan, `64d36d6` fix+tests. **Next: DeepSeek re-review.**
+
+### 2026-09-30 — Latest product/UI direction recorded (docs only)
+
+- Relayed by Hanzlah, 2026-09-30: complete desktop/web redesign;
+  platform-specific desktop/web, tablet, and mobile interfaces under one
+  design system; sheets remain data/workflow/IA source, not literal UI;
+  Prime Tracker visual design is not the target and its repo is untouched;
+  product name still undecided. Earlier "faithful layout" wording marked
+  superseded in `product-decisions.md`, `implementation-plan.md`, and §3.
 
 ## 12. Change log (newest first)
 

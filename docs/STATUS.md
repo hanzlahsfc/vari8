@@ -160,6 +160,19 @@ extraction) only, not the workbook UI itself.
 - Next: record the founder answers, then implement the separately reviewed S1-F
   Phase 1 schema foundation (still no routes/email until the flow decisions land).
 
+## 2026-09-30 — S1-F2C second repair after second DeepSeek FAIL; re-review PENDING
+
+- Post-lock freshness barrier now row-locks users → workspace →
+  workspace_member (FOR UPDATE) after the advisory-lock wait, then re-runs
+  the guard — six mid-wait race cases deny with zero side effects.
+- Role-based `state_version` increments pinned by real-PG tests (+1 status,
+  +1 role, +1 combined, +0 unrelated; forge-proof).
+- Gates: unit 319, integration 162/12, e2e 21; 5 repair mutations caught.
+- Latest product/UI direction recorded (docs only): per-form-factor
+  desktop/web redesign, NOT Prime Tracker's tablet/mobile layout; product
+  name still undecided; Prime Tracker untouched.
+- **Next: independent DeepSeek re-review of S1-F2C → then S1-F2D.**
+
 ## 2026-09-30 — S1-F2C REPAIRED after DeepSeek independent FAIL; re-review PENDING
 
 - DeepSeek FAIL repaired: clock-based freshness replaced by causal

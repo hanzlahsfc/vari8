@@ -121,3 +121,13 @@ Full required set incl. **upgrade deploy** (deploy ≤`20260930180000` then the
 new migration on a second DB). Rollback = `git revert` + additive-only
 migration (column additions are non-destructive; rollback of the code leaves
 inert columns).
+
+---
+
+## Second DeepSeek review (FAIL → repaired)
+
+`docs/tasks/s1-f2c-second-review-repair.md` — the post-lock freshness barrier
+was extended from the membership row to all three authorization rows
+(users → workspace → workspace_member FOR UPDATE) after the advisory-lock
+wait, with six real-PG mid-wait race proofs; role-generation behavior is now
+pinned by dedicated tests (migration unchanged).

@@ -30,7 +30,7 @@ revokeWorkspaceInvitation(session, { workspaceId, invitationId })
   -> { changed: boolean }
 listWorkspaceInvitations(session, { workspaceId, limit?, cursor? })
   -> { items: InvitationSummary[]; nextCursor: string | null }
-acceptWorkspaceInvitation(session, { rawToken, name?, password? })
+acceptWorkspaceInvitation(session, { workspaceId, rawToken, name?, password? }) — workspaceId is required; the claim is workspace-constrained
   -> { outcome: "accepted" | "already_member", userId, membershipId, workspaceId }
 ```
 
@@ -82,7 +82,7 @@ resourceId: tokenId, meta:{targetRole}})`.
 7. Commit → only then return `delivery` containing `rawToken`.
 
 Any failure (authz, audit, issue) rolls back the revocation too — the previous
-matching invite survives. P2002 → `invitation_failed`; P2034 → bounded retry
+matching invite survives. P2002 retried only for the four pinned acceptance races; unrelated/malformed P2002 → `invitation_failed`; serialization failures (P2034 / raw 40001/40P01) → bounded retry → `serialization_conflict`
 (max 2 attempts) then `serialization_conflict` — never unbounded.
 
 ## D. List — owner-only
@@ -102,7 +102,7 @@ foreign, consumed, expired, revoked are indistinguishable) else audit
 
 ## F. Accept — `acceptWorkspaceInvitation`
 
-One Serializable transaction; bounded retry (≤2 attempts) on P2034/P2002.
+One Serializable transaction; bounded retry (≤2 attempts) on P2034, raw-SQL 40001/40P01 (P2010), and P2002 only for the four pinned acceptance-race shapes (User.email, WorkspaceMember.(workspace_id,user_id), ClientProfile.(workspace_id,user_id), CoachProfile.workspace_member_id). Unrelated/malformed P2002 → `invitation_failed`; exhausted serialization → `serialization_conflict`.
 
 1. `claimAccessToken(tx, {rawToken, purpose: WORKSPACE_INVITE,
 workspaceId: input.workspaceId})` — every malformed/missing/wrong-purpose/
@@ -332,3 +332,32 @@ claim revoked/expiry dropped (1). All files restored byte-exact.
 Reviewer platform-admin observation recorded only: guard semantics (platform
 role does not bypass workspace membership) unchanged — S1-B precedence is a
 locked decision.
+
+---
+
+## Second repair record (2026-09-30, second DeepSeek FAIL)
+
+**Status: repaired — gates green — independent DeepSeek re-review PENDING.**
+
+1. **Post-lock authorization race closed.** The barrier now locks ALL THREE
+   authorization rows after the advisory wait, in the fixed order
+   `users → workspace → workspace_member` (`SELECT ... FOR UPDATE`), then
+   re-runs the real guard. Any status/role change committed during the wait
+   forces 40001 → bounded retry → fresh snapshot → deny; unchanged rows pass;
+   missing rows deny. Six real-PG mid-wait races proven: user DEACTIVATED,
+   user INVITED, workspace SUSPENDED, membership SUSPENDED, owner→coach
+   demotion on a staff invite, coach→assistant demotion on a client invite —
+   each leaves zero token/audit rows. Unauthorized callers still reject
+   before acquiring the lock.
+2. **Role-generation pinned.** New tests prove +1 on status-only, +1 on
+   role-only, +1 (not +2) on simultaneous change, +0 on unrelated write,
+   forge/reset overridden — and that a role change after issuance makes the
+   prior invite `invalid_token` while a fresh invite snapshots the new
+   generation. Migration SQL unchanged (independently verified correct);
+   only tests added. A `status`-only trigger mutation was caught on the live
+   DB and the function restored byte-exact.
+
+Repair mutations (this round, all caught, restored byte-exact): users lock
+removed (1 fail) · workspace lock removed (1) · membership lock removed (2) ·
+second `authorize()` removed (1 unit — guard-read spy) · role-increment
+dropped from trigger on live DB (2).
