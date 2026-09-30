@@ -407,6 +407,72 @@ describe("buildAccountAuditEvent (S1-F2B)", () => {
     expect(row).not.toHaveProperty("meta");
   });
 
+  it.each([
+    ["actorUserId", 123],
+    ["actorUserId", { id: "audit-canary" }],
+    ["actorRole", "HACKER"],
+    ["actorRole", 123],
+    ["resourceId", 123],
+    ["resourceId", { id: "audit-canary" }],
+  ])(
+    "rejects malformed account %s instead of silently nulling it",
+    (field, value) => {
+      const context = {
+        subjectUserId: "subj-1",
+        ...(field === "resourceId" ? {} : { [field]: value }),
+      };
+      const input = {
+        action: "PASSWORD_RESET" as const,
+        resourceType: "user" as const,
+        ...(field === "resourceId" ? { resourceId: value } : {}),
+      };
+      let error: unknown;
+      try {
+        buildAccountAuditEvent(context as never, input as never);
+      } catch (caught) {
+        error = caught;
+      }
+      expect(error).toMatchObject({
+        name: "AuditError",
+        code: "invalid_input",
+      });
+      expect(String(error)).not.toContain("audit-canary");
+    },
+  );
+
+  it.each([
+    "WORKSPACE_OWNER",
+    "COACH",
+    "ASSISTANT_COACH",
+    "SUPPORT",
+    "CLIENT",
+  ] as const)("preserves valid account actor role %s and IDs", (actorRole) => {
+    const row = buildAccountAuditEvent(
+      { subjectUserId: "subj-1", actorUserId: "actor-1", actorRole },
+      { action: "PASSWORD_RESET", resourceType: "user", resourceId: "r1" },
+    );
+    expect(row).toMatchObject({
+      actorUserId: "actor-1",
+      actorRole,
+      resourceId: "r1",
+    });
+  });
+
+  it.each([undefined, null])(
+    "keeps absent/null account optionals as null (%s)",
+    (value) => {
+      const row = buildAccountAuditEvent(
+        { subjectUserId: "subj-1", actorUserId: value, actorRole: value },
+        { action: "PASSWORD_RESET", resourceType: "user", resourceId: value },
+      );
+      expect(row).toMatchObject({
+        actorUserId: null,
+        actorRole: null,
+        resourceId: null,
+      });
+    },
+  );
+
   it("captures each input field once — getter mutation cannot bypass the pair rule", () => {
     // meta getter yields undefined first, then resetStage — the builder must
     // read once and produce a metadata-free user-resource row.
@@ -509,6 +575,35 @@ describe("buildAccountAuditEvent (S1-F2B)", () => {
     expect(err2).toBeInstanceOf(AuditError);
     expect(String(err2)).not.toContain("proxy-trap-secret");
   });
+
+  it.each([
+    ["actorUserId", 123],
+    ["actorRole", "HACKER"],
+    ["resourceId", { id: "audit-canary" }],
+  ])(
+    "writeAccountAuditEvent rejects malformed captured %s before create",
+    async (field, value) => {
+      const create = vi.fn();
+      let reads = 0;
+      const input = {
+        subjectUserId: "subj-1",
+        action: "PASSWORD_RESET" as const,
+        resourceType: "user" as const,
+        get [field]() {
+          reads++;
+          return value;
+        },
+      };
+      await expect(
+        writeAccountAuditEvent(
+          { auditEvent: { create } } as never,
+          input as never,
+        ),
+      ).rejects.toMatchObject({ name: "AuditError", code: "invalid_input" });
+      expect(reads).toBe(1);
+      expect(create).not.toHaveBeenCalled();
+    },
+  );
 
   it("writeAccountAuditEvent never reaches create on invalid captured input", async () => {
     let creates = 0;

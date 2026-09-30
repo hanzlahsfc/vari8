@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, type MemberRole } from "@prisma/client";
+import { MemberRole, Prisma, PrismaClient } from "@prisma/client";
 
 import { prisma } from "./db";
 import {
@@ -403,7 +403,14 @@ export function buildAccountAuditEvent(
   } catch {
     throw new AuditError("invalid_input");
   }
-  if (typeof subjectUserId !== "string" || subjectUserId.length === 0)
+  if (
+    typeof subjectUserId !== "string" ||
+    subjectUserId.length === 0 ||
+    (actorUserId != null && typeof actorUserId !== "string") ||
+    (actorRole != null &&
+      !Object.values(MemberRole).includes(actorRole as MemberRole)) ||
+    (resourceId != null && typeof resourceId !== "string")
+  )
     throw new AuditError("invalid_input");
   if (
     !(ACCOUNT_AUDIT_ACTIONS as readonly string[]).includes(action as string) ||
@@ -424,19 +431,12 @@ export function buildAccountAuditEvent(
     scope: "ACCOUNT",
     workspaceId: null,
     subjectUserId,
-    actorUserId: typeof actorUserId === "string" ? actorUserId : null,
-    actorRole:
-      actorRole === "WORKSPACE_OWNER" ||
-      actorRole === "COACH" ||
-      actorRole === "ASSISTANT_COACH" ||
-      actorRole === "SUPPORT" ||
-      actorRole === "CLIENT"
-        ? actorRole
-        : null,
+    actorUserId: (actorUserId ?? null) as string | null,
+    actorRole: (actorRole ?? null) as MemberRole | null,
     // Validated by the allowlists above — safe to assert the enums.
     action: action as (typeof ACCOUNT_AUDIT_ACTIONS)[number],
     resourceType: resourceType as (typeof ACCOUNT_AUDIT_RESOURCES)[number],
-    resourceId: typeof resourceId === "string" ? resourceId : null,
+    resourceId: (resourceId ?? null) as string | null,
     result: "ALLOW",
     reason: null,
     ip: null,
