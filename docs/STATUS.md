@@ -4,6 +4,35 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-30 — S1-F0 token-crypto foundation — implemented; gates green; independent review PENDING
+
+- `lib/tokens/crypto.ts` (policy-neutral primitives only): `generateAccessToken()`
+  returns `{ rawToken, tokenHash }` — 32 CSPRNG bytes as unpadded base64url
+  (43 chars, `[A-Za-z0-9_-]`); `hashAccessToken()` validates (string, ≤128 chars,
+  exact 43-char base64url) then returns the SHA-256 hex digest;
+  `TokenError("token_invalid")` carries codes only, never input contents. No
+  module state, no logging, no randomness-injection seam, no comparison helper
+  (consume path is a DB lookup by unique hash — see `s1-f0-token-crypto.md`).
+- Scope held: no `AccessToken` model, migration, invite/reset behavior,
+  registration, email verification, expiry/invalidation/resend policy, session
+  revocation, email provider, rate limiting, audit wiring, routes/UI/E2E. No
+  `TODO(human)` resolved; `product-decisions.md`/`open-questions.md` untouched.
+- RED: `npx vitest run tests/unit/token-crypto.test.ts` → exit 1 (module absent)
+  before `lib/tokens/crypto.ts` existed.
+- Mutation evidence (each restored byte-for-byte, `shasum`
+  `115b335567875114c41e25f73712ca2ff8115946` before/after): deterministic bytes →
+  2 failures; 128-bit entropy → 14; raw-as-hash → 5; format check removed → 5;
+  whitespace allowed → 1; input in error message → 8; oversized accepted → 2.
+- Gates: `git diff --check` 0; `npm ci` 0 (audit: 1 moderate + 4 high, unchanged
+  advisories, no force-fix); `format:check` 0; `typecheck` 0; `lint` 0;
+  `npm run test` 0 (272 passed, 27 files); `npm run build` 0; `npm run test:e2e`
+  0 (21 passed). No DB gate run — this slice touches no schema/table.
+- Review: fresh-context review performed but **same model as builder — NOT
+  independent**; a different-model review is still required.
+- **Full S1-F remains BLOCKED** on Marcel/Aleks answers (`open-questions.md`
+  #16–27). Next: independent different-model review of S1-F0, then collect the
+  product decisions.
+
 ## 2026-09-30 — S1-F (invites/recovery) — plan written; implementation BLOCKED on human decisions
 
 - `docs/tasks/s1-f-invites-recovery-plan.md` written (plan only): 15-area decision

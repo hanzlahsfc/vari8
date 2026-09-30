@@ -1,7 +1,9 @@
 # S1-F plan — workspace invitations and account recovery
 
-**Plan only.** No schema change, no migration, no `lib/tokens.ts`, no routes/UI, no token or
-reset code, no email provider. S1-F implementation is **blocked** on the human decisions in §2.
+**Plan only.** No schema change, no migration, no `lib/tokens.ts` service, no routes/UI, no
+token or reset code, no email provider. (The separately-scoped S1-F0 crypto primitives —
+`lib/tokens/crypto.ts`, generation + hashing only — exist but contain no invite/reset
+behavior.) S1-F implementation is **blocked** on the human decisions in §2.
 Sources: `stage-1-plan.md` §6/§9, `data-ownership.md`, `authorization-model.md`,
 `consent-audit.md`, `lib/auth/rbac.ts`, `lib/credentials.ts`, `lib/password.ts`, `auth.ts`,
 `auth.config.ts`, `db/schema.prisma`, and the S1-A–S1-E review records.
@@ -371,6 +373,9 @@ table (plus 11 before any real email is sent).
 
 ## 9. Status
 
-**Plan written; no S1-F production code, schema change, or migration exists.** Implementation
-remains blocked on §2/§4.2 decisions. Next step: collect Marcel/Aleks's answers, record them in
+**Plan written; no S1-F token service, schema change, or migration exists.** Implementation
+remains blocked on §2/§4.2 decisions. The policy-neutral prerequisite **S1-F0** has since
+landed: `lib/tokens/crypto.ts` (generation/hashing/validation only — no `AccessToken` model,
+no token lifecycle, nothing in §2 or §4.2 resolved). See `docs/tasks/s1-f0-token-crypto.md`.
+Next step: collect Marcel/Aleks's answers, record them in
 `docs/product-decisions.md` / `open-questions.md`, then write the S1-F implementation prompt.

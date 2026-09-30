@@ -160,7 +160,14 @@ threshold, health-data policy, workflow, or layout.
 - **Stage 1 / S1-F invites & recovery — plan only:** `docs/tasks/s1-f-invites-recovery-plan.md`
   (decision checklist, proposed invariants, `AccessToken` design, service matrix, test
   plan). **Blocked on human decisions** (`docs/open-questions.md` #16–27). No S1-F
-  production code or migration exists.
+  token service or migration exists.
+- **Stage 1 / S1-F0 token-crypto foundation (policy-neutral prerequisite):**
+  `lib/tokens/crypto.ts` — `generateAccessToken()` (32 CSPRNG bytes, unpadded
+  base64url, `{rawToken, tokenHash}`) and `hashAccessToken()` (strict structural
+  validation + SHA-256 hex; `TokenError("token_invalid")`, no input contents in
+  errors). No `AccessToken` model, no migration, no invite/reset behavior, no
+  product decision answered. Record: `docs/tasks/s1-f0-token-crypto.md`.
+  **Independent different-model review still required.**
 
 ### Important limitations
 
@@ -297,11 +304,16 @@ login outcomes, platform-admin reads, health-operation wrapper, retention/suppor
 proposed invariants/`AccessToken` design/service matrix/test plan — and remains
 **BLOCKED on the `TODO(human)` invite/recovery decisions** (`docs/open-questions.md`
 #16–27; it must not be implemented or exposed until those decisions are recorded).
-Notable new constraint discovered in planning: Auth.js JWT sessions cannot be revoked
-after password reset without new infrastructure, and `AuditEvent.workspaceId` being
-NOT NULL means user-owned reset/login audit rows need a schema decision. Next: collect
-Marcel/Aleks's answers, record them, then write the S1-F implementation prompt. GDPR
-(S1-G) and workspace shell (S1-H) remain later slices; no health records or product UI.
+The policy-neutral prerequisite **S1-F0** (`lib/tokens/crypto.ts` — CSPRNG
+generation, strict validation, SHA-256 storage digest only) has landed with gates
+green; it resolved none of the decisions and itself still requires an independent
+different-model review. Notable constraint discovered in planning: Auth.js JWT
+sessions cannot be revoked after password reset without new infrastructure, and
+`AuditEvent.workspaceId` being NOT NULL means user-owned reset/login audit rows
+need a schema decision. Next: independent different-model review of S1-F0, and
+collect Marcel/Aleks's answers, record them, then write the S1-F implementation
+prompt. GDPR (S1-G) and workspace shell (S1-H) remain later slices; no health
+records or product UI.
 
 ## 9. Human inputs still required
 
@@ -406,6 +418,64 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-30 — S1-F0 token-crypto foundation (implemented; gates green; independent review REQUIRED)
+
+- Scope: policy-neutral cryptographic prerequisite for S1-F only —
+  `lib/tokens/crypto.ts` + unit tests + task record. No `AccessToken` model,
+  migration, schema change, invite/reset/registration/email-verification
+  behavior, membership or user-status change, expiry/invalidation/resend
+  policy, session revocation, email provider, rate limiting, audit wiring,
+  routes/actions/UI/E2E, and no `TODO(human)` decision answered or bypassed.
+  Builder: SWE-2 High. **Not independently reviewed.**
+- Starting state: branch `main`, commit
+  `96c6380bd56377927775306f30ef36e342055be8` = `origin/main`, `git status`
+  clean.
+- Plan/acceptance source: task prompt (S1-F0 slice); invariants from
+  `docs/tasks/s1-f-invites-recovery-plan.md` §3 (hash-only storage, CSPRNG
+  material, no token leakage); `stage-1-plan.md` §6 (`tokenHash`, never raw).
+- Files changed: `lib/tokens/crypto.ts` (new), `tests/unit/token-crypto.test.ts`
+  (new, 21 tests), `docs/tasks/s1-f0-token-crypto.md` (new),
+  `docs/tasks/s1-f-invites-recovery-plan.md` (status note only),
+  `docs/STATUS.md`, `TRACKER 2.0.md`.
+- RED evidence: `npx vitest run tests/unit/token-crypto.test.ts` → exit 1
+  (module-resolution failure — `lib/tokens/crypto.ts` absent) before any
+  production code existed.
+- Focused verification: `npx vitest run tests/unit/token-crypto.test.ts` →
+  exit 0; 21 passed. Mutation evidence (each temporary, restored byte-for-byte;
+  `shasum` `115b335567875114c41e25f73712ca2ff8115946` confirmed before/after):
+  deterministic bytes → 2 failures; entropy cut to 128 bits → 14; raw token
+  returned as its own hash → 5; format check removed → 5; whitespace admitted
+  → 1; input echoed in error → 8; oversized accepted → 2.
+- Full gates:
+  - `git diff --check` → exit 0.
+  - `npm ci` → exit 0 (`npm audit`: 1 moderate + 4 high — unchanged recorded
+    advisories; no `--force`, no upgrades).
+  - `npm run format:check` → exit 0.
+  - `npm run typecheck` → exit 0.
+  - `npm run lint` → exit 0 (0 warnings).
+  - `npm run test` → exit 0; 27 files / 272 passed (251 → 272).
+  - `npm run build` → exit 0.
+  - `npm run test:e2e` → exit 0; 21 passed.
+  - No PostgreSQL integration/migration gate: the slice touches no database
+    surface; `git status` confirms `db/` untouched.
+- Behavioral test: none applicable — no runtime surface exists (library
+  primitives only). The unit suite is the behavioral gate; E2E 21/21 is
+  regression coverage.
+- Independent review: fresh-context review performed but **same model
+  (SWE-2 High) as the builder — NOT independent.** A different-model review is
+  required before treating S1-F0 as reviewed.
+- Review repairs and re-check: pending.
+- Commit/push/deploy: two scoped commits (implementation+tests; docs+handoff),
+  pushed to `origin/main` per instruction; no PR, no deploy.
+- Decisions/TODO(human): none resolved. `docs/open-questions.md` #16–27 and
+  `product-decisions.md` unchanged; full S1-F stays blocked on Marcel/Aleks.
+- Known risks/blockers: raw-token secrecy is a caller discipline enforced by
+  naming/types/docs, not yet by a persistence boundary (no `AccessToken` row
+  exists to violate); S1-F's consume path will look rows up by unique
+  `tokenHash` so no in-process digest comparison helper was added.
+- Next action: independent different-model review of S1-F0; collect
+  Marcel/Aleks's invite/recovery answers for full S1-F.
 
 ### 2026-09-30 — S1-F invites/recovery plan written (documentation only; implementation BLOCKED)
 
