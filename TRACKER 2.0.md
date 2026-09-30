@@ -200,13 +200,16 @@ threshold, health-data policy, workflow, or layout.
     `normalizeEmail`. Record: `docs/tasks/s1-f2a-token-primitives.md`.
     **Independently PASS** (`opencode-go/deepseek-v4.1-flash`, range
     `0d503b7..fb0713b`, 2026-09-30) — still no product flow.
-  - **S1-F2B** (implemented; independent review PENDING): `AuditScope`
+  - **S1-F2B** (repaired after DeepSeek FAIL; re-review PENDING): `AuditScope`
     WORKSPACE/ACCOUNT discriminator + nullable `workspaceId` + `subjectUserId`
     (Restrict) with named ownership CHECKs on `audit_event`; separate closed
     account audit writer/reader; `lib/password-policy.ts` (10–128 code points,
     NFC); `User.sessionVersion` now enforced via JWT `sv` + per-session DB
     re-read (fail-closed, no caching, legacy JWTs stale);
-    `cleanupTerminalAccessTokens` bounded 30-day CTE/RETURNING cleanup. No
+    `cleanupTerminalAccessTokens` bounded 30-day CTE/RETURNING cleanup.
+    Repaired after independent FAIL: the session gate now lives in the `jwt`
+    callback (runtime-supported `null` = revoked session + cleared cookie),
+    plus supporting indexes for the account listing and cleanup query. No
     orchestration, routes, or email. Record:
     `docs/tasks/s1-f2b-account-security.md`.
   - **Policy reconciliation + orchestration plan (docs only, 2026-09-30):**
@@ -387,8 +390,10 @@ recorded (policy surface decided except provider/domain/owner-name/rate-limit
 mechanics) and the orchestration plan exists
 (`docs/tasks/s1-f2b-orchestration-plan.md`). S1-F2B (account-security
 foundation: scoped audit, password policy, sessionVersion JWT gate, 30-day
-cleanup) is implemented with 14 mutation proofs — **its independent review is
-pending**, then S1-F2C invitations. No orchestration service exists yet. GDPR
+cleanup) is implemented with 14 mutation proofs; DeepSeek's independent
+review FAILed the session boundary, and the repair (jwt-callback
+invalidation, supporting indexes, deliberate callback composition) is in —
+**its independent re-review is pending**, then S1-F2C invitations. No orchestration service exists yet. GDPR
 (S1-G) and workspace shell (S1-H) remain later slices; no health records or
 product UI.
 
@@ -493,6 +498,29 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 - Known risks/blockers:
 - Next action: `<one exact next action>`.
 ```
+
+## 12. Change log (newest first)
+
+### 2026-09-30 — S1-F2B repair after DeepSeek FAIL (re-review pending)
+
+- DeepSeek (opencode-go) review of `ac9857e`: **FAIL**.
+- P0 root cause: returning `null` from the `session` callback is coalesced by
+  next-auth `getSession` back to the token-derived default session —
+  `auth()` stayed authenticated. Repaired via the supported `jwt`-returns-null
+  mechanism (runtime clears the cookie and returns null for both `auth()` and
+  `/api/auth/session`); `session` callback is pure delegation; callbacks are
+  deliberately composed (`...base` spread).
+- P2/P3: additive migration `20260930180000_stage1_f2b_review_indexes` —
+  `audit_event(subject_user_id, id)` for the id-cursor reader and
+  `access_token` effective-terminal-ts expression index serving the bounded
+  cleanup scan (EXPLAIN verified on analyzed fixtures).
+- Runtime tests exercise real `auth()` + `handlers` end-to-end (7 tests):
+  version bump, all invalid sv/sub/user cases, DB failure → null; cookie
+  cleared; update payload can't inject `sv`.
+- 8 repair mutations caught, all restored byte-exact. Gates: unit 309,
+  integration 131/11, build 0, e2e 21, all Prisma/npm gates 0.
+- Commits: `70bd307` repair plan + repair commits below.
+- **Next: independent DeepSeek re-review of the repair → then S1-F2C.**
 
 ## 12. Change log (newest first)
 

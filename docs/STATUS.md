@@ -116,6 +116,23 @@ extraction) only, not the workbook UI itself.
 - Next: record the founder answers, then implement the separately reviewed S1-F
   Phase 1 schema foundation (still no routes/email until the flow decisions land).
 
+## 2026-09-30 — S1-F2B REPAIRED after DeepSeek independent FAIL; re-review PENDING
+
+- DeepSeek review of `ac9857e`: **FAIL** — session-callback `null` was
+  coalesced to a default session by next-auth `getSession` (auth() stayed
+  authenticated); account-reader index mismatched the id cursor; cleanup query
+  had no supporting index; callback composition replaced base keys.
+- Repair: gate moved to the `jwt` callback (runtime-supported `JWT | null`;
+  null → `auth()` null + `/api/auth/session` null + cookie cleared);
+  deliberate callback composition; additive migration
+  `20260930180000_stage1_f2b_review_indexes` (`audit_event(subject_user_id,id)`
+  - `access_token` terminal-expression index); runtime tests exercise real
+    `auth()`/`handlers` end-to-end.
+- Gates: unit 309, integration 131/11 real-PG (incl. real `auth()` pipeline +
+  EXPLAIN evidence), build 0, e2e 21. 8 repair mutations caught, restored
+  byte-exact.
+- **Next: DeepSeek independent re-review → then S1-F2C.**
+
 ## 2026-09-30 — S1-F2B account-security foundation landed; independent review PENDING
 
 - `20260930170000_stage1_account_security` (additive): `AuditScope`

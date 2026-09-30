@@ -137,7 +137,9 @@ exceptions normalize to the same structural error.
   unauthenticated flows, same metadata allowlist, transaction-bound.
 - `listAccountAuditEvents` is an internal repository primitive (subject-scoped,
   `scope: ACCOUNT`, default 25 / max 100, id cursor, minimal fields) — it is
-  **not** a user-facing security log or an authorization claim.
+  **not** a user-facing security log or an authorization claim. Its
+  `(subject_user_id, id)` index matches the cursor; EXPLAIN-verified on an
+  analyzed fixture.
 
 **Implemented in S1-E** (the only events written today):
 

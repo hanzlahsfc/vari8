@@ -216,3 +216,69 @@ existence responses, no cross-workspace sharing. No S1-F2C/D, S1-G, S1-H.
 
 **Builder: SWE-2 High. Independent different-model review: PENDING — required
 before S1-F2C or any orchestration work.**
+
+---
+
+## Independent review + repair record (2026-09-30)
+
+**Independent review (opencode-go / deepseek-v4.1-flash) at `ac9857e`:
+FAIL.** Findings and repairs (repair plan: `docs/tasks/s1-f2b-repair-plan.md`):
+
+1. **P0 — `auth()` bypass.** The session callback returned
+   `null as unknown as Session`, but `next-auth/lib/index.js` `getSession()`
+   coalesces a nullish session-callback result to the token-derived DEFAULT
+   session (`?? { ...args[0].session, expires }`) — `auth()` stayed
+   authenticated on every rejection. Verified in installed
+   next-auth@5.0.0-beta.32 / @auth/core@0.41.3. **Repair:** the gate moved to
+   the `jwt` callback — its return type is `Awaitable<JWT | null>` and
+   `actions.session` treats `null` as invalidation (null body +
+   `sessionStore.clean()` cookie clearing) on BOTH the `/api/auth/session`
+   route and the `auth()`/`getSession` path. The `session` callback is pure
+   base delegation; a null token never reaches it. New runtime test
+   `tests/integration/s1-f2b-session-runtime.test.ts` drives the real exported
+   `auth()` + `handlers.GET/POST` (vitest stubs only `next/headers` +
+   `next/server`, inlined `next-auth`) with real signed JWT cookies: valid
+   session authenticates; version bump → `auth()` null AND endpoint null +
+   expired-cookie `Set-Cookie`; missing/malformed/non-integer/negative `sv`,
+   INVITED/DEACTIVATED/unknown users, malformed `sub`, and DB failure all →
+   null; update-trigger payloads cannot inject `sv` (CSRF-guarded at the route
+   AND ignored in the callback). **RED:** 6/7 runtime tests failed on the old
+   implementation — the bypass reproduced end-to-end.
+2. **P2 — account-reader index mismatch.** Reader paginates by `id`; added
+   additive `(subject_user_id, id)` index
+   (`audit_event_subject_user_id_id_idx`) and kept the id cursor. EXPLAIN on a
+   6000-row ANALYZEd fixture uses the index (no seqscan); the planner may still
+   choose otherwise on small tables — documented, not exaggerated.
+3. **P3 — cleanup query/index.** Added `access_token_terminal_cleanup_idx`, an
+   expression index on (effective-terminal-ts, id); `CLEANUP_VICTIMS_SQL`
+   rewritten to the same expression, `ORDER BY expr, id LIMIT 1000` — the index
+   serves WHERE+ORDER+LIMIT. Semantics identical: later of consumed/revoked,
+   else expires_at; active rows never selectable. EXPLAIN on a 6000-row
+   ANALYZEd fixture shows the index scan, no seqscan.
+4. **P3 — deliberate composition.** `createSessionCallbacks` spreads base
+   callbacks (`authorized`, future keys survive) and overrides only
+   `jwt`/`session`. `null as unknown as Session` removed; base-null jwt
+   propagates null.
+
+**Migration:** `20260930180000_stage1_f2b_review_indexes` — additive, two
+`CREATE INDEX` only; `20260930170000` untouched; all prior constraints/indexes
+verified live.
+
+**Repair mutations (8, all caught, restored byte-exact):** jwt gate bypassed
+(6 runtime fails) · missing-sv accepted (1 runtime) · status/version/DB-error
+checks bypassed (5 runtime) · update payload writes `sv` (1 unit; route-level
+POST is CSRF-blocked upstream) · composition spread removed (1 unit) · audit
+index dropped (2 integration) · cleanup GREATEST→LEAST (1 integration) ·
+cleanup LIMIT removed (1 integration).
+
+**Gates (fresh `s1f2b_verify`):** diff-check 0 · format/validate/generate 0 ·
+deploy 0 (9 migrations) · status 0 · format:check 0 · typecheck 0 · lint 0 ·
+unit **309** · integration **131**/11 files · build 0 · e2e **21**.
+
+**Remaining risks:** `auth()` path does not surface the cleared cookie header
+to clients (the token itself is dead — cookie cleanup lands on the next
+`/api/auth/session` or sign-in attempt); planner freedom on small tables is
+documented, not guaranteed.
+
+**Review status: REPAIRED — independent DeepSeek re-review PENDING.**
+S1-F2B is not approved.
