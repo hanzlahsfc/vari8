@@ -200,7 +200,9 @@ threshold, health-data policy, workflow, or layout.
     `normalizeEmail`. Record: `docs/tasks/s1-f2a-token-primitives.md`.
     **Independently PASS** (`opencode-go/deepseek-v4.1-flash`, range
     `0d503b7..fb0713b`, 2026-09-30) — still no product flow.
-  - **S1-F2B** (repaired after DeepSeek FAIL; re-review PENDING): `AuditScope`
+  - **S1-F2B** (**independently PASS** after DeepSeek FAIL + repair:
+    `opencode-go/deepseek-v4.1-flash`, range `ac9857e..ae7c6d5`):
+    `AuditScope`
     WORKSPACE/ACCOUNT discriminator + nullable `workspaceId` + `subjectUserId`
     (Restrict) with named ownership CHECKs on `audit_event`; separate closed
     account audit writer/reader; `lib/password-policy.ts` (10–128 code points,
@@ -392,8 +394,10 @@ mechanics) and the orchestration plan exists
 foundation: scoped audit, password policy, sessionVersion JWT gate, 30-day
 cleanup) is implemented with 14 mutation proofs; DeepSeek's independent
 review FAILed the session boundary, and the repair (jwt-callback
-invalidation, supporting indexes, deliberate callback composition) is in —
-**its independent re-review is pending**, then S1-F2C invitations. No orchestration service exists yet. GDPR
+invalidation, supporting indexes, deliberate callback composition) was
+independently re-reviewed **PASS** at `ae7c6d5`
+(`opencode-go/deepseek-v4.1-flash`, range `ac9857e..ae7c6d5`), then S1-F2C
+invitations. No orchestration service exists yet. GDPR
 (S1-G) and workspace shell (S1-H) remain later slices; no health records or
 product UI.
 
@@ -500,6 +504,33 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-30 — S1-F2B repair independently re-reviewed PASS (DeepSeek)
+
+- Read-only independent re-review of repair range `ac9857e..ae7c6d5` (HEAD
+  `ae7c6d5`), commits `70bd307`/`0c13818`/`ae7c6d5` inspected. Repair built by
+  SWE-2 High; reviewer a different model. **PASS.**
+- P0 confirmed fixed against installed next-auth@5.0.0-beta.32: the `jwt`
+  callback gate returns `null` → real `auth()` (getSession path), RSC `auth()`,
+  and `/api/auth/session` are all unauthenticated for legacy/no-`sv`, stale
+  after bump, malformed `sv`/`sub`, DEACTIVATED/INVITED, unknown, deleted, and
+  DB-failure cases; valid + fresh-after-bump authenticate; endpoint clears the
+  cookie; client update payload cannot inject `sv`.
+- P2/P3: EXPLAIN on analyzed fixtures uses
+  `audit_event_subject_user_id_id_idx` and
+  `access_token_terminal_cleanup_idx` (both no sort); the rewritten cleanup
+  predicate proved exactly equivalent to the original four-branch predicate
+  over 11,008 rows incl. boundary shapes.
+- Migration `20260930180000_stage1_f2b_review_indexes` additive only; published
+  `20260930170000` untouched; prior constraints/indexes live.
+- Reviewer mutation checks (restored byte-exact): gate bypass, status/version/
+  DB-error bypass, update-injects-`sv`, `...base` removed, audit index dropped,
+  cleanup GREATEST→LEAST, cleanup LIMIT removed — all caught.
+- Gates: `git diff --check` 0; `npm ci` 0; prisma 0; deploy 0 (9); status 0;
+  format:check/typecheck/lint 0; unit 309; integration 131/11; build 0; e2e 21;
+  `npm audit` unchanged (1 mod + 4 high).
+- Commits: repair `70bd307`/`0c13818`; builder record `ae7c6d5`; this
+  independent PASS record follows. **Next: S1-F2C invitations.**
 
 ### 2026-09-30 — S1-F2B repair after DeepSeek FAIL (re-review pending)
 

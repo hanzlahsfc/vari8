@@ -4,6 +4,50 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-30 — S1-F2B repair — independent re-review PASS (opencode-go/deepseek-v4.1-flash)
+
+- Read-only independent re-review of the repair range `ac9857e..ae7c6d5`
+  (HEAD `ae7c6d5`, full S1-F2B range `87a6e85..ae7c6d5`), each repair commit
+  (`70bd307` plan, `0c13818` implementation, `ae7c6d5` record) inspected.
+  Independence: repair built by SWE-2 High; reviewer is a different model.
+  **PASS.**
+- P0 (real `auth()` bypass) independently reproduced against installed
+  next-auth@5.0.0-beta.32: the gate now lives in the `jwt` callback
+  (`Awaitable<JWT | null>`). The reviewer drove the real pipeline
+  (`auth({req,res})` getSession path, RSC `auth()` via stubbed headers,
+  `handlers.GET/POST`, real `@auth/core/jwt` cookies): valid session
+  authenticates; legacy/no-`sv`, stale after bump, malformed `sv`/`sub`,
+  DEACTIVATED, INVITED, unknown, deleted, and DB-failure all return `null`;
+  reboot with fresh `sv` works; `/api/auth/session` → `200` body `null` +
+  clearing `Set-Cookie`; real sign-in issues current DB `sv`; client update
+  payload cannot inject/refresh `sv` (verified with a valid CSRF token).
+- P2/P3 indexes independently verified on fresh PostgreSQL with `ANALYZE`d
+  fixtures: `Index Scan using audit_event_subject_user_id_id_idx` (no sort);
+  `Index Scan using access_token_terminal_cleanup_idx` (no sort, `LIMIT 1000`).
+  New effective-terminal-ts predicate proven exactly equivalent to the original
+  four-branch predicate over 11,008 rows incl. all boundary shapes (0
+  disagreements).
+- P4: `createSessionCallbacks` deliberately spreads base callbacks; base keys
+  survive; null token cannot be resurrected.
+- Migration `20260930180000_stage1_f2b_review_indexes` additive only (two
+  `CREATE INDEX`); published `20260930170000` untouched; prior CHECKs/FKs/
+  indexes live.
+- Independent mutation checks (restored byte-exact): jwt gate bypassed (6
+  runtime fails) · status/version/DB-error bypassed (4) · update writes `sv`
+  (1 unit) · `...base` removed (1 unit) · audit index dropped (2) · cleanup
+  GREATEST→LEAST (1) · cleanup LIMIT removed (1).
+- Gates (fresh disposable DBs, dropped): `git diff --check` 0; `npm ci` 0;
+  prisma format/validate/generate 0; `migrate deploy` 0 (9); `migrate status` 0;
+  `format:check` 0; `typecheck` 0; `lint` 0; `npm run test` 0 (309/31);
+  `test:integration` 0 (131/11, real PG); `build` 0; `test:e2e` 0 (21).
+  `npm audit`: 1 moderate + 4 high (unchanged; no force-fix).
+- Non-blocking: the `auth()` RSC path does not surface the cleared cookie (the
+  token is dead; cleanup lands on the next `/api/auth/session` or sign-in);
+  planner freedom on tiny tables is documented; no protected route exists yet,
+  so browser-level enforcement is covered by the runtime harness rather than E2E.
+- **S1-F2B is independently PASS at `ae7c6d5`.** No repair, orchestration,
+  route, UI, email, PR, or deploy by the reviewer. Next: S1-F2C.
+
 ## 2026-09-30 — S1-F2A independent review PASS (opencode-go/deepseek-v4.1-flash)
 
 - Read-only independent review of range `0d503b7..fb0713b` (HEAD `fb0713b`), each

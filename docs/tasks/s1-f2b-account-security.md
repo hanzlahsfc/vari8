@@ -282,3 +282,78 @@ documented, not guaranteed.
 
 **Review status: REPAIRED — independent DeepSeek re-review PENDING.**
 S1-F2B is not approved.
+
+---
+
+## Independent re-review of the repair — PASS (2026-09-30)
+
+**Reviewer:** `opencode-go/deepseek-v4.1-flash` (a different model from the
+builder, SWE-2 High — independence holds). Repair range `ac9857e..ae7c6d5`,
+full S1-F2B range `87a6e85..ae7c6d5`, HEAD
+`ae7c6d5a00d2eb63f387de681c7ef2c182fd1d07`. Read-only: no production code,
+test, schema, or migration was edited by the reviewer.
+
+**P0 — real-pipeline revocation independently reproduced.** The reviewer drove
+the installed `next-auth@5.0.0-beta.32` pipeline itself, independent of the
+builder's tests:
+
+- `auth({req,res})` (the `getSession` path used by route handlers/
+  `getServerSideProps`; RSC `auth()` uses the same wrapper) now returns `null`
+  for: legacy token without `sv`; stale `sv` after a DB bump; malformed
+  `sv` (`"0"`); malformed `sub` (`42`); DEACTIVATED; INVITED; unknown user;
+  deleted user; and a forced DB failure (table renamed). A valid ACTIVE token
+  (`sv` matches) authenticates; after a DB bump a fresh `sv=1` authenticates
+  again.
+- `/api/auth/session` returns `200` with body `null` and a cookie-clearing
+  `Set-Cookie` (`Max-Age=0`) for a stale token; returns the user for a valid one.
+- A real credentials sign-in through `handlers` issued `sv` equal to the row's
+  current `sessionVersion` (`sv=0`, `sub` correct).
+- Update-path injection: with a valid CSRF token, a client `{data:{sv:999}}`
+  update on a valid session re-issued the token with `sv` unchanged; the same
+  injection on a stale session produced `null` body and stayed unauthenticated.
+  The old defect (server `auth()` still authenticated after bump/inactive/
+  unknown/deleted/DB-failure) is gone; the `null as unknown as Session` cast is
+  removed and the gate is on the type-supported `Awaitable<JWT | null>` return.
+
+**P2/P3 — indexes and semantics independently verified on fresh PostgreSQL.**
+On an independently seeded + `ANALYZE`d fixture (6,000+ account rows per
+subject; 11,008 access-token rows): `EXPLAIN` shows `Index Scan using
+audit_event_subject_user_id_id_idx` (no sort) for the reader, and `Index Scan
+using access_token_terminal_cleanup_idx` (no sort, `LIMIT 1000`) for cleanup.
+The rewritten effective-terminal-timestamp predicate was compared to the
+original four-branch predicate across all 11,008 rows, including boundary
+shapes (consumed-only, revoked-only, expired-only, consumed+revoked with the
+later timestamp recent, exact-30-day, active): **0 disagreements**.
+
+**P4 — composition.** `createSessionCallbacks` spreads the base callbacks and
+overrides only `jwt`/`session`; a runtime/unit check confirms base keys survive
+and a null/invalid token cannot be resurrected by a later callback.
+
+**Migration safety.** `20260930180000_stage1_f2b_review_indexes` is additive
+(two `CREATE INDEX` only); the published `20260930170000` is byte-untouched;
+all prior `audit_event`/`access_token` CHECKs, FKs, and indexes remain live.
+
+**Independent mutation checks (temporary, restored byte-exact).** Reviewer
+reproduced and confirmed tests bite for: jwt gate bypassed (6 runtime
+failures); status/version/DB-error checks bypassed (4 runtime); update payload
+writes `sv` (1 unit); `...base` composition removed (1 unit); audit index
+dropped (2 integration); cleanup `GREATEST`→`LEAST` (1 integration); cleanup
+`LIMIT` removed (1 integration). All files restored to baseline `shasum`; no
+mutation markers remain.
+
+**Gates (fresh disposable PG, reviewer-run):** `git diff --check` 0 · `npm ci`
+0 · prisma format (no diff)/validate/generate 0 · migrate deploy 0 (9) ·
+migrate status 0 · `format:check` 0 · `typecheck` 0 · `lint` 0 · unit **309** ·
+integration **131**/11 files · build 0 · e2e **21** · `npm audit` 1 moderate +
+4 high (unchanged; no `--force`).
+
+**Remaining risks / observations (non-blocking):** the `auth()` RSC path does
+not surface the cleared cookie header (token is dead; cookie cleanup lands on
+the next `/api/auth/session` or sign-in); planner index choice is not guaranteed
+on tiny tables (documented, proven on an analyzed fixture); no protected route
+exists yet, so browser-level enforcement is covered by the runtime harness, not
+E2E; the duplicate `## 12` heading pattern in `TRACKER 2.0.md` pre-dates this
+repair.
+
+**Independent re-review verdict: PASS.** S1-F2B is independently reviewed.
+S1-F2C/S1-F2D remain blocked only on their own future reviews, not on S1-F2B.
