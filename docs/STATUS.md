@@ -36,6 +36,37 @@ extraction) only, not the workbook UI itself.
 - Next: record the founder answers, then implement the separately reviewed S1-F
   Phase 1 schema foundation (still no routes/email until the flow decisions land).
 
+## 2026-09-30 — S1-F Phase 1 (S1-F1) — AccessToken + sessionVersion schema landed; review PENDING
+
+- `db/schema.prisma`: `AccessToken` model + `AccessTokenPurpose`
+  (`WORKSPACE_INVITE`/`PASSWORD_RESET` only), `User.sessionVersion Int
+@default(0)`, relations. `db/migrations/20260930150000_stage1_access_tokens/` —
+  additive (enum, table, `users` column, unique `token_hash`, three scoped
+  indexes, three FKs, three raw CHECK constraints; verified no DROP).
+- Constraints: `access_token_invite_shape` (workspace/email/role/issuer required;
+  role ∈ {COACH, ASSISTANT_COACH, CLIENT}; `user_id` null until consumed);
+  `access_token_reset_shape` (user required; all invite fields null);
+  `access_token_expiry_after_creation` (`expires_at > created_at`). FKs:
+  workspace Restrict, user Cascade (ephemeral user-owned rows), issuer Restrict.
+  `target_email` is documented plaintext PII, never standalone-indexed.
+- Fail-closed boundary: `lib/tokens.ts` `assertTokenFlowsExternallyExposable()`
+  throws `token_flows_not_exposable` until issuance/consumption services,
+  password policy, email delivery, session-version JWT wiring, audit ownership,
+  rate limiting, and route review all exist.
+- Suite caught a real defect pre-commit: `NULL IN (…)` passed the invite CHECK —
+  fixed with explicit `IS NOT NULL`.
+- RED: focused integration exit 1 (table/migration absent); unit exit 1
+  (`lib/tokens` absent). Mutation evidence: 7 cases, all restored byte-for-byte
+  (see `docs/tasks/s1-f1-token-schema.md`).
+- Gates (disposable `s1f1_final`, dropped): `git diff --check` 0; `npm ci` 0;
+  prisma format/validate/generate 0; `migrate deploy` 0 (6); `migrate status` 0;
+  `format:check` 0; `typecheck` 0; `lint` 0; `npm run test` 0 (277);
+  `test:integration` 0 (87, real PG); `build` 0; `test:e2e` 0 (21).
+  `lib/tokens/crypto.ts` unchanged.
+- **Independent different-model review PENDING** — required before any token
+  service. No issuance/consumption/invite/reset/email/route/UI/audit/RBAC/auth
+  behavior added.
+
 ## 2026-09-30 — S1-F Phase 1 (part A) — founder answers recorded; schema work pending
 
 - Founder answers relayed by Hanzlah recorded in `docs/product-decisions.md`

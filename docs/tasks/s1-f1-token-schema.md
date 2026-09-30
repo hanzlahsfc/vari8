@@ -117,10 +117,12 @@ security review. No fake providers or no-op defaults exist.
 
 ## RED evidence
 
-`tests/integration/s1-f1-token-schema.test.ts` written before `schema.prisma` changed;
-run against a disposable PostgreSQL: exit 1 — `access_token` table absent (relation
-does not exist), `session_version` column absent. Unit RED:
-`tests/unit/token-exposure.test.ts` → exit 1 (`lib/tokens.ts` absent).
+`tests/integration/s1-f1-token-schema.test.ts` written before `schema.prisma` or any
+migration changed; run against disposable `s1f1_red` (existing 5 migrations
+deployed): exit 1 — the new migration file absent and the `access_token` table
+nonexistent (all 25 tests blocked by the missing object). Unit RED:
+`npx vitest run tests/unit/token-exposure.test.ts` → exit 1 (`../../lib/tokens`
+unresolvable — `lib/tokens.ts` absent).
 
 ## Test list (real PostgreSQL + unit)
 
@@ -155,18 +157,42 @@ realistic tokens.
 
 ## Mutation evidence
 
-Each temporary, restored byte-for-byte:
+Each mutation applied temporarily on a fresh disposable DB, observed failing, then
+reverted; both files verified byte-identical afterward (`shasum` =
+`4ad6f1f20c08f6232d24f9399114feecd47742af` migration, `ff8d28f0…` `lib/tokens.ts`,
+before and after; 25/25 integration + 2/2 unit green).
 
-| Mutation                  | Result |
-| ------------------------- | ------ |
-| (recorded post-run below) |        |
+| Mutation                                                       | Failures observed                       |
+| -------------------------------------------------------------- | --------------------------------------- |
+| `access_token_invite_shape` CHECK removed                      | 7                                       |
+| `access_token_reset_shape` CHECK removed                       | 3                                       |
+| `intended_role IN (…)` allowed-role clause removed             | 1 (OWNER/SUPPORT invite accepted)       |
+| `token_hash` UNIQUE → plain INDEX                              | 2                                       |
+| `session_version` `NOT NULL DEFAULT 0` → bare `INTEGER`        | 1 (existing row got NULL — no backfill) |
+| `client_assignment_client_workspace_fkey` dropped in migration | 1 (prior-constraint regression test)    |
+| `assertTokenFlowsExternallyExposable` made to return           | 1 (unit)                                |
+
+A real defect was caught by the suite during development: `NULL IN (…)` is NULL
+(not FALSE), so `intended_role NULL` initially passed the invite CHECK — fixed by
+adding explicit `IS NOT NULL` before the `IN` clause; the role-null test then
+failed as intended.
 
 ## Gates
 
-Recorded in `docs/STATUS.md` / `TRACKER 2.0.md` for the committed tree: `git diff
---check`, `npm ci`, `prisma format/validate/generate`, `migrate deploy` + `migrate
-status` on a fresh disposable DB, `format:check`, `typecheck`, `lint`, `npm run test`,
-`test:integration` (real PG), `build`, `test:e2e`; `npm audit` inspected only.
+On the committed tree (fresh disposable DB `s1f1_final`, dropped after):
+
+- `git diff --check` → 0
+- `npm ci` → 0 (`npm audit`: 1 moderate + 4 high — unchanged advisories, no
+  `--force`, no upgrades)
+- `npx prisma format` → 0; `npx prisma validate` → 0; `npx prisma generate` → 0
+- `npx prisma migrate deploy` → 0 (6 migrations); `npx prisma migrate status` → 0
+  ("Database schema is up to date!")
+- `npm run format:check` → 0; `npm run typecheck` → 0; `npm run lint` → 0
+- `npm run test` → 0 (277 passed / 28 files)
+- `npm run test:integration` → 0 (87 passed / 6 files, real PostgreSQL)
+- `npm run build` → 0; `npm run test:e2e` → 0 (21 passed)
+- migration contains no `DROP`/destructive statement (grep-verified);
+  `lib/tokens/crypto.ts` unchanged (`git diff` empty)
 
 `prisma migrate dev`/`migrate diff` will propose dropping the raw CHECK constraints
 (not representable in the datamodel) — `migrate deploy` remains the required apply

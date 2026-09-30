@@ -171,6 +171,15 @@ threshold, health-data policy, workflow, or layout.
   errors). Record: `docs/tasks/s1-f0-token-crypto.md`.
   **Independently PASS** (`opencode-go/deepseek-v4.1-flash`, range
   `96c6380..4f713e9`, record `3e7733a`).
+- **Stage 1 / S1-F1 token schema + session foundation:** `AccessToken` model
+  (`WORKSPACE_INVITE`/`PASSWORD_RESET` purposes; unique `token_hash`; raw CHECKs
+  `access_token_invite_shape`/`reset_shape`/`expiry_after_creation`;
+  workspace-scoped invite-target index; `(user_id, purpose)` and `expires_at`
+  indexes; workspace Restrict / user Cascade / issuer Restrict FKs) +
+  `User.sessionVersion Int @default(0)`; additive migration
+  `20260930150000_stage1_access_tokens`; fail-closed `lib/tokens.ts`
+  `assertTokenFlowsExternallyExposable()`. Record: `docs/tasks/s1-f1-token-schema.md`.
+  **No token lifecycle service exists; independent review pending.**
 
 ### Important limitations
 
@@ -309,9 +318,7 @@ proposed invariants/`AccessToken` design/service matrix/test plan — and remain
 #16–27; it must not be implemented or exposed until those decisions are recorded).
 The policy-neutral prerequisite **S1-F0 token-crypto** (`lib/tokens/crypto.ts`:
 generation/hashing/validation only) is **independently PASS** (DeepSeek,
-`96c6380..4f713e9`). Next: record the founder answers, then implement the separately
-reviewed **S1-F Phase 1** schema foundation (`AccessToken` model, hash-only) — still no
-routes/email/reset behavior until the flow decisions land.
+`96c6380..4f713e9`, record `3e7733a`).
 **S1-F0** is independently PASS (DeepSeek, `96c6380..4f713e9`, record `3e7733a`).
 Founder answers were relayed by Hanzlah on 2026-09-30 and recorded in
 `docs/product-decisions.md` #13–19: invite-only initial product; client
@@ -319,14 +326,16 @@ self-onboarding; multi-coach sharing within a workspace; 12-hour invite/reset
 expiry with replacement-cancels-matching; logout-other-devices on reset;
 password rules/email provider/sender/domain still undecided pending the product
 name. Conservative interpretations (not founder decisions) are recorded
-separately there and in `docs/open-questions.md` #16–27. **S1-F Phase 1**
-(`AccessToken` model + `User.sessionVersion`, additive migration, no lifecycle
-services) is the current slice — `docs/tasks/s1-f1-token-schema.md`. Notable
-standing constraint: `AuditEvent.workspaceId` being NOT NULL still means
-user-owned reset/login audit rows need the §4.2 schema decision.
-Next: implement S1-F1 test-first, then an independent different-model review
-before any token service. GDPR (S1-G) and workspace shell (S1-H) remain later
-slices; no health records or product UI.
+separately there and in `docs/open-questions.md` #16–27. **S1-F Phase 1 (S1-F1) landed** — `AccessToken`
+model + `User.sessionVersion`, additive migration
+`20260930150000_stage1_access_tokens`, purpose-shape CHECKs, fail-closed
+`assertTokenFlowsExternallyExposable`; record `docs/tasks/s1-f1-token-schema.md`;
+gates green (unit 277, integration 87 real-PG, E2E 21). No token lifecycle
+service exists. Notable standing constraint: `AuditEvent.workspaceId` being NOT
+NULL still means user-owned reset/login audit rows need the §4.2 schema decision.
+Next: fresh different-model independent review of S1-F1 before any token
+service. GDPR (S1-G) and workspace shell (S1-H) remain later slices; no health
+records or product UI.
 
 ## 9. Human inputs still required
 
@@ -431,6 +440,73 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-30 — S1-F1 AccessToken + sessionVersion schema (implemented; gates green; independent review PENDING)
+
+- Scope: S1-F Phase 1 schema foundation — `db/schema.prisma` (`AccessToken`,
+  `AccessTokenPurpose`, `User.sessionVersion`, relations), additive migration
+  `20260930150000_stage1_access_tokens`, fail-closed `lib/tokens.ts`, tests. No
+  issuance/consumption/invite/reset services, routes, UI, email, rate limiting,
+  audit changes, RBAC changes, or JWT/session behavior changes. Builder:
+  SWE-2 High. **Not independently reviewed.**
+- Starting state: branch `main`, HEAD `01bf6e1` (decision-reconciliation commit)
+  atop `3e7733a` = `origin/main` at start; worktree clean.
+- Plan/acceptance source: task prompt (S1-F Phase 1);
+  `docs/tasks/s1-f-invites-recovery-plan.md` §3/§4 (post-answer update);
+  `docs/product-decisions.md` #13–19.
+- Files changed: `db/schema.prisma`,
+  `db/migrations/20260930150000_stage1_access_tokens/migration.sql` (new,
+  additive — grep-verified no DROP), `lib/tokens.ts` (new, exposure assertion
+  only), `tests/integration/s1-f1-token-schema.test.ts` (new, 25 tests),
+  `tests/integration/s1-a-identity.test.ts` (table set gains `access_token`),
+  `tests/unit/token-exposure.test.ts` (new, 2 tests),
+  `docs/tasks/s1-f1-token-schema.md`, `docs/STATUS.md`, `TRACKER 2.0.md`.
+- RED evidence: `INTEGRATION_DATABASE_URL=…/s1f1_red npx vitest run --config
+vitest.integration.config.ts tests/integration/s1-f1-token-schema.test.ts` →
+  exit 1 (migration file + `access_token` table absent, 25 tests blocked);
+  `npx vitest run tests/unit/token-exposure.test.ts` → exit 1 (`lib/tokens`
+  module absent).
+- Focused verification: focused integration → exit 0, 25 passed on disposable
+  `s1f1_verify`; unit exposure → 2 passed. Suite caught a genuine defect
+  mid-build: `NULL IN (…)` is NULL not FALSE, so `intended_role NULL` passed the
+  invite CHECK — fixed with an explicit `IS NOT NULL`.
+- Mutation evidence (each restored byte-for-byte; `shasum` verified before/after):
+  invite-shape CHECK removed → 7 failures; reset-shape CHECK removed → 3;
+  allowed-role `IN` clause removed → 1 (OWNER/SUPPORT accepted); `token_hash`
+  UNIQUE removed → 2; `session_version` default removed → 1 (existing row got
+  NULL); prior composite FK dropped → 1; exposure assertion weakened → 1 unit.
+- Full gates (fresh disposable `s1f1_final`, dropped after):
+  - `git diff --check` → 0.
+  - `npm ci` → 0 (`npm audit`: 1 moderate + 4 high, unchanged advisories; no
+    `--force`, no upgrades).
+  - `npx prisma format` → 0; `npx prisma validate` → 0; `npx prisma generate` → 0.
+  - `npx prisma migrate deploy` → 0 (6 migrations); `npx prisma migrate status`
+    → 0 ("Database schema is up to date!").
+  - `npm run format:check` → 0; `npm run typecheck` → 0; `npm run lint` → 0.
+  - `npm run test` → 0; 28 files / 277 passed.
+  - `npm run test:integration` → 0; 6 files / 87 passed (real PostgreSQL).
+  - `npm run build` → 0; `npm run test:e2e` → 0; 21 passed.
+- Behavioral test: schema-only slice — the real-PostgreSQL constraint suite is
+  the behavioral gate (invite/reset shapes, role boundary, unique hash, FK
+  delete behavior, session-version default/increment, prior-constraint
+  regression). E2E 21/21 is regression coverage only; no browser claims.
+- Independent review: **PENDING — a different-model review is required before
+  token services are implemented.** The builder does not grade its own work.
+- Commit/push/deploy: commits `01bf6e1` (decisions), `c2ea511` (implementation),
+  and this commit (handoff); pushed to `origin/main` per instruction; no PR, no
+  deploy.
+- Decisions/TODO(human): recorded in `product-decisions.md` #13–19 +
+  `open-questions.md` #16–27; still open — acceptance details (2.7), reset
+  eligibility (2.8), password policy (2.10), email delivery (2.11), abuse
+  protection (2.12), audit ownership §4.2 (2.13), retention (2.14), standalone
+  verification (2.15), owner invite revocation (2.6).
+- Known risks/blockers: `prisma migrate dev`/`diff` will propose dropping the raw
+  CHECKs (datamodel-invisible) — `migrate deploy` stays required, same caveat as
+  S1-A; `target_email` is plaintext PII (documented; retention/cleanup
+  undecided); `sessionVersion` is inert until JWT wiring lands with reset
+  consumption.
+- Next action: fresh different-model independent review of S1-F1 before token
+  services are implemented.
 
 ### 2026-09-30 — S1-F Phase 1 (part A): founder decisions recorded (documentation only)
 
