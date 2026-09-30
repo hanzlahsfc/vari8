@@ -454,7 +454,7 @@ Copy this block, fill it in, and insert it immediately above the previous log en
   - `npm run format:check` → exit 0.
   - `npm run typecheck` → exit 0.
   - `npm run lint` → exit 0 (0 warnings).
-  - `npm run test` → exit 0; 27 files / 272 passed (251 → 272).
+  - `npm run test` → exit 0; 27 files / 275 passed (251 → 275).
   - `npm run build` → exit 0.
   - `npm run test:e2e` → exit 0; 21 passed.
   - No PostgreSQL integration/migration gate: the slice touches no database
@@ -462,10 +462,17 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 - Behavioral test: none applicable — no runtime surface exists (library
   primitives only). The unit suite is the behavioral gate; E2E 21/21 is
   regression coverage.
-- Independent review: fresh-context review performed but **same model
-  (SWE-2 High) as the builder — NOT independent.** A different-model review is
-  required before treating S1-F0 as reviewed.
-- Review repairs and re-check: pending.
+- Independent review: fresh-context read-only subagent review → **PASS WITH
+  FINDINGS** — but the reviewer shares the builder's model (SWE-2 High), so it
+  is **NOT independent**; a different-model review is still required.
+- Review repairs and re-check: F1 (LOW) repaired — `TOKEN_PATTERN` tightened to
+  the strict canonical form `^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$` (32-byte
+  base64url can only emit 16 final-char indices ≡ 0 mod 4) with new rejection/
+  acceptance tests; reverting it failed 1 test (mutation-checked). F2 (LOW)
+  repaired — hardcoded known-answer test pins SHA-256. F3 (type branding) not
+  adopted — plain documented aliases match repo convention. F4 covered — unicode
+  rejection tests added. Post-repair: focused vitest 24/24, lint 0 warnings,
+  prettier clean, typecheck 0.
 - Commit/push/deploy: two scoped commits (implementation+tests; docs+handoff),
   pushed to `origin/main` per instruction; no PR, no deploy.
 - Decisions/TODO(human): none resolved. `docs/open-questions.md` #16–27 and

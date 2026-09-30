@@ -13,6 +13,9 @@ extraction) only, not the workbook UI itself.
   `TokenError("token_invalid")` carries codes only, never input contents. No
   module state, no logging, no randomness-injection seam, no comparison helper
   (consume path is a DB lookup by unique hash — see `s1-f0-token-crypto.md`).
+- Validation additionally restricted to the strict canonical form
+  (`[AEIMQUYcgkosw048]` final char — the only 16 indices 32-byte base64url can
+  emit) after fresh-context review finding F1.
 - Scope held: no `AccessToken` model, migration, invite/reset behavior,
   registration, email verification, expiry/invalidation/resend policy, session
   revocation, email provider, rate limiting, audit wiring, routes/UI/E2E. No
@@ -20,15 +23,20 @@ extraction) only, not the workbook UI itself.
 - RED: `npx vitest run tests/unit/token-crypto.test.ts` → exit 1 (module absent)
   before `lib/tokens/crypto.ts` existed.
 - Mutation evidence (each restored byte-for-byte, `shasum`
-  `115b335567875114c41e25f73712ca2ff8115946` before/after): deterministic bytes →
-  2 failures; 128-bit entropy → 14; raw-as-hash → 5; format check removed → 5;
-  whitespace allowed → 1; input in error message → 8; oversized accepted → 2.
+  `115b335567875114c41e25f73712ca2ff8115946` before/after on the pre-repair
+  file): deterministic bytes → 2 failures; 128-bit entropy → 14; raw-as-hash →
+  5; format check removed → 5; whitespace allowed → 1; input in error message →
+  8; oversized accepted → 2. Post-repair re-check: loosening the canonical
+  final-char class back to `{43}` → 1 failure.
 - Gates: `git diff --check` 0; `npm ci` 0 (audit: 1 moderate + 4 high, unchanged
   advisories, no force-fix); `format:check` 0; `typecheck` 0; `lint` 0;
-  `npm run test` 0 (272 passed, 27 files); `npm run build` 0; `npm run test:e2e`
+  `npm run test` 0 (275 passed, 27 files); `npm run build` 0; `npm run test:e2e`
   0 (21 passed). No DB gate run — this slice touches no schema/table.
-- Review: fresh-context review performed but **same model as builder — NOT
-  independent**; a different-model review is still required.
+- Review: fresh-context read-only review → **PASS WITH FINDINGS** (F1 canonical
+  final-char looseness, F2 unpinned digest algorithm — both repaired and
+  mutation-rechecked; F3/F4 informational). Reviewer is a subagent sharing the
+  builder's model, so this is **NOT** an independent review — a different-model
+  review is still required.
 - **Full S1-F remains BLOCKED** on Marcel/Aleks answers (`open-questions.md`
   #16–27). Next: independent different-model review of S1-F0, then collect the
   product decisions.

@@ -45,10 +45,13 @@ routes, and all existing services are unchanged.
   hashing is a different problem (low-entropy human input needs a work factor)
   and is deliberately not reused for tokens.
 - **Validation (before hashing):** the candidate must be a string, non-empty,
-  ≤ 128 chars (conservative abuse bound), and match `^[A-Za-z0-9_-]{43}$`
-  exactly — empty, truncated, extended, whitespace-bearing, wrong-alphabet,
-  oversized, and non-string inputs all throw `TokenError("token_invalid")`.
-  The error message is the code only; submitted input never appears in it.
+  ≤ 128 chars (conservative abuse bound), and match
+  `^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$` — the strict canonical base64url
+  form of 32 bytes (the 43rd character can only be one of the 16 indices
+  ≡ 0 mod 4). Empty, truncated, extended, whitespace-bearing, wrong-alphabet,
+  non-canonical-final-character, unicode, oversized, and non-string inputs all
+  throw `TokenError("token_invalid")`. The error message is the code only;
+  submitted input never appears in it.
 - **Result boundary:** `generateAccessToken()` returns `{ rawToken, tokenHash }`
   — the raw token exists once, for a future delivery layer to send; only
   `tokenHash` may persist. No function retains raw tokens in module state;
@@ -64,7 +67,7 @@ routes, and all existing services are unchanged.
 existed → exit 1, module-resolution failure (`Cannot find module
 '../../lib/tokens/crypto'`; 1 test file failed, no tests ran).
 
-## Tests (21)
+## Tests (24)
 
 Generation: canonical 43-char base64url format; decoded length exactly 32 bytes
 (≥ 256 bits) with base64url round-trip; result object is exactly
@@ -73,13 +76,16 @@ successive tokens differ; no console output of any kind.
 
 Hashing: deterministic; distinct tokens → distinct digests; 64-char lowercase
 hex; digest never equals the raw token; generated tokens always pass
-validation. Rejection: empty string; whitespace (leading/trailing/interior,
+validation; a hardcoded known-answer vector pins the algorithm to SHA-256.
+Rejection: empty string; whitespace (leading/trailing/interior,
 tab, newline); off-alphabet characters (`+`, `/`, `!`, `=`, `.`, `@`);
-truncated (42 chars / dropped first char); extended (44 chars); oversized
-(1024/4096 chars); non-string input (`undefined`, `null`, number, boolean,
-object, array, `Buffer`, boxed `String`). Error contents: marker-bearing input
-produces `TokenError` with `code === "token_invalid"` and
-`message === "token_invalid"` — never the submitted value.
+truncated (42 chars / dropped first char); extended (44 chars); non-canonical
+final characters (`B`, `a`, `z`, `-` in position 43 — only the 16 indices
+≡ 0 mod 4 are producible); unicode/non-ASCII (surrogate pair, fullwidth);
+oversized (1024/4096 chars); non-string input (`undefined`, `null`, number,
+boolean, object, array, `Buffer`, boxed `String`). Error contents:
+marker-bearing input produces `TokenError` with `code === "token_invalid"`
+and `message === "token_invalid"` — never the submitted value.
 
 Module boundary: every export is a function (no mutable module state);
 `generateAccessToken.length === 0` and `hashAccessToken.length === 1` (no
@@ -91,8 +97,11 @@ as an observed property of two draws, not a probabilistic proof.
 ## Mutation evidence
 
 Each mutation was applied temporarily, observed to fail, then reverted; the
-file was verified byte-identical afterward (`shasum` =
-`115b335567875114c41e25f73712ca2ff8115946` before and after, 21/21 green).
+pre-repair file was verified byte-identical afterward (`shasum` =
+`115b335567875114c41e25f73712ca2ff8115946` before and after, 21/21 green). The
+file was subsequently changed by the review repairs below — reverting the
+tightened regex to `{43}` was itself mutation-checked (1 failure) before
+committing the repair.
 
 | Mutation                                          | Result                                             |
 | ------------------------------------------------- | -------------------------------------------------- |
@@ -122,9 +131,29 @@ no database surface; any `db/` change would be a scope violation.
 - `product-decisions.md` and `open-questions.md` were not modified; nothing was
   marked resolved.
 
+## Fresh-context review and repairs (same model — NOT independent)
+
+A fresh-context read-only review (subagent, same model as builder — not a
+diversity-satisfying independent review) returned **PASS WITH FINDINGS**:
+
+- **F1 (LOW) — repaired.** `{43}` accepted all 64 alphabet chars in the final
+  position, but base64url of 32 bytes can only emit the 16 indices ≡ 0 mod 4.
+  Tightened to `^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$` + rejection tests for
+  non-canonical final chars and acceptance of a canonical one. Reverting the
+  tightening was mutation-checked: 1 test failure.
+- **F2 (LOW) — repaired.** No test pinned the digest algorithm; a
+  `sha256 → other-64-hex` mutation would have passed. Added a hardcoded
+  known-answer test (`sha256("A"*43)`).
+- **F3 (informational) — not adopted.** Branded `RawAccessToken`/`AccessTokenHash`
+  types would make swaps compile errors, but plain documented aliases match
+  this repo's conventions (`lib/password.ts`); recorded as a future option.
+- **F4 (informational) — covered.** Added unicode/non-ASCII rejection tests
+  (surrogate pair, fullwidth char, interior NBSP-class whitespace already
+  covered by alphabet).
+
 ## Status
 
-**Implemented; gates green; independent different-model review REQUIRED.** A
-fresh-context review was performed, but it shares the builder's model and is
-therefore **not** independent. Next action: independent different-model review
-of S1-F0 while awaiting the S1-F product decisions.
+**Implemented; review repairs landed; gates green; independent different-model
+review REQUIRED.** The fresh-context review above shares the builder's model
+and is therefore **not** independent. Next action: independent different-model
+review of S1-F0 while awaiting the S1-F product decisions.
