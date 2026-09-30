@@ -19,7 +19,9 @@ Independent different-model review pending before any routing slice.
 ## Files
 
 - `lib/auth/password-reset.ts` (new) — the service.
-- `lib/audit.ts` — add one closed meta key `resetStage?: "REQUESTED" | "COMPLETED"`.
+- `lib/audit.ts` — `resetStage` lives ONLY in the account-scope metadata set
+  (`AccountAuditMeta`/`sanitizeAccountAuditMeta`), valid solely on
+  `PASSWORD_RESET`/`access_token` events; never a global `AuditMeta` key.
 - `tests/unit/password-reset.test.ts` (new), `tests/integration/s1-f2d-password-reset.test.ts` (new).
 - `docs/tasks/s1-f2d-password-reset.md`, `docs/STATUS.md`.
 - **No schema/migration change** — S1-F1/F2B supply AccessToken,
@@ -28,11 +30,16 @@ Independent different-model review pending before any routing slice.
 ## Contracts
 
 ```ts
-requestPasswordReset({ email }, client?) =>
-  | { outcome: "ACCOUNT_NOT_FOUND" }                       // nothing else
-  | { outcome: "ACCOUNT_EXISTS" }                          // non-ACTIVE: no delivery
-  | { outcome: "ACCOUNT_EXISTS",
-      delivery: { kind: "password_reset", to, rawToken, expiresAt } }
+requestPasswordReset(
+  { email },
+  options: { deliver: ResetDeliverySink },  // REQUIRED, runtime-validated
+  client?,
+): Promise<{ outcome: "ACCOUNT_EXISTS" | "ACCOUNT_NOT_FOUND" }>
+// The public result is exactly { outcome } — it never carries delivery,
+// email, raw token, expiry, status, IDs, role, or workspace data. The
+// private payload ({ kind:"password_reset", to, rawToken, expiresAt }) goes
+// to `deliver` exactly once, post-commit, outside the retry loop.
+// Missing/non-function `deliver` → invalid_input BEFORE any DB work.
 
 resetPasswordWithToken({ rawToken, password }, client?) =>
   { changed: true }   // success carries NO userId/email/token
@@ -56,12 +63,18 @@ propagate. No IDs/emails/tokens/passwords/SQL in messages.
 4. Revoke those ids by PK (`updateMany id IN …`), issue one 12-hour token,
    write audit (`PASSWORD_RESET`/`access_token`/`{resetStage:"REQUESTED"}`,
    actorUserId null).
-5. Post-commit: return existence outcome + private delivery payload.
+5. Commit the transaction first. Then invoke the REQUIRED `deliver` sink
+   exactly once, outside the retry loop (delivery failure → `reset_failed`,
+   never a replay). Then return only the existence outcome.
+   Concurrent successful requests may each deliver one email — replacement
+   semantics mean only the LATEST delivered link remains usable.
 
 ## Consume transaction ordering
 
-1. Outside tx: `validatePasswordPolicy` + `hashPassword` (policy failure never
-   opens a tx — the claim cannot have happened).
+1. Outside tx, in this order: `safeTokenHash` (structural token check —
+   malformed input never reaches password work or the DB) →
+   `validatePasswordPolicy` → `hashPassword`. A policy failure never opens a
+   tx — no claim can have happened.
 2. Serializable tx: non-locking `findUnique(tokenHash)` to resolve `userId`
    (claim still enforces all predicates).
 3. `users FOR UPDATE` (same `users → access_token` order as request — no
@@ -71,20 +84,25 @@ propagate. No IDs/emails/tokens/passwords/SQL in messages.
 5. Sibling `FOR UPDATE` scan → revoke by PK.
 6. `UPDATE users SET password_hash, session_version=session_version+1
 WHERE id AND status='ACTIVE'` — conditional: status changed → fail closed.
-7. Audit `PASSWORD_RESET`/`access_token`/`{resetStage:"COMPLETED"}`,
-   actorUserId = the account user. Any failure rolls back all effects.
+7. Audit `PASSWORD_RESET`/`access_token`/`{resetStage:"COMPLETED"}` with
+   `actorUserId = null` and `actorRole = null` — consumption is
+   authenticated by the bearer token, not a user session. Any failure rolls
+   back all effects.
 
 ## Concurrency correctness (real-PG proofs)
 
-- Two concurrent requests for one user: loser waits on the user row lock,
-  then its locking token scan sees the winner's committed row → revokes →
-  issues its own → exactly one active token.
+- Two concurrent requests for one user: the loser waits on the user row
+  lock; its stale snapshot cannot see the winner's inserted token, but the
+  SSI predicate-read/insert conflict aborts one transaction → bounded retry
+  → fresh snapshot → revoke the visible winner's row → issue → exactly one
+  active token.
 - Concurrent consumes of the same token: conditional `updateMany` — one winner.
 - Concurrent sibling consumes: both serialize on the user row lock; the loser
   retries with a fresh snapshot and finds its token revoked → `invalid_token`.
-- User status flips mid-wait: `FOR UPDATE` hits 40001 (P2010) → bounded retry
-  → fresh snapshot → deny. Bounded attempts = 2; only P2034 / raw 40001·40P01
-  retry; unrelated/malformed P2002 → `reset_failed` (never retried, never
+- User status flips mid-wait: `FOR UPDATE` hits 40001 (P2010) → bounded
+  retry → fresh snapshot → deny. `MAX_ATTEMPTS = 8` with bounded backoff
+  (`min(attempt·10, 50)`ms); only P2034 / P2010 carrying raw 40001·40P01
+  retries; unrelated/malformed P2002 → `reset_failed` (never retried, never
   mislabeled `serialization_conflict`).
 
 ## Audit semantics (pinned)
@@ -92,7 +110,10 @@ WHERE id AND status='ACTIVE'` — conditional: status changed → fail closed.
 - scope ACCOUNT, workspaceId NULL, subjectUserId = exact account.
 - request: `resetStage:REQUESTED`, resourceId = issued token id, actor null.
 - consume: `resetStage:COMPLETED`, resourceId = consumed token id,
-  actor = account user. No email/token/hash/password/URL/IP anywhere.
+  `actorUserId`/`actorRole` = null (bearer-token authentication, not a
+  session). `resetStage` is valid ONLY on `PASSWORD_RESET`/`access_token`
+  account events — the `user` resource carries no metadata, and workspace
+  events reject it. No email/token/hash/password/URL/IP anywhere.
 
 ## Tests
 
@@ -122,7 +143,11 @@ Prime Tracker untouched; no PR/deploy/force-push; S1-H not started.
 
 ---
 
-## Implementation record (2026-10-01)
+## Implementation record (2026-10-01) — HISTORICAL — SUPERSEDED BY THE REPAIR RECORD
+
+_The contract details below reflect the original submission. Two
+independent reviews superseded parts of it (see the repair records below
+and the corrected contract sections above)._
 
 **Status: implemented on `feature/s1-f2d-password-reset`; local gates green;
 independent different-model review pending.**
@@ -169,7 +194,7 @@ limiter added; nothing under `app/**` imports the service.
 
 ---
 
-## Repair plan — independent DeepSeek FAIL (2026-10-01)
+## Repair plan — independent DeepSeek FAIL (2026-10-01) — HISTORICAL (implemented; partially superseded by the second repair)
 
 Second review FAILed the slice on documentation/test/production issues.
 Repairs, all test-first:
@@ -183,7 +208,8 @@ Repairs, all test-first:
 2. **Validate token before password work.** Order: `safeTokenHash` →
    `validatePasswordPolicy` → `hashPassword` → tx. Malformed token + bad
    password → `invalid_token`; malformed token never reaches scrypt.
-3. **Injected delivery sink.** `requestPasswordReset` returns ONLY
+3. **Injected delivery sink** (superseded — the sink became REQUIRED in the
+   second repair; the original plan made it optional). `requestPasswordReset` returns ONLY
    `{outcome:"ACCOUNT_EXISTS"}` / `{outcome:"ACCOUNT_NOT_FOUND"}` — never a
    `delivery` property. New param `deliver?: (payload)=>Promise<void>` fires
    exactly once, post-commit, outside the retry loop; its failure →
@@ -212,7 +238,7 @@ Repairs, all test-first:
 RED → GREEN → mutate-back per finding. All files restored byte-exact.
 No schema/migration/route/UI/provider/domain/rate-limit changes.
 
-## Repair record (2026-10-01)
+## Repair record (2026-10-01) — HISTORICAL — SUPERSEDED BY THE SECOND REPAIR RECORD
 
 All eight findings repaired on `feature/s1-f2d-password-reset`:
 
@@ -276,3 +302,37 @@ broadening, no schema change.
 Mandatory mutations: optional-`deliver` restored · runtime sink check
 removed · `PASSWORD_RESET`/`user` + `resetStage` allowed · one stale active
 doc statement reintroduced and caught by a documented rg gate.
+
+## Second repair record (2026-10-01)
+
+Second DeepSeek re-review FAIL → three repairs on
+`feature/s1-f2d-password-reset`:
+
+1. Active contract sections rewritten to match the implemented API
+   (required sink, `{outcome}`-only result, token-first validation, SSI
+   wording, `MAX_ATTEMPTS = 8`, null actor attribution, pair-coupled
+   `resetStage`, concurrent-delivery semantics). Prior plan and record
+   sections marked HISTORICAL — SUPERSEDED.
+2. `deliver` is now a required runtime-validated dependency —
+   missing/null/non-function → `invalid_input` before any lookup, tx,
+   revocation, issuance, or audit. Sink still fires once post-commit
+   outside the retry loop; failure → `reset_failed`, no replay.
+3. `resetStage` coupled at type + runtime to `PASSWORD_RESET`/`access_token`
+   only (discriminated `AccountAuditEventInput` + runtime check in
+   `buildAccountAuditEvent`). `PASSWORD_RESET`/`user` without metadata
+   remains accepted (S1-F2B behavior preserved).
+
+Mutation evidence (all caught, byte-exact restores, shasum-verified):
+optional `deliver`+default restored (1 unit) · runtime sink check removed
+(1 unit) · `resetStage` on `PASSWORD_RESET`/`user` allowed (1 unit + 1
+audit unit) · stale doc statement reintroduced and detected by the rg
+contract-consistency gate (documented patterns: `delivery:`-in-result,
+`actor = account user`, `Bounded attempts = 2`, `sees rows committed`,
+`sees the winner` in a non-historical context).
+
+Concurrency note (observed behavior, by design): concurrent successful
+requests each deliver once; replacement revocation means only the latest
+delivered link is usable. The one-active-token invariant is unchanged.
+
+**Status: second repair implemented; gates green; final independent
+different-model re-review pending.**

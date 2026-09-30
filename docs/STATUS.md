@@ -4,15 +4,31 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — S1-F2D second repair (final capped loop, feature branch)
+
+- DeepSeek re-review of the first repair FAILed on three items; all fixed:
+  active task-document contract rewritten to match the implemented API
+  (prior sections marked HISTORICAL); `deliver` is now a REQUIRED runtime-
+  validated sink (`invalid_input` before any DB work when absent); account
+  audit meta `resetStage` coupled to `PASSWORD_RESET`/`access_token` at type
+  and runtime (PASSWORD_RESET/user keeps its meta-free allowed shape).
+- Mutation evidence: optional-sink restore (1) · sink-validation removal (1)
+  · resetStage on user resource (2) · stale-doc reintroduction caught by the
+  rg consistency gate. Restores byte-exact.
+- Gates (fresh disposable `s1f2d_repair2`, dropped): unit 328, integration
+  179/13 files, build/e2e(21)/lint/typecheck all 0; npm audit unchanged
+  (5 vulns). `main` untouched; **final independent different-model
+  re-review pending; S1-H routing not started.**
+
 ## 2026-10-01 — S1-F2D repair after independent DeepSeek FAIL (feature branch)
 
 - Independent review FAILed the initial S1-F2D slice. Repairs landed:
   corrected FOR UPDATE/Snapshot visibility claims (SSI abort + bounded retry
   is what resolves post-snapshot inserts); token validated structurally
   BEFORE password policy/hash; public request result narrowed to
-  `{outcome}` only with an injected post-commit `deliver` sink (never called
+  `{outcome}` only with a REQUIRED runtime-validated post-commit `deliver` sink (never called
   for missing/ineligible accounts; delivery failure → `reset_failed`, no
-  replay); consume audit attribution corrected to `actorUserId=null`/
+  replay; missing sink → `invalid_input` before any DB work); consume audit attribution corrected to `actorUserId=null`/
   `actorRole=null` (bearer-token auth, not a session); retries bumped to
   `MAX_ATTEMPTS=8` + bounded backoff (repeated 3-way/8-way bursts: zero
   `serialization_conflict`, one active token each); real-CSRF
