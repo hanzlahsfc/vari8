@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, type MemberRole } from "@prisma/client";
+import { MemberRole, Prisma, PrismaClient } from "@prisma/client";
 
 import { prisma } from "./db";
 import {
@@ -91,6 +91,14 @@ export type AuditMeta = {
     "NEW_USER" | "JOINED" | "ALREADY_MEMBER" | "ACTIVATED" | "RESTORED";
 };
 
+/** S1-F2D: metadata allowed on ACCOUNT-scoped audit events only. Deliberately
+ * separate from workspace `AuditMeta` — reset markers must never be
+ * expressible on tenant-scoped rows. */
+export type AccountAuditMeta = {
+  /** Request-vs-consume marker on PASSWORD_RESET/access_token events. */
+  resetStage?: "REQUESTED" | "COMPLETED";
+};
+
 export type AuditEventInput = {
   action: AuditAction;
   resourceType: AuditResourceType;
@@ -141,6 +149,48 @@ const META_VALIDATORS = new Map<keyof AuditMeta, (v: unknown) => boolean>([
       v === "RESTORED",
   ],
 ]);
+
+/** Account-scope metadata allowlist — a separate closed set. */
+const ACCOUNT_META_VALIDATORS = new Map<
+  keyof AccountAuditMeta,
+  (v: unknown) => boolean
+>([["resetStage", (v) => v === "REQUESTED" || v === "COMPLETED"]]);
+
+/**
+ * Account-scope metadata sanitization — same fail-closed shape rules as the
+ * workspace sanitizer, but the allowlist is disjoint: `resetStage` lives only
+ * here and workspace keys (kind/role/acceptedAs/…) are rejected here.
+ */
+export function sanitizeAccountAuditMeta(
+  meta?: AccountAuditMeta,
+): AccountAuditMeta | undefined {
+  if (meta === undefined) return undefined;
+  if (meta === null || typeof meta !== "object" || Array.isArray(meta))
+    throw new AuditError("audit_metadata_forbidden");
+  const proto = Object.getPrototypeOf(meta);
+  if (proto !== Object.prototype && proto !== null)
+    throw new AuditError("audit_metadata_forbidden");
+  try {
+    const clean: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(meta)) {
+      const validator = ACCOUNT_META_VALIDATORS.get(
+        key as keyof AccountAuditMeta,
+      );
+      if (validator === undefined || validator(value) !== true)
+        throw new AuditError("audit_metadata_forbidden");
+      Object.defineProperty(clean, key, {
+        value,
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      });
+    }
+    return clean as AccountAuditMeta;
+  } catch (error) {
+    if (error instanceof AuditError) throw error;
+    throw new AuditError("audit_metadata_forbidden");
+  }
+}
 
 /**
  * Fail-closed metadata allowlist. Unknown keys — including `Object.prototype`
@@ -302,12 +352,27 @@ export type AccountAuditContext = {
   actorRole?: MemberRole | null;
 };
 
-export type AccountAuditEventInput = {
-  action: (typeof ACCOUNT_AUDIT_ACTIONS)[number];
-  resourceType: (typeof ACCOUNT_AUDIT_RESOURCES)[number];
-  resourceId?: string | null;
-  meta?: AuditMeta;
-};
+/**
+ * S1-F2D repair: account audit input is a discriminated union. `resetStage`
+ * metadata is valid ONLY on `PASSWORD_RESET`/`access_token` — the user
+ * resource accepts no metadata. Runtime enforcement lives in
+ * `buildAccountAuditEvent` for callers bypassing TypeScript.
+ */
+export type AccountAuditEventInput =
+  | {
+      action: "PASSWORD_RESET";
+      resourceType: "access_token";
+      resourceId?: string | null;
+      /** Account-scope metadata — a DIFFERENT closed set than workspace
+       * events; valid only on the access_token resource. */
+      meta?: AccountAuditMeta;
+    }
+  | {
+      action: "PASSWORD_RESET";
+      resourceType: "user";
+      resourceId?: string | null;
+      meta?: undefined;
+    };
 
 /**
  * Build an ACCOUNT-scoped audit row. Fails closed on any action/resource
@@ -318,26 +383,60 @@ export function buildAccountAuditEvent(
   context: AccountAuditContext,
   input: AccountAuditEventInput,
 ): Prisma.AuditEventUncheckedCreateInput {
+  // Read every consumed field EXACTLY ONCE — getter/proxy traps and
+  // mid-construction mutation cannot split validation from construction.
+  let subjectUserId: unknown;
+  let actorUserId: unknown;
+  let actorRole: unknown;
+  let action: unknown;
+  let resourceType: unknown;
+  let resourceId: unknown;
+  let metaIn: unknown;
+  try {
+    subjectUserId = context.subjectUserId;
+    actorUserId = context.actorUserId;
+    actorRole = context.actorRole;
+    action = input.action;
+    resourceType = input.resourceType;
+    resourceId = input.resourceId;
+    metaIn = input.meta;
+  } catch {
+    throw new AuditError("invalid_input");
+  }
   if (
-    typeof context.subjectUserId !== "string" ||
-    context.subjectUserId.length === 0
+    typeof subjectUserId !== "string" ||
+    subjectUserId.length === 0 ||
+    (actorUserId != null && typeof actorUserId !== "string") ||
+    (actorRole != null &&
+      !Object.values(MemberRole).includes(actorRole as MemberRole)) ||
+    (resourceId != null && typeof resourceId !== "string")
   )
     throw new AuditError("invalid_input");
   if (
-    !(ACCOUNT_AUDIT_ACTIONS as readonly string[]).includes(input.action) ||
-    !(ACCOUNT_AUDIT_RESOURCES as readonly string[]).includes(input.resourceType)
+    !(ACCOUNT_AUDIT_ACTIONS as readonly string[]).includes(action as string) ||
+    !(ACCOUNT_AUDIT_RESOURCES as readonly string[]).includes(
+      resourceType as string,
+    )
   )
     throw new AuditError("audit_metadata_forbidden");
-  const meta = sanitizeAuditMeta(input.meta);
+  // `resetStage` (the only account meta) is valid ONLY on the exact
+  // PASSWORD_RESET/access_token pair — decided from captured values.
+  if (
+    metaIn !== undefined &&
+    !(action === "PASSWORD_RESET" && resourceType === "access_token")
+  )
+    throw new AuditError("audit_metadata_forbidden");
+  const meta = sanitizeAccountAuditMeta(metaIn as AccountAuditMeta);
   return {
     scope: "ACCOUNT",
     workspaceId: null,
-    subjectUserId: context.subjectUserId,
-    actorUserId: context.actorUserId ?? null,
-    actorRole: context.actorRole ?? null,
-    action: input.action,
-    resourceType: input.resourceType,
-    resourceId: input.resourceId ?? null,
+    subjectUserId,
+    actorUserId: (actorUserId ?? null) as string | null,
+    actorRole: (actorRole ?? null) as MemberRole | null,
+    // Validated by the allowlists above — safe to assert the enums.
+    action: action as (typeof ACCOUNT_AUDIT_ACTIONS)[number],
+    resourceType: resourceType as (typeof ACCOUNT_AUDIT_RESOURCES)[number],
+    resourceId: (resourceId ?? null) as string | null,
     result: "ALLOW",
     reason: null,
     ip: null,

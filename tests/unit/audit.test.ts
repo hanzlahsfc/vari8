@@ -9,6 +9,7 @@ import {
   listAccountAuditEvents,
   listAuditEvents,
   sanitizeAuditMeta,
+  writeAccountAuditEvent,
   writeAuditEvent,
   type AuditMeta,
 } from "../../lib/audit";
@@ -406,6 +407,226 @@ describe("buildAccountAuditEvent (S1-F2B)", () => {
     expect(row).not.toHaveProperty("meta");
   });
 
+  it.each([
+    ["actorUserId", 123],
+    ["actorUserId", { id: "audit-canary" }],
+    ["actorRole", "HACKER"],
+    ["actorRole", 123],
+    ["resourceId", 123],
+    ["resourceId", { id: "audit-canary" }],
+  ])(
+    "rejects malformed account %s instead of silently nulling it",
+    (field, value) => {
+      const context = {
+        subjectUserId: "subj-1",
+        ...(field === "resourceId" ? {} : { [field]: value }),
+      };
+      const input = {
+        action: "PASSWORD_RESET" as const,
+        resourceType: "user" as const,
+        ...(field === "resourceId" ? { resourceId: value } : {}),
+      };
+      let error: unknown;
+      try {
+        buildAccountAuditEvent(context as never, input as never);
+      } catch (caught) {
+        error = caught;
+      }
+      expect(error).toMatchObject({
+        name: "AuditError",
+        code: "invalid_input",
+      });
+      expect(String(error)).not.toContain("audit-canary");
+    },
+  );
+
+  it.each([
+    "WORKSPACE_OWNER",
+    "COACH",
+    "ASSISTANT_COACH",
+    "SUPPORT",
+    "CLIENT",
+  ] as const)("preserves valid account actor role %s and IDs", (actorRole) => {
+    const row = buildAccountAuditEvent(
+      { subjectUserId: "subj-1", actorUserId: "actor-1", actorRole },
+      { action: "PASSWORD_RESET", resourceType: "user", resourceId: "r1" },
+    );
+    expect(row).toMatchObject({
+      actorUserId: "actor-1",
+      actorRole,
+      resourceId: "r1",
+    });
+  });
+
+  it.each([undefined, null])(
+    "keeps absent/null account optionals as null (%s)",
+    (value) => {
+      const row = buildAccountAuditEvent(
+        { subjectUserId: "subj-1", actorUserId: value, actorRole: value },
+        { action: "PASSWORD_RESET", resourceType: "user", resourceId: value },
+      );
+      expect(row).toMatchObject({
+        actorUserId: null,
+        actorRole: null,
+        resourceId: null,
+      });
+    },
+  );
+
+  it("captures each input field once — getter mutation cannot bypass the pair rule", () => {
+    // meta getter yields undefined first, then resetStage — the builder must
+    // read once and produce a metadata-free user-resource row.
+    let metaReads = 0;
+    const flaky = {
+      action: "PASSWORD_RESET" as const,
+      resourceType: "user" as const,
+      get meta() {
+        metaReads++;
+        return metaReads === 1
+          ? undefined
+          : ({ resetStage: "REQUESTED" } as never);
+      },
+    };
+    const row = buildAccountAuditEvent({ subjectUserId: "u1" }, flaky);
+    expect(row).toMatchObject({
+      scope: "ACCOUNT",
+      action: "PASSWORD_RESET",
+      resourceType: "user",
+    });
+    expect(row).not.toHaveProperty("meta");
+    expect(metaReads).toBe(1);
+
+    // Inverse: resetStage first, undefined second — still rejected.
+    let metaReads2 = 0;
+    const flaky2 = {
+      action: "PASSWORD_RESET" as const,
+      resourceType: "user" as const,
+      get meta() {
+        metaReads2++;
+        return metaReads2 === 1
+          ? ({ resetStage: "REQUESTED" } as never)
+          : undefined;
+      },
+    };
+    expect(() =>
+      buildAccountAuditEvent({ subjectUserId: "u1" }, flaky2),
+    ).toThrow("audit_metadata_forbidden");
+
+    // action getter mutating — validate AND build from the captured value.
+    let actionReads = 0;
+    const flipAction = {
+      get action() {
+        actionReads++;
+        return actionReads === 1 ? "PASSWORD_RESET" : "INVITE";
+      },
+      resourceType: "access_token" as const,
+      meta: { resetStage: "REQUESTED" as const },
+    };
+    const row2 = buildAccountAuditEvent(
+      { subjectUserId: "u1" },
+      flipAction as never,
+    );
+    expect(row2.action).toBe("PASSWORD_RESET");
+    expect(actionReads).toBe(1);
+  });
+
+  it("throwing getters/proxies produce structural input-free AuditError", async () => {
+    const throwingInput = {
+      get action(): never {
+        throw new Error("trapped-secret-payload");
+      },
+    };
+    const err = await (async () => {
+      try {
+        buildAccountAuditEvent({ subjectUserId: "u1" }, throwingInput as never);
+        return null;
+      } catch (e) {
+        return e;
+      }
+    })();
+    expect(err).toBeInstanceOf(AuditError);
+    expect(String(err)).not.toContain("trapped-secret");
+
+    // Metadata enumeration/proxy failures → audit_metadata_forbidden.
+    const proxyMeta = new Proxy(
+      {},
+      {
+        ownKeys() {
+          throw new Error("proxy-trap-secret");
+        },
+      },
+    );
+    const err2 = await (async () => {
+      try {
+        buildAccountAuditEvent(
+          { subjectUserId: "u1" },
+          {
+            action: "PASSWORD_RESET",
+            resourceType: "access_token",
+            meta: proxyMeta as never,
+          },
+        );
+        return null;
+      } catch (e) {
+        return e;
+      }
+    })();
+    expect(err).toBeInstanceOf(AuditError);
+    expect(err2).toBeInstanceOf(AuditError);
+    expect(String(err2)).not.toContain("proxy-trap-secret");
+  });
+
+  it.each([
+    ["actorUserId", 123],
+    ["actorRole", "HACKER"],
+    ["resourceId", { id: "audit-canary" }],
+  ])(
+    "writeAccountAuditEvent rejects malformed captured %s before create",
+    async (field, value) => {
+      const create = vi.fn();
+      let reads = 0;
+      const input = {
+        subjectUserId: "subj-1",
+        action: "PASSWORD_RESET" as const,
+        resourceType: "user" as const,
+        get [field]() {
+          reads++;
+          return value;
+        },
+      };
+      await expect(
+        writeAccountAuditEvent(
+          { auditEvent: { create } } as never,
+          input as never,
+        ),
+      ).rejects.toMatchObject({ name: "AuditError", code: "invalid_input" });
+      expect(reads).toBe(1);
+      expect(create).not.toHaveBeenCalled();
+    },
+  );
+
+  it("writeAccountAuditEvent never reaches create on invalid captured input", async () => {
+    let creates = 0;
+    const tx = {
+      auditEvent: {
+        create: async () => {
+          creates++;
+          return {};
+        },
+      },
+    };
+    const throwingInput = {
+      subjectUserId: "u1",
+      get action(): never {
+        throw new Error("hidden");
+      },
+    };
+    await expect(
+      writeAccountAuditEvent(tx as never, throwingInput as never),
+    ).rejects.toBeInstanceOf(AuditError);
+    expect(creates).toBe(0);
+  });
+
   it("rejects non-account actions/resources and missing subject", () => {
     for (const args of [
       [{ subjectUserId: "s" }, { action: "INVITE", resourceType: "user" }],
@@ -420,6 +641,24 @@ describe("buildAccountAuditEvent (S1-F2B)", () => {
       [
         { subjectUserId: "" },
         { action: "PASSWORD_RESET", resourceType: "user" },
+      ],
+      // S1-F2D repair: resetStage metadata is valid ONLY on
+      // PASSWORD_RESET/access_token — never on the user resource.
+      [
+        { subjectUserId: "s" },
+        {
+          action: "PASSWORD_RESET",
+          resourceType: "user",
+          meta: { resetStage: "REQUESTED" },
+        },
+      ],
+      [
+        { subjectUserId: "s" },
+        {
+          action: "PASSWORD_RESET",
+          resourceType: "user",
+          meta: { resetStage: "COMPLETED" },
+        },
       ],
     ] as const) {
       expect(() =>

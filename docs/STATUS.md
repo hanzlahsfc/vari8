@@ -4,6 +4,85 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — S1-F2D account-audit optional-field repair handoff (feature branch)
+
+- Base: verified `main`/`origin/main` = `e2bffb46810f3b507aaeb9fa96e39ef8cc2f6b43`
+  and local/remote feature = `ce01d95bde659b37346ecd389c9525a71f3b1c00`
+  after fetch; isolated feature worktree clean. Plan `7604451`,
+  implementation/tests `aed342b`; this handoff record follows.
+- RED: `npx vitest run tests/unit/audit.test.ts` exit 1, 9 failed / 60 passed;
+  direct production repro exit 0 returned null for malformed actorUserId,
+  actorRole, resourceId. GREEN focused unit exit 0 (81/81); three separate
+  silent-null mutations each exit 1 (3 targeted failures), restored byte-exact
+  to SHA-256 `216b0370…f2298`. Captured-input single reads and pair rule held.
+- Gates: `npm ci` 0 (423 packages audited); Prisma format/validate/generate 0,
+  migrate deploy 0 (10), status 0; focused real-PG account-audit + reset tests
+  0 (29/29); `format:check` 0; `typecheck` 0; `lint` 0; unit 0 (351/34 files);
+  full integration 0 (180/13 files); build 0; E2E 0 (21 actual-browser,
+  existing desktop/mobile flows); `git diff --check` 0. No reset route/UI
+  exists, so no external browser reset-flow claim.
+- `npm audit` exit 1: 1 moderate + 4 high (same recorded count); no dependency
+  or security-policy changes. Fresh synthetic PostgreSQL container
+  `s1f2d-audit-repair-db` (port 55439) stopped/auto-removed (exit 0,
+  `docker ps -a` no match). Existing databases untouched. No schema/route/UI/
+  provider change. Independent DeepSeek review **PENDING**; no PR/merge/deploy.
+
+## 2026-10-01 — S1-F2D stable-input boundary design (feature branch)
+
+- Post-review hardening: `requestPasswordReset` captures `options.deliver`
+  and `input.email` exactly once at entry (trapped getters/proxies →
+  `invalid_input` before any DB work) and invokes the captured sink
+  unconditionally once post-commit — mid-flight reassignment cannot
+  suppress delivery. `buildAccountAuditEvent` captures each consumed field
+  once and validates/builds solely from the captures (getter/proxy/
+  enumeration traps → structural `AuditError`); `resetStage` pair coupling
+  and meta-free `PASSWORD_RESET`/`user` preserved.
+- Mutations all caught: second `deliver` read (`?.` and direct), second
+  `meta` read, removed sink validation — byte-exact restores.
+- Gates (fresh disposable `s1f2d_boundary`, dropped): unit 328+, integration
+  179+ incl. the real-PG reassignment case; `main` untouched; independent
+  different-model re-review pending.
+
+## 2026-10-01 — S1-F2D second repair (final capped loop, feature branch)
+
+- DeepSeek re-review of the first repair FAILed on three items; all fixed:
+  active task-document contract rewritten to match the implemented API
+  (prior sections marked HISTORICAL); `deliver` is now a REQUIRED runtime-
+  validated sink (`invalid_input` before any DB work when absent); account
+  audit meta `resetStage` coupled to `PASSWORD_RESET`/`access_token` at type
+  and runtime (PASSWORD_RESET/user keeps its meta-free allowed shape).
+- Mutation evidence: optional-sink restore (1) · sink-validation removal (1)
+  · resetStage on user resource (2) · stale-doc reintroduction caught by the
+  rg consistency gate. Restores byte-exact.
+- Gates (fresh disposable `s1f2d_repair2`, dropped): unit 328, integration
+  179/13 files, build/e2e(21)/lint/typecheck all 0; npm audit unchanged
+  (5 vulns). `main` untouched; **final independent different-model
+  re-review pending; S1-H routing not started.**
+
+## 2026-10-01 — S1-F2D repair after independent DeepSeek FAIL (feature branch)
+
+- Independent review FAILed the initial S1-F2D slice. Repairs landed:
+  corrected FOR UPDATE/Snapshot visibility claims (SSI abort + bounded retry
+  is what resolves post-snapshot inserts); token validated structurally
+  BEFORE password policy/hash; public request result narrowed to
+  `{outcome}` only with a REQUIRED runtime-validated post-commit `deliver` sink (never called
+  for missing/ineligible accounts; delivery failure → `reset_failed`, no
+  replay; missing sink → `invalid_input` before any DB work); consume audit attribution corrected to `actorUserId=null`/
+  `actorRole=null` (bearer-token auth, not a session); retries bumped to
+  `MAX_ATTEMPTS=8` + bounded backoff (repeated 3-way/8-way bursts: zero
+  `serialization_conflict`, one active token each); real-CSRF
+  `/api/auth/session` update test (strict 200+null+cleared-cookie);
+  `resetStage` rescoped to an account-only audit meta set
+  (`AccountAuditMeta`/`sanitizeAccountAuditMeta`); `safeTokenHash` maps
+  TokenError→`invalid_token`, unexpected→`reset_failed`.
+- Repair mutations all caught: token-after-policy (1 unit) · delivery in
+  result (12) · sink for ineligible (1) · actor=account (1) · MAX_ATTEMPTS=3
+  (1 unit + 1 burst) · workspace resetStage (1) · safeTokenHash catch-all
+  (1) · invalid-CSRF test (1). Restored byte-exact (shasum-verified).
+- Gates: unit 324+·integration on fresh disposable DB — see task record for
+  exact counts; `main` untouched; independent different-model re-review
+  pending. No schema/route/UI/provider/rate-limit change.
+
 ## 2026-09-30 — S1-F2B repair — independent re-review PASS (opencode-go/deepseek-v4.1-flash)
 
 - Read-only independent re-review of the repair range `ac9857e..ae7c6d5`
