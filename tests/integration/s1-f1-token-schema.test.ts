@@ -101,7 +101,8 @@ describe.skipIf(!enabled)(
        VALUES ($1,$2::"AccessTokenPurpose",$3,$4,$5,$6,$7::"MemberRole",$8,$9,$10,$11)`,
         unique("tok"),
         row.purpose,
-        row.tokenHash ?? unique("hash").padEnd(64, "0").slice(0, 64),
+        row.tokenHash ??
+          createHash("sha256").update(unique("tok")).digest("hex"),
         row.workspaceId ?? null,
         row.userId ?? null,
         row.targetEmail ?? null,
@@ -192,6 +193,30 @@ describe.skipIf(!enabled)(
       await expect(
         insertToken(await resetRow({ tokenHash: SYNTHETIC_HASH })),
       ).rejects.toThrow();
+    });
+
+    it("rejects token_hash values that are not canonical SHA-256 hex digests", async () => {
+      // Only the S1-F0 SHA-256 output shape (64 lowercase hex chars) may be
+      // persisted. Anything else — including a raw 43-char base64url bearer
+      // token — must be rejected at the database boundary.
+      const bad: Array<[string, string]> = [
+        ["raw 43-char base64url bearer token", "A".repeat(43)],
+        ["uppercase 64-char hex", "F".repeat(64)],
+        ["whitespace-padded text", ` ${"a".repeat(62)} `],
+        ["arbitrary text", "not-a-digest"],
+        ["empty string", ""],
+        ["63-char lowercase hex", "a".repeat(63)],
+        ["65-char lowercase hex", "a".repeat(65)],
+        ["oversized text", "a".repeat(10_000)],
+      ];
+      for (const [label, tokenHash] of bad) {
+        await expect(
+          insertToken(await inviteRow({ tokenHash })),
+          label,
+        ).rejects.toThrow();
+      }
+      // …and a valid canonical digest is accepted.
+      await insertToken(await inviteRow({ tokenHash: "a".repeat(64) }));
     });
 
     it("rejects an invite without workspace_id", async () => {
@@ -352,6 +377,7 @@ describe.skipIf(!enabled)(
           "access_token_invite_shape",
           "access_token_reset_shape",
           "access_token_expiry_after_creation",
+          "access_token_token_hash_sha256_hex",
         ]),
       );
       const idx = await prisma.$queryRawUnsafe<
