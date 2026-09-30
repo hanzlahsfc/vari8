@@ -36,6 +36,29 @@ extraction) only, not the workbook UI itself.
 - Next: record the founder answers, then implement the separately reviewed S1-F
   Phase 1 schema foundation (still no routes/email until the flow decisions land).
 
+## 2026-09-30 — S1-F Phase 1 (part A) — founder answers recorded; schema work pending
+
+- Founder answers relayed by Hanzlah recorded in `docs/product-decisions.md`
+  #13–19: invite-only initial product; product roles coach/assistant-coach/client
+  (owner's product-facing name open); client self-onboarding (no pre-created
+  profile → no `clientProfileId` on tokens); multi-coach sharing within a
+  workspace; 12-hour invite/reset expiry; replacement cancels matching links;
+  reset logs out other devices; password rules + email provider/sender/domain
+  remain undecided pending product name.
+- Conservative engineering interpretations recorded separately (not founder
+  decisions): keep `WORKSPACE_OWNER`; RBAC unchanged; intended invite policy
+  owner→{COACH,ASSISTANT_COACH,CLIENT}, coach→CLIENT; `sessionVersion` for
+  logout-on-reset; single-workspace client ownership; no cross-workspace
+  health-data sharing.
+- `docs/open-questions.md` #16–27 updated: #16/#19/#20/#23 answered;
+  #17/#18 partial; #21/#22/#24–27 still `TODO(human)`.
+- `s1-f-invites-recovery-plan.md` §2 sections marked ANSWERED/PARTIAL/OPEN;
+  §4.1 updated to the S1-F1-as-built design (no `clientProfileId`, plaintext
+  `target_email`); §8 blockers re-scoped.
+- S1-F0 was independently reviewed **PASS** (`opencode-go/deepseek-v4.1-flash`,
+  `3e7733a`). Next: S1-F1 schema (`AccessToken` + `User.sessionVersion`),
+  test-first on real PostgreSQL.
+
 ## 2026-09-30 — S1-F0 token-crypto foundation — implemented; gates green; independent review PENDING
 
 - `lib/tokens/crypto.ts` (policy-neutral primitives only): `generateAccessToken()`

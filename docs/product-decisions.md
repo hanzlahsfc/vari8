@@ -39,3 +39,53 @@ stakeholder decisions). This document does not authorize a push, PR, deploy, or 
     Apps Script inventory). It **excludes PRGRSS 2.0** and has unresolved gaps of its own; it is
     not a substitute for the PRGRSS 2.0 formulas. `SCRIPT_CRE8.gs` is referenced but was not
     supplied.
+
+## S1-F invite/recovery — founder answers (relayed by Hanzlah, 2026-09-30)
+
+These are the founder's direct answers to the S1-F decision checklist
+(`docs/tasks/s1-f-invites-recovery-plan.md` §2). The engineering interpretations
+that follow them are recorded separately and are **not** founder decisions.
+
+13. **Registration model: invite-only for the initial product.** Coaches invite their
+    clients. Public self-registration may be considered later; nothing public exists now.
+14. **Product-facing roles: coach, optional assistant coach, and client.** The founder
+    questioned whether an "owner" role is product-facing and suggested it may represent a
+    gym owner — the product-facing naming/semantics of the administrative role remain open.
+15. **Client self-onboarding.** Clients receive an invitation and enter their own
+    information; coaches do not pre-create or fill in the client's details. (Engineering
+    consequence: client invite acceptance creates and links the `ClientProfile`; there is
+    no pre-created profile to bind at issuance — `AccessToken` carries no
+    `clientProfileId`.)
+16. **Multiple coaches and sharing.** Users should be able to work with multiple coaches
+    and easily share plans, training, and results. (Interpretation below scopes this to
+    multiple `ClientAssignment` rows inside one workspace; true cross-workspace sharing
+    stays open.)
+17. **Link expiry: 12 hours** for both invitation and password-reset links. **A
+    replacement cancels previous matching links** (re-requesting invalidates outstanding
+    matching tokens).
+18. **Reset logs out other devices.** A successful password reset must invalidate the
+    user's existing sessions on other devices. (Engineering consequence: `User`
+    `sessionVersion` incremented at reset-consumption time makes issued JWT sessions
+    stale; validation wiring is a later step.)
+19. **Still undecided pending the product name:** password rules, email provider, sender
+    identity, and product domain.
+
+## Conservative engineering interpretations (NOT founder decisions)
+
+Recorded for traceability so reviewers can distinguish assumption from decision:
+
+- The technical `WORKSPACE_OWNER` role stays: every workspace needs an administrator. Its
+  product-facing name (workspace admin / head coach / gym owner) is open.
+- Current RBAC (`lib/auth/rbac.ts`, `authorization-model.md`) is **unchanged** by this
+  decision round. The _intended future_ invitation policy — owner/admin may invite COACH,
+  ASSISTANT_COACH, CLIENT; COACH may invite CLIENT only; ASSISTANT_COACH and CLIENT may not
+  invite; OWNER/SUPPORT/platform-admin invitations stay denied — is recorded as direction,
+  not implemented.
+- Client records remain owned by exactly one workspace; sharing between coaches means
+  multiple `ClientAssignment` rows inside that workspace. No client health data is copied
+  or exposed across workspaces; true cross-workspace sharing is a separate future feature
+  needing explicit consent and authorization design.
+- Issuance of a replacement token must revoke all unconsumed, unexpired matching tokens in
+  the same transaction.
+- No user-facing token flow ships until password policy, email delivery configuration,
+  audit ownership, throttling, and route security review are all complete.

@@ -158,17 +158,19 @@ threshold, health-data policy, workflow, or layout.
   when already primary. **Independently PASS** (DeepSeek re-review of repaired
   `9f02983`, range `3415812..9f02983`). No route/UI/API exposes audit or the
   audited mutations.
-- **Stage 1 / S1-F invites & recovery — plan only:** `docs/tasks/s1-f-invites-recovery-plan.md`
-  (decision checklist, proposed invariants, `AccessToken` design, service matrix, test
-  plan). **Blocked on human decisions** (`docs/open-questions.md` #16–27). No S1-F
-  token service or migration exists.
+- **Stage 1 / S1-F invites & recovery — partially decided, schema foundation
+  pending:** `docs/tasks/s1-f-invites-recovery-plan.md` (decision checklist now
+  marked ANSWERED/PARTIAL/OPEN per the 2026-09-30 founder answers in
+  `docs/product-decisions.md` #13–19). Still blocked on the open items
+  (`docs/open-questions.md` #21–27, plan §2.7/2.8/2.10–2.15, §4.2). No S1-F
+  token service exists.
 - **Stage 1 / S1-F0 token-crypto foundation (policy-neutral prerequisite):**
   `lib/tokens/crypto.ts` — `generateAccessToken()` (32 CSPRNG bytes, unpadded
   base64url, `{rawToken, tokenHash}`) and `hashAccessToken()` (strict structural
   validation + SHA-256 hex; `TokenError("token_invalid")`, no input contents in
-  errors). No `AccessToken` model, no migration, no invite/reset behavior, no
-  product decision answered. Record: `docs/tasks/s1-f0-token-crypto.md`.
-  **Independent different-model review still required.**
+  errors). Record: `docs/tasks/s1-f0-token-crypto.md`.
+  **Independently PASS** (`opencode-go/deepseek-v4.1-flash`, range
+  `96c6380..4f713e9`, record `3e7733a`).
 
 ### Important limitations
 
@@ -310,16 +312,21 @@ generation/hashing/validation only) is **independently PASS** (DeepSeek,
 `96c6380..4f713e9`). Next: record the founder answers, then implement the separately
 reviewed **S1-F Phase 1** schema foundation (`AccessToken` model, hash-only) — still no
 routes/email/reset behavior until the flow decisions land.
-The policy-neutral prerequisite **S1-F0** (`lib/tokens/crypto.ts` — CSPRNG
-generation, strict validation, SHA-256 storage digest only) has landed with gates
-green; it resolved none of the decisions and itself still requires an independent
-different-model review. Notable constraint discovered in planning: Auth.js JWT
-sessions cannot be revoked after password reset without new infrastructure, and
-`AuditEvent.workspaceId` being NOT NULL means user-owned reset/login audit rows
-need a schema decision. Next: independent different-model review of S1-F0, and
-collect Marcel/Aleks's answers, record them, then write the S1-F implementation
-prompt. GDPR (S1-G) and workspace shell (S1-H) remain later slices; no health
-records or product UI.
+**S1-F0** is independently PASS (DeepSeek, `96c6380..4f713e9`, record `3e7733a`).
+Founder answers were relayed by Hanzlah on 2026-09-30 and recorded in
+`docs/product-decisions.md` #13–19: invite-only initial product; client
+self-onboarding; multi-coach sharing within a workspace; 12-hour invite/reset
+expiry with replacement-cancels-matching; logout-other-devices on reset;
+password rules/email provider/sender/domain still undecided pending the product
+name. Conservative interpretations (not founder decisions) are recorded
+separately there and in `docs/open-questions.md` #16–27. **S1-F Phase 1**
+(`AccessToken` model + `User.sessionVersion`, additive migration, no lifecycle
+services) is the current slice — `docs/tasks/s1-f1-token-schema.md`. Notable
+standing constraint: `AuditEvent.workspaceId` being NOT NULL still means
+user-owned reset/login audit rows need the §4.2 schema decision.
+Next: implement S1-F1 test-first, then an independent different-model review
+before any token service. GDPR (S1-G) and workspace shell (S1-H) remain later
+slices; no health records or product UI.
 
 ## 9. Human inputs still required
 
@@ -424,6 +431,42 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-30 — S1-F Phase 1 (part A): founder decisions recorded (documentation only)
+
+- Scope: decision reconciliation only — `docs/product-decisions.md`,
+  `docs/open-questions.md`, `docs/tasks/s1-f-invites-recovery-plan.md`,
+  `docs/STATUS.md`, `TRACKER 2.0.md`, new `docs/tasks/s1-f1-token-schema.md`.
+  No schema/code changes yet.
+- Starting state: branch `main`, commit
+  `3e7733afd4af16e09a29ea2d31ca74dd726c3d2d` = `origin/main`, clean worktree.
+- Founder answers (relayed by Hanzlah, 2026-09-30) recorded in
+  `product-decisions.md` #13–19: invite-only initial product (coaches invite
+  clients); product roles coach/assistant-coach/client with the owner role's
+  product-facing name open; client self-onboarding (no pre-created
+  `ClientProfile` → no `clientProfileId` on `AccessToken`); multi-coach
+  sharing; **12-hour** invite/reset expiry; replacement cancels matching links;
+  reset logs out other devices; password rules + email provider/sender/domain
+  undecided pending product name.
+- Conservative interpretations recorded separately (not founder decisions):
+  keep `WORKSPACE_OWNER`; RBAC unchanged; intended invite policy
+  owner→{COACH,ASSISTANT_COACH,CLIENT} / coach→CLIENT only / others denied;
+  `sessionVersion` foundation for logout-on-reset; client rows single-workspace;
+  no cross-workspace health-data sharing (true sharing = future feature needing
+  consent+authz design); no user-facing flow until password policy, delivery,
+  audit ownership, throttling, and route review land.
+- Plan updates: §2 sections marked ANSWERED/PARTIAL/OPEN; §2.5 self-onboarding
+  supersedes the pre-created-profile recommendation; §2.6/§2.9 record 12h +
+  replacement-cancels + logout-on-reset; §4.1 table updated to the S1-F1
+  as-built design; §8 blockers re-scoped to the remaining open items.
+- Verification (docs-only tree): `git diff --check` 0; `format:check` 0.
+- Decisions/TODO(human): still open — acceptance details (2.7), reset
+  eligibility (2.8), password policy (2.10), email delivery (2.11), abuse
+  protection (2.12), audit ownership incl. §4.2 (2.13), retention (2.14),
+  standalone verification (2.15), owner revocation of invites (2.6).
+- Next action: implement the S1-F1 schema foundation test-first
+  (`AccessToken` + `User.sessionVersion`, additive migration, exposure
+  assertion), then independent different-model review.
 
 ### 2026-09-30 — S1-F0 token-crypto independent review PASS (opencode-go/deepseek-v4.1-flash)
 

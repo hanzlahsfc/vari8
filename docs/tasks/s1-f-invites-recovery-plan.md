@@ -14,8 +14,9 @@ Reviewed tree: `80caad0` (S1-E independently PASS at `9f02983`, review record `8
 
 - Auth.js v5 credentials sign-in; **JWT sessions** (`auth.config.ts`, `session.strategy: "jwt"`).
   There is no server-side session store: **existing sessions cannot be revoked** without adding
-  new infrastructure (e.g. a per-request DB check or session-version field). Any requirement to
-  revoke sessions after password reset is therefore an infra change, not a policy toggle.
+  new infrastructure (e.g. a per-request DB check or session-version field). The founder has now
+  required logout-on-reset (§2.9), so `User.sessionVersion` lands as schema foundation in
+  S1-F1; the JWT embed/compare wiring is a later step bundled with reset consumption.
 - `authorizeCredentials` rejects non-`ACTIVE` users at sign-in and returns indistinguishable
   `null` for unknown-email vs wrong-password (no existence oracle at login).
 - Schema already has `UserStatus = ACTIVE | DEACTIVATED | INVITED` and
@@ -43,8 +44,13 @@ Reviewed tree: `80caad0` (S1-E independently PASS at `9f02983`, review record `8
 
 ## 2. Human decisions required (checklist)
 
-Everything below is **unapproved**. Recommendations are labeled as such and do not become
-decisions until recorded by the stakeholder.
+> **Update 2026-09-30:** founder answers were relayed by Hanzlah and recorded in
+> `docs/product-decisions.md` #13–19. Sections below are marked **ANSWERED**,
+> **PARTIAL**, or still **OPEN**. Conservative engineering interpretations are
+> labeled as such and are not founder decisions.
+
+Remaining unapproved items are labeled as such and do not become decisions until
+recorded by the stakeholder.
 
 **Founder-facing subset (plain language)** — the minimum questions Marcel/Aleks need to
 answer; the engineering-detail items further down are for reviewers, not founders:
@@ -66,70 +72,74 @@ answer; the engineering-detail items further down are for reviewers, not founder
 | 13  | Should we keep an activity record of invite/reset/log-in events? How long do we keep old used/expired links?        |
 | 14  | Is a separate "verify your email" step needed beyond the invite/reset links?                                        |
 
-### 2.1 Registration model
+### 2.1 Registration model — ANSWERED
 
-- **Options:** (a) invite-only; (b) public self-registration; (c) both.
+- **Decision (founder, 2026-09-30):** invite-only for the initial product. Coaches invite
+  their clients; public self-registration may be considered later but does not exist now.
 - Context: this is a coach-owned multi-tenant product where workspaces create their own members
   and clients; public self-registration mainly serves "a coach wants to create their own
   workspace."
-- **Recommendation (unapproved):** invite-only for members/clients now; revisit a "create
-  workspace" path separately if needed — keeps the tenant boundary fully owner-controlled.
 
-### 2.2 Who may invite
+### 2.2 Who may invite — PARTIAL (conservative interpretation recorded, not approved)
 
-- **Options:** (a) `WORKSPACE_OWNER` only — matches the current `membersInvitations` matrix
-  cell; (b) owner + COACH; (c) platform-admin involvement.
-- Context: matrix today denies invite-write to COACH/ASSISTANT_COACH/SUPPORT/CLIENT and denies
-  platform-admin writes. Option (b)/(c) require changing `authorization-model.md` + `rbac.ts`
-  with review.
-- **Recommendation (unapproved):** owner only — zero matrix change, least privilege.
+- **Founder input:** product-facing roles are coach, optional assistant coach, and client;
+  whether "owner" is a product-facing role was questioned (may be a gym owner).
+- **Conservative interpretation (unapproved):** keep the technical `WORKSPACE_OWNER` role —
+  every workspace needs an administrator; product-facing name (workspace admin / head
+  coach / gym owner) stays open. Intended future policy: owner/admin may invite COACH,
+  ASSISTANT_COACH, CLIENT; COACH may invite CLIENT only; ASSISTANT_COACH and CLIENT may
+  not invite; OWNER/SUPPORT/platform-admin invitations remain denied.
+- Context: matrix today denies invite-write to everyone except `WORKSPACE_OWNER`
+  (`membersInvitations` owner `ws/ws`). The intended coach-invites-client extension
+  requires changing `authorization-model.md` + `rbac.ts` with review — **not done yet**.
 
-### 2.3 Roles that may be invited
+### 2.3 Roles that may be invited — PARTIAL (conservative interpretation recorded)
 
-- **Options per role:** OWNER (dangerous — a second owner can invite/demote others; co-owner
-  invites need an explicit policy decision); COACH; ASSISTANT_COACH; CLIENT (interacts with the
-  client-profile link question, §2.5); SUPPORT (dangerous — support access itself is unresolved
-  `TODO(human)`).
-- **Recommendation (unapproved):** COACH / ASSISTANT_COACH / CLIENT only; OWNER and SUPPORT
-  invites stay blocked pending separate decisions.
+- **Conservative interpretation (unapproved):** allowed intended roles COACH,
+  ASSISTANT_COACH, CLIENT only; OWNER and SUPPORT invitations stay blocked (a second
+  owner can invite/demote others; support access itself is unresolved `TODO(human)`).
+  The database boundary for `AccessToken.intended_role` enforces exactly
+  {COACH, ASSISTANT_COACH, CLIENT} for invites regardless of who may issue them.
 
-### 2.4 Existing vs new users
+### 2.4 Existing vs new users — PARTIAL
 
-- Does inviting an email that already belongs to a `User` add a membership to the existing
-  account (one user, many workspaces) or reject?
-- Does invite acceptance require the recipient to be signed in as the matching email account,
-  or may anyone holding the link accept?
-- Schema already supports one user in many workspaces (`@@unique([workspaceId, userId])`,
-  `ClientProfile` unique per workspace+user).
-- **Recommendation (unapproved):** existing user may accept into another workspace; acceptance
-  requires signing in as the invited email (prevents link-forwarding hijack); new users set a
-  password during acceptance.
+- **Answered (founder, 2026-09-30):** users can work with multiple coaches — one `User`
+  may hold memberships in multiple workspaces (schema already supports this:
+  `@@unique([workspaceId, userId])`, `ClientProfile` unique per workspace+user).
+- **Still open:** whether invite acceptance requires the recipient to be signed in as the
+  invited email (prevents link-forwarding hijack) vs anyone holding the link may accept.
+- **Recommendation (unapproved):** acceptance requires signing in as the invited email;
+  new users set a password during acceptance (password rules themselves undecided, §2.10).
 
-### 2.5 Client invitations
+### 2.5 Client invitations — ANSWERED (self-onboarding)
 
-- Must a client invite reference an existing unlinked `ClientProfile` (invite flow = "give this
-  already-tracked client a login"), or may acceptance create a new `ClientProfile`?
-- Who selects the profile — the owner at invite-creation time, or the acceptor?
-- Wrong-link prevention: the chosen profile must be in the same workspace and currently
-  unlinked (`userId` null); the token should carry the intended `clientProfileId` so acceptance
-  cannot bind to a different client.
-- **Recommendation (unapproved):** owner selects an existing unlinked profile at creation; token
-  binds to that profile; acceptance links `userId` — no acceptor-chosen profile.
+- **Decision (founder, 2026-09-30):** clients receive an invitation and enter their own
+  information; coaches do not pre-create or fill in client details. Acceptance will
+  create and link the client's `ClientProfile` inside the invited workspace — there is
+  no pre-created profile to bind, so `AccessToken` carries **no `clientProfileId`**.
+- The earlier recommendation (owner selects a pre-existing unlinked `ClientProfile`)
+  is **superseded** by the founder's answer.
+- Open consequence: a "give an already-tracked client a login" path (invite bound to an
+  existing profile) is not part of the confirmed flow; if needed later it is a separate
+  decision.
 
-### 2.6 Invitation lifetime and uniqueness
+### 2.6 Invitation lifetime and uniqueness — ANSWERED (duration/invalidation)
 
-- Expiry duration (e.g. 24h / 7d — duration is a decision, not invented here).
-- Does resend invalidate earlier outstanding invites for the same workspace+email+role?
-- May multiple active invites exist for the same target?
-- May an owner revoke an outstanding invite?
-- **Recommendation (unapproved):** resend revokes prior outstanding invite(s) for the same
-  (workspace, email, role, clientProfile); at most one active invite per tuple; owner revocation
-  supported.
+- **Decision (founder, 2026-09-30):** invitation links expire after **12 hours**; a
+  replacement cancels previous matching links — the issuance transaction must revoke all
+  unconsumed, unexpired matching tokens (same workspace + email + role) before creating
+  the replacement.
+- **Still open:** whether an owner may explicitly revoke an outstanding invite.
+- Implementation note: "matching" is the `(workspaceId, purpose, targetEmail,
+intendedRole)` tuple — covered by a workspace-scoped index; no partial "one active"
+  unique index exists because active state depends on expiry/revocation/consumption, so
+  replacement enforcement is transactional in the future service.
 
-### 2.7 Invitation acceptance
+### 2.7 Invitation acceptance — OPEN
 
 - Does a new user set a password during acceptance (recommended, required for credentials
-  sign-in) vs a separate verification step?
+  sign-in) vs a separate verification step? Password rules themselves are undecided
+  (§2.10).
 - Is email verification implicit in possession of the invite link?
 - Membership transition `INVITED → ACTIVE`; user creation as `INVITED`→`ACTIVE` or directly
   `ACTIVE`?
@@ -138,8 +148,10 @@ answer; the engineering-detail items further down are for reviewers, not founder
 - **Recommendation (unapproved):** password set during acceptance; invite possession counts as
   that address's verification; acceptance activates both `User` and `WorkspaceMember`
   atomically; `SUSPENDED`/`REMOVED` memberships require a new invite, never silent revival.
+- Confirmed inputs: client acceptance creates+links the `ClientProfile` (§2.5);
+  invitees may hold memberships in multiple workspaces (§2.4).
 
-### 2.8 Password recovery eligibility
+### 2.8 Password recovery eligibility — OPEN
 
 - ACTIVE users only? What happens for `INVITED` or `DEACTIVATED` users?
 - Public response must remain generic regardless ("if an account exists…").
@@ -147,34 +159,35 @@ answer; the engineering-detail items further down are for reviewers, not founder
 - **Recommendation (unapproved):** issue reset tokens for ACTIVE users only, respond generically
   for everything else; recovery is user-level.
 
-### 2.9 Reset-token lifetime and invalidation
+### 2.9 Reset-token lifetime and invalidation — ANSWERED
 
-- Expiry duration (decision).
-- Does requesting a new reset invalidate previous outstanding reset tokens for that user?
-- Does a successful reset invalidate every outstanding reset token?
-- **Must existing sessions be revoked after a password reset?** — note: current Auth.js JWT
-  sessions are **not revocable**; answering "yes" requires a session-version/DB-check change,
-  which is additional schema + auth-config work beyond tokens.
-- **Recommendation (unapproved):** new request revokes prior outstanding resets; success revokes
-  all; session revocation deferred with the JWT caveat stated above.
+- **Decision (founder, 2026-09-30):** reset links expire after **12 hours**; a
+  replacement request cancels previous matching links (same transactional revocation as
+  invites); a successful reset must **log the user out on other devices**.
+- **Session-revocation consequence (now required, still unimplemented):** Auth.js JWT
+  sessions are not revocable, so the required all-device logout needs a session-version
+  mechanism. The schema foundation (`User.sessionVersion`, default 0) lands in S1-F1;
+  embedding/comparing the version in JWT validation is a later step that must atomically
+  accompany reset consumption (consume token → password policy check → update hash →
+  increment `sessionVersion` → revoke sibling tokens → audit).
 
-### 2.10 Password policy
+### 2.10 Password policy — OPEN
 
-- Minimum length; complexity rules; breached-password checking; reuse prevention.
-- **Do not invent a policy.** Only a minimum-length check is needed to consume a token;
-  everything else is a decision.
-- **Recommendation (unapproved):** minimum length 12, no complexity rules, no breach check
-  initially, record whether reuse-checking is wanted.
+- **Explicitly undecided (founder, 2026-09-30):** password rules remain open pending the
+  product name decision. **Do not invent a policy** — no minimum length, complexity,
+  breach-check, or reuse rule exists until recorded.
+- Earlier unapproved recommendation (min length 12, no complexity, no breach check) is
+  retained as a recommendation only.
 
-### 2.11 Email delivery
+### 2.11 Email delivery — OPEN
 
-- No provider approved; sender identity and application base URL unresolved.
-- Should S1-F build domain services only (token lifecycle + an outbound-email seam) and leave
-  delivery unimplemented?
-- **Recommendation (unapproved):** yes — services take an injected "send" port; no real email is
-  sent until a provider + sender + URL are decided. Routes still cannot exist until S1-H.
+- **Explicitly undecided (founder, 2026-09-30):** email provider, sender identity, and
+  product domain/base URL are undecided pending the product name.
+- **Recommendation (unapproved):** build domain services with an injected "send" port;
+  no real email until a provider + sender + URL are decided. Routes still cannot exist
+  until S1-H.
 
-### 2.12 Abuse protection
+### 2.12 Abuse protection — OPEN
 
 - Rate limits for invite creation/resend/reset-request/consume; lockouts; CAPTCHA; cooldowns.
 - All public-facing token requests must not leak account existence.
@@ -184,7 +197,7 @@ answer; the engineering-detail items further down are for reviewers, not founder
   (e.g. max N outstanding invites per workspace/email; cooldown between reset requests), with
   real HTTP-level throttling deferred to S1-H where requests exist.
 
-### 2.13 Auditing
+### 2.13 Auditing — OPEN
 
 - Which outcomes get `AuditEvent`s: invite create/revoke/accept (`INVITE`), reset request,
   reset consume, plus the deferred S1-E **login-outcome** requirement (`LOGIN` allow/deny).
@@ -198,7 +211,7 @@ answer; the engineering-detail items further down are for reviewers, not founder
   prefer the nullable-`workspaceId` + scope-discriminator path from §4.2(a) — do **not**
   fabricate a workspace for user-scoped rows.
 
-### 2.14 Token retention and cleanup
+### 2.14 Token retention and cleanup — OPEN
 
 - How long consumed/expired token rows persist; cleanup mechanism (scheduled job, manual, or
   opportunistic during token operations).
@@ -206,7 +219,7 @@ answer; the engineering-detail items further down are for reviewers, not founder
 - **Recommendation (unapproved):** opportunistic cleanup during token operations plus a bounded
   retention `TODO(human)` — no invented duration.
 
-### 2.15 Email verification scope
+### 2.15 Email verification scope — OPEN
 
 - Are standalone `EMAIL_VERIFICATION` tokens part of S1-F, or does invite possession count as
   verification and standalone verification defer?
@@ -239,36 +252,37 @@ existing authority documents:
 - Fail closed when required config is absent (no base URL/provider ⇒ no sends, no dead ends).
 - Only one concurrent consumption can succeed (atomic conditional update / unique consume).
 
-## 4. Proposed data model — **plan only, do not implement**
+## 4. Proposed data model — **implemented in S1-F1 (schema only, no services)**
 
-### 4.1 `AccessToken` (recommended: **one purpose-scoped table**)
+### 4.1 `AccessToken` (one purpose-scoped table — as implemented in S1-F1)
 
-`data-ownership.md` already reserves this model name. One table with a `purpose` discriminator
-is recommended over separate tables because the lifecycle invariants (hash-only storage, expiry,
-single-use, atomic consume) are identical; invite-specific columns stay nullable. Separate
-tables would duplicate the consume-path security code — the riskiest part — for no benefit.
-Left unapproved pending review.
+`data-ownership.md` already reserves this model name. One table with a `purpose`
+discriminator was chosen over separate tables because the lifecycle invariants
+(hash-only storage, expiry, single-use, atomic consume) are identical. **Implemented
+schema and constraints: see `docs/tasks/s1-f1-token-schema.md` and the migration.**
+Founder answers changed two fields vs the original proposal: `clientProfileId` was
+dropped (client self-onboarding, §2.5) and `targetEmail` is stored as normalized
+plaintext (no approved HMAC secret exists; an unsalted hash would be enumerable, so
+hashing was rejected rather than presented as anonymization — see the S1-F1 record).
 
-| Field             | Owner         | Nullable                                               | Personal data               | Indexes / uniqueness                                                                                                                | Tenant role                                                      | Delete behavior                |
-| ----------------- | ------------- | ------------------------------------------------------ | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------ |
-| `id`              | platform      | no                                                     | no                          | PK (cuid)                                                                                                                           | none                                                             | row cleanup per §2.14          |
-| `purpose`         | platform      | no                                                     | no                          | enum `WORKSPACE_INVITE / PASSWORD_RESET / EMAIL_VERIFICATION`                                                                       | none                                                             | —                              |
-| `tokenHash`       | platform      | no                                                     | **no** (hash)               | `@@unique` (lookup is by hash)                                                                                                      | none                                                             | —                              |
-| `workspaceId`     | Workspace     | invites: no; reset/verify: null                        | no                          | composite FK → `workspace.id`; index `(workspaceId, purpose)`                                                                       | tenant boundary for invites — all invite queries constrain on it | Restrict or Cascade (decision) |
-| `userId`          | User          | reset/verify: no; invites: null until acceptance binds | no                          | FK → `users.id`; index `(userId, purpose)`                                                                                          | none (user-owned rows are cross-workspace)                       | SetNull or Restrict (decision) |
-| `targetEmailHash` | platform      | invites: no                                            | **yes** (derivative of PII) | deterministic hash (HMAC) of normalized email; index `(workspaceId, targetEmailHash)` for resend-invalidation                       | scoped by workspaceId on the same row                            | nulled on cleanup (decision)   |
-| `targetEmail`     | platform      | invites: maybe                                         | **yes**                     | none — decide whether storing plaintext is needed for resend UX vs hash-only                                                        | same                                                             | nulled on cleanup (decision)   |
-| `intendedRole`    | Workspace     | invites: no                                            | no                          | none                                                                                                                                | checked against workspaceId                                      | —                              |
-| `clientProfileId` | ClientProfile | only for client invites                                | no (link)                   | FK → `client_profile.id`; composite `clientProfileId+workspaceId` FK for the same-workspace invariant (mirrors S1-A raw-FK pattern) | must equal row's workspaceId                                     | SetNull (decision)             |
-| `expiresAt`       | platform      | no                                                     | no                          | index for cleanup                                                                                                                   | none                                                             | —                              |
-| `consumedAt`      | platform      | yes                                                    | no                          | part of atomic-consume `WHERE`                                                                                                      | none                                                             | —                              |
-| `revokedAt`       | platform      | yes                                                    | no                          | part of atomic-consume `WHERE`                                                                                                      | none                                                             | —                              |
-| `createdByUserId` | User          | yes                                                    | yes                         | FK → `users.id`                                                                                                                     | none                                                             | SetNull                        |
-| `createdAt`       | platform      | no                                                     | no                          | —                                                                                                                                   | —                                                                | —                              |
+| Field             | Owner     | Nullable                                         | Personal data | Indexes / uniqueness                                                                     | Tenant role                                                      | Delete behavior                                          |
+| ----------------- | --------- | ------------------------------------------------ | ------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------- |
+| `id`              | platform  | no                                               | no            | PK (cuid)                                                                                | none                                                             | row cleanup per §2.14 (duration undecided)               |
+| `purpose`         | platform  | no                                               | no            | enum `WORKSPACE_INVITE / PASSWORD_RESET` (`EMAIL_VERIFICATION` reserved, not added)      | none                                                             | —                                                        |
+| `tokenHash`       | platform  | no                                               | **no** (hash) | `@@unique` (lookup is by hash)                                                           | none                                                             | —                                                        |
+| `workspaceId`     | Workspace | invites: no; reset: null                         | no            | FK → `workspace.id`; composite index `(workspaceId, purpose, targetEmail, intendedRole)` | tenant boundary for invites — all invite queries constrain on it | Restrict                                                 |
+| `userId`          | User      | reset: no; invites: null until consumption binds | no            | FK → `users.id`; index `(userId, purpose)`                                               | none (user-owned rows are cross-workspace)                       | Cascade (ephemeral user-owned records die with the user) |
+| `targetEmail`     | platform  | invites: no; reset: null                         | **yes**       | none standalone — only inside the workspace-scoped composite                             | scoped by workspaceId on the same row                            | —                                                        |
+| `intendedRole`    | Workspace | invites: no; reset: null                         | no            | in the workspace composite                                                               | checked against workspaceId                                      | —                                                        |
+| `expiresAt`       | platform  | no                                               | no            | index for cleanup                                                                        | none                                                             | —                                                        |
+| `consumedAt`      | platform  | yes                                              | no            | part of future atomic-consume `WHERE`                                                    | none                                                             | —                                                        |
+| `revokedAt`       | platform  | yes                                              | no            | part of future atomic-consume `WHERE`                                                    | none                                                             | —                                                        |
+| `createdByUserId` | User      | invites: no; reset: null                         | yes           | FK → `users.id`                                                                          | none                                                             | Restrict (issuer deletion must not silently sever rows)  |
+| `createdAt`       | platform  | no                                               | no            | —                                                                                        | none                                                             | —                                                        |
 
-Disputed fields pending §2 decisions: plaintext `targetEmail` vs hash-only (resend UX vs
-data-minimization); `userId` on invites at creation vs only after acceptance; whether
-`membershipId`/`clientProfileId` binding is carried on the token or derived at acceptance.
+Resolved former disputes: `targetEmail` plaintext (documented PII, no standalone index);
+`userId` on invites is null until consumption (DB CHECK enforces `user_id` may only be
+non-null once `consumed_at` is set); `clientProfileId` binding removed entirely.
 
 ### 4.2 Audit row ownership for user-scoped events — open design point
 
@@ -292,20 +306,20 @@ A `lib/tokens.ts` domain service (token lifecycle) plus thin orchestration where
 mutation is required. All mutations Serializable; audit writes coupled in-transaction for
 mutating operations (S1-E pattern); errors structural.
 
-| Operation               | Actor / authz                                             | Owner scope | Inputs                                     | Output (structural)                              | Audit                              | Tx boundary                                                                     | Denial cases                                                               | Concurrency                                  | Rate-limit dep     | Blocked by     |
-| ----------------------- | --------------------------------------------------------- | ----------- | ------------------------------------------ | ------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | -------------------------------------------- | ------------------ | -------------- |
-| `createWorkspaceInvite` | OWNER (`membersInvitations` write, workspace)             | Workspace   | workspaceId, email, role, clientProfileId? | `{ inviteId }` (+ raw token via send port only)  | `INVITE` ALLOW in-tx               | Serializable: authz → dedupe/revoke-prior → insert                              | non-owner; ineligible role; cross-workspace clientProfile; suspended ws    | resend-invalidates-prior under unique tuple  | per-workspace cap  | §2.2–2.6       |
-| `revokeWorkspaceInvite` | OWNER                                                     | Workspace   | workspaceId, inviteId                      | `{ revoked: boolean }`                           | `INVITE` (or `REVOKE`) ALLOW in-tx | Serializable: authz → conditional revoke                                        | non-owner; cross-workspace invite; already consumed                        | idempotent `revoked:false` on second call    | low                | §2.6           |
-| `acceptInvitation`      | holder of token; must sign in as invited email (per §2.4) | Workspace   | raw token, password (new user)             | `{ membershipId }` or structural error           | `INVITE` ALLOW in-tx               | Serializable: atomic consume → create/activate user+member → link clientProfile | expired/used/revoked token; email mismatch; cross-ws profile; suspended ws | two accepts of same token → exactly one wins | consume attempts   | §2.4–2.7       |
-| `requestPasswordReset`  | unauthenticated (public)                                  | User        | email                                      | **generic success always**                       | per §4.2 decision                  | read user → insert token (user-scoped)                                          | none observable; internally skips non-ACTIVE                               | multiple requests → per §2.9 invalidation    | per-email cooldown | §2.8–2.9, 2.12 |
-| `consumePasswordReset`  | holder of token (public)                                  | User        | raw token, newPassword                     | `{ changed: boolean }`                           | per §4.2 decision                  | Serializable: atomic consume → rehash password → invalidate siblings            | expired/used/revoked; wrong purpose; non-ACTIVE user                       | two consumes → exactly one wins              | consume attempts   | §2.8–2.10      |
-| `inspectInvitation`     | holder of token (public, minimal reveal)                  | Workspace   | raw token                                  | `{ valid: boolean, expiresAt? }` — no email leak | none                               | read-only                                                                       | invalid/expired → `valid:false`                                            | —                                            | low                | §2.7           |
-| `cleanupExpiredTokens`  | internal (opportunistic or job)                           | platform    | —                                          | `{ removed: number }`                            | none                               | bounded delete                                                                  | —                                                                          | safe concurrent (delete by predicate)        | —                  | §2.14          |
+| Operation               | Actor / authz                                             | Owner scope | Inputs                         | Output (structural)                              | Audit                              | Tx boundary                                                                            | Denial cases                                             | Concurrency                                  | Rate-limit dep     | Blocked by     |
+| ----------------------- | --------------------------------------------------------- | ----------- | ------------------------------ | ------------------------------------------------ | ---------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------- | -------------------------------------------- | ------------------ | -------------- |
+| `createWorkspaceInvite` | OWNER (`membersInvitations` write, workspace)             | Workspace   | workspaceId, email, role       | `{ inviteId }` (+ raw token via send port only)  | `INVITE` ALLOW in-tx               | Serializable: authz → revoke-prior-matching → insert                                   | non-owner; ineligible role; suspended ws                 | replacement revokes matching outstanding     | per-workspace cap  | §2.2–2.7       |
+| `revokeWorkspaceInvite` | OWNER                                                     | Workspace   | workspaceId, inviteId          | `{ revoked: boolean }`                           | `INVITE` (or `REVOKE`) ALLOW in-tx | Serializable: authz → conditional revoke                                               | non-owner; cross-workspace invite; already consumed      | idempotent `revoked:false` on second call    | low                | §2.6           |
+| `acceptInvitation`      | holder of token; must sign in as invited email (per §2.4) | Workspace   | raw token, password (new user) | `{ membershipId }` or structural error           | `INVITE` ALLOW in-tx               | Serializable: atomic consume → create/activate user+member → create+link clientProfile | expired/used/revoked token; email mismatch; suspended ws | two accepts of same token → exactly one wins | consume attempts   | §2.4–2.7       |
+| `requestPasswordReset`  | unauthenticated (public)                                  | User        | email                          | **generic success always**                       | per §4.2 decision                  | read user → insert token (user-scoped)                                                 | none observable; internally skips non-ACTIVE             | multiple requests → per §2.9 invalidation    | per-email cooldown | §2.8–2.9, 2.12 |
+| `consumePasswordReset`  | holder of token (public)                                  | User        | raw token, newPassword         | `{ changed: boolean }`                           | per §4.2 decision                  | Serializable: atomic consume → rehash password → invalidate siblings                   | expired/used/revoked; wrong purpose; non-ACTIVE user     | two consumes → exactly one wins              | consume attempts   | §2.8–2.10      |
+| `inspectInvitation`     | holder of token (public, minimal reveal)                  | Workspace   | raw token                      | `{ valid: boolean, expiresAt? }` — no email leak | none                               | read-only                                                                              | invalid/expired → `valid:false`                          | —                                            | low                | §2.7           |
+| `cleanupExpiredTokens`  | internal (opportunistic or job)                           | platform    | —                              | `{ removed: number }`                            | none                               | bounded delete                                                                         | —                                                        | safe concurrent (delete by predicate)        | —                  | §2.14          |
 
-Notes: invite acceptance for a **client** additionally links `ClientProfile.userId` inside the
-same transaction, guarded by the token's `clientProfileId`+`workspaceId` binding. `LOGIN`
-outcome auditing (deferred S1-E item) lives in `auth.ts` `authorize` — blocked on §4.2 and on
-the DENY-volume decision.
+Notes: invite acceptance for a **client** additionally creates and links `ClientProfile.userId`
+inside the same transaction (self-onboarding per §2.5 — there is no `clientProfileId` binding
+on the token). `LOGIN` outcome auditing (deferred S1-E item) lives in `auth.ts` `authorize` —
+blocked on §4.2 and on the DENY-volume decision.
 
 ## 6. Test plan — RED scenarios for implementation (not written yet)
 
@@ -351,31 +365,38 @@ desktop+mobile; generic reset response indistinguishable.
 
 ## 8. Dependencies between decisions (what truly blocks implementation)
 
-**Nothing in §2 or §4.2 may be coded as an unrecorded default** — every decision above
-blocks its own feature area until a stakeholder answer is recorded. The useful
-distinction is _which parts of the codebase each decision unblocks_:
+**Nothing open in §2 or §4.2 may be coded as an unrecorded default** — every open
+item blocks its own feature area until a stakeholder answer is recorded. After the
+2026-09-30 founder answers, the remaining blockers are:
 
-- **Blocks the invite flow's shape:** 2.1, 2.4, 2.5, 2.6, 2.7.
-- **Blocks the reset flow's shape:** 2.8, 2.9, 2.10 (even a minimum length is a choice —
-  do not invent it).
-- **Blocks invite writes/roles beyond the matrix default:** 2.2, 2.3 (the current matrix
-  answer is "owner only" — implementation _may_ encode exactly that if recorded).
-- **Blocks user-scoped audit rows (reset/login):** §4.2 (schema decision, reviewed
+- **Invite flow shape:** 2.2/2.3 (invite permission policy is an unapproved
+  interpretation — current matrix stays owner-only until changed with review), 2.4
+  (signed-in-as-invited-email acceptance), 2.7 (acceptance details: password-at-
+  acceptance, verification semantics, INVITED→ACTIVE, SUSPENDED/REMOVED rows).
+- **Reset flow shape:** 2.8 (eligibility), 2.10 (password policy — even a minimum
+  length is a choice; do not invent it).
+- **User-scoped audit rows (reset/login):** §4.2 (schema decision, reviewed
   separately) + 2.13 DENY-volume policy.
-- **Blocks token cleanup cadence:** 2.14 (opportunistic cleanup is safe to build; the
-  retention duration itself is the decision).
-- **Blocks delivery but not the code:** 2.11 (provider/sender/base URL), 2.12 (HTTP-level
+- **Token cleanup cadence:** 2.14 (retention duration undecided; opportunistic
+  cleanup is safe to build).
+- **Delivery but not the code:** 2.11 (provider/sender/base URL), 2.12 (HTTP-level
   throttling lands in S1-H where requests exist), 2.15 (standalone verification can
   defer without blocking invites/resets).
+- **Session revocation wiring:** §2.9 is answered (logout-on-reset required) but the
+  JWT `sessionVersion` comparison infrastructure is still to be built alongside
+  reset consumption.
 
-Founder-facing minimum to unblock core implementation: items 1–10 in the §2 summary
-table (plus 11 before any real email is sent).
+No longer blocking: registration model (invite-only), client self-onboarding,
+multi-workspace membership, 12-hour expiry, replacement-cancels-matching,
+logout-other-devices.
 
 ## 9. Status
 
-**Plan written; no S1-F token service, schema change, or migration exists.** Implementation
-remains blocked on §2/§4.2 decisions. The policy-neutral prerequisite **S1-F0** has since
-landed: `lib/tokens/crypto.ts` (generation/hashing/validation only — no `AccessToken` model,
-no token lifecycle, nothing in §2 or §4.2 resolved). See `docs/tasks/s1-f0-token-crypto.md`.
-Next step: collect Marcel/Aleks's answers, record them in
-`docs/product-decisions.md` / `open-questions.md`, then write the S1-F implementation prompt.
+**Plan updated with founder answers (2026-09-30); S1-F implementation still blocked
+on the remaining OPEN items.** The policy-neutral prerequisite **S1-F0**
+(`lib/tokens/crypto.ts`) is implemented and independently PASS. The **S1-F1**
+schema/session foundation (`AccessToken` + `User.sessionVersion`, additive
+migration, no lifecycle services) is the current slice — see
+`docs/tasks/s1-f1-token-schema.md`. Next step: implement the S1-F1 schema
+foundation, independent different-model review, then implement token services only
+for the answered policy surface.

@@ -61,32 +61,40 @@ CK-2026-K8M3 · Redistribution, resale or sublicensing prohibited`).
 
 ## S1-F invite/recovery decisions (detailed options in `docs/tasks/s1-f-invites-recovery-plan.md` §2)
 
-All of these are `TODO(human)` and block S1-F implementation:
+Founder answers were relayed by Hanzlah on 2026-09-30 (recorded in
+`docs/product-decisions.md` #13–19). Several items are now **answered**; the rest stay
+`TODO(human)` and still block the corresponding parts of S1-F.
 
-16. **`TODO(human)` — Registration model:** invite-only vs public self-registration vs both
-    (recommended: invite-only; unapproved).
-17. **`TODO(human)` — Who may invite** (owner only per current matrix vs broader), and **which
-    roles may be invited** (coaching/client roles vs OWNER/SUPPORT, which are flagged
-    dangerous).
-18. **`TODO(human)` — Existing users:** may one account join multiple workspaces; must the
-    invite be accepted while signed in as the invited email.
-19. **`TODO(human)` — Client invites:** whether acceptance links a pre-existing unlinked
-    `ClientProfile` chosen by the owner (recommended) or creates one.
-20. **`TODO(human)` — Invite lifetime/semantics:** expiry duration, resend-invalidates-prior,
-    one-active-per-target, owner revocation.
-21. **`TODO(human)` — Invite acceptance:** password set during acceptance; invite possession =
-    email verification; `INVITED → ACTIVE` transitions; behavior for SUSPENDED/REMOVED rows.
-22. **`TODO(human)` — Recovery eligibility:** ACTIVE-only recommended; INVITED/DEACTIVATED
-    handling; always-generic public response (recommended).
-23. **`TODO(human)` — Reset token invalidation:** expiry duration; new-request-invalidates-
-    previous; success-invalidates-all; **whether sessions must be revoked — current Auth.js
-    JWT sessions cannot be revoked without new infrastructure.**
+16. **ANSWERED — Registration model:** invite-only for the initial product; coaches invite
+    clients; public self-registration may be considered later (product-decisions #13).
+17. **PARTIALLY ANSWERED — Invite permissions:** product roles are coach, optional
+    assistant coach, and client; the founder questioned whether an "owner" role is
+    product-facing (may be a gym owner — product-facing name still open,
+    product-decisions #14). The intended policy (owner/admin invites
+    COACH/ASSISTANT_COACH/CLIENT; COACH invites CLIENT only; others denied) is a
+    conservative engineering interpretation, not yet approved or implemented.
+18. **PARTIALLY ANSWERED — Existing users:** one `User` may hold memberships in multiple
+    workspaces (multi-coach sharing, product-decisions #16). Still open: whether
+    acceptance must occur while signed in as the invited email.
+19. **ANSWERED — Client invites:** clients self-onboard — acceptance creates and links
+    the `ClientProfile`; no coach pre-created profile (product-decisions #15).
+20. **ANSWERED — Invite lifetime/invalidation:** 12-hour expiry; a replacement cancels
+    previous matching links (product-decisions #17). Still open: owner revocation of a
+    specific outstanding invite.
+21. **`TODO(human)` — Invite acceptance details:** password set during acceptance; invite
+    possession = email verification; `INVITED → ACTIVE` transitions; SUSPENDED/REMOVED
+    membership behavior.
+22. **`TODO(human)` — Recovery eligibility:** which user states may receive a reset
+    (ACTIVE-only was the unapproved recommendation); always-generic public response.
+23. **ANSWERED — Reset invalidation/logout:** 12-hour expiry; replacement cancels
+    previous matching links; successful reset must log out other devices
+    (product-decisions #17/#18 → `User.sessionVersion` foundation).
 24. **`TODO(human)` — Password policy:** min length / complexity / breach-check / reuse —
-    not invented.
-25. **`TODO(human)` — Email delivery:** no approved provider, sender identity, or app base URL;
-    recommended to build domain services + send-port seam only.
-26. **`TODO(human)` — Abuse protection:** rate limits/cooldowns/lockouts; no rate-limit infra
-    exists; no existence oracles.
+    explicitly undecided pending the product name (product-decisions #19).
+25. **`TODO(human)` — Email delivery:** provider, sender identity, and app base URL all
+    undecided pending the product name (product-decisions #19).
+26. **`TODO(human)` — Abuse protection:** rate limits/cooldowns/lockouts; no rate-limit
+    infra exists; no existence oracles.
 27. **`TODO(human)` — Token/audit specifics:** which invite/recovery outcomes are audited;
     how user-owned (non-workspace) audit rows are stored given `AuditEvent.workspaceId` is
     required; DENY-event volume policy; token-row retention + cleanup cadence; whether
