@@ -437,3 +437,50 @@ exception appears in errors. Keep workspace audit and metadata rules intact.
    handoff commits only. Verify `origin/main` is unchanged, push the feature
    branch normally, and leave independent DeepSeek review pending. No PR,
    merge, deploy, schema, route, UI, provider, or dependency changes.
+
+RED evidence before production changes: `npx vitest run tests/unit/audit.test.ts`
+exit 1, 9 failed / 60 passed (69 total); all nine failures are malformed
+optional captures accepted by the production builder/writer. Direct
+`npx tsx -e` production calls returned `actorUserId:null`,
+`actorRole:null`, and `resourceId:null` for 123/"HACKER"/123 respectively
+(exit 0). Prior single-read getter/proxy and `resetStage` pair tests pass.
+
+GREEN evidence: `npx vitest run tests/unit/audit.test.ts tests/unit/password-reset.test.ts`
+exit 0, 81/81 (69 audit, 12 reset);
+`npm run typecheck` exit 0. Three separate silent-null mutations
+(actorUserId/actorRole/resourceId) each made 3 targeted tests fail
+(exit 1), then `lib/audit.ts` restored after each to SHA-256
+`216b03700d15ea88cfbc4e7e3bac4e17397efdb8a504ed4199c2fdf0289f2298`.
+Focused unit re-run exit 0, 81/81; `git diff --check` exit 0.
+
+## Account-audit optional-field repair handoff (2026-10-01)
+
+Plan commit `7604451`; implementation + regression tests commit `aed342b`.
+Only captured optional actorUserId/resourceId strings and captured Prisma
+MemberRole values pass; absent/null fields still write null. Malformed
+captures throw `AuditError("invalid_input")` before create, with no raw
+value/exception in the error. The workspace writer, metadata restrictions,
+reset request/consume orchestration, and valid-CSRF Auth.js test did not
+change. All five MemberRole values, valid IDs, and null/absent values are
+covered; the prior single-read getters/proxies and `resetStage` pair
+regressions remain green.
+
+Gates on the repaired tree: `npm ci` 0 (423 packages audited);
+`npx prisma format` 0, `validate` 0, `generate` 0, `migrate deploy` 0
+(10 migrations), `migrate status` 0 (up to date); focused real-PG
+`npm run test:integration -- tests/integration/s1-f2b-account-audit.test.ts tests/integration/s1-f2d-password-reset.test.ts`
+0 (29/29, 2 files); `npm run format:check` 0; `npm run typecheck` 0;
+`npm run lint` 0; `npm run test` 0 (351/351, 34 files);
+`npm run test:integration` 0 (180/180, 13 files); `npm run build` 0;
+`npm run test:e2e` 0 (21/21, actual browser desktop/mobile cases);
+`git diff --check` 0. No reset UI/route exists, so E2E is an existing
+browser regression gate rather than an external reset-flow proof.
+`npm audit` 1: five reported vulnerabilities (1 moderate, 4 high),
+matching the previous recorded count; no dependency or security-policy
+change. The sole database was a newly created, synthetic PostgreSQL 16
+container `s1f2d-audit-repair-db` at port 55439; `docker stop` exited 0
+and `docker ps -a --filter name=s1f2d-audit-repair-db` returned no rows
+(`--rm` cleanup). Existing app and Prime Tracker databases untouched.
+
+Independent opencode-go/deepseek-v4.1-flash read-only review remains
+**PENDING**. No PR, merge, deploy, rebase, or force-push.

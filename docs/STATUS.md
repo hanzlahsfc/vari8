@@ -4,16 +4,28 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
-## 2026-10-01 — S1-F2D account-audit optional-field repair planned (feature branch)
+## 2026-10-01 — S1-F2D account-audit optional-field repair handoff (feature branch)
 
-- Verified `main`/`origin/main` = `e2bffb46810f3b507aaeb9fa96e39ef8cc2f6b43`
+- Base: verified `main`/`origin/main` = `e2bffb46810f3b507aaeb9fa96e39ef8cc2f6b43`
   and local/remote feature = `ce01d95bde659b37346ecd389c9525a71f3b1c00`
-  after fetch; isolated feature worktree clean. Read conductor, decisions,
-  S1-F2D record, audit builder, and account-audit tests.
-- Confirmed silent-null conversion for malformed captured actorUserId,
-  actorRole, resourceId in `buildAccountAuditEvent`. Scoped RED → GREEN →
-  three mutation checks → real-PG/full gates plan in the S1-F2D task record.
-  No production edits yet; independent DeepSeek review remains pending.
+  after fetch; isolated feature worktree clean. Plan `7604451`,
+  implementation/tests `aed342b`; this handoff record follows.
+- RED: `npx vitest run tests/unit/audit.test.ts` exit 1, 9 failed / 60 passed;
+  direct production repro exit 0 returned null for malformed actorUserId,
+  actorRole, resourceId. GREEN focused unit exit 0 (81/81); three separate
+  silent-null mutations each exit 1 (3 targeted failures), restored byte-exact
+  to SHA-256 `216b0370…f2298`. Captured-input single reads and pair rule held.
+- Gates: `npm ci` 0 (423 packages audited); Prisma format/validate/generate 0,
+  migrate deploy 0 (10), status 0; focused real-PG account-audit + reset tests
+  0 (29/29); `format:check` 0; `typecheck` 0; `lint` 0; unit 0 (351/34 files);
+  full integration 0 (180/13 files); build 0; E2E 0 (21 actual-browser,
+  existing desktop/mobile flows); `git diff --check` 0. No reset route/UI
+  exists, so no external browser reset-flow claim.
+- `npm audit` exit 1: 1 moderate + 4 high (same recorded count); no dependency
+  or security-policy changes. Fresh synthetic PostgreSQL container
+  `s1f2d-audit-repair-db` (port 55439) stopped/auto-removed (exit 0,
+  `docker ps -a` no match). Existing databases untouched. No schema/route/UI/
+  provider change. Independent DeepSeek review **PENDING**; no PR/merge/deploy.
 
 ## 2026-10-01 — S1-F2D stable-input boundary design (feature branch)
 
