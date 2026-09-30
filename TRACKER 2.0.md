@@ -13,11 +13,14 @@ deployment, production-data change, or external-service change.
 - Current product name: undecided. `App`, `The-great-tracker-`, `Prime Tracker Pro`, and
   `PRGRSS 2.0` are placeholders or source names, not an approved product name.
 - Current branch: `main`
-- Last independently reviewed HEAD: `8331bc53648f7e6ed64a9bf9ff4e3c8745882087` (S1-F1
-  AccessToken + sessionVersion schema, **opencode-go/deepseek-v4.1-flash** verdict
-  **PASS**, range `3e7733a..8331bc5`, repair-only `bedbe12..8331bc5`, 2026-09-30).
-  Previously `4f713e986c1a05b9c808c8fb9f76b2aeb1dc29c1` (S1-F0 token-crypto,
-  same reviewer, **PASS**). History:
+- Last independently reviewed HEAD: `fb0713bdc67ed2d855622d2045fc3744137b2cda`
+  (S1-F2A internal transaction-bound token-store primitives,
+  **opencode-go/deepseek-v4.1-flash** verdict **PASS**, range
+  `0d503b7..fb0713b`, 2026-09-30). Previously
+  `8331bc53648f7e6ed64a9bf9ff4e3c8745882087` (S1-F1 AccessToken + sessionVersion
+  schema, same reviewer, **PASS**, range `3e7733a..8331bc5`, repair-only
+  `bedbe12..8331bc5`), and `4f713e986c1a05b9c808c8fb9f76b2aeb1dc29c1` (S1-F0
+  token-crypto, same reviewer, **PASS**). History:
   `gpt-6-astra` independently FAILED S1-D `ec8250c`; builder repair landed in
   `6e8e2e6`/`942879e`/`3415812`; SWE-2 High independently passed S1-D at `3415812`
   (range `85feade..3415812`). S1-E was implemented (`45752bc`/`87a4d0a`/`b97c5b5`),
@@ -195,7 +198,9 @@ threshold, health-data policy, workflow, or layout.
     `assertTokenPrimitivesExternallyExposable()` fails closed alongside the
     flows assertion. 12 h expiry via `ACCESS_TOKEN_TTL_MS`; shared
     `normalizeEmail`. Record: `docs/tasks/s1-f2a-token-primitives.md`.
-    **Independent review pending — no product flow exists.**
+    **Independently PASS** (`opencode-go/deepseek-v4.1-flash`, range
+    `0d503b7..fb0713b`, 2026-09-30) — still no product flow; orchestration
+    services remain blocked on the open `TODO(human)` items.
 
 ### Important limitations
 
@@ -356,10 +361,11 @@ different-model independent **re**-review then **PASSed** the repaired tree at
 S1-F2A then landed the internal transaction-bound token-store primitives
 (`lib/tokens/store.ts` — issue/revoke/claim/inspect only) with gates green
 (unit 287, integration 102 real-PG, E2E 21) and 11 mutation proofs; a fresh
-different-model independent review of S1-F2A is required before any
-orchestration service, still blocked by the open `TODO(human)` items. GDPR
-(S1-G) and workspace shell (S1-H) remain later slices; no health records or
-product UI.
+different-model independent review **PASSed** S1-F2A at `fb0713b`
+(`opencode-go/deepseek-v4.1-flash`, range `0d503b7..fb0713b`, record
+`docs/tasks/s1-f2a-token-primitives.md`). No orchestration service exists yet;
+it stays blocked by the open `TODO(human)` items. GDPR (S1-G) and workspace
+shell (S1-H) remain later slices; no health records or product UI.
 
 ## 9. Human inputs still required
 
@@ -464,6 +470,54 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-30 — S1-F2A independent review PASS (reviewer: opencode-go/deepseek-v4.1-flash)
+
+- Scope: read-only independent review of the complete S1-F2A tree. Reviewer
+  `opencode-go/deepseek-v4.1-flash` (DeepSeek) — a different model than the
+  builder (SWE-2 High) — authored no part of the slice. No files were modified
+  during review; no repair was made.
+- Starting state: branch `main`, HEAD = `origin/main` =
+  `fb0713bdc67ed2d855622d2045fc3744137b2cda`, worktree clean; `git fetch origin`
+  confirmed the remote had not moved.
+- Reviewed: full range `0d503b7..fb0713b`, each commit separately (`7a9336b`
+  implementation, `fb0713b` docs); `lib/tokens/store.ts`, `lib/tokens.ts`,
+  `lib/credentials.ts`, `lib/tokens/crypto.ts`, `db/schema.prisma`, both
+  AccessToken migrations, and the S1-F2A unit/integration tests.
+- Real-PostgreSQL evidence (disposable DBs, since dropped): raw token absent from
+  every stored column (`CAST(row AS text) LIKE '%raw%'` = 0); independent SHA-256
+  digest match; email normalized identically to login; replacement revocation
+  revoked only the exact active matching invite/user-reset and left all other
+  rows byte-identical; claim malformed-rejected before DB work; wrong
+  scope/purpose/expired/revoked/consumed all `{ok:false}` with the row
+  unconsumed; two concurrent claims → exactly one success at Read Committed (one
+  `P2034` at Serializable, which propagates); rollback restored claimability and
+  removed a failed-after-issue row; inspection returned only
+  `{valid,purpose,expiresAt}` and `{valid:false}` for every invalid class; an
+  unexpected DB error propagated rather than being mislabeled invalid.
+- Constraint confirmation: TypeScript assignability probe showed a full
+  `PrismaClient` is not structurally excluded from the `Prisma.TransactionClient`
+  parameter (the store itself imports no global client) — recorded as a
+  non-blocking caller-discipline observation, not a defect.
+- Full gates (fresh disposable DBs, dropped): `git diff --check` 0; `npm ci` 0;
+  `prisma format` 0 (no schema diff), `validate` 0, `generate` 0;
+  `migrate deploy` 0 (7 migrations); `migrate status` 0; `format:check` 0;
+  `typecheck` 0; `lint` 0; `npm run test` 0 (287 passed / 29 files);
+  `test:integration` 0 (102 passed / 7 files, real PostgreSQL); `build` 0;
+  `test:e2e` 0 (21 passed). `npm audit`: 1 moderate + 4 high (unchanged
+  advisories; no `--force`, no dependency changes).
+- Verdict: **PASS**. This is documentation only; the reviewer introduced no
+  production-code, schema, migration, or test change, no service, route, UI,
+  email, PR, or deploy.
+- Commit/push/deploy: documentation commit recorded below; pushed to
+  `origin/main` per instruction; no PR, no deploy.
+- Known risks/blockers: unchanged — raw-token secrecy is caller discipline until
+  services exist; the optional claim scope is a lookup, not an authorization
+  boundary, and the orchestrator must revalidate the returned row; `target_email`
+  plaintext PII, retention undecided; `sessionVersion` inert until JWT wiring.
+- Next action: record Aleks's final policy decisions (not part of this range),
+  then plan the orchestration-service slice; it stays blocked until the open
+  `TODO(human)` items land and the service is separately reviewed.
 
 ### 2026-09-30 — S1-F2A internal token-store primitives (independent review PENDING)
 

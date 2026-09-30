@@ -4,6 +4,47 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-30 — S1-F2A independent review PASS (opencode-go/deepseek-v4.1-flash)
+
+- Read-only independent review of range `0d503b7..fb0713b` (HEAD `fb0713b`), each
+  commit (`7a9336b` implementation, `fb0713b` docs) inspected separately.
+  Independence: S1-F2A built by SWE-2 High; reviewer is a different model.
+  **PASS.**
+- Transaction boundary: every state-changing primitive takes a caller
+  `Prisma.TransactionClient`; the store imports no global client and opens no
+  transaction; rollback proven on real PostgreSQL (failed claim/issue leaves
+  `consumed_at` NULL / no row). (Observation: TS does not structurally exclude a
+  full `PrismaClient` from the tx parameter — convention, not compile error.)
+- Issuance: S1-F0 generation; only canonical 64-hex SHA-256 digest stored (raw
+  token absent from every column); expiry exactly +12 h; S1-F1 shapes satisfied;
+  RNG/DB failure fails closed.
+- Email: shared `normalizeEmail` (login-identical; trim+lowercase; no Gmail
+  rewriting); empty/non-string/>254 rejected structurally.
+- Replacement revocation: independently reproduced on real PostgreSQL — only the
+  exact matching active invite (and the exact user's reset) revoked; all other
+  rows byte-identical.
+- Atomic claim: conditional `updateMany` + exact-row retrieval; malformed rejected
+  before DB work; indistinguishable `{ok:false}`; concurrent claims → exactly one
+  success (Read Committed; `P2034` under Serializable — propagates); unexpected DB
+  errors propagate.
+- Inspection: only `{valid,purpose,expiresAt}`; malformed/missing/expired/revoked/
+  consumed all `{valid:false}` with no identity fields.
+- Exposure: both assertions fail closed; no email/fake-delivery seam, no
+  account/password/membership/profile/session/audit/RBAC mutation, no route/UI
+  import of the store; no registration or cross-workspace sharing.
+- Gates (fresh disposable DBs, dropped): `git diff --check` 0; `npm ci` 0;
+  prisma format/validate/generate 0; `migrate deploy` 0 (7); `migrate status` 0;
+  `format:check` 0; `typecheck` 0; `lint` 0; `npm run test` 0 (287/29);
+  `test:integration` 0 (102/7, real PG); `build` 0; `test:e2e` 0 (21).
+  `npm audit`: 1 moderate + 4 high (unchanged; no force-fix).
+- Non-blocking observations: `Prisma.TransactionClient`/`PrismaClient`
+  assignability (caller discipline); app-clock `expiresAt` vs DB-clock
+  `created_at` (fail-closed under extreme skew); `normalizeEmail` imported from
+  `lib/credentials.ts` (no cycle/DB coupling); Serializable loser returns `P2034`.
+- **S1-F2A is independently PASS at `fb0713b`.** No repair, service, route, UI,
+  email, PR, or deploy by the reviewer. Full S1-F still blocked on open
+  `TODO(human)` items; orchestration services remain blocked.
+
 ## 2026-09-30 — S1-F1 re-review PASS (opencode-go/deepseek-v4.1-flash)
 
 - Independent DeepSeek read-only re-review of the repaired tree at HEAD

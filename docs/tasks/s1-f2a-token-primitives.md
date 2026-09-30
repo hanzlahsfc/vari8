@@ -86,8 +86,93 @@ scope and asserts the row stays unconsumed — M6 then failed as required.
 `npm run test` 0 (287/29 files) · `test:integration` 0 (102/7 files, real PG) ·
 `build` 0 · `test:e2e` 0 (21).
 
+## Independent review — PASS (opencode-go/deepseek-v4.1-flash)
+
+Read-only independent review of range `0d503b7..fb0713b` (HEAD
+`fb0713bdc67ed2d855622d2045fc3744137b2cda`), each commit inspected separately
+(`7a9336b` implementation, `fb0713b` docs). Independence basis: S1-F2A was built
+by SWE-2 High; the reviewer `opencode-go/deepseek-v4.1-flash` is a different
+model and did not build this slice. No files were modified during review; no
+repair was made.
+
+- **Transaction boundary.** Every state-changing primitive requires a caller
+  `Prisma.TransactionClient`; `lib/tokens/store.ts` imports no global client and
+  opens no transaction. Rollback proven on real PostgreSQL: a claim followed by a
+  thrown error leaves `consumed_at` NULL; a failed-after-issue transaction leaves
+  no row. The suite catches a global-client escape (builder mutation: 10
+  failures). Caveat: `Prisma.TransactionClient` is `Omit<PrismaClient, …>`, so a
+  full `PrismaClient` is structurally assignable to the parameter — the guarantee
+  is convention + review, not a compile error (see observations).
+- **Issuance.** S1-F0 `generateAccessToken()` used; only the canonical 64-hex
+  SHA-256 digest reaches PostgreSQL (raw token absent from every stored column —
+  `CAST(row AS text) LIKE '%raw%'` count `0`); expiry exactly `+12 h` under faked
+  `Date`; invite/reset rows satisfy the S1-F1 CHECK shapes; RNG/DB failure fails
+  closed with no partial row; surrounding rollback removes the issued row.
+- **Email.** Issuance and revocation share `normalizedTargetEmail` →
+  `normalizeEmail` (`lib/credentials.ts`), identical to credential login (trim +
+  lowercase, no Gmail dot/plus rewriting); empty/non-string/>254 rejected
+  structurally. No cycle or database coupling (credentials → `lib/password.ts`).
+- **Replacement revocation.** Independently reproduced on real PostgreSQL: only
+  the matching `(workspace, purpose, email, role, unconsumed, unrevoked,
+unexpired)` invite was revoked; every other row byte-identical (cross-workspace,
+  cross-email, cross-role, reset, consumed, already-revoked, expired all
+  untouched). Reset revocation scoped to the exact user and purpose.
+- **Atomic claim.** Conditional `updateMany` (digest + purpose + optional scope +
+  `consumedAt/revokedAt IS NULL` + `expiresAt > now`) → `findUniqueOrThrow` for
+  the exact locked row. Malformed input rejected before any DB work;
+  `{ok:false}` indistinguishable across missing/wrong-purpose/expired/revoked/
+  consumed; two concurrent claims produced exactly one success at Read Committed
+  (one `P2034` at Serializable — propagates, never mislabeled); unexpected DB
+  errors propagate.
+- **Optional owner scope.** Omitted `workspaceId`/`userId` is a deliberate
+  lookup behavior, not a tenant bypass; the returned record exposes
+  `workspaceId`/`userId`/`targetEmail`/`intendedRole` so the orchestrator can
+  revalidate ownership/current state. No route, app, or service imports the store
+  (`grep`-verified), so no current exploit exists.
+- **Inspection.** `inspectAccessToken` returns only `{valid, purpose,
+expiresAt}`; malformed/missing/expired/revoked/consumed all returned
+  `{valid:false}` on real PostgreSQL with no identity field.
+- **Errors/leakage.** `TokenStoreError("invalid_input")` and
+  `TokenError("token_invalid")` carry the code only — no raw token, digest,
+  email, user/workspace id, or query parameters. Unexpected DB errors are not
+  converted to an invalid-token result.
+- **Exposure.** Both `assertTokenFlowsExternallyExposable` and
+  `assertTokenPrimitivesExternallyExposable` fail closed; no email or fake
+  delivery seam, no account/password/membership/profile/session/audit/RBAC
+  mutation, no registration or cross-workspace sharing was added.
+- **Test quality.** The 11 documented builder mutations target raw-token
+  persistence, TTL, every claim/revoke predicate, read-then-unconditional-update,
+  global-client escape, and secret-bearing errors; the critical database cases
+  were independently reproduced (above) beyond the committed suite.
+
+### Gates (reviewer-run, fresh disposable PostgreSQL databases, since dropped)
+
+`git diff --check` 0; `npm ci` 0; `npx prisma format` 0 (no schema diff);
+`validate` 0; `generate` 0; `migrate deploy` 0 (7 migrations); `migrate status` 0;
+`format:check` 0; `typecheck` 0; `lint` 0; `npm run test` 0 (287 passed / 29
+files); `test:integration` 0 (102 passed / 7 files, real PostgreSQL); `build` 0;
+`test:e2e` 0 (21 passed). `npm audit`: 1 moderate + 4 high (unchanged advisories;
+no `--force`).
+
+### Non-blocking observations
+
+- `Prisma.TransactionClient` does not structurally exclude a full `PrismaClient`;
+  a future orchestrator could pass the global client and write outside its
+  transaction. The module imports no global client itself, so this is a caller
+  discipline item — construct the tx only from `$transaction`.
+- The 12 h `expiresAt` uses the app clock while `created_at` defaults to the DB
+  clock; if the DB clock were >12 h ahead of the app clock, the
+  `expiry_after_creation` CHECK would reject the insert (fail-closed) — a
+  clock-skew availability caveat, not a security defect.
+- `normalizeEmail` lives in `lib/credentials.ts`; no cycle and no DB coupling, but
+  a shared pure util would be a cleaner home.
+- The losing Serializable claim surfaces `P2034`; the orchestrator must retry,
+  consistent with "unexpected DB errors propagate."
+
 ## Status
 
-**S1-F2A internal primitives implemented; no product flow exists; independent
-review required before any orchestration service.** Full S1-F remains blocked
-on the open `TODO(human)` items.
+**Independently reviewed PASS (`opencode-go/deepseek-v4.1-flash`, 2026-09-30) at
+`fb0713b`.** S1-F2A is internal primitives only — no product flow, service,
+authorization, audit coupling, delivery, route, UI, or external exposure. Full
+S1-F remains blocked on the open `TODO(human)` items; orchestration services stay
+blocked until those land and are separately reviewed.
