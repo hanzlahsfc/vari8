@@ -89,7 +89,13 @@ export type AuditMeta = {
   /** S1-F2C repair: structural acceptance outcome on INVITE/access_token events. */
   acceptedAs?:
     "NEW_USER" | "JOINED" | "ALREADY_MEMBER" | "ACTIVATED" | "RESTORED";
-  /** S1-F2D: request-vs-consume marker on PASSWORD_RESET/access_token events. */
+};
+
+/** S1-F2D: metadata allowed on ACCOUNT-scoped audit events only. Deliberately
+ * separate from workspace `AuditMeta` — reset markers must never be
+ * expressible on tenant-scoped rows. */
+export type AccountAuditMeta = {
+  /** Request-vs-consume marker on PASSWORD_RESET/access_token events. */
   resetStage?: "REQUESTED" | "COMPLETED";
 };
 
@@ -142,8 +148,49 @@ const META_VALIDATORS = new Map<keyof AuditMeta, (v: unknown) => boolean>([
       v === "ACTIVATED" ||
       v === "RESTORED",
   ],
-  ["resetStage", (v) => v === "REQUESTED" || v === "COMPLETED"],
 ]);
+
+/** Account-scope metadata allowlist — a separate closed set. */
+const ACCOUNT_META_VALIDATORS = new Map<
+  keyof AccountAuditMeta,
+  (v: unknown) => boolean
+>([["resetStage", (v) => v === "REQUESTED" || v === "COMPLETED"]]);
+
+/**
+ * Account-scope metadata sanitization — same fail-closed shape rules as the
+ * workspace sanitizer, but the allowlist is disjoint: `resetStage` lives only
+ * here and workspace keys (kind/role/acceptedAs/…) are rejected here.
+ */
+export function sanitizeAccountAuditMeta(
+  meta?: AccountAuditMeta,
+): AccountAuditMeta | undefined {
+  if (meta === undefined) return undefined;
+  if (meta === null || typeof meta !== "object" || Array.isArray(meta))
+    throw new AuditError("audit_metadata_forbidden");
+  const proto = Object.getPrototypeOf(meta);
+  if (proto !== Object.prototype && proto !== null)
+    throw new AuditError("audit_metadata_forbidden");
+  try {
+    const clean: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(meta)) {
+      const validator = ACCOUNT_META_VALIDATORS.get(
+        key as keyof AccountAuditMeta,
+      );
+      if (validator === undefined || validator(value) !== true)
+        throw new AuditError("audit_metadata_forbidden");
+      Object.defineProperty(clean, key, {
+        value,
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      });
+    }
+    return clean as AccountAuditMeta;
+  } catch (error) {
+    if (error instanceof AuditError) throw error;
+    throw new AuditError("audit_metadata_forbidden");
+  }
+}
 
 /**
  * Fail-closed metadata allowlist. Unknown keys — including `Object.prototype`
@@ -309,7 +356,8 @@ export type AccountAuditEventInput = {
   action: (typeof ACCOUNT_AUDIT_ACTIONS)[number];
   resourceType: (typeof ACCOUNT_AUDIT_RESOURCES)[number];
   resourceId?: string | null;
-  meta?: AuditMeta;
+  /** Account-scope metadata — a DIFFERENT closed set than workspace events. */
+  meta?: AccountAuditMeta;
 };
 
 /**
@@ -331,7 +379,7 @@ export function buildAccountAuditEvent(
     !(ACCOUNT_AUDIT_RESOURCES as readonly string[]).includes(input.resourceType)
   )
     throw new AuditError("audit_metadata_forbidden");
-  const meta = sanitizeAuditMeta(input.meta);
+  const meta = sanitizeAccountAuditMeta(input.meta);
   return {
     scope: "ACCOUNT",
     workspaceId: null,

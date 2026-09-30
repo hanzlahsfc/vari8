@@ -5,7 +5,11 @@ import { normalizeEmail } from "../credentials";
 import { hashPassword } from "../password";
 import { validatePasswordPolicy } from "../password-policy";
 import { prisma } from "../db";
-import { hashAccessToken, type RawAccessToken } from "../tokens/crypto";
+import {
+  hashAccessToken,
+  TokenError,
+  type RawAccessToken,
+} from "../tokens/crypto";
 import { claimAccessToken, issuePasswordResetToken } from "../tokens/store";
 
 /**
@@ -21,20 +25,22 @@ import { claimAccessToken, issuePasswordResetToken } from "../tokens/store";
  * - Lock order is always `users → access_token` — the same global order as
  *   S1-F2C (users row first). Request and consume cannot deadlock each other
  *   because both acquire the account's user row before touching token rows.
- * - The `users ... FOR UPDATE` row lock is the per-account serialization
- *   point AND the freshness barrier: a status change committed while we wait
- *   forces 40001 (P2010 → bounded retry → fresh snapshot → deny).
- * - Sibling revocation uses a `FOR UPDATE` scan keyed by PK: locking reads
- *   see rows committed after the tx snapshot, so a concurrent winner's fresh
- *   token is never invisible to a waiter's stale snapshot (the failure that
- *   motivated S1-F2C's second repair).
- * - Bounded retries (MAX_ATTEMPTS = 2) only for genuine serialization
- *   failures (P2034, or P2010 carrying SQLSTATE 40001/40P01). Unrelated or
- *   malformed P2002 never retries and never claims `serialization_conflict`.
+ * - The `users ... FOR UPDATE` row lock serializes writers on the EXISTING
+ *   user row and preserves lock ordering. It does NOT see rows inserted after
+ *   this transaction's snapshot — no locking read does. Correctness against
+ *   concurrent inserts comes from PostgreSQL SSI: the predicate read and the
+ *   concurrent insert conflict, one transaction is aborted (40001 → P2010),
+ *   and the bounded retry gives it a fresh snapshot that sees the winner's
+ *   row. Sibling revocation therefore relies on SSI + retry, not on
+ *   snapshot-transcending reads.
+ * - Bounded retries (MAX_ATTEMPTS below, plus small deterministic backoff)
+ *   only for genuine serialization failures (P2034, or P2010 carrying
+ *   SQLSTATE 40001/40P01). Unrelated or malformed P2002, application errors,
+ *   and delivery failures never retry and never claim `serialization_conflict`.
  *
- * The raw token leaves the service exactly once — post-commit, inside the
- * private `ResetDeliveryPayload`. It is never stored, logged, audited, or
- * included in errors. Provider, sender, domain, and URLs do not exist yet;
+ * The raw token leaves the service exactly once — post-commit, through the
+ * injected `deliver` sink. It is never stored, logged, audited, or included
+ * in errors. Provider, sender, domain, and URLs do not exist yet;
  * `assertPasswordResetOrchestrationExternallyExposable` fails closed. No
  * `app/**` file may import this module.
  */
@@ -95,9 +101,18 @@ function isRetryableConflict(error: unknown): boolean {
   );
 }
 
-/** Bounded retries — enough to outlast a small concurrent burst; never
- * an unbounded loop. Genuine serialization conflicts only. */
-const MAX_ATTEMPTS = 3;
+/**
+ * Bounded retries: enough headroom that an eight-way same-account burst
+ * resolves without `serialization_conflict` rejections (proven on real
+ * PostgreSQL), while staying a hard bound — never an unbounded loop.
+ * A small deterministic backoff between attempts lets waiters pass the
+ * user-row lock before colliding again.
+ */
+const MAX_ATTEMPTS = 8;
+const BACKOFF_BASE_MS = 10;
+const BACKOFF_CAP_MS = 50;
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 const STRUCTURAL_ERRORS = new Set([
   "PasswordResetError",
@@ -122,17 +137,14 @@ function mapResetError(error: unknown): never {
 
 // --- request ------------------------------------------------------------------
 
-/** Public outcome — existence only. Contains NO private delivery data when
- * the account is missing or not ACTIVE. */
+/** Public outcome — existence ONLY. Never carries delivery data, status,
+ * role, workspace, or any other account detail. */
 export type PasswordResetRequestResult = {
   outcome: "ACCOUNT_EXISTS" | "ACCOUNT_NOT_FOUND";
-  /** Private delivery data — present ONLY for an ACTIVE account that was
-   * issued a token. Structurally separate from the public existence bit. */
-  delivery?: ResetDeliveryPayload;
 };
 
-/** Private delivery payload — post-commit only, never part of the public
- * existence outcome's wire semantics. */
+/** Private delivery payload — passed to the injected sink post-commit only,
+ * never part of the public existence result. */
 export type ResetDeliveryPayload = {
   kind: "password_reset";
   to: string;
@@ -140,20 +152,34 @@ export type ResetDeliveryPayload = {
   expiresAt: Date;
 };
 
+/** Provider-neutral delivery port. Runs exactly once, after a successful
+ * commit, outside the transaction and outside the retry loop. A thrown
+ * delivery error surfaces as `reset_failed` and can never replay the
+ * committed mutation. */
+export type ResetDeliverySink = (
+  payload: ResetDeliveryPayload,
+) => void | Promise<void>;
+
 /**
  * Request a password reset for `email`. Any existing account returns
  * `ACCOUNT_EXISTS` (INVITED/DEACTIVATED included — but only ACTIVE accounts
  * are issued a token). The ACTIVE path runs in one Serializable transaction:
- * lock the user row → re-verify ACTIVE → lock+revoke outstanding siblings →
+ * lock the user row → re-verify ACTIVE → revoke outstanding siblings →
  * issue → audit. Audit failure rolls back revocation + issuance, so the
  * previous valid token is preserved when the replacement never committed.
+ *
+ * On success for an ACTIVE account the delivery sink is invoked exactly once
+ * with the private payload after the transaction commits. It is never called
+ * for missing accounts, non-ACTIVE accounts, or rolled-back issuance.
  */
 export async function requestPasswordReset(
   input: { email: unknown },
+  options: { deliver?: ResetDeliverySink } = {},
   client: PrismaClient = prisma,
 ): Promise<PasswordResetRequestResult> {
   const email = normalizedEmail(input.email);
 
+  let delivery: ResetDeliveryPayload | null = null;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
       const account = await client.user.findUnique({
@@ -164,11 +190,14 @@ export async function requestPasswordReset(
       // in-transaction ACTIVE re-check.
       if (!account) return { outcome: "ACCOUNT_NOT_FOUND" };
 
-      const delivery = await client.$transaction(
+      delivery = await client.$transaction(
         async (tx) => {
-          // 1. Serialize same-account requests + detect concurrent status
-          //    changes: users row lock FIRST (global order users →
-          //    access_token; consume locks in the same order).
+          // 1. Lock the existing user row first (global order users →
+          //    access_token — consume uses the same order, so request and
+          //    consume cannot deadlock each other). This serializes
+          //    same-account requests and turns a status change committed
+          //    during the wait into a 40001/P2010 serialization failure →
+          //    bounded retry → fresh snapshot → deny.
           const rows = await tx.$queryRawUnsafe<
             Array<{ id: string; status: string }>
           >(
@@ -177,9 +206,11 @@ export async function requestPasswordReset(
           );
           const current = rows[0];
           if (!current || current.status !== "ACTIVE") return null; // exists-only; zero mutations
-          // 2. Locking scan of outstanding siblings — sees rows committed
-          //    after our snapshot, so a concurrent winner's fresh token is
-          //    never invisible here.
+          // 2. Lock the user's currently-visible outstanding reset tokens.
+          //    This coordinates EXISTING rows only — a concurrent winner's
+          //    insert committed after our snapshot is not visible here; that
+          //    race is caught by the SSI predicate-read/insert conflict, which
+          //    aborts one transaction into the bounded retry above.
           const siblings = await tx.$queryRawUnsafe<Array<{ id: string }>>(
             `SELECT "id" FROM "access_token"
              WHERE "user_id" = $1
@@ -216,15 +247,26 @@ export async function requestPasswordReset(
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );
-      return delivery
-        ? { outcome: "ACCOUNT_EXISTS", delivery }
-        : { outcome: "ACCOUNT_EXISTS" };
+      break;
     } catch (error) {
-      if (isRetryableConflict(error) && attempt < MAX_ATTEMPTS) continue;
+      if (isRetryableConflict(error) && attempt < MAX_ATTEMPTS) {
+        await sleep(Math.min(attempt * BACKOFF_BASE_MS, BACKOFF_CAP_MS));
+        continue;
+      }
       throw mapResetError(error);
     }
   }
-  throw new PasswordResetError("serialization_conflict");
+  if (delivery) {
+    // Private delivery runs exactly once, post-commit, outside the retry
+    // loop — a delivery error maps to reset_failed and cannot replay the
+    // committed issuance.
+    try {
+      await options.deliver?.(delivery);
+    } catch {
+      throw new PasswordResetError("reset_failed");
+    }
+  }
+  return { outcome: "ACCOUNT_EXISTS" };
 }
 
 // --- consume ------------------------------------------------------------------
@@ -234,23 +276,26 @@ export type PasswordResetConsumeResult = {
 };
 
 /**
- * Consume a password-reset token. Password policy + hashing run BEFORE the
- * transaction (a policy failure can never have claimed the token). Inside one
- * Serializable transaction: resolve the token's bound user → lock the user
- * row → require ACTIVE → atomic conditional claim → lock+revoke siblings →
- * passwordHash + sessionVersion++ → account audit → commit. Every failure
- * rolls back every effect including the claim.
+ * Consume a password-reset token. Order is deliberate: the raw token is
+ * validated structurally FIRST (malformed input never triggers password
+ * work or a database mutation), then the password policy + scrypt hash run
+ * BEFORE the transaction (a policy failure can never have claimed the
+ * token). Inside one Serializable transaction: resolve the token's bound
+ * user → lock the user row → require ACTIVE → atomic conditional claim →
+ * revoke siblings → passwordHash + sessionVersion++ → account audit →
+ * commit. Every failure rolls back every effect including the claim.
  */
 export async function resetPasswordWithToken(
   input: { rawToken: unknown; password: unknown },
   client: PrismaClient = prisma,
 ): Promise<PasswordResetConsumeResult> {
-  // Structural token validation happens inside claimAccessToken; validating
-  // the password first guarantees a policy failure cannot consume the token.
+  // 1. Structural token validation — malformed input dies here, before any
+  //    password hashing or database work.
+  const tokenHash = safeTokenHash(input.rawToken);
+  // 2. Password policy + hashing — still outside the transaction, so a
+  //    policy failure cannot have claimed anything.
   const normalizedPassword = validatePasswordPolicy(input.password);
   const passwordHash = await hashPassword(normalizedPassword);
-  // Malformed token input fails structurally before any database work.
-  const tokenHash = safeTokenHash(input.rawToken);
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
@@ -265,8 +310,9 @@ export async function resetPasswordWithToken(
           const userId = row?.purpose === "PASSWORD_RESET" ? row.userId : null;
           if (!userId) throw new PasswordResetError("invalid_token");
 
-          // users row lock FIRST (shared order) — serializes against request
-          // and any concurrent sibling consume; a committed status change
+          // users row lock FIRST (shared order users → access_token) —
+          // serializes this consume against same-account requests and sibling
+          // consumes on the EXISTING user row; a committed status change
           // during the wait forces a serialization retry.
           const users = await tx.$queryRawUnsafe<
             Array<{ id: string; status: string }>
@@ -285,8 +331,8 @@ export async function resetPasswordWithToken(
           });
           if (!claim.ok) throw new PasswordResetError("invalid_token");
 
-          // Lock + revoke outstanding siblings (locking read sees the freshest
-          // committed rows even under this tx's older snapshot).
+          // Lock + revoke outstanding siblings — coordinates existing rows;
+          // post-snapshot inserts are handled by the SSI conflict + retry.
           const siblings = await tx.$queryRawUnsafe<Array<{ id: string }>>(
             `SELECT "id" FROM "access_token"
              WHERE "user_id" = $1
@@ -315,9 +361,12 @@ export async function resetPasswordWithToken(
           if (updated.count === 0)
             throw new PasswordResetError("invalid_token");
 
+          // Consumption is authenticated by the bearer token, NOT a user
+          // session — actor stays null; the account itself is the subject.
           await writeAccountAuditEvent(tx, {
             subjectUserId: userId,
-            actorUserId: userId,
+            actorUserId: null,
+            actorRole: null,
             action: "PASSWORD_RESET",
             resourceType: "access_token",
             resourceId: claim.token.id,
@@ -328,19 +377,29 @@ export async function resetPasswordWithToken(
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );
     } catch (error) {
-      if (isRetryableConflict(error) && attempt < MAX_ATTEMPTS) continue;
+      if (isRetryableConflict(error) && attempt < MAX_ATTEMPTS) {
+        await sleep(Math.min(attempt * BACKOFF_BASE_MS, BACKOFF_CAP_MS));
+        continue;
+      }
       throw mapResetError(error);
     }
   }
   throw new PasswordResetError("serialization_conflict");
 }
 
-/** Hash-or-die — malformed input becomes the shared invalid surface. */
+/**
+ * Structural hash-or-die. A `TokenError` means the input is malformed → the
+ * shared `invalid_token` surface. Any OTHER (unexpected internal) failure is
+ * `reset_failed` — never misclassified, never echoing the original message
+ * or the submitted token.
+ */
 function safeTokenHash(rawToken: unknown): string {
   try {
     return hashAccessToken(rawToken);
-  } catch {
-    throw new PasswordResetError("invalid_token");
+  } catch (error) {
+    if (error instanceof TokenError)
+      throw new PasswordResetError("invalid_token");
+    throw new PasswordResetError("reset_failed");
   }
 }
 

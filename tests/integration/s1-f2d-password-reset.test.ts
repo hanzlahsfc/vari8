@@ -11,6 +11,7 @@ import {
   PasswordResetError,
   requestPasswordReset,
   resetPasswordWithToken,
+  type ResetDeliveryPayload,
 } from "../../lib/auth/password-reset";
 import { hashPassword, verifyPassword } from "../../lib/password";
 import { generateAccessToken, hashAccessToken } from "../../lib/tokens/crypto";
@@ -85,8 +86,23 @@ describe.skipIf(!enabled)(
         orderBy: { id: "asc" },
       });
     }
-    const request = (email: unknown) =>
-      requestPasswordReset({ email }, prisma as never);
+    const request = (
+      email: unknown,
+      opts?: {
+        deliver?: (p: ResetDeliveryPayload) => void | Promise<void>;
+      },
+    ) => requestPasswordReset({ email }, opts ?? {}, prisma as never);
+    async function requestForToken(
+      email: string,
+    ): Promise<ResetDeliveryPayload> {
+      const payloads: ResetDeliveryPayload[] = [];
+      const r = await request(email, {
+        deliver: (pl) => void payloads.push(pl),
+      });
+      expect(r).toEqual({ outcome: "ACCOUNT_EXISTS" });
+      expect(payloads).toHaveLength(1);
+      return payloads[0];
+    }
     const consume = (rawToken: unknown, password: unknown = NEW_PASSWORD) =>
       resetPasswordWithToken({ rawToken, password }, prisma as never);
 
@@ -106,25 +122,29 @@ describe.skipIf(!enabled)(
 
     it("ACTIVE user → ACCOUNT_EXISTS + exactly one delivery payload + 12h expiry", async () => {
       const u = await mkUser();
-      const r = await request(`  ${u.email.toUpperCase()}  `);
-      expect(r.outcome).toBe("ACCOUNT_EXISTS");
-      const delivery = r.delivery;
-      expect(delivery).toBeDefined();
-      expect(delivery!.kind).toBe("password_reset");
-      expect(delivery!.to).toBe(u.email);
-      expect(delivery!.rawToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
+      const payloads: ResetDeliveryPayload[] = [];
+      const r = await request(`  ${u.email.toUpperCase()}  `, {
+        deliver: (pl) => void payloads.push(pl),
+      });
+      // Public result carries existence ONLY — never a delivery property.
+      expect(r).toEqual({ outcome: "ACCOUNT_EXISTS" });
+      expect(Object.keys(r)).toEqual(["outcome"]);
+      expect(payloads).toHaveLength(1);
+      const delivery = payloads[0];
+      expect(delivery.kind).toBe("password_reset");
+      expect(delivery.to).toBe(u.email);
+      expect(delivery.rawToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
       // Exactly 12h (shared ACCESS_TOKEN_TTL_MS), within a small skew.
-      const delta = delivery!.expiresAt.getTime() - Date.now();
+      const delta = delivery.expiresAt.getTime() - Date.now();
       expect(delta).toBeGreaterThan(12 * 3600_000 - 60_000);
       expect(delta).toBeLessThanOrEqual(12 * 3600_000);
       const tokens = await activeResetTokens(u.id);
       expect(tokens).toHaveLength(1);
       // Hash-only persistence: the raw token never appears in any column.
       const row = tokens[0];
-      expect(row.tokenHash).toBe(hashAccessToken(delivery!.rawToken));
-      expect(JSON.stringify(row)).not.toContain(delivery!.rawToken);
-      // Public outcome reveals existence only — no status/role/detail fields.
-      expect(Object.keys(r).sort()).toEqual(["delivery", "outcome"]);
+      expect(row.tokenHash).toBe(hashAccessToken(delivery.rawToken));
+      expect(JSON.stringify(row)).not.toContain(delivery.rawToken);
+
       const audit = await accountAudit(u.id);
       expect(audit).toHaveLength(1);
       expect(audit[0]).toMatchObject({
@@ -141,8 +161,10 @@ describe.skipIf(!enabled)(
     it("INVITED and DEACTIVATED accounts → ACCOUNT_EXISTS, no token/audit", async () => {
       for (const status of ["INVITED", "DEACTIVATED"] as const) {
         const u = await mkUser({ status });
-        const r = await request(u.email);
+        let called = 0;
+        const r = await request(u.email, { deliver: () => void called++ });
         expect(r).toEqual({ outcome: "ACCOUNT_EXISTS" });
+        expect(called).toBe(0);
         expect(await activeResetTokens(u.id)).toHaveLength(0);
         expect(await accountAudit(u.id)).toHaveLength(0);
       }
@@ -151,9 +173,9 @@ describe.skipIf(!enabled)(
     it("replacement revokes only that user's outstanding tokens", async () => {
       const a = await mkUser();
       const b = await mkUser();
-      const r1 = await request(a.email);
-      const rb = await request(b.email);
-      const r2 = await request(a.email);
+      const r1 = await requestForToken(a.email);
+      const rb = await requestForToken(b.email);
+      const r2 = await requestForToken(a.email);
       const aTokens = await prisma.accessToken.findMany({
         where: { userId: a.id, purpose: "PASSWORD_RESET" },
         orderBy: { createdAt: "asc" },
@@ -163,23 +185,43 @@ describe.skipIf(!enabled)(
       expect(aTokens[1].revokedAt).toBeNull();
       // b's token untouched; the stale a token can no longer consume.
       expect(await activeResetTokens(b.id)).toHaveLength(1);
-      await expect(consume(r1.delivery!.rawToken)).rejects.toMatchObject({
+      await expect(consume(r1.rawToken)).rejects.toMatchObject({
         code: "invalid_token",
       });
-      expect((await consume(r2.delivery!.rawToken)).changed).toBe(true);
+      expect((await consume(r2.rawToken)).changed).toBe(true);
       void rb;
     });
 
     it("concurrent requests leave exactly one active token", async () => {
       const u = await mkUser();
+      let delivered = 0;
+      const sink = { deliver: () => void delivered++ };
       const results = await Promise.all([
-        request(u.email),
-        request(u.email),
-        request(u.email),
+        request(u.email, sink),
+        request(u.email, sink),
+        request(u.email, sink),
       ]);
-      const delivered = results.filter((r) => r.delivery).length;
+      for (const r of results) expect(r).toEqual({ outcome: "ACCOUNT_EXISTS" });
       expect(delivered).toBeGreaterThanOrEqual(1);
       expect(await activeResetTokens(u.id)).toHaveLength(1);
+    });
+
+    it("repeated 3-way and 8-way bursts: one active token, zero rejections", async () => {
+      // Regression for the availability finding: 8-way bursts previously
+      // produced serialization_conflict on 48/80 operations.
+      for (let burst = 0; burst < 10; burst++) {
+        const u = await mkUser();
+        const fanout = burst % 2 === 0 ? 8 : 3;
+        const results = await Promise.allSettled(
+          Array.from({ length: fanout }, () => request(u.email)),
+        );
+        for (const r of results) {
+          expect(r.status, JSON.stringify(r)).toBe("fulfilled");
+          if (r.status === "fulfilled")
+            expect(r.value).toEqual({ outcome: "ACCOUNT_EXISTS" });
+        }
+        expect(await activeResetTokens(u.id)).toHaveLength(1);
+      }
     });
 
     it("user deactivated mid-request fails closed — no token issued", async () => {
@@ -206,7 +248,7 @@ describe.skipIf(!enabled)(
 
     it("audit failure rolls back revocation — prior token survives", async () => {
       const u = await mkUser();
-      const r1 = await request(u.email);
+      const r1 = await requestForToken(u.email);
       const first = (
         await prisma.accessToken.findMany({
           where: { userId: u.id },
@@ -240,7 +282,7 @@ describe.skipIf(!enabled)(
         },
       });
       await expect(
-        requestPasswordReset({ email: u.email }, bad as never),
+        requestPasswordReset({ email: u.email }, {}, bad as never),
       ).rejects.toMatchObject({ name: "AuditError" });
       const row = await prisma.accessToken.findUniqueOrThrow({
         where: { id: first.id },
@@ -254,9 +296,9 @@ describe.skipIf(!enabled)(
 
     it("valid token: password changes, sv +1, siblings revoked, audit written", async () => {
       const u = await mkUser();
-      const r1 = await request(u.email);
-      const r2 = await request(u.email); // r1 now revoked (sibling)
-      const res = await consume(r2.delivery!.rawToken);
+      const r1 = await requestForToken(u.email);
+      const r2 = await requestForToken(u.email); // r1 revoked (sibling)
+      const res = await consume(r2.rawToken);
       expect(res.changed).toBe(true);
       const after = await prisma.user.findUniqueOrThrow({
         where: { id: u.id },
@@ -275,12 +317,13 @@ describe.skipIf(!enabled)(
       expect(completed[0]).toMatchObject({
         action: "PASSWORD_RESET",
         resourceType: "access_token",
-        actorUserId: u.id,
+        actorUserId: null,
+        actorRole: null,
         workspaceId: null,
         subjectUserId: u.id,
       });
       // Consumed token cannot be reused.
-      await expect(consume(r2.delivery!.rawToken)).rejects.toMatchObject({
+      await expect(consume(r2.rawToken)).rejects.toMatchObject({
         code: "invalid_token",
       });
       void r1;
@@ -369,23 +412,21 @@ describe.skipIf(!enabled)(
 
     it("password-policy failure never consumes the token", async () => {
       const u = await mkUser();
-      const r = await request(u.email);
-      await expect(
-        consume(r.delivery!.rawToken, "short"),
-      ).rejects.toMatchObject({
+      const d = await requestForToken(u.email);
+      await expect(consume(d.rawToken, "short")).rejects.toMatchObject({
         name: "PasswordPolicyError",
         code: "password_too_short",
       });
       // Token still valid — a corrected password succeeds.
-      expect((await consume(r.delivery!.rawToken)).changed).toBe(true);
+      expect((await consume(d.rawToken)).changed).toBe(true);
     });
 
     it("concurrent same-token consumes: exactly one winner", async () => {
       const u = await mkUser();
-      const r = await request(u.email);
+      const d = await requestForToken(u.email);
       const results = await Promise.allSettled([
-        consume(r.delivery!.rawToken),
-        consume(r.delivery!.rawToken),
+        consume(d.rawToken),
+        consume(d.rawToken),
       ]);
       const wins = results.filter(
         (x) => x.status === "fulfilled" && x.value.changed,
@@ -427,8 +468,8 @@ describe.skipIf(!enabled)(
 
     it("no token/password/email/hash canaries in audit, errors, or output", async () => {
       const u = await mkUser({ password: "canary-old-passphrase-1" });
-      const r = await request(u.email);
-      const raw = r.delivery!.rawToken;
+      const d = await requestForToken(u.email);
+      const raw = d.rawToken;
       const hash = hashAccessToken(raw);
       const canaries = [raw, hash, u.email, NEW_PASSWORD, "canary-old"];
       const res = await consume(raw);
@@ -493,8 +534,8 @@ describe.skipIf(!enabled)(
       const staleCookie = await sessionJwtCookie({ sub: u.id, sv: 0 });
       expect((await authForCookie(staleCookie))?.user?.id).toBe(u.id);
 
-      const r = await request(u.email);
-      await consume(r.delivery!.rawToken);
+      const d = await requestForToken(u.email);
+      await consume(d.rawToken);
 
       // Old session dead through the real jwt-callback gate.
       await expect(authForCookie(staleCookie)).resolves.toBeNull();
@@ -536,16 +577,40 @@ describe.skipIf(!enabled)(
       });
       expect((await authForCookie(freshCookie))?.user?.id).toBe(u.id);
 
-      // Update payload cannot resurrect the stale session.
+      // Real CSRF-gated session update cannot resurrect the stale session.
+      const csrfRes = await handlers.GET(
+        new NextRequest("http://localhost/api/auth/csrf"),
+      );
+      expect(csrfRes.status).toBe(200);
+      const { csrfToken } = (await csrfRes.json()) as { csrfToken: string };
+      const csrfCookie = csrfRes.headers
+        .getSetCookie()
+        .find((c) => c.includes("csrf-token"));
+      expect(csrfCookie).toBeTruthy();
       const up = await handlers.POST(
         new NextRequest("http://localhost/api/auth/session", {
           method: "POST",
-          headers: { cookie: staleCookie, "content-type": "application/json" },
-          body: JSON.stringify({ data: { sv: 1 } }),
+          headers: {
+            cookie: `${staleCookie}; ${csrfCookie!.split(";")[0]}`,
+            "content-type": "application/x-www-form-urlencoded",
+          },
+          body: `csrfToken=${encodeURIComponent(csrfToken)}&data=${encodeURIComponent(JSON.stringify({ sv: 1 }))}`,
         }),
       );
-      const body = await up.json().catch(() => null);
-      expect(body === null || up.status !== 200).toBe(true);
+      expect(up.status).toBe(200);
+      await expect(up.json()).resolves.toBeNull();
+      expect(
+        up.headers
+          .getSetCookie()
+          .some(
+            (c) =>
+              c.startsWith(`${COOKIE_NAME}=`) &&
+              /(Max-Age=0|Expires=Thu, 01 Jan 1970|expires=Thu, 01 Jan 1970)/i.test(
+                c,
+              ),
+          ),
+      ).toBe(true);
+      await expect(authForCookie(staleCookie)).resolves.toBeNull();
     });
 
     // --- exposure -----------------------------------------------------------------
