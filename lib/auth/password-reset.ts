@@ -174,9 +174,19 @@ export type ResetDeliverySink = (
  */
 export async function requestPasswordReset(
   input: { email: unknown },
-  options: { deliver?: ResetDeliverySink } = {},
+  options: { deliver: ResetDeliverySink },
   client: PrismaClient = prisma,
 ): Promise<PasswordResetRequestResult> {
+  // The delivery sink is MANDATORY — without it, a successful issuance would
+  // discard the only copy of the raw token. Reject before any lookup,
+  // transaction, revocation, issuance, or audit (JavaScript callers cannot
+  // bypass a merely-typed contract).
+  if (
+    options === null ||
+    typeof options !== "object" ||
+    typeof options.deliver !== "function"
+  )
+    throw new PasswordResetError("invalid_input");
   const email = normalizedEmail(input.email);
 
   let delivery: ResetDeliveryPayload | null = null;

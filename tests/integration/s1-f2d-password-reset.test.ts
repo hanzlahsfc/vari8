@@ -91,7 +91,12 @@ describe.skipIf(!enabled)(
       opts?: {
         deliver?: (p: ResetDeliveryPayload) => void | Promise<void>;
       },
-    ) => requestPasswordReset({ email }, opts ?? {}, prisma as never);
+    ) =>
+      requestPasswordReset(
+        { email },
+        { deliver: opts?.deliver ?? (() => {}) },
+        prisma as never,
+      );
     async function requestForToken(
       email: string,
     ): Promise<ResetDeliveryPayload> {
@@ -282,7 +287,11 @@ describe.skipIf(!enabled)(
         },
       });
       await expect(
-        requestPasswordReset({ email: u.email }, {}, bad as never),
+        requestPasswordReset(
+          { email: u.email },
+          { deliver: () => {} },
+          bad as never,
+        ),
       ).rejects.toMatchObject({ name: "AuditError" });
       const row = await prisma.accessToken.findUniqueOrThrow({
         where: { id: first.id },

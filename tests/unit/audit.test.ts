@@ -421,6 +421,24 @@ describe("buildAccountAuditEvent (S1-F2B)", () => {
         { subjectUserId: "" },
         { action: "PASSWORD_RESET", resourceType: "user" },
       ],
+      // S1-F2D repair: resetStage metadata is valid ONLY on
+      // PASSWORD_RESET/access_token — never on the user resource.
+      [
+        { subjectUserId: "s" },
+        {
+          action: "PASSWORD_RESET",
+          resourceType: "user",
+          meta: { resetStage: "REQUESTED" },
+        },
+      ],
+      [
+        { subjectUserId: "s" },
+        {
+          action: "PASSWORD_RESET",
+          resourceType: "user",
+          meta: { resetStage: "COMPLETED" },
+        },
+      ],
     ] as const) {
       expect(() =>
         buildAccountAuditEvent(args[0] as never, args[1] as never),

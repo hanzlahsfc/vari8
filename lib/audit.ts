@@ -352,13 +352,27 @@ export type AccountAuditContext = {
   actorRole?: MemberRole | null;
 };
 
-export type AccountAuditEventInput = {
-  action: (typeof ACCOUNT_AUDIT_ACTIONS)[number];
-  resourceType: (typeof ACCOUNT_AUDIT_RESOURCES)[number];
-  resourceId?: string | null;
-  /** Account-scope metadata — a DIFFERENT closed set than workspace events. */
-  meta?: AccountAuditMeta;
-};
+/**
+ * S1-F2D repair: account audit input is a discriminated union. `resetStage`
+ * metadata is valid ONLY on `PASSWORD_RESET`/`access_token` — the user
+ * resource accepts no metadata. Runtime enforcement lives in
+ * `buildAccountAuditEvent` for callers bypassing TypeScript.
+ */
+export type AccountAuditEventInput =
+  | {
+      action: "PASSWORD_RESET";
+      resourceType: "access_token";
+      resourceId?: string | null;
+      /** Account-scope metadata — a DIFFERENT closed set than workspace
+       * events; valid only on the access_token resource. */
+      meta?: AccountAuditMeta;
+    }
+  | {
+      action: "PASSWORD_RESET";
+      resourceType: "user";
+      resourceId?: string | null;
+      meta?: undefined;
+    };
 
 /**
  * Build an ACCOUNT-scoped audit row. Fails closed on any action/resource
@@ -377,6 +391,13 @@ export function buildAccountAuditEvent(
   if (
     !(ACCOUNT_AUDIT_ACTIONS as readonly string[]).includes(input.action) ||
     !(ACCOUNT_AUDIT_RESOURCES as readonly string[]).includes(input.resourceType)
+  )
+    throw new AuditError("audit_metadata_forbidden");
+  if (
+    input.meta !== undefined &&
+    !(
+      input.action === "PASSWORD_RESET" && input.resourceType === "access_token"
+    )
   )
     throw new AuditError("audit_metadata_forbidden");
   const meta = sanitizeAccountAuditMeta(input.meta);

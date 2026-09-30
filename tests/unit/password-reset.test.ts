@@ -46,7 +46,7 @@ describe("S1-F2D password-reset — unit surface", () => {
   it("invalid inputs fail structurally without touching a database", async () => {
     for (const email of [undefined, null, 42, "", "   ", {}, "@x", "a@"]) {
       await expect(
-        requestPasswordReset({ email }, {}, {} as never),
+        requestPasswordReset({ email }, { deliver: () => {} }, {} as never),
       ).rejects.toMatchObject({
         name: "PasswordResetError",
         code: "invalid_input",
@@ -96,7 +96,7 @@ describe("S1-F2D password-reset — unit surface", () => {
       },
     };
     await expect(
-      requestPasswordReset({ email: "x@example.test" }, {}, {
+      requestPasswordReset({ email: "x@example.test" }, { deliver: () => {} }, {
         ...client,
         user: {
           findUnique: async () => ({ id: "u", status: "ACTIVE" }),
@@ -119,7 +119,11 @@ describe("S1-F2D password-reset — unit surface", () => {
       },
     };
     await expect(
-      requestPasswordReset({ email: "x@example.test" }, {}, client as never),
+      requestPasswordReset(
+        { email: "x@example.test" },
+        { deliver: () => {} },
+        client as never,
+      ),
     ).rejects.toMatchObject({ code: "serialization_conflict" });
     expect(attempts).toBe(8); // bounded MAX_ATTEMPTS
   });
@@ -189,6 +193,44 @@ describe("S1-F2D password-reset — unit surface", () => {
     expect(txCalls).toBe(1);
   });
 
+  it("deliver sink is mandatory — rejected before any database access", async () => {
+    let lookups = 0;
+    let txCalls = 0;
+    const probe = {
+      user: {
+        findUnique: async () => {
+          lookups++;
+          return { id: "u", status: "ACTIVE" };
+        },
+      },
+      $transaction: async () => {
+        txCalls++;
+        throw new Error("should never run");
+      },
+    };
+    for (const options of [
+      undefined,
+      {},
+      { deliver: undefined },
+      { deliver: null },
+      { deliver: 42 },
+      { deliver: "x" },
+    ]) {
+      await expect(
+        requestPasswordReset(
+          { email: "u@example.test" },
+          options as never,
+          probe as never,
+        ),
+      ).rejects.toMatchObject({
+        name: "PasswordResetError",
+        code: "invalid_input",
+      });
+    }
+    expect(lookups).toBe(0);
+    expect(txCalls).toBe(0);
+  });
+
   it("resetStage is scoped to account PASSWORD_RESET audit only", () => {
     // Workspace audit construction must reject it.
     expect(() =>
@@ -231,6 +273,26 @@ describe("S1-F2D password-reset — unit surface", () => {
         },
       ),
     ).toThrow("audit_metadata_forbidden");
+    // PASSWORD_RESET/user keeps its S1-F2B allowed shape — but resetStage
+    // metadata is forbidden on it.
+    const userRow = buildAccountAuditEvent(
+      { subjectUserId: "u1" },
+      { action: "PASSWORD_RESET", resourceType: "user", resourceId: "u1" },
+    );
+    expect(userRow.scope).toBe("ACCOUNT");
+    expect(userRow).not.toHaveProperty("meta");
+    for (const stage of ["REQUESTED", "COMPLETED"] as const) {
+      expect(() =>
+        buildAccountAuditEvent(
+          { subjectUserId: "u1" },
+          {
+            action: "PASSWORD_RESET",
+            resourceType: "user",
+            meta: { resetStage: stage } as never,
+          },
+        ),
+      ).toThrow("audit_metadata_forbidden");
+    }
     expect(() =>
       buildAccountAuditEvent(
         { subjectUserId: "u1" },
