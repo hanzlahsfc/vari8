@@ -8,8 +8,16 @@ stakeholder decisions). This document does not authorize a push, PR, deploy, or 
    placeholders or source names, not an approved product name.
 2. **The sheets are the base and core.** The 11-sheet professional workbook is the product's
    specification and source of truth.
-3. **Faithful layouts.** Reproduce the sheet layouts and information architecture faithfully in
-   the web UI; do not independently redesign them.
+3. **Layouts per form factor.** ~~Reproduce the sheet layouts and information architecture faithfully in
+   the web UI; do not independently redesign them.~~ **SUPERSEDED (2026-09-30):**
+   the sheets remain the source of data, workflow, relationships, and information
+   architecture, but the literal spreadsheet layout is not the final UI. The app
+   requires a full desktop/web redesign plus platform-appropriate tablet and
+   mobile interfaces — one design system, per-form-factor navigation/density/
+   panels, never a stretched or shrunk shared layout. Prime Tracker's visual
+   design is not the target; the Prime Tracker repository is Marcel and Mike's
+   and must not be modified. Product name still undecided.
+   (Relayed by Hanzlah, 2026-09-30.)
 4. **Data lives in the app.** Implement the sheet data and behavior inside the application; do
    not link to or embed the live sheets as the product.
 5. **Sheet-derived catalogs.** Replace Prime State's food/exercise master data with the

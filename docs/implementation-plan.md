@@ -12,7 +12,10 @@ Product placeholder name: **"App"** (final name TBD). The repository slug
 Build the technical foundation and the spreadsheet-extraction pipeline for a new coaching
 web app whose data and layouts come from the 11-sheet PRGRSS 2.0 workbook. The sheets are the
 product source of truth; the workbook layouts and information architecture must be
-reproduced faithfully, not redesigned. This task builds **only** the foundation and the
+reproduced as the DATA and information architecture — but NOT the literal UI.
+(Latest direction, relayed by Hanzlah 2026-09-30: complete desktop/web redesign
+with platform-appropriate tablet/mobile interfaces — one design system,
+per-form-factor layouts; Prime Tracker's visual design is not the target.) This task builds **only** the foundation and the
 extraction pipeline — not the product modules.
 
 ## 2. Non-goals
