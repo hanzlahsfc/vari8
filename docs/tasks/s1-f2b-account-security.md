@@ -95,3 +95,124 @@ inspect-only. Disposable DBs dropped after.
 
 Independent **different-model** review of the whole S1-F2B diff is mandatory
 before S1-F2C/2D or any route work. Builder (SWE-2 High) does not approve.
+
+---
+
+## Implementation record (2026-09-30, builder: SWE-2 High)
+
+**Commits:** `540c4e2` plan · `3db9e6d` audit schema/service · `4bdf118`
+password/session/cleanup · test-strengthening + docs commits after mutation
+review.
+
+### Files/schema changed
+
+- `db/schema.prisma`: `AuditScope` enum; `AuditEvent.scope` (+`WORKSPACE`
+  default), `workspaceId`→nullable, `subjectUserId`→`User` (`Restrict`),
+  `@@index([subjectUserId, at])`; `AuditAction` += `PASSWORD_RESET`.
+- `db/migrations/20260930170000_stage1_account_security/migration.sql` —
+  additive; named CHECKs `audit_event_workspace_scope_shape` /
+  `audit_event_account_scope_shape`; index `audit_event_subject_user_id_at_idx`.
+- `lib/audit.ts`: `AUDIT_ACTIONS`/`AUDIT_RESOURCE_TYPES` extended;
+  `ACCOUNT_AUDIT_ACTIONS`/`ACCOUNT_AUDIT_RESOURCES`; `buildAccountAuditEvent`,
+  `writeAccountAuditEvent` (tx-only, P2034 pass-through);
+  `listAccountAuditEvents` (internal, subject+ACCOUNT locked, 25/100 bounded,
+  minimal fields); workspace writer emits `scope:"WORKSPACE"`; `listAuditEvents`
+  hard-filters `scope:"WORKSPACE"`.
+- `lib/password-policy.ts` (new): `validatePasswordPolicy` → NFC-normalized
+  string; 10–128 code points; structural `password_too_short`/`password_too_long`.
+- `lib/password.ts`: NFC at both hash and verify boundaries.
+- `lib/credentials.ts`: `sessionVersion` on `CredentialRecord`/`AuthorizedUser`.
+- `lib/auth/session.ts` (new): `isValidSessionVersionClaim`,
+  `sessionVersionAllowed` (fresh PK read, fail-closed),
+  `prismaSessionUserLookup`, `createSessionCallbacks`, `authNodeCallbacks`
+  (the object wired into `auth.ts`); `JWT.sv`/`User.sessionVersion` module
+  augmentations.
+- `auth.ts`: credentials select += `sessionVersion`; `callbacks:
+authNodeCallbacks` (base callbacks delegated, `auth.config.ts` still
+  Prisma-free).
+- `lib/tokens/store.ts`: `ACCESS_TOKEN_TERMINAL_RETENTION_MS` (30d),
+  `ACCESS_TOKEN_CLEANUP_BATCH_LIMIT` (1000), `cleanupTerminalAccessTokens`
+  (CTE + DELETE…RETURNING).
+- `lib/tokens.ts`: `assertAccountSecurityExternallyExposable` + updated
+  boundary comment.
+
+### RED evidence
+
+- `s1-f2b-account-audit.test.ts` on a DB deployed **without** the new
+  migration: **6 failed / 10** (missing scope column, CHECKs, writer/reader
+  functions), then 10/10 on the deployed schema.
+- Unit files (`password-policy`, `session-version`, `audit` account-reader
+  tests, `token-exposure` assertion) exercised RED via absent modules at
+  authoring time; cleanup file failed before implementation (module function
+  absent).
+
+### Backfill/migration evidence
+
+- `migrate deploy` applies the migration cleanly over existing rows: existing
+  events keep `workspace_id` and get `scope=WORKSPACE` by column default;
+  verified by the S1-E regression suite (14 tests) staying green and by the
+  deployed-schema tests (scope+shape rows present/absent as required).
+- Wrong ownership shapes all rejected at the DB (4/4 shape tests).
+
+### Session invalidation evidence (real)
+
+On disposable migrated PostgreSQL, through the actual `createSessionCallbacks`
+composition: sign-in JWT embedded `sv=0` and yielded a session; `UPDATE users
+SET session_version = session_version + 1` made the same JWT return `null`
+(indistinguishable from expired); a fresh sign-in embedded `sv=1` and
+succeeded. `DEACTIVATED`/`INVITED` users rejected even with matching `sv`;
+missing/malformed/non-integer/negative `sv` rejected; invalid credentials stay
+generically null. Browser-level flow evidence lands with the routing slice —
+no protected route exists yet to observe through UI.
+
+### Cleanup evidence
+
+Four terminal shapes verified (consumed / revoked / consumed+revoked GREATEST /
+expired-only) deleted only past 30 days; consumed+revoked retained until 30
+days after the LATER timestamp; active and <30d rows untouched; 1007 seeded
+rows → exactly 1000 then 7 then 0; 3 concurrent calls → exactly 50 total
+deletions, no double-delete; broken client → `token_store_failed`, no SQL/conn
+text in the error.
+
+### Mutation evidence (14 — all caught, all restored byte-for-byte)
+
+| #   | Mutation                                                       | Detection                                                                    |
+| --- | -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 1   | `audit_event_account_scope_shape` dropped in DB                | 1 integration fail                                                           |
+| 2   | `scope:"WORKSPACE"` removed from `listAuditEvents`             | 1 unit fail (new spy test — the workspace_id predicate alone was masking it) |
+| 3   | `subjectUserId` removed from account listing where             | 1 unit + 2 integration fails                                                 |
+| 4   | metadata allowlist bypass                                      | 35 unit fails                                                                |
+| 5   | code-point → UTF-16 `length`                                   | 1 unit fail                                                                  |
+| 6   | NFC removed in `hashPassword`                                  | initially masked (policy+verify normalize); direct-call test added → 1 fail  |
+| 7   | password embedded in error message                             | 2 unit fails                                                                 |
+| 8   | `sessionVersion === sv` → `true`                               | 2 unit + 1 integration fails                                                 |
+| 9   | gate returns `true` on missing `sv`                            | 2 unit fails                                                                 |
+| 10  | status re-read removed                                         | 1 unit + 1 integration fails                                                 |
+| 11  | session callback bypasses gate (`if (false)`)                  | 1 unit + 4 integration fails                                                 |
+| 12  | cleanup `LIMIT 1000` removed                                   | 1 integration fail (1007 deleted in one call)                                |
+| 13  | `GREATEST(consumed,revoked)` → `consumed_at`                   | 3 integration fails                                                          |
+| 14  | `expires_at < cutoff` removed from the never-terminated branch | 3 integration fails (active rows deleted)                                    |
+
+All files `shasum`-verified restored after each mutation.
+
+### Gates (fresh disposable `s1f2b_*`, real PG)
+
+`git diff --check` 0 · `npm ci` 0 (audit: 1 mod + 4 high — unchanged posture,
+no `--force`, no upgrades) · `prisma format`/`validate`/`generate` 0 ·
+`migrate deploy` 0 (8 migrations; also applied to `app_dev`) ·
+`migrate status` 0 · `format:check` 0 · `typecheck` 0 · `lint` 0 ·
+`npm run test` 0 (**308**/30 files) · `test:integration` 0 (**122**/10 files)
+· `build` 0 · `test:e2e` 0 (**21**). No `app/`/route file imports the new
+surface.
+
+### Scope confirmations
+
+No invitation orchestration/acceptance, no reset request/consume service, no
+password-change service, no membership/profile transitions, no coach-invite
+RBAC change, no email delivery, no routes/API/actions/UI, no rate limiting, no
+existence responses, no cross-workspace sharing. No S1-F2C/D, S1-G, S1-H.
+
+### Review status
+
+**Builder: SWE-2 High. Independent different-model review: PENDING — required
+before S1-F2C or any orchestration work.**

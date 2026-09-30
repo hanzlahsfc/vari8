@@ -94,20 +94,22 @@ consent policy, and the PED/HRT consent/policy text.
 
 `AuditEvent`:
 
-| Field                    | Notes                                                                              |
-| ------------------------ | ---------------------------------------------------------------------------------- |
-| `actorUserId`            | nullable (system/erased actor may be null)                                         |
-| `actorRole`              | workspace role at event time                                                       |
-| `workspaceId`            | tenant                                                                             |
-| `action`                 | `READ, CREATE, UPDATE, DELETE, EXPORT, GRANT, REVOKE, INVITE, ASSIGN, DENY, LOGIN` |
-| `resourceType`           | e.g. `daily_entry`, `consent`, `membership`                                        |
-| `resourceId`             | nullable                                                                           |
-| `subjectClientProfileId` | nullable (subject)                                                                 |
-| `result`                 | `ALLOW` \| `DENY`                                                                  |
-| `reason`                 | structural only (e.g. `unassigned`, `no_consent`, `inactive`)                      |
-| `at`                     | timestamptz                                                                        |
-| `ip`                     | nullable                                                                           |
-| `meta`                   | JSON of **structural** data only                                                   |
+| Field                    | Notes                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------- |
+| `scope`                  | `WORKSPACE` \| `ACCOUNT` (S1-F2B); ownership shape enforced by DB CHECKs                           |
+| `actorUserId`            | nullable (system/erased actor may be null)                                                         |
+| `actorRole`              | workspace role at event time                                                                       |
+| `workspaceId`            | tenant — required for `WORKSPACE` rows, **null** for `ACCOUNT` rows (S1-F2B)                       |
+| `subjectUserId`          | required for `ACCOUNT` rows (the user the security event belongs to); `Restrict`                   |
+| `action`                 | `READ, CREATE, UPDATE, DELETE, EXPORT, GRANT, REVOKE, INVITE, ASSIGN, DENY, LOGIN, PASSWORD_RESET` |
+| `resourceType`           | e.g. `daily_entry`, `consent`, `membership`                                                        |
+| `resourceId`             | nullable                                                                                           |
+| `subjectClientProfileId` | nullable (subject)                                                                                 |
+| `result`                 | `ALLOW` \| `DENY`                                                                                  |
+| `reason`                 | structural only (e.g. `unassigned`, `no_consent`, `inactive`)                                      |
+| `at`                     | timestamptz                                                                                        |
+| `ip`                     | nullable                                                                                           |
+| `meta`                   | JSON of **structural** data only                                                                   |
 
 **Never** in `meta`: health values, note bodies, credentials, tokens, file contents, or
 presigned URLs. Enforcement is a **closed key allowlist** (not a denylist): only the
@@ -119,6 +121,23 @@ email/JWT/Bearer/hex-token-like strings and oversized values; enumeration or val
 exceptions normalize to the same structural error.
 
 ### What is audited
+
+**S1-F2B scope rules** (enforced by named CHECK constraints
+`audit_event_workspace_scope_shape` / `audit_event_account_scope_shape`):
+
+- `WORKSPACE` rows: `workspaceId` required, `subjectUserId` must be null.
+- `ACCOUNT` rows: `subjectUserId` required, `workspaceId` must be null — an
+  account-owned security event can never fabricate a workspace, and never
+  appears in workspace listings (`listAuditEvents` hard-filters
+  `scope: WORKSPACE`).
+- `subjectUserId` uses `Restrict` — deleting a user cannot silently erase its
+  security history. Account writers go through a separate closed path
+  (`writeAccountAuditEvent`): account allowlisted actions/resources only
+  (`PASSWORD_RESET` over `user`/`access_token`), nullable actor for
+  unauthenticated flows, same metadata allowlist, transaction-bound.
+- `listAccountAuditEvents` is an internal repository primitive (subject-scoped,
+  `scope: ACCOUNT`, default 25 / max 100, id cursor, minimal fields) — it is
+  **not** a user-facing security log or an authorization claim.
 
 **Implemented in S1-E** (the only events written today):
 

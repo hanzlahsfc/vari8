@@ -200,6 +200,15 @@ threshold, health-data policy, workflow, or layout.
     `normalizeEmail`. Record: `docs/tasks/s1-f2a-token-primitives.md`.
     **Independently PASS** (`opencode-go/deepseek-v4.1-flash`, range
     `0d503b7..fb0713b`, 2026-09-30) — still no product flow.
+  - **S1-F2B** (implemented; independent review PENDING): `AuditScope`
+    WORKSPACE/ACCOUNT discriminator + nullable `workspaceId` + `subjectUserId`
+    (Restrict) with named ownership CHECKs on `audit_event`; separate closed
+    account audit writer/reader; `lib/password-policy.ts` (10–128 code points,
+    NFC); `User.sessionVersion` now enforced via JWT `sv` + per-session DB
+    re-read (fail-closed, no caching, legacy JWTs stale);
+    `cleanupTerminalAccessTokens` bounded 30-day CTE/RETURNING cleanup. No
+    orchestration, routes, or email. Record:
+    `docs/tasks/s1-f2b-account-security.md`.
   - **Policy reconciliation + orchestration plan (docs only, 2026-09-30):**
     Aleks's final S1-F answers recorded in `product-decisions.md` #20–28 —
     invite acceptance rules, ACTIVE-only reset, min-10 password (below the
@@ -376,10 +385,12 @@ different-model independent review **PASSed** S1-F2A at `fb0713b`
 `docs/tasks/s1-f2a-token-primitives.md`). Aleks's final S1-F answers are now
 recorded (policy surface decided except provider/domain/owner-name/rate-limit
 mechanics) and the orchestration plan exists
-(`docs/tasks/s1-f2b-orchestration-plan.md`). No orchestration service exists
-yet — next is S1-F2B (account-security foundation), then its own independent
-review. GDPR (S1-G) and workspace shell (S1-H) remain later slices; no health
-records or product UI.
+(`docs/tasks/s1-f2b-orchestration-plan.md`). S1-F2B (account-security
+foundation: scoped audit, password policy, sessionVersion JWT gate, 30-day
+cleanup) is implemented with 14 mutation proofs — **its independent review is
+pending**, then S1-F2C invitations. No orchestration service exists yet. GDPR
+(S1-G) and workspace shell (S1-H) remain later slices; no health records or
+product UI.
 
 ## 9. Human inputs still required
 
@@ -482,6 +493,40 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 - Known risks/blockers:
 - Next action: `<one exact next action>`.
 ```
+
+## 12. Change log (newest first)
+
+### 2026-09-30 — S1-F2B account-security foundation (implemented; independent review PENDING)
+
+- Scope: account-scoped audit, password policy, sessionVersion JWT
+  enforcement, bounded token cleanup. **No** invitation/reset orchestration,
+  routes, UI, email, or rate limiting.
+- Commits: `540c4e2` plan · `3db9e6d` audit schema/service · `4bdf118`
+  password/session/cleanup · docs/test commits below.
+- Schema: `AuditScope` enum; `AuditEvent.scope` (default WORKSPACE);
+  `workspaceId` nullable; `subjectUserId` → User (Restrict);
+  `@@index([subjectUserId, at])`; `AuditAction` += `PASSWORD_RESET`. Migration
+  `20260930170000_stage1_account_security`: 2 named ownership CHECKs, additive.
+- `lib/audit.ts`: closed account writer (`writeAccountAuditEvent`, nullable
+  actor, PASSWORD_RESET over user/access_token only) + internal bounded reader
+  (`listAccountAuditEvents`, 25/100, minimal fields, ACCOUNT-locked);
+  workspace writer/listing hard-filter `scope:"WORKSPACE"`.
+- `lib/password-policy.ts`: NFC, 10–128 code-point bounds, structural errors,
+  no composition/trim/fold. `lib/password.ts`: NFC at hash+verify boundaries.
+- `lib/auth/session.ts` + `auth.ts`: JWT `sv` stamped from DB version at
+  sign-in; `session` callback re-reads `status`+`sessionVersion` per request
+  (one PK read, no cache) and returns null on any rejection — proven on real
+  PG via the actual callback composition (bump → stale → re-login sv=1).
+  `auth.config.ts` remains Prisma-free (statically asserted).
+- `cleanupTerminalAccessTokens` (store.ts): CTE SELECT…LIMIT 1000 +
+  DELETE…RETURNING; GREATEST(consumed,revoked) precedence; retryable,
+  concurrent-safe, structural errors.
+- Evidence: RED 6/10 fail pre-migration; 14 mutations all caught & restored
+  byte-exact (2 required test strengthening — scope-filter spy test, direct
+  hashPassword NFC test). Gates: unit 308, integration 122/10 files real PG,
+  E2E 21, build/typecheck/lint/format/diff-check all 0; audit posture
+  unchanged (1 mod + 4 high, no --force).
+- **Next: fresh different-model independent review of S1-F2B → then S1-F2C.**
 
 ## 12. Change log (newest first)
 

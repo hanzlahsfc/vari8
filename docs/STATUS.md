@@ -116,6 +116,30 @@ extraction) only, not the workbook UI itself.
 - Next: record the founder answers, then implement the separately reviewed S1-F
   Phase 1 schema foundation (still no routes/email until the flow decisions land).
 
+## 2026-09-30 — S1-F2B account-security foundation landed; independent review PENDING
+
+- `20260930170000_stage1_account_security` (additive): `AuditScope`
+  discriminator, nullable `workspaceId`, `subjectUserId` (`Restrict`), named
+  ownership CHECKs, `(subject_user_id, at)` index; `AuditAction` +=
+  `PASSWORD_RESET`. Existing rows backfill `WORKSPACE`; workspace listings
+  hard-filter scope.
+- Account writer/reader (`writeAccountAuditEvent`, `listAccountAuditEvents`)
+  are separate closed internal paths — no workspace fabrication, nullable
+  actor, same meta allowlist.
+- `lib/password-policy.ts`: 10–128 code points, NFC (no NFKC/trim/case-fold/
+  composition); `lib/password.ts` normalizes NFC at both boundaries.
+- `User.sessionVersion` is now live: JWT `sv` claim at sign-in; `session`
+  callback does one PK re-read of `status`+`sessionVersion` per request and
+  rejects stale/missing/malformed/indistinguishably (no caching; legacy JWTs
+  stale). Integration proof: bump → session null, fresh sign-in sv=1 works.
+- `cleanupTerminalAccessTokens`: CTE + `DELETE…RETURNING`, ≤1000/call,
+  GREATEST(consumed,revoked) precedence, active rows structurally safe.
+- RED (6/10 fail pre-migration) + 14 mutations caught & restored byte-exact.
+  Gates: unit 308, integration 122/10 real-PG, E2E 21, build/typecheck/lint/
+  format green. No orchestration, routes, or email.
+- **Next: fresh different-model independent review of S1-F2B before
+  S1-F2C invitations.**
+
 ## 2026-09-30 — Aleks's final S1-F answers reconciled; orchestration plan ready (docs only)
 
 - `docs/product-decisions.md` #20–28 + `docs/open-questions.md` + S1-F plan §2:
