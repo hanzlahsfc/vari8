@@ -4,26 +4,29 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
-## 2026-10-01 — S1-F2D password-reset orchestration implemented (feature branch)
+## 2026-10-01 — S1-F2D repair after independent DeepSeek FAIL (feature branch)
 
-- `lib/auth/password-reset.ts`: `requestPasswordReset` (existence-only
-  outcome `ACCOUNT_EXISTS`/`ACCOUNT_NOT_FOUND`; ACTIVE-only issuance; per-
-  account `users FOR UPDATE` serialization + `FOR UPDATE` sibling scan;
-  revoke → issue → account audit in one Serializable tx) and
-  `resetPasswordWithToken` (pre-tx password policy/hash; resolve bound user →
-  user lock + ACTIVE re-check → atomic claim → sibling revoke → hash +
-  `sessionVersion++` → account audit).
-- Audit: ACCOUNT scope, `PASSWORD_RESET`/`access_token`, closed meta
-  `resetStage` REQUESTED/COMPLETED; nothing sensitive in meta.
-- Evidence: 16 real-PG integration tests incl. real Auth.js pipeline (stale
-  JWT → null + cleared cookie; new password signs in with sv=1), concurrency
-  races, forced-rollback canaries; 5 unit tests. Gates: unit 324,
-  integration 178/13 files, build/e2e green, lint/typecheck 0.
-- Mutations: 14 caught, 2 deliberate survivors documented (snapshot-scan
-  lock redundant under SSI; claim userId param is non-widening).
-- No schema/migration/route/UI/provider/URL/rate-limit change. On
-  `feature/s1-f2d-password-reset`; **independent different-model review
-  pending — S1-H routing not started.**
+- Independent review FAILed the initial S1-F2D slice. Repairs landed:
+  corrected FOR UPDATE/Snapshot visibility claims (SSI abort + bounded retry
+  is what resolves post-snapshot inserts); token validated structurally
+  BEFORE password policy/hash; public request result narrowed to
+  `{outcome}` only with an injected post-commit `deliver` sink (never called
+  for missing/ineligible accounts; delivery failure → `reset_failed`, no
+  replay); consume audit attribution corrected to `actorUserId=null`/
+  `actorRole=null` (bearer-token auth, not a session); retries bumped to
+  `MAX_ATTEMPTS=8` + bounded backoff (repeated 3-way/8-way bursts: zero
+  `serialization_conflict`, one active token each); real-CSRF
+  `/api/auth/session` update test (strict 200+null+cleared-cookie);
+  `resetStage` rescoped to an account-only audit meta set
+  (`AccountAuditMeta`/`sanitizeAccountAuditMeta`); `safeTokenHash` maps
+  TokenError→`invalid_token`, unexpected→`reset_failed`.
+- Repair mutations all caught: token-after-policy (1 unit) · delivery in
+  result (12) · sink for ineligible (1) · actor=account (1) · MAX_ATTEMPTS=3
+  (1 unit + 1 burst) · workspace resetStage (1) · safeTokenHash catch-all
+  (1) · invalid-CSRF test (1). Restored byte-exact (shasum-verified).
+- Gates: unit 324+·integration on fresh disposable DB — see task record for
+  exact counts; `main` untouched; independent different-model re-review
+  pending. No schema/route/UI/provider/rate-limit change.
 
 ## 2026-09-30 — S1-F2B repair — independent re-review PASS (opencode-go/deepseek-v4.1-flash)
 

@@ -48,9 +48,11 @@ propagate. No IDs/emails/tokens/passwords/SQL in messages.
 1. `SELECT id,status FROM users WHERE id=$1 FOR UPDATE` — the per-account
    serialization point AND the freshness barrier for concurrent user writes.
 2. Re-read `status`; non-ACTIVE → return exists-outcome, zero mutations.
-3. Locking scan of the account's active reset tokens
-   (`... FOR UPDATE`) — locking reads see rows committed after our snapshot,
-   so a winner's fresh token is never missed by a waiter's stale snapshot.
+3. Locking scan of the account's active reset tokens (`... FOR UPDATE`) —
+   coordinates existing rows only; concurrent winner's inserts committed
+   after our snapshot are NOT visible here. The race is resolved by
+   PostgreSQL SSI aborting the predicate-read/insert conflict → bounded
+   retry → fresh snapshot.
 4. Revoke those ids by PK (`updateMany id IN …`), issue one 12-hour token,
    write audit (`PASSWORD_RESET`/`access_token`/`{resetStage:"REQUESTED"}`,
    actorUserId null).
@@ -209,3 +211,39 @@ Repairs, all test-first:
 
 RED → GREEN → mutate-back per finding. All files restored byte-exact.
 No schema/migration/route/UI/provider/domain/rate-limit changes.
+
+## Repair record (2026-10-01)
+
+All eight findings repaired on `feature/s1-f2d-password-reset`:
+
+1. Comments/docs corrected — FOR UPDATE coordinates existing rows; SSI
+   predicate-conflict aborts + bounded retry supply snapshot freshness.
+2. `safeTokenHash` runs before password policy/scrypt — malformed token +
+   bad password → `invalid_token`, zero hashing.
+3. Public result is exactly `{outcome}` — private payload travels through an
+   injected `deliver` sink, once, post-commit, outside the retry loop;
+   delivery failure → `reset_failed` without replay.
+4. COMPLETED audit: `actorUserId=null`, `actorRole=null` (bearer-token
+   authentication), subjectUserId = account, scope ACCOUNT.
+5. `MAX_ATTEMPTS = 8` + bounded backoff (`min(attempt*10, 50)`ms); 10-burst
+   real-PG proof (5×8-way + 5×3-way): zero rejections, one active token per
+   burst. Retries remain P2034/40001/40P01-only. Route-layer rate limiting
+   still required before public exposure — deferred, unchanged.
+6. Session-update test now uses a real CSRF token+cookie from the installed
+   handler: 200, null body, stale cookie cleared, `auth()` stays null.
+7. `resetStage` moved to `AccountAuditMeta` + `sanitizeAccountAuditMeta` —
+   workspace audit construction rejects it; account reset audit accepts
+   only REQUESTED|COMPLETED.
+8. `safeTokenHash`: TokenError → `invalid_token`; unexpected → `reset_failed`
+   (isolated unit test mocks `hashAccessToken` to throw).
+
+RED evidence: 6/8 unit tests failed against the unrepaired implementation;
+integration shape/actor/CSRF/audit tests failed as expected.
+
+Mutation evidence (all caught, restored byte-exact): token-after-policy (1
+unit) · delivery reintroduced into public result (12) · sink on ineligible
+(1) · actor=account (1) · MAX_ATTEMPTS=3 (unit attempts pin + 8-way burst) ·
+workspace resetStage (1) · safeTokenHash catch-all (1) · forged-CSRF (1).
+
+**Status: repair implemented on the feature branch; gates green;
+independent different-model re-review pending.**
