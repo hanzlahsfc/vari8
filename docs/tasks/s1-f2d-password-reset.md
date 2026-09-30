@@ -247,3 +247,32 @@ workspace resetStage (1) · safeTokenHash catch-all (1) · forged-CSRF (1).
 
 **Status: repair implemented on the feature branch; gates green;
 independent different-model re-review pending.**
+
+---
+
+## Second repair plan — after DeepSeek re-review FAIL (2026-10-01)
+
+Final capped-loop repair. Three confirmed findings only; no architecture
+broadening, no schema change.
+
+1. **Active documentation contradicts the repaired contract.** The
+   plan's "current contract" sections still describe the pre-repair API
+   (delivery-in-result, optional sink wording, actor=account user, the
+   superseded FOR UPDATE visibility claim, `MAX_ATTEMPTS` inconsistency).
+   Rewrite the active sections; mark the first implementation record
+   explicitly HISTORICAL — SUPERSEDED.
+2. **Optional delivery sink permits silent token loss.** Make `deliver`
+   a required runtime-validated dependency — missing/non-function →
+   `invalid_input` thrown BEFORE any account lookup, transaction,
+   revocation, issuance, or audit. Sink still runs exactly once, post-
+   commit, outside the retry loop; failure → `reset_failed`, no replay.
+   No separate existence-check service.
+3. **`resetStage` accepted on `PASSWORD_RESET`/`user`.** Couple account
+   metadata to the exact pair `PASSWORD_RESET`/`access_token` — type-level
+   discriminated input + runtime check in `buildAccountAuditEvent`/
+   `sanitizeAccountAuditMeta`. `PASSWORD_RESET`/`user` with no metadata
+   keeps its existing accepted behavior.
+
+Mandatory mutations: optional-`deliver` restored · runtime sink check
+removed · `PASSWORD_RESET`/`user` + `resetStage` allowed · one stale active
+doc statement reintroduced and caught by a documented rg gate.
