@@ -66,6 +66,11 @@ purpose-dependent nullability)
 - `access_token_expiry_after_creation`: `expires_at > created_at` — a token cannot be
   born already-expired. (The 12-hour duration is applied by the future service; the DB
   only enforces sanity.)
+- `access_token_token_hash_sha256_hex` (added by repair migration
+  `20260930160000_stage1_access_token_hash_format`): `octet_length(token_hash) = 64
+AND token_hash ~ '^[a-f0-9]{64}$'` — only the canonical S1-F0 SHA-256 output shape
+  may be stored; raw bearer tokens and malformed/oversized values are rejected at the
+  DB boundary even if a future caller bypasses `lib/tokens/crypto.ts`.
 
 ### Indexes (reviewed query support only)
 
@@ -162,15 +167,17 @@ reverted; both files verified byte-identical afterward (`shasum` =
 `4ad6f1f20c08f6232d24f9399114feecd47742af` migration, `ff8d28f0…` `lib/tokens.ts`,
 before and after; 25/25 integration + 2/2 unit green).
 
-| Mutation                                                       | Failures observed                       |
-| -------------------------------------------------------------- | --------------------------------------- |
-| `access_token_invite_shape` CHECK removed                      | 7                                       |
-| `access_token_reset_shape` CHECK removed                       | 3                                       |
-| `intended_role IN (…)` allowed-role clause removed             | 1 (OWNER/SUPPORT invite accepted)       |
-| `token_hash` UNIQUE → plain INDEX                              | 2                                       |
-| `session_version` `NOT NULL DEFAULT 0` → bare `INTEGER`        | 1 (existing row got NULL — no backfill) |
-| `client_assignment_client_workspace_fkey` dropped in migration | 1 (prior-constraint regression test)    |
-| `assertTokenFlowsExternallyExposable` made to return           | 1 (unit)                                |
+| Mutation                                                       | Failures observed                          |
+| -------------------------------------------------------------- | ------------------------------------------ |
+| `access_token_invite_shape` CHECK removed                      | 7                                          |
+| `access_token_reset_shape` CHECK removed                       | 3                                          |
+| `intended_role IN (…)` allowed-role clause removed             | 1 (OWNER/SUPPORT invite accepted)          |
+| `token_hash` UNIQUE → plain INDEX                              | 2                                          |
+| `session_version` `NOT NULL DEFAULT 0` → bare `INTEGER`        | 1 (existing row got NULL — no backfill)    |
+| `client_assignment_client_workspace_fkey` dropped in migration | 1 (prior-constraint regression test)       |
+| `assertTokenFlowsExternallyExposable` made to return           | 1 (unit)                                   |
+| `access_token_token_hash_sha256_hex` CHECK removed (repair)    | 2 (bad-hash test + constraint-name assert) |
+| hash regex weakened to `^[a-f0-9]+$` (repair)                  | 1 (length-pinned cases accepted)           |
 
 A real defect was caught by the suite during development: `NULL IN (…)` is NULL
 (not FALSE), so `intended_role NULL` initially passed the invite CHECK — fixed by
@@ -198,9 +205,31 @@ On the committed tree (fresh disposable DB `s1f1_final`, dropped after):
 (not representable in the datamodel) — `migrate deploy` remains the required apply
 path, same caveat as S1-A's composite FKs and partial indexes.
 
+## Independent review — FAIL, repaired
+
+A fresh different-model review (`opencode-go/deepseek-v4.1-flash`) of the S1-F1
+tree at `bedbe12` returned **FAIL**: `token_hash` was a bare `TEXT` column — the
+database boundary enforced uniqueness but not the canonical digest format, so a
+raw 43-character base64url bearer token (or any malformed value) could be
+persisted if a caller bypassed `lib/tokens/crypto.ts`.
+
+**Repair (builder-side, additive):** new migration
+`20260930160000_stage1_access_token_hash_format` adds the named CHECK
+`access_token_token_hash_sha256_hex`
+(`octet_length = 64 AND ~ '^[a-f0-9]{64}$'`). The published
+`20260930150000` migration was **not** edited. RED evidence on the unrepaired
+tree (disposable `s1f1_red`): focused integration suite exit 1 — 2 failed / 24
+passed (bad-hash values accepted; CHECK absent by name). Post-repair GREEN:
+26/26 on a fresh DB. Mutation-proved: CHECK removed → 2 failures; regex weakened
+to `^[a-f0-9]+$` → 1 failure (length-pinned cases accepted). Both restorations
+verified byte-identical (`shasum a69a0cfe…`). Fixture update: the test helper's
+default `tokenHash` now generates a real SHA-256 hex digest so all fixtures stay
+canonical.
+
 ## Status
 
-**S1-F Phase 1 schema/session foundation implemented; no token lifecycle or external
-flow; independent review pending.** Full S1-F remains blocked on the open
-`TODO(human)` items (acceptance details, reset eligibility, password policy, email
-delivery, abuse protection, audit ownership/retention, standalone verification).
+**S1-F Phase 1 schema/session foundation implemented and repaired; no token
+lifecycle or external flow; independent re-review pending.** Full S1-F remains
+blocked on the open `TODO(human)` items (acceptance details, reset eligibility,
+password policy, email delivery, abuse protection, audit ownership/retention,
+standalone verification).

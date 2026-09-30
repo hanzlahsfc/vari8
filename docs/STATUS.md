@@ -36,6 +36,26 @@ extraction) only, not the workbook UI itself.
 - Next: record the founder answers, then implement the separately reviewed S1-F
   Phase 1 schema foundation (still no routes/email until the flow decisions land).
 
+## 2026-09-30 — S1-F1 review FAIL repaired — token_hash format CHECK; re-review PENDING
+
+- Independent DeepSeek review of `bedbe12`: **FAIL** — `token_hash` TEXT enforced
+  uniqueness only; the DB accepted raw bearer tokens and malformed/oversized
+  values (a caller bypassing `lib/tokens/crypto.ts` could store non-canonical
+  digests).
+- Repair: additive migration `20260930160000_stage1_access_token_hash_format`
+  adds CHECK `access_token_token_hash_sha256_hex`
+  (`octet_length = 64 AND ~ '^[a-f0-9]{64}$'`). Published `20260930150000`
+  migration untouched. Test fixtures now generate real SHA-256 hex.
+- RED on unrepaired tree (disposable `s1f1_red`): exit 1, 2 failed / 24 passed
+  (8 bad-hash classes accepted incl. raw 43-char base64url token; CHECK absent).
+  GREEN post-repair: 26/26. Mutation-proved: CHECK removed → 2 failures;
+  regex weakened to `^[a-f0-9]+$` → 1 failure; restored byte-identical.
+- Gates re-run green on fresh `s1f1_final` (dropped): migrate deploy 0 (7
+  migrations), status 0, format/typecheck/lint 0, unit 277, integration 88,
+  build 0, e2e 21.
+- **Independent re-review still PENDING** — this repair does not mark S1-F1
+  passed. No token lifecycle service, no other behavior change.
+
 ## 2026-09-30 — S1-F Phase 1 (S1-F1) — AccessToken + sessionVersion schema landed; review PENDING
 
 - `db/schema.prisma`: `AccessToken` model + `AccessTokenPurpose`

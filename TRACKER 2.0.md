@@ -178,8 +178,11 @@ threshold, health-data policy, workflow, or layout.
   indexes; workspace Restrict / user Cascade / issuer Restrict FKs) +
   `User.sessionVersion Int @default(0)`; additive migration
   `20260930150000_stage1_access_tokens`; fail-closed `lib/tokens.ts`
-  `assertTokenFlowsExternallyExposable()`. Record: `docs/tasks/s1-f1-token-schema.md`.
-  **No token lifecycle service exists; independent review pending.**
+  `assertTokenFlowsExternallyExposable()`; repair migration
+  `20260930160000_stage1_access_token_hash_format` enforces canonical SHA-256 hex
+  at the DB boundary after an independent DeepSeek FAIL. Record:
+  `docs/tasks/s1-f1-token-schema.md`. **No token lifecycle service exists;
+  independent re-review pending (not passed).**
 
 ### Important limitations
 
@@ -333,9 +336,11 @@ model + `User.sessionVersion`, additive migration
 gates green (unit 277, integration 87 real-PG, E2E 21). No token lifecycle
 service exists. Notable standing constraint: `AuditEvent.workspaceId` being NOT
 NULL still means user-owned reset/login audit rows need the §4.2 schema decision.
-Next: fresh different-model independent review of S1-F1 before any token
-service. GDPR (S1-G) and workspace shell (S1-H) remain later slices; no health
-records or product UI.
+The S1-F1 independent review FAILED on `token_hash` format enforcement; the
+additive repair (`access_token_token_hash_sha256_hex` CHECK) landed with gates
+green. Next: fresh different-model independent **re**-review of the repaired
+tree before any token service. GDPR (S1-G) and workspace shell (S1-H) remain
+later slices; no health records or product UI.
 
 ## 9. Human inputs still required
 
@@ -440,6 +445,39 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-30 — S1-F1 independent-review FAIL repair: token_hash canonical-format CHECK
+
+- Independent `opencode-go/deepseek-v4.1-flash` review of `bedbe12`: **FAIL** —
+  `token_hash` enforced uniqueness but not the canonical digest format; the DB
+  would accept a raw 43-char base64url bearer token (or any malformed/oversized
+  value) if a caller bypassed `lib/tokens/crypto.ts`.
+- Scope: builder repair only — additive migration
+  `db/migrations/20260930160000_stage1_access_token_hash_format/migration.sql`
+  (one named CHECK `access_token_token_hash_sha256_hex`:
+  `octet_length(token_hash) = 64 AND token_hash ~ '^[a-f0-9]{64}$'`), plus
+  regression tests. The published `20260930150000` migration is byte-untouched.
+  No services/routes/auth/RBAC/audit changes.
+- Files changed: the new migration; `tests/integration/s1-f1-token-schema.test.ts`
+  (8 bad-hash rejection classes + acceptance of a valid 64-hex digest + the CHECK
+  name added to the constraint assertion; default `tokenHash` fixture now a real
+  SHA-256 hex digest so fixtures stay canonical); docs.
+- RED on unrepaired `bedbe12` schema (disposable `s1f1_red`): focused integration
+  exit 1 — **2 failed / 24 passed** (bad-hash insertions accepted; CHECK absent).
+- GREEN: focused integration exit 0 — 26/26 on fresh `s1f1_verify`.
+- Mutation evidence (restored byte-for-byte, `shasum a69a0cfe…` verified):
+  CHECK removed → 2 failures; regex weakened to `^[a-f0-9]+$` → 1 failure
+  (63/65-char and oversized hex accepted).
+- Gates re-run (fresh disposable `s1f1_final`, dropped after):
+  `git diff --check` 0; `npm ci` 0 (audit 1 mod + 4 high unchanged, no force);
+  `prisma format/validate/generate` 0; `migrate deploy` 0 (7 migrations);
+  `migrate status` 0; `format:check` 0; `typecheck` 0; `lint` 0;
+  `npm run test` 0 (277); `test:integration` 0 (88); `build` 0;
+  `test:e2e` 0 (21).
+- **Independent re-review PENDING** — S1-F1 is not marked passed. The builder
+  (SWE-2 High) does not grade its own work.
+- Next action: fresh different-model re-review of the repaired tree before any
+  token service.
 
 ### 2026-09-30 — S1-F1 AccessToken + sessionVersion schema (implemented; gates green; independent review PENDING)
 
