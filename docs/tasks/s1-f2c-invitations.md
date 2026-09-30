@@ -361,3 +361,14 @@ Repair mutations (this round, all caught, restored byte-exact): users lock
 removed (1 fail) · workspace lock removed (1) · membership lock removed (2) ·
 second `authorize()` removed (1 unit — guard-read spy) · role-increment
 dropped from trigger on live DB (2).
+
+---
+
+## Third-review documentation record (2026-10-01)
+
+Third independent DeepSeek review: **all production code, security,
+concurrency, migration, and test areas PASS** — the FAIL was documentation
+only. Active superseded UI wording remained in `TRACKER 2.0.md` §3 and the
+Stage 3 bullets, and the changelog falsely claimed §3 was already marked.
+Corrected now (docs-only commits; zero code changes). Final DeepSeek
+documentation re-review still pending; S1-F2D not started.

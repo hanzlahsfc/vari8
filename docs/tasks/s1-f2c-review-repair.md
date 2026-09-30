@@ -131,3 +131,13 @@ was extended from the membership row to all three authorization rows
 (users → workspace → workspace_member FOR UPDATE) after the advisory-lock
 wait, with six real-PG mid-wait race proofs; role-generation behavior is now
 pinned by dedicated tests (migration unchanged).
+
+---
+
+## Third DeepSeek review (FAIL — documentation only, repaired 2026-10-01)
+
+All implementation areas independently verified PASS. Remaining blocker was
+docs: `TRACKER 2.0.md` §3 and Stage 3 still carried the superseded
+"faithful sheet layout" requirement, and the changelog falsely claimed §3
+was corrected. Fixed in the documentation-only repair; final doc re-review
+pending.
