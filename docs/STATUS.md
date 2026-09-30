@@ -4,6 +4,22 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — S1-F2D stable-input boundary design (feature branch)
+
+- Post-review hardening: `requestPasswordReset` captures `options.deliver`
+  and `input.email` exactly once at entry (trapped getters/proxies →
+  `invalid_input` before any DB work) and invokes the captured sink
+  unconditionally once post-commit — mid-flight reassignment cannot
+  suppress delivery. `buildAccountAuditEvent` captures each consumed field
+  once and validates/builds solely from the captures (getter/proxy/
+  enumeration traps → structural `AuditError`); `resetStage` pair coupling
+  and meta-free `PASSWORD_RESET`/`user` preserved.
+- Mutations all caught: second `deliver` read (`?.` and direct), second
+  `meta` read, removed sink validation — byte-exact restores.
+- Gates (fresh disposable `s1f2d_boundary`, dropped): unit 328+, integration
+  179+ incl. the real-PG reassignment case; `main` untouched; independent
+  different-model re-review pending.
+
 ## 2026-10-01 — S1-F2D second repair (final capped loop, feature branch)
 
 - DeepSeek re-review of the first repair FAILed on three items; all fixed:

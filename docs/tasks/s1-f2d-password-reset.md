@@ -372,3 +372,31 @@ second `input.meta` read, delivery validation removed.
 Scope: `lib/auth/password-reset.ts`, `lib/audit.ts`, the two test files +
 `tests/unit/audit.test.ts`, this record, `docs/STATUS.md`. No schema,
 route, UI, provider, dependency, or Prime-Tracker change.
+
+## Boundary-design record (2026-10-01)
+
+Stable-input hardening implemented on `feature/s1-f2d-password-reset`:
+
+1. `requestPasswordReset` reads `options.deliver` and `input.email` once
+   each in a guarded block → trapped getters/proxies → `invalid_input`
+   (message/input never leak). The captured function is invoked
+   unconditionally once post-commit; mid-flight reassignment of
+   `options.deliver` cannot suppress delivery. Sink failure →
+   `reset_failed`, one commit, no replay. Residual limitation: a delivery
+   function that itself fails after commit cannot retry the email — the
+   token was already committed (documented, structural `reset_failed`
+   is the surface; the user may simply request again).
+2. `buildAccountAuditEvent` captures `subjectUserId`/`actorUserId`/
+   `actorRole`/`action`/`resourceType`/`resourceId`/`meta` once each and
+   validates + builds exclusively from the captures; trapped access →
+   structural `AuditError` only. `resetStage` stays coupled to
+   `PASSWORD_RESET`/`access_token`; meta-free `PASSWORD_RESET`/`user`
+   preserved.
+
+Mutation evidence (all caught, byte-exact restores): second
+`options.deliver` read via `?.` (2 unit + 1 real-PG) · second read via
+direct call (2 unit + 1 real-PG) · second `input.meta` read (1 unit) ·
+delivery validation removed (1 unit).
+
+**Status: boundary redesign implemented; gates green; independent
+different-model re-review pending.**
