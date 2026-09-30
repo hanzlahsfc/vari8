@@ -229,6 +229,43 @@ describe.skipIf(!enabled)(
       }
     });
 
+    it("options.deliver reassigned mid-transaction still delivers (real PG)", async () => {
+      const u = await mkUser();
+      const delivered: ResetDeliveryPayload[] = [];
+      const opts: { deliver?: (p: ResetDeliveryPayload) => void } = {
+        deliver: (p) => void delivered.push(p),
+      };
+      // Clear the sink after the transaction resolves but before the
+      // service would read it post-commit.
+      const wrapped = new Proxy(prisma, {
+        get(target, prop) {
+          if (prop === "$transaction")
+            return (...args: unknown[]) =>
+              (target.$transaction as (...a: unknown[]) => Promise<unknown>)
+                .apply(target, args)
+                .then((r) => {
+                  opts.deliver = undefined;
+                  return r;
+                });
+          return target[prop as keyof typeof target];
+        },
+      });
+      const r = await requestPasswordReset(
+        { email: u.email },
+        opts as never,
+        wrapped,
+      );
+      expect(r).toEqual({ outcome: "ACCOUNT_EXISTS" });
+      expect(delivered).toHaveLength(1);
+      expect(delivered[0].kind).toBe("password_reset");
+      expect(delivered[0].to).toBe(u.email);
+      expect(delivered[0].expiresAt.getTime() - Date.now()).toBeGreaterThan(
+        12 * 3600_000 - 60_000,
+      );
+      expect(await activeResetTokens(u.id)).toHaveLength(1);
+      expect(await accountAudit(u.id)).toHaveLength(1);
+    });
+
     it("user deactivated mid-request fails closed — no token issued", async () => {
       const u = await mkUser();
       // Holder locks the user row, deactivates, sleeps, then commits — the

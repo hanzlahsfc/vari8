@@ -383,33 +383,60 @@ export function buildAccountAuditEvent(
   context: AccountAuditContext,
   input: AccountAuditEventInput,
 ): Prisma.AuditEventUncheckedCreateInput {
-  if (
-    typeof context.subjectUserId !== "string" ||
-    context.subjectUserId.length === 0
-  )
+  // Read every consumed field EXACTLY ONCE — getter/proxy traps and
+  // mid-construction mutation cannot split validation from construction.
+  let subjectUserId: unknown;
+  let actorUserId: unknown;
+  let actorRole: unknown;
+  let action: unknown;
+  let resourceType: unknown;
+  let resourceId: unknown;
+  let metaIn: unknown;
+  try {
+    subjectUserId = context.subjectUserId;
+    actorUserId = context.actorUserId;
+    actorRole = context.actorRole;
+    action = input.action;
+    resourceType = input.resourceType;
+    resourceId = input.resourceId;
+    metaIn = input.meta;
+  } catch {
+    throw new AuditError("invalid_input");
+  }
+  if (typeof subjectUserId !== "string" || subjectUserId.length === 0)
     throw new AuditError("invalid_input");
   if (
-    !(ACCOUNT_AUDIT_ACTIONS as readonly string[]).includes(input.action) ||
-    !(ACCOUNT_AUDIT_RESOURCES as readonly string[]).includes(input.resourceType)
-  )
-    throw new AuditError("audit_metadata_forbidden");
-  if (
-    input.meta !== undefined &&
-    !(
-      input.action === "PASSWORD_RESET" && input.resourceType === "access_token"
+    !(ACCOUNT_AUDIT_ACTIONS as readonly string[]).includes(action as string) ||
+    !(ACCOUNT_AUDIT_RESOURCES as readonly string[]).includes(
+      resourceType as string,
     )
   )
     throw new AuditError("audit_metadata_forbidden");
-  const meta = sanitizeAccountAuditMeta(input.meta);
+  // `resetStage` (the only account meta) is valid ONLY on the exact
+  // PASSWORD_RESET/access_token pair — decided from captured values.
+  if (
+    metaIn !== undefined &&
+    !(action === "PASSWORD_RESET" && resourceType === "access_token")
+  )
+    throw new AuditError("audit_metadata_forbidden");
+  const meta = sanitizeAccountAuditMeta(metaIn as AccountAuditMeta);
   return {
     scope: "ACCOUNT",
     workspaceId: null,
-    subjectUserId: context.subjectUserId,
-    actorUserId: context.actorUserId ?? null,
-    actorRole: context.actorRole ?? null,
-    action: input.action,
-    resourceType: input.resourceType,
-    resourceId: input.resourceId ?? null,
+    subjectUserId,
+    actorUserId: typeof actorUserId === "string" ? actorUserId : null,
+    actorRole:
+      actorRole === "WORKSPACE_OWNER" ||
+      actorRole === "COACH" ||
+      actorRole === "ASSISTANT_COACH" ||
+      actorRole === "SUPPORT" ||
+      actorRole === "CLIENT"
+        ? actorRole
+        : null,
+    // Validated by the allowlists above — safe to assert the enums.
+    action: action as (typeof ACCOUNT_AUDIT_ACTIONS)[number],
+    resourceType: resourceType as (typeof ACCOUNT_AUDIT_RESOURCES)[number],
+    resourceId: typeof resourceId === "string" ? resourceId : null,
     result: "ALLOW",
     reason: null,
     ip: null,

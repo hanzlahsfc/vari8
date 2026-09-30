@@ -9,6 +9,7 @@ import {
   listAccountAuditEvents,
   listAuditEvents,
   sanitizeAuditMeta,
+  writeAccountAuditEvent,
   writeAuditEvent,
   type AuditMeta,
 } from "../../lib/audit";
@@ -404,6 +405,131 @@ describe("buildAccountAuditEvent (S1-F2B)", () => {
       result: "ALLOW",
     });
     expect(row).not.toHaveProperty("meta");
+  });
+
+  it("captures each input field once — getter mutation cannot bypass the pair rule", () => {
+    // meta getter yields undefined first, then resetStage — the builder must
+    // read once and produce a metadata-free user-resource row.
+    let metaReads = 0;
+    const flaky = {
+      action: "PASSWORD_RESET" as const,
+      resourceType: "user" as const,
+      get meta() {
+        metaReads++;
+        return metaReads === 1
+          ? undefined
+          : ({ resetStage: "REQUESTED" } as never);
+      },
+    };
+    const row = buildAccountAuditEvent({ subjectUserId: "u1" }, flaky);
+    expect(row).toMatchObject({
+      scope: "ACCOUNT",
+      action: "PASSWORD_RESET",
+      resourceType: "user",
+    });
+    expect(row).not.toHaveProperty("meta");
+    expect(metaReads).toBe(1);
+
+    // Inverse: resetStage first, undefined second — still rejected.
+    let metaReads2 = 0;
+    const flaky2 = {
+      action: "PASSWORD_RESET" as const,
+      resourceType: "user" as const,
+      get meta() {
+        metaReads2++;
+        return metaReads2 === 1
+          ? ({ resetStage: "REQUESTED" } as never)
+          : undefined;
+      },
+    };
+    expect(() =>
+      buildAccountAuditEvent({ subjectUserId: "u1" }, flaky2),
+    ).toThrow("audit_metadata_forbidden");
+
+    // action getter mutating — validate AND build from the captured value.
+    let actionReads = 0;
+    const flipAction = {
+      get action() {
+        actionReads++;
+        return actionReads === 1 ? "PASSWORD_RESET" : "INVITE";
+      },
+      resourceType: "access_token" as const,
+      meta: { resetStage: "REQUESTED" as const },
+    };
+    const row2 = buildAccountAuditEvent(
+      { subjectUserId: "u1" },
+      flipAction as never,
+    );
+    expect(row2.action).toBe("PASSWORD_RESET");
+    expect(actionReads).toBe(1);
+  });
+
+  it("throwing getters/proxies produce structural input-free AuditError", async () => {
+    const throwingInput = {
+      get action(): never {
+        throw new Error("trapped-secret-payload");
+      },
+    };
+    const err = await (async () => {
+      try {
+        buildAccountAuditEvent({ subjectUserId: "u1" }, throwingInput as never);
+        return null;
+      } catch (e) {
+        return e;
+      }
+    })();
+    expect(err).toBeInstanceOf(AuditError);
+    expect(String(err)).not.toContain("trapped-secret");
+
+    // Metadata enumeration/proxy failures → audit_metadata_forbidden.
+    const proxyMeta = new Proxy(
+      {},
+      {
+        ownKeys() {
+          throw new Error("proxy-trap-secret");
+        },
+      },
+    );
+    const err2 = await (async () => {
+      try {
+        buildAccountAuditEvent(
+          { subjectUserId: "u1" },
+          {
+            action: "PASSWORD_RESET",
+            resourceType: "access_token",
+            meta: proxyMeta as never,
+          },
+        );
+        return null;
+      } catch (e) {
+        return e;
+      }
+    })();
+    expect(err).toBeInstanceOf(AuditError);
+    expect(err2).toBeInstanceOf(AuditError);
+    expect(String(err2)).not.toContain("proxy-trap-secret");
+  });
+
+  it("writeAccountAuditEvent never reaches create on invalid captured input", async () => {
+    let creates = 0;
+    const tx = {
+      auditEvent: {
+        create: async () => {
+          creates++;
+          return {};
+        },
+      },
+    };
+    const throwingInput = {
+      subjectUserId: "u1",
+      get action(): never {
+        throw new Error("hidden");
+      },
+    };
+    await expect(
+      writeAccountAuditEvent(tx as never, throwingInput as never),
+    ).rejects.toBeInstanceOf(AuditError);
+    expect(creates).toBe(0);
   });
 
   it("rejects non-account actions/resources and missing subject", () => {

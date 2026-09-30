@@ -178,16 +178,21 @@ export async function requestPasswordReset(
   client: PrismaClient = prisma,
 ): Promise<PasswordResetRequestResult> {
   // The delivery sink is MANDATORY — without it, a successful issuance would
-  // discard the only copy of the raw token. Reject before any lookup,
-  // transaction, revocation, issuance, or audit (JavaScript callers cannot
-  // bypass a merely-typed contract).
-  if (
-    options === null ||
-    typeof options !== "object" ||
-    typeof options.deliver !== "function"
-  )
+  // discard the only copy of the raw token. `options.deliver` and
+  // `input.email` are each read EXACTLY ONCE: throwing getters/proxy traps
+  // and mid-flight mutation cannot bypass validation or suppress delivery.
+  let deliver: unknown;
+  let rawEmail: unknown;
+  try {
+    deliver =
+      options === null || options === undefined ? undefined : options.deliver;
+    rawEmail = input === null || input === undefined ? undefined : input.email;
+  } catch {
     throw new PasswordResetError("invalid_input");
-  const email = normalizedEmail(input.email);
+  }
+  if (typeof deliver !== "function")
+    throw new PasswordResetError("invalid_input");
+  const email = normalizedEmail(rawEmail);
 
   let delivery: ResetDeliveryPayload | null = null;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -271,7 +276,8 @@ export async function requestPasswordReset(
     // loop — a delivery error maps to reset_failed and cannot replay the
     // committed issuance.
     try {
-      await options.deliver?.(delivery);
+      // The captured function — never a second property read.
+      await deliver(delivery);
     } catch {
       throw new PasswordResetError("reset_failed");
     }

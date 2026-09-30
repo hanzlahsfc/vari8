@@ -231,6 +231,179 @@ describe("S1-F2D password-reset — unit surface", () => {
     expect(txCalls).toBe(0);
   });
 
+  it("options.deliver is captured once — mid-flight reassignment cannot suppress delivery", async () => {
+    let releaseTx!: () => void;
+    const gate = new Promise<void>((r) => (releaseTx = r));
+    let txCalls = 0;
+    const fake = {
+      user: {
+        findUnique: async () => ({ id: "u1", status: "ACTIVE" }),
+      },
+      $transaction: async (fn: (tx: unknown) => Promise<unknown>) => {
+        txCalls++;
+        const tx = {
+          $queryRawUnsafe: async (q: string) =>
+            q.includes("FOR UPDATE") && q.includes('"users"')
+              ? [{ id: "u1", status: "ACTIVE" }]
+              : [],
+          accessToken: {
+            updateMany: async () => ({ count: 0 }),
+            create: async () => ({
+              id: "tok1",
+              expiresAt: new Date(Date.now() + 12 * 3600_000),
+            }),
+          },
+          auditEvent: { create: async () => ({}) },
+        };
+        const inner = fn(tx);
+        await gate; // hold the commit pending while the caller mutates
+        return inner;
+      },
+    };
+    const delivered: unknown[] = [];
+    const options: { deliver?: ((p: never) => void) | undefined } = {
+      deliver: (p) => void delivered.push(p),
+    };
+    const pending = requestPasswordReset(
+      { email: "u@example.test" },
+      options as never,
+      fake as never,
+    );
+    await new Promise((r) => setTimeout(r, 20));
+    // Mutate the sink while the transaction is still pending.
+    options.deliver = undefined;
+    releaseTx();
+    const res = await pending;
+    expect(res).toEqual({ outcome: "ACCOUNT_EXISTS" });
+    expect(delivered).toHaveLength(1);
+    expect(txCalls).toBe(1);
+  });
+
+  it("deliver getter returning undefined on second read still delivers", async () => {
+    // Getter yields a function once, then undefined — the captured first
+    // read must be the only consultation.
+    let reads = 0;
+    const delivered: unknown[] = [];
+    const options = {
+      get deliver() {
+        reads++;
+        return reads === 1 ? (p: unknown) => void delivered.push(p) : undefined;
+      },
+    };
+    const fake = {
+      user: { findUnique: async () => ({ id: "u1", status: "ACTIVE" }) },
+      $transaction: async (fn: (tx: unknown) => Promise<unknown>) =>
+        fn({
+          $queryRawUnsafe: async (q: string) =>
+            q.includes("FOR UPDATE") && q.includes('"users"')
+              ? [{ id: "u1", status: "ACTIVE" }]
+              : [],
+          accessToken: {
+            updateMany: async () => ({ count: 0 }),
+            create: async () => ({
+              id: "tok1",
+              expiresAt: new Date(Date.now() + 12 * 3600_000),
+            }),
+          },
+          auditEvent: { create: async () => ({}) },
+        }),
+    };
+    const res = await requestPasswordReset(
+      { email: "u@example.test" },
+      options as never,
+      fake as never,
+    );
+    expect(res).toEqual({ outcome: "ACCOUNT_EXISTS" });
+    expect(delivered).toHaveLength(1);
+    expect(reads).toBe(1); // exactly one read of options.deliver
+  });
+
+  it("throwing input/option getters → invalid_input before any DB access", async () => {
+    let lookups = 0;
+    let txCalls = 0;
+    const probe = {
+      user: {
+        findUnique: async () => {
+          lookups++;
+          return { id: "u", status: "ACTIVE" };
+        },
+      },
+      $transaction: async () => {
+        txCalls++;
+        throw new Error("must not run");
+      },
+    };
+    const trappedOptions = {
+      get deliver(): never {
+        throw new Error("getter-secret-message");
+      },
+    };
+    await expect(
+      requestPasswordReset(
+        { email: "u@example.test" },
+        trappedOptions,
+        probe as never,
+      ),
+    ).rejects.toMatchObject({ code: "invalid_input" });
+    const trappedInput = {
+      get email(): never {
+        throw new Error("email-getter-secret");
+      },
+    };
+    const err = await requestPasswordReset(
+      trappedInput,
+      { deliver: () => {} },
+      probe as never,
+    ).then(
+      () => null,
+      (e) => e,
+    );
+    expect(err).toMatchObject({ code: "invalid_input" });
+    // Never leak the underlying message or input value.
+    expect(String(err)).not.toContain("secret");
+    expect(lookups).toBe(0);
+    expect(txCalls).toBe(0);
+  });
+
+  it("throwing deliver fn → reset_failed, one commit, no replay", async () => {
+    let txCalls = 0;
+    const fake = {
+      user: { findUnique: async () => ({ id: "u1", status: "ACTIVE" }) },
+      $transaction: async (fn: (tx: unknown) => Promise<unknown>) => {
+        txCalls++;
+        return fn({
+          $queryRawUnsafe: async (q: string) =>
+            q.includes("FOR UPDATE") && q.includes('"users"')
+              ? [{ id: "u1", status: "ACTIVE" }]
+              : [],
+          accessToken: {
+            updateMany: async () => ({ count: 0 }),
+            create: async () => ({
+              id: "tok1",
+              expiresAt: new Date(Date.now() + 12 * 3600_000),
+            }),
+          },
+          auditEvent: { create: async () => ({}) },
+        });
+      },
+    };
+    const err = await requestPasswordReset(
+      { email: "u@example.test" },
+      {
+        deliver: () => {
+          throw new Error("provider exploded with token-details");
+        },
+      },
+      fake as never,
+    ).then(
+      () => null,
+      (e) => e,
+    );
+    expect(err).toMatchObject({ code: "reset_failed" });
+    expect(String(err)).not.toContain("exploded");
+    expect(txCalls).toBe(1); // committed once, never replayed
+  });
+
   it("resetStage is scoped to account PASSWORD_RESET audit only", () => {
     // Workspace audit construction must reject it.
     expect(() =>
