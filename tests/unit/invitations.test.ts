@@ -247,10 +247,7 @@ describe("post-lock re-authorization", () => {
       auditEvent: { create: async () => ({ id: "a" }) },
     };
     const client = {
-      $transaction: async (
-        fn: (t: typeof tx) => Promise<unknown>,
-        _opts?: unknown,
-      ) => fn(tx),
+      $transaction: async (fn: (t: typeof tx) => Promise<unknown>) => fn(tx),
     };
     await createWorkspaceInvitation(
       { user: { id: "u" } },
