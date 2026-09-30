@@ -14,8 +14,10 @@ web app whose data and layouts come from the 11-sheet PRGRSS 2.0 workbook. The s
 product source of truth; the workbook layouts and information architecture must be
 reproduced as the DATA and information architecture — but NOT the literal UI.
 (Latest direction, relayed by Hanzlah 2026-09-30: complete desktop/web redesign
-with platform-appropriate tablet/mobile interfaces — one design system,
-per-form-factor layouts; Prime Tracker's visual design is not the target.) This task builds **only** the foundation and the
+with platform-appropriate tablet and mobile interfaces — one shared design
+system, but per-form-factor navigation, information density, panel structure,
+tables, dashboards, and interactions; never one layout stretched or shrunk
+across platforms; Prime Tracker's visual design is not the target.) This task builds **only** the foundation and the
 extraction pipeline — not the product modules.
 
 ## 2. Non-goals

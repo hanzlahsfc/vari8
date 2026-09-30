@@ -13,8 +13,9 @@ stakeholder decisions). This document does not authorize a push, PR, deploy, or 
    the sheets remain the source of data, workflow, relationships, and information
    architecture, but the literal spreadsheet layout is not the final UI. The app
    requires a full desktop/web redesign plus platform-appropriate tablet and
-   mobile interfaces — one design system, per-form-factor navigation/density/
-   panels, never a stretched or shrunk shared layout. Prime Tracker's visual
+   mobile interfaces — one design system, per-form-factor navigation,
+   information density, panel structure, tables, dashboards, and interactions;
+   never a stretched or shrunk shared layout. Prime Tracker's visual
    design is not the target; the Prime Tracker repository is Marcel and Mike's
    and must not be modified. Product name still undecided.
    (Relayed by Hanzlah, 2026-09-30.)

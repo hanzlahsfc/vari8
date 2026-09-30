@@ -72,7 +72,16 @@ threshold, health-data policy, workflow, or layout.
   substantially different.
 - The professional sheets are the base and core of the new product.
 - The goal is to move the sheets into a runnable web application with extra features.
-- Reproduce the sheet layouts faithfully in the UI; do not independently redesign them.
+- ~~Reproduce the sheet layouts faithfully in the UI; do not independently redesign them.~~
+  **SUPERSEDED** (latest product/UI direction relayed by Hanzlah, 2026-09-30):
+  the sheets remain the source for data, workflows, relationships, terminology,
+  and information architecture — but the literal spreadsheet layouts are NOT
+  the final UI. The unnamed app requires a complete desktop/web redesign;
+  desktop/web, tablet, and mobile each get a form-factor-appropriate interface;
+  one design system is shared while navigation, information density, panels,
+  tables, dashboards, and interactions may differ per form factor; never
+  stretch or shrink one mobile/tablet design across platforms. Prime Tracker's
+  visual design is not the target and its repository is untouched.
 - Implement the sheet data and behavior inside the application. Do not link to or embed the
   live sheets as the product.
 - Replace Prime State's exercise/food master data with the sheet-derived databases.
@@ -336,10 +345,17 @@ assumptions.
 ### Stage 3 — Product shell (per-form-factor UI; sheet-derived information architecture)
 
 - Build the dashboard and Daily Tracker first using synthetic fixtures.
-- Reproduce sheet hierarchy, grouping, density, section order, labels, and dark/light
-  visual system. Do not turn the interface into unrelated generic cards.
-- Desktop should match the sheet closely. Mobile may use deliberate horizontal scrolling,
-  sticky identifiers, and responsive grouping without changing information meaning.
+- Preserve the workbook's domain concepts, data relationships, workflows, terminology,
+  and useful hierarchy — translate them into an appropriate product interface
+  (the literal spreadsheet layout is NOT the final UI; superseded wording removed
+  2026-10-01 per the direction relayed by Hanzlah 2026-09-30).
+- Desktop/web gets a complete desktop-focused layout making effective use of
+  larger screens; tablet gets its own touch-appropriate layout; mobile gets its
+  own compact, task-focused layout. Navigation, information density, panels,
+  tables, dashboards, and interactions may be reorganized per form factor —
+  responsive scaling of one shared layout is NOT sufficient. Essential behavior
+  and information stay consistent across platforms. Prime Tracker's
+  tablet/mobile visual design is not the target.
 - Remove coordinates and redaction markers from product surfaces.
 - Add visual/browser assertions at representative desktop and mobile widths.
 
@@ -532,6 +548,23 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 
 ## 12. Change log (newest first)
 
+### 2026-10-01 — S1-F2C documentation-only repair (third DeepSeek review)
+
+- Third independent DeepSeek review: all code, security, concurrency,
+  migration, and test areas independently **PASS** — FAIL was documentation
+  only (active superseded UI wording left in §3 + Stage 3, plus a false
+  changelog claim that §3 had been marked).
+- Fixed: §3 bullet and Stage 3 bullets now marked superseded / rewritten to
+  the per-form-factor direction; the changelog claim corrected; tables,
+  dashboards, and interactions named explicitly across the docs.
+- Documentation only — zero code/test/schema/migration changes.
+- S1-F2C stays: implementation independently passed; **final DeepSeek
+  documentation re-review pending**; S1-F2D not started.
+- Disposable DB `s1f2c_repair2` inspected read-only (abandoned synthetic
+  test fixture, 0 connections) and removed.
+
+## 12. Change log (newest first)
+
 ### 2026-09-30 — S1-F2C second repair (second DeepSeek FAIL → fixed; re-review pending)
 
 - Post-lock freshness barrier extended: after the tuple advisory lock, the
@@ -553,8 +586,10 @@ Copy this block, fill it in, and insert it immediately above the previous log en
   platform-specific desktop/web, tablet, and mobile interfaces under one
   design system; sheets remain data/workflow/IA source, not literal UI;
   Prime Tracker visual design is not the target and its repo is untouched;
-  product name still undecided. Earlier "faithful layout" wording marked
-  superseded in `product-decisions.md`, `implementation-plan.md`, and §3.
+  product name still undecided. CORRECTION (2026-10-01): the §3 bullet and
+  Stage 3 bullets were NOT actually superseded by this commit — the third
+  DeepSeek review caught that; they are corrected now (see the documentation-
+  only repair entry above).
 
 ## 12. Change log (newest first)
 
