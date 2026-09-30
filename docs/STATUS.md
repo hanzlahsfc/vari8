@@ -4,6 +4,45 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-09-30 — S1-F1 re-review PASS (opencode-go/deepseek-v4.1-flash)
+
+- Independent DeepSeek read-only re-review of the repaired tree at HEAD
+  `8331bc53648f7e6ed64a9bf9ff4e3c8745882087` (full range `3e7733a..8331bc5`;
+  repair-only `bedbe12..8331bc5`), each repair commit (`2d23249`, `8331bc5`)
+  inspected separately. Independence: S1-F1 + repair built by SWE-2 High;
+  reviewer is a different model. **PASS.**
+- Constraint verified in `pg_constraint`: `access_token_token_hash_sha256_hex` =
+  `octet_length(token_hash) = 64 AND token_hash ~ '^[a-f0-9]{64}$'`. The published
+  `20260930150000` migration is byte-identical to `bedbe12` (untouched); the
+  repair is a new additive migration with one `ADD CONSTRAINT` (no DROP/DML/
+  normalization/rewrite).
+- Adversarial real-PG inserts: valid lowercase 64-hex accepted; duplicate digest
+  rejected (`23505`); raw 43-char base64url, uppercase/mixed hex, whitespace
+  (leading/trailing/internal), empty, arbitrary, 63/65-char, 100k text,
+  fullwidth/unicode, newline/CR/CRLF/tab, zero-width, `g`-text, `+`-text all
+  rejected (`23514`); NUL rejected at input; no rejected insertion left material.
+  200 `lib/tokens/crypto.ts` digests + known-answer digest inserted (constraint
+  satisfied); a raw S1-F0 token rejected directly.
+- Additive migration on existing bad data fails closed: deploy through
+  `20260930150000`, insert a raw 43-char token (old schema allows), apply
+  `20260930160000` → `ERROR: check constraint … violated by some row` (exit 3);
+  row unchanged, no constraint added, no normalize/delete/rewrite.
+- Test quality mutation-checked (DB-level constraint substitution, no repo
+  edits): CHECK removed → 2 failed; uppercase regex → 1; `^[a-f0-9]+$` → 1;
+  length-only → 1; renamed → 1; raw-b64url regex → 9. Fixture rewrite uses a real
+  SHA-256 hex digest.
+- Full S1-F1 re-check clean: invite/reset shapes, NULL handling, allowed roles,
+  expiry, global uniqueness, email PII/no standalone index, delete behavior,
+  `session_version` default + no JWT change, prior S1-A–S1-E constraints/indexes,
+  fail-closed exposure assertion. No token lifecycle/external flow.
+- Gates: `git diff --check` 0; `npm ci` 0; prisma format/validate/generate 0;
+  `migrate deploy` 0 (7); `migrate status` 0; `format:check` 0; `typecheck` 0;
+  `lint` 0; `npm run test` 0 (277/28); `test:integration` 0 (88/6, real PG);
+  `build` 0; `test:e2e` 0 (21). `npm audit`: 1 moderate + 4 high (unchanged; no
+  force-fix). No repair/token service/route/UI/email/PR/deploy by the reviewer.
+- **S1-F1 is independently PASS at `8331bc5`.** Full S1-F still blocked on the
+  open `TODO(human)` policy items; token lifecycle services remain blocked.
+
 ## 2026-09-30 — S1-F0 token-crypto — independent review PASS (opencode-go/deepseek-v4.1-flash)
 
 - Independently reviewed range `96c6380..4f713e9` (HEAD `4f713e9`), read-only,

@@ -13,8 +13,11 @@ deployment, production-data change, or external-service change.
 - Current product name: undecided. `App`, `The-great-tracker-`, `Prime Tracker Pro`, and
   `PRGRSS 2.0` are placeholders or source names, not an approved product name.
 - Current branch: `main`
-- Last independently reviewed HEAD: `4f713e986c1a05b9c808c8fb9f76b2aeb1dc29c1` (S1-F0
-  token-crypto, **opencode-go/deepseek-v4.1-flash** verdict **PASS**). History:
+- Last independently reviewed HEAD: `8331bc53648f7e6ed64a9bf9ff4e3c8745882087` (S1-F1
+  AccessToken + sessionVersion schema, **opencode-go/deepseek-v4.1-flash** verdict
+  **PASS**, range `3e7733a..8331bc5`, repair-only `bedbe12..8331bc5`, 2026-09-30).
+  Previously `4f713e986c1a05b9c808c8fb9f76b2aeb1dc29c1` (S1-F0 token-crypto,
+  same reviewer, **PASS**). History:
   `gpt-6-astra` independently FAILED S1-D `ec8250c`; builder repair landed in
   `6e8e2e6`/`942879e`/`3415812`; SWE-2 High independently passed S1-D at `3415812`
   (range `85feade..3415812`). S1-E was implemented (`45752bc`/`87a4d0a`/`b97c5b5`),
@@ -181,8 +184,9 @@ threshold, health-data policy, workflow, or layout.
   `assertTokenFlowsExternallyExposable()`; repair migration
   `20260930160000_stage1_access_token_hash_format` enforces canonical SHA-256 hex
   at the DB boundary after an independent DeepSeek FAIL. Record:
-  `docs/tasks/s1-f1-token-schema.md`. **No token lifecycle service exists;
-  independent re-review pending (not passed).**
+  `docs/tasks/s1-f1-token-schema.md`. **Independently PASS**
+  (`opencode-go/deepseek-v4.1-flash`, repaired HEAD `8331bc5`, range
+  `3e7733a..8331bc5`). **No token lifecycle service exists.**
 
 ### Important limitations
 
@@ -337,10 +341,12 @@ gates green (unit 277, integration 87 real-PG, E2E 21). No token lifecycle
 service exists. Notable standing constraint: `AuditEvent.workspaceId` being NOT
 NULL still means user-owned reset/login audit rows need the §4.2 schema decision.
 The S1-F1 independent review FAILED on `token_hash` format enforcement; the
-additive repair (`access_token_token_hash_sha256_hex` CHECK) landed with gates
-green. Next: fresh different-model independent **re**-review of the repaired
-tree before any token service. GDPR (S1-G) and workspace shell (S1-H) remain
-later slices; no health records or product UI.
+additive repair (`access_token_token_hash_sha256_hex` CHECK) landed, and a fresh
+different-model independent **re**-review then **PASSed** the repaired tree at
+`8331bc5` (DeepSeek, range `3e7733a..8331bc5`). S1-F1 is independently PASS;
+next is to begin token lifecycle services **only** for the policy surface that is
+recorded, still blocked by the open `TODO(human)` items. GDPR (S1-G) and
+workspace shell (S1-H) remain later slices; no health records or product UI.
 
 ## 9. Human inputs still required
 
@@ -445,6 +451,64 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-30 — S1-F1 independent re-review PASS (reviewer: opencode-go/deepseek-v4.1-flash)
+
+- Scope: read-only independent re-review of the complete repaired S1-F1 tree.
+  Reviewer `opencode-go/deepseek-v4.1-flash` (DeepSeek) — a different model than
+  the builder (SWE-2 High) — authored the earlier FAIL and re-verified the repair
+  from the tree. No files were modified during review; no repair was made.
+- Starting state: branch `main`, HEAD = `origin/main` =
+  `8331bc53648f7e6ed64a9bf9ff4e3c8745882087`, worktree clean; `git fetch origin`
+  confirmed the remote had not moved.
+- Reviewed: full range `3e7733a..8331bc5`, repair-only range `bedbe12..8331bc5`,
+  each repair commit separately (`2d23249` migration+tests, `8331bc5` docs);
+  `db/schema.prisma`, both S1-F1 migrations, `lib/tokens/crypto.ts`,
+  `lib/tokens.ts`, all S1-F1 tests, and the S1-A table-set change.
+- Constraint: `access_token_token_hash_sha256_hex` present in `pg_constraint`
+  as `octet_length(token_hash) = 64 AND token_hash ~ '^[a-f0-9]{64}$'`. The
+  published `20260930150000` migration is byte-identical to `bedbe12`; the repair
+  is a new additive migration with a single `ADD CONSTRAINT` (no DROP/DML/
+  normalization/rewrite).
+- Real-PostgreSQL evidence (disposable DBs, since dropped): valid lowercase
+  64-hex accepted; duplicate digest rejected by the unique index (`23505`); raw
+  43-char base64url, uppercase/mixed hex, leading/trailing/internal whitespace,
+  empty, arbitrary, 63-/65-char hex, 100,000-char text, fullwidth/unicode, a
+  64-byte multi-byte value, newline/CR/CRLF/tab, zero-width space, `g`-text, and
+  `+`-text all rejected (`23514`); NUL rejected at input; only accepted rows
+  persisted. 200 `generateAccessToken()` digests + the pinned known-answer digest
+  inserted successfully; a raw S1-F0 token rejected on direct insert.
+- Additive migration on existing bad data: deploy through `20260930150000`,
+  insert a raw 43-char token (old schema permits), apply `20260930160000` →
+  `ERROR: check constraint … violated by some row` (exit 3); invalid row
+  unchanged, constraint not added, nothing normalized/deleted/rewritten.
+- Test quality (DB-level constraint substitution; no repo files edited): CHECK
+  removed → 2 failed; uppercase-accepting regex → 1; `^[a-f0-9]+$` → 1;
+  length-only → 1; renamed → 1; raw-b64url regex → 9. Fixture rewrite uses a
+  legitimate synthetic SHA-256 digest.
+- Full S1-F1 re-check clean (invite/reset shapes, NULL handling, roles, expiry,
+  uniqueness, email PII/no standalone index, delete behavior, `session_version`
+  default + no JWT change, prior S1-A–S1-E constraints/indexes, fail-closed
+  exposure). Non-blocking observations accurate: consumed+revoked may both be
+  set (either inactive by the planned predicate); `sessionVersion` not yet
+  JWT-enforced; accepted user-owned rows cascade with user deletion;
+  workspace/issuer deletion depends on token cleanup. No current integrity defect.
+- Full gates (fresh disposable DBs, dropped): `git diff --check` 0; `npm ci` 0;
+  prisma format/validate/generate 0; `migrate deploy` 0 (7); `migrate status` 0;
+  `format:check` 0; `typecheck` 0; `lint` 0; `npm run test` 0 (277/28);
+  `test:integration` 0 (88/6, real PG); `build` 0; `test:e2e` 0 (21). `npm audit`:
+  1 moderate + 4 high (unchanged; no `--force`).
+- Verdict: **PASS**. This is documentation only; the reviewer introduced no
+  schema/migration/production-code/test change, no token service, no route/UI/
+  email, no PR, and no deploy.
+- Commit/push/deploy: documentation commit recorded below; pushed to
+  `origin/main` per instruction; no PR, no deploy.
+- Known risks/blockers: unchanged — raw-token secrecy is caller discipline until
+  services exist; `migrate dev`/`diff` drift would drop the raw CHECKs (`migrate
+deploy` stays required); `target_email` plaintext PII, retention undecided;
+  `sessionVersion` inert until JWT wiring.
+- Next action: implement S1-F token lifecycle services only for the recorded
+  policy surface, test-first, after the remaining `TODO(human)` items resolve.
 
 ### 2026-09-30 — S1-F1 independent-review FAIL repair: token_hash canonical-format CHECK
 

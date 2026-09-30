@@ -226,10 +226,86 @@ verified byte-identical (`shasum a69a0cfe…`). Fixture update: the test helper'
 default `tokenHash` now generates a real SHA-256 hex digest so all fixtures stay
 canonical.
 
+## Independent re-review — PASS (opencode-go/deepseek-v4.1-flash)
+
+Read-only re-review of the repaired tree at HEAD
+`8331bc53648f7e6ed64a9bf9ff4e3c8745882087` (full range `3e7733a..8331bc5`;
+repair-only range `bedbe12..8331bc5`), each repair commit inspected separately
+(`2d23249` migration+tests, `8331bc5` docs). Independence basis: S1-F1 and its
+repair were built by SWE-2 High; the reviewer
+`opencode-go/deepseek-v4.1-flash` (DeepSeek) is a different model, authored the
+earlier FAIL, and re-verified the repair from the tree rather than trusting the
+builder's report. **Verdict: PASS.**
+
+### Repair verification (real PostgreSQL 16.15, disposable databases)
+
+- `access_token_token_hash_sha256_hex` exists in `pg_constraint`:
+  `CHECK ((octet_length(token_hash) = 64) AND (token_hash ~ '^[a-f0-9]{64}$'))`.
+- The published `20260930150000_stage1_access_tokens/migration.sql` is
+  **byte-identical** to `bedbe12` (not edited); the repair is a new additive
+  migration `20260930160000_stage1_access_token_hash_format` containing a single
+  `ALTER TABLE … ADD CONSTRAINT` (no `DROP`/`UPDATE`/normalization/deletion/table
+  rewrite).
+- Adversarial inserts through the real constraint: a valid 64-char lowercase hex
+  digest inserts; a duplicate digest fails via `access_token_token_hash_key`
+  (`23505`); raw 43-char base64url, uppercase hex, uppercase-mixed hex,
+  leading/trailing/internal whitespace, empty, arbitrary text, 63-/65-char hex,
+  100,000-char text, fullwidth/unicode lookalikes, a 64-byte multi-byte value,
+  embedded newline/CR/CRLF/tab, zero-width space, `g`-containing 64-char text,
+  and `+`-padded 43-char text are all rejected (`23514`); a NUL byte is rejected
+  at text input. Only the accepted rows were persisted — no rejected insertion
+  left token material.
+- `lib/tokens/crypto.ts`: 200 `generateAccessToken()` digests plus the pinned
+  known-answer `sha256("A"*43)` digest all inserted successfully (constraint
+  satisfied); a freshly generated raw S1-F0 43-char base64url token inserted
+  directly as `token_hash` was rejected by the named CHECK with no row stored.
+- Additive-migration-on-bad-data: deploying through `20260930150000`, inserting
+  a raw 43-char token (permitted by the old schema), then applying
+  `20260930160000` fails closed — `ERROR: check constraint
+"access_token_token_hash_sha256_hex" … is violated by some row` (exit 3). The
+  invalid row is unchanged, the constraint is not left behind, and nothing is
+  normalized, deleted, or rewritten.
+
+### Test quality (mutation-checked on real PostgreSQL, no repo files edited)
+
+The constraint was substituted at the database layer and the focused suite
+re-run: CHECK removed → 2 failed; regex accepting uppercase → 1 failed;
+regex `^[a-f0-9]+$` (length check gone) → 1 failed; length-only (alphabet check
+gone) → 1 failed; constraint renamed → 1 failed; regex accepting raw
+43-char base64url → 9 failed. The suite bites on every requested mutation, and
+the fixture rewrite uses a legitimate synthetic SHA-256 digest (the previous
+`padEnd(64,"0")` default was not hex and would now be rejected).
+
+### Full S1-F1 re-check
+
+Purpose-specific invite/reset shapes, explicit `IS NOT NULL` NULL handling,
+allowed invite roles {COACH, ASSISTANT_COACH, CLIENT}, `expires_at > created_at`,
+global digest uniqueness, plaintext-`target_email` PII with no standalone index,
+workspace Restrict / user Cascade / issuer Restrict delete behavior, additive
+`session_version INT NOT NULL DEFAULT 0` with no JWT/auth change, prior S1-A–S1-E
+composite FKs and partial unique indexes intact, and the fail-closed
+`assertTokenFlowsExternallyExposable()` boundary all hold. No token lifecycle
+service or external flow exists. Non-blocking observations (consumed and revoked
+may both be set — either is inactive by the planned consume predicate;
+`sessionVersion` is not yet enforced by JWT; accepted user-owned token rows
+cascade with user deletion; workspace/issuer deletion depends on token cleanup)
+are accurate and conceal no current integrity defect.
+
+### Gates (reviewer-run, disposable databases, since dropped)
+
+`git diff --check` 0; `npm ci` 0; `npx prisma format` 0 (no schema diff);
+`validate` 0; `generate` 0; `migrate deploy` 0 (7 migrations); `migrate status` 0;
+`format:check` 0; `typecheck` 0; `lint` 0; `npm run test` 0 (277 passed / 28
+files); `test:integration` 0 (88 passed / 6 files, real PostgreSQL); `build` 0;
+`test:e2e` 0 (21 passed). `npm audit`: 1 moderate + 4 high (unchanged advisories;
+no `--force`).
+
 ## Status
 
-**S1-F Phase 1 schema/session foundation implemented and repaired; no token
-lifecycle or external flow; independent re-review pending.** Full S1-F remains
-blocked on the open `TODO(human)` items (acceptance details, reset eligibility,
-password policy, email delivery, abuse protection, audit ownership/retention,
-standalone verification).
+**S1-F Phase 1 schema/session foundation is independently PASS at `8331bc5`
+(`opencode-go/deepseek-v4.1-flash`).** No token lifecycle or external flow; no
+repair, service, route, UI, email, PR, or deploy was introduced by the review.
+Full S1-F remains blocked on the open `TODO(human)` items (acceptance details,
+reset eligibility, password policy, email delivery, abuse protection, audit
+ownership/retention, standalone verification); token lifecycle services stay
+blocked until those land.
