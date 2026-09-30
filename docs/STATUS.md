@@ -160,6 +160,40 @@ extraction) only, not the workbook UI itself.
 - Next: record the founder answers, then implement the separately reviewed S1-F
   Phase 1 schema foundation (still no routes/email until the flow decisions land).
 
+## 2026-10-01 — S1-F2C final documentation re-review PASS (opencode-go/deepseek-v4.1-flash)
+
+- Read-only final, documentation-only re-review of range `367fb99..02a7730`
+  (`fa33589` UI-direction reconciliation, `02a7730` record), HEAD `02a7730`.
+  Independence: implementation built by SWE-2 High; reviewer is a different
+  model and issued all three prior independent FAILs. **PASS.**
+- `git diff 367fb99..02a7730 -- lib tests db app` **empty** — zero code/test/
+  schema/migration/UI changes; changed files are exactly the seven expected
+  docs. The implementation at `367fb99` already independently passed every
+  full gate; this range is documentation only.
+- TRACKER §3 "faithful sheet layouts; do not redesign" now struck through +
+  **SUPERSEDED**; Stage 3 rewritten to the per-form-factor direction (desktop
+  = complete desktop-focused redesign; tablet/mobile form-factor-specific;
+  one shared design system; per-factor navigation, information density,
+  panels, tables, dashboards, interactions; no stretch/shrink). The false
+  changelog claim about §3 is corrected with a dated CORRECTION note.
+- All active guidance (`product-decisions.md` #3, `implementation-plan.md` §1,
+  STATUS, TRACKER §3 + Stage 3) consistently states the direction; an
+  exhaustive `rg` classification found no unmarked active contradiction
+  (remaining hits are superseded-struck or historical task/review evidence).
+- Boundaries: product name undecided (none invented); Prime Tracker
+  (Marcel + Mike) untouched and not the visual target; no UI implemented.
+  `s1f2c_repair2` no longer exists (read-only verified).
+- Verification: `git diff --check` 0; `npm run format:check` 0;
+  `git diff --check 367fb99..HEAD` 0; `git diff --exit-code 367fb99..HEAD --
+lib tests db app` 0.
+- **S1-F2C independently PASS. Platform-specific UI direction reconciled.
+  Prime Tracker untouched. Next eligible slice: S1-F2D (not started).**
+- Residual (non-blocking) UI-planning notes: "Marcel and Mike are finalizing
+  Prime Tracker" is conveyed as ownership + do-not-modify rather than the word
+  "finalizing"; Stage 3's visual-assertion bullet names desktop+mobile widths
+  (tablet width could be added); the `## 12. Change log` heading is duplicated
+  per entry (pre-existing structural quirk).
+
 ## 2026-10-01 — S1-F2C documentation-only repair after third DeepSeek FAIL
 
 - Third review verdict: all code/security/concurrency/migration/test areas

@@ -223,8 +223,8 @@ threshold, health-data policy, workflow, or layout.
     plus supporting indexes for the account listing and cleanup query. No
     orchestration, routes, or email. Record:
     `docs/tasks/s1-f2b-account-security.md`.
-  - **S1-F2C** (implemented; repaired after DeepSeek FAIL — re-review
-    PENDING):
+  - **S1-F2C** (implemented; **independently PASS** after three DeepSeek
+    reviews — final documentation-only re-review PASS at `02a7730`):
     `lib/workspace/invitations.ts` — `createWorkspaceInvitation` (owner→
     COACH/ASSISTANT_COACH/CLIENT via `membersInvitations`, coach→CLIENT via new
     `clientInvitations` resource; advisory-lock serialized replacement of the
@@ -436,11 +436,12 @@ review FAILed the session boundary, and the repair (jwt-callback
 invalidation, supporting indexes, deliberate callback composition) was
 independently re-reviewed **PASS** at `ae7c6d5`
 (`opencode-go/deepseek-v4.1-flash`, range `ac9857e..ae7c6d5`).
-**S1-F2C invitation orchestration is implemented and repaired after TWO
-independent DeepSeek FAILs** (see §6 + task records) with gates green (unit
-319, integration 162 real-PG, E2E 21) and 34 mutation proofs total — **its
-independent different-model re-review is pending**, then S1-F2D
-password-reset orchestration. No routes/UI/email exist. GDPR
+**S1-F2C invitation orchestration is independently PASS** after three DeepSeek
+reviews (two code/security FAILs repaired; the third FAIL was documentation
+only, repaired and re-reviewed PASS at `02a7730`) — see §6 + task records —
+with gates green (unit 319, integration 162 real-PG, E2E 21) and 34 mutation
+proofs total. **Next eligible slice: S1-F2D password-reset orchestration
+(not started).** No routes/UI/email exist. GDPR
 (S1-G) and workspace shell (S1-H) remain later slices; no health records or
 product UI.
 
@@ -547,6 +548,21 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-10-01 — S1-F2C final documentation re-review PASS (DeepSeek)
+
+- Final independent DeepSeek documentation-only re-review of
+  `367fb99..02a7730` (HEAD `02a7730`; commits `fa33589` UI-direction
+  reconciliation, `02a7730` record): **PASS**. `git diff 367fb99..02a7730 --
+lib tests db app` empty — no code/test/schema/migration/UI changes; only
+  the seven expected docs changed.
+- Verified: TRACKER §3 superseded wording; Stage 3 per-form-factor rewrite
+  (desktop as a complete desktop-focused redesign); corrected false-§3
+  changelog claim; consistent active guidance naming navigation, information
+  density, panels, tables, dashboards, interactions; product name undecided;
+  Prime Tracker (Marcel + Mike) untouched and not the visual target;
+  `s1f2c_repair2` gone (read-only check).
+- **S1-F2C independently PASS.** Next eligible slice: S1-F2D (not started).
 
 ### 2026-10-01 — S1-F2C documentation-only repair (third DeepSeek review)
 
