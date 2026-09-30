@@ -89,6 +89,8 @@ export type AuditMeta = {
   /** S1-F2C repair: structural acceptance outcome on INVITE/access_token events. */
   acceptedAs?:
     "NEW_USER" | "JOINED" | "ALREADY_MEMBER" | "ACTIVATED" | "RESTORED";
+  /** S1-F2D: request-vs-consume marker on PASSWORD_RESET/access_token events. */
+  resetStage?: "REQUESTED" | "COMPLETED";
 };
 
 export type AuditEventInput = {
@@ -140,6 +142,7 @@ const META_VALIDATORS = new Map<keyof AuditMeta, (v: unknown) => boolean>([
       v === "ACTIVATED" ||
       v === "RESTORED",
   ],
+  ["resetStage", (v) => v === "REQUESTED" || v === "COMPLETED"],
 ]);
 
 /**
