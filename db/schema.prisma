@@ -77,6 +77,12 @@ enum AuditAction {
   ASSIGN
   DENY
   LOGIN
+  PASSWORD_RESET
+}
+
+enum AuditScope {
+  WORKSPACE
+  ACCOUNT
 }
 
 enum AuditResult {
@@ -103,12 +109,14 @@ model User {
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
-  memberships        WorkspaceMember[]
-  clientProfiles     ClientProfile[]
-  consentsGranted    ConsentRecord[]
-  auditEvents        AuditEvent[]
-  accessTokens       AccessToken[]     @relation("AccessTokenUser")
-  issuedAccessTokens AccessToken[]     @relation("AccessTokenCreator")
+  memberships          WorkspaceMember[]
+  clientProfiles       ClientProfile[]
+  consentsGranted      ConsentRecord[]
+  auditEvents          AuditEvent[]
+  // S1-F2B: account-scoped audit rows (e.g. reset activity) owned by this user.
+  subjectAuditedEvents AuditEvent[]      @relation("AuditSubjectUser")
+  accessTokens         AccessToken[]     @relation("AccessTokenUser")
+  issuedAccessTokens   AccessToken[]     @relation("AccessTokenCreator")
 
   @@map("users")
 }
@@ -233,27 +241,36 @@ model ConsentRecord {
 
 model AuditEvent {
   id                     String      @id @default(cuid())
-  workspaceId            String      @map("workspace_id")
+  // S1-F2B: scope discriminates tenant-owned rows from account-owned security
+  // rows. Ownership shapes are enforced by raw SQL CHECKs in the migration
+  // (WORKSPACE scope ⇒ workspace_id set + subject_user_id null; ACCOUNT scope
+  // ⇒ subject_user_id set + workspace_id null) — Prisma cannot express it.
+  scope                  AuditScope  @default(WORKSPACE)
+  workspaceId            String?     @map("workspace_id")
   actorUserId            String?     @map("actor_user_id")
   actorRole              MemberRole? @map("actor_role")
   action                 AuditAction
   resourceType           String      @map("resource_type")
   resourceId             String?     @map("resource_id")
   subjectClientProfileId String?     @map("subject_client_profile_id")
+  subjectUserId          String?     @map("subject_user_id")
   result                 AuditResult
   reason                 String?
   at                     DateTime    @default(now()) @db.Timestamptz(6)
   ip                     String?
   meta                   Json?
 
-  workspace            Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  workspace            Workspace?     @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   actor                User?          @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
   subjectClientProfile ClientProfile? @relation(fields: [subjectClientProfileId], references: [id], onDelete: SetNull)
+  subjectUser          User?          @relation("AuditSubjectUser", fields: [subjectUserId], references: [id], onDelete: Restrict)
 
   // Read paths: tenant-scoped, time-ordered listing ([workspaceId, at]) and
   // tenant-scoped id-cursor pagination used by listAuditEvents ([workspaceId, id]).
+  // Account path: internal subject-user listing ([subjectUserId, at]).
   @@index([workspaceId, at])
   @@index([workspaceId, id])
+  @@index([subjectUserId, at])
   @@map("audit_event")
 }
 

@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient, type MemberRole } from "@prisma/client";
 
 import { prisma } from "./db";
 import {
@@ -35,7 +35,10 @@ import { normalizeLimit } from "./workspace/clients";
  */
 
 export type AuditErrorCode =
-  "invalid_input" | "audit_metadata_forbidden" | "audit_write_failed";
+  | "invalid_input"
+  | "audit_metadata_forbidden"
+  | "audit_write_failed"
+  | "audit_not_wired_for_external_use";
 
 export class AuditError extends Error {
   constructor(readonly code: AuditErrorCode) {
@@ -56,12 +59,23 @@ export const AUDIT_ACTIONS = [
   "ASSIGN",
   "DENY",
   "LOGIN",
+  "PASSWORD_RESET",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 /** Resource types audit events may reference (closed set for this slice). */
-export const AUDIT_RESOURCE_TYPES = ["consent", "client_assignment"] as const;
+export const AUDIT_RESOURCE_TYPES = [
+  "consent",
+  "client_assignment",
+  "access_token",
+  "user",
+] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
+
+/** S1-F2B: actions permitted on ACCOUNT-scoped rows (closed set). */
+export const ACCOUNT_AUDIT_ACTIONS = ["PASSWORD_RESET"] as const;
+/** S1-F2B: resource types permitted on ACCOUNT-scoped rows (closed set). */
+export const ACCOUNT_AUDIT_RESOURCES = ["user", "access_token"] as const;
 
 export type AuditMeta = {
   kind?: ConsentKind;
@@ -163,6 +177,7 @@ export function buildAuditEvent(
     throw new AuditError("audit_metadata_forbidden");
   const meta = sanitizeAuditMeta(input.meta);
   return {
+    scope: "WORKSPACE",
     workspaceId: context.workspaceId,
     actorUserId: context.userId,
     actorRole: context.workspaceRole ?? null,
@@ -201,7 +216,7 @@ export async function writeAuditEvent(
 
 export type AuditEventRow = {
   id: string;
-  workspaceId: string;
+  workspaceId: string | null;
   actorUserId: string | null;
   actorRole: string | null;
   action: string;
@@ -235,6 +250,9 @@ export async function listAuditEvents(
     throw new AccessDeniedError("role_denied", "auditLog", "read");
   const take = normalizeLimit(input.limit);
   const where: Prisma.AuditEventWhereInput = {
+    // S1-F2B: workspace listings are structurally scope-locked — account-owned
+    // security events can never enter a tenant's audit listing.
+    scope: "WORKSPACE",
     workspaceId: input.workspaceId,
   };
   if (input.cursor) where.id = { gt: input.cursor };
@@ -242,6 +260,139 @@ export async function listAuditEvents(
     where,
     orderBy: { id: "asc" },
     take: take + 1,
+  });
+  const items = rows.slice(0, take);
+  const nextCursor =
+    rows.length > take ? (items[items.length - 1]?.id ?? null) : null;
+  return { items, nextCursor };
+}
+
+// --- S1-F2B account-scoped security audit ------------------------------------
+//
+// Account events (password-reset activity today) belong to a user, not a
+// workspace — `AuditEvent.workspaceId` stays null for them and the database
+// CHECKs enforce the ownership shape. The account writer is a separate closed
+// path: it does NOT weaken the workspace writer's context requirements, and it
+// accepts only the reviewed action/resource sets above. A workspace is never
+// fabricated for account-owned activity.
+
+export type AccountAuditContext = {
+  /** The account this event belongs to — required, maps to subjectUserId. */
+  subjectUserId: string;
+  /** Nullable: future unauthenticated reset requests have no actor. */
+  actorUserId?: string | null;
+  actorRole?: MemberRole | null;
+};
+
+export type AccountAuditEventInput = {
+  action: (typeof ACCOUNT_AUDIT_ACTIONS)[number];
+  resourceType: (typeof ACCOUNT_AUDIT_RESOURCES)[number];
+  resourceId?: string | null;
+  meta?: AuditMeta;
+};
+
+/**
+ * Build an ACCOUNT-scoped audit row. Fails closed on any action/resource
+ * outside the account allowlists or a missing/empty subject; metadata goes
+ * through the same forbidden-shape allowlist as workspace events.
+ */
+export function buildAccountAuditEvent(
+  context: AccountAuditContext,
+  input: AccountAuditEventInput,
+): Prisma.AuditEventUncheckedCreateInput {
+  if (
+    typeof context.subjectUserId !== "string" ||
+    context.subjectUserId.length === 0
+  )
+    throw new AuditError("invalid_input");
+  if (
+    !(ACCOUNT_AUDIT_ACTIONS as readonly string[]).includes(input.action) ||
+    !(ACCOUNT_AUDIT_RESOURCES as readonly string[]).includes(input.resourceType)
+  )
+    throw new AuditError("audit_metadata_forbidden");
+  const meta = sanitizeAuditMeta(input.meta);
+  return {
+    scope: "ACCOUNT",
+    workspaceId: null,
+    subjectUserId: context.subjectUserId,
+    actorUserId: context.actorUserId ?? null,
+    actorRole: context.actorRole ?? null,
+    action: input.action,
+    resourceType: input.resourceType,
+    resourceId: input.resourceId ?? null,
+    result: "ALLOW",
+    reason: null,
+    ip: null,
+    ...(meta === undefined ? {} : { meta }),
+  };
+}
+
+/**
+ * Write an account-scoped audit event inside the caller's transaction.
+ * Transaction-client only — a failed write rolls the business mutation back
+ * with it, exactly like the workspace writer.
+ */
+export async function writeAccountAuditEvent(
+  tx: Prisma.TransactionClient,
+  input: AccountAuditContext & AccountAuditEventInput,
+): Promise<void> {
+  const data = buildAccountAuditEvent(input, input);
+  try {
+    await tx.auditEvent.create({ data });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2034"
+    )
+      throw error;
+    throw new AuditError("audit_write_failed");
+  }
+}
+
+export type AccountAuditEventRow = {
+  id: string;
+  actorUserId: string | null;
+  action: string;
+  resourceType: string;
+  resourceId: string | null;
+  result: string;
+  at: Date;
+};
+
+/**
+ * Internal bounded account-event listing — NOT a user-facing security log and
+ * NOT authorization. Subject-scoped by exact `subjectUserId` and hard-locked
+ * to `scope: ACCOUNT`; default 25 / max 100 via the shared limit normalizer;
+ * stable id cursor, deterministic ordering, minimal fields.
+ */
+export async function listAccountAuditEvents(
+  input: { subjectUserId: string; limit?: number; cursor?: string },
+  client: PrismaClient | PrismaLike = prisma,
+): Promise<{ items: AccountAuditEventRow[]; nextCursor: string | null }> {
+  if (
+    typeof input.subjectUserId !== "string" ||
+    input.subjectUserId.length === 0
+  )
+    throw new AuditError("invalid_input");
+  const take = normalizeLimit(input.limit);
+  const where: Prisma.AuditEventWhereInput = {
+    scope: "ACCOUNT",
+    subjectUserId: input.subjectUserId,
+  };
+  if (input.cursor) where.id = { gt: input.cursor };
+  const rows = await client.auditEvent.findMany({
+    where,
+    orderBy: { id: "asc" },
+    take: take + 1,
+    select: {
+      id: true,
+      actorUserId: true,
+      action: true,
+      resourceType: true,
+      resourceId: true,
+      result: true,
+      at: true,
+    },
   });
   const items = rows.slice(0, take);
   const nextCursor =
