@@ -214,7 +214,8 @@ threshold, health-data policy, workflow, or layout.
     plus supporting indexes for the account listing and cleanup query. No
     orchestration, routes, or email. Record:
     `docs/tasks/s1-f2b-account-security.md`.
-  - **S1-F2C** (implemented; independent different-model review PENDING):
+  - **S1-F2C** (implemented; repaired after DeepSeek FAIL — re-review
+    PENDING):
     `lib/workspace/invitations.ts` — `createWorkspaceInvitation` (owner→
     COACH/ASSISTANT_COACH/CLIENT via `membersInvitations`, coach→CLIENT via new
     `clientInvitations` resource; advisory-lock serialized replacement of the
@@ -226,8 +227,16 @@ threshold, health-data policy, workflow, or layout.
     exact-identity binding → membership state machine incl. fresh-invite-only
     restoration → single profile type → user binding → audit; one Serializable
     tx). `AuditMeta.targetRole` closed extension. No routes/UI/email —
-    `assertInvitationOrchestrationExternallyExposable` fails closed. Record:
-    `docs/tasks/s1-f2c-invitations.md`.
+    `assertInvitationOrchestrationExternallyExposable` fails closed. The
+    independent DeepSeek review FAILED it (clock-based freshness); repaired
+    with a causal membership state-generation snapshot
+    (`workspace_member.state_version` trigger + `access_token`
+    `target_member_state_version`, migration `20260930190000`), guard-based
+    issuer re-authorization, fail-closed profile coherence, truthful
+    `INVITE`/`access_token` acceptance audit, authorize-before-lock ordering,
+    strict P2002 classification, and the
+    `access_token_ws_invite_list_idx` index. Records:
+    `docs/tasks/s1-f2c-invitations.md`, `docs/tasks/s1-f2c-review-repair.md`.
   - **Policy reconciliation + orchestration plan (docs only, 2026-09-30):**
     Aleks's final S1-F answers recorded in `product-decisions.md` #20–28 —
     invite acceptance rules, ACTIVE-only reset, min-10 password (below the
@@ -411,9 +420,10 @@ review FAILed the session boundary, and the repair (jwt-callback
 invalidation, supporting indexes, deliberate callback composition) was
 independently re-reviewed **PASS** at `ae7c6d5`
 (`opencode-go/deepseek-v4.1-flash`, range `ac9857e..ae7c6d5`).
-**S1-F2C invitation orchestration is now implemented** (see §6 + task record)
-with gates green (unit 315, integration 152 real-PG, E2E 21) and 14 mutation
-proofs — **its independent different-model review is pending**, then S1-F2D
+**S1-F2C invitation orchestration is implemented and REPAIRED after an
+independent DeepSeek FAIL** (see §6 + task records) with gates green (unit
+318, integration 159 real-PG, E2E 21) and 29 mutation proofs total — **its
+independent different-model re-review is pending**, then S1-F2D
 password-reset orchestration. No routes/UI/email exist. GDPR
 (S1-G) and workspace shell (S1-H) remain later slices; no health records or
 product UI.
@@ -521,6 +531,24 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 ```
 
 ## 12. Change log (newest first)
+
+### 2026-09-30 — S1-F2C repaired after independent DeepSeek FAIL (re-review pending)
+
+- DeepSeek findings: clock-crossed freshness proof, hand-written issuer role
+  list, cross-role profile incoherence, unfaithful acceptance audit,
+  authorize-after-lock ordering, blanket P2002 retry, missing list index.
+- Repairs: `workspace_member.state_version` DB-trigger generation +
+  `access_token.target_member_state_version` snapshot (causal, clock-free;
+  migration `20260930190000_stage1_f2c_member_state`); issuer re-auth via the
+  S1-B guard inside the tx; opposite-profile coherence gate; acceptance audit
+  `INVITE`/`access_token`/`{targetRole,acceptedAs}`; authorize → advisory
+  lock → FOR UPDATE + re-authorize; P2002 retry only for 4 pinned
+  modelName+target races; new `access_token_ws_invite_list_idx`
+  (EXPLAIN-verified, no Sort).
+- 15 repair mutations caught, restored byte-exact. Gates: unit 318,
+  integration 159/12, build 0, e2e 21.
+- Commits: `0849426` plan; repair + record commits follow. **Next:
+  independent DeepSeek re-review → S1-F2D.**
 
 ### 2026-09-30 — S1-F2C invitation orchestration implemented (review pending)
 

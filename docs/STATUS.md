@@ -160,6 +160,20 @@ extraction) only, not the workbook UI itself.
 - Next: record the founder answers, then implement the separately reviewed S1-F
   Phase 1 schema foundation (still no routes/email until the flow decisions land).
 
+## 2026-09-30 — S1-F2C REPAIRED after DeepSeek independent FAIL; re-review PENDING
+
+- DeepSeek FAIL repaired: clock-based freshness replaced by causal
+  `workspace_member.state_version` (DB trigger-owned; additive migration
+  `20260930190000` + `access_token.target_member_state_version` snapshot);
+  issuer re-auth now uses the reviewed guard; fail-closed profile coherence;
+  truthful `INVITE`/`access_token` acceptance audit (`acceptedAs`);
+  authorize-before-lock + FOR UPDATE re-check; strict P2002 classification;
+  new `access_token_ws_invite_list_idx` with real EXPLAIN evidence.
+- Gates: unit 318, integration 159/12 real-PG files, e2e 21; 15 repair
+  mutations caught + restored byte-exact. Record:
+  `docs/tasks/s1-f2c-review-repair.md` + `s1-f2c-invitations.md`.
+- **Next: independent DeepSeek re-review of S1-F2C → then S1-F2D.**
+
 ## 2026-09-30 — S1-F2C invitation orchestration implemented; independent review PENDING
 
 - `lib/workspace/invitations.ts`: create/replace (owner→staff|client,

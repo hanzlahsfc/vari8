@@ -121,28 +121,36 @@ workspaceId: input.workspaceId})` — every malformed/missing/wrong-purpose/
    (ACTIVE — invite = email verification).
 6. Membership state machine on `(workspaceId, userId)`:
 
-   | Current member                                                               | Outcome                                                                                          |
-   | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-   | none                                                                         | create ACTIVE member with `intendedRole`                                                         |
-   | INVITED                                                                      | → ACTIVE with `intendedRole`                                                                     |
-   | ACTIVE same role                                                             | `already_member` idempotent — no writes, no dup profile                                          |
-   | ACTIVE other role                                                            | `membership_conflict` — closed, no silent role change                                            |
-   | SUSPENDED/REMOVED + **fresh** invite (`token.createdAt > member.updatedAt`)  | → ACTIVE with `intendedRole` (the fresh invite IS the explicit restoration + role authorization) |
-   | SUSPENDED/REMOVED + **stale** invite (`token.createdAt <= member.updatedAt`) | `invalid_token` — an invite issued before the state change cannot restore                        |
+   | Current member                                                                                 | Outcome                                                                                          |
+   | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+   | none                                                                                           | create ACTIVE member with `intendedRole`                                                         |
+   | INVITED                                                                                        | → ACTIVE with `intendedRole`                                                                     |
+   | ACTIVE same role                                                                               | `already_member` idempotent — no writes, no dup profile                                          |
+   | ACTIVE other role                                                                              | `membership_conflict` — closed, no silent role change                                            |
+   | SUSPENDED/REMOVED + **fresh** invite (`token.targetMemberStateVersion = member.state_version`) | → ACTIVE with `intendedRole` (the fresh invite IS the explicit restoration + role authorization) |
+   | SUSPENDED/REMOVED + **stale** invite (`token.targetMemberStateVersion ≠ member.state_version`) | `invalid_token` — an invite issued before the state change cannot restore                        |
 
-   Freshness is proven by `token.createdAt > member.updatedAt`: any write to
-   the membership row (including suspension/removal) makes every invite issued
-   before it stale.
+   Freshness is causal (post-repair): `member.state_version` is a DB-owned
+   generation bumped by trigger on every status/role change; issuance stamps
+   the invite with the current generation, acceptance requires equality.
+   Supersedes the original clock comparison (`token.createdAt >
+member.updatedAt`), which the independent review failed because it mixed
+   app and database clocks. (Historical text below is superseded: only
+   status/role writes bump the generation.)
 
 7. Profiles: CLIENT → `ClientProfile.create({workspaceId, userId, name})`
    (name from invitee input for new users; existing user's `name` for existing
    — never overwritten on idempotent accept); COACH/ASSISTANT_COACH →
    `CoachProfile.create({workspaceMemberId, displayName})`. Exactly one
-   profile type per invite; concurrent create → P2002 → bounded retry sees the
-   row → idempotent/conflict.
+   coherent profile type per membership — an opposite-class pre-existing
+   profile (or corrupt dual state) makes acceptance `membership_conflict`
+   before any membership write (post-repair). Concurrent create → P2002 →
+   bounded retry sees the row → idempotent/conflict.
 8. Bind `token.userId = acceptedUserId` (S1-F1 CHECK permits it only on
    consumed rows).
-9. `writeAuditEvent` — `CREATE`/`user`/`resourceId=userId`,
+9. `writeAuditEvent` — post-repair: `INVITE`/`access_token`/`token.id`,
+   `meta:{targetRole, acceptedAs}` — (original plan said `CREATE`/`user`/`userId`;
+   superseded),
    `meta:{targetRole, status:"ACTIVE"}` — inside the same tx.
 10. Commit. Any failure leaves no partial user/member/profile/token/audit row.
 
@@ -202,8 +210,8 @@ PENDING.** Builder: SWE-2 High (builder only, no self-approval).
 - `lib/tokens/store.ts`: `claimAccessToken` record now also selects
   `createdByUserId` + `createdAt` (issuer re-authorization + freshness).
 - No migration needed — the F2B index set already serves every query; the
-  owner list uses `access_token_invite_target_idx`
-  (workspaceId, purpose, …) for filtering + bounded id ordering.
+  owner list is backed by `access_token_ws_invite_list_idx`
+  (workspace_id, purpose, id) added in the repair — EXPLAIN-verified no-Sort.
 - `authorization-model.md` updated (new matrix row + rules).
 
 ### Key semantics proven on real PostgreSQL (21 integration tests)
@@ -221,12 +229,12 @@ PENDING.** Builder: SWE-2 High (builder only, no self-approval).
   `{changed:false}` for terminal/foreign/missing, audit only on change.
 - Acceptance: atomic claim (one winner under `Promise.all` race); issuer
   re-authorization (client=owner-or-coach, staff=owner); new-user path creates
-  ACTIVE user + member + exactly one profile type (policy-validated,
+  ACTIVE user + member + the coherent profile type (policy-validated,
   scrypt-hashed password verified); existing-user path requires session for
   the exact invited email and never touches the password; same user joins
   multiple workspaces with no data crossing; INVITED→ACTIVE; ACTIVE same-role
-  idempotent; ACTIVE other-role closed; SUSPENDED/REMEMBER-restoration gated
-  on `token.createdAt > member.updatedAt` (fresh-invite invariant).
+  idempotent; ACTIVE other-role closed; SUSPENDED/REMOVED restoration gated on the membership state-generation
+  snapshot (causal, clock-independent — repaired after DeepSeek FAIL).
 
 ### RED → GREEN
 
@@ -256,3 +264,71 @@ No routes/UI/actions, no email provider/URL/domain, no rate limiting, no
 ClientAssignment auto-creation (unapproved), no cross-workspace copying, no
 S1-F2D work. `assertTokenFlowsExternallyExposable` +
 `assertInvitationOrchestrationExternallyExposable` fail closed.
+
+---
+
+## Repair record (2026-09-30, after independent DeepSeek FAIL)
+
+**Status: repaired — gates green — independent DeepSeek re-review PENDING.**
+
+Findings and repairs (all mutations caught, restored byte-exact):
+
+1. **Clock freshness → causal generation.** `token.createdAt >
+member.updatedAt` mixed the DB clock with the app clock (±5 s skew flipped
+   the decision). Replaced by `workspace_member.state_version`: a DB-owned
+   generation that the `workspace_member_state_version_guard` trigger
+   increments iff status/role change (and forces on INSERT/UPDATE — direct
+   SQL cannot forge or reset it). Issuance stamps
+   `access_token.target_member_state_version` (NULL = no member existed);
+   acceptance requires snapshot equality for every existing-member branch.
+   Causality: a state transition and its generation bump are one statement —
+   "issued before" is a value inequality, immune to clock skew. New CHECK
+   `access_token_invite_member_state_shape` bars impossible snapshots.
+   Migration `20260930190000` additive; pre-migration invites carry NULL and
+   fail closed whenever a member exists.
+2. **Issuer re-authorization** now runs the reviewed S1-B guard
+   (`authorize` + transaction-bound repo) on the token's `createdByUserId`
+   against `invitationResource(intendedRole)` — DEACTIVATED/INVITED/missing
+   users, REMOVED/SUSPENDED memberships, owner→coach demotion on staff
+   invites, and suspended workspaces all deny; every failure maps to the
+   generic `invalid_token` surface. Hand-written `issuerRolesFor` removed.
+3. **Profile coherence gate** before any membership mutation: opposite-class
+   profile (CoachProfile on a CLIENT-intended member, ClientProfile on a
+   staff-intended member) → `membership_conflict`, nothing mutated, token
+   unconsumed. Same-class profile reused without overwriting. Dual-profile
+   corrupt state fails closed either way.
+4. **Truthful audit**: acceptance writes `INVITE`/`access_token`/consumed
+   token id with `meta:{targetRole, acceptedAs}` where acceptedAs ∈
+   NEW_USER|JOINED|ALREADY_MEMBER|ACTIVATED|RESTORED; actor = accepted user.
+   Forced audit failure rolls back claim, binding, user, member, profile.
+5. **Lock ordering**: authorize → advisory tuple lock → FOR UPDATE member
+   read + re-authorize → revoke → issue → audit. Under Serializable the
+   snapshot is fixed at first read, so the FOR UPDATE row lock is what makes
+   the post-wait check causal: a concurrent member change committed during
+   the wait forces P2034 → bounded retry → fresh snapshot → deny.
+   Unauthorized callers reject before ever touching the lock.
+6. **P2002 classification**: retries only when `meta.modelName` +
+   `meta.target` exactly match {User.email, WorkspaceMember.(workspace_id,
+   user_id), ClientProfile.(workspace_id,user_id), CoachProfile.
+   workspace_member_id} and meta has no extra keys; unknown/missing metadata
+   fails closed → `invitation_failed` (never `serialization_conflict`, which
+   is reserved for P2034 + raw-SQL 40001/40P01 surfaced as P2010).
+7. **List index**: `access_token_ws_invite_list_idx (workspace_id, purpose,
+id)` — EXPLAIN (ANALYZE, BUFFERS) on a 12k-row skewed, analyzed fixture
+   uses it with no Sort node.
+8. Tests strengthened: different-role-survives assertion, `take=limit+1`
+   proven by spying the Prisma call, P2002 metadata pinned, 28 real-PG
+   integration tests total.
+
+Mutation evidence (15): generation check removed (1 fail) · trigger dropped
+on live DB (2) · snapshot forced-to-current (1) · issuer guard → hand list
+(12 — incl. deactivated-issuer case) · opposite-profile check removed (1) ·
+audit action/resource reverted to CREATE/user (3) · acceptance audit
+swallowed (1) · authorize moved behind lock (1) · intendedRole dropped from
+replacement (1) · P2002 meta check removed (1) · list `take` removed (unit
+spy, 1) · index dropped on live DB (1) · workspace predicate removed (1) ·
+claim revoked/expiry dropped (1). All files restored byte-exact.
+
+Reviewer platform-admin observation recorded only: guard semantics (platform
+role does not bypass workspace membership) unchanged — S1-B precedence is a
+locked decision.
