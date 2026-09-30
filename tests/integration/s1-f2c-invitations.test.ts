@@ -869,6 +869,95 @@ describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
     ).toBe(1);
   });
 
+  it("state_version increments exactly once per status OR role transition", async () => {
+    const { ws } = await ownerFixture();
+    const u = await user();
+    const m = await member(ws.id, u.id, "CLIENT", "ACTIVE");
+    const gen = () =>
+      prisma.workspaceMember
+        .findUniqueOrThrow({ where: { id: m.id } })
+        .then((r) => r.stateVersion);
+    expect(await gen()).toBe(0);
+    // status-only → +1
+    await prisma.$executeRawUnsafe(
+      `UPDATE "workspace_member" SET status='SUSPENDED' WHERE id=$1`,
+      m.id,
+    );
+    expect(await gen()).toBe(1);
+    // role-only → +1
+    await prisma.$executeRawUnsafe(
+      `UPDATE "workspace_member" SET role='SUPPORT' WHERE id=$1`,
+      m.id,
+    );
+    expect(await gen()).toBe(2);
+    // simultaneous status+role → exactly +1, not +2
+    await prisma.$executeRawUnsafe(
+      `UPDATE "workspace_member" SET status='REMOVED', role='CLIENT' WHERE id=$1`,
+      m.id,
+    );
+    expect(await gen()).toBe(3);
+  });
+
+  it("a role change after issuance makes the prior invitation stale", async () => {
+    const { ws, session: sess } = await ownerFixture();
+    const u = await user({ email: "rolestale@example.test" });
+    await member(ws.id, u.id, "CLIENT", "ACTIVE");
+    // Invite snapshots the CURRENT generation (ACTIVE).
+    const stale = await invite(sess, ws.id, "rolestale@example.test", "CLIENT");
+    // Role-only change bumps the generation → the invite is now stale.
+    await prisma.$executeRawUnsafe(
+      `UPDATE "workspace_member" SET role='SUPPORT' WHERE workspace_id=$1 AND user_id=$2`,
+      ws.id,
+      u.id,
+    );
+    await expect(
+      acceptAs(session(u.id), ws.id, stale.delivery.rawToken),
+    ).rejects.toThrow("invalid_token");
+    // The claim rolled back — token still technically live would be wrong too,
+    // but the row must remain unconsumed/unbound.
+    const tok = await prisma.accessToken.findUniqueOrThrow({
+      where: { id: stale.invitationId },
+    });
+    expect(tok.consumedAt).toBeNull();
+    expect(tok.userId).toBeNull();
+    // A fresh post-change invitation snapshots the NEW generation —
+    // verifiable directly on the token row.
+    const fresh = await invite(sess, ws.id, "rolestale@example.test", "CLIENT");
+    const memberNow = await prisma.workspaceMember.findUniqueOrThrow({
+      where: { workspaceId_userId: { workspaceId: ws.id, userId: u.id } },
+    });
+    const freshTok = await prisma.accessToken.findUniqueOrThrow({
+      where: { id: fresh.invitationId },
+    });
+    expect(freshTok.targetMemberStateVersion).toBe(memberNow.stateVersion);
+    // …but the member is ACTIVE with a different role — acceptance fails
+    // closed on the role conflict (no silent role change).
+    await expect(
+      acceptAs(session(u.id), ws.id, fresh.delivery.rawToken),
+    ).rejects.toThrow("membership_conflict");
+    // Same shape with suspension: fresh invite DOES restore.
+    await prisma.$executeRawUnsafe(
+      `UPDATE "workspace_member" SET status='SUSPENDED', role='CLIENT' WHERE workspace_id=$1 AND user_id=$2`,
+      ws.id,
+      u.id,
+    );
+    const fresh2 = await invite(
+      sess,
+      ws.id,
+      "rolestale@example.test",
+      "CLIENT",
+    );
+    const ok = await acceptAs(session(u.id), ws.id, fresh2.delivery.rawToken);
+    expect(ok.outcome).toBe("accepted");
+    expect(
+      (
+        await prisma.workspaceMember.findUniqueOrThrow({
+          where: { id: memberNow.id },
+        })
+      ).status,
+    ).toBe("ACTIVE");
+  });
+
   it("concurrent transition vs issuance never misclassifies freshness", async () => {
     const { ws, session: sess } = await ownerFixture();
     const u = await user({ email: "racegen@example.test" });
@@ -1159,6 +1248,107 @@ describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
     await held2;
     expect(await activeTokensFor(ws.id, "lockorder@example.test")).toHaveLength(
       0,
+    );
+  });
+
+  it("post-lock barrier catches every authorization-row change mid-wait", async () => {
+    const lockSql = "SELECT pg_advisory_xact_lock(hashtextextended($1,0))";
+    /** Holder acquires the tuple lock, applies `mutateSql`, sleeps, then
+     * commits — the change becomes visible exactly when the lock releases. */
+    const holdWithChange = (key: string, sql: string, args: string[]) =>
+      prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe(lockSql, key);
+        await tx.$executeRawUnsafe(sql, ...args);
+        await new Promise((r) => setTimeout(r, 250));
+      });
+
+    async function raceCase(
+      label: string,
+      mutateSql: (ctx: { wsId: string; uid: string }) => [string, string[]],
+      role: "CLIENT" | "COACH",
+      actorRole: "WORKSPACE_OWNER" | "COACH" = "WORKSPACE_OWNER",
+    ) {
+      const { ws, session: sess, owner } = await ownerFixture();
+      const actor =
+        actorRole === "WORKSPACE_OWNER"
+          ? owner
+          : await user().then(async (u) => {
+              await member(ws.id, u.id, actorRole);
+              return u;
+            });
+      const as = session(actor.id);
+      const key = `${ws.id}|${label}@example.test|${role}`;
+      const [sql, args] = mutateSql({ wsId: ws.id, uid: actor.id });
+      const held = holdWithChange(key, sql, args);
+      await new Promise((r) => setTimeout(r, 100));
+      await expect(
+        invite(as, ws.id, `${label}@example.test`, role),
+      ).rejects.toThrow(AccessDeniedError);
+      await held;
+      // Nothing committed: no token row, no audit row.
+      expect(
+        await prisma.accessToken.count({
+          where: { workspaceId: ws.id, targetEmail: `${label}@example.test` },
+        }),
+      ).toBe(0);
+      expect(
+        await prisma.auditEvent.count({
+          where: { workspaceId: ws.id, action: "INVITE" },
+        }),
+      ).toBe(0);
+      void sess;
+    }
+
+    // 1–2. Actor User status flips during the wait.
+    await raceCase(
+      "wu-deact",
+      ({ uid }) => [
+        `UPDATE "users" SET status='DEACTIVATED' WHERE id=$1`,
+        [uid],
+      ],
+      "CLIENT",
+    );
+    await raceCase(
+      "wu-invited",
+      ({ uid }) => [`UPDATE "users" SET status='INVITED' WHERE id=$1`, [uid]],
+      "CLIENT",
+    );
+    // 3. Workspace suspended during the wait.
+    await raceCase(
+      "ws-susp",
+      ({ wsId }) => [
+        `UPDATE "workspace" SET status='SUSPENDED' WHERE id=$1`,
+        [wsId],
+      ],
+      "CLIENT",
+    );
+    // 4. Membership suspended during the wait.
+    await raceCase(
+      "wm-susp",
+      ({ wsId, uid }) => [
+        `UPDATE "workspace_member" SET status='SUSPENDED' WHERE workspace_id=$1 AND user_id=$2`,
+        [wsId, uid],
+      ],
+      "CLIENT",
+    );
+    // 5. Owner→coach demotion during a STAFF invite wait.
+    await raceCase(
+      "wm-demote",
+      ({ wsId, uid }) => [
+        `UPDATE "workspace_member" SET role='COACH' WHERE workspace_id=$1 AND user_id=$2`,
+        [wsId, uid],
+      ],
+      "COACH",
+    );
+    // 6. Coach→assistant demotion during a CLIENT invite wait.
+    await raceCase(
+      "wm-coach-assist",
+      ({ wsId, uid }) => [
+        `UPDATE "workspace_member" SET role='ASSISTANT_COACH' WHERE workspace_id=$1 AND user_id=$2`,
+        [wsId, uid],
+      ],
+      "CLIENT",
+      "COACH",
     );
   });
 

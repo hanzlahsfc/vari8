@@ -214,14 +214,26 @@ export async function createWorkspaceInvitation(
             "SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
             `${input.workspaceId}|${targetEmail}|${intendedRole}`,
           );
-          // 3. Re-authorize after the wait. Under Serializable the tx
-          //    snapshot is fixed at first read, so a plain re-read can miss a
-          //    revocation committed while we waited — instead take a row lock
-          //    on the actor's membership: a concurrent status/role change
-          //    forces P2034 (retry → fresh snapshot → deny), and an unchanged
-          //    row returns its current state. THEN re-run the guard so the
-          //    whole authorization is re-evaluated on visible state.
+          // 3. Post-lock freshness barrier. Under Serializable the tx
+          //    snapshot is fixed at first read, so a plain re-authorize can
+          //    miss a revocation committed while we waited on the advisory
+          //    lock. Take a row lock on EVERY authorization row — actor user,
+          //    workspace, actor membership — in this fixed global order (the
+          //    only multi-row locking order in the codebase; single-row
+          //    writers cannot form a deadlock cycle with it). A concurrent
+          //    committed change to any of them forces 40001 (P2010 → bounded
+          //    retry → fresh snapshot → deny); an unchanged row returns our
+          //    snapshot version; a missing row is impossible to authorize.
+          //    THEN the real guard re-runs on visible-current state.
           const actorUserId = ctx.userId;
+          await tx.$queryRawUnsafe(
+            `SELECT "id" FROM "users" WHERE "id" = $1 FOR UPDATE`,
+            actorUserId,
+          );
+          await tx.$queryRawUnsafe(
+            `SELECT "id" FROM "workspace" WHERE "id" = $1 FOR UPDATE`,
+            input.workspaceId,
+          );
           await tx.$queryRawUnsafe(
             `SELECT "id" FROM "workspace_member"
              WHERE "workspace_id" = $1 AND "user_id" = $2 FOR UPDATE`,

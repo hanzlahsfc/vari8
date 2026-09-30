@@ -204,3 +204,64 @@ describe("list query bound", () => {
     expect(calls[2].take).toBe(101); // clamped to MAX 100 + 1
   });
 });
+
+// ---------------------------------------------------------------------------
+// Post-lock re-authorization — the guard must run TWICE (before and after the
+// advisory-lock wait). Removing the second call must fail this test.
+// ---------------------------------------------------------------------------
+
+import { createWorkspaceInvitation } from "../../lib/workspace/invitations";
+
+describe("post-lock re-authorization", () => {
+  it("authorize runs before AND after the advisory lock", async () => {
+    let membershipReads = 0;
+    const tx = {
+      $executeRawUnsafe: async () => 1,
+      $queryRawUnsafe: async () => [{ id: "x" }],
+      user: {
+        findUnique: async () => ({
+          id: "u",
+          platformRole: "USER",
+          status: "ACTIVE",
+        }),
+      },
+      workspace: {
+        findUnique: async () => ({ id: "w", status: "ACTIVE" }),
+      },
+      workspaceMember: {
+        findUnique: async (args: { select?: Record<string, boolean> }) => {
+          // The guard reads {id, role, status}; the issuance snapshot reads
+          // only {stateVersion} — count guard reads precisely.
+          if (args?.select && "role" in args.select && "status" in args.select)
+            membershipReads++;
+          return { id: "m", role: "WORKSPACE_OWNER", status: "ACTIVE" };
+        },
+        findFirst: async () => null,
+      },
+      clientProfile: { findFirst: async () => null },
+      clientAssignment: { findFirst: async () => null },
+      accessToken: {
+        updateMany: async () => ({ count: 0 }),
+        create: async () => ({ id: "tok", expiresAt: new Date() }),
+      },
+      auditEvent: { create: async () => ({ id: "a" }) },
+    };
+    const client = {
+      $transaction: async (
+        fn: (t: typeof tx) => Promise<unknown>,
+        _opts?: unknown,
+      ) => fn(tx),
+    };
+    await createWorkspaceInvitation(
+      { user: { id: "u" } },
+      {
+        workspaceId: "w",
+        targetEmail: "t@example.test",
+        intendedRole: "CLIENT",
+      },
+      client as never,
+    );
+    // Two authorize() calls → the membership row is read once per call.
+    expect(membershipReads).toBeGreaterThanOrEqual(2);
+  });
+});
