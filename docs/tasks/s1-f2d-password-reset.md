@@ -336,3 +336,39 @@ delivered link is usable. The one-active-token invariant is unchanged.
 
 **Status: second repair implemented; gates green; final independent
 different-model re-review pending.**
+
+---
+
+## Boundary-design plan — stable inputs (2026-10-01)
+
+Post-repair hardening for TOCTOU-style input mutation. Two designs:
+
+1. **Reset delivery — capture once.** `requestPasswordReset` reads
+   `options.deliver` and `input.email` exactly once at entry inside a
+   try/catch → throwing getters/proxies → `invalid_input` (no leak). The
+   captured function is validated (`typeof === "function"` → else
+   `invalid_input`, before any DB work) and invoked unconditionally
+   (`deliver(payload)`, no `?.`) exactly once post-commit outside the
+   retry loop; mid-transaction mutation of `options.deliver` cannot
+   suppress delivery. Sink failure → `reset_failed`, no replay.
+   Result stays exactly `{ outcome }`.
+2. **Account audit — capture once.** `buildAccountAuditEvent` reads
+   `action`/`resourceType`/`resourceId`/`meta` and the context fields once
+   each inside a guarded block → throwing getters/proxies/enumeration →
+   structural `AuditError` (`invalid_input` / `audit_metadata_forbidden`),
+   never leaking the raw exception or input. Validation and row
+   construction use only the captured values; the
+   `resetStage`-only-on-`PASSWORD_RESET`/`access_token` coupling and the
+   meta-free `PASSWORD_RESET`/`user` shape are preserved.
+
+RED first: deferred-transaction unit tests flipping `options.deliver`
+mid-flight, getter/proxy traps, single-read audit probes, and a real-PG
+integration case where `options.deliver` is reassigned while the
+transaction is pending — issuance + audit + one post-commit delivery.
+
+Mutations to prove: second `options.deliver` read (optional + direct),
+second `input.meta` read, delivery validation removed.
+
+Scope: `lib/auth/password-reset.ts`, `lib/audit.ts`, the two test files +
+`tests/unit/audit.test.ts`, this record, `docs/STATUS.md`. No schema,
+route, UI, provider, dependency, or Prime-Tracker change.
