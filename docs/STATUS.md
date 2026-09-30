@@ -4,6 +4,27 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — S1-F2D password-reset orchestration implemented (feature branch)
+
+- `lib/auth/password-reset.ts`: `requestPasswordReset` (existence-only
+  outcome `ACCOUNT_EXISTS`/`ACCOUNT_NOT_FOUND`; ACTIVE-only issuance; per-
+  account `users FOR UPDATE` serialization + `FOR UPDATE` sibling scan;
+  revoke → issue → account audit in one Serializable tx) and
+  `resetPasswordWithToken` (pre-tx password policy/hash; resolve bound user →
+  user lock + ACTIVE re-check → atomic claim → sibling revoke → hash +
+  `sessionVersion++` → account audit).
+- Audit: ACCOUNT scope, `PASSWORD_RESET`/`access_token`, closed meta
+  `resetStage` REQUESTED/COMPLETED; nothing sensitive in meta.
+- Evidence: 16 real-PG integration tests incl. real Auth.js pipeline (stale
+  JWT → null + cleared cookie; new password signs in with sv=1), concurrency
+  races, forced-rollback canaries; 5 unit tests. Gates: unit 324,
+  integration 178/13 files, build/e2e green, lint/typecheck 0.
+- Mutations: 14 caught, 2 deliberate survivors documented (snapshot-scan
+  lock redundant under SSI; claim userId param is non-widening).
+- No schema/migration/route/UI/provider/URL/rate-limit change. On
+  `feature/s1-f2d-password-reset`; **independent different-model review
+  pending — S1-H routing not started.**
+
 ## 2026-09-30 — S1-F2B repair — independent re-review PASS (opencode-go/deepseek-v4.1-flash)
 
 - Read-only independent re-review of the repair range `ac9857e..ae7c6d5`

@@ -117,3 +117,50 @@ P2002 · exposure assertion no-op.
 No routes/actions/UI/provider/domain/rate-limiter/schema changes; no `app/**`
 import; `assertPasswordResetOrchestrationExternallyExposable` fails closed;
 Prime Tracker untouched; no PR/deploy/force-push; S1-H not started.
+
+---
+
+## Implementation record (2026-10-01)
+
+**Status: implemented on `feature/s1-f2d-password-reset`; local gates green;
+independent different-model review pending.**
+
+Built exactly per plan: `lib/auth/password-reset.ts`
+(`requestPasswordReset` / `resetPasswordWithToken` /
+`assertPasswordResetOrchestrationExternallyExposable`), one closed
+`resetStage` meta key in `lib/audit.ts`, 5 unit + 16 real-PG integration
+tests (incl. the real Auth.js `auth()`/`handlers` pipeline).
+
+Evidence highlights:
+
+- Concurrent requests (3-way) → exactly one active token; concurrent
+  same-token consumes → one winner; concurrent sibling consumes → one reset,
+  one `sessionVersion` bump.
+- Deactivation committed while a request waits on the user row lock →
+  40001 → bounded retry → `ACCOUNT_EXISTS` with zero rows.
+- Forced audit failure inside the tx → revocation rolled back, prior token
+  stays active.
+- Real pipeline: pre-reset JWT authenticates → consume → `auth()` null,
+  `/api/auth/session` null + cookie cleared; old password → generic null,
+  new password signs in with `sv=1`; client update payload cannot resurrect.
+
+Mutation results (restored byte-exact, shasum-verified): ACTIVE re-check (2
+fails) · status leak in outcome (3) · request sibling revocation (2) ·
+users-row lock (1) · claim purpose predicate (1, via the shared-primitive
+F2A suite) · expiry/consumed predicates (3) · password policy bypass (1) ·
+sessionVersion increment (4) · consume sibling revocation (1) · audit
+removed (1) · audit outside tx (7) · ACTIVE re-check + conditional update
+(1) · email in audit meta (2) · blanket-P2002 retry (1 unit) · exposure
+no-op (2).
+
+Two deliberate-survivor notes (kept as defense-in-depth, documented):
+
+- Removing `FOR UPDATE` from the request sibling scan alone does not regress
+  — the Serializable predicate-read↔insert conflict already aborts one of
+  the concurrent txs; the lock converts aborts into waits (fewer retries).
+- Removing `userId` from the claim call does not regress — the bound user is
+  resolved FROM the claimed row, so the param cannot widen scope; kept
+  anyway as an explicit invariant.
+
+No schema or migration change was needed. No routes/UI/provider/URL/rate
+limiter added; nothing under `app/**` imports the service.
