@@ -67,8 +67,45 @@ that follow them are recorded separately and are **not** founder decisions.
     user's existing sessions on other devices. (Engineering consequence: `User`
     `sessionVersion` incremented at reset-consumption time makes issued JWT sessions
     stale; validation wiring is a later step.)
-19. **Still undecided pending the product name:** password rules, email provider, sender
-    identity, and product domain.
+19. **Partially undecided pending the product name:** email provider, sender
+    identity, and product domain remain open. Password rules were resolved by
+    Aleks's final answers (#20–#27 below).
+
+## S1-F final policy answers (Aleks, relayed by Hanzlah, 2026-09-30)
+
+Aleks approved the previously proposed defaults **with two explicit changes** —
+recorded verbatim as approved, including the two deviations from the earlier
+engineering recommendation:
+
+20. **Invite acceptance.** New users set a password during acceptance; existing
+    users must sign in using the exact invited email; possession of the
+    invitation counts as email verification (no standalone
+    `EMAIL_VERIFICATION` flow now).
+21. **Membership restoration.** Suspended or removed memberships are never
+    silently restored — a fresh explicit re-invitation is required.
+22. **Reset eligibility.** Password reset is available only to `ACTIVE`
+    accounts.
+23. **Password policy.** Minimum **10 characters** — an explicit change from
+    the proposed 15; long passphrases allowed; **no** uppercase/lowercase/
+    number/symbol composition requirement. (Recorded risk: 10 is below the
+    current 15-character recommendation for password-only authentication —
+    accepted as a product decision, not silently overridden.)
+24. **Public reset response differs by account existence — accepted
+    enumeration risk.** The public password-reset response deliberately differs
+    depending on whether an account exists. Aleks was warned that this permits
+    account enumeration and explicitly accepted the tradeoff. Boundaries still
+    apply: the response may reveal only existence — never status, role,
+    workspace membership, client status, or other details — and routes still
+    require rate limiting, abuse monitoring, and minimized timing differences.
+25. **Invitation revocation.** Workspace admin/head coach may revoke
+    outstanding invitations.
+26. **Token retention.** Consumed and expired/revoked token records may be
+    deleted after **30 days**.
+27. **Reset audit ownership.** Password-reset activity belongs in an
+    account-level security log, not a workspace log.
+28. **Provider neutrality.** Email provider, sender identity, product domain,
+    and product name may be selected later; the backend remains
+    provider-neutral.
 
 ## Conservative engineering interpretations (NOT founder decisions)
 

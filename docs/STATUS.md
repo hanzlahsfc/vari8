@@ -116,6 +116,25 @@ extraction) only, not the workbook UI itself.
 - Next: record the founder answers, then implement the separately reviewed S1-F
   Phase 1 schema foundation (still no routes/email until the flow decisions land).
 
+## 2026-09-30 — Aleks's final S1-F answers reconciled; orchestration plan ready (docs only)
+
+- `docs/product-decisions.md` #20–28 + `docs/open-questions.md` + S1-F plan §2:
+  invite acceptance (new users set password; existing sign in as invited email;
+  invite = verification), ACTIVE-only reset, **password min 10** (explicit
+  change from proposed 15 — recorded risk), no composition rules,
+  **different reset response by account existence** (explicit accepted
+  enumeration risk — not best practice), workspace-admin invite revocation,
+  30-day token retention, account-level reset audit, provider-neutral backend.
+- Still open: email provider/sender/domain, product-facing `WORKSPACE_OWNER`
+  name, rate-limit mechanism, DENY-event volume, cross-workspace sharing.
+- New `docs/tasks/s1-f2b-orchestration-plan.md`: S1-F2B (account audit scope
+  discriminator + password policy + `sessionVersion`→JWT + 30-day cleanup) →
+  S1-F2C (invitations) → S1-F2D (reset) → routing slice. Includes the chosen
+  nullable-`workspaceId` + `WORKSPACE`/`ACCOUNT` scope + `subjectUserId` audit
+  design with ownership CHECKs and `WORKSPACE` backfill.
+- Documentation/planning only — no production code, schema, or migration
+  changed. **Next: implement + independently review S1-F2B.**
+
 ## 2026-09-30 — S1-F2A internal token primitives landed; independent review PENDING
 
 - `lib/tokens/store.ts`: internal, transaction-bound primitives only —

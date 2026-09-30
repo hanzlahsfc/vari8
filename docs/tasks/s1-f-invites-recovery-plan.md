@@ -80,36 +80,36 @@ answer; the engineering-detail items further down are for reviewers, not founder
   and clients; public self-registration mainly serves "a coach wants to create their own
   workspace."
 
-### 2.2 Who may invite — PARTIAL (conservative interpretation recorded, not approved)
+### 2.2 Who may invite — ANSWERED (Aleks final, 2026-09-30)
 
-- **Founder input:** product-facing roles are coach, optional assistant coach, and client;
-  whether "owner" is a product-facing role was questioned (may be a gym owner).
-- **Conservative interpretation (unapproved):** keep the technical `WORKSPACE_OWNER` role —
-  every workspace needs an administrator; product-facing name (workspace admin / head
-  coach / gym owner) stays open. Intended future policy: owner/admin may invite COACH,
-  ASSISTANT_COACH, CLIENT; COACH may invite CLIENT only; ASSISTANT_COACH and CLIENT may
-  not invite; OWNER/SUPPORT/platform-admin invitations remain denied.
+- **Approved policy:** the technical `WORKSPACE_OWNER` role remains workspace
+  admin/head coach; owner/admin may invite COACH, ASSISTANT_COACH, CLIENT;
+  COACH may invite CLIENT only; ASSISTANT_COACH and CLIENT may not invite;
+  OWNER/SUPPORT/platform-admin invitations remain denied. Workspace
+  admin/head coach may revoke outstanding invitations.
+- **Still open:** the product-facing name of `WORKSPACE_OWNER` (admin / head
+  coach / gym owner).
 - Context: matrix today denies invite-write to everyone except `WORKSPACE_OWNER`
-  (`membersInvitations` owner `ws/ws`). The intended coach-invites-client extension
-  requires changing `authorization-model.md` + `rbac.ts` with review — **not done yet**.
+  (`membersInvitations` owner `ws/ws`). The coach-invites-client extension
+  requires changing `authorization-model.md` + `rbac.ts` with review — plan in
+  `docs/tasks/s1-f2b-orchestration-plan.md` (prefer a distinct resource so staff
+  invitation permission is not accidentally broadened).
 
-### 2.3 Roles that may be invited — PARTIAL (conservative interpretation recorded)
+### 2.3 Roles that may be invited — ANSWERED (Aleks final, 2026-09-30)
 
-- **Conservative interpretation (unapproved):** allowed intended roles COACH,
-  ASSISTANT_COACH, CLIENT only; OWNER and SUPPORT invitations stay blocked (a second
-  owner can invite/demote others; support access itself is unresolved `TODO(human)`).
-  The database boundary for `AccessToken.intended_role` enforces exactly
+- **Approved:** intended roles COACH, ASSISTANT_COACH, CLIENT only; OWNER,
+  SUPPORT, and platform-admin invitations stay blocked. The database boundary
+  for `AccessToken.intended_role` already enforces exactly
   {COACH, ASSISTANT_COACH, CLIENT} for invites regardless of who may issue them.
 
-### 2.4 Existing vs new users — PARTIAL
+### 2.4 Existing vs new users — ANSWERED (Aleks final, 2026-09-30)
 
-- **Answered (founder, 2026-09-30):** users can work with multiple coaches — one `User`
-  may hold memberships in multiple workspaces (schema already supports this:
+- **Decisions:** users can work with multiple coaches — one `User` may hold
+  memberships in multiple workspaces (schema already supports this:
   `@@unique([workspaceId, userId])`, `ClientProfile` unique per workspace+user).
-- **Still open:** whether invite acceptance requires the recipient to be signed in as the
-  invited email (prevents link-forwarding hijack) vs anyone holding the link may accept.
-- **Recommendation (unapproved):** acceptance requires signing in as the invited email;
-  new users set a password during acceptance (password rules themselves undecided, §2.10).
+  An **existing user must sign in using the exact invited email** to accept —
+  link-forwarding alone is not acceptance.
+- New users set a password during acceptance (§2.10 policy now decided).
 
 ### 2.5 Client invitations — ANSWERED (self-onboarding)
 
@@ -129,35 +129,38 @@ answer; the engineering-detail items further down are for reviewers, not founder
   replacement cancels previous matching links — the issuance transaction must revoke all
   unconsumed, unexpired matching tokens (same workspace + email + role) before creating
   the replacement.
-- **Still open:** whether an owner may explicitly revoke an outstanding invite.
+- **Also answered (Aleks final):** the workspace admin/head coach may revoke an
+  outstanding invite.
 - Implementation note: "matching" is the `(workspaceId, purpose, targetEmail,
 intendedRole)` tuple — covered by a workspace-scoped index; no partial "one active"
   unique index exists because active state depends on expiry/revocation/consumption, so
   replacement enforcement is transactional in the future service.
 
-### 2.7 Invitation acceptance — OPEN
+### 2.7 Invitation acceptance — ANSWERED (Aleks final, 2026-09-30)
 
-- Does a new user set a password during acceptance (recommended, required for credentials
-  sign-in) vs a separate verification step? Password rules themselves are undecided
-  (§2.10).
-- Is email verification implicit in possession of the invite link?
-- Membership transition `INVITED → ACTIVE`; user creation as `INVITED`→`ACTIVE` or directly
-  `ACTIVE`?
-- Behavior when a membership row already exists in `INVITED`/`SUSPENDED`/`REMOVED` state
-  (re-invite vs reject vs revive)?
-- **Recommendation (unapproved):** password set during acceptance; invite possession counts as
-  that address's verification; acceptance activates both `User` and `WorkspaceMember`
-  atomically; `SUSPENDED`/`REMOVED` memberships require a new invite, never silent revival.
+- **Decisions:** new users set a password during acceptance (policy in §2.10);
+  possession of the invitation counts as email verification — no separate
+  verification step; SUSPENDED/REMOVED memberships are never silently restored —
+  explicit re-invitation is required.
+- **Engineering detail (not founder wording):** user+membership+profile creation
+  and activation commit atomically in the acceptance transaction; an ACTIVE
+  duplicate membership yields an idempotent structural outcome; a re-invite for
+  a SUSPENDED/REMOVED membership is itself the explicit restoration — the fresh
+  invite acceptance transitions the prior row to ACTIVE.
 - Confirmed inputs: client acceptance creates+links the `ClientProfile` (§2.5);
   invitees may hold memberships in multiple workspaces (§2.4).
 
-### 2.8 Password recovery eligibility — OPEN
+### 2.8 Password recovery eligibility — ANSWERED (Aleks final, 2026-09-30)
 
-- ACTIVE users only? What happens for `INVITED` or `DEACTIVATED` users?
-- Public response must remain generic regardless ("if an account exists…").
-- Is recovery user-level across all workspaces (it is — `User` is platform-owned)?
-- **Recommendation (unapproved):** issue reset tokens for ACTIVE users only, respond generically
-  for everything else; recovery is user-level.
+- **Decisions:** reset tokens are issued only for `ACTIVE` users; recovery is
+  user-level (platform-owned `User`, not workspace-scoped).
+- **Change from the earlier recommendation — accepted enumeration risk:** the
+  public response deliberately **differs** depending on whether an account
+  exists (vs the recommended always-generic response). Aleks was warned this
+  permits account enumeration and explicitly accepted the tradeoff. Boundaries:
+  the response reveals only existence — never status/role/workspace/client
+  details — and routes still need rate limiting + abuse monitoring + minimized
+  timing differences. Do not describe this as a secure best practice.
 
 ### 2.9 Reset-token lifetime and invalidation — ANSWERED
 
@@ -171,13 +174,14 @@ intendedRole)` tuple — covered by a workspace-scoped index; no partial "one ac
   accompany reset consumption (consume token → password policy check → update hash →
   increment `sessionVersion` → revoke sibling tokens → audit).
 
-### 2.10 Password policy — OPEN
+### 2.10 Password policy — ANSWERED (Aleks final, 2026-09-30)
 
-- **Explicitly undecided (founder, 2026-09-30):** password rules remain open pending the
-  product name decision. **Do not invent a policy** — no minimum length, complexity,
-  breach-check, or reuse rule exists until recorded.
-- Earlier unapproved recommendation (min length 12, no complexity, no breach check) is
-  retained as a recommendation only.
+- **Decision — explicit change from the proposed default:** minimum length is
+  **10** (the proposal was 15); long passphrases allowed; **no** uppercase,
+  lowercase, number, or symbol composition requirement.
+- **Recorded risk:** 10 is below the current 15-character recommendation for
+  password-only authentication — an explicit accepted product decision, not
+  silently overridden. No breach-password checking is approved.
 
 ### 2.11 Email delivery — OPEN
 
@@ -187,44 +191,40 @@ intendedRole)` tuple — covered by a workspace-scoped index; no partial "one ac
   no real email until a provider + sender + URL are decided. Routes still cannot exist
   until S1-H.
 
-### 2.12 Abuse protection — OPEN
+### 2.12 Abuse protection — PARTIALLY OPEN
 
-- Rate limits for invite creation/resend/reset-request/consume; lockouts; CAPTCHA; cooldowns.
-- All public-facing token requests must not leak account existence.
-- There is **no rate-limit infrastructure** today — any answer "yes" also requires picking a
-  mechanism.
-- **Recommendation (unapproved):** minimal per-actor + per-target counters even at service level
-  (e.g. max N outstanding invites per workspace/email; cooldown between reset requests), with
-  real HTTP-level throttling deferred to S1-H where requests exist.
+- The existence-oracle question is decided: the reset response deliberately
+  differs by account existence — an **accepted enumeration risk**, not a best
+  practice. Per-IP and per-identifier rate limiting is **still required** at the
+  route layer; the precise HTTP mechanism remains `TODO(human)` (no rate-limit
+  infra exists).
+- **Recommendation (unapproved):** minimal per-actor + per-target counters even
+  at service level (e.g. max N outstanding invites per workspace/email), with
+  real HTTP-level throttling deferred to the routing slice where requests exist.
 
-### 2.13 Auditing — OPEN
+### 2.13 Auditing — PARTIALLY ANSWERED
 
-- Which outcomes get `AuditEvent`s: invite create/revoke/accept (`INVITE`), reset request,
-  reset consume, plus the deferred S1-E **login-outcome** requirement (`LOGIN` allow/deny).
-- DENY-row volume/abuse policy remains `TODO(human)` (S1-E scope decision).
-- Audit `meta` never contains raw tokens, passwords, email bodies, or secret URLs; token hash
-  itself should not be in meta either (it is a lookup capability).
-- `AuditEvent.workspaceId` is required — decide how user-owned reset/login events are stored
-  (see §4.2).
-- **Recommendation (unapproved):** audit `INVITE` create/revoke/accept inside the mutation
-  transaction (workspace-owned — fits the current schema); for user-owned reset/login events,
-  prefer the nullable-`workspaceId` + scope-discriminator path from §4.2(a) — do **not**
-  fabricate a workspace for user-scoped rows.
+- **Decision (Aleks final):** password-reset activity belongs in an
+  account-level security log, not a workspace log — needs the §4.2(a) scope
+  design since `AuditEvent.workspaceId` is required today. Invite
+  create/revoke/accept events remain workspace-owned.
+- Audit `meta` never contains raw tokens, passwords, email bodies, secret URLs,
+  or token hashes (a hash is a lookup capability).
+- Still open: DENY-event volume/abuse policy (S1-E scope decision).
 
-### 2.14 Token retention and cleanup — OPEN
+### 2.14 Token retention and cleanup — ANSWERED (Aleks final, 2026-09-30)
 
-- How long consumed/expired token rows persist; cleanup mechanism (scheduled job, manual, or
-  opportunistic during token operations).
-- Relates to the unresolved general retention `TODO(human)`.
-- **Recommendation (unapproved):** opportunistic cleanup during token operations plus a bounded
-  retention `TODO(human)` — no invented duration.
+- **Decision:** consumed and expired/revoked token records may be deleted after
+  **30 days**. Engineering detail (not founder wording): bounded batches with a
+  stable cursor; active tokens are never deleted; cleanup is retryable and safe
+  under concurrency; opportunistic vs scheduled placement is an implementation
+  choice — design in the S1-F2B plan.
 
-### 2.15 Email verification scope — OPEN
+### 2.15 Email verification scope — ANSWERED (Aleks final, 2026-09-30)
 
-- Are standalone `EMAIL_VERIFICATION` tokens part of S1-F, or does invite possession count as
-  verification and standalone verification defer?
-- `stage-1-plan.md` §6 already lists `EMAIL_VERIFICATION` as "(later)".
-- **Recommendation (unapproved):** defer standalone verification; invite possession counts.
+- **Decision:** possession of the invitation counts as email verification;
+  standalone `EMAIL_VERIFICATION` tokens are deferred (consistent with
+  `stage-1-plan.md` §6 "(later)").
 
 ## 3. Proposed engineering invariants (safe regardless of the decisions above)
 
@@ -392,15 +392,15 @@ logout-other-devices.
 
 ## 9. Status
 
-**Plan updated with founder answers (2026-09-30); S1-F implementation still blocked
-on the remaining OPEN items.** The policy-neutral prerequisite **S1-F0**
-(`lib/tokens/crypto.ts`) is implemented and independently PASS. The **S1-F1**
-schema/session foundation (`AccessToken` + `User.sessionVersion`, additive
-migrations incl. the `token_hash` canonical-format CHECK added after independent
-FAIL/repair) is implemented and independently PASS — see
-`docs/tasks/s1-f1-token-schema.md`. **S1-F2A** adds internal transaction-bound
-store primitives (`lib/tokens/store.ts`: issue/revoke/claim/inspect) — no product
-flow, authorization, audit coupling, or delivery exists; see
-`docs/tasks/s1-f2a-token-primitives.md`. Independent different-model review of
-S1-F2A is required before any orchestration service; token services implement
-only the answered policy surface.
+**Aleks's final S1-F policy answers are recorded (2026-09-30); all blocking
+policy questions are now answered except email provider/sender/domain, the
+product-facing owner name, the rate-limit mechanism, DENY-event volume, and
+true cross-workspace sharing.** **S1-F0** (`lib/tokens/crypto.ts`) and **S1-F1**
+(schema/session foundation incl. the `token_hash` canonical-format CHECK) are
+independently PASS. **S1-F2A** (internal transaction-bound store primitives,
+`lib/tokens/store.ts`) is independently PASS — see
+`docs/tasks/s1-f2a-token-primitives.md`. The implementation-ready orchestration
+plan is `docs/tasks/s1-f2b-orchestration-plan.md` (S1-F2B account-security
+foundation → S1-F2C invitations → S1-F2D password reset → routing slice). No
+product flow exists; each slice needs its own independent different-model
+review.

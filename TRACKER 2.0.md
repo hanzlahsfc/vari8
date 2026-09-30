@@ -199,8 +199,18 @@ threshold, health-data policy, workflow, or layout.
     flows assertion. 12 h expiry via `ACCESS_TOKEN_TTL_MS`; shared
     `normalizeEmail`. Record: `docs/tasks/s1-f2a-token-primitives.md`.
     **Independently PASS** (`opencode-go/deepseek-v4.1-flash`, range
-    `0d503b7..fb0713b`, 2026-09-30) — still no product flow; orchestration
-    services remain blocked on the open `TODO(human)` items.
+    `0d503b7..fb0713b`, 2026-09-30) — still no product flow.
+  - **Policy reconciliation + orchestration plan (docs only, 2026-09-30):**
+    Aleks's final S1-F answers recorded in `product-decisions.md` #20–28 —
+    invite acceptance rules, ACTIVE-only reset, min-10 password (below the
+    15-char recommendation — accepted risk), existence-differentiating reset
+    response (accepted enumeration risk — not best practice), admin invite
+    revocation, 30-day token retention, account-level reset audit,
+    provider-neutral backend. Still open: email provider/sender/domain, owner
+    product-facing name, rate-limit mechanism, DENY-event volume,
+    cross-workspace sharing. Implementation-ready plan:
+    `docs/tasks/s1-f2b-orchestration-plan.md` (S1-F2B → S1-F2C → S1-F2D →
+    routing). Next slice: **S1-F2B account-security foundation**.
 
 ### Important limitations
 
@@ -363,9 +373,13 @@ S1-F2A then landed the internal transaction-bound token-store primitives
 (unit 287, integration 102 real-PG, E2E 21) and 11 mutation proofs; a fresh
 different-model independent review **PASSed** S1-F2A at `fb0713b`
 (`opencode-go/deepseek-v4.1-flash`, range `0d503b7..fb0713b`, record
-`docs/tasks/s1-f2a-token-primitives.md`). No orchestration service exists yet;
-it stays blocked by the open `TODO(human)` items. GDPR (S1-G) and workspace
-shell (S1-H) remain later slices; no health records or product UI.
+`docs/tasks/s1-f2a-token-primitives.md`). Aleks's final S1-F answers are now
+recorded (policy surface decided except provider/domain/owner-name/rate-limit
+mechanics) and the orchestration plan exists
+(`docs/tasks/s1-f2b-orchestration-plan.md`). No orchestration service exists
+yet — next is S1-F2B (account-security foundation), then its own independent
+review. GDPR (S1-G) and workspace shell (S1-H) remain later slices; no health
+records or product UI.
 
 ## 9. Human inputs still required
 
@@ -471,6 +485,42 @@ Copy this block, fill it in, and insert it immediately above the previous log en
 
 ## 12. Change log (newest first)
 
+### 2026-09-30 — Aleks's final S1-F decisions reconciled + orchestration plan (docs only)
+
+- Scope: documentation and planning only — **no production code, schema, or
+  migration changed** (verified by diff).
+- `docs/product-decisions.md`: #19 reworded (password rules resolved; provider/
+  sender/domain stay open), new #20–28 recording Aleks's final answers —
+  new-user password during acceptance, existing-user sign-in as invited email,
+  invite = verification, no silent membership restore, ACTIVE-only reset,
+  **min-10 password (explicit change from proposed 15; recorded risk)**, no
+  composition rules, **existence-differentiating reset response (explicit
+  accepted enumeration risk — not best practice; existence-only, still needs
+  rate limiting/abuse monitoring/timing care)**, workspace-admin invite
+  revocation, 30-day token retention, account-level reset audit,
+  provider-neutral backend.
+- `docs/open-questions.md`: items 17–24, 26–27 reconciled; still open: 25
+  (provider/sender/domain), owner product-facing name, rate-limit mechanism,
+  DENY-event volume.
+- `docs/tasks/s1-f-invites-recovery-plan.md`: §2 items re-marked
+  ANSWERED/PARTIAL; §9 status updated (all S1-F policy decided except the
+  listed leftovers).
+- **New `docs/tasks/s1-f2b-orchestration-plan.md`:** S1-F2B (account audit
+  scope discriminator `WORKSPACE`/`ACCOUNT` + `subjectUserId` + ownership
+  CHECKs + WORKSPACE backfill; password policy — min 10 code points / max 128 /
+  NFC / no composition, scrypt unchanged; `sessionVersion`→JWT wiring —
+  `token.sv`, fresh DB read per session, legacy-JWT reject; 30-day bounded
+  cursor cleanup) → S1-F2C (invite orchestration: RBAC split, Serializable
+  authorize+revoke+issue+audit, dual acceptance paths, explicit restoration
+  semantics) → S1-F2D (reset: existence result, ACTIVE-only, atomic
+  claim+hash+`sessionVersion`+sibling-revoke+account audit) → routing slice
+  (provider, rate limits, UI, E2E review). Provider-neutral delivery port;
+  raw token crosses the boundary post-commit only.
+- Gates (docs-only set): `git diff --check` 0; `format:check`/`typecheck`/
+  `lint`/`npm run test` — all exit 0 (287 unit; no DB/build/E2E required).
+- Next action: implement + independently review **S1-F2B** account-security
+  foundation before invitation/reset orchestration.
+
 ### 2026-09-30 — S1-F2A independent review PASS (reviewer: opencode-go/deepseek-v4.1-flash)
 
 - Scope: read-only independent review of the complete S1-F2A tree. Reviewer
@@ -553,8 +603,6 @@ Copy this block, fill it in, and insert it immediately above the previous log en
   items.
 - Next action: fresh different-model review of S1-F2A before any orchestration
   service; continue awaiting founder answers.
-
-### 2026-09-30 — S1-F1 independent re-review PASS (reviewer: opencode-go/deepseek-v4.1-flash)
 
 ### 2026-09-30 — S1-F1 independent re-review PASS (reviewer: opencode-go/deepseek-v4.1-flash)
 

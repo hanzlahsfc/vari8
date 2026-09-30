@@ -62,43 +62,50 @@ CK-2026-K8M3 · Redistribution, resale or sublicensing prohibited`).
 ## S1-F invite/recovery decisions (detailed options in `docs/tasks/s1-f-invites-recovery-plan.md` §2)
 
 Founder answers were relayed by Hanzlah on 2026-09-30 (recorded in
-`docs/product-decisions.md` #13–19). Several items are now **answered**; the rest stay
-`TODO(human)` and still block the corresponding parts of S1-F.
+`docs/product-decisions.md` #13–19; final answers #20–28). Most S1-F items are
+now **answered**; the rest stay `TODO(human)`.
 
 16. **ANSWERED — Registration model:** invite-only for the initial product; coaches invite
     clients; public self-registration may be considered later (product-decisions #13).
-17. **PARTIALLY ANSWERED — Invite permissions:** product roles are coach, optional
-    assistant coach, and client; the founder questioned whether an "owner" role is
-    product-facing (may be a gym owner — product-facing name still open,
-    product-decisions #14). The intended policy (owner/admin invites
-    COACH/ASSISTANT_COACH/CLIENT; COACH invites CLIENT only; others denied) is a
-    conservative engineering interpretation, not yet approved or implemented.
-18. **PARTIALLY ANSWERED — Existing users:** one `User` may hold memberships in multiple
-    workspaces (multi-coach sharing, product-decisions #16). Still open: whether
-    acceptance must occur while signed in as the invited email.
+17. **ANSWERED (policy) — Invite permissions:** owner/admin invites
+    COACH/ASSISTANT_COACH/CLIENT; COACH invites CLIENT only; ASSISTANT_COACH and
+    CLIENT cannot invite; OWNER/SUPPORT/platform-admin invitations stay denied;
+    workspace admin/head coach may revoke outstanding invites (product-decisions
+    #25). Still open: the product-facing name of the technical `WORKSPACE_OWNER`
+    role (admin / head coach / gym owner, #14).
+18. **ANSWERED — Existing users:** one `User` may hold memberships in multiple
+    workspaces; acceptance requires signing in as the exact invited email
+    (product-decisions #20).
 19. **ANSWERED — Client invites:** clients self-onboard — acceptance creates and links
     the `ClientProfile`; no coach pre-created profile (product-decisions #15).
 20. **ANSWERED — Invite lifetime/invalidation:** 12-hour expiry; a replacement cancels
-    previous matching links (product-decisions #17). Still open: owner revocation of a
-    specific outstanding invite.
-21. **`TODO(human)` — Invite acceptance details:** password set during acceptance; invite
-    possession = email verification; `INVITED → ACTIVE` transitions; SUSPENDED/REMOVED
-    membership behavior.
-22. **`TODO(human)` — Recovery eligibility:** which user states may receive a reset
-    (ACTIVE-only was the unapproved recommendation); always-generic public response.
+    previous matching links (product-decisions #17); workspace admin may revoke.
+21. **ANSWERED — Invite acceptance details:** new users set a password during
+    acceptance; invite possession = email verification; `INVITED → ACTIVE`
+    transitions; SUSPENDED/REMOVED never silently restored — explicit
+    re-invitation required (product-decisions #20/#21).
+22. **ANSWERED — Recovery eligibility:** `ACTIVE` accounts only (product-decisions
+    #22). Public reset response deliberately differs by account existence —
+    an explicit accepted enumeration risk (product-decisions #24), never
+    revealing status/role/workspace details.
 23. **ANSWERED — Reset invalidation/logout:** 12-hour expiry; replacement cancels
     previous matching links; successful reset must log out other devices
     (product-decisions #17/#18 → `User.sessionVersion` foundation).
-24. **`TODO(human)` — Password policy:** min length / complexity / breach-check / reuse —
-    explicitly undecided pending the product name (product-decisions #19).
+24. **ANSWERED — Password policy:** minimum 10 characters (explicit Aleks decision,
+    below the 15-char recommendation — recorded risk); long passphrases allowed;
+    no composition rules; no breach-check approved (product-decisions #23).
 25. **`TODO(human)` — Email delivery:** provider, sender identity, and app base URL all
-    undecided pending the product name (product-decisions #19).
-26. **`TODO(human)` — Abuse protection:** rate limits/cooldowns/lockouts; no rate-limit
-    infra exists; no existence oracles.
-27. **`TODO(human)` — Token/audit specifics:** which invite/recovery outcomes are audited;
-    how user-owned (non-workspace) audit rows are stored given `AuditEvent.workspaceId` is
-    required; DENY-event volume policy; token-row retention + cleanup cadence; whether
-    standalone `EMAIL_VERIFICATION` is in scope.
+    undecided pending the product name (product-decisions #28 — backend stays
+    provider-neutral).
+26. **PARTIALLY OPEN — Abuse protection:** an existence oracle via the reset
+    response is now an accepted risk; per-IP/per-identifier rate limiting is
+    still required at the route layer and the mechanism is `TODO(human)` (no
+    rate-limit infra exists).
+27. **PARTIALLY ANSWERED — Token/audit specifics:** reset activity is
+    account-level (not workspace) audit — schema design needed because
+    `AuditEvent.workspaceId` is required today; token rows may be deleted after
+    30 days; standalone `EMAIL_VERIFICATION` is deferred (invite possession
+    verifies). Still open: DENY-event volume policy.
 
 ## Resolved (recorded for traceability)
 
