@@ -400,3 +400,40 @@ delivery validation removed (1 unit).
 
 **Status: boundary redesign implemented; gates green; independent
 different-model re-review pending.**
+
+## Account-audit optional-field validation repair plan (2026-10-01)
+
+Base `ce01d95`; repair only the ACCOUNT builder. Captured `actorUserId`,
+`actorRole`, and `resourceId` currently become null if a present value has
+an invalid type. Preserve the single read of every context/input property.
+For each optional capture, `undefined`/`null` maps to null; a present
+`actorUserId` or `resourceId` must be a string, and a present `actorRole`
+must be one of Prisma's five `MemberRole` values. Invalid values throw
+`AuditError("invalid_input")` before `auditEvent.create`; no input or caught
+exception appears in errors. Keep workspace audit and metadata rules intact.
+
+1. RED in `tests/unit/audit.test.ts`: production builder rejects numeric/
+   object actor IDs, `HACKER`/wrong-type roles, and numeric/object resource
+   IDs; account writer calls no create for malformed captures. Pin valid
+   strings and each MemberRole, and both missing/null optional values.
+   `npx vitest run tests/unit/audit.test.ts` must fail on the three current
+   silent-null branches, while prior getter/proxy/pair tests remain active.
+2. GREEN in `lib/audit.ts`: validate captured values before constructing
+   the row; construct it only from those values, using null only for
+   missing/null options. Re-run the focused unit command: exit 0.
+3. Mutate the three output branches one at a time back to silent null;
+   each targeted RED test must fail, then restore the file byte-for-byte.
+4. On a fresh disposable PostgreSQL database, run
+   `npm run test:integration -- tests/integration/s1-f2b-account-audit.test.ts tests/integration/s1-f2d-password-reset.test.ts`, then full gates:
+   `npm ci`, `npx prisma format`, `npx prisma validate`,
+   `npx prisma generate`, `npx prisma migrate deploy`,
+   `npx prisma migrate status`, `npm run format:check`,
+   `npm run typecheck`, `npm run lint`, `npm run test`,
+   `npm run test:integration`, `npm run build`, `npm run test:e2e`,
+   `git diff --check`, `npm audit`. Record exit codes/counts and clean up
+   only the disposable database. Existing E2E covers browser regressions;
+   no reset browser route exists yet.
+5. Update this record and `docs/STATUS.md`; scoped plan, repair/tests, and
+   handoff commits only. Verify `origin/main` is unchanged, push the feature
+   branch normally, and leave independent DeepSeek review pending. No PR,
+   merge, deploy, schema, route, UI, provider, or dependency changes.

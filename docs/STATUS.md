@@ -4,6 +4,17 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — S1-F2D account-audit optional-field repair planned (feature branch)
+
+- Verified `main`/`origin/main` = `e2bffb46810f3b507aaeb9fa96e39ef8cc2f6b43`
+  and local/remote feature = `ce01d95bde659b37346ecd389c9525a71f3b1c00`
+  after fetch; isolated feature worktree clean. Read conductor, decisions,
+  S1-F2D record, audit builder, and account-audit tests.
+- Confirmed silent-null conversion for malformed captured actorUserId,
+  actorRole, resourceId in `buildAccountAuditEvent`. Scoped RED → GREEN →
+  three mutation checks → real-PG/full gates plan in the S1-F2D task record.
+  No production edits yet; independent DeepSeek review remains pending.
+
 ## 2026-10-01 — S1-F2D stable-input boundary design (feature branch)
 
 - Post-review hardening: `requestPasswordReset` captures `options.deliver`
