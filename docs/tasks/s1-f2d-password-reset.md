@@ -164,3 +164,48 @@ Two deliberate-survivor notes (kept as defense-in-depth, documented):
 
 No schema or migration change was needed. No routes/UI/provider/URL/rate
 limiter added; nothing under `app/**` imports the service.
+
+---
+
+## Repair plan — independent DeepSeek FAIL (2026-10-01)
+
+Second review FAILed the slice on documentation/test/production issues.
+Repairs, all test-first:
+
+1. **Correct the FOR UPDATE visibility claim.** A locking read does NOT see
+   concurrent INSERTs that committed after the tx snapshot — correctness
+   comes from PostgreSQL SSI aborting the predicate-read↔insert conflict,
+   with bounded retry supplying a fresh snapshot. Row locks coordinate
+   existing rows and preserve lock order only. Fix comments in
+   `lib/auth/password-reset.ts`, this record, STATUS, and any rg hits.
+2. **Validate token before password work.** Order: `safeTokenHash` →
+   `validatePasswordPolicy` → `hashPassword` → tx. Malformed token + bad
+   password → `invalid_token`; malformed token never reaches scrypt.
+3. **Injected delivery sink.** `requestPasswordReset` returns ONLY
+   `{outcome:"ACCOUNT_EXISTS"}` / `{outcome:"ACCOUNT_NOT_FOUND"}` — never a
+   `delivery` property. New param `deliver?: (payload)=>Promise<void>` fires
+   exactly once, post-commit, outside the retry loop; its failure →
+   `reset_failed`; never called for missing/ineligible/failed issuance.
+4. **Audit attribution.** COMPLETED events: `actorUserId=null`,
+   `actorRole=null`, `subjectUserId=account`, scope ACCOUNT — bearer-token
+   consumption is not an authenticated user session. Real-PG regression.
+5. **Bounded retry headroom.** `MAX_ATTEMPTS = 8` + small deterministic
+   backoff (`min(attempt*10, 50)` ms). Retries still only P2034 / raw
+   40001·40P01. Proven by repeated 3-way and 8-way same-account bursts —
+   exactly one active token per burst, no deadlock, no `serialization_conflict`
+   rejections. Route-layer rate limiting stays deferred (documented).
+6. **Real CSRF update test.** Fetch a real CSRF token+cookie from
+   `handlers.GET /api/auth/csrf`, POST `/api/auth/session` with it; assert
+   200 + null body + cleared stale cookie + subsequent `auth()` null. The
+   loose "null OR non-200" assertion is deleted.
+7. **Scope `resetStage` to account audit.** Move it out of workspace
+   `AuditMeta`/`META_VALIDATORS` into an account-only meta type +
+   validator; `buildAuditEvent` rejects it; `buildAccountAuditEvent`
+   accepts only `resetStage` ∈ REQUESTED|COMPLETED on
+   PASSWORD_RESET/access_token.
+8. **`safeTokenHash` narrowing.** `TokenError` → `invalid_token`; anything
+   else → `reset_failed` (message/token never leaked). New regression test
+   with a controlled crypto failure.
+
+RED → GREEN → mutate-back per finding. All files restored byte-exact.
+No schema/migration/route/UI/provider/domain/rate-limit changes.
