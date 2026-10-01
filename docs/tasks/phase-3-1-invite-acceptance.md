@@ -60,8 +60,8 @@ role-management redesign, rate limiting infra, client shell, tracker/catalog.
 `workspaceId` + `rawToken`). Server component:
 
 1. Missing/malformed params → safe invalid state (no form).
-2. `getInviteLinkState` peeks the token (no consume): `valid +
-purpose="WORKSPACE_INVITE"` → form; anything else → invalid state.
+2. `getInviteLinkState` peeks the token (no consume): `valid` plus
+   `purpose="WORKSPACE_INVITE"` → form; anything else → invalid state.
 3. Session-aware form:
    - anonymous → `Your name` + `Password` fields ("Create account and join") +
      link to `/login` ("Already have an account? Sign in first").
@@ -167,10 +167,10 @@ retry bounds — is unchanged.
 
 - `Referrer-Policy: no-referrer` on `/invite` via route-scoped
   `next.config.ts` `headers()` (no global change). Production probe:
-  `curl -sI "…/invite?workspace=x&token=bogus"` → `Referrer-Policy:
-no-referrer` AND `Cache-Control: private, no-cache, no-store,
-max-age=0, must-revalidate` (existing no-store preserved). E2E asserts the
-  header on both the valid-form and invalid-link responses.
+  `curl -sI "…/invite?workspace=x&token=bogus"` shows the
+  `Referrer-Policy: no-referrer` response header and preserves the existing
+  `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate`.
+  E2E asserts the header on both the valid-form and invalid-link responses.
 - Copy aligned to the clarified rule: "at least one number" → "at least one
   digit (0–9)" in the form hint, the `password_needs_digit` message, tests,
   and `docs/product-decisions.md` §23. No rule change (server still checks

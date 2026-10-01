@@ -54,8 +54,9 @@ extraction) only, not the workbook UI itself.
   exposure, client shell, client-side catalog reachability.
 - Post-review hardening (model-diverse security review repairs): route-scoped
   `Referrer-Policy: no-referrer` on `/invite` via `next.config.ts` `headers()`
-  (production probe: header present AND `Cache-Control: private, no-cache,
-no-store` preserved); "number" copy clarified to "digit (0–9)" (form hint,
+  (production probe: the header is present and the response still carries the
+  existing `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate`);
+  "number" copy clarified to "digit (0–9)" (form hint,
   error message, tests, product-decisions §23 — rule unchanged). Deferred
   docs-only: token→httpOnly-cookie exchange/redirect for history/access-log
   exposure; public-route rate limiting. Re-gated: e2e 69/69.
@@ -664,8 +665,8 @@ FATS (g)/COOKED/RAW/DRY/CAT`; columns 12–21 and the row-label column empty →
   (Marcel + Mike) untouched and not the visual target; no UI implemented.
   `s1f2c_repair2` no longer exists (read-only verified).
 - Verification: `git diff --check` 0; `npm run format:check` 0;
-  `git diff --check 367fb99..HEAD` 0; `git diff --exit-code 367fb99..HEAD --
-lib tests db app` 0.
+  `git diff --check 367fb99..HEAD` 0;
+  `git diff --exit-code 367fb99..HEAD -- lib tests db app` 0.
 - **S1-F2C independently PASS. Platform-specific UI direction reconciled.
   Prime Tracker untouched. Next eligible slice: S1-F2D (not started).**
 - Residual (non-blocking) UI-planning notes: "Marcel and Mike are finalizing
