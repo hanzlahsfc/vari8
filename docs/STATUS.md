@@ -59,8 +59,9 @@ no-store` preserved); "number" copy clarified to "digit (0–9)" (form hint,
   error message, tests, product-decisions §23 — rule unchanged). Deferred
   docs-only: token→httpOnly-cookie exchange/redirect for history/access-log
   exposure; public-route rate limiting. Re-gated: e2e 69/69.
-- Branch `feature/phase-3-1-invite-acceptance` pushed; tip `a97d633`
-  (`00e6060` header fix, `a97d633` copy+records); no PR/merge/deploy.
+- Branch `feature/phase-3-1-invite-acceptance` pushed; tip `c1392fd`
+  (`00e6060` header fix, `a97d633` copy+records, `c1392fd` records);
+  no PR/merge/deploy.
 
 ## 2026-10-01 — Phase 2.2 Exercise Database catalog + import pipeline — implementation + independent review PASS (feature branch)
 
