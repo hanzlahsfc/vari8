@@ -18,8 +18,11 @@ code on every route; UI visibility is never authorization.
 In scope:
 
 1. Session gate: unauthenticated requests to `/workspace*` redirect to `/login`.
-2. Workspace list resolved from the session (ACTIVE user, ACTIVE membership, ACTIVE workspace).
-3. Workspace shell route with server-side guard wiring (`authorize`/`authorizeCollection`).
+2. Workspace list resolved from the session (the session gate already requires an ACTIVE user —
+   `auth()` invalidates non-ACTIVE/deactivated sessions in `lib/auth/session.ts`; the list query
+   additionally requires ACTIVE membership and ACTIVE workspace).
+3. Workspace shell route with server-side guard wiring (`authorize`; `authorizeCollection` is not
+   used by this slice because the only collection is the actor's own self-scoped list).
 4. Real HTTP 403 access-denied page (`app/forbidden.tsx` via Next `forbidden()`).
 5. Role-aware navigation (cosmetic only — every route re-authorizes server-side).
 6. Form-factor-appropriate layout: informative desktop/web, plus distinct tablet and mobile
@@ -63,8 +66,11 @@ implement them and does not silently drop them:
   workspace validated against an ACTIVE membership.
 - Denials are structural; the outward surface is a 403 page that reveals nothing about the
   workspace (no name, no existence confirmation).
-- Cross-workspace, non-member, inactive-user, inactive-workspace, and role-denied cases all
-  resolve to 403 (not 404, not a redirect loop).
+- Cross-workspace, non-member, inactive-workspace, and role-denied cases (for an authenticated
+  actor) all resolve to 403 (not 404, not a redirect loop).
+- A **deactivated / non-`ACTIVE` user** is removed at the session gate (`auth()` returns null),
+  so they are redirected to `/login` — they never reach `authorize` and never see a 403. 403 is
+  reserved for authenticated-but-unauthorized requests.
 - The public sign-in page and `/` remain reachable unauthenticated (unchanged); `/workspace*`
   requires a session.
 
@@ -99,8 +105,10 @@ New:
     `AuthorizationContext | null` (null on `AccessDeniedError`); never throws outward.
   - `requireWorkspaceAccess(session, request, client?)`: calls `resolveWorkspaceAccess`; on
     null calls `forbidden()` from `next/navigation`.
-  - `requireSessionUser()`: `auth()` → session user id or `redirect('/login')`.
-  - `listSessionWorkspaces(session)`: DB-scoped list of the user's ACTIVE workspaces
+  - `requireSessionUser()`: one `auth()` call → `{ userId, session }` (the raw `SessionLike`
+    is returned too, so a caller never needs a second `auth()`); redirects to `/login` when
+    unauthenticated.
+  - `listSessionWorkspaces(userId, client?)`: DB-scoped list of the user's ACTIVE workspaces
     (`workspaceMember` where `userId`, `status: ACTIVE`, `workspace.status: ACTIVE`), minimal
     fields (`id`, `name`, `role`).
 - `app/forbidden.tsx` — access-denied UI (rendered by `forbidden()`, HTTP 403).
@@ -109,7 +117,9 @@ New:
 - `app/workspace/[workspaceId]/layout.tsx` — shell chrome; calls `requireSessionUser()` first
   (unauthenticated → `redirect('/login')`), then `requireWorkspaceAccess(..., workspaceSettings/read)`
   (denied → `forbidden()`); renders workspace name + role + role-aware nav + sign-out.
-- `app/workspace/[workspaceId]/page.tsx` — overview (no sensitive data).
+- `app/workspace/[workspaceId]/page.tsx` — overview (no sensitive data); it re-runs
+  `requireWorkspaceAccess(..., workspaceSettings/read)` itself (Next layouts are not re-executed
+  on client-side navigation, so each page authorizes server-side on every request).
 - `app/workspace/[workspaceId]/admin/page.tsx` — owner-only placeholder; guards
   `workspaceSettings/write`.
 - `components/workspace-nav.tsx` — server component; nav links filtered by `resolveScope`
@@ -125,8 +135,9 @@ Touched:
   `prisma migrate deploy` (idempotent no-op when current) and **upserts** reserved synthetic
   fixtures under a namespaced scheme — emails ending `@s1h-e2e.test` and workspace slug
   `s1h-e2e-workspace`. No broad `deleteMany`; a matching teardown removes only rows carrying
-  those reserved identifiers, so the 21 existing E2E specs and any pre-existing rows are
-  provably unaffected (assert by counting rows outside the reserved namespace before/after).
+  those reserved identifiers, so the 21 existing E2E test cases (7 spec files) and any
+  pre-existing rows are provably unaffected (assert by counting rows outside the reserved
+  namespace before/after).
 - `components/app-nav.tsx` — add a static `/workspace` link.
 - `app/globals.css` — shell styles with desktop/tablet/mobile breakpoints.
 - `docs/tasks/s1-h-workspace-shell.md` (this file), `docs/STATUS.md`.
@@ -143,27 +154,33 @@ export async function resolveWorkspaceAccess(
   client: PrismaLike = prisma,
 ): Promise<AuthorizationContext | null>;
 export async function requireWorkspaceAccess(...): Promise<AuthorizationContext>; // forbidden() on null
-export async function requireSessionUser(): Promise<{ userId: string }>; // redirect('/login')
+export async function requireSessionUser(): Promise<{
+  userId: string;
+  session: SessionLike;
+}>; // redirect('/login') when unauthenticated
 export async function listSessionWorkspaces(
   userId: string,
   client: PrismaLike = prisma,
 ): Promise<{ id: string; name: string; role: WorkspaceRole }[]>;
 ```
 
-Call sequence (stated explicitly so no guessing is required): a route/page first calls
-`const { userId } = await requireSessionUser();`, then passes `userId` to
-`listSessionWorkspaces(userId)` (list page) or passes the raw `session` from `auth()` to
-`requireWorkspaceAccess(session, …)` (workspace layout/pages). The layout calls
-`requireSessionUser()` **before** `requireWorkspaceAccess()`; an unauthenticated deep link
+Call sequence (stated explicitly so no guessing is required): the list page calls
+`const { userId } = await requireSessionUser();` then `listSessionWorkspaces(userId)`. The
+`[workspaceId]` layout calls `const { session } = await requireSessionUser();` then
+`requireWorkspaceAccess(session, { resource: "workspaceSettings", action: "read", workspaceId })`.
+There is exactly one `auth()` call per request (inside `requireSessionUser`); the layout calls
+`requireSessionUser()` **before** `requireWorkspaceAccess()`, so an unauthenticated deep link
 redirects to `/login` and never reaches `authorize`.
 
 - `resolveWorkspaceAccess` reuses `authorize(session, request, createPrismaAuthorizationRepo(client))`
   and maps `AccessDeniedError` → `null`. It does **not** catch unexpected DB errors (those
   propagate to the framework as 500, never as a false 403).
-- `forbidden()` renders `app/forbidden.tsx` with status 403 (Next 15 auth interrupts). If the
-  installed Next build does not support `authInterrupts`, the plan falls back to a dedicated
-  `/403` route reached via `redirect('/403')`; that deviation must be recorded and the E2E
-  assertion updated to the real status. Primary path is the real 403.
+- `forbidden()` renders `app/forbidden.tsx` with status 403 (Next `authInterrupts`). This is
+  **verified supported** by the installed `next@15.5.25` (`forbidden` is exported from
+  `next/navigation`; the flag exists in the config schema; the renderer maps it to HTTP 403).
+  No fallback is planned. (If a future Next version dropped it, the only acceptable fallback
+  would be a documented deviation returning a real 403 — never a 200 page or a redirect — and
+  the E2E status assertion would be updated to the real status.)
 - The shell layout guards `workspaceSettings/read`; `/admin` guards `workspaceSettings/write`.
   Both run server-side per request with a DB re-read.
 
@@ -189,8 +206,8 @@ Unit (`tests/unit/route-guard.test.ts`, mocked repo + `next/navigation`):
 - `resolveWorkspaceAccess` returns the context when the guard allows and `null` on every
   `AccessDeniedError` reason; unexpected errors are not swallowed.
 - `requireWorkspaceAccess` calls `forbidden()` exactly when `resolveWorkspaceAccess` is null.
-- `requireSessionUser` calls `redirect('/login')` when `auth()` is null/empty and returns the
-  user id otherwise.
+- `requireSessionUser` calls `redirect('/login')` when `auth()` is null/empty and otherwise
+  returns `{ userId, session }` from a single `auth()` call.
 - `listSessionWorkspaces` query is scoped to the session user + ACTIVE membership + ACTIVE
   workspace and selects minimal fields.
 
@@ -215,6 +232,8 @@ matching teardown that removes only those rows — idempotent and non-damaging t
 - Signed in as coach: `/workspace/<id>` renders; `/workspace/<id>/admin` returns **HTTP 403**
   and shows the access-denied page; the workspace name is not disclosed on the 403 page.
 - Signed in as non-member: `/workspace/<id>` returns HTTP 403.
+- A user whose account is DEACTIVATED (session invalidated by the S1-F2B gate) is redirected to
+  `/login` for `/workspace` and `/workspace/<id>` (not 403).
 - Form factors: at 1440px, 834px, and 390px the shell renders with no document horizontal
   overflow and usable navigation; assert distinct layout markers per breakpoint (sidebar vs
   top-bar vs stacked).
