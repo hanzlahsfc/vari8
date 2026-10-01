@@ -28,9 +28,12 @@ Position / Setup/Coaching Notes / Cues/Video Link`; columns 12–22 and the
   unchanged. Provenance stores a source-byte fingerprint, run counts, and
   machine-readable row outcomes (reason codes) with no raw payloads.
 - Search is bounded (min 2 chars, limit clamped 1–50) and source-backed
-  (`Exercise Name` via a pg_trgm GIN index; exact `Muscle Group`/`Equipment`
-  facets via btree), authorized by the existing `foodExerciseMasterData/read`
-  matrix — no auth/session change.
+  (a pg_trgm GIN index on `Exercise Name` exists to support name search —
+  PostgreSQL may still choose a sequential scan at the current catalog size;
+  exact `Muscle Group`/`Equipment` facets via btree), authorized by the
+  existing `foodExerciseMasterData/read` matrix — no auth/session change.
+  Reachability is staff-only today: the enclosing workspace layout denies
+  CLIENT (`workspaceSettings/read` → 403); client access stays deferred.
 - TDD: unit source extractor RED (module absent) → GREEN. Gates on the exact
   tree (real exit codes): `git diff --check` 0; `format:check` 0; `typecheck`
   0; `lint` 0; `test` 0 (42 files / 433 tests, +4); `test:integration` 0
@@ -41,11 +44,13 @@ Position / Setup/Coaching Notes / Cues/Video Link`; columns 12–22 and the
   min-length (integration), reconciliation check (integration), `missing_name`
   reason misclassification (unit).
 - Independent fresh-context read-only review: **PASS**, no P0 findings.
-  Reviewer is a same-model fresh-context agent — **model diversity NOT
-  verified**; different-model review still required by the orchestrator.
+  Reviewer is a same-model fresh-context agent — model diversity NOT
+  verified in-environment. Model-diverse review subsequently arranged by the
+  orchestrator: **`opencode-go/deepseek-v4.1-flash` — PASS**, no P0/P1, with
+  checks/build/E2E and the real import independently reproduced.
   P1 (missing records) repaired; P2 `first_imported_at`-on-update fixed here
-  (nutrition keeps the reviewed behavior); remaining P2s recorded as shared
-  Phase 2.1-pattern limitations in the task record.
+  (nutrition keeps the reviewed behavior); remaining P2s are consolidated as
+  non-blocking follow-ups in the task record §14.
 - Record: `docs/tasks/phase-2-2-exercise-catalog.md`. No `db` change beyond
   the additive exercise tables; no Training/workouts/programs/calculations/
   client entry; no raw exports/client data/`TRACKER 2.0.md` committed.

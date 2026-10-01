@@ -109,8 +109,10 @@ content changes on re-import, exactly as in Phase 2.1.
 
 - `exercise_catalog_item` — one row per accepted source row, keyed by unique
   `source_id`; `row_fingerprint` for change detection; `muscle_group` and
-  `equipment` btree indexes; `name` **pg_trgm GIN** index for bounded substring
-  search (raw SQL; Prisma cannot express GIN).
+  `equipment` btree indexes; `name` **pg_trgm GIN** index created to support
+  bounded substring search (raw SQL; Prisma cannot express GIN). The index
+  exists to serve name search; PostgreSQL's planner may still choose a
+  sequential scan while the catalog is small (~546 rows).
 - `exercise_import_run` — provenance: `source_name`, `source_fingerprint`
   (SHA-256 of source bytes), scanned/source/accepted/rejected/duplicate/
   inserted/updated/unchanged counts, `status`, `started_at`/`completed_at`.
@@ -142,10 +144,12 @@ explicit local path required, no route/API/upload, prints a JSON summary, exits
 non-zero on failure.
 
 **Search (`lib/exercise/search.ts`)** — `MIN_QUERY_LENGTH = 2`,
-`RESULT_LIMIT = 50` (clamped 1–50); case-insensitive `name` substring (ILIKE,
-trigram GIN-indexed) with optional exact `muscle_group` and `equipment` filters
-(btree-indexed, populated from distinct source values). Empty/below-min query
-returns an empty state — never the unbounded catalog. Facet choices mirror the
+`RESULT_LIMIT = 50` (clamped 1–50); case-insensitive `name` substring (ILIKE; a
+pg_trgm GIN index exists to support it, though PostgreSQL may choose a
+sequential scan at the current catalog size) with optional exact
+`muscle_group` and `equipment` filters (btree-indexed, populated from distinct
+source values). Empty/below-min query returns an empty state — never the
+unbounded catalog. Facet choices mirror the
 existing `searchExercises`/`exerciseFacets` precedence in `lib/catalog.ts`.
 
 ## 4. Route + UI
@@ -171,8 +175,9 @@ overflow; labels, focus, keyboard, semantic landmarks.
 - **AC3** Invalid rows and duplicates are explicit, auditable outcomes with
   reason codes; no raw rows/payloads are persisted or committed.
 - **AC4** Search is bounded (`limit`), min-query gated, source-backed
-  (name/muscle group/equipment), and backed by the pg_trgm GIN index;
-  empty/below-min returns an empty state.
+  (name/muscle group/equipment), and supported by a pg_trgm GIN index that
+  exists to serve name search — PostgreSQL may still choose a sequential scan
+  for the current small catalog; empty/below-min returns an empty state.
 - **AC5** Authorized staff reach `/workspace/[id]/exercises` via navigation;
   non-member 403; unauthenticated → login.
 - **AC6** Route usable at 1440/834/390 with no horizontal overflow, keyboard
@@ -269,9 +274,13 @@ undecided. No PR/merge/deploy.
 
 - Fresh-context, read-only reviewer subagent on the frozen branch tree:
   **PASS**, no P0 blockers. Reviewer runs on the same model as the builder
-  (SWE-2 High) — **model diversity is NOT verified in-environment**; a
-  different-model review should be arranged by the orchestrator before any
-  merge decision. Review rounds: 1.
+  (SWE-2 High) — **model diversity is NOT verified in-environment**.
+- Model-diverse independent review (arranged by the orchestrator against the
+  pushed tip `c83855b`): **`opencode-go/deepseek-v4.1-flash` — PASS**, no
+  P0/P1; checks, build/E2E, and the real import were independently
+  reproduced. This satisfies the different-model review requirement.
+- All remaining reviewer observations below are **non-blocking follow-ups**,
+  not merge criteria.
 - P1 (process): STATUS/§10 records not yet written at review time — repaired
   here before push.
 - P2 findings and dispositions:
@@ -313,5 +322,31 @@ undecided. No PR/merge/deploy.
 
 - None. The catalog is workspace-scoped master data; the route reuses the
   reviewed `foodExerciseMasterData/read` authorization and does not change
-  auth/session semantics. Note per the reviewed matrix, a CLIENT member may
-  also read this catalog — the existing matrix is intentionally unchanged.
+  auth/session semantics. Correction on client reach: although the RBAC matrix
+  grants CLIENT a workspace-scope `foodExerciseMasterData/read` cell, a CLIENT
+  member cannot currently reach the catalog — the enclosing staff workspace
+  layout authorizes `workspaceSettings/read`, which denies CLIENT with HTTP 403. Client-facing access remains deferred client-shell work, unchanged by
+  this task.
+
+## 14. Non-blocking follow-ups (consolidated reviewer observations)
+
+Recorded for future work; none are merge criteria:
+
+- `lib/nutrition/import.ts` still rewrites `first_imported_at` on update —
+  the exercise module fixed this; a shared tested fix for nutrition remains
+  open.
+- ILIKE metacharacters (`%`/`_`) reach `contains` unescaped in both catalog
+  searches (bounded by `take ≤ 50`).
+- Digit-string `ID`s exceeding int4 classify as accepted then fail at insert
+  as `write_failed` (clean rollback) rather than `invalid_source_id`.
+- `reason_field` is never populated for exercise rows (no field-level
+  rejection reasons exist); the column is carried for pattern symmetry.
+- A facet param value absent from the dropdown list renders the select as
+  "All" while the filter still applies (same quirk as nutrition `cat=`).
+- `EXERCISE_SOURCE_HEADERS` is exported but unreferenced (documentation-only;
+  `NUTRITION_SOURCE_HEADERS` identical).
+- `scannedRowCount` counts only post-header rows (nutrition convention);
+  content above the header row would be uncounted — not possible in the real
+  export.
+- `completedAt` uses wall-clock while `startedAt` uses the injected `now`
+  (faithful to Phase 2.1; semantically a completion timestamp).
