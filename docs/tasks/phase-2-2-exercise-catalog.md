@@ -222,4 +222,96 @@ undecided. No PR/merge/deploy.
 
 ## 10. Implementation + verification record
 
-_(filled in during implementation)_
+**Status: implemented, all gates green, independently reviewed PASS.**
+
+- Base verified live: `origin/main` =
+  `f75abd55c45858742b56732da8502fc1cbfaebb3` (remote tip matched; clean
+  worktree). Feature branch `feature/phase-2-2-exercise-catalog` off that tip.
+- Commits: `250f95e` plan; `76f3022` schema/import/search/CLI; `70d7122`
+  route/nav; `731e453` tests; review-repair + docs commits follow.
+- RED→GREEN: `tests/unit/exercise-source.test.ts` exit 1 (module absent)
+  before `lib/exercise/source.ts`; integration search/import tests exercised
+  only after the services landed.
+- **Real CLI against the actual export** (disposable `tracker_p22_int`;
+  `app_dev` untouched by real data; source file never copied into the repo):
+  - First run: fingerprint `fac31164…b8dfb1`, header row 2, scanned 994,
+    source rows 547, ignored empty 447, accepted **546**, rejected **1**
+    (`non_data_row` — license footer, source row 996), duplicates 0, inserted
+    **546**, updated 0, unchanged 0. Exit 0.
+  - Identical rerun: inserted **0**, updated **0**, unchanged **546**; catalog
+    still 546 rows; 2 runs / 1094 outcomes. Exit 0 — idempotent, no
+    duplicates.
+  - Reconciliation identities held: `547 = 546 + 1 + 0` and
+    `994 = 547 + 447`.
+- Invalid-row / duplicate / rollback cases: covered by integration
+  (`missing_name`, `non_data_row`, `invalid_source_id`,
+  `duplicate_source_id`, reconciliation mismatch, post-insert failure → full
+  rollback) — persisted only as row coordinates + reason codes, never
+  payloads.
+- Gates on the exact tree (real exit codes): `git diff --check` 0;
+  `format:check` 0; `typecheck` 0; `lint` 0; `test` 0 (42 files / 433 tests,
+  +4); `test:integration` 0 (19 files / 213 tests, +8, disposable PG);
+  `build` 0 (`ƒ /workspace/[workspaceId]/exercises` emitted); `test:e2e` 0
+  (57 passed, +8 at 1440/834/390 incl. keyboard and overflow).
+- Mutations caught and restored byte-exact (SHA-256 verified): search
+  min-length 2→0 (integration FAIL); source-count reconciliation disabled
+  (integration FAIL); `missing_name` reason misclassified (unit FAIL).
+- `s1-a-identity.test.ts` expected-table list updated for the three
+  intentional new tables; `exercise` removed from the forbidden-substring
+  list (the exact sorted table-list assertion remains the guard). The
+  forbidden-table guard still proves no premature health/meal/program
+  tables exist.
+- `git diff f75abd5 -- lib/extraction/databases.ts` verified additive-only
+  (two `export` keywords); `app/globals.css` unchanged (shared `.catalog-*`
+  styles reused); no auth/session/RBAC file touched.
+
+## 11. Independent review
+
+- Fresh-context, read-only reviewer subagent on the frozen branch tree:
+  **PASS**, no P0 blockers. Reviewer runs on the same model as the builder
+  (SWE-2 High) — **model diversity is NOT verified in-environment**; a
+  different-model review should be arranged by the orchestrator before any
+  merge decision. Review rounds: 1.
+- P1 (process): STATUS/§10 records not yet written at review time — repaired
+  here before push.
+- P2 findings and dispositions:
+  - `first_imported_at` was overwritten on update (mirrored Phase 2.1
+    pattern) — **fixed in this module**: update payloads now omit it;
+    deterministic regression assertions added (explicit `now` injection).
+    The same flaw remains in `lib/nutrition/import.ts` (out of scope; a
+    shared fix is a future tested change).
+  - `completedAt` uses real wall-clock while `startedAt` uses the injected
+    `now` — kept (semantically correct completion timestamp; faithful to the
+    reviewed Phase 2.1 pattern).
+  - LIKE metacharacters (`%`/`_`) pass through to ILIKE unescaped — kept
+    (bounded by `take ≤ 50`; identical reviewed behavior in nutrition
+    search; recorded as a shared limitation).
+  - Oversized digit-string `ID`s (> int4) classify as accepted and then fail
+    at insert as `write_failed` with full rollback — kept (fail-safe;
+    unreachable with the real export).
+  - `databases.ts` additive-only diff confirmed by the builder after review
+    (`export` keywords only).
+
+## 12. Deferred source fields / out-of-scope
+
+- Spreadsheet columns 12–22 and row-label column 1: empty in the export —
+  unmapped.
+- No formula/validation/named-range/hidden-row semantics to recover
+  (values-only export); none inferred.
+- `VIDEO LINK` stored/rendered as verbatim text (1 placeholder value in the
+  export); no link behavior invented.
+- Rows removed from a later source are not deleted (upsert-only) — a future
+  change-management decision, not this slice.
+- Entirely deferred (not built): TRAINING sheet, workouts, programs,
+  completed training records, set/rep prescriptions, progression,
+  performance tracking, training calculations, client data entry, exercise
+  recommendations. The claimed ~990-exercise count vs. the export's 546 rows
+  remains an open source question (needs the original `.xlsx`; recorded in
+  `docs/source-inventory.md` / `docs/tasks/phase-0-1-source-blueprint.md`).
+
+## 13. Deviations / blockers
+
+- None. The catalog is workspace-scoped master data; the route reuses the
+  reviewed `foodExerciseMasterData/read` authorization and does not change
+  auth/session semantics. Note per the reviewed matrix, a CLIENT member may
+  also read this catalog — the existing matrix is intentionally unchanged.

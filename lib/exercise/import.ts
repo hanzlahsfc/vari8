@@ -37,8 +37,8 @@ export type ExerciseImportSummary = {
   unchangedCount: number;
 };
 
-function toData(record: ExerciseSourceRecord, now: Date) {
-  return {
+function toData(record: ExerciseSourceRecord, now: Date, forInsert: boolean) {
+  const base = {
     sourceId: record.sourceId,
     rowFingerprint: record.rowFingerprint,
     name: record.name,
@@ -50,9 +50,11 @@ function toData(record: ExerciseSourceRecord, now: Date) {
     positionSetup: record.positionSetup,
     cues: record.cues,
     videoLink: record.videoLink,
-    firstImportedAt: now,
     updatedAt: now,
   };
+  // `first_imported_at` records when the row first entered the catalog — an
+  // update must never rewrite it.
+  return forInsert ? { ...base, firstImportedAt: now } : base;
 }
 
 export async function importExerciseCatalog(
@@ -109,13 +111,13 @@ export async function importExerciseCatalog(
       // 3. Write catalog changes.
       if (inserts.length > 0) {
         await tx.exerciseCatalogItem.createMany({
-          data: inserts.map((record) => toData(record, now)),
+          data: inserts.map((record) => toData(record, now, true)),
         });
       }
       for (const record of updates) {
         await tx.exerciseCatalogItem.update({
           where: { sourceId: record.sourceId },
-          data: toData(record, now),
+          data: toData(record, now, false),
         });
       }
 

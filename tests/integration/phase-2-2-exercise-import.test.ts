@@ -187,6 +187,8 @@ describe.skipIf(!enabled)("Phase 2.2 Exercise catalog import (real PG)", () => {
 
   it("updates only rows whose content fingerprint changed", async () => {
     await prisma.$executeRawUnsafe(TRUNCATE);
+    const firstRun = new Date("2026-10-01T10:00:00Z");
+    const secondRun = new Date("2026-10-02T10:00:00Z");
     await importExerciseCatalog(
       prisma,
       source({
@@ -195,6 +197,7 @@ describe.skipIf(!enabled)("Phase 2.2 Exercise catalog import (real PG)", () => {
           record({ sourceId: 2, name: "Plank" }),
         ],
       }),
+      firstRun,
     );
     const summary = await importExerciseCatalog(
       prisma,
@@ -209,6 +212,7 @@ describe.skipIf(!enabled)("Phase 2.2 Exercise catalog import (real PG)", () => {
           }),
         ],
       }),
+      secondRun,
     );
     expect(summary).toMatchObject({
       insertedCount: 0,
@@ -220,6 +224,14 @@ describe.skipIf(!enabled)("Phase 2.2 Exercise catalog import (real PG)", () => {
     });
     expect(plank.equipment).toBe("Cable");
     expect(plank.rowFingerprint).toBe("fp-2-changed");
+    // first_imported_at is provenance — an update must not rewrite it.
+    expect(plank.firstImportedAt.getTime()).toBe(firstRun.getTime());
+    expect(plank.updatedAt.getTime()).toBe(secondRun.getTime());
+    const untouched = await prisma.exerciseCatalogItem.findUniqueOrThrow({
+      where: { sourceId: 1 },
+    });
+    expect(untouched.firstImportedAt.getTime()).toBe(firstRun.getTime());
+    expect(untouched.updatedAt.getTime()).toBe(firstRun.getTime());
   });
 
   it("fails closed on reconciliation mismatch with no partial write", async () => {

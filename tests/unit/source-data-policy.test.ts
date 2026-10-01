@@ -6,10 +6,11 @@ import { describe, expect, it } from "vitest";
 /**
  * Phase 3 source-data policy guard.
  *
- * The trusted `npm run import:nutrition` path is the only approved way to bring
- * real Nutrition catalog data into PostgreSQL. No full copied Nutrition/Exercise
- * catalog dump may be committed: the committed catalog artifacts must be small,
- * explicitly synthetic fixtures that cannot be mistaken for a real PRGRSS export.
+ * The trusted `npm run import:nutrition` / `npm run import:exercise` paths are
+ * the only approved ways to bring real catalog data into PostgreSQL. No full
+ * copied Nutrition/Exercise catalog dump may be committed: the committed
+ * catalog artifacts must be small, explicitly synthetic fixtures that cannot
+ * be mistaken for a real PRGRSS export.
  */
 
 const SPEC = join(process.cwd(), "spec");
