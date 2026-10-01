@@ -84,19 +84,19 @@ request to any `/workspace*` path — including a deep link to `/workspace/<id>`
 on denial. The `/workspace` **list** page runs only the session gate plus the self-scoped
 `listSessionWorkspaces` read (no `requireWorkspaceAccess`), as documented in §5/§7.
 
-| Route | Session gate (first) | Authorization (then, server) | Denied result |
-| --- | --- | --- | --- |
-| `/workspace` | `requireSessionUser` | self-scoped list of the session user's ACTIVE staff workspaces (see §5) | `redirect('/login')` when unauthenticated |
-| `/workspace/[workspaceId]` (layout) | `requireSessionUser` | `workspaceSettings` **read** (`authorize`) | unauthenticated → `redirect('/login')`; authorized-session denial → `forbidden()` → HTTP 403 |
-| `/workspace/[workspaceId]` (overview) | `requireSessionUser` (cache-shared) | `workspaceSettings` **read** (`authorize`) re-run by the page (layouts do not re-run on client navigation) | `forbidden()` → HTTP 403 |
-| `/workspace/[workspaceId]/admin` | `requireSessionUser` (cache-shared) | `workspaceSettings` **write** (`authorize`) — owner-only | `forbidden()` → HTTP 403 |
+| Route                                 | Session gate (first)                | Authorization (then, server)                                                                               | Denied result                                                                                |
+| ------------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `/workspace`                          | `requireSessionUser`                | self-scoped list of the session user's ACTIVE staff workspaces (see §5)                                    | `redirect('/login')` when unauthenticated                                                    |
+| `/workspace/[workspaceId]` (layout)   | `requireSessionUser`                | `workspaceSettings` **read** (`authorize`)                                                                 | unauthenticated → `redirect('/login')`; authorized-session denial → `forbidden()` → HTTP 403 |
+| `/workspace/[workspaceId]` (overview) | `requireSessionUser` (cache-shared) | `workspaceSettings` **read** (`authorize`) re-run by the page (layouts do not re-run on client navigation) | `forbidden()` → HTTP 403                                                                     |
+| `/workspace/[workspaceId]/admin`      | `requireSessionUser` (cache-shared) | `workspaceSettings` **write** (`authorize`) — owner-only                                                   | `forbidden()` → HTTP 403                                                                     |
 
 Matrix check (`lib/auth/rbac.ts`): `workspaceSettings` read = `ws` for OWNER/COACH/ASSISTANT,
 denied for SUPPORT/CLIENT; write = `workspace` for OWNER only, denied for COACH/ASSISTANT/
 SUPPORT/CLIENT; PLATFORM_ADMIN read = `platform`, write = `denied`. Because the layout and
 `/admin` use the single-record `authorize` (with a `workspaceId`), a **non-member**
 PLATFORM_ADMIN is denied at the ACTIVE-membership step (`membership_missing_or_inactive`); a
-PLATFORM_ADMIN who *is* a workspace member is evaluated by that membership role. So `/admin` is a
+PLATFORM_ADMIN who _is_ a workspace member is evaluated by that membership role. So `/admin` is a
 clean owner-only 403 demo inside a workspace the user already belongs to.
 
 ## 4. Files
@@ -109,7 +109,7 @@ New:
   - `requireWorkspaceAccess(session, request, client?)`: calls `resolveWorkspaceAccess`; on
     null calls `forbidden()` from `next/navigation`.
   - `requireSessionUser()`: `cache()`-wrapped; one `auth()` call per request → `{ userId,
-    session }` (the raw `SessionLike` is returned too); redirects to `/login` when
+session }` (the raw `SessionLike` is returned too); redirects to `/login` when
     unauthenticated.
   - `listSessionWorkspaces(userId, client?)`: DB-scoped list of the user's ACTIVE **staff**
     workspaces — `workspaceMember` where `userId`, `status: ACTIVE`, `workspace.status: ACTIVE`,

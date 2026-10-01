@@ -2,6 +2,10 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "tests/e2e",
+  // S1-H: migrate + upsert reserved synthetic fixtures before the suite, and
+  // remove only those reserved rows afterwards.
+  globalSetup: "./tests/e2e/global-setup.ts",
+  globalTeardown: "./tests/e2e/global-teardown.ts",
   // Single worker to keep local runs deterministic and resource-light for the
   // scaffold. Revisit if the suite grows enough to parallelise safely.
   workers: 1,
