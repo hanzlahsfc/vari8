@@ -4,6 +4,31 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — S1-G privacy/storage plan written; S1-F2D status reconciled (feature branch)
+
+- Base verified: `main`/`origin/main` =
+  `836945140a4616953d2c9cd51b6b5101ef0b53fc`, working tree clean after
+  fetch; existing `s1-f2d-password-reset` worktree left untouched.
+- **Status reconciliation (supersedes stale wording below):** the earlier
+  2026-10-01 entries that leave S1-F2D "review PENDING; no PR/merge/deploy"
+  are stale. S1-F2D independently passed its final different-model review,
+  was merged to `main` via PR #1 (merge commit `8369451`,
+  2026-09-30T22:51:19Z), and post-merge CI on `main` passed (CI run
+  36787929805, success, 3m27s). S1-F2D is complete. **S1-G and S1-H are not
+  complete and not started** — no export/erasure/retention/storage or
+  routing code exists.
+- This task is PLAN ONLY: `docs/tasks/s1-g-privacy-storage.md` defines the
+  S1-G scope (allowlist export + counts manifest, delete-vs-anonymize
+  erasure, retention policy-as-data with `TODO(human)` durations,
+  provider-neutral storage port), RED tests, exact gates, rollback,
+  privacy boundaries, and the unresolved `TODO(human)` set. No production
+  code, schema, migration, route, or UI changed.
+- Verification this task: `git status`/`rev-parse`/`fetch` state above;
+  `git diff --check` and `npm run format:check` on the docs-only diff.
+- On `feature/s1-g-privacy-storage-plan`, pushed normally for collaborator
+  visibility. **Stop: plan review precedes any implementation; no merge,
+  PR, deploy, or S1-H.**
+
 ## 2026-10-01 — S1-F2D account-audit optional-field repair handoff (feature branch)
 
 - Base: verified `main`/`origin/main` = `e2bffb46810f3b507aaeb9fa96e39ef8cc2f6b43`
