@@ -13,6 +13,16 @@ const nextConfig: NextConfig = {
         source: "/invite",
         headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
       },
+      {
+        // Phase 3.2: same bearer-token-in-URL protection for the reset
+        // consume route, plus an explicit no-store belt on the dynamic
+        // page's existing no-cache behavior. Route-scoped; no global change.
+        source: "/reset",
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "Cache-Control", value: "no-store" },
+        ],
+      },
     ];
   },
 };

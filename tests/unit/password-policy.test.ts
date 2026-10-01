@@ -5,7 +5,7 @@ import {
   PASSWORD_MAX_CODE_POINTS,
   PASSWORD_MIN_CODE_POINTS,
   PasswordPolicyError,
-  validateInvitePassword,
+  validatePasswordSetup,
   validatePasswordPolicy,
 } from "../../lib/password-policy";
 
@@ -120,14 +120,14 @@ function validatePasswordPolicySafe(candidate: unknown): unknown {
   }
 }
 
-describe("P3.1 invite-setup password policy (min 10 + at least one ASCII digit)", () => {
+describe("P3.1+P3.2 setup password policy (min 10 + at least one ASCII digit)", () => {
   it("accepts a ≥10-code-point password containing a digit", () => {
-    expect(validateInvitePassword("benchpress4u")).toBe("benchpress4u");
-    expect(validateInvitePassword("7".padEnd(10, "x"))).toBe(
+    expect(validatePasswordSetup("benchpress4u")).toBe("benchpress4u");
+    expect(validatePasswordSetup("7".padEnd(10, "x"))).toBe(
       "7".padEnd(10, "x"),
     );
     // Digit anywhere — not just leading/trailing.
-    expect(validateInvitePassword("long passphr4se")).toBe("long passphr4se");
+    expect(validatePasswordSetup("long passphr4se")).toBe("long passphr4se");
   });
 
   it("rejects ≥10 chars without a digit as password_needs_digit", () => {
@@ -154,7 +154,7 @@ describe("P3.1 invite-setup password policy (min 10 + at least one ASCII digit)"
   it("still NFC-normalizes before the digit check and return", () => {
     const composed = "caf\u00e9-passw0rd";
     const decomposed = "cafe\u0301-passw0rd";
-    expect(validateInvitePassword(decomposed)).toBe(composed);
+    expect(validatePasswordSetup(decomposed)).toBe(composed);
   });
 
   it("only the invite path requires a digit — the shared policy does not", () => {
@@ -165,7 +165,7 @@ describe("P3.1 invite-setup password policy (min 10 + at least one ASCII digit)"
 
 function safe(candidate: unknown): unknown {
   try {
-    return validateInvitePassword(candidate);
+    return validatePasswordSetup(candidate);
   } catch (error) {
     return error;
   }

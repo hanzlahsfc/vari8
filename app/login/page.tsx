@@ -1,11 +1,16 @@
+import Link from "next/link";
+
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ inviteAccepted?: string | string[] }>;
+  searchParams: Promise<{
+    inviteAccepted?: string | string[];
+    reset?: string | string[];
+  }>;
 }) {
-  const { inviteAccepted } = await searchParams;
+  const { inviteAccepted, reset } = await searchParams;
   return (
     <main className="app-main">
       <h1 className="app-title">App</h1>
@@ -15,8 +20,16 @@ export default async function LoginPage({
           password you just set.
         </p>
       ) : null}
+      {reset === "1" ? (
+        <p className="auth-success" role="status">
+          Your password was updated. Sign in with your new password.
+        </p>
+      ) : null}
       <p className="app-lede">Sign in to continue.</p>
       <LoginForm />
+      <p className="app-lede">
+        <Link href="/reset-request">Forgot your password?</Link>
+      </p>
     </main>
   );
 }

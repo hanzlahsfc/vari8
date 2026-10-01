@@ -26,7 +26,8 @@ const url = process.env.INTEGRATION_DATABASE_URL;
 const enabled = typeof url === "string" && url.length > 0;
 const AUTH_SECRET = "integration-test-auth-secret-not-for-production";
 const COOKIE_NAME = "authjs.session-token";
-const NEW_PASSWORD = "brand new correct horse battery staple";
+// Phase 3.2: reset-set passwords use the setup policy (≥10 + ≥1 ASCII digit).
+const NEW_PASSWORD = "brand new correct horse battery staple1";
 const OLD_PASSWORD = "old correct horse battery staple";
 
 describe.skipIf(!enabled)(
@@ -462,6 +463,12 @@ describe.skipIf(!enabled)(
       await expect(consume(d.rawToken, "short")).rejects.toMatchObject({
         name: "PasswordPolicyError",
         code: "password_too_short",
+      });
+      // Phase 3.2 rule: ≥10 chars without a digit is also rejected — and the
+      // token stays claimable either way.
+      await expect(consume(d.rawToken, "abcdefghij")).rejects.toMatchObject({
+        name: "PasswordPolicyError",
+        code: "password_needs_digit",
       });
       // Token still valid — a corrected password succeeds.
       expect((await consume(d.rawToken)).changed).toBe(true);

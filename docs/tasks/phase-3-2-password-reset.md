@@ -51,7 +51,7 @@ through public routes `/reset-request` (request) and `/reset?token=<raw>`
   existence). Raw token discarded server-side; never logged/returned.
 - `lib/auth/password-reset-boundary.ts`:
   - `getResetLinkState(rawToken)` — `inspectAccessToken` peek + `purpose ===
-    "PASSWORD_RESET"`; everything else → `invalid`. Display-only; claim stays
+"PASSWORD_RESET"`; everything else → `invalid`. Display-only; claim stays
     atomic at submit.
   - `requestPasswordResetFromForm(email)` — service call with the seam;
     `invalid_input` → "Enter a valid email address."; both existence outcomes
@@ -114,7 +114,36 @@ Mutations: digit-rule removal, purpose-check removal.
 
 ## 7. Record
 
-(filled during implementation)
+Implemented on `feature/phase-3-2-password-reset`.
+
+- TDD: unit RED (missing boundary + `validatePasswordSetup`) → GREEN (40/40
+  in the touched files). Integration file added (+6) and F2D fixture gained
+  a digit + a digitless-regression assertion.
+- Boundary: `lib/auth/password-reset-boundary.ts` — peek collapse,
+  non-enumerating request (unit-proven identical messages), structural
+  error→copy map. Delivery seam `lib/auth/password-reset-delivery.ts` —
+  documented no-op (must never throw: a thrown sink error surfaces only for
+  existing accounts and would reintroduce enumeration).
+- Service edit: `lib/auth/password-reset.ts` consume now calls
+  `validatePasswordSetup` (the only reviewed-code change; the ordering —
+  policy before tx, claim inside — is untouched).
+- Rename: `validateInvitePassword` → `validatePasswordSetup` in
+  `password-policy.ts`; `invitations.ts` call site + unit imports updated;
+  behavior unchanged (same codes, same bounds).
+- Headers: `/reset` gets `Referrer-Policy: no-referrer` +
+  `Cache-Control: no-store` (route-scoped; prod-probe verified).
+- Login: `?reset=1` status note + "Forgot your password?" link.
+- Gates (real exit codes): `git diff --check` 0 · `format:check` 0 ·
+  `typecheck` 0 · `lint` 0 · `test` 0 (44/456) · `test:integration` 0
+  (21/226, disposable `reset_p32_int`) · `build` 0 (`ƒ /reset`,
+  `ƒ /reset-request`) · `test:e2e` 0 (81/81, +12).
+- Mutations caught + restored byte-exact (sha256): digit-check removal
+  (unit FAIL), purpose-check removal (unit FAIL).
+- E2E bugs found/fixed during the run: none in production code — two test
+  defects (a `getByRole("alert")` strict-mode collision scoped to
+  `.auth-error`; a self-defeating "exist" string assertion) — fixed.
+- Reviewer: fresh-context read-only subagent — verdict + model identity
+  recorded below once complete.
 
 ## 8. Deferred
 

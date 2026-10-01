@@ -3,7 +3,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { writeAccountAuditEvent } from "../audit";
 import { normalizeEmail } from "../credentials";
 import { hashPassword } from "../password";
-import { validatePasswordPolicy } from "../password-policy";
+import { validatePasswordSetup } from "../password-policy";
 import { prisma } from "../db";
 import {
   hashAccessToken,
@@ -310,7 +310,7 @@ export async function resetPasswordWithToken(
   const tokenHash = safeTokenHash(input.rawToken);
   // 2. Password policy + hashing — still outside the transaction, so a
   //    policy failure cannot have claimed anything.
-  const normalizedPassword = validatePasswordPolicy(input.password);
+  const normalizedPassword = validatePasswordSetup(input.password);
   const passwordHash = await hashPassword(normalizedPassword);
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {

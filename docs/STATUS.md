@@ -4,6 +4,47 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — Phase 3.2 password-reset request + set-password flow — implemented on feature branch
+
+- Exposed the reviewed S1-F2D `requestPasswordReset`/`resetPasswordWithToken`
+  orchestration through public routes `GET /reset-request` and
+  `GET /reset?token=<raw>` plus a boundary module
+  (`lib/auth/password-reset-boundary.ts`) — the `app/**` import ban is
+  extended to `auth/password-reset` (exact-specifier regex so the
+  `-boundary`/`-delivery` modules pass).
+- Confirmed policy applied: reset-set passwords require ≥10 code points + ≥1
+  ASCII digit via `validatePasswordSetup` (renamed from the Phase 3.1
+  invite-specific name — single implementation, same codes; invite path
+  unchanged). Ordinary sign-in still performs no policy check.
+- Reset-request UI is non-enumerating per the Phase 3.2 instruction — both
+  service outcomes map to one generic message (tighter than the §24 accepted
+  risk; internal outcome retained for delivery decisions; §24 updated).
+- Delivery seam `lib/auth/password-reset-delivery.ts` is a documented no-op:
+  tokens are issued/sibling-revoked/audited then the raw copy is discarded —
+  email provider/sender/base URL are still undecided (operational limitation
+  reported; the seam must never throw, which would leak existence).
+- Consume is atomic in the reviewed service: conditional claim → sibling
+  revoke → `passwordHash` + `sessionVersion++` (invalidates every existing
+  JWT via `sv` mismatch) → `COMPLETED` audit; policy runs BEFORE the tx so a
+  weak password never claims the token.
+- `/reset` sends route-scoped `Referrer-Policy: no-referrer` +
+  `Cache-Control: no-store` (token-bearing route only; E2E + production probe
+  verified). `/reset-request` needs no such header (no token in URL).
+- Gates on the exact tree: `git diff --check` 0; `format:check` 0;
+  `typecheck` 0; `lint` 0; `test` 0 (44 files / 456 tests); `test:integration`
+  0 (21 files / 226 tests, disposable `reset_p32_int`); `build` 0 (`ƒ
+/reset`, `ƒ /reset-request`); `test:e2e` 0 (81/81, +12). Mutations caught +
+  restored byte-exact: digit-check removal (unit FAIL), purpose-check removal
+  (unit FAIL).
+- E2E proves: non-enumerating request (identical message existing/missing),
+  compliant set → `/login?reset=1` → old password rejected, new works, prior
+  session signed out by `sv` bump; consumed/revoked/expired/malformed/
+  wrong-purpose links → one safe state; headers on `/reset`; 1440/834/390 +
+  keyboard.
+- Task record: `docs/tasks/phase-3-2-password-reset.md`.
+- Deferred: email provider + canonical reset URL (seam documented no-op
+  until then), rate limiting on both public routes, token→cookie exchange.
+
 ## 2026-10-01 — Phase 3.1 invite acceptance + initial password setup — implemented on feature branch
 
 - Exposed the reviewed S1-F2C `acceptWorkspaceInvitation` service through a

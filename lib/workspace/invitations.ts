@@ -9,7 +9,7 @@ import {
 } from "../auth/guard";
 import { normalizeEmail } from "../credentials";
 import { hashPassword } from "../password";
-import { validateInvitePassword } from "../password-policy";
+import { validatePasswordSetup } from "../password-policy";
 import type { RawAccessToken } from "../tokens/crypto";
 import {
   claimAccessToken,
@@ -551,7 +551,7 @@ export async function acceptWorkspaceInvitation(
             // chars + ≥1 digit); structural codes cover missing/non-string
             // input. The existing-user path never touches `input.password`.
             const passwordHash = await hashPassword(
-              validateInvitePassword(input.password),
+              validatePasswordSetup(input.password),
             );
             user = await tx.user.create({
               data: {
