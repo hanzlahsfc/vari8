@@ -186,3 +186,72 @@ table/column modified; no external state.
 No raw exports/ZIPs/client data/credentials/`TRACKER 2.0.md`/raw catalog dumps committed.
 No Mealplan, calculations, targets, dashboard, or client entry. No auth/session change.
 Product name undecided. No PR/merge/deploy.
+
+## 10. Implementation + verification record
+
+**Status: implemented, all gates green, independently reviewed PASS.**
+
+- Base verified live: `origin/feature/phase-1-1-daily-tracker-shell` =
+  `080b32001ef3e7c80585b8a8124421380626368e` (remote tip matched; `main` remains
+  `fc2c936`; the Phase 0.1 blueprint is present). Feature branch
+  `feature/phase-2-1-nutrition-catalog` off that tip.
+- Commits: `eb64354` plan; `3486c7f` schema/import/search/CLI; `beaf76f` route/nav/styles;
+  `ccbb62d` tests; documentation + branch-name records follow review.
+- RED→GREEN: `tests/unit/nutrition-source.test.ts` exit 1 (module absent) before
+  `lib/nutrition/source.ts`; integration search/import tests exercised only after the
+  services landed.
+- **Real CLI against the actual export** (disposable `tracker_p21_int`; `app_dev`
+  untouched; source file never copied into the repo):
+  - First run: fingerprint `cb93e907…066b8`, header row 2, scanned 1169, source rows 660,
+    ignored empty 509, accepted **599**, rejected **61** (`missing_food` 60,
+    `non_data_row` 1), duplicates 0, inserted **599**, updated 0, unchanged 0. Exit 0.
+  - Identical rerun: inserted **0**, updated **0**, unchanged **599**; catalog still 599
+    rows; 2 runs / 1320 outcomes. Exit 0 — idempotent, no duplicates.
+  - Reconciliation identity held in the service and is enforced: `660 = 599 + 61 + 0`
+    and `1169 = 660 + 509`.
+- Invalid-row case: covered by integration (`missing_food`, `non_data_row`,
+  `invalid_source_number`, `invalid_numeric` + `reason_field`, `duplicate_source_number`)
+  — persisted only as row coordinates + reason codes, never payloads.
+- Reconciliation-failure case: integration asserts a declared-count mismatch throws
+  `NutritionImportError("reconciliation_failed")` with catalog 0 / runs 0 (no partial
+  write); a forced post-insert failure also rolls the whole transaction back.
+- Gates on the exact tree (real exit codes): `git diff --check` 0; `format:check` 0;
+  `typecheck` 0; `lint` 0; `test` 0 (40 files / 425 tests, +4); `test:integration` 0
+  (18 files / 205 tests, +7, disposable PG); `build` 0
+  (`ƒ /workspace/[workspaceId]/nutrition` emitted); `test:e2e` 0 (49 passed, +8 at
+  1440/834/390 incl. keyboard and overflow).
+- Mutations caught and restored byte-exact (SHA-256 verified): search min-length 2→0
+  (integration FAIL); source-count reconciliation disabled (integration FAIL);
+  `missing_food` reason misclassified (unit FAIL).
+- `s1-a-identity.test.ts` schema snapshot updated for the three intentional new tables;
+  its forbidden-table guard (no premature health/meal/program tables) still holds.
+
+## 11. Independent review
+
+- Fresh-context, read-only reviewer in a separate `opencode run` session on the frozen
+  tree: **PASS**, no criterion violated. Reviewer model `opencode-go/glm-5.3` is
+  **different** from the builder model `opencode-go/deepseek-v4.1-flash` — model
+  diversity verified. The reviewer independently re-ran the unit (4/4) and integration
+  (7/7) suites on the disposable DB.
+- Process findings, both repaired before push: (1) commits initially sat on the local
+  Phase 1 branch — repointed to the scoped `feature/phase-2-1-nutrition-catalog`; (2)
+  missing STATUS/task record — added here and in `docs/STATUS.md`.
+- Residual observations folded in: `import.ts` comment clarified (upsert-only, no
+  deletes); limit-clamp tests added (`1..50`); `fileExerciseMasterData` read is
+  workspace-scoped, so a CLIENT member (per the reviewed matrix) may also read the
+  catalog — the existing matrix is intentionally unchanged.
+
+## 12. Deferred source fields / out-of-scope
+
+- Spreadsheet columns 12–21 and row-label column 1: empty in the export — unmapped.
+- No formula/validation/named-range/hidden-row semantics to recover (values-only export);
+  none inferred.
+- Rows removed from a later source are not deleted (upsert-only) — a future
+  change-management decision, not this slice.
+- Entirely deferred: Mealplan, portions, meal totals, macro/calorie calculations,
+  targets, dashboard values, client entry, Nutrition scores/interpretations.
+
+## 13. Deviations / blockers
+
+- None. The catalog is workspace-scoped master data; the route reuses the reviewed
+  `foodExerciseMasterData/read` authorization and does not change auth/session semantics.

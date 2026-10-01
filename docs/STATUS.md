@@ -4,6 +4,42 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — Phase 2.1 Nutrition Database catalog + import pipeline — implementation + independent review PASS (feature branch)
+
+- Built the first real in-app Nutrition Database catalog: a trusted local import CLI
+  (`npm run import:nutrition -- --source <path>`, no route/API/upload) plus an
+  authenticated, searchable staff route at `/workspace/[workspaceId]/nutrition`.
+  Delivered `lib/nutrition/{source,import,search}.ts`, `scripts/import-nutrition.ts`,
+  schema/migration `20261001100000_phase2_1_nutrition_catalog`, the route + results
+  component, a `workspace-nav` entry, tokenized responsive styles, and tests.
+- Source fidelity (real export inspected with the repo's existing parser): header row 2,
+  the 10 source headers `NO./FOOD/AMOUNT/UNIT/CALORIES (kcal)/PROTEIN (g)/CARBS (g)/
+FATS (g)/COOKED/RAW/DRY/CAT`; columns 12–21 and the row-label column empty → unmapped;
+  no formulas/validations in a values-only export. Empty cells stay NULL (never 0); no
+  invented fields or calculations.
+- Import is transactional, idempotent, and reconciling; **real CLI run**: 660 source rows
+  → **599 accepted**, **61 rejected** (`missing_food` 60, `non_data_row` 1), 509 ignored
+  empty, inserted 599; identical rerun inserted 0 / updated 0 / **unchanged 599** with the
+  catalog unchanged. Provenance stores a source-byte fingerprint, run counts, and
+  machine-readable row outcomes (reason codes) with no raw payloads.
+- Search is bounded (min 2 chars, limit clamped 1–50) and source-backed (FOOD name via a
+  pg_trgm GIN index; exact CAT via btree), authorized by the existing
+  `foodExerciseMasterData/read` matrix — no auth/session change.
+- TDD: unit source extractor RED (module absent) → GREEN. Gates on the exact tree (real
+  exit codes): `git diff --check` 0; `format:check` 0; `typecheck` 0; `lint` 0; `test` 0
+  (40 files / 425 tests, +4); `test:integration` 0 (18 files / 205 tests, +7, disposable
+  PG); `build` 0; `test:e2e` 0 (49 passed, +8 at 1440/834/390 incl. keyboard/overflow).
+  Mutations caught and restored byte-exact: search min-length (integration),
+  reconciliation check (integration), row reason misclassification (unit).
+- Independent fresh-context read-only review of the frozen tree: **PASS**, no criterion
+  violated; reviewer model `opencode-go/glm-5.3` differs from builder
+  `opencode-go/deepseek-v4.1-flash` (model diversity verified). Process findings
+  (branch naming, STATUS/record) repaired before push; limit-clamp tests and a comment
+  clarification folded in.
+- Record: `docs/tasks/phase-2-1-nutrition-catalog.md`. No `db` change beyond the additive
+  nutrition tables; no Mealplan/calculations/targets/client entry; no raw exports/client
+  data/`TRACKER 2.0.md` committed. **No PR/merge/deploy; branch pushed for collaborators.**
+
 ## 2026-10-01 — Phase 1.1 production Daily Tracker shell — implementation + independent review PASS (feature branch)
 
 - Built the first production-oriented Daily Tracker UI foundation: a real,
