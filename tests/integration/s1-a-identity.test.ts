@@ -279,16 +279,16 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
       "audit_log",
       "daily_entry",
       "food",
-      "exercise",
       "meal",
       "program",
     ]) {
       expect(names.some((n) => n.includes(forbidden))).toBe(false);
     }
     // Identity/tenancy (S1-A), versioned consent (S1-D), audit events (S1-E),
-    // access tokens (S1-F1), and the Phase 2.1 Nutrition catalog + import
-    // provenance. The forbidden-table guard above still proves no premature
-    // health/meal/program tables exist.
+    // access tokens (S1-F1), and the Phase 2.1 Nutrition + Phase 2.2 Exercise
+    // catalogs with their import provenance. The forbidden-table guard above
+    // still proves no premature health/meal/program tables exist; the
+    // exercise_catalog/exercise_import tables are the intentional catalog.
     expect(names.sort()).toEqual(
       [
         "_prisma_migrations",
@@ -298,6 +298,9 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         "client_profile",
         "coach_profile",
         "consent_record",
+        "exercise_catalog_item",
+        "exercise_import_row_outcome",
+        "exercise_import_run",
         "nutrition_catalog_item",
         "nutrition_import_row_outcome",
         "nutrition_import_run",
