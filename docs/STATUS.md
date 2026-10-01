@@ -4,6 +4,66 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — Phase 3.1 invite acceptance + initial password setup — implemented on feature branch
+
+- Exposed the reviewed S1-F2C `acceptWorkspaceInvitation` service through a
+  public route at `GET /invite?workspace=<id>&token=<raw>` plus a boundary
+  module (`lib/workspace/invite-acceptance.ts`) — the `app/**` → service
+  import ban stays intact (`tests/unit/invitations.test.ts` green).
+- New-user path: anonymous recipients set name + password, and the confirmed
+  stricter invite-setup policy (≥10 code points **and ≥1 ASCII digit `0–9`**
+  — "number" was clarified as ASCII-digit semantics, no uppercase/symbol
+  rule) is enforced server-side via the new
+  `validateInvitePassword` in `lib/password-policy.ts`; the service's new-user
+  branch calls it. Ordinary sign-in (hash verify, no policy) and the
+  password-reset policy are unchanged; `docs/product-decisions.md` §23 records
+  the dated policy update.
+- Invalid/missing/malformed/expired/revoked/consumed/wrong-purpose tokens all
+  render one identical safe state via a non-consuming `inspectAccessToken`
+  peek (purpose-checked); the atomic claim stays inside the service's
+  Serializable transaction. No mutation, no session, no form on bad links.
+- Signed-in acceptors see a one-click confirm (identity enforced by the
+  service: `identity_required` / `identity_mismatch` map to safe copy); new
+  accounts hand off to the existing `/login` flow (`?inviteAccepted=1`
+  status note); signed-in acceptances redirect to `/`. No invented session
+  mechanism.
+- Bug found by E2E and fixed with a regression: `FormData.get` returns `null`
+  for absent fields but the service treats only `undefined` as "not
+  provided" — the boundary normalizes `null → undefined` so the signed-in
+  accept path works (proven in integration + E2E).
+- React clears uncontrolled fields after a form action; the action echoes the
+  name field back via `defaultValue` on error (password never echoed).
+- TDD: unit RED (modules absent) → GREEN; E2E caught the null-vs-undefined
+  service-contract bug. Gates on the exact tree: `git diff --check` 0;
+  `format:check` 0; `typecheck` 0; `lint` 0; `test` 0 (43 files / 444 tests,
+  +11); `test:integration` 0 (20 files / 220 tests, +7, disposable
+  `invite_p31_int`); `build` 0 (`ƒ /invite` emitted); `test:e2e` 0
+  (68/68, +11). Mutations caught + restored byte-exact: digit check removal
+  (unit FAIL), purpose check removal (unit FAIL), `null→undefined` removal
+  (integration FAIL).
+- Task record: `docs/tasks/phase-3-1-invite-acceptance.md`.
+- Independent review (fresh-context, same model — SWE-2 High; **model
+  diversity NOT achieved**, a different-model review is still required before
+  merge): PASS, no P0/P1; P2s are documented/cosmetic (peek can't bind
+  workspace pre-submit — fails atomically as `invalid_token`; error alert not
+  tied via `aria-errormessage`, matching the pre-existing login form).
+  Reviewer ran static analysis only (read-only profile, no shell); gate exit
+  codes above are builder-run on the exact tree.
+- Deferred: invite creation/list/revoke UI, email delivery + canonical link
+  format, rate limiting/abuse controls on the public route, password reset
+  exposure, client shell, client-side catalog reachability.
+- Post-review hardening (model-diverse security review repairs): route-scoped
+  `Referrer-Policy: no-referrer` on `/invite` via `next.config.ts` `headers()`
+  (production probe: the header is present and the response still carries the
+  existing `Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate`);
+  "number" copy clarified to "digit (0–9)" (form hint,
+  error message, tests, product-decisions §23 — rule unchanged). Deferred
+  docs-only: token→httpOnly-cookie exchange/redirect for history/access-log
+  exposure; public-route rate limiting. Re-gated: e2e 69/69.
+- Branch `feature/phase-3-1-invite-acceptance` pushed; tip `c1392fd`
+  (`00e6060` header fix, `a97d633` copy+records, `c1392fd` records);
+  no PR/merge/deploy.
+
 ## 2026-10-01 — Phase 2.2 Exercise Database catalog + import pipeline — implementation + independent review PASS (feature branch)
 
 - Built the in-app Exercise Database catalog: a trusted local import CLI
@@ -605,8 +665,8 @@ FATS (g)/COOKED/RAW/DRY/CAT`; columns 12–21 and the row-label column empty →
   (Marcel + Mike) untouched and not the visual target; no UI implemented.
   `s1f2c_repair2` no longer exists (read-only verified).
 - Verification: `git diff --check` 0; `npm run format:check` 0;
-  `git diff --check 367fb99..HEAD` 0; `git diff --exit-code 367fb99..HEAD --
-lib tests db app` 0.
+  `git diff --check 367fb99..HEAD` 0;
+  `git diff --exit-code 367fb99..HEAD -- lib tests db app` 0.
 - **S1-F2C independently PASS. Platform-specific UI direction reconciled.
   Prime Tracker untouched. Next eligible slice: S1-F2D (not started).**
 - Residual (non-blocking) UI-planning notes: "Marcel and Mike are finalizing

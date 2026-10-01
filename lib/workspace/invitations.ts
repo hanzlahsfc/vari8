@@ -9,7 +9,7 @@ import {
 } from "../auth/guard";
 import { normalizeEmail } from "../credentials";
 import { hashPassword } from "../password";
-import { validatePasswordPolicy } from "../password-policy";
+import { validateInvitePassword } from "../password-policy";
 import type { RawAccessToken } from "../tokens/crypto";
 import {
   claimAccessToken,
@@ -547,10 +547,11 @@ export async function acceptWorkspaceInvitation(
             // never silently create another account under this invite.
             if (sessionUser) throw new InvitationError("identity_mismatch");
             const name = validateName(input.name);
-            // Structural `password_too_short` covers missing/non-string input;
-            // the existing-user path never touches `input.password`.
+            // Invite password setup uses the confirmed stricter policy (≥10
+            // chars + ≥1 digit); structural codes cover missing/non-string
+            // input. The existing-user path never touches `input.password`.
             const passwordHash = await hashPassword(
-              validatePasswordPolicy(input.password),
+              validateInvitePassword(input.password),
             );
             user = await tx.user.create({
               data: {

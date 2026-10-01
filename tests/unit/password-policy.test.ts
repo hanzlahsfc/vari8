@@ -5,6 +5,7 @@ import {
   PASSWORD_MAX_CODE_POINTS,
   PASSWORD_MIN_CODE_POINTS,
   PasswordPolicyError,
+  validateInvitePassword,
   validatePasswordPolicy,
 } from "../../lib/password-policy";
 
@@ -114,6 +115,57 @@ describe("S1-F2B password policy", () => {
 function validatePasswordPolicySafe(candidate: unknown): unknown {
   try {
     return validatePasswordPolicy(candidate);
+  } catch (error) {
+    return error;
+  }
+}
+
+describe("P3.1 invite-setup password policy (min 10 + at least one ASCII digit)", () => {
+  it("accepts a ≥10-code-point password containing a digit", () => {
+    expect(validateInvitePassword("benchpress4u")).toBe("benchpress4u");
+    expect(validateInvitePassword("7".padEnd(10, "x"))).toBe(
+      "7".padEnd(10, "x"),
+    );
+    // Digit anywhere — not just leading/trailing.
+    expect(validateInvitePassword("long passphr4se")).toBe("long passphr4se");
+  });
+
+  it("rejects ≥10 chars without a digit as password_needs_digit", () => {
+    for (const candidate of [
+      "abcdefghij",
+      "no digits in this one",
+      "🎒".repeat(10),
+      "  spaces only  ",
+    ]) {
+      const err = safe(candidate);
+      expect(err).toBeInstanceOf(PasswordPolicyError);
+      expect((err as Error).message).toBe("password_needs_digit");
+    }
+  });
+
+  it("keeps the shared length bounds (short/long beat the digit rule)", () => {
+    expect((safe("sh0rt") as Error).message).toBe("password_too_short");
+    expect((safe("1") as Error).message).toBe("password_too_short");
+    expect((safe("9".repeat(129)) as Error).message).toBe("password_too_long");
+    // Non-string input is the same structural short failure — never echoed.
+    expect((safe(null) as Error).message).toBe("password_too_short");
+  });
+
+  it("still NFC-normalizes before the digit check and return", () => {
+    const composed = "caf\u00e9-passw0rd";
+    const decomposed = "cafe\u0301-passw0rd";
+    expect(validateInvitePassword(decomposed)).toBe(composed);
+  });
+
+  it("only the invite path requires a digit — the shared policy does not", () => {
+    // Guard against accidentally widening validatePasswordPolicy.
+    expect(validatePasswordPolicy("abcdefghij")).toBe("abcdefghij");
+  });
+});
+
+function safe(candidate: unknown): unknown {
+  try {
+    return validateInvitePassword(candidate);
   } catch (error) {
     return error;
   }

@@ -20,7 +20,8 @@ import {
  */
 const url = process.env.INTEGRATION_DATABASE_URL;
 const enabled = typeof url === "string" && url.length > 0;
-const PASSWORD = "acceptance-test-password!";
+// Phase 3.1 policy: invite-setup passwords need ≥10 chars AND ≥1 digit.
+const PASSWORD = "acceptance-test-p4ssword!";
 
 describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
   let prisma: PrismaClient;
@@ -447,6 +448,31 @@ describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
     // The token still works with a valid password.
     const ok = await acceptAs(null, ws.id, r.delivery.rawToken, {
       name: "Strong",
+      password: PASSWORD,
+    });
+    expect(ok.outcome).toBe("accepted");
+  });
+
+  it("rejects a ≥10-char password without a digit — token stays usable", async () => {
+    const { ws, session: sess } = await ownerFixture();
+    const r = await invite(sess, ws.id, "nodigit@example.test", "CLIENT");
+    await expect(
+      acceptAs(null, ws.id, r.delivery.rawToken, {
+        name: "No Digit",
+        password: "abcdefghij", // 10 chars, no number
+      }),
+    ).rejects.toThrow("password_needs_digit");
+    const token = await prisma.accessToken.findUniqueOrThrow({
+      where: { id: r.invitationId },
+    });
+    expect(token.consumedAt).toBeNull();
+    expect(
+      await prisma.user.findUnique({
+        where: { email: "nodigit@example.test" },
+      }),
+    ).toBeNull();
+    const ok = await acceptAs(null, ws.id, r.delivery.rawToken, {
+      name: "Digit",
       password: PASSWORD,
     });
     expect(ok.outcome).toBe("accepted");
