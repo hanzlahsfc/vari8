@@ -35,7 +35,26 @@ Explicitly OUT of scope (do not build, do not expose):
 - No workspace/member CRUD, no assignment UI, no audit-log UI.
 - No product name invention (placeholder `App` remains), no branding, no i18n.
 - No schema/migration change. No new dependency. No vendor/RLS/Supabase.
-- No rate limiting (not needed — the only public surface remains sign-in, unchanged).
+- No rate limiting (not needed for this slice: the only unauthenticated reachable surfaces are
+  the unchanged sign-in page and the `/workspace*` → `/login` redirect; this slice adds a
+  `signOut` server action, not a new unauthenticated endpoint).
+
+### 1a. Deferred prerequisites (recorded, not silently dropped)
+
+`docs/security/consent-audit.md:154-167` and `docs/tasks/stage-1-plan.md:114` record that
+**DENY-attempt auditing** and **login-outcome auditing** are deferred to the routing slice and
+are required before exposure, pending a `TODO(human)` abuse-volume policy. This plan does not
+implement them and does not silently drop them:
+
+- S1-H adds the first user-reachable **authorization denial** (the 403 page), but exposes **no
+  audited mutation**: the shell only reads the actor's own `workspaceMember` rows and renders;
+  it never reaches the S1-C/S1-D/S1-E audited writes (consent, assignment, invitation). The
+  "required before exposure" note therefore continues to gate the **mutation** exposure, which
+  stays unreachable (`assert*ExternallyExposable` remain fail-closed and unimported by `app/**`).
+- DENY-event and login-outcome audit rows are **not** written by S1-H; implementing them needs
+  the abuse-volume policy decision (`TODO(human)`), which is not invented here. This deferral is
+  recorded in §9 and in `docs/STATUS.md` at handoff, so it is not lost.
+- The 403 page writes nothing and discloses nothing about the workspace.
 
 ## 2. Locked behavior this slice must honor
 
@@ -51,17 +70,25 @@ Explicitly OUT of scope (do not build, do not expose):
 
 ## 3. Routes and contracts
 
-| Route | Session | Authorization (server) | Denied result |
+Ordering is fixed on every `/workspace*` route: **session gate first** (`requireSessionUser`),
+then **authorization** (`requireWorkspaceAccess`). An unauthenticated request to any
+`/workspace*` path — including a deep link to `/workspace/<id>` — redirects to `/login`; only an
+authenticated request can reach the authorization step, which yields HTTP 403 on denial.
+
+| Route | Session gate (first) | Authorization (then, server) | Denied result |
 | --- | --- | --- | --- |
-| `/workspace` | required (`redirect('/login')`) | list the session user's ACTIVE memberships in ACTIVE workspaces | `redirect('/login')` when unauthenticated |
-| `/workspace/[workspaceId]` (layout) | required | `workspaceSettings` **read** (`authorize`) | `forbidden()` → HTTP 403 |
-| `/workspace/[workspaceId]` (overview) | inherited | none beyond the layout guard | 403 via layout |
-| `/workspace/[workspaceId]/admin` | inherited | `workspaceSettings` **write** (`authorize`) — owner-only | `forbidden()` → HTTP 403 |
+| `/workspace` | `requireSessionUser` | self-scoped list of the session user's ACTIVE memberships in ACTIVE workspaces (see §5) | `redirect('/login')` when unauthenticated |
+| `/workspace/[workspaceId]` (layout) | `requireSessionUser` | `workspaceSettings` **read** (`authorize`) | unauthenticated → `redirect('/login')`; authorized-session denial → `forbidden()` → HTTP 403 |
+| `/workspace/[workspaceId]` (overview) | inherited from layout | none beyond the layout guard | 403 via layout |
+| `/workspace/[workspaceId]/admin` | inherited from layout | `workspaceSettings` **write** (`authorize`) — owner-only | `forbidden()` → HTTP 403 |
 
 Matrix check (`lib/auth/rbac.ts`): `workspaceSettings` read = `ws` for OWNER/COACH/ASSISTANT,
 denied for SUPPORT/CLIENT; write = `workspace` for OWNER only, denied for COACH/ASSISTANT/
-SUPPORT/CLIENT; PLATFORM_ADMIN read = `platform` (collection guard rejects platform scope), write
-denied. So `/admin` is a clean owner-only 403 demo inside a workspace the user already belongs to.
+SUPPORT/CLIENT; PLATFORM_ADMIN read = `platform`, write = `denied`. Because the layout and
+`/admin` use the single-record `authorize` (with a `workspaceId`), a **non-member**
+PLATFORM_ADMIN is denied at the ACTIVE-membership step (`membership_missing_or_inactive`); a
+PLATFORM_ADMIN who *is* a workspace member is evaluated by that membership role. So `/admin` is a
+clean owner-only 403 demo inside a workspace the user already belongs to.
 
 ## 4. Files
 
@@ -77,10 +104,11 @@ New:
     (`workspaceMember` where `userId`, `status: ACTIVE`, `workspace.status: ACTIVE`), minimal
     fields (`id`, `name`, `role`).
 - `app/forbidden.tsx` — access-denied UI (rendered by `forbidden()`, HTTP 403).
-- `app/workspace/page.tsx` — signed-in workspace list (uses `requireSessionUser` +
-  `listSessionWorkspaces`); empty state when none.
-- `app/workspace/[workspaceId]/layout.tsx` — shell chrome; guards `workspaceSettings/read`
-  via `requireWorkspaceAccess`; renders workspace name + role + role-aware nav + sign-out.
+- `app/workspace/page.tsx` — signed-in workspace list; calls `requireSessionUser()` then
+  `listSessionWorkspaces(userId)`; empty state when none.
+- `app/workspace/[workspaceId]/layout.tsx` — shell chrome; calls `requireSessionUser()` first
+  (unauthenticated → `redirect('/login')`), then `requireWorkspaceAccess(..., workspaceSettings/read)`
+  (denied → `forbidden()`); renders workspace name + role + role-aware nav + sign-out.
 - `app/workspace/[workspaceId]/page.tsx` — overview (no sensitive data).
 - `app/workspace/[workspaceId]/admin/page.tsx` — owner-only placeholder; guards
   `workspaceSettings/write`.
@@ -93,7 +121,12 @@ New:
 Touched:
 
 - `next.config.ts` — `experimental.authInterrupts: true` (enables `forbidden()`), documented.
-- `playwright.config.ts` — `globalSetup` to migrate + seed synthetic E2E fixtures.
+- `playwright.config.ts` — `globalSetup` (`tests/e2e/global-setup.ts`) that runs
+  `prisma migrate deploy` (idempotent no-op when current) and **upserts** reserved synthetic
+  fixtures under a namespaced scheme — emails ending `@s1h-e2e.test` and workspace slug
+  `s1h-e2e-workspace`. No broad `deleteMany`; a matching teardown removes only rows carrying
+  those reserved identifiers, so the 21 existing E2E specs and any pre-existing rows are
+  provably unaffected (assert by counting rows outside the reserved namespace before/after).
 - `components/app-nav.tsx` — add a static `/workspace` link.
 - `app/globals.css` — shell styles with desktop/tablet/mobile breakpoints.
 - `docs/tasks/s1-h-workspace-shell.md` (this file), `docs/STATUS.md`.
@@ -112,9 +145,17 @@ export async function resolveWorkspaceAccess(
 export async function requireWorkspaceAccess(...): Promise<AuthorizationContext>; // forbidden() on null
 export async function requireSessionUser(): Promise<{ userId: string }>; // redirect('/login')
 export async function listSessionWorkspaces(
-  session: SessionLike,
+  userId: string,
+  client: PrismaLike = prisma,
 ): Promise<{ id: string; name: string; role: WorkspaceRole }[]>;
 ```
+
+Call sequence (stated explicitly so no guessing is required): a route/page first calls
+`const { userId } = await requireSessionUser();`, then passes `userId` to
+`listSessionWorkspaces(userId)` (list page) or passes the raw `session` from `auth()` to
+`requireWorkspaceAccess(session, …)` (workspace layout/pages). The layout calls
+`requireSessionUser()` **before** `requireWorkspaceAccess()`; an unauthenticated deep link
+redirects to `/login` and never reaches `authorize`.
 
 - `resolveWorkspaceAccess` reuses `authorize(session, request, createPrismaAuthorizationRepo(client))`
   and maps `AccessDeniedError` → `null`. It does **not** catch unexpected DB errors (those
@@ -164,7 +205,9 @@ Integration (`tests/integration/s1-h-route-guard.test.ts`, real disposable Postg
   workspace, SUSPENDED/REMOVED membership, other users) and never leaks other members.
 
 E2E (`tests/e2e/workspace-shell.spec.ts`, real browser; `tests/e2e/global-setup.ts` migrates +
-seeds synthetic fixtures):
+upserts reserved synthetic fixtures under `@s1h-e2e.test` / slug `s1h-e2e-workspace`, with a
+matching teardown that removes only those rows — idempotent and non-damaging to the existing
+21 specs and pre-existing data):
 
 - Unauthenticated `/workspace` and `/workspace/<id>` redirect to `/login`.
 - Signed in as owner: `/workspace` lists the workspace; `/workspace/<id>` renders the shell
@@ -194,8 +237,11 @@ Observable acceptance criteria:
 - `rg -n "lib/gdpr|lib/storage|workspace/invitations|auth/password-reset|tokens/store" app/`
   empty — the shell imports none of the deferred/exposure-gated services.
 - `rg -n "assert.*ExternallyExposable" app/` empty.
-- Every `/workspace*` route performs a server-side `authorize`/`authorizeCollection` call before
-  rendering any workspace data (integration + E2E).
+- Every `/workspace/[workspaceId]*` route performs a server-side `authorize` call before
+  rendering any workspace data (integration + E2E). The `/workspace` list page is a
+  **self-scoped read**: `listSessionWorkspaces(userId)` filters by the session user's `userId`
+  plus ACTIVE membership and ACTIVE workspace, so it can never return another user's workspace
+  and needs no `authorize` call (it exposes no cross-tenant record).
 - A denied role receives a real HTTP 403 (E2E), not a 200 page.
 - No product name invented; `App` placeholder only.
 - `TRACKER 2.0.md` stays out of version control; Prime Tracker untouched.
@@ -217,6 +263,10 @@ hard gate. Re-run the focused unit/integration/E2E files after any revert.
 
 - No route exposes invitation/reset/export/storage; `assert*ExternallyExposable` stay fail-closed
   and unimported by `app/**`.
+- DENY-attempt auditing and login-outcome auditing remain **deferred** (§1a) pending the
+  `TODO(human)` abuse-volume policy; this slice exposes no audited mutation, and
+  `consent-audit.md`'s "required before exposure" note continues to gate mutation exposure,
+  which stays unreachable. The deferral is recorded in `docs/STATUS.md` at handoff.
 - No sensitive data leaves the server unauthorized: the shell reads only the session user's own
   membership rows; the overview shows no client/health data; the 403 page discloses nothing.
 - No new dependency; no vendor/RLS/Supabase; no product name; no i18n.
