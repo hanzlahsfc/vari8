@@ -4,6 +4,153 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — S1-G implementation — independent DeepSeek review PASS (feature branch)
+
+- Fresh read-only implementation review of `db099ec` by
+  `opencode-go/deepseek-v4.1-flash` in a separate `opencode run` session
+  (builder SWE-2 High; reviewer different model, fresh context,
+  tree-verified unchanged): **PASS**.
+- Verified with line refs: own-path actor resolution ignoring supplied
+  client ids; scoped path rejecting `own`; `client_outside_workspace`
+  denial on cross-tenant ids; workspace-predicate defense in depth;
+  manifest derived from emitted rows; bounded id-cursor pagination with
+  the ceiling checked before emission (never silent truncation); exactly
+  one tx-bound `EXPORT`/`client_export` audit on success;
+  P2034/P2010(40001/40P01) bounded retry; retention all-or-nothing with no
+  deletion; null storage backend cannot mint URLs; fail-closed key/TTL
+  validation; tests assert the load-bearing invariants.
+- Non-blocking observations only: generic DB errors propagate raw (not
+  mapped to `GdprError`); per-field allowlist closure relies on query
+  `select`; the multi-page test counts rows rather than instrumenting
+  fetches.
+- S1-G reviewed scope is built and independently PASSed. Erasure,
+  retention enforcement, a real storage backend, and any external
+  exposure remain deferred on `TODO(human)` decisions + S1-H routing.
+- **No PR/merge/deploy; branch pushed for collaborators.**
+
+## 2026-10-01 — S1-G implementation built test-first — pending independent review (feature branch)
+
+- Implemented only the approved policy-independent scope (plan rev 3,
+  `924b999` PASS): `lib/gdpr/export.ts` (allowlist own/scoped export,
+  manifest derived from emitted rows, id-cursor pagination, hard
+  `export_too_large` ceiling), `lib/gdpr/retention.ts` (policy-as-data, all
+  durations `TODO(human)` except the referenced access-token constant,
+  all-or-nothing evaluator, no enforcement), `lib/storage.ts`
+  (provider-neutral port, fail-closed key/TTL validation, null backend),
+  `lib/gdpr.ts` (exposure gate), `client_export` added to
+  `AUDIT_RESOURCE_TYPES`. **No schema/migration, no routes/UI, no erasure
+  code, no vendor SDK.**
+- TDD observed: RED (3 unit files fail, modules absent) → GREEN.
+  Unit 401/401 (37 files) exit 0; integration 190/190 (15 files) exit 0
+  on a fresh disposable `postgres:16-alpine` (`127.0.0.1:55441`; app DB
+  untouched).
+- Mutation checks (all restored byte-exact, SHA-256 verified): allowlist
+  bypass · manifest count skipped · audit subject dropped · ceiling not
+  enforced · single-page stop · TTL over-bound accepted · retention due on
+  null duration · null-backend presign minting a URL · own-export honoring
+  a caller client id · workspace predicate dropped · `own`-scope rejection
+  removed — each produced a targeted test failure.
+- Gates on current tree (real exit codes): `git diff --check` 0;
+  `npm ci` 0; prisma format/validate/generate/migrate deploy/status 0;
+  `format:check` 0; `typecheck` 0; `lint` 0; `test` 401/401 exit 0;
+  `test:integration` 190/190 exit 0; `build` 0; `test:e2e` 21/21 exit 0;
+  `npm audit` 5 known vulns (unchanged baseline). Boundary greps empty:
+  no `app/**` import of the new modules; no vendor coupling;
+  `git diff 8369451 -- db/` empty.
+- Browser: N/A — S1-G exposes no route/UI; the 21 existing desktop/mobile
+  E2E tests ran as a regression gate only.
+- **Next: second fresh-context independent DeepSeek review of the exact
+  implementation diff; repair + re-review before completion is claimed.
+  No PR/merge/deploy.**
+
+## 2026-10-01 — S1-G plan rev 3 — independent DeepSeek re-review PASS (feature branch)
+
+- Fresh read-only re-review of `2ef21e9` by `opencode-go/deepseek-v4.1-flash`
+  in a separate `opencode run` session (builder is SWE-2 High — different
+  model, fresh context, no edits; reviewer verified tree unchanged):
+  **PASS**. D1 (parameterized `assertPresignGetTtl`) and D2 (blocked vs
+  flagged-for-confirmation split) confirmed resolved with line refs;
+  F1–F6 re-verified still resolved; claims cross-checked against
+  schema/audit/rbac code. Non-blocking residuals noted only.
+- The S1-G plan is now approved-for-implementation scope: allowlist
+  export + counts manifest with explicit bounds, retention policy-as-data
+  (all durations unset), provider-neutral fail-closed storage port. All
+  erasure paths stay deferred on `TODO(human)` policy.
+- **Next: implement the reviewed S1-G scope test-first on this branch;
+  a second independent DeepSeek review of the implementation diff is
+  required before completion is claimed.**
+
+## 2026-10-01 — S1-G plan rev 3 — repaired after independent DeepSeek FAIL (feature branch)
+
+- Independent read-only review of rev 2 (`cd6f449`) by
+  `opencode-go/deepseek-v4.1-flash` in a separate `opencode run` session:
+  **FAIL** — two findings, tree unchanged by the reviewer.
+- D1: presign-TTL bound was asserted-enforced while its value stayed
+  `TODO(human)` and was unreachable/untestable behind the null backend.
+  Repair: bound enforcement is now a pure parameterized validator
+  `assertPresignGetTtl(ttlSeconds, maxTtlSeconds)` every backend must call;
+  unit tests pin it with explicit test operands; no production value
+  invented.
+- D2: coach (`asg` read) export was listed as both blocked and in-scope.
+  Repair: §10 split into blocked `TODO(human)` items vs in-scope work
+  flagged for product confirmation; coach export sits in the latter.
+- Non-blocking repairs: `EXPORT_PAGE_SIZE`/`EXPORT_SECTION_ROW_MAX` given
+  PROPOSED values (500 / 100_000); every promised mutation now maps to an
+  enumerated test (multi-page pagination, ceiling → `export_too_large`
+  with no audit row, own-export ignores a supplied client-id, TTL
+  validator); real-browser requirement marked N/A for this slice —
+  `test:e2e` is a regression gate only, S1-G exposes no browser surface.
+- Verification: docs-only diff; `git diff --check` + `format:check` clean.
+- **Next: fresh read-only re-review of the repaired plan; implementation
+  still blocked until PASS.**
+
+## 2026-10-01 — S1-G plan rev 2 — scope narrowed after external review findings (feature branch)
+
+- Plan `docs/tasks/s1-g-privacy-storage.md` rewritten per six review
+  findings; still plan-only, no production code/schema/route/UI.
+- Erasure moved entirely out of scope: client deletion conflicts with the
+  locked never-delete-consent-grants model (`consent-audit.md` §1 +
+  `Restrict` FKs); account anonymization can orphan a sole-owned
+  workspace; workspace anonymization has no resolved tx/storage sequence.
+  Recorded requirements for the future design: storage-delete↔DB-tx is
+  NOT atomic (idempotent `deletePrefix`, retry-safe erasure, residual
+  state surfaces as `erasure_failed`); erasure audit rows never carry a
+  deleted client identifier in `resourceId`.
+- Export now specifies bounded pagination + a hard per-section ceiling
+  with explicit `export_too_large` failure — never silent truncation.
+- Remaining S1-G scope: allowlist export + counts manifest, retention
+  policy-as-data (all durations `TODO(human)`, no automatic cleanup),
+  provider-neutral fail-closed storage port (no backend, no Supabase).
+- Verification: docs-only diff; `git diff --check` + `format:check` clean.
+- **Next: independent read-only review of the repaired plan by
+  `opencode-go/deepseek-v4.1-flash` (separate session); implementation is
+  blocked until the plan returns PASS.**
+
+## 2026-10-01 — S1-G privacy/storage plan written; S1-F2D status reconciled (feature branch)
+
+- Base verified: `main`/`origin/main` =
+  `836945140a4616953d2c9cd51b6b5101ef0b53fc`, working tree clean after
+  fetch; existing `s1-f2d-password-reset` worktree left untouched.
+- **Status reconciliation (supersedes stale wording below):** the earlier
+  2026-10-01 entries that leave S1-F2D "review PENDING; no PR/merge/deploy"
+  are stale. S1-F2D independently passed its final different-model review,
+  was merged to `main` via PR #1 (merge commit `8369451`,
+  2026-09-30T22:51:19Z), and post-merge CI on `main` passed (CI run
+  36787929805, success, 3m27s). S1-F2D is complete. **S1-G and S1-H are not
+  complete and not started** — no export/erasure/retention/storage or
+  routing code exists.
+- This task is PLAN ONLY: `docs/tasks/s1-g-privacy-storage.md` defines the
+  S1-G scope (allowlist export + counts manifest, delete-vs-anonymize
+  erasure, retention policy-as-data with `TODO(human)` durations,
+  provider-neutral storage port), RED tests, exact gates, rollback,
+  privacy boundaries, and the unresolved `TODO(human)` set. No production
+  code, schema, migration, route, or UI changed.
+- Verification this task: `git status`/`rev-parse`/`fetch` state above;
+  `git diff --check` and `npm run format:check` on the docs-only diff.
+- On `feature/s1-g-privacy-storage-plan`, pushed normally for collaborator
+  visibility. **Stop: plan review precedes any implementation; no merge,
+  PR, deploy, or S1-H.**
+
 ## 2026-10-01 — S1-F2D account-audit optional-field repair handoff (feature branch)
 
 - Base: verified `main`/`origin/main` = `e2bffb46810f3b507aaeb9fa96e39ef8cc2f6b43`
