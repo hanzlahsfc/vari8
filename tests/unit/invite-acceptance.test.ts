@@ -116,7 +116,7 @@ describe("acceptInvitationMessage (safe error mapping)", () => {
     ).toMatch(/at least 10 characters/i);
     expect(
       acceptInvitationMessage(new PasswordPolicyError("password_needs_digit")),
-    ).toMatch(/at least one (number|digit)/i);
+    ).toMatch(/at least one digit \(0.9\)/i);
     expect(
       acceptInvitationMessage(new PasswordPolicyError("password_too_long")),
     ).toMatch(/128/);

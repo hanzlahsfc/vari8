@@ -146,7 +146,7 @@ test.describe("anonymous acceptance (new account)", () => {
     await page.getByLabel("Password").fill("abcdefghij");
     await page.getByRole("button", { name: "Create account and join" }).click();
     await expect(page.locator(".auth-error")).toContainText(
-      "at least one number",
+      "at least one digit (0–9)",
     );
 
     // Both rejections left zero account state — the link still works.
@@ -184,6 +184,18 @@ test.describe("anonymous acceptance (new account)", () => {
 });
 
 test.describe("invalid link states", () => {
+  test("/invite responses send Referrer-Policy: no-referrer", async ({
+    page,
+  }) => {
+    // The token lives in the URL — the document must never leak it via the
+    // Referer header to subresources or link targets.
+    const valid = await page.goto(await invite(inviteeEmail("refpolicy")));
+    expect(valid?.headers()["referrer-policy"]).toBe("no-referrer");
+    // …and the invalid-link state gets the same protection.
+    const invalid = await page.goto("/invite?workspace=x&token=bogus");
+    expect(invalid?.headers()["referrer-policy"]).toBe("no-referrer");
+  });
+
   test("malformed and unknown tokens show the same safe state", async ({
     page,
   }) => {

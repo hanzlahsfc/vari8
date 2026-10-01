@@ -120,7 +120,7 @@ function validatePasswordPolicySafe(candidate: unknown): unknown {
   }
 }
 
-describe("P3.1 invite-setup password policy (min 10 + at least one number)", () => {
+describe("P3.1 invite-setup password policy (min 10 + at least one ASCII digit)", () => {
   it("accepts a ≥10-code-point password containing a digit", () => {
     expect(validateInvitePassword("benchpress4u")).toBe("benchpress4u");
     expect(validateInvitePassword("7".padEnd(10, "x"))).toBe(

@@ -53,7 +53,7 @@ export function InviteForm({
             />
           </label>
           <p id="invite-password-hint" className="auth-hint">
-            At least 10 characters and at least one number.
+            At least 10 characters and at least one digit (0–9).
           </p>
         </>
       ) : null}

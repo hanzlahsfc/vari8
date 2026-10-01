@@ -34,7 +34,9 @@ role-management redesign, rate limiting infra, client shell, tracker/catalog.
   ⇒ A boundary module is required (`lib/workspace/invite-acceptance.ts`).
 - Password policy: `validatePasswordPolicy` = 10–128 code points, NFC, **no
   composition rule**. Confirmed instruction (Aleks, via Hanzlah) for invite
-  password **setup** differs: ≥10 chars **and ≥1 number** — additive stricter
+  password **setup** differs: ≥10 chars **and ≥1 ASCII digit `0–9`** (the
+  relayed "at least one number" was clarified to ASCII-digit semantics, not
+  broadened to Unicode digits) — additive stricter
   validator `validateInvitePassword` (new structural code
   `password_needs_digit`); `validatePasswordPolicy` and the reset path are
   untouched. Ordinary sign-in performs no policy check at all (hash verify
@@ -161,6 +163,21 @@ retry bounds — is unchanged.
   unit FAIL; `WORKSPACE_INVITE` purpose-check removal → unit FAIL;
   `null→undefined` normalization removal → integration FAIL.
 
+**Post-review hardening round (model-diverse review repairs):**
+
+- `Referrer-Policy: no-referrer` on `/invite` via route-scoped
+  `next.config.ts` `headers()` (no global change). Production probe:
+  `curl -sI "…/invite?workspace=x&token=bogus"` → `Referrer-Policy:
+no-referrer` AND `Cache-Control: private, no-cache, no-store,
+max-age=0, must-revalidate` (existing no-store preserved). E2E asserts the
+  header on both the valid-form and invalid-link responses.
+- Copy aligned to the clarified rule: "at least one number" → "at least one
+  digit (0–9)" in the form hint, the `password_needs_digit` message, tests,
+  and `docs/product-decisions.md` §23. No rule change (server still checks
+  `[0-9]`); no sign-in/reset change.
+- Gates re-run on the final tree: format 0 · typecheck 0 · lint 0 · unit
+  444/0 · integration 220/0 · build 0 · e2e **69/69** (+1 header test).
+
 **Known non-blocking observations:**
 
 - The peek (`getInviteLinkState`) cannot distinguish "token valid but bound
@@ -180,6 +197,17 @@ retry bounds — is unchanged.
 Invite creation/list/revoke UI (owners), email delivery + canonical invite
 URL, rate limiting/abuse controls on the public route, password-reset
 exposure slice, client shell + CLIENT catalog reachability.
+
+**Documented-not-implemented mitigations (security review):**
+
+- The URL-carried token still lands in browser history and any initial
+  server access log that records query strings. The stronger future fix is a
+  token→httpOnly-cookie exchange/redirect (link carries the token once, a
+  one-time exchange sets a cookie and 302s to a clean URL); deferred until
+  the delivery/link-format decision lands with email sending.
+- Public-route rate limiting on `/invite` submit is deferred — same open
+  item the S1-F2C record lists; submit cost is one bounded conditional
+  update gated by 256-bit token entropy.
 
 ## 9. Review
 

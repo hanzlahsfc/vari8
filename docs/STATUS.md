@@ -11,8 +11,9 @@ extraction) only, not the workbook UI itself.
   module (`lib/workspace/invite-acceptance.ts`) — the `app/**` → service
   import ban stays intact (`tests/unit/invitations.test.ts` green).
 - New-user path: anonymous recipients set name + password, and the confirmed
-  stricter invite-setup policy (≥10 code points **and ≥1 digit**, no
-  uppercase/symbol rule) is enforced server-side via the new
+  stricter invite-setup policy (≥10 code points **and ≥1 ASCII digit `0–9`**
+  — "number" was clarified as ASCII-digit semantics, no uppercase/symbol
+  rule) is enforced server-side via the new
   `validateInvitePassword` in `lib/password-policy.ts`; the service's new-user
   branch calls it. Ordinary sign-in (hash verify, no policy) and the
   password-reset policy are unchanged; `docs/product-decisions.md` §23 records
@@ -51,6 +52,13 @@ extraction) only, not the workbook UI itself.
 - Deferred: invite creation/list/revoke UI, email delivery + canonical link
   format, rate limiting/abuse controls on the public route, password reset
   exposure, client shell, client-side catalog reachability.
+- Post-review hardening (model-diverse security review repairs): route-scoped
+  `Referrer-Policy: no-referrer` on `/invite` via `next.config.ts` `headers()`
+  (production probe: header present AND `Cache-Control: private, no-cache,
+no-store` preserved); "number" copy clarified to "digit (0–9)" (form hint,
+  error message, tests, product-decisions §23 — rule unchanged). Deferred
+  docs-only: token→httpOnly-cookie exchange/redirect for history/access-log
+  exposure; public-route rate limiting. Re-gated: e2e 69/69.
 - Branch `feature/phase-3-1-invite-acceptance` pushed at `19ac1af` +
   records commit; no PR/merge/deploy.
 

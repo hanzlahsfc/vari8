@@ -116,7 +116,7 @@ export function acceptInvitationMessage(error: unknown): string {
       case "password_too_long":
         return "Password must be at most 128 characters.";
       case "password_needs_digit":
-        return "Password must include at least one number.";
+        return "Password must include at least one digit (0–9).";
     }
   }
   if (error instanceof WorkspaceServiceError) {

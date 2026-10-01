@@ -208,7 +208,7 @@ describe.skipIf(!enabled)(
 
       for (const [password, fragment] of [
         ["short", "at least 10 characters"],
-        ["abcdefghij", "at least one number"],
+        ["abcdefghij", "at least one digit (0–9)"],
       ] as const) {
         const res = await acceptInvitationFromLink(
           null,
