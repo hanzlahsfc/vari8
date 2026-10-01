@@ -168,6 +168,13 @@ string` narrowing (REPAIRED — typeof guard), double property read of
   same predicate rather than being deleted. Prod probe: both routes 404,
   `/login` has no reset link. Service/policy/token/audit/session semantics
   untouched.
+  Post-repair review (fresh-context read-only; **same model — SWE-2 High,
+  diversity still not achieved**): **PASS** — registry immutability
+  (`Object.freeze`, unexported), env-only-impossible enablement, 404 before
+  any peek including forged action calls, and docs accuracy all verified.
+  Remaining P2s: the gated-off E2E describe is an intentional tripwire that
+  must be updated at activation; `.env.example` omits the selector var
+  (deliberate — inert until an adapter exists).
 
 ## 8. Deferred
 
