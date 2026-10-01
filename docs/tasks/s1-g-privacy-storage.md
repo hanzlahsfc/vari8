@@ -5,6 +5,11 @@ Planning branch `feature/s1-g-privacy-storage-plan` off `main` `8369451`
 (S1-F2D merged via PR #1; post-merge CI passed). Implementation begins only
 after this plan is reviewed; the builder never self-grades.
 
+**Revision 2 — scope narrowed after external review.** Review findings
+established that every erasure path has an unresolved policy conflict, so
+this slice now covers only the policy-independent parts: export, retention
+policy-as-data, and the storage port. All erasure work is deferred (§5).
+
 Sources: `docs/tasks/stage-1-plan.md` §7 + §9 (row S1-G),
 `docs/security/data-ownership.md`, `docs/security/authorization-model.md`,
 `docs/security/consent-audit.md`, `docs/product-decisions.md`,
@@ -16,85 +21,80 @@ allowlist mechanism, or deletion/anonymization behavior.
 
 ## 1. Scope
 
-S1-G builds the internal privacy/storage **services**. It ships no route,
+S1-G builds internal privacy/storage **services** only. It ships no route,
 server action, UI, email, scheduled job, or external-provider integration.
 Every entry point sits behind a fail-closed `assert*ExternallyExposable`
 gate until the S1-H routing slice plus a fresh independent review.
 
-In scope — exactly the documented `stage-1-plan.md` §7 items:
+In scope — the policy-independent parts of `stage-1-plan.md` §7:
 
 1. **Export** — client-own export resolved from the actor (no client-id
    parameter on the own path); closed section allowlist + counts manifest;
+   bounded pagination with explicit failure, never silent truncation;
    audited once. The `exportsErasure` matrix also grants owner `ws` and
    coach `asg` read scope, so a guarded per-client export for those roles
    is included (see §4 and the open flag in §10).
-2. **Erasure** — two explicit documented paths: **delete**
-   (child-before-parent, private objects removed before the DB
-   transaction) and **anonymize** an in-place shell (no hard-delete of the
-   workspace). Audit identifiers nulled; structural audit rows retained.
-3. **Retention** — policy represented as data with `TODO(human)` durations;
+2. **Retention** — policy represented as data with `TODO(human)` durations;
    evaluation only. **No automatic cleanup job, scheduler, or cron.** The
    already-implemented 30-day terminal `access_token` cleanup (S1-F2B,
    founder-decided) is unchanged.
-4. **Storage port** — provider-neutral object-storage abstraction: private
+3. **Storage port** — provider-neutral object-storage abstraction: private
    bucket semantics, no ACLs, server-generated presigned GET with bounded
    TTL, keys prefixed by workspace + client. **No Supabase-specific APIs,
-   no vendor SDK, no new dependency.**
+   no vendor SDK, no new dependency, no real backend.**
 
-Out of scope: routes/UI (S1-H), DENY-event auditing (documented as a
-routing-slice prerequisite), login auditing, platform-admin audit plumbing,
-health-record tables and any health-module export (Stage 2+ — **no
-client-health persistence exists, so a complete client-health export is not
-possible; the export allowlist can only cover the client-owned rows that
-exist today**), email delivery, rate limiting, legal/policy copy, a real
-storage backend, workspace departure UX (membership/assignment removal
-already exists and revokes access without touching data), and any
-cross-workspace sharing.
+Explicitly OUT of scope for this slice (see §5):
+
+- Client-data deletion, user-account anonymization, workspace
+  anonymization, and their audit events — all blocked on unresolved
+  `TODO(human)` policy, not on engineering.
+- Routes/UI (S1-H), DENY-event auditing (documented as a routing-slice
+  prerequisite), login auditing, platform-admin audit plumbing, health
+  records and any health-module export (Stage 2+ — **no client-health
+  persistence exists, so a complete client-health export is not possible;
+  the export allowlist can only cover the client-owned rows that exist
+  today**), email delivery, rate limiting, legal/policy copy, a real
+  storage backend, workspace departure UX (membership/assignment removal
+  already exists and revokes access without touching data), and any
+  cross-workspace sharing.
 
 ## 2. Locked/documented vs. open
 
-| Item                                                                                                                                                                                                                                                  | State                                                        |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Own export resolved from actor; section allowlist + counts manifest; audited once                                                                                                                                                                     | DOCUMENTED (`stage-1-plan.md` §7)                            |
-| Delete vs anonymize = two explicit paths; child-before-parent; private objects before DB tx; in-place shell, no workspace hard-delete                                                                                                                 | DOCUMENTED (§7)                                              |
-| Retention = policy-as-data; **no automatic deletion job**                                                                                                                                                                                             | DOCUMENTED mechanism; **all durations `TODO(human)`**        |
-| Private bucket, no ACL, server presigned GET (short TTL), ws+client key prefix                                                                                                                                                                        | DOCUMENTED shape; **vendor/bucket/region/TTL `TODO(human)`** |
-| `exportsErasure` matrix: owner `ws/ws`, coach `asg/—`, client `own/own`, SUPPORT/assistant/platform-admin denied                                                                                                                                      | LOCKED (`authorization-model.md`, `lib/auth/rbac.ts`)        |
-| User-account erasure separate from client data; `actorUserId` nulled, structural audit rows retained                                                                                                                                                  | DOCUMENTED (§7, `consent-audit.md`)                          |
-| Membership/assignment removal revokes access, data stays workspace-owned                                                                                                                                                                              | IMPLEMENTED (S1-C/S1-F2C) — reused, not re-built             |
-| Export JSON shape, section/field allowlist, tombstone values, erasure audit event set, storage key format                                                                                                                                             | PROPOSED in §4–§7 — require review sign-off                  |
-| Retention durations (all families + audit), storage vendor/config/TTL, legal/privacy copy, export download delivery, erasure UX (self-serve vs request/cooling-off), coach-export product intent, erased-user invite-email handling, PED/HRT anything | `TODO(human)` — NOT implementable (§10)                      |
+| Item                                                                                                                                                        | State                                                           |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Own export resolved from actor; section allowlist + counts manifest; audited once                                                                           | DOCUMENTED (`stage-1-plan.md` §7)                               |
+| Retention = policy-as-data; **no automatic deletion job**                                                                                                   | DOCUMENTED mechanism; **all durations `TODO(human)`**           |
+| Private bucket, no ACL, server presigned GET (short TTL), ws+client key prefix                                                                              | DOCUMENTED shape; **vendor/bucket/region/TTL `TODO(human)`**    |
+| `exportsErasure` matrix: owner `ws/ws`, coach `asg/—`, client `own/own`, others denied                                                                      | LOCKED (`authorization-model.md`, `lib/auth/rbac.ts`)           |
+| Consent grants are never deleted; `revokedAt` is the only permitted mutation                                                                                | LOCKED (`consent-audit.md` §1) — blocks client-profile deletion |
+| Membership/assignment removal revokes access, data stays workspace-owned                                                                                    | IMPLEMENTED (S1-C/S1-F2C) — reused, not re-built                |
+| access_token 30-day terminal cleanup                                                                                                                        | IMPLEMENTED (S1-F2B, founder decision #26) — unchanged          |
+| Export JSON shape, section/field allowlist, per-section row bound, storage key format                                                                       | PROPOSED in §4/§7 — require review sign-off                     |
+| Retention durations (all families + audit), storage vendor/config/TTL, legal/privacy copy, export download delivery, all erasure behavior, PED/HRT anything | `TODO(human)` — NOT implementable (§10)                         |
 
 ## 3. Files
 
 New:
 
-- `lib/gdpr/export.ts` — export assembly + allowlist + manifest.
-- `lib/gdpr/erasure.ts` — delete and anonymize paths.
+- `lib/gdpr/export.ts` — export assembly + allowlist + manifest + bounds.
 - `lib/gdpr/retention.ts` — policy-as-data + evaluation (all durations unset).
 - `lib/gdpr.ts` — fail-closed exposure assertions for the slice
   (`assertGdprExternallyExposable`, mirroring `lib/tokens.ts`).
 - `lib/storage.ts` — provider-neutral storage port + fail-closed null backend.
-- `tests/unit/gdpr-export.test.ts`, `tests/unit/erasure.test.ts`,
-  `tests/unit/retention.test.ts`, `tests/unit/storage.test.ts`.
+- `tests/unit/gdpr-export.test.ts`, `tests/unit/retention.test.ts`,
+  `tests/unit/storage.test.ts`.
 - `tests/integration/s1-g-export.test.ts`,
-  `tests/integration/s1-g-erasure.test.ts`,
   `tests/integration/s1-g-retention.test.ts`.
 - `docs/tasks/s1-g-privacy-storage.md` (this file), `docs/STATUS.md`.
 
 Touched:
 
 - `lib/audit.ts` — extend the closed `AUDIT_RESOURCE_TYPES` allowlist with
-  the proposed event targets (`"client_profile"`, `"client_export"`,
-  `"workspace"`, and — flagged — an account-scope `DELETE`/`user` pair for
-  account anonymization; see §8). `AuditAction` already carries
-  `EXPORT`/`DELETE`/`UPDATE`; the meta allowlist needs no new keys
-  (`count` suffices for the manifest summary).
-- **No schema or migration change.** Every needed FK behavior exists:
-  `Restrict` on `consent_record`/`client_assignment`/`access_token`
-  issuer/`audit_event.subject_user_id`, `Cascade` on `access_token.user_id`,
-  `SetNull` on `audit_event.actor_user_id`/`subject_client_profile_id` and
-  `client_profile.user_id`. Gate: `git diff 8369451 -- db/` must stay empty.
+  `"client_export"` only. `AuditAction` already carries `EXPORT`; the meta
+  allowlist needs no new keys (`count` suffices for the manifest summary).
+  No erasure audit resources are added — erasure is deferred (§5).
+- **No schema or migration change.** Gate: `git diff 8369451 -- db/` must
+  stay empty.
 
 ## 4. Export design (PROPOSED — contents need review sign-off)
 
@@ -115,8 +115,7 @@ exportClientData(session: SessionLike, input: { workspaceId: string; clientProfi
   platform-admin, and non-members deny structurally.
 - Document (PROPOSED): `{ formatVersion, manifest, sections }` —
   `manifest.sections` maps each emitted section to its row count plus
-  `totalRecords`; `generatedAt` is omitted as redundant (the audit row
-  carries the timestamp) unless reviewers prefer it inside the document.
+  `totalRecords`; the audit event's timestamp covers generation time.
 - Section allowlist — closed set, only existing client-owned tables
   (PROPOSED fields; the reviewer may shrink, never silently grow):
 
@@ -133,83 +132,63 @@ exportClientData(session: SessionLike, input: { workspaceId: string; clientProfi
   deliberately and re-reviewed — the allowlist never iterates tables
   dynamically.
 
-- Exactly one `EXPORT`/`client_export` WORKSPACE audit event per export,
-  inside the same transaction as the read, `subjectClientProfileId` set,
-  `meta { count }` = total exported rows. Denied exports write nothing
-  (DENY auditing stays deferred to S1-H).
+- **Resource bounds — no silent incompleteness.** Each section is read with
+  explicit bounded pagination (id-cursor pages, `EXPORT_PAGE_SIZE` rows per
+  query) and a hard per-section ceiling `EXPORT_SECTION_ROW_MAX`
+  (engineering bound — PROPOSED value `100_000`, flagged for review; it is
+  not a product retention or access policy). If a section would exceed the
+  ceiling, the export throws `GdprError("export_too_large")` and returns
+  **nothing** — a partial export is never produced and the audit event is
+  not written. The manifest counts always equal the emitted rows by
+  construction (counts are derived from the emitted arrays, not queried
+  separately).
+- Exactly one `EXPORT`/`client_export` WORKSPACE audit event per successful
+  export, inside the same transaction as the reads,
+  `subjectClientProfileId` set, `meta { count }` = total exported rows.
+  Denied or `export_too_large` attempts write nothing (DENY auditing stays
+  deferred to S1-H).
 - Delivery is a returned document; no route, download URL, or file naming
   (`TODO(human)` for the S1-H surface).
 
-## 5. Erasure design
+## 5. Erasure — DEFERRED, not implemented in this slice
 
-Two documented explicit paths. Both run the storage step **before** opening
-the DB transaction (documented ordering), then one Serializable
-transaction with the established bounded P2034/40001/40P01 retry.
+All three documented erasure paths are blocked on unresolved policy, so
+this slice ships no erasure code:
 
-### 5.1 Client-data deletion — `eraseClientData(session, { workspaceId, clientProfileId })`
+1. **Client-data deletion is incompatible with the locked consent model.**
+   `client_profile` has `Restrict` FKs from `consent_record` and
+   `client_assignment`; deleting a client requires deleting its consent
+   rows — but `consent-audit.md` §1 states grants are **never deleted**
+   and `revokedAt` is the only permitted mutation. A policy-compatible
+   design (e.g. anonymize-in-place consent shells vs. an approved
+   retention exception) is `TODO(human)`; until it exists, client erasure
+   stays out of scope.
+2. **User-account anonymization can orphan a workspace.** Tombstoning the
+   only `WORKSPACE_OWNER`'s account while their membership stays ACTIVE
+   leaves a workspace with no functional owner. Safe handling
+   (ownership transfer, sole-owner refusal, workspace disposition) is
+   `TODO(human)`; the whole path is deferred, not just the owner case.
+3. **Workspace anonymization has no resolved sequence.** It depends on
+   client erasure (blocked above) and its transaction/storage ordering
+   was flagged as ambiguous; deferred until both are designed and
+   reviewed.
 
-- Authorize `exportsErasure/write`: owner (`workspace` scope) or the client
-  themselves (`own` scope via a separate actor-resolved
-  `eraseOwnClientData` — no client-id parameter). Coach/assistant/SUPPORT/
-  platform-admin deny structurally.
-- `storage.deleteClientObjects(workspaceId, clientProfileId)` first;
-  failure aborts with zero DB writes. (Null backend: see §7.)
-- Serializable tx, child-before-parent to satisfy `Restrict` FKs:
-  1. re-authorize inside the tx (post-lock, per S1-F2C convention);
-  2. delete `consent_record` rows (see open flag §10.6 — delete vs
-     retain-anonymized);
-  3. delete `client_assignment` rows;
-  4. delete `client_profile` — `audit_event.subject_client_profile_id`
-     SetNulls automatically;
-  5. mark the client's `workspace_member` row `REMOVED` (PROPOSED — see
-     §10.8); never delete the member row;
-  6. unlink nothing else — a linked `User` is untouched (account erasure
-     is a separate path);
-  7. one `DELETE`/`client_profile` audit event, `meta { count }`, written
-     before the profile row so the subject id is recorded once and then
-     nulled by the cascade; audit failure rolls everything back.
-- Second erasure of the same client → structural `client_not_accessible`,
-  no side effects. Health tables don't exist yet; the deletion walker is a
-  **closed ordered list**, not a schema scan — new client-owned tables are
-  added explicitly with their own review, else `Restrict` fails closed.
+Recorded requirements for the future erasure design (from review):
 
-### 5.2 User-account anonymization — `anonymizeUserAccount(session)`
-
-- Account-scoped, not workspace-scoped: any `ACTIVE` authenticated user may
-  erase their own account regardless of memberships (PROPOSED self-serve
-  trigger; §10.7). In-place shell — the `User` row is never deleted, which
-  keeps `access_token.created_by` (Restrict) and
-  `audit_event.subject_user_id` (Restrict + ACCOUNT-scope CHECK) valid.
-- Serializable tx: tombstone `email` (unique non-PII value derived from the
-  user id — PROPOSED `erased+<id>@…`, §10.9), `name → null`, `passwordHash
-→ unusable tombstone` (§10.9), `status → DEACTIVATED`,
-  `sessionVersion + 1` (existing JWTs go stale — founder decision #18
-  mechanism, already live);
-  every `workspace_member` of the user → `REMOVED`;
-  `client_profile.user_id → null` for profiles linked to the user (client
-  data stays workspace-owned — documented);
-  delete `access_token` rows owned by the user (ephemeral; in-place user
-  means no Cascade — explicit delete), revoke outstanding invites the user
-  issued (issuer row retained; `createdByUserId` keeps pointing at the
-  shell);
-  `audit_event.actor_user_id → null` where actor = the user;
-  `subject_user_id` **stays** (ACCOUNT CHECK requires it — it references a
-  tombstoned shell, not an identity);
-  one account-scope erasure audit event (requires the flagged
-  `ACCOUNT_AUDIT_ACTIONS`/`ACCOUNT_AUDIT_RESOURCES` widening in §8).
-
-### 5.3 Workspace anonymization — `anonymizeWorkspace(session, { workspaceId })`
-
-- Owner-only (`exportsErasure/write`, `workspace` scope). In-place shell —
-  the workspace row is never hard-deleted (`audit_event.workspace_id` is
-  Restrict-bound to it).
-- Serializable tx: run §5.1 deletion for every `client_profile` in the
-  workspace; every `workspace_member` → `REMOVED`; revoke outstanding
-  `WORKSPACE_INVITE` tokens then delete all workspace `access_token` rows
-  (removes `target_email` PII now, not after 30 days — PROPOSED, §10.10);
-  tombstone `name`/`slug` (unique non-PII values, §10.9), `status →
-SUSPENDED`; audit rows retained untouched; one `UPDATE`/`workspace`
-  audit event, `meta { count }`.
+- **Storage delete vs DB transaction are NOT atomic** — never claimed
+  otherwise. The documented order (private objects removed before the DB
+  transaction) means a DB failure after storage deletion leaves objects
+  gone while rows remain. Required mitigations: `deletePrefix` must be
+  **idempotent**; the erasure operation must be **safe to retry**
+  end-to-end (a retry after a mid-failure completes correctly); any
+  residual state must surface as a structural `erasure_failed` outcome,
+  never a reported success.
+- **Erasure audit records must not retain deleted client identifiers** in
+  `resourceId` (consistent with `subject_client_profile_id` being
+  SetNull'd on erasure): erasure events use `resourceId: null` or a
+  non-client structural target only.
+- Sole-owner/last-owner orphan checks and ownership-transfer policy are
+  prerequisites for account anonymization.
 
 ## 6. Retention — policy as data, evaluation only
 
@@ -233,9 +212,9 @@ export function evaluateRetention(
   `assertAutomaticRetentionConfigured(): never` fails closed — no job,
   cron, webhook, or startup hook may exist.
 - The implemented 30-day `access_token` terminal cleanup (founder decision
-  #26, S1-F2B `cleanupTerminalAccessTokens`) is the single decided duration
-  and stays owned by that slice; the policy map references it read-only
-  rather than duplicating the number.
+  #26, S1-F2B `cleanupTerminalAccessTokens`) is the single decided
+  duration and stays owned by that slice; the policy map references it
+  read-only rather than duplicating the number.
 
 ## 7. Storage port — provider-neutral, fail closed
 
@@ -265,9 +244,12 @@ export const nullObjectStorage: ObjectStorageBackend;
 ("storage_not_configured")` — a presigned URL can never be minted before
   a vendor decision. `nullObjectStorage.deletePrefix` returns
   `{ deleted: 0 }`: no upload path or backend has ever existed, so no
-  object can exist; this is a structural invariant, not a skipped step —
-  the erasure flow still calls the port first, and any real backend's
-  delete failure must abort erasure (pinned by a throwing-spy test).
+  object can exist; this is a structural invariant, not a skipped step.
+  `deletePrefix` is part of the port contract for the deferred erasure
+  slice (§5): implementations must be idempotent and retry-safe, and any
+  real backend's delete failure must abort the consumer's operation —
+  storage deletion and DB mutation are **not** atomic and no design may
+  claim they are.
 - Presigned-GET TTL: caller supplies `ttlSeconds`; the port enforces an
   upper bound `PRESIGNED_GET_MAX_TTL_SECONDS`, **value `TODO(human)`** —
   until a backend exists nothing reaches it.
@@ -276,19 +258,14 @@ export const nullObjectStorage: ObjectStorageBackend;
 
 ## 8. Audit additions (PROPOSED — reviewer sign-off)
 
-- `AUDIT_RESOURCE_TYPES` += `"client_export"`, `"client_profile"`,
-  `"workspace"` (existing closed-set convention).
-- New events: `EXPORT`/`client_export` (per export), `DELETE`/
-  `client_profile` (per client erasure), `UPDATE`/`workspace`
-  (workspace anonymization), each `subjectClientProfileId`-scoped where
-  applicable, `meta { count }` only.
-- User anonymization needs one ACCOUNT-scope event → widen
-  `ACCOUNT_AUDIT_ACTIONS`/`ACCOUNT_AUDIT_RESOURCES` to admit `DELETE`/`user`
-  (or a dedicated erasure marker — exact shape is a review decision). The
-  S1-F2B CHECK constraints already permit it (`subjectUserId` = the erased
-  user, `workspaceId` null).
-- Denied export/erasure attempts write nothing — DENY auditing remains
-  deferred to the routing slice per `consent-audit.md`.
+- `AUDIT_RESOURCE_TYPES` += `"client_export"` (existing closed-set
+  convention).
+- New event: `EXPORT`/`client_export`, once per successful export,
+  `subjectClientProfileId` set, `meta { count }` only.
+- No erasure events: erasure is deferred (§5). When it lands, its events
+  must never place a deleted client identifier in `resourceId`.
+- Denied export attempts write nothing — DENY auditing remains deferred to
+  the routing slice per `consent-audit.md`.
 
 ## 9. RED tests, commands, acceptance
 
@@ -297,35 +274,31 @@ GREEN, mutation-check the load-bearing assertions, restore byte-exact.
 
 Unit (fail before the modules exist):
 
-- `tests/unit/storage.test.ts` — key/prefix validation rejections, null
-  backend presign → `storage_not_configured`, deletePrefix → `{deleted:0}`.
-- `tests/unit/retention.test.ts` — every family unset → `evaluateRetention`
-  `[]`; malformed policy rejected; `assertAutomaticRetentionConfigured`
-  throws.
+- `tests/unit/storage.test.ts` — key/prefix validation rejections
+  (traversal, foreign prefix, absolute, backslash, empty segment,
+  non-string), null-backend presign → `storage_not_configured`,
+  `deletePrefix` → `{deleted:0}`.
+- `tests/unit/retention.test.ts` — every family unset →
+  `evaluateRetention` `[]`; malformed policy rejected;
+  `assertAutomaticRetentionConfigured` throws.
 - `tests/unit/gdpr-export.test.ts` — manifest/count derivation, allowlist
-  closure, structural error codes, exposure assertion throws.
-- `tests/unit/erasure.test.ts` — ordering plan, tombstone builders, error
-  mapping, exposure assertion throws.
+  closure, page/ceiling bound arithmetic, structural error codes, exposure
+  assertion throws.
 
 Integration (fresh disposable PostgreSQL, synthetic fixtures only):
 
 - `tests/integration/s1-g-export.test.ts` — own export content bounded to
-  the allowlist; manifest counts equal real row counts; one EXPORT event
-  in the same tx; cross-workspace / other-client / unassigned-coach /
-  SUPPORT / assistant / platform-admin / non-ACTIVE denials; assigned-coach
-  and owner paths per the matrix; non-allowlisted field canary absent.
-- `tests/integration/s1-g-erasure.test.ts` — delete path ordering (storage
-  spy invoked before tx; throwing storage → zero DB writes); Restrict
-  proofs; audit `subject_client_profile_id` nulled + rows retained;
-  audit-failure rollback; second-erasure denial; user anonymization
-  (tombstones, memberships REMOVED, tokens deleted/revoked, `actor_user_id`
-  nulled, `subject_user_id` retained, pre-erasure JWT → `auth()` null);
-  workspace anonymization (clients erased, invites revoked+deleted, shell
-  retained, audit intact); concurrent export-vs-erase → Serializable retry.
+  the allowlist; manifest counts equal emitted row counts; pagination
+  correctness across multiple pages; a fixture over the section ceiling →
+  `export_too_large`, empty result, no audit row; one EXPORT event in the
+  same tx; cross-workspace / other-client / unassigned-coach / SUPPORT /
+  assistant / platform-admin / non-ACTIVE denials; assigned-coach and
+  owner paths per the matrix; non-allowlisted field canary absent.
 - `tests/integration/s1-g-retention.test.ts` — seeded rows of each family
   evaluate as never-due.
 
-Focused commands: `npx vitest run tests/unit/{storage,retention,gdpr-export,erasure}.test.ts`;
+Focused commands:
+`npx vitest run tests/unit/{storage,retention,gdpr-export}.test.ts`;
 `npm run test:integration -- tests/integration/s1-g-*.test.ts`.
 
 Full gates (real exit codes recorded in STATUS): `git diff --check` 0;
@@ -339,17 +312,20 @@ Observable acceptance criteria:
 - `git diff 8369451 -- db/` empty (no schema/migration).
 - `rg -n "lib/gdpr|lib/storage" app/` empty — no route/UI import.
 - `rg -i "supabase" lib db tests` empty — no vendor coupling.
-- `rg -n "setInterval|setTimeout|cron|schedule" lib/gdpr lib/storage.ts`
-  empty — no automatic cleanup.
+- `rg -n "setInterval|cron|schedule" lib/gdpr lib/storage.ts` empty — no
+  automatic cleanup.
 - Exposure assertions throw (unit-pinned); all denials structural only.
+- No `consent_record`/`client_assignment`/`client_profile`/`workspace_member`
+  delete or anonymization code path exists anywhere in the slice
+  (`rg -n "delete" lib/gdpr lib/storage.ts` reviewed to be only the port
+  contract and tests).
 
 Mutations to prove (each restored byte-exact): allowlist section bypass ·
-manifest count skipped · audit outside tx · storage-after-tx ordering ·
-child-before-parent order violated (Restrict abort) · tombstone omitted ·
-`sessionVersion` bump omitted · unlink of `client_profile.user_id` omitted
-· retention returns due with null duration · null-backend presign succeeds
-· TTL bound unenforced · own-export accepts client-id param ·
-cross-workspace scope dropped · second erasure not denied.
+manifest count skipped · audit outside tx · section ceiling not enforced
+(silent truncation) · pagination stops at first page · retention returns
+due with null duration · null-backend presign succeeds · TTL bound
+unenforced · own-export accepts client-id param · cross-workspace scope
+dropped.
 
 ## 10. Open items — `TODO(human)` / review decisions
 
@@ -363,32 +339,31 @@ Not implementable without human decisions (stay blocked):
    confirmation wording, PED/HRT anything.
 4. Export delivery surface (download route, streaming/archive format,
    file naming) — S1-H + product decision.
-5. Erasure workflow UX: immediate self-serve vs request/approval/cooling-
-   off; who may initiate account/workspace erasure operationally.
-6. On client erasure, are `ConsentRecord` rows deleted with the client or
-   retained anonymized as a legal record? (Plan proposes delete; needs
-   sign-off.)
-7. Self-serve account erasure trigger conditions (e.g. outstanding
-   memberships) — proposed minimal: any ACTIVE user, memberships → REMOVED.
-8. Whether client erasure marks the client's `workspace_member` REMOVED
-   (proposed) vs leaves it.
-9. Tombstone value formats (`email`, `name`, `passwordHash`, workspace
-   `name`/`slug`) — must stay unique and non-PII; exact format is a
-   review decision, not silently chosen.
-10. Invite tokens whose `target_email` is an erased user/client email —
-    proposed: revoke outstanding + delete rows on workspace erasure.
-11. Coach-initiated (`asg` read) client export — implemented per the locked
-    matrix but flagged for product confirmation.
-12. Pre-existing unresolved: DENY-audit volume, SUPPORT access policy,
-    cross-workspace sharing, platform-admin health exceptions, i18n.
+5. **Erasure policy (blocks all erasure paths):**
+   a. Consent-record disposition on client erasure — grants are never
+   deleted today; delete vs anonymize-shell vs retention exception is
+   a legal/policy call.
+   b. Sole-owner handling — ownership transfer, refusal, or workspace
+   disposition before any account anonymization.
+   c. Workspace anonymization sequence — transaction/storage ordering and
+   the client-erasure dependency.
+   d. Erasure workflow UX: self-serve vs request/approval/cooling-off;
+   who may initiate each erasure class operationally.
+   e. Invite tokens whose `target_email` is an erased user/client email.
+   f. Tombstone value formats, if in-place anonymization is approved.
+6. Coach-initiated (`asg` read) client export — implemented per the locked
+   matrix but flagged for product confirmation.
+7. Pre-existing unresolved: DENY-audit volume, SUPPORT access policy,
+   cross-workspace sharing, platform-admin health exceptions, i18n.
 
 ## 11. Rollback
 
 No migration and no external state: rollback = revert the slice commits on
 the feature branch. `git diff 8369451 -- db/` empty is a hard gate. The
-storage port holds no data; the retention module deletes nothing. If a
-defect lands, `git revert` the scoped commits and re-run the focused
-integration files — there is no shipped surface to soak.
+storage port holds no data; the retention module deletes nothing; the
+export service writes only one audit row per success inside the read
+transaction. If a defect lands, `git revert` the scoped commits and re-run
+the focused integration files — there is no shipped surface to soak.
 
 ## 12. Boundaries and review requirements
 
@@ -397,15 +372,18 @@ integration files — there is no shipped surface to soak.
   `assertGdprExternallyExposable` / storage assertions fail closed.
 - Health data has no product modules; nothing here may imply a complete
   client-health export is possible.
+- No erasure or anonymization code of any kind (all paths deferred, §5).
 - Prime Tracker (Marcel + Mike) untouched; synthetic fixtures only; no real
-  health data in tests.
+  health data in tests; `TRACKER 2.0.md` stays out of version control.
 - Forbidden git ops per AGENTS: no `reset --hard`, `clean`, `checkout --
 <path>`, `add -A`, force-push, PR, merge, or deploy.
-- Independent review: a different model than the builder, read-only, fresh
-  context, after all gates pass on the current tree; findings repaired by
-  the builder and re-checked; fail-closed verdicts; capped rounds. The
-  builder never approves its own work; the slice is not merged until its
-  own gates pass on the current tree and review returns PASS. External
-  exposure additionally requires S1-H routing + a fresh review.
+- Independent review: a different model than the builder
+  (`opencode-go/deepseek-v4.1-flash` via a separate `opencode run`
+  session), read-only, fresh context, after all gates pass on the current
+  tree; findings repaired by the builder and re-checked; fail-closed
+  verdicts; capped rounds. The builder never approves its own work; the
+  slice is not merged until its own gates pass on the current tree and
+  review returns PASS. External exposure additionally requires S1-H
+  routing + a fresh review.
 - **This task stops at the pushed plan.** Implementation starts only after
   plan review.

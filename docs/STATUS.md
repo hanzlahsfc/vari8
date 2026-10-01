@@ -4,6 +4,28 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — S1-G plan rev 2 — scope narrowed after external review findings (feature branch)
+
+- Plan `docs/tasks/s1-g-privacy-storage.md` rewritten per six review
+  findings; still plan-only, no production code/schema/route/UI.
+- Erasure moved entirely out of scope: client deletion conflicts with the
+  locked never-delete-consent-grants model (`consent-audit.md` §1 +
+  `Restrict` FKs); account anonymization can orphan a sole-owned
+  workspace; workspace anonymization has no resolved tx/storage sequence.
+  Recorded requirements for the future design: storage-delete↔DB-tx is
+  NOT atomic (idempotent `deletePrefix`, retry-safe erasure, residual
+  state surfaces as `erasure_failed`); erasure audit rows never carry a
+  deleted client identifier in `resourceId`.
+- Export now specifies bounded pagination + a hard per-section ceiling
+  with explicit `export_too_large` failure — never silent truncation.
+- Remaining S1-G scope: allowlist export + counts manifest, retention
+  policy-as-data (all durations `TODO(human)`, no automatic cleanup),
+  provider-neutral fail-closed storage port (no backend, no Supabase).
+- Verification: docs-only diff; `git diff --check` + `format:check` clean.
+- **Next: independent read-only review of the repaired plan by
+  `opencode-go/deepseek-v4.1-flash` (separate session); implementation is
+  blocked until the plan returns PASS.**
+
 ## 2026-10-01 — S1-G privacy/storage plan written; S1-F2D status reconciled (feature branch)
 
 - Base verified: `main`/`origin/main` =
