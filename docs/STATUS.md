@@ -4,6 +4,22 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — Phase 0.1 PRGRSS source blueprint & Daily Tracker spec (docs only)
+
+- New `docs/tasks/phase-0-1-source-blueprint.md`: manifest of the 11 HTML exports
+  - `resources/` (formulas, validations, conditional formats, hidden rows, and
+    Apps Script are **absent**; two referenced `cellImage_*_0` images are missing);
+    a field-level Daily Tracker crosswalk (labels independently confirmed in the
+    source HTML, 82 `Averages` week blocks) with type/units marked
+    CONFIRMED/INTERPRETATION/UNKNOWN; a 15-item unknown/conflict list each with its
+    resolving source; a remaining-sheet inventory; and proposed acceptance criteria
+    for the first Daily Tracker slice.
+- Source fidelity: no workbook contents or client data committed; `TRACKER 2.0.md`
+  stays out of Git; product name undecided. Documentation only — no
+  app/schema/migration/dependency/route/UI change.
+- Independent reviewer agent review: **PENDING** (see task record).
+- Branch `feature/phase-0-1-source-blueprint` off verified `main` `fc2c936`.
+
 ## 2026-10-01 — S1-H workspace shell + 403 routing — implementation PASS (feature branch)
 
 - Plan `docs/tasks/s1-h-workspace-shell.md` (plan review took four rounds;
