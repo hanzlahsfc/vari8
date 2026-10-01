@@ -38,9 +38,10 @@ Explicitly OUT of scope (do not build, do not expose):
 - No workspace/member CRUD, no assignment UI, no audit-log UI.
 - No product name invention (placeholder `App` remains), no branding, no i18n.
 - No schema/migration change. No new dependency. No vendor/RLS/Supabase.
-- No rate limiting (not needed for this slice: the only unauthenticated reachable surfaces are
-  the unchanged sign-in page and the `/workspace*` → `/login` redirect; this slice adds a
-  `signOut` server action, not a new unauthenticated endpoint).
+- No rate limiting (not needed for this slice: the only unauthenticated surfaces this slice
+  adds or changes are the `/workspace*` → `/login` redirect and a `signOut` server action, not a
+  new unauthenticated endpoint. The pre-existing public pages `/`, `/library/*`, `/sheets`,
+  `/daily` are unchanged).
 
 ### 1a. Deferred prerequisites (recorded, not silently dropped)
 
@@ -76,10 +77,12 @@ implement them and does not silently drop them:
 
 ## 3. Routes and contracts
 
-Ordering is fixed on every `/workspace*` route: **session gate first** (`requireSessionUser`),
-then **authorization** (`requireWorkspaceAccess`). An unauthenticated request to any
-`/workspace*` path — including a deep link to `/workspace/<id>` — redirects to `/login`; only an
-authenticated request can reach the authorization step, which yields HTTP 403 on denial.
+Ordering is fixed on every `/workspace/[workspaceId]*` route: **session gate first**
+(`requireSessionUser`), then **authorization** (`requireWorkspaceAccess`). An unauthenticated
+request to any `/workspace*` path — including a deep link to `/workspace/<id>` — redirects to
+`/login`; only an authenticated request can reach the authorization step, which yields HTTP 403
+on denial. The `/workspace` **list** page runs only the session gate plus the self-scoped
+`listSessionWorkspaces` read (no `requireWorkspaceAccess`), as documented in §5/§7.
 
 | Route | Session gate (first) | Authorization (then, server) | Denied result |
 | --- | --- | --- | --- |
@@ -148,7 +151,10 @@ Touched:
   scheme — emails ending `@s1h-e2e.test` and workspace slug `s1h-e2e-workspace`. No broad
   `deleteMany`; the teardown removes only rows carrying those reserved identifiers, so the 21
   existing E2E test cases (7 spec files) and any pre-existing rows are provably unaffected
-  (assert by counting rows outside the reserved namespace before/after).
+  (assert by counting rows outside the reserved namespace before/after). Both setup and teardown
+  resolve the database via `process.env.DATABASE_URL ?? "postgresql://app:app_dev_password@127.0.0.1:5433/app_dev?schema=public"`
+  — the same fallback as `playwright.config.ts` — because Playwright does not load `.env` and
+  `webServer.env` does not reach the runner process.
 - `components/app-nav.tsx` — add a static `/workspace` link.
 - `app/globals.css` — shell styles with desktop/tablet/mobile breakpoints.
 - `docs/tasks/s1-h-workspace-shell.md` (this file), `docs/STATUS.md`.
@@ -178,8 +184,9 @@ export async function listSessionWorkspaces(
   client: PrismaLike = prisma,
 ): Promise<{ id: string; name: string; role: WorkspaceRole }[]>;
 // Post-authorization scoped read of the workspace name (AuthorizationContext has none).
+// Accepts only a workspace-scoped context; fails closed if ctx.workspaceId is absent.
 export async function getAuthorizedWorkspaceSummary(
-  ctx: AuthorizationContext,
+  ctx: AuthorizationContext & { workspaceId: string },
   client: PrismaLike = prisma,
 ): Promise<{ id: string; name: string }>;
 ```
@@ -191,11 +198,15 @@ per request even though both the layout and the page call it.
 - List page (`app/workspace/page.tsx`):
   `const { userId } = await requireSessionUser();` → `await listSessionWorkspaces(userId)`.
 - Shell layout (`app/workspace/[workspaceId]/layout.tsx`):
-  `const { session } = await requireSessionUser();` →
+  `const { userId, session } = await requireSessionUser();` →
   `const ctx = await requireWorkspaceAccess(session, { resource: "workspaceSettings", action: "read", workspaceId });`
-  → `const { name } = await getAuthorizedWorkspaceSummary(ctx);` (renders name + `ctx.workspaceRole`).
-- Overview page (`app/workspace/[workspaceId]/page.tsx`): repeats the layout's two calls
-  (cache-shared) so the page also authorizes server-side on client-side navigations.
+  → `const { name } = await getAuthorizedWorkspaceSummary(ctx);` →
+  `const switcher = await listSessionWorkspaces(userId);` (the desktop sidebar's workspace
+  switcher reuses the same staff-scoped list). Renders name + `ctx.workspaceRole` + switcher.
+- Overview page (`app/workspace/[workspaceId]/page.tsx`): calls `requireSessionUser()`
+  (cache-shared — same one `auth()` as the layout) and then `requireWorkspaceAccess(...)` again,
+  so `authorize` re-runs per route and the page authorizes server-side on client-side
+  navigations too.
 - Admin page (`app/workspace/[workspaceId]/admin/page.tsx`):
   `const { session } = await requireSessionUser();` →
   `await requireWorkspaceAccess(session, { resource: "workspaceSettings", action: "write", workspaceId });`.
@@ -265,8 +276,9 @@ matching teardown that removes only those rows — idempotent and non-damaging t
 - Signed in as coach: `/workspace/<id>` renders; `/workspace/<id>/admin` returns **HTTP 403**
   and shows the access-denied page; the workspace name is not disclosed on the 403 page.
 - Signed in as non-member: `/workspace/<id>` returns HTTP 403.
-- A user whose account is DEACTIVATED (session invalidated by the S1-F2B gate) is redirected to
-  `/login` for `/workspace` and `/workspace/<id>` (not 403).
+- Deactivated-session behavior is mechanized: the test signs in while the account is ACTIVE,
+  then flips `User.status` to `DEACTIVATED` directly via Prisma (a deactivated account cannot
+  sign in), and asserts `/workspace` and `/workspace/<id>` redirect to `/login` (not 403).
 - Form factors: at 1440px, 834px, and 390px the shell renders with no document horizontal
   overflow and usable navigation; assert distinct layout markers per breakpoint (sidebar vs
   top-bar vs stacked).
