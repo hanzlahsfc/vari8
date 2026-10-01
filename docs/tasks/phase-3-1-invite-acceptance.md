@@ -121,4 +121,62 @@ disposable `invite_p31_int` · build · e2e — real exit codes recorded in §7.
 
 ## 7. Implementation + verification record
 
-_(filled in during implementation)_
+**TDD evidence:**
+
+- `tests/unit/invite-acceptance.test.ts` + `tests/unit/password-policy.test.ts`
+  written RED (module/export absent — 4 failing) → implemented → 22/22 GREEN.
+- E2E caught a real boundary bug: `FormData.get` returns `null` for absent
+  fields while `acceptWorkspaceInvitation` treats only `undefined` as "not
+  provided" — a signed-in accept would hit `validateName(null)` →
+  `invalid_input`. Fixed in the boundary (`null → undefined` normalization)
+  with an integration regression (explicit `name:null, password:null` accept)
+  and E2E coverage.
+- Also found: React clears uncontrolled inputs after a form action; the
+  action now echoes `name` back as `defaultValue` on failure (password is
+  never echoed).
+
+**Service change (the only production-code edit to reviewed code):**
+`lib/workspace/invitations.ts` new-user branch now calls
+`validateInvitePassword` (≥10 code points + ≥1 ASCII digit) instead of
+`validatePasswordPolicy`. Everything else — claim, issuer re-auth, identity
+binding, membership state machine, profile coherence, token binding, audit,
+retry bounds — is unchanged.
+
+**Gates on the exact tree (real exit codes):**
+
+- `git diff --check` → 0; `npm run format:check` → 0; `npm run typecheck` → 0;
+  `npm run lint` → 0.
+- `npm run test` → 0 (43 files / **444** tests; +1 file, +11 vs 433).
+- `INTEGRATION_DATABASE_URL=…/invite_p31_int npm run test:integration` → 0
+  (20 files / **220** tests; +7: 6 boundary + 1 digitless regression).
+- `npm run build` → 0; `ƒ /invite` emitted.
+- `npx playwright test` → 0 (**68/68**; +11): anonymous accept → login
+  handoff → real sign-in; policy rejections (short / no-digit) with
+  `role="alert"` copy; name preserved, password cleared after rejection;
+  consumed-revisit, malformed, unknown, revoked, expired → identical safe
+  state; signed-in accept (no password field) lands `/`; wrong-account →
+  mismatch copy; 1440/834/390 (no overflow, ≥44px submit); keyboard-only
+  submit.
+- Mutations caught + restored byte-exact (sha256): digit-check removal →
+  unit FAIL; `WORKSPACE_INVITE` purpose-check removal → unit FAIL;
+  `null→undefined` normalization removal → integration FAIL.
+
+**Known non-blocking observations:**
+
+- The peek (`getInviteLinkState`) cannot distinguish "token valid but bound
+  to a different workspace" — a tampered `workspace` param shows the form and
+  fails atomically on submit as `invalid_token`. Safe by design.
+- `assertInvitationOrchestrationExternallyExposable` still throws for
+  issuance surfaces — creation/list/revoke remain internal-only (test-pinned).
+- No rate limiting on the public action — recorded as a deferred hardening
+  item alongside the pending email-delivery decision (same open item the
+  S1-F2C record lists).
+- Session note: acceptance never creates/invalidates a session itself —
+  `sessionVersion` untouched; new users authenticate through the existing
+  credentials provider (which embeds `sv`).
+
+## 8. Deferred / next
+
+Invite creation/list/revoke UI (owners), email delivery + canonical invite
+URL, rate limiting/abuse controls on the public route, password-reset
+exposure slice, client shell + CLIENT catalog reachability.

@@ -100,6 +100,11 @@ engineering recommendation:
     number/symbol composition requirement. (Recorded risk: 10 is below the
     current 15-character recommendation for password-only authentication —
     accepted as a product decision, not silently overridden.)
+    **Update (relayed 2026-10-01, Phase 3.1):** invite password _setup_
+    additionally requires **at least one number** — still no uppercase or
+    symbol requirement. The stricter rule applies only to the invite-setup
+    path; ordinary sign-in performs no policy check and the password-reset
+    policy is unchanged unless Aleks confirms otherwise.
 24. **Public reset response differs by account existence — accepted
     enumeration risk.** The public password-reset response deliberately differs
     depending on whether an account exists. Aleks was warned that this permits

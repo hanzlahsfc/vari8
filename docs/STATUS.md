@@ -4,6 +4,48 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — Phase 3.1 invite acceptance + initial password setup — implemented on feature branch
+
+- Exposed the reviewed S1-F2C `acceptWorkspaceInvitation` service through a
+  public route at `GET /invite?workspace=<id>&token=<raw>` plus a boundary
+  module (`lib/workspace/invite-acceptance.ts`) — the `app/**` → service
+  import ban stays intact (`tests/unit/invitations.test.ts` green).
+- New-user path: anonymous recipients set name + password, and the confirmed
+  stricter invite-setup policy (≥10 code points **and ≥1 digit**, no
+  uppercase/symbol rule) is enforced server-side via the new
+  `validateInvitePassword` in `lib/password-policy.ts`; the service's new-user
+  branch calls it. Ordinary sign-in (hash verify, no policy) and the
+  password-reset policy are unchanged; `docs/product-decisions.md` §23 records
+  the dated policy update.
+- Invalid/missing/malformed/expired/revoked/consumed/wrong-purpose tokens all
+  render one identical safe state via a non-consuming `inspectAccessToken`
+  peek (purpose-checked); the atomic claim stays inside the service's
+  Serializable transaction. No mutation, no session, no form on bad links.
+- Signed-in acceptors see a one-click confirm (identity enforced by the
+  service: `identity_required` / `identity_mismatch` map to safe copy); new
+  accounts hand off to the existing `/login` flow (`?inviteAccepted=1`
+  status note); signed-in acceptances redirect to `/`. No invented session
+  mechanism.
+- Bug found by E2E and fixed with a regression: `FormData.get` returns `null`
+  for absent fields but the service treats only `undefined` as "not
+  provided" — the boundary normalizes `null → undefined` so the signed-in
+  accept path works (proven in integration + E2E).
+- React clears uncontrolled fields after a form action; the action echoes the
+  name field back via `defaultValue` on error (password never echoed).
+- TDD: unit RED (modules absent) → GREEN; E2E caught the null-vs-undefined
+  service-contract bug. Gates on the exact tree: `git diff --check` 0;
+  `format:check` 0; `typecheck` 0; `lint` 0; `test` 0 (43 files / 444 tests,
+  +11); `test:integration` 0 (20 files / 220 tests, +7, disposable
+  `invite_p31_int`); `build` 0 (`ƒ /invite` emitted); `test:e2e` 0
+  (68/68, +11). Mutations caught + restored byte-exact: digit check removal
+  (unit FAIL), purpose check removal (unit FAIL), `null→undefined` removal
+  (integration FAIL).
+- Task record: `docs/tasks/phase-3-1-invite-acceptance.md`.
+- Deferred: invite creation/list/revoke UI, email delivery, password reset
+  exposure, rate limiting/abuse controls, client shell, client-side catalog
+  reachability.
+- Independent review + push pending.
+
 ## 2026-10-01 — Phase 2.2 Exercise Database catalog + import pipeline — implementation + independent review PASS (feature branch)
 
 - Built the in-app Exercise Database catalog: a trusted local import CLI
