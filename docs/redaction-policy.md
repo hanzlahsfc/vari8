@@ -12,6 +12,14 @@ Applies to:
 - `spec/sheets/*.json` and `spec/sheets/*.summary.json` (committed, redacted)
 - `spec/data/*.json`, `spec/theme.json`, `spec/cross-sheet.md`
 - `spec/redaction-manifest.json`
+
+**No full copied catalog dump may be committed.** The committed Nutrition/Exercise catalog
+artifacts (`spec/data/foods.json`, `spec/data/exercises.json`,
+`spec/sheets/{nutrition-database,exercise-database}.json`) are **minimal synthetic fixtures
+only**. Real source catalog data is brought into PostgreSQL through the trusted local
+`npm run import:nutrition` path and is never committed to Git (see
+`docs/tasks/phase-3-main-integration.md`).
+
 - demo seeds / fixtures / tests
 - logs and error messages
 

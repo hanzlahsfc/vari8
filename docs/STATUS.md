@@ -4,6 +4,117 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — Phase 3 controlled main integration — source-data policy remediation (integration branch)
+
+- Integration branch `feature/integrate-tracker-shell-nutrition-catalog` off the verified
+  Phase 2.1 tip `72963fe`; `main` `fc2c936` is an ancestor (clean merge-commit PR).
+- Source-data audit found four prohibited **full copied catalog dumps** committed on `main`
+  and replaced them with minimal synthetic fixtures: `spec/data/foods.json` (599→3),
+  `spec/data/exercises.json` (546→2), `spec/sheets/nutrition-database.json` (→5 cells),
+  `spec/sheets/exercise-database.json` (→5 cells) — **−395,322 lines** of copied source data.
+  PII-redacted health-sheet extraction artifacts, summaries, theme/cross-sheet/manifest,
+  blueprints, app code and migrations are retained; the trusted `import:nutrition` path
+  remains the only approved route for real Nutrition data.
+- New regression guard `tests/unit/source-data-policy.test.ts` (RED 4/4 → GREEN 4/4).
+  Updated `spec-artifacts.test.ts`, `redact-real.test.ts` (catalog determinism lock),
+  `library.spec.ts`, library ledes, and `docs/redaction-policy.md`. Record:
+  `docs/tasks/phase-3-main-integration.md`.
+- Gates (real exit codes): `git diff --check` 0; `format:check` 0; `typecheck` 0; `lint` 0;
+  `test` 0 (41 files / 429 tests); `test:integration` 0 (18 files / 205 tests, disposable PG);
+  `build` 0 (Daily Tracker + Nutrition routes); `test:e2e` 0 (49 passed).
+- Integration PR into `main`, normal merge commit; merged delivery branches deleted only
+  after ancestry proof. **No deploy; `main` not pushed directly; no history rewrite.**
+
+## 2026-10-01 — Phase 2.1 Nutrition Database catalog + import pipeline — implementation + independent review PASS (feature branch)
+
+- Built the first real in-app Nutrition Database catalog: a trusted local import CLI
+  (`npm run import:nutrition -- --source <path>`, no route/API/upload) plus an
+  authenticated, searchable staff route at `/workspace/[workspaceId]/nutrition`.
+  Delivered `lib/nutrition/{source,import,search}.ts`, `scripts/import-nutrition.ts`,
+  schema/migration `20261001100000_phase2_1_nutrition_catalog`, the route + results
+  component, a `workspace-nav` entry, tokenized responsive styles, and tests.
+- Source fidelity (real export inspected with the repo's existing parser): header row 2,
+  the 10 source headers `NO./FOOD/AMOUNT/UNIT/CALORIES (kcal)/PROTEIN (g)/CARBS (g)/
+FATS (g)/COOKED/RAW/DRY/CAT`; columns 12–21 and the row-label column empty → unmapped;
+  no formulas/validations in a values-only export. Empty cells stay NULL (never 0); no
+  invented fields or calculations.
+- Import is transactional, idempotent, and reconciling; **real CLI run**: 660 source rows
+  → **599 accepted**, **61 rejected** (`missing_food` 60, `non_data_row` 1), 509 ignored
+  empty, inserted 599; identical rerun inserted 0 / updated 0 / **unchanged 599** with the
+  catalog unchanged. Provenance stores a source-byte fingerprint, run counts, and
+  machine-readable row outcomes (reason codes) with no raw payloads.
+- Search is bounded (min 2 chars, limit clamped 1–50) and source-backed (FOOD name via a
+  pg_trgm GIN index; exact CAT via btree), authorized by the existing
+  `foodExerciseMasterData/read` matrix — no auth/session change.
+- TDD: unit source extractor RED (module absent) → GREEN. Gates on the exact tree (real
+  exit codes): `git diff --check` 0; `format:check` 0; `typecheck` 0; `lint` 0; `test` 0
+  (40 files / 425 tests, +4); `test:integration` 0 (18 files / 205 tests, +7, disposable
+  PG); `build` 0; `test:e2e` 0 (49 passed, +8 at 1440/834/390 incl. keyboard/overflow).
+  Mutations caught and restored byte-exact: search min-length (integration),
+  reconciliation check (integration), row reason misclassification (unit).
+- Independent fresh-context read-only review of the frozen tree: **PASS**, no criterion
+  violated; reviewer model `opencode-go/glm-5.3` differs from builder
+  `opencode-go/deepseek-v4.1-flash` (model diversity verified). Process findings
+  (branch naming, STATUS/record) repaired before push; limit-clamp tests and a comment
+  clarification folded in.
+- Record: `docs/tasks/phase-2-1-nutrition-catalog.md`. No `db` change beyond the additive
+  nutrition tables; no Mealplan/calculations/targets/client entry; no raw exports/client
+  data/`TRACKER 2.0.md` committed. **No PR/merge/deploy; branch pushed for collaborators.**
+
+## 2026-10-01 — Phase 1.1 production Daily Tracker shell — implementation + independent review PASS (feature branch)
+
+- Built the first production-oriented Daily Tracker UI foundation: a real,
+  server-authorized route at `/workspace/[workspaceId]/daily` reached through the
+  role-aware workspace navigation. Delivered `lib/daily-tracker.ts` (verified
+  section/field contract), `components/tracker/*` (reusable field/section/shell
+  primitives), the route page, a `workspace-nav` entry, and a
+  `requireDailyTrackerAccess` collection guard (existing `authorizeCollection`
+  primitive; no RBAC/session/auth-semantics change). Non-persistent by design:
+  entry/saving is honestly unavailable until Phase 4, with no writes, no
+  localStorage, no fabricated records or computed data.
+- Source fidelity from the **available** Phase 0.1 blueprint (`b05c130`, off
+  verified `main` `fc2c936`): exactly the nine verified sections and only source
+  labels/units; `CALORIES` renders only `TODO(product)`; E2/PROG/coach-notes
+  excluded; only biofeedback 1–10 and DAY LABEL ∈ {HIGH, MEDIUM, LOW} encoded.
+- TDD: unit contract RED (module absent) → GREEN. Gates on the exact tree
+  (real exit codes): `git diff --check` 0; `format:check` 0; `typecheck` 0;
+  `lint` 0; `test` 0 (39 files / 421; +9); `build` 0 (route emitted);
+  `test:e2e` 0 (41 browser tests; +10 at 1440/834/390 incl. keyboard/focus and
+  overflow); `test:integration` 0 (17 files / 198 on disposable `tracker_p11_int`;
+  +2). Mutations caught and restored byte-exact: guard deny→plain throw (integration
+  FAIL); MENSES cycle-consent flag removed (unit FAIL).
+- Independent fresh-context read-only review of frozen `fb973fd` (tree
+  `447c851`, verified unchanged): **PASS**, no blocking findings; reviewer model
+  `opencode-go/glm-5.3` differs from builder `opencode-go/deepseek-v4.1-flash`
+  (model diversity verified). Non-blocking notes recorded in the task record.
+- Record: `docs/tasks/phase-1-1-daily-tracker-shell.md`. No `db/**`, schema,
+  migration, dependency, or `app/api/**` change; Phase B0 `/daily` untouched;
+  no `TRACKER 2.0.md`/client data. **No PR/merge/deploy; branch pushed for
+  collaborators; persistence/consent/client shell/formulas remain deferred.**
+
+## 2026-10-01 — Phase 0.1 PRGRSS source blueprint & Daily Tracker spec (docs only)
+
+- New `docs/tasks/phase-0-1-source-blueprint.md`: manifest of the 11 HTML exports
+  - `resources/` (formulas, validations, conditional formats, hidden rows, and
+    Apps Script are **absent**; two referenced `cellImage_*_0` images are missing);
+    a field-level Daily Tracker crosswalk (labels independently confirmed in the
+    source HTML, 82 `Averages` week blocks) with type/units marked
+    CONFIRMED/INTERPRETATION/UNKNOWN; a 15-item unknown/conflict list each with its
+    resolving source; a remaining-sheet inventory; and proposed acceptance criteria
+    for the first Daily Tracker slice.
+- Source fidelity: no workbook contents or client data committed; `TRACKER 2.0.md`
+  stays out of Git; product name undecided. Documentation only — no
+  app/schema/migration/dependency/route/UI change.
+- Independent reviewer-agent review: four rounds (separate fresh-context read-only
+  agents; builder never self-approved). Rounds 1–3 FAILed on source-fidelity/
+  consistency issues (prototype existence, consent gating, `NUTRITION & DIGESTION`,
+  units, PED count, column consistency), all repaired; **round 4 PASS** with only
+  low non-blocking wording observations, folded in after the PASS.
+- Checks: `format:check` 0, `git diff --check` 0, `lint` 0, `typecheck` 0.
+- Branch `feature/phase-0-1-source-blueprint` off verified `main` `fc2c936`;
+  pushed for collaborators. **No PR/merge/deploy; Daily Tracker implementation not
+  started.**
+
 ## 2026-10-01 — S1-H workspace shell + 403 routing — implementation PASS (feature branch)
 
 - Plan `docs/tasks/s1-h-workspace-shell.md` (plan review took four rounds;

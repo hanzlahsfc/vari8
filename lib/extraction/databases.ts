@@ -16,7 +16,7 @@ import { parseSheetHtml } from "./parse";
  * rows and non-numeric footer rows are skipped.
  */
 
-type FoodField =
+export type FoodField =
   | "no"
   | "food"
   | "amount"
@@ -40,7 +40,7 @@ type ExerciseField =
   | "cues"
   | "videoLink";
 
-function normalizeHeader(text: string): string {
+export function normalizeHeader(text: string): string {
   return text
     .replace(/\([^)]*\)/g, " ")
     .toLowerCase()
@@ -49,7 +49,7 @@ function normalizeHeader(text: string): string {
     .trim();
 }
 
-const FOOD_ALIASES: Record<FoodField, string[]> = {
+export const FOOD_ALIASES: Record<FoodField, string[]> = {
   no: ["no"],
   food: ["food"],
   amount: ["amount"],

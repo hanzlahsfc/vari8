@@ -10,7 +10,9 @@ import {
 import {
   AccessDeniedError,
   authorize,
+  authorizeCollection,
   type AuthorizationContext,
+  type CollectionContext,
   type SessionLike,
 } from "./guard";
 import { type Action, type Resource, type WorkspaceRole } from "./rbac";
@@ -73,6 +75,30 @@ export async function requireWorkspaceAccess(
   const ctx = await resolveWorkspaceAccess(session, request, client);
   if (ctx === null) forbidden();
   return ctx;
+}
+
+/**
+ * Phase 1.1 — workspace-level Daily Tracker collection guard. A Daily Tracker
+ * shell is a workspace collection view (no single client record yet), so it
+ * uses `authorizeCollection("dailyTracking/read")`: owner/coach/assistant and a
+ * client's own scope resolve, while SUPPORT, non-members, and inactive
+ * users/workspaces/memberships deny with a real HTTP 403. No RBAC cell changes.
+ */
+export async function requireDailyTrackerAccess(
+  session: SessionLike,
+  workspaceId: string,
+  client: PrismaLike = prisma,
+): Promise<CollectionContext> {
+  try {
+    return await authorizeCollection(
+      session,
+      { resource: "dailyTracking", action: "read", workspaceId },
+      createPrismaAuthorizationRepo(client),
+    );
+  } catch (error) {
+    if (error instanceof AccessDeniedError) forbidden();
+    throw error;
+  }
 }
 
 /**

@@ -286,7 +286,9 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
       expect(names.some((n) => n.includes(forbidden))).toBe(false);
     }
     // Identity/tenancy (S1-A), versioned consent (S1-D), audit events (S1-E),
-    // access tokens (S1-F1).
+    // access tokens (S1-F1), and the Phase 2.1 Nutrition catalog + import
+    // provenance. The forbidden-table guard above still proves no premature
+    // health/meal/program tables exist.
     expect(names.sort()).toEqual(
       [
         "_prisma_migrations",
@@ -296,6 +298,9 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         "client_profile",
         "coach_profile",
         "consent_record",
+        "nutrition_catalog_item",
+        "nutrition_import_row_outcome",
+        "nutrition_import_run",
         "users",
         "workspace",
         "workspace_member",

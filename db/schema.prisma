@@ -95,6 +95,12 @@ enum AccessTokenPurpose {
   PASSWORD_RESET
 }
 
+enum NutritionImportOutcome {
+  IMPORTED
+  REJECTED
+  DUPLICATE
+}
+
 model User {
   id             String       @id @default(cuid())
   email          String       @unique
@@ -331,4 +337,82 @@ model AccessToken {
   // Member-state-generation column/trigger/CHECK are raw SQL; see migration
   // 20260930190000.
   @@map("access_token")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 2.1 — Nutrition Database catalog (imported reference master data)
+// ---------------------------------------------------------------------------
+// One row per accepted source row of the PRGRSS "Nutrition Database" export.
+// Values are mapped verbatim from source headers (see
+// docs/tasks/phase-2-1-nutrition-catalog.md); empty source cells stay NULL and
+// are never replaced with 0. Deliberately NOT Mealplan and NOT a calculator:
+// nothing here is derived.
+model NutritionCatalogItem {
+  id              String   @id @default(cuid())
+  // Source `NO.` column — the source's own row identifier (unique in the export).
+  sourceNo        Int      @unique @map("source_no")
+  // SHA-256 of the canonical mapped fields; lets re-imports detect real changes.
+  rowFingerprint  String   @map("row_fingerprint")
+  name            String
+  amount          Float?
+  unit            String?
+  calories        Float?
+  protein         Float?
+  carbs           Float?
+  fats            Float?
+  state           String?
+  category        String?
+  firstImportedAt DateTime @default(now()) @map("first_imported_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Category filter (exact). The name substring-search index is a pg_trgm GIN
+  // index created in raw SQL (Prisma cannot express GIN) — see migration
+  // 20261001100000; keep `migrate deploy` (never let `migrate dev` drop it).
+  @@index([category])
+  @@map("nutrition_catalog_item")
+}
+
+// Provenance for one import execution. No source file content is stored — only
+// a content fingerprint and counts, so an import is auditable without retaining
+// the private source export.
+model NutritionImportRun {
+  id                   String   @id @default(cuid())
+  sourceName           String   @map("source_name")
+  // SHA-256 of the source file bytes.
+  sourceFingerprint    String   @map("source_fingerprint")
+  scannedRowCount      Int      @map("scanned_row_count")
+  sourceRowCount       Int      @map("source_row_count")
+  ignoredEmptyRowCount Int      @map("ignored_empty_row_count")
+  acceptedCount        Int      @map("accepted_count")
+  rejectedCount        Int      @map("rejected_count")
+  duplicateCount       Int      @map("duplicate_count")
+  insertedCount        Int      @map("inserted_count")
+  updatedCount         Int      @map("updated_count")
+  unchangedCount       Int      @map("unchanged_count")
+  status               String
+  startedAt            DateTime @default(now()) @map("started_at") @db.Timestamptz(6)
+  completedAt          DateTime @default(now()) @map("completed_at") @db.Timestamptz(6)
+
+  rowOutcomes NutritionImportRowOutcome[]
+
+  @@index([sourceFingerprint])
+  @@map("nutrition_import_run")
+}
+
+// Row-level outcome for every candidate source row. Stores only coordinates,
+// identifiers and machine-readable reason codes — never the raw row payload.
+model NutritionImportRowOutcome {
+  id          String                 @id @default(cuid())
+  importRunId String                 @map("import_run_id")
+  sourceRow   Int                    @map("source_row")
+  sourceNo    Int?                   @map("source_no")
+  outcome     NutritionImportOutcome
+  reasonCode  String?                @map("reason_code")
+  reasonField String?                @map("reason_field")
+
+  importRun NutritionImportRun @relation(fields: [importRunId], references: [id], onDelete: Cascade)
+
+  @@unique([importRunId, sourceRow])
+  @@index([importRunId, outcome])
+  @@map("nutrition_import_row_outcome")
 }

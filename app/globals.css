@@ -72,6 +72,7 @@ body {
 :root {
   --sheet-col-w: 7rem;
   --sheet-row-h: 1.5rem;
+  --tracker-nav-w: 14rem;
 }
 
 .app-nav {
@@ -444,5 +445,409 @@ body {
 
   .shell__main {
     padding: var(--space-4);
+  }
+}
+
+/* --- Phase 1.1 Daily Tracker shell ---------------------------------------
+ * Production tracker workspace: information-dense two-column layout on
+ * desktop, reflowed single column with horizontal section chips on tablet,
+ * and a scannable single-column card flow on mobile. Colors come exclusively
+ * from the theme custom properties; no hex belongs here.
+ */
+.tracker-page {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.tracker-page__header {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.tracker-page__eyebrow {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tracker {
+  display: grid;
+  grid-template-columns: var(--tracker-nav-w) minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+  min-width: 0;
+}
+
+.tracker__nav {
+  position: sticky;
+  top: var(--space-4);
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.tracker__nav-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tracker__nav-count {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.tracker__nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.tracker__nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.tracker__nav-link:hover {
+  background-color: var(--color-surface-2);
+  color: var(--color-text-primary);
+}
+
+.tracker__nav-link:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.tracker__nav-link[aria-current="true"] {
+  background-color: var(--color-surface-2);
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.tracker__nav-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-base);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.tracker__sections {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.tracker-section {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  scroll-margin-top: var(--space-4);
+}
+
+.tracker-section__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tracker-section__title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+}
+
+.tracker-section__badge {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.tracker-section__note {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.tracker-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.tracker-field {
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-base);
+}
+
+.tracker-field__label {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  overflow-wrap: anywhere;
+}
+
+.tracker-field__value {
+  margin: var(--space-1) 0 0;
+  overflow-wrap: anywhere;
+}
+
+.tracker-field__placeholder {
+  color: var(--color-text-secondary);
+}
+
+.tracker-field__computed {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.tracker-field__hint {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Tablet (640–1023px): single column, horizontal section chips, touch targets. */
+@media (max-width: 1023px) {
+  .tracker {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+
+  .tracker__nav {
+    position: static;
+  }
+
+  .tracker__nav-list {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+    overflow-x: auto;
+    padding-bottom: var(--space-1);
+  }
+
+  .tracker__nav-link {
+    white-space: nowrap;
+  }
+}
+
+/* Mobile (<640px): scannable single-column cards. */
+@media (max-width: 639px) {
+  .tracker-section {
+    padding: var(--space-3);
+  }
+
+  .tracker-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Phase 2.1 Nutrition Database catalog ---------------------------------
+ * A dense, source-backed result list on desktop that reflows into readable
+ * single-column cards on tablet/mobile. Colors come only from theme tokens.
+ */
+.catalog-page {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.catalog-page__header {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.catalog-page__eyebrow {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.catalog-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  min-width: 0;
+}
+
+.catalog-search__field {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.catalog-search__input {
+  min-height: 44px;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-base);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.catalog-search__input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.catalog-search__submit {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-radius: var(--radius-md);
+  background-color: var(--color-accent);
+  color: var(--color-text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.catalog-search__submit:focus-visible {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+}
+
+.catalog-empty {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.catalog-results {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.catalog-results__count {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+}
+
+.catalog-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.catalog-item {
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+}
+
+.catalog-item__name {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  overflow-wrap: anywhere;
+}
+
+.catalog-item__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  min-width: 0;
+}
+
+.catalog-field {
+  min-width: 0;
+}
+
+.catalog-field__label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.catalog-field__value {
+  margin: 0;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.catalog-limit {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Tablet/mobile: stack the controls full-width and reflow fields to one column. */
+@media (max-width: 1023px) {
+  .catalog-search {
+    align-items: stretch;
+  }
+
+  .catalog-search__field {
+    flex: 1 1 12rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .catalog-search {
+    flex-direction: column;
+  }
+
+  .catalog-item {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .catalog-item__fields {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

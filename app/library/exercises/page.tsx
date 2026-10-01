@@ -14,8 +14,8 @@ export default function ExercisesLibraryPage() {
       <AppNav />
       <h1 className="app-title">Exercises</h1>
       <p className="app-lede">
-        Read-only reference library · {exercises.count} rows from the Exercise
-        Database, in source order.
+        Read-only synthetic reference fixture · {exercises.count} placeholder
+        rows (no source data), in source order.
       </p>
       <ExerciseLibrary
         records={exercises.records}

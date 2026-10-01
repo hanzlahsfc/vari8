@@ -9,20 +9,24 @@ import {
   listSheets,
 } from "../../lib/spec-artifacts";
 
-// These read the committed artifacts (reproducible without the external source).
+// These read the committed artifacts. The catalog fixtures are synthetic
+// placeholders (real catalog data is imported into PostgreSQL via
+// `npm run import:nutrition`; see tests/unit/source-data-policy.test.ts).
 describe("committed reference artifacts", () => {
-  it("exposes the committed food count and fields", () => {
+  it("exposes the committed synthetic food fixture count and fields", () => {
     const foods = getFoods();
-    expect(foods.count).toBe(599);
-    expect(foods.records).toHaveLength(599);
+    expect(foods.count).toBe(3);
+    expect(foods.records).toHaveLength(3);
+    expect(foods.sourceFile).toMatch(/SYNTHETIC/);
     expect(foods.records[0]).toHaveProperty("food");
     expect(foods.records[0]).toHaveProperty("sourceRow");
   });
 
-  it("exposes the committed exercise count", () => {
+  it("exposes the committed synthetic exercise fixture count", () => {
     const exercises = getExercises();
-    expect(exercises.count).toBe(546);
-    expect(exercises.records).toHaveLength(546);
+    expect(exercises.count).toBe(2);
+    expect(exercises.records).toHaveLength(2);
+    expect(exercises.sourceFile).toMatch(/SYNTHETIC/);
   });
 
   it("lists the 11 sheets in source order with original names", () => {
