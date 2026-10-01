@@ -22,6 +22,12 @@ export function WorkspaceNav({
       action: "read",
     },
     {
+      href: `/workspace/${workspaceId}/daily`,
+      label: "Daily Tracker",
+      resource: "dailyTracking",
+      action: "read",
+    },
+    {
       href: `/workspace/${workspaceId}/admin`,
       label: "Admin",
       resource: "workspaceSettings",
@@ -29,9 +35,10 @@ export function WorkspaceNav({
     },
   ] as const;
 
-  const visible = items.filter(
-    (item) => resolveScope(item.resource, item.action, role) === "workspace",
-  );
+  const visible = items.filter((item) => {
+    const scope = resolveScope(item.resource, item.action, role);
+    return scope === "workspace" || scope === "assigned" || scope === "own";
+  });
 
   return (
     <nav className="shell__nav" aria-label="Workspace">
