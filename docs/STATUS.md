@@ -4,6 +4,38 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — S1-H workspace shell + 403 routing — implementation PASS (feature branch)
+
+- Plan `docs/tasks/s1-h-workspace-shell.md` (plan review took four rounds;
+  final independent **PASS** after repairs). Implemented test-first on
+  `feature/s1-h-workspace-shell` off `main` `3d04829`.
+- Delivered: `lib/auth/route-guard.ts` (session gate + `authorize` wiring →
+  `forbidden()`); `app/workspace` list + `[workspaceId]` shell
+  (session → authorize → name); owner-only `[workspaceId]/admin`; a real
+  HTTP 403 via `app/forbidden.tsx` + `next.config.ts`
+  `experimental.authInterrupts`; role-aware `components/workspace-nav.tsx`;
+  sign-out (`app/logout/actions.ts` + `components/sign-out-button.tsx`);
+  form-factor shell CSS (desktop sidebar / tablet top-bar / mobile stacked).
+  **No schema/migration/package change; no `app/**` import of
+  invitation/reset/export/storage or `assert*ExternallyExposable`.**
+- Deferred (recorded, not dropped): DENY-attempt and login-outcome auditing
+  remain deferred pending the `TODO(human)` abuse-volume policy; this slice
+  exposes no audited mutation (plan §1a).
+- RED→GREEN: unit `route-guard` RED (module absent) → 11/11; real-PG
+  integration 6/6; E2E 10 new browser tests (real 403 + 1440/834/390 widths).
+  Mutations caught and restored byte-exact: swallow-all-errors,
+  no-session-redirect, drop-ACTIVE-membership, drop-ACTIVE-workspace,
+  admin-guard-read (E2E).
+- Gates (real exit codes): `git diff --check` 0; `npm ci` 0; prisma
+  format/validate/generate/migrate deploy/status 0; `format:check` 0;
+  `typecheck` 0; `lint` 0; `test` 0 (412/38 files); `test:integration` 0
+  (196/16 files); `build` 0; `test:e2e` 0 (31, incl. 10 new); `npm audit`
+  1 moderate + 4 high (unchanged). `git diff 3d04829 -- db/` empty.
+- Independent implementation review (separate `opencode-go/deepseek-v4.1-flash`
+  session, read-only, fresh context): **PASS** — no blocking findings; the P2
+  STATUS omission and P3 clarifications were folded in.
+- **No PR yet; feature branch pushed for collaborators. Not merged/deployed.**
+
 ## 2026-10-01 — S1-G implementation — independent DeepSeek review PASS (feature branch)
 
 - Fresh read-only implementation review of `db099ec` by

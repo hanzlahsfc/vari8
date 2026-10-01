@@ -105,7 +105,8 @@ New:
 
 - `lib/auth/route-guard.ts` (server-only) —
   - `resolveWorkspaceAccess(session, request, client?)`: wraps `authorize` and returns
-    `AuthorizationContext | null` (null on `AccessDeniedError`); never throws outward.
+    `AuthorizationContext | null` (null on `AccessDeniedError`); it does **not** swallow
+    unexpected errors — those propagate (so a DB fault surfaces as 500, never a false 403).
   - `requireWorkspaceAccess(session, request, client?)`: calls `resolveWorkspaceAccess`; on
     null calls `forbidden()` from `next/navigation`.
   - `requireSessionUser()`: `cache()`-wrapped; one `auth()` call per request → `{ userId,
@@ -342,3 +343,36 @@ hard gate. Re-run the focused unit/integration/E2E files after any revert.
   The builder never approves its own work; findings are repaired and re-checked; fail-closed
   verdicts; capped rounds.
 - **This task stops at the pushed plan.** Implementation starts only after plan review PASS.
+
+---
+
+## Implementation + review record (2026-10-01)
+
+**Status: implemented; independent implementation review PASS; branch pushed for
+collaborators; not merged/deployed.**
+
+- Plan review took four rounds (repairs for session-gate/redirect consistency,
+  DENY/login-audit deferral recording, namespaced E2E seeding, list-route
+  acceptance wording, signature/session-flow consistency, deactivated-user
+  semantics, and workspace-name source); final plan review **PASS**.
+- Implementation commit `3767181`; this record + review clarifications follow.
+- Delivered exactly per plan: `lib/auth/route-guard.ts`, `app/forbidden.tsx`,
+  `app/workspace/**`, `app/logout/actions.ts`, `components/workspace-nav.tsx`,
+  `components/sign-out-button.tsx`, form-factor shell CSS, `next.config.ts`
+  `experimental.authInterrupts`, and the unit/integration/E2E suites.
+- Evidence: unit 412/38 exit 0; integration 196/16 exit 0 (fresh disposable
+  PostgreSQL); E2E 31 exit 0 (10 new, incl. real HTTP 403 and 1440/834/390
+  widths); build 0; format/typecheck/lint 0; `git diff 3d04829 -- db/` empty;
+  `npm audit` 1 moderate + 4 high (unchanged).
+- Mutations caught and restored byte-exact: swallow-all-errors ·
+  no-session-redirect · drop-ACTIVE-membership · drop-ACTIVE-workspace ·
+  admin-guard-read (E2E).
+- Independent implementation review by `opencode-go/deepseek-v4.1-flash`
+  (separate session, fresh context, read-only): **PASS** — no blocking
+  findings.
+- Deferred (recorded, not dropped): DENY-attempt and login-outcome auditing
+  pending the `TODO(human)` abuse-volume policy; this slice exposes no audited
+  mutation.
+- Boundaries: no invitation/password-reset/export/storage exposure; no
+  schema/migration/dependency change; no product name; Prime Tracker untouched;
+  `TRACKER 2.0.md` out of version control.

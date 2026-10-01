@@ -37,6 +37,22 @@ export default async function globalTeardown(): Promise<void> {
         ],
       },
     });
+    // Defensive: `AuditEvent.subjectUserId`/`AccessToken.userId` are Restrict.
+    // The shell creates neither today, but delete reserved-user dependents
+    // first so teardown stays robust if later slices add them.
+    await prisma.auditEvent.deleteMany({
+      where: {
+        OR: [
+          { subjectUserId: { in: userIds } },
+          { actorUserId: { in: userIds } },
+        ],
+      },
+    });
+    await prisma.accessToken.deleteMany({
+      where: {
+        OR: [{ userId: { in: userIds } }, { createdByUserId: { in: userIds } }],
+      },
+    });
     await prisma.workspace.deleteMany({ where: { id: { in: workspaceIds } } });
     await prisma.user.deleteMany({ where: { id: { in: userIds } } });
   } finally {

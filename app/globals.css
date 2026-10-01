@@ -410,6 +410,14 @@ body {
     flex-wrap: wrap;
   }
 
+  /* Tablet touch targets (>=44px) for every navigation link. */
+  .shell__nav a,
+  .shell__switcher a {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
   .shell__signout {
     margin-top: 0;
   }

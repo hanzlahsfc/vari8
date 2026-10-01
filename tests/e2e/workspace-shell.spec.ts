@@ -103,10 +103,10 @@ test("sign out returns to /login", async ({ page }) => {
   await expect(page).toHaveURL(/\/login$/);
 });
 
-for (const [name, viewport, navDirection] of [
-  ["desktop", { width: 1440, height: 900 }, "column"],
-  ["tablet", { width: 834, height: 1112 }, "row"],
-  ["mobile", { width: 390, height: 844 }, "column"],
+for (const [name, viewport, navDirection, gridTracks] of [
+  ["desktop", { width: 1440, height: 900 }, "column", 2],
+  ["tablet", { width: 834, height: 1112 }, "row", 1],
+  ["mobile", { width: 390, height: 844 }, "column", 1],
 ] as const) {
   test(`${name}: shell renders a form-factor layout without horizontal overflow`, async ({
     page,
@@ -127,5 +127,14 @@ for (const [name, viewport, navDirection] of [
       .locator(".shell__nav")
       .evaluate((el) => getComputedStyle(el).flexDirection);
     expect(direction).toBe(navDirection);
+
+    // Desktop is a two-column grid (sidebar + main); tablet/mobile collapse to
+    // a single column — i.e. genuinely different layouts, not one stretched.
+    const tracks = await page
+      .locator(".shell")
+      .evaluate(
+        (el) => getComputedStyle(el).gridTemplateColumns.split(" ").length,
+      );
+    expect(tracks).toBe(gridTracks);
   });
 }
