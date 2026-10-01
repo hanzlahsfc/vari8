@@ -69,6 +69,8 @@ export const AUDIT_RESOURCE_TYPES = [
   "client_assignment",
   "access_token",
   "user",
+  // S1-G: allowlist export events only — no erasure event types exist yet.
+  "client_export",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 

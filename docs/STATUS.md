@@ -4,6 +4,41 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — S1-G implementation built test-first — pending independent review (feature branch)
+
+- Implemented only the approved policy-independent scope (plan rev 3,
+  `924b999` PASS): `lib/gdpr/export.ts` (allowlist own/scoped export,
+  manifest derived from emitted rows, id-cursor pagination, hard
+  `export_too_large` ceiling), `lib/gdpr/retention.ts` (policy-as-data, all
+  durations `TODO(human)` except the referenced access-token constant,
+  all-or-nothing evaluator, no enforcement), `lib/storage.ts`
+  (provider-neutral port, fail-closed key/TTL validation, null backend),
+  `lib/gdpr.ts` (exposure gate), `client_export` added to
+  `AUDIT_RESOURCE_TYPES`. **No schema/migration, no routes/UI, no erasure
+  code, no vendor SDK.**
+- TDD observed: RED (3 unit files fail, modules absent) → GREEN.
+  Unit 401/401 (37 files) exit 0; integration 190/190 (15 files) exit 0
+  on a fresh disposable `postgres:16-alpine` (`127.0.0.1:55441`; app DB
+  untouched).
+- Mutation checks (all restored byte-exact, SHA-256 verified): allowlist
+  bypass · manifest count skipped · audit subject dropped · ceiling not
+  enforced · single-page stop · TTL over-bound accepted · retention due on
+  null duration · null-backend presign minting a URL · own-export honoring
+  a caller client id · workspace predicate dropped · `own`-scope rejection
+  removed — each produced a targeted test failure.
+- Gates on current tree (real exit codes): `git diff --check` 0;
+  `npm ci` 0; prisma format/validate/generate/migrate deploy/status 0;
+  `format:check` 0; `typecheck` 0; `lint` 0; `test` 401/401 exit 0;
+  `test:integration` 190/190 exit 0; `build` 0; `test:e2e` 21/21 exit 0;
+  `npm audit` 5 known vulns (unchanged baseline). Boundary greps empty:
+  no `app/**` import of the new modules; no vendor coupling;
+  `git diff 8369451 -- db/` empty.
+- Browser: N/A — S1-G exposes no route/UI; the 21 existing desktop/mobile
+  E2E tests ran as a regression gate only.
+- **Next: second fresh-context independent DeepSeek review of the exact
+  implementation diff; repair + re-review before completion is claimed.
+  No PR/merge/deploy.**
+
 ## 2026-10-01 — S1-G plan rev 3 — independent DeepSeek re-review PASS (feature branch)
 
 - Fresh read-only re-review of `2ef21e9` by `opencode-go/deepseek-v4.1-flash`
