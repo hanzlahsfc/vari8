@@ -28,7 +28,7 @@ export type FoodField =
   | "state"
   | "category";
 
-type ExerciseField =
+export type ExerciseField =
   | "id"
   | "name"
   | "muscleGroup"
@@ -62,7 +62,7 @@ export const FOOD_ALIASES: Record<FoodField, string[]> = {
   category: ["cat", "category"],
 };
 
-const EXERCISE_ALIASES: Record<ExerciseField, string[]> = {
+export const EXERCISE_ALIASES: Record<ExerciseField, string[]> = {
   id: ["id"],
   name: ["exercise name", "name"],
   muscleGroup: ["muscle group"],

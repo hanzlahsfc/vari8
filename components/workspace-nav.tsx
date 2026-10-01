@@ -34,6 +34,12 @@ export function WorkspaceNav({
       action: "read",
     },
     {
+      href: `/workspace/${workspaceId}/exercises`,
+      label: "Exercise Database",
+      resource: "foodExerciseMasterData",
+      action: "read",
+    },
+    {
       href: `/workspace/${workspaceId}/admin`,
       label: "Admin",
       resource: "workspaceSettings",

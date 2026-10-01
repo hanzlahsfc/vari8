@@ -4,6 +4,58 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — Phase 2.2 Exercise Database catalog + import pipeline — implementation + independent review PASS (feature branch)
+
+- Built the in-app Exercise Database catalog: a trusted local import CLI
+  (`npm run import:exercise -- --source <path>`, no route/API/upload) plus an
+  authenticated, searchable staff route at `/workspace/[workspaceId]/exercises`.
+  Delivered `lib/exercise/{source,import,search}.ts`, `scripts/import-exercise.ts`,
+  schema/migration `20261001200000_phase2_2_exercise_catalog`, the route +
+  results component, a `workspace-nav` entry, and tests. Reused the tokenized
+  `.catalog-*` styles (no CSS change).
+- Source fidelity (real export inspected with the repo's existing parser):
+  header row 2, the 10 source headers `ID/Exercise Name/Muscle Group/
+Primary Target/Additional Target(s)/Equipment/Movement Pattern/
+Position / Setup/Coaching Notes / Cues/Video Link`; columns 12–22 and the
+  row-label column empty → unmapped; values-only export (no formulas/
+  validations). `Not specified` is a source literal preserved verbatim; empty
+  cells stay NULL. Identity = source `ID` (unique, contiguous 1–546);
+  `row_fingerprint` detects content changes.
+- Import is transactional, idempotent, and reconciling; **real CLI run**
+  (disposable `tracker_p22_int`): 994 scanned → **546 accepted**, **1 rejected**
+  (`non_data_row` license footer, row 996), 447 ignored empty, inserted 546;
+  identical rerun inserted 0 / updated 0 / **unchanged 546** with the catalog
+  unchanged. Provenance stores a source-byte fingerprint, run counts, and
+  machine-readable row outcomes (reason codes) with no raw payloads.
+- Search is bounded (min 2 chars, limit clamped 1–50) and source-backed
+  (a pg_trgm GIN index on `Exercise Name` exists to support name search —
+  PostgreSQL may still choose a sequential scan at the current catalog size;
+  exact `Muscle Group`/`Equipment` facets via btree), authorized by the
+  existing `foodExerciseMasterData/read` matrix — no auth/session change.
+  Reachability is staff-only today: the enclosing workspace layout denies
+  CLIENT (`workspaceSettings/read` → 403); client access stays deferred.
+- TDD: unit source extractor RED (module absent) → GREEN. Gates on the exact
+  tree (real exit codes): `git diff --check` 0; `format:check` 0; `typecheck`
+  0; `lint` 0; `test` 0 (42 files / 433 tests, +4); `test:integration` 0
+  (19 files / 213 tests, +8, disposable PG); `build` 0
+  (`ƒ /workspace/[workspaceId]/exercises` emitted); `test:e2e` 0 (57 passed,
+  +8 at 1440/834/390 incl. keyboard/overflow).
+- Mutations caught and restored byte-exact (SHA-256 verified): search
+  min-length (integration), reconciliation check (integration), `missing_name`
+  reason misclassification (unit).
+- Independent fresh-context read-only review: **PASS**, no P0 findings.
+  Reviewer is a same-model fresh-context agent — model diversity NOT
+  verified in-environment. Model-diverse review subsequently arranged by the
+  orchestrator: **`opencode-go/deepseek-v4.1-flash` — PASS**, no P0/P1, with
+  checks/build/E2E and the real import independently reproduced.
+  P1 (missing records) repaired; P2 `first_imported_at`-on-update fixed here
+  (nutrition keeps the reviewed behavior); remaining P2s are consolidated as
+  non-blocking follow-ups in the task record §14.
+- Record: `docs/tasks/phase-2-2-exercise-catalog.md`. No `db` change beyond
+  the additive exercise tables; no Training/workouts/programs/calculations/
+  client entry; no raw exports/client data/`TRACKER 2.0.md` committed.
+  **No PR/merge/deploy; branch pushed for collaborators.**
+
 ## 2026-10-01 — Phase 3 controlled main integration — source-data policy remediation (integration branch)
 
 - Integration branch `feature/integrate-tracker-shell-nutrition-catalog` off the verified

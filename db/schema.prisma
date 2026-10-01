@@ -101,6 +101,12 @@ enum NutritionImportOutcome {
   DUPLICATE
 }
 
+enum ExerciseImportOutcome {
+  IMPORTED
+  REJECTED
+  DUPLICATE
+}
+
 model User {
   id             String       @id @default(cuid())
   email          String       @unique
@@ -415,4 +421,84 @@ model NutritionImportRowOutcome {
   @@unique([importRunId, sourceRow])
   @@index([importRunId, outcome])
   @@map("nutrition_import_row_outcome")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 2.2 — Exercise Database catalog (imported reference master data)
+// ---------------------------------------------------------------------------
+// One row per accepted source row of the PRGRSS "Exercise Database" export.
+// Values are mapped verbatim from source headers (see
+// docs/tasks/phase-2-2-exercise-catalog.md); empty source cells stay NULL and
+// source literals such as "Not specified" are preserved verbatim. Deliberately
+// NOT Training: nothing here prescribes, tracks, or derives anything.
+model ExerciseCatalogItem {
+  id                String   @id @default(cuid())
+  // Source `ID` column — the source's own row identifier (unique in the export).
+  sourceId          Int      @unique @map("source_id")
+  // SHA-256 of the canonical mapped fields; lets re-imports detect real changes.
+  rowFingerprint    String   @map("row_fingerprint")
+  name              String
+  muscleGroup       String?  @map("muscle_group")
+  primaryTarget     String?  @map("primary_target")
+  additionalTargets String?  @map("additional_targets")
+  equipment         String?
+  movementPattern   String?  @map("movement_pattern")
+  positionSetup     String?  @map("position_setup")
+  cues              String?
+  videoLink         String?  @map("video_link")
+  firstImportedAt   DateTime @default(now()) @map("first_imported_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Muscle-group and equipment filters (exact). The name substring-search
+  // index is a pg_trgm GIN index created in raw SQL (Prisma cannot express
+  // GIN) — see migration 20261001200000; keep `migrate deploy` (never let
+  // `migrate dev` drop it).
+  @@index([muscleGroup])
+  @@index([equipment])
+  @@map("exercise_catalog_item")
+}
+
+// Provenance for one import execution. No source file content is stored — only
+// a content fingerprint and counts, so an import is auditable without retaining
+// the private source export.
+model ExerciseImportRun {
+  id                   String   @id @default(cuid())
+  sourceName           String   @map("source_name")
+  // SHA-256 of the source file bytes.
+  sourceFingerprint    String   @map("source_fingerprint")
+  scannedRowCount      Int      @map("scanned_row_count")
+  sourceRowCount       Int      @map("source_row_count")
+  ignoredEmptyRowCount Int      @map("ignored_empty_row_count")
+  acceptedCount        Int      @map("accepted_count")
+  rejectedCount        Int      @map("rejected_count")
+  duplicateCount       Int      @map("duplicate_count")
+  insertedCount        Int      @map("inserted_count")
+  updatedCount         Int      @map("updated_count")
+  unchangedCount       Int      @map("unchanged_count")
+  status               String
+  startedAt            DateTime @default(now()) @map("started_at") @db.Timestamptz(6)
+  completedAt          DateTime @default(now()) @map("completed_at") @db.Timestamptz(6)
+
+  rowOutcomes ExerciseImportRowOutcome[]
+
+  @@index([sourceFingerprint])
+  @@map("exercise_import_run")
+}
+
+// Row-level outcome for every candidate source row. Stores only coordinates,
+// identifiers and machine-readable reason codes — never the raw row payload.
+model ExerciseImportRowOutcome {
+  id          String                @id @default(cuid())
+  importRunId String                @map("import_run_id")
+  sourceRow   Int                   @map("source_row")
+  sourceId    Int?                  @map("source_id")
+  outcome     ExerciseImportOutcome
+  reasonCode  String?               @map("reason_code")
+  reasonField String?               @map("reason_field")
+
+  importRun ExerciseImportRun @relation(fields: [importRunId], references: [id], onDelete: Cascade)
+
+  @@unique([importRunId, sourceRow])
+  @@index([importRunId, outcome])
+  @@map("exercise_import_row_outcome")
 }
