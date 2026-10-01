@@ -83,10 +83,10 @@ authenticated request can reach the authorization step, which yields HTTP 403 on
 
 | Route | Session gate (first) | Authorization (then, server) | Denied result |
 | --- | --- | --- | --- |
-| `/workspace` | `requireSessionUser` | self-scoped list of the session user's ACTIVE memberships in ACTIVE workspaces (see §5) | `redirect('/login')` when unauthenticated |
+| `/workspace` | `requireSessionUser` | self-scoped list of the session user's ACTIVE staff workspaces (see §5) | `redirect('/login')` when unauthenticated |
 | `/workspace/[workspaceId]` (layout) | `requireSessionUser` | `workspaceSettings` **read** (`authorize`) | unauthenticated → `redirect('/login')`; authorized-session denial → `forbidden()` → HTTP 403 |
-| `/workspace/[workspaceId]` (overview) | inherited from layout | none beyond the layout guard | 403 via layout |
-| `/workspace/[workspaceId]/admin` | inherited from layout | `workspaceSettings` **write** (`authorize`) — owner-only | `forbidden()` → HTTP 403 |
+| `/workspace/[workspaceId]` (overview) | `requireSessionUser` (cache-shared) | `workspaceSettings` **read** (`authorize`) re-run by the page (layouts do not re-run on client navigation) | `forbidden()` → HTTP 403 |
+| `/workspace/[workspaceId]/admin` | `requireSessionUser` (cache-shared) | `workspaceSettings` **write** (`authorize`) — owner-only | `forbidden()` → HTTP 403 |
 
 Matrix check (`lib/auth/rbac.ts`): `workspaceSettings` read = `ws` for OWNER/COACH/ASSISTANT,
 denied for SUPPORT/CLIENT; write = `workspace` for OWNER only, denied for COACH/ASSISTANT/
@@ -105,18 +105,25 @@ New:
     `AuthorizationContext | null` (null on `AccessDeniedError`); never throws outward.
   - `requireWorkspaceAccess(session, request, client?)`: calls `resolveWorkspaceAccess`; on
     null calls `forbidden()` from `next/navigation`.
-  - `requireSessionUser()`: one `auth()` call → `{ userId, session }` (the raw `SessionLike`
-    is returned too, so a caller never needs a second `auth()`); redirects to `/login` when
+  - `requireSessionUser()`: `cache()`-wrapped; one `auth()` call per request → `{ userId,
+    session }` (the raw `SessionLike` is returned too); redirects to `/login` when
     unauthenticated.
-  - `listSessionWorkspaces(userId, client?)`: DB-scoped list of the user's ACTIVE workspaces
-    (`workspaceMember` where `userId`, `status: ACTIVE`, `workspace.status: ACTIVE`), minimal
-    fields (`id`, `name`, `role`).
+  - `listSessionWorkspaces(userId, client?)`: DB-scoped list of the user's ACTIVE **staff**
+    workspaces — `workspaceMember` where `userId`, `status: ACTIVE`, `workspace.status: ACTIVE`,
+    and the role resolves `workspaceSettings`/`read` to `workspace` (OWNER/COACH/ASSISTANT);
+    minimal fields (`id`, `name`, `role`). CLIENT/SUPPORT-only memberships are intentionally not
+    listed in this staff shell (their product surfaces are future slices), so the list never
+    offers a workspace that would immediately 403 on entry.
+  - `getAuthorizedWorkspaceSummary(ctx, client?)`: post-authorization scoped read of the
+    workspace `name` by `ctx.workspaceId` (the `AuthorizationContext` carries no name); the only
+    name-bearing source for the shell header, used only after `requireWorkspaceAccess` succeeds.
 - `app/forbidden.tsx` — access-denied UI (rendered by `forbidden()`, HTTP 403).
 - `app/workspace/page.tsx` — signed-in workspace list; calls `requireSessionUser()` then
   `listSessionWorkspaces(userId)`; empty state when none.
 - `app/workspace/[workspaceId]/layout.tsx` — shell chrome; calls `requireSessionUser()` first
   (unauthenticated → `redirect('/login')`), then `requireWorkspaceAccess(..., workspaceSettings/read)`
-  (denied → `forbidden()`); renders workspace name + role + role-aware nav + sign-out.
+  (denied → `forbidden()`), then `getAuthorizedWorkspaceSummary(ctx)` for the name; renders
+  workspace name + `ctx.workspaceRole` + role-aware nav + `SignOutButton`.
 - `app/workspace/[workspaceId]/page.tsx` — overview (no sensitive data); it re-runs
   `requireWorkspaceAccess(..., workspaceSettings/read)` itself (Next layouts are not re-executed
   on client-side navigation, so each page authorizes server-side on every request).
@@ -124,20 +131,24 @@ New:
   `workspaceSettings/write`.
 - `components/workspace-nav.tsx` — server component; nav links filtered by `resolveScope`
   (cosmetic; pages re-authorize).
-- `app/logout/actions.ts` — `signOutAction` server action (`signOut({ redirectTo: '/login' })`).
+- `components/sign-out-button.tsx` — client component rendering a `<form action={signOutAction}>`
+  submit button; placed in the shell header.
+- `app/logout/actions.ts` — `signOutAction` server action (`signOut({ redirectTo: '/login' })`),
+  imported by `components/sign-out-button.tsx`.
 - `tests/unit/route-guard.test.ts`, `tests/integration/s1-h-route-guard.test.ts`,
-  `tests/e2e/workspace-shell.spec.ts`, `tests/e2e/global-setup.ts`.
+  `tests/e2e/workspace-shell.spec.ts`, `tests/e2e/global-setup.ts`,
+  `tests/e2e/global-teardown.ts`.
 
 Touched:
 
 - `next.config.ts` — `experimental.authInterrupts: true` (enables `forbidden()`), documented.
-- `playwright.config.ts` — `globalSetup` (`tests/e2e/global-setup.ts`) that runs
-  `prisma migrate deploy` (idempotent no-op when current) and **upserts** reserved synthetic
-  fixtures under a namespaced scheme — emails ending `@s1h-e2e.test` and workspace slug
-  `s1h-e2e-workspace`. No broad `deleteMany`; a matching teardown removes only rows carrying
-  those reserved identifiers, so the 21 existing E2E test cases (7 spec files) and any
-  pre-existing rows are provably unaffected (assert by counting rows outside the reserved
-  namespace before/after).
+- `playwright.config.ts` — `globalSetup: "tests/e2e/global-setup.ts"` and
+  `globalTeardown: "tests/e2e/global-teardown.ts"`. Setup runs `prisma migrate deploy`
+  (idempotent no-op when current) and **upserts** reserved synthetic fixtures under a namespaced
+  scheme — emails ending `@s1h-e2e.test` and workspace slug `s1h-e2e-workspace`. No broad
+  `deleteMany`; the teardown removes only rows carrying those reserved identifiers, so the 21
+  existing E2E test cases (7 spec files) and any pre-existing rows are provably unaffected
+  (assert by counting rows outside the reserved namespace before/after).
 - `components/app-nav.tsx` — add a static `/workspace` link.
 - `app/globals.css` — shell styles with desktop/tablet/mobile breakpoints.
 - `docs/tasks/s1-h-workspace-shell.md` (this file), `docs/STATUS.md`.
@@ -148,29 +159,49 @@ Touched:
 
 ```ts
 // lib/auth/route-guard.ts (server-only)
+import { cache } from "react";
+
 export async function resolveWorkspaceAccess(
   session: SessionLike,
   request: { resource: Resource; action: Action; workspaceId: string },
   client: PrismaLike = prisma,
 ): Promise<AuthorizationContext | null>;
 export async function requireWorkspaceAccess(...): Promise<AuthorizationContext>; // forbidden() on null
-export async function requireSessionUser(): Promise<{
-  userId: string;
-  session: SessionLike;
-}>; // redirect('/login') when unauthenticated
+// Memoized per request (React cache): layout + page share ONE auth()/session-gate read.
+export const requireSessionUser = cache(
+  async (): Promise<{ userId: string; session: SessionLike }> => {
+    /* auth() once; redirect('/login') when unauthenticated */
+  },
+);
 export async function listSessionWorkspaces(
   userId: string,
   client: PrismaLike = prisma,
 ): Promise<{ id: string; name: string; role: WorkspaceRole }[]>;
+// Post-authorization scoped read of the workspace name (AuthorizationContext has none).
+export async function getAuthorizedWorkspaceSummary(
+  ctx: AuthorizationContext,
+  client: PrismaLike = prisma,
+): Promise<{ id: string; name: string }>;
 ```
 
-Call sequence (stated explicitly so no guessing is required): the list page calls
-`const { userId } = await requireSessionUser();` then `listSessionWorkspaces(userId)`. The
-`[workspaceId]` layout calls `const { session } = await requireSessionUser();` then
-`requireWorkspaceAccess(session, { resource: "workspaceSettings", action: "read", workspaceId })`.
-There is exactly one `auth()` call per request (inside `requireSessionUser`); the layout calls
-`requireSessionUser()` **before** `requireWorkspaceAccess()`, so an unauthenticated deep link
-redirects to `/login` and never reaches `authorize`.
+Call sequence (exact; no guessing required). `requireSessionUser` is wrapped in React
+`cache()`, so a `/workspace/[workspaceId]` deep link performs **exactly one** `auth()` call
+per request even though both the layout and the page call it.
+
+- List page (`app/workspace/page.tsx`):
+  `const { userId } = await requireSessionUser();` → `await listSessionWorkspaces(userId)`.
+- Shell layout (`app/workspace/[workspaceId]/layout.tsx`):
+  `const { session } = await requireSessionUser();` →
+  `const ctx = await requireWorkspaceAccess(session, { resource: "workspaceSettings", action: "read", workspaceId });`
+  → `const { name } = await getAuthorizedWorkspaceSummary(ctx);` (renders name + `ctx.workspaceRole`).
+- Overview page (`app/workspace/[workspaceId]/page.tsx`): repeats the layout's two calls
+  (cache-shared) so the page also authorizes server-side on client-side navigations.
+- Admin page (`app/workspace/[workspaceId]/admin/page.tsx`):
+  `const { session } = await requireSessionUser();` →
+  `await requireWorkspaceAccess(session, { resource: "workspaceSettings", action: "write", workspaceId });`.
+
+The session gate runs before `requireWorkspaceAccess`, so an unauthenticated deep link redirects
+to `/login` and never reaches `authorize`.
 
 - `resolveWorkspaceAccess` reuses `authorize(session, request, createPrismaAuthorizationRepo(client))`
   and maps `AccessDeniedError` → `null`. It does **not** catch unexpected DB errors (those
@@ -201,7 +232,8 @@ redirects to `/login` and never reaches `authorize`.
 TDD: failing tests first, watch them fail, minimal GREEN, mutation-check load-bearing
 assertions, restore byte-exact.
 
-Unit (`tests/unit/route-guard.test.ts`, mocked repo + `next/navigation`):
+Unit (`tests/unit/route-guard.test.ts`, with `@/auth`'s `auth`, `next/navigation`'s
+`redirect`/`forbidden`, and the guard repo all mocked):
 
 - `resolveWorkspaceAccess` returns the context when the guard allows and `null` on every
   `AccessDeniedError` reason; unexpected errors are not swallowed.
@@ -218,8 +250,9 @@ Integration (`tests/integration/s1-h-route-guard.test.ts`, real disposable Postg
 - `/admin` contract: owner resolves `workspaceSettings/write`; coach/assistant/SUPPORT/CLIENT/
   non-member/platform-admin deny.
 - Cross-workspace: a member of workspace A gets `null` for workspace B.
-- `listSessionWorkspaces` returns only the user's ACTIVE workspaces (excludes SUSPENDED
-  workspace, SUSPENDED/REMOVED membership, other users) and never leaks other members.
+- `listSessionWorkspaces` returns only the user's ACTIVE staff workspaces (excludes SUSPENDED
+  workspace, SUSPENDED/REMOVED membership, other users, and CLIENT/SUPPORT-only memberships) and
+  never leaks other members.
 
 E2E (`tests/e2e/workspace-shell.spec.ts`, real browser; `tests/e2e/global-setup.ts` migrates +
 upserts reserved synthetic fixtures under `@s1h-e2e.test` / slug `s1h-e2e-workspace`, with a
