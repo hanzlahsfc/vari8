@@ -4,6 +4,30 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — S1-G implementation — independent DeepSeek review PASS (feature branch)
+
+- Fresh read-only implementation review of `db099ec` by
+  `opencode-go/deepseek-v4.1-flash` in a separate `opencode run` session
+  (builder SWE-2 High; reviewer different model, fresh context,
+  tree-verified unchanged): **PASS**.
+- Verified with line refs: own-path actor resolution ignoring supplied
+  client ids; scoped path rejecting `own`; `client_outside_workspace`
+  denial on cross-tenant ids; workspace-predicate defense in depth;
+  manifest derived from emitted rows; bounded id-cursor pagination with
+  the ceiling checked before emission (never silent truncation); exactly
+  one tx-bound `EXPORT`/`client_export` audit on success;
+  P2034/P2010(40001/40P01) bounded retry; retention all-or-nothing with no
+  deletion; null storage backend cannot mint URLs; fail-closed key/TTL
+  validation; tests assert the load-bearing invariants.
+- Non-blocking observations only: generic DB errors propagate raw (not
+  mapped to `GdprError`); per-field allowlist closure relies on query
+  `select`; the multi-page test counts rows rather than instrumenting
+  fetches.
+- S1-G reviewed scope is built and independently PASSed. Erasure,
+  retention enforcement, a real storage backend, and any external
+  exposure remain deferred on `TODO(human)` decisions + S1-H routing.
+- **No PR/merge/deploy; branch pushed for collaborators.**
+
 ## 2026-10-01 — S1-G implementation built test-first — pending independent review (feature branch)
 
 - Implemented only the approved policy-independent scope (plan rev 3,
