@@ -51,17 +51,17 @@ Sections, in source order (blueprint §2 row-8 headers): `DATE & PHASE`,
 `BODYWEIGHT`, `MENSES`, `SLEEP`, `ACTIVITY`, `BIOFEEDBACK`, `BIOMETRICS`,
 `NUTRITION & DIGESTION`, `NOTES`.
 
-| Section               | Field label (source header)                                                                                        | Unit / hint         |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------- |
-| DATE & PHASE          | Weekday, Date                                                                                                      | —                   |
-| BODYWEIGHT            | WEIGHT, TIME                                                                                                       | kg; hrs:mins        |
-| MENSES                | CYCLE DAY, PMS SYMPTOMS, BBT                                                                                       | day; —; °C          |
-| SLEEP                 | DURATION, QUALITY (Sleep Score), SLEEP TIME, WAKE TIME                                                             | hrs:mins; —; hrs:mins; hrs:mins |
-| ACTIVITY              | STEPS, CARDIO, RESISTANCE TRAINING, TIME OF TRAINING                                                               | steps; mins; —; hrs:mins |
-| BIOFEEDBACK           | DESIRE TO TRAIN, ENERGY IN GYM, MOOD IN GYM, ENERGY OUTSIDE GYM, MOOD OUTSIDE GYM, STRESS, HUNGER, ADHERENCE        | Scale 1–10          |
-| BIOMETRICS            | RHR, BLOOD PRESSURE, BLOOD GLUCOSE                                                                                 | bpm; mmHg; mmol/L   |
-| NUTRITION & DIGESTION | DAY LABEL, CARBS, PROTEIN, FATS, CALORIES, SALT, WATER, OFF-PLAN MEAL, BOWEL MOVEMENTS                             | —; g; g; g; computed; g; L; —; — |
-| NOTES                 | Client Notes                                                                                                       | —                   |
+| Section               | Field label (source header)                                                                                  | Unit / hint                      |
+| --------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------- |
+| DATE & PHASE          | Weekday, Date                                                                                                | —                                |
+| BODYWEIGHT            | WEIGHT, TIME                                                                                                 | kg; hrs:mins                     |
+| MENSES                | CYCLE DAY, PMS SYMPTOMS, BBT                                                                                 | day; —; °C                       |
+| SLEEP                 | DURATION, QUALITY (Sleep Score), SLEEP TIME, WAKE TIME                                                       | hrs:mins; —; hrs:mins; hrs:mins  |
+| ACTIVITY              | STEPS, CARDIO, RESISTANCE TRAINING, TIME OF TRAINING                                                         | steps; mins; —; hrs:mins         |
+| BIOFEEDBACK           | DESIRE TO TRAIN, ENERGY IN GYM, MOOD IN GYM, ENERGY OUTSIDE GYM, MOOD OUTSIDE GYM, STRESS, HUNGER, ADHERENCE | Scale 1–10                       |
+| BIOMETRICS            | RHR, BLOOD PRESSURE, BLOOD GLUCOSE                                                                           | bpm; mmHg; mmol/L                |
+| NUTRITION & DIGESTION | DAY LABEL, CARBS, PROTEIN, FATS, CALORIES, SALT, WATER, OFF-PLAN MEAL, BOWEL MOVEMENTS                       | —; g; g; g; computed; g; L; —; — |
+| NOTES                 | Client Notes                                                                                                 | —                                |
 
 **Excluded fields (out of scope, no input/field contract):** `E2`, `PROG`
 (PED/HRT — legal/policy gate), and `Coaches' notes` (coach-authored). `CALORIES`
@@ -74,7 +74,7 @@ persistence.
 
 - Auth/RBAC: `requireSessionUser()` (session gate → `/login`, HTTP 403 via
   `forbidden()`) plus the existing `authorizeCollection("dailyTracking", "read",
-  workspaceId)` primitive, exposed through a new read-only route-guard helper.
+workspaceId)` primitive, exposed through a new read-only route-guard helper.
   No RBAC matrix, session, or authentication semantics change.
 - Shell: the route renders inside `app/workspace/[workspaceId]/layout.tsx`
   (desktop sidebar / tablet top bar / mobile stacked) and adds a nav entry in
