@@ -41,10 +41,18 @@ extraction) only, not the workbook UI itself.
   (unit FAIL), purpose check removal (unit FAIL), `null→undefined` removal
   (integration FAIL).
 - Task record: `docs/tasks/phase-3-1-invite-acceptance.md`.
-- Deferred: invite creation/list/revoke UI, email delivery, password reset
-  exposure, rate limiting/abuse controls, client shell, client-side catalog
-  reachability.
-- Independent review + push pending.
+- Independent review (fresh-context, same model — SWE-2 High; **model
+  diversity NOT achieved**, a different-model review is still required before
+  merge): PASS, no P0/P1; P2s are documented/cosmetic (peek can't bind
+  workspace pre-submit — fails atomically as `invalid_token`; error alert not
+  tied via `aria-errormessage`, matching the pre-existing login form).
+  Reviewer ran static analysis only (read-only profile, no shell); gate exit
+  codes above are builder-run on the exact tree.
+- Deferred: invite creation/list/revoke UI, email delivery + canonical link
+  format, rate limiting/abuse controls on the public route, password reset
+  exposure, client shell, client-side catalog reachability.
+- Branch `feature/phase-3-1-invite-acceptance` pushed at `19ac1af` +
+  records commit; no PR/merge/deploy.
 
 ## 2026-10-01 — Phase 2.2 Exercise Database catalog + import pipeline — implementation + independent review PASS (feature branch)
 

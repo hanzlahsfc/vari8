@@ -180,3 +180,19 @@ retry bounds — is unchanged.
 Invite creation/list/revoke UI (owners), email delivery + canonical invite
 URL, rate limiting/abuse controls on the public route, password-reset
 exposure slice, client shell + CLIENT catalog reachability.
+
+## 9. Review
+
+- Fresh-context independent review (subagent, **same model as builder —
+  SWE-2 High; model diversity not achieved** — a different-model review is
+  still required before merge): **PASS**, no P0/P1.
+- P2s accepted/documented: peek can't bind `workspace` pre-submit (fails
+  atomically as `invalid_token`); `identity_required` copy acknowledges an
+  account exists (post-claim, token-holder only); `role="alert"` not tied via
+  `aria-errormessage` (matches login); inputs other than the submit lack the
+  44px floor (text-input convention).
+- Reviewer profile was read-only (no shell) — the gate table above is
+  builder-run on the exact tree; no checks were claimed by the reviewer.
+- Commit sequence: `aeb2009` plan · `ed3aa7a` policy+boundary · `72b82dd`
+  route+login handoff · `19ac1af` tests+docs · records commit on top.
+- Pushed: `origin/feature/phase-3-1-invite-acceptance`. No PR/merge/deploy.
