@@ -20,7 +20,10 @@ export default async function ResetPage({
   searchParams: Promise<{ token?: string | string[] }>;
 }) {
   const { token } = await searchParams;
-  const state = await getResetLinkState(token);
+  // Narrow before the peek — empty/array/missing input already yields the
+  // invalid state, so no assertion is needed below.
+  const rawToken = typeof token === "string" ? token : "";
+  const state = await getResetLinkState(rawToken);
 
   if (state.state !== "ready") {
     return (
@@ -44,7 +47,7 @@ export default async function ResetPage({
         Choose a new password for your account. All existing sign-in sessions
         will be signed out.
       </p>
-      <ResetForm token={token as string} />
+      <ResetForm token={rawToken} />
     </main>
   );
 }

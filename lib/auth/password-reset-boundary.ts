@@ -37,11 +37,17 @@ export async function getResetLinkState(
   if (typeof rawToken !== "string" || rawToken.length === 0) {
     return { state: "invalid" };
   }
-  const peek = await inspectAccessToken(client, rawToken);
-  if (!peek.valid || peek.purpose !== "PASSWORD_RESET") {
+  try {
+    const peek = await inspectAccessToken(client, rawToken);
+    if (!peek.valid || peek.purpose !== "PASSWORD_RESET") {
+      return { state: "invalid" };
+    }
+    return { state: "ready" };
+  } catch {
+    // Storage/lookup failure → fail closed to the same safe state rather
+    // than a 500; the atomic claim on submit is unaffected either way.
     return { state: "invalid" };
   }
-  return { state: "ready" };
 }
 
 export type ResetRequestResult =
