@@ -142,8 +142,20 @@ Implemented on `feature/phase-3-2-password-reset`.
 - E2E bugs found/fixed during the run: none in production code — two test
   defects (a `getByRole("alert")` strict-mode collision scoped to
   `.auth-error`; a self-defeating "exist" string assertion) — fixed.
-- Reviewer: fresh-context read-only subagent — verdict + model identity
-  recorded below once complete.
+- Independent review (fresh-context read-only; **same model — SWE-2 High,
+  diversity NOT achieved** — a different-model review is still required
+  before merge): **PASS**, no P0/P1. P1-adjacent note reaffirmed: the public
+  routes need rate limiting before production exposure — already deferred
+  and recorded. P2s: timing oracle on the request path (bounded when rate
+  limiting lands), failure-path existence signal (backend-faults only),
+  peek doesn't pre-check user status (submit fails closed), `token as
+string` narrowing (REPAIRED — typeof guard), double property read of
+  `input.rawToken` (service-internal, not exploitable via the route),
+  a11y `aria-invalid`/`aria-errormessage` polish, DB-error → 500 on the
+  page (REPAIRED — peek now fails closed to the invalid state).
+  Reviewer ran static analysis only (read-only profile, no shell); gate
+  exit codes above are builder-run on the exact tree.
+- Repairs: `6d30f5c` — token narrowing + fail-closed peek.
 
 ## 8. Deferred
 
