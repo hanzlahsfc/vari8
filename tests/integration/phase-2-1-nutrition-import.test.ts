@@ -305,6 +305,24 @@ describe.skipIf(!enabled)(
       expect(limited.total).toBe(2);
       expect(limited.limit).toBe(1);
 
+      // The limit is clamped to a safe 1..50 band (never unbounded).
+      expect(
+        (await searchNutritionCatalog(prisma, { query: "chicken", limit: 999 }))
+          .limit,
+      ).toBe(50);
+      expect(
+        (await searchNutritionCatalog(prisma, { query: "chicken", limit: 0 }))
+          .limit,
+      ).toBe(1);
+      expect(
+        (
+          await searchNutritionCatalog(prisma, {
+            query: "chicken",
+            limit: Number.NaN,
+          })
+        ).limit,
+      ).toBe(1);
+
       const categoryMiss = await searchNutritionCatalog(prisma, {
         query: "chicken",
         category: "CHO",

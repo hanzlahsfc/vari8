@@ -5,10 +5,12 @@ import type { NutritionSource, NutritionSourceRecord } from "./source";
 /**
  * Phase 2.1 — transactional, idempotent Nutrition Database import.
  *
- * The whole import runs in one interactive transaction: the catalog is only
- * ever swapped atomically, so a failure can never leave a partially replaced
- * catalog. Re-importing identical source content touches nothing (fingerprint
- * equality), and counts are reconciled before the run is reported successful.
+ * The whole import runs in one interactive transaction: catalog writes and
+ * provenance commit together, so a failure can never leave a partially written
+ * catalog (or a run row without its data). This slice is upsert-only — rows
+ * removed from a later source are deliberately NOT deleted. Re-importing
+ * identical source content touches nothing (fingerprint equality), and counts
+ * are reconciled before the run is reported successful.
  */
 
 export class NutritionImportError extends Error {
