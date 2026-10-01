@@ -13,8 +13,9 @@ export default function FoodsLibraryPage() {
       <AppNav />
       <h1 className="app-title">Foods</h1>
       <p className="app-lede">
-        Read-only reference library · {foods.count} rows from the Nutrition
-        Database, in source order.
+        Read-only synthetic reference fixture · {foods.count} placeholder rows
+        (no source data), in source order. Real Nutrition data is imported into
+        the database catalog, not committed as JSON.
       </p>
       <FoodLibrary
         records={foods.records}

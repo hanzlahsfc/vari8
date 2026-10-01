@@ -106,8 +106,22 @@ describe.skipIf(!SOURCE_EXISTS)("phase 11 redaction over real exports", () => {
     }
   });
 
-  it("matches the committed artifacts byte-for-byte (determinism lock)", () => {
+  it("matches the committed redacted artifacts byte-for-byte (determinism lock)", () => {
+    // The Nutrition/Exercise catalog grids are NOT committed as source dumps:
+    // they are synthetic fixtures (see tests/unit/source-data-policy.test.ts).
+    // Every other redacted health sheet must still round-trip exactly.
+    const syntheticCatalogSlugs = new Set([
+      "nutrition-database",
+      "exercise-database",
+    ]);
     for (const { slug, result } of results) {
+      if (syntheticCatalogSlugs.has(slug)) {
+        const committed = JSON.parse(
+          readFileSync(join(SPEC, "spec", "sheets", `${slug}.json`), "utf8"),
+        ) as { sourceFile: string };
+        expect(committed.sourceFile).toMatch(/SYNTHETIC/);
+        continue;
+      }
       const committed = readFileSync(
         join(SPEC, "spec", "sheets", `${slug}.json`),
         "utf8",
