@@ -156,10 +156,23 @@ string` narrowing (REPAIRED — typeof guard), double property read of
   Reviewer ran static analysis only (read-only profile, no shell); gate
   exit codes above are builder-run on the exact tree.
 - Repairs: `6d30f5c` — token narrowing + fail-closed peek.
+- **Different-model P1 repair (fail closed without delivery):** delivery is
+  a no-op while the public routes promised email delivery — gated the whole
+  surface. Capability = registered-adapter registry
+  (`lib/auth/password-reset-delivery.ts`): `PASSWORD_RESET_DELIVERY_ADAPTER`
+  selects a name in `ADAPTERS` (empty by design) — an env value alone can
+  never enable the UI. `/reset-request` and `/reset` → `notFound()`; login
+  link hidden; boundary entry points refuse DB access when gated (zero
+  issuance/inspection/writes, unit-proven). Enabled path stays fully tested
+  via an injected `deliveryAvailable` gate; the E2E flow spec skips on the
+  same predicate rather than being deleted. Prod probe: both routes 404,
+  `/login` has no reset link. Service/policy/token/audit/session semantics
+  untouched.
 
 ## 8. Deferred
 
-Email provider + sender + canonical reset URL (delivery seam is a documented
-no-op until then — request flow issues/audits tokens that are discarded
-server-side; reported as an operational limitation). Rate limiting on both
-public routes. Token→cookie exchange hardening (same as §3.1).
+Email provider + sender + canonical reset URL — register a real adapter in
+`ADAPTERS` and set `PASSWORD_RESET_DELIVERY_ADAPTER` to activate the surface.
+Rate limiting on both public routes (required before production exposure —
+reviewer-flagged). Request-path timing equalization (existence oracle via
+latency). Token→cookie exchange hardening (same as §3.1).

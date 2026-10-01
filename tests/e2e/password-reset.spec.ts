@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 
 import { hashPassword } from "../../lib/password";
 import { requestPasswordReset } from "../../lib/auth/password-reset";
+import { passwordResetDeliveryAvailable } from "../../lib/auth/password-reset-delivery";
 import { createWorkspaceInvitation } from "../../lib/workspace/invitations";
 import { E2E, e2eDatabaseUrl } from "./global-setup";
 
@@ -13,7 +14,19 @@ import { E2E, e2eDatabaseUrl } from "./global-setup";
  * captured), then the browser exercises `/reset-request` and
  * `/reset?token=…`. Created rows are namespaced (`p32-*@s1h-e2e.test`) and
  * removed in afterAll so teardown's reserved-row cleanup stays intact.
+ *
+ * The routes are capability-gated: every flow test skips while no real
+ * delivery adapter is registered (the documented activation path). The
+ * gated-off assertions at the bottom always run.
  */
+
+// True only when a REAL adapter is registered AND selected — an env value
+// alone can never enable this (the registry is empty until a provider lands).
+const DELIVERY_UP = passwordResetDeliveryAvailable(
+  process.env.PASSWORD_RESET_DELIVERY_ADAPTER,
+);
+const GATED = !DELIVERY_UP;
+const GATE_REASON = "password-reset delivery adapter not configured";
 
 const prisma = new PrismaClient({
   datasources: { db: { url: e2eDatabaseUrl() } },
@@ -121,6 +134,7 @@ async function signInExpect(
 }
 
 test.describe("reset request (/reset-request)", () => {
+  test.skip(GATED, GATE_REASON);
   test("generic success for existing AND missing accounts — non-enumerating", async ({
     page,
   }) => {
@@ -164,6 +178,7 @@ test.describe("reset request (/reset-request)", () => {
 });
 
 test.describe("reset completion (/reset)", () => {
+  test.skip(GATED, GATE_REASON);
   test("valid link sets a compliant password; old fails, new signs in", async ({
     page,
   }) => {
@@ -286,6 +301,7 @@ test.describe("reset completion (/reset)", () => {
 });
 
 test.describe("session invalidation", () => {
+  test.skip(GATED, GATE_REASON);
   test("an existing session is signed out by the reset", async ({ page }) => {
     const u = await mkResettableUser("session");
     // Sign in first — prove the session worked before the reset.
@@ -309,6 +325,7 @@ test.describe("session invalidation", () => {
 });
 
 test.describe("responsive + a11y", () => {
+  test.skip(GATED, GATE_REASON);
   for (const [name, width] of [
     ["desktop", 1440],
     ["tablet", 834],
@@ -346,5 +363,36 @@ test.describe("responsive + a11y", () => {
     await page.keyboard.press("Tab"); // submit
     await page.keyboard.press("Enter");
     await expect(page.getByRole("status")).toBeVisible();
+  });
+});
+
+test.describe("delivery gated off (current default)", () => {
+  test("/reset-request returns 404", async ({ page }) => {
+    const resp = await page.goto("/reset-request");
+    expect(resp?.status()).toBe(404);
+  });
+
+  test("/reset returns 404 — including token-bearing URLs", async ({
+    page,
+  }) => {
+    const resp = await page.goto("/reset");
+    expect(resp?.status()).toBe(404);
+    const resp2 = await page.goto(`/reset?token=${"a".repeat(42)}A`);
+    expect(resp2?.status()).toBe(404);
+    // The gated route never inspects the token: a REAL valid token also 404s.
+    const u = await mkResettableUser("gated404");
+    const rawToken = await resetToken(u.email);
+    myRawTokens.push(rawToken);
+    const resp3 = await page.goto(`/reset?token=${rawToken}`);
+    expect(resp3?.status()).toBe(404);
+  });
+
+  test("login shows no reset link while delivery is unavailable", async ({
+    page,
+  }) => {
+    await page.goto("/login");
+    await expect(
+      page.getByRole("link", { name: "Forgot your password?" }),
+    ).toHaveCount(0);
   });
 });

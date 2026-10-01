@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { getResetLinkState } from "@/lib/auth/password-reset-boundary";
+import { passwordResetDeliveryConfigured } from "@/lib/auth/password-reset-delivery";
 
 import { ResetForm } from "./reset-form";
 
@@ -9,7 +11,9 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Set a new password" };
 
 /**
- * Phase 3.2 public reset-consume route. Validity is established by a
+ * Phase 3.2 public reset-consume route. Fails closed (404) until a real
+ * delivery adapter is registered — token URLs never reach the peek while the
+ * route is gated off. Once enabled, validity is established by a
  * non-consuming peek — every unusable link (missing, malformed, expired,
  * revoked, consumed, wrong purpose) renders one identical safe state. The
  * atomic claim itself still happens inside the reviewed service on submit.
@@ -19,6 +23,7 @@ export default async function ResetPage({
 }: {
   searchParams: Promise<{ token?: string | string[] }>;
 }) {
+  if (!passwordResetDeliveryConfigured()) notFound();
   const { token } = await searchParams;
   // Narrow before the peek — empty/array/missing input already yields the
   // invalid state, so no assertion is needed below.

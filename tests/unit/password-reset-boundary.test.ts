@@ -37,7 +37,9 @@ describe("getResetLinkState (non-consuming peek)", () => {
 
   it("returns ready for an active PASSWORD_RESET token", async () => {
     await expect(
-      getResetLinkState(VALID_TOKEN, fakeDb(active) as never),
+      getResetLinkState(VALID_TOKEN, fakeDb(active) as never, {
+        deliveryAvailable: true,
+      }),
     ).resolves.toEqual({ state: "ready" });
   });
 
@@ -51,7 +53,9 @@ describe("getResetLinkState (non-consuming peek)", () => {
     ];
     for (const row of variants) {
       await expect(
-        getResetLinkState(VALID_TOKEN, fakeDb(row) as never),
+        getResetLinkState(VALID_TOKEN, fakeDb(row) as never, {
+          deliveryAvailable: true,
+        }),
       ).resolves.toEqual({ state: "invalid" });
     }
   });
@@ -76,7 +80,9 @@ describe("getResetLinkState (non-consuming peek)", () => {
       42,
     ]) {
       await expect(
-        getResetLinkState(rawToken, counting as never),
+        getResetLinkState(rawToken, counting as never, {
+          deliveryAvailable: true,
+        }),
       ).resolves.toEqual({ state: "invalid" });
     }
     expect(reads).toBe(0);
@@ -93,6 +99,9 @@ describe("requestPasswordResetFromForm (non-enumerating)", () => {
     const r = await requestPasswordResetFromForm(
       "ghost@example.test",
       db as never,
+      {
+        deliveryAvailable: true,
+      },
     );
     expect(r.ok).toBe(true);
     expect(r.message).toMatch(GENERIC);
@@ -124,10 +133,17 @@ describe("requestPasswordResetFromForm (non-enumerating)", () => {
     const exists = await requestPasswordResetFromForm(
       "u@example.test",
       fake as never,
+      {
+        deliveryAvailable: true,
+      },
     );
-    const missing = await requestPasswordResetFromForm("ghost@example.test", {
-      user: { findUnique: async () => null },
-    } as never);
+    const missing = await requestPasswordResetFromForm(
+      "ghost@example.test",
+      {
+        user: { findUnique: async () => null },
+      } as never,
+      { deliveryAvailable: true },
+    );
     expect(exists.ok).toBe(true);
     expect(exists.message).toBe(missing.message);
     expect(exists.message).not.toContain("u@example.test");
@@ -144,7 +160,9 @@ describe("requestPasswordResetFromForm (non-enumerating)", () => {
       },
     };
     for (const email of [undefined, null, 42, "", "   ", {}, "@x", "a@"]) {
-      const r = await requestPasswordResetFromForm(email, probe as never);
+      const r = await requestPasswordResetFromForm(email, probe as never, {
+        deliveryAvailable: true,
+      });
       expect(r.ok).toBe(false);
       expect(r.message).toMatch(/valid email/i);
     }
@@ -209,6 +227,7 @@ describe("completePasswordReset", () => {
     const r = await completePasswordReset(
       { rawToken: "nope", password: "valid-passw0rd" },
       probe as never,
+      { deliveryAvailable: true },
     );
     expect(r).toEqual({
       ok: false,
@@ -228,11 +247,77 @@ describe("completePasswordReset", () => {
     const r = await completePasswordReset(
       { rawToken: VALID_TOKEN, password: "abcdefghij" }, // no digit
       probe as never,
+      { deliveryAvailable: true },
     );
     expect(r).toEqual({
       ok: false,
       message: expect.stringMatching(/at least one digit/i),
     });
+    expect(txCalls).toBe(0);
+  });
+});
+
+describe("delivery-capability gate (fail closed until a real adapter)", () => {
+  it("peek returns invalid without any DB read when delivery is unavailable", async () => {
+    let reads = 0;
+    const counting = {
+      accessToken: {
+        findUnique: async () => {
+          reads++;
+          return {
+            purpose: "PASSWORD_RESET",
+            expiresAt: new Date(Date.now() + 60_000),
+            consumedAt: null,
+            revokedAt: null,
+          };
+        },
+      },
+    };
+    await expect(
+      getResetLinkState(VALID_TOKEN, counting as never),
+    ).resolves.toEqual({ state: "invalid" });
+    expect(reads).toBe(0);
+  });
+
+  it("request fails closed without issuing or touching the DB when unavailable", async () => {
+    let lookups = 0;
+    let txCalls = 0;
+    const probe = {
+      user: {
+        findUnique: async () => {
+          lookups++;
+          return { id: "u", status: "ACTIVE" };
+        },
+      },
+      $transaction: async () => {
+        txCalls++;
+        throw new Error("must not run");
+      },
+    };
+    const r = await requestPasswordResetFromForm(
+      "u@example.test",
+      probe as never,
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.message).toMatch(/not (currently )?available/i);
+    expect(lookups).toBe(0);
+    expect(txCalls).toBe(0);
+  });
+
+  it("completion fails closed without a transaction when unavailable", async () => {
+    let txCalls = 0;
+    const probe = {
+      $transaction: async () => {
+        txCalls++;
+        throw new Error("must not run");
+      },
+    };
+    const r = await completePasswordReset(
+      { rawToken: VALID_TOKEN, password: "valid-passw0rd" },
+      probe as never,
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.message).toMatch(/not (currently )?available/i);
     expect(txCalls).toBe(0);
   });
 });

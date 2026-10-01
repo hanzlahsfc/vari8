@@ -4,6 +4,31 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — Phase 3.2 repair — reset routes fail closed until real delivery exists
+
+- Different-model security review found a P1: `/reset-request`, `/reset`, and
+  the login link publicly promised email delivery while the delivery seam is
+  a documented no-op. Repaired by gating the entire public surface.
+- Capability design (`lib/auth/password-reset-delivery.ts`): env var
+  `PASSWORD_RESET_DELIVERY_ADAPTER` only SELECTS a registered adapter name;
+  the `ADAPTERS` registry is empty by design until a real provider lands, so
+  no env value can enable the UI while the sink is a no-op. Activation path:
+  implement + register a real adapter, set the env name — the gate flips
+  because an adapter exists, not because a flag was set.
+- Gated off (current default): `/reset-request` and `/reset` 404 via
+  `notFound()` — including valid token-bearing URLs — the login link is
+  absent, and the boundary itself refuses to touch the DB (zero issuance/
+  inspection/writes on direct action attempts; unit-proven).
+- Service, boundary mechanics, policy, token semantics, audit, atomicity,
+  and session invalidation are preserved intact for activation; the enabled
+  path is still covered by unit/integration tests via an explicit injected
+  gate, and the full E2E flow spec is capability-skipped (not deleted) —
+  it re-runs the moment a real adapter registers.
+- Gates post-repair: typecheck 0 · format 0 · lint 0 · unit green · E2E
+  (3 gated-off assertions pass, 12 flow specs capability-skipped) · prod
+  probe: `/reset-request` 404, `/reset?token=` 404, `/login` zero reset
+  links.
+
 ## 2026-10-01 — Phase 3.2 password-reset request + set-password flow — implemented on feature branch
 
 - Exposed the reviewed S1-F2D `requestPasswordReset`/`resetPasswordWithToken`

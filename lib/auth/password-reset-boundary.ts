@@ -3,7 +3,10 @@ import type { PrismaClient } from "@prisma/client";
 import { prisma } from "../db";
 import { PasswordPolicyError } from "../password-policy";
 import { inspectAccessToken } from "../tokens/store";
-import { deliverPasswordResetToken } from "./password-reset-delivery";
+import {
+  deliverPasswordResetToken,
+  passwordResetDeliveryConfigured,
+} from "./password-reset-delivery";
 import {
   PasswordResetError,
   requestPasswordReset,
@@ -26,14 +29,27 @@ import {
  *   enumeration risk at the UI layer; the internal outcome still drives
  *   delivery decisions).
  * - The raw token is never returned, logged, or placed in errors.
+ * - Every entry point fails closed while no real delivery adapter is
+ *   registered: the default `deliveryAvailable` resolves through the adapter
+ *   registry (never an env flag alone), and when unavailable NOTHING below
+ *   touches the database — no issuance, inspection, or claim. The `gate`
+ *   option exists so tests can exercise the enabled path explicitly; an env
+ *   var cannot inject it.
  */
 
 export type ResetLinkState = { state: "ready" | "invalid" };
 
+export type ResetGate = { deliveryAvailable?: boolean };
+
+const deliveryAvailable = (gate?: ResetGate): boolean =>
+  gate?.deliveryAvailable ?? passwordResetDeliveryConfigured();
+
 export async function getResetLinkState(
   rawToken: unknown,
   client: PrismaClient = prisma,
+  gate?: ResetGate,
 ): Promise<ResetLinkState> {
+  if (!deliveryAvailable(gate)) return { state: "invalid" };
   if (typeof rawToken !== "string" || rawToken.length === 0) {
     return { state: "invalid" };
   }
@@ -64,10 +80,16 @@ const REQUEST_SUCCESS =
  * service-side failure is reported as a generic, non-distinguishing retry
  * message.
  */
+const UNAVAILABLE_MESSAGE = "Password reset is not currently available.";
+
 export async function requestPasswordResetFromForm(
   email: unknown,
   client: PrismaClient = prisma,
+  gate?: ResetGate,
 ): Promise<ResetRequestResult> {
+  if (!deliveryAvailable(gate)) {
+    return { ok: false, message: UNAVAILABLE_MESSAGE };
+  }
   try {
     await requestPasswordReset(
       { email },
@@ -93,7 +115,11 @@ export type ResetCompletionResult =
 export async function completePasswordReset(
   input: { rawToken: unknown; password: unknown },
   client: PrismaClient = prisma,
+  gate?: ResetGate,
 ): Promise<ResetCompletionResult> {
+  if (!deliveryAvailable(gate)) {
+    return { ok: false, message: UNAVAILABLE_MESSAGE };
+  }
   try {
     await resetPasswordWithToken(input, client);
     return { ok: true };

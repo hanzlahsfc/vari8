@@ -46,6 +46,9 @@ describe.skipIf(!enabled)("Phase 3.2 password-reset boundary (real PG)", () => {
   });
 
   const uid = () => `p32${++n}_${Date.now()}`;
+  // These tests exercise the ENABLED path — the capability gate is injected
+  // explicitly (an env flag can never open it; see the delivery seam).
+  const GATE = { deliveryAvailable: true };
   async function mkUser(
     opts: { status?: "ACTIVE" | "DEACTIVATED" | "INVITED" } = {},
   ) {
@@ -87,10 +90,11 @@ describe.skipIf(!enabled)("Phase 3.2 password-reset boundary (real PG)", () => {
 
   it("request returns an identical generic message for existing and missing accounts", async () => {
     const u = await mkUser();
-    const existing = await requestPasswordResetFromForm(u.email, prisma);
+    const existing = await requestPasswordResetFromForm(u.email, prisma, GATE);
     const missing = await requestPasswordResetFromForm(
       `ghost-${uid()}@example.test`,
       prisma,
+      GATE,
     );
     expect(existing).toEqual(missing); // non-enumerating surface
     expect(existing.ok).toBe(true);
@@ -110,7 +114,7 @@ describe.skipIf(!enabled)("Phase 3.2 password-reset boundary (real PG)", () => {
 
   it("request on INVITED/DEACTIVATED accounts issues nothing but answers identically", async () => {
     const u = await mkUser({ status: "DEACTIVATED" });
-    const r = await requestPasswordResetFromForm(u.email, prisma);
+    const r = await requestPasswordResetFromForm(u.email, prisma, GATE);
     expect(r.ok).toBe(true);
     expect(await resetTokens(u.id)).toHaveLength(0);
     expect(await accountAudit(u.id)).toHaveLength(0);
@@ -119,7 +123,9 @@ describe.skipIf(!enabled)("Phase 3.2 password-reset boundary (real PG)", () => {
   it("getResetLinkState is non-consuming and purpose-scoped", async () => {
     const u = await mkUser();
     const rawToken = await issueToken(u.email);
-    await expect(getResetLinkState(rawToken, prisma)).resolves.toEqual({
+    await expect(
+      getResetLinkState(rawToken, prisma, { deliveryAvailable: true }),
+    ).resolves.toEqual({
       state: "ready",
     });
     // Nothing consumed.
@@ -150,12 +156,18 @@ describe.skipIf(!enabled)("Phase 3.2 password-reset boundary (real PG)", () => {
       prisma,
     );
     await expect(
-      getResetLinkState(inv.delivery.rawToken, prisma),
+      getResetLinkState(inv.delivery.rawToken, prisma, {
+        deliveryAvailable: true,
+      }),
     ).resolves.toEqual({ state: "invalid" });
-    await expect(getResetLinkState("malformed", prisma)).resolves.toEqual({
+    await expect(
+      getResetLinkState("malformed", prisma, { deliveryAvailable: true }),
+    ).resolves.toEqual({
       state: "invalid",
     });
-    await expect(getResetLinkState(undefined, prisma)).resolves.toEqual({
+    await expect(
+      getResetLinkState(undefined, prisma, { deliveryAvailable: true }),
+    ).resolves.toEqual({
       state: "invalid",
     });
   });
@@ -166,6 +178,7 @@ describe.skipIf(!enabled)("Phase 3.2 password-reset boundary (real PG)", () => {
     const r = await completePasswordReset(
       { rawToken, password: NEW_PASSWORD },
       prisma,
+      GATE,
     );
     expect(r).toEqual({ ok: true });
     const after = await prisma.user.findUniqueOrThrow({
@@ -199,7 +212,11 @@ describe.skipIf(!enabled)("Phase 3.2 password-reset boundary (real PG)", () => {
       ["short1", "at least 10 characters"],
       ["abcdefghij", "at least one digit (0–9)"],
     ] as const) {
-      const r = await completePasswordReset({ rawToken, password }, prisma);
+      const r = await completePasswordReset(
+        { rawToken, password },
+        prisma,
+        GATE,
+      );
       expect(r.ok).toBe(false);
       if (!r.ok) expect(r.message).toContain(fragment);
     }
@@ -211,6 +228,7 @@ describe.skipIf(!enabled)("Phase 3.2 password-reset boundary (real PG)", () => {
     const ok = await completePasswordReset(
       { rawToken, password: NEW_PASSWORD },
       prisma,
+      GATE,
     );
     expect(ok).toEqual({ ok: true });
   });
@@ -225,10 +243,12 @@ describe.skipIf(!enabled)("Phase 3.2 password-reset boundary (real PG)", () => {
     await completePasswordReset(
       { rawToken: used, password: NEW_PASSWORD },
       prisma,
+      GATE,
     );
     const reuse = await completePasswordReset(
       { rawToken: used, password: NEW_PASSWORD },
       prisma,
+      GATE,
     );
     expect(reuse.ok).toBe(false);
     if (!reuse.ok) expect(reuse.message).toMatch(INVALID);
@@ -239,6 +259,7 @@ describe.skipIf(!enabled)("Phase 3.2 password-reset boundary (real PG)", () => {
     const revoked = await completePasswordReset(
       { rawToken: first, password: NEW_PASSWORD },
       prisma,
+      GATE,
     );
     expect(revoked.ok).toBe(false);
     if (!revoked.ok) expect(revoked.message).toMatch(INVALID);
@@ -254,6 +275,7 @@ describe.skipIf(!enabled)("Phase 3.2 password-reset boundary (real PG)", () => {
     const expired = await completePasswordReset(
       { rawToken: expiring, password: NEW_PASSWORD },
       prisma,
+      GATE,
     );
     expect(expired.ok).toBe(false);
     if (!expired.ok) expect(expired.message).toMatch(INVALID);
@@ -263,6 +285,7 @@ describe.skipIf(!enabled)("Phase 3.2 password-reset boundary (real PG)", () => {
       const r = await completePasswordReset(
         { rawToken: bogus, password: NEW_PASSWORD },
         prisma,
+        GATE,
       );
       expect(r.ok).toBe(false);
       if (!r.ok) expect(r.message).toMatch(INVALID);
@@ -293,6 +316,7 @@ describe.skipIf(!enabled)("Phase 3.2 password-reset boundary (real PG)", () => {
     const wrongPurpose = await completePasswordReset(
       { rawToken: inv.delivery.rawToken, password: NEW_PASSWORD },
       prisma,
+      GATE,
     );
     expect(wrongPurpose.ok).toBe(false);
     if (!wrongPurpose.ok) expect(wrongPurpose.message).toMatch(INVALID);
