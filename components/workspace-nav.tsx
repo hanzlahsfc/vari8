@@ -28,6 +28,12 @@ export function WorkspaceNav({
       action: "read",
     },
     {
+      href: `/workspace/${workspaceId}/nutrition`,
+      label: "Nutrition Database",
+      resource: "foodExerciseMasterData",
+      action: "read",
+    },
+    {
       href: `/workspace/${workspaceId}/admin`,
       label: "Admin",
       resource: "workspaceSettings",

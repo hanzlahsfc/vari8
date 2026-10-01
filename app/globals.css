@@ -680,3 +680,174 @@ body {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* --- Phase 2.1 Nutrition Database catalog ---------------------------------
+ * A dense, source-backed result list on desktop that reflows into readable
+ * single-column cards on tablet/mobile. Colors come only from theme tokens.
+ */
+.catalog-page {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.catalog-page__header {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.catalog-page__eyebrow {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.catalog-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  min-width: 0;
+}
+
+.catalog-search__field {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.catalog-search__input {
+  min-height: 44px;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-base);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.catalog-search__input:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.catalog-search__submit {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-radius: var(--radius-md);
+  background-color: var(--color-accent);
+  color: var(--color-text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.catalog-search__submit:focus-visible {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+}
+
+.catalog-empty {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.catalog-results {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.catalog-results__count {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+}
+
+.catalog-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.catalog-item {
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+}
+
+.catalog-item__name {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  overflow-wrap: anywhere;
+}
+
+.catalog-item__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  min-width: 0;
+}
+
+.catalog-field {
+  min-width: 0;
+}
+
+.catalog-field__label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.catalog-field__value {
+  margin: 0;
+  color: var(--color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.catalog-limit {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Tablet/mobile: stack the controls full-width and reflow fields to one column. */
+@media (max-width: 1023px) {
+  .catalog-search {
+    align-items: stretch;
+  }
+
+  .catalog-search__field {
+    flex: 1 1 12rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .catalog-search {
+    flex-direction: column;
+  }
+
+  .catalog-item {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .catalog-item__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
