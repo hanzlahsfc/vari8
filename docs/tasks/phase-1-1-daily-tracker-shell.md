@@ -154,3 +154,54 @@ persistence. The Phase B0 `/daily` prototype is untouched.
 
 No `TRACKER 2.0.md`; no real client data; no Prime Tracker change; product name
 undecided (never invented); synthetic fixtures only; no PR/merge/deploy.
+
+## 10. Implementation + verification record
+
+**Status: implemented, all gates green, independently reviewed PASS.**
+
+- Base verified live: `main` = `origin/main` = `fc2c936`; Phase 0.1 blueprint
+  `b05c130` (off `main`, docs-only) was available and inspected before use, so
+  no source-fact limitation applied. `TRACKER 2.0.md` absent and gitignored.
+- Commits: `10d89b0` plan, `8446cdf` tests (RED), `bb4dddc` implementation,
+  `fb973fd` plan-format. Working tree clean at review.
+- RED observed: `npx vitest run tests/unit/daily-tracker.test.ts` exit 1
+  (module absent); E2E spec exercised the live route only after implementation.
+- GREEN gates on the exact final tree (real exit codes): `git diff --check` 0;
+  `npm run format:check` 0; `npm run typecheck` 0; `npm run lint` 0;
+  `npm run test` 0 (39 files, 421 tests; +9 new); `npm run build` 0
+  (`/workspace/[workspaceId]/daily` emitted); `npx playwright test` 0 (41
+  browser tests; +10 new at 1440/834/390); `npm run test:integration` 0
+  (17 files, 198 tests on disposable `tracker_p11_int`; +2 new). Baseline
+  before changes was green (412 unit) once the Prisma client was regenerated.
+- Mutation evidence (each reverted byte-exact, SHA-256 verified): guard
+  denial mapped to plain `throw` instead of `forbidden()` → integration FAIL;
+  MENSES `requires: ["cycleConsent"]` removed → unit FAIL.
+- Browser evidence: unauthenticated `/workspace/[id]/daily` → `/login`;
+  non-member → real 403; owner reaches the page via the sidebar "Daily Tracker"
+  link; coach 200; nine section headings, source labels/units, `TODO(product)`
+  computed marker, no E2/PROG/coach-notes field; zero POST/PUT/PATCH/DELETE;
+  keyboard Enter on a section link scrolls and sets `aria-current`; overflow
+  ≤1px, distinct grid tracks (2/1/1) and nav direction (column/row/row), ≥44px
+  tablet/mobile targets.
+
+## 11. Independent review
+
+- Fresh-context, read-only reviewer in a separate `opencode run` session on the
+  frozen tree (`fb973fd`, tree `447c851`, verified unchanged by the reviewer):
+  **PASS**, no blocking findings. Reviewer model `opencode-go/glm-5.3` is
+  **different** from the builder model `opencode-go/deepseek-v4.1-flash` — model
+  diversity verified.
+- Non-blocking observations folded into this record / candidates for Phase 4:
+  DATE & PHASE `Weekday`/`Date` are day-row values (keys map to crosswalk rows)
+  so Phase 4 should bind them as values, not invented headers; the collection
+  guard grants a CLIENT `own` scope while the staff shell layout 403s CLIENT
+  before the page — a deferred client shell must reconcile that; the
+  `EXCLUDED_TRACKER_FIELD_KEYS` list mixes field keys and column groups; nav
+  filter widening is cosmetic only and authorization stays server-side.
+
+## 12. Deviations / blockers
+
+- None. The route lives under the existing staff workspace shell
+  (`workspaceSettings/read` layout gate), so a client-facing Daily Tracker is
+  deliberately deferred with the client shell; this slice satisfies "a
+  signed-in, authorized workspace user".

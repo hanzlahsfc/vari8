@@ -4,6 +4,37 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — Phase 1.1 production Daily Tracker shell — implementation + independent review PASS (feature branch)
+
+- Built the first production-oriented Daily Tracker UI foundation: a real,
+  server-authorized route at `/workspace/[workspaceId]/daily` reached through the
+  role-aware workspace navigation. Delivered `lib/daily-tracker.ts` (verified
+  section/field contract), `components/tracker/*` (reusable field/section/shell
+  primitives), the route page, a `workspace-nav` entry, and a
+  `requireDailyTrackerAccess` collection guard (existing `authorizeCollection`
+  primitive; no RBAC/session/auth-semantics change). Non-persistent by design:
+  entry/saving is honestly unavailable until Phase 4, with no writes, no
+  localStorage, no fabricated records or computed data.
+- Source fidelity from the **available** Phase 0.1 blueprint (`b05c130`, off
+  verified `main` `fc2c936`): exactly the nine verified sections and only source
+  labels/units; `CALORIES` renders only `TODO(product)`; E2/PROG/coach-notes
+  excluded; only biofeedback 1–10 and DAY LABEL ∈ {HIGH, MEDIUM, LOW} encoded.
+- TDD: unit contract RED (module absent) → GREEN. Gates on the exact tree
+  (real exit codes): `git diff --check` 0; `format:check` 0; `typecheck` 0;
+  `lint` 0; `test` 0 (39 files / 421; +9); `build` 0 (route emitted);
+  `test:e2e` 0 (41 browser tests; +10 at 1440/834/390 incl. keyboard/focus and
+  overflow); `test:integration` 0 (17 files / 198 on disposable `tracker_p11_int`;
+  +2). Mutations caught and restored byte-exact: guard deny→plain throw (integration
+  FAIL); MENSES cycle-consent flag removed (unit FAIL).
+- Independent fresh-context read-only review of frozen `fb973fd` (tree
+  `447c851`, verified unchanged): **PASS**, no blocking findings; reviewer model
+  `opencode-go/glm-5.3` differs from builder `opencode-go/deepseek-v4.1-flash`
+  (model diversity verified). Non-blocking notes recorded in the task record.
+- Record: `docs/tasks/phase-1-1-daily-tracker-shell.md`. No `db/**`, schema,
+  migration, dependency, or `app/api/**` change; Phase B0 `/daily` untouched;
+  no `TRACKER 2.0.md`/client data. **No PR/merge/deploy; branch pushed for
+  collaborators; persistence/consent/client shell/formulas remain deferred.**
+
 ## 2026-10-01 — Phase 0.1 PRGRSS source blueprint & Daily Tracker spec (docs only)
 
 - New `docs/tasks/phase-0-1-source-blueprint.md`: manifest of the 11 HTML exports
