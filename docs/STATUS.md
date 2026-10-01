@@ -4,6 +4,30 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — S1-G plan rev 3 — repaired after independent DeepSeek FAIL (feature branch)
+
+- Independent read-only review of rev 2 (`cd6f449`) by
+  `opencode-go/deepseek-v4.1-flash` in a separate `opencode run` session:
+  **FAIL** — two findings, tree unchanged by the reviewer.
+- D1: presign-TTL bound was asserted-enforced while its value stayed
+  `TODO(human)` and was unreachable/untestable behind the null backend.
+  Repair: bound enforcement is now a pure parameterized validator
+  `assertPresignGetTtl(ttlSeconds, maxTtlSeconds)` every backend must call;
+  unit tests pin it with explicit test operands; no production value
+  invented.
+- D2: coach (`asg` read) export was listed as both blocked and in-scope.
+  Repair: §10 split into blocked `TODO(human)` items vs in-scope work
+  flagged for product confirmation; coach export sits in the latter.
+- Non-blocking repairs: `EXPORT_PAGE_SIZE`/`EXPORT_SECTION_ROW_MAX` given
+  PROPOSED values (500 / 100_000); every promised mutation now maps to an
+  enumerated test (multi-page pagination, ceiling → `export_too_large`
+  with no audit row, own-export ignores a supplied client-id, TTL
+  validator); real-browser requirement marked N/A for this slice —
+  `test:e2e` is a regression gate only, S1-G exposes no browser surface.
+- Verification: docs-only diff; `git diff --check` + `format:check` clean.
+- **Next: fresh read-only re-review of the repaired plan; implementation
+  still blocked until PASS.**
+
 ## 2026-10-01 — S1-G plan rev 2 — scope narrowed after external review findings (feature branch)
 
 - Plan `docs/tasks/s1-g-privacy-storage.md` rewritten per six review

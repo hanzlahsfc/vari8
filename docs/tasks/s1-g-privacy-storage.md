@@ -133,15 +133,15 @@ exportClientData(session: SessionLike, input: { workspaceId: string; clientProfi
   dynamically.
 
 - **Resource bounds — no silent incompleteness.** Each section is read with
-  explicit bounded pagination (id-cursor pages, `EXPORT_PAGE_SIZE` rows per
-  query) and a hard per-section ceiling `EXPORT_SECTION_ROW_MAX`
-  (engineering bound — PROPOSED value `100_000`, flagged for review; it is
-  not a product retention or access policy). If a section would exceed the
-  ceiling, the export throws `GdprError("export_too_large")` and returns
-  **nothing** — a partial export is never produced and the audit event is
-  not written. The manifest counts always equal the emitted rows by
-  construction (counts are derived from the emitted arrays, not queried
-  separately).
+  explicit bounded pagination (id-cursor pages of `EXPORT_PAGE_SIZE` rows,
+  PROPOSED `500`) and a hard per-section ceiling `EXPORT_SECTION_ROW_MAX`
+  (PROPOSED `100_000`). Both are internal engineering bounds marked
+  PROPOSED for review — they are not a product retention, quota, or access
+  policy. If a section would exceed the ceiling, the export throws
+  `GdprError("export_too_large")` and returns **nothing** — a partial
+  export is never produced and the audit event is not written. The
+  manifest counts always equal the emitted rows by construction (counts
+  are derived from the emitted arrays, not queried separately).
 - Exactly one `EXPORT`/`client_export` WORKSPACE audit event per successful
   export, inside the same transaction as the reads,
   `subjectClientProfileId` set, `meta { count }` = total exported rows.
@@ -233,6 +233,10 @@ export function assertClientObjectKey(
   workspaceId,
   clientProfileId,
 ): string;
+export function assertPresignGetTtl(
+  ttlSeconds: number,
+  maxTtlSeconds: number,
+): void;
 export const nullObjectStorage: ObjectStorageBackend;
 ```
 
@@ -250,9 +254,15 @@ export const nullObjectStorage: ObjectStorageBackend;
   real backend's delete failure must abort the consumer's operation —
   storage deletion and DB mutation are **not** atomic and no design may
   claim they are.
-- Presigned-GET TTL: caller supplies `ttlSeconds`; the port enforces an
-  upper bound `PRESIGNED_GET_MAX_TTL_SECONDS`, **value `TODO(human)`** —
-  until a backend exists nothing reaches it.
+- Presigned-GET TTL: the caller supplies `ttlSeconds`. Bound enforcement
+  is a pure, parameterized validator `assertPresignGetTtl(ttlSeconds,
+maxTtlSeconds)` — fail closed on non-integer, non-positive, or
+  over-bound values (`StorageError("invalid_ttl")`) — that every backend
+  must run before issuing a URL. The production bound value itself is
+  `TODO(human)`; the validator takes both operands as parameters so it is
+  unit-testable with explicit test values and no production duration is
+  invented. `nullObjectStorage.presignGet` throws before any TTL check, so
+  no TTL is ever issued by this slice.
 - No SDK, no ACL/public-url model, no Supabase API — verified by a grep
   gate (`rg -i "supabase" lib db tests` empty) and no new dependency.
 
@@ -277,23 +287,29 @@ Unit (fail before the modules exist):
 - `tests/unit/storage.test.ts` — key/prefix validation rejections
   (traversal, foreign prefix, absolute, backslash, empty segment,
   non-string), null-backend presign → `storage_not_configured`,
-  `deletePrefix` → `{deleted:0}`.
+  `deletePrefix` → `{deleted:0}`; `assertPresignGetTtl` with explicit test
+  operands — over-bound, non-integer, zero/negative all → `invalid_ttl`;
+  in-bound accepted.
 - `tests/unit/retention.test.ts` — every family unset →
   `evaluateRetention` `[]`; malformed policy rejected;
   `assertAutomaticRetentionConfigured` throws.
 - `tests/unit/gdpr-export.test.ts` — manifest/count derivation, allowlist
-  closure, page/ceiling bound arithmetic, structural error codes, exposure
-  assertion throws.
+  closure, page/ceiling bound arithmetic against the PROPOSED constants,
+  structural error codes, exposure assertion throws.
 
 Integration (fresh disposable PostgreSQL, synthetic fixtures only):
 
 - `tests/integration/s1-g-export.test.ts` — own export content bounded to
   the allowlist; manifest counts equal emitted row counts; pagination
-  correctness across multiple pages; a fixture over the section ceiling →
-  `export_too_large`, empty result, no audit row; one EXPORT event in the
-  same tx; cross-workspace / other-client / unassigned-coach / SUPPORT /
-  assistant / platform-admin / non-ACTIVE denials; assigned-coach and
-  owner paths per the matrix; non-allowlisted field canary absent.
+  correctness across multiple pages (seed > `EXPORT_PAGE_SIZE` rows in one
+  section; assert every row emitted and >1 page query observed); a fixture
+  over the section ceiling → `export_too_large`, empty result, no audit
+  row; `exportOwnData` called with an extra `clientProfileId` in input
+  still resolves the actor's own profile (the parameter cannot select a
+  foreign client); one EXPORT event in the same tx; cross-workspace /
+  other-client / unassigned-coach / SUPPORT / assistant / platform-admin /
+  non-ACTIVE denials; assigned-coach and owner paths per the matrix;
+  non-allowlisted field canary absent.
 - `tests/integration/s1-g-retention.test.ts` — seeded rows of each family
   evaluate as never-due.
 
@@ -320,21 +336,29 @@ Observable acceptance criteria:
   (`rg -n "delete" lib/gdpr lib/storage.ts` reviewed to be only the port
   contract and tests).
 
-Mutations to prove (each restored byte-exact): allowlist section bypass ·
-manifest count skipped · audit outside tx · section ceiling not enforced
-(silent truncation) · pagination stops at first page · retention returns
-due with null duration · null-backend presign succeeds · TTL bound
-unenforced · own-export accepts client-id param · cross-workspace scope
-dropped.
+Every mutation maps to an enumerated test above. Mutations to prove (each
+restored byte-exact): allowlist section bypass · manifest count skipped ·
+audit outside tx · section ceiling not enforced (silent truncation) ·
+pagination stops at first page · `assertPresignGetTtl` accepts over-bound
+TTL · retention returns due with null duration · null-backend presign
+succeeds · own-export honors a caller-supplied client-id ·
+cross-workspace scope dropped.
+
+**Browser gate:** S1-G exposes no route/UI, so there is no new user flow to
+exercise. `npm run test:e2e` runs as a regression gate over the existing
+21 browser tests only; the real-browser requirement is N/A for this slice
+and lands with S1-H routing — explicitly not claimed here.
 
 ## 10. Open items — `TODO(human)` / review decisions
 
-Not implementable without human decisions (stay blocked):
+Not implementable without human decisions (stay blocked — none of these
+are in this slice):
 
 1. Retention durations for every family, including audit retention period.
-2. Storage vendor, bucket, region, credentials, encryption, exact presign
-   TTL; no Supabase-specific APIs without an explicit decision + plan
-   (`stage-1-plan.md` §8, product-decisions #10).
+2. Storage vendor, bucket, region, credentials, encryption, and the
+   production presign-TTL bound value; no Supabase-specific APIs without
+   an explicit decision + plan (`stage-1-plan.md` §8, product-decisions
+   #10).
 3. Legal copy: privacy notice/policy text, export cover text, erasure
    confirmation wording, PED/HRT anything.
 4. Export delivery surface (download route, streaming/archive format,
@@ -351,10 +375,18 @@ Not implementable without human decisions (stay blocked):
    who may initiate each erasure class operationally.
    e. Invite tokens whose `target_email` is an erased user/client email.
    f. Tombstone value formats, if in-place anonymization is approved.
-6. Coach-initiated (`asg` read) client export — implemented per the locked
-   matrix but flagged for product confirmation.
-7. Pre-existing unresolved: DENY-audit volume, SUPPORT access policy,
+6. Pre-existing unresolved: DENY-audit volume, SUPPORT access policy,
    cross-workspace sharing, platform-admin health exceptions, i18n.
+
+In scope but flagged for product confirmation (NOT blocking — the locked
+matrix already decides the authorization):
+
+- Coach-initiated (`asg` read) client export is implemented exactly per
+  `authorization-model.md`/`rbac.ts`; whether the product exposes it is a
+  delivery-surface question for S1-H, not an authorization change.
+- PROPOSED items awaiting reviewer sign-off: export JSON shape and
+  section/field allowlist, `EXPORT_PAGE_SIZE`/`EXPORT_SECTION_ROW_MAX`
+  values, storage key format.
 
 ## 11. Rollback
 
