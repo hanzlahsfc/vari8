@@ -4,6 +4,27 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — Phase 3 controlled main integration — source-data policy remediation (integration branch)
+
+- Integration branch `feature/integrate-tracker-shell-nutrition-catalog` off the verified
+  Phase 2.1 tip `72963fe`; `main` `fc2c936` is an ancestor (clean merge-commit PR).
+- Source-data audit found four prohibited **full copied catalog dumps** committed on `main`
+  and replaced them with minimal synthetic fixtures: `spec/data/foods.json` (599→3),
+  `spec/data/exercises.json` (546→2), `spec/sheets/nutrition-database.json` (→5 cells),
+  `spec/sheets/exercise-database.json` (→5 cells) — **−395,322 lines** of copied source data.
+  PII-redacted health-sheet extraction artifacts, summaries, theme/cross-sheet/manifest,
+  blueprints, app code and migrations are retained; the trusted `import:nutrition` path
+  remains the only approved route for real Nutrition data.
+- New regression guard `tests/unit/source-data-policy.test.ts` (RED 4/4 → GREEN 4/4).
+  Updated `spec-artifacts.test.ts`, `redact-real.test.ts` (catalog determinism lock),
+  `library.spec.ts`, library ledes, and `docs/redaction-policy.md`. Record:
+  `docs/tasks/phase-3-main-integration.md`.
+- Gates (real exit codes): `git diff --check` 0; `format:check` 0; `typecheck` 0; `lint` 0;
+  `test` 0 (41 files / 429 tests); `test:integration` 0 (18 files / 205 tests, disposable PG);
+  `build` 0 (Daily Tracker + Nutrition routes); `test:e2e` 0 (49 passed).
+- Integration PR into `main`, normal merge commit; merged delivery branches deleted only
+  after ancestry proof. **No deploy; `main` not pushed directly; no history rewrite.**
+
 ## 2026-10-01 — Phase 2.1 Nutrition Database catalog + import pipeline — implementation + independent review PASS (feature branch)
 
 - Built the first real in-app Nutrition Database catalog: a trusted local import CLI

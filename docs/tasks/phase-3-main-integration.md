@@ -68,3 +68,34 @@ merge commit → post-merge verify → delete merged branches.
 
 No deploy; no force-push/history rewrite; no direct `main` push; no Exercise/Training/
 Mealplan feature work; no client shell/auth redesign; no raw source in Git.
+
+## 8. Record (implementation + verification)
+
+**Status: remediation complete, all gates green.**
+
+- Integration branch `feature/integrate-tracker-shell-nutrition-catalog` off verified
+  `feature/phase-2-1-nutrition-catalog` `72963fe` (`main` `fc2c936` unchanged).
+- Commits: `4f58aac` plan; `acf1cbf` remediation (4 fixtures + tests + page ledes +
+  policy doc); record follows.
+- RED→GREEN: `tests/unit/source-data-policy.test.ts` failed 4/4 before remediation
+  (real 599/546-record dumps present) → 4/4 after.
+- Removed prohibited full copied catalog dumps (replaced with synthetic fixtures):
+  `spec/data/foods.json` (599→3 fixture records), `spec/data/exercises.json` (546→2),
+  `spec/sheets/nutrition-database.json` (≈200k-line grid → 5 cells),
+  `spec/sheets/exercise-database.json` (≈176k-line grid → 5 cells). Net **−395,322**
+  lines of copied source data.
+- Consumers/tests updated so the libraries and dev sheet viewer keep working:
+  `tests/unit/spec-artifacts.test.ts`, `tests/unit/redact-real.test.ts` (catalog slugs
+  excluded from the real-source determinism lock and asserted synthetic),
+  `tests/e2e/library.spec.ts`, and the two library page ledes. `docs/redaction-policy.md`
+  now states no full copied catalog dump may be committed.
+- Gates on the exact tree (real exit codes): `git diff --check` 0; `format:check` 0;
+  `typecheck` 0; `lint` 0; `test` 0 (41 files / 429 tests); `test:integration` 0
+  (18 files / 205 tests, disposable `tracker_p3_int`); `build` 0 (both
+  `/workspace/[workspaceId]/daily` and `/workspace/[workspaceId]/nutrition` emitted);
+  `test:e2e` 0 (49 passed).
+- Retained: all summaries/metadata, PII-redacted health-sheet extraction artifacts,
+  theme/cross-sheet/manifest, blueprints, app code, migrations.
+- Residual: `scripts/extract-sheets.ts` can still regenerate real dumps into `spec/` if run
+  manually against the external source; it is a dev-only extractor, not an app path, and is
+  not run in CI. Recorded for a future policy decision.
