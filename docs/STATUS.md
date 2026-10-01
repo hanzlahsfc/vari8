@@ -4,6 +4,23 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-01 — S1-G plan rev 3 — independent DeepSeek re-review PASS (feature branch)
+
+- Fresh read-only re-review of `2ef21e9` by `opencode-go/deepseek-v4.1-flash`
+  in a separate `opencode run` session (builder is SWE-2 High — different
+  model, fresh context, no edits; reviewer verified tree unchanged):
+  **PASS**. D1 (parameterized `assertPresignGetTtl`) and D2 (blocked vs
+  flagged-for-confirmation split) confirmed resolved with line refs;
+  F1–F6 re-verified still resolved; claims cross-checked against
+  schema/audit/rbac code. Non-blocking residuals noted only.
+- The S1-G plan is now approved-for-implementation scope: allowlist
+  export + counts manifest with explicit bounds, retention policy-as-data
+  (all durations unset), provider-neutral fail-closed storage port. All
+  erasure paths stay deferred on `TODO(human)` policy.
+- **Next: implement the reviewed S1-G scope test-first on this branch;
+  a second independent DeepSeek review of the implementation diff is
+  required before completion is claimed.**
+
 ## 2026-10-01 — S1-G plan rev 3 — repaired after independent DeepSeek FAIL (feature branch)
 
 - Independent read-only review of rev 2 (`cd6f449`) by
