@@ -14,7 +14,7 @@
  * property, log line, or audit row.
  */
 export type PasswordPolicyErrorCode =
-  "password_too_short" | "password_too_long";
+  "password_too_short" | "password_too_long" | "password_needs_digit";
 
 export class PasswordPolicyError extends Error {
   constructor(readonly code: PasswordPolicyErrorCode) {
@@ -45,6 +45,23 @@ export function validatePasswordPolicy(candidate: unknown): string {
   }
   if (length > PASSWORD_MAX_CODE_POINTS) {
     throw new PasswordPolicyError("password_too_long");
+  }
+  return normalized;
+}
+
+/**
+ * Phase 3.1 — invite password setup (Aleks's confirmed policy, relayed
+ * 2026-10-01): the shared length bounds PLUS at least one ASCII digit. No
+ * uppercase or symbol requirement.
+ *
+ * Applies only to the invitation-acceptance account-creation path; the shared
+ * `validatePasswordPolicy` (and the password-reset flow that uses it) keep the
+ * no-composition-rule decision. Errors remain structural codes.
+ */
+export function validateInvitePassword(candidate: unknown): string {
+  const normalized = validatePasswordPolicy(candidate);
+  if (!/[0-9]/.test(normalized)) {
+    throw new PasswordPolicyError("password_needs_digit");
   }
   return normalized;
 }
