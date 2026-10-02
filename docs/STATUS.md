@@ -1,8 +1,9 @@
 # STATUS — App foundation & extraction build
 
 Append-only loop memory (newest first). "Done" = the exact gate re-run on the current
-tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
-extraction) only, not the workbook UI itself.
+tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extraction)
+are complete; product direction is now the configurable coaching system in
+`docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
 ## 2026-10-02 — P-006 product-alignment blueprint (documentation only)
 
@@ -16,15 +17,20 @@ extraction) only, not the workbook UI itself.
   W01–W11/D01–D05/T01–T04/R01–R04/N01–N08/P01–P08/C01–C07/M01–M05 + habits.
 - The blueprint **supersedes the Phase 0.1 universal-schema assumption only**:
   PRGRSS 2.0 becomes one source-backed starter configuration; the Phase 0.1
-  record is preserved unchanged.
-- All unapproved owner decisions recorded as PROPOSED/PENDING (D-01…D-09) with
+  evidence is preserved (a dated supersession notice was added to its header).
+- All unapproved owner decisions recorded as PROPOSED/PENDING (D-01…D-14) with
   one recommended model each; no product name ("Nexus" excluded); wearables,
   migration, export, specialist modules and formulas remain deferred/blocked.
 - Historical deviation recorded: PR #8 merged before its independent
   different-model review completed; this gate miss is a process deviation and
   is never retroactively satisfiable.
-- No code/schema/migration/route/UI change; gates not applicable (docs-only
-  diff). Branch `docs/p006-product-alignment-blueprint` off `main` `25994573`.
+- Review round 1: Apollo (Codex/GPT-6, read-only) BLOCK — R1–R7 (retention,
+  source-authority supersession, template-rule completeness, onboarding key
+  discipline, decision-table depth, process evidence, RBAC accuracy); Helios
+  BLOCK folded in (rating preservation, revision-on-resubmit, PD#21 re-invite,
+  N05/M01 enumeration, terminology, confirmed-direction attribution). Repairs
+  applied in-place; revised candidate + gate evidence in
+  `docs/tasks/p006-product-alignment-blueprint.md`.
 
 ## 2026-10-01 — Phase 3.2 repair — reset routes fail closed until real delivery exists
 

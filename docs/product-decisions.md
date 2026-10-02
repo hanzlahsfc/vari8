@@ -9,6 +9,14 @@ PR, deploy, or external change.
    placeholders or source names, not an approved product name.
 2. **The sheets are the base and core.** The 11-sheet professional workbook is the product's
    specification and source of truth.
+   **Update (relayed 2026-10-02, P-006 direction / Lilly's "Core coaching system"
+   brief, 1 Oct 2026):** narrowed in scope — the product is a **configurable
+   coaching system**; the PRGRSS workbook is a source-backed **starter
+   configuration** and evidence corpus (parameter seed, workflow patterns), not
+   the permanent universal schema. Coaches shape the tool from a parameter
+   library; confirmed invariant: switching template variants must preserve all
+   client data. The workbook remains authoritative for the fields it actually
+   documents; see `docs/product-alignment-blueprint.md`.
 3. **Layouts per form factor.** ~~Reproduce the sheet layouts and information architecture faithfully in
    the web UI; do not independently redesign them.~~ **SUPERSEDED (2026-09-30):**
    the sheets remain the source of data, workflow, relationships, and information
