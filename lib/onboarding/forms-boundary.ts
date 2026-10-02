@@ -1,7 +1,18 @@
 import type { PrismaClient } from "@prisma/client";
 
-import type { SessionLike } from "../auth/guard";
-import { FORM_LIMITS, type FormDefinition, type FormSummary } from "./forms";
+import { prisma as defaultPrisma } from "../db";
+import { AccessDeniedError, type SessionLike } from "../auth/guard";
+import {
+  FORM_LIMITS,
+  OnboardingFormError,
+  archiveOnboardingForm,
+  createOnboardingForm,
+  openOnboardingDraft,
+  publishOnboardingForm,
+  saveOnboardingFormDraft,
+  type FormDefinition,
+  type FormSummary,
+} from "./forms";
 
 /**
  * P-008 server boundary — the ONLY app-facing entry to onboarding form
@@ -21,6 +32,27 @@ export type BoundaryDeps = { db?: PrismaClient };
 
 // Pinned safe-message contract — exact strings, never codes/internals.
 const INVALID_INPUT = "Check the form details and try again.";
+const GENERIC_ERROR = "Something went wrong. Please try again in a moment.";
+const DENIED_ERROR = "You don't have access to do that.";
+
+const ERROR_MESSAGES: Record<string, string> = {
+  invalid_input: INVALID_INPUT,
+  forbidden_field_id: INVALID_INPUT,
+  stale_revision:
+    "This form changed while you were editing. Reload and try again.",
+  form_archived: "This form is archived.",
+  no_open_draft: "There's no open draft. Reopen the draft to edit.",
+  publish_incomplete: "A publish needs at least one field.",
+  serialization_conflict: "A conflict occurred. Please try again.",
+  form_not_accessible: DENIED_ERROR,
+};
+
+function mapError(error: unknown): { ok: false; message: string } {
+  if (error instanceof AccessDeniedError) return fail(DENIED_ERROR);
+  if (error instanceof OnboardingFormError)
+    return fail(ERROR_MESSAGES[error.code] ?? GENERIC_ERROR);
+  return fail(GENERIC_ERROR);
+}
 
 // Contract-derived bounds: draftJson is UTF-8 byte-bounded BEFORE parse
 // (normalized 64KiB service bound + transport headroom); IDs ≤128 chars;
@@ -74,10 +106,6 @@ function parseDraftJson(draftJson: unknown): unknown | null {
   }
 }
 
-function notImplemented(): never {
-  throw new Error("not implemented (slice 5A increment)");
-}
-
 export async function saveDraftFromAction(
   _session: SessionLike,
   _input: {
@@ -102,8 +130,16 @@ export async function saveDraftFromAction(
     draft === null
   )
     return fail(INVALID_INPUT);
-  void { workspaceId, formId, expectedRevision, draft, name };
-  return notImplemented();
+  try {
+    const value = await saveOnboardingFormDraft(
+      _session,
+      { workspaceId, formId, expectedRevision, draft, name },
+      _deps.db ?? defaultPrisma,
+    );
+    return { ok: true, value };
+  } catch (e) {
+    return mapError(e);
+  }
 }
 
 export async function openDraftFromAction(
@@ -114,8 +150,16 @@ export async function openDraftFromAction(
   const workspaceId = boundedId(_input.workspaceId);
   const formId = boundedId(_input.formId);
   if (!workspaceId || !formId) return fail(INVALID_INPUT);
-  void { workspaceId, formId };
-  return notImplemented();
+  try {
+    const value = await openOnboardingDraft(
+      _session,
+      { workspaceId, formId },
+      _deps.db ?? defaultPrisma,
+    );
+    return { ok: true, value };
+  } catch (e) {
+    return mapError(e);
+  }
 }
 
 export async function publishFromAction(
@@ -128,8 +172,16 @@ export async function publishFromAction(
   const expectedRevision = boundedRevision(_input.expectedRevision);
   if (!workspaceId || !formId || expectedRevision === null)
     return fail(INVALID_INPUT);
-  void { workspaceId, formId, expectedRevision };
-  return notImplemented();
+  try {
+    const value = await publishOnboardingForm(
+      _session,
+      { workspaceId, formId, expectedRevision },
+      _deps.db ?? defaultPrisma,
+    );
+    return { ok: true, value };
+  } catch (e) {
+    return mapError(e);
+  }
 }
 
 export async function archiveFormFromAction(
@@ -140,8 +192,16 @@ export async function archiveFormFromAction(
   const workspaceId = boundedId(_input.workspaceId);
   const formId = boundedId(_input.formId);
   if (!workspaceId || !formId) return fail(INVALID_INPUT);
-  void { workspaceId, formId };
-  return notImplemented();
+  try {
+    const value = await archiveOnboardingForm(
+      _session,
+      { workspaceId, formId },
+      _deps.db ?? defaultPrisma,
+    );
+    return { ok: true, value };
+  } catch (e) {
+    return mapError(e);
+  }
 }
 
 export async function createFormFromAction(
@@ -153,8 +213,16 @@ export async function createFormFromAction(
   const name = boundedName(_input.name);
   if (!workspaceId || name === null || name === undefined)
     return fail(INVALID_INPUT);
-  void { workspaceId, name };
-  return notImplemented();
+  try {
+    const value = await createOnboardingForm(
+      _session,
+      { workspaceId, name },
+      _deps.db ?? defaultPrisma,
+    );
+    return { ok: true, value };
+  } catch (e) {
+    return mapError(e);
+  }
 }
 
 export async function listFormsForWorkspace(
