@@ -300,4 +300,17 @@ describe("P-008 actions — delegation contract", () => {
     expect(mockedRevalidate).not.toHaveBeenCalled();
     expect(consoleSpy).not.toHaveBeenCalled();
   });
+  it("bounds draftJson BYTES not chars — multibyte under char-limit still rejects", async () => {
+    const actions = await import(actionsPath);
+    mockedAuth.mockResolvedValue({ user: { id: "u1" } });
+    const spy = vi.spyOn(boundary, "saveDraftFromAction");
+    // ~40k × 4-byte chars: char .length < 128KiB but UTF-8 bytes ~160KiB.
+    const heavy = JSON.stringify({ title: "🔥".repeat(40_000), fields: [] });
+    const res = await actions.saveDraft(
+      "w1",
+      fd({ formId: "f1", expectedRevision: "1", draftJson: heavy }),
+    );
+    expect(res).toEqual({ ok: false, message: INVALID });
+    expect(spy).not.toHaveBeenCalled();
+  });
 });
