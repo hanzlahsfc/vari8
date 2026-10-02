@@ -44,6 +44,18 @@ const fail = (message: string): { ok: false; message: string } => ({
   message,
 });
 
+/** Well-formed UTF-16 — lone surrogates would make encodeURIComponent throw
+ * URIError during canonical path building, so malformed strings are rejected
+ * as INVALID at input binding. */
+function isWellFormedString(v: string): boolean {
+  try {
+    encodeURIComponent(v);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Exactly one string value; File/duplicate/missing/oversized → null. */
 function singleString(
   formData: FormData,
@@ -54,7 +66,7 @@ function singleString(
   if (all.length !== 1) return null;
   const v = all[0];
   if (typeof v !== "string" || v.length === 0 || v.length > maxLen) return null;
-  return v;
+  return isWellFormedString(v) ? v : null;
 }
 
 /** singleString variant bound on UTF-8 BYTES — the boundary's bound is
@@ -83,7 +95,8 @@ function strictRevision(formData: FormData): number | null {
 function boundedArg(value: unknown): string | null {
   return typeof value === "string" &&
     value.length > 0 &&
-    value.length <= MAX_ID_LEN
+    value.length <= MAX_ID_LEN &&
+    isWellFormedString(value)
     ? value
     : null;
 }

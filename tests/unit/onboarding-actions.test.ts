@@ -484,10 +484,15 @@ describe("P-008 actions — independent delegation per action", () => {
     mockedAuth.mockResolvedValue({ user: { id: "u1" } });
     const spy = vi.spyOn(boundary, "archiveFormFromAction");
     // Unpaired surrogates make encodeURIComponent throw URIError — the typed
-    // contract requires INVALID before any path construction.
+    // contract requires INVALID before any path construction. FormData.get
+    // normalizes lone surrogates to U+FFFD, so the surrogate vector exists
+    // ONLY through the caller-bound string argument.
     const res = await actions.archiveForm("\ud800", fd({ formId: "f1" }));
     expect(res).toEqual({ ok: false, message: INVALID });
-    const res2 = await actions.archiveForm("w1", fd({ formId: "f\udfff" }));
+    const res2 = await actions.saveDraft(
+      "\ud800w",
+      fd({ formId: "f1", expectedRevision: "1", draftJson: "{}" }),
+    );
     expect(res2).toEqual({ ok: false, message: INVALID });
     expect(spy).not.toHaveBeenCalled();
     expect(mockedRevalidate).not.toHaveBeenCalled();
