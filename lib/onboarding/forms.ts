@@ -531,11 +531,66 @@ export async function publishOnboardingForm(
 }
 
 export async function openOnboardingDraft(
-  _session: SessionLike,
-  _input: { workspaceId: string; formId: string },
-  _client?: PrismaClient,
+  session: SessionLike,
+  input: { workspaceId: string; formId: string },
+  client?: PrismaClient,
 ): Promise<{ revision: number; definition: FormDefinition }> {
-  throw new Error("not implemented (later slices)");
+  const db = client ?? defaultPrisma;
+  const ctx = await authorize(
+    session,
+    {
+      resource: "onboardingFormTemplates",
+      action: "write",
+      workspaceId: input.workspaceId,
+    },
+    createPrismaAuthorizationRepo(db),
+  );
+  const workspaceId = ctx.workspaceId as string;
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const form = await lockForm(tx, workspaceId, input.formId);
+        if (!form) throw new OnboardingFormError("form_not_accessible");
+        if (form.status === "ARCHIVED")
+          throw new OnboardingFormError("form_archived");
+        // Replay: an already-open draft is returned unchanged — no revision
+        // bump, no audit write.
+        if (form.draft !== null) {
+          return {
+            revision: form.draft_revision,
+            definition: form.draft as FormDefinition,
+          };
+        }
+        // Closed draft: seed from the LATEST published version — the frozen
+        // snapshot, title + field/option IDs retained.
+        const latest = await tx.onboardingFormVersion.findFirst({
+          where: { formId: form.id },
+          orderBy: { versionSeq: "desc" },
+        });
+        const seeded = (latest?.definition as FormDefinition | undefined) ?? {
+          title: form.name,
+          fields: [],
+        };
+        const nextRevision = form.draft_revision + 1;
+        await tx.onboardingForm.update({
+          where: { id: form.id },
+          data: {
+            draft: seeded as unknown as Prisma.InputJsonValue,
+            draftRevision: nextRevision,
+            draftSavedByMemberId: ctx.workspaceMemberId as string,
+            draftUpdatedAt: new Date(),
+          },
+        });
+        await writeAuditEvent(tx, ctx, {
+          action: "UPDATE",
+          resourceType: "onboarding_form",
+          resourceId: form.id,
+        });
+        return { revision: nextRevision, definition: seeded };
+      },
+      { isolationLevel: "Serializable" },
+    ),
+  );
 }
 
 export async function archiveOnboardingForm(
