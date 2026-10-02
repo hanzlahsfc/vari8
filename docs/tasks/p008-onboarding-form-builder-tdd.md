@@ -4,7 +4,7 @@
 - **Branch:** `feature/p008-onboarding-form-builder-tdd`
 - **Worktree:** `../repo-p008-tdd`
 - **Base:** `origin/main` `5036796309381732e73c650c783cd0b3d1b3c0ea`
-  (fetch-verified 2026-10-02T16:2xZ, no delta)
+  (fetch-verified 2026-10-02T16:13Z, no delta)
 - **Read-only reference:** `feature/p008-onboarding-form-builder` @
   `d10d7883e7cebab25d433fa2ee1c6a475847c2cd` — preserved unchanged; consulted
   for contracts/regressions only, production code is never transplanted.
@@ -50,21 +50,35 @@ tests-only with provenance noted (see headers in the test files).
 
 implementation → GREEN, logs captured outside Git)
 
-| Slice | Production scope                                                                                                                                                                      | Governing tests (already committed)                                                                                                 |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| 0     | none — tests-only commit + RED capture                                                                                                                                                | all below                                                                                                                           |
-| 1     | `db/schema.prisma` models + migration; RBAC resource; `AuditMeta.status` + `ARCHIVED`; `lib/onboarding/forms.ts` **scaffold** exporting typed signatures that throw `not implemented` | `tests/unit/rbac.test.ts` matrix; `tests/integration/s1-a-identity.test.ts` table pin; suite RED becomes callable-boundary failures |
-| 2     | create/list/get + authorization wiring                                                                                                                                                | integration create/list/get/deny-matrix/x-workspace/revoked-reads                                                                   |
-| 3     | draft lifecycle: open/save/publish/archive + IDs/revision/concurrency/audit                                                                                                           | remaining integration tests                                                                                                         |
-| 4     | boundary module + server actions + routes/pages/editor/preview/nav                                                                                                                    | unit onboarding-forms + source-policy; e2e authz + full lifecycle                                                                   |
-| 5     | final gates + evidence bundle                                                                                                                                                         | all                                                                                                                                 |
+Per-Apollo slice split (post-checkpoint audit correction): each production
+change gets its own committed-test RED on the exact tree first — no bundled
+slices, no `not implemented` scaffold release, no bulk transplant.
 
-Per-slice commands:
-`npx vitest run tests/unit/...`, `INTEGRATION_DATABASE_URL=<disposable> npx
-vitest run --config vitest.integration.config.ts tests/integration/...`,
-`DATABASE_URL=<disposable> npx playwright test tests/e2e/onboarding-forms.spec.ts`.
-Final: `format:check`, `lint`, `typecheck`, `test`, `test:integration`,
-`build`, `test:e2e` (+ reset 404 assertions under forged adapter env).
+| Slice | Production scope                                                         | Governing tests                                                                       |
+| ----- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| 0     | none — tests-only commit + RED capture                                   | all below                                                                             |
+| 1A    | `lib/auth/rbac.ts`: `RESOURCES` + matrix row only                        | direct per-role `resolveScope` test in `tests/unit/rbac.test.ts`                      |
+| 1B    | `db/schema.prisma` models + migration                                    | `tests/integration/s1-a-identity.test.ts` table-pin (tables absent → meaningful fail) |
+| 1C    | `lib/audit.ts`: `ARCHIVED` in status union + validator                   | direct failing meta assertion (committed before edit)                                 |
+| 1D    | `lib/onboarding/forms.ts`: types + `validateDefinition` only             | `tests/unit/onboarding-forms.test.ts` bounds/ID-trust describes                       |
+| 2     | create/list/get + authorization wiring                                   | integration create/list/get/deny/x-workspace/revoked-reads                            |
+| 3     | save/open + ID trust + revisions + `no_open_draft`                       | integration stable-IDs/no-open-draft/retired-IDs tests                                |
+| 4     | publish immutability/idempotency + archive + serialized concurrency      | integration publish/immutable/race/archive tests                                      |
+| 5     | `forms-boundary.ts` + server actions + routes/pages/editor/preview + nav | unit boundary/seam; e2e spec                                                          |
+| 6     | final gates + evidence bundle                                            | all                                                                                   |
+
+Exact commands (run from the worktree root):
+
+- `npx vitest run tests/unit/rbac.test.ts`
+- `npx vitest run tests/unit/onboarding-forms.test.ts`
+- `npx vitest run tests/unit/audit.test.ts tests/unit/guard.test.ts`
+- `INTEGRATION_DATABASE_URL="postgresql://app:app_dev_password@127.0.0.1:5445/p8_int?schema=public" npx vitest run --config vitest.integration.config.ts tests/integration/p008-onboarding-forms.test.ts`
+- `DATABASE_URL="postgresql://app:app_dev_password@127.0.0.1:5445/p8_e2e?schema=public" npx playwright test tests/e2e/onboarding-forms.spec.ts`
+
+Final gates: `npm run format:check`, `npm run lint`, `npm run typecheck`,
+`npm run test`, `INTEGRATION_DATABASE_URL=… npm run test:integration`,
+`npm run build`, `DATABASE_URL=… npm run test:e2e` (+ the reset-404 spec
+under `PASSWORD_RESET_DELIVERY_ADAPTER=resend`).
 
 ## Evidence
 

@@ -227,6 +227,28 @@ describe("RBAC matrix", () => {
     }
   });
 
+  it("onboardingFormTemplates: direct per-role resolveScope cells (P-008)", () => {
+    // Direct per-role assertions against the live boundary — not just matrix
+    // shape. Owner decision #29: owner + ACTIVE coach read AND write at
+    // workspace scope; assistant/support/client/platform denied outright.
+    const expected: Record<PrincipalRole, Cell> = {
+      PLATFORM_ADMIN: ["denied", "denied"],
+      WORKSPACE_OWNER: ["workspace", "workspace"],
+      COACH: ["workspace", "workspace"],
+      ASSISTANT_COACH: ["denied", "denied"],
+      SUPPORT: ["denied", "denied"],
+      CLIENT: ["denied", "denied"],
+    };
+    for (const role of PRINCIPAL_ROLES) {
+      expect(resolveScope("onboardingFormTemplates", "read", role)).toBe(
+        expected[role][0],
+      );
+      expect(resolveScope("onboardingFormTemplates", "write", role)).toBe(
+        expected[role][1],
+      );
+    }
+  });
+
   it("fails closed for unknown resource/action/role", () => {
     expect(resolveScope("nope" as Resource, "read", "COACH")).toBeUndefined();
     expect(
