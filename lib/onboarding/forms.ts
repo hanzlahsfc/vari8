@@ -9,7 +9,7 @@
  * their lifecycle slices land.
  */
 
-import type { PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { prisma as defaultPrisma } from "../db";
 import { authorize, type SessionLike } from "../auth/guard";
@@ -23,7 +23,8 @@ export type OnboardingFormErrorCode =
   | "no_open_draft"
   | "stale_revision"
   | "forbidden_field_id"
-  | "publish_incomplete";
+  | "publish_incomplete"
+  | "serialization_conflict";
 
 export class OnboardingFormError extends Error {
   constructor(readonly code: OnboardingFormErrorCode) {
@@ -376,18 +377,149 @@ export async function getOnboardingForm(
   };
 }
 
+// ── Concurrency protocol (save/open) ────────────────────────────────────────
+// Serializable transactions + a workspace-scoped SELECT ... FOR UPDATE row
+// lock; genuine serialization failures (P2034, P2010 carrying 40001/40P01)
+// retry a bounded number of times, everything else propagates unchanged.
+
+const RAW_SERIALIZATION_SQLSTATES = new Set(["40001", "40P01"]);
+const MAX_ATTEMPTS = 8;
+const BACKOFF_BASE_MS = 10;
+const BACKOFF_CAP_MS = 50;
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+function isRetryableSerialization(error: unknown): boolean {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
+  if (error.code === "P2034") return true;
+  if (error.code === "P2010") {
+    const meta = error.meta as { code?: unknown } | undefined;
+    return (
+      typeof meta?.code === "string" &&
+      RAW_SERIALIZATION_SQLSTATES.has(meta.code)
+    );
+  }
+  return false;
+}
+
+async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
+  let attempt = 0;
+  for (;;) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (isRetryableSerialization(error) && ++attempt < MAX_ATTEMPTS) {
+        await sleep(Math.min(BACKOFF_BASE_MS * attempt, BACKOFF_CAP_MS));
+        continue;
+      }
+      if (isRetryableSerialization(error))
+        throw new OnboardingFormError("serialization_conflict");
+      throw error;
+    }
+  }
+}
+
+type LockedFormRow = {
+  id: string;
+  workspace_id: string;
+  name: string;
+  status: string;
+  draft: unknown;
+  draft_revision: number;
+};
+
+/** Row lock scoped to BOTH formId and workspaceId — never a foreign row. */
+async function lockForm(
+  tx: Prisma.TransactionClient,
+  workspaceId: string,
+  formId: string,
+): Promise<LockedFormRow | null> {
+  const rows = await tx.$queryRawUnsafe<LockedFormRow[]>(
+    `SELECT id, workspace_id, name, status, draft, draft_revision
+     FROM "onboarding_form" WHERE id = $1 AND workspace_id = $2 FOR UPDATE`,
+    formId,
+    workspaceId,
+  );
+  return rows[0] ?? null;
+}
+
+/** The CURRENT draft's live IDs — the only trusted set (no version history). */
+function knownIdsFrom(draft: unknown): {
+  fieldIds: Map<string, FieldKind>;
+  optionIds: Map<string, string>;
+} {
+  const fieldIds = new Map<string, FieldKind>();
+  const optionIds = new Map<string, string>();
+  const d = draft as FormDefinition | null;
+  for (const f of d?.fields ?? []) {
+    fieldIds.set(f.fieldId, f.kind);
+    for (const o of f.options ?? []) optionIds.set(o.optionId, f.fieldId);
+  }
+  return { fieldIds, optionIds };
+}
+
 export async function saveOnboardingFormDraft(
-  _session: SessionLike,
-  _input: {
+  session: SessionLike,
+  input: {
     workspaceId: string;
     formId: string;
     expectedRevision: number;
     draft: unknown;
     name?: string;
   },
-  _client?: PrismaClient,
+  client?: PrismaClient,
 ): Promise<{ revision: number; definition: FormDefinition }> {
-  throw new Error("not implemented (later slices)");
+  const db = client ?? defaultPrisma;
+  const ctx = await authorize(
+    session,
+    {
+      resource: "onboardingFormTemplates",
+      action: "write",
+      workspaceId: input.workspaceId,
+    },
+    createPrismaAuthorizationRepo(db),
+  );
+  const name =
+    input.name === undefined
+      ? undefined
+      : cleanText(input.name, FORM_LIMITS.nameMax);
+  const workspaceId = ctx.workspaceId as string;
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const form = await lockForm(tx, workspaceId, input.formId);
+        if (!form) throw new OnboardingFormError("form_not_accessible");
+        if (form.status === "ARCHIVED")
+          throw new OnboardingFormError("form_archived");
+        if (form.draft === null) throw new OnboardingFormError("no_open_draft");
+        if (form.draft_revision !== input.expectedRevision)
+          throw new OnboardingFormError("stale_revision");
+        const definition = validateDefinition(
+          input.draft,
+          knownIdsFrom(form.draft),
+          { forPublish: false },
+        );
+        const nextRevision = form.draft_revision + 1;
+        await tx.onboardingForm.update({
+          where: { id: form.id },
+          data: {
+            draft: definition as unknown as Prisma.InputJsonValue,
+            draftRevision: nextRevision,
+            draftSavedByMemberId: ctx.workspaceMemberId as string,
+            draftUpdatedAt: new Date(),
+            ...(name === undefined ? {} : { name }),
+          },
+        });
+        await writeAuditEvent(tx, ctx, {
+          action: "UPDATE",
+          resourceType: "onboarding_form",
+          resourceId: form.id,
+        });
+        return { revision: nextRevision, definition };
+      },
+      { isolationLevel: "Serializable" },
+    ),
+  );
 }
 
 export async function publishOnboardingForm(
