@@ -126,3 +126,72 @@ Boundary rules (test-pinned):
 
 Increments: 5A-1 raw bound + JSON parse + ID/revision guards; 5A-2 mutation
 wrappers + error mapping; 5A-3 read wrappers.
+
+## Slice 5B — server actions only, plan v3 (Apollo 71b7d62e)
+
+Scope: `app/workspace/[workspaceId]/onboarding/actions.ts` (`"use server"`)
+ONLY. No pages, editor, nav, preview, or routes under 5B.
+
+### CSRF/Origin — pinned framework source (Next 15.5.25)
+
+`node_modules/next/dist/server/app-render/action-handler.js:397-430`:
+
+- `originDomain` from `Origin` header vs `parseHostHeader` (x-forwarded-host
+  preferred, else Host — `:322-340`).
+- Missing Origin → warning only, action proceeds (`:407-410`).
+- Mismatch with host present/absent → E80 "Invalid Server Actions request"
+  abort (`:418-430`) unless `serverActions.allowedOrigins` matches
+  (`isCsrfOriginAllowed`, `:415`).
+- `next.config.ts` sets NO `allowedOrigins`; no custom CSRF layer exists.
+  Consequence: framework rejects cross-ORIGIN actions; MISSING-origin requests
+  proceed and are gated by session+service authz. A production-HTTP
+  hostile-Origin zero-write check is REQUIRED at the later UI-mount slice
+  (recorded as a gate, not optional).
+
+### Definite action contract
+
+```ts
+type OnboardingActionResult<T> =
+  { ok: true; value: T } | { ok: false; message: string };
+```
+
+Every mutation returns this union — NO `redirect()`/`forbidden()` inside
+actions. `revalidatePath` runs ONLY after `{ ok: true }`. `deps` is never
+accepted as action input — wrappers use the default client; the injected-db
+seam remains internal/test-only.
+
+### Actions (all `auth()` first; missing session → `DENIED` before service)
+
+- `createForm(formData)` → `{formId}`; `name` single string ≤ 120.
+- `saveDraft(formData)` → `{revision, definition}`; `formId`,
+  `expectedRevision`, `draftJson`, optional `name`.
+- `publishForm(formData)` → `{versionSeq}`; `formId`, `expectedRevision`.
+- `archiveForm(formData)` → `{formId}`; `formId`.
+- `openDraft(formData)` → `{revision, definition}`; `formId`.
+
+Input rules: `singleString(fd, key, max)` uses `fd.getAll(key)` — rejects
+duplicates, `File`, missing, empty, oversized. `expectedRevision` requires
+`/^[0-9]+$/` → `Number()` → `Number.isSafeInteger` and `<= 2147483647`
+(Int column). No `parseInt` coercion; no coercion of non-decimals.
+`draftJson` passes to the boundary as raw string — the byte bound stays
+there. Workspace scope comes from the ROUTE param `workspaceId` bound
+server-side by the caller — never trusted as a form field.
+Service remains the final membership/role/workspace authority.
+
+### Test list (before impl)
+
+Unit (labeled auth mock — `vi.mock("@/auth")` + boundary spies):
+missing session → `{ok:false,DENIED}` + zero service calls; File/duplicate/
+missing/oversized fields → INVALID without delegation; revision `'abc'`,
+`'2.5'`, `'1e3'`, `''`, `9999999999999999` → INVALID; success forwards exact
+raw strings + returns `ok`; `revalidatePath` called only on ok; no payload
+in logs.
+
+Integration (seeded fixtures, real service via boundary): owner create/
+save/publish/archive happy paths through real action functions;
+cross-workspace formId denied; post-demotion actor denied; failures write
+zero rows (version/audit counts unchanged).
+
+Callable scaffold RED checkpoint: signatures + untyped throws committed
+separately, RED on clean committed tree, then increments — 5B-1 input
+validation, 5B-2 delegation+revalidate.
