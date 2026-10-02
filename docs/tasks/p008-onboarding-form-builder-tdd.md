@@ -216,7 +216,7 @@ openDraft(workspaceId: string, formData: FormData)
 - Optional `name`: absent → `undefined`; present → strict string bound, then
   service normalization decides blank handling. Actions don't pre-bless.
 
-## Slice 5C — UI plan (docs-only draft, Apollo 78c5380c — no impl until audit)
+## Slice 5C — UI plan v2 (expanded, Apollo 3b0ce3aa — no impl until audit)
 
 Canonical routes (matching the 5B actions):
 
@@ -224,26 +224,92 @@ Canonical routes (matching the 5B actions):
 - `app/workspace/[workspaceId]/onboarding/forms/new/page.tsx` — create
 - `app/workspace/[workspaceId]/onboarding/forms/[formId]/page.tsx` — editor
 - `app/workspace/[workspaceId]/onboarding/forms/[formId]/preview/page.tsx`
-  — preview (`?src=draft|version`)
-- WorkspaceNav entry gated by the same `onboardingFormTemplates` read scope.
+  — preview (`?src=draft` | `?src=version`)
+- `WorkspaceNav` entry gated by the same `onboardingFormTemplates` read scope.
 
-Reads use server-only boundary wrappers (`getFormForWorkspace`,
-`listFormsForWorkspace`) inside server components — never service/Prisma.
-Editor is a client component bound to the server-normalized definition:
-server-minted field/option IDs, `draftRevision`, dirty-tracking, pending-
-disabled controls (all mutating controls in `fieldset[disabled]` while a
-mutation is in flight — r2 fix), dirty-gated publish, contextual preview
-links (draft vs latest version).
+### Authorization contract (resource-specific, per page)
 
-Increments (each: committed behavioral/browser RED → bounded impl):
+The parent workspace layout check is INSUFFICIENT — each of list/new/detail/
+preview performs its OWN boundary call (`listFormsForWorkspace` /
+`getFormForWorkspace`) with the current session so owner + ACTIVE coach
+reach the page and ASSISTANT_COACH / CLIENT / SUPPORT / PLATFORM_ADMIN /
+nonmember receive the repo-standard 403 (`forbidden()`) and revoked or
+inactive users/members are denied immediately with no cached authority.
+Cross-workspace formId and nonexistent formId are indistinguishable (403 —
+non-disclosure, consistent with the boundary's cross-workspace=missing
+contract); malformed workspace/form segments fail before any read.
+Unauthenticated deep links redirect to /login via `requireSessionUser`.
+The nav entry is rendered only when the server-computed current scope
+permits (NOT cosmetic hiding — the pages still re-check on every request).
 
-- 5C-1 list + create page + nav entry (denied roles → 403 via layout guard)
-- 5C-2 editor: fields/options add/remove/reorder, save, open-reopen seeding
-- 5C-3 publish + archive flows, version list, archive banner
-- 5C-4 preview pages (src=draft/version), all controls disabled, zero
-  mutating requests, storage/DB delta zero
+### Pinned test/selector contract
 
-Browser gates per increment: full lifecycle at 1440/834/390, keyboard flow,
-production HTTP hostile-Origin + revoked-session zero-write checks (the
-framework-allowed missing-Origin case included in security review).
-Scope: no submissions, client workflow, or retention decisions.
+Old testids are retained as the test contract (no production transplant):
+`onboarding-forms-table`, `onboarding-new-form-button`, `onboarding-name-
+input`, `onboarding-create-submit`, `onboarding-editor`, `onboarding-
+publish`, `onboarding-archive`, `onboarding-version-link`, `onboarding-
+preview-*`. Accessible roles/names preferred for user-facing elements.
+
+### List page
+
+- Renders forms with name, status (DRAFT-only / has versions / ARCHIVED
+  badge), latest version number, updated timestamp.
+- Empty state with a single primary "New form" action.
+- Status badges distinct for draft-only, published, archived; archived rows
+  visibly marked and open the read-only editor view.
+
+### Create page
+
+- Name field bound to the `createForm` action (FormData `name` only —
+  workspaceId is a bound first arg, never a form field).
+- Exact safe validation result surfaced (`{ ok:false, message }` — no
+  inline server detail leak).
+- Submit control + name input disabled while the action is pending
+  (double-submit-safe); on `{ ok:true }` → `router.push` to the new
+  form's editor route.
+- No anonymous or client-facing intake surface exists.
+
+### Editor state machine (5C-2+)
+
+- Server-normalized definition + `draftRevision` arrive as revalidated
+  props; client edits update local state and set `dirtyRef` — prop identity
+  changes re-seed only when NOT dirty (no refresh clobber of in-flight
+  edits).
+- ALL editing + mutating controls inside `fieldset[disabled]` while any
+  action is pending.
+- Save requires dirty + revision; publish requires dirty AND revision and
+  is disabled while dirty=false per contract... publish enabled only when
+  the draft is saved-current (expectedRevision known); reopen seeds from
+  latest version and is idempotent.
+- Archived form: editor renders read-only (no save/publish/archive/open
+  controls); archived banner.
+- Publish history is immutable — version rows never editable.
+
+### Preview pages (5C-4)
+
+- `?src=draft` renders the current draft definition; `?src=version`
+  renders the latest published version — explicit and labeled.
+- All preview inputs disabled; the page issues ZERO mutating requests.
+- Snapshot: storage key→value pairs, draft JSON, draftRevision, version
+  count, audit-event count identical before/after viewing.
+
+### Browser gates (per increment, prospective RED)
+
+- Full lifecycle at 1440/834/390 (not width-sampled).
+- Keyboard/focus flow; no horizontal overflow on any populated page.
+- Production-mounted action HTTP checks: hostile-Origin, tampered bound
+  argument, and revoked-session zero-write. Missing-Origin behavior
+  observed and labeled (framework warns+proceeds); proxy trust assumptions
+  documented explicitly.
+
+### Increments
+
+- 5C-1 list + create + nav entry (per-page checks, denied matrix, deep
+  links, empty/draft/published/archived list states, pending-safe create)
+- 5C-2 editor: add/remove/reorder fields+options, save, reopen seeding,
+  dirty/pending state machine, archive read-only view
+- 5C-3 publish + archive flows + immutable version list
+- 5C-4 preview pages + zero-mutation/storage/DB delta proofs + HTTP
+  hostile-Origin/tamper/revoked-session checks
+
+Scope: no submissions, client workflow, retention decisions, or intake UI.

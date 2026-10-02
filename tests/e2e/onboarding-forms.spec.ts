@@ -60,13 +60,13 @@ const storageSnapshot = (page: Page) =>
   });
 
 test("unauthenticated deep link redirects to /login", async ({ page }) => {
-  await page.goto(`/workspace/${wsId}/onboarding-forms`);
+  await page.goto(`/workspace/${wsId}/onboarding/forms`);
   await expect(page).toHaveURL(/login/);
 });
 
 test("non-member gets HTTP 403 on the form library", async ({ page }) => {
   await signIn(page, E2E.nonmember);
-  const res = await page.goto(`/workspace/${wsId}/onboarding-forms`);
+  const res = await page.goto(`/workspace/${wsId}/onboarding/forms`);
   expect(res?.status()).toBe(403);
 });
 
@@ -74,8 +74,68 @@ test("client member is denied the staff form library and editor deep link", asyn
   page,
 }) => {
   await signIn(page, E2E.client);
-  const res = await page.goto(`/workspace/${wsId}/onboarding-forms`);
+  const res = await page.goto(`/workspace/${wsId}/onboarding/forms`);
   expect(res?.status()).toBe(403);
+});
+
+test("assistant coach and support are denied list AND new-page deep link", async ({
+  page,
+}) => {
+  for (const email of [E2E.assistant, E2E.support]) {
+    await signIn(page, email);
+    const res = await page.goto(`/workspace/${wsId}/onboarding/forms`);
+    expect(res?.status()).toBe(403);
+    const res2 = await page.goto(`/workspace/${wsId}/onboarding/forms/new`);
+    expect(res2?.status()).toBe(403);
+  }
+});
+
+test("nav gates the onboarding-forms entry by current server-side role", async ({
+  page,
+}) => {
+  await signIn(page, E2E.owner);
+  await page.goto(`/workspace/${wsId}`);
+  await expect(
+    page.locator(".shell__nav").getByText("Onboarding Forms"),
+  ).toBeVisible();
+  // Coach also sees it (read scope); a denied role does not.
+  await page.goto(`/logout`);
+  await signIn(page, E2E.assistant);
+  const res = await page.goto(`/workspace/${wsId}`);
+  if (res?.status() === 200) {
+    await expect(
+      page.locator(".shell__nav").getByText("Onboarding Forms"),
+    ).not.toBeVisible();
+  }
+});
+
+test("coach reaches the list and create page", async ({ page }) => {
+  await signIn(page, E2E.coach);
+  const res = await page.goto(`/workspace/${wsId}/onboarding/forms`);
+  expect(res?.status()).toBe(200);
+  await expect(page.getByTestId("new-onboarding-form")).toBeVisible();
+  const res2 = await page.goto(`/workspace/${wsId}/onboarding/forms/new`);
+  expect(res2?.status()).toBe(200);
+});
+
+test("empty list shows the empty state; create validates and disables while pending", async ({
+  page,
+}) => {
+  await signIn(page, E2E.owner);
+  await page.goto(`/workspace/${wsId}/onboarding/forms`);
+  await expect(page.getByTestId("onboarding-empty-state")).toBeVisible();
+  await page.getByTestId("new-onboarding-form").click();
+  await expect(page).toHaveURL(/onboarding\/forms\/new$/);
+  await page.getByTestId("onboarding-create-submit").click();
+  // Empty name → safe validation message, stays on /new, no navigation.
+  await expect(page).toHaveURL(/onboarding\/forms\/new$/);
+  await expect(page.getByRole("alert")).toBeVisible();
+  await page.getByTestId("onboarding-name-input").fill("E2E P8 5C1 Created");
+  const submit = page.getByTestId("onboarding-create-submit");
+  await submit.click();
+  // Control is pending-disabled while the action resolves (double-submit).
+  await expect(submit).toBeDisabled();
+  await expect(page).toHaveURL(/onboarding\/forms\/[A-Za-z0-9_-]+$/);
 });
 
 test("owner creates, edits, publishes, reopens, v2, and archives", async ({
@@ -87,7 +147,7 @@ test("owner creates, edits, publishes, reopens, v2, and archives", async ({
   });
 
   await signIn(page, E2E.owner);
-  await page.goto(`/workspace/${wsId}/onboarding-forms`);
+  await page.goto(`/workspace/${wsId}/onboarding/forms`);
   await page.getByTestId("new-onboarding-form").click();
   await page.getByTestId("form-name-input").fill("E2E P8 Intake");
   await page.getByRole("button", { name: "Create form" }).click();
@@ -178,7 +238,7 @@ test("owner creates, edits, publishes, reopens, v2, and archives", async ({
   ).toBe(versionsBefore);
 
   // Publish → immutable v1; editor flips to the closed-draft branch.
-  await page.goto(`/workspace/${wsId}/onboarding-forms/${form.id}`);
+  await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
   await page.getByTestId("publish-form").click();
   await expect
     .poll(async () =>
@@ -193,7 +253,7 @@ test("owner creates, edits, publishes, reopens, v2, and archives", async ({
   await expect(page.getByText("Your full name")).toBeVisible();
 
   // Reopen creates a draft seeded from v1; edit + publish → v2.
-  await page.goto(`/workspace/${wsId}/onboarding-forms/${form.id}`);
+  await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
   await page.getByTestId("open-draft").click();
   await expect(page.getByTestId("draft-editor")).toBeVisible();
   await expect(page.getByTestId("field-label-0")).toHaveValue("Your full name");
@@ -216,9 +276,9 @@ test("owner creates, edits, publishes, reopens, v2, and archives", async ({
     .toBe(2);
 
   // Archive → list shows ARCHIVED.
-  await page.goto(`/workspace/${wsId}/onboarding-forms/${form.id}`);
+  await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
   await page.getByTestId("archive-form").click();
-  await expect(page).toHaveURL(/onboarding-forms$/);
+  await expect(page).toHaveURL(/onboarding\/forms$/);
   await expect(
     page.getByTestId("onboarding-forms-table").getByText("ARCHIVED"),
   ).toBeVisible();
@@ -228,13 +288,13 @@ test("editor controls disable while a mutation is in flight (no mid-save clobber
   page,
 }) => {
   // Slow every server-action POST so the pending window is observable.
-  await page.route(/onboarding-forms/, async (route) => {
+  await page.route(/onboarding\/forms/, async (route) => {
     if (route.request().method() === "POST")
       await new Promise((r) => setTimeout(r, 900));
     await route.continue();
   });
   await signIn(page, E2E.owner);
-  await page.goto(`/workspace/${wsId}/onboarding-forms`);
+  await page.goto(`/workspace/${wsId}/onboarding/forms`);
   await page.getByTestId("new-onboarding-form").click();
   await page.getByTestId("form-name-input").fill("E2E P8 pending");
   await page.getByRole("button", { name: "Create form" }).click();
@@ -269,7 +329,7 @@ async function fullLifecycle(page: Page, tag: string, width: number) {
   });
 
   const name = `E2E P8 ${tag} ${Date.now()}`;
-  await page.goto(`/workspace/${wsId}/onboarding-forms`);
+  await page.goto(`/workspace/${wsId}/onboarding/forms`);
   await page.getByTestId("new-onboarding-form").click();
   await page.getByTestId("form-name-input").fill(name);
   await page.getByRole("button", { name: "Create form" }).click();
@@ -433,7 +493,7 @@ async function fullLifecycle(page: Page, tag: string, width: number) {
 
   // Publish v1 → draft preview of a CHANGED draft still shows the draft,
   // version preview still shows frozen v1.
-  await page.goto(`/workspace/${wsId}/onboarding-forms/${form.id}`);
+  await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
   await page.getByTestId("publish-form").click();
   await expect
     .poll(async () =>
@@ -450,7 +510,7 @@ async function fullLifecycle(page: Page, tag: string, width: number) {
   ).toBeLessThanOrEqual(width + 1);
 
   // Reopen, diverge from v1, save, publish v2.
-  await page.goto(`/workspace/${wsId}/onboarding-forms/${form.id}`);
+  await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
   await page.getByTestId("open-draft").click();
   await expect(page.getByTestId("draft-editor")).toBeVisible();
   await expect(page.getByTestId("field-label-0")).toHaveValue(`${tag} renamed`);
@@ -469,13 +529,13 @@ async function fullLifecycle(page: Page, tag: string, width: number) {
   await expect(page.getByTestId("preview-source")).toContainText("draft");
   await expect(page.getByText(`${tag} v2 label`)).toBeVisible();
   await page.goto(
-    `/workspace/${wsId}/onboarding-forms/${form.id}/preview?src=version`,
+    `/workspace/${wsId}/onboarding/forms/${form.id}/preview?src=version`,
   );
   await expect(page.getByTestId("preview-source")).toContainText("version 1");
   await expect(page.getByText(`${tag} renamed`)).toBeVisible();
   await expect(page.getByText(`${tag} v2 label`)).toBeHidden();
 
-  await page.goto(`/workspace/${wsId}/onboarding-forms/${form.id}`);
+  await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
   await page.getByTestId("publish-form").click();
   await expect
     .poll(async () =>
@@ -483,7 +543,7 @@ async function fullLifecycle(page: Page, tag: string, width: number) {
     )
     .toBe(2);
   await page.getByTestId("archive-form").click();
-  await expect(page).toHaveURL(/onboarding-forms$/);
+  await expect(page).toHaveURL(/onboarding\/forms$/);
 
   // No horizontal overflow on the archived library at this width.
   const scrollWidth = await page.evaluate(
