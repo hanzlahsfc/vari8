@@ -4,6 +4,28 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. This repo covers Phases 1–12 (foundation + spreadsheet-source
 extraction) only, not the workbook UI itself.
 
+## 2026-10-02 — P-006 product-alignment blueprint (documentation only)
+
+- Authored `docs/product-alignment-blueprint.md` from Lilly's "Core coaching
+  system" brief (1 Oct 2026 handoff): configurable-template domain model,
+  template/version/variant lifecycle, parameter library, onboarding
+  reconciliation with invite-first identity, permissions mapping onto the
+  existing matrix, six-tab workflows, calculation governance, revised
+  dependency roadmap (keep/adapt/defer/supersede), synthetic acceptance
+  scenarios, and a full traceability matrix for brief IDs
+  W01–W11/D01–D05/T01–T04/R01–R04/N01–N08/P01–P08/C01–C07/M01–M05 + habits.
+- The blueprint **supersedes the Phase 0.1 universal-schema assumption only**:
+  PRGRSS 2.0 becomes one source-backed starter configuration; the Phase 0.1
+  record is preserved unchanged.
+- All unapproved owner decisions recorded as PROPOSED/PENDING (D-01…D-09) with
+  one recommended model each; no product name ("Nexus" excluded); wearables,
+  migration, export, specialist modules and formulas remain deferred/blocked.
+- Historical deviation recorded: PR #8 merged before its independent
+  different-model review completed; this gate miss is a process deviation and
+  is never retroactively satisfiable.
+- No code/schema/migration/route/UI change; gates not applicable (docs-only
+  diff). Branch `docs/p006-product-alignment-blueprint` off `main` `25994573`.
+
 ## 2026-10-01 — Phase 3.2 repair — reset routes fail closed until real delivery exists
 
 - Different-model security review found a P1: `/reset-request`, `/reset`, and

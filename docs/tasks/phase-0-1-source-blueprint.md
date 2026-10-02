@@ -1,5 +1,12 @@
 # Phase 0.1 — PRGRSS source blueprint & Daily Tracker specification
 
+> **Status note (2026-10-02):** this document is preserved as the authoritative
+> field-level record of the PRGRSS 2.0 sources. Its _universal-schema
+> assumption_ is superseded by `docs/product-alignment-blueprint.md` (P-006):
+> PRGRSS is now one source-backed starter configuration in a configurable
+> coaching system, not the fixed product schema. Everything else here —
+> evidence, crosswalk, unknowns — remains valid and unchanged.
+
 **Documentation and source analysis only — no application code, schema, migration,
 dependency, route, UI, or import change.** Builder: SWE-2 High. Branch
 `feature/phase-0-1-source-blueprint` off verified `main` `fc2c936`.
