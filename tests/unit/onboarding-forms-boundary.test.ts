@@ -124,6 +124,13 @@ describe("P-008 boundary — raw payload bound before parse", () => {
         { workspaceId: ws, formId: "f", expectedRevision: 1.5 },
         { workspaceId: ws, formId: "f", expectedRevision: -1 },
         { workspaceId: ws, formId: "f", expectedRevision: "2" },
+        {
+          workspaceId: ws,
+          formId: "f",
+          expectedRevision: Number.MAX_SAFE_INTEGER + 1,
+        },
+        { workspaceId: ws, formId: "f", expectedRevision: Infinity },
+        { workspaceId: ws, formId: "f", expectedRevision: NaN },
         { workspaceId: ws, formId: "f".repeat(5000), expectedRevision: 1 },
         { workspaceId: "w".repeat(5000), formId: "f", expectedRevision: 1 },
         {
