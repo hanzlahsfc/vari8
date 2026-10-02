@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { AccessDeniedError } from "../../lib/auth/guard";
 import * as accessModule from "../../lib/workspace/access";
-import { createOwnedDisposableDb, dropOwnedDb } from "./disposable-db";
+import { createOwnedDisposableDb } from "./disposable-db";
 import {
   archiveOnboardingForm,
   createOnboardingForm,
@@ -303,9 +303,8 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
         await rb.onboardingForm.count({ where: { workspaceId: w.id } }),
       ).toBe(0);
     } finally {
-      await rb.$disconnect();
-      // Cleanup only the DB this run created — nothing pre-existing.
-      await dropOwnedDb(url as string, owned.name);
+      // Capability-bound cleanup: disconnects and drops ONLY the owned name.
+      await owned.cleanup();
     }
   });
 

@@ -86,8 +86,9 @@ describe("disposable-db URL safety contract", () => {
   });
 
   it("asserts the derived URL can never equal the supplied database", () => {
+    // p8r_int is the base itself — rejected before any URL is produced.
     expect(() => disposableDbUrl(BASE, "p8r_int")).toThrowError(
-      /same|distinct/i,
+      /same|distinct|owned/i,
     );
   });
 
