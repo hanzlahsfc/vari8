@@ -14,7 +14,10 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 import { auth } from "../../auth";
 import type * as Actions from "../../app/workspace/[workspaceId]/onboarding/actions";
 
-const mockedAuth = vi.mocked(auth);
+const mockedAuth = auth as unknown as {
+  mockReset: () => void;
+  mockResolvedValue: (value: unknown) => void;
+};
 
 const url = process.env.INTEGRATION_DATABASE_URL;
 const enabled = typeof url === "string" && url.length > 0;

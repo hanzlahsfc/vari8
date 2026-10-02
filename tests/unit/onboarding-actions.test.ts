@@ -12,7 +12,10 @@ import { auth } from "../../auth";
 import { revalidatePath } from "next/cache";
 import * as boundary from "../../lib/onboarding/forms-boundary";
 
-const mockedAuth = vi.mocked(auth);
+const mockedAuth = auth as unknown as {
+  mockReset: () => void;
+  mockResolvedValue: (value: unknown) => void;
+};
 const mockedRevalidate = vi.mocked(revalidatePath);
 
 const DENIED = "You don't have access to do that.";
