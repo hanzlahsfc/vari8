@@ -3,15 +3,17 @@
  *
  * Contains the definition contract: types, limits, the closed kind union and
  * `validateDefinition` (shape/bounds + current-draft ID trust + publish
- * completeness). Persistence-backed service operations are exported further
- * down as callable stubs — they throw UNTYPED errors until their slices land;
- * no authz/DB/audit logic exists yet.
+ * completeness). Persistence: `listOnboardingForms`, `getOnboardingForm` and
+ * `createOnboardingForm` are implemented (slice 2); `save`, `publish`,
+ * `open` and `archive` remain callable stubs that throw UNTYPED errors until
+ * their lifecycle slices land.
  */
 
 import type { PrismaClient } from "@prisma/client";
 
 import { prisma as defaultPrisma } from "../db";
 import { authorize, type SessionLike } from "../auth/guard";
+import { createPrismaAuthorizationRepo } from "../workspace/access";
 import { writeAuditEvent } from "../audit";
 
 export type OnboardingFormErrorCode =
@@ -243,10 +245,10 @@ export function validateDefinition(
   return definition;
 }
 
-// ── Service-callable stubs (slice-2 scaffold) ──────────────────────────────
-// Real signatures so the committed integration suite resolves imports, but
-// each throws an UNTYPED error — no authorization, DB, or audit logic yet.
-// Each behavior lands in its own RED→GREEN increment.
+// ── Service operations ─────────────────────────────────────────────────────
+// list/get/create are authorized and backed by workspace-scoped queries; every
+// call re-authorizes through the guard using an auth repo bound to the
+// caller's client. save/open/publish/archive remain untyped-throw stubs.
 
 export async function listOnboardingForms(
   session: SessionLike,
@@ -256,11 +258,16 @@ export async function listOnboardingForms(
   const db = client ?? defaultPrisma;
   // Server-side reauthorization on every call — current user/membership/
   // workspace state is re-read by the guard; there is no cached grant.
-  const ctx = await authorize(session, {
-    resource: "onboardingFormTemplates",
-    action: "read",
-    workspaceId: input.workspaceId,
-  });
+  const ctx = await authorize(
+    session,
+    {
+      resource: "onboardingFormTemplates",
+      action: "read",
+      workspaceId: input.workspaceId,
+    },
+    // Auth reads share the caller's connection — never the global client.
+    createPrismaAuthorizationRepo(db),
+  );
   const rows = await db.onboardingForm.findMany({
     where: { workspaceId: ctx.workspaceId },
     select: {
@@ -296,14 +303,18 @@ export async function createOnboardingForm(
   client?: PrismaClient,
 ): Promise<{ formId: string }> {
   const db = client ?? defaultPrisma;
-  const ctx = await authorize(session, {
-    resource: "onboardingFormTemplates",
-    action: "write",
-    workspaceId: input.workspaceId,
-  });
+  const ctx = await authorize(
+    session,
+    {
+      resource: "onboardingFormTemplates",
+      action: "write",
+      workspaceId: input.workspaceId,
+    },
+    createPrismaAuthorizationRepo(db),
+  );
   const name = cleanText(input.name, FORM_LIMITS.nameMax);
-  // Form + audit event are one transaction — an audit failure rolls back the
-  // form row (atomicity regression: no orphan definitions).
+  // Form + audit event are one transaction — if the audit write fails the
+  // whole transaction rolls back and no form row survives.
   return db.$transaction(async (tx) => {
     const form = await tx.onboardingForm.create({
       data: {
@@ -312,6 +323,9 @@ export async function createOnboardingForm(
         createdByMemberId: ctx.workspaceMemberId as string,
         draft: { title: name, fields: [] },
         draftRevision: 1,
+        // Editor identity + time on the initial draft too.
+        draftSavedByMemberId: ctx.workspaceMemberId as string,
+        draftUpdatedAt: new Date(),
       },
       select: { id: true },
     });
@@ -330,11 +344,15 @@ export async function getOnboardingForm(
   client?: PrismaClient,
 ): Promise<FormDetail> {
   const db = client ?? defaultPrisma;
-  const ctx = await authorize(session, {
-    resource: "onboardingFormTemplates",
-    action: "read",
-    workspaceId: input.workspaceId,
-  });
+  const ctx = await authorize(
+    session,
+    {
+      resource: "onboardingFormTemplates",
+      action: "read",
+      workspaceId: input.workspaceId,
+    },
+    createPrismaAuthorizationRepo(db),
+  );
   // Workspace-scoped lookup: a formId outside this workspace is never
   // distinguishable from a missing one (typed not-found, no leakage).
   const form = await db.onboardingForm.findFirst({
