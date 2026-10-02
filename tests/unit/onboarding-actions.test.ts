@@ -15,6 +15,7 @@ import * as boundary from "../../lib/onboarding/forms-boundary";
 const mockedAuth = auth as unknown as {
   mockReset: () => void;
   mockResolvedValue: (value: unknown) => void;
+  mockRejectedValue: (value: unknown) => void;
 };
 const mockedRevalidate = vi.mocked(revalidatePath);
 
@@ -156,5 +157,142 @@ describe("P-008 actions — delegation contract", () => {
     );
     expect(res).toEqual({ ok: false, message: DENIED });
     expect(pub.mock.calls[0][1].workspaceId).toBe("ws_victim");
+  });
+  it("rejects File/duplicate/missing values on EVERY field of save/publish/archive/open", async () => {
+    const actions = await import(actionsPath);
+    mockedAuth.mockResolvedValue({ user: { id: "u1" } });
+    const saveSpy = vi.spyOn(boundary, "saveDraftFromAction");
+    const pubSpy = vi.spyOn(boundary, "publishFromAction");
+    const archSpy = vi.spyOn(boundary, "archiveFormFromAction");
+    const openSpy = vi.spyOn(boundary, "openDraftFromAction");
+
+    const file = new File(["x"], "f.txt");
+    const dup = (key: string) => {
+      const f = fd({ formId: "f1", expectedRevision: "1", draftJson: "{}" });
+      f.append(key, "extra");
+      return f;
+    };
+    const withField = (
+      key: string,
+      value: string | File,
+      extras: Record<string, string> = {},
+    ) => {
+      const f = fd({
+        formId: "f1",
+        expectedRevision: "1",
+        draftJson: "{}",
+        ...extras,
+      });
+      f.delete(key);
+      f.append(key, value);
+      return f;
+    };
+    const missing = (key: string) => {
+      const f = fd({
+        formId: "f1",
+        expectedRevision: "1",
+        draftJson: "{}",
+      });
+      f.delete(key);
+      return f;
+    };
+
+    // saveDraft touches formId + expectedRevision + draftJson + optional name
+    for (const bad of [
+      dup("formId"),
+      dup("expectedRevision"),
+      dup("draftJson"),
+      dup("name"),
+      withField("formId", file),
+      withField("expectedRevision", file),
+      withField("draftJson", file),
+      withField("name", file),
+      missing("formId"),
+      missing("expectedRevision"),
+      missing("draftJson"),
+    ]) {
+      expect(await actions.saveDraft("w1", bad)).toEqual({
+        ok: false,
+        message: INVALID,
+      });
+    }
+    // publish/archive/open only require formId (+ revision for publish)
+    expect(await actions.publishForm("w1", dup("formId"))).toEqual({
+      ok: false,
+      message: INVALID,
+    });
+    expect(await actions.publishForm("w1", missing("formId"))).toEqual({
+      ok: false,
+      message: INVALID,
+    });
+    expect(await actions.archiveForm("w1", withField("formId", file))).toEqual({
+      ok: false,
+      message: INVALID,
+    });
+    expect(await actions.openDraft("w1", missing("formId"))).toEqual({
+      ok: false,
+      message: INVALID,
+    });
+    for (const s of [saveSpy, pubSpy, archSpy, openSpy])
+      expect(s).not.toHaveBeenCalled();
+  });
+
+  it("untrusted workspaceId argument is validated before delegation", async () => {
+    const actions = await import(actionsPath);
+    mockedAuth.mockResolvedValue({ user: { id: "u1" } });
+    const spy = vi.spyOn(boundary, "createFormFromAction");
+    for (const bad of ["", "x".repeat(5000), 42, null, undefined] as const) {
+      const res = await actions.createForm(bad as never, fd({ name: "N" }));
+      expect(res).toEqual({ ok: false, message: INVALID });
+    }
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("optional name: absent forwards undefined; blank forwards to service policy", async () => {
+    const actions = await import(actionsPath);
+    mockedAuth.mockResolvedValue({ user: { id: "u1" } });
+    const spy = vi
+      .spyOn(boundary, "saveDraftFromAction")
+      .mockResolvedValue({ ok: false, message: INVALID });
+    const okPayload = fd({
+      formId: "f1",
+      expectedRevision: "1",
+      draftJson: "{}",
+    });
+    await actions.saveDraft("w1", okPayload);
+    expect(spy.mock.calls[0][1].name).toBeUndefined();
+    // Blank/whitespace name is FORWARDED — the service's cleanText policy
+    // rejects it (boundary mock returns INVALID here, as real service does).
+    const withBlank = fd({
+      formId: "f1",
+      expectedRevision: "1",
+      draftJson: "{}",
+      name: "   ",
+    });
+    const res = await actions.saveDraft("w1", withBlank);
+    expect(spy.mock.calls[1][1].name).toBe("   ");
+    expect(res).toEqual({ ok: false, message: INVALID });
+  });
+
+  it("auth() exception → generic safe failure, no boundary call, no payload log", async () => {
+    const actions = await import(actionsPath);
+    mockedAuth.mockRejectedValue(
+      new Error("session store exploded token=sekrit"),
+    );
+    const spy = vi.spyOn(boundary, "createFormFromAction");
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const res = await actions.createForm(
+      "w1",
+      fd({ name: "sensitive-draft-title" }),
+    );
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.message).toMatch(/went wrong|try again/i);
+      expect(res.message).not.toContain("sekrit");
+      expect(res.message).not.toContain("sensitive-draft-title");
+    }
+    expect(spy).not.toHaveBeenCalled();
+    expect(mockedRevalidate).not.toHaveBeenCalled();
+    expect(consoleSpy).not.toHaveBeenCalled();
   });
 });
