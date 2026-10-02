@@ -7,6 +7,8 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: {
     alias: {
+      // "@/*" tsconfig path — needed for tests importing app/* entrypoints.
+      "@": path.resolve(import.meta.dirname),
       // next-auth's index imports these Next server-only modules; stub them so
       // the real exported `auth()`/`handlers` pipeline runs under vitest.
       "next/headers": path.resolve(

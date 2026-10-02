@@ -168,7 +168,12 @@ describe("P-008 actions — delegation contract", () => {
 
     const file = new File(["x"], "f.txt");
     const dup = (key: string) => {
-      const f = fd({ formId: "f1", expectedRevision: "1", draftJson: "{}" });
+      const f = fd({
+        formId: "f1",
+        expectedRevision: "1",
+        draftJson: "{}",
+        name: "Base",
+      });
       f.append(key, "extra");
       return f;
     };
