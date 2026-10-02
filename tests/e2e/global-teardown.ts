@@ -29,6 +29,14 @@ export default async function globalTeardown(): Promise<void> {
     const workspaceIds = workspaces.map((w) => w.id);
     const userIds = users.map((u) => u.id);
 
+    // P-008: form versions/forms Restrict-reference members and workspaces —
+    // delete fixture-owned definitions before members/workspaces.
+    await prisma.onboardingFormVersion.deleteMany({
+      where: { form: { workspaceId: { in: workspaceIds } } },
+    });
+    await prisma.onboardingForm.deleteMany({
+      where: { workspaceId: { in: workspaceIds } },
+    });
     await prisma.workspaceMember.deleteMany({
       where: {
         OR: [
