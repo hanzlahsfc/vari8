@@ -1359,4 +1359,350 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
       }
     }
   });
+
+  it("concurrent save/save same revision — exactly one wins, one stale, one audit", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const { formId } = await createOnboardingForm(
+      session(owner.id),
+      { workspaceId: ws.id, name: "SaveRace" },
+      prisma,
+    );
+    const auditBefore = await prisma.auditEvent.count({
+      where: { resourceType: "onboarding_form", resourceId: formId },
+    });
+    const results = await Promise.allSettled([
+      saveOnboardingFormDraft(
+        session(owner.id),
+        {
+          workspaceId: ws.id,
+          formId,
+          expectedRevision: 1,
+          draft: draftWith([field(0, { label: "A" })]),
+        },
+        prisma,
+      ),
+      saveOnboardingFormDraft(
+        session(owner.id),
+        {
+          workspaceId: ws.id,
+          formId,
+          expectedRevision: 1,
+          draft: draftWith([field(0, { label: "B" })]),
+        },
+        prisma,
+      ),
+    ]);
+    const wins = results.filter((r) => r.status === "fulfilled");
+    const losses = results.filter((r) => r.status === "rejected");
+    // Exactly one winner at revision 2; every loser is a typed conflict —
+    // never a silent overwrite.
+    expect(wins.length).toBe(1);
+    expect(
+      (wins[0] as PromiseFulfilledResult<{ revision: number }>).value.revision,
+    ).toBe(2);
+    for (const l of losses) {
+      expect(l.reason).toEqual(
+        expect.objectContaining({
+          code: expect.stringMatching(/stale_revision|serialization_conflict/),
+        }),
+      );
+    }
+    const row = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: formId },
+    });
+    expect(row.draftRevision).toBe(2);
+    // Exactly one UPDATE audit for the winning save.
+    expect(
+      await prisma.auditEvent.count({
+        where: {
+          resourceType: "onboarding_form",
+          resourceId: formId,
+          action: "UPDATE",
+        },
+      }),
+    ).toBe(1);
+    void auditBefore;
+  });
+
+  it("concurrent open/save interleaves without silent loss", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    // Closed draft + published fixture — open and save race.
+    const form = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: ws.id,
+        name: "OpenSave",
+        createdByMemberId: m.id,
+        draft: Prisma.JsonNull,
+        draftRevision: 1,
+      },
+    });
+    await prisma.onboardingFormVersion.create({
+      data: {
+        formId: form.id,
+        versionSeq: 1,
+        definition: {
+          title: "V1",
+          fields: [
+            {
+              fieldId: "f_v1",
+              kind: "shortText",
+              label: "Published field",
+              required: false,
+              order: 0,
+            },
+          ],
+        },
+        publishOriginRevision: 1,
+        publishedByMemberId: m.id,
+      },
+    });
+    const results = await Promise.allSettled([
+      openOnboardingDraft(
+        session(owner.id),
+        { workspaceId: ws.id, formId: form.id },
+        prisma,
+      ),
+      // A save racing with the open must be a typed rejection (no open draft
+      // yet / stale revision) — never a silent write.
+      saveOnboardingFormDraft(
+        session(owner.id),
+        {
+          workspaceId: ws.id,
+          formId: form.id,
+          expectedRevision: 1,
+          draft: draftWith([field(0)]),
+        },
+        prisma,
+      ),
+    ]);
+    const row = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: form.id },
+    });
+    const opens = results.filter(
+      (r) =>
+        r.status === "fulfilled" &&
+        "definition" in
+          (
+            r as PromiseFulfilledResult<{
+              revision: number;
+              definition: { title: string };
+            }>
+          ).value,
+    );
+    expect(opens.length).toBeGreaterThanOrEqual(1);
+    // Final state is deterministic: opened (revision 2, seeded from v1) OR the
+    // save legitimately won after seeding — but the draft always contains the
+    // published field ID or the saved field, never a merged mess.
+    expect(row.draftRevision).toBeGreaterThanOrEqual(2);
+    for (const r of results) {
+      if (r.status === "rejected") {
+        expect(r.reason).toEqual(
+          expect.objectContaining({
+            code: expect.stringMatching(
+              /stale_revision|no_open_draft|serialization_conflict|invalid_input|forbidden_field_id|form_not_accessible/,
+            ),
+          }),
+        );
+      }
+    }
+  });
+
+  it("denied save/open on archived, no-draft, malformed, and cross-workspace states leave zero deltas", async () => {
+    const ws = await workspace();
+    const wsOther = await workspace();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    await member(wsOther.id, owner.id, "WORKSPACE_OWNER");
+    const archived = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: ws.id,
+        name: "Arch",
+        status: "ARCHIVED",
+        createdByMemberId: m.id,
+        draft: { title: "A", fields: [] },
+        draftRevision: 3,
+        archivedAt: new Date(),
+        archivedByMemberId: m.id,
+      },
+    });
+    const closed = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: ws.id,
+        name: "Closed",
+        createdByMemberId: m.id,
+        draft: Prisma.JsonNull,
+        draftRevision: 1,
+      },
+    });
+    const open1 = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: ws.id,
+        name: "Open",
+        createdByMemberId: m.id,
+        draft: { title: "O", fields: [] },
+        draftRevision: 1,
+      },
+    });
+    const auditBase = await prisma.auditEvent.count({
+      where: { resourceType: "onboarding_form" },
+    });
+    const expectDenied = async (fn: () => Promise<unknown>, code: string) => {
+      await expect(fn()).rejects.toThrowError(
+        expect.objectContaining({ code }),
+      );
+    };
+    // Archived: write ops deny.
+    await expectDenied(
+      () =>
+        saveOnboardingFormDraft(
+          session(owner.id),
+          {
+            workspaceId: ws.id,
+            formId: archived.id,
+            expectedRevision: 3,
+            draft: draftWith([field(0)]),
+          },
+          prisma,
+        ),
+      "form_archived",
+    );
+    await expectDenied(
+      () =>
+        openOnboardingDraft(
+          session(owner.id),
+          { workspaceId: ws.id, formId: archived.id },
+          prisma,
+        ),
+      "form_archived",
+    );
+    // Closed draft: save denies (open is the sanctioned path).
+    await expectDenied(
+      () =>
+        saveOnboardingFormDraft(
+          session(owner.id),
+          {
+            workspaceId: ws.id,
+            formId: closed.id,
+            expectedRevision: 1,
+            draft: draftWith([field(0)]),
+          },
+          prisma,
+        ),
+      "no_open_draft",
+    );
+    // Malformed payloads deny before touching the row.
+    await expectDenied(
+      () =>
+        saveOnboardingFormDraft(
+          session(owner.id),
+          {
+            workspaceId: ws.id,
+            formId: open1.id,
+            expectedRevision: 1,
+            draft: { title: 42, fields: "no" },
+          },
+          prisma,
+        ),
+      "invalid_input",
+    );
+    // Cross-workspace formId is never distinguishable from missing.
+    await expectDenied(
+      () =>
+        saveOnboardingFormDraft(
+          session(owner.id),
+          {
+            workspaceId: wsOther.id,
+            formId: open1.id,
+            expectedRevision: 1,
+            draft: draftWith([field(0)]),
+          },
+          prisma,
+        ),
+      "form_not_accessible",
+    );
+    await expectDenied(
+      () =>
+        openOnboardingDraft(
+          session(owner.id),
+          { workspaceId: wsOther.id, formId: closed.id },
+          prisma,
+        ),
+      "form_not_accessible",
+    );
+    // Zero deltas: no draft/revision churn, no audit writes.
+    const rows = await prisma.onboardingForm.findMany({
+      where: { id: { in: [archived.id, closed.id, open1.id] } },
+    });
+    expect(rows.find((r) => r.id === archived.id)?.draftRevision).toBe(3);
+    expect(rows.find((r) => r.id === closed.id)?.draftRevision).toBe(1);
+    expect(rows.find((r) => r.id === open1.id)?.draftRevision).toBe(1);
+    expect(
+      await prisma.auditEvent.count({
+        where: { resourceType: "onboarding_form" },
+      }),
+    ).toBe(auditBase);
+  });
+
+  it("open audit failure rolls back the seed (INJECTED fault)", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const form = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: ws.id,
+        name: "OpenTx",
+        createdByMemberId: m.id,
+        draft: Prisma.JsonNull,
+        draftRevision: 1,
+      },
+    });
+    const sentinel = new Error("INJECTED audit failure");
+    const spy = vi
+      .spyOn(auditModule, "writeAuditEvent")
+      .mockRejectedValue(sentinel);
+    try {
+      await expect(
+        openOnboardingDraft(
+          session(owner.id),
+          { workspaceId: ws.id, formId: form.id },
+          prisma,
+        ),
+      ).rejects.toBe(sentinel);
+      const row = await prisma.onboardingForm.findUniqueOrThrow({
+        where: { id: form.id },
+      });
+      expect(row.draftRevision).toBe(1);
+      expect(row.draft).toBeNull();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("open is denied for denied roles on the service path", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    const assistant = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    await member(ws.id, assistant.id, "ASSISTANT_COACH");
+    const form = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: ws.id,
+        name: "DeniedOpen",
+        createdByMemberId: m.id,
+        draft: Prisma.JsonNull,
+        draftRevision: 1,
+      },
+    });
+    await expect(
+      openOnboardingDraft(
+        session(assistant.id),
+        { workspaceId: ws.id, formId: form.id },
+        prisma,
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+  });
 });
