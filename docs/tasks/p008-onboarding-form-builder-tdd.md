@@ -244,11 +244,15 @@ permits (NOT cosmetic hiding — the pages still re-check on every request).
 
 ### Pinned test/selector contract
 
-Old testids are retained as the test contract (no production transplant):
-`onboarding-forms-table`, `onboarding-new-form-button`, `onboarding-name-
-input`, `onboarding-create-submit`, `onboarding-editor`, `onboarding-
-publish`, `onboarding-archive`, `onboarding-version-link`, `onboarding-
-preview-*`. Accessible roles/names preferred for user-facing elements.
+The existing spec's selector contract is authoritative (retained; no
+production transplant): `new-onboarding-form` (list CTA), `form-name-input`
+(create input), `Create form` role-button (create submit),
+`onboarding-forms-table`, `onboarding-empty-state`,
+`onboarding-form-editor`, `form-name`, `draft-editor`, `no-draft`,
+`save-draft`, `publish-form`, `archive-form`, `open-draft`,
+`add-field-*`, `add-option-*`, `field-label-*`, `field-options-*`,
+`onboarding-form-preview`, `preview-*`. Accessible roles/names preferred
+for user-facing elements.
 
 ### List page
 
@@ -277,10 +281,14 @@ preview-*`. Accessible roles/names preferred for user-facing elements.
   edits).
 - ALL editing + mutating controls inside `fieldset[disabled]` while any
   action is pending.
-- Save requires dirty + revision; publish requires dirty AND revision and
-  is disabled while dirty=false per contract... publish enabled only when
-  the draft is saved-current (expectedRevision known); reopen seeds from
-  latest version and is idempotent.
+- Save is enabled only while dirty=true and not pending; it carries the
+  current `expectedRevision`.
+- Publish requires an OPEN draft that is SAVED-CURRENT (dirty=false — the
+  latest draft state has been saved at a known `expectedRevision`), no
+  pending mutation, and the form not archived. dirty=true blocks publish.
+- Reopen is enabled only when no draft is open (closed/published or
+  archived-with-version history); it seeds the draft from the latest
+  published version and is idempotent.
 - Archived form: editor renders read-only (no save/publish/archive/open
   controls); archived banner.
 - Publish history is immutable — version rows never editable.

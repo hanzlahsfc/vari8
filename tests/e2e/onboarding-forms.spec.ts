@@ -70,12 +70,14 @@ test("non-member gets HTTP 403 on the form library", async ({ page }) => {
   expect(res?.status()).toBe(403);
 });
 
-test("client member is denied the staff form library and editor deep link", async ({
+test("client member is denied the list AND new-page deep link", async ({
   page,
 }) => {
   await signIn(page, E2E.client);
   const res = await page.goto(`/workspace/${wsId}/onboarding/forms`);
   expect(res?.status()).toBe(403);
+  const res2 = await page.goto(`/workspace/${wsId}/onboarding/forms/new`);
+  expect(res2?.status()).toBe(403);
 });
 
 test("assistant coach and support are denied list AND new-page deep link", async ({
@@ -109,34 +111,75 @@ test("nav gates the onboarding-forms entry by current server-side role", async (
   }
 });
 
-test("coach reaches the list and create page", async ({ page }) => {
-  await signIn(page, E2E.coach);
-  const res = await page.goto(`/workspace/${wsId}/onboarding/forms`);
-  expect(res?.status()).toBe(200);
-  await expect(page.getByTestId("new-onboarding-form")).toBeVisible();
-  const res2 = await page.goto(`/workspace/${wsId}/onboarding/forms/new`);
-  expect(res2?.status()).toBe(200);
-});
+for (const width of [1440, 834, 390] as const) {
+  test(`coach reaches the list and create page at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await signIn(page, E2E.coach);
+    const res = await page.goto(`/workspace/${wsId}/onboarding/forms`);
+    expect(res?.status()).toBe(200);
+    await expect(page.getByTestId("new-onboarding-form")).toBeVisible();
+    const res2 = await page.goto(`/workspace/${wsId}/onboarding/forms/new`);
+    expect(res2?.status()).toBe(200);
+    await expect(
+      page.getByRole("button", { name: "Create form" }),
+    ).toBeVisible();
+    // No horizontal overflow at this width.
+    const overflow = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth >
+        document.documentElement.clientWidth,
+    );
+    expect(overflow).toBe(false);
+    // Keyboard: name input reachable and focusable.
+    const input = page.getByTestId("form-name-input");
+    await input.focus();
+    await expect(input).toBeFocused();
+  });
+}
 
-test("empty list shows the empty state; create validates and disables while pending", async ({
-  page,
-}) => {
-  await signIn(page, E2E.owner);
-  await page.goto(`/workspace/${wsId}/onboarding/forms`);
-  await expect(page.getByTestId("onboarding-empty-state")).toBeVisible();
-  await page.getByTestId("new-onboarding-form").click();
-  await expect(page).toHaveURL(/onboarding\/forms\/new$/);
-  await page.getByTestId("onboarding-create-submit").click();
-  // Empty name → safe validation message, stays on /new, no navigation.
-  await expect(page).toHaveURL(/onboarding\/forms\/new$/);
-  await expect(page.getByRole("alert")).toBeVisible();
-  await page.getByTestId("onboarding-name-input").fill("E2E P8 5C1 Created");
-  const submit = page.getByTestId("onboarding-create-submit");
-  await submit.click();
-  // Control is pending-disabled while the action resolves (double-submit).
-  await expect(submit).toBeDisabled();
-  await expect(page).toHaveURL(/onboarding\/forms\/[A-Za-z0-9_-]+$/);
-});
+for (const width of [1440, 834, 390] as const) {
+  test(`empty list + controlled-pending create at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await signIn(page, E2E.owner);
+    await page.goto(`/workspace/${wsId}/onboarding/forms`);
+    await expect(page.getByTestId("onboarding-empty-state")).toBeVisible();
+    await page.getByTestId("new-onboarding-form").click();
+    await expect(page).toHaveURL(/onboarding\/forms\/new$/);
+    await page.getByRole("button", { name: "Create form" }).click();
+    // Empty name → safe validation message, stays on /new, no navigation.
+    await expect(page).toHaveURL(/onboarding\/forms\/new$/);
+    await expect(page.getByRole("alert")).toBeVisible();
+    await page.getByTestId("form-name-input").fill(`E2E P8 5C1 ${width}`);
+
+    // Deterministic pending: hold the action POST at the network layer so
+    // disabled-state assertions cannot race a fast server.
+    let release!: () => void;
+    const hold = new Promise<void>((r) => (release = r));
+    await page.route(`**/onboarding/forms/new`, async (route) => {
+      if (route.request().method() === "POST") {
+        await hold;
+      }
+      await route.continue();
+    });
+    const submit = page.getByRole("button", { name: "Create form" });
+    const input = page.getByTestId("form-name-input");
+    await submit.click();
+    // BOTH name input and submit are disabled while pending.
+    await expect(submit).toBeDisabled();
+    await expect(input).toBeDisabled();
+    release();
+    await expect(page).toHaveURL(/onboarding\/forms\/[A-Za-z0-9_-]+$/);
+    // Exactly one form row for this name — double-submit cannot duplicate.
+    const rows = await prisma.onboardingForm.count({
+      where: { name: `E2E P8 5C1 ${width}` },
+    });
+    expect(rows).toBe(1);
+  });
+}
 
 test("owner creates, edits, publishes, reopens, v2, and archives", async ({
   page,
