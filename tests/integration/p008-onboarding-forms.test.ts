@@ -1019,7 +1019,7 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
       { workspaceId: ws.id, name: "Race2" },
       prisma,
     );
-    await saveOnboardingFormDraft(
+    const seeded = await saveOnboardingFormDraft(
       session(owner.id),
       {
         workspaceId: ws.id,
@@ -1090,6 +1090,9 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
       // PUBLISHED audit event.
       expect(versions.length).toBe(1);
       expect(versions[0].publishOriginRevision).toBe(2);
+      // The frozen snapshot equals the pre-race normalized draft — not just
+      // "a version exists".
+      expect(versions[0].definition).toEqual(seeded.definition);
       expect(row.draft).toBeNull();
       expect(
         await prisma.auditEvent.count({
@@ -1113,7 +1116,8 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
       );
       expect(row.draftRevision).toBe(3);
     }
-    void archRes;
+    // Archive must succeed regardless of interleaving.
+    expect(archRes.status).toBe("fulfilled");
     // Archive is idempotent.
     const again = await archiveOnboardingForm(
       session(owner.id),
