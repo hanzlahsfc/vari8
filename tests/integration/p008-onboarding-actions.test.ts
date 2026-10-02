@@ -232,4 +232,107 @@ describe.skipIf(!enabled)("P-008 onboarding actions (real PG)", () => {
     expect(res).toEqual({ ok: false, message: INVALID });
     expect(await auditCount()).toBe(audits);
   });
+  it("active COACH runs the full action lifecycle", async () => {
+    const ws = await ws_();
+    const coach = await user();
+    await member(ws.id, coach.id, "COACH");
+    mockedAuth.mockResolvedValue({ user: { id: coach.id } });
+    const created = await actions.createForm(ws.id, fd({ name: "Intake" }));
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const formId = created.value.formId;
+    const saved = await actions.saveDraft(
+      ws.id,
+      fd({ formId, expectedRevision: "1", draftJson: draftJson() }),
+    );
+    expect(saved).toMatchObject({ ok: true, value: { revision: 2 } });
+    const published = await actions.publishForm(
+      ws.id,
+      fd({ formId, expectedRevision: "2" }),
+    );
+    expect(published).toEqual({ ok: true, value: { versionSeq: 1 } });
+    const archived = await actions.archiveForm(ws.id, fd({ formId }));
+    expect(archived.ok).toBe(true);
+  });
+
+  it("EVERY mutation denied for assistant coach on a fixture-seeded form", async () => {
+    const ws = await ws_();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const assistant = await user();
+    await member(ws.id, assistant.id, "ASSISTANT_COACH");
+    const form = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: ws.id,
+        name: "Seed",
+        createdByMemberId: m.id,
+        draft: { title: "T", fields: [] },
+        draftRevision: 1,
+      },
+    });
+    mockedAuth.mockResolvedValue({ user: { id: assistant.id } });
+    const audits = await auditCount();
+    for (const res of [
+      await actions.createForm(ws.id, fd({ name: "N" })),
+      await actions.saveDraft(
+        ws.id,
+        fd({ formId: form.id, expectedRevision: "1", draftJson: draftJson() }),
+      ),
+      await actions.publishForm(
+        ws.id,
+        fd({ formId: form.id, expectedRevision: "1" }),
+      ),
+      await actions.openDraft(ws.id, fd({ formId: form.id })),
+      await actions.archiveForm(ws.id, fd({ formId: form.id })),
+    ]) {
+      expect(res).toEqual({ ok: false, message: DENIED });
+    }
+    expect(await auditCount()).toBe(audits);
+  });
+
+  it("nonmember + suspended-member denied on ALL five mutations", async () => {
+    const ws = await ws_();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const outsider = await user();
+    const suspended = await user();
+    const sm = await member(ws.id, suspended.id, "COACH");
+    await prisma.workspaceMember.update({
+      where: { id: sm.id },
+      data: { status: "SUSPENDED" },
+    });
+    const form = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: ws.id,
+        name: "Seed2",
+        createdByMemberId: m.id,
+        draft: { title: "T", fields: [] },
+        draftRevision: 1,
+      },
+    });
+    for (const uid of [outsider.id, suspended.id]) {
+      mockedAuth.mockResolvedValue({ user: { id: uid } });
+      const audits = await auditCount();
+      for (const res of [
+        await actions.createForm(ws.id, fd({ name: "N" })),
+        await actions.saveDraft(
+          ws.id,
+          fd({
+            formId: form.id,
+            expectedRevision: "1",
+            draftJson: draftJson(),
+          }),
+        ),
+        await actions.publishForm(
+          ws.id,
+          fd({ formId: form.id, expectedRevision: "1" }),
+        ),
+        await actions.openDraft(ws.id, fd({ formId: form.id })),
+        await actions.archiveForm(ws.id, fd({ formId: form.id })),
+      ]) {
+        expect(res).toEqual({ ok: false, message: DENIED });
+      }
+      expect(await auditCount()).toBe(audits);
+    }
+  });
 });
