@@ -109,6 +109,23 @@ describe("sanitizeAuditMeta", () => {
     });
   });
 
+  it("accepts PUBLISHED status with a structural version identifier", () => {
+    // Publish events carry the marker + bounded version seq linkage —
+    // never definition/title/answers.
+    expect(sanitizeAuditMeta({ status: "PUBLISHED", version: "2" })).toEqual({
+      status: "PUBLISHED",
+      version: "2",
+    });
+  });
+
+  it("rejects a non-structural version identifier", () => {
+    for (const bad of [42, { seq: 1 }, ["1"], null]) {
+      expect(() =>
+        sanitizeAuditMeta({ status: "PUBLISHED", version: bad as never }),
+      ).toThrowError(/audit_metadata_forbidden/);
+    }
+  });
+
   it("rejects non-plain-object metadata", () => {
     expect(() => sanitizeAuditMeta("kind=HEALTH_DATA" as never)).toThrowError(
       /audit_metadata_forbidden/,
