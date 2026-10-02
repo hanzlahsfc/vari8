@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { AccessDeniedError } from "../../lib/auth/guard";
 import * as accessModule from "../../lib/workspace/access";
+import { createOwnedDisposableDb, dropOwnedDb } from "./disposable-db";
 import {
   archiveOnboardingForm,
   createOnboardingForm,
@@ -208,10 +209,16 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
     try {
       const ws = await workspace();
       const owner = await user();
-      await member(ws.id, owner.id, "WORKSPACE_OWNER");
+      const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+      const seeded = await seedForm(ws.id, m.id, "Seeded");
       await listOnboardingForms(
         session(owner.id),
         { workspaceId: ws.id },
+        prisma,
+      );
+      await getOnboardingForm(
+        session(owner.id),
+        { workspaceId: ws.id, formId: seeded.id },
         prisma,
       );
       await expect(
@@ -222,7 +229,7 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
         ),
       ).resolves.toBeDefined();
       const calls = spy.mock.calls;
-      expect(calls.length).toBeGreaterThanOrEqual(2);
+      expect(calls.length).toBeGreaterThanOrEqual(3);
       for (const args of calls) expect(args[0]).toBe(prisma);
     } finally {
       spy.mockRestore();
@@ -247,27 +254,16 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
   });
 
   it("audit-write failure rolls back the created form (executed rollback)", async () => {
-    // Dedicated disposable DB: fully migrated, then audit_event is dropped so
-    // the audit insert inside create's transaction genuinely fails. The form
-    // row must not survive — executed proof, not construction claims.
-    const adminUrl = url!.replace(/\/p8r_int\?/, "/postgres?");
-    const rbUrl = url!.replace(/\/p8r_int\?/, "/p8r_rb?");
-    const admin = new PrismaClient({
-      datasources: { db: { url: adminUrl } },
-    });
+    // Run-owned disposable DB (validated loopback + p8r_ prefix, unique name,
+    // ownership proven via current_database() before any DDL). Failure
+    // injection is a CHECK(false) constraint on audit_event — every insert
+    // fails, no table is dropped, nothing outside the owned DB is touched.
+    const owned = await createOwnedDisposableDb(url as string);
+    const rb = owned.client;
     try {
-      await admin.$executeRawUnsafe("DROP DATABASE IF EXISTS p8r_rb");
-      await admin.$executeRawUnsafe("CREATE DATABASE p8r_rb");
-    } finally {
-      await admin.$disconnect();
-    }
-    execFileSync("npx", ["prisma", "migrate", "deploy"], {
-      stdio: "pipe",
-      env: { ...process.env, DATABASE_URL: rbUrl },
-    });
-    const rb = new PrismaClient({ datasources: { db: { url: rbUrl } } });
-    try {
-      await rb.$executeRawUnsafe('DROP TABLE "audit_event" CASCADE');
+      await rb.$executeRawUnsafe(
+        'ALTER TABLE "audit_event" ADD CONSTRAINT "audit_insert_blocked" CHECK (false)',
+      );
       const w = await rb.workspace.create({
         data: { name: "RB", slug: `rb-${Date.now()}`, status: "ACTIVE" },
       });
@@ -308,6 +304,8 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
       ).toBe(0);
     } finally {
       await rb.$disconnect();
+      // Cleanup only the DB this run created — nothing pre-existing.
+      await dropOwnedDb(url as string, owned.name);
     }
   });
 
