@@ -124,8 +124,13 @@ export function validateDefinition(
   const title = cleanText(input.title, FORM_LIMITS.labelMax);
   const rawFields = input.fields;
   if (!Array.isArray(rawFields)) throw new OnboardingFormError("invalid_input");
-  if (rawFields.length > FORM_LIMITS.maxFields)
-    throw new OnboardingFormError("invalid_input");
+  if (
+    rawFields.length > FORM_LIMITS.maxFields ||
+    (opts.forPublish && rawFields.length < FORM_LIMITS.minPublishFields)
+  )
+    throw new OnboardingFormError(
+      opts.forPublish ? "publish_incomplete" : "invalid_input",
+    );
 
   const orders = new Set<number>();
   const seenFieldIds = new Set<string>();
@@ -229,7 +234,5 @@ export function validateDefinition(
     FORM_LIMITS.definitionMaxBytes
   )
     throw new OnboardingFormError("invalid_input");
-  void knownIds;
-  void opts;
   return definition;
 }
