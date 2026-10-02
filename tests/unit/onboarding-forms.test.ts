@@ -35,7 +35,7 @@ const textField = (over: Record<string, unknown> = {}) => ({
 });
 
 describe("P-008 validation — definition bounds", () => {
-  it("accepts a valid mixed draft and mints server IDs", () => {
+  it("accepts a valid mixed draft (shape and order normalized)", () => {
     const def = validateDefinition(
       {
         title: "Intake",
@@ -54,9 +54,37 @@ describe("P-008 validation — definition bounds", () => {
       { forPublish: false },
     );
     expect(def.fields).toHaveLength(2);
-    expect(def.fields[0].fieldId).toMatch(/^f_/);
-    expect(def.fields[1].options?.[0].optionId).toMatch(/^o_/);
+    expect(def.fields[0].kind).toBe("shortText");
+    expect(def.fields[1].kind).toBe("singleChoice");
+    expect(def.fields[1].required).toBe(true);
+    expect(def.fields[1].options).toHaveLength(2);
     expect(def.fields.map((f) => f.order)).toEqual([0, 1]);
+  });
+
+  it("mints opaque server IDs for new fields/options", () => {
+    const def = validateDefinition(
+      { title: "T", fields: [textField({ options: undefined })] },
+      known(),
+      { forPublish: false },
+    );
+    expect(def.fields[0].fieldId).toMatch(/^f_/);
+    const choice = validateDefinition(
+      {
+        title: "T",
+        fields: [
+          {
+            kind: "singleChoice",
+            label: "C",
+            required: false,
+            order: 0,
+            options: [{ label: "A" }],
+          },
+        ],
+      },
+      known(),
+      { forPublish: false },
+    );
+    expect(choice.fields[0].options![0].optionId).toMatch(/^o_/);
   });
 
   it("allows zero fields for drafts but rejects empty publish", () => {
@@ -127,6 +155,25 @@ describe("P-008 validation — definition bounds", () => {
     expect(() =>
       validateDefinition(
         { title: "T", fields: [textField({ options: [{ label: "a" }] })] },
+        known(),
+        { forPublish: false },
+      ),
+    ).toThrowError(expect.objectContaining({ code: "invalid_input" }));
+    // Duplicate option labels within one choice field.
+    expect(() =>
+      validateDefinition(
+        {
+          title: "T",
+          fields: [
+            {
+              kind: "singleChoice",
+              label: "C",
+              required: false,
+              order: 0,
+              options: [{ label: "Same" }, { label: "Same" }],
+            },
+          ],
+        },
         known(),
         { forPublish: false },
       ),
