@@ -5,6 +5,29 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-02 — P-008 onboarding form builder (TDD recovery, in progress)
+
+- The first P-008 candidate (`feature/p008-onboarding-form-builder` @ `d10d788`)
+  passed all technical review but implemented production code before its tests;
+  the owner REJECTED the requested test-first exception. That branch is frozen
+  as a read-only reference — no cherry-pick/merge/transplant of its code.
+- Recovery branch `feature/p008-onboarding-form-builder-tdd` off verified
+  `origin/main` `50367963` (fetch-verified, no delta). Worktree:
+  `../repo-p008-tdd`. Recovery plan + slice map:
+  `docs/tasks/p008-onboarding-form-builder-tdd.md` (`fbaccae`).
+- Tests-only contract suite committed at `5debb24` (adapted tests-only from the
+  reference branch, provenance in headers): unit validation/boundary/RBAC/seam,
+  integration denial matrix + lifecycle + concurrency + Restrict-FK + audit
+  marker, e2e authz + pending-disable + full-width lifecycle.
+- Slice-0 RED on the committed tree `5debb24`: `vitest
+tests/unit/onboarding-forms.test.ts` exit 1 (module absent);
+  `tests/unit/rbac.test.ts` exit 1 (matrix missing `onboardingFormTemplates`
+  row — meaningful assertion); integration file exit 1 (module absent). Logs:
+  `gate-logs/p008-recovery/` outside Git.
+- **Held at the first RED checkpoint for Apollo audit — no production code
+  yet.** Scope unchanged (decision #29): owner + ACTIVE coach only, definitions
+  only, no submissions/intake/invites. Not pushed, no PR.
+
 ## 2026-10-02 — P-006 product-alignment blueprint (documentation only)
 
 - Authored `docs/product-alignment-blueprint.md` from Lilly's "Core coaching
