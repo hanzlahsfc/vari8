@@ -71,6 +71,9 @@ export const AUDIT_RESOURCE_TYPES = [
   "user",
   // S1-G: allowlist export events only — no erasure event types exist yet.
   "client_export",
+  // P-008: onboarding form definition lifecycle events (IDs + structural
+  // markers only — never draft payloads or answers).
+  "onboarding_form",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 

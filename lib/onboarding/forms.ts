@@ -10,7 +10,9 @@
 
 import type { PrismaClient } from "@prisma/client";
 
-import type { SessionLike } from "../auth/guard";
+import { prisma as defaultPrisma } from "../db";
+import { authorize, type SessionLike } from "../auth/guard";
+import { writeAuditEvent } from "../audit";
 
 export type OnboardingFormErrorCode =
   | "invalid_input"
@@ -247,27 +249,113 @@ export function validateDefinition(
 // Each behavior lands in its own RED→GREEN increment.
 
 export async function listOnboardingForms(
-  _session: SessionLike,
-  _input: { workspaceId: string },
-  _client?: PrismaClient,
+  session: SessionLike,
+  input: { workspaceId: string },
+  client?: PrismaClient,
 ): Promise<FormSummary[]> {
-  throw new Error("not implemented (P-008 slice-2 scaffold)");
+  const db = client ?? defaultPrisma;
+  // Server-side reauthorization on every call — current user/membership/
+  // workspace state is re-read by the guard; there is no cached grant.
+  const ctx = await authorize(session, {
+    resource: "onboardingFormTemplates",
+    action: "read",
+    workspaceId: input.workspaceId,
+  });
+  const rows = await db.onboardingForm.findMany({
+    where: { workspaceId: ctx.workspaceId },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      draftRevision: true,
+      draft: true,
+      updatedAt: true,
+      versions: {
+        select: { versionSeq: true },
+        orderBy: { versionSeq: "desc" },
+        take: 1,
+      },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+  // List rows carry only summary fields — never the draft/definition payload.
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    status: row.status,
+    draftRevision: row.draftRevision,
+    hasDraft: row.draft !== null,
+    latestVersionSeq: row.versions[0]?.versionSeq ?? null,
+    updatedAt: row.updatedAt.toISOString(),
+  }));
 }
 
 export async function createOnboardingForm(
-  _session: SessionLike,
-  _input: { workspaceId: string; name: string },
-  _client?: PrismaClient,
+  session: SessionLike,
+  input: { workspaceId: string; name: string },
+  client?: PrismaClient,
 ): Promise<{ formId: string }> {
-  throw new Error("not implemented (P-008 slice-2 scaffold)");
+  const db = client ?? defaultPrisma;
+  const ctx = await authorize(session, {
+    resource: "onboardingFormTemplates",
+    action: "write",
+    workspaceId: input.workspaceId,
+  });
+  const name = cleanText(input.name, FORM_LIMITS.nameMax);
+  // Form + audit event are one transaction — an audit failure rolls back the
+  // form row (atomicity regression: no orphan definitions).
+  return db.$transaction(async (tx) => {
+    const form = await tx.onboardingForm.create({
+      data: {
+        workspaceId: ctx.workspaceId as string,
+        name,
+        createdByMemberId: ctx.workspaceMemberId as string,
+        draft: { title: name, fields: [] },
+        draftRevision: 1,
+      },
+      select: { id: true },
+    });
+    await writeAuditEvent(tx, ctx, {
+      action: "CREATE",
+      resourceType: "onboarding_form",
+      resourceId: form.id,
+    });
+    return { formId: form.id };
+  });
 }
 
 export async function getOnboardingForm(
-  _session: SessionLike,
-  _input: { workspaceId: string; formId: string },
-  _client?: PrismaClient,
+  session: SessionLike,
+  input: { workspaceId: string; formId: string },
+  client?: PrismaClient,
 ): Promise<FormDetail> {
-  throw new Error("not implemented (P-008 slice-2 scaffold)");
+  const db = client ?? defaultPrisma;
+  const ctx = await authorize(session, {
+    resource: "onboardingFormTemplates",
+    action: "read",
+    workspaceId: input.workspaceId,
+  });
+  // Workspace-scoped lookup: a formId outside this workspace is never
+  // distinguishable from a missing one (typed not-found, no leakage).
+  const form = await db.onboardingForm.findFirst({
+    where: { id: input.formId, workspaceId: ctx.workspaceId },
+    include: {
+      versions: { orderBy: { versionSeq: "asc" } },
+    },
+  });
+  if (!form) throw new OnboardingFormError("form_not_accessible");
+  return {
+    id: form.id,
+    name: form.name,
+    status: form.status,
+    draftRevision: form.draftRevision,
+    draft: (form.draft as FormDefinition | null) ?? null,
+    versions: form.versions.map((v) => ({
+      versionSeq: v.versionSeq,
+      publishedAt: v.publishedAt.toISOString(),
+      definition: v.definition as unknown as FormDefinition,
+    })),
+  };
 }
 
 export async function saveOnboardingFormDraft(
