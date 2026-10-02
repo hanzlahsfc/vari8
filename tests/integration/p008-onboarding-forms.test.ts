@@ -5,7 +5,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { AccessDeniedError } from "../../lib/auth/guard";
 import * as accessModule from "../../lib/workspace/access";
-import { createOwnedDisposableDb } from "./disposable-db";
+import * as auditModule from "../../lib/audit";
+import { prisma as globalPrisma } from "../../lib/db";
 import {
   archiveOnboardingForm,
   createOnboardingForm,
@@ -253,58 +254,40 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
     expect(form.draftUpdatedAt).not.toBeNull();
   });
 
-  it("audit-write failure rolls back the created form (executed rollback)", async () => {
-    // Run-owned disposable DB (validated loopback + p8r_ prefix, unique name,
-    // ownership proven via current_database() before any DDL). Failure
-    // injection is a CHECK(false) constraint on audit_event — every insert
-    // fails, no table is dropped, nothing outside the owned DB is touched.
-    const owned = await createOwnedDisposableDb(url as string);
-    const rb = owned.client;
+  it("audit-write failure rolls back the created form (INJECTED fault)", async () => {
+    // Deterministic fault injection: the REAL writeAuditEvent module is spied
+    // to throw a sentinel AFTER the form insert inside the real Prisma
+    // $transaction. Proves the transaction boundary (audit failure ⇒ zero
+    // surviving form rows) without any DB creation/DDL. Labeled INJECTED —
+    // the real audit write is covered separately by the CREATE-audit test.
+    const ws = await workspace();
+    const owner = await user();
+    await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const sentinel = new Error("INJECTED audit failure");
+    const spy = vi
+      .spyOn(auditModule, "writeAuditEvent")
+      .mockRejectedValue(sentinel);
     try {
-      await rb.$executeRawUnsafe(
-        'ALTER TABLE "audit_event" ADD CONSTRAINT "audit_insert_blocked" CHECK (false)',
-      );
-      const w = await rb.workspace.create({
-        data: { name: "RB", slug: `rb-${Date.now()}`, status: "ACTIVE" },
-      });
-      const u = await rb.user.create({
-        data: {
-          email: `rb-${Date.now()}@example.test`,
-          passwordHash: "scrypt$fixture",
-          name: "RB",
-          platformRole: "USER",
-          status: "ACTIVE",
-        },
-      });
-      await rb.workspaceMember.create({
-        data: {
-          workspaceId: w.id,
-          userId: u.id,
-          role: "WORKSPACE_OWNER",
-          status: "ACTIVE",
-        },
-      });
-      let failure: unknown;
-      try {
-        await createOnboardingForm(
-          session(u.id),
-          { workspaceId: w.id, name: "Rollback" },
-          rb,
-        );
-      } catch (e) {
-        failure = e;
-      }
-      expect(failure).toBeDefined();
-      // The failure must come from the audit write inside the transaction —
-      // NOT from authorization. An AccessDeniedError here would mean auth
-      // reads never reached the injected client.
-      expect(failure).not.toBeInstanceOf(AccessDeniedError);
+      await expect(
+        createOnboardingForm(
+          session(owner.id),
+          { workspaceId: ws.id, name: "Rollback" },
+          prisma,
+        ),
+      ).rejects.toBe(sentinel);
+      // The audit write must have been attempted on the TRANSACTION client —
+      // neither the injected client nor the module-global one.
+      expect(spy).toHaveBeenCalledOnce();
+      const txArg = spy.mock.calls[0][0] as unknown;
+      expect(txArg).not.toBe(prisma);
+      expect(txArg).not.toBe(globalPrisma);
+      expect(txArg).toBeTypeOf("object");
+      // Rollback: the form insert inside the same transaction does not survive.
       expect(
-        await rb.onboardingForm.count({ where: { workspaceId: w.id } }),
+        await prisma.onboardingForm.count({ where: { workspaceId: ws.id } }),
       ).toBe(0);
     } finally {
-      // Capability-bound cleanup: disconnects and drops ONLY the owned name.
-      await owned.cleanup();
+      spy.mockRestore();
     }
   });
 
