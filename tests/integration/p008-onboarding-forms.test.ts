@@ -1,9 +1,10 @@
 import { execFileSync } from "node:child_process";
 
 import { Prisma, PrismaClient } from "@prisma/client";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { AccessDeniedError } from "../../lib/auth/guard";
+import * as accessModule from "../../lib/workspace/access";
 import {
   archiveOnboardingForm,
   createOnboardingForm,
@@ -185,22 +186,143 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
     }
   });
 
+  /** Fixture-seeded form row — independent of the service under test. */
+  async function seedForm(workspaceId: string, memberId: string, name: string) {
+    return prisma.onboardingForm.create({
+      data: {
+        workspaceId,
+        name,
+        createdByMemberId: memberId,
+        draft: { title: name, fields: [] },
+        draftRevision: 1,
+      },
+      select: { id: true },
+    });
+  }
+
+  it("authorization reads go through the INJECTED client, not the global repo", async () => {
+    // Seam regression (slice-2 review): authorize() must bind its repo to the
+    // same connection as the domain queries — otherwise a caller-supplied
+    // client (e.g. a transaction) would auth against a different database.
+    const spy = vi.spyOn(accessModule, "createPrismaAuthorizationRepo");
+    try {
+      const ws = await workspace();
+      const owner = await user();
+      await member(ws.id, owner.id, "WORKSPACE_OWNER");
+      await listOnboardingForms(
+        session(owner.id),
+        { workspaceId: ws.id },
+        prisma,
+      );
+      await expect(
+        createOnboardingForm(
+          session(owner.id),
+          { workspaceId: ws.id, name: "Seam" },
+          prisma,
+        ),
+      ).resolves.toBeDefined();
+      const calls = spy.mock.calls;
+      expect(calls.length).toBeGreaterThanOrEqual(2);
+      for (const args of calls) expect(args[0]).toBe(prisma);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("create records draft editor identity and timestamp", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const { formId } = await createOnboardingForm(
+      session(owner.id),
+      { workspaceId: ws.id, name: "Meta" },
+      prisma,
+    );
+    const form = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: formId },
+    });
+    // Every definition mutation records editor identity + time (contract).
+    expect(form.draftSavedByMemberId).toBe(m.id);
+    expect(form.draftUpdatedAt).not.toBeNull();
+  });
+
+  it("audit-write failure rolls back the created form (executed rollback)", async () => {
+    // Dedicated disposable DB: fully migrated, then audit_event is dropped so
+    // the audit insert inside create's transaction genuinely fails. The form
+    // row must not survive — executed proof, not construction claims.
+    const adminUrl = url!.replace(/\/p8r_int\?/, "/postgres?");
+    const rbUrl = url!.replace(/\/p8r_int\?/, "/p8r_rb?");
+    const admin = new PrismaClient({
+      datasources: { db: { url: adminUrl } },
+    });
+    try {
+      await admin.$executeRawUnsafe("DROP DATABASE IF EXISTS p8r_rb");
+      await admin.$executeRawUnsafe("CREATE DATABASE p8r_rb");
+    } finally {
+      await admin.$disconnect();
+    }
+    execFileSync("npx", ["prisma", "migrate", "deploy"], {
+      stdio: "pipe",
+      env: { ...process.env, DATABASE_URL: rbUrl },
+    });
+    const rb = new PrismaClient({ datasources: { db: { url: rbUrl } } });
+    try {
+      await rb.$executeRawUnsafe('DROP TABLE "audit_event" CASCADE');
+      const w = await rb.workspace.create({
+        data: { name: "RB", slug: `rb-${Date.now()}`, status: "ACTIVE" },
+      });
+      const u = await rb.user.create({
+        data: {
+          email: `rb-${Date.now()}@example.test`,
+          passwordHash: "scrypt$fixture",
+          name: "RB",
+          platformRole: "USER",
+          status: "ACTIVE",
+        },
+      });
+      await rb.workspaceMember.create({
+        data: {
+          workspaceId: w.id,
+          userId: u.id,
+          role: "WORKSPACE_OWNER",
+          status: "ACTIVE",
+        },
+      });
+      let failure: unknown;
+      try {
+        await createOnboardingForm(
+          session(u.id),
+          { workspaceId: w.id, name: "Rollback" },
+          rb,
+        );
+      } catch (e) {
+        failure = e;
+      }
+      expect(failure).toBeDefined();
+      // The failure must come from the audit write inside the transaction —
+      // NOT from authorization. An AccessDeniedError here would mean auth
+      // reads never reached the injected client.
+      expect(failure).not.toBeInstanceOf(AccessDeniedError);
+      expect(
+        await rb.onboardingForm.count({ where: { workspaceId: w.id } }),
+      ).toBe(0);
+    } finally {
+      await rb.$disconnect();
+    }
+  });
+
   it("list returns workspace-scoped summaries only; no cross-workspace leakage", async () => {
     const wsA = await workspace();
     const wsB = await workspace();
     const owner = await user();
-    await member(wsA.id, owner.id, "WORKSPACE_OWNER");
+    const mA = await member(wsA.id, owner.id, "WORKSPACE_OWNER");
     await member(wsB.id, owner.id, "WORKSPACE_OWNER");
-    const { formId } = await createOnboardingForm(
-      session(owner.id),
-      { workspaceId: wsA.id, name: "A only" },
-      prisma,
-    );
-    await createOnboardingForm(
-      session(owner.id),
-      { workspaceId: wsB.id, name: "B only" },
-      prisma,
-    );
+    const mB = await prisma.workspaceMember.findFirstOrThrow({
+      where: { workspaceId: wsB.id, userId: owner.id },
+    });
+    // Fixture-seeded — reads must be testable without the create service.
+    const { id: formId } = await seedForm(wsA.id, mA.id, "A only");
+    await seedForm(wsB.id, mB.id, "B only");
     const listA = await listOnboardingForms(
       session(owner.id),
       { workspaceId: wsA.id },
