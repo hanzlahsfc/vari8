@@ -595,7 +595,7 @@ export async function publishOnboardingForm(
           action: "UPDATE",
           resourceType: "onboarding_form",
           resourceId: form.id,
-          meta: { status: "PUBLISHED" },
+          meta: { status: "PUBLISHED", version: String(versionSeq) },
         });
         return { versionSeq };
       },
