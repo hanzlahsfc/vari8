@@ -91,3 +91,38 @@ under `PASSWORD_RESET_DELIVERY_ADAPTER=resend`).
 
 1. Plan commit → 2. tests-only commit → 3. RED capture → 4. **STOP** —
    report SHA set to Apollo for audit before slice 1.
+
+
+## Slice 5A — server boundary plan (lib/onboarding/forms-boundary.ts ONLY)
+
+Proposed public surface (all take `(session, input, deps?)` and return a typed
+`ActionResult<T> = { ok: true; value: T } | { ok: false; message: string }`,
+matching the password-reset boundary convention — safe stable messages, never
+service internals/stacks/SQL/payloads):
+
+- `saveDraftFromAction(session, {workspaceId, formId, expectedRevision, draftJson, name?}, {db?})`
+  → `{revision, definition}`
+- `openDraftFromAction(session, {workspaceId, formId}, {db?})`
+  → `{revision, definition}`
+- `publishFromAction(session, {workspaceId, formId, expectedRevision}, {db?})`
+  → `{versionSeq}`
+- `archiveFormFromAction(session, {workspaceId, formId}, {db?})`
+  → `{formId}`
+- `listFormsForWorkspace(session, {workspaceId}, {db?})` → `{forms: summaries}`
+- `getFormForWorkspace(session, {workspaceId, formId}, {db?})` → detail
+
+Boundary rules (test-pinned):
+1. `draftJson` byte-bound (UTF-8) BEFORE `JSON.parse` — oversized payloads
+   reject pre-parse AND before any service/DB call.
+2. Malformed JSON, non-integer revisions, malformed/oversized IDs/strings →
+   `invalid_input` mapped to a safe message; no service call.
+3. Every wrapper binds the injected `deps.db` (or default prisma) to the
+   service call — no global-repo bypass.
+4. `OnboardingFormError`/`AccessDeniedError` → safe stable messages;
+   unexpected faults → generic message, no stack/SQL/payload echo.
+5. Boundary NEVER logs draft content.
+6. These are library adapters — they do NOT prove HTTP/CSRF/session security;
+   that is asserted only when routes land.
+
+Increments: 5A-1 raw bound + JSON parse + ID/revision guards; 5A-2 mutation
+wrappers + error mapping; 5A-3 read wrappers.
