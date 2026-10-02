@@ -128,6 +128,7 @@ export function validateDefinition(
     throw new OnboardingFormError("invalid_input");
 
   const orders = new Set<number>();
+  const seenFieldIds = new Set<string>();
   const fields: FormField[] = rawFields.map((raw) => {
     if (!isPlainObject(raw)) throw new OnboardingFormError("invalid_input");
     const kind = raw.kind;
@@ -137,15 +138,22 @@ export function validateDefinition(
     )
       throw new OnboardingFormError("invalid_input");
 
-    // 1D-1: shape only — presented IDs are carried without trust checks yet
-    // (forged/kind-change rejection arrives in 1D-2 and its tests stay RED).
+    // ID trust rule: presented IDs must already be bound in `knownIds` (the
+    // current draft's IDs only); absent → server-minted. A known ID carrying a
+    // different kind is a forged kind change — rejected.
     let fieldId: string;
     if (raw.fieldId === undefined || raw.fieldId === null) {
       fieldId = mintFieldId();
     } else {
       if (!isId(raw.fieldId)) throw new OnboardingFormError("invalid_input");
+      const knownKind = knownIds.fieldIds.get(raw.fieldId);
+      if (knownKind === undefined || knownKind !== kind)
+        throw new OnboardingFormError("forbidden_field_id");
       fieldId = raw.fieldId;
     }
+    if (seenFieldIds.has(fieldId))
+      throw new OnboardingFormError("invalid_input");
+    seenFieldIds.add(fieldId);
 
     if (typeof raw.order !== "number" || !Number.isInteger(raw.order))
       throw new OnboardingFormError("invalid_input");
@@ -180,6 +188,7 @@ export function validateDefinition(
       )
         throw new OnboardingFormError("invalid_input");
       const optionLabels = new Set<string>();
+      const seenOptionIds = new Set<string>();
       field.options = raw.options.map((rawOption) => {
         if (!isPlainObject(rawOption))
           throw new OnboardingFormError("invalid_input");
@@ -189,8 +198,15 @@ export function validateDefinition(
         } else {
           if (!isId(rawOption.optionId))
             throw new OnboardingFormError("invalid_input");
+          // Option IDs must be bound to THIS field in the current draft —
+          // a cross-field or historical option ID is rejected.
+          if (knownIds.optionIds.get(rawOption.optionId) !== fieldId)
+            throw new OnboardingFormError("forbidden_field_id");
           optionId = rawOption.optionId;
         }
+        if (seenOptionIds.has(optionId))
+          throw new OnboardingFormError("invalid_input");
+        seenOptionIds.add(optionId);
         const label = cleanText(rawOption.label, FORM_LIMITS.optionLabelMax);
         if (optionLabels.has(label))
           throw new OnboardingFormError("invalid_input");
