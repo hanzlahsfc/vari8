@@ -233,7 +233,7 @@ export async function listFormsForWorkspace(
   const workspaceId = boundedId(_input.workspaceId);
   if (!workspaceId) return fail(INVALID_INPUT);
   void workspaceId;
-  return notImplemented();
+  throw new Error("not implemented (5c rebuild)");
 }
 
 export async function getFormForWorkspace(
@@ -245,5 +245,5 @@ export async function getFormForWorkspace(
   const formId = boundedId(_input.formId);
   if (!workspaceId || !formId) return fail(INVALID_INPUT);
   void { workspaceId, formId };
-  return notImplemented();
+  throw new Error("not implemented (5c rebuild)");
 }
