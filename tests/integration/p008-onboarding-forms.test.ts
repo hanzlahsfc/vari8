@@ -1346,10 +1346,9 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
     const fulfilled = results.filter(
       (
         r,
-      ): r is PromiseFulfilledResult<{
-        revision: number;
-        definition: { title: string };
-      }> => r.status === "fulfilled",
+      ): r is PromiseFulfilledResult<
+        Awaited<ReturnType<typeof openOnboardingDraft>>
+      > => r.status === "fulfilled",
     );
     // At least one open wins; EVERY fulfilled caller observes the same seed.
     expect(fulfilled.length).toBeGreaterThanOrEqual(1);

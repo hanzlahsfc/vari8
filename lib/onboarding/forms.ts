@@ -668,9 +668,45 @@ export async function openOnboardingDraft(
 }
 
 export async function archiveOnboardingForm(
-  _session: SessionLike,
-  _input: { workspaceId: string; formId: string },
-  _client?: PrismaClient,
+  session: SessionLike,
+  input: { workspaceId: string; formId: string },
+  client?: PrismaClient,
 ): Promise<{ formId: string }> {
-  throw new Error("not implemented (later slices)");
+  const db = client ?? defaultPrisma;
+  const ctx = await authorize(
+    session,
+    {
+      resource: "onboardingFormTemplates",
+      action: "write",
+      workspaceId: input.workspaceId,
+    },
+    createPrismaAuthorizationRepo(db),
+  );
+  const workspaceId = ctx.workspaceId as string;
+  await withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const form = await lockForm(tx, workspaceId, input.formId);
+        if (!form) throw new OnboardingFormError("form_not_accessible");
+        // Idempotent: already archived → preserve original stamps, no audit.
+        if (form.status === "ARCHIVED") return;
+        await tx.onboardingForm.update({
+          where: { id: form.id },
+          data: {
+            status: "ARCHIVED",
+            archivedAt: new Date(),
+            archivedByMemberId: ctx.workspaceMemberId as string,
+          },
+        });
+        await writeAuditEvent(tx, ctx, {
+          action: "UPDATE",
+          resourceType: "onboarding_form",
+          resourceId: form.id,
+          meta: { status: "ARCHIVED" },
+        });
+      },
+      { isolationLevel: "Serializable" },
+    ),
+  );
+  return { formId: input.formId };
 }
