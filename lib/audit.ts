@@ -85,7 +85,7 @@ export type AuditMeta = {
   changed?: boolean;
   count?: number;
   role?: "PRIMARY" | "COACH";
-  status?: "ACTIVE" | "REMOVED";
+  status?: "ACTIVE" | "REMOVED" | "ARCHIVED";
   /** S1-F2C: the invited member role on invitation events (invitable roles only). */
   targetRole?: "COACH" | "ASSISTANT_COACH" | "CLIENT";
   /** S1-F2C repair: structural acceptance outcome on INVITE/access_token events. */
@@ -136,7 +136,7 @@ const META_VALIDATORS = new Map<keyof AuditMeta, (v: unknown) => boolean>([
       typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 1_000_000,
   ],
   ["role", (v) => v === "PRIMARY" || v === "COACH"],
-  ["status", (v) => v === "ACTIVE" || v === "REMOVED"],
+  ["status", (v) => v === "ACTIVE" || v === "REMOVED" || v === "ARCHIVED"],
   [
     "targetRole",
     (v) => v === "COACH" || v === "ASSISTANT_COACH" || v === "CLIENT",
