@@ -215,3 +215,35 @@ openDraft(workspaceId: string, formData: FormData)
   service's stale-revision gate decides semantics.
 - Optional `name`: absent → `undefined`; present → strict string bound, then
   service normalization decides blank handling. Actions don't pre-bless.
+
+## Slice 5C — UI plan (docs-only draft, Apollo 78c5380c — no impl until audit)
+
+Canonical routes (matching the 5B actions):
+
+- `app/workspace/[workspaceId]/onboarding/forms/page.tsx` — list
+- `app/workspace/[workspaceId]/onboarding/forms/new/page.tsx` — create
+- `app/workspace/[workspaceId]/onboarding/forms/[formId]/page.tsx` — editor
+- `app/workspace/[workspaceId]/onboarding/forms/[formId]/preview/page.tsx`
+  — preview (`?src=draft|version`)
+- WorkspaceNav entry gated by the same `onboardingFormTemplates` read scope.
+
+Reads use server-only boundary wrappers (`getFormForWorkspace`,
+`listFormsForWorkspace`) inside server components — never service/Prisma.
+Editor is a client component bound to the server-normalized definition:
+server-minted field/option IDs, `draftRevision`, dirty-tracking, pending-
+disabled controls (all mutating controls in `fieldset[disabled]` while a
+mutation is in flight — r2 fix), dirty-gated publish, contextual preview
+links (draft vs latest version).
+
+Increments (each: committed behavioral/browser RED → bounded impl):
+
+- 5C-1 list + create page + nav entry (denied roles → 403 via layout guard)
+- 5C-2 editor: fields/options add/remove/reorder, save, open-reopen seeding
+- 5C-3 publish + archive flows, version list, archive banner
+- 5C-4 preview pages (src=draft/version), all controls disabled, zero
+  mutating requests, storage/DB delta zero
+
+Browser gates per increment: full lifecycle at 1440/834/390, keyboard flow,
+production HTTP hostile-Origin + revoked-session zero-write checks (the
+framework-allowed missing-Origin case included in security review).
+Scope: no submissions, client workflow, or retention decisions.
