@@ -525,11 +525,83 @@ export async function saveOnboardingFormDraft(
 }
 
 export async function publishOnboardingForm(
-  _session: SessionLike,
-  _input: { workspaceId: string; formId: string; expectedRevision: number },
-  _client?: PrismaClient,
+  session: SessionLike,
+  input: { workspaceId: string; formId: string; expectedRevision: number },
+  client?: PrismaClient,
 ): Promise<{ versionSeq: number }> {
-  throw new Error("not implemented (later slices)");
+  const db = client ?? defaultPrisma;
+  const ctx = await authorize(
+    session,
+    {
+      resource: "onboardingFormTemplates",
+      action: "write",
+      workspaceId: input.workspaceId,
+    },
+    createPrismaAuthorizationRepo(db),
+  );
+  const workspaceId = ctx.workspaceId as string;
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const form = await lockForm(tx, workspaceId, input.formId);
+        if (!form) throw new OnboardingFormError("form_not_accessible");
+        if (form.status === "ARCHIVED")
+          throw new OnboardingFormError("form_archived");
+        if (form.draft === null) {
+          // Idempotent replay: a version minted from THIS revision already
+          // exists → return it. Reauthorization already ran above, so a
+          // denied actor's retry never reaches here.
+          const existing = await tx.onboardingFormVersion.findFirst({
+            where: {
+              formId: form.id,
+              publishOriginRevision: input.expectedRevision,
+            },
+          });
+          if (existing) return { versionSeq: existing.versionSeq };
+          throw new OnboardingFormError("no_open_draft");
+        }
+        if (form.draft_revision !== input.expectedRevision)
+          throw new OnboardingFormError("stale_revision");
+        // Snapshot re-validates at publish completeness — an empty draft
+        // cannot publish, and the stored definition is what gets frozen.
+        const definition = validateDefinition(
+          form.draft,
+          knownIdsFrom(form.draft),
+          { forPublish: true },
+        );
+        const max = await tx.onboardingFormVersion.aggregate({
+          where: { formId: form.id },
+          _max: { versionSeq: true },
+        });
+        const versionSeq = (max._max.versionSeq ?? 0) + 1;
+        await tx.onboardingFormVersion.create({
+          data: {
+            formId: form.id,
+            versionSeq,
+            definition: definition as unknown as Prisma.InputJsonValue,
+            publishOriginRevision: form.draft_revision,
+            publishedByMemberId: ctx.workspaceMemberId as string,
+          },
+        });
+        await tx.onboardingForm.update({
+          where: { id: form.id },
+          data: {
+            draft: Prisma.DbNull,
+            draftSavedByMemberId: ctx.workspaceMemberId as string,
+            draftUpdatedAt: new Date(),
+          },
+        });
+        await writeAuditEvent(tx, ctx, {
+          action: "UPDATE",
+          resourceType: "onboarding_form",
+          resourceId: form.id,
+          meta: { status: "PUBLISHED" },
+        });
+        return { versionSeq };
+      },
+      { isolationLevel: "Serializable" },
+    ),
+  );
 }
 
 export async function openOnboardingDraft(
