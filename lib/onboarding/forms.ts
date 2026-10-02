@@ -6,9 +6,9 @@
  * completeness). Persistence: `listOnboardingForms`, `getOnboardingForm`,
  * `createOnboardingForm` (slice 2), `saveOnboardingFormDraft` and
  * `openOnboardingDraft` (slice 3 — serializable tx + workspace-scoped FOR
- * UPDATE row lock, bounded P2034/P2010-40001 retry) are implemented;
- * `publish` and `archive` remain callable stubs that throw UNTYPED errors
- * until the lifecycle slice lands.
+ * UPDATE row lock, bounded P2034/P2010-40001 retry), `publishOnboardingForm`
+ * and `archiveOnboardingForm` (slice 4 — immutable versions, origin-revision
+ * idempotency, truthful audit markers) are implemented.
  */
 
 import { Prisma, type PrismaClient } from "@prisma/client";

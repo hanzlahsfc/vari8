@@ -48,6 +48,20 @@ function singleString(
   return v;
 }
 
+/** singleString variant bound on UTF-8 BYTES — the boundary's bound is
+ * byte-based, so the action-level transport bound must match. */
+function singleStringBytes(
+  formData: FormData,
+  key: string,
+  maxBytes: number,
+): string | null {
+  const all = formData.getAll(key);
+  if (all.length !== 1) return null;
+  const v = all[0];
+  if (typeof v !== "string" || v.length === 0) return null;
+  return new TextEncoder().encode(v).length <= maxBytes ? v : null;
+}
+
 /** Strict decimal integer within Int32 — no coercion. 0 is syntactically
  * valid; the service's stale-revision gate controls semantics. */
 function strictRevision(formData: FormData): number | null {
@@ -108,7 +122,11 @@ export async function saveDraft(
   const ws = boundedArg(workspaceId);
   const formId = singleString(formData, "formId", MAX_ID_LEN);
   const expectedRevision = strictRevision(formData);
-  const draftJson = singleString(formData, "draftJson", MAX_DRAFT_JSON_BYTES);
+  const draftJson = singleStringBytes(
+    formData,
+    "draftJson",
+    MAX_DRAFT_JSON_BYTES,
+  );
   const names = formData.getAll("name");
   const name =
     names.length === 0
