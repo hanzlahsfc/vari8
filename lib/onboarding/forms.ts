@@ -81,6 +81,30 @@ export type FormDetail = {
   }>;
 };
 
+const CHOICE_KINDS: ReadonlySet<FieldKind> = new Set([
+  "singleChoice",
+  "multiChoice",
+]);
+
+function isPlainObject(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function isId(v: unknown): v is string {
+  return typeof v === "string" && /^[a-z0-9_-]{1,64}$/i.test(v);
+}
+
+const mintFieldId = () => `f_${crypto.randomUUID()}`;
+const mintOptionId = () => `o_${crypto.randomUUID()}`;
+
+function cleanText(v: unknown, max: number): string {
+  if (typeof v !== "string") throw new OnboardingFormError("invalid_input");
+  const trimmed = v.trim();
+  if (trimmed.length < 1 || trimmed.length > max)
+    throw new OnboardingFormError("invalid_input");
+  return trimmed;
+}
+
 /**
  * Structural validation + normalization of a definition payload. Presented
  * `fieldId`/`optionId` values are trusted only when already bound in
@@ -89,12 +113,107 @@ export type FormDetail = {
  * ones. Field kind is immutable per fieldId.
  */
 export function validateDefinition(
-  _input: unknown,
-  _knownIds: {
+  input: unknown,
+  knownIds: {
     fieldIds: Map<string, FieldKind>;
     optionIds: Map<string, string>;
   },
-  _opts: { forPublish: boolean },
+  opts: { forPublish: boolean },
 ): FormDefinition {
-  throw new Error("not implemented (P-008 slice-1D scaffold)");
+  if (!isPlainObject(input)) throw new OnboardingFormError("invalid_input");
+  const title = cleanText(input.title, FORM_LIMITS.labelMax);
+  const rawFields = input.fields;
+  if (!Array.isArray(rawFields)) throw new OnboardingFormError("invalid_input");
+  if (rawFields.length > FORM_LIMITS.maxFields)
+    throw new OnboardingFormError("invalid_input");
+
+  const orders = new Set<number>();
+  const fields: FormField[] = rawFields.map((raw) => {
+    if (!isPlainObject(raw)) throw new OnboardingFormError("invalid_input");
+    const kind = raw.kind;
+    if (
+      typeof kind !== "string" ||
+      !(FIELD_KINDS as readonly string[]).includes(kind)
+    )
+      throw new OnboardingFormError("invalid_input");
+
+    // 1D-1: shape only — presented IDs are carried without trust checks yet
+    // (forged/kind-change rejection arrives in 1D-2 and its tests stay RED).
+    let fieldId: string;
+    if (raw.fieldId === undefined || raw.fieldId === null) {
+      fieldId = mintFieldId();
+    } else {
+      if (!isId(raw.fieldId)) throw new OnboardingFormError("invalid_input");
+      fieldId = raw.fieldId;
+    }
+
+    if (typeof raw.order !== "number" || !Number.isInteger(raw.order))
+      throw new OnboardingFormError("invalid_input");
+    if (orders.has(raw.order)) throw new OnboardingFormError("invalid_input");
+    orders.add(raw.order);
+
+    if (typeof raw.required !== "boolean")
+      throw new OnboardingFormError("invalid_input");
+
+    const field: FormField = {
+      fieldId,
+      kind: kind as FieldKind,
+      label: cleanText(raw.label, FORM_LIMITS.labelMax),
+      required: raw.required,
+      order: raw.order,
+    };
+
+    if (raw.helpText !== undefined && raw.helpText !== null) {
+      const helpText =
+        typeof raw.helpText === "string" ? raw.helpText.trim() : null;
+      if (helpText === null || helpText.length > FORM_LIMITS.helpTextMax)
+        throw new OnboardingFormError("invalid_input");
+      if (helpText.length > 0) field.helpText = helpText;
+    }
+
+    if (CHOICE_KINDS.has(field.kind)) {
+      if (!Array.isArray(raw.options))
+        throw new OnboardingFormError("invalid_input");
+      if (
+        raw.options.length < FORM_LIMITS.minOptions ||
+        raw.options.length > FORM_LIMITS.maxOptions
+      )
+        throw new OnboardingFormError("invalid_input");
+      const optionLabels = new Set<string>();
+      field.options = raw.options.map((rawOption) => {
+        if (!isPlainObject(rawOption))
+          throw new OnboardingFormError("invalid_input");
+        let optionId: string;
+        if (rawOption.optionId === undefined || rawOption.optionId === null) {
+          optionId = mintOptionId();
+        } else {
+          if (!isId(rawOption.optionId))
+            throw new OnboardingFormError("invalid_input");
+          optionId = rawOption.optionId;
+        }
+        const label = cleanText(rawOption.label, FORM_LIMITS.optionLabelMax);
+        if (optionLabels.has(label))
+          throw new OnboardingFormError("invalid_input");
+        optionLabels.add(label);
+        return { optionId, label };
+      });
+    } else if (raw.options !== undefined && raw.options !== null) {
+      throw new OnboardingFormError("invalid_input");
+    }
+    return field;
+  });
+
+  // Unique contiguous ordering: sort by client order, renumber 0..n-1.
+  fields.sort((a, b) => a.order - b.order);
+  fields.forEach((f, i) => (f.order = i));
+
+  const definition: FormDefinition = { title, fields };
+  if (
+    Buffer.byteLength(JSON.stringify(definition), "utf8") >
+    FORM_LIMITS.definitionMaxBytes
+  )
+    throw new OnboardingFormError("invalid_input");
+  void knownIds;
+  void opts;
+  return definition;
 }
