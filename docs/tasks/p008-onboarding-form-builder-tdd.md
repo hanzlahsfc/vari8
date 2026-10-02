@@ -92,7 +92,6 @@ under `PASSWORD_RESET_DELIVERY_ADAPTER=resend`).
 1. Plan commit → 2. tests-only commit → 3. RED capture → 4. **STOP** —
    report SHA set to Apollo for audit before slice 1.
 
-
 ## Slice 5A — server boundary plan (lib/onboarding/forms-boundary.ts ONLY)
 
 Proposed public surface (all take `(session, input, deps?)` and return a typed
@@ -112,6 +111,7 @@ service internals/stacks/SQL/payloads):
 - `getFormForWorkspace(session, {workspaceId, formId}, {db?})` → detail
 
 Boundary rules (test-pinned):
+
 1. `draftJson` byte-bound (UTF-8) BEFORE `JSON.parse` — oversized payloads
    reject pre-parse AND before any service/DB call.
 2. Malformed JSON, non-integer revisions, malformed/oversized IDs/strings →
