@@ -7,10 +7,13 @@ import {
   OnboardingFormError,
   archiveOnboardingForm,
   createOnboardingForm,
+  getOnboardingForm,
+  listOnboardingForms,
   openOnboardingDraft,
   publishOnboardingForm,
   saveOnboardingFormDraft,
   type FormDefinition,
+  type FormDetail,
   type FormSummary,
 } from "./forms";
 
@@ -232,18 +235,34 @@ export async function listFormsForWorkspace(
 ): Promise<ActionResult<{ forms: FormSummary[] }>> {
   const workspaceId = boundedId(_input.workspaceId);
   if (!workspaceId) return fail(INVALID_INPUT);
-  void workspaceId;
-  throw new Error("not implemented (5c rebuild)");
+  try {
+    const forms = await listOnboardingForms(
+      _session,
+      { workspaceId },
+      _deps.db ?? defaultPrisma,
+    );
+    return { ok: true, value: { forms } };
+  } catch (e) {
+    return mapError(e);
+  }
 }
 
 export async function getFormForWorkspace(
   _session: SessionLike,
   _input: { workspaceId: string; formId: string },
   _deps: BoundaryDeps = {},
-): Promise<ActionResult<import("./forms").FormDetail>> {
+): Promise<ActionResult<FormDetail>> {
   const workspaceId = boundedId(_input.workspaceId);
   const formId = boundedId(_input.formId);
   if (!workspaceId || !formId) return fail(INVALID_INPUT);
-  void { workspaceId, formId };
-  throw new Error("not implemented (5c rebuild)");
+  try {
+    const value = await getOnboardingForm(
+      _session,
+      { workspaceId, formId },
+      _deps.db ?? defaultPrisma,
+    );
+    return { ok: true, value };
+  } catch (e) {
+    return mapError(e);
+  }
 }
