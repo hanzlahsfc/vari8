@@ -68,7 +68,7 @@ body {
   font-size: var(--font-size-sm);
 }
 
-/* Phase 3.1 invite acceptance — scoped additions (login rules unchanged). */
+/* Phase 3.1/3.2 invite + reset forms — scoped additions (login unchanged). */
 .auth-hint {
   margin: 0;
   color: var(--color-text-secondary);
@@ -82,12 +82,15 @@ body {
 }
 
 .invite-form .auth-input:focus-visible,
-.invite-form .auth-button:focus-visible {
+.invite-form .auth-button:focus-visible,
+.reset-form .auth-input:focus-visible,
+.reset-form .auth-button:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
-.invite-form__submit {
+.invite-form__submit,
+.reset-form__submit {
   min-height: 44px;
 }
 

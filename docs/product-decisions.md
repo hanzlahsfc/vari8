@@ -103,9 +103,11 @@ engineering recommendation:
     **Update (relayed 2026-10-01, Phase 3.1):** invite password _setup_
     additionally requires **at least one digit** — clarified as one ASCII
     `0–9` character (not a broadened Unicode-digit rule) — still no uppercase
-    or symbol requirement. The stricter rule applies only to the invite-setup
-    path; ordinary sign-in performs no policy check and the password-reset
-    policy is unchanged unless Aleks confirms otherwise.
+    or symbol requirement. Ordinary sign-in performs no policy check.
+    **Update (Phase 3.2):** reset-completion passwords use the same setup
+    rule (≥10 + ≥1 ASCII digit) — the instruction explicitly confirmed it
+    for passwords set through reset. Both setup surfaces share
+    `validatePasswordSetup`.
 24. **Public reset response differs by account existence — accepted
     enumeration risk.** The public password-reset response deliberately differs
     depending on whether an account exists. Aleks was warned that this permits
@@ -113,6 +115,10 @@ engineering recommendation:
     apply: the response may reveal only existence — never status, role,
     workspace membership, client status, or other details — and routes still
     require rate limiting, abuse monitoring, and minimized timing differences.
+    **Update (Phase 3.2):** the implemented public response is generic
+    regardless of existence (per the Phase 3.2 instruction — a stricter,
+    non-enumerating surface than the accepted risk requires). The service
+    still distinguishes internally so delivery decisions stay correct.
 25. **Invitation revocation.** Workspace admin/head coach may revoke
     outstanding invitations.
 26. **Token retention.** Consumed and expired/revoked token records may be

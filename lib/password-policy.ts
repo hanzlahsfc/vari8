@@ -50,15 +50,16 @@ export function validatePasswordPolicy(candidate: unknown): string {
 }
 
 /**
- * Phase 3.1 — invite password setup (Aleks's confirmed policy, relayed
- * 2026-10-01): the shared length bounds PLUS at least one ASCII digit. No
+ * Shared password-SETUP policy (Aleks's confirmed rule, relayed 2026-10-01):
+ * the shared length bounds PLUS at least one ASCII digit (`0–9`). No
  * uppercase or symbol requirement.
  *
- * Applies only to the invitation-acceptance account-creation path; the shared
- * `validatePasswordPolicy` (and the password-reset flow that uses it) keep the
+ * Applies wherever the user establishes a password — Phase 3.1 invite
+ * acceptance and Phase 3.2 password-reset completion. Ordinary sign-in
+ * performs no policy check and `validatePasswordPolicy` keeps the
  * no-composition-rule decision. Errors remain structural codes.
  */
-export function validateInvitePassword(candidate: unknown): string {
+export function validatePasswordSetup(candidate: unknown): string {
   const normalized = validatePasswordPolicy(candidate);
   if (!/[0-9]/.test(normalized)) {
     throw new PasswordPolicyError("password_needs_digit");
