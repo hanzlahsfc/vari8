@@ -107,6 +107,14 @@ now **answered**; the rest stay `TODO(human)`.
     30 days; standalone `EMAIL_VERIFICATION` is deferred (invite possession
     verifies). Still open: DENY-event volume policy.
 
+## P-006 blueprint decisions (owner)
+
+28. **`TODO(human)` — Product-alignment decisions D-01…D-14** are pending owner
+    approval; options, recommendations and blockers live in
+    `docs/product-alignment-blueprint.md` §11. Until answered, the corresponding
+    blueprint slices are blocked (e.g. calculation catalog D-06 gates all
+    computed roadmap/dashboard stories).
+
 ## Resolved (recorded for traceability)
 
 - **Privacy policy:** committed artifacts preserve structure and redact identifiers/health

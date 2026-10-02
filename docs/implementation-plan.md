@@ -1,5 +1,13 @@
 # App — Implementation Plan
 
+> **Status note (2026-10-02):** Phases 1–12 below are complete and historical.
+> Per Hanzlah's relayed P-006 direction and Lilly's "Core coaching system"
+> brief (1 Oct 2026), the product direction is a **configurable coaching
+> system** — the PRGRSS workbook is a source-backed starter configuration, not
+> the universal schema. Forward planning lives in
+> `docs/product-alignment-blueprint.md`; the phase gates and verification
+> doctrine below remain the working standard.
+
 Status: **approved plan, committed before any implementation code.** This document is the
 Conductor-required plan: it names exact paths, exact commands, and observable acceptance
 criteria for every phase, and it is committed ahead of the code it governs.
