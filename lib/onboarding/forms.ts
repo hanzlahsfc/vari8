@@ -402,7 +402,7 @@ export async function openOnboardingDraft(
   _session: SessionLike,
   _input: { workspaceId: string; formId: string },
   _client?: PrismaClient,
-): Promise<{ revision: number }> {
+): Promise<{ revision: number; definition: FormDefinition }> {
   throw new Error("not implemented (later slices)");
 }
 

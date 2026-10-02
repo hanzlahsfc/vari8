@@ -1112,4 +1112,251 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
       ),
     ).rejects.toBeInstanceOf(AccessDeniedError);
   });
+
+  it("save writes audit atomically — injected fault rolls back the draft save", async () => {
+    // INJECTED fault (spy), same discipline as the create rollback test:
+    // sentinel thrown inside the real transaction must leave the stored draft
+    // and revision untouched.
+    const ws = await workspace();
+    const owner = await user();
+    await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const { formId } = await createOnboardingForm(
+      session(owner.id),
+      { workspaceId: ws.id, name: "SaveTx" },
+      prisma,
+    );
+    const sentinel = new Error("INJECTED audit failure");
+    const spy = vi
+      .spyOn(auditModule, "writeAuditEvent")
+      .mockRejectedValue(sentinel);
+    try {
+      await expect(
+        saveOnboardingFormDraft(
+          session(owner.id),
+          {
+            workspaceId: ws.id,
+            formId,
+            expectedRevision: 1,
+            draft: draftWith([field(0)]),
+          },
+          prisma,
+        ),
+      ).rejects.toBe(sentinel);
+      const row = await prisma.onboardingForm.findUniqueOrThrow({
+        where: { id: formId },
+      });
+      expect(row.draftRevision).toBe(1);
+      expect(row.draft).toMatchObject({ fields: [] });
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("save records editor identity/time and an UPDATE audit event", async () => {
+    const ws = await workspace();
+    const coach = await user();
+    const m = await member(ws.id, coach.id, "COACH");
+    const { formId } = await createOnboardingForm(
+      session(coach.id),
+      { workspaceId: ws.id, name: "Meta2" },
+      prisma,
+    );
+    await saveOnboardingFormDraft(
+      session(coach.id),
+      {
+        workspaceId: ws.id,
+        formId,
+        expectedRevision: 1,
+        draft: draftWith([field(0)]),
+      },
+      prisma,
+    );
+    const row = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: formId },
+    });
+    expect(row.draftRevision).toBe(2);
+    expect(row.draftSavedByMemberId).toBe(m.id);
+    expect(row.draftUpdatedAt).not.toBeNull();
+    const audit = await prisma.auditEvent.findFirst({
+      where: {
+        resourceType: "onboarding_form",
+        resourceId: formId,
+        action: "UPDATE",
+      },
+    });
+    expect(audit).not.toBeNull();
+  });
+
+  it("open on an existing draft replays without revision bump or new audit", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const { formId } = await createOnboardingForm(
+      session(owner.id),
+      { workspaceId: ws.id, name: "Replay" },
+      prisma,
+    );
+    const auditBefore = await prisma.auditEvent.count({
+      where: { resourceType: "onboarding_form", resourceId: formId },
+    });
+    const out = await openOnboardingDraft(
+      session(owner.id),
+      { workspaceId: ws.id, formId },
+      prisma,
+    );
+    // Replay: returns the open draft + current revision; no write, no audit.
+    expect(out.revision).toBe(1);
+    expect(out.definition).toMatchObject({ title: "Replay", fields: [] });
+    const row = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: formId },
+    });
+    expect(row.draftRevision).toBe(1);
+    expect(
+      await prisma.auditEvent.count({
+        where: { resourceType: "onboarding_form", resourceId: formId },
+      }),
+    ).toBe(auditBefore);
+  });
+
+  it("open seeds a closed draft from the latest published version, retaining IDs", async () => {
+    // Published version is a SYNTHETIC FIXTURE row — the publish service is
+    // not in this slice. Draft must be seeded with title+IDs retained.
+    const ws = await workspace();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const form = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: ws.id,
+        name: "Seeded",
+        createdByMemberId: m.id,
+        draft: Prisma.JsonNull,
+        draftRevision: 1,
+      },
+    });
+    await prisma.onboardingFormVersion.create({
+      data: {
+        formId: form.id,
+        versionSeq: 1,
+        definition: {
+          title: "Published title",
+          fields: [
+            {
+              fieldId: "f_seed",
+              kind: "shortText",
+              label: "Seeded field",
+              required: true,
+              order: 0,
+            },
+          ],
+        },
+        publishOriginRevision: 1,
+        publishedByMemberId: m.id,
+      },
+    });
+    const out = await openOnboardingDraft(
+      session(owner.id),
+      { workspaceId: ws.id, formId: form.id },
+      prisma,
+    );
+    expect(out.revision).toBe(2);
+    expect(out.definition.title).toBe("Published title");
+    // Seeded IDs are live again — the draft IS the trust source.
+    expect(out.definition.fields[0].fieldId).toBe("f_seed");
+    const row = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: form.id },
+    });
+    expect(row.draftRevision).toBe(2);
+    expect(row.draftSavedByMemberId).toBe(m.id);
+    const audit = await prisma.auditEvent.findFirst({
+      where: {
+        resourceType: "onboarding_form",
+        resourceId: form.id,
+        action: "UPDATE",
+      },
+    });
+    expect(audit).not.toBeNull();
+    // Re-presenting the seeded IDs on save must round-trip (they're live).
+    const saved = await saveOnboardingFormDraft(
+      session(owner.id),
+      {
+        workspaceId: ws.id,
+        formId: form.id,
+        expectedRevision: 2,
+        draft: { title: "Edited", fields: out.definition.fields },
+      },
+      prisma,
+    );
+    expect(saved.definition.fields[0].fieldId).toBe("f_seed");
+  });
+
+  it("concurrent open/save serializes — no silent loss, deterministic outcome", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    // Closed draft + published fixture → three concurrent opens race to seed.
+    const form = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: ws.id,
+        name: "RaceOpen",
+        createdByMemberId: m.id,
+        draft: Prisma.JsonNull,
+        draftRevision: 1,
+      },
+    });
+    await prisma.onboardingFormVersion.create({
+      data: {
+        formId: form.id,
+        versionSeq: 1,
+        definition: { title: "V1", fields: [] },
+        publishOriginRevision: 1,
+        publishedByMemberId: m.id,
+      },
+    });
+    const results = await Promise.allSettled([
+      openOnboardingDraft(
+        session(owner.id),
+        { workspaceId: ws.id, formId: form.id },
+        prisma,
+      ),
+      openOnboardingDraft(
+        session(owner.id),
+        { workspaceId: ws.id, formId: form.id },
+        prisma,
+      ),
+      openOnboardingDraft(
+        session(owner.id),
+        { workspaceId: ws.id, formId: form.id },
+        prisma,
+      ),
+    ]);
+    const row = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: form.id },
+    });
+    // Exactly one seed: revision bumped once, single UPDATE audit.
+    expect(row.draftRevision).toBe(2);
+    expect(
+      await prisma.auditEvent.count({
+        where: {
+          resourceType: "onboarding_form",
+          resourceId: form.id,
+          action: "UPDATE",
+        },
+      }),
+    ).toBe(1);
+    for (const r of results) {
+      if (r.status === "fulfilled") {
+        // Winners/replays both observe the seeded draft.
+        expect(r.value.revision).toBe(2);
+        expect(r.value.definition.title).toBe("V1");
+      } else {
+        expect(r.reason).toEqual(
+          expect.objectContaining({
+            code: expect.stringMatching(
+              /stale_revision|serialization_conflict|invalid_input/,
+            ),
+          }),
+        );
+      }
+    }
+  });
 });
