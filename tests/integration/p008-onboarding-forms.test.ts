@@ -1343,9 +1343,18 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
         },
       }),
     ).toBe(1);
+    const fulfilled = results.filter(
+      (
+        r,
+      ): r is PromiseFulfilledResult<{
+        revision: number;
+        definition: { title: string };
+      }> => r.status === "fulfilled",
+    );
+    // At least one open wins; EVERY fulfilled caller observes the same seed.
+    expect(fulfilled.length).toBeGreaterThanOrEqual(1);
     for (const r of results) {
       if (r.status === "fulfilled") {
-        // Winners/replays both observe the seeded draft.
         expect(r.value.revision).toBe(2);
         expect(r.value.definition.title).toBe("V1");
       } else {
@@ -1413,6 +1422,15 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
       where: { id: formId },
     });
     expect(row.draftRevision).toBe(2);
+    // The persisted draft IS the fulfilled winner's normalized definition —
+    // not merely a revision bump.
+    const winner = (
+      wins[0] as PromiseFulfilledResult<{
+        revision: number;
+        definition: unknown;
+      }>
+    ).value;
+    expect(row.draft).toEqual(winner.definition);
     // Exactly one UPDATE audit for the winning save.
     expect(
       await prisma.auditEvent.count({
@@ -1482,33 +1500,42 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
     const row = await prisma.onboardingForm.findUniqueOrThrow({
       where: { id: form.id },
     });
-    const opens = results.filter(
-      (r) =>
-        r.status === "fulfilled" &&
-        "definition" in
-          (
-            r as PromiseFulfilledResult<{
-              revision: number;
-              definition: { title: string };
-            }>
-          ).value,
+    // Deterministic outcome: the save at expectedRevision=1 can NEVER succeed
+    // (draft null before open → no_open_draft; after open → stale_revision;
+    // serialization_conflict only if retries genuinely exhaust).
+    const openRes = results[0];
+    const saveRes = results[1];
+    expect(openRes.status).toBe("fulfilled");
+    const opened = (
+      openRes as PromiseFulfilledResult<{
+        revision: number;
+        definition: { title: string; fields: Array<{ fieldId: string }> };
+      }>
+    ).value;
+    expect(opened.revision).toBe(2);
+    expect(opened.definition.title).toBe("V1");
+    expect(opened.definition.fields[0].fieldId).toBe("f_v1");
+    expect(saveRes.status).toBe("rejected");
+    expect((saveRes as PromiseRejectedResult).reason).toEqual(
+      expect.objectContaining({
+        code: expect.stringMatching(
+          /no_open_draft|stale_revision|serialization_conflict/,
+        ),
+      }),
     );
-    expect(opens.length).toBeGreaterThanOrEqual(1);
-    // Final state is deterministic: opened (revision 2, seeded from v1) OR the
-    // save legitimately won after seeding — but the draft always contains the
-    // published field ID or the saved field, never a merged mess.
-    expect(row.draftRevision).toBeGreaterThanOrEqual(2);
-    for (const r of results) {
-      if (r.status === "rejected") {
-        expect(r.reason).toEqual(
-          expect.objectContaining({
-            code: expect.stringMatching(
-              /stale_revision|no_open_draft|serialization_conflict|invalid_input|forbidden_field_id|form_not_accessible/,
-            ),
-          }),
-        );
-      }
-    }
+    // Persisted state: draft equals the published seed, revision exactly 2,
+    // exactly one UPDATE audit.
+    expect(row.draftRevision).toBe(2);
+    expect(row.draft).toEqual(opened.definition);
+    expect(
+      await prisma.auditEvent.count({
+        where: {
+          resourceType: "onboarding_form",
+          resourceId: form.id,
+          action: "UPDATE",
+        },
+      }),
+    ).toBe(1);
   });
 
   it("denied save/open on archived, no-draft, malformed, and cross-workspace states leave zero deltas", async () => {
@@ -1704,5 +1731,240 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
         prisma,
       ),
     ).rejects.toBeInstanceOf(AccessDeniedError);
+  });
+
+  it("publish snapshots the complete definition with actor/time and closes the draft", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const { formId } = await createOnboardingForm(
+      session(owner.id),
+      { workspaceId: ws.id, name: "Snap" },
+      prisma,
+    );
+    const saved = await saveOnboardingFormDraft(
+      session(owner.id),
+      {
+        workspaceId: ws.id,
+        formId,
+        expectedRevision: 1,
+        draft: {
+          title: "Snap intake",
+          fields: [
+            {
+              kind: "singleChoice",
+              label: "Mode",
+              required: true,
+              order: 0,
+              helpText: "pick one",
+              options: [{ label: "A" }, { label: "B" }],
+            },
+          ],
+        },
+      },
+      prisma,
+    );
+    const pub = await publishOnboardingForm(
+      session(owner.id),
+      { workspaceId: ws.id, formId, expectedRevision: saved.revision },
+      prisma,
+    );
+    expect(pub.versionSeq).toBe(1);
+    const version = await prisma.onboardingFormVersion.findFirstOrThrow({
+      where: { formId, versionSeq: 1 },
+    });
+    // The snapshot preserves the FULL normalized definition — every field's
+    // kind/label/required/order/helpText and every minted ID.
+    const def = version.definition as {
+      title: string;
+      fields: Array<{
+        fieldId: string;
+        kind: string;
+        label: string;
+        required: boolean;
+        order: number;
+        helpText?: string;
+        options?: Array<{ optionId: string; label: string }>;
+      }>;
+    };
+    expect(def).toEqual(saved.definition);
+    expect(def.fields[0].helpText).toBe("pick one");
+    expect(def.fields[0].options![0].optionId).toMatch(/^o_/);
+    expect(version.publishedByMemberId).toBe(m.id);
+    expect(version.publishOriginRevision).toBe(saved.revision);
+    expect(version.publishedAt).not.toBeNull();
+    // Draft is closed by publish — not cleared data, a closed state.
+    const row = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: formId },
+    });
+    expect(row.draft).toBeNull();
+    // Publish is audited with actor identity.
+    const audit = await prisma.auditEvent.findFirst({
+      where: {
+        resourceType: "onboarding_form",
+        resourceId: formId,
+        action: "UPDATE",
+        meta: { path: ["status"], equals: "PUBLISHED" },
+      },
+    });
+    expect(audit).not.toBeNull();
+  });
+
+  it("publish retry by a denied actor is denied — authorization is re-run", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    const denied = await user();
+    await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    await member(ws.id, denied.id, "ASSISTANT_COACH");
+    const { formId } = await createOnboardingForm(
+      session(owner.id),
+      { workspaceId: ws.id, name: "RetryDeny" },
+      prisma,
+    );
+    const saved = await saveOnboardingFormDraft(
+      session(owner.id),
+      {
+        workspaceId: ws.id,
+        formId,
+        expectedRevision: 1,
+        draft: draftWith([field(0)]),
+      },
+      prisma,
+    );
+    const pub = await publishOnboardingForm(
+      session(owner.id),
+      { workspaceId: ws.id, formId, expectedRevision: saved.revision },
+      prisma,
+    );
+    // Same-arg retry by a DENIED actor must NOT idempotently succeed —
+    // authorization is re-evaluated before the replay check.
+    await expect(
+      publishOnboardingForm(
+        session(denied.id),
+        { workspaceId: ws.id, formId, expectedRevision: saved.revision },
+        prisma,
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+    expect(pub.versionSeq).toBe(1);
+    expect(
+      await prisma.onboardingFormVersion.count({ where: { formId } }),
+    ).toBe(1);
+  });
+
+  it("publish audit failure rolls back version + draft close (INJECTED fault)", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const { formId } = await createOnboardingForm(
+      session(owner.id),
+      { workspaceId: ws.id, name: "PubTx" },
+      prisma,
+    );
+    await saveOnboardingFormDraft(
+      session(owner.id),
+      {
+        workspaceId: ws.id,
+        formId,
+        expectedRevision: 1,
+        draft: draftWith([field(0)]),
+      },
+      prisma,
+    );
+    const sentinel = new Error("INJECTED audit failure");
+    const spy = vi
+      .spyOn(auditModule, "writeAuditEvent")
+      .mockRejectedValue(sentinel);
+    try {
+      await expect(
+        publishOnboardingForm(
+          session(owner.id),
+          { workspaceId: ws.id, formId, expectedRevision: 2 },
+          prisma,
+        ),
+      ).rejects.toBe(sentinel);
+      expect(
+        await prisma.onboardingFormVersion.count({ where: { formId } }),
+      ).toBe(0);
+      const row = await prisma.onboardingForm.findUniqueOrThrow({
+        where: { id: formId },
+      });
+      // Draft stays OPEN (not closed) when the publish tx rolls back.
+      expect(row.draft).not.toBeNull();
+      expect(row.draftRevision).toBe(2);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("repeat archive preserves stamps and emits no duplicate audit", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const { formId } = await createOnboardingForm(
+      session(owner.id),
+      { workspaceId: ws.id, name: "RepeatArch" },
+      prisma,
+    );
+    await archiveOnboardingForm(
+      session(owner.id),
+      { workspaceId: ws.id, formId },
+      prisma,
+    );
+    const first = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: formId },
+    });
+    const auditAfterFirst = await prisma.auditEvent.count({
+      where: { resourceType: "onboarding_form", resourceId: formId },
+    });
+    // Second archive: idempotent — same stamps, no new audit.
+    await archiveOnboardingForm(
+      session(owner.id),
+      { workspaceId: ws.id, formId },
+      prisma,
+    );
+    const second = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: formId },
+    });
+    expect(second.archivedAt).toEqual(first.archivedAt);
+    expect(second.archivedByMemberId).toBe(m.id);
+    expect(second.status).toBe("ARCHIVED");
+    // Versions and draft preserved read-only.
+    expect(second.draft).not.toBeNull();
+    expect(
+      await prisma.auditEvent.count({
+        where: { resourceType: "onboarding_form", resourceId: formId },
+      }),
+    ).toBe(auditAfterFirst);
+  });
+
+  it("archive audit failure rolls back the archive (INJECTED fault)", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const { formId } = await createOnboardingForm(
+      session(owner.id),
+      { workspaceId: ws.id, name: "ArchTx" },
+      prisma,
+    );
+    const sentinel = new Error("INJECTED audit failure");
+    const spy = vi
+      .spyOn(auditModule, "writeAuditEvent")
+      .mockRejectedValue(sentinel);
+    try {
+      await expect(
+        archiveOnboardingForm(
+          session(owner.id),
+          { workspaceId: ws.id, formId },
+          prisma,
+        ),
+      ).rejects.toBe(sentinel);
+      const row = await prisma.onboardingForm.findUniqueOrThrow({
+        where: { id: formId },
+      });
+      expect(row.status).toBe("ACTIVE");
+      expect(row.archivedAt).toBeNull();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
