@@ -1,16 +1,25 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import { auth } from "@/auth";
-import type { ActionResult } from "@/lib/onboarding/forms-boundary";
+import {
+  archiveFormFromAction,
+  createFormFromAction,
+  openDraftFromAction,
+  publishFromAction,
+  saveDraftFromAction,
+  type ActionResult,
+} from "@/lib/onboarding/forms-boundary";
 
 type OnboardingActionResult<T> = ActionResult<T>;
 
 /**
  * P-008 slice-5B — onboarding form server actions.
  *
- * 5B-1 implements the session gate + strict input validation ONLY; valid
- * authenticated paths still throw untyped (delegation + revalidation land
- * in 5B-2).
+ * 5B-2: delegation to the reviewed boundary + success-only revalidation.
+ * Successful writes return `{ ok: true }` even if cache revalidation throws
+ * (the commit already happened); failure results never revalidate.
  *
  * Contract notes:
  * - `workspaceId` is a caller-bound argument but remains an UNTRUSTED input;
@@ -95,6 +104,44 @@ async function sessionGate(): Promise<
   return { ok: true, session: { user: { id } } };
 }
 
+/** Canonical revalidation paths — segments are encoded so caller-supplied
+ * IDs can never inject extra path segments. */
+const listPath = (workspaceId: string) =>
+  `/workspace/${encodeURIComponent(workspaceId)}/onboarding/forms`;
+const formPath = (workspaceId: string, formId: string) =>
+  `${listPath(workspaceId)}/${encodeURIComponent(formId)}`;
+
+/** Revalidation is best-effort: a committed mutation stays successful even
+ * when the cache layer throws. Never echoes the exception. */
+function revalidate(path: string): void {
+  try {
+    revalidatePath(path);
+  } catch {
+    // Cache invalidation failure must not convert a committed write into a
+    // retryable-looking failure.
+  }
+}
+
+/** Non-FormData arguments (serialized tamper) fail typed — getAll would
+ * TypeError on a plain object. */
+function isFormData(value: unknown): value is FormData {
+  return value instanceof FormData;
+}
+
+async function delegate<T>(
+  fn: () => Promise<OnboardingActionResult<T>>,
+  path: string,
+): Promise<OnboardingActionResult<T>> {
+  let result: OnboardingActionResult<T>;
+  try {
+    result = await fn();
+  } catch {
+    return fail(GENERIC);
+  }
+  if (result.ok) revalidate(path);
+  return result;
+}
+
 export async function createForm(
   workspaceId: string,
   formData: FormData,
@@ -102,10 +149,13 @@ export async function createForm(
   const gate = await sessionGate();
   if (!gate.ok) return gate;
   const ws = boundedArg(workspaceId);
+  if (!ws || !isFormData(formData)) return fail(INVALID);
   const name = singleString(formData, "name", MAX_NAME_LEN);
-  if (!ws || name === null) return fail(INVALID);
-  void { gate, ws, name };
-  throw new Error("not implemented (slice 5B-2)");
+  if (name === null) return fail(INVALID);
+  return delegate(
+    () => createFormFromAction(gate.session, { workspaceId: ws, name }),
+    listPath(ws),
+  );
 }
 
 export async function saveDraft(
@@ -120,6 +170,7 @@ export async function saveDraft(
   const gate = await sessionGate();
   if (!gate.ok) return gate;
   const ws = boundedArg(workspaceId);
+  if (!ws || !isFormData(formData)) return fail(INVALID);
   const formId = singleString(formData, "formId", MAX_ID_LEN);
   const expectedRevision = strictRevision(formData);
   const draftJson = singleStringBytes(
@@ -137,15 +188,23 @@ export async function saveDraft(
         ? names[0]
         : null;
   if (
-    !ws ||
     formId === null ||
     expectedRevision === null ||
     draftJson === null ||
     name === null
   )
     return fail(INVALID);
-  void { gate, ws, formId, expectedRevision, draftJson, name };
-  throw new Error("not implemented (slice 5B-2)");
+  return delegate(
+    () =>
+      saveDraftFromAction(gate.session, {
+        workspaceId: ws,
+        formId,
+        expectedRevision,
+        draftJson,
+        name,
+      }),
+    formPath(ws, formId),
+  );
 }
 
 export async function publishForm(
@@ -155,11 +214,19 @@ export async function publishForm(
   const gate = await sessionGate();
   if (!gate.ok) return gate;
   const ws = boundedArg(workspaceId);
+  if (!ws || !isFormData(formData)) return fail(INVALID);
   const formId = singleString(formData, "formId", MAX_ID_LEN);
   const expectedRevision = strictRevision(formData);
-  if (!ws || formId === null || expectedRevision === null) return fail(INVALID);
-  void { gate, ws, formId, expectedRevision };
-  throw new Error("not implemented (slice 5B-2)");
+  if (formId === null || expectedRevision === null) return fail(INVALID);
+  return delegate(
+    () =>
+      publishFromAction(gate.session, {
+        workspaceId: ws,
+        formId,
+        expectedRevision,
+      }),
+    formPath(ws, formId),
+  );
 }
 
 export async function archiveForm(
@@ -169,10 +236,13 @@ export async function archiveForm(
   const gate = await sessionGate();
   if (!gate.ok) return gate;
   const ws = boundedArg(workspaceId);
+  if (!ws || !isFormData(formData)) return fail(INVALID);
   const formId = singleString(formData, "formId", MAX_ID_LEN);
-  if (!ws || formId === null) return fail(INVALID);
-  void { gate, ws, formId };
-  throw new Error("not implemented (slice 5B-2)");
+  if (formId === null) return fail(INVALID);
+  return delegate(
+    () => archiveFormFromAction(gate.session, { workspaceId: ws, formId }),
+    formPath(ws, formId),
+  );
 }
 
 export async function openDraft(
@@ -187,8 +257,11 @@ export async function openDraft(
   const gate = await sessionGate();
   if (!gate.ok) return gate;
   const ws = boundedArg(workspaceId);
+  if (!ws || !isFormData(formData)) return fail(INVALID);
   const formId = singleString(formData, "formId", MAX_ID_LEN);
-  if (!ws || formId === null) return fail(INVALID);
-  void { gate, ws, formId };
-  throw new Error("not implemented (slice 5B-2)");
+  if (formId === null) return fail(INVALID);
+  return delegate(
+    () => openDraftFromAction(gate.session, { workspaceId: ws, formId }),
+    formPath(ws, formId),
+  );
 }
