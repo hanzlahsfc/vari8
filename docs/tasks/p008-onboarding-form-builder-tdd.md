@@ -195,3 +195,23 @@ zero rows (version/audit counts unchanged).
 Callable scaffold RED checkpoint: signatures + untyped throws committed
 separately, RED on clean committed tree, then increments — 5B-1 input
 validation, 5B-2 delegation+revalidate.
+
+### 5B signature clarification (Apollo 5376ff93)
+
+Exact signatures — `workspaceId` is an explicit FIRST ARG bound by the
+calling page later; it remains an UNTRUSTED request input (validated shape +
+guarded service enforces current actor access — argument binding is never
+authorization):
+
+```ts
+createForm(workspaceId: string, formData: FormData)
+saveDraft(workspaceId: string, formData: FormData)
+publishForm(workspaceId: string, formData: FormData)
+archiveForm(workspaceId: string, formData: FormData)
+openDraft(workspaceId: string, formData: FormData)
+```
+
+- `expectedRevision` policy: `0` is syntactically valid (safe Int32) — the
+  service's stale-revision gate decides semantics.
+- Optional `name`: absent → `undefined`; present → strict string bound, then
+  service normalization decides blank handling. Actions don't pre-bless.
