@@ -204,17 +204,30 @@ flow):
   plans/check-ins/messages; no new tracker; nothing deleted; ClientAssignment
   untouched.
 
-Client overrides and precedence (PROPOSED):
+Per-client configuration and precedence (PROPOSED):
 
-- Precedence order: client-setup override → variant selection → versioned
-  template defaults → parameter-library defaults.
-- Permitted per-client overrides: active variant, per-parameter
-  show/hide within the version's selected set, and per-client plan/target
-  values. **Limits:** a client setup may not add parameters outside the
-  assigned version's selected set, and may not alter parameter types/units —
-  those require a version upgrade. Which template elements are
-  client-overridable at all is **PENDING D-12** (recommendation: the three
-  listed above only).
+- "Client-overridable" means **per-client configuration stored on the client
+  setup and edited by an authorized assigned COACH** — not self-service writes
+  by the CLIENT principal. Actor permissions are unchanged by configuration
+  precedence: a plan-value override is a coach write under `assigned` scope; it
+  can never grant the CLIENT writes the matrix denies (e.g. `meal plans` stays
+  client `own` **read-only** today). Any expanded client edit rights need an
+  owner decision (D-12/D-14).
+- Precedence order (configuration resolution, not authorization): per-client
+  setup override → variant selection → versioned template defaults →
+  parameter-library defaults. **Library defaults are resolved and snapshotted
+  into the TemplateVersion at publish** — a later library edit never changes
+  what a pinned version means (no live fallback).
+- Permitted per-client overrides: active variant, per-parameter show/hide
+  within the version's selected set, and per-client plan/target values.
+  **Limits:** a client setup may not add parameters outside the assigned
+  version's selected set, and may not alter parameter types/units — those
+  require a version upgrade. Which elements are per-client configurable at
+  all is **PENDING D-12** (recommendation: the three listed above only).
+- Upgrade/rollback override handling: on a version repin, per-client overrides
+  that remain compatible are **retained**; overrides referencing removed or
+  incompatibly-changed parameters are **flagged to the coach and rejected
+  before the repin applies** — never silently reset, never dropped history.
 - What survives upgrade/rollback: all client data, all prior version snapshots
   needed to render it, plan/target effective-dated history, submissions,
   messages, habit data.
@@ -293,15 +306,21 @@ explicit order):
    and token rows are deletable after 30 days (product-decisions #17/#26).
    **A raw bearer token or its hash is never a domain identity, idempotency
    key, or long-lived foreign key.**
-2. **Identity acceptance** (existing Phase 3.1 behavior, unchanged): the
-   invitee sets a password; User + ACTIVE CLIENT membership are created and a
-   ClientProfile shell is provisioned/linked.
+2. **Identity acceptance** (existing Phase 3.1 behavior, unchanged) — two
+   explicit paths:
+   - **New user:** sets a password at acceptance; User + ACTIVE CLIENT
+     membership + ClientProfile shell are created and linked.
+   - **Existing user:** must sign in as the _exact invited email_
+     (product-decisions #20); acceptance links the existing identity to the
+     workspace/client profile — no password reset, no duplicate identity.
 3. **Intake submission** — the onboarding form (versioned) binds to the
    durable invitationId and the clientProfileId. The submission carries its own
-   durable `submissionId`; it materializes the coaching client record (core
-   profile fields + full retained form). This satisfies the brief's
-   "submission creates the client record" direction while keeping the identity
-   path intact — the coaching record exists only after submission.
+   durable `submissionId`; it **populates the coaching client record** (core
+   profile fields + full retained form) — today Phase 3.1 already creates the
+   ClientProfile at acceptance; "submission creates the client record" is
+   satisfied in the workflow sense that the client becomes coaching-ready only
+   after intake. The invite-ridden intake flow itself is a PROPOSED design,
+   not yet approved.
 4. **Retries/concurrency** — idempotent on `submissionId`/attempt keys: a
    retried POST returns the same submission; duplicate invites for the same
    (workspaceId, email) reuse the open invitation rather than stacking.
@@ -323,8 +342,9 @@ client-visible.
 **PENDING D-01:** whether coaches may send intake _before_ any invite
 (pre-account intake collection). Recommendation: **no** — intake rides the
 invitation so a single identity path exists. Owner: product owner. Blocks: only
-the hypothetical pre-account intake UI; the invite-ridden onboarding above is
-unblocked.
+the hypothetical pre-account intake UI. Note: the invite-ridden onboarding flow
+above is itself PROPOSED pending owner sign-off — D-01 governs only whether an
+_additional_ pre-account intake variant exists.
 
 ---
 
@@ -364,8 +384,13 @@ inventing capabilities:
 - Health-data access stays server-enforced, workspace/role-scoped,
   consent-aware, audited — configuration can never grant it.
 - Invite/password-reset scope unchanged: reset routes stay gated off
-  (`lib/auth/password-reset-delivery.ts`, empty frozen registry) until a real
-  adapter lands.
+  (`lib/auth/password-reset-delivery.ts`, empty frozen registry). Public
+  activation requires **all** of the deferred preconditions — a real registered
+  adapter **plus** route rate limiting, request-path timing equalization, and
+  token→cookie hardening — each reviewed before exposure. Adapter registration
+  alone is never approval: the registry going non-empty flips the capability
+  gate, so a future adapter must not ship until the full precondition set has
+  been reviewed together.
 
 ---
 
@@ -481,22 +506,22 @@ calculation-backed widgets per approved catalog entry.
 
 Classification of existing work (keep/adapt/defer/supersede):
 
-| Existing item                                                            | Disposition                                                                | Rationale                                                     |
-| ------------------------------------------------------------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Identity/auth/session/sessionVersion                                     | keep                                                                       | foundation for client self-service                            |
-| Workspace/membership/ClientProfile/ClientAssignment/Consent/Audit models | keep                                                                       | §1 reuses them directly                                       |
-| Invite flow (Phase 3.1)                                                  | keep                                                                       | onboarding rides it (§4)                                      |
-| Password-reset foundation (Phase 3.2)                                    | keep — stays gated off                                                     | activation is a later adapter task                            |
-| Authorization model + guard                                              | keep                                                                       | §5 maps brief roles onto it                                   |
-| Daily Tracker shell (Phase 1.1, staff, nonpersistent)                    | adapt → staff preview of a client-configured tracker once parameters exist | hardcoded PRGRSS sections become one template's rendering     |
-| Nutrition catalog route + import (Phase 2.1)                             | keep (staff catalog)                                                       | feeds food logging/search later; client surface is new work   |
-| Exercise catalog route + import (Phase 2.2)                              | keep (staff catalog)                                                       | feeds training prescription pickers                           |
-| PRGRSS extraction pipeline + spec artifacts                              | keep (evidence + starter-config seed)                                      | no longer the universal schema                                |
-| Phase 0.1 blueprint doc                                                  | supersede (preserved)                                                      | this document supersedes its universal-schema assumption only |
-| Sheet/dev viewers (`/sheets`, `/daily` prototype flags)                  | defer → keep dev-only fail-closed                                          | unchanged policy                                              |
-| Menses / peaking / showday / supplementation / PED-HRT                   | defer                                                                      | specialist modules; legal/consent gates open                  |
-| Wearables, migration, export                                             | defer                                                                      | intended direction; needs scoped contracts/providers          |
-| Rate limiting, email adapter, canonical URLs                             | defer (unchanged deferrals)                                                | Phase 3.2 task record §8                                      |
+| Existing item                                                            | Disposition                                                                | Rationale                                                                                              |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Identity/auth/session/sessionVersion                                     | keep                                                                       | foundation for client self-service                                                                     |
+| Workspace/membership/ClientProfile/ClientAssignment/Consent/Audit models | keep                                                                       | §1 reuses them directly                                                                                |
+| Invite flow (Phase 3.1)                                                  | keep                                                                       | onboarding rides it (§4)                                                                               |
+| Password-reset foundation (Phase 3.2)                                    | keep — stays gated off                                                     | activation needs adapter + rate limiting + timing equalization + token→cookie, all reviewed first (§5) |
+| Authorization model + guard                                              | keep                                                                       | §5 maps brief roles onto it                                                                            |
+| Daily Tracker shell (Phase 1.1, staff, nonpersistent)                    | adapt → staff preview of a client-configured tracker once parameters exist | hardcoded PRGRSS sections become one template's rendering                                              |
+| Nutrition catalog route + import (Phase 2.1)                             | keep (staff catalog)                                                       | feeds food logging/search later; client surface is new work                                            |
+| Exercise catalog route + import (Phase 2.2)                              | keep (staff catalog)                                                       | feeds training prescription pickers                                                                    |
+| PRGRSS extraction pipeline + spec artifacts                              | keep (evidence + starter-config seed)                                      | no longer the universal schema                                                                         |
+| Phase 0.1 blueprint doc                                                  | supersede (preserved)                                                      | this document supersedes its universal-schema assumption only                                          |
+| Sheet/dev viewers (`/sheets`, `/daily` prototype flags)                  | defer → keep dev-only fail-closed                                          | unchanged policy                                                                                       |
+| Menses / peaking / showday / supplementation / PED-HRT                   | defer                                                                      | specialist modules; legal/consent gates open                                                           |
+| Wearables, migration, export                                             | defer                                                                      | intended direction; needs scoped contracts/providers                                                   |
+| Rate limiting, email adapter, canonical URLs                             | defer (unchanged deferrals)                                                | Phase 3.2 task record §8                                                                               |
 
 Recommended slice order (each independently reviewable; **no implementation
 authorized**). Onboarding is first because intake is the prerequisite for any
@@ -600,22 +625,22 @@ Brief ID → proposed domain/workflow → current capability → disposition.
 
 Owner = product owner (relayed via Hanzlah) unless noted. Status: all PENDING.
 
-| ID   | Decision                             | Recommended option (reason / tradeoff)                                         | Alternative                   | Blocks                                              |
-| ---- | ------------------------------------ | ------------------------------------------------------------------------------ | ----------------------------- | --------------------------------------------------- |
-| D-01 | Pre-account intake?                  | No — intake rides the invite (single identity path; avoids orphan PII)         | separate intake token         | only a pre-account intake UI variant; W11 unblocked |
-| D-02 | General-note visibility              | per-note coach flag, default private (flexible; slight UI cost)                | all-private / all-shared      | W04 client surface                                  |
-| D-03 | Template ownership scope             | workspace-shared library (covers coach absence; simple)                        | per-coach libraries / hybrid  | W10 slice 2                                         |
-| D-04 | Coach↔client dashboard relation      | same layout, client sees visibility subset (one config source)                 | separate client layout        | D05 + client roadmap                                |
-| D-05 | Custom check-in vs scheduled dates   | satisfies only when coach marks coverage (no silent fulfillment)               | auto-match nearest date       | C03/C04 + W06                                       |
-| D-06 | Formula supply path                  | owner supplies definitions per §7 catalog contract                             | defer calc-backed widgets     | §7 computed stories                                 |
-| D-07 | Profile label vocabulary             | free-text labels + coach tag set (matches sheets practice)                     | fixed enum                    | W03                                                 |
-| D-08 | Wearables first move                 | defer all wearables until scoped provider contract exists                      | pick a first provider         | wearable direction only                             |
-| D-09 | Video feedback provider              | embedded Loom-style link first (no build cost; external dep)                   | in-house recording            | C06/M05                                             |
-| D-10 | Submission/record retention          | owner-defined retention window + deletion/consent enforcement (like #26)       | indefinite retention          | submission retention rule                           |
-| D-11 | Multi-coach setup edit rights        | any assigned ACTIVE coach edits client setup, audited (simple, covers handoff) | primary-coach-only edits      | ClientSetup writers                                 |
-| D-12 | Client-overridable template elements | variant choice, per-param show/hide, plan values only (predictable)            | wider per-client override set | override implementation                             |
-| D-13 | Coach-note staff visibility          | keep workspace-scoped staff read (continuity)                                  | author-only                   | W04/W07                                             |
-| D-14 | Post-submit entry edit rules         | same-day client edit w/ history; coach edits = new effective-dated versions    | immutable entries             | entry-edit surfaces                                 |
+| ID   | Decision                                                                    | Recommended option (reason / tradeoff)                                         | Alternative                   | Blocks                                              |
+| ---- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ----------------------------- | --------------------------------------------------- |
+| D-01 | Pre-account intake?                                                         | No — intake rides the invite (single identity path; avoids orphan PII)         | separate intake token         | only a pre-account intake UI variant; W11 unblocked |
+| D-02 | General-note visibility                                                     | per-note coach flag, default private (flexible; slight UI cost)                | all-private / all-shared      | W04 client surface                                  |
+| D-03 | Template ownership scope                                                    | workspace-shared library (covers coach absence; simple)                        | per-coach libraries / hybrid  | W10 slice 2                                         |
+| D-04 | Coach↔client dashboard relation                                             | same layout, client sees visibility subset (one config source)                 | separate client layout        | D05 + client roadmap                                |
+| D-05 | Custom check-in vs scheduled dates                                          | satisfies only when coach marks coverage (no silent fulfillment)               | auto-match nearest date       | C03/C04 + W06                                       |
+| D-06 | Formula supply path                                                         | owner supplies definitions per §7 catalog contract                             | defer calc-backed widgets     | §7 computed stories                                 |
+| D-07 | Profile label vocabulary                                                    | free-text labels + coach tag set (matches sheets practice)                     | fixed enum                    | W03                                                 |
+| D-08 | Wearables first move                                                        | defer all wearables until scoped provider contract exists                      | pick a first provider         | wearable direction only                             |
+| D-09 | Video feedback provider                                                     | embedded Loom-style link first (no build cost; external dep)                   | in-house recording            | C06/M05                                             |
+| D-10 | Submission/record retention                                                 | owner-defined retention window + deletion/consent enforcement (like #26)       | indefinite retention          | submission retention rule                           |
+| D-11 | Multi-coach setup edit rights                                               | any assigned ACTIVE coach edits client setup, audited (simple, covers handoff) | primary-coach-only edits      | ClientSetup writers                                 |
+| D-12 | Per-client configurable elements (edited by assigned coach, not the CLIENT) | variant choice, per-param show/hide, plan values only (predictable)            | wider per-client override set | override implementation                             |
+| D-13 | Coach-note staff visibility                                                 | keep workspace-scoped staff read (continuity)                                  | author-only                   | W04/W07                                             |
+| D-14 | Post-submit entry edit rules                                                | same-day client edit w/ history; coach edits = new effective-dated versions    | immutable entries             | entry-edit surfaces                                 |
 
 Each row names one recommended model; alternatives exist only to show the
 tradeoff. Owner sign-off is additionally required on the §2
