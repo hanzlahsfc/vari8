@@ -1,12 +1,16 @@
 /**
- * P-008 onboarding form definitions — callable interface scaffold (slice 1D-0).
+ * P-008 onboarding form definitions — pure validator module (slices 1D).
  *
- * Types and approved constants only. `validateDefinition` is intentionally a
- * stub: it throws an UNTYPED error so every behavioral test fails meaningfully
- * (missing typed codes / missing minted IDs) until the validator slices
- * implement it. No Prisma/DB imports, no service operations, no authz or
- * audit wiring live here — those are later slices.
+ * Contains the definition contract: types, limits, the closed kind union and
+ * `validateDefinition` (shape/bounds + current-draft ID trust + publish
+ * completeness). Persistence-backed service operations are exported further
+ * down as callable stubs — they throw UNTYPED errors until their slices land;
+ * no authz/DB/audit logic exists yet.
  */
+
+import type { PrismaClient } from "@prisma/client";
+
+import type { SessionLike } from "../auth/guard";
 
 export type OnboardingFormErrorCode =
   | "invalid_input"
@@ -235,4 +239,71 @@ export function validateDefinition(
   )
     throw new OnboardingFormError("invalid_input");
   return definition;
+}
+
+// ── Service-callable stubs (slice-2 scaffold) ──────────────────────────────
+// Real signatures so the committed integration suite resolves imports, but
+// each throws an UNTYPED error — no authorization, DB, or audit logic yet.
+// Each behavior lands in its own RED→GREEN increment.
+
+export async function listOnboardingForms(
+  _session: SessionLike,
+  _input: { workspaceId: string },
+  _client?: PrismaClient,
+): Promise<FormSummary[]> {
+  throw new Error("not implemented (P-008 slice-2 scaffold)");
+}
+
+export async function createOnboardingForm(
+  _session: SessionLike,
+  _input: { workspaceId: string; name: string },
+  _client?: PrismaClient,
+): Promise<{ formId: string }> {
+  throw new Error("not implemented (P-008 slice-2 scaffold)");
+}
+
+export async function getOnboardingForm(
+  _session: SessionLike,
+  _input: { workspaceId: string; formId: string },
+  _client?: PrismaClient,
+): Promise<FormDetail> {
+  throw new Error("not implemented (P-008 slice-2 scaffold)");
+}
+
+export async function saveOnboardingFormDraft(
+  _session: SessionLike,
+  _input: {
+    workspaceId: string;
+    formId: string;
+    expectedRevision: number;
+    draft: unknown;
+    name?: string;
+  },
+  _client?: PrismaClient,
+): Promise<{ revision: number; definition: FormDefinition }> {
+  throw new Error("not implemented (later slices)");
+}
+
+export async function publishOnboardingForm(
+  _session: SessionLike,
+  _input: { workspaceId: string; formId: string; expectedRevision: number },
+  _client?: PrismaClient,
+): Promise<{ versionSeq: number }> {
+  throw new Error("not implemented (later slices)");
+}
+
+export async function openOnboardingDraft(
+  _session: SessionLike,
+  _input: { workspaceId: string; formId: string },
+  _client?: PrismaClient,
+): Promise<{ revision: number }> {
+  throw new Error("not implemented (later slices)");
+}
+
+export async function archiveOnboardingForm(
+  _session: SessionLike,
+  _input: { workspaceId: string; formId: string },
+  _client?: PrismaClient,
+): Promise<{ formId: string }> {
+  throw new Error("not implemented (later slices)");
 }
