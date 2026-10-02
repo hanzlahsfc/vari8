@@ -185,6 +185,110 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
     }
   });
 
+  it("list returns workspace-scoped summaries only; no cross-workspace leakage", async () => {
+    const wsA = await workspace();
+    const wsB = await workspace();
+    const owner = await user();
+    await member(wsA.id, owner.id, "WORKSPACE_OWNER");
+    await member(wsB.id, owner.id, "WORKSPACE_OWNER");
+    const { formId } = await createOnboardingForm(
+      session(owner.id),
+      { workspaceId: wsA.id, name: "A only" },
+      prisma,
+    );
+    await createOnboardingForm(
+      session(owner.id),
+      { workspaceId: wsB.id, name: "B only" },
+      prisma,
+    );
+    const listA = await listOnboardingForms(
+      session(owner.id),
+      { workspaceId: wsA.id },
+      prisma,
+    );
+    expect(listA.map((f) => f.name)).toEqual(["A only"]);
+    expect(listA[0].id).toBe(formId);
+    expect(listA[0].status).toBe("ACTIVE");
+    expect(listA[0].hasDraft).toBe(true);
+    expect(listA[0].latestVersionSeq).toBeNull();
+    // Rows carry no draft/definition payload on the list path.
+    expect(JSON.stringify(listA)).not.toContain('"fields"');
+  });
+
+  it("denies unauthenticated, inactive user, and inactive workspace", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    // No session at all.
+    await expect(
+      listOnboardingForms(null, { workspaceId: ws.id }, prisma),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+    await expect(
+      listOnboardingForms({ user: {} }, { workspaceId: ws.id }, prisma),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+    // Deactivated user with otherwise-valid membership.
+    const deactivated = await user();
+    await member(ws.id, deactivated.id, "COACH");
+    await prisma.user.update({
+      where: { id: deactivated.id },
+      data: { status: "DEACTIVATED" },
+    });
+    await expect(
+      listOnboardingForms(
+        session(deactivated.id),
+        { workspaceId: ws.id },
+        prisma,
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+    // Suspended workspace denies even the owner.
+    await prisma.workspace.update({
+      where: { id: ws.id },
+      data: { status: "SUSPENDED" },
+    });
+    await expect(
+      getOnboardingForm(
+        session(owner.id),
+        { workspaceId: ws.id, formId: "f_x" },
+        prisma,
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+  });
+
+  it("immediate role change mid-flow revokes write AND read", async () => {
+    const ws = await workspace();
+    const coach = await user();
+    const m = await member(ws.id, coach.id, "COACH");
+    const { formId } = await createOnboardingForm(
+      session(coach.id),
+      { workspaceId: ws.id, name: "RoleChange" },
+      prisma,
+    );
+    // Coach demoted to ASSISTANT_COACH — every op fails on the NEXT call,
+    // no cached grants.
+    await prisma.workspaceMember.update({
+      where: { id: m.id },
+      data: { role: "ASSISTANT_COACH" },
+    });
+    for (const op of [
+      () =>
+        listOnboardingForms(session(coach.id), { workspaceId: ws.id }, prisma),
+      () =>
+        getOnboardingForm(
+          session(coach.id),
+          { workspaceId: ws.id, formId },
+          prisma,
+        ),
+      () =>
+        createOnboardingForm(
+          session(coach.id),
+          { workspaceId: ws.id, name: "X" },
+          prisma,
+        ),
+    ]) {
+      await expect(op()).rejects.toBeInstanceOf(AccessDeniedError);
+    }
+  });
+
   it("revoked access denies reads AND writes immediately", async () => {
     const ws = await workspace();
     const coach = await user();
