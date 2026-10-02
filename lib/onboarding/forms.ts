@@ -3,10 +3,12 @@
  *
  * Contains the definition contract: types, limits, the closed kind union and
  * `validateDefinition` (shape/bounds + current-draft ID trust + publish
- * completeness). Persistence: `listOnboardingForms`, `getOnboardingForm` and
- * `createOnboardingForm` are implemented (slice 2); `save`, `publish`,
- * `open` and `archive` remain callable stubs that throw UNTYPED errors until
- * their lifecycle slices land.
+ * completeness). Persistence: `listOnboardingForms`, `getOnboardingForm`,
+ * `createOnboardingForm` (slice 2), `saveOnboardingFormDraft` and
+ * `openOnboardingDraft` (slice 3 — serializable tx + workspace-scoped FOR
+ * UPDATE row lock, bounded P2034/P2010-40001 retry) are implemented;
+ * `publish` and `archive` remain callable stubs that throw UNTYPED errors
+ * until the lifecycle slice lands.
  */
 
 import { Prisma, type PrismaClient } from "@prisma/client";
