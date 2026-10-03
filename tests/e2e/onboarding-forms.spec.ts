@@ -137,20 +137,21 @@ test("nav gates the onboarding-forms entry by current server-side role", async (
       page.locator(".shell__nav").getByText("Onboarding Forms"),
     ).toBeVisible();
   }
-  // Denied roles never see it: the staff shell itself 403s for
-  // client/support/nonmember, while the assistant reaches the shell and must
-  // see a nav WITHOUT the entry (cosmetic gating only — the pages still
-  // re-authorize, proven by the deep-link tests above).
-  for (const email of [E2E.assistant, E2E.support, E2E.client, E2E.nonmember]) {
+  // The assistant reliably reaches the staff shell — hard-assert HTTP 200,
+  // then the entry must be absent. A conditional check could vacuously pass
+  // if the shell ever started 403ing this role.
+  await signIn(page, E2E.assistant);
+  const assistantRes = await page.goto(`/workspace/${wsId}`);
+  expect(assistantRes?.status()).toBe(200);
+  await expect(
+    page.locator(".shell__nav").getByText("Onboarding Forms"),
+  ).not.toBeVisible();
+  // Remaining denied roles: the staff shell itself 403s for
+  // client/support/nonmember — the entry is unreachable either way.
+  for (const email of [E2E.support, E2E.client, E2E.nonmember]) {
     await signIn(page, email);
     const res = await page.goto(`/workspace/${wsId}`);
-    if (res?.status() === 200) {
-      await expect(
-        page.locator(".shell__nav").getByText("Onboarding Forms"),
-      ).not.toBeVisible();
-    } else {
-      expect(res?.status()).toBe(403);
-    }
+    expect(res?.status()).toBe(403);
   }
 });
 
@@ -537,7 +538,8 @@ test("owner creates, edits, publishes, reopens, v2, and archives", async ({
   await expect(page.getByTestId("field-label-0")).toHaveValue("Your full name");
   await page.getByTestId("field-label-0").fill("Legal name");
   await page.getByTestId("save-draft").click();
-  // publish bumped revision to 4; reopen seeded draft at 5; this save → 6.
+  // Publish does NOT bump draftRevision (v1 froze rev 3); reopen seeded the
+  // draft at 4; this save lands at 5.
   await expect
     .poll(async () => {
       const f = await prisma.onboardingForm.findUnique({
@@ -545,7 +547,7 @@ test("owner creates, edits, publishes, reopens, v2, and archives", async ({
       });
       return f?.draftRevision;
     })
-    .toBe(6);
+    .toBe(5);
   await page.getByTestId("publish-form").click();
   await expect
     .poll(async () =>
@@ -794,6 +796,8 @@ async function fullLifecycle(page: Page, tag: string, width: number) {
   await expect(page.getByTestId("field-label-0")).toHaveValue(`${tag} renamed`);
   await page.getByTestId("field-label-0").fill(`${tag} v2 label`);
   await page.getByTestId("save-draft").click();
+  // Same fixture sequence: create1 → save2 → save3 → publish stays 3 →
+  // reopen4 → this save lands at 5 (publish never bumps draftRevision).
   await expect
     .poll(async () => {
       const f = await prisma.onboardingForm.findUnique({
@@ -801,7 +805,7 @@ async function fullLifecycle(page: Page, tag: string, width: number) {
       });
       return f?.draftRevision;
     })
-    .toBe(6);
+    .toBe(5);
   // The changed draft previews differently than frozen v1.
   await page.getByTestId("preview-draft-link").click();
   await expect(page.getByTestId("preview-source")).toContainText("draft");

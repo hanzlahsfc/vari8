@@ -291,16 +291,31 @@ for user-facing elements.
   version and is idempotent. An ARCHIVED form is permanently read-only —
   reopen is never offered and the service denies with `form_archived`.
 - Archived form: editor renders read-only (no save/publish/archive/open
-  controls); archived banner.
+  controls); archived banner. Reopen is never offered — verified pinned.
 - Publish history is immutable — version rows never editable.
+- Pending-disable coverage: the slowed-mutation test MUST exercise both
+  save AND open-draft controls while a mutation is in flight, not only the
+  save path.
+- Authorization probes pinned for the editor: the assistant deep link is
+  the reliable page-level guard test (other denied roles are already
+  rejected by the parent staff layout, so only the assistant exercises the
+  resource guard itself); foreign-workspace and nonexistent formIds return
+  the IDENTICAL non-disclosing 403; a mid-session revoked/inactivated
+  member is denied on the next real browser request (no cached authority).
 
 ### Preview pages (5C-4)
 
 - `?src=draft` renders the current draft definition; `?src=version`
   renders the latest published version — explicit and labeled.
+- `?src` missing or carrying any other value fails safely; `?src=version`
+  on a form with ZERO published versions resolves the pinned non-disclosing
+  failure, never a draft leak.
 - All preview inputs disabled; the page issues ZERO mutating requests.
 - Snapshot: storage key→value pairs, draft JSON, draftRevision, version
-  count, audit-event count identical before/after viewing.
+  count, audit-event count identical before/after viewing — the audit
+  delta is asserted on EVERY preview variant, not only `src=draft`.
+- Assistant deep-link denial applies to preview routes for the same
+  page-level guard reason.
 
 ### Browser gates (per increment, prospective RED)
 
@@ -310,6 +325,9 @@ for user-facing elements.
   argument, and revoked-session zero-write. Missing-Origin behavior
   observed and labeled (framework warns+proceeds); proxy trust assumptions
   documented explicitly.
+- Mid-session revocation: demote/inactivate a signed-in member server-side
+  and assert the next real navigation/action is denied — proves no cached
+  authority survives role loss.
 
 ### Increments
 
