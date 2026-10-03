@@ -2141,4 +2141,209 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
       }),
     ).toBe(auditBase);
   });
+
+  // ── Orion 435: reauthorization inside EVERY retry attempt ────────────────
+  // Deterministic mid-retry revocation: the injected client's FIRST
+  // $transaction call mutates the actor's authority (separate client write)
+  // then fails with a synthetic P2034, so a SECOND attempt must re-authorize
+  // inside the transaction — a stale ctx captured before the retry is the
+  // pinned defect. No sleeps, no real concurrency, no broad deletion.
+  const P2034 = () =>
+    new Prisma.PrismaClientKnownRequestError(
+      "INJECTED deterministic serialization failure (first tx attempt)",
+      { code: "P2034", clientVersion: "injected" },
+    );
+
+  /** First $transaction call runs `effect`; later calls pass through. */
+  function interceptFirstTx(
+    real: PrismaClient,
+    effect: (callReal: () => Promise<unknown>) => Promise<unknown>,
+  ): PrismaClient {
+    let seen = false;
+    return new Proxy(real, {
+      get(target, prop, receiver) {
+        if (prop !== "$transaction") {
+          return Reflect.get(target, prop, receiver);
+        }
+        return (...args: unknown[]) => {
+          const callReal = () =>
+            (target.$transaction as (...a: unknown[]) => Promise<unknown>)(
+              ...args,
+            );
+          return seen ? callReal() : ((seen = true), effect(callReal));
+        };
+      },
+    }) as PrismaClient;
+  }
+
+  async function formDelta(formId: string) {
+    const f = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: formId },
+    });
+    return {
+      draft: JSON.stringify(f.draft),
+      draftRevision: f.draftRevision,
+      status: f.status,
+      versions: await prisma.onboardingFormVersion.count({
+        where: { formId },
+      }),
+      audits: await prisma.auditEvent.count({
+        where: { resourceType: "onboarding_form" },
+      }),
+    };
+  }
+
+  it("mid-retry DEMOTION denies a retried save — authz re-read inside the tx", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const seeded = await seedForm(ws.id, m.id, "RetrySave");
+    const before = await formDelta(seeded.id);
+    const flaky = interceptFirstTx(prisma, async () => {
+      await prisma.workspaceMember.update({
+        where: { id: m.id },
+        data: { role: "ASSISTANT_COACH" },
+      });
+      throw P2034();
+    });
+    await expect(
+      saveOnboardingFormDraft(
+        session(owner.id),
+        {
+          workspaceId: ws.id,
+          formId: seeded.id,
+          expectedRevision: 1,
+          draft: draftWith([field(0)]),
+        },
+        flaky,
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+    expect(await formDelta(seeded.id)).toEqual(before);
+  });
+
+  it("mid-retry member SUSPENSION denies a retried publish — zero version/audit delta", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const seeded = await seedForm(ws.id, m.id, "RetryPublish");
+    const saved = await saveOnboardingFormDraft(
+      session(owner.id),
+      {
+        workspaceId: ws.id,
+        formId: seeded.id,
+        expectedRevision: 1,
+        draft: draftWith([field(0)]),
+      },
+      prisma,
+    );
+    const before = await formDelta(seeded.id);
+    const flaky = interceptFirstTx(prisma, async () => {
+      await prisma.workspaceMember.update({
+        where: { id: m.id },
+        data: { status: "SUSPENDED" },
+      });
+      throw P2034();
+    });
+    await expect(
+      publishOnboardingForm(
+        session(owner.id),
+        {
+          workspaceId: ws.id,
+          formId: seeded.id,
+          expectedRevision: saved.revision,
+        },
+        flaky,
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+    expect(await formDelta(seeded.id)).toEqual(before);
+  });
+
+  it("mid-retry workspace SUSPENSION denies a retried open-draft — draft stays closed", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const seeded = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: ws.id,
+        name: "RetryOpen",
+        createdByMemberId: m.id,
+        draft: Prisma.DbNull,
+        draftRevision: 1,
+      },
+      select: { id: true },
+    });
+    const before = await formDelta(seeded.id);
+    const flaky = interceptFirstTx(prisma, async () => {
+      await prisma.workspace.update({
+        where: { id: ws.id },
+        data: { status: "SUSPENDED" },
+      });
+      throw P2034();
+    });
+    await expect(
+      openOnboardingDraft(
+        session(owner.id),
+        { workspaceId: ws.id, formId: seeded.id },
+        flaky,
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+    expect(await formDelta(seeded.id)).toEqual(before);
+  });
+
+  it("mid-retry DEMOTION denies a retried archive — status stays ACTIVE", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const seeded = await seedForm(ws.id, m.id, "RetryArchive");
+    const before = await formDelta(seeded.id);
+    const flaky = interceptFirstTx(prisma, async () => {
+      await prisma.workspaceMember.update({
+        where: { id: m.id },
+        data: { role: "CLIENT" },
+      });
+      throw P2034();
+    });
+    await expect(
+      archiveOnboardingForm(
+        session(owner.id),
+        { workspaceId: ws.id, formId: seeded.id },
+        flaky,
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+    expect(await formDelta(seeded.id)).toEqual(before);
+  });
+
+  it("create: demotion inside the check/write gap denies — authorize runs in the tx", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const auditsBefore = await prisma.auditEvent.count({
+      where: { resourceType: "onboarding_form" },
+    });
+    // No retry here: the gap is authorize() running BEFORE the tx body.
+    // The first (only) $transaction call demotes the member first — the
+    // authorize re-read inside the tx must see the demotion.
+    const flaky = interceptFirstTx(prisma, async (callReal) => {
+      await prisma.workspaceMember.update({
+        where: { id: m.id },
+        data: { role: "ASSISTANT_COACH" },
+      });
+      return callReal();
+    });
+    await expect(
+      createOnboardingForm(
+        session(owner.id),
+        { workspaceId: ws.id, name: "GapCreate" },
+        flaky,
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+    expect(
+      await prisma.onboardingForm.count({ where: { workspaceId: ws.id } }),
+    ).toBe(0);
+    expect(
+      await prisma.auditEvent.count({
+        where: { resourceType: "onboarding_form" },
+      }),
+    ).toBe(auditsBefore);
+  });
 });
