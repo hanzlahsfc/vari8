@@ -59,6 +59,21 @@ start`. Log `red-5c1-browser-v3.log`.
   20/20 @ `453d2bf` (`green-5c1-transport-fix.log`); full gates re-raw'd
   at the same head (`raw-5c1-*-final.log`: mech/unit523/integration281/
   build all exit 0).
+- Security repair (`be20047`, security hold `bf80ae54`, Orion 435):
+  `authorize()` moved INSIDE every mutating tx attempt — save/publish/
+  open/archive re-read membership/role/workspace on the tx client per
+  `withSerializedRetry` attempt; create's check/write gap closed inside
+  its single tx. Tests first @`30a1796` (deterministic injected-client
+  first-attempt P2034 + separate-client revocation: save→demotion,
+  publish→member suspension, open→workspace suspension,
+  archive→demotion, create→in-gap demotion — zero deltas asserted).
+  Raw RED `red-5b-txreauth.log` 5/5 meaningful @`30a1796`. Seam test
+  contract correction disclosed in impl commit (repo now binds tx
+  client for mutating ops; never global). Gates @`be20047`: mech/unit523/
+  integration286(+5)/build/UI1+mount31 all exit 0 (`raw-5b-*.log`,
+  `green-5b-regression-ui1.log`). Lock ordering unchanged (plain authz
+  reads → FOR UPDATE form lock, uniform across ops — no new deadlock
+  channel); retry bounds + replay semantics unchanged.
 - 5C-2a implemented (`0293780`, conditional release `46a908c1`): canonical
   `/onboarding/forms/[formId]` mounts with per-page boundary read —
   read-only in EVERY state (disabled name + disabled field controls, zero
