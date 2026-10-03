@@ -17,7 +17,7 @@ are complete; product direction is now the configurable coaching system in
   identical contract to the prior cycle's RED.
 - Browser RED `es2a-clean-recovery/red-es2a-e2e-local-edit.log`:
   `CI=1 DATABASE_URL=…/p8e_e2e npx playwright test … -g 'local metadata
-  edits arm save'` → 3 meaningful failures (1440/834/390), exit 1 —
+edits arm save'` → 3 meaningful failures (1440/834/390), exit 1 —
   controlled `form-name` input reverts the typed value (inert scaffold).
   Owned `juno-p8-pg`/`p8e_e2e` (fresh DB, negative existence check first);
   port 3000 free; production `build && start`; BUILD_ID `0WkgVkNAMs3l60aq1YrLE467`
