@@ -9,8 +9,8 @@
 // This module is intentionally pure — no React imports — so the seam is
 // unit-testable without a DOM harness.
 //
-// SCAFFOLD ONLY: every body throws "not implemented". Behavioral RED is
-// captured on this committed tree before any helper implementation.
+// Helpers land in per-helper increments, each preceded by a committed
+// behavioral RED — see docs/STATUS.md for the current stage.
 
 export type DraftFieldKind =
   "shortText" | "longText" | "number" | "date" | "singleChoice" | "multiChoice";
@@ -87,7 +87,12 @@ export function adoptSavedResult(
   local: DraftState,
   saved: SavedDraft,
 ): DraftState {
-  throw new Error("not implemented");
+  return {
+    name: saved.definition.title,
+    fields: ordered(saved.definition.fields),
+    revision: saved.revision,
+    dirty: false,
+  };
 }
 
 /**
