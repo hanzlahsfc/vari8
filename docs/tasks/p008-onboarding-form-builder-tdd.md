@@ -252,7 +252,16 @@ production transplant): `new-onboarding-form` (list CTA), `form-name-input`
 `save-draft`, `publish-form`, `archive-form`, `open-draft`,
 `add-field-*`, `add-option-*`, `field-label-*`, `field-options-*`,
 `onboarding-form-preview`, `preview-*`. Accessible roles/names preferred
-for user-facing elements.
+for user-facing elements. Implemented 5C-1 additions, now equally pinned:
+`form-status-badge` (DRAFT/PUBLISHED/ARCHIVED), `form-version` (`v{n}` or
+`—`), `create-onboarding-form` (create form wrapper).
+
+UI1 ownership command (this slice's green scope ONLY — the remaining
+editor/preview specs are intentionally RED, never claim whole-feature
+green): `npx playwright test tests/e2e/onboarding-forms.spec.ts
+--grep-invert "owner creates|editor controls|full lifecycle"` with
+explicit owned `DATABASE_URL` (disposable DB identity mandatory; an unset
+fallback is not disposability proof).
 
 ### List page
 
@@ -261,6 +270,11 @@ for user-facing elements.
 - Empty state with a single primary "New form" action.
 - Status badges distinct for draft-only, published, archived; archived rows
   visibly marked and open the read-only editor view.
+- Mixed state contract (pinned by seed): an OPEN draft over published
+  history shows DRAFT + the retained latest `v{n}` — published history is
+  never implied gone while a current draft exists.
+- Closed-draft fixtures are seeded with `Prisma.DbNull` (SQL NULL) —
+  matching what publish actually writes, not JSON null.
 
 ### Create page
 
@@ -300,8 +314,13 @@ for user-facing elements.
   the reliable page-level guard test (other denied roles are already
   rejected by the parent staff layout, so only the assistant exercises the
   resource guard itself); foreign-workspace and nonexistent formIds return
-  the IDENTICAL non-disclosing 403; a mid-session revoked/inactivated
-  member is denied on the next real browser request (no cached authority).
+  the IDENTICAL non-disclosing 403 — proven with a DUAL-member actor
+  (member of BOTH workspaces): a wsA formId fetched under a wsB URL must
+  exercise the resource-level workspace scoping, not mere nonmembership
+  (the existing list-level foreign test only proves layout nonmembership);
+  an archived form deep link renders the read-only view + banner; a
+  mid-session revoked/inactivated member is denied on the next real
+  browser request (no cached authority).
 
 ### Preview pages (5C-4)
 
@@ -310,6 +329,9 @@ for user-facing elements.
 - `?src` missing or carrying any other value fails safely; `?src=version`
   on a form with ZERO published versions resolves the pinned non-disclosing
   failure, never a draft leak.
+- Version selection is exact: `src=version` renders the LATEST published
+  version; where an explicit version is addressable, an older version
+  renders its own frozen snapshot — never silently the latest.
 - All preview inputs disabled; the page issues ZERO mutating requests.
 - Snapshot: storage key→value pairs, draft JSON, draftRevision, version
   count, audit-event count identical before/after viewing — the audit

@@ -268,7 +268,7 @@ test.describe("seeded list rendering", () => {
         name: "E2E P8 Seed Published",
         createdByMemberId: ownerMemberId,
         draftRevision: 4,
-        draft: Prisma.JsonNull, // publish consumes the open draft
+        draft: Prisma.DbNull, // publish consumes the open draft (SQL NULL)
         versions: {
           create: [
             {
@@ -296,6 +296,46 @@ test.describe("seeded list rendering", () => {
     ).toHaveAttribute("href", `/workspace/${wsId}/onboarding/forms/${form.id}`);
   });
 
+  test("open draft over published history keeps DRAFT badge AND latest version", async ({
+    page,
+  }) => {
+    // Mixed state: a reopened draft coexisting with published versions must
+    // show DRAFT (current draft is what a coach edits) while the retained
+    // latest version stays visible — published history is never implied gone.
+    const form = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: wsId,
+        name: "E2E P8 Seed Mixed",
+        createdByMemberId: ownerMemberId,
+        draftRevision: 4,
+        draft: seedDefinition("E2E P8 Seed Mixed (draft)"),
+        versions: {
+          create: [
+            {
+              versionSeq: 1,
+              definition: seedDefinition("E2E P8 Seed Mixed"),
+              publishOriginRevision: 2,
+              publishedByMemberId: ownerMemberId,
+            },
+            {
+              versionSeq: 2,
+              definition: seedDefinition("E2E P8 Seed Mixed v2"),
+              publishOriginRevision: 3,
+              publishedByMemberId: ownerMemberId,
+            },
+          ],
+        },
+      },
+      select: { id: true },
+    });
+    const row = await listRow(page, "E2E P8 Seed Mixed");
+    await expect(row.getByTestId("form-status-badge")).toHaveText("DRAFT");
+    await expect(row.getByTestId("form-version")).toHaveText("v2");
+    await expect(
+      row.getByRole("link", { name: "E2E P8 Seed Mixed" }),
+    ).toHaveAttribute("href", `/workspace/${wsId}/onboarding/forms/${form.id}`);
+  });
+
   test("archived form renders ARCHIVED status and retained version", async ({
     page,
   }) => {
@@ -308,7 +348,7 @@ test.describe("seeded list rendering", () => {
         archivedAt: new Date(),
         archivedByMemberId: ownerMemberId,
         draftRevision: 2,
-        draft: Prisma.JsonNull,
+        draft: Prisma.DbNull,
         versions: {
           create: [
             {
