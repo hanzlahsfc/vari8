@@ -5,6 +5,27 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-009 ES-2A clean-recovery — prospective RED captured (STOPPED for review)
+
+- Head at capture: `65fdab4` (docs commit; code/tests identical to base
+  `ea8400e`). Both runs recorded clean `git status --porcelain` PATH
+  snapshots before AND after; SHA unchanged inside each capture window.
+- DOM subset RED `es2a-clean-recovery/red-es2a-dom-subset.log`:
+  `npx vitest run …dom.test.tsx -t 'mount surface|props reseed'` →
+  4 AssertionError + 1 markup pass + 12 skipped, exit 1. Failures are
+  absent-behavior on the inert scaffold (edit arming + 3 reseed cases),
+  identical contract to the prior cycle's RED.
+- Browser RED `es2a-clean-recovery/red-es2a-e2e-local-edit.log`:
+  `CI=1 DATABASE_URL=…/p8e_e2e npx playwright test … -g 'local metadata
+  edits arm save'` → 3 meaningful failures (1440/834/390), exit 1 —
+  controlled `form-name` input reverts the typed value (inert scaffold).
+  Owned `juno-p8-pg`/`p8e_e2e` (fresh DB, negative existence check first);
+  port 3000 free; production `build && start`; BUILD_ID `0WkgVkNAMs3l60aq1YrLE467`
+  (sha256 `467fb76a…`, snapshot copy preserved next to the log).
+- This RED is prospective evidence for the NEW cycle head only — it does
+  not repair the historical run and is not cited as its proof.
+- STOPPED for root review; no ES-2A implementation yet.
+
 ## 2026-10-04 — P-009 ES-2A clean-recovery cycle — provenance doc (STOPPED before RED)
 
 - New branch `feature/p008-editor-save-recovery-es2a` + worktree
