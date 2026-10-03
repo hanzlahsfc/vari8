@@ -5,6 +5,33 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-03 — P-008-R editor save recovery — ES-1 helpers complete (STOPPED)
+
+- Apollo release `a121bc12` authorized ES-1b then ES-1c as separate
+  sequential helper cycles (ES-1a `6e25230` incrementally accepted — not
+  final review).
+- ES-1b: RED recaptured on clean `8b3a095` (`red-es-1b-recapture-preimpl.log`
+  2/2 throws, exit 1) → impl `3d2e18c` (`adoptSavedResult`: server
+  `definition.title`/ordered fields+ids/revision, dirty clears; stale
+  scaffold header corrected). `green-es-1b-scoped.log` 2/2 exit 0;
+  `green-es-1a-regression.log` 6/6 exit 0; honest full-file
+  `raw-es-1b-fullfile.log` 8 pass/8 fail exit 1 (ES-1c still RED).
+- ES-1c: RED recaptured on clean `3d2e18c` (`red-es-1c-recapture-preimpl.log`
+  8/8 throws, exit 1) → impl `f13a970` (`addDraftField`: immutable append,
+  next contiguous order, blank metadata, no ids, dirty=true, exactly one
+  blank option for choice kinds, none otherwise).
+- Gates @ `f13a970`: `green-es-1c-fullfile.log` 16/16 exit 0;
+  `green-es-1c-fullunit.log` 49 files/539 tests exit 0 (rest of repo
+  unaffected); `raw-es-1c-format.log`/`raw-es-1c-typecheck.log`/
+  `raw-es-1c-lint.log` all exit 0 (the earlier 4 unused-param stub warnings
+  are gone — no lint findings at all now).
+- Mutant check (`mutant-monotonic-guard.log`): monotonic guard removed in
+  isolated detached worktree `../p008-mutant-1` → ES-1a stale-props test
+  FAILED as required (1 fail, exit 1); worktree removed; restoration proof
+  sha256 `ba04c28e…` identical before/after + clean porcelain.
+- STOPPED before DOM deps/tests/UI/editor wiring (ES-2). No push/PR/merge/
+  deploy.
+
 ## 2026-10-03 — P-008-R editor save recovery — ES-1a implemented (STOPPED)
 
 - Apollo release `cdae666d` authorized ES-1a implementation ONLY. RED
