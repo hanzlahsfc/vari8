@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   initialDraftState,
+  reseedDraftState,
+  type DraftField,
   type DraftFieldKind,
   type DraftState,
 } from "@/components/onboarding/state";
@@ -25,17 +27,16 @@ const isChoice = (kind: DraftFieldKind) =>
 const noop = () => {};
 
 /**
- * P-008-R ES-2 callable scaffold — REAL selector surface, INERT handlers.
+ * P-008-R ES-2A — metadata editing + dirty arming + props reseed.
  *
- * Renders the pinned contract surface (`form-name`, `field-label-*`,
- * `field-required-*`, `field-help-*`, `field-options-*`, `add-option-*`,
- * `add-field-*`, `save-draft`, an empty `role="alert"` region) from the
- * actual mounted props via `initialDraftState`. Every handler is a no-op:
- * no edits, no dirty arming, no props reseed, no save action invocation —
- * those behaviors land in the committed-increment cycles gated by the
- * DOM harness and the browser suite. This component is testable-only,
- * never a shipped state: no fake alerts, no fake answers, no fabricated
- * state.
+ * Editing EXISTING metadata (form name, field label/required/help, option
+ * label) updates local state and arms the save control; all of it is
+ * client-local — no action invocation, no network/storage/DB delta.
+ * Incoming server props flow through `reseedDraftState`: dirty local
+ * edits are never clobbered, clean state adopts only a same-or-newer
+ * revision (monotonic). Structure operations (add/remove/move field,
+ * add/remove option) and the save action itself remain INERT for the
+ * ES-2B / ES-3 cycles.
  */
 export function DraftEditor({
   initialName,
@@ -48,9 +49,49 @@ export function DraftEditor({
   initialRevision: number;
   initialDraft: EditorDefinition;
 }) {
-  const [state] = useState<DraftState>(() =>
+  const [state, setState] = useState<DraftState>(() =>
     initialDraftState(initialName, initialRevision, initialDraft),
   );
+
+  // Route incoming server props through the monotonic seam.
+  useEffect(() => {
+    setState((prev) =>
+      reseedDraftState(
+        prev,
+        initialDraftState(initialName, initialRevision, initialDraft),
+      ),
+    );
+  }, [initialName, initialRevision, initialDraft]);
+
+  const updateName = (name: string) =>
+    setState((prev) => ({ ...prev, name, dirty: true }));
+
+  const updateField = (index: number, patch: Partial<DraftField>) =>
+    setState((prev) => ({
+      ...prev,
+      dirty: true,
+      fields: prev.fields.map((f, i) => (i === index ? { ...f, ...patch } : f)),
+    }));
+
+  const updateOption = (
+    fieldIndex: number,
+    optionIndex: number,
+    label: string,
+  ) =>
+    setState((prev) => ({
+      ...prev,
+      dirty: true,
+      fields: prev.fields.map((f, i) =>
+        i === fieldIndex
+          ? {
+              ...f,
+              options: (f.options ?? []).map((o, j) =>
+                j === optionIndex ? { ...o, label } : o,
+              ),
+            }
+          : f,
+      ),
+    }));
 
   return (
     <>
@@ -61,7 +102,7 @@ export function DraftEditor({
             className="auth-input"
             data-testid="form-name"
             id="onboarding-form-name"
-            onChange={noop}
+            onChange={(e) => updateName(e.target.value)}
             type="text"
             value={state.name}
           />
@@ -77,7 +118,9 @@ export function DraftEditor({
                   className="auth-input"
                   data-testid={`field-label-${index}`}
                   id={`field-label-${index}`}
-                  onChange={noop}
+                  onChange={(e) =>
+                    updateField(index, { label: e.target.value })
+                  }
                   type="text"
                   value={field.label}
                 />
@@ -87,7 +130,9 @@ export function DraftEditor({
                 <input
                   data-testid={`field-required-${index}`}
                   id={`field-required-${index}`}
-                  onChange={noop}
+                  onChange={(e) =>
+                    updateField(index, { required: e.target.checked })
+                  }
                   checked={field.required}
                   type="checkbox"
                 />
@@ -98,7 +143,9 @@ export function DraftEditor({
                   className="auth-input"
                   data-testid={`field-help-${index}`}
                   id={`field-help-${index}`}
-                  onChange={noop}
+                  onChange={(e) =>
+                    updateField(index, { helpText: e.target.value })
+                  }
                   type="text"
                   value={field.helpText ?? ""}
                 />
@@ -110,7 +157,9 @@ export function DraftEditor({
                       <input
                         aria-label={`Option ${oi + 1}`}
                         className="auth-input"
-                        onChange={noop}
+                        onChange={(e) =>
+                          updateOption(index, oi, e.target.value)
+                        }
                         placeholder="Option label"
                         type="text"
                         value={option.label}
