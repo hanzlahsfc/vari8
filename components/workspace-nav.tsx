@@ -28,6 +28,12 @@ export function WorkspaceNav({
       action: "read",
     },
     {
+      href: `/workspace/${workspaceId}/onboarding/forms`,
+      label: "Onboarding Forms",
+      resource: "onboardingFormTemplates",
+      action: "read",
+    },
+    {
       href: `/workspace/${workspaceId}/nutrition`,
       label: "Nutrition Database",
       resource: "foodExerciseMasterData",
