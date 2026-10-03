@@ -369,6 +369,38 @@ test.describe("seeded list rendering", () => {
       row.getByRole("link", { name: "E2E P8 Seed Archived" }),
     ).toHaveAttribute("href", `/workspace/${wsId}/onboarding/forms/${form.id}`);
   });
+
+  for (const width of [1440, 834, 390] as const) {
+    test(`populated list has no horizontal overflow at ${width}px`, async ({
+      page,
+    }) => {
+      // A real multi-row table — including a long name — must not push the
+      // page viewport at any pinned width.
+      const longTail = "longnamesegment".repeat(6); // 90 chars
+      for (let i = 1; i <= 5; i += 1) {
+        await prisma.onboardingForm.create({
+          data: {
+            workspaceId: wsId,
+            name: i === 5 ? `E2E P8 Pop ${longTail}` : `E2E P8 Pop ${i} short`,
+            createdByMemberId: ownerMemberId,
+            draft: seedDefinition(`E2E P8 Pop ${i}`),
+          },
+          select: { id: true },
+        });
+      }
+      await page.setViewportSize({ width, height: 900 });
+      await signIn(page, E2E.owner);
+      await page.goto(`/workspace/${wsId}/onboarding/forms`);
+      await expect(page.getByTestId("onboarding-forms-table")).toBeVisible();
+      expect(
+        await page.evaluate(
+          () =>
+            document.documentElement.scrollWidth >
+            document.documentElement.clientWidth,
+        ),
+      ).toBe(false);
+    });
+  }
 });
 
 test.describe("empty list + controlled-pending create", () => {
@@ -455,6 +487,71 @@ test.describe("empty list + controlled-pending create", () => {
       expect(rows).toBe(1);
     });
   }
+
+  test("aborted action transport surfaces a safe inline error; retry succeeds", async ({
+    page,
+  }) => {
+    await signIn(page, E2E.owner);
+    await page.goto(`/workspace/${wsId}/onboarding/forms`);
+    await expect(page.getByTestId("onboarding-empty-state")).toBeVisible();
+    await page.getByTestId("new-onboarding-form").click();
+    await expect(page).toHaveURL(/onboarding\/forms\/new$/);
+
+    const auditsBefore = await prisma.auditEvent.count({
+      where: { resourceType: "onboarding_form" },
+    });
+
+    // Deterministic transport failure: the action POST is aborted at the
+    // network layer before delivery — the server never sees it, so zero
+    // DB/audit mutation is provable. This does NOT claim client-side
+    // rollback: if a mutation raced past an abort point it would be a
+    // different (server-side) failure mode.
+    await page.route(`**/onboarding/forms/new`, async (route) => {
+      if (route.request().method() === "POST") {
+        await route.abort();
+        return;
+      }
+      await route.continue();
+    });
+
+    const submit = page.getByRole("button", { name: "Create form" });
+    const input = page.getByTestId("form-name-input");
+    await input.fill("E2E P8 transport");
+    await submit.click();
+
+    // Safe inline failure inside the create form — the generic boundary
+    // message, never a thrown transport exception, stack, or payload.
+    await expect(
+      page.getByTestId("create-onboarding-form").getByRole("alert"),
+    ).toContainText("Something went wrong");
+    // Pending cleared: both controls usable again, typed name preserved.
+    await expect(submit).toBeEnabled();
+    await expect(input).toBeEnabled();
+    await expect(input).toHaveValue("E2E P8 transport");
+    // Stayed on /new; nothing was created or audited for the abort.
+    await expect(page).toHaveURL(/onboarding\/forms\/new$/);
+    expect(
+      await prisma.onboardingForm.count({
+        where: { workspaceId: wsId, name: "E2E P8 transport" },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.auditEvent.count({
+        where: { resourceType: "onboarding_form" },
+      }),
+    ).toBe(auditsBefore);
+
+    // Retry path stays usable: with the abort lifted the same name submits
+    // cleanly and lands on the canonical editor route with exactly one row.
+    await page.unroute(`**/onboarding/forms/new`);
+    await submit.click();
+    await expect(page).toHaveURL(/onboarding\/forms\/(?!new$)[A-Za-z0-9_-]+$/);
+    expect(
+      await prisma.onboardingForm.count({
+        where: { workspaceId: wsId, name: "E2E P8 transport" },
+      }),
+    ).toBe(1);
+  });
 });
 
 test("owner creates, edits, publishes, reopens, v2, and archives", async ({
