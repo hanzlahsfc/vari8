@@ -42,6 +42,9 @@ export type SavedDraft = {
   definition: { title: string; fields: DraftField[] };
 };
 
+const ordered = (fields: DraftField[]): DraftField[] =>
+  [...fields].sort((a, b) => a.order - b.order);
+
 /**
  * Seed the editor's initial local state from mounted server props.
  * Contract: fields ordered by `order`, dirty = false.
@@ -51,7 +54,12 @@ export function initialDraftState(
   revision: number,
   definition: { title: string; fields: DraftField[] },
 ): DraftState {
-  throw new Error("not implemented");
+  return {
+    name,
+    fields: ordered(definition.fields),
+    revision,
+    dirty: false,
+  };
 }
 
 /**
@@ -64,7 +72,9 @@ export function reseedDraftState(
   local: DraftState,
   incoming: DraftState,
 ): DraftState {
-  throw new Error("not implemented");
+  return local.dirty || incoming.revision < local.revision
+    ? local
+    : { ...incoming, dirty: false };
 }
 
 /**
