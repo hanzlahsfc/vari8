@@ -244,10 +244,13 @@ describe("DraftEditor — save wiring (intentionally RED until ES-3)", () => {
   it("disables every mutation control while the save is in flight, then re-enables", async () => {
     const { DraftEditor } = await load();
     let release: (value: ReturnType<typeof savedResult>) => void = () => {};
-    saveDraftMock.mockReturnValue(
-      new Promise((resolve) => {
-        release = resolve;
-      }),
+    // Deferred via mockImplementation so no promise exists (and nothing
+    // dangles) while the action is still unwired on the scaffold.
+    saveDraftMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
     );
     render(<DraftEditor {...baseProps} />);
     fireEvent.change(input("form-name"), {
@@ -295,7 +298,12 @@ describe("DraftEditor — save wiring (intentionally RED until ES-3)", () => {
 
   it("a transport failure shows the generic alert, preserves edits, and does not auto-retry", async () => {
     const { DraftEditor } = await load();
-    saveDraftMock.mockRejectedValue(new Error("network down"));
+    // mockImplementation, not mockRejectedValue — the rejection must only
+    // exist if the action is actually invoked (no eager unhandled
+    // rejection while the stub is inert).
+    saveDraftMock.mockImplementation(() =>
+      Promise.reject(new Error("network down")),
+    );
     render(<DraftEditor {...baseProps} />);
     fireEvent.change(input("field-label-0"), {
       target: { value: "Edit before abort" },
