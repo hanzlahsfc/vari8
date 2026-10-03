@@ -107,7 +107,11 @@ mount-v2.log` (11/11 @`2afe9c4`) → mount `5c36cbe` → test fixes
 e2e-ui1-final}.log`; earlier `green-5c1-*` logs labeled SUMMARY (original
   raw stdout was not persisted — recorded honestly). Credentials redacted
   in all manifests. UI1 targeted green: 16/16 @ `d628936`.
-- **STOPPED for Apollo audit before editor work.** No push/PR/deploy.
+- **STOPPED for Apollo audit before editor work** — historical point in
+  time for the 5C-1 handoff. Since superseded: the read-only 5C-2a mount
+  passed Helios/model review and Atlas evidence audit; editor mutation UI
+  remains under an ACTIVE security hold (bf80ae54 repair landed `be20047`,
+  further reviews pending). No push/PR/deploy.
 
 - The first P-008 candidate (`feature/p008-onboarding-form-builder` @ `d10d788`)
   passed all technical review but implemented production code before its tests;

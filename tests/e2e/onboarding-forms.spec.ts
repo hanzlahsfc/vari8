@@ -615,6 +615,38 @@ test.describe("editor mount + read guards", () => {
     }
   }
 
+  /**
+   * Complete zero-delta proof for mount (Atlas follow-up): the mount is a
+   * pure read — serialized workspace forms (name/status/draft/revision/
+   * updatedAt/editor+archival stamps), all version rows, and all
+   * onboarding audit rows must be byte-identical before and after.
+   */
+  const workspaceSnapshot = async () => ({
+    forms: await prisma.onboardingForm.findMany({
+      where: { workspaceId: wsId },
+      orderBy: { id: "asc" },
+    }),
+    versions: await prisma.onboardingFormVersion.findMany({
+      where: { form: { workspaceId: wsId } },
+      orderBy: [{ formId: "asc" }, { versionSeq: "asc" }],
+    }),
+    audits: await prisma.auditEvent.findMany({
+      where: { resourceType: "onboarding_form", workspaceId: wsId },
+      orderBy: { id: "asc" },
+    }),
+  });
+
+  /** Every non-GET request post-signin on ANY path — mount writes none. */
+  function trackNonGet(page: Page): string[] {
+    const requests: string[] = [];
+    page.on("request", (req) => {
+      if (req.method() !== "GET") {
+        requests.push(`${req.method()} ${req.url()}`);
+      }
+    });
+    return requests;
+  }
+
   test("unauthenticated deep link to the editor redirects to /login", async ({
     page,
   }) => {
@@ -709,17 +741,11 @@ test.describe("editor mount + read guards", () => {
     const form = await seedForm("E2E P8 Mount Draft", {
       draft: seedDefinition("E2E P8 Mount Draft"),
     });
-    const auditsBefore = await prisma.auditEvent.count({
-      where: { resourceType: "onboarding_form" },
-    });
+    const before = await workspaceSnapshot();
     await signIn(page, E2E.coach);
-    // Count only post-signin mutating requests to the onboarding routes —
-    // the mount itself must issue none.
-    const mutating: string[] = [];
-    page.on("request", (req) => {
-      if (req.method() !== "GET" && req.url().includes("/onboarding/"))
-        mutating.push(`${req.method()} ${req.url()}`);
-    });
+    // EVERY non-GET post-signin on ANY path — the mount itself must write
+    // nothing at all (no onboarding-only scoping).
+    const mutating = trackNonGet(page);
     const res = await page.goto(
       `/workspace/${wsId}/onboarding/forms/${form.id}`,
     );
@@ -733,18 +759,12 @@ test.describe("editor mount + read guards", () => {
     await expect(page.getByTestId("draft-editor")).toContainText("Full name");
     await expectMountReadOnly(page);
     await expectAllControlsDisabled(page, "draft-editor");
-    // Mount issues ZERO mutating requests and writes nothing — no row,
-    // no revision, no audit delta.
+    // Mount issues ZERO mutating requests on any path, and the complete
+    // workspace state is byte-identical — serialized forms (name/status/
+    // draft/revision/updatedAt/editor+archival stamps), all version rows,
+    // all audit rows.
     expect(mutating).toEqual([]);
-    const after = await prisma.onboardingForm.findUniqueOrThrow({
-      where: { id: form.id },
-    });
-    expect(after.draftRevision).toBe(1);
-    expect(
-      await prisma.auditEvent.count({
-        where: { resourceType: "onboarding_form" },
-      }),
-    ).toBe(auditsBefore);
+    expect(await workspaceSnapshot()).toEqual(before);
   });
 
   test("active form without a draft mounts the no-draft read state", async ({
@@ -763,7 +783,9 @@ test.describe("editor mount + read guards", () => {
         ],
       },
     });
+    const before = await workspaceSnapshot();
     await signIn(page, E2E.owner);
+    const mutating = trackNonGet(page);
     const res = await page.goto(
       `/workspace/${wsId}/onboarding/forms/${form.id}`,
     );
@@ -775,6 +797,8 @@ test.describe("editor mount + read guards", () => {
     await expect(page.getByTestId("no-draft")).toBeVisible();
     await expect(page.getByTestId("draft-editor")).toHaveCount(0);
     await expectMountReadOnly(page);
+    expect(mutating).toEqual([]);
+    expect(await workspaceSnapshot()).toEqual(before);
   });
 
   test("archived form mounts permanently read-only: banner, no mutation controls", async ({
@@ -796,7 +820,9 @@ test.describe("editor mount + read guards", () => {
         ],
       },
     });
+    const before = await workspaceSnapshot();
     await signIn(page, E2E.owner);
+    const mutating = trackNonGet(page);
     const res = await page.goto(
       `/workspace/${wsId}/onboarding/forms/${form.id}`,
     );
@@ -809,6 +835,8 @@ test.describe("editor mount + read guards", () => {
     // Permanently read-only: reopen is NEVER offered on an archived form,
     // and no save/publish/archive control may render at all.
     await expectMountReadOnly(page);
+    expect(mutating).toEqual([]);
+    expect(await workspaceSnapshot()).toEqual(before);
   });
 
   test("archived form WITH a preserved draft renders its content read-only", async ({
@@ -832,7 +860,9 @@ test.describe("editor mount + read guards", () => {
         ],
       },
     });
+    const before = await workspaceSnapshot();
     await signIn(page, E2E.owner);
+    const mutating = trackNonGet(page);
     const res = await page.goto(
       `/workspace/${wsId}/onboarding/forms/${form.id}`,
     );
@@ -843,6 +873,8 @@ test.describe("editor mount + read guards", () => {
     await expect(page.getByTestId("draft-editor")).toContainText("Full name");
     await expectMountReadOnly(page);
     await expectAllControlsDisabled(page, "draft-editor");
+    expect(mutating).toEqual([]);
+    expect(await workspaceSnapshot()).toEqual(before);
   });
 
   for (const width of [1440, 834, 390] as const) {
@@ -852,11 +884,15 @@ test.describe("editor mount + read guards", () => {
       const form = await seedForm("E2E P8 Mount Width", {
         draft: seedDefinition("E2E P8 Mount Width"),
       });
+      const before = await workspaceSnapshot();
       await page.setViewportSize({ width, height: 900 });
       await signIn(page, E2E.coach);
+      const mutating = trackNonGet(page);
       await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
       await expect(page.getByTestId("onboarding-form-editor")).toBeVisible();
       await expectMountReadOnly(page);
+      expect(mutating).toEqual([]);
+      expect(await workspaceSnapshot()).toEqual(before);
       expect(
         await page.evaluate(
           () =>

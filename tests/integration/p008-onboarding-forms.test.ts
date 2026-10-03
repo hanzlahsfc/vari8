@@ -2350,4 +2350,137 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
       }),
     ).toBe(auditsBefore);
   });
+
+  it("mutations bind the authz repo to the TRANSACTION client; reads bind the injected client", async () => {
+    // Exact-binding proof (Orion+Helios re-review): a $transaction wrapper on
+    // the injected client captures the REAL transaction object each service
+    // call receives; the repo factory must be invoked with THAT exact tx —
+    // never the injected client, never the module-global, never an arbitrary
+    // substitute.
+    const spy = vi.spyOn(accessModule, "createPrismaAuthorizationRepo");
+    try {
+      const ws = await workspace();
+      const owner = await user();
+      const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+      const seeded = await seedForm(ws.id, m.id, "TxBindRead");
+      const txSeen: unknown[] = [];
+      const wrapped = new Proxy(prisma, {
+        get(target, prop, receiver) {
+          if (prop !== "$transaction") {
+            return Reflect.get(target, prop, receiver);
+          }
+          return (
+            fn: (tx: Prisma.TransactionClient) => Promise<unknown>,
+            opts?: unknown,
+          ) =>
+            (target.$transaction as (...a: unknown[]) => Promise<unknown>)(
+              async (tx: Prisma.TransactionClient) => {
+                txSeen.push(tx);
+                return fn(tx);
+              },
+              opts,
+            );
+        },
+      }) as PrismaClient;
+
+      await listOnboardingForms(
+        session(owner.id),
+        { workspaceId: ws.id },
+        wrapped,
+      );
+      await getOnboardingForm(
+        session(owner.id),
+        { workspaceId: ws.id, formId: seeded.id },
+        wrapped,
+      );
+      const created = await createOnboardingForm(
+        session(owner.id),
+        { workspaceId: ws.id, name: "TxBindWrite" },
+        wrapped,
+      );
+      await saveOnboardingFormDraft(
+        session(owner.id),
+        {
+          workspaceId: ws.id,
+          formId: created.formId,
+          expectedRevision: 1,
+          draft: draftWith([field(0)]),
+        },
+        wrapped,
+      );
+      await publishOnboardingForm(
+        session(owner.id),
+        {
+          workspaceId: ws.id,
+          formId: created.formId,
+          expectedRevision: 2,
+        },
+        wrapped,
+      );
+      await openOnboardingDraft(
+        session(owner.id),
+        { workspaceId: ws.id, formId: created.formId },
+        wrapped,
+      );
+      await archiveOnboardingForm(
+        session(owner.id),
+        { workspaceId: ws.id, formId: created.formId },
+        wrapped,
+      );
+
+      const args = spy.mock.calls.map((c) => c[0]);
+      expect(args.length).toBeGreaterThanOrEqual(7);
+      // Reads: bound to the injected client itself.
+      expect(args[0]).toBe(wrapped);
+      expect(args[1]).toBe(wrapped);
+      // Mutations: bound to the EXACT transaction client each call ran in —
+      // captured by the wrapper, not asserted by type or exclusion.
+      expect(txSeen).toHaveLength(5);
+      for (let i = 0; i < txSeen.length; i += 1) {
+        expect(args[2 + i]).toBe(txSeen[i]);
+        expect(args[2 + i]).not.toBe(wrapped);
+        expect(args[2 + i]).not.toBe(prisma);
+        expect(args[2 + i]).not.toBe(globalPrisma);
+      }
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("mid-retry user DEACTIVATED denies a retried save — zero deltas", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const seeded = await seedForm(ws.id, m.id, "RetryUser");
+    const before = await formDelta(seeded.id);
+    const flaky = interceptFirstTx(prisma, async () => {
+      await prisma.user.update({
+        where: { id: owner.id },
+        data: { status: "DEACTIVATED" },
+      });
+      throw P2034();
+    });
+    try {
+      await expect(
+        saveOnboardingFormDraft(
+          session(owner.id),
+          {
+            workspaceId: ws.id,
+            formId: seeded.id,
+            expectedRevision: 1,
+            draft: draftWith([field(0)]),
+          },
+          flaky,
+        ),
+      ).rejects.toBeInstanceOf(AccessDeniedError);
+      expect(await formDelta(seeded.id)).toEqual(before);
+    } finally {
+      // Restore the fixture user so a later test on the same DB sees the
+      // intended state regardless of assertion outcome.
+      await prisma.user.update({
+        where: { id: owner.id },
+        data: { status: "ACTIVE" },
+      });
+    }
+  });
 });
