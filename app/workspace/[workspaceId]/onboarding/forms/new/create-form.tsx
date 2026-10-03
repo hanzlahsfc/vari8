@@ -32,7 +32,17 @@ export function CreateOnboardingForm({ workspaceId }: { workspaceId: string }) {
     }
     setError(null);
     startTransition(async () => {
-      const result = await createForm(workspaceId, formData);
+      let result: Awaited<ReturnType<typeof createForm>>;
+      try {
+        result = await createForm(workspaceId, formData);
+      } catch {
+        // Transport-level rejection (aborted/unreachable action POST) must
+        // not escape the transition as an unhandled error — surface the
+        // same generic message the boundary uses; no payload, no logging
+        // of input values.
+        setError("Something went wrong. Please try again in a moment.");
+        return;
+      }
       if (result.ok) {
         router.push(
           `/workspace/${workspaceId}/onboarding/forms/${result.value.formId}`,
