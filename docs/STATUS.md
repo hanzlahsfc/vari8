@@ -26,7 +26,7 @@ are complete; product direction is now the configurable coaching system in
   `juno-p8-pg`/`p8e_e2e`, `CI=1`, production build+start — incl. 3
   local-edit widths asserting zero non-GET/storage/DB delta; GREEN
   BUILD_ID `4oU0hfNUsx4w8ljkL2pup` sha256 `853886d0…`, RED BUILD_ID
-  `0WkgVkNAMs3l60aq1YrLE467` snapshot preserved.
+  `0WkgVkNAMs3l60aq1YrLE` snapshot preserved.
 - First format attempt `raw-es2a-format.log` @`36a2f8f` failed on a
   STATUS.md whitespace issue — preserved; fixed docs-only `63dfa4e`,
   NEWCURRENT recapture exit 0.
@@ -47,7 +47,7 @@ are complete; product direction is now the configurable coaching system in
 edits arm save'` → 3 meaningful failures (1440/834/390), exit 1 —
   controlled `form-name` input reverts the typed value (inert scaffold).
   Owned `juno-p8-pg`/`p8e_e2e` (fresh DB, negative existence check first);
-  port 3000 free; production `build && start`; BUILD_ID `0WkgVkNAMs3l60aq1YrLE467`
+  port 3000 free; production `build && start`; BUILD_ID `0WkgVkNAMs3l60aq1YrLE`
   (sha256 `467fb76a…`, snapshot copy preserved next to the log).
 - This RED is prospective evidence for the NEW cycle head only — it does
   not repair the historical run and is not cited as its proof.

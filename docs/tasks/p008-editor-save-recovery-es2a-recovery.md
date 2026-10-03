@@ -79,7 +79,46 @@ reports, which remain preserved unchanged under the old branch and
 
 - **ES-2A (this cycle):** RED checkpoint → root review → minimal impl →
   scoped GREEN (DOM subset + 3-width local-edit browser) + ES-1 regression.
+  DONE: impl `36a2f8f`, gates @`63dfa4e`, record `023de20`.
 - **ES-2B:** structure ops only, its own committed-tests-first cycle.
 - **ES-3:** save wiring, its own committed-tests-first cycle.
 - No push/PR/merge/deploy at any point; user merge approval is a separate
   later gate.
+
+## ES-2B acceptance (prep release `7344de53`, 2026-10-04)
+
+**Scope:** field add/remove/move-up + option add/remove on EXISTING
+rendered rows — client-local edits that arm save. Save stays INERT;
+server-id/payload assertions stay deferred to ES-3. No backend, helper,
+page-wiring, or dependency changes; no invented IDs.
+
+**Test contract (committed before any production):**
+
+- DOM harness `field structure ops` describe: add/remove/move-up field,
+  option remove+add AND standalone option add, all six `add-field-*`
+  kinds, exactly-one-blank-option for BOTH choice kinds, no options
+  region for non-choice kinds, contiguous rendered row sequence,
+  dirty arming after each op.
+- Browser: NEW `local structure edits arm save — zero
+network/storage/DB delta` case at 1440/834/390 — real add-field /
+  add-option / move-up / remove-field clicks, then zero non-GET
+  requests, unchanged `storageSnapshot`, byte-identical
+  `workspaceSnapshot`, armed save.
+- Dedicated both-choice blank-option browser cases (existing,
+  `seeds exactly one blank option input`) remain governing.
+- Strengthening landed prep-side: three-width local-edit case now uses
+  the `storageSnapshot` sorted key→value helper (was `Object.keys`) —
+  immediate-PASS additional proof, not a fabricated RED; two vitest
+  deferred/probe comments reworded to observed-symptom +
+  defensive-guard (comment-only).
+
+**Governing RED (clean committed head):** DOM `field structure ops`
+subset + dedicated blank-option browser + new local-structure browser
+case, all meaningful absent-behavior failures.
+
+**Impl acceptance (later release):** scoped structure GREEN (DOM subset
+
+- new local-structure browser + blank-option browser), ES-2A metadata
+  DOM subset + local-edit browser regression GREEN, ES-1 17/17, format/
+  lint/typecheck 0; remaining RED enumerated (ES-3 save 5 + deferred
+  payload 3). Structure GREEN does NOT imply save/whole-file green.
