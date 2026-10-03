@@ -48,9 +48,17 @@ start`. Log `red-5c1-browser-v3.log`.
   disclosed: no separate browser RED ran between `8b0cb40` and `e72b77b`;
   the `40a5115` suite RED covered both increments prospectively. Evidence
   logs sanitized (`<redacted-credentials>`, outside Git).
+- Evidence audit follow-up (`d628936`, tests/docs only): Helios40/14 prep —
+  `Prisma.DbNull` closed-draft seeds, mixed-state open-draft+published
+  list test (DRAFT badge + retained `v2`), pinned new testids + UI1
+  `--grep-invert` ownership command, dual-member cross-workspace isolation,
+  archived deep-link and exact preview version selection pinned for later
+  slices. Raw gate captures re-run on clean head — tee'd stdout/stderr/
+  exit/UTC/SHA: `raw-5c1-{mech,unit,integration,build,e2e-ui1,
+e2e-ui1-final}.log`; earlier `green-5c1-*` logs labeled SUMMARY (original
+  raw stdout was not persisted — recorded honestly). Credentials redacted
+  in all manifests. UI1 targeted green: 16/16 @ `d628936`.
 - **STOPPED for Apollo audit before editor work.** No push/PR/deploy.
-
-## 2026-10-02 — P-008 onboarding form builder (TDD recovery, in progress)
 
 - The first P-008 candidate (`feature/p008-onboarding-form-builder` @ `d10d788`)
   passed all technical review but implemented production code before its tests;
