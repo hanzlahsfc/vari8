@@ -48,6 +48,17 @@ start`. Log `red-5c1-browser-v3.log`.
   disclosed: no separate browser RED ran between `8b0cb40` and `e72b77b`;
   the `40a5115` suite RED covered both increments prospectively. Evidence
   logs sanitized (`<redacted-credentials>`, outside Git).
+- Review-repair (`453d2bf`): Helios pinned transport-rejection defect in
+  `create-form.tsx` — the action `await` had no catch, so an aborted POST
+  escaped the transition unhandled. Sequence kept test-first: `40bef8e`
+  committed the deterministic abort test + populated-list overflow (3
+  widths) on the clean tree → raw RED `red-5c1-transport.log` (alert
+  absent); `453d2bf` adds a catch narrowed to the action call → generic
+  inline error, pending clears, name preserved, retry usable, zero
+  DB/audit mutation proven for the aborted case. UI1 targeted green now
+  20/20 @ `453d2bf` (`green-5c1-transport-fix.log`); full gates re-raw'd
+  at the same head (`raw-5c1-*-final.log`: mech/unit523/integration281/
+  build all exit 0).
 - Evidence audit follow-up (`d628936`, tests/docs only): Helios40/14 prep —
   `Prisma.DbNull` closed-draft seeds, mixed-state open-draft+published
   list test (DRAFT badge + retained `v2`), pinned new testids + UI1

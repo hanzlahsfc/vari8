@@ -275,6 +275,13 @@ fallback is not disposability proof).
   never implied gone while a current draft exists.
 - Closed-draft fixtures are seeded with `Prisma.DbNull` (SQL NULL) —
   matching what publish actually writes, not JSON null.
+- Non-blocking observations (documented, NOT rewritten this slice):
+  a) the list page maps ANY boundary `!ok` to `forbidden()` — including
+  infra faults; a future distinction between denied and degraded is a
+  deliberate follow-up, not silent scope creep;
+  b) `listOnboardingForms` selects the whole `draft` JSON column only to
+  compute `hasDraft` — a cheaper `draft IS NOT NULL` projection is a
+  valid future optimization inside the service/boundary contract.
 
 ### Create page
 
