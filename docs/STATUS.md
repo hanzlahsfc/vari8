@@ -5,6 +5,28 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-03 — P-008-R editor save recovery — ES-1a implemented (STOPPED)
+
+- Apollo release `cdae666d` authorized ES-1a implementation ONLY. RED
+  recaptured on the current clean head `5734af4` BEFORE logic
+  (`red-es-1a-recapture-preimpl.log`: 6/6 real `not implemented` throws,
+  exit 1, CLEAN_BEFORE/AFTER markers + dirty counts).
+- Impl `6e25230` (production): `initialDraftState` (ordered mount seed)
+  - `reseedDraftState` (dirty-preserve, clean monotonic — equal/higher
+    adopt, older preserve). Fresh logic, no transplant.
+    `adoptSavedResult`/`addDraftField` still throw — ES-1b/1c intentionally
+    RED.
+- Gates @ `6e25230`: scoped GREEN `green-es-1a-scoped.log` 6/6 exit 0;
+  honest full-file `raw-es-1a-fullfile.log` 6 pass / 10 fail (exit 1 —
+  intentional stubs, not claimed green); `raw-es-1a-format.log` exit 0;
+  `raw-es-1a-typecheck.log` exit 0; `raw-es-1a-lint.log` exit 0 with 4
+  WARNINGS — `@typescript-eslint/no-unused-vars` on the two intentional
+  stub signatures (attributable, not errors).
+- STOPPED before ES-1b/1c/UI/deps. Prior disclosure stands: two
+  all-skipped log files from a wrong-case `-t` mistake were removed at
+  ES-1 setup and are not recoverable — going forward every attempt log is
+  preserved and labeled (Apollo execution note).
+
 ## 2026-10-03 — P-008-R editor save recovery — ES-1 tests+scaffold checkpoint (STOPPED)
 
 - Apollo checkpoint release `538b5b56` authorized ES-1 TESTS+SCAFFOLD ONLY on

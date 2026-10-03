@@ -1,6 +1,6 @@
 # P-008-R — Editor metadata editing + Save recovery plan
 
-- **Status:** ES-1 tests+scaffold stage COMPLETE — STOPPED before helper
+- **Status:** ES-1a implemented (`6e25230`) — STOPPED before ES-1b/1c; helper
   implementation. Plan `176740e`, tests `dd42327`, scaffold `54e211c`;
   behavioral REDs captured on the clean scaffold tree (see STATUS entry
   2026-10-03). Helper implementation is NOT authorized yet.
