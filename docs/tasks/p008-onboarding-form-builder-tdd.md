@@ -254,7 +254,8 @@ production transplant): `new-onboarding-form` (list CTA), `form-name-input`
 `onboarding-form-preview`, `preview-*`. Accessible roles/names preferred
 for user-facing elements. Implemented 5C-1 additions, now equally pinned:
 `form-status-badge` (DRAFT/PUBLISHED/ARCHIVED), `form-version` (`v{n}` or
-`—`), `create-onboarding-form` (create form wrapper).
+`—`), `create-onboarding-form` (create form wrapper), `archived-banner`
+(editor read-only marker for archived forms).
 
 UI1 ownership command (this slice's green scope ONLY — the remaining
 editor/preview specs are intentionally RED, never claim whole-feature
@@ -294,7 +295,28 @@ fallback is not disposability proof).
   form's editor route.
 - No anonymous or client-facing intake surface exists.
 
-### Editor state machine (5C-2+)
+### Editor mount + read guards (5C-2a)
+
+- Canonical route `/workspace/[workspaceId]/onboarding/forms/[formId]`
+  performs its own current-resource `read` authorization via
+  `getFormForWorkspace` — every request re-resolves membership/role/
+  workspace; `!ok` fails closed to the non-disclosing 403.
+- Rendered read states only (no mutation behavior in this slice):
+  `onboarding-form-editor` + `form-name` (name input per contract);
+  open draft → `draft-editor`; otherwise → `no-draft` read state;
+  archived → `archived-banner` and ZERO mutation controls (`save-draft`,
+  `publish-form`, `archive-form`, `open-draft` never render).
+- Denial/non-disclosure probes (browser, production server): assistant
+  deep link 403 (only denied role past the layout — the page-level guard
+  probe); DUAL-member wsA-formId-under-wsB identical to nonexistent
+  (form name never rendered); nonexistent and malformed formIds identical
+  403; unauthenticated → `/login`; no horizontal overflow at 1440/834/390.
+- Ownership command: `npx playwright test tests/e2e/onboarding-forms.spec.ts
+-g "editor mount"` — this slice's scope only; lifecycle/edit/preview
+  tests remain intentionally RED.
+- Editing behaviors are expressly NOT part of 5C-2a.
+
+### Editor state machine (5C-2b+)
 
 - Server-normalized definition + `draftRevision` arrive as revalidated
   props; client edits update local state and set `dirtyRef` — prop identity
@@ -365,7 +387,11 @@ fallback is not disposability proof).
   — DONE @ `14a7467`; prospective RED captured at `40a5115`, gates +
   remaining RED recorded in `gate-logs/p008-recovery/slice-5c1.md`.
   STOPPED for audit before 5C-2.
-- 5C-2 editor: add/remove/reorder fields+options, save, reopen seeding,
+- 5C-2a editor mount + read guards: canonical route mount, per-page
+  resource authorization, denied/foreign/nonexistent non-disclosure,
+  archived permanently-read-only mount, width overflow — ownership
+  `-g "editor mount"`; NO save/publish/reopen/preview behavior
+- 5C-2b editor: add/remove/reorder fields+options, save, reopen seeding,
   dirty/pending state machine, archive read-only view
 - 5C-3 publish + archive flows + immutable version list
 - 5C-4 preview pages + zero-mutation/storage/DB delta proofs + HTTP

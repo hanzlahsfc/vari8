@@ -62,6 +62,19 @@ async function signIn(page: Page, email: string) {
   await expect(page).not.toHaveURL(/login/);
 }
 
+const seedDefinition = (title: string) => ({
+  title,
+  fields: [
+    {
+      fieldId: "f_seed_1",
+      kind: "shortText",
+      label: "Full name",
+      required: true,
+      order: 0,
+    },
+  ],
+});
+
 // Sorted key→value pairs so a value change under a reused key can't evade.
 const storageSnapshot = (page: Page) =>
   page.evaluate(() => {
@@ -213,19 +226,6 @@ test.describe("seeded list rendering", () => {
   // after so ordering can never leak rows between tests.
   test.beforeEach(removeFixtures);
   test.afterEach(removeFixtures);
-
-  const seedDefinition = (title: string) => ({
-    title,
-    fields: [
-      {
-        fieldId: "f_seed_1",
-        kind: "shortText",
-        label: "Full name",
-        required: true,
-        order: 0,
-      },
-    ],
-  });
 
   async function listRow(page: Page, name: string) {
     await signIn(page, E2E.owner);
@@ -552,6 +552,210 @@ test.describe("empty list + controlled-pending create", () => {
       }),
     ).toBe(1);
   });
+});
+
+/**
+ * 5C-2a editor mount + read guards — this slice owns ONLY the mount/read
+ * surface: authorization, non-disclosure, and rendered read states. Editing
+ * behavior (save/publish/reopen/preview) is out of scope and stays RED in
+ * the lifecycle tests below. Ownership command: `-g "editor mount"`.
+ */
+test.describe("editor mount + read guards", () => {
+  test.beforeEach(removeFixtures);
+  test.afterEach(removeFixtures);
+
+  const seedForm = (
+    name: string,
+    extra: Omit<
+      Prisma.OnboardingFormUncheckedCreateInput,
+      "workspaceId" | "name" | "createdByMemberId"
+    > = {},
+  ) =>
+    prisma.onboardingForm.create({
+      data: {
+        workspaceId: wsId,
+        name,
+        createdByMemberId: ownerMemberId,
+        draftRevision: 1,
+        ...extra,
+      },
+      select: { id: true },
+    });
+
+  test("unauthenticated deep link to the editor redirects to /login", async ({
+    page,
+  }) => {
+    await page.goto(`/workspace/${wsId}/onboarding/forms/not-a-real-id`);
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test("denied-role deep links get the identical non-disclosing 403", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8 Mount Denied", {
+      draft: seedDefinition("E2E P8 Mount Denied"),
+    });
+    const path = `/workspace/${wsId}/onboarding/forms/${form.id}`;
+    // The assistant is the discriminating probe: it passes the staff layout
+    // but lacks the resource — the editor page itself must deny. Other
+    // denied roles may 403 earlier; the result must be identical either way
+    // and must never render the form name.
+    for (const email of [E2E.assistant, E2E.client, E2E.support]) {
+      await signIn(page, email);
+      const res = await page.goto(path);
+      expect(res?.status()).toBe(403);
+      await expect(page.getByTestId("onboarding-form-editor")).toHaveCount(0);
+      await expect(page.getByText("E2E P8 Mount Denied")).toHaveCount(0);
+    }
+  });
+
+  test("dual-member isolation: wsA form under a wsB URL is indistinguishable from nonexistent", async ({
+    page,
+  }) => {
+    // The owner is a member of BOTH fixture workspaces — passing the layout
+    // AND resource authorization in wsB, so a wsA formId under a wsB URL
+    // exercises the resource-level workspace scoping, not nonmembership.
+    const form = await seedForm("E2E P8 Foreign", {
+      draft: seedDefinition("E2E P8 Foreign"),
+    });
+    await signIn(page, E2E.owner);
+    const foreign = await page.goto(
+      `/workspace/${wsBId}/onboarding/forms/${form.id}`,
+    );
+    expect(foreign?.status()).toBe(403);
+    await expect(page.getByText("E2E P8 Foreign")).toHaveCount(0);
+    // Same workspace URL shape, a formId that exists nowhere — must look
+    // identical to the cross-workspace read: 403, no name, no editor.
+    const missing = await page.goto(
+      `/workspace/${wsBId}/onboarding/forms/missingformid123`,
+    );
+    expect(missing?.status()).toBe(403);
+    await expect(page.getByTestId("onboarding-form-editor")).toHaveCount(0);
+  });
+
+  test("nonexistent and malformed formIds fail closed identically", async ({
+    page,
+  }) => {
+    await seedForm("E2E P8 Real Name", {
+      draft: seedDefinition("E2E P8 Real Name"),
+    });
+    await signIn(page, E2E.owner);
+    for (const bad of ["missingformid123", "not!valid!segment"]) {
+      const res = await page.goto(`/workspace/${wsId}/onboarding/forms/${bad}`);
+      expect(res?.status()).toBe(403);
+      await expect(page.getByText("E2E P8 Real Name")).toHaveCount(0);
+    }
+  });
+
+  test("active form with an open draft mounts form-name + draft-editor", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8 Mount Draft", {
+      draft: seedDefinition("E2E P8 Mount Draft"),
+    });
+    await signIn(page, E2E.coach);
+    const res = await page.goto(
+      `/workspace/${wsId}/onboarding/forms/${form.id}`,
+    );
+    expect(res?.status()).toBe(200);
+    await expect(page.getByTestId("onboarding-form-editor")).toBeVisible();
+    await expect(page.getByTestId("form-name")).toHaveValue(
+      "E2E P8 Mount Draft",
+    );
+    await expect(page.getByTestId("draft-editor")).toBeVisible();
+    await expect(page.getByTestId("no-draft")).toHaveCount(0);
+  });
+
+  test("active form without a draft mounts the no-draft read state", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8 Mount Published", {
+      draft: Prisma.DbNull,
+      versions: {
+        create: [
+          {
+            versionSeq: 1,
+            definition: seedDefinition("E2E P8 Mount Published"),
+            publishOriginRevision: 1,
+            publishedByMemberId: ownerMemberId,
+          },
+        ],
+      },
+    });
+    await signIn(page, E2E.owner);
+    const res = await page.goto(
+      `/workspace/${wsId}/onboarding/forms/${form.id}`,
+    );
+    expect(res?.status()).toBe(200);
+    await expect(page.getByTestId("onboarding-form-editor")).toBeVisible();
+    await expect(page.getByTestId("form-name")).toHaveValue(
+      "E2E P8 Mount Published",
+    );
+    await expect(page.getByTestId("no-draft")).toBeVisible();
+    await expect(page.getByTestId("draft-editor")).toHaveCount(0);
+  });
+
+  test("archived form mounts permanently read-only: banner, no mutation controls", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8 Mount Archived", {
+      status: "ARCHIVED",
+      archivedAt: new Date(),
+      archivedByMemberId: ownerMemberId,
+      draft: Prisma.DbNull,
+      versions: {
+        create: [
+          {
+            versionSeq: 1,
+            definition: seedDefinition("E2E P8 Mount Archived"),
+            publishOriginRevision: 1,
+            publishedByMemberId: ownerMemberId,
+          },
+        ],
+      },
+    });
+    await signIn(page, E2E.owner);
+    const res = await page.goto(
+      `/workspace/${wsId}/onboarding/forms/${form.id}`,
+    );
+    expect(res?.status()).toBe(200);
+    await expect(page.getByTestId("onboarding-form-editor")).toBeVisible();
+    await expect(page.getByTestId("form-name")).toHaveValue(
+      "E2E P8 Mount Archived",
+    );
+    await expect(page.getByTestId("archived-banner")).toBeVisible();
+    // Permanently read-only: reopen is NEVER offered on an archived form,
+    // and no save/publish/archive control may render at all.
+    for (const testid of [
+      "save-draft",
+      "publish-form",
+      "archive-form",
+      "open-draft",
+    ]) {
+      await expect(page.getByTestId(testid)).toHaveCount(0);
+    }
+  });
+
+  for (const width of [1440, 834, 390] as const) {
+    test(`mounted editor has no horizontal overflow at ${width}px`, async ({
+      page,
+    }) => {
+      const form = await seedForm("E2E P8 Mount Width", {
+        draft: seedDefinition("E2E P8 Mount Width"),
+      });
+      await page.setViewportSize({ width, height: 900 });
+      await signIn(page, E2E.coach);
+      await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+      await expect(page.getByTestId("onboarding-form-editor")).toBeVisible();
+      expect(
+        await page.evaluate(
+          () =>
+            document.documentElement.scrollWidth >
+            document.documentElement.clientWidth,
+        ),
+      ).toBe(false);
+    });
+  }
 });
 
 test("owner creates, edits, publishes, reopens, v2, and archives", async ({
