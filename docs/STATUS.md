@@ -59,6 +59,22 @@ start`. Log `red-5c1-browser-v3.log`.
   20/20 @ `453d2bf` (`green-5c1-transport-fix.log`); full gates re-raw'd
   at the same head (`raw-5c1-*-final.log`: mech/unit523/integration281/
   build all exit 0).
+- Post-repair test strengthening (`42d5a7b`, Apollo `a28cd235` + Atlas
+  mount-delta, tests/docs only — expected-PASS proofs, no manufactured
+  RED): exact tx-binding seam test captures the real transaction object
+  inside an injected `$transaction` wrapper and asserts the authz repo
+  is built with THAT tx for all five mutations / the injected client for
+  reads — never global or arbitrary (weaker `!==globalPrisma` assertion
+  replaced). Mid-retry user DEACTIVATED denial + zero deltas + finally-
+  restore added. Mount zero-delta snapshots now byte-compare ALL
+  workspace forms (serialized incl. name/status/draft/revision/updatedAt/
+  editor+archival stamps), ALL version rows, ALL ws audit rows before/
+  after mount across every state and width; non-GET tracking covers
+  every path post-signin (none observed). Raw: `raw-5b-txbinding.log`
+  2/2, `raw-5c2a-mount-delta.log` 11/11. Distinction recorded per Apollo:
+  the four retry ops shared the retry-stale-ctx defect; create had no
+  retry loop — its check/write gap is related but separately closed, NOT
+  the same proven defect. Read-only list/get/mount unaffected.
 - Security repair (`be20047`, security hold `bf80ae54`, Orion 435):
   `authorize()` moved INSIDE every mutating tx attempt — save/publish/
   open/archive re-read membership/role/workspace on the tx client per
