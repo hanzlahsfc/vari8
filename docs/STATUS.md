@@ -5,6 +5,33 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-009 ES-2B PREPARATION — tests committed + prospective RED (STOPPED for review)
+
+- Prep release `7344de53`. Tests-only commit `13483f5`: local-edit case
+  switched to `storageSnapshot` sorted key→value helper; both vitest
+  deferred/probe comments reworded to observed-symptom/defensive-guard
+  (comment-only); NEW browser `local structure edits arm save — zero
+network/storage/DB delta` at 3 widths; DOM structure describe gained
+  standalone option-add + all-six-kind add loop (choice→1 blank option,
+  non-choice→no options region). Docs `372499f` (BUILD_ID cosmetic fix +
+  ES-2B acceptance in narrow plan). Production unchanged at `36a2f8f`.
+- Captures on clean committed head `372499f` (porcelain path snapshots
+  empty before/after, SHA stable in-window):
+  `red-es2b-dom-structure.log` 11 meaningful failures (4 existing + 7
+  new), exit 1 · `red-es2b-e2e-blank-option.log` 2 meaningful failures
+  (single+multiChoice, option row absent after real click), exit 1 ·
+  `red-es2b-e2e-local-structure.log` 3 meaningful failures
+  (field-label-1 absent — inert handlers), exit 1.
+- Honest positive records at same head: `green-es2b-e2e-local-edit-
+strengthened.log` 3/3 pass (immediate PASS = additional proof, not
+  fabricated RED) · `green-es2b-dom-metadata-regression.log` 5/5 ·
+  `green-es2b-es1-regression.log` 17/17 · `raw-es2b-dom-fullfile.log`
+  honest 5 pass / 19 fail (save 5 + structure 11 + deferred payload 3).
+- Owned `juno-p8-pg`/`p8e_e2e`, `CI=1`, production build+start each run;
+  final BUILD_ID `oPIVPlHp75Htzn2Tkr3dQ` sha256 `57d18b61…`.
+- STOPPED for root checkpoint review before ES-2B implementation. Save
+  remains INERT; structure handlers remain no-op.
+
 ## 2026-10-04 — P-009 ES-2A clean-recovery — implemented + gates (STOPPED for acceptance)
 
 - Root accepted the RED checkpoint (release `23cae652`). Fresh minimal
