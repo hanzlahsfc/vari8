@@ -5,6 +5,42 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-03 — P-008 slice 5C-1 list/create/nav (complete, awaiting audit)
+
+- Scoped release (Apollo `f469c9ae`) executed on
+  `feature/p008-onboarding-form-builder-tdd-5c` — head `14a7467`, tree clean.
+  Earlier candidate `../repo` @ `d10d788` untouched and distinct.
+- Corrections commit `40a5115` (docs/tests only): ARCHIVED never reopens
+  (plan text; service already denies `form_archived`); created rows can no
+  longer leak between widths (fixture-scoped beforeEach/afterEach on the
+  `E2E P8` namespace); held action POST released in `finally` + repeated
+  submit/Enter attempts while held must emit exactly one mutation request
+  and one workspace-scoped row; independent seeded draft/published/archived
+  list assertions with status+version metadata; real Tab/Enter traversal
+  replaces `.focus()`; overflow checked on list AND new at all widths; nav
+  visibility covers owner+coach and every denied role; foreign-workspace and
+  malformed-segment 403s added.
+- Prospective RED on the committed tree (no page code): `DATABASE_URL=
+…/p8r_e2e2 npx playwright test tests/e2e/onboarding-forms.spec.ts` → exit
+  1, 20/20 failed (15 scoped meaningful; 5 editor tests intentionally RED).
+  Disposable owned `juno-p8-pg` @5445, production `next build && next
+start`. Log `red-5c1-browser-v3.log`.
+- Implementation `8b0cb40` (list page + gated nav) + `e72b77b` (create page
+  - pending-safe name form) — fresh, no transplant. Per-page authorization:
+    list via boundary `listFormsForWorkspace` (fresh service re-authz every
+    request), new via `requireWorkspaceAccess` write; both fail closed to the
+    non-disclosing 403. Create navigates to the canonical editor route —
+    disclosed 5C-2 dependency, unimplemented.
+- `14a7467` test fixes from first GREEN attempt: alert locator scoped past
+  Next's `role="alert"` route announcer; editor URL wait excludes literal
+  `new` (the in-flight POST could no longer race the row count).
+- Gates @ `14a7467`: format 0 · lint 0 · typecheck 0 · unit 48 files/523 ·
+  FULL disposable integration (`p8r_int`) 24 files/281 · build 0 · targeted
+  5C-1 UI E2E 15/15 at 1440/834/390 vs production server (`p8r_e2e2`).
+  Full spec NOT green by design: 5 editor/preview tests remain RED for
+  5C-2/5C-3/5C-4. Logs: `gate-logs/p008-recovery/slice-5c1.md`.
+- **STOPPED for Apollo audit before editor work.** No push/PR/deploy.
+
 ## 2026-10-02 — P-008 onboarding form builder (TDD recovery, in progress)
 
 - The first P-008 candidate (`feature/p008-onboarding-form-builder` @ `d10d788`)

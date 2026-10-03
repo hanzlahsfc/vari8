@@ -315,6 +315,9 @@ for user-facing elements.
 
 - 5C-1 list + create + nav entry (per-page checks, denied matrix, deep
   links, empty/draft/published/archived list states, pending-safe create)
+  — DONE @ `14a7467`; prospective RED captured at `40a5115`, gates +
+  remaining RED recorded in `gate-logs/p008-recovery/slice-5c1.md`.
+  STOPPED for audit before 5C-2.
 - 5C-2 editor: add/remove/reorder fields+options, save, reopen seeding,
   dirty/pending state machine, archive read-only view
 - 5C-3 publish + archive flows + immutable version list
