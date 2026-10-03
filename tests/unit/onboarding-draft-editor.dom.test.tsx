@@ -23,7 +23,13 @@
 // read DOM properties directly (`input.value`, `control.disabled`,
 // `textContent`) with plain vitest expects.
 
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { act, type JSX } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -312,8 +318,8 @@ describe("DraftEditor — save wiring (intentionally RED until ES-3)", () => {
     const transportError = Promise.reject(new Error("network down"));
     transportError.catch(() => {});
     saveDraftMock.mockImplementation((...args) =>
-      args.length === 0
-        ? (Promise.resolve() as ReturnType<typeof saveDraft>)
+      (args as unknown[]).length === 0
+        ? (Promise.resolve() as unknown as ReturnType<typeof saveDraft>)
         : transportError,
     );
     render(<DraftEditor {...baseProps} />);
@@ -328,5 +334,167 @@ describe("DraftEditor — save wiring (intentionally RED until ES-3)", () => {
     // must press again; exactly one call for the one press.
     expect(saveDraftMock).toHaveBeenCalledTimes(1);
     expectEnabled("save-draft");
+  });
+});
+
+describe("DraftEditor — field structure ops (intentionally RED until ES-3)", () => {
+  const labelInputs = () => screen.getAllByTestId(/^field-label-\d+$/);
+  const optionsIn = (index: number) =>
+    within(screen.getByTestId(`field-options-${index}`)).getAllByLabelText(
+      /^Option \d+$/,
+    );
+  const threeFieldProps: EditorProps = {
+    ...baseProps,
+    initialDraft: {
+      title: "Intake",
+      fields: [
+        field({ fieldId: "f_a", label: "First", order: 0 }),
+        field({ fieldId: "f_b", label: "Second", order: 1 }),
+        field({
+          fieldId: "f_c",
+          kind: "singleChoice",
+          label: "Third",
+          order: 2,
+          options: [
+            { optionId: "o_a", label: "Yes" },
+            { optionId: "o_b", label: "No" },
+          ],
+        }),
+      ],
+    },
+  };
+  const sentPayload = (): { fields: DraftField[] } =>
+    JSON.parse(String(saveDraftMock.mock.calls[0][1].get("draftJson"))) as {
+      fields: DraftField[];
+    };
+
+  it("adding a singleChoice field via the real control renders exactly one blank option row", async () => {
+    const { DraftEditor } = await load();
+    render(<DraftEditor {...baseProps} />);
+    // The real add-field control routes through addDraftField — assert the
+    // newly RENDERED rows, not a synthetic snapshot.
+    fireEvent.click(control("add-field-singleChoice"));
+    expect(labelInputs()).toHaveLength(3);
+    expectValue("field-label-2", "");
+    const seeded = optionsIn(2);
+    expect(seeded).toHaveLength(1);
+    expect((seeded[0] as HTMLInputElement).value).toBe("");
+    expectEnabled("save-draft");
+  });
+
+  it("remove reindexes contiguously, keeps surviving field/option ids, and the next add uses the next order", async () => {
+    const { DraftEditor } = await load();
+    saveDraftMock.mockResolvedValue(
+      savedResult(2, "Intake", [
+        savedField("f_a", { label: "First" }),
+        savedField("f_c", {
+          kind: "singleChoice",
+          label: "Third",
+          order: 1,
+        }),
+      ]),
+    );
+    render(<DraftEditor {...threeFieldProps} />);
+    fireEvent.click(screen.getByLabelText("Remove field 2"));
+    // f_b retires; the survivors reindex contiguously in the DOM.
+    expect(labelInputs()).toHaveLength(2);
+    expectValue("field-label-0", "First");
+    expectValue("field-label-1", "Third");
+    expect(screen.queryByTestId("field-label-2")).toBeNull();
+    // The surviving choice field keeps its rendered option rows.
+    expect(optionsIn(1)).toHaveLength(2);
+    // A subsequent add lands at the NEXT contiguous index — not the stale
+    // pre-removal length.
+    fireEvent.click(control("add-field-shortText"));
+    expectValue("field-label-2", "");
+    fireEvent.click(control("save-draft"));
+    await act(async () => {});
+    expect(saveDraftMock).toHaveBeenCalledTimes(1);
+    const payload = sentPayload();
+    expect(payload.fields.map((f) => f.order)).toEqual([0, 1, 2]);
+    // Surviving server ids stay attached; the new field carries none.
+    expect(payload.fields.map((f) => f.fieldId ?? null)).toEqual([
+      "f_a",
+      "f_c",
+      null,
+    ]);
+    // Retired ids never resurrect — f_b appears nowhere in the payload.
+    expect(payload.fields.some((f) => f.fieldId === "f_b")).toBe(false);
+    // Surviving option ids are preserved on the reindexed field.
+    expect(payload.fields[1].options?.map((o) => o.optionId ?? null)).toEqual([
+      "o_a",
+      "o_b",
+    ]);
+  });
+
+  it("moving a field up swaps it with its neighbour — contiguous orders, stable ids", async () => {
+    const { DraftEditor } = await load();
+    saveDraftMock.mockResolvedValue(
+      savedResult(2, "Intake", [
+        savedField("f_a", { label: "First" }),
+        savedField("f_c", { label: "Third", order: 1 }),
+        savedField("f_b", { label: "Second", order: 2 }),
+      ]),
+    );
+    render(<DraftEditor {...threeFieldProps} />);
+    fireEvent.click(screen.getByLabelText("Move field 3 up"));
+    expectValue("field-label-0", "First");
+    expectValue("field-label-1", "Third");
+    expectValue("field-label-2", "Second");
+    fireEvent.click(control("save-draft"));
+    await act(async () => {});
+    expect(saveDraftMock).toHaveBeenCalledTimes(1);
+    expect(
+      sentPayload().fields.map((f) => [f.fieldId ?? null, f.order]),
+    ).toEqual([
+      ["f_a", 0],
+      ["f_c", 1],
+      ["f_b", 2],
+    ]);
+  });
+
+  it("removing then adding an option keeps surviving ids and never resurrects the retired one", async () => {
+    const { DraftEditor } = await load();
+    const choiceProps: EditorProps = {
+      ...baseProps,
+      initialDraft: {
+        title: "Intake",
+        fields: [
+          field({
+            fieldId: "f_c",
+            kind: "singleChoice",
+            label: "Pick one",
+            order: 0,
+            options: [
+              { optionId: "o_a", label: "Yes" },
+              { optionId: "o_b", label: "No" },
+            ],
+          }),
+        ],
+      },
+    };
+    saveDraftMock.mockResolvedValue(
+      savedResult(2, "Intake", [
+        savedField("f_c", { kind: "singleChoice", label: "Pick one" }),
+      ]),
+    );
+    render(<DraftEditor {...choiceProps} />);
+    fireEvent.click(screen.getByLabelText("Remove option 1"));
+    const remaining = optionsIn(0);
+    expect(remaining).toHaveLength(1);
+    expect((remaining[0] as HTMLInputElement).value).toBe("No");
+    fireEvent.click(control("add-option-0"));
+    const grown = optionsIn(0);
+    expect(grown).toHaveLength(2);
+    expect((grown[1] as HTMLInputElement).value).toBe("");
+    fireEvent.click(control("save-draft"));
+    await act(async () => {});
+    expect(saveDraftMock).toHaveBeenCalledTimes(1);
+    // o_b survives with its id; the new option is blank and idless; o_a
+    // is gone for good — never reassigned to the new row.
+    expect(sentPayload().fields[0].options).toEqual([
+      { optionId: "o_b", label: "No" },
+      { label: "" },
+    ]);
   });
 });
