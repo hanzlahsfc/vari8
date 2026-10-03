@@ -1,9 +1,14 @@
 # P-008-R — Editor metadata editing + Save recovery plan
 
-- **Status:** ES-1 helpers complete (`f13a970`) — STOPPED before ES-2; helper
-  implementation. Plan `176740e`, tests `dd42327`, scaffold `54e211c`;
-  behavioral REDs captured on the clean scaffold tree (see STATUS entry
-  2026-10-03). Helper implementation is NOT authorized yet.
+- **Status:** ES-2 tests/harness+scaffold checkpoint complete (`6dbeaeb`)
+  — STOPPED before ES-3 behavior. Plan `176740e`; ES-1 tests `dd42327`,
+  scaffold `54e211c`, impl `f13a970` (+ wrap-up `ffc75ea`); ES-2
+  test-infra `2c46546`+`a86a453`, tests `4087c23`+`6dbeaeb`, scaffold
+  `b15a60f`, harness corrections `6ba4c22`+`d37673c`. RED evidence:
+  `red-es-2-dom-scaffold-behavioral-final.log` (13/1, exit 1) and
+  `red-es-2-e2e-production-browser.log` (16 fail / 31 pass on owned
+  `juno-p8-pg`/`p8r_e2e2`, production server, exit 1). ES-3 behavior
+  implementation is NOT authorized yet.
 - **Approved authority:** Apollo checkpoint release
   `538b5b56-e2f7-4578-90d0-34d2c3cae21c` (P-009, 2026-10-03) — ES-1
   tests+scaffold only on this branch/worktree. Direction approved at audit

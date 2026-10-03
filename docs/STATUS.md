@@ -5,6 +5,58 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-03 — P-008-R editor save recovery — ES-2 tests/harness+scaffold checkpoint (STOPPED)
+
+- Apollo release authorized ES-2: ES-1 wrap-up, DOM harness deps,
+  adapted tests committed BEFORE the scaffold, inert callable
+  `DraftEditor`, honest RED evidence — then STOP before ES-3 behavior.
+- ES-1 wrap-up `ffc75ea` (tests-only): `initialDraftState` input-array
+  immutability proof — sorted output, caller array reference/order
+  unchanged. Immediate PASS, labeled additional proof (no manufactured
+  RED). Helper suite 17/17 exit 0.
+- Test-infra `2c46546` (+ correction `a86a453` for the oxc JSX runtime):
+  `jsdom@30.1.1`, `@testing-library/react@16.3.3`,
+  `@testing-library/dom@10.4.2` — dev-only, registry-verified publish
+  ages (20/37/11 days), React 19 + Node 26 compatible; `npm audit`
+  showed no harness-attributable findings (all findings pre-existing in
+  next/postcss, eslint-config-next/braces, prisma/deepmerge-ts).
+- Tests `4087c23` (DOM harness + adapted save-foundation E2E) +
+  `6dbeaeb` (Apollo-pinned structure ops): real `DraftEditor` mounted via
+  testing-library/jsdom; mount/edit/props-reseed/save contracts; remove
+  - reorder reindex pins (contiguous `0..n-1` orders, surviving
+    field/option ids preserved, retired ids never resurrected, post-remove
+    adds take the next order); dedicated blank-option test asserts the
+    newly RENDERED option row after the real `add-field-*` click.
+- Scaffold `b15a60f`: callable `DraftEditor` + open-draft page wiring —
+  real selector surface from props via `initialDraftState`, all handlers
+  no-op, save visible+disabled (clean), empty `role="alert"`, no state
+  mutation, no action invocation. Closed/archived read-only paths
+  unchanged.
+- Harness corrections committed before RED recapture: `6ba4c22` (lazy
+  pending/transport mocks), `d37673c` (probe-safe impls — vitest invokes
+  a mock's impl once during cleanup with ZERO args and awaits it; shared
+  deferred + args-gated rejection eliminate the teardown stall and the
+  phantom `network down` error).
+- DOM RED `red-es-2-dom-scaffold-behavioral-final.log` @ `6dbeaeb`:
+  13 AssertionError failures + 1 legit markup pass, exit 1, ~0.7s — all
+  failures are absent behavior (inert noops), no harness noise.
+- E2E RED `red-es-2-e2e-production-browser.log` @ `6dbeaeb`: owned
+  `juno-p8-pg`/`p8r_e2e2`, `CI=1`, production `build && start`:
+  31 passed / 16 failed, exit 1, 8.9m. Failures are all missing
+  behavior — add/remove/edit noops produce `field-label-*` element
+  timeouts; unwired save produces `waitForResponse` timeouts; the two
+  dedicated blank-option tests fail after REAL add-field clicks; the
+  reload/dirty-discard, stale-revision, transport, pending-disable,
+  double-save-id, owner-lifecycle, mid-flight-clobber, and 3×
+  responsive-lifecycle tests fail at the first missing behavior. Mount/
+  authz/read-only/overflow-markup tests pass legitimately (labeled
+  markup, not behavior, proof).
+- Authorship: state seam + component authored fresh on this branch from
+  the approved tests/contracts after committed RED — no old production
+  file/function was copied, cherry-picked, checked out, or transplanted.
+- STOPPED before ES-3 (edit/add/remove/reorder behavior + save wiring).
+  No push/PR/merge/deploy.
+
 ## 2026-10-03 — P-008-R editor save recovery — ES-1 helpers complete (STOPPED)
 
 - Apollo release `a121bc12` authorized ES-1b then ES-1c as separate
