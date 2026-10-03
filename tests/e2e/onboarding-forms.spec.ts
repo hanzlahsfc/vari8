@@ -928,6 +928,50 @@ test.describe("editor mount + read guards", () => {
         ),
       ).toBe(false);
     });
+
+    test(`local metadata edits arm save — zero network/storage/DB delta at ${width}px`, async ({
+      page,
+    }) => {
+      // ES-2A standalone case: editing EXISTING metadata (name + a field
+      // label) is client-local only. Dirty arming enables the save control
+      // but NOTHING is sent — no non-GET request, no web-storage write, no
+      // workspace DB delta. Save wiring itself stays ES-3.
+      const form = await seedForm(`E2E P8 Local Edit ${width}`, {
+        draft: seedDefinition(`E2E P8 Local Edit ${width}`),
+      });
+      const before = await workspaceSnapshot();
+      await page.setViewportSize({ width, height: 900 });
+      await signIn(page, E2E.coach);
+      const mutating = trackNonGet(page);
+      await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+      await expect(page.getByTestId("onboarding-form-editor")).toBeVisible();
+      await expectEditorReady(page);
+      const storageBefore = await page.evaluate(() => ({
+        local: Object.keys(localStorage),
+        session: Object.keys(sessionStorage),
+      }));
+      await page
+        .getByTestId("form-name")
+        .fill(`E2E P8 Local Edit ${width} (edited)`);
+      await page.getByTestId("field-label-0").fill("Edited label");
+      // Dirty arming must hold the EDITED values and enable the clean save.
+      await expect(page.getByTestId("form-name")).toHaveValue(
+        `E2E P8 Local Edit ${width} (edited)`,
+      );
+      await expect(page.getByTestId("field-label-0")).toHaveValue(
+        "Edited label",
+      );
+      await expect(page.getByTestId("save-draft")).toBeEnabled();
+      // Still zero mutation traffic, zero storage delta, byte-identical DB.
+      expect(mutating).toEqual([]);
+      expect(
+        await page.evaluate(() => ({
+          local: Object.keys(localStorage),
+          session: Object.keys(sessionStorage),
+        })),
+      ).toEqual(storageBefore);
+      expect(await workspaceSnapshot()).toEqual(before);
+    });
   }
 });
 
