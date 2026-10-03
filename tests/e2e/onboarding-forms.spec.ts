@@ -664,16 +664,21 @@ test.describe("editor mount + read guards", () => {
     expect(foreign?.status()).toBe(403);
     await expect(page.getByTestId("access-denied")).toBeVisible();
     await expect(page.getByText("E2E P8 Foreign")).toHaveCount(0);
-    const foreignBody = await page.textContent("body");
+    const foreignDenial =
+      (await page.getByTestId("access-denied").textContent()) ?? "";
     // Same workspace URL shape, a formId that exists nowhere — status AND
-    // visible denial content must be indistinguishable.
+    // the visible denial content must be indistinguishable. (Raw body
+    // comparison is impossible: the RSC flight payload embeds the URL
+    // segments — only the VISIBLE denial region is compared.)
     const missing = await page.goto(
       `/workspace/${wsBId}/onboarding/forms/missingformid123`,
     );
     expect(missing?.status()).toBe(403);
     await expect(page.getByTestId("access-denied")).toBeVisible();
     await expect(page.getByTestId("onboarding-form-editor")).toHaveCount(0);
-    expect(await page.textContent("body")).toBe(foreignBody);
+    expect(await page.getByTestId("access-denied").textContent()).toBe(
+      foreignDenial,
+    );
     // And inside wsA itself: nonexistent == the same denial, not a 404 or
     // partial render that would leak the workspace's forms.
     const missingA = await page.goto(
@@ -707,11 +712,14 @@ test.describe("editor mount + read guards", () => {
     const auditsBefore = await prisma.auditEvent.count({
       where: { resourceType: "onboarding_form" },
     });
+    await signIn(page, E2E.coach);
+    // Count only post-signin mutating requests to the onboarding routes —
+    // the mount itself must issue none.
     const mutating: string[] = [];
     page.on("request", (req) => {
-      if (req.method() !== "GET") mutating.push(`${req.method()} ${req.url()}`);
+      if (req.method() !== "GET" && req.url().includes("/onboarding/"))
+        mutating.push(`${req.method()} ${req.url()}`);
     });
-    await signIn(page, E2E.coach);
     const res = await page.goto(
       `/workspace/${wsId}/onboarding/forms/${form.id}`,
     );
