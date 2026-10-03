@@ -244,40 +244,47 @@ describe("DraftEditor — save wiring (intentionally RED until ES-3)", () => {
   it("disables every mutation control while the save is in flight, then re-enables", async () => {
     const { DraftEditor } = await load();
     let release: (value: ReturnType<typeof savedResult>) => void = () => {};
-    // Deferred via mockImplementation so no promise exists (and nothing
-    // dangles) while the action is still unwired on the scaffold.
-    saveDraftMock.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          release = resolve;
-        }),
+    // One shared deferred — NOT created inside the impl — so vitest's
+    // post-test mock probe-call returns the already-settled promise
+    // instead of minting a second, never-resolving one (which wedged the
+    // cleanup hook until the timeout).
+    const pendingSave = new Promise<ReturnType<typeof savedResult>>(
+      (resolve) => {
+        release = resolve;
+      },
     );
+    saveDraftMock.mockImplementation(() => pendingSave);
     render(<DraftEditor {...baseProps} />);
     fireEvent.change(input("form-name"), {
       target: { value: "Edited name" },
     });
     fireEvent.click(control("save-draft"));
-    expect(saveDraftMock).toHaveBeenCalledTimes(1);
-    for (const testid of [
-      "form-name",
-      "field-label-0",
-      "add-field-shortText",
-      "add-field-singleChoice",
-      "save-draft",
-    ]) {
-      expectDisabled(testid);
+    try {
+      expect(saveDraftMock).toHaveBeenCalledTimes(1);
+      for (const testid of [
+        "form-name",
+        "field-label-0",
+        "add-field-shortText",
+        "add-field-singleChoice",
+        "save-draft",
+      ]) {
+        expectDisabled(testid);
+      }
+      expect(
+        (screen.getByLabelText("Remove field 1") as Control).disabled,
+      ).toBe(true);
+    } finally {
+      // Always drain the act queue and settle the in-flight save — even on
+      // failure — so a pending transition can never wedge the teardown.
+      await act(async () => {
+        release(
+          savedResult(2, "Edited name", [
+            savedField("f_a", { label: "First" }),
+            savedField("f_b", { label: "Second", order: 1 }),
+          ]),
+        );
+      });
     }
-    expect((screen.getByLabelText("Remove field 1") as Control).disabled).toBe(
-      true,
-    );
-    await act(async () => {
-      release(
-        savedResult(2, "Edited name", [
-          savedField("f_a", { label: "First" }),
-          savedField("f_b", { label: "Second", order: 1 }),
-        ]),
-      );
-    });
     expectEnabled("form-name");
     expectDisabled("save-draft");
   });
@@ -298,11 +305,16 @@ describe("DraftEditor — save wiring (intentionally RED until ES-3)", () => {
 
   it("a transport failure shows the generic alert, preserves edits, and does not auto-retry", async () => {
     const { DraftEditor } = await load();
-    // mockImplementation, not mockRejectedValue — the rejection must only
-    // exist if the action is actually invoked (no eager unhandled
-    // rejection while the stub is inert).
-    saveDraftMock.mockImplementation(() =>
-      Promise.reject(new Error("network down")),
+    // vitest's cleanup probe invokes the impl once with ZERO args and
+    // awaits the result — return a settled promise there so the probe can
+    // never surface a phantom rejection. The real saveDraft call always
+    // carries (workspaceId, formData).
+    const transportError = Promise.reject(new Error("network down"));
+    transportError.catch(() => {});
+    saveDraftMock.mockImplementation((...args) =>
+      args.length === 0
+        ? (Promise.resolve() as ReturnType<typeof saveDraft>)
+        : transportError,
     );
     render(<DraftEditor {...baseProps} />);
     fireEvent.change(input("field-label-0"), {
