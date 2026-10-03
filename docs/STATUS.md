@@ -59,6 +59,14 @@ start`. Log `red-5c1-browser-v3.log`.
   20/20 @ `453d2bf` (`green-5c1-transport-fix.log`); full gates re-raw'd
   at the same head (`raw-5c1-*-final.log`: mech/unit523/integration281/
   build all exit 0).
+- 5C-2a prep (`94a6141`, tests/docs only, Apollo `aa1e8611`): editor
+  mount + read-guard contract committed — per-page resource read via
+  `getFormForWorkspace`, assistant page-guard deep link, dual-member
+  wsA-form-under-wsB + nonexistent/malformed identical-403 probes,
+  draft/no-draft/archived-banner mount states, width overflow; ownership
+  `-g "editor mount"`. Raw prospective RED `red-5c2a-editor-mount.log`:
+  10/10 meaningful failures on p8r_e2e2 + prod server. Editor production
+  NOT started — held for Apollo release.
 - Evidence audit follow-up (`d628936`, tests/docs only): Helios40/14 prep —
   `Prisma.DbNull` closed-draft seeds, mixed-state open-draft+published
   list test (DRAFT badge + retained `v2`), pinned new testids + UI1
