@@ -348,8 +348,12 @@ test.describe("empty list + controlled-pending create", () => {
       await expect(page).toHaveURL(/onboarding\/forms\/new$/);
       await page.getByRole("button", { name: "Create form" }).click();
       // Empty name → safe validation message, stays on /new, no navigation.
+      // Scoped to the create form: Next's route announcer also carries
+      // role="alert" and must not satisfy this locator.
       await expect(page).toHaveURL(/onboarding\/forms\/new$/);
-      await expect(page.getByRole("alert")).toBeVisible();
+      await expect(
+        page.getByTestId("create-onboarding-form").getByRole("alert"),
+      ).toBeVisible();
 
       // Count every mutating request to the onboarding routes so a
       // double-submit can be detected at the network layer.
@@ -395,7 +399,12 @@ test.describe("empty list + controlled-pending create", () => {
         release();
       }
 
-      await expect(page).toHaveURL(/onboarding\/forms\/[A-Za-z0-9_-]+$/);
+      // Navigation to the canonical editor route means the action resolved
+      // ok:true — the literal `new` segment is excluded so a still-pending
+      // /new URL can never satisfy this wait.
+      await expect(page).toHaveURL(
+        /onboarding\/forms\/(?!new$)[A-Za-z0-9_-]+$/,
+      );
       // Creating a definition writes nothing to browser storage and leaves
       // exactly one row — a double-submit cannot duplicate.
       expect(await storageSnapshot(page)).toBe(storageBefore);
