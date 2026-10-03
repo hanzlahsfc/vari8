@@ -20,7 +20,7 @@
 // save wiring itself stays intentionally RED until ES-3.
 //
 // Matcher note: jest-dom is NOT part of the approved harness — assertions
-// read DOM properties directly (`input.value`, `control.disabled`,
+// read DOM state directly (`input.value`, `el.matches(":disabled")`,
 // `textContent`) with plain vitest expects.
 
 import {
@@ -108,10 +108,13 @@ type Control = HTMLInputElement | HTMLButtonElement;
 const control = (testid: string) => screen.getByTestId(testid) as Control;
 const input = (testid: string) =>
   screen.getByTestId(testid) as HTMLInputElement;
+// `:disabled` is the EFFECTIVE semantic — it also reflects disabledness
+// inherited from an ancestor `<fieldset disabled>`; the `.disabled`
+// property only reflects the element's own attribute.
 const expectEnabled = (testid: string) =>
-  expect(control(testid).disabled).toBe(false);
+  expect(control(testid).matches(":disabled")).toBe(false);
 const expectDisabled = (testid: string) =>
-  expect(control(testid).disabled).toBe(true);
+  expect(control(testid).matches(":disabled")).toBe(true);
 const expectValue = (testid: string, value: string) =>
   expect(input(testid).value).toBe(value);
 
@@ -219,10 +222,21 @@ describe("DraftEditor — save wiring (intentionally RED until ES-3)", () => {
     expect(wsArg).toBe("ws-test");
     expect(formData.get("formId")).toBe("form-test");
     expect(formData.get("expectedRevision")).toBe("1");
-    expect(JSON.parse(String(formData.get("draftJson")))).toEqual({
-      title: "Edited name",
-      fields: baseProps.initialDraft.fields,
-    });
+    const draftPayload = JSON.parse(String(formData.get("draftJson"))) as {
+      title: string;
+      fields: DraftField[];
+    };
+    expect(draftPayload.title).toBe("Edited name");
+    // The payload must carry the EDITOR-ORDERED field list — the
+    // initialDraftState contract sorts by `order`. Asserting the raw
+    // `baseProps.initialDraft.fields` array would be WRONG: that fixture
+    // is deliberately unsorted ([order1, order0]) to prove mount-ordering.
+    expect(
+      draftPayload.fields.map((f) => [f.fieldId ?? null, f.order]),
+    ).toEqual([
+      ["f_a", 0],
+      ["f_b", 1],
+    ]);
     expect(formData.get("name")).toBe("Edited name");
   });
 
@@ -276,9 +290,9 @@ describe("DraftEditor — save wiring (intentionally RED until ES-3)", () => {
       ]) {
         expectDisabled(testid);
       }
-      expect(
-        (screen.getByLabelText("Remove field 1") as Control).disabled,
-      ).toBe(true);
+      expect(screen.getByLabelText("Remove field 1").matches(":disabled")).toBe(
+        true,
+      );
     } finally {
       // Always drain the act queue and settle the in-flight save — even on
       // failure — so a pending transition can never wedge the teardown.
@@ -337,37 +351,58 @@ describe("DraftEditor — save wiring (intentionally RED until ES-3)", () => {
   });
 });
 
-describe("DraftEditor — field structure ops (intentionally RED until ES-3)", () => {
-  const labelInputs = () => screen.getAllByTestId(/^field-label-\d+$/);
-  const optionsIn = (index: number) =>
-    within(screen.getByTestId(`field-options-${index}`)).getAllByLabelText(
-      /^Option \d+$/,
-    );
-  const threeFieldProps: EditorProps = {
-    ...baseProps,
-    initialDraft: {
-      title: "Intake",
-      fields: [
-        field({ fieldId: "f_a", label: "First", order: 0 }),
-        field({ fieldId: "f_b", label: "Second", order: 1 }),
-        field({
-          fieldId: "f_c",
-          kind: "singleChoice",
-          label: "Third",
-          order: 2,
-          options: [
-            { optionId: "o_a", label: "Yes" },
-            { optionId: "o_b", label: "No" },
-          ],
-        }),
-      ],
-    },
-  };
-  const sentPayload = (): { fields: DraftField[] } =>
-    JSON.parse(String(saveDraftMock.mock.calls[0][1].get("draftJson"))) as {
-      fields: DraftField[];
-    };
+// Shared fixtures for the field-structure describes.
+const labelInputs = () => screen.getAllByTestId(/^field-label-\d+$/);
+const optionsIn = (index: number) =>
+  within(screen.getByTestId(`field-options-${index}`)).getAllByLabelText(
+    /^Option \d+$/,
+  );
+const threeFieldProps: EditorProps = {
+  ...baseProps,
+  initialDraft: {
+    title: "Intake",
+    fields: [
+      field({ fieldId: "f_a", label: "First", order: 0 }),
+      field({ fieldId: "f_b", label: "Second", order: 1 }),
+      field({
+        fieldId: "f_c",
+        kind: "singleChoice",
+        label: "Third",
+        order: 2,
+        options: [
+          { optionId: "o_a", label: "Yes" },
+          { optionId: "o_b", label: "No" },
+        ],
+      }),
+    ],
+  },
+};
+const choiceProps: EditorProps = {
+  ...baseProps,
+  initialDraft: {
+    title: "Intake",
+    fields: [
+      field({
+        fieldId: "f_c",
+        kind: "singleChoice",
+        label: "Pick one",
+        order: 0,
+        options: [
+          { optionId: "o_a", label: "Yes" },
+          { optionId: "o_b", label: "No" },
+        ],
+      }),
+    ],
+  },
+};
 
+// DOM-visible structural contract — SEPARABLE from save wiring: these
+// tests assert only rendered rows/metadata (row sequence, labels, option
+// inputs, enabled state) so they can GREEN at the field-structure slice
+// without the ES-3 save path. Rendered label values act as row-identity
+// surrogates; the server-id payload assertions live in the explicitly
+// deferred describe below.
+describe("DraftEditor — field structure ops (DOM-visible, separable from save)", () => {
   it("adding a singleChoice field via the real control renders exactly one blank option row", async () => {
     const { DraftEditor } = await load();
     render(<DraftEditor {...baseProps} />);
@@ -382,18 +417,8 @@ describe("DraftEditor — field structure ops (intentionally RED until ES-3)", (
     expectEnabled("save-draft");
   });
 
-  it("remove reindexes contiguously, keeps surviving field/option ids, and the next add uses the next order", async () => {
+  it("remove reindexes the rendered rows contiguously; the next add lands at the next index", async () => {
     const { DraftEditor } = await load();
-    saveDraftMock.mockResolvedValue(
-      savedResult(2, "Intake", [
-        savedField("f_a", { label: "First" }),
-        savedField("f_c", {
-          kind: "singleChoice",
-          label: "Third",
-          order: 1,
-        }),
-      ]),
-    );
     render(<DraftEditor {...threeFieldProps} />);
     fireEvent.click(screen.getByLabelText("Remove field 2"));
     // f_b retires; the survivors reindex contiguously in the DOM.
@@ -407,6 +432,59 @@ describe("DraftEditor — field structure ops (intentionally RED until ES-3)", (
     // pre-removal length.
     fireEvent.click(control("add-field-shortText"));
     expectValue("field-label-2", "");
+    expectEnabled("save-draft");
+  });
+
+  it("moving a field up swaps it with its neighbour in the rendered row order", async () => {
+    const { DraftEditor } = await load();
+    render(<DraftEditor {...threeFieldProps} />);
+    fireEvent.click(screen.getByLabelText("Move field 3 up"));
+    expectValue("field-label-0", "First");
+    expectValue("field-label-1", "Third");
+    expectValue("field-label-2", "Second");
+    expectEnabled("save-draft");
+  });
+
+  it("removing then adding an option keeps the surviving option row and renders a blank new row", async () => {
+    const { DraftEditor } = await load();
+    render(<DraftEditor {...choiceProps} />);
+    fireEvent.click(screen.getByLabelText("Remove option 1"));
+    const remaining = optionsIn(0);
+    expect(remaining).toHaveLength(1);
+    expect((remaining[0] as HTMLInputElement).value).toBe("No");
+    fireEvent.click(control("add-option-0"));
+    const grown = optionsIn(0);
+    expect(grown).toHaveLength(2);
+    expect((grown[1] as HTMLInputElement).value).toBe("");
+    expectEnabled("save-draft");
+  });
+});
+
+// DEFERRED SUBSET — these assertions read the save payload (draftJson) to
+// pin server-id stability and reindexed order values. They cannot GREEN
+// until ES-3 wires the save path; they stay honestly RED for that reason,
+// not for any missing structural check.
+describe("DraftEditor — structure-ops payload subset (deferred to ES-3)", () => {
+  const sentPayload = (): { fields: DraftField[] } =>
+    JSON.parse(String(saveDraftMock.mock.calls[0][1].get("draftJson"))) as {
+      fields: DraftField[];
+    };
+
+  it("remove+add payload: contiguous orders, surviving field/option ids, no retired-id resurrection", async () => {
+    const { DraftEditor } = await load();
+    saveDraftMock.mockResolvedValue(
+      savedResult(2, "Intake", [
+        savedField("f_a", { label: "First" }),
+        savedField("f_c", {
+          kind: "singleChoice",
+          label: "Third",
+          order: 1,
+        }),
+      ]),
+    );
+    render(<DraftEditor {...threeFieldProps} />);
+    fireEvent.click(screen.getByLabelText("Remove field 2"));
+    fireEvent.click(control("add-field-shortText"));
     fireEvent.click(control("save-draft"));
     await act(async () => {});
     expect(saveDraftMock).toHaveBeenCalledTimes(1);
@@ -427,7 +505,7 @@ describe("DraftEditor — field structure ops (intentionally RED until ES-3)", (
     ]);
   });
 
-  it("moving a field up swaps it with its neighbour — contiguous orders, stable ids", async () => {
+  it("move-up payload: contiguous orders with stable ids on the swapped rows", async () => {
     const { DraftEditor } = await load();
     saveDraftMock.mockResolvedValue(
       savedResult(2, "Intake", [
@@ -438,9 +516,6 @@ describe("DraftEditor — field structure ops (intentionally RED until ES-3)", (
     );
     render(<DraftEditor {...threeFieldProps} />);
     fireEvent.click(screen.getByLabelText("Move field 3 up"));
-    expectValue("field-label-0", "First");
-    expectValue("field-label-1", "Third");
-    expectValue("field-label-2", "Second");
     fireEvent.click(control("save-draft"));
     await act(async () => {});
     expect(saveDraftMock).toHaveBeenCalledTimes(1);
@@ -453,26 +528,8 @@ describe("DraftEditor — field structure ops (intentionally RED until ES-3)", (
     ]);
   });
 
-  it("removing then adding an option keeps surviving ids and never resurrects the retired one", async () => {
+  it("option remove+add payload: surviving option id preserved, retired id never reassigned", async () => {
     const { DraftEditor } = await load();
-    const choiceProps: EditorProps = {
-      ...baseProps,
-      initialDraft: {
-        title: "Intake",
-        fields: [
-          field({
-            fieldId: "f_c",
-            kind: "singleChoice",
-            label: "Pick one",
-            order: 0,
-            options: [
-              { optionId: "o_a", label: "Yes" },
-              { optionId: "o_b", label: "No" },
-            ],
-          }),
-        ],
-      },
-    };
     saveDraftMock.mockResolvedValue(
       savedResult(2, "Intake", [
         savedField("f_c", { kind: "singleChoice", label: "Pick one" }),
@@ -480,13 +537,7 @@ describe("DraftEditor — field structure ops (intentionally RED until ES-3)", (
     );
     render(<DraftEditor {...choiceProps} />);
     fireEvent.click(screen.getByLabelText("Remove option 1"));
-    const remaining = optionsIn(0);
-    expect(remaining).toHaveLength(1);
-    expect((remaining[0] as HTMLInputElement).value).toBe("No");
     fireEvent.click(control("add-option-0"));
-    const grown = optionsIn(0);
-    expect(grown).toHaveLength(2);
-    expect((grown[1] as HTMLInputElement).value).toBe("");
     fireEvent.click(control("save-draft"));
     await act(async () => {});
     expect(saveDraftMock).toHaveBeenCalledTimes(1);
