@@ -1,4 +1,4 @@
-// P-008-R ES-1 scaffold — pure draft-editor state seam (callable stub).
+// P-008-R ES-1 — pure draft-editor state seam.
 //
 // The client draft-editor component routes incoming server props and the
 // save-success result through this seam so a revalidated snapshot can
@@ -7,10 +7,8 @@
 // tests/unit/onboarding-draft-editor.test.ts.
 //
 // This module is intentionally pure — no React imports — so the seam is
-// unit-testable without a DOM harness.
-//
-// Helpers land in per-helper increments, each preceded by a committed
-// behavioral RED — see docs/STATUS.md for the current stage.
+// unit-testable without a DOM harness; the component consumes it in
+// components/onboarding/draft-editor.tsx.
 
 export type DraftFieldKind =
   "shortText" | "longText" | "number" | "date" | "singleChoice" | "multiChoice";

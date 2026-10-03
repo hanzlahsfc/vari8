@@ -1,5 +1,6 @@
 import { forbidden } from "next/navigation";
 
+import { DraftEditor } from "@/components/onboarding/draft-editor";
 import { requireSessionUser } from "@/lib/auth/route-guard";
 import { getFormForWorkspace } from "@/lib/onboarding/forms-boundary";
 
@@ -19,10 +20,11 @@ type FormField = import("@/lib/onboarding/forms").FormField;
  * current workspace, so denied roles, foreign form ids, nonexistent ids and
  * malformed segments all fail closed to the same non-disclosing HTTP 403.
  *
- * This slice renders a READ-ONLY surface in EVERY state — the name control
- * is disabled, every field control is disabled, and no mutation or submit
- * control exists inside the editor region. Editing behaviors (save,
- * publish, archive, reopen, preview) belong to later increments.
+ * ES-2 mount wiring: an OPEN draft on a non-archived form mounts the
+ * callable `DraftEditor` scaffold (editor-ready surface, inert handlers —
+ * editing/save behaviors land in their own increments). Every other
+ * state — archived (with or without a preserved draft) and no open
+ * draft — keeps the fully read-only rendering from 5C-2a.
  */
 function OrderedDraftFields({ draft }: { draft: FormDefinition }) {
   const fields = [...draft.fields].sort((a, b) => a.order - b.order);
@@ -97,26 +99,38 @@ export default async function OnboardingFormEditorPage({
           This form is archived and permanently read-only.
         </p>
       ) : null}
-      <div className="auth-form">
-        <label className="auth-field" htmlFor="onboarding-form-name">
-          Form name
-          <input
-            className="auth-input"
-            data-testid="form-name"
-            defaultValue={form.name}
-            disabled
-            id="onboarding-form-name"
-            readOnly
-            type="text"
-          />
-        </label>
-      </div>
-      {form.draft !== null ? (
-        <OrderedDraftFields draft={form.draft} />
+      {form.draft !== null && !archived ? (
+        <DraftEditor
+          formId={formId}
+          initialDraft={form.draft}
+          initialName={form.name}
+          initialRevision={form.draftRevision}
+          workspaceId={workspaceId}
+        />
       ) : (
-        <p className="app-lede" data-testid="no-draft">
-          No draft is open.
-        </p>
+        <>
+          <div className="auth-form">
+            <label className="auth-field" htmlFor="onboarding-form-name">
+              Form name
+              <input
+                className="auth-input"
+                data-testid="form-name"
+                defaultValue={form.name}
+                disabled
+                id="onboarding-form-name"
+                readOnly
+                type="text"
+              />
+            </label>
+          </div>
+          {form.draft !== null ? (
+            <OrderedDraftFields draft={form.draft} />
+          ) : (
+            <p className="app-lede" data-testid="no-draft">
+              No draft is open.
+            </p>
+          )}
+        </>
       )}
     </div>
   );
