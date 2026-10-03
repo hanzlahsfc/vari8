@@ -22,6 +22,12 @@
 // Matcher note: jest-dom is NOT part of the approved harness — assertions
 // read DOM state directly (`input.value`, `el.matches(":disabled")`,
 // `textContent`) with plain vitest expects.
+//
+// Comment corrections (ES-2B prep, Apollo 7344de53): the two
+// deferred/probe comments in the save-wiring describe are reworded to
+// observed-symptom + defensive-guard wording — the earlier phrasing
+// asserted runner internals that were not independently established.
+// Comments only; mock behavior and expectations unchanged.
 
 import {
   cleanup,
@@ -264,10 +270,11 @@ describe("DraftEditor — save wiring (intentionally RED until ES-3)", () => {
   it("disables every mutation control while the save is in flight, then re-enables", async () => {
     const { DraftEditor } = await load();
     let release: (value: ReturnType<typeof savedResult>) => void = () => {};
-    // One shared deferred — NOT created inside the impl — so vitest's
-    // post-test mock probe-call returns the already-settled promise
-    // instead of minting a second, never-resolving one (which wedged the
-    // cleanup hook until the timeout).
+    // Defensive guard: one shared deferred minted OUTSIDE the impl.
+    // Observed symptom during harness bring-up — an impl that minted a
+    // fresh never-resolving promise per call wedged test teardown until
+    // the timeout. Resolving a single shared promise keeps teardown
+    // stable regardless of how the runner exercises the mock.
     const pendingSave = new Promise<ReturnType<typeof savedResult>>(
       (resolve) => {
         release = resolve;
@@ -325,10 +332,12 @@ describe("DraftEditor — save wiring (intentionally RED until ES-3)", () => {
 
   it("a transport failure shows the generic alert, preserves edits, and does not auto-retry", async () => {
     const { DraftEditor } = await load();
-    // vitest's cleanup probe invokes the impl once with ZERO args and
-    // awaits the result — return a settled promise there so the probe can
-    // never surface a phantom rejection. The real saveDraft call always
-    // carries (workspaceId, formData).
+    // Defensive guard: a ZERO-arg invocation gets a settled promise.
+    // Observed symptom — teardown surfaced a phantom `network down`
+    // rejection when every invocation returned the same rejected
+    // transport promise. The real saveDraft call always carries
+    // (workspaceId, formData); the zero-arg branch only shields runner
+    // bookkeeping from the injected rejection.
     const transportError = Promise.reject(new Error("network down"));
     transportError.catch(() => {});
     saveDraftMock.mockImplementation((...args) =>
@@ -458,6 +467,49 @@ describe("DraftEditor — field structure ops (DOM-visible, separable from save)
     expect((grown[1] as HTMLInputElement).value).toBe("");
     expectEnabled("save-draft");
   });
+
+  it("adding an option renders a blank new row after the survivors", async () => {
+    const { DraftEditor } = await load();
+    render(<DraftEditor {...choiceProps} />);
+    fireEvent.click(control("add-option-0"));
+    const options = optionsIn(0);
+    expect(options).toHaveLength(3);
+    expect((options[0] as HTMLInputElement).value).toBe("Yes");
+    expect((options[1] as HTMLInputElement).value).toBe("No");
+    expect((options[2] as HTMLInputElement).value).toBe("");
+    expectEnabled("save-draft");
+  });
+
+  // All six add kinds: each click appends a rendered field row and arms
+  // save. Choice kinds seed EXACTLY one blank option input; non-choice
+  // kinds render NO options region at all.
+  for (const kind of [
+    "shortText",
+    "longText",
+    "number",
+    "date",
+    "singleChoice",
+    "multiChoice",
+  ] as const) {
+    const choice = kind === "singleChoice" || kind === "multiChoice";
+    it(`adding a ${kind} field renders a new row (${choice ? "one blank option" : "no options"})`, async () => {
+      const { DraftEditor } = await load();
+      render(<DraftEditor {...baseProps} />);
+      fireEvent.click(control(`add-field-${kind}`));
+      expectValue("field-label-2", "");
+      const region = screen.queryByTestId("field-options-2");
+      if (choice) {
+        const seeded = within(region as HTMLElement).getAllByLabelText(
+          /^Option \d+$/,
+        );
+        expect(seeded).toHaveLength(1);
+        expect((seeded[0] as HTMLInputElement).value).toBe("");
+      } else {
+        expect(region).toBeNull();
+      }
+      expectEnabled("save-draft");
+    });
+  }
 });
 
 // DEFERRED SUBSET — these assertions read the save payload (draftJson) to

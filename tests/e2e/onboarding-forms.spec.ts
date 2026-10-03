@@ -946,10 +946,7 @@ test.describe("editor mount + read guards", () => {
       await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
       await expect(page.getByTestId("onboarding-form-editor")).toBeVisible();
       await expectEditorReady(page);
-      const storageBefore = await page.evaluate(() => ({
-        local: Object.keys(localStorage),
-        session: Object.keys(sessionStorage),
-      }));
+      const storageBefore = await storageSnapshot(page);
       await page
         .getByTestId("form-name")
         .fill(`E2E P8 Local Edit ${width} (edited)`);
@@ -964,12 +961,54 @@ test.describe("editor mount + read guards", () => {
       await expect(page.getByTestId("save-draft")).toBeEnabled();
       // Still zero mutation traffic, zero storage delta, byte-identical DB.
       expect(mutating).toEqual([]);
-      expect(
-        await page.evaluate(() => ({
-          local: Object.keys(localStorage),
-          session: Object.keys(sessionStorage),
-        })),
-      ).toEqual(storageBefore);
+      expect(await storageSnapshot(page)).toBe(storageBefore);
+      expect(await workspaceSnapshot()).toEqual(before);
+    });
+
+    // ES-2B client-local structure phase: add/remove/move field and
+    // add/remove option are local edits — they arm the save but send
+    // NOTHING (same zero-delta contract as metadata edits). Runs RED on
+    // the ES-2A head where the structure handlers are still inert.
+    test(`local structure edits arm save — zero network/storage/DB delta at ${width}px`, async ({
+      page,
+    }) => {
+      const form = await seedForm(`E2E P8 Local Struct ${width}`, {
+        draft: seedDefinition(`E2E P8 Local Struct ${width}`),
+      });
+      const before = await workspaceSnapshot();
+      await page.setViewportSize({ width, height: 900 });
+      await signIn(page, E2E.coach);
+      const mutating = trackNonGet(page);
+      await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+      await expect(page.getByTestId("onboarding-form-editor")).toBeVisible();
+      await expectEditorReady(page);
+      const storageBefore = await storageSnapshot(page);
+      // The seeded draft has one shortText field at index 0.
+      await page.getByTestId("add-field-singleChoice").click();
+      await expect(page.getByTestId("field-label-1")).toHaveCount(1);
+      await expect(
+        page.getByTestId("field-options-1").getByPlaceholder("Option label"),
+      ).toHaveCount(1);
+      await page.getByTestId("add-option-1").click();
+      await expect(
+        page.getByTestId("field-options-1").getByPlaceholder("Option label"),
+      ).toHaveCount(2);
+      // Move the new choice field above the seeded field.
+      await page.getByLabel("Move field 2 up").click();
+      await expect(
+        page.getByTestId("field-options-0").getByPlaceholder("Option label"),
+      ).toHaveCount(2);
+      await expect(page.getByTestId("field-label-1")).toHaveValue("Full name");
+      // Remove the seeded field — the choice field survives at index 0.
+      await page.getByLabel("Remove field 2").click();
+      await expect(page.getByTestId("field-label-1")).toHaveCount(0);
+      await expect(
+        page.getByTestId("field-options-0").getByPlaceholder("Option label"),
+      ).toHaveCount(2);
+      // Dirty arming holds; still zero mutation traffic/storage/DB delta.
+      await expect(page.getByTestId("save-draft")).toBeEnabled();
+      expect(mutating).toEqual([]);
+      expect(await storageSnapshot(page)).toBe(storageBefore);
       expect(await workspaceSnapshot()).toEqual(before);
     });
   }
