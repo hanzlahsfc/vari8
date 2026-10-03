@@ -62,6 +62,26 @@ describe("ES-1a initial mount seed + monotonic props reseed", () => {
     ]);
   });
 
+  it("does not mutate the input definition or reorder the caller's field array", async () => {
+    const { initialDraftState } = await load();
+    const source = [field("Second", 1), field("First", 0), field("Third", 2)];
+    const definition = { title: "Form name", fields: source };
+    const next = initialDraftState("Form name", 7, definition);
+    // Output is sorted by order…
+    expect(next.fields.map((f) => f.label)).toEqual([
+      "First",
+      "Second",
+      "Third",
+    ]);
+    // …while the caller's array reference and its contents are untouched.
+    expect(definition.fields).toBe(source);
+    expect(definition.fields.map((f) => f.label)).toEqual([
+      "Second",
+      "First",
+      "Third",
+    ]);
+  });
+
   it("adopts the incoming server snapshot when the editor is CLEAN", async () => {
     const { reseedDraftState } = await load();
     const local: DraftState = {
