@@ -1,11 +1,12 @@
 # P-008-R — Editor metadata editing + Save recovery plan
 
-- **Status:** ES-2 tests/harness+scaffold checkpoint complete (`6dbeaeb`)
+- **Status:** ES-2 checkpoint + audit corrections complete (`08ff818`)
   — STOPPED before ES-3 behavior. Plan `176740e`; ES-1 tests `dd42327`,
   scaffold `54e211c`, impl `f13a970` (+ wrap-up `ffc75ea`); ES-2
   test-infra `2c46546`+`a86a453`, tests `4087c23`+`6dbeaeb`, scaffold
-  `b15a60f`, harness corrections `6ba4c22`+`d37673c`. RED evidence:
-  `red-es-2-dom-scaffold-behavioral-final.log` (13/1, exit 1) and
+  `b15a60f`, harness corrections `6ba4c22`+`d37673c`, audit-8b151ebc
+  test corrections `08ff818`. RED evidence:
+  `red-es-2-dom-scaffold-behavioral-postaudit.log` (16/1, exit 1) and
   `red-es-2-e2e-production-browser.log` (16 fail / 31 pass on owned
   `juno-p8-pg`/`p8r_e2e2`, production server, exit 1). ES-3 behavior
   implementation is NOT authorized yet.

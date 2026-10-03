@@ -5,6 +5,40 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-03 — P-008-R editor save recovery — ES-2 audit corrections applied (STOPPED)
+
+- Apollo audit `8b151ebc` of checkpoint `404b571`: scaffold/noops and
+  both RED bindings verified; authorship attestation recorded with
+  limits (not cryptographic proof). Three test-contract corrections
+  REQUIRED before any ES-2 behavior release — all applied tests-only:
+- Corrections commit `08ff818` (tests only, current code head):
+  1. `issues saveDraft` payload test asserted the deliberately-UNSORTED
+     fixture array (`baseProps.initialDraft.fields`, [order1, order0]) —
+     now pins the editor-ordered field list `[f_a, f_b]` explicitly;
+     production ordering policy unchanged (the test was wrong).
+  2. Disabled assertions switched from the `.disabled` PROPERTY (which
+     ignores `<fieldset disabled>` inheritance) to the effective
+     `:disabled` semantic via `el.matches(":disabled")` — no redundant
+     prod attributes needed.
+  3. Structure-ops split for save-separability: DOM-visible structural
+     tests (row sequence/labels/options/next-index — can GREEN at the
+     field-structure slice with no save) vs a `structure-ops payload
+subset` describe honestly labeled DEFERRED to ES-3 (id/order pins
+     read draftJson).
+- Fresh scoped RED `red-es-2-dom-scaffold-behavioral-postaudit.log` @
+  `08ff818`: 16 AssertionError REDs + 1 markup pass (17 tests), exit 1,
+  ~0.7s, clean before/after. Delta vs prior run: 14 → 17 tests
+  (4 structure tests became 4 DOM-visible + 3 deferred payload tests).
+- Dependency audit log `raw-es-2-deps-audit.log`: installed
+  jsdom@30.1.1 / @testing-library/react@16.3.3 /
+  @testing-library/dom@10.4.2 (lockfile exact); `npm audit` = 10
+  findings ALL pre-existing (next→postcss, eslint-config-next→braces,
+  prisma→deepmerge-ts) — none harness-attributable; no force-fix
+  (breaking changes).
+- All ES-2 attempt logs + harness-fix provenance preserved in
+  `gate-logs/p008-editor-recovery/`. STOPPED before ES-3 — no prod
+  behavior, no push/PR/GitHub actions.
+
 ## 2026-10-03 — P-008-R editor save recovery — ES-2 tests/harness+scaffold checkpoint (STOPPED)
 
 - Apollo release authorized ES-2: ES-1 wrap-up, DOM harness deps,
