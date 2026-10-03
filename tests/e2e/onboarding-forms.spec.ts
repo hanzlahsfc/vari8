@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 import { E2E, e2eDatabaseUrl } from "./global-setup";
 
@@ -12,10 +12,16 @@ import { E2E, e2eDatabaseUrl } from "./global-setup";
  * candidate branch feature/p008-onboarding-form-builder @ d10d788, per the
  * recovery contract. These tests encode the reviewed contract; the
  * production implementation is rebuilt fresh on this branch.
+ *
+ * Slice ownership: the authz/nav/list/create tests govern 5C-1. The editor
+ * and preview assertions (open-draft lifecycle, previews, pending editor)
+ * remain prospective RED for 5C-2+ — they intentionally do not pass yet.
  */
 
 let prisma: PrismaClient;
 let wsId: string;
+let wsBId: string;
+let ownerMemberId: string;
 
 async function removeFixtures() {
   await prisma.onboardingFormVersion.deleteMany({
@@ -32,6 +38,14 @@ test.beforeAll(async () => {
     where: { slug: E2E.workspaceSlug },
   });
   wsId = ws.id;
+  const wsB = await prisma.workspace.findUniqueOrThrow({
+    where: { slug: E2E.workspaceBSlug },
+  });
+  wsBId = wsB.id;
+  const ownerMember = await prisma.workspaceMember.findFirstOrThrow({
+    where: { workspaceId: wsId, role: "WORKSPACE_OWNER" },
+  });
+  ownerMemberId = ownerMember.id;
   await removeFixtures();
 });
 
@@ -64,10 +78,29 @@ test("unauthenticated deep link redirects to /login", async ({ page }) => {
   await expect(page).toHaveURL(/login/);
 });
 
-test("non-member gets HTTP 403 on the form library", async ({ page }) => {
+test("non-member gets HTTP 403 on the form library AND create page", async ({
+  page,
+}) => {
   await signIn(page, E2E.nonmember);
   const res = await page.goto(`/workspace/${wsId}/onboarding/forms`);
   expect(res?.status()).toBe(403);
+  const res2 = await page.goto(`/workspace/${wsId}/onboarding/forms/new`);
+  expect(res2?.status()).toBe(403);
+});
+
+test("foreign-workspace and malformed segments fail closed (non-disclosing)", async ({
+  page,
+}) => {
+  // The coach is a member of the fixture workspace only — a different
+  // workspace's library must be indistinguishable from a missing one, and a
+  // malformed workspace segment must fail before any resource read.
+  await signIn(page, E2E.coach);
+  const foreign = await page.goto(`/workspace/${wsBId}/onboarding/forms`);
+  expect(foreign?.status()).toBe(403);
+  const malformed = await page.goto(
+    `/workspace/not-a-workspace/onboarding/forms`,
+  );
+  expect(malformed?.status()).toBe(403);
 });
 
 test("client member is denied the list AND new-page deep link", async ({
@@ -95,19 +128,29 @@ test("assistant coach and support are denied list AND new-page deep link", async
 test("nav gates the onboarding-forms entry by current server-side role", async ({
   page,
 }) => {
-  await signIn(page, E2E.owner);
-  await page.goto(`/workspace/${wsId}`);
-  await expect(
-    page.locator(".shell__nav").getByText("Onboarding Forms"),
-  ).toBeVisible();
-  // Coach also sees it (read scope); a denied role does not.
-  await page.goto(`/logout`);
-  await signIn(page, E2E.assistant);
-  const res = await page.goto(`/workspace/${wsId}`);
-  if (res?.status() === 200) {
+  // Owner AND coach see the entry (both hold workspace-scope read).
+  for (const email of [E2E.owner, E2E.coach]) {
+    await signIn(page, email);
+    const res = await page.goto(`/workspace/${wsId}`);
+    expect(res?.status()).toBe(200);
     await expect(
       page.locator(".shell__nav").getByText("Onboarding Forms"),
-    ).not.toBeVisible();
+    ).toBeVisible();
+  }
+  // Denied roles never see it: the staff shell itself 403s for
+  // client/support/nonmember, while the assistant reaches the shell and must
+  // see a nav WITHOUT the entry (cosmetic gating only — the pages still
+  // re-authorize, proven by the deep-link tests above).
+  for (const email of [E2E.assistant, E2E.support, E2E.client, E2E.nonmember]) {
+    await signIn(page, email);
+    const res = await page.goto(`/workspace/${wsId}`);
+    if (res?.status() === 200) {
+      await expect(
+        page.locator(".shell__nav").getByText("Onboarding Forms"),
+      ).not.toBeVisible();
+    } else {
+      expect(res?.status()).toBe(403);
+    }
   }
 });
 
@@ -120,66 +163,249 @@ for (const width of [1440, 834, 390] as const) {
     const res = await page.goto(`/workspace/${wsId}/onboarding/forms`);
     expect(res?.status()).toBe(200);
     await expect(page.getByTestId("new-onboarding-form")).toBeVisible();
+    // No horizontal overflow on the LIST page at this width.
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth >
+          document.documentElement.clientWidth,
+      ),
+    ).toBe(false);
+
     const res2 = await page.goto(`/workspace/${wsId}/onboarding/forms/new`);
     expect(res2?.status()).toBe(200);
     await expect(
       page.getByRole("button", { name: "Create form" }),
     ).toBeVisible();
-    // No horizontal overflow at this width.
-    const overflow = await page.evaluate(
-      () =>
-        document.documentElement.scrollWidth >
-        document.documentElement.clientWidth,
-    );
-    expect(overflow).toBe(false);
-    // Keyboard: name input reachable and focusable.
+    // No horizontal overflow on the NEW page at this width.
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth >
+          document.documentElement.clientWidth,
+      ),
+    ).toBe(false);
+    // The create surface has exactly one text input — no intake/answer
+    // fields exist in this slice.
+    await expect(page.getByRole("textbox")).toHaveCount(1);
+
+    // Real keyboard traversal — Tab keypresses, not programmatic .focus() —
+    // must reach the name input, then the submit control in DOM order.
     const input = page.getByTestId("form-name-input");
-    await input.focus();
+    const submit = page.getByRole("button", { name: "Create form" });
+    for (let i = 0; i < 40; i++) {
+      if (await input.evaluate((el) => el === document.activeElement)) break;
+      await page.keyboard.press("Tab");
+    }
     await expect(input).toBeFocused();
+    for (let i = 0; i < 10; i++) {
+      if (await submit.evaluate((el) => el === document.activeElement)) break;
+      await page.keyboard.press("Tab");
+    }
+    await expect(submit).toBeFocused();
   });
 }
 
-for (const width of [1440, 834, 390] as const) {
-  test(`empty list + controlled-pending create at ${width}px`, async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width, height: 900 });
+test.describe("seeded list rendering", () => {
+  // Independent per-test fixture state: each test seeds exactly the row it
+  // asserts on, and the reserved `E2E P8` namespace is cleaned before AND
+  // after so ordering can never leak rows between tests.
+  test.beforeEach(removeFixtures);
+  test.afterEach(removeFixtures);
+
+  const seedDefinition = (title: string) => ({
+    title,
+    fields: [
+      {
+        fieldId: "f_seed_1",
+        kind: "shortText",
+        label: "Full name",
+        required: true,
+        order: 0,
+      },
+    ],
+  });
+
+  async function listRow(page: Page, name: string) {
     await signIn(page, E2E.owner);
     await page.goto(`/workspace/${wsId}/onboarding/forms`);
-    await expect(page.getByTestId("onboarding-empty-state")).toBeVisible();
-    await page.getByTestId("new-onboarding-form").click();
-    await expect(page).toHaveURL(/onboarding\/forms\/new$/);
-    await page.getByRole("button", { name: "Create form" }).click();
-    // Empty name → safe validation message, stays on /new, no navigation.
-    await expect(page).toHaveURL(/onboarding\/forms\/new$/);
-    await expect(page.getByRole("alert")).toBeVisible();
-    await page.getByTestId("form-name-input").fill(`E2E P8 5C1 ${width}`);
+    const row = page
+      .getByTestId("onboarding-forms-table")
+      .getByRole("row")
+      .filter({ hasText: name });
+    await expect(row).toHaveCount(1);
+    return row;
+  }
 
-    // Deterministic pending: hold the action POST at the network layer so
-    // disabled-state assertions cannot race a fast server.
-    let release!: () => void;
-    const hold = new Promise<void>((r) => (release = r));
-    await page.route(`**/onboarding/forms/new`, async (route) => {
-      if (route.request().method() === "POST") {
-        await hold;
-      }
-      await route.continue();
+  test("draft-only form renders DRAFT status with no published version", async ({
+    page,
+  }) => {
+    const form = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: wsId,
+        name: "E2E P8 Seed Draft",
+        createdByMemberId: ownerMemberId,
+        draftRevision: 3,
+        draft: seedDefinition("E2E P8 Seed Draft"),
+      },
+      select: { id: true },
     });
-    const submit = page.getByRole("button", { name: "Create form" });
-    const input = page.getByTestId("form-name-input");
-    await submit.click();
-    // BOTH name input and submit are disabled while pending.
-    await expect(submit).toBeDisabled();
-    await expect(input).toBeDisabled();
-    release();
-    await expect(page).toHaveURL(/onboarding\/forms\/[A-Za-z0-9_-]+$/);
-    // Exactly one form row for this name — double-submit cannot duplicate.
-    const rows = await prisma.onboardingForm.count({
-      where: { name: `E2E P8 5C1 ${width}` },
-    });
-    expect(rows).toBe(1);
+    const row = await listRow(page, "E2E P8 Seed Draft");
+    await expect(row.getByTestId("form-status-badge")).toHaveText("DRAFT");
+    await expect(row.getByTestId("form-version")).toHaveText("—");
+    await expect(
+      row.getByRole("link", { name: "E2E P8 Seed Draft" }),
+    ).toHaveAttribute("href", `/workspace/${wsId}/onboarding/forms/${form.id}`);
   });
-}
+
+  test("published form renders PUBLISHED status and its latest version", async ({
+    page,
+  }) => {
+    const form = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: wsId,
+        name: "E2E P8 Seed Published",
+        createdByMemberId: ownerMemberId,
+        draftRevision: 4,
+        draft: Prisma.JsonNull, // publish consumes the open draft
+        versions: {
+          create: [
+            {
+              versionSeq: 1,
+              definition: seedDefinition("E2E P8 Seed Published"),
+              publishOriginRevision: 1,
+              publishedByMemberId: ownerMemberId,
+            },
+            {
+              versionSeq: 2,
+              definition: seedDefinition("E2E P8 Seed Published v2"),
+              publishOriginRevision: 4,
+              publishedByMemberId: ownerMemberId,
+            },
+          ],
+        },
+      },
+      select: { id: true },
+    });
+    const row = await listRow(page, "E2E P8 Seed Published");
+    await expect(row.getByTestId("form-status-badge")).toHaveText("PUBLISHED");
+    await expect(row.getByTestId("form-version")).toHaveText("v2");
+    await expect(
+      row.getByRole("link", { name: "E2E P8 Seed Published" }),
+    ).toHaveAttribute("href", `/workspace/${wsId}/onboarding/forms/${form.id}`);
+  });
+
+  test("archived form renders ARCHIVED status and retained version", async ({
+    page,
+  }) => {
+    const form = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: wsId,
+        name: "E2E P8 Seed Archived",
+        createdByMemberId: ownerMemberId,
+        status: "ARCHIVED",
+        archivedAt: new Date(),
+        archivedByMemberId: ownerMemberId,
+        draftRevision: 2,
+        draft: Prisma.JsonNull,
+        versions: {
+          create: [
+            {
+              versionSeq: 1,
+              definition: seedDefinition("E2E P8 Seed Archived"),
+              publishOriginRevision: 2,
+              publishedByMemberId: ownerMemberId,
+            },
+          ],
+        },
+      },
+      select: { id: true },
+    });
+    const row = await listRow(page, "E2E P8 Seed Archived");
+    await expect(row.getByTestId("form-status-badge")).toHaveText("ARCHIVED");
+    await expect(row.getByTestId("form-version")).toHaveText("v1");
+    await expect(
+      row.getByRole("link", { name: "E2E P8 Seed Archived" }),
+    ).toHaveAttribute("href", `/workspace/${wsId}/onboarding/forms/${form.id}`);
+  });
+});
+
+test.describe("empty list + controlled-pending create", () => {
+  // Fixture-scoped cleanup, NOT broad deletion: only the reserved `E2E P8`
+  // namespace inside this workspace is touched, before AND after each test,
+  // so a created row can never leak into the next width's empty-state
+  // assertion.
+  test.beforeEach(removeFixtures);
+  test.afterEach(removeFixtures);
+
+  for (const width of [1440, 834, 390] as const) {
+    test(`empty state + single-row create at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await signIn(page, E2E.owner);
+      await page.goto(`/workspace/${wsId}/onboarding/forms`);
+      await expect(page.getByTestId("onboarding-empty-state")).toBeVisible();
+      await page.getByTestId("new-onboarding-form").click();
+      await expect(page).toHaveURL(/onboarding\/forms\/new$/);
+      await page.getByRole("button", { name: "Create form" }).click();
+      // Empty name → safe validation message, stays on /new, no navigation.
+      await expect(page).toHaveURL(/onboarding\/forms\/new$/);
+      await expect(page.getByRole("alert")).toBeVisible();
+
+      // Count every mutating request to the onboarding routes so a
+      // double-submit can be detected at the network layer.
+      const mutating: string[] = [];
+      page.on("request", (req) => {
+        if (req.method() !== "GET" && req.url().includes("/onboarding/forms"))
+          mutating.push(`${req.method()} ${req.url()}`);
+      });
+
+      // Deterministic pending: hold the action POST at the network layer so
+      // disabled-state assertions cannot race a fast server.
+      let release!: () => void;
+      const hold = new Promise<void>((r) => (release = r));
+      await page.route(`**/onboarding/forms/new`, async (route) => {
+        if (route.request().method() === "POST") {
+          await hold;
+        }
+        await route.continue();
+      });
+
+      const submit = page.getByRole("button", { name: "Create form" });
+      const input = page.getByTestId("form-name-input");
+      await input.fill(`E2E P8 5C1 ${width}`);
+      const storageBefore = await storageSnapshot(page);
+      // Real keyboard submission — Enter in the focused input, not a click.
+      await input.press("Enter");
+      try {
+        // BOTH name input and submit are disabled while pending.
+        await expect(submit).toBeDisabled();
+        await expect(input).toBeDisabled();
+        // Hammer the submit path while the first request is held: more Enter
+        // presses and further submit attempts must not produce a second
+        // mutation request. Attempts on the disabled controls time out
+        // quickly — the attempt itself is what matters.
+        await page.keyboard.press("Enter");
+        await page.keyboard.press("Enter");
+        await submit.click({ timeout: 1_000 }).catch(() => {});
+        await input.press("Enter", { timeout: 1_000 }).catch(() => {});
+        expect(mutating).toHaveLength(1);
+      } finally {
+        // The held POST is ALWAYS released — including on assertion failure —
+        // so the run can never wedge on an unresolved route handler.
+        release();
+      }
+
+      await expect(page).toHaveURL(/onboarding\/forms\/[A-Za-z0-9_-]+$/);
+      // Creating a definition writes nothing to browser storage and leaves
+      // exactly one row — a double-submit cannot duplicate.
+      expect(await storageSnapshot(page)).toBe(storageBefore);
+      const rows = await prisma.onboardingForm.count({
+        where: { workspaceId: wsId, name: `E2E P8 5C1 ${width}` },
+      });
+      expect(rows).toBe(1);
+    });
+  }
+});
 
 test("owner creates, edits, publishes, reopens, v2, and archives", async ({
   page,

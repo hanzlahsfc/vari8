@@ -286,9 +286,10 @@ for user-facing elements.
 - Publish requires an OPEN draft that is SAVED-CURRENT (dirty=false — the
   latest draft state has been saved at a known `expectedRevision`), no
   pending mutation, and the form not archived. dirty=true blocks publish.
-- Reopen is enabled only when no draft is open (closed/published or
-  archived-with-version history); it seeds the draft from the latest
-  published version and is idempotent.
+- Reopen is enabled only while the form is ACTIVE and no draft is open
+  (closed/published state); it seeds the draft from the latest published
+  version and is idempotent. An ARCHIVED form is permanently read-only —
+  reopen is never offered and the service denies with `form_archived`.
 - Archived form: editor renders read-only (no save/publish/archive/open
   controls); archived banner.
 - Publish history is immutable — version rows never editable.
