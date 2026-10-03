@@ -59,6 +59,21 @@ start`. Log `red-5c1-browser-v3.log`.
   20/20 @ `453d2bf` (`green-5c1-transport-fix.log`); full gates re-raw'd
   at the same head (`raw-5c1-*-final.log`: mech/unit523/integration281/
   build all exit 0).
+- 5C-2a implemented (`0293780`, conditional release `46a908c1`): canonical
+  `/onboarding/forms/[formId]` mounts with per-page boundary read —
+  read-only in EVERY state (disabled name + disabled field controls, zero
+  mutation/submit controls in the editor region), `draft-editor`/
+  `no-draft`/`archived-banner` states incl. archived-with-preserved-draft.
+  Sequence: `2afe9c4` strengthened tests (mount read-only everywhere,
+  archived-open-draft fixture, `access-denied` identity, nonmember,
+  platform-admin fixture named outstanding) → RED v2 `red-5c2a-editor-
+mount-v2.log` (11/11 @`2afe9c4`) → mount `5c36cbe` → test fixes
+  `0293780` (visible-region denial compare — RSC payload embeds URL;
+  mutation counter post-signin scoped to `/onboarding/`). GREEN
+  `green-5c2a-editor-mount-v2.log` 11/11; regression UI1+mount 31/31
+  `green-5c2a-regression-ui1.log`; mech/unit523/integration281/build all 0
+  (`raw-5c2a-*.log`). Record corrections: mount describe has 10→11 tests;
+  RED start 12:48:52Z. PLATFORM_ADMIN E2E fixture outstanding.
 - 5C-2a prep (`94a6141`, tests/docs only, Apollo `aa1e8611`): editor
   mount + read-guard contract committed — per-page resource read via
   `getFormForWorkspace`, assistant page-guard deep link, dual-member
