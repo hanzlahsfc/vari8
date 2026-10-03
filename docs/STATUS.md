@@ -5,6 +5,33 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-009 ES-2A clean-recovery — implemented + gates (STOPPED for acceptance)
+
+- Root accepted the RED checkpoint (release `23cae652`). Fresh minimal
+  ES-2A implementation in `components/onboarding/draft-editor.tsx` ONLY,
+  committed `36a2f8f`: existing name/label/required/help/option-label
+  edits → local state + dirty arming; `useEffect` props reseed via
+  `reseedDraftState` (dirty preserve / clean monotonic adopt). Save
+  INERT; add/remove/move/option ops remain no-op. No transplant of
+  `d7cf860` — derived from the committed seam/test contracts.
+- Gates on clean committed head `63dfa4e` (docs-only delta from `36a2f8f`
+  — code/tests identical; NEWCURRENT recaptures):
+  `green-es2a-dom-subset-final.log` 5/5 exit 0 ·
+  `green-es2a-es1-regression-final.log` 17/17 exit 0 ·
+  `raw-es2a-format-final.log`/`raw-es2a-typecheck-final.log`/
+  `raw-es2a-lint-final.log` all exit 0 ·
+  `raw-es2a-dom-fullfile-final.log` honest 5 pass / 12 fail exit 1
+  (ES-3 save 5 + ES-2B structure 4 + deferred payload 3, enumerated) ·
+  `green-es2a-e2e-mount-describe.log` 14/14 exit 0 on owned
+  `juno-p8-pg`/`p8e_e2e`, `CI=1`, production build+start — incl. 3
+  local-edit widths asserting zero non-GET/storage/DB delta; GREEN
+  BUILD_ID `4oU0hfNUsx4w8ljkL2pup` sha256 `853886d0…`, RED BUILD_ID
+  `0WkgVkNAMs3l60aq1YrLE467` snapshot preserved.
+- First format attempt `raw-es2a-format.log` @`36a2f8f` failed on a
+  STATUS.md whitespace issue — preserved; fixed docs-only `63dfa4e`,
+  NEWCURRENT recapture exit 0.
+- STOPPED for root acceptance before ES-2B. No push/PR/merge/deploy.
+
 ## 2026-10-04 — P-009 ES-2A clean-recovery — prospective RED captured (STOPPED for review)
 
 - Head at capture: `65fdab4` (docs commit; code/tests identical to base
