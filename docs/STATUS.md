@@ -39,6 +39,15 @@ start`. Log `red-5c1-browser-v3.log`.
   5C-1 UI E2E 15/15 at 1440/834/390 vs production server (`p8r_e2e2`).
   Full spec NOT green by design: 5 editor/preview tests remain RED for
   5C-2/5C-3/5C-4. Logs: `gate-logs/p008-recovery/slice-5c1.md`.
+- Helios732 corrections `f7dbc0b` (tests/docs only): lifecycle post-reopen
+  saves `6 → 5` (publish never bumps `draftRevision`; verified vs service);
+  nav assistant hard-asserts 200 + hidden entry; later-slice gates pinned
+  (assistant deep links on editor/preview, identical foreign/nonexistent
+  403, archived read-only, preview src variants, per-variant audit delta,
+  save+open pending coverage, mid-session revoked denial). Timing
+  disclosed: no separate browser RED ran between `8b0cb40` and `e72b77b`;
+  the `40a5115` suite RED covered both increments prospectively. Evidence
+  logs sanitized (`<redacted-credentials>`, outside Git).
 - **STOPPED for Apollo audit before editor work.** No push/PR/deploy.
 
 ## 2026-10-02 — P-008 onboarding form builder (TDD recovery, in progress)
