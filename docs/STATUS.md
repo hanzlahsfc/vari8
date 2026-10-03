@@ -5,6 +5,35 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-03 — P-008-R editor save recovery — ES-1 tests+scaffold checkpoint (STOPPED)
+
+- Apollo checkpoint release `538b5b56` authorized ES-1 TESTS+SCAFFOLD ONLY on
+  a fresh branch/worktree off verified base `61715321` (main-descended;
+  backend/security/read-only mount retained). `origin/main` re-verified live
+  = `50367963`, no change; refs clean, remote `The-great-tracker-` only.
+  `repo-p008-tdd` @ `bb5ef98` and `repo` @ `d10d788` preserved untouched.
+- Branch `feature/p008-editor-save-recovery`, worktree `../repo-p008-editor-tdd`.
+  Plan carried docs-only at `176740e`; tests-only contract suite
+  `tests/unit/onboarding-draft-editor.test.ts` committed `dd42327`
+  (adapted w/ provenance from `e157306`, extended: `adoptSavedResult`
+  normalized-title, `addDraftField` blank-option seed, `initialDraftState`
+  ordering). Scaffold `components/onboarding/state.ts` committed `54e211c`
+  — React-free types + signatures, all bodies throw `not implemented`,
+  zero helper logic.
+- RED evidence (raw logs outside Git, `gate-logs/p008-editor-recovery/`):
+  module-absent setup run `red-es1-module-absent{,-run}.log` @ `dd42327`
+  (16/16 module-not-found, exit 1 — setup record, NOT a behavioral gate);
+  behavioral REDs on the clean committed scaffold `54e211c`, real-module
+  `Error: not implemented` throws (never import errors):
+  `red-es-1a-scaffold.log` 6/6 exit 1, `red-es-1b-scaffold.log` 2/2 exit 1,
+  `red-es-1c-scaffold.log` 8/8 exit 1. Per-run UTC/SHA/clean-porcelain/
+  command/exit recorded; bash `pipefail` runner with immediate `rc=$?`
+  capture.
+- STOPPED before helper implementation per release. No deps/harness/UI yet,
+  no editing/save behavior, no reopen/publish/archive/preview, no
+  push/PR/merge/deploy. Old evidence (`e157306`) is reference-only and is
+  not retroactively waived or reused.
+
 ## 2026-10-03 — P-008 slice 5C-1 list/create/nav (complete, awaiting audit)
 
 - Scoped release (Apollo `f469c9ae`) executed on

@@ -1,7 +1,9 @@
 # P-008-R — Editor metadata editing + Save recovery plan
 
-- **Status:** ES-1 checkpoint in progress — tests + scaffold stage ONLY;
-  helper implementation is NOT authorized yet.
+- **Status:** ES-1 tests+scaffold stage COMPLETE — STOPPED before helper
+  implementation. Plan `176740e`, tests `dd42327`, scaffold `54e211c`;
+  behavioral REDs captured on the clean scaffold tree (see STATUS entry
+  2026-10-03). Helper implementation is NOT authorized yet.
 - **Approved authority:** Apollo checkpoint release
   `538b5b56-e2f7-4578-90d0-34d2c3cae21c` (P-009, 2026-10-03) — ES-1
   tests+scaffold only on this branch/worktree. Direction approved at audit
