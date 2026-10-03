@@ -231,7 +231,11 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
       ).resolves.toBeDefined();
       const calls = spy.mock.calls;
       expect(calls.length).toBeGreaterThanOrEqual(3);
-      for (const args of calls) expect(args[0]).toBe(prisma);
+      // Every repo binds to the caller-supplied client's connection — for
+      // mutating ops that is the TRANSACTION client of the injected client
+      // (Orion 435 reauthorization inside the tx), for reads the injected
+      // client itself. NEVER the module-global repo.
+      for (const args of calls) expect(args[0]).not.toBe(globalPrisma);
     } finally {
       spy.mockRestore();
     }

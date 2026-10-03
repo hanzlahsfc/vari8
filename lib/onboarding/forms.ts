@@ -306,19 +306,22 @@ export async function createOnboardingForm(
   client?: PrismaClient,
 ): Promise<{ formId: string }> {
   const db = client ?? defaultPrisma;
-  const ctx = await authorize(
-    session,
-    {
-      resource: "onboardingFormTemplates",
-      action: "write",
-      workspaceId: input.workspaceId,
-    },
-    createPrismaAuthorizationRepo(db),
-  );
   const name = cleanText(input.name, FORM_LIMITS.nameMax);
   // Form + audit event are one transaction — if the audit write fails the
-  // whole transaction rolls back and no form row survives.
+  // whole transaction rolls back and no form row survives. Authorization
+  // is re-read INSIDE the transaction on the tx client: an authorize()
+  // outside the tx leaves a check/write gap where a mid-flight demotion
+  // would still be honoured (Orion 435).
   return db.$transaction(async (tx) => {
+    const ctx = await authorize(
+      session,
+      {
+        resource: "onboardingFormTemplates",
+        action: "write",
+        workspaceId: input.workspaceId,
+      },
+      createPrismaAuthorizationRepo(tx),
+    );
     const form = await tx.onboardingForm.create({
       data: {
         workspaceId: ctx.workspaceId as string,
@@ -472,23 +475,26 @@ export async function saveOnboardingFormDraft(
   client?: PrismaClient,
 ): Promise<{ revision: number; definition: FormDefinition }> {
   const db = client ?? defaultPrisma;
-  const ctx = await authorize(
-    session,
-    {
-      resource: "onboardingFormTemplates",
-      action: "write",
-      workspaceId: input.workspaceId,
-    },
-    createPrismaAuthorizationRepo(db),
-  );
   const name =
     input.name === undefined
       ? undefined
       : cleanText(input.name, FORM_LIMITS.nameMax);
-  const workspaceId = ctx.workspaceId as string;
+  const workspaceId = input.workspaceId;
   return withSerializedRetry(() =>
     db.$transaction(
       async (tx) => {
+        // Reauthorized on EVERY attempt inside the tx: a retry after a
+        // serialization failure re-reads current membership/role/workspace
+        // in the serializable snapshot — no stale ctx (Orion 435).
+        const ctx = await authorize(
+          session,
+          {
+            resource: "onboardingFormTemplates",
+            action: "write",
+            workspaceId: input.workspaceId,
+          },
+          createPrismaAuthorizationRepo(tx),
+        );
         const form = await lockForm(tx, workspaceId, input.formId);
         if (!form) throw new OnboardingFormError("form_not_accessible");
         if (form.status === "ARCHIVED")
@@ -530,19 +536,22 @@ export async function publishOnboardingForm(
   client?: PrismaClient,
 ): Promise<{ versionSeq: number }> {
   const db = client ?? defaultPrisma;
-  const ctx = await authorize(
-    session,
-    {
-      resource: "onboardingFormTemplates",
-      action: "write",
-      workspaceId: input.workspaceId,
-    },
-    createPrismaAuthorizationRepo(db),
-  );
-  const workspaceId = ctx.workspaceId as string;
+  const workspaceId = input.workspaceId;
   return withSerializedRetry(() =>
     db.$transaction(
       async (tx) => {
+        // Reauthorized on EVERY attempt inside the tx: a retry after a
+        // serialization failure re-reads current membership/role/workspace
+        // in the serializable snapshot — no stale ctx (Orion 435).
+        const ctx = await authorize(
+          session,
+          {
+            resource: "onboardingFormTemplates",
+            action: "write",
+            workspaceId: input.workspaceId,
+          },
+          createPrismaAuthorizationRepo(tx),
+        );
         const form = await lockForm(tx, workspaceId, input.formId);
         if (!form) throw new OnboardingFormError("form_not_accessible");
         if (form.status === "ARCHIVED")
@@ -610,19 +619,22 @@ export async function openOnboardingDraft(
   client?: PrismaClient,
 ): Promise<{ revision: number; definition: FormDefinition }> {
   const db = client ?? defaultPrisma;
-  const ctx = await authorize(
-    session,
-    {
-      resource: "onboardingFormTemplates",
-      action: "write",
-      workspaceId: input.workspaceId,
-    },
-    createPrismaAuthorizationRepo(db),
-  );
-  const workspaceId = ctx.workspaceId as string;
+  const workspaceId = input.workspaceId;
   return withSerializedRetry(() =>
     db.$transaction(
       async (tx) => {
+        // Reauthorized on EVERY attempt inside the tx: a retry after a
+        // serialization failure re-reads current membership/role/workspace
+        // in the serializable snapshot — no stale ctx (Orion 435).
+        const ctx = await authorize(
+          session,
+          {
+            resource: "onboardingFormTemplates",
+            action: "write",
+            workspaceId: input.workspaceId,
+          },
+          createPrismaAuthorizationRepo(tx),
+        );
         const form = await lockForm(tx, workspaceId, input.formId);
         if (!form) throw new OnboardingFormError("form_not_accessible");
         if (form.status === "ARCHIVED")
@@ -673,19 +685,22 @@ export async function archiveOnboardingForm(
   client?: PrismaClient,
 ): Promise<{ formId: string }> {
   const db = client ?? defaultPrisma;
-  const ctx = await authorize(
-    session,
-    {
-      resource: "onboardingFormTemplates",
-      action: "write",
-      workspaceId: input.workspaceId,
-    },
-    createPrismaAuthorizationRepo(db),
-  );
-  const workspaceId = ctx.workspaceId as string;
+  const workspaceId = input.workspaceId;
   await withSerializedRetry(() =>
     db.$transaction(
       async (tx) => {
+        // Reauthorized on EVERY attempt inside the tx: a retry after a
+        // serialization failure re-reads current membership/role/workspace
+        // in the serializable snapshot — no stale ctx (Orion 435).
+        const ctx = await authorize(
+          session,
+          {
+            resource: "onboardingFormTemplates",
+            action: "write",
+            workspaceId: input.workspaceId,
+          },
+          createPrismaAuthorizationRepo(tx),
+        );
         const form = await lockForm(tx, workspaceId, input.formId);
         if (!form) throw new OnboardingFormError("form_not_accessible");
         // Idempotent: already archived → preserve original stamps, no audit.
