@@ -105,5 +105,20 @@ export function addDraftField(
   state: DraftState,
   kind: DraftFieldKind,
 ): DraftState {
-  throw new Error("not implemented");
+  return {
+    ...state,
+    dirty: true,
+    fields: [
+      ...state.fields,
+      {
+        kind,
+        label: "",
+        required: false,
+        order: state.fields.length,
+        ...(kind === "singleChoice" || kind === "multiChoice"
+          ? { options: [{ label: "" }] }
+          : {}),
+      },
+    ],
+  };
 }
