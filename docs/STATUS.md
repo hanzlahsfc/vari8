@@ -5,6 +5,25 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-009 ES-2A clean-recovery cycle — provenance doc (STOPPED before RED)
+
+- New branch `feature/p008-editor-save-recovery-es2a` + worktree
+  `../repo-p008-editor-es2a` rooted EXACTLY at `ea8400e` (ES-1 helpers +
+  inert ES-2 scaffold + corrected DOM tests + 3-width local-edit tests).
+  `feature/p008-editor-save-recovery` preserved at `db986a57` in
+  `../repo-p008-editor-tdd`; all historical logs preserved.
+- Reason: prior ES-2A browser RED logged `CLEAN_AFTER: 1` and its `.next`
+  build was later overwritten (see ERRATUM 2,
+  `gate-logs/p008-editor-recovery/red-es-2a-e2e-local-edit.log`) — the
+  `d7cf860` implementation does not sit behind a provably clean RED window.
+- Provenance/scope doc: `docs/tasks/p008-editor-save-recovery-es2a-recovery.md`
+  (additive; identifies the limitation without rewriting old evidence).
+- New owned disposable DB `p8e_e2e` created on `juno-p8-pg` after negative
+  existence check. Next: prospective DOM-subset + 3-width browser RED on
+  the clean committed head under
+  `gate-logs/p008-editor-recovery/es2a-clean-recovery/`, then STOP for root
+  review. No transplant of `d7cf860`; no implementation before review.
+
 ## 2026-10-03 — P-008-R editor save recovery — ES-2 audit corrections applied (STOPPED)
 
 - Apollo audit `8b151ebc` of checkpoint `404b571`: scaffold/noops and
