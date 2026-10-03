@@ -582,6 +582,39 @@ test.describe("editor mount + read guards", () => {
       select: { id: true },
     });
 
+  const MUTATION_TESTIDS = [
+    "save-draft",
+    "publish-form",
+    "archive-form",
+    "open-draft",
+  ] as const;
+
+  async function expectMountReadOnly(page: Page) {
+    // Mount is READ-ONLY in EVERY state this slice, not only archived:
+    // the name control is disabled, no named mutation control exists, and
+    // the editor region contains no submit/button at all.
+    await expect(page.getByTestId("form-name")).toBeDisabled();
+    for (const testid of MUTATION_TESTIDS) {
+      await expect(page.getByTestId(testid)).toHaveCount(0);
+    }
+    await expect(
+      page
+        .getByTestId("onboarding-form-editor")
+        .locator("button, [type='submit']"),
+    ).toHaveCount(0);
+  }
+
+  async function expectAllControlsDisabled(page: Page, region: string) {
+    const controls = page
+      .getByTestId(region)
+      .locator("input,textarea,select,button");
+    const count = await controls.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i += 1) {
+      await expect(controls.nth(i)).toBeDisabled();
+    }
+  }
+
   test("unauthenticated deep link to the editor redirects to /login", async ({
     page,
   }) => {
@@ -598,18 +631,24 @@ test.describe("editor mount + read guards", () => {
     const path = `/workspace/${wsId}/onboarding/forms/${form.id}`;
     // The assistant is the discriminating probe: it passes the staff layout
     // but lacks the resource — the editor page itself must deny. Other
-    // denied roles may 403 earlier; the result must be identical either way
-    // and must never render the form name.
-    for (const email of [E2E.assistant, E2E.client, E2E.support]) {
+    // denied roles may 403 earlier; the visible denial must be identical
+    // either way and must never render the form name.
+    for (const email of [
+      E2E.assistant,
+      E2E.client,
+      E2E.support,
+      E2E.nonmember,
+    ]) {
       await signIn(page, email);
       const res = await page.goto(path);
       expect(res?.status()).toBe(403);
+      await expect(page.getByTestId("access-denied")).toBeVisible();
       await expect(page.getByTestId("onboarding-form-editor")).toHaveCount(0);
       await expect(page.getByText("E2E P8 Mount Denied")).toHaveCount(0);
     }
   });
 
-  test("dual-member isolation: wsA form under a wsB URL is indistinguishable from nonexistent", async ({
+  test("dual-member isolation: wsA form under a wsB URL renders the IDENTICAL denial as nonexistent", async ({
     page,
   }) => {
     // The owner is a member of BOTH fixture workspaces — passing the layout
@@ -623,14 +662,25 @@ test.describe("editor mount + read guards", () => {
       `/workspace/${wsBId}/onboarding/forms/${form.id}`,
     );
     expect(foreign?.status()).toBe(403);
+    await expect(page.getByTestId("access-denied")).toBeVisible();
     await expect(page.getByText("E2E P8 Foreign")).toHaveCount(0);
-    // Same workspace URL shape, a formId that exists nowhere — must look
-    // identical to the cross-workspace read: 403, no name, no editor.
+    const foreignBody = await page.textContent("body");
+    // Same workspace URL shape, a formId that exists nowhere — status AND
+    // visible denial content must be indistinguishable.
     const missing = await page.goto(
       `/workspace/${wsBId}/onboarding/forms/missingformid123`,
     );
     expect(missing?.status()).toBe(403);
+    await expect(page.getByTestId("access-denied")).toBeVisible();
     await expect(page.getByTestId("onboarding-form-editor")).toHaveCount(0);
+    expect(await page.textContent("body")).toBe(foreignBody);
+    // And inside wsA itself: nonexistent == the same denial, not a 404 or
+    // partial render that would leak the workspace's forms.
+    const missingA = await page.goto(
+      `/workspace/${wsId}/onboarding/forms/missingformid123`,
+    );
+    expect(missingA?.status()).toBe(403);
+    await expect(page.getByTestId("access-denied")).toBeVisible();
   });
 
   test("nonexistent and malformed formIds fail closed identically", async ({
@@ -643,15 +693,23 @@ test.describe("editor mount + read guards", () => {
     for (const bad of ["missingformid123", "not!valid!segment"]) {
       const res = await page.goto(`/workspace/${wsId}/onboarding/forms/${bad}`);
       expect(res?.status()).toBe(403);
+      await expect(page.getByTestId("access-denied")).toBeVisible();
       await expect(page.getByText("E2E P8 Real Name")).toHaveCount(0);
     }
   });
 
-  test("active form with an open draft mounts form-name + draft-editor", async ({
+  test("active form with an open draft mounts READ-ONLY: name + draft visible, zero mutation surface", async ({
     page,
   }) => {
     const form = await seedForm("E2E P8 Mount Draft", {
       draft: seedDefinition("E2E P8 Mount Draft"),
+    });
+    const auditsBefore = await prisma.auditEvent.count({
+      where: { resourceType: "onboarding_form" },
+    });
+    const mutating: string[] = [];
+    page.on("request", (req) => {
+      if (req.method() !== "GET") mutating.push(`${req.method()} ${req.url()}`);
     });
     await signIn(page, E2E.coach);
     const res = await page.goto(
@@ -664,6 +722,21 @@ test.describe("editor mount + read guards", () => {
     );
     await expect(page.getByTestId("draft-editor")).toBeVisible();
     await expect(page.getByTestId("no-draft")).toHaveCount(0);
+    await expect(page.getByTestId("draft-editor")).toContainText("Full name");
+    await expectMountReadOnly(page);
+    await expectAllControlsDisabled(page, "draft-editor");
+    // Mount issues ZERO mutating requests and writes nothing — no row,
+    // no revision, no audit delta.
+    expect(mutating).toEqual([]);
+    const after = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: form.id },
+    });
+    expect(after.draftRevision).toBe(1);
+    expect(
+      await prisma.auditEvent.count({
+        where: { resourceType: "onboarding_form" },
+      }),
+    ).toBe(auditsBefore);
   });
 
   test("active form without a draft mounts the no-draft read state", async ({
@@ -693,6 +766,7 @@ test.describe("editor mount + read guards", () => {
     );
     await expect(page.getByTestId("no-draft")).toBeVisible();
     await expect(page.getByTestId("draft-editor")).toHaveCount(0);
+    await expectMountReadOnly(page);
   });
 
   test("archived form mounts permanently read-only: banner, no mutation controls", async ({
@@ -726,14 +800,41 @@ test.describe("editor mount + read guards", () => {
     await expect(page.getByTestId("archived-banner")).toBeVisible();
     // Permanently read-only: reopen is NEVER offered on an archived form,
     // and no save/publish/archive control may render at all.
-    for (const testid of [
-      "save-draft",
-      "publish-form",
-      "archive-form",
-      "open-draft",
-    ]) {
-      await expect(page.getByTestId(testid)).toHaveCount(0);
-    }
+    await expectMountReadOnly(page);
+  });
+
+  test("archived form WITH a preserved draft renders its content read-only", async ({
+    page,
+  }) => {
+    // An archived form may still hold draft content — it must render so the
+    // coach can see what was frozen, but nothing can become editable.
+    const form = await seedForm("E2E P8 Mount Archived Draft", {
+      status: "ARCHIVED",
+      archivedAt: new Date(),
+      archivedByMemberId: ownerMemberId,
+      draft: seedDefinition("E2E P8 Mount Archived Draft"),
+      versions: {
+        create: [
+          {
+            versionSeq: 1,
+            definition: seedDefinition("E2E P8 Mount Archived Draft"),
+            publishOriginRevision: 1,
+            publishedByMemberId: ownerMemberId,
+          },
+        ],
+      },
+    });
+    await signIn(page, E2E.owner);
+    const res = await page.goto(
+      `/workspace/${wsId}/onboarding/forms/${form.id}`,
+    );
+    expect(res?.status()).toBe(200);
+    await expect(page.getByTestId("onboarding-form-editor")).toBeVisible();
+    await expect(page.getByTestId("archived-banner")).toBeVisible();
+    await expect(page.getByTestId("draft-editor")).toBeVisible();
+    await expect(page.getByTestId("draft-editor")).toContainText("Full name");
+    await expectMountReadOnly(page);
+    await expectAllControlsDisabled(page, "draft-editor");
   });
 
   for (const width of [1440, 834, 390] as const) {
@@ -747,6 +848,7 @@ test.describe("editor mount + read guards", () => {
       await signIn(page, E2E.coach);
       await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
       await expect(page.getByTestId("onboarding-form-editor")).toBeVisible();
+      await expectMountReadOnly(page);
       expect(
         await page.evaluate(
           () =>

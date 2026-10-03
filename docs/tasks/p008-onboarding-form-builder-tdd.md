@@ -301,16 +301,25 @@ fallback is not disposability proof).
   performs its own current-resource `read` authorization via
   `getFormForWorkspace` — every request re-resolves membership/role/
   workspace; `!ok` fails closed to the non-disclosing 403.
-- Rendered read states only (no mutation behavior in this slice):
-  `onboarding-form-editor` + `form-name` (name input per contract);
-  open draft → `draft-editor`; otherwise → `no-draft` read state;
-  archived → `archived-banner` and ZERO mutation controls (`save-draft`,
-  `publish-form`, `archive-form`, `open-draft` never render).
+- Rendered read states only — READ-ONLY in EVERY state this slice, not
+  only archived: `form-name` is a disabled control, `draft-editor` field
+  controls are all disabled, and ZERO mutation/submit control exists in
+  the editor region (`save-draft`, `publish-form`, `archive-form`,
+  `open-draft`, any `button`/`[type=submit]` inside
+  `onboarding-form-editor`). Mount issues ZERO mutating requests and zero
+  DB/audit delta. Open draft → `draft-editor`; otherwise → `no-draft`;
+  archived → `archived-banner` — and an archived form carrying a
+  preserved draft renders that draft content read-only (never editable).
 - Denial/non-disclosure probes (browser, production server): assistant
   deep link 403 (only denied role past the layout — the page-level guard
   probe); DUAL-member wsA-formId-under-wsB identical to nonexistent
-  (form name never rendered); nonexistent and malformed formIds identical
-  403; unauthenticated → `/login`; no horizontal overflow at 1440/834/390.
+  (same `access-denied` content, form name never rendered); nonexistent
+  and malformed formIds identical 403; unauthenticated → `/login`; no
+  horizontal overflow at 1440/834/390.
+- Coverage note (named outstanding): a PLATFORM_ADMIN browser-denial
+  fixture does not exist in the E2E identities — platform denial is
+  covered at the unit/integration matrix level; an E2E fixture may be
+  added later. Full actor coverage is NOT claimed here.
 - Ownership command: `npx playwright test tests/e2e/onboarding-forms.spec.ts
 -g "editor mount"` — this slice's scope only; lifecycle/edit/preview
   tests remain intentionally RED.
