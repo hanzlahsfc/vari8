@@ -10,12 +10,18 @@ import { E2E, e2eDatabaseUrl } from "./global-setup";
  *
  * Provenance (TDD recovery): adapted TESTS-ONLY from the frozen read-only
  * candidate branch feature/p008-onboarding-form-builder @ d10d788, per the
- * recovery contract. These tests encode the reviewed contract; the
- * production implementation is rebuilt fresh on this branch.
+ * recovery contract; the `editor save foundation` describe and the
+ * open-draft editor-ready mount assertions were adapted TESTS-ONLY from
+ * feature/p008-onboarding-form-builder-tdd-5c @ bb5ef98. These tests
+ * encode the reviewed contract; the production implementation is rebuilt
+ * fresh on this branch.
  *
- * Slice ownership: the authz/nav/list/create tests govern 5C-1. The editor
- * and preview assertions (open-draft lifecycle, previews, pending editor)
- * remain prospective RED for 5C-2+ — they intentionally do not pass yet.
+ * Slice ownership: the authz/nav/list/create tests govern 5C-1; the
+ * mount+denial suite governs 5C-2a. The `editor save foundation` describe
+ * (plus the dedicated blank-option creation test, new to this recovery)
+ * governs ES-2/ES-3 — those assertions stay intentionally RED until the
+ * behavior lands. Lifecycle controls (open-draft/publish/archive) remain
+ * out of slice and must NOT render.
  */
 
 let prisma: PrismaClient;
@@ -74,6 +80,38 @@ const seedDefinition = (title: string) => ({
     },
   ],
 });
+
+/**
+ * Complete zero-delta proof for mount/edit phases (Atlas follow-up): a
+ * read mount or client-local edit must leave serialized workspace forms
+ * (name/status/draft/revision/updatedAt/editor+archival stamps), all
+ * version rows, and all onboarding audit rows byte-identical.
+ */
+const workspaceSnapshot = async () => ({
+  forms: await prisma.onboardingForm.findMany({
+    where: { workspaceId: wsId },
+    orderBy: { id: "asc" },
+  }),
+  versions: await prisma.onboardingFormVersion.findMany({
+    where: { form: { workspaceId: wsId } },
+    orderBy: [{ formId: "asc" }, { versionSeq: "asc" }],
+  }),
+  audits: await prisma.auditEvent.findMany({
+    where: { resourceType: "onboarding_form", workspaceId: wsId },
+    orderBy: { id: "asc" },
+  }),
+});
+
+/** Every non-GET request on ANY path — read/edit phases must write none. */
+function trackNonGet(page: Page): string[] {
+  const requests: string[] = [];
+  page.on("request", (req) => {
+    if (req.method() !== "GET") {
+      requests.push(`${req.method()} ${req.url()}`);
+    }
+  });
+  return requests;
+}
 
 // Sorted key→value pairs so a value change under a reused key can't evade.
 const storageSnapshot = (page: Page) =>
@@ -616,35 +654,22 @@ test.describe("editor mount + read guards", () => {
   }
 
   /**
-   * Complete zero-delta proof for mount (Atlas follow-up): the mount is a
-   * pure read — serialized workspace forms (name/status/draft/revision/
-   * updatedAt/editor+archival stamps), all version rows, and all
-   * onboarding audit rows must be byte-identical before and after.
+   * Open-draft mount = editor-ready surface (ES-2 contract): name and
+   * field inputs are ENABLED for metadata editing; local edit controls
+   * (add/remove/move) may exist, but the ONLY server-mutation control is
+   * a CLEAN (disabled) save. Reopen/publish/archive controls do not
+   * exist in this slice.
    */
-  const workspaceSnapshot = async () => ({
-    forms: await prisma.onboardingForm.findMany({
-      where: { workspaceId: wsId },
-      orderBy: { id: "asc" },
-    }),
-    versions: await prisma.onboardingFormVersion.findMany({
-      where: { form: { workspaceId: wsId } },
-      orderBy: [{ formId: "asc" }, { versionSeq: "asc" }],
-    }),
-    audits: await prisma.auditEvent.findMany({
-      where: { resourceType: "onboarding_form", workspaceId: wsId },
-      orderBy: { id: "asc" },
-    }),
-  });
-
-  /** Every non-GET request post-signin on ANY path — mount writes none. */
-  function trackNonGet(page: Page): string[] {
-    const requests: string[] = [];
-    page.on("request", (req) => {
-      if (req.method() !== "GET") {
-        requests.push(`${req.method()} ${req.url()}`);
-      }
-    });
-    return requests;
+  async function expectEditorReady(page: Page) {
+    await expect(page.getByTestId("form-name")).toBeEnabled();
+    await expect(page.getByTestId("save-draft")).toBeVisible();
+    await expect(page.getByTestId("save-draft")).toBeDisabled();
+    for (const testid of ["publish-form", "archive-form", "open-draft"]) {
+      await expect(page.getByTestId(testid)).toHaveCount(0);
+    }
+    await expect(
+      page.getByTestId("onboarding-form-editor").locator("[type='submit']"),
+    ).toHaveCount(0);
   }
 
   test("unauthenticated deep link to the editor redirects to /login", async ({
@@ -756,9 +781,11 @@ test.describe("editor mount + read guards", () => {
     );
     await expect(page.getByTestId("draft-editor")).toBeVisible();
     await expect(page.getByTestId("no-draft")).toHaveCount(0);
-    await expect(page.getByTestId("draft-editor")).toContainText("Full name");
-    await expectMountReadOnly(page);
-    await expectAllControlsDisabled(page, "draft-editor");
+    // Open draft mounts EDITOR-READY: metadata inputs enabled, the only
+    // button is a clean disabled save — still zero mutation traffic.
+    await expectEditorReady(page);
+    await expect(page.getByTestId("field-label-0")).toBeEnabled();
+    await expect(page.getByTestId("field-label-0")).toHaveValue("Full name");
     // Mount issues ZERO mutating requests on any path, and the complete
     // workspace state is byte-identical — serialized forms (name/status/
     // draft/revision/updatedAt/editor+archival stamps), all version rows,
@@ -890,9 +917,549 @@ test.describe("editor mount + read guards", () => {
       const mutating = trackNonGet(page);
       await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
       await expect(page.getByTestId("onboarding-form-editor")).toBeVisible();
-      await expectMountReadOnly(page);
+      await expectEditorReady(page);
       expect(mutating).toEqual([]);
       expect(await workspaceSnapshot()).toEqual(before);
+      expect(
+        await page.evaluate(
+          () =>
+            document.documentElement.scrollWidth >
+            document.documentElement.clientWidth,
+        ),
+      ).toBe(false);
+    });
+  }
+});
+
+test.describe("editor save foundation", () => {
+  test.beforeEach(removeFixtures);
+  test.afterEach(removeFixtures);
+
+  const seedForm = (
+    name: string,
+    extra: Omit<
+      Prisma.OnboardingFormUncheckedCreateInput,
+      "workspaceId" | "name" | "createdByMemberId"
+    > = {},
+  ) =>
+    prisma.onboardingForm.create({
+      data: {
+        workspaceId: wsId,
+        name,
+        createdByMemberId: ownerMemberId,
+        draftRevision: 1,
+        ...extra,
+      },
+      select: { id: true },
+    });
+
+  const coachMember = () =>
+    prisma.workspaceMember.findFirstOrThrow({
+      where: { workspaceId: wsId, role: "COACH", status: "ACTIVE" },
+    });
+
+  const draftFields = async (formId: string) =>
+    (
+      (
+        await prisma.onboardingForm.findUniqueOrThrow({
+          where: { id: formId },
+          select: { draft: true },
+        })
+      ).draft as {
+        fields: {
+          fieldId: string;
+          kind: string;
+          label: string;
+          required: boolean;
+          order: number;
+          helpText?: string;
+          options?: { optionId: string; label: string }[];
+        }[];
+      }
+    ).fields.slice();
+
+  test("coach edits all six kinds, adds/removes/reorders, and saves twice with stable server IDs", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8 SaveBase", {
+      draft: seedDefinition("E2E P8 SaveBase"),
+    });
+    const coach = await coachMember();
+    await signIn(page, E2E.coach);
+    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+    await expect(page.getByTestId("onboarding-form-editor")).toBeVisible();
+    await expect(page.getByTestId("form-name")).toBeEnabled();
+    // Not dirty yet — save cannot fire.
+    await expect(page.getByTestId("save-draft")).toBeDisabled();
+    // Slice boundary: reopen/publish/archive controls do not exist in
+    // 5C-2b-1; the seeded draft row already exists.
+    for (const testid of ["publish-form", "archive-form", "open-draft"]) {
+      await expect(page.getByTestId(testid)).toHaveCount(0);
+    }
+    // Seeded shortText field visible with its label.
+    await expect(page.getByTestId("field-label-0")).toHaveValue("Full name");
+
+    // All editing is client-local until save — zero requests on any path,
+    // and no browser storage is touched.
+    const storageBefore = await storageSnapshot(page);
+    const editPhase = trackNonGet(page);
+    const kinds = [
+      "longText",
+      "number",
+      "date",
+      "singleChoice",
+      "multiChoice",
+    ] as const;
+    for (const [i, kind] of kinds.entries()) {
+      await page.getByTestId(`add-field-${kind}`).click();
+      await page.getByTestId(`field-label-${i + 1}`).fill(`Q ${kind}`);
+    }
+    // Options are definition metadata for the choice kinds — including a
+    // real option REMOVAL: Option B must not persist.
+    await page
+      .getByTestId("field-options-4")
+      .getByPlaceholder("Option label")
+      .fill("Option A");
+    await page.getByTestId("add-option-4").click();
+    await page
+      .getByTestId("field-options-4")
+      .getByPlaceholder("Option label")
+      .nth(1)
+      .fill("Option B");
+    await page
+      .getByTestId("field-options-4")
+      .getByLabel("Remove option 2")
+      .click();
+    await page
+      .getByTestId("field-options-5")
+      .getByPlaceholder("Option label")
+      .fill("Option X");
+    // Required + helpText are definition metadata too.
+    await page.getByTestId("field-required-0").check();
+    await page.getByTestId("field-help-0").fill("Shown under the label");
+    // Field removal: add a seventh throwaway field then remove it.
+    await page.getByTestId("add-field-shortText").click();
+    await page.getByTestId("field-label-6").fill("Throwaway");
+    await page.getByLabel("Remove field 7").click();
+    await expect(page.getByTestId("field-label-6")).toHaveCount(0);
+    // Reorder: move multiChoice (last of the remaining six) up once.
+    await page.getByLabel("Move field 6 up").click();
+    // Dirty now — save enabled; still zero requests during the edit phase.
+    await expect(page.getByTestId("save-draft")).toBeEnabled();
+    expect(editPhase).toEqual([]);
+    expect(await storageSnapshot(page)).toBe(storageBefore);
+
+    // Save #1 — intentionally padded label proves the server-normalized
+    // result re-seeds the inputs. cleanText TRIMS OUTER whitespace only —
+    // inner spacing is preserved verbatim ("  Padded   name  " →
+    // "Padded   name"); the service has no whitespace-collapse policy.
+    await page.getByTestId("field-label-0").fill("  Padded   name  ");
+    const saves = trackNonGet(page);
+    await page.getByTestId("save-draft").click();
+    await expect
+      .poll(async () => {
+        const f = await prisma.onboardingForm.findUniqueOrThrow({
+          where: { id: form.id },
+        });
+        return f.draftRevision;
+      })
+      .toBe(2);
+    expect(saves.filter((r) => r.startsWith("POST"))).toHaveLength(1);
+    const first = await draftFields(form.id);
+    // ALL SIX kinds persist through the save — longText retained.
+    expect(first).toHaveLength(6);
+    // Normalized: outer-trimmed label persisted AND the input re-seeded.
+    expect(first.find((f) => f.order === 0)?.label).toBe("Padded   name");
+    await expect(page.getByTestId("field-label-0")).toHaveValue(
+      "Padded   name",
+    );
+    expect(first.find((f) => f.order === 0)?.required).toBe(true);
+    expect(first.find((f) => f.order === 0)?.helpText).toBe(
+      "Shown under the label",
+    );
+    // Reorder persisted: multiChoice now sits at order 4, singleChoice 5.
+    const byOrder = [...first].sort((a, b) => a.order - b.order);
+    expect(byOrder.map((f) => f.kind)).toEqual([
+      "shortText",
+      "longText",
+      "number",
+      "date",
+      "multiChoice",
+      "singleChoice",
+    ]);
+    expect(byOrder[4].options?.map((o) => o.label)).toEqual(["Option X"]);
+    // The removed option did NOT persist — singleChoice keeps only A.
+    expect(byOrder[5].options?.map((o) => o.label)).toEqual(["Option A"]);
+    // Every field/option carries a server-minted id; the coach saved it.
+    const firstIds = byOrder.map((f) => ({
+      fieldId: f.fieldId,
+      optionIds: (f.options ?? []).map((o) => o.optionId),
+    }));
+    for (const f of firstIds) expect(f.fieldId).toBeTruthy();
+    expect(
+      (
+        await prisma.onboardingForm.findUniqueOrThrow({
+          where: { id: form.id },
+        })
+      ).draftSavedByMemberId,
+    ).toBe(coach.id);
+    // Save cleared dirty — the button is disabled until the next edit.
+    await expect(page.getByTestId("save-draft")).toBeDisabled();
+
+    // Save #2 — rename + label edit; EVERY field/option id round-trips.
+    // The name is PADDED: the server normalizes it (trim-only), the DB
+    // row must hold the trimmed value AND the input must re-seed to the
+    // server's normalized name — never keep the raw client padding.
+    await page.getByTestId("form-name").fill("  E2E P8 SaveBase renamed  ");
+    await page.getByTestId("field-label-0").fill("Renamed question");
+    await page.getByTestId("save-draft").click();
+    await expect
+      .poll(async () => {
+        const f = await prisma.onboardingForm.findUniqueOrThrow({
+          where: { id: form.id },
+        });
+        return f.draftRevision;
+      })
+      .toBe(3);
+    const second = await draftFields(form.id);
+    expect(
+      [...second]
+        .sort((a, b) => a.order - b.order)
+        .map((f) => ({
+          fieldId: f.fieldId,
+          optionIds: (f.options ?? []).map((o) => o.optionId),
+        })),
+    ).toEqual(firstIds);
+    const row = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: form.id },
+    });
+    expect(row.name).toBe("E2E P8 SaveBase renamed");
+    // The normalized draft title matches, and the INPUT reflects the
+    // server's value — not the padded client text.
+    expect((row.draft as { title: string }).title).toBe(
+      "E2E P8 SaveBase renamed",
+    );
+    await expect(page.getByTestId("form-name")).toHaveValue(
+      "E2E P8 SaveBase renamed",
+    );
+    // No version was minted by saves, and no row was duplicated.
+    expect(
+      await prisma.onboardingFormVersion.count({ where: { formId: form.id } }),
+    ).toBe(0);
+    expect(
+      await prisma.onboardingForm.count({
+        where: { workspaceId: wsId, name: { startsWith: "E2E P8 SaveBase" } },
+      }),
+    ).toBe(1);
+  });
+
+  test("all edit controls disable while a save is in flight, then re-enable", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8 SavePending", {
+      draft: seedDefinition("E2E P8 SavePending"),
+    });
+    await signIn(page, E2E.coach);
+    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+    await page.getByTestId("field-label-0").fill("Edited");
+    // Hold the save POST so the pending window is observable: `intercepted`
+    // resolves only when the request is actually in flight (never a
+    // release-placeholder race), and `releaseGate` frees it from finally
+    // so a failed assertion can never wedge the test.
+    let interceptedResolve: () => void = () => {};
+    let releaseResolve: () => void = () => {};
+    const intercepted = new Promise<void>((r) => (interceptedResolve = r));
+    const releaseGate = new Promise<void>((r) => (releaseResolve = r));
+    let postCount = 0;
+    await page.route(/onboarding\/forms/, async (route) => {
+      if (route.request().method() !== "POST") return route.continue();
+      postCount += 1;
+      interceptedResolve();
+      await releaseGate;
+      await route.continue();
+    });
+    // waitForResponse BEFORE unrouteAll — removing the route mid-hold
+    // leaves the request hanging (route.continue races the route's
+    // teardown), so the response gate is awaited first.
+    const responseDone = page.waitForResponse(
+      (res) =>
+        res.request().method() === "POST" &&
+        res.url().includes("/onboarding/forms/"),
+    );
+    try {
+      await page.getByTestId("save-draft").click();
+      await intercepted; // the write is genuinely in flight
+      // Every mutation-capable control is inert while the write is in
+      // flight — edits, adds, removes, reorders, options, name, save.
+      for (const testid of [
+        "form-name",
+        "field-label-0",
+        "add-field-shortText",
+        "add-field-singleChoice",
+        "save-draft",
+      ]) {
+        await expect(page.getByTestId(testid)).toBeDisabled();
+      }
+      await expect(page.getByLabel("Remove field 1")).toBeDisabled();
+    } finally {
+      releaseResolve();
+      await responseDone;
+      await page.unrouteAll();
+    }
+    // Exactly ONE write was attempted for the single press.
+    expect(postCount).toBe(1);
+    // Clean after save: metadata enabled, save disabled until new edits.
+    await expect(page.getByTestId("save-draft")).toBeDisabled();
+    await expect(page.getByTestId("field-label-0")).toBeEnabled();
+    await expect
+      .poll(async () => {
+        const f = await prisma.onboardingForm.findUniqueOrThrow({
+          where: { id: form.id },
+        });
+        return f.draftRevision;
+      })
+      .toBe(2);
+    // A fresh edit re-arms the button.
+    await page.getByTestId("field-label-0").fill("Edited again");
+    await expect(page.getByTestId("save-draft")).toBeEnabled();
+  });
+
+  test("stale revision surfaces a safe inline alert and preserves unsaved edits", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8 SaveStale", {
+      draft: seedDefinition("E2E P8 SaveStale"),
+    });
+    await signIn(page, E2E.coach);
+    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+    await page.getByTestId("field-label-0").fill("Unsaved local edit");
+    const storageBefore = await storageSnapshot(page);
+    const dbBefore = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: form.id },
+    });
+    const auditsBefore = await prisma.auditEvent.count({
+      where: { resourceType: "onboarding_form" },
+    });
+    // Another actor saved first — the mounted revision is now stale. This
+    // is the ONE intentional external write; everything else must be a
+    // zero delta — no stale overwrite of draft, name, stamps or audit.
+    await prisma.onboardingForm.update({
+      where: { id: form.id },
+      data: { draftRevision: 2 },
+    });
+    await page.getByTestId("save-draft").click();
+    // Safe scoped inline alert — the stale_revision typed message, no
+    // code, no payload echo.
+    await expect(
+      page.getByTestId("onboarding-form-editor").getByRole("alert"),
+    ).toContainText(
+      "This form changed while you were editing. Reload and try again.",
+    );
+    // The unsaved edit is preserved, save re-enables, and the server draft
+    // was NOT overwritten by the rejected attempt — the only difference
+    // from the pre-save row is the external revision bump itself.
+    await expect(page.getByTestId("field-label-0")).toHaveValue(
+      "Unsaved local edit",
+    );
+    await expect(page.getByTestId("save-draft")).toBeEnabled();
+    const after = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: form.id },
+    });
+    expect(after.draft).toEqual(dbBefore.draft);
+    expect(after.name).toBe(dbBefore.name);
+    expect(after.draftRevision).toBe(2);
+    expect(after.draftSavedByMemberId).toBe(dbBefore.draftSavedByMemberId);
+    expect(
+      await prisma.auditEvent.count({
+        where: { resourceType: "onboarding_form" },
+      }),
+    ).toBe(auditsBefore);
+    expect(await storageSnapshot(page)).toBe(storageBefore);
+  });
+
+  test("aborted save transport preserves unsaved edits; explicit retry succeeds once", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8 SaveAbort", {
+      draft: seedDefinition("E2E P8 SaveAbort"),
+    });
+    await signIn(page, E2E.coach);
+    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+    await page.getByTestId("field-label-0").fill("Edit before abort");
+    const storageBefore = await storageSnapshot(page);
+    const before = await workspaceSnapshot();
+    // Abort the action POST before delivery — zero mutation is provable;
+    // an unknown outcome is never blindly retried (user must re-press).
+    await page.route(/onboarding\/forms/, async (route) => {
+      if (route.request().method() === "POST") return route.abort();
+      return route.continue();
+    });
+    await page.getByTestId("save-draft").click();
+    await expect(
+      page.getByTestId("onboarding-form-editor").getByRole("alert"),
+    ).toContainText("Something went wrong. Please try again in a moment.");
+    await expect(page.getByTestId("field-label-0")).toHaveValue(
+      "Edit before abort",
+    );
+    await expect(page.getByTestId("save-draft")).toBeEnabled();
+    // A before-delivery abort is a PROVEN zero mutation — the complete
+    // workspace state is byte-identical, not merely the revision.
+    expect(await workspaceSnapshot()).toEqual(before);
+    expect(await storageSnapshot(page)).toBe(storageBefore);
+    // Explicit user retry — exactly one mutation, revision 2.
+    await page.unrouteAll();
+    const retry = trackNonGet(page);
+    await page.getByTestId("save-draft").click();
+    await expect
+      .poll(async () => {
+        const f = await prisma.onboardingForm.findUniqueOrThrow({
+          where: { id: form.id },
+        });
+        return f.draftRevision;
+      })
+      .toBe(2);
+    expect(retry.filter((r) => r.startsWith("POST"))).toHaveLength(1);
+  });
+
+  test("committed-but-lost response reconciles safely — stale retry cannot double-apply", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8 SaveLost", {
+      draft: seedDefinition("E2E P8 SaveLost"),
+    });
+    await signIn(page, E2E.coach);
+    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+    await page.getByTestId("field-label-0").fill("Committed then lost");
+    const auditsBefore = await prisma.auditEvent.count({
+      where: { resourceType: "onboarding_form" },
+    });
+    // The server COMMITS the save, then the response is dropped — the
+    // client sees a failure for a mutation that actually landed (the
+    // genuinely unknown outcome, not a before-delivery abort).
+    await page.route(/onboarding\/forms/, async (route) => {
+      if (route.request().method() !== "POST") return route.continue();
+      await route.fetch();
+      return route.abort();
+    });
+    await page.getByTestId("save-draft").click();
+    await expect(
+      page.getByTestId("onboarding-form-editor").getByRole("alert"),
+    ).toContainText("Something went wrong. Please try again in a moment.");
+    await page.unrouteAll();
+    // The mutation DID land: revision 2 committed server-side despite the
+    // failure surfaced to the user.
+    await expect
+      .poll(async () => {
+        const f = await prisma.onboardingForm.findUniqueOrThrow({
+          where: { id: form.id },
+        });
+        return f.draftRevision;
+      })
+      .toBe(2);
+    // The client still believes the mounted revision (1) — its explicit
+    // retry must CONFLICT SAFELY on the stale guard: a second typed
+    // rejection, no duplicate write, no second audit event. Reconciliation
+    // is the revision check — a second press does NOT intrinsically
+    // prevent a double-apply.
+    await page.getByTestId("save-draft").click();
+    await expect(
+      page.getByTestId("onboarding-form-editor").getByRole("alert"),
+    ).toContainText(
+      "This form changed while you were editing. Reload and try again.",
+    );
+    const after = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: form.id },
+    });
+    expect(after.draftRevision).toBe(2);
+    expect(
+      (after.draft as { fields: { label: string }[] }).fields[0].label,
+    ).toBe("Committed then lost");
+    expect(
+      await prisma.auditEvent.count({
+        where: { resourceType: "onboarding_form" },
+      }),
+    ).toBe(auditsBefore + 1);
+  });
+
+  test("dirty edits are discarded on reload — persisted state renders, nothing auto-saves", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8 SaveReload", {
+      draft: seedDefinition("E2E P8 SaveReload"),
+    });
+    await signIn(page, E2E.coach);
+    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+    await page.getByTestId("field-label-0").fill("Never-saved edit");
+    // The edit must genuinely be dirty client-side BEFORE the reload —
+    // save enabled proves the editor registered it, so the post-reload
+    // assertion cannot be satisfied by an edit that never took.
+    await expect(page.getByTestId("save-draft")).toBeEnabled();
+    const storageBefore = await storageSnapshot(page);
+    const before = await workspaceSnapshot();
+    const mutating = trackNonGet(page);
+    await page.reload();
+    await expect(page.getByTestId("draft-editor")).toBeVisible();
+    // Reload renders the last persisted draft — the unsaved edit is gone
+    // and nothing was auto-saved (no requests, zero DB or storage delta).
+    // NOTE: this proves fresh-mount renders persisted state; the
+    // revalidated-props-while-dirty clobber contract is pinned by the
+    // pure seam (tests/unit/onboarding-draft-editor.test.ts) AND the
+    // real-component DOM harness (onboarding-draft-editor.dom.test.tsx).
+    await expect(page.getByTestId("field-label-0")).toHaveValue("Full name");
+    expect(mutating).toEqual([]);
+    expect(await workspaceSnapshot()).toEqual(before);
+    expect(await storageSnapshot(page)).toBe(storageBefore);
+  });
+
+  // Dedicated gap-1 checkpoint: clicking a choice-kind add control must
+  // create exactly ONE blank option input. This MUST fail on the inert
+  // scaffold by the missing option row — never a missing route/module.
+  for (const kind of ["singleChoice", "multiChoice"] as const) {
+    test(`adding a ${kind} field seeds exactly one blank option input`, async ({
+      page,
+    }) => {
+      const form = await seedForm(`E2E P8 BlankOpt ${kind}`, {
+        draft: seedDefinition(`E2E P8 BlankOpt ${kind}`),
+      });
+      await signIn(page, E2E.coach);
+      await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+      await expect(page.getByTestId("onboarding-form-editor")).toBeVisible();
+      // The seeded draft has one shortText field at index 0 — the new
+      // choice field lands at index 1 with its single blank option.
+      await page.getByTestId(`add-field-${kind}`).click();
+      const options = page
+        .getByTestId("field-options-1")
+        .getByPlaceholder("Option label");
+      await expect(options).toHaveCount(1);
+      await expect(options.first()).toHaveValue("");
+    });
+  }
+
+  for (const width of [1440, 834, 390] as const) {
+    test(`editing + save round-trips with no overflow at ${width}px`, async ({
+      page,
+    }) => {
+      const form = await seedForm(`E2E P8 Save ${width}`, {
+        draft: seedDefinition(`E2E P8 Save ${width}`),
+      });
+      await page.setViewportSize({ width, height: 900 });
+      await signIn(page, E2E.coach);
+      await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+      await page.getByTestId("add-field-multiChoice").click();
+      await page.getByTestId("field-label-1").fill(`Width ${width} choice`);
+      await page
+        .getByTestId("field-options-1")
+        .getByPlaceholder("Option label")
+        .fill("Opt");
+      await page.getByTestId("save-draft").click();
+      await expect
+        .poll(async () => {
+          const f = await prisma.onboardingForm.findUniqueOrThrow({
+            where: { id: form.id },
+          });
+          return f.draftRevision;
+        })
+        .toBe(2);
       expect(
         await page.evaluate(
           () =>
