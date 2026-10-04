@@ -57,13 +57,20 @@ vi.mock("@/app/workspace/[workspaceId]/onboarding/actions", () => ({
 
 // ES-4a harness fix (pre-impl, tests-only): the lifecycle implementation
 // navigates via useRouter().push on a successful archive (canonical list)
-// and relies on the action's own revalidation for publish/reopen
-// remounts. jsdom mounts have no App Router context, so the module is
-// stubbed. Navigation assertions are deliberately NOT pinned here — the
-// harness's seam is the action boundary; navigation correctness is an
-// e2e (real-browser) concern.
+// and calls useRouter().refresh() on a successful publish/reopen — the
+// explicit client refresh is the resilience fallback for a swallowed
+// action-side revalidation (R1 repair, Apollo request c4a5ddde). jsdom
+// mounts have no App Router context, so the module is stubbed with
+// hoisted spies. The action mock never delivers new props — an honest
+// no-remount simulation — so these pins assert the refresh REQUEST, not
+// any framework DOM transition (that remains real-browser e2e scope).
+const { routerPushMock, routerRefreshMock } = vi.hoisted(() => ({
+  routerPushMock: vi.fn(),
+  routerRefreshMock: vi.fn(),
+}));
+
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+  useRouter: () => ({ push: routerPushMock, refresh: routerRefreshMock }),
 }));
 
 const saveDraftMock = vi.mocked(saveDraft);
@@ -152,6 +159,8 @@ beforeEach(() => {
   publishFormMock.mockReset();
   archiveFormMock.mockReset();
   openDraftMock.mockReset();
+  routerPushMock.mockReset();
+  routerRefreshMock.mockReset();
 });
 
 describe("DraftEditor — mount surface + client-local edit contract", () => {
@@ -905,6 +914,10 @@ describe("DraftEditor — lifecycle controls (intentionally RED until ES-4a)", (
     expect(wsArg).toBe("ws-test");
     expect(formData.get("formId")).toBe("form-test");
     expect(formData.get("expectedRevision")).toBe("2");
+    // A successful publish requests exactly one client refresh — the
+    // consumed draft must remount closed even when the action-side
+    // revalidation was swallowed.
+    expect(routerRefreshMock).toHaveBeenCalledTimes(1);
   });
 
   it("a pending publish disables the fieldset, name, save, AND archive controls", async () => {
@@ -930,8 +943,13 @@ describe("DraftEditor — lifecycle controls (intentionally RED until ES-4a)", (
         release(publishResult);
       });
     }
+    // Pending settlement is the governing post-success contract here —
+    // controls re-enable on THIS still-mounted branch. No
+    // publish-form-enabled assertion: a real publish consumes the draft
+    // and the closed branch mounts no publish control at all. The
+    // single refresh request is pinned instead.
     expectEnabled("form-name");
-    expectEnabled("publish-form");
+    expect(routerRefreshMock).toHaveBeenCalledTimes(1);
   });
 
   it("a pending archive disables the fieldset, name, save, AND publish controls", async () => {
@@ -989,6 +1007,8 @@ describe("DraftEditor — lifecycle controls (intentionally RED until ES-4a)", (
     // The alert cleared on the press and the failed publish left edits
     // intact; publish may be pressed again explicitly.
     expectEnabled("publish-form");
+    // A typed failure is not a commit — no refresh is requested.
+    expect(routerRefreshMock).not.toHaveBeenCalled();
   });
 
   it("a transport publish rejection shows the generic alert and never blindly retries", async () => {
@@ -1007,6 +1027,9 @@ describe("DraftEditor — lifecycle controls (intentionally RED until ES-4a)", (
     expect(screen.getByRole("alert").textContent).not.toContain("aborted");
     expect(publishFormMock).toHaveBeenCalledTimes(1);
     expectEnabled("publish-form");
+    // Unknown outcome — no refresh; the draft may still be the current
+    // one and an explicit retry stays replay-safe.
+    expect(routerRefreshMock).not.toHaveBeenCalled();
   });
 
   it("an explicit retry after an unknown publish outcome re-sends the SAME expectedRevision (replay-safe)", async () => {
@@ -1027,12 +1050,15 @@ describe("DraftEditor — lifecycle controls (intentionally RED until ES-4a)", (
       publishFormMock.mock.calls[1][1].get("expectedRevision"),
     );
     expect(screen.getByRole("alert").textContent).toBe("");
+    // Only the successful second press refreshes — the lost first
+    // response never triggered one.
+    expect(routerRefreshMock).toHaveBeenCalledTimes(1);
   });
 });
 
-// Reopen is a separate client component on the no-draft branch — its
-// module must exist for the harness to mount it, so the inert scaffold
-// (explicit no-op) stands in until ES-4a production.
+// Reopen is a separate client component on the no-draft branch —
+// mounted standalone here so the harness observes the real action seam
+// without a page-level frame.
 const OPEN_DRAFT_MODULE = "../../components/onboarding/open-draft-button";
 const loadOpenDraft = () =>
   import(OPEN_DRAFT_MODULE) as Promise<{
@@ -1059,6 +1085,9 @@ describe("OpenDraftButton — reopen surface (intentionally RED until ES-4a)", (
     const [wsArg, formData] = openDraftMock.mock.calls[0];
     expect(wsArg).toBe("ws-test");
     expect(formData.get("formId")).toBe("form-test");
+    // A successful reopen requests exactly one client refresh so the
+    // seeded editor remounts even when revalidation was swallowed.
+    expect(routerRefreshMock).toHaveBeenCalledTimes(1);
   });
 
   it("disables while pending and surfaces a typed rejection safely", async () => {
@@ -1080,5 +1109,7 @@ describe("OpenDraftButton — reopen surface (intentionally RED until ES-4a)", (
     }
     expect(screen.getByRole("alert").textContent).toContain(STALE_MESSAGE);
     expectEnabled("open-draft");
+    // Typed failure is not a commit — no refresh is requested.
+    expect(routerRefreshMock).not.toHaveBeenCalled();
   });
 });
