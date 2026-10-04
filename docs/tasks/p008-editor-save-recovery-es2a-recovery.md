@@ -186,3 +186,58 @@ docs `d4cdd62` (Apollo `57523a99`): root inspection + Helios code PASS
   double-kill (`mutant-es3-helper-rawname-dom.log`) satisfies the mutant
   requirement. Next slice: lifecycle/security plan in
   `docs/tasks/p008-editor-lifecycle-security-plan.md`.
+
+## ES-4a lifecycle tests-only preparation (commits `71ca892` + `47558a5`, 2026-10-04)
+
+**Scope:** focused lifecycle contract pins committed BEFORE any lifecycle
+production, under corrected plan `1ead789` (Apollo request
+`caa50bf4`). `tests/unit/onboarding-draft-editor.dom.test.tsx` +
+`tests/e2e/onboarding-forms.spec.ts` + new inert scaffold
+`components/onboarding/open-draft-button.tsx`. `draft-editor.tsx`
+untouched (ES-3 Save `0c6242b`); no backend/service/page/dependency
+changes; no preview behavior.
+
+**DOM pins:** actions mock extended with `publishForm`/`archiveForm`/
+`openDraft`; 9 focused tests — publish enablement (clean open draft)
+and dirty-gating, archive enablement across dirty state, publish
+payload (`formId` + current `expectedRevision`), pending-publish and
+pending-archive breadth (fieldset + name + Save + other lifecycle
+control), typed publish rejection (safe message, edits/state
+preserved, no internals echo), transport publish rejection (generic
+message, no blind retry), replay-safe same-revision retry after
+unknown outcome, `OpenDraftButton` calls `openDraft` once with
+workspace/form identity, pending-disable, typed-failure alert.
+
+**Browser pins:** mount helpers split — `expectArchivedReadOnly` (zero
+mutation controls), `expectNoDraftMount` (`open-draft` + `archive-form`
+enabled, Save/Publish absent, exactly 2 editor buttons),
+`expectEditorReady` (Save clean-disabled, Publish + Archive enabled,
+Open Draft absent, no submit). New preview-independent
+`editor lifecycle controls` describe: publish→closed→reopen seeds
+fresh draft→edit→save→publish v2; archive from open-draft and closed
+states lands form on archived list; pending publish disables all
+editor+lifecycle controls; stale publish shows safe alert and writes
+no version.
+
+**Inert scaffold:** `open-draft-button.tsx` renders an explicit no-op
+button (`onClick={() => {}}` + `void props`) and empty alert region —
+mountable module authorized by release; NOT a fake outcome, NOT wired
+into any page.
+
+**Committed RED (clean `47558a5`, empty porcelain windows, logs in
+`gate-logs/p008-editor-recovery/es2a-clean-recovery/`):**
+`red-es4a-dom-lifecycle.log` 9 fail / 31 pass (existing tests all GREEN);
+`red-es4a-e2e-lifecycle.log` 5 fail / 0 pass; `red-es4a-e2e-mount.log`
+11 fail / 6 pass (RED on updated lifecycle assertions; archived
+read-only cases GREEN). GREEN regressions: `green-es4a-es1.log` 17/17,
+`green-es4a-e2e-save-foundation.log` 12/12, format/typecheck/lint 0.
+Browser env: `juno-p8-pg`/`p8e_e2e`, `CI=1`, production build+start,
+port 3000 free, BUILD_ID `33PdvF-vYjceQEo21St7m`.
+
+**Deviations:** pre-lintfix captures on `71ca892` preserved as
+`attempt-*-pre-lintfix.log` (5 files) — superseded by recapture on
+`47558a5` after the scaffold `_props`→`void props` lint fix.
+
+**STOPPED** before ES-4a production implementation (publish/archive/
+openDraft UI wiring, confirm UX, previews). Preview-dependent
+full-lifecycle e2e cases remain future RED through ES-4b per plan.

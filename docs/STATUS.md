@@ -5,6 +5,49 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-009 ES-4a lifecycle TESTS-ONLY prep — committed + captured (STOPPED before impl)
+
+- Root released ES-4a tests-only preparation under corrected plan
+  `1ead789` (Apollo request
+  `caa50bf4-cf48-4833-9329-6d2584b3e5dd`): focused lifecycle pins ONLY,
+  no lifecycle production.
+- Tests commit `71ca892` — `tests/unit/onboarding-draft-editor.dom.test.tsx`
+  (+publish/archive/openDraft mocks; 9 focused lifecycle tests:
+  enablement/gating, payload `formId`/`expectedRevision`, pending
+  fieldset+name+Save+cross-lifecycle disable, typed/transport alert
+  safety, replay-safe same-revision retry, OpenDraft call/pending/
+  typed-failure) + `tests/e2e/onboarding-forms.spec.ts` (mount helpers
+  split: `expectArchivedReadOnly`/`expectNoDraftMount`/`expectEditorReady`
+  now expect lifecycle test IDs; new preview-independent
+  `editor lifecycle controls` describe: publish→closed→reopen→v2,
+  archive from open-draft + closed states, pending-publish breadth,
+  stale-publish safe alert) + new inert scaffold
+  `components/onboarding/open-draft-button.tsx` (explicit no-op button
+  - empty alert region — mountable module only, NO production wiring).
+- Lint-warning fix `47558a5` — scaffold `_props` → `props` + `void
+props`; ESLint clean. No behavior change.
+- Captures on clean committed `47558a5` (empty porcelain windows,
+  absolute logs in `gate-logs/p008-editor-recovery/es2a-clean-recovery/`):
+  `red-es4a-dom-lifecycle.log` 9 fail / 31 pass exit 1 (intended RED —
+  controls absent, scaffold inert) · `green-es4a-es1.log` 17/17 exit 0 ·
+  `raw-es4a-format.log` / `raw-es4a-typecheck.log` / `raw-es4a-lint.log`
+  exit 0.
+- Browser (`juno-p8-pg`/`p8e_e2e`, `CI=1`, production `build && start`,
+  port 3000 verified free, BUILD_ID `33PdvF-vYjceQEo21St7m`):
+  `red-es4a-e2e-lifecycle.log` 5 fail / 0 pass exit 1 (intended RED) ·
+  `red-es4a-e2e-mount.log` 11 fail / 6 pass exit 1 (intended RED on
+  updated lifecycle assertions; archived read-only cases remain GREEN) ·
+  `green-es4a-e2e-save-foundation.log` 12/12 exit 0 GREEN regression —
+  Save untouched.
+- Pre-lintfix captures on `71ca892` preserved as
+  `attempt-*-pre-lintfix.log` (5 files); not governing.
+- Existing Save/metadata/structure/read-only regressions preserved.
+  Preview-dependent full-lifecycle cases remain future RED through
+  ES-4b per plan; not claimed here.
+- STOPPED: no lifecycle production (publish/archive/openDraft UI
+  wiring) implemented; backend/service untouched; no push/PR/merge.
+  Awaiting root review/release of ES-4a implementation.
+
 ## 2026-10-04 — P-009 Editor/Save recovery — root INCREMENTAL ACCEPTANCE
 
 - Root ACCEPTED the increment at production `0c6242b` / docs `d4cdd62`
