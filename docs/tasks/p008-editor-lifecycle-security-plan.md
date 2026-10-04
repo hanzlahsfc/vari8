@@ -2,9 +2,11 @@
 
 - **Status:** plan only, submitted for parallel review (Apollo request
   `57523a99-a77e-467b-ba53-cc326b3076b5`; corrections per Apollo
-  `78d85f64-4881-47c9-96cb-2c47fa1774ed` + Orion ES-5 blockers folded
-  in). No source/test/dep changes authorized; no infra runs for this
-  planning task.
+  `78d85f64-4881-47c9-96cb-2c47fa1774ed` + Orion ES-5 blockers + Orion
+  platform-admin guard finding + Helios conditional-PASS items A/B
+  under ES-4a prep `caa50bf4` folded in). No source/test/dep changes
+  authorized for planning; ES-4a prep commits `71ca892`/`47558a5` are
+  tests + inert scaffold only.
 - **Base:** accepted editor/save increment `0c6242b` (+ docs `d4cdd62`)
   on `feature/p008-editor-save-recovery-es2a`.
 - **Preserved:** backend service (`lib/onboarding/forms.ts` —
@@ -83,6 +85,19 @@ draftRevision, name]` byte-equality, version count, auditEvent count
   only renders when no editor is mounted).
 - Alert/typing identical to save: typed rejection → boundary message;
   transport → generic; no echo of internals/ids/payload.
+- **Tests-only inversion enumeration (Helios A — landed in prep commits
+  `71ca892`/`47558a5`, explicit so the ES-4a diff is honest):** the
+  shared `expectMountReadOnly` helper is SPLIT into
+  `expectArchivedReadOnly` (zero mutation controls; archived incl.
+  draft denial + zero-delta assertions unchanged — NOT weakened),
+  `expectNoDraftMount` (published/no-draft: `open-draft` + `archive-form`
+  enabled, `save-draft` + `publish-form` absent, exactly 2 editor-region
+  buttons, name disabled/data-readonly), and `expectEditorReady`
+  (open draft: name/fields enabled, `save-draft` clean-disabled,
+  `publish-form` + `archive-form` ENABLED on clean mount, `open-draft`
+  absent, no submit control). DOM-side pins cover publish
+  `disabled` when dirty or pending. These expectations are RED until
+  ES-4a production lands — that inversion is the pin, not a weakening.
 - **NEW focused e2e cases for ES-4a** (do NOT depend on preview):
   publish-open-draft-only happy path (publish → `no-draft` →
   `open-draft` → seeded editor → publish v2), pending-breadth case
@@ -110,6 +125,13 @@ clients/non-members denied):
   zero-mutation contract. Historical seq selection (e.g.
   `?src=version&seq=N`) is an additive extension only if a test pins
   it — not assumed.
+- **`src` query contract (Helios B — explicit, no silent fallback):**
+  `src` missing OR `src=draft` → current open draft;
+  `src=version` → latest frozen published version; an UNKNOWN `src`
+  value → safe NON-DISCLOSING not-found (same denial surface as
+  unauthorized access — never a default draft fallback); `src=version`
+  on a form with ZERO published history → non-disclosing fail (no
+  draft leak, no empty-version fabrication).
 - `preview-draft-link` on the editor (open draft); `preview-version-link`
   on the no-draft branch.
 - **Zero-delta breadth (per Apollo):** before/after snapshots across
@@ -189,13 +211,31 @@ account; membership/status are asserted fresh in-test before use).
    then the `workspaceMember` row deleted/deactivated between mount
    and POST → denial + zero writes (service reauthorizes per call);
    member row restored in `finally`.
-8. **PLATFORM_ADMIN denial** — NEW fixture `platform-admin@s1h-e2e.test`
-   with `platformRole: PLATFORM_ADMIN` AND an ACTIVE workspace
-   membership (per Apollo: denial must probe the platform role itself,
-   not nonmembership) added to `global-setup.ts` upserts; browser
-   visit + action POST → denied, zero writes.
-9. **Parity arms** — existing `nonmember` + `deactivated` fixtures
-   carry the same denial assertions.
+8. **PLATFORM_ADMIN legs (Orion blocker — corrected):** the workspaceId
+   authorize path selects the ACTIVE membership role, so a
+   `platformRole: PLATFORM_ADMIN` user WITHOUT membership is denied by
+   the membership gate BEFORE the role is ever evaluated — that fixture
+   proves membership-gating ONLY, not platform-role denial.
+   a. `platform-admin@s1h-e2e.test` (PLATFORM_ADMIN, NO workspace
+   membership) → denied + zero writes; asserted and DOCUMENTED as
+   membership-gate proof, not platform-role proof.
+   b. **TABLED as unresolved PD29 precedence question / possible gap:**
+   a dual-role fixture (PLATFORM_ADMIN + ACTIVE OWNER/COACH
+   membership) would evaluate the membership role, so expected
+   behavior under PD29 ("platform admin denied") needs CONTRACT
+   REVIEW before it can be pinned — NOT asserted either way here.
+   No silent global guard change is made or proposed by this plan.
+9. **No-session / stale-session legs** — standalone `request` fixture
+   (no cookie jar) + valid captured action encoding → denial + zero
+   writes; plus a STALE/forged session-cookie arm (cookie present but
+   no longer valid against `sessionVersion`/status) → denial + zero
+   writes. Paired with the positive control in the same build.
+10. **Malformed-payload leg** — valid session + valid `Origin` +
+    action POST with a malformed/truncated RSC-FormData body (valid
+    `Next-Action` id, broken argument encoding) → safe failure + ZERO
+    writes (full-row snapshots), no 5xx internals echo.
+11. **Parity arms** — existing `nonmember` + `deactivated` fixtures
+    carry the same denial assertions.
 
 **Test-first RED honesty:** where existing guards may already hold
 (e.g. hostile Origin at framework level), a first-pass result that
@@ -225,7 +265,10 @@ not presented as governing RED.
 - Session revocation mechanism: `User.sessionVersion` increment (JWT),
   verified in repo — not session-row deletion.
 - Rebound-arg denial identity: `coach` (member of A only), not owner.
-- Platform-admin fixture: includes active workspace membership.
+- Platform-admin fixture: NO-membership variant = membership-gate proof
+  only (Orion-verified authorize path); the dual-role
+  PLATFORM_ADMIN + active-membership case is TABLED as an unresolved
+  PD29 precedence question — see matrix item 8b.
 
 ## Open human product choices
 
