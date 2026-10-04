@@ -1089,11 +1089,12 @@ test.describe("editor save foundation", () => {
     await expect(page.getByTestId("form-name")).toBeEnabled();
     // Not dirty yet — save cannot fire.
     await expect(page.getByTestId("save-draft")).toBeDisabled();
-    // Slice boundary: reopen/publish/archive controls do not exist in
-    // 5C-2b-1; the seeded draft row already exists.
-    for (const testid of ["publish-form", "archive-form", "open-draft"]) {
-      await expect(page.getByTestId(testid)).toHaveCount(0);
-    }
+    // ES-4a contract (supersedes the earlier 5C-2b-1 slice boundary):
+    // an open draft mounts publish + archive ENABLED (clean saved
+    // draft); reopen never renders on an open draft.
+    await expect(page.getByTestId("publish-form")).toBeEnabled();
+    await expect(page.getByTestId("archive-form")).toBeEnabled();
+    await expect(page.getByTestId("open-draft")).toHaveCount(0);
     // Seeded shortText field visible with its label.
     await expect(page.getByTestId("field-label-0")).toHaveValue("Full name");
 

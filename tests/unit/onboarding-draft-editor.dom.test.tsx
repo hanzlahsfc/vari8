@@ -55,6 +55,17 @@ vi.mock("@/app/workspace/[workspaceId]/onboarding/actions", () => ({
   openDraft: vi.fn(),
 }));
 
+// ES-4a harness fix (pre-impl, tests-only): the lifecycle implementation
+// navigates via useRouter().push on a successful archive (canonical list)
+// and relies on the action's own revalidation for publish/reopen
+// remounts. jsdom mounts have no App Router context, so the module is
+// stubbed. Navigation assertions are deliberately NOT pinned here — the
+// harness's seam is the action boundary; navigation correctness is an
+// e2e (real-browser) concern.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
+
 const saveDraftMock = vi.mocked(saveDraft);
 const publishFormMock = vi.mocked(publishForm);
 const archiveFormMock = vi.mocked(archiveForm);
