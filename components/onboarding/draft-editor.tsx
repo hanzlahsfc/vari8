@@ -1,8 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
-import { saveDraft } from "@/app/workspace/[workspaceId]/onboarding/actions";
+import {
+  archiveForm,
+  publishForm,
+  saveDraft,
+} from "@/app/workspace/[workspaceId]/onboarding/actions";
 import {
   addDraftField,
   adoptSavedResult,
@@ -60,6 +65,16 @@ const toPayloadField = ({ helpText, ...field }: DraftField): DraftField =>
  * the old revision stay, so an explicit retry re-sends the same
  * expectedRevision and stays stale-guarded. Success adopts the
  * server-normalized definition wholesale via `adoptSavedResult`.
+ *
+ * ES-4a lifecycle controls (publish/archive) sit outside the fieldset
+ * and share the save pending scope — ANY in-flight mutation disables
+ * name/fieldset/save/publish/archive together. Publish additionally
+ * requires a clean saved-current draft (dirty gates it off); archive
+ * stays pressable while dirty. On publish success nothing local is
+ * faked: the action's own revalidation remounts this route as the
+ * closed no-draft surface. On archive success the router navigates to
+ * the canonical list — navigation sits OUTSIDE the action catch so a
+ * navigation/refresh failure can never misreport a committed mutation.
  */
 export function DraftEditor({
   workspaceId,
@@ -74,11 +89,16 @@ export function DraftEditor({
   initialRevision: number;
   initialDraft: EditorDefinition;
 }) {
+  const router = useRouter();
   const [state, setState] = useState<DraftState>(() =>
     initialDraftState(initialName, initialRevision, initialDraft),
   );
   const [alert, setAlert] = useState("");
-  const [pending, startTransition] = useTransition();
+  const [savePending, startSaveTransition] = useTransition();
+  const [lifecyclePending, startLifecycleTransition] = useTransition();
+  // One pending scope for the mounted branch: any in-flight mutation
+  // (save or lifecycle) disables every mutation control.
+  const pending = savePending || lifecyclePending;
 
   // Route incoming server props through the monotonic seam.
   useEffect(() => {
@@ -190,7 +210,7 @@ export function DraftEditor({
         fields: state.fields.map(toPayloadField),
       }),
     );
-    startTransition(async () => {
+    startSaveTransition(async () => {
       let result: Awaited<ReturnType<typeof saveDraft>>;
       try {
         result = await saveDraft(workspaceId, formData);
@@ -207,6 +227,67 @@ export function DraftEditor({
       } else {
         setAlert(result.message);
       }
+    });
+  };
+
+  const publish = () => {
+    // Publish requires a saved-current clean draft and no in-flight
+    // mutation — a dirty or already-pending press can never fire.
+    if (pending || state.dirty) {
+      return;
+    }
+    setAlert("");
+    const formData = new FormData();
+    formData.set("formId", formId);
+    formData.set("expectedRevision", String(state.revision));
+    startLifecycleTransition(async () => {
+      let result: Awaited<ReturnType<typeof publishForm>>;
+      try {
+        result = await publishForm(workspaceId, formData);
+      } catch {
+        // Unknown outcome (a committed-but-lost response is possible):
+        // generic alert only, state/revision preserved so an explicit
+        // retry re-sends the SAME expectedRevision (replay-safe).
+        setAlert(GENERIC_MESSAGE);
+        return;
+      }
+      if (!result.ok) {
+        setAlert(result.message);
+        return;
+      }
+      // Success needs no local bookkeeping — the action's revalidation
+      // remounts this route's server render as the closed no-draft
+      // surface, so an editable editor can never persist on a consumed
+      // draft.
+    });
+  };
+
+  const archive = () => {
+    // Archive is pressable even while dirty (the draft is discarded
+    // server-side either way) but never while a mutation is in flight.
+    if (pending) {
+      return;
+    }
+    setAlert("");
+    const formData = new FormData();
+    formData.set("formId", formId);
+    startLifecycleTransition(async () => {
+      let result: Awaited<ReturnType<typeof archiveForm>>;
+      try {
+        result = await archiveForm(workspaceId, formData);
+      } catch {
+        setAlert(GENERIC_MESSAGE);
+        return;
+      }
+      if (!result.ok) {
+        setAlert(result.message);
+        return;
+      }
+      // Outside the action catch — a navigation failure cannot misreport
+      // the committed archive as a failed mutation.
+      router.push(
+        `/workspace/${encodeURIComponent(workspaceId)}/onboarding/forms`,
+      );
     });
   };
 
@@ -342,6 +423,24 @@ export function DraftEditor({
         type="button"
       >
         Save draft
+      </button>
+      <button
+        className="auth-button"
+        data-testid="publish-form"
+        disabled={pending || state.dirty}
+        onClick={publish}
+        type="button"
+      >
+        Publish
+      </button>
+      <button
+        className="auth-button"
+        data-testid="archive-form"
+        disabled={pending}
+        onClick={archive}
+        type="button"
+      >
+        Archive
       </button>
     </>
   );
