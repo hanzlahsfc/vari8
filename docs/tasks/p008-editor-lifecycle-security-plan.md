@@ -389,3 +389,42 @@ changes is a defect.
 
 STOP after the RED captures: no production change without a new
 bounded release.
+
+### PD29 prospective RED — captured on clean committed tests head `904cb12`
+
+Plan commit `d3f6514`; tests-only commit `904cb12`. Production is
+unchanged (`lib/`, `app/`, `components/`, `db/` untouched).
+
+Captures were run sequentially with `run-capture.sh`; each log has
+empty porcelain before and after and 0 credential bytes. Before
+running, port 3000 was confirmed free and the owned DB had no other
+connections. Logs are under
+`gate-logs/p008-editor-recovery/es2a-clean-recovery/`.
+
+- `red-pd29-unit-guard.log`: 4 failed / 18 passed, exit 1
+  (15:16:10Z).
+  - The 4 failures are exactly the dual-role OWNER/COACH ×
+    authorize(read+write)/authorizeCollection cases.
+  - Passing: the USER owner/coach controls, the no-membership admin
+    (`membership_missing_or_inactive`) and the other-resource
+    non-regression.
+- `red-pd29-integration.log` (`p8e_int`): 1 failed / 45 passed,
+  exit 1 (15:16:29Z).
+  - Observed: list, get, create, save, open and archive were ALLOWED.
+  - publish failed with `stale_revision` only because the bypassed
+    save had already bumped the revision.
+- `red-pd29-e2e-security.log` (`p8e_e2e`, BUILD_ID
+  `YrH1HY-Jj2LqJkQSLrfKG`, read immediately after the run, not inside
+  the log bytes): 2 failed / 7 passed, exit 1 (15:16:57Z).
+  - Arm A (owner flipped to admin) and arm B (admin with a temporary
+    COACH membership) each failed on both legs: the editor GET
+    returned 200 (403 expected), and the save replay executed (no
+    `"ok":false` marker).
+  - The 7 existing ES-5 legs, including the old no-membership leg,
+    pass.
+
+All REDs are genuine behavioral failures on the committed head. Each
+failure is an expected-denial leg; no control failed. No prior scratch
+run of the integration or HTTP legs exists. One dirty-tree scratch run
+of the unit file (4 failed / 18 passed) during authoring is not
+preserved and not claimed. STOPPED before production.

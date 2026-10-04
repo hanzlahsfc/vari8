@@ -5,6 +5,43 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-008 PD29 DUAL-ROLE REPAIR — PLAN + TESTS-ONLY, prospective RED captured; STOPPED before production
+
+- Apollo request `f88468e4`. Policy chosen by Apollo under the user's
+  delegation (least privilege, form definitions only): `PLATFORM_ADMIN`
+  is denied `onboardingFormTemplates` read/write even with an ACTIVE
+  OWNER/COACH membership. USER owners/coaches are unchanged. No matrix
+  change and no change to other resources.
+- Plan `d3f6514`: `docs/tasks/p008-editor-lifecycle-security-plan.md`,
+  section "PD29 dual-role repair".
+- Tests only `904cb12`:
+  - unit guard: real `authorize` + `authorizeCollection`;
+  - integration: real PG, all 7 ops, full-row snapshots;
+  - real HTTP: arm A owner flipped to admin, arm B admin with a
+    temporary COACH membership; editor GET plus captured save replay;
+    restored in `finally`.
+- Prospective RED on clean `904cb12`, all exit 1, captured
+  sequentially on owned `juno-p8-pg`:
+  - `red-pd29-unit-guard.log`: 4 failed / 18 passed;
+  - `red-pd29-integration.log`: 1 failed / 45 passed (ops ALLOWED);
+  - `red-pd29-e2e-security.log`: 2 failed / 7 passed (GET 200, save
+    executed), BUILD_ID `YrH1HY-Jj2LqJkQSLrfKG` (attested).
+
+  Only the dual-role legs fail; controls and the old no-membership leg
+  pass.
+
+- Predicted minimum fix (NOT implemented):
+  - `lib/auth/guard.ts` only: a resource-specific
+    `PLATFORM_ADMIN_DENIED_RESOURCES = {onboardingFormTemplates}`;
+  - in `authorize` and `authorizeCollection`, after the ACTIVE
+    membership resolves, deny `role_denied` when
+    `platformRole === "PLATFORM_ADMIN"` and the resource is in that
+    set.
+
+  Regression scope: the full gate set.
+
+- No production/guard change yet; no push/PR/merge.
+
 ## 2026-10-04 — P-008/P-009 INTEGRATION ACCOUNTING (PLAN-ONLY) — local completeness, NOT final sign-off
 
 - Apollo request `59423372`. ES-5 accepted SCOPED locally as
