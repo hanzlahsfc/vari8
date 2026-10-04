@@ -5,6 +5,35 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-008 ES-5 TESTS-ONLY CORRECTION `659d424` — full snapshots + reject-class pins
+
+- Apollo request `52ead226` (tests-only follow-up on base `3bab484` +
+  `a1ec048`): root found the hostile-Origin leg checked only
+  `draftRevision`. Commit `659d424` (spec only): hostile-Origin now
+  asserts FULL form/version/audit snapshot equality + the observed
+  framework reject class (HTTP 500 "Invalid Server Actions request");
+  every typed-denial leg pins HTTP 200 (`{ok:false}` channel) so the
+  two classes cannot blur; missing-Origin and hostile-Origin + spoofed
+  XFH assert their OBSERVED execution via full-snapshot deltas (200,
+  revision +1, audit +1, versions unchanged) — app-level diagnostic
+  record only, NO edge-safety claim; malformed body pinned to the
+  observed framework 500.
+- Captures on clean committed `659d424` (run-capture.sh, empty
+  porcelain before/after, credential bytes 0):
+  `green-fwd-es5-security-http-v3.log` 7/7 exit 0 ·
+  `green-fwd-es5-e2e-full-v2.log` 147p/12s (pre-existing gated
+  password-reset skips) exit 0, BUILD_ID `-rr_xTP_0bl7xnD9kJuvV`
+  (verified, last build).
+- Deviations (annotation-es5-build-identity.txt; logs untouched):
+  under CI=1 every playwright run rebuilds, so the v3 focused run's
+  BUILD_ID was overwritten and is NOT recorded; and the
+  `n8VinkBVcWqj2Kq8LsdXL` BUILD_ID recorded below for the v2 log was
+  MISATTRIBUTED — it was read before v2 ran and belongs to the
+  superseded run.
+- Helios/Atlas review of `3bab484`/`a1ec048` does not transfer to
+  `659d424`. No production/guards/actions/allowedOrigins changes;
+  STOPPED; no push/PR/merge.
+
 ## 2026-10-04 — P-008 ES-5 TESTS-ONLY PREP COMMITTED — real-HTTP security matrix captured (7/7)
 
 - Apollo assignment `34b777d1` (tests-only; preserve `b4b19a0` +

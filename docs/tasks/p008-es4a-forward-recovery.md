@@ -12,8 +12,16 @@
   PLATFORM_ADMIN (membership-gate proof only — PD29 dual-role tabled,
   not asserted), truncated body. Captures: security spec
   `green-fwd-es5-security-http-v2.log` 7/7 exit 0; full e2e
-  `green-fwd-es5-e2e-full.log` 147p/12s exit 0; BUILD_ID
-  `n8VinkBVcWqj2Kq8LsdXL`. STOPPED before any security production fix.
+  `green-fwd-es5-e2e-full.log` 147p/12s exit 0 (the BUILD_ID
+  `n8VinkBVcWqj2Kq8LsdXL` first recorded for v2 is MISATTRIBUTED — see
+  annotation-es5-build-identity.txt). Tests-only correction `659d424`
+  (Apollo `52ead226`): hostile-Origin full-snapshot equality + framework
+  500 class, typed-denial legs pinned 200, missing-Origin/XFH observed
+  execution asserted as diagnostics (no edge-safety claim). Captured
+  `green-fwd-es5-security-http-v3.log` 7/7 exit 0 +
+  `green-fwd-es5-e2e-full-v2.log` 147p/12s exit 0, BUILD_ID
+  `-rr_xTP_0bl7xnD9kJuvV` (full-v2 run; v3 BUILD_ID overwritten, not
+  recorded). STOPPED before any security production fix.
 - **Authorized by:** Apollo request `cd81077c-ef1c-4bb6-b3b8-7b98b502ebf0`
   (root adjudication of the B-gap on the `feature/p008-editor-save-recovery-es2a`
   branch).
