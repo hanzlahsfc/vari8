@@ -5,6 +5,41 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-008 ES-5 TESTS-ONLY PREP COMMITTED — real-HTTP security matrix captured (7/7)
+
+- Apollo assignment `34b777d1` (tests-only; preserve `b4b19a0` +
+  `1b55dd0`; no guard/infra/allowedOrigins changes; PD29 dual-role
+  unresolved; XFH app-level diagnostic only): commit `3bab484` adds
+  `tests/e2e/onboarding-forms-security.spec.ts` (7 tests, ~600 lines).
+- Protocol discipline per plan B1/B6/B7: the genuine action wire
+  encoding (`next-action` id + multipart body) is CAPTURED from a live
+  browser-driven `saveDraft` in the same build — never hardcoded; the
+  positive control asserts the replay lands a real write + audit row.
+  Negative arms are detection-sensitive (`draftRevision` reset to the
+  captured expectedRevision before replay, so an executed replay
+  produces an observable write — zero-writes assertions are never
+  vacuous). Full-row form/version/audit snapshots, not counts.
+- Matrix: valid positive control · hostile `Origin` (observed 500
+  framework reject, zero writes) · missing `Origin` (OBSERVED —
+  recorded honestly, no assumed reject) · hostile `Origin` + spoofed
+  `X-Forwarded-Host` (app-level diagnostic only; owned edge remains a
+  deployment gate) · no-session / forged-cookie / `sessionVersion`
+  revocation (zero writes, version restored in finally) · mid-session
+  `workspaceMember` deletion (denied, row restored in finally) ·
+  workspaceId + formId tampering via the A-only coach (zero writes;
+  foreign-formId status parity vs fabricated cuid) · no-membership
+  `PLATFORM_ADMIN` denial labeled membership-gate proof only +
+  nonmember/deactivated parity · truncated body (safe 500, zero
+  writes, no internals echo).
+- Captures on committed `3bab484` (run-capture.sh, full
+  before/after markers): `green-fwd-es5-security-http-v2.log` 7/7
+  exit 0 · `green-fwd-es5-e2e-full.log` FULL e2e suite 147p/12s
+  (gated password-reset skips, pre-existing) exit 0 · BUILD_ID
+  `n8VinkBVcWqj2Kq8LsdXL`. One superseded capture preserved and
+  labeled (credential embedded in argv — recaptured with env-exported
+  DATABASE_URL, zero credential bytes in the governing log).
+- STOPPED before any ES-5 production/security fix; no push/PR/merge.
+
 ## 2026-10-04 — P-009 ES-4b PREVIEW IMPLEMENTED — full onboarding-forms spec ALL GREEN (68/68)
 
 - Root release `170d0e36` under the corrected `749ef1e` RED

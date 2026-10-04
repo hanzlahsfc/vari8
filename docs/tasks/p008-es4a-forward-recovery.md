@@ -2,8 +2,18 @@
 
 - **Status:** ES-4a ACCEPTED incrementally on this line (`07c0d22` +
   `a83af56`). ES-4b preview implemented `b4b19a0` under the repaired
-  `749ef1e` RED — full onboarding-forms spec 68/68 GREEN; STOPPED for
-  parallel review before ES-5.
+  `749ef1e` RED — full onboarding-forms spec 68/68 GREEN.
+  ES-5 tests-only prep committed `3bab484` —
+  `tests/e2e/onboarding-forms-security.spec.ts` (7 tests): genuine
+  same-build captured action protocol, replayed under hostile/missing
+  Origin, XFH spoof (app-level diagnostic only), no/forged/revoked
+  session, mid-session membership removal (restored in finally),
+  wsA→wsB + formId tampering by the A-only coach, no-membership
+  PLATFORM_ADMIN (membership-gate proof only — PD29 dual-role tabled,
+  not asserted), truncated body. Captured `green-fwd-es5-security-
+http-v2.log` 7/7 exit 0 + `green-fwd-es5-e2e-full.log` 147p/12s
+  exit 0, BUILD_ID `n8VinkBVcWqj2Kq8LsdXL`. STOPPED before any
+  security production fix.
 - **Authorized by:** Apollo request `cd81077c-ef1c-4bb6-b3b8-7b98b502ebf0`
   (root adjudication of the B-gap on the `feature/p008-editor-save-recovery-es2a`
   branch).
