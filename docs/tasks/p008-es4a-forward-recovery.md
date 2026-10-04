@@ -1,7 +1,8 @@
-# P-009 ES-4a forward recovery — closed-branch controls + refresh (PLAN ONLY)
+# P-009 ES-4a forward recovery — closed-branch controls + refresh
 
-- **Status:** checkpoint only — tests-only provenance commit + prospective
-  RED captures. NO implementation until root releases it.
+- **Status:** implementation committed `07c0d22` under the new-cycle RED
+  at `394704e`; all gates GREEN (see `docs/STATUS.md`); STOPPED for
+  root's parallel code/evidence review before ES-4b.
 - **Authorized by:** Apollo request `cd81077c-ef1c-4bb6-b3b8-7b98b502ebf0`
   (root adjudication of the B-gap on the `feature/p008-editor-save-recovery-es2a`
   branch).

@@ -5,6 +5,42 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-009 ES-4a FORWARD RECOVERY — closed-branch controls + publish/reopen refresh (NEW cycle)
+
+- Root adjudication `cd81077c`: the missing committed RED between impl A
+  (`897f7c1`) and impl B (`7f9f47d`) on the `es2a` branch cannot be
+  retro-approved → this NEW forward cycle on
+  `feature/p008-es4a-closed-forward` (old branch preserved at `0ba8873`,
+  untouched). NEW evidence — not historical B RED, not a waiver.
+- Tests-only provenance `394704e`: carries the `43d49fb` DOM delta
+  verbatim (hoisted router spies, refresh-on-ok pins, corrected
+  pending-publish contract) + `docs/tasks/p008-es4a-forward-recovery.md`
+  scoped plan. Zero production code carried.
+- Prospective REDs on clean `394704e` via `run-capture.sh` (before+after
+  SHA, empty porcelain paths, UTC, exact cmd, real exit):
+  `red-fwd-final-dom-closed.log` 5f/35p; `red-fwd-final-e2e-closed.log`
+  3f/3p closed-control subset only (preview-dependent owner test
+  excluded). Earlier `red-fwd-es4aB-*` logs lacked in-file
+  before-markers — superseded, preserved unmodified except a truthful
+  append-only label fix; two invalid attempts preserved in-log.
+- Production `07c0d22` (ONE combined commit, released `7cfa7553`,
+  precondition verified `2ac32d9c`): fresh-authored `OpenDraftButton`
+  reopen+archive — shared pending, typed→safe / transport→generic,
+  replay-safe; `router.refresh()` on reopen-ok, `router.push()` to the
+  canonical list on archive-ok (both outside the action catch). Page
+  mounts it only on `!archived && draft===null`; archived keeps zero
+  controls. `DraftEditor` publish-ok `router.refresh()` (R1 contract)
+  - truthful preserve-draft comment. Backend/actions/helpers/save/
+    editor-A/deps untouched; no old-B/R1 transplant.
+- Gates on clean `07c0d22` (all captured): format 0 · lint 0 ·
+  typecheck 0 · build 0 · DOM 40/40 · helpers 17/17 · unit 580/580 ·
+  integration 288/288 (`p8e_int`, CI=1) · focused e2e 35/35 · full spec
+  55p/4f — only the 4 named preview-dependent REDs
+  (`preview-draft-link`, ES-4b scope). BUILD_ID `BwywS2uLkECuQeCzrCjTl`
+  sha256 `b90ff345…6842c59f`.
+- STOPPED before ES-4b preview and ES-5 security; reported to Apollo
+  for parallel code/evidence review.
+
 ## 2026-10-04 — P-009 ES-4a prep CORRECTION — impossible-GREEN arithmetic + timing gates fixed
 
 - Root blocker `70bf24c3-dcc5-41c1-886a-f76714a29a50` before ES-4a
