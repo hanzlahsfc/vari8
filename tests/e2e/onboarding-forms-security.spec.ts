@@ -2,6 +2,7 @@ import {
   expect,
   test,
   type APIRequestContext,
+  type APIResponse,
   type Page,
 } from "@playwright/test";
 import { Prisma, PrismaClient } from "@prisma/client";
@@ -20,9 +21,16 @@ import { E2E, e2eDatabaseUrl } from "./global-setup";
  * negative replay is DETECTION-SENSITIVE: the target form's
  * draftRevision is reset to the captured expectedRevision first, so an
  * executed replay produces a real observable write — a "zero writes"
- * assertion is therefore meaningful, not vacuous. Positives assert the
- * exact write + audit row; negatives snapshot FULL form/version/audit
- * rows, not counts only.
+ * assertion is therefore meaningful, not vacuous. Executed replays
+ * (positive control + missing-Origin/XFH diagnostics) assert the decoded
+ * `{ok:true}` body and the single-save delta in expectSingleSaveDelta.
+ * Typed denials assert the decoded `{ok:false}` + pinned DENIED message
+ * (expectTypedDenial), never status alone. Zero-write depth per leg:
+ * FULL form/version/audit equality for hostile-Origin, no-session,
+ * membership-revoked, denied-role, and malformed legs; the forged-cookie
+ * leg asserts draftRevision only; the revoked-session leg asserts
+ * draftRevision + audit rows; tamper arms assert draftRevision + empty
+ * audits on the target form and formA revision/versions.
  *
  * Cookie/session handling (B7): `page.context().request` shares the
  * browser's HttpOnly cookie jar (authenticated probes); the bare
@@ -46,6 +54,7 @@ let prisma: PrismaClient;
 let wsAId: string;
 let wsBId: string;
 let ownerMemberId: string;
+let ownerUserId: string;
 let coachMember: { id: string; workspaceId: string; userId: string };
 
 const seedDefinition = (title: string) => ({
@@ -216,6 +225,87 @@ const resetRevision = (formId: string) =>
     data: { draftRevision: 1 },
   });
 
+/** Pinned boundary safe message for every authorization denial
+ * (`actions.ts` DENIED / `forms-boundary.ts` DENIED_ERROR). */
+const DENIED_MESSAGE = "You don't have access to do that.";
+
+/** Typed-result decoding from the REAL RSC flight response body: the
+ * action's return value is serialized as JSON inside the flight payload,
+ * so the typed fields are asserted directly — status alone is never
+ * taken as proof of `{ok:false}`. */
+const expectTypedDenial = async (res: APIResponse) => {
+  expect(res.status()).toBe(200);
+  const text = await res.text();
+  expect(text).toContain('"ok":false');
+  expect(text).toContain(`"message":"${DENIED_MESSAGE}"`);
+  expect(text).not.toContain('"ok":true');
+};
+
+const expectTypedSuccess = async (res: APIResponse) => {
+  expect(res.status()).toBe(200);
+  const text = await res.text();
+  expect(text).toContain('"ok":true');
+  expect(text).not.toContain('"ok":false');
+};
+
+type FormState = Awaited<ReturnType<typeof formState>>;
+
+/** Full-row delta for exactly ONE executed saveDraft by the owner:
+ * every form column except the four the save path writes is
+ * byte-identical (incl. `draft`, which the replay re-writes with the
+ * identical captured content); draftRevision +1, draftSavedByMemberId
+ * = owner member, draftUpdatedAt/updatedAt advance; version rows
+ * identical; pre-existing audit rows identical and exactly one new
+ * audit row with the pinned field values below. Audit `reason`, `ip`,
+ * `meta`, `at` and `id` are NOT asserted. */
+const expectSingleSaveDelta = (
+  before: FormState,
+  after: FormState,
+  formId: string,
+  ownerUserId: string,
+) => {
+  const {
+    draftRevision: r0,
+    draftSavedByMemberId: _s0,
+    draftUpdatedAt: d0,
+    updatedAt: u0,
+    ...stable0
+  } = before.form;
+  const {
+    draftRevision: r1,
+    draftSavedByMemberId: s1,
+    draftUpdatedAt: d1,
+    updatedAt: u1,
+    ...stable1
+  } = after.form;
+  void _s0;
+  expect(stable1).toEqual(stable0);
+  expect(r1).toBe(r0 + 1);
+  expect(s1).toBe(ownerMemberId);
+  expect(d1).not.toBeNull();
+  expect(d1!.getTime()).toBeGreaterThan(d0?.getTime() ?? 0);
+  expect(u1.getTime()).toBeGreaterThan(u0.getTime());
+  expect(after.versions).toEqual(before.versions);
+  const beforeIds = new Set(before.audits.map((a) => a.id));
+  expect(after.audits.filter((a) => beforeIds.has(a.id))).toEqual(
+    before.audits,
+  );
+  const added = after.audits.filter((a) => !beforeIds.has(a.id));
+  expect(added).toHaveLength(1);
+  expect(added[0]).toMatchObject({
+    scope: "WORKSPACE",
+    workspaceId: wsAId,
+    actorUserId: ownerUserId,
+    actorRole: "WORKSPACE_OWNER",
+    action: "UPDATE",
+    resourceType: "onboarding_form",
+    resourceId: formId,
+    result: "ALLOW",
+    subjectUserId: null,
+    subjectClientProfileId: null,
+  });
+};
+
 test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
   test.beforeAll(async () => {
     prisma = new PrismaClient({
@@ -233,6 +323,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       where: { workspaceId: wsAId, role: "WORKSPACE_OWNER" },
     });
     ownerMemberId = ownerMember.id;
+    ownerUserId = ownerMember.userId;
     const coachMemberRow = await prisma.workspaceMember.findFirstOrThrow({
       where: { workspaceId: wsAId, role: "COACH", status: "ACTIVE" },
     });
@@ -298,21 +389,13 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     const before = await formState(form.id);
     const res = await postCaptured(page.context().request, cap);
     console.log(`observed positive-replay status: ${res.status()}`);
-    expect(res.status()).toBe(200);
-    await expect
-      .poll(
-        async () =>
-          (
-            await prisma.onboardingForm.findUniqueOrThrow({
-              where: { id: form.id },
-            })
-          ).draftRevision,
-      )
-      .toBe(2);
-    const after = await formState(form.id);
-    expect(after.form.draftRevision).toBe(2);
-    expect(after.audits.length).toBe(before.audits.length + 1);
-    expect(after.versions).toEqual(before.versions);
+    await expectTypedSuccess(res);
+    expectSingleSaveDelta(
+      before,
+      await formState(form.id),
+      form.id,
+      ownerUserId,
+    );
   });
 
   test("Origin variants — hostile rejected, missing observed, XFH app-level diagnostic", async ({
@@ -324,9 +407,9 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     const ctx = page.context().request;
 
     // Hostile Origin, real Host: must produce ZERO writes. The
-    // OBSERVED reject class is the framework-level 500 "Invalid Server
-    // Actions request" — asserted distinctly from the typed-denial
-    // channel (denied actions return HTTP 200 with {ok:false}).
+    // OBSERVED reject class is the framework-level HTTP 500 (server log:
+    // "Invalid Server Actions request") — distinct from the typed-denial
+    // channel, whose `{ok:false}` body is decoded in expectTypedDenial.
     // Full-row snapshot equality pins zero writes, not just revision.
     await resetRevision(form.id);
     const hostileBefore = await formState(form.id);
@@ -338,28 +421,28 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     expect(await formState(form.id)).toEqual(hostileBefore);
 
     // Missing Origin — OBSERVED behavior in this build: the action
-    // executes and the write lands (200, revision +1, audit +1).
-    // Pinned as a full-snapshot diagnostic record of app-level
-    // behavior — NOT an edge-safety claim (the owned edge should
-    // enforce Origin at deploy time; asserted honestly either way
-    // when a production gate changes this).
+    // executes. Pinned via the decoded typed `{ok:true}` body plus the
+    // full-row single-save delta (expectSingleSaveDelta). Diagnostic
+    // record of app-level behavior only — NOT an edge-safety claim.
     await resetRevision(form.id);
     const missingBefore = await formState(form.id);
     const missing = await postCaptured(ctx, cap, {
       dropHeaders: ["origin"],
     });
     console.log(`observed missing-origin status: ${missing.status()}`);
-    const missingAfter = await formState(form.id);
-    expect(missing.status()).toBe(200);
-    expect(missingAfter.form.draftRevision).toBe(2);
-    expect(missingAfter.audits.length).toBe(missingBefore.audits.length + 1);
-    expect(missingAfter.versions).toEqual(missingBefore.versions);
+    await expectTypedSuccess(missing);
+    expectSingleSaveDelta(
+      missingBefore,
+      await formState(form.id),
+      form.id,
+      ownerUserId,
+    );
 
     // Hostile Origin + spoofed X-Forwarded-Host — APP-LEVEL diagnostic
     // only: the owned edge must strip/overwrite XFH; this records what
     // the app does if the spoof reaches it. OBSERVED: the action
-    // executes (200, write + audit land). No guard config is changed
-    // and NO public-edge safety is claimed.
+    // executes — decoded `{ok:true}` + full-row single-save delta. No
+    // guard config is changed and NO public-edge safety is claimed.
     await resetRevision(form.id);
     const xfhBefore = await formState(form.id);
     const xfh = await postCaptured(ctx, cap, {
@@ -369,11 +452,13 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       },
     });
     console.log(`observed hostile-origin+xfh status: ${xfh.status()}`);
-    const xfhAfter = await formState(form.id);
-    expect(xfh.status()).toBe(200);
-    expect(xfhAfter.form.draftRevision).toBe(2);
-    expect(xfhAfter.audits.length).toBe(xfhBefore.audits.length + 1);
-    expect(xfhAfter.versions).toEqual(xfhBefore.versions);
+    await expectTypedSuccess(xfh);
+    expectSingleSaveDelta(
+      xfhBefore,
+      await formState(form.id),
+      form.id,
+      ownerUserId,
+    );
   });
 
   test("no-session, forged-cookie, and sessionVersion revocation all deny with zero writes", async ({
@@ -396,10 +481,10 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     console.log(
       `observed no-session status: ${noSession.status()} (no-origin: ${noSessionNoOrigin.status()})`,
     );
-    // Typed-denial channel: the action runs, session gate fails, and
-    // the result is a typed {ok:false} over HTTP 200 — NOT a framework
-    // reject. Pinned distinctly from the hostile-Origin 500 class.
-    expect(noSession.status()).toBe(200);
+    // Typed-denial channel: the action runs, the session gate fails, and
+    // the decoded RSC body carries {ok:false} + the pinned DENIED message
+    // — distinct from the hostile-Origin framework 500 class.
+    await expectTypedDenial(noSession);
     expect(await formState(form.id)).toEqual(before);
 
     // Forged/stale session cookie — real cookie NAME (never logged),
@@ -420,7 +505,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       timeout: 15_000,
     });
     console.log(`observed forged-cookie status: ${forged.status()}`);
-    expect(forged.status()).toBe(200);
+    await expectTypedDenial(forged);
     expect((await formState(form.id)).form.draftRevision).toBe(1);
 
     // Revoked session: bump the user's sessionVersion — the JWT sv
@@ -442,7 +527,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       console.log(
         `observed revoked-session status: ${revoked.status()} (no-origin: ${revokedNoOrigin.status()})`,
       );
-      expect(revoked.status()).toBe(200);
+      await expectTypedDenial(revoked);
       const after = await formState(form.id);
       expect(after.form.draftRevision).toBe(1);
       expect(after.audits).toEqual(before.audits);
@@ -470,7 +555,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       const before = await formState(form.id);
       const res = await postCaptured(page.context().request, cap);
       console.log(`observed membership-revoked status: ${res.status()}`);
-      expect(res.status()).toBe(200);
+      await expectTypedDenial(res);
       expect(await formState(form.id)).toEqual(before);
     } finally {
       await prisma.workspaceMember.upsert({
@@ -515,7 +600,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     );
     const wsTampered = await postCaptured(ctx, cap, { body: arm1 });
     console.log(`observed ws-tamper status: ${wsTampered.status()}`);
-    expect(wsTampered.status()).toBe(200);
+    await expectTypedDenial(wsTampered);
     const afterArm1B = await formState(formB.id);
     expect(afterArm1B.form.draftRevision).toBe(1);
     expect(afterArm1B.audits).toEqual([]);
@@ -540,7 +625,8 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       `observed formid-tamper status: ${foreign.status()} vs nonexistent: ${ghost.status()}`,
     );
     expect(foreign.status()).toBe(ghost.status());
-    expect(foreign.status()).toBe(200);
+    await expectTypedDenial(foreign);
+    await expectTypedDenial(ghost);
     const afterArm2B = await formState(formB.id);
     expect(afterArm2B.form.draftRevision).toBe(1);
     expect(afterArm2B.audits).toEqual([]);
@@ -590,7 +676,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       console.log(
         `observed denied-role status (${email.split("@")[0]}): ${res.status()}`,
       );
-      expect(res.status()).toBe(200);
+      await expectTypedDenial(res);
       expect(await formState(form.id)).toEqual(legBefore);
     }
   });
