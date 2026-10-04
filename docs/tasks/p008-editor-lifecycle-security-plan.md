@@ -428,3 +428,59 @@ failure is an expected-denial leg; no control failed. No prior scratch
 run of the integration or HTTP legs exists. One dirty-tree scratch run
 of the unit file (4 failed / 18 passed) during authoring is not
 preserved and not claimed. STOPPED before production.
+
+### PD29 production fix — `814620a` (Apollo `518b483f`)
+
+**Precedence wording.** The rule that a PLATFORM_ADMIN account is denied
+onboarding form definitions even with an ACTIVE OWNER/COACH membership
+is an ENGINEERING INTERPRETATION of product decision #29 ("PLATFORM_ADMIN
+… denied for this slice"), adopted through Apollo's least-privilege
+choice under the user's delegation of common professional practice. It
+is NOT a new founder decision. No other role or resource changes.
+
+**Change** (single commit `814620a`, `lib/auth/guard.ts` only, +21):
+
+- New `PLATFORM_ADMIN_DENIED_RESOURCES = {onboardingFormTemplates}`.
+- `authorize` and `authorizeCollection` both run
+  `deny("role_denied", …)` when `platformRole === "PLATFORM_ADMIN"` and
+  the resource is in the set.
+- Placement in both: after the ACTIVE-membership check, before
+  `resolveScope`.
+- Unchanged: the no-membership denial
+  (`membership_missing_or_inactive`) and the no-workspace matrix denial.
+- No matrix, `DenialReason`, service, action, page or preview change.
+
+**Gates on clean committed `814620a`.** Every gate was captured with
+`run-capture.sh`, run sequentially on owned `juno-p8-pg` with CI=1
+after confirming port 3000 was free and the DB had no other
+connections. Each log has empty porcelain before and after, 0
+credential bytes, and the DB URL in env, not argv. Logs are the
+`green-pd29-*.log` files under
+`gate-logs/p008-editor-recovery/es2a-clean-recovery/`.
+
+| Gate                                  | Log                               | Result                                                                                                                                 |
+| ------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| format                                | `green-pd29-format.log`           | exit 0                                                                                                                                 |
+| lint                                  | `green-pd29-lint.log`             | exit 0                                                                                                                                 |
+| typecheck                             | `green-pd29-typecheck.log`        | exit 0                                                                                                                                 |
+| build                                 | `green-pd29-build.log`            | exit 0                                                                                                                                 |
+| guard unit                            | `green-pd29-unit-guard.log`       | 22/22, exit 0 (RED was 4 failed / 18 passed)                                                                                           |
+| full unit (incl. DOM + helpers files) | `green-pd29-unit-full.log`        | 588/588, exit 0 (580 + 8 new)                                                                                                          |
+| P-008 integration (`p8e_int`)         | `green-pd29-integration-p008.log` | 46/46, exit 0 (RED was 1 failed / 45 passed)                                                                                           |
+| full integration                      | `green-pd29-integration-full.log` | 289/289, exit 0 (288 + 1 new)                                                                                                          |
+| security spec (`p8e_e2e`)             | `green-pd29-e2e-security.log`     | 9/9, exit 0, BUILD_ID `MNQjAyOlhfNaiMHgq3Cis`                                                                                          |
+| full e2e                              | `green-pd29-e2e-full.log`         | 149 passed / 12 skipped, exit 0 (147 + 2 new; skips are the pre-existing gated password-reset tests), BUILD_ID `lkfEntUVb1NrTd9ZvsWHg` |
+
+For both browser runs, the BUILD_ID is printed INSIDE the capture
+window by the captured command itself (`bash -c '…; echo BUILD_ID:
+$(cat .next/BUILD_ID)'`). It is therefore byte-bound to its log,
+closing the earlier v2/v4 attestation gap.
+
+**Deviations.**
+
+- One pre-commit scratch run of the guard unit file on the dirty tree
+  (22/22) was not preserved and is not claimed as evidence.
+- No failed or invalid attempts occurred in this cycle.
+
+STOPPED for Helios code review, Orion different-model security review
+and Atlas evidence review. No push/PR/merge/deploy.

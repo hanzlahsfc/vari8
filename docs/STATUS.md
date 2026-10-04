@@ -5,6 +5,43 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-008 PD29 DUAL-ROLE FIX IMPLEMENTED `814620a` — all gates GREEN; STOPPED for review
+
+- Apollo bounded release `518b483f`, under the independently reviewed
+  RED at tests `904cb12` (Helios/Orion test-contract PASS, Atlas RED
+  evidence PASS).
+- Production commit `814620a` touches `lib/auth/guard.ts` only (+21):
+  - a resource-specific `PLATFORM_ADMIN_DENIED_RESOURCES =
+{onboardingFormTemplates}`;
+  - `authorize` and `authorizeCollection` deny with the existing
+    `role_denied` after the ACTIVE-membership check and before
+    `resolveScope`.
+
+  Unchanged: the no-membership denial and USER owner/coach grants. No
+  matrix, service, action, preview or other-resource change.
+
+- Precedence is an ENGINEERING INTERPRETATION of product decision #29
+  under the user-delegated least-privilege choice. It is not a new
+  founder decision.
+- Gates on clean `814620a`, run sequentially on owned infra with CI=1;
+  each log has empty porcelain and 0 credential bytes:
+  - format, lint, typecheck and build: all exit 0;
+  - guard unit 22/22;
+  - full unit 588/588 (includes DOM + helpers);
+  - P-008 integration 46/46;
+  - full integration 289/289;
+  - security spec 9/9, BUILD_ID `MNQjAyOlhfNaiMHgq3Cis`;
+  - full e2e 149 passed / 12 skipped, BUILD_ID
+    `lkfEntUVb1NrTd9ZvsWHg`.
+
+  Both BUILD_IDs are printed inside their capture window, so they are
+  byte-bound to their logs. Logs: `green-pd29-*.log`.
+
+- Deviation: one dirty-tree scratch run of the guard unit file was not
+  preserved and is not claimed. No failed attempts.
+- STOPPED for Helios code, Orion security and Atlas evidence review.
+  No push/PR/merge/deploy.
+
 ## 2026-10-04 — P-008 PD29 DUAL-ROLE REPAIR — PLAN + TESTS-ONLY, prospective RED captured; STOPPED before production
 
 - Apollo request `f88468e4`. Policy chosen by Apollo under the user's
