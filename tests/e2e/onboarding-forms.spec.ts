@@ -2287,3 +2287,320 @@ test.describe("editor lifecycle controls (ES-4a — preview independent)", () =>
     ).toBe(0);
   });
 });
+
+test.describe("form definition preview (ES-4b — zero-mutation reads)", () => {
+  test.beforeEach(removeFixtures);
+  test.afterEach(removeFixtures);
+
+  const seedForm = (
+    name: string,
+    extra: Omit<
+      Prisma.OnboardingFormUncheckedCreateInput,
+      "workspaceId" | "name" | "createdByMemberId"
+    > = {},
+  ) =>
+    prisma.onboardingForm.create({
+      data: {
+        workspaceId: wsId,
+        name,
+        createdByMemberId: ownerMemberId,
+        draftRevision: 1,
+        ...extra,
+      },
+      select: { id: true },
+    });
+
+  /**
+   * Six-kind definition with a per-field tag baked into every label — a
+   * source mix-up (draft vs version vs wrong seq) shows up as visible
+   * text, never as an ambiguous count.
+   */
+  const previewDefinition = (title: string, tag: string) => ({
+    title,
+    fields: [
+      {
+        fieldId: `f_${tag}_st`,
+        kind: "shortText",
+        label: `${tag} short`,
+        required: true,
+        order: 0,
+      },
+      {
+        fieldId: `f_${tag}_lt`,
+        kind: "longText",
+        label: `${tag} long`,
+        required: false,
+        order: 1,
+      },
+      {
+        fieldId: `f_${tag}_num`,
+        kind: "number",
+        label: `${tag} number`,
+        required: false,
+        order: 2,
+      },
+      {
+        fieldId: `f_${tag}_dt`,
+        kind: "date",
+        label: `${tag} date`,
+        required: false,
+        order: 3,
+      },
+      {
+        fieldId: `f_${tag}_sc`,
+        kind: "singleChoice",
+        label: `${tag} single`,
+        required: false,
+        order: 4,
+        options: [
+          { optionId: `o_${tag}_sc_a`, label: `${tag} single A` },
+          { optionId: `o_${tag}_sc_b`, label: `${tag} single B` },
+        ],
+      },
+      {
+        fieldId: `f_${tag}_mc`,
+        kind: "multiChoice",
+        label: `${tag} multi`,
+        required: false,
+        order: 5,
+        options: [
+          { optionId: `o_${tag}_mc_x`, label: `${tag} multi X` },
+          { optionId: `o_${tag}_mc_y`, label: `${tag} multi Y` },
+        ],
+      },
+    ],
+  });
+
+  const previewUrl = (formId: string, src?: string) =>
+    `/workspace/${wsId}/onboarding/forms/${formId}/preview${src ? `?src=${src}` : ""}`;
+
+  test("draft preview renders every kind read-only; Enter submits nothing; workspace stays byte-identical", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8B Preview Draft", {
+      draft: previewDefinition("E2E P8B Preview Draft", "DRAFT"),
+    });
+    const before = await workspaceSnapshot();
+    await signIn(page, E2E.owner);
+    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+    // Committed link contract: the open-draft editor exposes the draft
+    // preview link (the no-draft branch exposes the version one instead).
+    await expect(page.getByTestId("preview-draft-link")).toBeVisible();
+    const storageBefore = await storageSnapshot(page);
+    const mutating = trackNonGet(page);
+    await page.getByTestId("preview-draft-link").click();
+    await expect(page.getByTestId("onboarding-form-preview")).toBeVisible();
+    await expect(page.getByTestId("preview-source")).toContainText("draft");
+    const fields = page.getByTestId("preview-fields");
+    // All six kinds render — pinned per control TYPE so a wrong element
+    // can't hide inside a disabled-count total.
+    for (const label of [
+      "DRAFT short",
+      "DRAFT long",
+      "DRAFT number",
+      "DRAFT date",
+      "DRAFT single",
+      "DRAFT multi",
+    ]) {
+      await expect(fields.getByText(label)).toBeVisible();
+    }
+    await expect(fields.locator("input[type='text']")).toHaveCount(1);
+    await expect(fields.locator("textarea")).toHaveCount(1);
+    await expect(fields.locator("input[type='number']")).toHaveCount(1);
+    await expect(fields.locator("input[type='date']")).toHaveCount(1);
+    await expect(fields.locator("input[type='radio']")).toHaveCount(2);
+    await expect(fields.locator("input[type='checkbox']")).toHaveCount(2);
+    // EVERY control is disabled — including the radios/checkboxes inside
+    // the two choice fieldsets — and there is no form to submit.
+    await expect(fields.locator("fieldset[disabled]")).toHaveCount(2);
+    await expect(fields.locator("input[disabled]")).toHaveCount(
+      await fields.locator("input").count(),
+    );
+    await expect(fields.locator("textarea[disabled]")).toHaveCount(1);
+    await expect(fields.locator("input:not([disabled])")).toHaveCount(0);
+    await expect(
+      page.getByTestId("onboarding-form-preview").locator("form"),
+    ).toHaveCount(0);
+    await page.keyboard.press("Enter"); // must not submit anything
+    expect(mutating).toEqual([]);
+    expect(await storageSnapshot(page)).toBe(storageBefore);
+    expect(await workspaceSnapshot()).toEqual(before);
+  });
+
+  test("src selection: missing/src=draft render the open draft; src=version renders the LATEST frozen version", async ({
+    page,
+  }) => {
+    // One form carrying BOTH an open draft and published history — the
+    // version arm must pick the LATEST seq (v2), not the first.
+    const form = await seedForm("E2E P8B Preview Src", {
+      draft: previewDefinition("E2E P8B Preview Src", "DRAFT"),
+      draftRevision: 4,
+      versions: {
+        create: [
+          {
+            versionSeq: 1,
+            definition: previewDefinition("E2E P8B Preview Src", "V1"),
+            publishOriginRevision: 2,
+            publishedByMemberId: ownerMemberId,
+          },
+          {
+            versionSeq: 2,
+            definition: previewDefinition("E2E P8B Preview Src", "V2"),
+            publishOriginRevision: 4,
+            publishedByMemberId: ownerMemberId,
+          },
+        ],
+      },
+    });
+    const before = await workspaceSnapshot();
+    await signIn(page, E2E.owner);
+    const mutating = trackNonGet(page);
+    // Missing src AND explicit src=draft both render the open draft.
+    for (const url of [previewUrl(form.id), previewUrl(form.id, "draft")]) {
+      await page.goto(url);
+      await expect(page.getByTestId("onboarding-form-preview")).toBeVisible();
+      await expect(page.getByTestId("preview-source")).toContainText("draft");
+      await expect(page.getByText("DRAFT short")).toBeVisible();
+    }
+    // src=version renders the frozen LATEST version — v2, not the draft,
+    // not v1.
+    await page.goto(previewUrl(form.id, "version"));
+    await expect(page.getByTestId("onboarding-form-preview")).toBeVisible();
+    await expect(page.getByTestId("preview-source")).toContainText("version 2");
+    await expect(page.getByText("V2 short")).toBeVisible();
+    await expect(page.getByText("V1 short")).toHaveCount(0);
+    await expect(page.getByText("DRAFT short")).toHaveCount(0);
+    expect(mutating).toEqual([]);
+    expect(await workspaceSnapshot()).toEqual(before);
+  });
+
+  test("unknown src and a version preview with zero history fail closed non-disclosing", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8B Preview Edge", {
+      draft: previewDefinition("E2E P8B Preview Edge", "LEAK"),
+      versions: {
+        create: [
+          {
+            versionSeq: 1,
+            definition: previewDefinition("E2E P8B Preview Edge", "VONE"),
+            publishOriginRevision: 1,
+            publishedByMemberId: ownerMemberId,
+          },
+        ],
+      },
+    });
+    await signIn(page, E2E.owner);
+    // An UNKNOWN src is never a silent draft fallback — the denial is
+    // the same non-disclosing surface as unauthorized access.
+    const unknown = await page.goto(previewUrl(form.id, "bogus"));
+    expect([403, 404]).toContain(unknown?.status());
+    await expect(page.getByTestId("onboarding-form-preview")).toHaveCount(0);
+    await expect(page.getByText("LEAK short")).toHaveCount(0);
+    // src=version on a form with ZERO published history fails the same
+    // way — no draft leak, no empty-version fabrication.
+    const noHistory = await seedForm("E2E P8B Preview NoHist", {
+      draft: previewDefinition("E2E P8B Preview NoHist", "NOHIST"),
+    });
+    const res = await page.goto(previewUrl(noHistory.id, "version"));
+    expect([403, 404]).toContain(res?.status());
+    await expect(page.getByTestId("onboarding-form-preview")).toHaveCount(0);
+    await expect(page.getByText("NOHIST short")).toHaveCount(0);
+  });
+
+  test("denied roles, foreign workspace, and nonexistent form get the identical non-disclosing denial", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8B Preview Denied", {
+      draft: previewDefinition("E2E P8B Preview Denied", "DENIED"),
+    });
+    // The assistant is the discriminating probe (passes the staff layout,
+    // lacks the resource); every denied actor must see the SAME denial —
+    // no preview surface, no definition text.
+    for (const email of [
+      E2E.assistant,
+      E2E.client,
+      E2E.support,
+      E2E.nonmember,
+    ]) {
+      await signIn(page, email);
+      const res = await page.goto(previewUrl(form.id));
+      expect(res?.status()).toBe(403);
+      await expect(page.getByTestId("access-denied")).toBeVisible();
+      await expect(page.getByTestId("onboarding-form-preview")).toHaveCount(0);
+      await expect(page.getByText("DENIED short")).toHaveCount(0);
+    }
+    // Dual-member probe: the owner IS a wsB member, so a wsA formId under
+    // the wsB URL exercises resource scoping — and must be visually
+    // identical to a formId that exists nowhere.
+    await signIn(page, E2E.owner);
+    const foreign = await page.goto(
+      `/workspace/${wsBId}/onboarding/forms/${form.id}/preview`,
+    );
+    expect(foreign?.status()).toBe(403);
+    await expect(page.getByTestId("access-denied")).toBeVisible();
+    await expect(page.getByText("DENIED short")).toHaveCount(0);
+    const foreignDenial =
+      (await page.getByTestId("access-denied").textContent()) ?? "";
+    const missing = await page.goto(
+      `/workspace/${wsBId}/onboarding/forms/missingformid123/preview`,
+    );
+    expect(missing?.status()).toBe(403);
+    expect(await page.getByTestId("access-denied").textContent()).toBe(
+      foreignDenial,
+    );
+  });
+
+  test("the closed no-draft branch exposes the version preview link", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8B Preview Link", {
+      draft: Prisma.DbNull,
+      versions: {
+        create: [
+          {
+            versionSeq: 1,
+            definition: previewDefinition("E2E P8B Preview Link", "VFROZEN"),
+            publishOriginRevision: 1,
+            publishedByMemberId: ownerMemberId,
+          },
+        ],
+      },
+    });
+    await signIn(page, E2E.owner);
+    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+    await expect(page.getByTestId("no-draft")).toBeVisible();
+    await expect(page.getByTestId("preview-version-link")).toBeVisible();
+    await page.getByTestId("preview-version-link").click();
+    await expect(page).toHaveURL(/preview\?src=version/);
+    await expect(page.getByTestId("preview-source")).toContainText("version 1");
+    await expect(page.getByText("VFROZEN short")).toBeVisible();
+  });
+
+  for (const width of [1440, 834, 390] as const) {
+    test(`draft preview has no horizontal overflow and all-disabled controls at ${width}px`, async ({
+      page,
+    }) => {
+      const form = await seedForm(`E2E P8B Preview ${width}`, {
+        draft: previewDefinition(`E2E P8B Preview ${width}`, `W${width}`),
+      });
+      await page.setViewportSize({ width, height: 900 });
+      await signIn(page, E2E.coach);
+      await page.goto(previewUrl(form.id));
+      await expect(page.getByTestId("onboarding-form-preview")).toBeVisible();
+      const fields = page.getByTestId("preview-fields");
+      await expect(fields.locator("input:not([disabled])")).toHaveCount(0);
+      await expect(fields.locator("textarea:not([disabled])")).toHaveCount(0);
+      await expect(
+        page.getByTestId("onboarding-form-preview").locator("form"),
+      ).toHaveCount(0);
+      expect(
+        await page.evaluate(
+          () =>
+            document.documentElement.scrollWidth >
+            document.documentElement.clientWidth,
+        ),
+      ).toBe(false);
+    });
+  }
+});
