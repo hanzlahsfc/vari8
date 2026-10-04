@@ -286,3 +286,106 @@ not presented as governing RED.
 No other unresolved product choices identified — lifecycle semantics
 (frozen versions, reopen seeding, archive permanence) are locked in
 the service layer.
+
+## PD29 dual-role repair (Apollo `f88468e4`) — PLAN + TESTS-ONLY PREP
+
+Resolves the TABLED matrix item 8b.
+
+**Policy, chosen by Apollo under the user's delegation of common
+professional practice — least privilege, onboarding form definitions
+ONLY:**
+
+- A user whose `platformRole` is `PLATFORM_ADMIN` is DENIED read AND
+  write on `onboardingFormTemplates`.
+- The denial holds even when the same account has an ACTIVE
+  `WORKSPACE_OWNER` or `COACH` membership in the target workspace.
+- Owners and coaches whose `platformRole` is `USER` stay allowed,
+  exactly as today.
+- No change to the general admin hierarchy, to the RBAC matrix, or to
+  any other resource.
+- This matches the letter of `docs/product-decisions.md` #29
+  ("PLATFORM_ADMIN … denied for this slice"). Recording the resolved
+  precedence in product-decisions.md is left to root/owner.
+
+**Current gap (verified by reading `lib/auth/guard.ts` at `4a0a103`):**
+
+- `authorize` takes the role from the ACTIVE membership whenever a
+  `workspaceId` is supplied, so `platformRole` is never consulted on
+  the workspace path.
+- A dual-role admin-owner or admin-coach therefore resolves
+  `onboardingFormTemplates` to `workspace` scope and is allowed.
+- `authorizeCollection` has the same shape.
+- The `RBAC_MATRIX` `PLATFORM_ADMIN: D` cell only applies when no
+  workspace is supplied.
+
+**Predicted minimum fix (NOT implemented in this slice):** in
+`lib/auth/guard.ts` only.
+
+- Add a closed, resource-specific set:
+  `PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> = new Set(["onboardingFormTemplates"])`.
+- `authorize`: after the ACTIVE membership resolves (so a no-membership
+  admin keeps `membership_missing_or_inactive`, the old leg) and
+  before scope resolution, if
+  `platformRole === "PLATFORM_ADMIN" && PLATFORM_ADMIN_DENIED_RESOURCES.has(resource)`,
+  then `deny("role_denied", …)`.
+- `authorizeCollection`: the identical check at the same point.
+- With no `workspaceId`, an admin already resolves to the matrix cell
+  `PLATFORM_ADMIN: D`, which yields `role_denied`; that is unchanged.
+- No matrix edit, no new `DenialReason`, no service/action/page change.
+  Every P-008 caller goes through `authorize` (service list/get/create/
+  save/open/publish/archive, the new-form page via
+  `requireWorkspaceAccess`, and the preview/editor pages via the
+  service). The action boundary already maps `AccessDeniedError` to the
+  safe DENIED message.
+
+**Prospective tests (committed BEFORE any production change):**
+
+1. Unit, `tests/unit/guard.test.ts`, real `authorize` +
+   `authorizeCollection` with the existing in-memory repo:
+   - dual-role admin with an ACTIVE OWNER membership, and with an
+     ACTIVE COACH membership, is denied read AND write via `authorize`
+     and read via `authorizeCollection`, all with reason `role_denied`
+     (RED today);
+   - a no-membership admin gives `membership_missing_or_inactive`
+     (the old leg, distinct);
+   - controls: USER owner and USER coach are allowed (workspace
+     scope);
+   - non-regression: a dual-role admin-owner keeps `workspaceSettings`
+     read/write and `dailyTracking` assigned-scope behavior.
+2. Integration, `tests/integration/p008-onboarding-forms.test.ts`, real
+   PG plus the real guard, transaction-bound:
+   - dual-role admin-owner and admin-coach are denied list, get,
+     create, save, open, publish and archive with `AccessDeniedError`
+     reason `role_denied`;
+   - full form/version/audit rows and the form count stay unchanged
+     (RED today);
+   - control: a USER owner in the same workspace still lists the form.
+3. Real HTTP, `tests/e2e/onboarding-forms-security.spec.ts`, with the
+   same captured-protocol replay:
+   - arm A: the owner fixture is flipped to `PLATFORM_ADMIN`, keeping
+     its ACTIVE OWNER membership and the same session. The editor GET
+     must return 403, and the captured save replay must give the
+     typed-denial markers plus full-row zero-write;
+   - arm B: the existing no-membership `platform-admin` fixture gets a
+     temporary ACTIVE COACH membership in wsA, then signs in. The
+     replay must give the typed-denial markers plus full-row
+     zero-write;
+   - `platformRole` and the membership are restored in `finally`;
+   - the old no-membership leg is unchanged and stays labelled
+     membership-gate proof.
+
+**RED protocol:** commit the tests, then capture on the clean committed
+head with `run-capture.sh`: unit guard file, integration (`p8e_int`),
+focused security spec (`p8e_e2e`). Capture SHA, porcelain, UTC, real
+exit and the DB identity with the credential redacted (env, not argv).
+Run captures sequentially. Expected RED: only the dual-role legs; the
+controls and the old leg pass.
+
+**Regression scope for the later fix:** the full gate set (format,
+lint, typecheck, build, unit, DOM, helpers, integration, full e2e).
+Directly affected: the guard unit tests, the P-008 integration file,
+and the security spec. Any other resource whose dual-role behavior
+changes is a defect.
+
+STOP after the RED captures: no production change without a new
+bounded release.
