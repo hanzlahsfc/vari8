@@ -27,8 +27,13 @@
   delta + decoded RSC typed results. Captured
   `green-fwd-es5-security-http-v4.log` 7/7 exit 0 (BUILD_ID
   `e0yAwuslFUbH31P7w-Ptc`) + `green-fwd-es5-e2e-full-v3.log` 147p/12s
-  exit 0 (BUILD_ID `Ti94CNVEv2_ozDDdxE1pJ`). STOPPED before any
-  security production fix.
+  exit 0 (BUILD_ID `Ti94CNVEv2_ozDDdxE1pJ`). ERRATUM (Apollo
+  `cbb3e4c4`): "decoded RSC typed results" above is imprecise — the
+  checks are literal raw flight-text substring markers backed by DB
+  delta/zero-write checks, not a formal decode; they cover only the
+  named helper-passed requests, and the `noSessionNoOrigin` /
+  `revokedNoOrigin` companions are observation-only (status logged).
+  STOPPED before any security production fix.
 - **Authorized by:** Apollo request `cd81077c-ef1c-4bb6-b3b8-7b98b502ebf0`
   (root adjudication of the B-gap on the `feature/p008-editor-save-recovery-es2a`
   branch).

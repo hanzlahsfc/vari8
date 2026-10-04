@@ -5,6 +5,29 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-008 ES-5 B2 TERMINOLOGY CORRECTION — comments/docs only, no assertion change
+
+- Apollo request `cbb3e4c4` (Helios B1 PASS; B2 terminology open on
+  tests `b6d2ce6` / docs `a82d5b9`). CORRECTION to the `b6d2ce6`
+  entry below: `expectTypedDenial` / `expectTypedSuccess` do NOT
+  "decode" the typed result. They are literal raw RSC flight-text
+  substring marker assertions (`"ok":false` + pinned DENIED message
+  string / `"ok":true`), backed by DB delta or zero-write checks —
+  not a formal flight decode and not structural attribution to the
+  action return value.
+- Scope CORRECTION: the marker checks cover only the named requests
+  passed through the helpers (no-session, forged-cookie,
+  revoked-session, membership-revoked, ws-tamper, foreign-formId,
+  fabricated-cuid ghost, platform-admin/nonmember/deactivated; success
+  markers on the positive control, missing-Origin, XFH). The no-Origin
+  companions `noSessionNoOrigin` / `revokedNoOrigin` are
+  OBSERVATION-ONLY for the response (status logged, no marker check);
+  the "every denial leg" wording below is therefore an overclaim. The
+  DB zero-write checks in those two legs do run after both requests.
+- Spec comments reworded to match; no assertion, production, guard or
+  edge change; no browser rerun (comments/docs only). `147p/12s`
+  below means passed/skipped, as written.
+
 ## 2026-10-04 — P-008 ES-5 HELIOS B1/B2 REPAIR `b6d2ce6` — single-save delta + decoded typed results
 
 - Apollo request `ccb3a41b` (Helios blockers on `659d424`/`ca8235e`).

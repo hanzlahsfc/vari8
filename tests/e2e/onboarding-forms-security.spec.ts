@@ -22,10 +22,18 @@ import { E2E, e2eDatabaseUrl } from "./global-setup";
  * draftRevision is reset to the captured expectedRevision first, so an
  * executed replay produces a real observable write — a "zero writes"
  * assertion is therefore meaningful, not vacuous. Executed replays
- * (positive control + missing-Origin/XFH diagnostics) assert the decoded
- * `{ok:true}` body and the single-save delta in expectSingleSaveDelta.
- * Typed denials assert the decoded `{ok:false}` + pinned DENIED message
- * (expectTypedDenial), never status alone. Zero-write depth per leg:
+ * (positive control + missing-Origin/XFH diagnostics) assert literal
+ * raw RSC flight-text markers (`"ok":true`, via expectTypedSuccess)
+ * backed by the single-save DB delta in expectSingleSaveDelta. Named
+ * denial legs passed through expectTypedDenial assert literal raw
+ * flight-text markers (`"ok":false` + the pinned DENIED message string)
+ * backed by DB zero-write checks. These are substring checks on the raw
+ * response text — NOT a formal flight decode and NOT structural
+ * attribution to the action return value. The no-Origin companion
+ * requests in the no-session and revoked-session legs are
+ * observation-only for the response (status logged, no marker check);
+ * the DB zero-write checks in those legs run after both requests.
+ * Zero-write depth per leg:
  * FULL form/version/audit equality for hostile-Origin, no-session,
  * membership-revoked, denied-role, and malformed legs; the forged-cookie
  * leg asserts draftRevision only; the revoked-session leg asserts
@@ -229,10 +237,12 @@ const resetRevision = (formId: string) =>
  * (`actions.ts` DENIED / `forms-boundary.ts` DENIED_ERROR). */
 const DENIED_MESSAGE = "You don't have access to do that.";
 
-/** Typed-result decoding from the REAL RSC flight response body: the
- * action's return value is serialized as JSON inside the flight payload,
- * so the typed fields are asserted directly — status alone is never
- * taken as proof of `{ok:false}`. */
+/** Literal raw-text marker assertions on the REAL RSC flight response
+ * body: substring checks for `"ok":false` and the pinned DENIED message
+ * string (and absence of `"ok":true`). This is NOT a formal flight
+ * decode and does not structurally attribute the markers to the action
+ * return value; callers pair it with DB zero-write checks. Status alone
+ * is never taken as the denial evidence. */
 const expectTypedDenial = async (res: APIResponse) => {
   expect(res.status()).toBe(200);
   const text = await res.text();
@@ -241,6 +251,8 @@ const expectTypedDenial = async (res: APIResponse) => {
   expect(text).not.toContain('"ok":true');
 };
 
+/** Literal raw-text marker counterpart: substring `"ok":true` present and
+ * `"ok":false` absent — not a formal decode; paired with the DB delta. */
 const expectTypedSuccess = async (res: APIResponse) => {
   expect(res.status()).toBe(200);
   const text = await res.text();
@@ -409,7 +421,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     // Hostile Origin, real Host: must produce ZERO writes. The
     // OBSERVED reject class is the framework-level HTTP 500 (server log:
     // "Invalid Server Actions request") — distinct from the typed-denial
-    // channel, whose `{ok:false}` body is decoded in expectTypedDenial.
+    // channel, whose raw-text `"ok":false` markers expectTypedDenial checks.
     // Full-row snapshot equality pins zero writes, not just revision.
     await resetRevision(form.id);
     const hostileBefore = await formState(form.id);
@@ -421,7 +433,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     expect(await formState(form.id)).toEqual(hostileBefore);
 
     // Missing Origin — OBSERVED behavior in this build: the action
-    // executes. Pinned via the decoded typed `{ok:true}` body plus the
+    // executes. Pinned via the raw-text `"ok":true` marker plus the
     // full-row single-save delta (expectSingleSaveDelta). Diagnostic
     // record of app-level behavior only — NOT an edge-safety claim.
     await resetRevision(form.id);
@@ -441,7 +453,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     // Hostile Origin + spoofed X-Forwarded-Host — APP-LEVEL diagnostic
     // only: the owned edge must strip/overwrite XFH; this records what
     // the app does if the spoof reaches it. OBSERVED: the action
-    // executes — decoded `{ok:true}` + full-row single-save delta. No
+    // executes — raw-text `"ok":true` marker + single-save delta. No
     // guard config is changed and NO public-edge safety is claimed.
     await resetRevision(form.id);
     const xfhBefore = await formState(form.id);
@@ -470,8 +482,9 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     const cap = await captureSaveDraft(page, form.id);
 
     // No-session arm: the bare `request` fixture carries no cookie jar.
-    // Paired observation: same request with Origin dropped — the
-    // protocol's anonymous reject class under both header shapes.
+    // Companion with Origin dropped is OBSERVATION-ONLY for the response
+    // (status logged, no marker check); the full-row zero-write equality
+    // below runs after both requests.
     await resetRevision(form.id);
     const before = await formState(form.id);
     const noSession = await postCaptured(request, cap);
@@ -481,9 +494,9 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     console.log(
       `observed no-session status: ${noSession.status()} (no-origin: ${noSessionNoOrigin.status()})`,
     );
-    // Typed-denial channel: the action runs, the session gate fails, and
-    // the decoded RSC body carries {ok:false} + the pinned DENIED message
-    // — distinct from the hostile-Origin framework 500 class.
+    // Typed-denial channel (noSession request only): raw flight text
+    // carries the literal `"ok":false` + DENIED message markers —
+    // distinct from the hostile-Origin framework 500 class.
     await expectTypedDenial(noSession);
     expect(await formState(form.id)).toEqual(before);
 
@@ -520,6 +533,8 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
         data: { sessionVersion: { increment: 1 } },
       });
       await resetRevision(form.id);
+      // Marker check on `revoked` only; the no-Origin companion is
+      // OBSERVATION-ONLY (status logged). DB checks run after both.
       const revoked = await postCaptured(page.context().request, cap);
       const revokedNoOrigin = await postCaptured(page.context().request, cap, {
         dropHeaders: ["origin"],
