@@ -358,6 +358,176 @@ describe("DraftEditor — save wiring (intentionally RED until ES-3)", () => {
     expect(saveDraftMock).toHaveBeenCalledTimes(1);
     expectEnabled("save-draft");
   });
+
+  // ES-3 prep pins (Apollo release 2e49379d / Orion advance-contract
+  // notes): cheap contract coverage added tests-only ahead of the Save
+  // implementation — all RED while save stays inert.
+  it("a field-only save preserves the existing form name — never an empty name", async () => {
+    const { DraftEditor } = await load();
+    saveDraftMock.mockResolvedValue(
+      savedResult(2, "Intake", [
+        savedField("f_a", { label: "Edited label" }),
+        savedField("f_b", { label: "Second", order: 1 }),
+      ]),
+    );
+    render(<DraftEditor {...baseProps} />);
+    // Edit ONLY a field label — the name input is never touched. The
+    // payload must still carry the mounted name; a blank title would
+    // silently empty the saved row name.
+    fireEvent.change(input("field-label-0"), {
+      target: { value: "Edited label" },
+    });
+    fireEvent.click(control("save-draft"));
+    await act(async () => {});
+    expect(saveDraftMock).toHaveBeenCalledTimes(1);
+    const [, formData] = saveDraftMock.mock.calls[0];
+    const payload = JSON.parse(String(formData.get("draftJson"))) as {
+      title: string;
+    };
+    expect(payload.title).toBe("Intake");
+    expect(formData.get("name")).toBe("Intake");
+  });
+
+  it("cleared helpText saves as a normalized omission — the emptied input is not persisted", async () => {
+    const { DraftEditor } = await load();
+    saveDraftMock.mockResolvedValue(
+      savedResult(2, "Intake", [
+        savedField("f_a", { label: "First" }),
+        savedField("f_b", { label: "Second", order: 1 }),
+      ]),
+    );
+    render(<DraftEditor {...baseProps} />);
+    // Set then clear: the emptied string must normalize AWAY — the saved
+    // field carries no helpText key, and the input itself stays empty.
+    fireEvent.change(input("field-help-0"), {
+      target: { value: "Shown under the label" },
+    });
+    fireEvent.change(input("field-help-0"), { target: { value: "" } });
+    expectValue("field-help-0", "");
+    fireEvent.click(control("save-draft"));
+    await act(async () => {});
+    expect(saveDraftMock).toHaveBeenCalledTimes(1);
+    const payload = JSON.parse(
+      String(saveDraftMock.mock.calls[0][1].get("draftJson")),
+    ) as { fields: DraftField[] };
+    expect(payload.fields[0]).not.toHaveProperty("helpText");
+  });
+
+  it("a pending save disables the whole fieldset breadth plus the outside name/save controls", async () => {
+    const { DraftEditor } = await load();
+    let release: (value: ReturnType<typeof savedResult>) => void = () => {};
+    // Defensive guard: one shared deferred minted OUTSIDE the impl (same
+    // observed-teardown rationale as the earlier pending case above).
+    const pendingSave = new Promise<ReturnType<typeof savedResult>>(
+      (resolve) => {
+        release = resolve;
+      },
+    );
+    saveDraftMock.mockImplementation(() => pendingSave);
+    render(<DraftEditor {...threeFieldProps} />);
+    fireEvent.change(input("form-name"), {
+      target: { value: "Edited name" },
+    });
+    fireEvent.click(control("save-draft"));
+    try {
+      expect(saveDraftMock).toHaveBeenCalledTimes(1);
+      // The FIELDSET's own effective disabled state reaches every control
+      // inside it — labels, required, help, options, and all
+      // add/remove/move buttons.
+      expect(screen.getByTestId("draft-editor").matches(":disabled")).toBe(
+        true,
+      );
+      for (const testid of [
+        "field-label-0",
+        "field-required-0",
+        "field-help-0",
+        "add-option-2",
+        "add-field-shortText",
+        "add-field-multiChoice",
+      ]) {
+        expectDisabled(testid);
+      }
+      for (const label of [
+        "Option 1",
+        "Remove option 1",
+        "Move field 2 up",
+        "Remove field 3",
+      ]) {
+        expect(screen.getByLabelText(label).matches(":disabled")).toBe(true);
+      }
+      // The name input and the save control sit OUTSIDE the fieldset —
+      // they must be disabled by their own pending wiring, not by
+      // inheritance.
+      expectDisabled("form-name");
+      expectDisabled("save-draft");
+    } finally {
+      await act(async () => {
+        release(
+          savedResult(2, "Edited name", [
+            savedField("f_a", { label: "First" }),
+            savedField("f_b", { label: "Second", order: 1 }),
+            savedField("f_c", {
+              kind: "singleChoice",
+              label: "Third",
+              order: 2,
+            }),
+          ]),
+        );
+      });
+    }
+    expectEnabled("form-name");
+    expectDisabled("save-draft");
+  });
+
+  it("a new save press clears the prior alert", async () => {
+    const { DraftEditor } = await load();
+    saveDraftMock
+      .mockResolvedValueOnce({ ok: false, message: STALE_MESSAGE })
+      .mockResolvedValueOnce(
+        savedResult(2, "Intake", [
+          savedField("f_a", { label: "First" }),
+          savedField("f_b", { label: "Second", order: 1 }),
+        ]),
+      );
+    render(<DraftEditor {...baseProps} />);
+    fireEvent.change(input("field-label-0"), {
+      target: { value: "Local edit" },
+    });
+    fireEvent.click(control("save-draft"));
+    await act(async () => {});
+    expect(screen.getByRole("alert").textContent).toContain(STALE_MESSAGE);
+    // The edit is preserved after a typed rejection, so the user may
+    // press again; the second press must clear the stale alert rather
+    // than leave it standing next to a successful save.
+    fireEvent.click(control("save-draft"));
+    await act(async () => {});
+    expect(screen.getByRole("alert").textContent).toBe("");
+    expect(saveDraftMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("the alert never echoes internals, ids, or raw payload text", async () => {
+    const { DraftEditor } = await load();
+    // Defensive guard: zero-arg invocations get a settled promise (same
+    // observed-teardown rationale as the earlier transport case above);
+    // each real (workspaceId, formData) call gets a FRESH rejection so a
+    // shared rejected promise can never surface late.
+    saveDraftMock.mockImplementation((...args) =>
+      (args as unknown[]).length === 0
+        ? (Promise.resolve() as unknown as ReturnType<typeof saveDraft>)
+        : Promise.reject(new Error("network down f_a secret-payload")),
+    );
+    render(<DraftEditor {...baseProps} />);
+    fireEvent.change(input("field-label-0"), {
+      target: { value: "Edit before abort" },
+    });
+    fireEvent.click(control("save-draft"));
+    await act(async () => {});
+    const alertText = screen.getByRole("alert").textContent ?? "";
+    expect(alertText).toContain(GENERIC_MESSAGE);
+    expect(alertText).not.toContain("network down");
+    expect(alertText).not.toContain("f_a");
+    expect(alertText).not.toContain("secret-payload");
+  });
 });
 
 // Shared fixtures for the field-structure describes.
@@ -480,6 +650,28 @@ describe("DraftEditor — field structure ops (DOM-visible, separable from save)
     expectEnabled("save-draft");
   });
 
+  // ES-3 prep strengthening pin (Apollo/Helios): rendered option CONTENT
+  // — not merely the row count — must survive field move/remove. On the
+  // ES-2B implementation this passes immediately (additional proof, not
+  // a governing RED); the corresponding server-id pin lives in the
+  // deferred payload describe below.
+  it("moving then removing fields preserves the surviving field's option CONTENT", async () => {
+    const { DraftEditor } = await load();
+    render(<DraftEditor {...threeFieldProps} />);
+    fireEvent.click(screen.getByLabelText("Move field 3 up"));
+    expect(optionsIn(1).map((o) => (o as HTMLInputElement).value)).toEqual([
+      "Yes",
+      "No",
+    ]);
+    fireEvent.click(screen.getByLabelText("Remove field 1"));
+    expectValue("field-label-0", "Third");
+    expect(optionsIn(0).map((o) => (o as HTMLInputElement).value)).toEqual([
+      "Yes",
+      "No",
+    ]);
+    expectEnabled("save-draft");
+  });
+
   // All six add kinds: each click appends a rendered field row and arms
   // save. Choice kinds seed EXACTLY one blank option input; non-choice
   // kinds render NO options region at all.
@@ -598,6 +790,34 @@ describe("DraftEditor — structure-ops payload subset (deferred to ES-3)", () =
     expect(sentPayload().fields[0].options).toEqual([
       { optionId: "o_b", label: "No" },
       { label: "" },
+    ]);
+  });
+
+  // ES-3 prep pin (Apollo/Helios): a field that moved and outlived a
+  // removal must carry BOTH its option values and its optionIds into the
+  // payload — a row-count check alone cannot detect content blanking.
+  it("move+remove payload: surviving choice field keeps option values AND optionIds", async () => {
+    const { DraftEditor } = await load();
+    saveDraftMock.mockResolvedValue(
+      savedResult(2, "Intake", [
+        savedField("f_c", { kind: "singleChoice", label: "Third" }),
+        savedField("f_b", { label: "Second", order: 1 }),
+      ]),
+    );
+    render(<DraftEditor {...threeFieldProps} />);
+    fireEvent.click(screen.getByLabelText("Move field 3 up"));
+    fireEvent.click(screen.getByLabelText("Remove field 1"));
+    fireEvent.click(control("save-draft"));
+    await act(async () => {});
+    expect(saveDraftMock).toHaveBeenCalledTimes(1);
+    const payload = sentPayload();
+    expect(payload.fields.map((f) => [f.fieldId ?? null, f.order])).toEqual([
+      ["f_c", 0],
+      ["f_b", 1],
+    ]);
+    expect(payload.fields[0].options).toEqual([
+      { optionId: "o_a", label: "Yes" },
+      { optionId: "o_b", label: "No" },
     ]);
   });
 });

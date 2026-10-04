@@ -1464,6 +1464,42 @@ test.describe("editor save foundation", () => {
     ).toBe(auditsBefore + 1);
   });
 
+  // ES-3 prep pin (Apollo release 2e49379d / Orion advance-contract):
+  // a save triggered by ONLY a field edit must keep the seeded name —
+  // the payload always carries the mounted name, never an empty title.
+  test("a field-only save preserves the seeded form name — never an empty name", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8 FieldOnly", {
+      draft: seedDefinition("E2E P8 FieldOnly"),
+    });
+    await signIn(page, E2E.coach);
+    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+    await expect(page.getByTestId("onboarding-form-editor")).toBeVisible();
+    // Edit ONLY a field label; the name input is never touched.
+    await page.getByTestId("field-label-0").fill("Renamed question only");
+    await page.getByTestId("save-draft").click();
+    await expect
+      .poll(async () => {
+        const f = await prisma.onboardingForm.findUniqueOrThrow({
+          where: { id: form.id },
+        });
+        return f.draftRevision;
+      })
+      .toBe(2);
+    const row = await prisma.onboardingForm.findUniqueOrThrow({
+      where: { id: form.id },
+    });
+    // Row name and draft title both keep the seeded name — a blank
+    // title would have emptied the saved row name.
+    expect(row.name).toBe("E2E P8 FieldOnly");
+    expect((row.draft as { title: string }).title).toBe("E2E P8 FieldOnly");
+    await expect(page.getByTestId("form-name")).toHaveValue("E2E P8 FieldOnly");
+    expect((row.draft as { fields: { label: string }[] }).fields[0].label).toBe(
+      "Renamed question only",
+    );
+  });
+
   test("dirty edits are discarded on reload — persisted state renders, nothing auto-saves", async ({
     page,
   }) => {
