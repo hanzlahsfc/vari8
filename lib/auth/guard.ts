@@ -122,6 +122,17 @@ function deny(reason: DenialReason, resource: string, action: string): never {
 }
 
 /**
+ * PD29 (engineering interpretation of product decision #29 under the
+ * user-delegated least-privilege choice): resources a PLATFORM_ADMIN account
+ * is denied even when the same account holds an ACTIVE workspace membership
+ * whose role would otherwise be granted. Deliberately resource-specific —
+ * every other resource keeps its existing membership-derived rules.
+ */
+const PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> = new Set([
+  "onboardingFormTemplates",
+]);
+
+/**
  * Authorize a workspace collection read. Re-reads DB state, resolves the matrix,
  * and returns only `workspace | assigned | own` scope. Denies write, unknown
  * inputs, platform scope, and anything not explicitly a listable scope.
@@ -148,6 +159,11 @@ export async function authorizeCollection(
   const membership = await repo.getMembership(userId, request.workspaceId);
   if (!membership || membership.status !== "ACTIVE")
     deny("membership_missing_or_inactive", resource, action);
+  if (
+    user.platformRole === "PLATFORM_ADMIN" &&
+    PLATFORM_ADMIN_DENIED_RESOURCES.has(resource)
+  )
+    deny("role_denied", resource, action);
 
   const scope = resolveScope(resource, "read", membership.role);
   if (!scope || scope === "denied" || scope === "platform")
@@ -196,6 +212,11 @@ export async function authorize(
     membership = await repo.getMembership(userId, request.workspaceId);
     if (!membership || membership.status !== "ACTIVE")
       deny("membership_missing_or_inactive", resource, action);
+    if (
+      platformRole === "PLATFORM_ADMIN" &&
+      PLATFORM_ADMIN_DENIED_RESOURCES.has(resource)
+    )
+      deny("role_denied", resource, action);
     role = membership.role;
   } else if (platformRole === "PLATFORM_ADMIN") {
     role = "PLATFORM_ADMIN";
