@@ -127,3 +127,29 @@ case, all meaningful absent-behavior failures.
   DOM subset + local-edit browser regression GREEN, ES-1 17/17, format/
   lint/typecheck 0; remaining RED enumerated (ES-3 save 5 + deferred
   payload 3). Structure GREEN does NOT imply save/whole-file green.
+
+## ES-3 tests-only preparation (commit `d537ec4`, 2026-10-04)
+
+**Scope:** contract-strengthening pins for Save, committed BEFORE any
+Save production. `tests/unit/onboarding-draft-editor.dom.test.tsx` +
+`tests/e2e/onboarding-forms.spec.ts` only. Save remains INERT
+(`draft-editor.tsx` byte-identical to `741336d`); no backend/helper/
+page/dependency changes.
+
+**New pins:** helpText clear→payload omission; field-only save
+preserves existing/seeded form name (DOM + browser); pending save
+disables whole `<fieldset>` + outside name/Save; new press clears prior
+alert; alerts never echo internals/IDs/payload; option values+IDs
+preserved across move/remove (DOM + deferred payload). All earlier
+save + deferred-payload contracts retained.
+
+**Committed RED (clean head `d537ec4`, empty porcelain windows, logs in
+`gate-logs/p008-editor-recovery/es2a-clean-recovery/`):** DOM
+save+payload subset 14 fail; full DOM 17 pass / 14 fail; browser
+save-foundation 9 fail / 3 pass (inert save). Regressions GREEN:
+DOM metadata 5/5, DOM structure 12/12, ES-1 17/17, browser mount
+17/17, format/typecheck/lint 0. Deviations preserved: bad-`-g`
+mount attempt (`attempt-…-badpattern.log`); two BUILD_IDENTITY
+annotation concatenations corrected in place with inline notes.
+
+**STOPPED** before ES-3 Save implementation pending root acceptance.

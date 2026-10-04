@@ -5,6 +5,56 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-009 ES-3 tests-only prep — committed RED checkpoint (STOPPED before Save impl)
+
+- Root released ES-3 TESTS-ONLY preparation while ES-2B review runs
+  (Apollo directive): strengthen the Save contract with committed pins
+  on the inert implementation — NO production changes.
+- Tests-only commit `d537ec4d6863664889aaa19d2d970b2fc4650069` —
+  `tests/unit/onboarding-draft-editor.dom.test.tsx` +
+  `tests/e2e/onboarding-forms.spec.ts` ONLY. New pins: helpText
+  clear→omission (never an explicit empty string in payload);
+  field-only save preserves the existing/seeded form name (DOM +
+  browser); pending save disables the whole `<fieldset>` AND the
+  outside name/Save controls; a new save press clears a prior alert;
+  alerts never echo internals/IDs/raw payload; moved/removed surviving
+  choice fields preserve option values AND option IDs (DOM + deferred
+  payload). All prior save contracts retained (bounded payload,
+  once-per-press, normalized adoption, typed stale, transport failure,
+  unsaved-edit preservation, no blind retry, pending disable,
+  committed-but-lost) plus all deferred payload tests.
+- Production untouched: `components/onboarding/draft-editor.tsx` is
+  byte-identical to `741336d` (Save `noop`); no backend/helper/page/
+  dependency/action-import/useTransition changes.
+- Captures on clean committed head `d537ec4` (porcelain PATH snapshots
+  empty before/after, SHA stable in-window; absolute log paths under
+  `gate-logs/p008-editor-recovery/es2a-clean-recovery/`):
+  `red-es3-dom-save-payload.log` honest 14 fail exit 1 ·
+  `raw-es3prep-dom-fullfile.log` honest 17 pass / 14 fail exit 1
+  (all fails are save-not-called / inert-save / deferred-payload
+  assertions) · `green-es3prep-dom-metadata.log` 5/5 exit 0 ·
+  `green-es3prep-dom-structure.log` 12/12 exit 0 ·
+  `green-es3prep-es1.log` 17/17 exit 0 ·
+  `raw-es3prep-format.log` / `raw-es3prep-typecheck.log` /
+  `raw-es3prep-lint.log` exit 0.
+- Browser on owned `juno-p8-pg`/`p8e_e2e`, `CI=1`, production
+  `build && start`, port 3000 verified free:
+  `red-es3-e2e-save-foundation.log` honest 9 fail / 3 pass exit 1
+  (BUILD_ID `oJbklCdTqUIErY-pl6TtH`) ·
+  `green-es3prep-e2e-mount.log` 17/17 exit 0
+  (BUILD_ID `bzO-XCt3ogMdYABk-oGwQ`). Snapshots:
+  `build-id-es3prep-red.txt`, `build-id-es3prep-mount.txt`.
+- Process deviation disclosed + preserved: one mount-capture attempt
+  used a wrong `-g` pattern (no tests found) — preserved as
+  `attempt-green-es3prep-e2e-mount-badpattern.log`; recaptured with
+  `-g 'editor mount'`. Two BUILD_IDENTITY annotation blocks were
+  initially written with the ID+hash concatenated (no trailing newline
+  in `.next/BUILD_ID`); corrected in place with an inline CORRECTION
+  note — the blocks are post-capture annotations, not raw output.
+- STOPPED before ES-3 Save implementation. Save remains INERT; no
+  push/PR/merge/deploy. Awaiting root acceptance of this RED
+  checkpoint.
+
 ## 2026-10-04 — P-009 ES-2B structure ops — implemented + gates (STOPPED for acceptance)
 
 - Root released ES-2B structure implementation (request
