@@ -241,3 +241,36 @@ port 3000 free, BUILD_ID `33PdvF-vYjceQEo21St7m`.
 **STOPPED** before ES-4a production implementation (publish/archive/
 openDraft UI wiring, confirm UX, previews). Preview-dependent
 full-lifecycle e2e cases remain future RED through ES-4b per plan.
+
+## ES-4a prep correction (commit `39a6427`, 2026-10-04) — tests-only + plan wording
+
+Root blocker `70bf24c3` before ES-4a production: the focused browser
+`publish → closed → reopen` case asserted revision 3 after reopen and
+4 after save — impossible-GREEN under the locked service
+(`publishOnboardingForm` clears `draft` WITHOUT bumping
+`draftRevision`; `openOnboardingDraft` seeds `draft_revision + 1`;
+save bumps `+1`). Corrected to truthful arithmetic: seeded rev 1 →
+publish (still 1) → reopen → 2 → save → 3, with comments citing the
+verified service lines. Both fixed-900ms pending cases (new
+pending-publish AND the older pending-save `no mid-save clobber`)
+converted to the deterministic `intercepted`/`releaseGate` handshake
+(observed-POST gate, `finally` release, `waitForResponse` before
+`unrouteAll`, `postCount === 1`) — no timing windows. Plan wording:
+`archive-form` renders on BOTH the open-draft editor surface and the
+closed/no-draft branch (Helios placement note; service archives either
+state — no scope change).
+
+**Fresh RED on clean `39a6427`** (empty porcelain windows, same evidence dir):
+`red-es4a-e2e-lifecycle-v2.log` 5 fail / 0 pass (absent controls) ·
+`red-es4a-e2e-inflight.log` 1 fail / 1 pass — the hardened pending-save
+gate held the write deterministically, editor-side disable assertions
+PASSED while held, RED precisely on absent `publish-form`; sibling
+save-foundation pending case GREEN, proving gate mechanics ·
+`red-es4a-dom-lifecycle-v2.log` 9 fail / 31 pass (DOM file unchanged,
+head-binding recapture). Deviation noted in-log: the lifecycle-v2
+BUILD_IDENTITY annotation reflects the subsequent sequential build on
+the same commit (its own build id not snapshotted mid-sequence);
+snapshot `build-id-es4a-prep-v2.txt` = `pCVwQUQPLuDACEun5FG2Y`.
+
+**STOPPED** — no lifecycle production until the corrected pin is
+root-accepted.

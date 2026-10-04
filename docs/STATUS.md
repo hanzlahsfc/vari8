@@ -5,6 +5,27 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-009 ES-4a prep CORRECTION — impossible-GREEN arithmetic + timing gates fixed
+
+- Root blocker `70bf24c3-dcc5-41c1-886a-f76714a29a50` before ES-4a
+  production, folded into `39a6427` (tests-only + plan wording):
+  publish→reopen browser case asserted rev 3/4 — impossible under the
+  locked service (publish never bumps `draftRevision`; reopen seeds
+  `+1`; save `+1`) → corrected to honest 2/3 with cited service lines.
+  Both 900ms pending cases (pending-publish + the older pending-save)
+  converted to deterministic `intercepted`/`releaseGate` + finally +
+  observed-POST response gate + `postCount === 1`. Plan: `archive-form`
+  renders on BOTH open-draft and closed branches (Helios note).
+- Fresh RED on clean `39a6427` (same evidence dir): e2e lifecycle
+  5f/0p · in-flight pair 1f/1p (hardened gate held the save write;
+  editor disables PASSED while held; RED only on absent `publish-form`;
+  sibling save pending GREEN proves the mechanics) · DOM lifecycle
+  9f/31p head-binding recapture. `build-id-es4a-prep-v2.txt`
+  `pCVwQUQPLuDACEun5FG2Y`; mid-sequence build-id deviation noted
+  in-log.
+- Still STOPPED before ES-4a production; new pin reported for
+  Helios/Atlas re-review (prior pin superseded, not verdict-transferred).
+
 ## 2026-10-04 — P-009 ES-4a lifecycle TESTS-ONLY prep — committed + captured (STOPPED before impl)
 
 - Root released ES-4a tests-only preparation under corrected plan
