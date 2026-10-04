@@ -21,7 +21,14 @@
   `green-fwd-es5-security-http-v3.log` 7/7 exit 0 +
   `green-fwd-es5-e2e-full-v2.log` 147p/12s exit 0, BUILD_ID
   `-rr_xTP_0bl7xnD9kJuvV` (full-v2 run; v3 BUILD_ID overwritten, not
-  recorded). STOPPED before any security production fix.
+  recorded). Helios B1/B2 repair `b6d2ce6` (Apollo `ccb3a41b`):
+  `659d424`'s "full-snapshot delta" and "`{ok:false}` channel" claims
+  were overclaims (count/status only) — now real single-save full-row
+  delta + decoded RSC typed results. Captured
+  `green-fwd-es5-security-http-v4.log` 7/7 exit 0 (BUILD_ID
+  `e0yAwuslFUbH31P7w-Ptc`) + `green-fwd-es5-e2e-full-v3.log` 147p/12s
+  exit 0 (BUILD_ID `Ti94CNVEv2_ozDDdxE1pJ`). STOPPED before any
+  security production fix.
 - **Authorized by:** Apollo request `cd81077c-ef1c-4bb6-b3b8-7b98b502ebf0`
   (root adjudication of the B-gap on the `feature/p008-editor-save-recovery-es2a`
   branch).

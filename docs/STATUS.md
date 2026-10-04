@@ -5,6 +5,39 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-008 ES-5 HELIOS B1/B2 REPAIR `b6d2ce6` — single-save delta + decoded typed results
+
+- Apollo request `ccb3a41b` (Helios blockers on `659d424`/`ca8235e`).
+  The `659d424` entry below OVERCLAIMED on two points, now corrected:
+  B1 — its "full-snapshot deltas" for missing-Origin/XFH were only
+  status + revision + audit COUNT + versions; B2 — its "HTTP 200
+  (`{ok:false}` channel)" pins asserted status only, never the decoded
+  body.
+- Commit `b6d2ce6` (spec only): `expectSingleSaveDelta` (positive
+  control + missing-Origin + XFH) — every form column except
+  draftRevision/draftSavedByMemberId/draftUpdatedAt/updatedAt equal
+  (incl. `draft`), revision +1, saver = owner member, both timestamps
+  advance, versions equal, pre-existing audit rows equal, exactly one
+  new audit row with pinned scope/workspaceId/actorUserId/actorRole/
+  action/resourceType/resourceId/result/subject fields (reason/ip/
+  meta/at/id NOT asserted). `expectTypedDenial` decodes the real RSC
+  flight body (`"ok":false` + pinned DENIED message, no `"ok":true`)
+  on every denial leg; `expectTypedSuccess` decodes `"ok":true`.
+  Header comment narrowed to the actual per-leg zero-write depth
+  (forged-cookie = revision only; revoked = revision + audits; tamper
+  = revision + empty audits). Hostile-Origin full equality unchanged.
+- Captures on clean committed `b6d2ce6` (run-capture.sh, empty
+  porcelain before/after, credential bytes 0, BUILD_ID read
+  immediately after each run): `green-fwd-es5-security-http-v4.log`
+  7/7 exit 0, BUILD_ID `e0yAwuslFUbH31P7w-Ptc`;
+  `green-fwd-es5-e2e-full-v3.log` 147p/12s exit 0, BUILD_ID
+  `Ti94CNVEv2_ozDDdxE1pJ`. New assertions are strengthened checks of
+  existing behavior — immediate-PASS, not a governing RED. One
+  pre-commit scratch run on the dirty tree (7/7) checked decoding
+  reliability; not preserved, not claimed as evidence.
+- Prior reviews do not transfer to `b6d2ce6`. No production/guards/
+  actions/edge changes; STOPPED; no push/PR/merge.
+
 ## 2026-10-04 — P-008 ES-5 TESTS-ONLY CORRECTION `659d424` — full snapshots + reject-class pins
 
 - Apollo request `52ead226` (tests-only follow-up on base `3bab484` +
