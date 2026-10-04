@@ -70,3 +70,146 @@
   all worktrees under
   `gate-logs/p008-editor-recovery/es2a-clean-recovery/`; all attempts
   preserved including invalid ones; no edits during a capture.
+
+## Integration accounting (PLAN-ONLY, Apollo `59423372`)
+
+Local completeness record for the P-008 onboarding form-definition
+builder (P-009 editor slices ES-1..ES-5). This is NOT final sign-off:
+no push/PR/merge/deploy authority and no edge/deployment approval.
+Scope is the coach-owned form-DEFINITION builder only — NO intake,
+NO submissions, NO client-facing form filling.
+
+### Branch and tree
+
+- Branch `feature/p008-es4a-closed-forward`; base `main` `5036796`.
+- Final local tree: `793b0e0f0f446f182575bfc7398c7eca3dfb94e7`
+  (followed by this docs-only accounting commit).
+- Production is byte-unchanged since `b4b19a0`: `git diff b4b19a0
+793b0e0` outside `tests/` and `docs/` is empty.
+- `b6d2ce6..793b0e0` touches comments/docs only (every changed spec
+  line is a comment).
+- Pre-ES P-008 foundation also on this branch since `5036796`
+  (schema + migration, service, boundary, actions, list/create pages,
+  5C-2a mount, Orion-435 tx reauthorization `be20047`, etc.) was
+  accepted under earlier P-008 records and is not re-enumerated here.
+
+### Immutable pins per slice (first-parent, this branch)
+
+| Slice | Tests / scaffold                                                                                             | Production                                            | Docs / records                                        |
+| ----- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- | ----------------------------------------------------- |
+| ES-1  | `dd42327`, `54e211c` (scaffold), `ffc75ea`                                                                   | `6e25230` (1a), `3d2e18c` (1b), `f13a970` (1c)        | `5734af4`, `8b3a095`, `23a7c21`                       |
+| ES-2  | `2c46546` (dev deps), `4087c23`, `a86a453`, `b15a60f` (scaffold), `6ba4c22`, `d37673c`, `6dbeaeb`, `08ff818` | — (harness/scaffold)                                  | `404b571`, `cd805c6`                                  |
+| ES-2A | `ea8400e`                                                                                                    | `36a2f8f`                                             | `65fdab4`, `18c4916`, `63dfa4e`, `023de20`, `cfab0cf` |
+| ES-2B | `13483f5`                                                                                                    | `741336d`                                             | `372499f`, `88792af`, `a6a0fb6`                       |
+| ES-3  | `d537ec4`                                                                                                    | `0c6242b`                                             | `1cd243d`, `5f77978`, `d4cdd62`, `a6cecf6`            |
+| ES-4a | `71ca892`, `47558a5`, `39a6427`, `e5636c3`, `394704e` (fwd provenance)                                       | `897f7c1` (A), `07c0d22` (fwd combined closed-branch) | `1ead789`, `65947c3`, `ac146bc`, `06f2f59`, `a83af56` |
+| ES-4b | `3d9522f`, `749ef1e`                                                                                         | `b4b19a0`                                             | `1b55dd0`                                             |
+| ES-5  | `3bab484`, `659d424`, `b6d2ce6` (accepted test pin), `793b0e0` (comments)                                    | — (tests-only)                                        | `a1ec048`, `758685b`, `ca8235e`, `a82d5b9`, `793b0e0` |
+
+Not on this line (superseded, not merged): old ES-4a branch
+`feature/p008-editor-save-recovery-es2a` (`7f9f47d`, `43d49fb`,
+`3452055`, … `0ba8873`). Only the `43d49fb` DOM test delta was
+carried forward, with provenance, in `394704e`.
+
+### Gates — what still applies vs what needs a fresh rerun
+
+Still applicable to the production code (production unchanged since
+`b4b19a0`; tests changed since then only in the new e2e security
+spec, which unit/DOM/helpers/integration do not load):
+
+- On `b4b19a0`: format, lint, typecheck and build all exit 0; DOM
+  40/40; helpers 17/17; unit 580/580; integration 288/288
+  (`p8e_int`, CI=1); focused preview 9/9; focused lifecycle 35/35;
+  full `onboarding-forms.spec.ts` 68/68. BUILD_ID
+  `EZ17DdUJSOuL5ZRNcGcDF`.
+- On `b6d2ce6` (ES-5): focused security spec 7/7 exit 0
+  (`green-fwd-es5-security-http-v4.log`); full e2e 147 passed /
+  12 skipped exit 0 (`green-fwd-es5-e2e-full-v3.log`). The 12 skips
+  are pre-existing gated password-reset tests.
+- On `793b0e0`: no capture. It is comments/docs only relative to
+  `b6d2ce6`, so the behavior is identical, but no gate is bound to
+  this exact tree.
+
+A fresh rerun is required before any final sign-off: the full gate
+set (format, lint, typecheck, build, unit, DOM, helpers, integration,
+full e2e) in one clean sequence on the exact tree proposed for merge.
+Reasons:
+
+- No capture exists on `793b0e0`.
+- ES-5 BUILD_IDs are attested, not byte-bound in the logs (see
+  below).
+- Any rebase onto current `main` produces a new tree.
+
+### Evidence disclosures (all preserved outside Git; logs untouched)
+
+- Unpreserved scratch runs: a pre-commit 7/7 run on the dirty tree
+  that checked raw-marker reliability (`b6d2ce6` cycle); earlier
+  ES-4a dirty-tree DOM runs on the old branch. None is claimed as
+  evidence.
+- v2 BUILD_ID misattribution: `n8VinkBVcWqj2Kq8LsdXL`, recorded for
+  `green-fwd-es5-security-http-v2.log`, was read before that run and
+  belongs to the superseded run. See
+  `annotation-es5-build-identity.txt`.
+- BUILD_IDs attested, not byte-bound: under CI=1 every Playwright run
+  rebuilds, and `run-capture.sh` does not embed the BUILD_ID.
+  - v4 `e0yAwuslFUbH31P7w-Ptc` and full-v3 `Ti94CNVEv2_ozDDdxE1pJ`
+    were each read immediately after their own run, but they are
+    recorded only in docs and reports, not inside the log bytes.
+  - The v3 focused BUILD_ID was overwritten and never recorded.
+- Superseded credential log:
+  `superseded-es5-security-http-unredacted-cmd.log` (outside Git)
+  contains the disposable E2E database credential in its COMMAND
+  line.
+  - It is labeled SUPERSEDED, and every governing log has 0
+    credential bytes.
+  - The file should be deleted or rotated per the owner's decision;
+    it was not deleted here.
+- ES-4a historical B RED is absent on the old branch. The forward
+  cycle supplies new evidence; it is not a waiver.
+- `659d424`/`b6d2ce6` wording overclaims are corrected by later
+  append-only entries.
+
+### Security scope caveats
+
+- Helios caveat, foreign-formId per action: the HTTP tamper arms
+  (wsA→wsB rebinding and foreign formId) replay the captured
+  `saveDraft` only. `publish`, `openDraft`, `archiveForm` and
+  `createForm` are not replayed over real HTTP with foreign IDs.
+  Their protection rests on the shared guarded service path plus
+  integration tests, not on ES-5 HTTP evidence.
+- Typed-result checks are literal raw RSC flight-text markers backed
+  by DB checks, not a formal decode. The `noSessionNoOrigin` and
+  `revokedNoOrigin` companion requests are observation-only.
+- PD29 dual-role (PLATFORM_ADMIN with an ACTIVE membership) is TABLED
+  and unasserted. The no-membership PLATFORM_ADMIN leg proves the
+  membership gate only.
+- Missing-Origin and hostile-Origin plus spoofed `X-Forwarded-Host`
+  both EXECUTE the action at app level. This is recorded app behavior
+  and NOT edge safety.
+- Owned-edge verification is required before any deployment claim:
+  the edge must strip or overwrite `X-Forwarded-Host`/`Forwarded`
+  and handle Origin policy, with `trustHost: true` bounded by it. No
+  guard, `allowedOrigins` or infra change was made.
+
+### Remaining decisions / gates (none started)
+
+1. Owned-edge header verification (Origin, XFH, Forwarded, Host).
+   Deployment prerequisite.
+2. Product/security decision on missing-Origin execution: whether to
+   require Origin at app level. That would be a production change and
+   needs a new bounded release with test-first evidence.
+3. PD29 dual-role precedence contract review.
+4. Whether HTTP foreign-ID tamper coverage is required for `publish`,
+   `openDraft`, `archiveForm` and `createForm`.
+5. Fresh full gate set on the exact final/merge tree.
+6. Independent final review of the whole `main..final` diff,
+   including:
+   - the migration and schema changes;
+   - `lib/audit.ts` and `lib/auth/rbac.ts` changes;
+   - the dev dependency additions in `package.json` and
+     `package-lock.json` (jsdom/testing-library harness).
+7. Disposition of the superseded credential-bearing log, and of the
+   old ES-4a branch.
+8. Deferred product question: historical-version preview selector.
+9. Intake and submissions: out of scope, a separate future effort.
+10. PR/merge/deploy authorization from Hanzlah. None exists now.

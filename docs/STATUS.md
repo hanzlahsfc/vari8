@@ -5,6 +5,23 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-008/P-009 INTEGRATION ACCOUNTING (PLAN-ONLY) — local completeness, NOT final sign-off
+
+- Apollo request `59423372`. ES-5 accepted SCOPED locally as
+  tests-only (Helios B1 PASS `b6d2ce6`, B2 wording PASS `793b0e0`,
+  Atlas evidence PASS on clean `b6d2ce6` captures, Orion contract
+  PASS `b6d2ce6`). This entry is accounting only: no infra run, no
+  production/test change. Full pin table, gate applicability and
+  open gates live in `docs/tasks/p008-es4a-forward-recovery.md`
+  § "Integration accounting".
+- Final local tree `793b0e0` on `feature/p008-es4a-closed-forward`
+  (base `main` `5036796`). Production is byte-unchanged since
+  `b4b19a0` (`git diff b4b19a0 793b0e0` outside tests/docs is empty);
+  `b6d2ce6..793b0e0` is comments/docs only.
+- Scope is the onboarding FORM-DEFINITION builder only — NO intake,
+  NO submissions, NO client-facing forms. No push/PR/merge/deploy
+  authority; no edge/deployment approval.
+
 ## 2026-10-04 — P-008 ES-5 B2 TERMINOLOGY CORRECTION — comments/docs only, no assertion change
 
 - Apollo request `cbb3e4c4` (Helios B1 PASS; B2 terminology open on
