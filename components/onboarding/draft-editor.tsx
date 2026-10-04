@@ -71,10 +71,11 @@ const toPayloadField = ({ helpText, ...field }: DraftField): DraftField =>
  * name/fieldset/save/publish/archive together. Publish additionally
  * requires a clean saved-current draft (dirty gates it off); archive
  * stays pressable while dirty. On publish success nothing local is
- * faked: the action's own revalidation remounts this route as the
- * closed no-draft surface. On archive success the router navigates to
- * the canonical list — navigation sits OUTSIDE the action catch so a
- * navigation/refresh failure can never misreport a committed mutation.
+ * faked: `router.refresh()` requests a client remount so the route
+ * re-renders as the closed no-draft surface even when the action-side
+ * revalidation was swallowed. On archive success the router navigates
+ * to the canonical list — refresh/navigation sit OUTSIDE the action
+ * catch so either failure can never misreport a committed mutation.
  */
 export function DraftEditor({
   workspaceId,
@@ -255,16 +256,19 @@ export function DraftEditor({
         setAlert(result.message);
         return;
       }
-      // Success needs no local bookkeeping — the action's revalidation
-      // remounts this route's server render as the closed no-draft
-      // surface, so an editable editor can never persist on a consumed
-      // draft.
+      // Success — request a client refresh so the consumed draft
+      // remounts as the closed surface even when the action-side
+      // revalidation was swallowed. Outside the action catch: a
+      // refresh failure can never misreport the committed publish,
+      // and an editable editor can never persist on a consumed draft.
+      router.refresh();
     });
   };
 
   const archive = () => {
-    // Archive is pressable even while dirty (the draft is discarded
-    // server-side either way) but never while a mutation is in flight.
+    // Archive is pressable even while dirty (the service preserves the
+    // draft — the archived form renders it read-only) but never while
+    // a mutation is in flight.
     if (pending) {
       return;
     }

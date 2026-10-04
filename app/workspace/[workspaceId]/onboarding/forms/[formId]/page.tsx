@@ -1,6 +1,7 @@
 import { forbidden } from "next/navigation";
 
 import { DraftEditor } from "@/components/onboarding/draft-editor";
+import { OpenDraftButton } from "@/components/onboarding/open-draft-button";
 import { requireSessionUser } from "@/lib/auth/route-guard";
 import { getFormForWorkspace } from "@/lib/onboarding/forms-boundary";
 
@@ -22,9 +23,13 @@ type FormField = import("@/lib/onboarding/forms").FormField;
  *
  * ES-2 mount wiring: an OPEN draft on a non-archived form mounts the
  * callable `DraftEditor` scaffold (editor-ready surface, inert handlers —
- * editing/save behaviors land in their own increments). Every other
- * state — archived (with or without a preserved draft) and no open
- * draft — keeps the fully read-only rendering from 5C-2a.
+ * editing/save behaviors land in their own increments).
+ *
+ * ES-4a closed-branch wiring: a NON-archived form with no open draft
+ * mounts `OpenDraftButton` (reopen + archive are the only controls on
+ * that surface). Every other state — archived (with or without a
+ * preserved draft) — stays the fully read-only rendering from 5C-2a:
+ * reopen is never offered on an archived form.
  */
 function OrderedDraftFields({ draft }: { draft: FormDefinition }) {
   const fields = [...draft.fields].sort((a, b) => a.order - b.order);
@@ -126,9 +131,14 @@ export default async function OnboardingFormEditorPage({
           {form.draft !== null ? (
             <OrderedDraftFields draft={form.draft} />
           ) : (
-            <p className="app-lede" data-testid="no-draft">
-              No draft is open.
-            </p>
+            <>
+              <p className="app-lede" data-testid="no-draft">
+                No draft is open.
+              </p>
+              {!archived ? (
+                <OpenDraftButton formId={formId} workspaceId={workspaceId} />
+              ) : null}
+            </>
           )}
         </>
       )}
