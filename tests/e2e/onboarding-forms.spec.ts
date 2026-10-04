@@ -1755,12 +1755,6 @@ test("owner creates, edits, publishes, reopens, v2, and archives", async ({
 test("editor controls disable while a mutation is in flight (no mid-save clobber)", async ({
   page,
 }) => {
-  // Slow every server-action POST so the pending window is observable.
-  await page.route(/onboarding\/forms/, async (route) => {
-    if (route.request().method() === "POST")
-      await new Promise((r) => setTimeout(r, 900));
-    await route.continue();
-  });
   await signIn(page, E2E.owner);
   await page.goto(`/workspace/${wsId}/onboarding/forms`);
   await page.getByTestId("new-onboarding-form").click();
@@ -1770,13 +1764,47 @@ test("editor controls disable while a mutation is in flight (no mid-save clobber
 
   await page.getByTestId("add-field-shortText").click();
   await page.getByTestId("field-label-0").fill("Pending test");
-  await page.getByTestId("save-draft").click();
-  // While the save is in flight the editor must not accept further edits —
-  // a returned snapshot could otherwise silently overwrite them.
-  await expect(page.getByTestId("field-label-0")).toBeDisabled();
-  await expect(page.getByTestId("add-field-number")).toBeDisabled();
-  await expect(page.getByTestId("publish-form")).toBeDisabled();
-  await expect(page.getByTestId("archive-form")).toBeDisabled();
+
+  // Hold the save POST deterministically — the same intercept/release
+  // handshake as the save-foundation pending case: `intercepted`
+  // resolves only when the write is genuinely in flight, `releaseGate`
+  // frees it from finally so a failed assertion can never wedge the
+  // route, and `postCount` proves exactly one write per press.
+  let interceptedResolve: () => void = () => {};
+  let releaseResolve: () => void = () => {};
+  const intercepted = new Promise<void>((r) => (interceptedResolve = r));
+  const releaseGate = new Promise<void>((r) => (releaseResolve = r));
+  let postCount = 0;
+  await page.route(/onboarding\/forms/, async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    postCount += 1;
+    interceptedResolve();
+    await releaseGate;
+    await route.continue();
+  });
+  // waitForResponse BEFORE unrouteAll — removing the route mid-hold
+  // leaves the request hanging.
+  const responseDone = page.waitForResponse(
+    (res) =>
+      res.request().method() === "POST" &&
+      res.url().includes("/onboarding/forms/"),
+  );
+  try {
+    await page.getByTestId("save-draft").click();
+    await intercepted; // the write is genuinely in flight
+    // While the save is in flight the editor must not accept further
+    // edits — a returned snapshot could otherwise silently overwrite
+    // them — and the lifecycle controls share the pending scope.
+    await expect(page.getByTestId("field-label-0")).toBeDisabled();
+    await expect(page.getByTestId("add-field-number")).toBeDisabled();
+    await expect(page.getByTestId("publish-form")).toBeDisabled();
+    await expect(page.getByTestId("archive-form")).toBeDisabled();
+  } finally {
+    releaseResolve();
+    await responseDone;
+    await page.unrouteAll();
+  }
+  expect(postCount).toBe(1);
   // After settlement the controls re-enable and the saved label stands.
   await expect(page.getByTestId("field-label-0")).toBeEnabled();
   await expect(page.getByTestId("field-label-0")).toHaveValue("Pending test");
@@ -2079,7 +2107,10 @@ test.describe("editor lifecycle controls (ES-4a — preview independent)", () =>
     await expect(page.getByTestId("no-draft")).toBeVisible();
     await expect(page.getByTestId("draft-editor")).toHaveCount(0);
 
-    // Reopen seeds a fresh draft from v1; revision advances by one.
+    // Reopen seeds a fresh draft from v1. Publish does NOT bump
+    // draftRevision — it only clears `draft` (verified
+    // `publishOnboardingForm`), so the still-1 revision advances to 2
+    // on reopen (`openOnboardingDraft` seeds `draft_revision + 1`).
     await page.getByTestId("open-draft").click();
     await expect(page.getByTestId("draft-editor")).toBeVisible();
     await expect(page.getByTestId("field-label-0")).toHaveValue("Full name");
@@ -2090,9 +2121,9 @@ test.describe("editor lifecycle controls (ES-4a — preview independent)", () =>
         });
         return f?.draftRevision;
       })
-      .toBe(3);
+      .toBe(2);
 
-    // Edit + save → rev 4; publish → v2. draftRevision stays at the
+    // Edit + save → rev 3; publish → v2. draftRevision stays at the
     // saved value — publish never bumps it.
     await page.getByTestId("field-label-0").fill("Legal name");
     await page.getByTestId("save-draft").click();
@@ -2103,7 +2134,7 @@ test.describe("editor lifecycle controls (ES-4a — preview independent)", () =>
         });
         return f?.draftRevision;
       })
-      .toBe(4);
+      .toBe(3);
     await page.getByTestId("publish-form").click();
     await expect
       .poll(async () =>
@@ -2177,24 +2208,51 @@ test.describe("editor lifecycle controls (ES-4a — preview independent)", () =>
   test("a pending publish disables every editor + lifecycle control", async ({
     page,
   }) => {
-    // Slow every server-action POST so the pending window is observable.
-    await page.route(/onboarding\/forms/, async (route) => {
-      if (route.request().method() === "POST")
-        await new Promise((r) => setTimeout(r, 900));
-      await route.continue();
-    });
     const form = await seedForm("E2E P8A Pending", {
       draft: seedDefinition("E2E P8A Pending"),
     });
     await signIn(page, E2E.owner);
     await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
-    await page.getByTestId("publish-form").click();
-    await expect(page.getByTestId("field-label-0")).toBeDisabled();
-    await expect(page.getByTestId("add-field-number")).toBeDisabled();
-    await expect(page.getByTestId("save-draft")).toBeDisabled();
-    await expect(page.getByTestId("publish-form")).toBeDisabled();
-    await expect(page.getByTestId("archive-form")).toBeDisabled();
-    // After settlement the controls re-enable and v1 exists.
+
+    // Hold the publish POST deterministically — no timing window:
+    // `intercepted` resolves only when the write is genuinely in flight
+    // (the observed-POST handshake), `releaseGate` frees it from
+    // finally so a failed assertion can never wedge the route, and
+    // `postCount` proves exactly one publish per press.
+    let interceptedResolve: () => void = () => {};
+    let releaseResolve: () => void = () => {};
+    const intercepted = new Promise<void>((r) => (interceptedResolve = r));
+    const releaseGate = new Promise<void>((r) => (releaseResolve = r));
+    let postCount = 0;
+    await page.route(/onboarding\/forms/, async (route) => {
+      if (route.request().method() !== "POST") return route.continue();
+      postCount += 1;
+      interceptedResolve();
+      await releaseGate;
+      await route.continue();
+    });
+    // waitForResponse BEFORE unrouteAll — removing the route mid-hold
+    // leaves the request hanging.
+    const responseDone = page.waitForResponse(
+      (res) =>
+        res.request().method() === "POST" &&
+        res.url().includes("/onboarding/forms/"),
+    );
+    try {
+      await page.getByTestId("publish-form").click();
+      await intercepted; // the publish write is genuinely in flight
+      await expect(page.getByTestId("field-label-0")).toBeDisabled();
+      await expect(page.getByTestId("add-field-number")).toBeDisabled();
+      await expect(page.getByTestId("save-draft")).toBeDisabled();
+      await expect(page.getByTestId("publish-form")).toBeDisabled();
+      await expect(page.getByTestId("archive-form")).toBeDisabled();
+    } finally {
+      releaseResolve();
+      await responseDone;
+      await page.unrouteAll();
+    }
+    expect(postCount).toBe(1);
+    // After settlement v1 exists and the closed no-draft branch renders.
     await expect
       .poll(async () =>
         prisma.onboardingFormVersion.count({ where: { formId: form.id } }),

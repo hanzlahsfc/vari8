@@ -74,15 +74,19 @@ draftRevision, name]` byte-equality, version count, auditEvent count
 - `open-draft` — rendered on the `no-draft` branch; submits `formId`
   via `openDraft`; service-side replay of an already-open draft is
   idempotent.
-- `archive-form` — submits `formId` via `archiveForm`; on `ok`
-  `router.push` to the canonical list path (committed test asserts
-  `/onboarding/forms$` URL + ARCHIVED badge).
+- `archive-form` — rendered on BOTH surfaces: inside `DraftEditor` for
+  an open draft AND on the closed/no-draft branch alongside
+  `OpenDraftButton` (the service archives either state — Helios
+  placement note, no extra product scope); submits `formId` via
+  `archiveForm`; on `ok` `router.push` to the canonical list path
+  (committed test asserts `/onboarding/forms$` URL + ARCHIVED badge).
 - **Pending scope:** `pending = savePending || lifecyclePending` —
   every mutation control (name input, fieldset, save, publish,
-  archive) disables during ANY in-flight action. Wiring: publish and
-  archive render inside `DraftEditor` (outside the fieldset);
-  `open-draft` is a standalone `OpenDraftButton` client component (it
-  only renders when no editor is mounted).
+  archive) disables during ANY in-flight action. Wiring: publish
+  renders inside `DraftEditor` (outside the fieldset); archive renders
+  on the editor surface AND on the closed branch; `open-draft` is a
+  standalone `OpenDraftButton` client component (closed branch only —
+  it never renders while an editor is mounted).
 - Alert/typing identical to save: typed rejection → boundary message;
   transport → generic; no echo of internals/ids/payload.
 - **Tests-only inversion enumeration (Helios A — landed in prep commits
