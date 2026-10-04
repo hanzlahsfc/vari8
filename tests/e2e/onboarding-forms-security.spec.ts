@@ -696,6 +696,97 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     }
   });
 
+  // PD29 dual-role repair (Apollo f88468e4, least privilege): a
+  // PLATFORM_ADMIN account is denied onboarding form definitions EVEN WITH
+  // an ACTIVE OWNER/COACH membership. Distinct from the no-membership leg
+  // above (membership-gate only). platformRole + membership restored in
+  // finally.
+  test("PD29 dual-role arm A: owner flipped to PLATFORM_ADMIN (ACTIVE OWNER kept) is denied read + write", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8S DualRole Owner");
+    await signIn(page, E2E.owner);
+    const cap = await captureSaveDraft(page, form.id);
+    const editorUrl = `/workspace/${wsAId}/onboarding/forms/${form.id}`;
+    try {
+      // The owner fixture itself becomes PLATFORM_ADMIN, keeping its
+      // ACTIVE WORKSPACE_OWNER membership and its live session (the guard
+      // re-reads platformRole from the DB on every call).
+      await prisma.user.update({
+        where: { id: ownerUserId },
+        data: { platformRole: "PLATFORM_ADMIN" },
+      });
+      const ownerMembership = await prisma.workspaceMember.findUniqueOrThrow({
+        where: { id: ownerMemberId },
+      });
+      expect(ownerMembership).toMatchObject({
+        role: "WORKSPACE_OWNER",
+        status: "ACTIVE",
+      });
+      const readA = await page.goto(editorUrl);
+      console.log(`observed dual-role owner editor GET: ${readA?.status()}`);
+      // Soft so the write leg below still runs and is observed.
+      expect.soft(readA?.status()).toBe(403);
+      await resetRevision(form.id);
+      const beforeA = await formState(form.id);
+      const writeA = await postCaptured(page.context().request, cap);
+      console.log(`observed dual-role owner save status: ${writeA.status()}`);
+      await expectTypedDenial(writeA);
+      expect(await formState(form.id)).toEqual(beforeA);
+    } finally {
+      await prisma.user.update({
+        where: { id: ownerUserId },
+        data: { platformRole: "USER" },
+      });
+    }
+  });
+
+  test("PD29 dual-role arm B: PLATFORM_ADMIN fixture with a temporary ACTIVE COACH membership is denied read + write", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8S DualRole Coach");
+    await signIn(page, E2E.owner);
+    const cap = await captureSaveDraft(page, form.id);
+    const editorUrl = `/workspace/${wsAId}/onboarding/forms/${form.id}`;
+    const admin = await prisma.user.findUniqueOrThrow({
+      where: { email: PLATFORM_ADMIN_EMAIL },
+    });
+    let adminMemberId: string | null = null;
+    try {
+      // The platform-admin fixture gains a temporary ACTIVE COACH
+      // membership in wsA, then signs in with its own session.
+      expect(admin.platformRole).toBe("PLATFORM_ADMIN");
+      const adminMember = await prisma.workspaceMember.create({
+        data: {
+          workspaceId: wsAId,
+          userId: admin.id,
+          role: "COACH",
+          status: "ACTIVE",
+        },
+      });
+      adminMemberId = adminMember.id;
+      await signIn(page, PLATFORM_ADMIN_EMAIL);
+      const readB = await page.goto(editorUrl);
+      console.log(`observed dual-role coach editor GET: ${readB?.status()}`);
+      // Soft so the write leg below still runs and is observed.
+      expect.soft(readB?.status()).toBe(403);
+      await resetRevision(form.id);
+      const beforeB = await formState(form.id);
+      const writeB = await postCaptured(page.context().request, cap);
+      console.log(`observed dual-role coach save status: ${writeB.status()}`);
+      await expectTypedDenial(writeB);
+      expect(await formState(form.id)).toEqual(beforeB);
+    } finally {
+      if (adminMemberId) {
+        await prisma.workspaceMember.delete({ where: { id: adminMemberId } });
+      }
+    }
+    // The no-membership shape of the platform-admin fixture is restored.
+    expect(
+      await prisma.workspaceMember.count({ where: { userId: admin.id } }),
+    ).toBe(0);
+  });
+
   test("malformed action payload fails safely — zero writes, no internals echo", async ({
     page,
   }) => {

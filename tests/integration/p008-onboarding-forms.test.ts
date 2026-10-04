@@ -2483,4 +2483,141 @@ describe.skipIf(!enabled)("P-008 onboarding forms (real PG)", () => {
       });
     }
   });
+
+  // PD29 dual-role repair (Apollo f88468e4, least privilege): PLATFORM_ADMIN
+  // is denied P-008 form definitions even with an ACTIVE OWNER/COACH
+  // membership in the workspace. Every service op runs the real guard on
+  // the injected client / transaction client; FULL rows must not move.
+  it("PD29: dual-role PLATFORM_ADMIN + ACTIVE OWNER/COACH is role_denied on every op; full rows unchanged", async () => {
+    const ws = await workspace();
+    const owner = await user();
+    const m = await member(ws.id, owner.id, "WORKSPACE_OWNER");
+    const adminOwner = await user("PLATFORM_ADMIN");
+    await member(ws.id, adminOwner.id, "WORKSPACE_OWNER");
+    const adminCoach = await user("PLATFORM_ADMIN");
+    await member(ws.id, adminCoach.id, "COACH");
+
+    // One open-draft form and one closed (published, no draft) form so
+    // every op has an executable target if the guard were bypassed.
+    const openForm = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: ws.id,
+        name: "PD29 Open",
+        createdByMemberId: m.id,
+        draft: draftWith([field(0)]) as Prisma.InputJsonValue,
+        draftRevision: 1,
+      },
+    });
+    const closedForm = await prisma.onboardingForm.create({
+      data: {
+        workspaceId: ws.id,
+        name: "PD29 Closed",
+        createdByMemberId: m.id,
+        draft: Prisma.JsonNull,
+        draftRevision: 1,
+      },
+    });
+
+    const snapshot = async () => ({
+      forms: await prisma.onboardingForm.findMany({
+        where: { workspaceId: ws.id },
+        orderBy: { id: "asc" },
+      }),
+      versions: await prisma.onboardingFormVersion.findMany({
+        where: { form: { workspaceId: ws.id } },
+        orderBy: { id: "asc" },
+      }),
+      audits: await prisma.auditEvent.findMany({
+        where: { workspaceId: ws.id },
+        orderBy: { id: "asc" },
+      }),
+    });
+    const deniedReason = async (fn: () => Promise<unknown>) => {
+      try {
+        await fn();
+        return "ALLOWED";
+      } catch (error) {
+        return error instanceof AccessDeniedError
+          ? error.reason
+          : `other:${String(error)}`;
+      }
+    };
+
+    const before = await snapshot();
+    for (const actor of [adminOwner, adminCoach]) {
+      const s = session(actor.id);
+      const results = {
+        list: await deniedReason(() =>
+          listOnboardingForms(s, { workspaceId: ws.id }, prisma),
+        ),
+        get: await deniedReason(() =>
+          getOnboardingForm(
+            s,
+            { workspaceId: ws.id, formId: openForm.id },
+            prisma,
+          ),
+        ),
+        create: await deniedReason(() =>
+          createOnboardingForm(
+            s,
+            { workspaceId: ws.id, name: "PD29 Nope" },
+            prisma,
+          ),
+        ),
+        save: await deniedReason(() =>
+          saveOnboardingFormDraft(
+            s,
+            {
+              workspaceId: ws.id,
+              formId: openForm.id,
+              expectedRevision: 1,
+              draft: draftWith([field(0), field(1)]),
+            },
+            prisma,
+          ),
+        ),
+        publish: await deniedReason(() =>
+          publishOnboardingForm(
+            s,
+            { workspaceId: ws.id, formId: openForm.id, expectedRevision: 1 },
+            prisma,
+          ),
+        ),
+        open: await deniedReason(() =>
+          openOnboardingDraft(
+            s,
+            { workspaceId: ws.id, formId: closedForm.id },
+            prisma,
+          ),
+        ),
+        archive: await deniedReason(() =>
+          archiveOnboardingForm(
+            s,
+            { workspaceId: ws.id, formId: openForm.id },
+            prisma,
+          ),
+        ),
+      };
+      expect(results).toEqual({
+        list: "role_denied",
+        get: "role_denied",
+        create: "role_denied",
+        save: "role_denied",
+        publish: "role_denied",
+        open: "role_denied",
+        archive: "role_denied",
+      });
+      expect(await snapshot()).toEqual(before);
+    }
+
+    // Control: the USER owner in the same workspace is still allowed.
+    const listed = await listOnboardingForms(
+      session(owner.id),
+      { workspaceId: ws.id },
+      prisma,
+    );
+    expect(listed.map((f) => f.id).sort()).toEqual(
+      [openForm.id, closedForm.id].sort(),
+    );
+  });
 });

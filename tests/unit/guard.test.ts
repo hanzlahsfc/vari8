@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   AccessDeniedError,
   authorize,
+  authorizeCollection,
   type AuthorizationRepo,
 } from "../../lib/auth/guard";
 
@@ -444,5 +445,139 @@ describe("authorize — scopes", () => {
     expect(error?.action).toBe("read");
     expect(Object.keys(error ?? {})).not.toContain("clientName");
     expect(String(error?.message)).not.toMatch(/c1|w1|u1|client|workspace/i);
+  });
+});
+
+// PD29 dual-role repair (Apollo f88468e4, least privilege): a
+// PLATFORM_ADMIN account is denied onboarding form DEFINITIONS even when
+// the same account holds an ACTIVE WORKSPACE_OWNER/COACH membership.
+// Resource-specific — other resources keep their existing dual-role rules.
+describe("authorize — PD29 platform-admin dual-role on onboardingFormTemplates", () => {
+  const admin = {
+    id: "u1",
+    platformRole: "PLATFORM_ADMIN",
+    status: "ACTIVE",
+  } as const;
+  const forms = "onboardingFormTemplates" as const;
+
+  for (const role of ["WORKSPACE_OWNER", "COACH"] as const) {
+    it(`dual-role PLATFORM_ADMIN + ACTIVE ${role} is role_denied read AND write`, async () => {
+      const { repo } = makeRepo({
+        user: admin,
+        membership: { id: "m1", role, status: "ACTIVE" },
+      });
+      for (const action of ["read", "write"] as const) {
+        expect(
+          await reason(() =>
+            authorize(
+              session(),
+              { resource: forms, action, workspaceId: w },
+              repo,
+            ),
+          ),
+        ).toBe("role_denied");
+      }
+    });
+
+    it(`dual-role PLATFORM_ADMIN + ACTIVE ${role} is role_denied on the collection (list) path`, async () => {
+      const { repo } = makeRepo({
+        user: admin,
+        membership: { id: "m1", role, status: "ACTIVE" },
+      });
+      expect(
+        await reason(() =>
+          authorizeCollection(
+            session(),
+            { resource: forms, action: "read", workspaceId: w },
+            repo,
+          ),
+        ),
+      ).toBe("role_denied");
+    });
+
+    it(`control: USER + ACTIVE ${role} keeps workspace scope (authorize + collection)`, async () => {
+      const { repo } = makeRepo({
+        membership: { id: "m1", role, status: "ACTIVE" },
+      });
+      for (const action of ["read", "write"] as const) {
+        const ctx = await authorize(
+          session(),
+          { resource: forms, action, workspaceId: w },
+          repo,
+        );
+        expect(ctx.grantedScope).toBe("workspace");
+        expect(ctx.platformRole).toBe("USER");
+      }
+      const col = await authorizeCollection(
+        session(),
+        { resource: forms, action: "read", workspaceId: w },
+        repo,
+      );
+      expect(col.grantedScope).toBe("workspace");
+    });
+  }
+
+  it("no-membership PLATFORM_ADMIN stays a membership-gate denial (old leg, distinct reason)", async () => {
+    const { repo } = makeRepo({ user: admin, membership: null });
+    expect(
+      await reason(() =>
+        authorize(
+          session(),
+          { resource: forms, action: "read", workspaceId: w },
+          repo,
+        ),
+      ),
+    ).toBe("membership_missing_or_inactive");
+    expect(
+      await reason(() =>
+        authorizeCollection(
+          session(),
+          { resource: forms, action: "read", workspaceId: w },
+          repo,
+        ),
+      ),
+    ).toBe("membership_missing_or_inactive");
+    // No workspace at all: the matrix PLATFORM_ADMIN cell already denies.
+    expect(
+      await reason(() =>
+        authorize(session(), { resource: forms, action: "read" }, repo),
+      ),
+    ).toBe("role_denied");
+  });
+
+  it("non-regression: dual-role admin-owner keeps other resources' workspace rules", async () => {
+    const { repo } = makeRepo({
+      user: admin,
+      membership: { id: "m1", role: "WORKSPACE_OWNER", status: "ACTIVE" },
+    });
+    for (const action of ["read", "write"] as const) {
+      const ctx = await authorize(
+        session(),
+        { resource: "workspaceSettings", action, workspaceId: w },
+        repo,
+      );
+      expect(ctx.grantedScope).toBe("workspace");
+    }
+    const col = await authorizeCollection(
+      session(),
+      { resource: "workspaceSettings", action: "read", workspaceId: w },
+      repo,
+    );
+    expect(col.grantedScope).toBe("workspace");
+    const { repo: adminCoach } = makeRepo({
+      user: admin,
+      membership: { id: "m1", role: "COACH", status: "ACTIVE" },
+    });
+    const assigned = await authorize(
+      session(),
+      {
+        resource: "dailyTracking",
+        action: "read",
+        workspaceId: w,
+        clientProfileId: c,
+      },
+      adminCoach,
+    );
+    expect(assigned.grantedScope).toBe("assigned");
   });
 });
