@@ -2313,7 +2313,9 @@ test.describe("form definition preview (ES-4b — zero-mutation reads)", () => {
   /**
    * Six-kind definition with a per-field tag baked into every label — a
    * source mix-up (draft vs version vs wrong seq) shows up as visible
-   * text, never as an ambiguous count.
+   * text, never as an ambiguous count. Field labels and option labels
+   * share prefixes by design; EVERY label assertion below must use
+   * `{ exact: true }` so "TAG single" can't match "TAG single A".
    */
   const previewDefinition = (title: string, tag: string) => ({
     title,
@@ -2374,35 +2376,39 @@ test.describe("form definition preview (ES-4b — zero-mutation reads)", () => {
   const previewUrl = (formId: string, src?: string) =>
     `/workspace/${wsId}/onboarding/forms/${formId}/preview${src ? `?src=${src}` : ""}`;
 
-  test("draft preview renders every kind read-only; Enter submits nothing; workspace stays byte-identical", async ({
-    page,
-  }) => {
-    const form = await seedForm("E2E P8B Preview Draft", {
-      draft: previewDefinition("E2E P8B Preview Draft", "DRAFT"),
-    });
-    const before = await workspaceSnapshot();
-    await signIn(page, E2E.owner);
-    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
-    // Committed link contract: the open-draft editor exposes the draft
-    // preview link (the no-draft branch exposes the version one instead).
-    await expect(page.getByTestId("preview-draft-link")).toBeVisible();
+  /**
+   * Zero-mutation proof for ONE preview variant: the read must leave
+   * every workspace row (forms/versions/audits), the browser storage
+   * VALUES, and the captured non-GET request list byte-identical.
+   * `run` holds the navigation + render assertions of that variant.
+   */
+  const assertPreviewReadonlyZeroDelta = async (
+    page: Page,
+    run: () => Promise<void>,
+  ) => {
+    const wsBefore = await workspaceSnapshot();
     const storageBefore = await storageSnapshot(page);
     const mutating = trackNonGet(page);
-    await page.getByTestId("preview-draft-link").click();
-    await expect(page.getByTestId("onboarding-form-preview")).toBeVisible();
-    await expect(page.getByTestId("preview-source")).toContainText("draft");
-    const fields = page.getByTestId("preview-fields");
-    // All six kinds render — pinned per control TYPE so a wrong element
-    // can't hide inside a disabled-count total.
+    await run();
+    expect(mutating).toEqual([]);
+    expect(await storageSnapshot(page)).toBe(storageBefore);
+    expect(await workspaceSnapshot()).toEqual(wsBefore);
+  };
+
+  /** All six kinds render, each as its real control TYPE, all disabled. */
+  const expectSixKindsDisabled = async (
+    fields: ReturnType<Page["getByTestId"]>,
+    tag: string,
+  ) => {
     for (const label of [
-      "DRAFT short",
-      "DRAFT long",
-      "DRAFT number",
-      "DRAFT date",
-      "DRAFT single",
-      "DRAFT multi",
+      `${tag} short`,
+      `${tag} long`,
+      `${tag} number`,
+      `${tag} date`,
+      `${tag} single`,
+      `${tag} multi`,
     ]) {
-      await expect(fields.getByText(label)).toBeVisible();
+      await expect(fields.getByText(label, { exact: true })).toBeVisible();
     }
     await expect(fields.locator("input[type='text']")).toHaveCount(1);
     await expect(fields.locator("textarea")).toHaveCount(1);
@@ -2410,21 +2416,37 @@ test.describe("form definition preview (ES-4b — zero-mutation reads)", () => {
     await expect(fields.locator("input[type='date']")).toHaveCount(1);
     await expect(fields.locator("input[type='radio']")).toHaveCount(2);
     await expect(fields.locator("input[type='checkbox']")).toHaveCount(2);
-    // EVERY control is disabled — including the radios/checkboxes inside
-    // the two choice fieldsets — and there is no form to submit.
+    // EVERY control carries [disabled] — including the radios/checkboxes
+    // inside the two choice fieldsets — so no enabled control can hide.
     await expect(fields.locator("fieldset[disabled]")).toHaveCount(2);
     await expect(fields.locator("input[disabled]")).toHaveCount(
       await fields.locator("input").count(),
     );
     await expect(fields.locator("textarea[disabled]")).toHaveCount(1);
     await expect(fields.locator("input:not([disabled])")).toHaveCount(0);
-    await expect(
-      page.getByTestId("onboarding-form-preview").locator("form"),
-    ).toHaveCount(0);
-    await page.keyboard.press("Enter"); // must not submit anything
-    expect(mutating).toEqual([]);
-    expect(await storageSnapshot(page)).toBe(storageBefore);
-    expect(await workspaceSnapshot()).toEqual(before);
+  };
+
+  test("draft preview renders every kind read-only; Enter submits nothing; workspace stays byte-identical", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8B Preview Draft", {
+      draft: previewDefinition("E2E P8B Preview Draft", "DRAFT"),
+    });
+    await signIn(page, E2E.owner);
+    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+    // Committed link contract: the open-draft editor exposes the draft
+    // preview link (the no-draft branch exposes the version one instead).
+    await expect(page.getByTestId("preview-draft-link")).toBeVisible();
+    await assertPreviewReadonlyZeroDelta(page, async () => {
+      await page.getByTestId("preview-draft-link").click();
+      await expect(page.getByTestId("onboarding-form-preview")).toBeVisible();
+      await expect(page.getByTestId("preview-source")).toContainText("draft");
+      await expectSixKindsDisabled(page.getByTestId("preview-fields"), "DRAFT");
+      await expect(
+        page.getByTestId("onboarding-form-preview").locator("form"),
+      ).toHaveCount(0);
+      await page.keyboard.press("Enter"); // must not submit anything
+    });
   });
 
   test("src selection: missing/src=draft render the open draft; src=version renders the LATEST frozen version", async ({
@@ -2452,29 +2474,36 @@ test.describe("form definition preview (ES-4b — zero-mutation reads)", () => {
         ],
       },
     });
-    const before = await workspaceSnapshot();
     await signIn(page, E2E.owner);
-    const mutating = trackNonGet(page);
-    // Missing src AND explicit src=draft both render the open draft.
-    for (const url of [previewUrl(form.id), previewUrl(form.id, "draft")]) {
-      await page.goto(url);
+    // Draft variant — missing src AND explicit src=draft both render the
+    // open draft, with the same zero-delta proof on each read.
+    await assertPreviewReadonlyZeroDelta(page, async () => {
+      for (const url of [previewUrl(form.id), previewUrl(form.id, "draft")]) {
+        await page.goto(url);
+        await expect(page.getByTestId("onboarding-form-preview")).toBeVisible();
+        await expect(page.getByTestId("preview-source")).toContainText("draft");
+        await expect(
+          page.getByText("DRAFT short", { exact: true }),
+        ).toBeVisible();
+      }
+    });
+    // Version variant — the frozen LATEST seq (v2), never the draft or
+    // v1.
+    await assertPreviewReadonlyZeroDelta(page, async () => {
+      await page.goto(previewUrl(form.id, "version"));
       await expect(page.getByTestId("onboarding-form-preview")).toBeVisible();
-      await expect(page.getByTestId("preview-source")).toContainText("draft");
-      await expect(page.getByText("DRAFT short")).toBeVisible();
-    }
-    // src=version renders the frozen LATEST version — v2, not the draft,
-    // not v1.
-    await page.goto(previewUrl(form.id, "version"));
-    await expect(page.getByTestId("onboarding-form-preview")).toBeVisible();
-    await expect(page.getByTestId("preview-source")).toContainText("version 2");
-    await expect(page.getByText("V2 short")).toBeVisible();
-    await expect(page.getByText("V1 short")).toHaveCount(0);
-    await expect(page.getByText("DRAFT short")).toHaveCount(0);
-    expect(mutating).toEqual([]);
-    expect(await workspaceSnapshot()).toEqual(before);
+      await expect(page.getByTestId("preview-source")).toContainText(
+        "version 2",
+      );
+      await expect(page.getByText("V2 short", { exact: true })).toBeVisible();
+      await expect(page.getByText("V1 short", { exact: true })).toHaveCount(0);
+      await expect(page.getByText("DRAFT short", { exact: true })).toHaveCount(
+        0,
+      );
+    });
   });
 
-  test("unknown src and a version preview with zero history fail closed non-disclosing", async ({
+  test("edge src legs fail closed non-disclosing: unknown value, version with zero history, draft on a closed form", async ({
     page,
   }) => {
     const form = await seedForm("E2E P8B Preview Edge", {
@@ -2490,22 +2519,46 @@ test.describe("form definition preview (ES-4b — zero-mutation reads)", () => {
         ],
       },
     });
+    const closed = await seedForm("E2E P8B Preview Closed", {
+      draft: Prisma.DbNull,
+      versions: {
+        create: [
+          {
+            versionSeq: 1,
+            definition: previewDefinition("E2E P8B Preview Closed", "CLSD"),
+            publishOriginRevision: 1,
+            publishedByMemberId: ownerMemberId,
+          },
+        ],
+      },
+    });
     await signIn(page, E2E.owner);
+    const noPreview = async (res: Awaited<ReturnType<Page["goto"]>>) => {
+      expect([403, 404]).toContain(res?.status());
+      await expect(page.getByTestId("onboarding-form-preview")).toHaveCount(0);
+    };
     // An UNKNOWN src is never a silent draft fallback — the denial is
     // the same non-disclosing surface as unauthorized access.
-    const unknown = await page.goto(previewUrl(form.id, "bogus"));
-    expect([403, 404]).toContain(unknown?.status());
-    await expect(page.getByTestId("onboarding-form-preview")).toHaveCount(0);
-    await expect(page.getByText("LEAK short")).toHaveCount(0);
+    await noPreview(await page.goto(previewUrl(form.id, "bogus")));
+    await expect(page.getByText("LEAK short", { exact: true })).toHaveCount(0);
     // src=version on a form with ZERO published history fails the same
     // way — no draft leak, no empty-version fabrication.
     const noHistory = await seedForm("E2E P8B Preview NoHist", {
       draft: previewDefinition("E2E P8B Preview NoHist", "NOHIST"),
     });
-    const res = await page.goto(previewUrl(noHistory.id, "version"));
-    expect([403, 404]).toContain(res?.status());
-    await expect(page.getByTestId("onboarding-form-preview")).toHaveCount(0);
-    await expect(page.getByText("NOHIST short")).toHaveCount(0);
+    await noPreview(await page.goto(previewUrl(noHistory.id, "version")));
+    await expect(page.getByText("NOHIST short", { exact: true })).toHaveCount(
+      0,
+    );
+    // Draft-arm reads on a CLOSED form (published history, draft
+    // consumed) — there is no draft to preview: the same fail for
+    // BOTH the missing-src default and explicit src=draft.
+    for (const url of [previewUrl(closed.id), previewUrl(closed.id, "draft")]) {
+      await noPreview(await page.goto(url));
+      await expect(page.getByText("CLSD short", { exact: true })).toHaveCount(
+        0,
+      );
+    }
   });
 
   test("denied roles, foreign workspace, and nonexistent form get the identical non-disclosing denial", async ({
@@ -2514,6 +2567,7 @@ test.describe("form definition preview (ES-4b — zero-mutation reads)", () => {
     const form = await seedForm("E2E P8B Preview Denied", {
       draft: previewDefinition("E2E P8B Preview Denied", "DENIED"),
     });
+    const before = await workspaceSnapshot();
     // The assistant is the discriminating probe (passes the staff layout,
     // lacks the resource); every denied actor must see the SAME denial —
     // no preview surface, no definition text.
@@ -2528,7 +2582,9 @@ test.describe("form definition preview (ES-4b — zero-mutation reads)", () => {
       expect(res?.status()).toBe(403);
       await expect(page.getByTestId("access-denied")).toBeVisible();
       await expect(page.getByTestId("onboarding-form-preview")).toHaveCount(0);
-      await expect(page.getByText("DENIED short")).toHaveCount(0);
+      await expect(page.getByText("DENIED short", { exact: true })).toHaveCount(
+        0,
+      );
     }
     // Dual-member probe: the owner IS a wsB member, so a wsA formId under
     // the wsB URL exercises resource scoping — and must be visually
@@ -2539,7 +2595,9 @@ test.describe("form definition preview (ES-4b — zero-mutation reads)", () => {
     );
     expect(foreign?.status()).toBe(403);
     await expect(page.getByTestId("access-denied")).toBeVisible();
-    await expect(page.getByText("DENIED short")).toHaveCount(0);
+    await expect(page.getByText("DENIED short", { exact: true })).toHaveCount(
+      0,
+    );
     const foreignDenial =
       (await page.getByTestId("access-denied").textContent()) ?? "";
     const missing = await page.goto(
@@ -2549,6 +2607,44 @@ test.describe("form definition preview (ES-4b — zero-mutation reads)", () => {
     expect(await page.getByTestId("access-denied").textContent()).toBe(
       foreignDenial,
     );
+    // Denied reads write nothing either.
+    expect(await workspaceSnapshot()).toEqual(before);
+  });
+
+  test("an archived form's published history stays an allowed READ-ONLY version preview", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8B Preview Archived", {
+      status: "ARCHIVED",
+      archivedAt: new Date(),
+      archivedByMemberId: ownerMemberId,
+      draft: Prisma.DbNull,
+      versions: {
+        create: [
+          {
+            versionSeq: 1,
+            definition: previewDefinition("E2E P8B Preview Archived", "ARCH"),
+            publishOriginRevision: 1,
+            publishedByMemberId: ownerMemberId,
+          },
+        ],
+      },
+    });
+    await signIn(page, E2E.owner);
+    // Archived = permanently read-only, not unreadable — the frozen
+    // version remains previewable under the identical zero-mutation
+    // contract.
+    await assertPreviewReadonlyZeroDelta(page, async () => {
+      await page.goto(previewUrl(form.id, "version"));
+      await expect(page.getByTestId("onboarding-form-preview")).toBeVisible();
+      await expect(page.getByTestId("preview-source")).toContainText(
+        "version 1",
+      );
+      await expectSixKindsDisabled(page.getByTestId("preview-fields"), "ARCH");
+      await expect(
+        page.getByTestId("onboarding-form-preview").locator("form"),
+      ).toHaveCount(0);
+    });
   });
 
   test("the closed no-draft branch exposes the version preview link", async ({
@@ -2571,10 +2667,16 @@ test.describe("form definition preview (ES-4b — zero-mutation reads)", () => {
     await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
     await expect(page.getByTestId("no-draft")).toBeVisible();
     await expect(page.getByTestId("preview-version-link")).toBeVisible();
-    await page.getByTestId("preview-version-link").click();
-    await expect(page).toHaveURL(/preview\?src=version/);
-    await expect(page.getByTestId("preview-source")).toContainText("version 1");
-    await expect(page.getByText("VFROZEN short")).toBeVisible();
+    await assertPreviewReadonlyZeroDelta(page, async () => {
+      await page.getByTestId("preview-version-link").click();
+      await expect(page).toHaveURL(/preview\?src=version/);
+      await expect(page.getByTestId("preview-source")).toContainText(
+        "version 1",
+      );
+      await expect(
+        page.getByText("VFROZEN short", { exact: true }),
+      ).toBeVisible();
+    });
   });
 
   for (const width of [1440, 834, 390] as const) {
@@ -2586,21 +2688,26 @@ test.describe("form definition preview (ES-4b — zero-mutation reads)", () => {
       });
       await page.setViewportSize({ width, height: 900 });
       await signIn(page, E2E.coach);
-      await page.goto(previewUrl(form.id));
-      await expect(page.getByTestId("onboarding-form-preview")).toBeVisible();
-      const fields = page.getByTestId("preview-fields");
-      await expect(fields.locator("input:not([disabled])")).toHaveCount(0);
-      await expect(fields.locator("textarea:not([disabled])")).toHaveCount(0);
-      await expect(
-        page.getByTestId("onboarding-form-preview").locator("form"),
-      ).toHaveCount(0);
-      expect(
-        await page.evaluate(
-          () =>
-            document.documentElement.scrollWidth >
-            document.documentElement.clientWidth,
-        ),
-      ).toBe(false);
+      await assertPreviewReadonlyZeroDelta(page, async () => {
+        await page.goto(previewUrl(form.id));
+        await expect(page.getByTestId("onboarding-form-preview")).toBeVisible();
+        // The six kinds must actually render — the all-disabled counts
+        // are meaningless on an empty region.
+        await expectSixKindsDisabled(
+          page.getByTestId("preview-fields"),
+          `W${width}`,
+        );
+        await expect(
+          page.getByTestId("onboarding-form-preview").locator("form"),
+        ).toHaveCount(0);
+        expect(
+          await page.evaluate(
+            () =>
+              document.documentElement.scrollWidth >
+              document.documentElement.clientWidth,
+          ),
+        ).toBe(false);
+      });
     });
   }
 });

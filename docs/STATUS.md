@@ -5,6 +5,34 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-009 ES-4a ACCEPTED on forward line + ES-4b preview tests pinned/repaired
+
+- Root incremental ACCEPTANCE of ES-4a on this branch: prod `07c0d22`
+  - docs `a83af56` — root code inspection + Helios/Atlas/Orion new-code
+    PASSes. The old-B missing-checkpoint and the invalid first fwd logs
+    remain preserved, not waived, no historical approval. NOT final
+    P-008/HTTP-gate/merge. Platform dual-role question still human-pending.
+- ES-4b tests-only `3d9522f`: focused zero-mutation preview describe
+  (8 tests) — draft/src-selection/edge-src/denials/archived-read/link/
+  widths per the committed contract; historical-seq deliberately NOT
+  pinned (open product question #2).
+- Fresh prospective RED at `3d9522f`: `red-fwd-es4b-e2e-preview.log`
+  7f/1p (route/links absent; the unknown-src/no-history leg
+  immediate-PASSes under the framework 404 — named, not governing);
+  regressions `green-fwd-es4b-e2e-lifecycle-regress.log` 35/35,
+  `green-fwd-es4b-dom-regress.log` 40/40.
+- Root test inspection `cd035f04` ordered a tests-only repair before
+  any prod release: `{exact:true}` on all field-label assertions
+  (option labels share prefixes — substring match would mask later);
+  shared `assertPreviewReadonlyZeroDelta` wraps EVERY preview variant
+  (per-variant non-GET + storage VALUES + full workspace rows);
+  width variants now assert the six kinds actually render (disabled
+  counts can't be vacuous); missing-src/src=draft on a CLOSED form
+  pinned as a named fail; archived published history pinned as an
+  allowed read-only version preview under the same zero-delta
+  contract. `3d9522f`'s 7f/1p does not govern the fixed assertions —
+  a fresh RED on the repaired head is required before prod.
+
 ## 2026-10-04 — P-009 ES-4a FORWARD RECOVERY — closed-branch controls + publish/reopen refresh (NEW cycle)
 
 - Root adjudication `cd81077c`: the missing committed RED between impl A
