@@ -5,6 +5,49 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-009 ES-2B structure ops — implemented + gates (STOPPED for acceptance)
+
+- Root released ES-2B structure implementation (request
+  `3f8c0b3d-33c3-4ce3-b2e9-1229c7b9625c`), accepting the prospective RED
+  at `372499f` (record `88792af`); code-identical docs successors kept
+  that RED governing.
+- Production commit `741336d` — `components/onboarding/draft-editor.tsx`
+  ONLY: all six `add-field-*` route through `addDraftField`;
+  remove/move-up field with contiguous `0..n-1` `order` reindex; option
+  add/remove; immutable functional updates; surviving ids preserved,
+  new rows id-less, retired ids never reassigned; every real edit arms
+  dirty. Save stays INERT (`noop`, no action import/useTransition/
+  network/storage); closed/archived surfaces unchanged. No backend,
+  helper, page, or dependency changes.
+- Process deviation disclosed + preserved: the first post-impl capture
+  set wrote its logs INSIDE the worktree (relative-path capture
+  invocation) — its porcelain markers show accumulating `??` log files,
+  so the clean-window claim does not hold for that set. All ten
+  preserved as `attempt-*.log` (the 3 e2e carry an appended
+  misplacement ERRATUM + their real build identities); the NEWCURRENT
+  recapture used absolute log paths outside the worktree.
+- NEWCURRENT gates on clean committed head `741336d` (porcelain PATH
+  snapshots empty before/after, SHA stable in-window; logs under
+  `gate-logs/p008-editor-recovery/es2a-clean-recovery/`):
+  `green-es2b-dom-structure.log` 11/11 exit 0 ·
+  `green-es2b-dom-metadata-post-impl.log` 5/5 exit 0 ·
+  `green-es2b-es1-post-impl.log` 17/17 exit 0 ·
+  `raw-es2b-dom-fullfile-post-impl.log` honest 16 pass / 8 fail exit 1
+  (ES-3 save 5 + deferred payload 3 — all `saveDraft`-not-called /
+  inert-save assertions, enumerated) ·
+  `raw-es2b-format-post-impl.log` / `raw-es2b-typecheck-post-impl.log` /
+  `raw-es2b-lint-post-impl.log` exit 0.
+- Browser on owned `juno-p8-pg`/`p8e_e2e`, `CI=1`, production
+  `build && start`, port 3000 verified free:
+  `green-es2b-e2e-blank-option.log` 2/2 exit 0 ·
+  `green-es2b-e2e-local-structure.log` 3/3 exit 0 ·
+  `green-es2b-e2e-mount-describe.log` 17/17 exit 0 (superset:
+  mount/read-guards/widths/denial + local-edit + local-structure).
+- Build identity: per-run BUILD_ID snapshots `build-id-es2b-green-1/2/3.txt`;
+  run-set final `mHRDUx_GCuHTh5EMUgosR` sha256 `7370038a…`.
+- STOPPED for root incremental acceptance before ES-3. Save remains
+  INERT; no push/PR/merge/deploy.
+
 ## 2026-10-04 — P-009 ES-2A root incremental ACCEPTANCE recorded; ES-2B clean-RED checkpoint standing (STOPPED)
 
 - Root issued incremental ACCEPTANCE of the ES-2A delivered record

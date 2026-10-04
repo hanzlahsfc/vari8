@@ -83,6 +83,9 @@ reports, which remain preserved unchanged under the old branch and
   incremental ACCEPTANCE of `023de20` (zero blockers) — incremental
   only, not final P-008 completion or merge approval.
 - **ES-2B:** structure ops only, its own committed-tests-first cycle.
+  DONE pending acceptance: impl `741336d`, NEWCURRENT gates captured —
+  see STATUS entry 2026-10-04 (a first capture set was invalidated for
+  in-worktree log writes and preserved as `attempt-*`).
 - **ES-3:** save wiring, its own committed-tests-first cycle.
 - No push/PR/merge/deploy at any point; user merge approval is a separate
   later gate.
