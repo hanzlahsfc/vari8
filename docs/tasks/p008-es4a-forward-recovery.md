@@ -10,10 +10,10 @@
   session, mid-session membership removal (restored in finally),
   wsA→wsB + formId tampering by the A-only coach, no-membership
   PLATFORM_ADMIN (membership-gate proof only — PD29 dual-role tabled,
-  not asserted), truncated body. Captured `green-fwd-es5-security-
-http-v2.log` 7/7 exit 0 + `green-fwd-es5-e2e-full.log` 147p/12s
-  exit 0, BUILD_ID `n8VinkBVcWqj2Kq8LsdXL`. STOPPED before any
-  security production fix.
+  not asserted), truncated body. Captures: security spec
+  `green-fwd-es5-security-http-v2.log` 7/7 exit 0; full e2e
+  `green-fwd-es5-e2e-full.log` 147p/12s exit 0; BUILD_ID
+  `n8VinkBVcWqj2Kq8LsdXL`. STOPPED before any security production fix.
 - **Authorized by:** Apollo request `cd81077c-ef1c-4bb6-b3b8-7b98b502ebf0`
   (root adjudication of the B-gap on the `feature/p008-editor-save-recovery-es2a`
   branch).
