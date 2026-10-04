@@ -174,3 +174,15 @@ archive), explicitly named, NOT claimed complete. Disposable raw-name
 mutant killed exactly the normalized-title test; restored byte-exact.
 
 **STOPPED** for Helios/Atlas/Orion review pending root acceptance.
+
+## Root acceptance (2026-10-04)
+
+Root ACCEPTED the P-009 editor/save recovery increment at `0c6242b` /
+docs `d4cdd62` (Apollo `57523a99`): root inspection + Helios code PASS
+
+- Atlas gates/mutant PASS + Orion different-model PASS. Incremental
+  only — not final P-008, not merge/PR/deploy. Original in-recovery-tree
+  mutant deviation stays disclosed; the isolated-worktree helper+DOM
+  double-kill (`mutant-es3-helper-rawname-dom.log`) satisfies the mutant
+  requirement. Next slice: lifecycle/security plan in
+  `docs/tasks/p008-editor-lifecycle-security-plan.md`.

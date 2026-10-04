@@ -5,6 +5,25 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-009 Editor/Save recovery — root INCREMENTAL ACCEPTANCE
+
+- Root ACCEPTED the increment at production `0c6242b` / docs `d4cdd62`
+  (Apollo request `57523a99-a77e-467b-ba53-cc326b3076b5`): root
+  inspection + Helios code PASS + Atlas gates/mutant PASS + Orion
+  different-model implemented PASS. Incremental acceptance ONLY — not
+  final P-008 completion, not merge/PR/deploy approval.
+- Mutant resolution: the required double-kill is satisfied by
+  `mutant-es3-helper-rawname-dom.log` — isolated disposable worktree
+  `/tmp/p8-es3-mutant-wt` (detached `0c6242b`, disposed after);
+  `adoptSavedResult` raw-name mutant killed BOTH the direct ES-1b
+  helper test AND the real-DOM normalized-title test (46 pass / 2
+  fail); restored byte-exact (sha256 `9c92a802…` == committed blob).
+  The earlier DOM mutant disclosed as run in the recovery worktree
+  (append-only clarification in `mutant-es3-rawname-adoption.log`);
+  deviation preserved, not rewritten.
+- Next: bounded lifecycle/security PLAN ONLY under Apollo request
+  `57523a99` — see `docs/tasks/p008-editor-lifecycle-security-plan.md`.
+
 ## 2026-10-04 — P-009 ES-3 Save implementation — committed + gates (STOPPED for review)
 
 - Root incrementally ACCEPTED ES-2B at `741336d`/docs `a6a0fb6` (not
