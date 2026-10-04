@@ -38,7 +38,7 @@ are complete; product direction is now the configurable coaching system in
   `raw-es3-e2e-fullspec.log` — 49 pass / 5 fail exit 1. ALL 5 fails are
   later-lifecycle controls that do not exist yet (NOT claimed
   complete): `owner creates, edits, publishes, reopens, v2, and
-  archives`, `editor controls disable while a mutation is in flight`
+archives`, `editor controls disable while a mutation is in flight`
   (both missing `preview-draft-link`/`publish-form`/`archive-form`),
   and the 3 responsive `full lifecycle` cases at 1440/834/390.
   Save-foundation (12), mount (17), and all other suites GREEN.
