@@ -79,7 +79,9 @@ reports, which remain preserved unchanged under the old branch and
 
 - **ES-2A (this cycle):** RED checkpoint → root review → minimal impl →
   scoped GREEN (DOM subset + 3-width local-edit browser) + ES-1 regression.
-  DONE: impl `36a2f8f`, gates @`63dfa4e`, record `023de20`.
+  DONE: impl `36a2f8f`, gates @`63dfa4e`, record `023de20`. Root issued
+  incremental ACCEPTANCE of `023de20` (zero blockers) — incremental
+  only, not final P-008 completion or merge approval.
 - **ES-2B:** structure ops only, its own committed-tests-first cycle.
 - **ES-3:** save wiring, its own committed-tests-first cycle.
 - No push/PR/merge/deploy at any point; user merge approval is a separate

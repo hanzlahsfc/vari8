@@ -5,6 +5,37 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-009 ES-2A root incremental ACCEPTANCE recorded; ES-2B clean-RED checkpoint standing (STOPPED)
+
+- Root issued incremental ACCEPTANCE of the ES-2A delivered record
+  `023de20`: scope/raw-gate markers inspected, Helios NEW code PASS,
+  Atlas NEW evidence VALID, zero blockers. This closes ES-2A as an
+  INCREMENTAL acceptance only — it is NOT final P-008 completion and
+  NOT merge/PR/deploy approval; the feature remains local-only.
+- Append-only errata directive adopted (Atlas, non-blocking): a prior
+  RED-log epoch annotation was corrected IN PLACE — disclosed
+  deviation. The original erroneous annotation `epoch 1759608439` is
+  preserved as a historical annotation alongside the corrected
+  `epoch 1791055639` (= 2026-10-03T19:27:19Z, the RED build mtime,
+  inside that capture window). ERRATUM appended to
+  `gate-logs/p008-editor-recovery/es2a-clean-recovery/red-es2a-e2e-local-edit.log`;
+  no other raw lines edited. All corrections going forward are
+  append-only ERRATUM blocks.
+- Build identity reconciled: actual RED BUILD_ID is
+  `0WkgVkNAMs3l60aq1YrLE` (sha256 `467fb76a…`); the `…467` suffix in
+  preserved build references was a stray sha256-prefix concatenation
+  against the no-trailing-newline snapshot file — cosmetic only, and
+  hashes/snapshots reconcile (appended ERRATUM in
+  `green-es2a-e2e-mount-describe.log`; docs fix `372499f`).
+- ES-2B prep release `7344de53` unchanged (entry below): tests
+  `13483f5`, docs `372499f`, clean-RED captures + honest positives
+  recorded at `88792af`. The ES-2B clean-RED checkpoint STANDS for
+  root review; structure implementation is NOT started and awaits the
+  root release. Save remains ES-3. No reruns/holds for cosmetics; no
+  source edits during capture.
+- Head: this commit (docs only). Production unchanged at `36a2f8f`;
+  tests unchanged at `13483f5`.
+
 ## 2026-10-04 — P-009 ES-2B PREPARATION — tests committed + prospective RED (STOPPED for review)
 
 - Prep release `7344de53`. Tests-only commit `13483f5`: local-edit case
