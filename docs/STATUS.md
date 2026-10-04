@@ -5,6 +5,30 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-009 ES-4b PREVIEW IMPLEMENTED — full onboarding-forms spec ALL GREEN (68/68)
+
+- Root release `170d0e36` under the corrected `749ef1e` RED
+  (8f/1p): ONE bounded production commit `b4b19a0` —
+  `forms/[formId]/preview/page.tsx` (server component, same
+  `requireSessionUser` + `getFormForWorkspace` guarded read;
+  explicit src resolution: missing|draft → open draft, version →
+  LATEST frozen seq, unknown/duplicated/malformed → same
+  non-disclosing 403, absent draft/zero history → same fail; all six
+  kinds from a sorted defensive copy, every control disabled, no
+  form/submit/button/client import; archived history stays an
+  allowed read), `preview-draft-link` on the open-draft editor,
+  `preview-version-link` on the non-archived no-draft branch only
+  when history exists. No guard/backend/actions/deps changes; no
+  historical-seq selector.
+- Gates on clean `b4b19a0` (all run-capture.sh): format 0 · lint 0 ·
+  typecheck 0 · build 0 · DOM 40/40 · helpers 17/17 · unit 580/580 ·
+  integration 288/288 (`p8e_int`, CI=1) · focused preview 9/9 ·
+  focused lifecycle 35/35 · FULL onboarding-forms spec 68/68 —
+  the 4 previously-named preview REDs are GREEN; zero remaining
+  named REDs in this spec. BUILD_ID `EZ17DdUJSOuL5ZRNcGcDF`.
+- STOPPED for parallel review before ES-5; F3 HTTP security gates
+  remain outstanding (separate slice), no merge/push.
+
 ## 2026-10-04 — P-009 ES-4a ACCEPTED on forward line + ES-4b preview tests pinned/repaired
 
 - Root incremental ACCEPTANCE of ES-4a on this branch: prod `07c0d22`

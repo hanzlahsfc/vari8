@@ -1,8 +1,9 @@
 # P-009 ES-4a forward recovery — closed-branch controls + refresh
 
-- **Status:** implementation committed `07c0d22` under the new-cycle RED
-  at `394704e`; all gates GREEN (see `docs/STATUS.md`); STOPPED for
-  root's parallel code/evidence review before ES-4b.
+- **Status:** ES-4a ACCEPTED incrementally on this line (`07c0d22` +
+  `a83af56`). ES-4b preview implemented `b4b19a0` under the repaired
+  `749ef1e` RED — full onboarding-forms spec 68/68 GREEN; STOPPED for
+  parallel review before ES-5.
 - **Authorized by:** Apollo request `cd81077c-ef1c-4bb6-b3b8-7b98b502ebf0`
   (root adjudication of the B-gap on the `feature/p008-editor-save-recovery-es2a`
   branch).
