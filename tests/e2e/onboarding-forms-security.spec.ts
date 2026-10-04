@@ -298,6 +298,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     const before = await formState(form.id);
     const res = await postCaptured(page.context().request, cap);
     console.log(`observed positive-replay status: ${res.status()}`);
+    expect(res.status()).toBe(200);
     await expect
       .poll(
         async () =>
@@ -322,35 +323,45 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     const cap = await captureSaveDraft(page, form.id);
     const ctx = page.context().request;
 
-    // Hostile Origin, real Host: must produce ZERO writes. Observed
-    // reject class (framework vs typed) is recorded, not assumed.
+    // Hostile Origin, real Host: must produce ZERO writes. The
+    // OBSERVED reject class is the framework-level 500 "Invalid Server
+    // Actions request" — asserted distinctly from the typed-denial
+    // channel (denied actions return HTTP 200 with {ok:false}).
+    // Full-row snapshot equality pins zero writes, not just revision.
     await resetRevision(form.id);
+    const hostileBefore = await formState(form.id);
     const hostile = await postCaptured(ctx, cap, {
       setHeaders: { origin: "https://evil.example" },
     });
     console.log(`observed hostile-origin status: ${hostile.status()}`);
-    expect((await formState(form.id)).form.draftRevision).toBe(1);
+    expect(hostile.status()).toBe(500);
+    expect(await formState(form.id)).toEqual(hostileBefore);
 
-    // Missing Origin: observe-and-record — no assumed framework reject.
+    // Missing Origin — OBSERVED behavior in this build: the action
+    // executes and the write lands (200, revision +1, audit +1).
+    // Pinned as a full-snapshot diagnostic record of app-level
+    // behavior — NOT an edge-safety claim (the owned edge should
+    // enforce Origin at deploy time; asserted honestly either way
+    // when a production gate changes this).
     await resetRevision(form.id);
+    const missingBefore = await formState(form.id);
     const missing = await postCaptured(ctx, cap, {
       dropHeaders: ["origin"],
     });
     console.log(`observed missing-origin status: ${missing.status()}`);
-    // Whatever the framework does, the outcome is pinned honestly.
-    const missingState = await formState(form.id);
-    if (missingState.form.draftRevision === 2) {
-      console.log(
-        "missing-origin EXECUTED the write — recorded as app-level behavior",
-      );
-    } else {
-      console.log("missing-origin produced no write");
-    }
+    const missingAfter = await formState(form.id);
+    expect(missing.status()).toBe(200);
+    expect(missingAfter.form.draftRevision).toBe(2);
+    expect(missingAfter.audits.length).toBe(missingBefore.audits.length + 1);
+    expect(missingAfter.versions).toEqual(missingBefore.versions);
 
     // Hostile Origin + spoofed X-Forwarded-Host — APP-LEVEL diagnostic
     // only: the owned edge must strip/overwrite XFH; this records what
-    // the app does if it reaches it. No guard config is changed.
+    // the app does if the spoof reaches it. OBSERVED: the action
+    // executes (200, write + audit land). No guard config is changed
+    // and NO public-edge safety is claimed.
     await resetRevision(form.id);
+    const xfhBefore = await formState(form.id);
     const xfh = await postCaptured(ctx, cap, {
       setHeaders: {
         origin: "https://evil.example",
@@ -358,14 +369,11 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       },
     });
     console.log(`observed hostile-origin+xfh status: ${xfh.status()}`);
-    const xfhState = await formState(form.id);
-    if (xfhState.form.draftRevision === 2) {
-      console.log(
-        "XFH spoof EXECUTED at app level — deployment-edge gate applies",
-      );
-    } else {
-      console.log("XFH spoof produced no write");
-    }
+    const xfhAfter = await formState(form.id);
+    expect(xfh.status()).toBe(200);
+    expect(xfhAfter.form.draftRevision).toBe(2);
+    expect(xfhAfter.audits.length).toBe(xfhBefore.audits.length + 1);
+    expect(xfhAfter.versions).toEqual(xfhBefore.versions);
   });
 
   test("no-session, forged-cookie, and sessionVersion revocation all deny with zero writes", async ({
@@ -388,6 +396,10 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     console.log(
       `observed no-session status: ${noSession.status()} (no-origin: ${noSessionNoOrigin.status()})`,
     );
+    // Typed-denial channel: the action runs, session gate fails, and
+    // the result is a typed {ok:false} over HTTP 200 — NOT a framework
+    // reject. Pinned distinctly from the hostile-Origin 500 class.
+    expect(noSession.status()).toBe(200);
     expect(await formState(form.id)).toEqual(before);
 
     // Forged/stale session cookie — real cookie NAME (never logged),
@@ -408,6 +420,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       timeout: 15_000,
     });
     console.log(`observed forged-cookie status: ${forged.status()}`);
+    expect(forged.status()).toBe(200);
     expect((await formState(form.id)).form.draftRevision).toBe(1);
 
     // Revoked session: bump the user's sessionVersion — the JWT sv
@@ -429,6 +442,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       console.log(
         `observed revoked-session status: ${revoked.status()} (no-origin: ${revokedNoOrigin.status()})`,
       );
+      expect(revoked.status()).toBe(200);
       const after = await formState(form.id);
       expect(after.form.draftRevision).toBe(1);
       expect(after.audits).toEqual(before.audits);
@@ -456,6 +470,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       const before = await formState(form.id);
       const res = await postCaptured(page.context().request, cap);
       console.log(`observed membership-revoked status: ${res.status()}`);
+      expect(res.status()).toBe(200);
       expect(await formState(form.id)).toEqual(before);
     } finally {
       await prisma.workspaceMember.upsert({
@@ -500,6 +515,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     );
     const wsTampered = await postCaptured(ctx, cap, { body: arm1 });
     console.log(`observed ws-tamper status: ${wsTampered.status()}`);
+    expect(wsTampered.status()).toBe(200);
     const afterArm1B = await formState(formB.id);
     expect(afterArm1B.form.draftRevision).toBe(1);
     expect(afterArm1B.audits).toEqual([]);
@@ -524,6 +540,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       `observed formid-tamper status: ${foreign.status()} vs nonexistent: ${ghost.status()}`,
     );
     expect(foreign.status()).toBe(ghost.status());
+    expect(foreign.status()).toBe(200);
     const afterArm2B = await formState(formB.id);
     expect(afterArm2B.form.draftRevision).toBe(1);
     expect(afterArm2B.audits).toEqual([]);
@@ -573,6 +590,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       console.log(
         `observed denied-role status (${email.split("@")[0]}): ${res.status()}`,
       );
+      expect(res.status()).toBe(200);
       expect(await formState(form.id)).toEqual(legBefore);
     }
   });
@@ -595,6 +613,9 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       body: truncated,
     });
     console.log(`observed malformed-body status: ${res.status()}`);
+    // Framework-level parse reject (observed 500 "Unexpected end of
+    // form") — same non-typed class as the hostile-Origin reject.
+    expect(res.status()).toBe(500);
     const text = await res.text();
     // Safe failure must not echo internals — no stack/file/ORM markers
     // and never the seeded content.
