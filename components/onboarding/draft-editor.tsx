@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import {
+  addDraftField,
   initialDraftState,
   reseedDraftState,
   type DraftField,
@@ -27,16 +28,19 @@ const isChoice = (kind: DraftFieldKind) =>
 const noop = () => {};
 
 /**
- * P-008-R ES-2A — metadata editing + dirty arming + props reseed.
+ * P-008-R ES-2A + ES-2B — metadata editing, structure ops, dirty arming,
+ * props reseed.
  *
  * Editing EXISTING metadata (form name, field label/required/help, option
  * label) updates local state and arms the save control; all of it is
  * client-local — no action invocation, no network/storage/DB delta.
  * Incoming server props flow through `reseedDraftState`: dirty local
  * edits are never clobbered, clean state adopts only a same-or-newer
- * revision (monotonic). Structure operations (add/remove/move field,
- * add/remove option) and the save action itself remain INERT for the
- * ES-2B / ES-3 cycles.
+ * revision (monotonic). ES-2B adds client-local structure operations —
+ * add/remove/move-up field and add/remove option — all immutable updates
+ * with contiguous 0..n-1 `order`, surviving ids preserved, new rows
+ * id-less, retired ids never reassigned. The save action itself remains
+ * INERT for ES-3.
  */
 export function DraftEditor({
   initialName,
@@ -65,6 +69,57 @@ export function DraftEditor({
 
   const updateName = (name: string) =>
     setState((prev) => ({ ...prev, name, dirty: true }));
+
+  const addField = (kind: DraftFieldKind) =>
+    setState((prev) => addDraftField(prev, kind));
+
+  const removeField = (index: number) =>
+    setState((prev) => ({
+      ...prev,
+      dirty: true,
+      fields: prev.fields
+        .filter((_, i) => i !== index)
+        .map((f, i) => (f.order === i ? f : { ...f, order: i })),
+    }));
+
+  const moveFieldUp = (index: number) =>
+    setState((prev) => {
+      if (index <= 0 || index >= prev.fields.length) {
+        return prev;
+      }
+      const fields = prev.fields.slice();
+      [fields[index - 1], fields[index]] = [fields[index], fields[index - 1]];
+      return {
+        ...prev,
+        dirty: true,
+        fields: fields.map((f, i) => (f.order === i ? f : { ...f, order: i })),
+      };
+    });
+
+  const addOption = (fieldIndex: number) =>
+    setState((prev) => ({
+      ...prev,
+      dirty: true,
+      fields: prev.fields.map((f, i) =>
+        i === fieldIndex
+          ? { ...f, options: [...(f.options ?? []), { label: "" }] }
+          : f,
+      ),
+    }));
+
+  const removeOption = (fieldIndex: number, optionIndex: number) =>
+    setState((prev) => ({
+      ...prev,
+      dirty: true,
+      fields: prev.fields.map((f, i) =>
+        i === fieldIndex
+          ? {
+              ...f,
+              options: (f.options ?? []).filter((_, j) => j !== optionIndex),
+            }
+          : f,
+      ),
+    }));
 
   const updateField = (index: number, patch: Partial<DraftField>) =>
     setState((prev) => ({
@@ -166,7 +221,7 @@ export function DraftEditor({
                       />
                       <button
                         aria-label={`Remove option ${oi + 1}`}
-                        onClick={noop}
+                        onClick={() => removeOption(index, oi)}
                         type="button"
                       >
                         Remove
@@ -175,7 +230,7 @@ export function DraftEditor({
                   ))}
                   <button
                     data-testid={`add-option-${index}`}
-                    onClick={noop}
+                    onClick={() => addOption(index)}
                     type="button"
                   >
                     Add option
@@ -186,14 +241,14 @@ export function DraftEditor({
                 <button
                   aria-label={`Move field ${index + 1} up`}
                   disabled={index === 0}
-                  onClick={noop}
+                  onClick={() => moveFieldUp(index)}
                   type="button"
                 >
                   Up
                 </button>
                 <button
                   aria-label={`Remove field ${index + 1}`}
-                  onClick={noop}
+                  onClick={() => removeField(index)}
                   type="button"
                 >
                   Remove
@@ -206,7 +261,7 @@ export function DraftEditor({
               <button
                 data-testid={`add-field-${kind}`}
                 key={kind}
-                onClick={noop}
+                onClick={() => addField(kind)}
                 type="button"
               >
                 {`Add ${kind}`}
