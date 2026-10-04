@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 
+import { saveDraft } from "@/app/workspace/[workspaceId]/onboarding/actions";
 import {
   addDraftField,
+  adoptSavedResult,
   initialDraftState,
   reseedDraftState,
   type DraftField,
@@ -25,11 +27,19 @@ const KINDS: readonly DraftFieldKind[] = [
 const isChoice = (kind: DraftFieldKind) =>
   kind === "singleChoice" || kind === "multiChoice";
 
-const noop = () => {};
+const GENERIC_MESSAGE = "Something went wrong. Please try again in a moment.";
 
 /**
- * P-008-R ES-2A + ES-2B — metadata editing, structure ops, dirty arming,
- * props reseed.
+ * Copy a draft field for the outgoing payload: an emptied helpText
+ * normalizes to omission — the cleared string is never sent (local
+ * state is untouched).
+ */
+const toPayloadField = ({ helpText, ...field }: DraftField): DraftField =>
+  helpText ? { ...field, helpText } : field;
+
+/**
+ * P-008-R ES-2A + ES-2B + ES-3 — metadata editing, structure ops, dirty
+ * arming, props reseed, save wiring.
  *
  * Editing EXISTING metadata (form name, field label/required/help, option
  * label) updates local state and arms the save control; all of it is
@@ -39,10 +49,21 @@ const noop = () => {};
  * revision (monotonic). ES-2B adds client-local structure operations —
  * add/remove/move-up field and add/remove option — all immutable updates
  * with contiguous 0..n-1 `order`, surviving ids preserved, new rows
- * id-less, retired ids never reassigned. The save action itself remains
- * INERT for ES-3.
+ * id-less, retired ids never reassigned.
+ *
+ * ES-3 save wiring: an explicit press issues ONE saveDraft call with the
+ * bounded payload (formId, expectedRevision, name, draftJson). While the
+ * action is in flight the whole fieldset plus the outside name/save
+ * controls disable. A press clears the prior alert; a typed rejection
+ * surfaces the boundary's safe message and a transport rejection the
+ * generic message (never internals, ids, or payload text) — edits and
+ * the old revision stay, so an explicit retry re-sends the same
+ * expectedRevision and stays stale-guarded. Success adopts the
+ * server-normalized definition wholesale via `adoptSavedResult`.
  */
 export function DraftEditor({
+  workspaceId,
+  formId,
   initialName,
   initialRevision,
   initialDraft,
@@ -56,6 +77,8 @@ export function DraftEditor({
   const [state, setState] = useState<DraftState>(() =>
     initialDraftState(initialName, initialRevision, initialDraft),
   );
+  const [alert, setAlert] = useState("");
+  const [pending, startTransition] = useTransition();
 
   // Route incoming server props through the monotonic seam.
   useEffect(() => {
@@ -148,6 +171,45 @@ export function DraftEditor({
       ),
     }));
 
+  const save = () => {
+    // Explicit pending/clean guard — a press on a disabled control or a
+    // double dispatch can never issue a second action call.
+    if (pending || !state.dirty) {
+      return;
+    }
+    // A new press clears any standing alert before the action runs.
+    setAlert("");
+    const formData = new FormData();
+    formData.set("formId", formId);
+    formData.set("expectedRevision", String(state.revision));
+    formData.set("name", state.name);
+    formData.set(
+      "draftJson",
+      JSON.stringify({
+        title: state.name,
+        fields: state.fields.map(toPayloadField),
+      }),
+    );
+    startTransition(async () => {
+      let result: Awaited<ReturnType<typeof saveDraft>>;
+      try {
+        result = await saveDraft(workspaceId, formData);
+      } catch {
+        // Transport rejection — the outcome is unknown (a committed-but-
+        // lost response is possible). Surface the generic message only;
+        // edits and the old revision stay so an explicit retry remains
+        // stale-guarded. Never blindly retry, never echo internals.
+        setAlert(GENERIC_MESSAGE);
+        return;
+      }
+      if (result.ok) {
+        setState((prev) => adoptSavedResult(prev, result.value));
+      } else {
+        setAlert(result.message);
+      }
+    });
+  };
+
   return (
     <>
       <div className="auth-form">
@@ -156,6 +218,7 @@ export function DraftEditor({
           <input
             className="auth-input"
             data-testid="form-name"
+            disabled={pending}
             id="onboarding-form-name"
             onChange={(e) => updateName(e.target.value)}
             type="text"
@@ -163,7 +226,7 @@ export function DraftEditor({
           />
         </label>
       </div>
-      <fieldset data-testid="draft-editor">
+      <fieldset data-testid="draft-editor" disabled={pending}>
         <div className="auth-form">
           {state.fields.map((field, index) => (
             <div className="auth-field" key={index}>
@@ -270,12 +333,12 @@ export function DraftEditor({
           </div>
         </div>
       </fieldset>
-      <div role="alert" />
+      <div role="alert">{alert}</div>
       <button
         className="auth-button"
         data-testid="save-draft"
-        disabled={!state.dirty}
-        onClick={noop}
+        disabled={pending || !state.dirty}
+        onClick={save}
         type="button"
       >
         Save draft
