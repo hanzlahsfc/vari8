@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { forbidden } from "next/navigation";
 
 import { DraftEditor } from "@/components/onboarding/draft-editor";
@@ -137,6 +138,14 @@ export default async function OnboardingFormEditorPage({
               </p>
               {!archived ? (
                 <OpenDraftButton formId={formId} workspaceId={workspaceId} />
+              ) : null}
+              {!archived && form.versions.length > 0 ? (
+                <Link
+                  data-testid="preview-version-link"
+                  href={`/workspace/${encodeURIComponent(workspaceId)}/onboarding/forms/${formId}/preview?src=version`}
+                >
+                  Preview latest version
+                </Link>
               ) : null}
             </>
           )}

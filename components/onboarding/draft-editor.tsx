@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
@@ -446,6 +447,12 @@ export function DraftEditor({
       >
         Archive
       </button>
+      <Link
+        data-testid="preview-draft-link"
+        href={`/workspace/${encodeURIComponent(workspaceId)}/onboarding/forms/${formId}/preview`}
+      >
+        Preview draft
+      </Link>
     </>
   );
 }
