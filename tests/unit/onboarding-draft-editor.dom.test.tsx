@@ -41,13 +41,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { DraftField } from "../../components/onboarding/state";
 import type { FormField } from "@/lib/onboarding/forms";
-import { saveDraft } from "@/app/workspace/[workspaceId]/onboarding/actions";
+import {
+  archiveForm,
+  openDraft,
+  publishForm,
+  saveDraft,
+} from "@/app/workspace/[workspaceId]/onboarding/actions";
 
 vi.mock("@/app/workspace/[workspaceId]/onboarding/actions", () => ({
   saveDraft: vi.fn(),
+  publishForm: vi.fn(),
+  archiveForm: vi.fn(),
+  openDraft: vi.fn(),
 }));
 
 const saveDraftMock = vi.mocked(saveDraft);
+const publishFormMock = vi.mocked(publishForm);
+const archiveFormMock = vi.mocked(archiveForm);
+const openDraftMock = vi.mocked(openDraft);
 
 const MODULE_PATH = "../../components/onboarding/draft-editor";
 
@@ -125,7 +136,12 @@ const expectValue = (testid: string, value: string) =>
   expect(input(testid).value).toBe(value);
 
 afterEach(cleanup);
-beforeEach(() => saveDraftMock.mockReset());
+beforeEach(() => {
+  saveDraftMock.mockReset();
+  publishFormMock.mockReset();
+  archiveFormMock.mockReset();
+  openDraftMock.mockReset();
+});
 
 describe("DraftEditor — mount surface + client-local edit contract", () => {
   it("mounts editor-ready: fields ordered, inputs enabled, clean disabled save", async () => {
@@ -819,5 +835,239 @@ describe("DraftEditor — structure-ops payload subset (deferred to ES-3)", () =
       { optionId: "o_a", label: "Yes" },
       { optionId: "o_b", label: "No" },
     ]);
+  });
+});
+
+// ES-4a prep pins (Apollo release caa50bf4): lifecycle controls —
+// publish + archive live inside DraftEditor (outside the fieldset),
+// reopen lives in a standalone component. ALL RED while the scaffold
+// renders no lifecycle controls; preview is a separate ES-4b concern
+// and is deliberately not exercised here.
+const publishResult = { ok: true as const, value: { versionSeq: 1 } };
+
+describe("DraftEditor — lifecycle controls (intentionally RED until ES-4a)", () => {
+  it("publish is enabled on a clean mount, disabled while dirty, re-enabled after save", async () => {
+    const { DraftEditor } = await load();
+    saveDraftMock.mockResolvedValue(
+      savedResult(2, "Intake", [
+        savedField("f_a", { label: "First" }),
+        savedField("f_b", { label: "Second", order: 1 }),
+      ]),
+    );
+    publishFormMock.mockResolvedValue(publishResult);
+    render(<DraftEditor {...baseProps} />);
+    // Clean mounted draft: publish is a legal next step.
+    expectEnabled("publish-form");
+    expectEnabled("archive-form");
+    // Dirty disables publish — a saved-current clean draft is required.
+    fireEvent.change(input("form-name"), {
+      target: { value: "Edited name" },
+    });
+    expectDisabled("publish-form");
+    expectEnabled("archive-form");
+    // After the save lands clean, publish re-enables.
+    fireEvent.click(control("save-draft"));
+    await act(async () => {});
+    expectEnabled("publish-form");
+  });
+
+  it("publish issues publishForm exactly once with formId + the CURRENT expectedRevision", async () => {
+    const { DraftEditor } = await load();
+    saveDraftMock.mockResolvedValue(
+      savedResult(2, "Intake", [
+        savedField("f_a", { label: "First" }),
+        savedField("f_b", { label: "Second", order: 1 }),
+      ]),
+    );
+    publishFormMock.mockResolvedValue(publishResult);
+    render(<DraftEditor {...baseProps} />);
+    // Save first so the adopted revision (2) is what publish must send.
+    fireEvent.change(input("field-label-0"), {
+      target: { value: "Relabeled" },
+    });
+    fireEvent.click(control("save-draft"));
+    await act(async () => {});
+    fireEvent.click(control("publish-form"));
+    await act(async () => {});
+    expect(publishFormMock).toHaveBeenCalledTimes(1);
+    const [wsArg, formData] = publishFormMock.mock.calls[0];
+    expect(wsArg).toBe("ws-test");
+    expect(formData.get("formId")).toBe("form-test");
+    expect(formData.get("expectedRevision")).toBe("2");
+  });
+
+  it("a pending publish disables the fieldset, name, save, AND archive controls", async () => {
+    const { DraftEditor } = await load();
+    let release: (value: typeof publishResult) => void = () => {};
+    const pendingPublish = new Promise<typeof publishResult>((resolve) => {
+      release = resolve;
+    });
+    publishFormMock.mockImplementation(() => pendingPublish);
+    render(<DraftEditor {...baseProps} />);
+    fireEvent.click(control("publish-form"));
+    try {
+      expect(publishFormMock).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId("draft-editor").matches(":disabled")).toBe(
+        true,
+      );
+      expectDisabled("form-name");
+      expectDisabled("save-draft");
+      expectDisabled("publish-form");
+      expectDisabled("archive-form");
+    } finally {
+      await act(async () => {
+        release(publishResult);
+      });
+    }
+    expectEnabled("form-name");
+    expectEnabled("publish-form");
+  });
+
+  it("a pending archive disables the fieldset, name, save, AND publish controls", async () => {
+    const { DraftEditor } = await load();
+    let release: (value: {
+      ok: true;
+      value: { formId: string };
+    }) => void = () => {};
+    const pendingArchive = new Promise<{ ok: true; value: { formId: string } }>(
+      (resolve) => {
+        release = resolve;
+      },
+    );
+    archiveFormMock.mockImplementation(() => pendingArchive);
+    render(<DraftEditor {...baseProps} />);
+    fireEvent.click(control("archive-form"));
+    try {
+      expect(archiveFormMock).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId("draft-editor").matches(":disabled")).toBe(
+        true,
+      );
+      expectDisabled("form-name");
+      expectDisabled("save-draft");
+      expectDisabled("publish-form");
+      expectDisabled("archive-form");
+    } finally {
+      await act(async () => {
+        release({ ok: true, value: { formId: "form-test" } });
+      });
+    }
+    expectEnabled("form-name");
+  });
+
+  it("a typed publish rejection shows the safe alert and preserves unsaved edits", async () => {
+    const { DraftEditor } = await load();
+    publishFormMock.mockResolvedValue({ ok: false, message: STALE_MESSAGE });
+    render(<DraftEditor {...baseProps} />);
+    fireEvent.change(input("field-label-0"), {
+      target: { value: "Unsaved local edit" },
+    });
+    // Publish is gated off while dirty, so the stale race is exercised
+    // from a clean post-save state — the typed rejection must still
+    // surface the boundary's safe message and keep the saved edits.
+    saveDraftMock.mockResolvedValue(
+      savedResult(2, "Intake", [
+        savedField("f_a", { label: "Unsaved local edit" }),
+        savedField("f_b", { label: "Second", order: 1 }),
+      ]),
+    );
+    fireEvent.click(control("save-draft"));
+    await act(async () => {});
+    fireEvent.click(control("publish-form"));
+    await act(async () => {});
+    expect(screen.getByRole("alert").textContent).toContain(STALE_MESSAGE);
+    // The alert cleared on the press and the failed publish left edits
+    // intact; publish may be pressed again explicitly.
+    expectEnabled("publish-form");
+  });
+
+  it("a transport publish rejection shows the generic alert and never blindly retries", async () => {
+    const { DraftEditor } = await load();
+    const transportError = Promise.reject(new Error("publish aborted"));
+    transportError.catch(() => {});
+    publishFormMock.mockImplementation((...args) =>
+      (args as unknown[]).length === 0
+        ? (Promise.resolve() as unknown as ReturnType<typeof publishForm>)
+        : transportError,
+    );
+    render(<DraftEditor {...baseProps} />);
+    fireEvent.click(control("publish-form"));
+    await act(async () => {});
+    expect(screen.getByRole("alert").textContent).toContain(GENERIC_MESSAGE);
+    expect(screen.getByRole("alert").textContent).not.toContain("aborted");
+    expect(publishFormMock).toHaveBeenCalledTimes(1);
+    expectEnabled("publish-form");
+  });
+
+  it("an explicit retry after an unknown publish outcome re-sends the SAME expectedRevision (replay-safe)", async () => {
+    const { DraftEditor } = await load();
+    publishFormMock
+      .mockRejectedValueOnce(new Error("response lost"))
+      .mockResolvedValueOnce(publishResult);
+    render(<DraftEditor {...baseProps} />);
+    fireEvent.click(control("publish-form"));
+    await act(async () => {});
+    fireEvent.click(control("publish-form"));
+    await act(async () => {});
+    expect(publishFormMock).toHaveBeenCalledTimes(2);
+    // Unknown outcome → the retry carries the same expectedRevision, so a
+    // committed-but-lost first publish replays to the same versionSeq
+    // server-side instead of minting a second version.
+    expect(publishFormMock.mock.calls[0][1].get("expectedRevision")).toBe(
+      publishFormMock.mock.calls[1][1].get("expectedRevision"),
+    );
+    expect(screen.getByRole("alert").textContent).toBe("");
+  });
+});
+
+// Reopen is a separate client component on the no-draft branch — its
+// module must exist for the harness to mount it, so the inert scaffold
+// (explicit no-op) stands in until ES-4a production.
+const OPEN_DRAFT_MODULE = "../../components/onboarding/open-draft-button";
+const loadOpenDraft = () =>
+  import(OPEN_DRAFT_MODULE) as Promise<{
+    OpenDraftButton: (props: {
+      workspaceId: string;
+      formId: string;
+    }) => JSX.Element;
+  }>;
+
+describe("OpenDraftButton — reopen surface (intentionally RED until ES-4a)", () => {
+  it("issues openDraft exactly once with formId", async () => {
+    const { OpenDraftButton } = await loadOpenDraft();
+    openDraftMock.mockResolvedValue({
+      ok: true as const,
+      value: {
+        revision: 4,
+        definition: { title: "Intake", fields: [] },
+      },
+    });
+    render(<OpenDraftButton workspaceId="ws-test" formId="form-test" />);
+    fireEvent.click(control("open-draft"));
+    await act(async () => {});
+    expect(openDraftMock).toHaveBeenCalledTimes(1);
+    const [wsArg, formData] = openDraftMock.mock.calls[0];
+    expect(wsArg).toBe("ws-test");
+    expect(formData.get("formId")).toBe("form-test");
+  });
+
+  it("disables while pending and surfaces a typed rejection safely", async () => {
+    const { OpenDraftButton } = await loadOpenDraft();
+    let release: (value: { ok: false; message: string }) => void = () => {};
+    const pending = new Promise<{ ok: false; message: string }>((resolve) => {
+      release = resolve;
+    });
+    openDraftMock.mockImplementation(() => pending);
+    render(<OpenDraftButton workspaceId="ws-test" formId="form-test" />);
+    fireEvent.click(control("open-draft"));
+    try {
+      expect(openDraftMock).toHaveBeenCalledTimes(1);
+      expectDisabled("open-draft");
+    } finally {
+      await act(async () => {
+        release({ ok: false, message: STALE_MESSAGE });
+      });
+    }
+    expect(screen.getByRole("alert").textContent).toContain(STALE_MESSAGE);
+    expectEnabled("open-draft");
   });
 });

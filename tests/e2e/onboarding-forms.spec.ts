@@ -627,10 +627,10 @@ test.describe("editor mount + read guards", () => {
     "open-draft",
   ] as const;
 
-  async function expectMountReadOnly(page: Page) {
-    // Mount is READ-ONLY in EVERY state this slice, not only archived:
-    // the name control is disabled, no named mutation control exists, and
-    // the editor region contains no submit/button at all.
+  async function expectArchivedReadOnly(page: Page) {
+    // ARCHIVED mount is permanently read-only: the name control is
+    // disabled, no named mutation control exists (reopen is never
+    // offered), and the editor region contains no button at all.
     await expect(page.getByTestId("form-name")).toBeDisabled();
     for (const testid of MUTATION_TESTIDS) {
       await expect(page.getByTestId(testid)).toHaveCount(0);
@@ -640,6 +640,21 @@ test.describe("editor mount + read guards", () => {
         .getByTestId("onboarding-form-editor")
         .locator("button, [type='submit']"),
     ).toHaveCount(0);
+  }
+
+  async function expectNoDraftMount(page: Page) {
+    // No-draft mount (published history, draft consumed): name stays
+    // disabled and read-only, the ONLY controls are the reopen +
+    // archive lifecycle buttons — no save/publish (nothing to save),
+    // and no other button renders in the region.
+    await expect(page.getByTestId("form-name")).toBeDisabled();
+    await expect(page.getByTestId("open-draft")).toBeEnabled();
+    await expect(page.getByTestId("archive-form")).toBeEnabled();
+    await expect(page.getByTestId("save-draft")).toHaveCount(0);
+    await expect(page.getByTestId("publish-form")).toHaveCount(0);
+    await expect(
+      page.getByTestId("onboarding-form-editor").locator("button"),
+    ).toHaveCount(2);
   }
 
   async function expectAllControlsDisabled(page: Page, region: string) {
@@ -654,19 +669,19 @@ test.describe("editor mount + read guards", () => {
   }
 
   /**
-   * Open-draft mount = editor-ready surface (ES-2 contract): name and
-   * field inputs are ENABLED for metadata editing; local edit controls
-   * (add/remove/move) may exist, but the ONLY server-mutation control is
-   * a CLEAN (disabled) save. Reopen/publish/archive controls do not
-   * exist in this slice.
+   * Open-draft mount = editor-ready surface: name and field inputs are
+   * ENABLED for metadata editing; the CLEAN save control is disabled;
+   * the lifecycle controls exist — publish is ENABLED (the mounted draft
+   * is clean/saved-current), archive is ENABLED, and reopen does NOT
+   * render on an open draft. No submit-type control exists.
    */
   async function expectEditorReady(page: Page) {
     await expect(page.getByTestId("form-name")).toBeEnabled();
     await expect(page.getByTestId("save-draft")).toBeVisible();
     await expect(page.getByTestId("save-draft")).toBeDisabled();
-    for (const testid of ["publish-form", "archive-form", "open-draft"]) {
-      await expect(page.getByTestId(testid)).toHaveCount(0);
-    }
+    await expect(page.getByTestId("publish-form")).toBeEnabled();
+    await expect(page.getByTestId("archive-form")).toBeEnabled();
+    await expect(page.getByTestId("open-draft")).toHaveCount(0);
     await expect(
       page.getByTestId("onboarding-form-editor").locator("[type='submit']"),
     ).toHaveCount(0);
@@ -823,7 +838,7 @@ test.describe("editor mount + read guards", () => {
     );
     await expect(page.getByTestId("no-draft")).toBeVisible();
     await expect(page.getByTestId("draft-editor")).toHaveCount(0);
-    await expectMountReadOnly(page);
+    await expectNoDraftMount(page);
     expect(mutating).toEqual([]);
     expect(await workspaceSnapshot()).toEqual(before);
   });
@@ -861,7 +876,7 @@ test.describe("editor mount + read guards", () => {
     await expect(page.getByTestId("archived-banner")).toBeVisible();
     // Permanently read-only: reopen is NEVER offered on an archived form,
     // and no save/publish/archive control may render at all.
-    await expectMountReadOnly(page);
+    await expectArchivedReadOnly(page);
     expect(mutating).toEqual([]);
     expect(await workspaceSnapshot()).toEqual(before);
   });
@@ -898,7 +913,7 @@ test.describe("editor mount + read guards", () => {
     await expect(page.getByTestId("archived-banner")).toBeVisible();
     await expect(page.getByTestId("draft-editor")).toBeVisible();
     await expect(page.getByTestId("draft-editor")).toContainText("Full name");
-    await expectMountReadOnly(page);
+    await expectArchivedReadOnly(page);
     await expectAllControlsDisabled(page, "draft-editor");
     expect(mutating).toEqual([]);
     expect(await workspaceSnapshot()).toEqual(before);
@@ -2020,4 +2035,196 @@ test.describe("responsive + keyboard", () => {
       await fullLifecycle(page, name, width);
     });
   }
+});
+
+test.describe("editor lifecycle controls (ES-4a — preview independent)", () => {
+  test.beforeEach(removeFixtures);
+  test.afterEach(removeFixtures);
+
+  const seedForm = (
+    name: string,
+    extra: Omit<
+      Prisma.OnboardingFormUncheckedCreateInput,
+      "workspaceId" | "name" | "createdByMemberId"
+    > = {},
+  ) =>
+    prisma.onboardingForm.create({
+      data: {
+        workspaceId: wsId,
+        name,
+        createdByMemberId: ownerMemberId,
+        draftRevision: 1,
+        ...extra,
+      },
+      select: { id: true },
+    });
+
+  test("publish → closed → reopen seeds → edit → save → publish v2", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8A Publish", {
+      draft: seedDefinition("E2E P8A Publish"),
+    });
+    await signIn(page, E2E.owner);
+    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+
+    // Publish the clean mounted draft → frozen v1 + no-draft state.
+    await expect(page.getByTestId("publish-form")).toBeEnabled();
+    await page.getByTestId("publish-form").click();
+    await expect
+      .poll(async () =>
+        prisma.onboardingFormVersion.count({ where: { formId: form.id } }),
+      )
+      .toBe(1);
+    await expect(page.getByTestId("no-draft")).toBeVisible();
+    await expect(page.getByTestId("draft-editor")).toHaveCount(0);
+
+    // Reopen seeds a fresh draft from v1; revision advances by one.
+    await page.getByTestId("open-draft").click();
+    await expect(page.getByTestId("draft-editor")).toBeVisible();
+    await expect(page.getByTestId("field-label-0")).toHaveValue("Full name");
+    await expect
+      .poll(async () => {
+        const f = await prisma.onboardingForm.findUnique({
+          where: { id: form.id },
+        });
+        return f?.draftRevision;
+      })
+      .toBe(3);
+
+    // Edit + save → rev 4; publish → v2. draftRevision stays at the
+    // saved value — publish never bumps it.
+    await page.getByTestId("field-label-0").fill("Legal name");
+    await page.getByTestId("save-draft").click();
+    await expect
+      .poll(async () => {
+        const f = await prisma.onboardingForm.findUnique({
+          where: { id: form.id },
+        });
+        return f?.draftRevision;
+      })
+      .toBe(4);
+    await page.getByTestId("publish-form").click();
+    await expect
+      .poll(async () =>
+        prisma.onboardingFormVersion.count({ where: { formId: form.id } }),
+      )
+      .toBe(2);
+    const v2 = await prisma.onboardingFormVersion.findUniqueOrThrow({
+      where: { formId_versionSeq: { formId: form.id, versionSeq: 2 } },
+    });
+    expect(
+      (v2.definition as { fields: { label: string }[] }).fields[0].label,
+    ).toBe("Legal name");
+  });
+
+  test("archive from an open-draft state lands the form on the archived list", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8A Archive Open", {
+      draft: seedDefinition("E2E P8A Archive Open"),
+    });
+    await signIn(page, E2E.owner);
+    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+    await page.getByTestId("archive-form").click();
+    await expect(page).toHaveURL(/onboarding\/forms$/);
+    await expect(
+      page.getByTestId("onboarding-forms-table").getByText("ARCHIVED"),
+    ).toBeVisible();
+    // The archived form page itself is permanently read-only.
+    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+    await expect(page.getByTestId("archived-banner")).toBeVisible();
+    for (const testid of [
+      "save-draft",
+      "publish-form",
+      "archive-form",
+      "open-draft",
+    ]) {
+      await expect(page.getByTestId(testid)).toHaveCount(0);
+    }
+  });
+
+  test("archive from a closed (published, no draft) state archives the form", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8A Archive Closed", {
+      draft: Prisma.DbNull,
+      versions: {
+        create: [
+          {
+            versionSeq: 1,
+            definition: seedDefinition("E2E P8A Archive Closed"),
+            publishOriginRevision: 1,
+            publishedByMemberId: ownerMemberId,
+          },
+        ],
+      },
+    });
+    await signIn(page, E2E.owner);
+    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+    // Closed state: reopen + archive are the only lifecycle controls.
+    await expect(page.getByTestId("open-draft")).toBeEnabled();
+    await expect(page.getByTestId("archive-form")).toBeEnabled();
+    await expect(page.getByTestId("save-draft")).toHaveCount(0);
+    await expect(page.getByTestId("publish-form")).toHaveCount(0);
+    await page.getByTestId("archive-form").click();
+    await expect(page).toHaveURL(/onboarding\/forms$/);
+    await expect(
+      page.getByTestId("onboarding-forms-table").getByText("ARCHIVED"),
+    ).toBeVisible();
+  });
+
+  test("a pending publish disables every editor + lifecycle control", async ({
+    page,
+  }) => {
+    // Slow every server-action POST so the pending window is observable.
+    await page.route(/onboarding\/forms/, async (route) => {
+      if (route.request().method() === "POST")
+        await new Promise((r) => setTimeout(r, 900));
+      await route.continue();
+    });
+    const form = await seedForm("E2E P8A Pending", {
+      draft: seedDefinition("E2E P8A Pending"),
+    });
+    await signIn(page, E2E.owner);
+    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+    await page.getByTestId("publish-form").click();
+    await expect(page.getByTestId("field-label-0")).toBeDisabled();
+    await expect(page.getByTestId("add-field-number")).toBeDisabled();
+    await expect(page.getByTestId("save-draft")).toBeDisabled();
+    await expect(page.getByTestId("publish-form")).toBeDisabled();
+    await expect(page.getByTestId("archive-form")).toBeDisabled();
+    // After settlement the controls re-enable and v1 exists.
+    await expect
+      .poll(async () =>
+        prisma.onboardingFormVersion.count({ where: { formId: form.id } }),
+      )
+      .toBe(1);
+    await expect(page.getByTestId("no-draft")).toBeVisible();
+  });
+
+  test("a stale publish shows the safe alert and writes no version", async ({
+    page,
+  }) => {
+    const form = await seedForm("E2E P8A Stale", {
+      draft: seedDefinition("E2E P8A Stale"),
+      draftRevision: 5,
+    });
+    await signIn(page, E2E.owner);
+    await page.goto(`/workspace/${wsId}/onboarding/forms/${form.id}`);
+    // Another writer commits first — the mounted revision is now stale.
+    await prisma.onboardingForm.update({
+      where: { id: form.id },
+      data: { draftRevision: { increment: 1 } },
+    });
+    await page.getByTestId("publish-form").click();
+    await expect(
+      page.getByTestId("onboarding-form-editor").getByRole("alert"),
+    ).toContainText(
+      "This form changed while you were editing. Reload and try again.",
+    );
+    expect(
+      await prisma.onboardingFormVersion.count({ where: { formId: form.id } }),
+    ).toBe(0);
+  });
 });
