@@ -5,6 +5,53 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-04 — P-009 ES-3 Save implementation — committed + gates (STOPPED for review)
+
+- Root incrementally ACCEPTED ES-2B at `741336d`/docs `a6a0fb6` (not
+  final P-008/merge approval) and RELEASED ES-3 minimal Save
+  implementation (Apollo request
+  `0b4ac5d9-7c59-4717-8540-726c155369b9`), accepting the committed RED
+  at `d537ec4`.
+- Impl commit `0c6242b` — `components/onboarding/draft-editor.tsx` ONLY
+  (+73/−10): imports `saveDraft` + `adoptSavedResult` + `useTransition`;
+  explicit press → ONE `saveDraft(workspaceId, formData)` with
+  `formId`/`expectedRevision`/`name`/`draftJson` (editor-ordered fields);
+  pending/clean guard; `pending` disables the whole `<fieldset>` plus
+  the outside name input and save control; press clears prior alert;
+  typed rejection → boundary's safe message, transport rejection →
+  generic message only (no internals/ids/payload echo), edits + old
+  revision preserved, no blind retry, retry stays stale-guarded;
+  success adopts server-normalized title/fields/ids/revision via
+  `adoptSavedResult`; emptied `helpText` omitted in outgoing copied
+  fields without mutating local state. No backend/helper/page/
+  dependency changes; closed/archived surfaces unchanged.
+- Gates on clean committed head `0c6242b` (porcelain PATH snapshots
+  empty before/after, SHA stable in-window; logs under
+  `gate-logs/p008-editor-recovery/es2a-clean-recovery/`):
+  `green-es3-dom-fullfile.log` 31/31 exit 0 · `green-es3-es1.log`
+  17/17 exit 0 · `raw-es3-unit-full.log` 571/571 exit 0 ·
+  `raw-es3-format.log` / `raw-es3-typecheck.log` / `raw-es3-lint.log`
+  exit 0 · `raw-es3-build.log` exit 0 · `raw-es3-integration.log`
+  288/288 exit 0 (`juno-p8-pg`, disposable `p8e_int`, `CI=1`).
+- Browser full-spec baseline on owned `juno-p8-pg`/`p8e_e2e`, `CI=1`,
+  production `build && start`, port 3000 verified free:
+  `raw-es3-e2e-fullspec.log` — 49 pass / 5 fail exit 1. ALL 5 fails are
+  later-lifecycle controls that do not exist yet (NOT claimed
+  complete): `owner creates, edits, publishes, reopens, v2, and
+  archives`, `editor controls disable while a mutation is in flight`
+  (both missing `preview-draft-link`/`publish-form`/`archive-form`),
+  and the 3 responsive `full lifecycle` cases at 1440/834/390.
+  Save-foundation (12), mount (17), and all other suites GREEN.
+  BUILD_ID `nnKimZIPjT1sVpmck2kfD` (`build-id-es3-fullspec.txt`).
+- Disposable raw-name mutant (required, `mutant-es3-rawname-adoption.log`):
+  `adoptSavedResult` bypassed so the raw local name is adopted — exactly
+  the server-normalized-title DOM test failed (30 pass / 1 fail, exit 1);
+  restored byte-exact (sha256 `a57b7492…` matches committed impl),
+  clean tree, post-restore DOM 31/31.
+- STOPPED for Helios code / Atlas evidence / Orion substantive review.
+  No push/PR/merge/deploy; lifecycle/preview/archive controls not
+  started.
+
 ## 2026-10-04 — P-009 ES-3 tests-only prep — committed RED checkpoint (STOPPED before Save impl)
 
 - Root released ES-3 TESTS-ONLY preparation while ES-2B review runs

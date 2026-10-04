@@ -153,3 +153,24 @@ mount attempt (`attempt-…-badpattern.log`); two BUILD_IDENTITY
 annotation concatenations corrected in place with inline notes.
 
 **STOPPED** before ES-3 Save implementation pending root acceptance.
+
+## ES-3 Save implementation (commit `0c6242b`, 2026-10-04)
+
+**Scope:** `components/onboarding/draft-editor.tsx` only (+73/−10).
+`saveDraft(workspaceId, formData)` once per explicit press — bounded
+`formId`/`expectedRevision`/`name`/`draftJson` payload; pending/clean
+guard; `useTransition` pending disables fieldset + outside name/save;
+press clears prior alert; typed rejection → boundary message,
+transport → generic only; edits + old revision preserved, no blind
+retry; success via `adoptSavedResult`; emptied `helpText` omitted in
+copied payload fields. No backend/helper/page/dep changes.
+
+**Gates (clean `0c6242b`, empty porcelain windows, logs in
+`gate-logs/p008-editor-recovery/es2a-clean-recovery/`):** DOM 31/31,
+ES-1 17/17, full unit 571/571, format/typecheck/lint/build 0,
+integration 288/288 (`p8e_int`). Full e2e spec 49 pass / 5 fail — the
+5 are later-lifecycle controls not yet implemented (preview/publish/
+archive), explicitly named, NOT claimed complete. Disposable raw-name
+mutant killed exactly the normalized-title test; restored byte-exact.
+
+**STOPPED** for Helios/Atlas/Orion review pending root acceptance.
