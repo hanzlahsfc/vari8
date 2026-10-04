@@ -9,10 +9,13 @@
  * invocation, no fake outcome. ES-4a production wires the real
  * `openDraft` call, pending disable, and alert surface.
  */
-export function OpenDraftButton(_props: {
+export function OpenDraftButton(props: {
   workspaceId: string;
   formId: string;
 }) {
+  // Inert scaffold: props are accepted (call-site contract) but unused
+  // until ES-4a wires the real openDraft call.
+  void props;
   return (
     <>
       <div role="alert" />
