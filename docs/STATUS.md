@@ -5,6 +5,36 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-05 — P-008 targeted integration retry GREEN; full gate remains FAILED
+
+- The user specifically authorized a three-file retry on the disposable
+  `p8e_int` database, including those files' fixture truncation. Juno
+  confirmed a clean worktree and healthy read-only database preflight,
+  then ran only the three failed files sequentially on committed
+  `10acc9b5293c1ed5e77a06a3aff1e5252b7d71be`:
+  `retry-p008-int-forms.log` 46/46, `retry-p008-int-s1c.log` 9/9,
+  `retry-p008-int-nutrition.log` 7/7, each exit 0 and bound to clean
+  before/after porcelain. All logs remain outside Git under
+  `gate-logs/p008-final-gate-28d1796/`. No full-suite or browser
+  rerun was authorized or performed.
+- The former 24-file integration capture remains FAILED (entry below).
+  A PostgreSQL checkpoint took approximately 2987s during that run;
+  later targeted runs passed in seconds with healthy I/O. Host/VM
+  starvation is a strong hypothesis, but the first wait was not
+  captured and the cause is not proven. A `public.users` lookup on a
+  schema-less database seen in the server log is unexplained.
+- Atlas completed a read-only whole-diff inventory. Helios's bounded
+  action/retry/migration review and Orion's bounded independent security
+  review returned PASS on `5036796..28d1796`, not a final feature
+  verdict. Orion noted a non-blocking global audit-status vocabulary
+  widening. Helios corrected an unsupported S1-C-first-stall claim;
+  his temporary review artifact was moved byte-exact outside Git
+  (SHA-256 `32f40871…3893a`), restoring clean porcelain.
+- Still required: specifically authorized full integration and E2E
+  runs on the eventual candidate tree, final evidence reconciliation,
+  owned-edge verification before deployment claim, and user authority
+  for any push/PR/merge/deploy. No such action was taken.
+
 ## 2026-10-05 — P-008 final local gates — integration FAILED; browser not run
 
 - On clean committed `28d179690a51d0a5c1ebc954d8617ab779755885`, Juno

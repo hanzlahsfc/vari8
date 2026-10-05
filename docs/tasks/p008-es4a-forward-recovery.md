@@ -71,6 +71,25 @@
   `gate-logs/p008-editor-recovery/es2a-clean-recovery/`; all attempts
   preserved including invalid ones; no edits during a capture.
 
+## Targeted integration retry — 2026-10-05 (not full-gate closure)
+
+With explicit user approval for the three failed files' fixture
+truncation on disposable `p8e_int`, Juno rechecked database health and
+ran only those files on clean committed `10acc9b`: P-008 forms 46/46,
+S1-C assignments 9/9, nutrition import 7/7, each exit 0. Raw logs
+`retry-p008-int-{forms,s1c,nutrition}.log` under outside-Git
+`gate-logs/p008-final-gate-28d1796/` bind SHA and empty before/after
+porcelain. The full integration attempt below still exited 1; no full
+suite or browser rerun has occurred on this docs-only successor.
+A 2987s PostgreSQL checkpoint supports transient I/O starvation as a
+hypothesis, but no in-stall lock/activity snapshot proves the first
+wait; a schema-less `public.users` lookup remains unexplained. Atlas
+whole-diff inventory and bounded Helios/Orion read-only reviews are
+complete (both reviewer scopes PASS, not whole-feature approval). Orion
+noted a non-blocking global audit-status vocabulary widening. Helios
+corrected an unsupported timeout attribution and preserved his
+untracked review artifact outside Git; the worktree is clean.
+
 ## Final local gate attempt — 2026-10-05, integration blocker
 
 Juno captured the exact `28d179690a51d0a5c1ebc954d8617ab779755885`
