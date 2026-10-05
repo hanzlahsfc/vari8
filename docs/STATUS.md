@@ -5,6 +5,30 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-05 — P-008 PD29 DUAL-ROLE FIX — scoped local review acceptance
+
+- Production `814620a0aed638062ac85e52d9e7a8dee21b117d`, tests
+  `904cb1292c14975260618ab6b24c2c4e0aa21674`, and prior docs
+  `afa7cd230d2599bbef8300858afe1ce08b3fae26` received three
+  independent read-only reviews: Helios code/contract PASS; Orion
+  different-model security PASS; Atlas evidence VALID (zero discrepancies).
+- Helios and Orion verified both guard paths, exact resource scope,
+  denial ordering, all seven guarded service paths, dual-role tests and
+  unchanged USER/other-resource behavior. Atlas bound RED/GREEN chronology,
+  clean porcelain, exact SHA, redaction, gate counts and byte-bound GREEN
+  BUILD_IDs. No reviewer reran tests or changed files.
+- Scoped PD29 dual-role fix is locally accepted on these pins. This is
+  not whole-feature or merge readiness. The previous STOPPED-for-review
+  entries below describe the state before these receipts, not a current
+  production hold. The PD29 gate logs referenced by `afa7cd2` remain
+  the builder's captures on clean committed `814620a`; no new suite has
+  been run on this docs-only record.
+- Still open: final integrated gate set on the eventual candidate tree,
+  independent whole-diff review, owned-edge Origin/Host/XFH/Forwarded
+  verification before any deployment claim, unresolved missing-Origin
+  policy/HTTP foreign-ID coverage decisions, and explicit user authority
+  for push/PR/merge/deploy. No such action was taken.
+
 ## 2026-10-04 — P-008 PD29 DUAL-ROLE FIX IMPLEMENTED `814620a` — all gates GREEN; STOPPED for review
 
 - Apollo bounded release `518b483f`, under the independently reviewed

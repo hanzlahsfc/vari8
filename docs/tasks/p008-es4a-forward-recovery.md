@@ -71,6 +71,22 @@
   `gate-logs/p008-editor-recovery/es2a-clean-recovery/`; all attempts
   preserved including invalid ones; no edits during a capture.
 
+## PD29 reconciliation addendum — 2026-10-05
+
+The integration accounting below was written on `793b0e0` before the
+PD29 dual-role repair and remains historical for that pin. The tabled
+PLATFORM_ADMIN-with-membership item in its security caveats and remaining
+gates was resolved locally by tests `904cb12`, production guard fix
+`814620a`, and the docs record `afa7cd2`: Helios code/contract PASS,
+Orion different-model security PASS, Atlas evidence VALID on those
+exact pins. No reviewer ran tests or changed files. The scoped PD29
+increment is accepted locally, not as final P-008 sign-off. Fresh final
+integrated gates, whole-diff independent review, owned-edge verification,
+and explicit user authority for any push/PR/merge/deploy remain open.
+See `docs/STATUS.md` and the PD29 section of
+`docs/tasks/p008-editor-lifecycle-security-plan.md` for the bounded
+review and gate details.
+
 ## Integration accounting (PLAN-ONLY, Apollo `59423372`)
 
 Local completeness record for the P-008 onboarding form-definition

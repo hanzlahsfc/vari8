@@ -484,3 +484,22 @@ closing the earlier v2/v4 attestation gap.
 
 STOPPED for Helios code review, Orion different-model security review
 and Atlas evidence review. No push/PR/merge/deploy.
+
+### PD29 review reconciliation — 2026-10-05 (docs-only)
+
+- Helios code/contract PASS and Orion different-model security PASS on
+  production `814620a0aed638062ac85e52d9e7a8dee21b117d`, tests
+  `904cb1292c14975260618ab6b24c2c4e0aa21674`, docs
+  `afa7cd230d2599bbef8300858afe1ce08b3fae26`. Both checked the
+  two guard paths, seven P-008 service paths, dual-role tests, USER and
+  other-resource controls, and scope/denial placement.
+- Atlas evidence VALID on the same pins, zero discrepancies: clean
+  committed RED before the guard fix, clean GREEN on `814620a`, exact
+  chronology and gate counts, redacted URLs, and GREEN browser BUILD_IDs
+  printed inside each capture window. The earlier RED browser BUILD_ID
+  remains attested only; the unpreserved scratch runs remain disclosed.
+- These are read-only reviewer receipts, not reviewer test executions or
+  human authorization. The PD29 dual-role repair is accepted locally as
+  one scoped increment; the preceding STOPPED entries are historical.
+  No final integrated suite was run on this docs-only record and no
+  push/PR/merge/deploy was authorized or performed.
