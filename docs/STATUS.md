@@ -5,6 +5,26 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-05 — P-008 optional HTTP tests-only candidate BLOCKED for repair
+
+- Atlas committed isolated tests-only spec `e8969bf` off approved
+  plan `7ac83b9`; only `tests/e2e/onboarding-forms-security.spec.ts`
+  changed (+513/-6). Builder static format/lint/typecheck passed;
+  no browser/DB run occurred and this accepted worktree stayed
+  untouched. Juno's read-only test-contract review returned PASS,
+  but Orion's independent security review BLOCKED the pin on three
+  plan-conformance defects: namespace cleanup left audit events;
+  the claimed CUID-shaped ghost ID was mixed-case/31 characters;
+  and three lifecycle tests seeded before `try/finally` so partial
+  seed failures could leave rows.
+- Atlas was queued a bounded, same-file tests-only repair in its
+  isolated worktree: delete only namespace-associated audit rows,
+  use one genuinely CUID-shaped nonexistent ID, and wrap all seeding
+  in `try/finally`; static gates/commit only. Orion re-review is
+  required on the repair pin before any user-approved E2E run.
+  The prior local P-008 acceptance is unaffected; no production,
+  shared DB, edge, push, PR, merge or deploy change was authorized.
+
 ## 2026-10-05 — P-008 non-save HTTP plan recheck PASS; tests-only assignment queued
 
 - Orion independently rechecked the corrected plan on clean `7ac83b9`
