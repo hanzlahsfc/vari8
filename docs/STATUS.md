@@ -5,6 +5,50 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-05 — P-008 ES-5 repaired pin runtime-GREEN on disposable p8e_e2e (isolated)
+
+- Fresh user authorization ("follow your decision" release) allowed one
+  focused run then, only if green, one full E2E run on the exact clean
+  pin `743109964c16e01e8039ebe104e1d048b03f469b`
+  (`feature/p008-es5-nonsave-http-coverage`, disposable `p8e_e2e`,
+  container `juno-p8-pg`). Juno executed both exactly once:
+  - Focused `tests/e2e/onboarding-forms-security.spec.ts`: exit 0,
+    **13/13 passed** in 25.3s; BUILD_ID `4tHXCFrhcfpgorNXRbN9e`.
+    Capture: `gate-logs/p008-es5-7431099/es5-7431099-focused-security.log`.
+  - Full `tests/e2e/`: exit 0, **153 passed / 12 skipped (pre-existing)
+    / 0 failed** of 165 in 1.5m; BUILD_ID `3WFxoOUnW5XLKrnZfr-zY`.
+    Capture: `gate-logs/p008-es5-7431099/es5-7431099-full-e2e.log`.
+    Clean porcelain and unchanged HEAD before/after each run; the 15s-poll
+    watchdog reported zero violations; zero fixture residue; no retries,
+    resets, or edits.
+- Orion's independent exact-pin runtime evidence audit returned VALID
+  (evidence review — no reviewer re-execution); Orion's static
+  re-review of `7431099` had already passed.
+- **Q3 anomaly resolved — correction to the entries below.** The
+  earlier "unexplained" openDraft/archive passes are explained by
+  Playwright's documented lifecycle: on any test failure the worker
+  stops, unrun tests are re-queued to a NEW worker process, and
+  `beforeAll` re-executes there (confirmed in installed
+  `@playwright/test` 1.63.0 dispatcher/worker source and official
+  docs). `workers: 1` limits concurrency, not worker lifetimes. The
+  publish failure ran against the stale pre-rotation `coachMember.id`
+  while the live member had already been recreated; the re-queued
+  openDraft/archive/create tests ran under a fresh `beforeAll` that
+  re-resolved `coachMember.id` to the live row, so identical asserts
+  passed legitimately. The parent failed log attests the order and id
+  mismatch; the restart/reseed itself is inferred from official
+  lifecycle semantics, not directly instrumented in the list-reporter
+  output.
+- The repair (revoke-restore recreates the row with its ORIGINAL id)
+  removes the stale-handle defect class at the source and now has
+  runtime proof on the isolated pin. The `0c784b8` failure record
+  below stands as that pin's runtime history.
+- Scope unchanged: the ES-5 spec remains isolated on
+  `feature/p008-es5-nonsave-http-coverage` and has NOT been integrated
+  into this accepted worktree; accepted production is unchanged;
+  owned-edge limitations and the Helios pause stand; no release or
+  integration authority has been granted; no push/PR/merge/deploy.
+
 ## 2026-10-05 — P-008 ES-5 stale-handle repair committed; re-review queued
 
 - Atlas repaired the stale `coachMember.id` defect as

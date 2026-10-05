@@ -599,6 +599,29 @@ pin. No push/PR/merge/deploy.
 
 ### Tests-only implementation review hold — 2026-10-05
 
+**Update — repaired pin runtime-GREEN, anomaly resolved
+(2026-10-05):** Under fresh user authorization Juno ran the exact
+clean pin `743109964c16e01e8039ebe104e1d048b03f469b` on disposable
+`p8e_e2e`: focused `tests/e2e/onboarding-forms-security.spec.ts`
+exit 0, **13/13** (BUILD_ID `4tHXCFrhcfpgorNXRbN9e`); conditional
+full `tests/e2e/` exit 0, **153 passed / 12 pre-existing skips**
+(BUILD_ID `3WFxoOUnW5XLKrnZfr-zY`). Captures:
+`gate-logs/p008-es5-7431099/es5-7431099-focused-security.log` and
+`gate-logs/p008-es5-7431099/es5-7431099-full-e2e.log`; clean
+unchanged pin, zero watchdog violations, no retries. Orion's
+independent exact-pin evidence audit returned VALID (no
+re-execution). The openDraft/archive anomaly is resolved: Playwright
+restarts the worker on test failure and re-runs `beforeAll`, which
+re-resolved the rotated `coachMember.id`; `workers: 1` bounds
+concurrency, not worker lifetime (lifecycle inferred from official
+runner semantics plus the parent log's order/id mismatch — not
+directly instrumented). The revoke-restore now recreates the row
+with its original id, so the stale-handle class is removed and
+runtime-proven. The spec remains isolated on
+`feature/p008-es5-nonsave-http-coverage` — not integrated, no
+release/integration authority; the `0c784b8` failure below stays as
+that pin's record.
+
 **Update — repaired pin reviewed PASS, focused runtime FAILED:**
 Atlas's repair `0c784b8d41f0ce6d12776ffc9fdd7dd99f1b8cbd` cleared
 Orion's three static blockers (audit-scoped cleanup, 25-char
