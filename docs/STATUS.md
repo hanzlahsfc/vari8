@@ -5,6 +5,30 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-05 — P-008 final local gates — integration FAILED; browser not run
+
+- On clean committed `28d179690a51d0a5c1ebc954d8617ab779755885`, Juno
+  ran sequential outside-worktree captures in
+  `gate-logs/p008-final-gate-28d1796/`: `final-p008-format.log`,
+  `final-p008-lint.log`, `final-p008-typecheck.log`,
+  `final-p008-build.log` all exit 0; `final-p008-unit-full.log`
+  588/588 in 50 files, exit 0. The full integration capture
+  `final-p008-integration-full.log` exited 1 (21 files passed, 3
+  failed; 278 tests passed, 2 failed, 9 skipped out of 289).
+- The two test timeouts were the P-008 concurrent archive vs
+  save/publish case (60s) and the Phase 2.1 nutrition rollback case
+  (60s). The S1-C `beforeAll` migration hook timed out (120s), so its
+  9 tests skipped. Capture has the exact SHA before/after and empty
+  porcelain paths. Builder reports disposable `p8e_int` and no active
+  connections or ungranted locks after exit; a lock-contention cascade
+  is a hypothesis, not a proven root cause.
+- Juno stopped before focused/form-security or full browser runs, as
+  instructed. No final integrated GREEN exists on this tree. A bounded
+  read-only timeout investigation was queued for Juno; Helios and Orion
+  were queued disjoint, read-only whole-diff review areas from Atlas's
+  inventory. No retry, test/code edit, database reset, push, PR, merge,
+  or deploy was authorized by this record.
+
 ## 2026-10-05 — P-008 PD29 DUAL-ROLE FIX — scoped local review acceptance
 
 - Production `814620a0aed638062ac85e52d9e7a8dee21b117d`, tests

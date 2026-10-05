@@ -71,6 +71,20 @@
   `gate-logs/p008-editor-recovery/es2a-clean-recovery/`; all attempts
   preserved including invalid ones; no edits during a capture.
 
+## Final local gate attempt — 2026-10-05, integration blocker
+
+Juno captured the exact `28d179690a51d0a5c1ebc954d8617ab779755885`
+committed tree with clean before/after porcelain. The outside-Git directory
+`gate-logs/p008-final-gate-28d1796/` contains successful format, lint,
+typecheck, build and full unit (588/588) captures. The full integration
+capture exited 1: 278 passed, 2 timed out, 9 skipped (S1-C setup hook
+timed out). This is a failed gate, not an acceptable final baseline.
+The suspected lock-contention cascade is not established as root cause.
+Juno stopped before browser gates; no exact-tree full E2E claim exists.
+Read-only diagnosis and independent whole-diff reviews are queued, not
+completed at this record. No destructive DB action, retry, production
+edit, remote operation, or deployment is authorized here.
+
 ## PD29 reconciliation addendum — 2026-10-05
 
 The integration accounting below was written on `793b0e0` before the
