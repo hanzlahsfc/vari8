@@ -5,6 +5,34 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-05 — P-008 ES-5 stale-handle repair committed; re-review queued
+
+- Atlas repaired the stale `coachMember.id` defect as
+  `743109964c16e01e8039ebe104e1d048b03f469b` on
+  `feature/p008-es5-nonsave-http-coverage` (parent `0c784b8`), spec
+  file only (+12/-7), clean porcelain. Approach: the revocation
+  test's `finally` now does `deleteMany(wsA,coachUser)` +
+  `create({id: coachMember.id, ...})`, restoring the ORIGINAL member
+  row identity so the `beforeAll` handle stays valid; `upsert`
+  without an explicit id was rejected because its update arm could
+  leave a rotated row. Static gates pass per Atlas; no runtime run.
+- Apollo independently audited the diff and the anomaly: all six
+  member-stamp asserts read action-written fields
+  (`forms.ts` writes `ctx.workspaceMemberId`), `workers: 1`, no
+  retries — so under strict serial order the openDraft/archive
+  member asserts could NOT have passed against the stale id after
+  publish failed identically. The anomaly remains UNRESOLVED
+  (execution/reporting artifact vs residual defect unknown); the
+  next runtime re-run will disambiguate. The repair is correct
+  regardless — it eliminates the stale-handle defect class at the
+  source.
+- Orion re-review of `7431099` queued (message
+  `2eb3b0bc-a457-42cc-b21a-a253a6609a4f`), including whether the
+  anomaly indicates an unfixed residual defect. Any new
+  fixture-writing E2E run still requires fresh user authorization —
+  the prior authorization was consumed by the failed run.
+- The pin remains isolated, unintegrated, and NOT runtime-green.
+
 ## 2026-10-05 — P-008 ES-5 focused E2E run FAILED on test-contract defect (12/13)
 
 - Juno executed the user-authorized focused run of
