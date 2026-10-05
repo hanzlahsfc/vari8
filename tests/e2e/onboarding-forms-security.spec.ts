@@ -713,15 +713,20 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       await expectTypedDenial(res);
       expect(await formState(form.id)).toEqual(before);
     } finally {
-      await prisma.workspaceMember.upsert({
+      // Restore the ORIGINAL row id — every member-stamp assert in this
+      // file holds the beforeAll-resolved handle, and a fresh cuid would
+      // leave it pointing at a deleted row. deleteMany+create (not
+      // upsert) so a pre-existing rotated row cannot survive via the
+      // update arm with a different id.
+      await prisma.workspaceMember.deleteMany({
         where: {
-          workspaceId_userId: {
-            workspaceId: coachMember.workspaceId,
-            userId: coachMember.userId,
-          },
+          workspaceId: coachMember.workspaceId,
+          userId: coachMember.userId,
         },
-        update: { role: "COACH", status: "ACTIVE" },
-        create: {
+      });
+      await prisma.workspaceMember.create({
+        data: {
+          id: coachMember.id,
           workspaceId: coachMember.workspaceId,
           userId: coachMember.userId,
           role: "COACH",
