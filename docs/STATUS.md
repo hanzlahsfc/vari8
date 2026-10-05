@@ -5,6 +5,26 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-05 — P-008 non-save HTTP plan — Orion conditional repairs folded in
+
+- Helios's read-only test-contract review of plan `2ed4b01` returned
+  PASS; Orion's different-model security review returned conditional
+  PASS with six detection-sensitivity corrections required before
+  implementation. The plan now pins action-specific positive replay,
+  one POST per press, publish with zero prior versions, reopen with
+  null draft and baseline revision, ACTIVE archive with null stamps,
+  B-member fixture attribution, namespaced finally-cleanup on bypass
+  failure, and full A/B row snapshots. It also calls out the stale
+  PD29 comment in the existing security spec. No tests or production
+  code were changed and no database/browser work was performed.
+- Helios acknowledged a second temporary review artifact created
+  despite read-only scope. He moved it byte-exact to outside-Git
+  `gate-logs/p008-final-gate-28d1796/helios-review-http-plan.md`
+  (SHA-256 `aead6c23…24b29`); the worktree has no untracked file.
+  Orion must recheck the corrected committed plan before tests-only
+  implementation. The previously accepted local P-008 checkpoint
+  remains unchanged; edge verification is still a co-founder gate.
+
 ## 2026-10-05 — P-008 non-save HTTP coverage follow-up — PLAN ONLY
 
 - Atlas proposed a read-only, test-only extension for real-HTTP

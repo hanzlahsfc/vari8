@@ -526,38 +526,54 @@ a genuine failure requiring a separate test-first production slice.
 
 **Protocol and positive controls:** generalize the existing live
 browser `Next-Action` capture only as needed, with no hardcoded action
-IDs. Drive each real UI control in the same production build and assert
-its write and audit; for publish/reopen/archive, replay against a
-second prepared A form to prove the captured encoding still reaches a
-mutation after the first control consumes its form state. The create
-control can replay to create a second A form. Bound arguments and
-multipart bytes must be tampered using the established byte-preserving
-approach, not a synthetic action ID or a different build.
+IDs. Assert exactly one mutating POST per real UI press. Drive each
+control in the same production build and assert its action-specific
+write and audit; the first POST with a `next-action` header alone does
+not establish which action was captured. For publish/reopen/archive,
+replay against a second A form whose state and revision match the
+captured arguments, proving that the exact captured encoding still
+produces respectively a new frozen version and closed draft, a new
+draft with revision increment and audit, or ARCHIVED status/stamps and
+audit. The create control replay must add a second A form and CREATE
+audit. Perform these liveness checks BEFORE any B denial probe. Bound
+arguments and multipart bytes must be tampered using the established
+byte-preserving approach, not a synthetic action ID or a different
+build.
 
-**Non-vacuous negative fixtures:**
+**Non-vacuous negative fixtures (assert each precondition pre-arm):**
 
 - Publish: B form has an open publishable draft with at least one
-  valid field and a revision matching the captured request; bypass
-  would add a version, close the draft, and audit the change.
-- Reopen: B form has a published version and no open draft; bypass
-  would seed a new draft and audit it.
-- Archive: B form is ACTIVE; bypass would change status/stamps and
-  add an audit row, not return an idempotent archived result.
+  valid field, a revision matching the captured request, and ZERO
+  existing versions (in particular none with matching
+  `publishOriginRevision`). A bypass would add a version, close the
+  draft, and audit the change, not take the idempotent replay path.
+- Reopen: B form has a published version, `draft === null`, and a
+  recorded baseline `draftRevision`; a bypass would seed a draft,
+  increment revision by one, and audit it, not return an open draft.
+- Archive: B form has `status === "ACTIVE"` and `archivedAt === null`;
+  bypass would change status/stamps and add an audit row, not take the
+  already-archived idempotent path.
 - Create: change the bound workspace A to B; bypass would add a B
   form and CREATE audit row. There is no formId/ghost axis for create.
 
-Use a real B workspace member for B fixture creator/publisher stamps;
-never misattribute B rows to the A-only coach or to an A member.
-Before and after each B attempt compare full B form rows, version
-rows, and B workspace `onboarding_form` audit rows. For create, compare
-the full B workspace form/version/audit collections, not just counts.
-Verify the A control rows are unchanged by negative probes. For the
-three formId-bearing actions compare foreign and fabricated-cuid
-response status and the same safe typed-denial markers, with zero
-writes on either arm; do not claim to formally decode RSC flight text.
-Fixture cleanup remains namespace-scoped and outside any shared user
-or workspace deletion; restore any temporary role/member mutation in
-`finally` if introduced (none planned).
+Use a real B workspace member for B fixture creator and publisher
+stamps; assert existing non-null B stamps belong to B members and the
+ACTIVE archive target has null archival stamps. Never misattribute B
+rows to the A-only coach or to an A member. Before and after each B
+attempt compare full B form rows, version rows, and B
+workspace `onboarding_form` audit rows. For create, compare the full
+B workspace form/version/audit collections, not just counts. Verify
+A workspace form/version/audit collections are unchanged by each B
+probe. For the three formId-bearing actions compare foreign and
+fabricated-cuid response status and the same safe typed-denial markers,
+with zero writes on either arm; do not claim to formally decode RSC
+flight text. Name every new form with the existing `E2E P8S` prefix,
+and run namespace-scoped cleanup in `finally` even if a bypass arm
+writes before an assertion fails; do not delete shared users or
+workspaces. Restore any temporary role/member mutation in `finally`
+if introduced (none planned). Update the existing stale spec comment
+claiming PD29 dual-role is tabled; dual-role tests already exist.
+Keep missing-Origin/XFH labeled app-level observations, not edge proof.
 
 **Gates and stop conditions:** commit the tests-only pin first; on a
 clean committed tree capture focused
