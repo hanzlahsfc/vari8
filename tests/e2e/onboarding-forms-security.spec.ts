@@ -162,20 +162,21 @@ const wsSnapshot = async (workspaceId: string) => ({
 });
 
 async function removeSecurityFixtures() {
-  await prisma.onboardingFormVersion.deleteMany({
-    where: {
-      form: {
-        workspaceId: { in: [wsAId, wsBId] },
-        name: { startsWith: "E2E P8S" },
-      },
-    },
-  });
-  await prisma.onboardingForm.deleteMany({
+  const doomed = await prisma.onboardingForm.findMany({
     where: {
       workspaceId: { in: [wsAId, wsBId] },
       name: { startsWith: "E2E P8S" },
     },
+    select: { id: true },
   });
+  const ids = doomed.map((f) => f.id);
+  await prisma.auditEvent.deleteMany({
+    where: { resourceType: "onboarding_form", resourceId: { in: ids } },
+  });
+  await prisma.onboardingFormVersion.deleteMany({
+    where: { formId: { in: ids } },
+  });
+  await prisma.onboardingForm.deleteMany({ where: { id: { in: ids } } });
 }
 
 async function signIn(page: Page, email: string) {
@@ -401,9 +402,10 @@ const rebindBody = (cap: ActionCapture, ...pairs: [string, string][]) =>
     "latin1",
   );
 
-/** Fabricated but well-formed form id — never exists; paired with the
- * real foreign id for non-disclosing status parity. */
-const GHOST_FORM_ID = "cmSecurityNonexistentFormId0000";
+/** Fabricated but well-formed 25-char lowercase cuid-shaped form id —
+ * asserted nonexistent in beforeAll; paired with the real foreign id
+ * for non-disclosing status parity. */
+const GHOST_FORM_ID = "csecuritynonexistentf0000";
 
 /**
  * Drive ANY real UI lifecycle control and capture its genuine wire
@@ -477,6 +479,11 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       where: { workspaceId: wsBId, role: "WORKSPACE_OWNER" },
     });
     wsBMemberId = wsBOwnerMember.id;
+    expect(
+      await prisma.onboardingForm.findUnique({
+        where: { id: GHOST_FORM_ID },
+      }),
+    ).toBeNull();
     const passwordHash = await hashPassword(E2E.password);
     await prisma.user.upsert({
       where: { email: PLATFORM_ADMIN_EMAIL },
@@ -728,7 +735,7 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     page,
   }) => {
     const formA = await seedForm("E2E P8S Tamper A");
-    const formB = await seedForm("E2E P8S Tamper B", wsBId);
+    const formB = await seedFormAs("E2E P8S Tamper B", wsBId, wsBMemberId);
     await signIn(page, E2E.coach); // coach is a member of wsA ONLY
     const cap = await captureSaveDraft(page, formA.id);
     const ctx = page.context().request;
@@ -758,13 +765,12 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     // scoped lookup must miss → identical non-disclosing denial to a
     // never-existent id. Pin both the deny AND status parity with a
     // fabricated cuid replay.
-    const fabricated = "cmSecurityNonexistentFormId0000";
     const arm2 = Buffer.from(
       cap.body.toString("latin1").replaceAll(formA.id, formB.id),
       "latin1",
     );
     const arm2ghost = Buffer.from(
-      cap.body.toString("latin1").replaceAll(formA.id, fabricated),
+      cap.body.toString("latin1").replaceAll(formA.id, GHOST_FORM_ID),
       "latin1",
     );
     const foreign = await postCaptured(ctx, cap, { body: arm2 });
@@ -962,10 +968,10 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
   test("publishForm — coach capture replays on a second wsA form but foreign wsB formId is denied with zero writes", async ({
     page,
   }) => {
-    const capForm = await seedForm("E2E P8S PubCap");
-    const okForm = await seedForm("E2E P8S PubOK");
-    const bForm = await seedFormAs("E2E P8S PubDeny", wsBId, wsBMemberId);
     try {
+      const capForm = await seedForm("E2E P8S PubCap");
+      const okForm = await seedForm("E2E P8S PubOK");
+      const bForm = await seedFormAs("E2E P8S PubDeny", wsBId, wsBMemberId);
       await signIn(page, E2E.coach);
       // Real UI publish press on the wsA draft: exactly one action POST;
       // observed write = frozen version, closed draft, PUBLISHED audit.
@@ -1059,14 +1065,22 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
   test("openDraft — coach capture replays on a second wsA form but foreign wsB formId is denied with zero writes", async ({
     page,
   }) => {
-    const capForm = await seedClosedForm(
-      "E2E P8S OpenCap",
-      wsAId,
-      ownerMemberId,
-    );
-    const okForm = await seedClosedForm("E2E P8S OpenOK", wsAId, ownerMemberId);
-    const bForm = await seedClosedForm("E2E P8S OpenDeny", wsBId, wsBMemberId);
     try {
+      const capForm = await seedClosedForm(
+        "E2E P8S OpenCap",
+        wsAId,
+        ownerMemberId,
+      );
+      const okForm = await seedClosedForm(
+        "E2E P8S OpenOK",
+        wsAId,
+        ownerMemberId,
+      );
+      const bForm = await seedClosedForm(
+        "E2E P8S OpenDeny",
+        wsBId,
+        wsBMemberId,
+      );
       await signIn(page, E2E.coach);
       // Real UI reopen press on the closed wsA form: exactly one action
       // POST; observed write = draft seeded from the latest version,
@@ -1157,14 +1171,22 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
   test("archiveForm — coach capture replays on a second wsA form but foreign wsB formId is denied with zero writes", async ({
     page,
   }) => {
-    const capForm = await seedClosedForm(
-      "E2E P8S ArchCap",
-      wsAId,
-      ownerMemberId,
-    );
-    const okForm = await seedClosedForm("E2E P8S ArchOK", wsAId, ownerMemberId);
-    const bForm = await seedClosedForm("E2E P8S ArchDeny", wsBId, wsBMemberId);
     try {
+      const capForm = await seedClosedForm(
+        "E2E P8S ArchCap",
+        wsAId,
+        ownerMemberId,
+      );
+      const okForm = await seedClosedForm(
+        "E2E P8S ArchOK",
+        wsAId,
+        ownerMemberId,
+      );
+      const bForm = await seedClosedForm(
+        "E2E P8S ArchDeny",
+        wsBId,
+        wsBMemberId,
+      );
       await signIn(page, E2E.coach);
       // Real UI archive press on the closed-branch control: exactly one
       // action POST; observed write = ARCHIVED status + stamps + audit.
