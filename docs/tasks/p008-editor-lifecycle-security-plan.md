@@ -565,15 +565,22 @@ workspace `onboarding_form` audit rows. For create, compare the full
 B workspace form/version/audit collections, not just counts. Verify
 A workspace form/version/audit collections are unchanged by each B
 probe. For the three formId-bearing actions compare foreign and
-fabricated-cuid response status and the same safe typed-denial markers,
-with zero writes on either arm; do not claim to formally decode RSC
-flight text. Name every new form with the existing `E2E P8S` prefix,
-and run namespace-scoped cleanup in `finally` even if a bypass arm
-writes before an assertion fails; do not delete shared users or
-workspaces. Restore any temporary role/member mutation in `finally`
-if introduced (none planned). Update the existing stale spec comment
-claiming PD29 dual-role is tabled; dual-role tests already exist.
-Keep missing-Origin/XFH labeled app-level observations, not edge proof.
+genuinely CUID-shaped, confirmed nonexistent formId response status
+and the same safe typed-denial markers, with zero writes on either
+arm; reuse one 25-character lowercase ghost ID across existing and
+new tests rather than accepting a malformed-ID denial. Do not claim
+to formally decode RSC flight text. Name every new form with the
+existing `E2E P8S` prefix and put ALL seeding inside the same
+`try/finally` as the probes. In `finally`, first collect the IDs of
+namespace-prefixed forms in A and B; delete only `onboarding_form`
+audit rows with those resource IDs, then their versions/forms. This
+must clean positive and bypass-written rows even when a seed or
+assertion fails, without deleting shared users, workspaces or other
+specs' audits. Restore any temporary role/member mutation in
+`finally` if introduced (none planned). Update the existing stale
+spec comment claiming PD29 dual-role is tabled; dual-role tests
+already exist. Keep missing-Origin/XFH labeled app-level observations,
+not edge proof.
 
 **Gates and stop conditions:** commit the tests-only pin first; on a
 clean committed tree capture focused
@@ -589,3 +596,19 @@ restore fails, or gate is non-green, stop and report rather than
 editing production, increasing timeouts, or retrying blindly. Request
 read-only security/code and evidence review of the exact tests/gates
 pin. No push/PR/merge/deploy.
+
+### Tests-only implementation review hold — 2026-10-05
+
+Atlas's isolated tests-only commit `e8969bfc85d4535b8b28667936f202113dc3264c`
+(parent `7ac83b9`) changes only the security E2E spec. Static
+format/lint/typecheck passed, but no browser/DB run occurred. Juno's
+read-only contract review returned PASS; Orion's independent security
+review BLOCKED on three exact-plan gaps: audit events survived fixture
+cleanup, the ghost ID was 31 characters/mixed case, and three tests
+seeded rows before entering their `try/finally`. The stricter blocker
+governs; the tests-only pin is not accepted or merged into the
+forward worktree. The repair requirements are folded into the plan
+above, and Atlas has a bounded same-file repair assignment. Review
+of the new committed pin must precede any fixture-writing E2E
+request. Previously accepted local production and gates remain
+unchanged.
