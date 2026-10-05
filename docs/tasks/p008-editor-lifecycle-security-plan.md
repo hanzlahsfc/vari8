@@ -503,3 +503,73 @@ and Atlas evidence review. No push/PR/merge/deploy.
   one scoped increment; the preceding STOPPED entries are historical.
   No final integrated suite was run on this docs-only record and no
   push/PR/merge/deploy was authorized or performed.
+
+## Follow-up HTTP foreign-ID coverage — tests-only plan, 2026-10-05
+
+**Status:** planning only. P-008 local code/evidence acceptance remains
+intact; this optional coverage increment has not been implemented or
+run. Public-edge verification stays with the technical co-founders and
+is not waived by these app-level tests. No submissions or intake.
+
+**File ownership:** `tests/e2e/onboarding-forms-security.spec.ts` only;
+no production, schema, config, dependency, or shared-DB setup changes.
+Use one isolated worker worktree; do not edit Juno's accepted worktree
+or reuse a reviewer as its own final approver.
+
+**Contract:** add real-HTTP foreign-ID denials for `publishForm`,
+`openDraft`, and `archiveForm` plus a bound-workspace rebinding denial
+for `createForm` from a coach who belongs to workspace A but not B.
+The existing `saveDraft` arm remains unchanged. This is coverage of
+already implemented authorization: expected immediate GREEN, not a
+fabricated prospective RED. An observed write in any negative arm is
+a genuine failure requiring a separate test-first production slice.
+
+**Protocol and positive controls:** generalize the existing live
+browser `Next-Action` capture only as needed, with no hardcoded action
+IDs. Drive each real UI control in the same production build and assert
+its write and audit; for publish/reopen/archive, replay against a
+second prepared A form to prove the captured encoding still reaches a
+mutation after the first control consumes its form state. The create
+control can replay to create a second A form. Bound arguments and
+multipart bytes must be tampered using the established byte-preserving
+approach, not a synthetic action ID or a different build.
+
+**Non-vacuous negative fixtures:**
+
+- Publish: B form has an open publishable draft with at least one
+  valid field and a revision matching the captured request; bypass
+  would add a version, close the draft, and audit the change.
+- Reopen: B form has a published version and no open draft; bypass
+  would seed a new draft and audit it.
+- Archive: B form is ACTIVE; bypass would change status/stamps and
+  add an audit row, not return an idempotent archived result.
+- Create: change the bound workspace A to B; bypass would add a B
+  form and CREATE audit row. There is no formId/ghost axis for create.
+
+Use a real B workspace member for B fixture creator/publisher stamps;
+never misattribute B rows to the A-only coach or to an A member.
+Before and after each B attempt compare full B form rows, version
+rows, and B workspace `onboarding_form` audit rows. For create, compare
+the full B workspace form/version/audit collections, not just counts.
+Verify the A control rows are unchanged by negative probes. For the
+three formId-bearing actions compare foreign and fabricated-cuid
+response status and the same safe typed-denial markers, with zero
+writes on either arm; do not claim to formally decode RSC flight text.
+Fixture cleanup remains namespace-scoped and outside any shared user
+or workspace deletion; restore any temporary role/member mutation in
+`finally` if introduced (none planned).
+
+**Gates and stop conditions:** commit the tests-only pin first; on a
+clean committed tree capture focused
+`CI=1 npx playwright test tests/e2e/onboarding-forms-security.spec.ts`
+then full `CI=1 npx playwright test tests/e2e/`, each against the
+separately owned disposable `p8e_e2e` and production build/start.
+Before execution verify DB ownership, port 3000, and clean porcelain;
+use the outside-Git `run-capture.sh`, UTC, exact SHA, real exit,
+credential-redacted env, and in-window BUILD_ID. Obtain explicit user
+authorization for fixture writes/deletes before either run. Keep
+all attempts. If any action capture fails, denial arm writes, fixture
+restore fails, or gate is non-green, stop and report rather than
+editing production, increasing timeouts, or retrying blindly. Request
+read-only security/code and evidence review of the exact tests/gates
+pin. No push/PR/merge/deploy.
