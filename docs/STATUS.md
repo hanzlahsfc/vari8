@@ -5,6 +5,38 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-05 — P-008 ES-5 focused E2E run FAILED on test-contract defect (12/13)
+
+- Juno executed the user-authorized focused run of
+  `tests/e2e/onboarding-forms-security.spec.ts` on isolated pin
+  `0c784b8d41f0ce6d12776ffc9fdd7dd99f1b8cbd`
+  (`feature/p008-es5-nonsave-http-coverage`, disposable `p8e_e2e`):
+  exit 1, **12 passed / 1 failed** in 24.5s; clean porcelain pre/post;
+  in-window BUILD_ID `oeHEBuVs29DPLt78rofgV`. Capture:
+  `gate-logs/p008-final-gate-28d1796/es5-focused-security-0c784b8.log`.
+  Per protocol Juno STOPPED: no full E2E run, no retry, no edits,
+  no DB reset. Watchdog reported zero lock/idle-tx anomalies.
+- **Failure is a TEST-CONTRACT defect, not a product bug.** The
+  mid-suite membership-revocation test (spec.ts:706-730) deletes the
+  wsA coach `workspaceMember` row then upserts without an explicit id;
+  `@default(cuid())` mints a NEW member id, so the `coachMember.id`
+  captured once in `beforeAll` (spec.ts:468-475) is a dead handle for
+  every later test. The publishForm arm failed at spec.ts:1000
+  asserting `publishedByMemberId` equals the stale id while the action
+  correctly stamped the live rotated member row
+  (`forms.ts` writes `ctx.workspaceMemberId`). The failure fired on
+  the capture-press positive control, so publish's negative probes
+  never executed. Juno flagged one unresolved anomaly: openDraft and
+  archive arms later PASSED identical `toBe(coachMember.id)` asserts —
+  explanation pending from Atlas's repair.
+- Atlas was queued a bounded same-file repair (restore original member
+  id in the revocation test's upsert, or re-resolve the live coach
+  member per test; do NOT weaken member-stamp asserts; audit all
+  `coachMember.id` assertions; explain the openDraft/archive anomaly).
+  Static gates only — a new fixture-writing run needs fresh user
+  authorization. The pin remains unintegrated and NOT runtime-green;
+  the failed run stands as the runtime record for `0c784b8`.
+
 ## 2026-10-05 — P-008 non-save HTTP tests repair PASS; E2E run not authorized yet
 
 - Atlas repaired the isolated tests-only candidate at

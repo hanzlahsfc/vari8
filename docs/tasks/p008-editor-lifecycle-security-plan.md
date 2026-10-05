@@ -599,6 +599,29 @@ pin. No push/PR/merge/deploy.
 
 ### Tests-only implementation review hold — 2026-10-05
 
+**Update — repaired pin reviewed PASS, focused runtime FAILED:**
+Atlas's repair `0c784b8d41f0ce6d12776ffc9fdd7dd99f1b8cbd` cleared
+Orion's three static blockers (audit-scoped cleanup, 25-char
+lowercase CUID ghost asserted nonexistent, all seeding inside
+`try/finally`, real wsB-member legacy fixture). The user-authorized
+focused run on disposable `p8e_e2e` then exited 1 — 12/13 passed.
+Root cause is a **test-contract defect**, not a production bug: the
+earlier membership-revocation test deletes the wsA coach
+`workspaceMember` row and upserts it back without an explicit id, so
+`@default(cuid())` rotates the member id while `beforeAll`'s captured
+`coachMember.id` goes stale for all later member-stamp assertions
+(spec.ts:1000 publish arm fired first). Juno stopped per protocol —
+no full E2E, no retry, no edits. One anomaly remains unexplained:
+openDraft/archive member-stamp asserts passed against the stale id
+after publish failed; Atlas's repair task requires a concrete
+explanation. Capture:
+`gate-logs/p008-final-gate-28d1796/es5-focused-security-0c784b8.log`.
+A bounded same-file repair (preserve original member id on restore,
+or re-resolve the live coach member per test — asserts must stay
+live, not weakened) is queued for Atlas; a new fixture-writing run
+still needs fresh user authorization after re-review.
+
+**Original hold text:**
 Atlas's isolated tests-only commit `e8969bfc85d4535b8b28667936f202113dc3264c`
 (parent `7ac83b9`) changes only the security E2E spec. Static
 format/lint/typecheck passed, but no browser/DB run occurred. Juno's
