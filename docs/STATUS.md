@@ -5,6 +5,23 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-05 — P-008 non-save HTTP tests repair PASS; E2E run not authorized yet
+
+- Atlas repaired the isolated tests-only candidate at
+  `0c784b8d41f0ce6d12776ffc9fdd7dd99f1b8cbd` (parent `e8969bf`);
+  Orion independently re-reviewed and returned PASS. Diff is only
+  `tests/e2e/onboarding-forms-security.spec.ts` (+54/-32), preserving
+  all prior assertions. Audit cleanup is namespace-ID scoped, the
+  ghost ID is confirmed nonexistent and CUID-shaped, lifecycle seeds
+  are all inside `try/finally`, and the legacy wsB fixture uses a real
+  wsB member. Static gates passed per Atlas (format/lint/typecheck).
+- The candidate remains UNEXECUTED in browser/DB; this is not runtime
+  evidence. It is isolated on `feature/p008-es5-nonsave-http-coverage`
+  and has NOT been integrated into this accepted worktree. User
+  authorization is still required for fixture-writing focused and
+  full E2E runs against disposable `p8e_e2e`, with focused green before
+  the conditional full run. No production change or release action.
+
 ## 2026-10-05 — P-008 optional HTTP tests-only candidate BLOCKED for repair
 
 - Atlas committed isolated tests-only spec `e8969bf` off approved
