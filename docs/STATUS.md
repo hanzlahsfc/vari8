@@ -5,6 +5,21 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-05 — P-008 non-save HTTP plan recheck PASS; tests-only assignment queued
+
+- Orion independently rechecked the corrected plan on clean `7ac83b9`
+  and returned PASS: R1–R6 detection fixes, second-A action-specific
+  replay, full A/B snapshots, namespace/finally cleanup, stale PD29
+  comment direction, and app-level Origin caveat are all pinned.
+  This was read-only plan review, not test execution or edge approval.
+- Atlas (SWE2 High) was queued for tests-only implementation in an
+  isolated worktree rooted at `7ac83b9`, with ownership restricted to
+  `tests/e2e/onboarding-forms-security.spec.ts`. No production, DB,
+  browser, dependency or config change was released. Atlas must stop
+  after a committed tests-only pin and static gates for independent
+  review; future fixture-writing E2E runs need explicit user approval.
+  Existing local P-008 acceptance is unchanged; no push/PR/merge/deploy.
+
 ## 2026-10-05 — P-008 non-save HTTP plan — Orion conditional repairs folded in
 
 - Helios's read-only test-contract review of plan `2ed4b01` returned
