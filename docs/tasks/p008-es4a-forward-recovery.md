@@ -71,6 +71,31 @@
   `gate-logs/p008-editor-recovery/es2a-clean-recovery/`; all attempts
   preserved including invalid ones; no edits during a capture.
 
+## Final2 integrated local gates — 2026-10-05 (edge/release still open)
+
+After explicit user approval for both the full disposable integration
+`p8e_int` and conditional full E2E `p8e_e2e` runs, Juno captured both
+on clean committed `6391f6131c502f041f5f3ff17675eb5a2d432fea`:
+`final2-p008-integration-full.log` 24/24 files and 289/289 tests,
+exit 0; `final2-p008-e2e-full.log` 149 passed/12 skipped, exit 0,
+BUILD_ID `wyVUUGzregIu8WxhrmFuf` inside its capture window. Logs
+under outside-Git `gate-logs/p008-final-gate-28d1796/` bind SHA,
+empty before/after porcelain, UTC, DB identity and real exit. The
+older failed full run and targeted retry below remain preserved as
+separate evidence. Mechanism gates and 588/588 unit were green at
+`28d1796`; successors through `6391f61` are docs-only.
+
+Orion's read-only different-model whole-diff synthesis on
+`5036796..6391f61` returned PASS for local code/security readiness,
+not edge/merge/deploy approval or independent test execution. The
+non-blocking shared-audit-status vocabulary widening remains a
+follow-up; Atlas final2 evidence audit is pending. Host/DB I/O
+starvation is supported by the earlier long checkpoint plus this
+prompt unchanged-code rerun, but the exact first wait is unproven.
+Owned-edge header verification, the missing-Origin policy question,
+non-save foreign-ID HTTP coverage choice, and user authorization for
+push/PR/merge/deploy remain open. No release action occurred.
+
 ## Targeted integration retry — 2026-10-05 (not full-gate closure)
 
 With explicit user approval for the three failed files' fixture

@@ -5,6 +5,38 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-05 — P-008 final2 local integrated gates GREEN; edge and release gates OPEN
+
+- The user authorized one full integration run on disposable `p8e_int`
+  and, only if green, one full browser run on disposable `p8e_e2e`.
+  Juno captured both on clean committed
+  `6391f6131c502f041f5f3ff17675eb5a2d432fea` under
+  `gate-logs/p008-final-gate-28d1796/`:
+  `final2-p008-integration-full.log` 24/24 files, 289/289 tests,
+  exit 0; `final2-p008-e2e-full.log` 149 passed, 12 pre-existing
+  password-reset skips, exit 0, in-window BUILD_ID
+  `wyVUUGzregIu8WxhrmFuf`. Both logs include stable SHA and empty
+  porcelain before/after; the earlier failed attempt remains preserved
+  below, not reclassified as green. Format/lint/typecheck/build and
+  full unit 588/588 were captured green on ancestor `28d1796`;
+  `28d1796..6391f61` changes docs only.
+- Orion returned a read-only different-model unified whole-diff PASS
+  for local code/security readiness at `6391f61` (base main
+  `5036796`); this is static inspection plus builder gate evidence,
+  not reviewer test execution or final feature approval. One
+  non-blocking finding remains: the shared audit `meta.status`
+  vocabulary permits onboarding-only ARCHIVED/PUBLISHED on unrelated
+  resource types, though no untrusted producer or policy read exists.
+  Atlas's independent audit of the new final2 gate evidence is pending.
+- The earlier timeout occurred alongside an approximately 2987s
+  checkpoint; later unchanged-code runs passed promptly. Transient
+  host/DB starvation is strongly supported, not a proven first-wait
+  trace. The schema-less `public.users` lookup remains unexplained.
+  Owned-edge Origin/Host/XFH/Forwarded behavior remains unverified;
+  missing-Origin and hostile-Origin plus spoofed XFH executed at the
+  app level. Non-save foreign-ID HTTP coverage is a separate open
+  decision. No push/PR/merge/deploy was authorized or performed.
+
 ## 2026-10-05 — P-008 targeted integration retry GREEN; full gate remains FAILED
 
 - The user specifically authorized a three-file retry on the disposable
