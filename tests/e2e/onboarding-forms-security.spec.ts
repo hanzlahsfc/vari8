@@ -4,6 +4,7 @@ import {
   type APIRequestContext,
   type APIResponse,
   type Page,
+  type Request,
 } from "@playwright/test";
 import { Prisma, PrismaClient } from "@prisma/client";
 
@@ -38,7 +39,12 @@ import { E2E, e2eDatabaseUrl } from "./global-setup";
  * membership-revoked, denied-role, and malformed legs; the forged-cookie
  * leg asserts draftRevision only; the revoked-session leg asserts
  * draftRevision + audit rows; tamper arms assert draftRevision + empty
- * audits on the target form and formA revision/versions.
+ * audits on the target form and formA revision/versions. The ES-5
+ * follow-up foreign-ID arms (publish/openDraft/archive) assert FULL
+ * per-form AND full workspace-scoped form/version/audit equality on both
+ * workspaces, foreign-vs-ghost status parity, and an action-specific
+ * write on the second-A positive replay; the createForm rebind arm
+ * compares the full wsB collections, not just counts.
  *
  * Cookie/session handling (B7): `page.context().request` shares the
  * browser's HttpOnly cookie jar (authenticated probes); the bare
@@ -47,8 +53,9 @@ import { E2E, e2eDatabaseUrl } from "./global-setup";
  * mutations are restored in `finally`. The `deactivated` fixture is a
  * user with NO membership (asserted fresh before use). The
  * `platform-admin` fixture is a PLATFORM_ADMIN user with NO workspace
- * membership — its denial proves the membership gate only (PD29
- * dual-role precedence is TABLED, not asserted).
+ * membership — its denial proves the membership gate only. PD29
+ * dual-role precedence IS asserted by the dedicated dual-role arms
+ * in this file (guard fix at production 814620a).
  *
  * Hostile-Origin + spoofed X-Forwarded-Host is an APP-LEVEL diagnostic
  * only — the owned-edge header policy is a separate deployment gate;
@@ -63,6 +70,7 @@ let wsAId: string;
 let wsBId: string;
 let ownerMemberId: string;
 let ownerUserId: string;
+let wsBMemberId: string;
 let coachMember: { id: string; workspaceId: string; userId: string };
 
 const seedDefinition = (title: string) => ({
@@ -78,9 +86,10 @@ const seedDefinition = (title: string) => ({
   ],
 });
 
-const seedForm = (
+const seedFormAs = (
   name: string,
-  workspaceId: string = wsAId,
+  workspaceId: string,
+  createdByMemberId: string,
   extra: Omit<
     Prisma.OnboardingFormUncheckedCreateInput,
     "workspaceId" | "name" | "createdByMemberId"
@@ -90,13 +99,67 @@ const seedForm = (
     data: {
       workspaceId,
       name,
-      createdByMemberId: ownerMemberId,
+      createdByMemberId,
       draftRevision: 1,
       draft: seedDefinition(name),
       ...extra,
     },
     select: { id: true },
   });
+
+const seedForm = (
+  name: string,
+  workspaceId: string = wsAId,
+  extra: Omit<
+    Prisma.OnboardingFormUncheckedCreateInput,
+    "workspaceId" | "name" | "createdByMemberId"
+  > = {},
+) => seedFormAs(name, workspaceId, ownerMemberId, extra);
+
+/**
+ * Published-and-closed fixture: draft cleared plus one frozen version row
+ * — the state that mounts the closed-branch controls (openDraft/archive)
+ * and satisfies the non-vacuous negative preconditions. Creator and
+ * publisher stamps both belong to the SAME workspace member passed in
+ * (a real wsB member for B targets — never the A-only coach).
+ */
+const seedClosedForm = async (
+  name: string,
+  workspaceId: string,
+  memberId: string,
+) => {
+  const form = await seedFormAs(name, workspaceId, memberId, {
+    draft: Prisma.DbNull,
+  });
+  await prisma.onboardingFormVersion.create({
+    data: {
+      formId: form.id,
+      versionSeq: 1,
+      definition: seedDefinition(name) as Prisma.InputJsonValue,
+      publishOriginRevision: 1,
+      publishedByMemberId: memberId,
+    },
+  });
+  return form;
+};
+
+/** Full workspace-scoped collections — every onboarding form, its
+ * version rows, and the workspace's onboarding_form audit rows. Used
+ * for pre/post tamper equality, not just counts. */
+const wsSnapshot = async (workspaceId: string) => ({
+  forms: await prisma.onboardingForm.findMany({
+    where: { workspaceId },
+    orderBy: { id: "asc" },
+  }),
+  versions: await prisma.onboardingFormVersion.findMany({
+    where: { form: { workspaceId } },
+    orderBy: { id: "asc" },
+  }),
+  audits: await prisma.auditEvent.findMany({
+    where: { workspaceId, resourceType: "onboarding_form" },
+    orderBy: { id: "asc" },
+  }),
+});
 
 async function removeSecurityFixtures() {
   await prisma.onboardingFormVersion.deleteMany({
@@ -318,6 +381,70 @@ const expectSingleSaveDelta = (
   });
 };
 
+/** Audit-row meta marker presence — e.g. {status:"PUBLISHED"} — without
+ * asserting fields the writer never sets. */
+const hasAuditMeta = (state: FormState, meta: Record<string, unknown>) =>
+  state.audits.some((a) => {
+    const m = a.meta as Record<string, unknown> | null;
+    return m !== null && Object.entries(meta).every(([k, v]) => m[k] === v);
+  });
+
+/** Byte-preserving tamper on the captured multipart/RSC body — the
+ * established latin1 text view + replaceAll approach; cuid-shaped ids
+ * never overlap so replace order is inert. */
+const rebindBody = (cap: ActionCapture, ...pairs: [string, string][]) =>
+  Buffer.from(
+    pairs.reduce(
+      (text, [from, to]) => text.replaceAll(from, to),
+      cap.body.toString("latin1"),
+    ),
+    "latin1",
+  );
+
+/** Fabricated but well-formed form id — never exists; paired with the
+ * real foreign id for non-disclosing status parity. */
+const GHOST_FORM_ID = "cmSecurityNonexistentFormId0000";
+
+/**
+ * Drive ANY real UI lifecycle control and capture its genuine wire
+ * protocol in the same production build — generalizing captureSaveDraft
+ * for the non-saveDraft actions. EVERY action POST during the press is
+ * collected and the exactly-one assertion pins the no-double-dispatch
+ * contract: a `next-action` POST alone does not establish WHICH action
+ * ran — that binding comes from the caller's `until` observation of the
+ * action-specific write plus the second-target replay positives. Never
+ * hardcodes action ids.
+ */
+async function captureAction(
+  page: Page,
+  path: string,
+  press: () => Promise<void>,
+  until: () => Promise<void>,
+): Promise<ActionCapture> {
+  await page.goto(path);
+  const posts: ActionCapture[] = [];
+  const onRequest = (req: Request) => {
+    const nextAction = req.headers()["next-action"];
+    if (req.method() !== "POST" || !nextAction) return;
+    posts.push({
+      url: req.url(),
+      nextAction,
+      headers: req.headers(),
+      contentType: req.headers()["content-type"] ?? "",
+      body: req.postDataBuffer() ?? Buffer.alloc(0),
+    });
+  };
+  page.on("request", onRequest);
+  try {
+    await press();
+    await until();
+  } finally {
+    page.off("request", onRequest);
+  }
+  expect(posts).toHaveLength(1);
+  return posts[0];
+}
+
 test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
   test.beforeAll(async () => {
     prisma = new PrismaClient({
@@ -344,6 +471,12 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
       workspaceId: coachMemberRow.workspaceId,
       userId: coachMemberRow.userId,
     };
+    // A REAL wsB member — B-fixture creator/publisher stamps must belong
+    // to a genuine B member, never the A-only coach or an A member.
+    const wsBOwnerMember = await prisma.workspaceMember.findFirstOrThrow({
+      where: { workspaceId: wsBId, role: "WORKSPACE_OWNER" },
+    });
+    wsBMemberId = wsBOwnerMember.id;
     const passwordHash = await hashPassword(E2E.password);
     await prisma.user.upsert({
       where: { email: PLATFORM_ADMIN_EMAIL },
@@ -814,5 +947,379 @@ test.describe("onboarding forms — real HTTP action security (ES-5)", () => {
     expect(text).not.toMatch(/prisma|node_modules|\.tsx?:|at [A-Z]/i);
     expect(text).not.toContain("E2E P8S Malformed");
     expect(await formState(form.id)).toEqual(before);
+  });
+
+  // ---- ES-5 follow-up (Orion-approved plan, tests 7ac83b9): real-HTTP
+  // foreign-ID denials for the non-saveDraft actions — publishForm,
+  // openDraft, archiveForm — plus bound-workspace rebinding for
+  // createForm, all replayed as the wsA-only coach. Coverage of ALREADY
+  // implemented authorization: expected immediate GREEN. An executed
+  // write in any negative arm is a genuine RED and fails the test. Each
+  // arm's B target is pre-armed so a bypass produces a REAL observable
+  // write (never a vacuous domain error); the second-A replay positive
+  // runs BEFORE any B probe and proves the captured encoding is live.
+
+  test("publishForm — coach capture replays on a second wsA form but foreign wsB formId is denied with zero writes", async ({
+    page,
+  }) => {
+    const capForm = await seedForm("E2E P8S PubCap");
+    const okForm = await seedForm("E2E P8S PubOK");
+    const bForm = await seedFormAs("E2E P8S PubDeny", wsBId, wsBMemberId);
+    try {
+      await signIn(page, E2E.coach);
+      // Real UI publish press on the wsA draft: exactly one action POST;
+      // observed write = frozen version, closed draft, PUBLISHED audit.
+      const cap = await captureAction(
+        page,
+        `/workspace/${wsAId}/onboarding/forms/${capForm.id}`,
+        async () => {
+          await expect(page.getByTestId("publish-form")).toBeEnabled();
+          await page.getByTestId("publish-form").click();
+        },
+        async () => {
+          await expect
+            .poll(
+              async () =>
+                (
+                  await prisma.onboardingForm.findUniqueOrThrow({
+                    where: { id: capForm.id },
+                  })
+                ).draft,
+            )
+            .toBeNull();
+        },
+      );
+      const capAfter = await formState(capForm.id);
+      expect(capAfter.versions).toHaveLength(1);
+      expect(capAfter.versions[0].publishedByMemberId).toBe(coachMember.id);
+      expect(
+        hasAuditMeta(capAfter, { status: "PUBLISHED", version: "1" }),
+      ).toBe(true);
+
+      // Positive replay on a SECOND wsA form in identical pre-publish
+      // state (open publishable draft at the captured revision 1, zero
+      // versions): the exact captured encoding must mint a real version
+      // — not take the idempotent replay path.
+      const replayOk = await postCaptured(page.context().request, cap, {
+        body: rebindBody(cap, [capForm.id, okForm.id]),
+      });
+      await expectTypedSuccess(replayOk);
+      const okAfter = await formState(okForm.id);
+      expect(okAfter.form.draft).toBeNull();
+      expect(okAfter.versions).toHaveLength(1);
+      expect(okAfter.versions[0].publishedByMemberId).toBe(coachMember.id);
+      expect(hasAuditMeta(okAfter, { status: "PUBLISHED", version: "1" })).toBe(
+        true,
+      );
+
+      // Non-vacuous B preconditions, asserted pre-arm: open publishable
+      // draft at the captured expectedRevision (1), ZERO versions (no
+      // idempotent publishOriginRevision match), creator stamp is a real
+      // wsB member. A bypass would mint version 1 and close the draft.
+      const bBefore = await formState(bForm.id);
+      expect(bBefore.form.status).toBe("ACTIVE");
+      expect(bBefore.form.draft).not.toBeNull();
+      expect(bBefore.form.draftRevision).toBe(1);
+      expect(bBefore.versions).toHaveLength(0);
+      expect(bBefore.form.createdByMemberId).toBe(wsBMemberId);
+      const aBefore = await wsSnapshot(wsAId);
+      const bWsBefore = await wsSnapshot(wsBId);
+
+      // Arm 1 — fully rebound target: bound workspaceId wsA→wsB AND
+      // formId capForm→bForm genuinely addresses the wsB form.
+      const wsTampered = await postCaptured(page.context().request, cap, {
+        body: rebindBody(cap, [wsAId, wsBId], [capForm.id, bForm.id]),
+      });
+      console.log(`observed publish ws-tamper status: ${wsTampered.status()}`);
+      await expectTypedDenial(wsTampered);
+
+      // Arm 2 — foreign formId under wsA (coach IS a wsA member): the
+      // scoped lookup must miss exactly like a never-existent id.
+      const foreign = await postCaptured(page.context().request, cap, {
+        body: rebindBody(cap, [capForm.id, bForm.id]),
+      });
+      const ghost = await postCaptured(page.context().request, cap, {
+        body: rebindBody(cap, [capForm.id, GHOST_FORM_ID]),
+      });
+      console.log(
+        `observed publish foreign status: ${foreign.status()} vs ghost: ${ghost.status()}`,
+      );
+      expect(foreign.status()).toBe(ghost.status());
+      await expectTypedDenial(foreign);
+      await expectTypedDenial(ghost);
+
+      expect(await formState(bForm.id)).toEqual(bBefore);
+      expect(await wsSnapshot(wsBId)).toEqual(bWsBefore);
+      expect(await wsSnapshot(wsAId)).toEqual(aBefore);
+    } finally {
+      await removeSecurityFixtures();
+    }
+  });
+
+  test("openDraft — coach capture replays on a second wsA form but foreign wsB formId is denied with zero writes", async ({
+    page,
+  }) => {
+    const capForm = await seedClosedForm(
+      "E2E P8S OpenCap",
+      wsAId,
+      ownerMemberId,
+    );
+    const okForm = await seedClosedForm("E2E P8S OpenOK", wsAId, ownerMemberId);
+    const bForm = await seedClosedForm("E2E P8S OpenDeny", wsBId, wsBMemberId);
+    try {
+      await signIn(page, E2E.coach);
+      // Real UI reopen press on the closed wsA form: exactly one action
+      // POST; observed write = draft seeded from the latest version,
+      // revision +1, UPDATE audit.
+      const cap = await captureAction(
+        page,
+        `/workspace/${wsAId}/onboarding/forms/${capForm.id}`,
+        () => page.getByTestId("open-draft").click(),
+        async () => {
+          await expect
+            .poll(
+              async () =>
+                (
+                  await prisma.onboardingForm.findUniqueOrThrow({
+                    where: { id: capForm.id },
+                  })
+                ).draft !== null,
+            )
+            .toBe(true);
+        },
+      );
+      const capAfter = await formState(capForm.id);
+      expect(capAfter.form.draft).not.toBeNull();
+      expect(capAfter.form.draftRevision).toBe(2);
+      expect(capAfter.form.draftSavedByMemberId).toBe(coachMember.id);
+      expect(capAfter.audits.some((a) => a.action === "UPDATE")).toBe(true);
+
+      // Positive replay on a SECOND closed wsA form — a bypass-shaped
+      // encoding must open a real draft, bumping the baseline revision.
+      const okBaseline = await formState(okForm.id);
+      expect(okBaseline.form.draft).toBeNull();
+      const replayOk = await postCaptured(page.context().request, cap, {
+        body: rebindBody(cap, [capForm.id, okForm.id]),
+      });
+      await expectTypedSuccess(replayOk);
+      const okAfter = await formState(okForm.id);
+      expect(okAfter.form.draft).not.toBeNull();
+      expect(okAfter.form.draftRevision).toBe(
+        okBaseline.form.draftRevision + 1,
+      );
+      expect(okAfter.form.draftSavedByMemberId).toBe(coachMember.id);
+      expect(okAfter.audits.length).toBeGreaterThan(okBaseline.audits.length);
+
+      // Non-vacuous B preconditions, asserted pre-arm: a published
+      // version minted by a real wsB member, draft === null, baseline
+      // revision recorded — a bypass would seed a draft + bump + audit,
+      // not return an already-open draft.
+      const bBefore = await formState(bForm.id);
+      expect(bBefore.form.status).toBe("ACTIVE");
+      expect(bBefore.form.draft).toBeNull();
+      expect(bBefore.versions.length).toBeGreaterThanOrEqual(1);
+      expect(
+        bBefore.versions.every((v) => v.publishedByMemberId === wsBMemberId),
+      ).toBe(true);
+      expect(bBefore.form.createdByMemberId).toBe(wsBMemberId);
+      const aBefore = await wsSnapshot(wsAId);
+      const bWsBefore = await wsSnapshot(wsBId);
+
+      const wsTampered = await postCaptured(page.context().request, cap, {
+        body: rebindBody(cap, [wsAId, wsBId], [capForm.id, bForm.id]),
+      });
+      console.log(
+        `observed openDraft ws-tamper status: ${wsTampered.status()}`,
+      );
+      await expectTypedDenial(wsTampered);
+
+      const foreign = await postCaptured(page.context().request, cap, {
+        body: rebindBody(cap, [capForm.id, bForm.id]),
+      });
+      const ghost = await postCaptured(page.context().request, cap, {
+        body: rebindBody(cap, [capForm.id, GHOST_FORM_ID]),
+      });
+      console.log(
+        `observed openDraft foreign status: ${foreign.status()} vs ghost: ${ghost.status()}`,
+      );
+      expect(foreign.status()).toBe(ghost.status());
+      await expectTypedDenial(foreign);
+      await expectTypedDenial(ghost);
+
+      expect(await formState(bForm.id)).toEqual(bBefore);
+      expect(await wsSnapshot(wsBId)).toEqual(bWsBefore);
+      expect(await wsSnapshot(wsAId)).toEqual(aBefore);
+    } finally {
+      await removeSecurityFixtures();
+    }
+  });
+
+  test("archiveForm — coach capture replays on a second wsA form but foreign wsB formId is denied with zero writes", async ({
+    page,
+  }) => {
+    const capForm = await seedClosedForm(
+      "E2E P8S ArchCap",
+      wsAId,
+      ownerMemberId,
+    );
+    const okForm = await seedClosedForm("E2E P8S ArchOK", wsAId, ownerMemberId);
+    const bForm = await seedClosedForm("E2E P8S ArchDeny", wsBId, wsBMemberId);
+    try {
+      await signIn(page, E2E.coach);
+      // Real UI archive press on the closed-branch control: exactly one
+      // action POST; observed write = ARCHIVED status + stamps + audit.
+      const cap = await captureAction(
+        page,
+        `/workspace/${wsAId}/onboarding/forms/${capForm.id}`,
+        () => page.getByTestId("archive-form").click(),
+        async () => {
+          await expect
+            .poll(
+              async () =>
+                (
+                  await prisma.onboardingForm.findUniqueOrThrow({
+                    where: { id: capForm.id },
+                  })
+                ).status,
+            )
+            .toBe("ARCHIVED");
+        },
+      );
+      const capAfter = await formState(capForm.id);
+      expect(capAfter.form.archivedAt).not.toBeNull();
+      expect(capAfter.form.archivedByMemberId).toBe(coachMember.id);
+      expect(hasAuditMeta(capAfter, { status: "ARCHIVED" })).toBe(true);
+
+      // Positive replay on a SECOND ACTIVE wsA form — the captured
+      // encoding must take the real archive path, not the already-
+      // archived idempotent early return.
+      const replayOk = await postCaptured(page.context().request, cap, {
+        body: rebindBody(cap, [capForm.id, okForm.id]),
+      });
+      await expectTypedSuccess(replayOk);
+      const okAfter = await formState(okForm.id);
+      expect(okAfter.form.status).toBe("ARCHIVED");
+      expect(okAfter.form.archivedAt).not.toBeNull();
+      expect(okAfter.form.archivedByMemberId).toBe(coachMember.id);
+      expect(hasAuditMeta(okAfter, { status: "ARCHIVED" })).toBe(true);
+
+      // Non-vacuous B preconditions, asserted pre-arm: ACTIVE with null
+      // archival stamps — a bypass would flip status/stamps and audit,
+      // never the idempotent path. Creator/publisher stamps are a real
+      // wsB member's.
+      const bBefore = await formState(bForm.id);
+      expect(bBefore.form.status).toBe("ACTIVE");
+      expect(bBefore.form.archivedAt).toBeNull();
+      expect(bBefore.form.archivedByMemberId).toBeNull();
+      expect(bBefore.form.createdByMemberId).toBe(wsBMemberId);
+      expect(
+        bBefore.versions.every((v) => v.publishedByMemberId === wsBMemberId),
+      ).toBe(true);
+      const aBefore = await wsSnapshot(wsAId);
+      const bWsBefore = await wsSnapshot(wsBId);
+
+      const wsTampered = await postCaptured(page.context().request, cap, {
+        body: rebindBody(cap, [wsAId, wsBId], [capForm.id, bForm.id]),
+      });
+      console.log(`observed archive ws-tamper status: ${wsTampered.status()}`);
+      await expectTypedDenial(wsTampered);
+
+      const foreign = await postCaptured(page.context().request, cap, {
+        body: rebindBody(cap, [capForm.id, bForm.id]),
+      });
+      const ghost = await postCaptured(page.context().request, cap, {
+        body: rebindBody(cap, [capForm.id, GHOST_FORM_ID]),
+      });
+      console.log(
+        `observed archive foreign status: ${foreign.status()} vs ghost: ${ghost.status()}`,
+      );
+      expect(foreign.status()).toBe(ghost.status());
+      await expectTypedDenial(foreign);
+      await expectTypedDenial(ghost);
+
+      expect(await formState(bForm.id)).toEqual(bBefore);
+      expect(await wsSnapshot(wsBId)).toEqual(bWsBefore);
+      expect(await wsSnapshot(wsAId)).toEqual(aBefore);
+    } finally {
+      await removeSecurityFixtures();
+    }
+  });
+
+  test("createForm — bound-workspace wsA→wsB rebind denied; verbatim replay mints a second wsA form", async ({
+    page,
+  }) => {
+    try {
+      await signIn(page, E2E.coach);
+      // Real UI submit on /new: exactly one action POST; observed write =
+      // a wsA form row + CREATE audit stamped by the coach.
+      const cap = await captureAction(
+        page,
+        `/workspace/${wsAId}/onboarding/forms/new`,
+        async () => {
+          await page.getByTestId("form-name-input").fill("E2E P8S CreateCap");
+          await page.getByRole("button", { name: "Create form" }).click();
+        },
+        async () => {
+          await expect
+            .poll(async () =>
+              prisma.onboardingForm.count({
+                where: {
+                  workspaceId: wsAId,
+                  name: "E2E P8S CreateCap",
+                },
+              }),
+            )
+            .toBe(1);
+        },
+      );
+      const created = await prisma.onboardingForm.findMany({
+        where: { workspaceId: wsAId, name: "E2E P8S CreateCap" },
+      });
+      expect(created).toHaveLength(1);
+      const createdAudits = await prisma.auditEvent.findMany({
+        where: {
+          resourceType: "onboarding_form",
+          resourceId: created[0].id,
+          action: "CREATE",
+        },
+      });
+      expect(createdAudits).toHaveLength(1);
+      expect(createdAudits[0].actorUserId).toBe(coachMember.userId);
+
+      // Positive verbatim replay: the captured encoding adds a SECOND
+      // wsA form + CREATE audit — the replay channel is genuinely live.
+      const replayOk = await postCaptured(page.context().request, cap);
+      await expectTypedSuccess(replayOk);
+      const created2 = await prisma.onboardingForm.findMany({
+        where: { workspaceId: wsAId, name: "E2E P8S CreateCap" },
+      });
+      expect(created2).toHaveLength(2);
+      for (const f of created2) {
+        expect(
+          await prisma.auditEvent.count({
+            where: {
+              resourceType: "onboarding_form",
+              resourceId: f.id,
+              action: "CREATE",
+            },
+          }),
+        ).toBe(1);
+      }
+
+      // Negative — rebind ONLY the bound workspaceId wsA→wsB. There is
+      // no formId/ghost axis for create. A bypass would add a wsB row +
+      // CREATE audit: compare the FULL wsB collections, not counts.
+      const bBefore = await wsSnapshot(wsBId);
+      const aBefore = await wsSnapshot(wsAId);
+      const denied = await postCaptured(page.context().request, cap, {
+        body: rebindBody(cap, [wsAId, wsBId]),
+      });
+      console.log(`observed create ws-rebind status: ${denied.status()}`);
+      await expectTypedDenial(denied);
+      expect(await wsSnapshot(wsBId)).toEqual(bBefore);
+      expect(await wsSnapshot(wsAId)).toEqual(aBefore);
+    } finally {
+      await removeSecurityFixtures();
+    }
   });
 });
