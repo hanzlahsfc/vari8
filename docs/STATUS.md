@@ -5,6 +5,25 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-05 — P-008 non-save HTTP coverage follow-up — PLAN ONLY
+
+- Atlas proposed a read-only, test-only extension for real-HTTP
+  foreign-ID denial of publish/reopen/archive and bound-workspace
+  denial of create. The bounded plan is committed in
+  `docs/tasks/p008-editor-lifecycle-security-plan.md` at `2ed4b01`:
+  same-build captured action protocol, positive writes, non-vacuous
+  B-target states, full-row zero-write checks, foreign/ghost parity
+  where formId exists, and namespace-scoped cleanup. B fixtures use
+  a real B member, not an A member. No test or production behavior
+  changed; no DB or browser run occurred.
+- This adds coverage of already guarded service actions, so a first
+  PASS would be immediate-GREEN evidence, not a retrospective RED.
+  Any negative write would instead block and require a new test-first
+  production-fix cycle. Independent plan review and explicit approval
+  for future disposable-E2E fixture writes/deletes are still needed.
+  Prior local P-008 acceptance is not reopened by planning alone;
+  owned-edge verification remains the co-founders' deployment gate.
+
 ## 2026-10-05 — P-008 local code/evidence checkpoint ACCEPTED; edge gate OPEN
 
 - Atlas independently audited the final2 captures at clean committed
