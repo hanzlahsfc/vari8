@@ -5,6 +5,34 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-05 — P-008 local code/evidence checkpoint ACCEPTED; edge gate OPEN
+
+- Atlas independently audited the final2 captures at clean committed
+  `6391f6131c502f041f5f3ff17675eb5a2d432fea`: VALID, zero
+  discrepancies. The failed full integration attempt at `28d1796`
+  remains disclosed; the user-authorized three-file retry on
+  `10acc9b` is a separate 62/62 capture; the later authorized final2
+  integration ran 289/289 (24/24 files) and conditional E2E ran
+  149 passed/12 skipped, both exit 0. The E2E BUILD_ID
+  `wyVUUGzregIu8WxhrmFuf` is inside the capture window. Every log
+  binds SHA, UTC, clean before/after porcelain, real exit and owned
+  disposable DB identity with credentials redacted.
+- Helios's bounded code/contract PASS and Orion's different-model
+  unified whole-diff security PASS cover the local code review lanes;
+  neither reviewer reran the builder's gates. The production/schema/
+  tests/lockfile bytes are unchanged from PD29 fix `814620a` to this
+  docs-only record. This is scoped LOCAL acceptance of the P-008
+  form-definition builder evidence, not a final release/edge verdict.
+- The low, non-blocking global audit `meta.status` vocabulary finding
+  remains a follow-up. The old integration stall's first wait and a
+  schema-less `public.users` lookup remain unproven diagnostics.
+  App-level missing-Origin and spoofed-XFH requests executed in local
+  testing; public-edge Origin/Host/X-Forwarded-Host/Forwarded header
+  behavior has NOT been verified. Whether to reject missing Origin or
+  require real-HTTP foreign-ID coverage for non-save actions is still
+  a separate policy/scope choice. No push/PR/merge/deploy was
+  authorized or performed.
+
 ## 2026-10-05 — P-008 final2 local integrated gates GREEN; edge and release gates OPEN
 
 - The user authorized one full integration run on disposable `p8e_int`

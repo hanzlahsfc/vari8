@@ -71,6 +71,24 @@
   `gate-logs/p008-editor-recovery/es2a-clean-recovery/`; all attempts
   preserved including invalid ones; no edits during a capture.
 
+## Atlas final2 evidence audit — 2026-10-05 (scoped local acceptance)
+
+Atlas read-only audited the final2 integration/E2E captures and their
+failed-run/targeted-retry chronology on exact clean `6391f61`: VALID,
+zero discrepancies. It verified the single authorized full integration
+289/289 exit 0 preceded the conditional full E2E 149 passed/12 skipped
+exit 0, with in-window BUILD_ID `wyVUUGzregIu8WxhrmFuf`, clean
+porcelain, exact SHA and redacted DB identities. Earlier FAILED
+integration and 62/62 targeted retry are distinct preserved windows,
+not retroactively waived. Mechanism/unit captures at `28d1796` apply
+to the byte-identical production/test tree; later changes are docs
+only. Combined with Helios's bounded code PASS and Orion's read-only
+unified whole-diff security PASS, the P-008 form-definition builder
+reaches a scoped LOCAL code/evidence acceptance checkpoint. Reviewers
+did not independently run tests. Owned-edge verification and explicit
+user authority remain required before any push/PR/merge/deploy;
+no release action occurred.
+
 ## Final2 integrated local gates — 2026-10-05 (edge/release still open)
 
 After explicit user approval for both the full disposable integration
