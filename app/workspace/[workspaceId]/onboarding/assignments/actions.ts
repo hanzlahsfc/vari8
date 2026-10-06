@@ -14,10 +14,10 @@ import { isOnboardingAssignmentsEnabled } from "@/lib/onboarding/assignments-gat
 /**
  * P-013 — onboarding assignment server actions.
  *
- * Order of operations is load-bearing: session gate → DEV FLAG → only then
+ * Order of operations is load-bearing: DEV FLAG → session gate → only then
  * binding user-controlled fields. With the flag off, the action returns the
- * feature-off failure before any form field is read and before the boundary
- * is touched — no mutation, no audit, no service call.
+ * feature-off failure before `auth()` runs — no session lookup, no form
+ * field reads, no boundary/database/audit work.
  *
  * Contract notes:
  * - `workspaceId` is a caller-bound argument but remains an UNTRUSTED input;
@@ -122,12 +122,12 @@ export async function createAssignment(
   workspaceId: string,
   formData: FormData,
 ): Promise<ActionResult<{ assignmentId: string }>> {
-  const gate = await sessionGate();
-  if (!gate.ok) return gate;
   if (
     !isOnboardingAssignmentsEnabled(process.env.ENABLE_ONBOARDING_ASSIGNMENTS)
   )
     return fail(OFF);
+  const gate = await sessionGate();
+  if (!gate.ok) return gate;
   const ws = boundedArg(workspaceId);
   if (!ws || !isFormData(formData)) return fail(INVALID);
   const clientProfileId = singleString(formData, "clientProfileId", MAX_ID_LEN);
@@ -148,12 +148,12 @@ export async function replaceAssignment(
   workspaceId: string,
   formData: FormData,
 ): Promise<ActionResult<{ changed: boolean; assignmentId?: string }>> {
-  const gate = await sessionGate();
-  if (!gate.ok) return gate;
   if (
     !isOnboardingAssignmentsEnabled(process.env.ENABLE_ONBOARDING_ASSIGNMENTS)
   )
     return fail(OFF);
+  const gate = await sessionGate();
+  if (!gate.ok) return gate;
   const ws = boundedArg(workspaceId);
   if (!ws || !isFormData(formData)) return fail(INVALID);
   const assignmentId = singleString(formData, "assignmentId", MAX_ID_LEN);
@@ -172,12 +172,12 @@ export async function cancelAssignment(
   workspaceId: string,
   formData: FormData,
 ): Promise<ActionResult<{ cancelled: true }>> {
-  const gate = await sessionGate();
-  if (!gate.ok) return gate;
   if (
     !isOnboardingAssignmentsEnabled(process.env.ENABLE_ONBOARDING_ASSIGNMENTS)
   )
     return fail(OFF);
+  const gate = await sessionGate();
+  if (!gate.ok) return gate;
   const ws = boundedArg(workspaceId);
   if (!ws || !isFormData(formData)) return fail(INVALID);
   const assignmentId = singleString(formData, "assignmentId", MAX_ID_LEN);

@@ -123,8 +123,11 @@ describe.skipIf(!enabled)("P-013 onboarding assignments (real PG)", () => {
       },
     });
 
-  async function staffFixture(role: Role = "WORKSPACE_OWNER") {
-    const ws = await workspace();
+  async function staffFixture(
+    role: Role = "WORKSPACE_OWNER",
+    existing?: { id: string },
+  ) {
+    const ws = existing ?? (await workspace());
     const u = await user();
     const m = await member(ws.id, u.id, role);
     return { ws, u, m };
@@ -412,13 +415,15 @@ describe.skipIf(!enabled)("P-013 onboarding assignments (real PG)", () => {
         where: { id: ca.id },
         data: { status: "REMOVED" },
       });
+      // Denied mutation surfaces the uniform non-disclosing error (P2-1) —
+      // the authorization failure is real but existence is never revealed.
       await expect(
         cancelOnboardingAssignment(
           s(coachU.id),
           { workspaceId: ws.id, assignmentId: created.assignmentId },
           prisma,
         ),
-      ).rejects.toBeInstanceOf(AccessDeniedError);
+      ).rejects.toMatchObject({ code: "assignment_not_accessible" });
       const list = await listOnboardingAssignments(
         s(coachU.id),
         { workspaceId: ws.id },
@@ -849,6 +854,305 @@ describe.skipIf(!enabled)("P-013 onboarding assignments (real PG)", () => {
         ),
       ).rejects.toThrow();
       expect(await assignmentCount()).toBe(countBefore);
+    });
+  });
+
+  describe("authorization order and non-disclosure (P2-1)", () => {
+    /**
+     * A denied caller must be indistinguishable from probing: missing id,
+     * ACTIVE row, terminal row, and cross-workspace row all produce the SAME
+     * `assignment_not_accessible` — authorization happens before any row lock
+     * or status read can leak existence/lifecycle. Authorized callers keep
+     * the useful `assignment_not_active` distinction.
+     */
+    it("denied callers get identical not_accessible for missing/active/terminal/foreign", async () => {
+      const { ws, m } = await staffFixture("WORKSPACE_OWNER");
+      const other = await staffFixture("WORKSPACE_OWNER");
+      // Coach assigned ONLY to cpA — write-scope proves targeted denial,
+      // not blanket denial.
+      const { m: coach } = await staffFixture("COACH", ws);
+      const cpA = await eligibleClient(ws.id);
+      const cpB = await eligibleClient(ws.id);
+      await assignCoach(ws.id, cpA.id, coach.id);
+      // Assistant (read-scope) assigned to cpB — authorized to READ the row,
+      // never to mutate it.
+      const { m: assistant } = await staffFixture("ASSISTANT_COACH", ws);
+      await assignCoach(ws.id, cpB.id, assistant.id);
+
+      const f = await form(ws.id, m.id);
+      const v = await version(f.id, 1, m.id);
+      const mk = async (status: "ACTIVE" | "CANCELLED") =>
+        prisma.onboardingFormAssignment.create({
+          data: {
+            workspaceId: ws.id,
+            clientProfileId: cpB.id,
+            formId: f.id,
+            formVersionId: v.id,
+            status,
+            assignedByMemberId: m.id,
+            ...(status === "CANCELLED"
+              ? { endedByMemberId: m.id, endedAt: new Date() }
+              : {}),
+          },
+        });
+      const activeRow = await mk("ACTIVE");
+      const terminalRow = await mk("CANCELLED");
+      // Cross-workspace row in `other` with matching shape.
+      const otherCp = await eligibleClient(other.ws.id);
+      const otherF = await form(other.ws.id, other.m.id);
+      const otherV = await version(otherF.id, 1, other.m.id);
+      const foreignRow = await prisma.onboardingFormAssignment.create({
+        data: {
+          workspaceId: other.ws.id,
+          clientProfileId: otherCp.id,
+          formId: otherF.id,
+          formVersionId: otherV.id,
+          assignedByMemberId: other.m.id,
+        },
+      });
+
+      for (const target of [
+        "missing-row",
+        activeRow.id,
+        terminalRow.id,
+        foreignRow.id,
+      ]) {
+        for (const op of [
+          () =>
+            replaceOnboardingAssignment(
+              s(coach.userId),
+              { workspaceId: ws.id, assignmentId: target },
+              prisma,
+            ),
+          () =>
+            cancelOnboardingAssignment(
+              s(coach.userId),
+              { workspaceId: ws.id, assignmentId: target },
+              prisma,
+            ),
+        ]) {
+          await expect(op()).rejects.toMatchObject({
+            code: "assignment_not_accessible",
+          });
+        }
+      }
+
+      // Assistant (read-only) on its OWN assigned client's row: also the
+      // same non-disclosing denial — never a write denial that reveals the
+      // row exists and is ACTIVE.
+      for (const target of ["missing-row", activeRow.id, terminalRow.id]) {
+        await expect(
+          cancelOnboardingAssignment(
+            s(assistant.userId),
+            { workspaceId: ws.id, assignmentId: target },
+            prisma,
+          ),
+        ).rejects.toMatchObject({ code: "assignment_not_accessible" });
+      }
+
+      // Authorized caller keeps the useful distinction: terminal →
+      // not_active, missing → not_accessible, active → succeeds.
+      await expect(
+        cancelOnboardingAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, assignmentId: terminalRow.id },
+          prisma,
+        ),
+      ).rejects.toMatchObject({ code: "assignment_not_active" });
+      await expect(
+        cancelOnboardingAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, assignmentId: "missing-row" },
+          prisma,
+        ),
+      ).rejects.toMatchObject({ code: "assignment_not_accessible" });
+      await expect(
+        cancelOnboardingAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, assignmentId: activeRow.id },
+          prisma,
+        ),
+      ).resolves.toBeUndefined();
+    });
+
+    it("concurrent replace/cancel bursts settle into a valid lifecycle under the lock order", async () => {
+      const { ws, m } = await staffFixture();
+      const cp = await eligibleClient(ws.id);
+      const f = await form(ws.id, m.id);
+      await version(f.id, 1, m.id);
+      await version(f.id, 2, m.id);
+      const row = await prisma.onboardingFormAssignment.create({
+        data: {
+          workspaceId: ws.id,
+          clientProfileId: cp.id,
+          formId: f.id,
+          formVersionId: (await version(f.id, 3, m.id)).id,
+          assignedByMemberId: m.id,
+        },
+      });
+      const results = await Promise.allSettled([
+        replaceOnboardingAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, assignmentId: row.id },
+          prisma,
+        ),
+        cancelOnboardingAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, assignmentId: row.id },
+          prisma,
+        ),
+        replaceOnboardingAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, assignmentId: row.id },
+          prisma,
+        ),
+        cancelOnboardingAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, assignmentId: row.id },
+          prisma,
+        ),
+      ]);
+      // Every request settles — no deadlock, no surfaced serialization error.
+      for (const r of results) {
+        if (r.status === "rejected") {
+          expect(r.reason).toMatchObject({
+            code: expect.stringMatching(/^assignment_/),
+          });
+        }
+      }
+      const rows = await prisma.onboardingFormAssignment.findMany({
+        where: { clientProfileId: cp.id, formId: f.id },
+      });
+      // Exactly one valid end state: the row transitioned exactly once into
+      // CANCELLED or SUPERSEDED; at most one ACTIVE row exists.
+      const active = rows.filter((r) => r.status === "ACTIVE");
+      const terminal = rows.filter((r) => r.status !== "ACTIVE");
+      expect(active.length).toBeLessThanOrEqual(1);
+      expect(terminal.length).toBeGreaterThanOrEqual(1);
+      expect(rows.find((r) => r.id === row.id)?.status).not.toBe("ACTIVE");
+      // Every terminal row carries provenance; every ACTIVE row carries none.
+      for (const r of rows) {
+        if (r.status === "ACTIVE") {
+          expect(r.endedAt).toBeNull();
+          expect(r.endedByMemberId).toBeNull();
+        } else {
+          expect(r.endedAt).not.toBeNull();
+          expect(r.endedByMemberId).not.toBeNull();
+        }
+      }
+    });
+  });
+
+  describe("form-picker authorization (P2-3)", () => {
+    it("listAssignableForms requires form-template read — assistant is denied", async () => {
+      const { ws, m } = await staffFixture();
+      const { m: assistant } = await staffFixture("ASSISTANT_COACH", ws);
+      const cp = await eligibleClient(ws.id);
+      await assignCoach(ws.id, cp.id, assistant.id);
+      const f = await form(ws.id, m.id);
+      await version(f.id, 1, m.id);
+      // Assistant may READ assignment records but must not reach the
+      // form-template picker data — that permission is
+      // onboardingFormTemplates/read, which assistants do not hold.
+      await expect(
+        listAssignableForms(
+          s(assistant.userId),
+          { workspaceId: ws.id },
+          prisma,
+        ),
+      ).rejects.toThrow(AccessDeniedError);
+      // Boundary surfaces the same denial as a safe failure.
+      const { listAssignableFormsForWorkspace } =
+        await import("../../lib/onboarding/assignments-boundary");
+      const saved = process.env.ENABLE_ONBOARDING_ASSIGNMENTS;
+      process.env.ENABLE_ONBOARDING_ASSIGNMENTS = "1";
+      try {
+        const result = await listAssignableFormsForWorkspace(
+          s(assistant.userId),
+          { workspaceId: ws.id },
+          { db: prisma },
+        );
+        expect(result.ok).toBe(false);
+      } finally {
+        if (saved === undefined)
+          delete process.env.ENABLE_ONBOARDING_ASSIGNMENTS;
+        else process.env.ENABLE_ONBOARDING_ASSIGNMENTS = saved;
+      }
+      // Owner and coach keep the permission.
+      const { m: coach } = await staffFixture("COACH", ws);
+      const ownerForms = await listAssignableForms(
+        s(m.userId),
+        { workspaceId: ws.id },
+        prisma,
+      );
+      expect(ownerForms.map((x) => x.id)).toContain(f.id);
+      const coachForms = await listAssignableForms(
+        s(coach.userId),
+        { workspaceId: ws.id },
+        prisma,
+      );
+      expect(coachForms.map((x) => x.id)).toContain(f.id);
+    });
+  });
+
+  describe("platform-admin dual role (P3)", () => {
+    it("a PLATFORM_ADMIN with an ACTIVE workspace membership stays denied", async () => {
+      const { ws, m } = await staffFixture();
+      const admin = await user("PLATFORM_ADMIN");
+      await member(ws.id, admin.id, "COACH");
+      const cp = await eligibleClient(ws.id);
+      const f = await form(ws.id, m.id);
+      await version(f.id, 1, m.id);
+      await expect(
+        listOnboardingAssignments(s(admin.id), { workspaceId: ws.id }, prisma),
+      ).rejects.toThrow(AccessDeniedError);
+      await expect(
+        createOnboardingAssignment(
+          s(admin.id),
+          { workspaceId: ws.id, clientProfileId: cp.id, formId: f.id },
+          prisma,
+        ),
+      ).rejects.toThrow(AccessDeniedError);
+    });
+  });
+
+  describe("assistant assigned read scope (P3)", () => {
+    it("assistant sees rows only for clients under its ACTIVE ClientAssignment", async () => {
+      const { ws, m } = await staffFixture();
+      const { m: assistant } = await staffFixture("ASSISTANT_COACH", ws);
+      const cpIn = await eligibleClient(ws.id);
+      const cpOut = await eligibleClient(ws.id);
+      await assignCoach(ws.id, cpIn.id, assistant.id);
+      const f = await form(ws.id, m.id);
+      const v = await version(f.id, 1, m.id);
+      const inRow = await prisma.onboardingFormAssignment.create({
+        data: {
+          workspaceId: ws.id,
+          clientProfileId: cpIn.id,
+          formId: f.id,
+          formVersionId: v.id,
+          assignedByMemberId: m.id,
+        },
+      });
+      const f2 = await form(ws.id, m.id);
+      const v2 = await version(f2.id, 1, m.id);
+      const outRow = await prisma.onboardingFormAssignment.create({
+        data: {
+          workspaceId: ws.id,
+          clientProfileId: cpOut.id,
+          formId: f2.id,
+          formVersionId: v2.id,
+          assignedByMemberId: m.id,
+        },
+      });
+      const page = await listOnboardingAssignments(
+        s(assistant.userId),
+        { workspaceId: ws.id },
+        prisma,
+      );
+      const ids = page.items.map((i) => i.id);
+      expect(ids).toContain(inRow.id);
+      expect(ids).not.toContain(outRow.id);
     });
   });
 

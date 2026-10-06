@@ -7,7 +7,7 @@ import type {
   AssignableClient,
   AssignableForm,
   AssignmentSummary,
-} from "@/lib/onboarding/assignments";
+} from "@/lib/onboarding/assignments-boundary";
 import {
   cancelAssignment,
   createAssignment,

@@ -251,7 +251,11 @@ test.describe("feature flag OFF (port 3101)", () => {
     ).toBeVisible();
   });
 
-  test("a crafted POST to the closed route mutates nothing", async ({
+  // NOTE: this is a transport-level probe, not a server-action invocation —
+  // a non-action POST receives the not-found response. The real
+  // action-layer flag-off ordering (flag before auth/FormData/boundary) is
+  // proven by tests/unit/onboarding-assignments-actions.test.ts.
+  test("a non-action POST to the closed route mutates nothing", async ({
     request,
   }) => {
     const rowsBefore = await prisma.onboardingFormAssignment.count();

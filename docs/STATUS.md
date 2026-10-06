@@ -5,6 +5,29 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-06 — P-013-R2 repair delta on reviewed be811f3
+
+- DeepSeek V4.1 Flash independently reviewed the pushed P-013 candidate
+  `be811f3` → **CONDITIONAL PASS** (no P0/P1; three P2 repairs, five P3
+  hardening items; reviewer gates all passed). Reviewer-corrected record:
+  the original candidate is 27 files (14 modified + 13 added); original
+  integration result 323 tests / 26 files including 25 P-013 tests.
+- Repairs implemented as a forward commit (reviewed commit preserved, no
+  amend): (P2-1) replace/cancel now resolve the immutable tuple via a
+  non-locking scoped read, authorize inside the tx, then take tuple +
+  row locks — denied callers get identical `assignment_not_accessible`
+  for missing/active/terminal/foreign; (P2-2) the page and client
+  component route through the boundary only, with a mechanical test
+  forbidding direct `app/**` service imports; (P2-3)
+  `listAssignableForms` now requires `onboardingFormTemplates/read`
+  (assistant denied). P3: `hashtextextended` advisory keys, flag check
+  before `auth()` in all three actions (action-layer mocked test), an
+  honest transport-level POST test name, dual-role platform-admin and
+  positive assistant-scope integration tests.
+- `be811f3` was the independently reviewed original; the R2 delta is NOT
+  yet independently reviewed. Full record in
+  `docs/tasks/p013-onboarding-assignments.md`.
+
 ## 2026-10-06 — P-013 dev-gated staff onboarding assignments (candidate)
 
 - Implemented on `feature/p013-onboarding-assignments` from verified

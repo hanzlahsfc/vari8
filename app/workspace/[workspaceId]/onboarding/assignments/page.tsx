@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { forbidden, notFound } from "next/navigation";
 
-import { AccessDeniedError } from "@/lib/auth/guard";
 import {
   requireOnboardingAssignmentsAccess,
   requireSessionUser,
@@ -9,10 +8,12 @@ import {
 import { resolveScope } from "@/lib/auth/rbac";
 import { isOnboardingAssignmentsEnabled } from "@/lib/onboarding/assignments-gate";
 import {
-  listAssignableClients,
-  listAssignableForms,
-  listOnboardingAssignments,
-} from "@/lib/onboarding/assignments";
+  listAssignableClientsForWorkspace,
+  listAssignableFormsForWorkspace,
+  listAssignmentsForWorkspace,
+  type AssignableClient,
+  type AssignableForm,
+} from "@/lib/onboarding/assignments-boundary";
 import {
   nextRosterHref,
   parseRosterQuery,
@@ -61,32 +62,29 @@ export default async function OnboardingAssignmentsPage({
 
   const ctx = await requireOnboardingAssignmentsAccess(session, workspaceId);
 
-  let assignments;
-  try {
-    assignments = await listOnboardingAssignments(session, {
-      workspaceId,
-      limit: ROSTER_PAGE_SIZE,
-      cursor: query.cursor,
-    });
-  } catch (error) {
-    if (error instanceof AccessDeniedError) forbidden();
-    throw error;
-  }
+  const assignmentPage = await listAssignmentsForWorkspace(session, {
+    workspaceId,
+    limit: ROSTER_PAGE_SIZE,
+    cursor: query.cursor,
+  });
+  if (!assignmentPage.ok) forbidden();
+  const assignments = assignmentPage.value;
 
   const canWrite =
     resolveScope("onboardingAssignments", "write", ctx.workspaceRole) !==
     "denied";
 
-  // Picker lists are only needed when mutation controls render.
-  let clients: Awaited<ReturnType<typeof listAssignableClients>>["items"] = [];
-  let forms: Awaited<ReturnType<typeof listAssignableForms>> = [];
+  // Picker lists are only fetched when mutation controls render.
+  let clients: AssignableClient[] = [];
+  let forms: AssignableForm[] = [];
   if (canWrite) {
-    [clients, forms] = await Promise.all([
-      listAssignableClients(session, { workspaceId, limit: 100 }).then(
-        (r) => r.items,
-      ),
-      listAssignableForms(session, { workspaceId }),
+    const [clientsPage, formsResult] = await Promise.all([
+      listAssignableClientsForWorkspace(session, { workspaceId, limit: 100 }),
+      listAssignableFormsForWorkspace(session, { workspaceId }),
     ]);
+    if (!clientsPage.ok || !formsResult.ok) forbidden();
+    clients = clientsPage.value.items;
+    forms = formsResult.value;
   }
 
   const basePath = `/workspace/${encodeURIComponent(workspaceId)}/onboarding/assignments`;

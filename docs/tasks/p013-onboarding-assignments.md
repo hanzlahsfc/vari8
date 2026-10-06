@@ -1,9 +1,15 @@
 # P-013 — Dev-gated staff onboarding-form assignments
 
-Status: candidate pushed for independent review.
-Builder: Devin (SWE-2 High). Independent review: DeepSeek V4.1 Flash (pending).
+Status: R2 repair candidate — `be811f3` received CONDITIONAL PASS from
+DeepSeek V4.1 Flash (no P0/P1; three P2 repairs, five P3 items); the repair
+delta is a separate forward commit that has NOT been independently reviewed.
+Builder: Devin (SWE-2 High). Independent review: DeepSeek V4.1 Flash.
 Base: `origin/main` @ `7ead9481ea95dc0dbe6898713b3a97247c9b7c7f`.
 Branch: `feature/p013-onboarding-assignments`.
+Original reviewed candidate: `be811f3ffdc609e1380e8235888b1d393e8f4e1d`
+(27 files: 14 modified + 13 added — corrected from the initial report's
+"25"; original integration result was 323 tests across 26 files including
+25 P-013 tests, not "322+25").
 
 ## Scope
 
@@ -163,6 +169,69 @@ definitions/user-visible IDs.
 - Playwright's flag-off server (`:3101`) is a second `next start` instance of
   the same build with `ENABLE_ONBOARDING_ASSIGNMENTS` pinned empty — local
   test infrastructure only.
+
+## R2 repairs (be811f3..HEAD — not yet independently reviewed)
+
+DeepSeek V4.1 Flash reviewed `be811f3` → **CONDITIONAL PASS** (no P0/P1;
+three P2 repairs + five P3 items; all reviewer-run gates passed).
+
+**P2-1 — authorization-before-lock.** `replace`/`cancel` previously took a
+`FOR UPDATE` row lock and disclosed terminal status before authorizing.
+Now: a non-locking scoped lookup resolves the immutable
+(workspace, client, form) tuple → `authorize(write)` inside the tx, with
+`AccessDeniedError` mapped to `assignment_not_accessible` → tuple advisory
+lock → row lock → status re-check. Missing/active/terminal/foreign inputs
+return the identical code to denied callers; authorized callers keep
+`assignment_not_active`. Integration test proves per-case uniformity for an
+assigned-out-of-scope coach, an assistant on its own client's row, a
+foreign-workspace row, and missing ids — plus a 4-way replace/cancel burst
+with no deadlock and a valid single-transition outcome.
+
+**P2-2 — enforced boundary.** The page and the manager now import only
+`assignments-boundary` (reads return `ActionResult`, `!ok → forbidden()`,
+the P-008 convention); surface types are re-exported through the boundary.
+A mechanical test (`onboarding-assignments-boundary-imports.test.ts`) walks
+`app/**` and fails on any direct service import — it caught both the page
+and the client component before the fix.
+
+**R2 gates (re-run on the repaired tree, real exit codes).**
+
+| Gate                                           | Result                                                  |
+| ---------------------------------------------- | ------------------------------------------------------- |
+| `git diff --check`                             | 0                                                       |
+| `npm run format:check`                         | 0                                                       |
+| `npm run typecheck`                            | 0                                                       |
+| `npm run lint`                                 | 0                                                       |
+| `npm test`                                     | 667 passed / 57 files, exit 0 (+9 tests in 2 new files) |
+| prisma generate / validate                     | 0 / 0                                                   |
+| fresh `app_p013_check` migrate deploy / status | 0 — all 14 migrations; "up to date"                     |
+| `npm run test:integration` (fresh PG)          | 328 passed / 26 files (30 P-013)                        |
+| `npm run build`                                | 0                                                       |
+| focused P-013 E2E                              | 12/12                                                   |
+| full E2E                                       | 188 passed, 12 skipped (pre-existing), 0 failed         |
+| secrets/scope scan on `be811f3..HEAD`          | clean — 9 modified + 2 new test files                   |
+
+**P2-3 — form-picker permission.** `listAssignableForms` now authorizes
+`onboardingFormTemplates/read` (owner + coach) instead of relying on
+assignment read; an assistant — who may read assignment rows — is denied,
+proven at service and boundary level. Only id/name/latest-version-seq is
+returned; no definitions or drafts.
+
+**P3 items.**
+
+- Advisory lock uses `hashtextextended($1, 0)` (64-bit, matching the
+  reviewed invitations convention).
+- Server actions check the flag BEFORE `auth()` — flag-off performs no
+  session lookup, FormData access, boundary call, mutation, or audit
+  (proven by `onboarding-assignments-actions.test.ts` mocking auth,
+  boundary, and FormData spies).
+- The E2E "crafted POST" test is renamed to say exactly what it proves —
+  a transport-level non-action POST to a 404'd route with zero DB effects;
+  action-layer ordering is proven by the unit spec above.
+- Dual-role platform-admin integration test (platformRole=PLATFORM_ADMIN +
+  ACTIVE workspace COACH membership → read and write denied).
+- Positive assistant-scope integration test (assistant sees rows only for
+  clients under its own ACTIVE `ClientAssignment`).
 
 ## Same-model self-review (fresh pass over the full diff)
 

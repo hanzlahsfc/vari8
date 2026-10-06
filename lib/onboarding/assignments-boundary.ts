@@ -35,6 +35,14 @@ import {
 export type ActionResult<T> =
   { ok: true; value: T } | { ok: false; message: string };
 
+// App-facing surface types — components/pages import these from THIS
+// boundary, never from the guarded service module.
+export type {
+  AssignableClient,
+  AssignableForm,
+  AssignmentSummary,
+} from "./assignments";
+
 export type BoundaryDeps = { db?: PrismaClient };
 
 const INVALID_INPUT = "Check the form details and try again.";

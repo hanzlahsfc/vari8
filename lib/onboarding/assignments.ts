@@ -27,6 +27,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { prisma as defaultPrisma } from "../db";
 import {
+  AccessDeniedError,
   authorize,
   authorizeCollection,
   type CollectionContext,
@@ -112,9 +113,10 @@ async function lockAssignmentTuple(
   formId: string,
 ): Promise<void> {
   // $executeRawUnsafe: pg_advisory_xact_lock returns void, which $queryRaw
-  // cannot deserialize.
+  // cannot deserialize. hashtextextended matches the reviewed invitations
+  // convention (64-bit keyspace, not 32-bit hashtext).
   await tx.$executeRawUnsafe(
-    `SELECT pg_advisory_xact_lock(hashtext($1))`,
+    `SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
     `onbassign:${workspaceId}:${clientProfileId}:${formId}`,
   );
 }
@@ -304,10 +306,14 @@ export async function listAssignableForms(
   input: { workspaceId: string },
   client: PrismaClient = defaultPrisma,
 ): Promise<AssignableForm[]> {
+  // Form-picker data is form-template data: it requires the approved
+  // onboardingFormTemplates/read permission (owner + coach), not merely the
+  // assignment read an assistant holds. Never returns definitions or drafts —
+  // only id, name, and the latest published version number.
   const ctx = await authorizeCollection(
     session,
     {
-      resource: "onboardingAssignments",
+      resource: "onboardingFormTemplates",
       action: "read",
       workspaceId: input.workspaceId,
     },
@@ -444,6 +450,49 @@ async function lockAssignmentRow(
   return rows[0] ?? null;
 }
 
+/**
+ * Authorization-before-lock protocol for row-targeting mutations (P2-1):
+ * a NON-locking scoped lookup resolves the immutable (workspace, client,
+ * form) tuple, the caller is authorized against it, and only then are locks
+ * acquired — tuple advisory lock first, row lock second, in that fixed order
+ * for every mutation. Missing, foreign, denied, active, and terminal inputs
+ * all surface the same `assignment_not_accessible` to unauthorized callers;
+ * only authorized callers learn `assignment_not_active`.
+ */
+async function authorizeAssignmentTarget(
+  tx: Prisma.TransactionClient,
+  session: SessionLike,
+  input: { workspaceId: string; assignmentId: string },
+): Promise<{
+  ctx: Awaited<ReturnType<typeof authorize>>;
+  target: { clientProfileId: string; formId: string };
+}> {
+  const resolved = await tx.onboardingFormAssignment.findFirst({
+    where: { id: input.assignmentId, workspaceId: input.workspaceId },
+    // Immutable columns only — existence/status is never read here.
+    select: { clientProfileId: true, formId: true },
+  });
+  if (!resolved)
+    throw new OnboardingAssignmentError("assignment_not_accessible");
+  try {
+    const ctx = await authorize(
+      session,
+      {
+        resource: "onboardingAssignments",
+        action: "write",
+        workspaceId: input.workspaceId,
+        clientProfileId: resolved.clientProfileId,
+      },
+      createPrismaAuthorizationRepo(tx),
+    );
+    return { ctx, target: resolved };
+  } catch (error) {
+    if (error instanceof AccessDeniedError)
+      throw new OnboardingAssignmentError("assignment_not_accessible");
+    throw error;
+  }
+}
+
 export async function replaceOnboardingAssignment(
   session: SessionLike,
   input: { workspaceId: string; assignmentId: string },
@@ -453,32 +502,26 @@ export async function replaceOnboardingAssignment(
   return withSerializedRetry(() =>
     db.$transaction(
       async (tx) => {
+        const { ctx, target } = await authorizeAssignmentTarget(
+          tx,
+          session,
+          input,
+        );
+        await lockAssignmentTuple(
+          tx,
+          input.workspaceId,
+          target.clientProfileId,
+          target.formId,
+        );
         const current = await lockAssignmentRow(
           tx,
           input.workspaceId,
           input.assignmentId,
         );
-        // Foreign/missing rows are indistinguishable — never reveal existence.
         if (!current)
           throw new OnboardingAssignmentError("assignment_not_accessible");
         if (current.status !== "ACTIVE")
           throw new OnboardingAssignmentError("assignment_not_active");
-        const ctx = await authorize(
-          session,
-          {
-            resource: "onboardingAssignments",
-            action: "write",
-            workspaceId: input.workspaceId,
-            clientProfileId: current.clientProfileId,
-          },
-          createPrismaAuthorizationRepo(tx),
-        );
-        await lockAssignmentTuple(
-          tx,
-          input.workspaceId,
-          current.clientProfileId,
-          current.formId,
-        );
         await requireEligibleClient(
           tx,
           input.workspaceId,
@@ -550,6 +593,17 @@ export async function cancelOnboardingAssignment(
   return withSerializedRetry(() =>
     db.$transaction(
       async (tx) => {
+        const { ctx, target } = await authorizeAssignmentTarget(
+          tx,
+          session,
+          input,
+        );
+        await lockAssignmentTuple(
+          tx,
+          input.workspaceId,
+          target.clientProfileId,
+          target.formId,
+        );
         const current = await lockAssignmentRow(
           tx,
           input.workspaceId,
@@ -560,22 +614,6 @@ export async function cancelOnboardingAssignment(
         // Terminal/stale/repeated requests produce no mutation and no audit.
         if (current.status !== "ACTIVE")
           throw new OnboardingAssignmentError("assignment_not_active");
-        const ctx = await authorize(
-          session,
-          {
-            resource: "onboardingAssignments",
-            action: "write",
-            workspaceId: input.workspaceId,
-            clientProfileId: current.clientProfileId,
-          },
-          createPrismaAuthorizationRepo(tx),
-        );
-        await lockAssignmentTuple(
-          tx,
-          input.workspaceId,
-          current.clientProfileId,
-          current.formId,
-        );
         const now = new Date();
         await tx.onboardingFormAssignment.update({
           where: { id: current.id },
