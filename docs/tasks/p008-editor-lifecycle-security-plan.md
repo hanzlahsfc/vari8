@@ -599,6 +599,19 @@ pin. No push/PR/merge/deploy.
 
 ### Tests-only implementation review hold — 2026-10-05
 
+**Update — local integration accepted after independent review
+(2026-10-06):** Orion returned PASS on clean final integration pin
+`a229fdce5097693d3b0331d8c8bcf8ad12950a37`, independently
+verifying the three cherry-pick mappings, identical security blob,
+ALL tracked non-docs equality with runtime-tested `7431099`, preserved
+docs history, exact three-path scope and unchanged main/candidate
+refs. Docs Prettier and diff-check exited 0. No independent runtime
+or npm-gate re-execution claimed. Apollo accepts local integration
+under the user's authorization; prior runtime evidence applies by
+verified byte equality. No push/PR/merge-to-main/deploy approval;
+owned-edge header verification and missing-Origin policy remain open.
+The pending-review statements below describe prior checkpoints.
+
 **Update — authorized local integration (2026-10-06), independent
 applicability review pending:** After Juno's removal, Apollo applied
 the three reviewed tests-only commits to clean accepted base

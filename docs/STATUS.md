@@ -5,6 +5,23 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-06 — P-008 ES-5 local integration ACCEPTED after independent review
+
+- Orion's independent read-only final-pin review returned PASS on clean
+  `a229fdce5097693d3b0331d8c8bcf8ad12950a37`. He verified the
+  three cherry-pick mappings, exact security-spec blob, all tracked
+  non-docs equality with tested `7431099`, preserved docs chronology,
+  three-path scope and unchanged local main/candidate refs.
+  Independent docs Prettier and diff-check both exited 0; no reviewer
+  runtime or npm-gate rerun was claimed.
+- Apollo accepts this LOCAL integration under the user's existing
+  authorization. The original focused 13/13 and full 153 passed /
+  12 skipped remain captures on `7431099`, applicable by verified
+  byte equality, not new runs on the integrated SHA. This entry is
+  docs-only; the preceding pending-review entry is historical.
+- No push, PR, merge to main or deployment. Public-edge header
+  verification and missing-Origin policy remain pre-deployment gates.
+
 ## 2026-10-06 — P-008 ES-5 locally integrated; independent applicability review pending
 
 - The user delegated the recommended local feature-branch integration.
