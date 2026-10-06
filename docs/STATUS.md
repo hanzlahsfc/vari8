@@ -5,6 +5,27 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-07 — P-014-I1-R2 repaired parameter pagination after independent review
+
+- Independent DeepSeek review of `14e12c0`: **CONDITIONAL PASS**, no P0/P1.
+  Repaired forward on `feature/p014-parameter-template-foundation`.
+- P2-1 fixed: `listParameters` returns `{parameters, nextCursor}` with
+  workspace-scoped keyset pagination (foreign/unknown cursor fails closed);
+  the boundary validates `limit` (1..100) + `cursor`; the Parameter Library
+  got `?cursor=` server-side Next/First-page links; the template editor
+  pages to completeness so every ACTIVE parameter is selectable.
+- Copy fix: `parameter_not_publishable` no longer says only "before
+  publishing" (it applies to saves too). New PG test proves removed
+  option-ID tombstones survive later transactions and cannot be reused.
+- Gates on the repaired tree: unit 732/732; integration 356/356 fresh PG
+  (P-014 28/28); typecheck/lint/format/build clean; fresh migrate deploy
+  clean; focused E2E 15/15; full E2E 203 pass / 12 skip / 0 fail.
+- E2E count correction: on the reviewed `14e12c0` the focused spec was 14
+  passed and the independent full-suite run was 202 pass / 12 skip
+  (builder-run recorded 201/12 — fixture-cleanup flake resolved in R1).
+- Still no PR; another independent DeepSeek review of the repaired head is
+  required before one exists.
+
 ## 2026-10-07 — P-014 parameter library + coaching template foundation implemented
 
 - Implementation branch `feature/p014-parameter-template-foundation` (from

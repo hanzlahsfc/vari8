@@ -252,7 +252,7 @@ describe.skipIf(!enabled)("P-014 coaching foundation (real PG)", () => {
       expect(created.key).toMatch(/^p_/);
       const { u: coach } = await staffFixture("COACH", ws);
       expect(
-        await listParameters(s(coach.id), { workspaceId: ws.id }),
+        (await listParameters(s(coach.id), { workspaceId: ws.id })).parameters,
       ).toHaveLength(1);
       await createTemplate(s(coach.id), { workspaceId: ws.id, name: "T" });
       expect(
@@ -904,6 +904,107 @@ describe.skipIf(!enabled)("P-014 coaching foundation (real PG)", () => {
           where: { workspaceId: ws.id },
         }),
       ).toBe(before);
+    });
+  });
+
+  describe("parameter list pagination", () => {
+    it("pages deterministically beyond 25 — no gaps, duplicates, or cap", async () => {
+      const { ws, m } = await staffFixture();
+      const created = await Promise.all(
+        Array.from({ length: 30 }, (_, i) =>
+          mkParam(ws.id, s(m.userId), `p${String(i).padStart(2, "0")}`),
+        ),
+      );
+      const pages: string[][] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await listParameters(s(m.userId), {
+          workspaceId: ws.id,
+          limit: 10,
+          ...(cursor ? { cursor } : {}),
+        });
+        pages.push(page.parameters.map((p) => p.id));
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+      const flat = pages.flat();
+      expect(flat.length).toBe(created.length);
+      expect(new Set(flat).size).toBe(flat.length); // no duplicates
+      for (const p of created) expect(flat).toContain(p.parameterId); // nothing omitted
+      // Deterministic: a second pass produces the identical sequence.
+      const again: string[] = [];
+      let c: string | undefined;
+      do {
+        const page = await listParameters(s(m.userId), {
+          workspaceId: ws.id,
+          limit: 7,
+          ...(c ? { cursor: c } : {}),
+        });
+        again.push(...page.parameters.map((p) => p.id));
+        c = page.nextCursor ?? undefined;
+      } while (c);
+      expect(again).toEqual(flat);
+    });
+
+    it("a foreign or unknown cursor fails closed, never leaks", async () => {
+      const a = await staffFixture();
+      const b = await staffFixture();
+      await mkParam(a.ws.id, s(a.m.userId));
+      const foreign = await mkParam(b.ws.id, s(b.m.userId));
+      for (const cursor of [foreign.parameterId, "nonexistent"]) {
+        await expect(
+          listParameters(s(a.m.userId), {
+            workspaceId: a.ws.id,
+            cursor,
+          }),
+        ).rejects.toMatchObject({ code: "invalid_input" });
+      }
+    });
+  });
+
+  describe("option tombstones", () => {
+    it("removed option IDs stay tombstoned across later transactions and can never be reused", async () => {
+      const { ws, m } = await staffFixture();
+      const p = await createParameter(s(m.userId), {
+        workspaceId: ws.id,
+        input: {
+          kind: "OPTION",
+          label: "Day type",
+          options: [{ label: "Easy" }, { label: "Hard" }],
+        },
+      });
+      const detail = await getParameter(s(m.userId), {
+        workspaceId: ws.id,
+        parameterId: p.parameterId,
+      });
+      const [aId, bId] = detail.options.map((o) => o.optionId);
+      // Remove "Hard" — bId moves into the tombstone set.
+      await updateParameter(s(m.userId), {
+        workspaceId: ws.id,
+        parameterId: p.parameterId,
+        expectedRevision: 1,
+        input: { options: [{ optionId: aId, label: "Easy" }] },
+      });
+      // A LATER transaction cannot resurrect or reuse the tombstoned ID.
+      await expect(
+        updateParameter(s(m.userId), {
+          workspaceId: ws.id,
+          parameterId: p.parameterId,
+          expectedRevision: 2,
+          input: {
+            options: [
+              { optionId: aId, label: "Easy" },
+              { optionId: bId, label: "Hard" },
+            ],
+          },
+        }),
+      ).rejects.toMatchObject({ code: "invalid_input" });
+      const row = await prisma.parameterDefinition.findUniqueOrThrow({
+        where: { id: p.parameterId },
+        select: { retiredOptionIds: true, revision: true },
+      });
+      expect(row.retiredOptionIds).toContain(bId);
+      // The failed reuse wrote nothing — revision unchanged.
+      expect(row.revision).toBe(2);
     });
   });
 });

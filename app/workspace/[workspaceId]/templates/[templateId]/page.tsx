@@ -40,10 +40,24 @@ export default async function TemplatePage({
   });
   if (!result.ok) forbidden();
   const template = result.value;
-  const paramsResult = await listParametersForWorkspace(session, {
-    workspaceId,
-  });
-  const parameters = paramsResult.ok ? paramsResult.value.parameters : [];
+  // The picker must see EVERY active parameter — page through the bounded
+  // boundary until the cursor chain ends. The page cap is a fail-safe
+  // (100 × 100 rows); normal workspaces never approach it.
+  const parameters: import("@/lib/coaching/parameters-boundary").ParameterSummary[] =
+    [];
+  {
+    let cursor: string | undefined;
+    let pages = 0;
+    do {
+      const r = await listParametersForWorkspace(session, {
+        workspaceId,
+        ...(cursor !== undefined ? { cursor } : {}),
+      });
+      if (!r.ok) forbidden();
+      parameters.push(...r.value.parameters);
+      cursor = r.value.nextCursor ?? undefined;
+    } while (cursor !== undefined && ++pages < 100);
+  }
   const archived = template.status === "ARCHIVED";
 
   return (

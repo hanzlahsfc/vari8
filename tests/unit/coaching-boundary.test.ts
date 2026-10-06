@@ -11,7 +11,7 @@ vi.mock("@/lib/coaching/parameters", () => ({
   archiveParameter: vi.fn(async () => ({})),
   createParameter: vi.fn(async () => ({})),
   getParameter: vi.fn(async () => ({})),
-  listParameters: vi.fn(async () => []),
+  listParameters: vi.fn(async () => ({ parameters: [], nextCursor: null })),
   updateParameter: vi.fn(async () => ({})),
   ParameterError: class ParameterError extends Error {},
 }));
@@ -166,6 +166,52 @@ describe("P-014 boundaries — flag-off zero side effects", () => {
       ]) {
         expect(vi.mocked(fn)).not.toHaveBeenCalled();
       }
+    },
+  );
+
+  it("flag on: listParametersForWorkspace forwards bounded limit/cursor", async () => {
+    process.env[FLAG] = "1";
+    vi.mocked(listParameters).mockResolvedValueOnce({
+      parameters: [],
+      nextCursor: "c_next",
+    });
+    const r = await listParametersForWorkspace(session, {
+      workspaceId: "w",
+      limit: 10,
+      cursor: "c_1",
+    });
+    expect(r).toEqual({
+      ok: true,
+      value: { parameters: [], nextCursor: "c_next" },
+    });
+    expect(vi.mocked(listParameters)).toHaveBeenCalledWith(
+      session,
+      { workspaceId: "w", limit: 10, cursor: "c_1" },
+      expect.anything(),
+    );
+  });
+
+  it.each([
+    { limit: 0 },
+    { limit: -1 },
+    { limit: 1.5 },
+    { limit: 101 },
+    { limit: "10" },
+    { cursor: 42 },
+    { cursor: "x".repeat(129) },
+  ])(
+    "flag on: malformed page request %o is rejected before the service",
+    async (extra) => {
+      process.env[FLAG] = "1";
+      const r = await listParametersForWorkspace(session, {
+        workspaceId: "w",
+        ...(extra as { limit?: number; cursor?: string }),
+      });
+      expect(r).toEqual({
+        ok: false,
+        message: "Check the details and try again.",
+      });
+      expect(vi.mocked(listParameters)).not.toHaveBeenCalled();
     },
   );
 

@@ -63,7 +63,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   parameter_changed:
     "A referenced parameter changed since this draft was saved. Review the draft and save it again before publishing.",
   parameter_not_publishable:
-    "A referenced parameter is archived or no longer available. Remove or replace it before publishing.",
+    "A referenced parameter is archived or no longer available. Remove or replace it and try again.",
   serialization_conflict: "A conflict occurred. Please try again.",
   template_not_accessible: DENIED_ERROR,
 };

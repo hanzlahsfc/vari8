@@ -236,3 +236,77 @@ pending — required before any PR.
 - E2E relies on the dedicated flag-off server on :3101 (Playwright
   webServer config); the shared test DB accumulates run-unique rows and
   the spec self-cleans in `afterAll`.
+
+---
+
+## P-014-I1-R2 repair record (2026-10-07)
+
+Independent review (`opencode-go/deepseek-v4.1-flash`) of `14e12c0` returned
+**CONDITIONAL PASS** — no P0/P1. One required repair plus three narrowly
+scoped follow-ups, all landed as forward commits on the same branch.
+
+### RED evidence (run against `14e12c0` before any production change)
+
+- New unit tests: `vitest run tests/unit/coaching-actions.test.ts
+tests/unit/coaching-boundary.test.ts` → **11 failed / 17 passed** — the
+  boundary ignored `limit`/`cursor` (25-record cap) and accepted malformed
+  pagination input without refusal.
+- New disposable-PG tests: 26 pass / **2 fail** — `listParameters` returned
+  a bare array (no `nextCursor`) and a foreign-workspace cursor silently
+  produced an empty page instead of failing closed. The tombstone-persistence
+  test passed immediately (existing behavior — kept as a regression lock).
+- E2E first runs: the read-after-click approach for a client-side
+  continuation action proved incompatible with the Next.js action transport
+  (the in-flight action POST was aborted by component re-render; promise
+  never settled). The continuation mechanism was re-cut as server-side
+  `?cursor=` navigation — plain links, no client plumbing.
+
+### Repairs
+
+- **P2-1 pagination.** `listParameters` now returns
+  `{parameters, nextCursor}` and does proper keyset pagination: the cursor
+  is resolved inside the caller's workspace (foreign/unknown cursor →
+  `invalid_input`), pages filter `(createdAt, id) > anchor`, one extra row
+  detects `hasMore`, `nextCursor` is `null` on the last page. Ordering
+  `(createdAt ASC, id ASC)` is unchanged — deterministic, no duplicates or
+  omissions across pages (proven with a 30-row fixture in the PG suite).
+- **Boundary.** `listParametersForWorkspace` accepts optional `limit`
+  (integer, 1..`listMaxLimit` — malformed → `invalid_input`, no silent
+  clamp) and `cursor` (bounded id check before the service call).
+- **Parameter Library.** Server-side paginated navigation: the page reads
+  `?cursor=`, renders `Next page →` (visible only while `nextCursor`
+  exists) and `← First page` (visible only on deep pages) as native links
+  — keyboard-focusable, Enter-activated, no client action transport, no
+  cursor or IDs in rendered text. Mutations still `router.refresh()` the
+  current page server-side.
+- **Template picker.** `/templates/[id]` pages through the boundary until
+  `nextCursor` is null (fail-safe cap of 100 pages — beyond every bounded
+  surface) so every ACTIVE parameter is selectable; the E2E proves a
+  parameter past the original first 25 is selectable and an ARCHIVED one
+  is never offered.
+- **Copy fix.** `parameter_not_publishable` now reads "Remove or replace
+  it and try again." — accurate for save-time and publish-time failures
+  (previously said only "before publishing").
+- **Tombstone regression.** New PG test: a removed option id lands in
+  `retiredOptionIds`, and a LATER transaction attempting to reuse it is
+  rejected with `invalid_input` and writes nothing (revision unchanged).
+
+### Gate results on the repaired tree
+
+- `npm test` — 732/732 unit (64 files), exit 0.
+- Full integration (fresh disposable PG) — **356/356**, exit 0 (P-014 file
+  28/28 incl. new pagination + tombstone tests).
+- Fresh empty-DB `prisma migrate deploy` + `status` — clean, exit 0.
+- `typecheck`, `lint`, `format:check`, `build` — exit 0.
+- Focused E2E `coaching-templates` — **15/15**, exit 0 (new pagination/
+  picker test included).
+- Full E2E on the repaired tree — **203 pass / 12 skip / 0 fail**
+  (delivery-gated reset specs skip), exit 0.
+
+### Count corrections (verified against actual runs)
+
+- Focused P-014 E2E on reviewed `14e12c0`: **14 passed** (the task record's
+  earlier "13/13" predated the added isolation/empty-state spec).
+- Full E2E on `14e12c0`: builder-run recorded 201 pass / 12 skip; the
+  independent reviewer-run count is **202 pass / 12 skip**. The repaired
+  tree adds one pagination E2E test → 203 pass / 12 skip.

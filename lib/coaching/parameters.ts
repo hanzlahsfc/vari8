@@ -502,11 +502,19 @@ async function lockParameter(
 
 // ── Service operations ──────────────────────────────────────────────────────
 
+/**
+ * Keyset-paginated parameter listing, ordered by (createdAt, id) — stable
+ * under concurrent inserts/appends. The cursor is opaque: a caller-held
+ * parameter row id resolved INSIDE the caller's workspace; a foreign or
+ * unknown cursor fails closed (`invalid_input`), so a cursor can never
+ * reach or reveal another workspace's rows. `nextCursor` is null on the
+ * last page.
+ */
 export async function listParameters(
   session: SessionLike,
   input: { workspaceId: string; limit?: number; cursor?: string },
   client?: PrismaClient,
-): Promise<ParameterSummary[]> {
+): Promise<{ parameters: ParameterSummary[]; nextCursor: string | null }> {
   const db = client ?? defaultPrisma;
   const ctx = await authorize(
     session,
@@ -521,8 +529,22 @@ export async function listParameters(
     Math.max(1, Math.floor(input.limit ?? COACHING_LIMITS.listDefaultLimit)),
     COACHING_LIMITS.listMaxLimit,
   );
+  let cursorFilter: Record<string, unknown> = {};
+  if (input.cursor !== undefined) {
+    const anchor = await db.parameterDefinition.findFirst({
+      where: { id: input.cursor, workspaceId: ctx.workspaceId },
+      select: { id: true, createdAt: true },
+    });
+    if (!anchor) throw new ParameterError("invalid_input");
+    cursorFilter = {
+      OR: [
+        { createdAt: { gt: anchor.createdAt } },
+        { createdAt: anchor.createdAt, id: { gt: anchor.id } },
+      ],
+    };
+  }
   const rows = await db.parameterDefinition.findMany({
-    where: { workspaceId: ctx.workspaceId },
+    where: { workspaceId: ctx.workspaceId, ...cursorFilter },
     select: {
       id: true,
       key: true,
@@ -534,19 +556,24 @@ export async function listParameters(
       versionReferences: { select: { versionId: true }, take: 1 },
     },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-    take,
-    ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+    take: take + 1, // one extra row to detect a following page
   });
-  return rows.map((row) => ({
-    id: row.id,
-    key: row.key,
-    kind: row.kind,
-    label: row.label,
-    status: row.status,
-    revision: row.revision,
-    publishedReferenced: row.versionReferences.length > 0,
-    updatedAt: row.updatedAt.toISOString(),
-  }));
+  const page = rows.slice(0, take);
+  const nextCursor =
+    rows.length > take ? (page[page.length - 1]?.id ?? null) : null;
+  return {
+    parameters: page.map((row) => ({
+      id: row.id,
+      key: row.key,
+      kind: row.kind,
+      label: row.label,
+      status: row.status,
+      revision: row.revision,
+      publishedReferenced: row.versionReferences.length > 0,
+      updatedAt: row.updatedAt.toISOString(),
+    })),
+    nextCursor,
+  };
 }
 
 export async function getParameter(

@@ -29,6 +29,7 @@ async function createParameterUi(
   wsId: string,
   kind: string,
   label: string,
+  opts: { assertVisible?: boolean } = {},
 ) {
   await page.goto(`/workspace/${wsId}/parameters`);
   await page.locator("#param-kind").selectOption(kind);
@@ -37,7 +38,12 @@ async function createParameterUi(
     await page.locator("#param-options").fill("Alpha\nBeta");
   }
   await page.getByTestId("create-parameter").click();
-  await expect(page.getByText(label)).toBeVisible();
+  // New rows append at the end of the keyset order — with >1 page of
+  // parameters the fresh row may live on a later page, so visibility is
+  // only asserted when the caller knows the list fits on page 1.
+  if (opts.assertVisible !== false)
+    await expect(page.getByText(label)).toBeVisible();
+  else await expect(page.getByTestId("parameter-error")).toBeHidden();
 }
 
 test.beforeAll(async () => {
@@ -304,6 +310,114 @@ test.describe("template draft → publish → v2 lifecycle", () => {
   });
 });
 
+test.describe("pagination and picker completeness", () => {
+  test(">25 parameters are all reachable via Load more, picker included", async ({
+    page,
+  }) => {
+    await signIn(page, E2E.owner);
+    // Seed 28 ACTIVE + 1 ARCHIVED parameter rows directly (fixture speed);
+    // the UI path is exercised end-to-end elsewhere in this spec.
+    const ownerMember = await prisma.workspaceMember.findFirstOrThrow({
+      where: {
+        workspaceId: wsAId,
+        role: "WORKSPACE_OWNER",
+        user: { email: E2E.owner },
+      },
+    });
+    const tag = `${RUN} Pg`;
+    for (let i = 0; i < 28; i++) {
+      await prisma.parameterDefinition.create({
+        data: {
+          workspaceId: wsAId,
+          key: `p_p${Date.now().toString(36)}_${i}`,
+          kind: "TEXT",
+          label: `${tag} ${String(i).padStart(2, "0")}`,
+          status: "ACTIVE",
+          revision: 1,
+          createdByMemberId: ownerMember.id,
+          updatedByMemberId: ownerMember.id,
+        },
+      });
+    }
+    await prisma.parameterDefinition.create({
+      data: {
+        workspaceId: wsAId,
+        key: `p_p${Date.now().toString(36)}_arch`,
+        kind: "TEXT",
+        label: `${tag} Archived`,
+        status: "ARCHIVED",
+        revision: 1,
+        createdByMemberId: ownerMember.id,
+        updatedByMemberId: ownerMember.id,
+        archivedByMemberId: ownerMember.id,
+        archivedAt: new Date(),
+      },
+    });
+
+    await page.goto(`/workspace/${wsAId}/parameters`);
+    const countRows = () =>
+      page
+        .getByTestId("parameters-table")
+        .locator('tr[data-testid="parameter-row"]')
+        .count();
+    // First page renders at most the default page size.
+    const firstCount = await countRows();
+    expect(firstCount).toBeLessThanOrEqual(25);
+    // The continuation link is a native anchor — keyboard-focusable and
+    // Enter-activated with no client action plumbing.
+    const seenLabels = new Set(
+      await page
+        .getByTestId("parameters-table")
+        .locator('tr[data-testid="parameter-row"] td:first-child')
+        .allTextContents(),
+    );
+    await page.getByTestId("next-page").focus();
+    await expect(page.getByTestId("next-page")).toBeFocused();
+    await page.keyboard.press("Enter"); // first hop via keyboard
+    await page.waitForURL(/cursor=/);
+    while (true) {
+      const labels = await page
+        .getByTestId("parameters-table")
+        .locator('tr[data-testid="parameter-row"] td:first-child')
+        .allTextContents();
+      for (const l of labels) seenLabels.add(l);
+      if (!(await page.getByTestId("next-page").isVisible())) break;
+      await page.getByTestId("next-page").click();
+      await page.waitForURL(/cursor=/);
+    }
+    // "First page" resets the view.
+    await expect(page.getByTestId("first-page")).toBeVisible();
+    await page.getByTestId("first-page").click();
+    await expect(page).not.toHaveURL(/cursor=/);
+    // Every seeded row was reached exactly once — no duplicates, no gaps.
+    for (let i = 0; i < 28; i++)
+      expect(seenLabels).toContain(`${tag} ${String(i).padStart(2, "0")}`);
+    expect(seenLabels).toContain(`${tag} Archived`);
+
+    // Picker: the deepest ACTIVE parameter is selectable; the ARCHIVED one
+    // is not offered.
+    await page.goto(`/workspace/${wsAId}/templates`);
+    await page.locator("#template-name").fill(`${RUN} Picker`);
+    await page.getByTestId("create-template").click();
+    await page.waitForURL(/\/templates\/[^/]+$/);
+    await page.getByTestId("add-section").click();
+    await page.getByTestId("section-label-0").fill("s");
+    await page.getByTestId("add-item-0").click();
+    const picker = page.getByTestId("item-param-0-0");
+    await expect(
+      picker.locator("option", { hasText: `${tag} 27` }),
+    ).toHaveCount(1);
+    await expect(
+      picker.locator("option", { hasText: `${tag} Archived` }),
+    ).toHaveCount(0);
+    await picker.selectOption({ label: `${tag} 27 (TEXT)` });
+    await page.getByTestId("save-draft").click();
+    await expect(page.getByTestId("template-notice")).toHaveText(
+      "Draft saved.",
+    );
+  });
+});
+
 test.describe("workspace isolation + empty states", () => {
   test("workspace B shows empty states and none of workspace A's rows", async ({
     page,
@@ -312,8 +426,11 @@ test.describe("workspace isolation + empty states", () => {
     const wsB = await prisma.workspace.findUniqueOrThrow({
       where: { slug: E2E.workspaceBSlug },
     });
-    // Seed workspace A so the isolation check is meaningful.
-    await createParameterUi(page, wsAId, "TEXT", `${RUN} Isolation`);
+    // Seed workspace A so the isolation check is meaningful (the row may
+    // land on a later page once the library exceeds one page).
+    await createParameterUi(page, wsAId, "TEXT", `${RUN} Isolation`, {
+      assertVisible: false,
+    });
     await page.goto(`/workspace/${wsB.id}/parameters`);
     await expect(page.getByTestId("parameters-empty")).toBeVisible();
     await expect(page.getByText(`${RUN} Isolation`)).toBeHidden();

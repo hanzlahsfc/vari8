@@ -2,7 +2,7 @@ import type { PrismaClient } from "@prisma/client";
 
 import { prisma as defaultPrisma } from "../db";
 import { AccessDeniedError, type SessionLike } from "../auth/guard";
-import { isCoachingTemplatesEnabled } from "./gate";
+import { isCoachingTemplatesEnabled, COACHING_LIMITS } from "./gate";
 import {
   archiveParameter,
   createParameter,
@@ -182,20 +182,39 @@ export async function archiveParameterFromAction(
 
 export async function listParametersForWorkspace(
   _session: SessionLike,
-  _input: { workspaceId: string },
+  _input: { workspaceId: string; limit?: number; cursor?: string },
   _deps: BoundaryDeps = {},
-): Promise<ActionResult<{ parameters: ParameterSummary[] }>> {
+): Promise<
+  ActionResult<{ parameters: ParameterSummary[]; nextCursor: string | null }>
+> {
   const off = flagOff();
   if (off) return off;
   const workspaceId = boundedId(_input.workspaceId);
+  // limit must be an explicit integer inside the service's own bounds —
+  // anything else is a malformed request, not a request to clamp.
+  const limit = _input.limit;
+  if (
+    limit !== undefined &&
+    (!Number.isInteger(limit) ||
+      (limit as number) < 1 ||
+      (limit as number) > COACHING_LIMITS.listMaxLimit)
+  )
+    return fail(INVALID_INPUT);
+  const cursor = _input.cursor;
+  if (cursor !== undefined && boundedId(cursor) === null)
+    return fail(INVALID_INPUT);
   if (!workspaceId) return fail(INVALID_INPUT);
   try {
-    const parameters = await listParameters(
+    const value = await listParameters(
       _session,
-      { workspaceId },
+      {
+        workspaceId,
+        ...(limit !== undefined ? { limit } : {}),
+        ...(cursor !== undefined ? { cursor } : {}),
+      },
       _deps.db ?? defaultPrisma,
     );
-    return { ok: true, value: { parameters } };
+    return { ok: true, value };
   } catch (e) {
     return mapError(e);
   }

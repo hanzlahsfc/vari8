@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { forbidden } from "next/navigation";
 
@@ -18,22 +19,55 @@ export const metadata = { title: "Parameters" };
  * membership/role/workspace on every request — denied roles, revoked
  * memberships and foreign workspaces all fail closed to the repo-standard
  * non-disclosing HTTP 403. UI visibility is never authorization.
+ *
+ * Pagination is server-side keyset navigation via `?cursor=` — the opaque
+ * cursor is resolved inside the workspace scope; foreign/unknown cursors
+ * fail closed as invalid input (non-disclosing denial via the boundary).
  */
 export default async function ParametersPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ workspaceId: string }>;
+  searchParams: Promise<{ cursor?: string }>;
 }) {
   if (!isCoachingTemplatesEnabled(process.env.ENABLE_COACHING_TEMPLATES))
     notFound();
   const { workspaceId } = await params;
+  const { cursor } = await searchParams;
   const { session } = await requireSessionUser();
-  const result = await listParametersForWorkspace(session, { workspaceId });
+  const result = await listParametersForWorkspace(session, {
+    workspaceId,
+    ...(typeof cursor === "string" ? { cursor } : {}),
+  });
   if (!result.ok) forbidden();
+  const base = `/workspace/${encodeURIComponent(workspaceId)}/parameters`;
   return (
-    <ParameterManager
-      parameters={result.value.parameters}
-      workspaceId={workspaceId}
-    />
+    <>
+      <ParameterManager
+        parameters={result.value.parameters}
+        workspaceId={workspaceId}
+      />
+      <nav
+        aria-label="Parameter pages"
+        className="catalog-page"
+        data-testid="parameter-pagination"
+      >
+        {cursor ? (
+          <Link className="auth-button" data-testid="first-page" href={base}>
+            ← First page
+          </Link>
+        ) : null}
+        {result.value.nextCursor ? (
+          <Link
+            className="auth-button"
+            data-testid="next-page"
+            href={`${base}?cursor=${encodeURIComponent(result.value.nextCursor)}`}
+          >
+            Next page →
+          </Link>
+        ) : null}
+      </nav>
+    </>
   );
 }
