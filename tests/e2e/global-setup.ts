@@ -15,6 +15,8 @@ export const E2E = {
   owner: "owner@s1h-e2e.test",
   coach: "coach@s1h-e2e.test",
   client: "client@s1h-e2e.test",
+  assistant: "assistant@s1h-e2e.test",
+  support: "support@s1h-e2e.test",
   nonmember: "nonmember@s1h-e2e.test",
   deactivated: "deactivated@s1h-e2e.test",
   workspaceSlug: "s1h-e2e-workspace",
@@ -50,6 +52,8 @@ export default async function globalSetup(): Promise<void> {
     const owner = await upsertUser(E2E.owner);
     const coach = await upsertUser(E2E.coach);
     const client = await upsertUser(E2E.client);
+    const assistant = await upsertUser(E2E.assistant);
+    const support = await upsertUser(E2E.support);
     await upsertUser(E2E.nonmember);
     await upsertUser(E2E.deactivated);
 
@@ -65,7 +69,8 @@ export default async function globalSetup(): Promise<void> {
     const upsertMember = (
       workspaceId: string,
       userId: string,
-      role: "WORKSPACE_OWNER" | "COACH" | "CLIENT",
+      role:
+        "WORKSPACE_OWNER" | "COACH" | "ASSISTANT_COACH" | "SUPPORT" | "CLIENT",
     ) =>
       prisma.workspaceMember.upsert({
         where: { workspaceId_userId: { workspaceId, userId } },
@@ -76,6 +81,8 @@ export default async function globalSetup(): Promise<void> {
     await upsertMember(wsA.id, owner.id, "WORKSPACE_OWNER");
     await upsertMember(wsA.id, coach.id, "COACH");
     await upsertMember(wsA.id, client.id, "CLIENT");
+    await upsertMember(wsA.id, assistant.id, "ASSISTANT_COACH");
+    await upsertMember(wsA.id, support.id, "SUPPORT");
     await upsertMember(wsB.id, owner.id, "WORKSPACE_OWNER");
   } finally {
     await prisma.$disconnect();

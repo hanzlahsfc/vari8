@@ -141,10 +141,11 @@ model Workspace {
   createdAt DateTime        @default(now()) @map("created_at")
   updatedAt DateTime        @updatedAt @map("updated_at")
 
-  members        WorkspaceMember[]
-  clientProfiles ClientProfile[]
-  auditEvents    AuditEvent[]
-  accessTokens   AccessToken[]
+  members         WorkspaceMember[]
+  clientProfiles  ClientProfile[]
+  auditEvents     AuditEvent[]
+  accessTokens    AccessToken[]
+  onboardingForms OnboardingForm[]
 
   @@map("workspace")
 }
@@ -167,6 +168,10 @@ model WorkspaceMember {
 
   coachProfile CoachProfile?
   assignments  ClientAssignment[] @relation("ClientAssignmentCoach")
+
+  onboardingFormsCreated  OnboardingForm[]        @relation("OnboardingFormCreator")
+  onboardingFormsArchived OnboardingForm[]        @relation("OnboardingFormArchiver")
+  onboardingFormVersions  OnboardingFormVersion[] @relation("OnboardingFormVersionPublisher")
 
   @@unique([workspaceId, userId])
   // Composite target for the ClientAssignment same-workspace foreign key (raw SQL).
@@ -501,4 +506,54 @@ model ExerciseImportRowOutcome {
   @@unique([importRunId, sourceRow])
   @@index([importRunId, outcome])
   @@map("exercise_import_row_outcome")
+}
+
+// P-008: workspace-scoped onboarding form definitions — the mutable draft and
+// immutable published snapshots only. No submission/intake tables exist in
+// this slice by design. Restrict FKs: deleting a workspace/member must not
+// cascade away form history.
+enum OnboardingFormStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+model OnboardingForm {
+  id                   String               @id @default(cuid())
+  workspaceId          String               @map("workspace_id")
+  name                 String
+  status               OnboardingFormStatus @default(ACTIVE)
+  archivedAt           DateTime?            @map("archived_at") @db.Timestamptz(6)
+  archivedByMemberId   String?              @map("archived_by_member_id")
+  draft                Json?
+  draftRevision        Int                  @default(1) @map("draft_revision")
+  draftSavedByMemberId String?              @map("draft_saved_by_member_id")
+  draftUpdatedAt       DateTime?            @map("draft_updated_at") @db.Timestamptz(6)
+  createdByMemberId    String               @map("created_by_member_id")
+  createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace        Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  createdByMember  WorkspaceMember         @relation("OnboardingFormCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  archivedByMember WorkspaceMember?        @relation("OnboardingFormArchiver", fields: [archivedByMemberId], references: [id], onDelete: Restrict)
+  versions         OnboardingFormVersion[]
+
+  @@index([workspaceId, status])
+  @@map("onboarding_form")
+}
+
+model OnboardingFormVersion {
+  id                    String   @id @default(cuid())
+  formId                String   @map("form_id")
+  versionSeq            Int      @map("version_seq")
+  definition            Json
+  publishOriginRevision Int      @map("publish_origin_revision")
+  publishedAt           DateTime @default(now()) @map("published_at") @db.Timestamptz(6)
+  publishedByMemberId   String   @map("published_by_member_id")
+
+  form              OnboardingForm  @relation(fields: [formId], references: [id], onDelete: Restrict)
+  publishedByMember WorkspaceMember @relation("OnboardingFormVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
+
+  @@unique([formId, versionSeq])
+  @@index([formId, publishOriginRevision])
+  @@map("onboarding_form_version")
 }

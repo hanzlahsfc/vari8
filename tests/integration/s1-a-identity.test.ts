@@ -304,6 +304,9 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         "nutrition_catalog_item",
         "nutrition_import_row_outcome",
         "nutrition_import_run",
+        // P-008: onboarding form definitions + immutable versions (reviewed).
+        "onboarding_form",
+        "onboarding_form_version",
         "users",
         "workspace",
         "workspace_member",

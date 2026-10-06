@@ -5,6 +5,1345 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-06 — P-008 ES-5 local integration ACCEPTED after independent review
+
+- Orion's independent read-only final-pin review returned PASS on clean
+  `a229fdce5097693d3b0331d8c8bcf8ad12950a37`. He verified the
+  three cherry-pick mappings, exact security-spec blob, all tracked
+  non-docs equality with tested `7431099`, preserved docs chronology,
+  three-path scope and unchanged local main/candidate refs.
+  Independent docs Prettier and diff-check both exited 0; no reviewer
+  runtime or npm-gate rerun was claimed.
+- Apollo accepts this LOCAL integration under the user's existing
+  authorization. The original focused 13/13 and full 153 passed /
+  12 skipped remain captures on `7431099`, applicable by verified
+  byte equality, not new runs on the integrated SHA. This entry is
+  docs-only; the preceding pending-review entry is historical.
+- No push, PR, merge to main or deployment. Public-edge header
+  verification and missing-Origin policy remain pre-deployment gates.
+
+## 2026-10-06 — P-008 ES-5 locally integrated; independent applicability review pending
+
+- The user delegated the recommended local feature-branch integration.
+  Juno's queued assignment was never delivered before his canvas removal;
+  Apollo then performed it on the verified clean accepted base
+  `4074a46131897696a7b3893572c6354fd1f8197e`.
+- Three reviewed tests-only commits were cherry-picked in order without
+  conflicts: `e8969bf` -> `b6e51dc`, `0c784b8` -> `3ff70af`,
+  `7431099` -> `3f42980c8af9f703baee53a45a08471546800019`.
+  The integration delta changes only
+  `tests/e2e/onboarding-forms-security.spec.ts`; no production,
+  configuration, schema or dependency bytes changed.
+- On clean `3f42980`, `git diff --exit-code 7431099 HEAD -- .
+':(exclude)docs/**'` exited 0: ALL tracked non-documentation bytes
+  equal the runtime-tested candidate. The security-spec blob on both
+  pins is `4d3c63d4083aa06da2fc270be84d2962d85288eb`.
+  `git diff --check 4074a46 HEAD`, `npm run format:check`,
+  `npm run lint` and `npm run typecheck` each exited 0; porcelain
+  remained empty after the checks. Outside-Git summary:
+  `gate-logs/p008-es5-7431099/local-integration-verification.md`.
+- Focused 13/13 and full 153 passed / 12 pre-existing skips were
+  executed on `7431099`, with Orion's static PASS and independent
+  evidence VALID. Byte equality establishes applicability to this
+  local integration; these are NOT newly executed gates on `3f42980`.
+  No browser, database, unit or integration suite was rerun here.
+  Orion's independent integration/applicability review is pending.
+- The isolated candidate remains clean at `7431099`; prior failed-run
+  records and corrected Q3 lifecycle explanation are preserved below.
+  Local `main` and `origin/main` remain `5036796` (no fresh fetch
+  claimed). No push, PR, merge to main or deployment; public-edge
+  verification remains a separate co-founder pre-deployment gate.
+  Helios remains paused and the wake loop remains stopped.
+
+## 2026-10-05 — P-008 ES-5 repaired pin runtime-GREEN on disposable p8e_e2e (isolated)
+
+- Fresh user authorization ("follow your decision" release) allowed one
+  focused run then, only if green, one full E2E run on the exact clean
+  pin `743109964c16e01e8039ebe104e1d048b03f469b`
+  (`feature/p008-es5-nonsave-http-coverage`, disposable `p8e_e2e`,
+  container `juno-p8-pg`). Juno executed both exactly once:
+  - Focused `tests/e2e/onboarding-forms-security.spec.ts`: exit 0,
+    **13/13 passed** in 25.3s; BUILD_ID `4tHXCFrhcfpgorNXRbN9e`.
+    Capture: `gate-logs/p008-es5-7431099/es5-7431099-focused-security.log`.
+  - Full `tests/e2e/`: exit 0, **153 passed / 12 skipped (pre-existing)
+    / 0 failed** of 165 in 1.5m; BUILD_ID `3WFxoOUnW5XLKrnZfr-zY`.
+    Capture: `gate-logs/p008-es5-7431099/es5-7431099-full-e2e.log`.
+    Clean porcelain and unchanged HEAD before/after each run; the 15s-poll
+    watchdog reported zero violations; zero fixture residue; no retries,
+    resets, or edits.
+- Orion's independent exact-pin runtime evidence audit returned VALID
+  (evidence review — no reviewer re-execution); Orion's static
+  re-review of `7431099` had already passed.
+- **Q3 anomaly resolved — correction to the entries below.** The
+  earlier "unexplained" openDraft/archive passes are explained by
+  Playwright's documented lifecycle: on any test failure the worker
+  stops, unrun tests are re-queued to a NEW worker process, and
+  `beforeAll` re-executes there (confirmed in installed
+  `@playwright/test` 1.63.0 dispatcher/worker source and official
+  docs). `workers: 1` limits concurrency, not worker lifetimes. The
+  publish failure ran against the stale pre-rotation `coachMember.id`
+  while the live member had already been recreated; the re-queued
+  openDraft/archive/create tests ran under a fresh `beforeAll` that
+  re-resolved `coachMember.id` to the live row, so identical asserts
+  passed legitimately. The parent failed log attests the order and id
+  mismatch; the restart/reseed itself is inferred from official
+  lifecycle semantics, not directly instrumented in the list-reporter
+  output.
+- The repair (revoke-restore recreates the row with its ORIGINAL id)
+  removes the stale-handle defect class at the source and now has
+  runtime proof on the isolated pin. The `0c784b8` failure record
+  below stands as that pin's runtime history.
+- Scope unchanged: the ES-5 spec remains isolated on
+  `feature/p008-es5-nonsave-http-coverage` and has NOT been integrated
+  into this accepted worktree; accepted production is unchanged;
+  owned-edge limitations and the Helios pause stand; no release or
+  integration authority has been granted; no push/PR/merge/deploy.
+
+## 2026-10-05 — P-008 ES-5 stale-handle repair committed; re-review queued
+
+- Atlas repaired the stale `coachMember.id` defect as
+  `743109964c16e01e8039ebe104e1d048b03f469b` on
+  `feature/p008-es5-nonsave-http-coverage` (parent `0c784b8`), spec
+  file only (+12/-7), clean porcelain. Approach: the revocation
+  test's `finally` now does `deleteMany(wsA,coachUser)` +
+  `create({id: coachMember.id, ...})`, restoring the ORIGINAL member
+  row identity so the `beforeAll` handle stays valid; `upsert`
+  without an explicit id was rejected because its update arm could
+  leave a rotated row. Static gates pass per Atlas; no runtime run.
+- Apollo independently audited the diff and the anomaly: all six
+  member-stamp asserts read action-written fields
+  (`forms.ts` writes `ctx.workspaceMemberId`), `workers: 1`, no
+  retries — so under strict serial order the openDraft/archive
+  member asserts could NOT have passed against the stale id after
+  publish failed identically. The anomaly remains UNRESOLVED
+  (execution/reporting artifact vs residual defect unknown); the
+  next runtime re-run will disambiguate. The repair is correct
+  regardless — it eliminates the stale-handle defect class at the
+  source.
+- Orion re-review of `7431099` queued (message
+  `2eb3b0bc-a457-42cc-b21a-a253a6609a4f`), including whether the
+  anomaly indicates an unfixed residual defect. Any new
+  fixture-writing E2E run still requires fresh user authorization —
+  the prior authorization was consumed by the failed run.
+- The pin remains isolated, unintegrated, and NOT runtime-green.
+
+## 2026-10-05 — P-008 ES-5 focused E2E run FAILED on test-contract defect (12/13)
+
+- Juno executed the user-authorized focused run of
+  `tests/e2e/onboarding-forms-security.spec.ts` on isolated pin
+  `0c784b8d41f0ce6d12776ffc9fdd7dd99f1b8cbd`
+  (`feature/p008-es5-nonsave-http-coverage`, disposable `p8e_e2e`):
+  exit 1, **12 passed / 1 failed** in 24.5s; clean porcelain pre/post;
+  in-window BUILD_ID `oeHEBuVs29DPLt78rofgV`. Capture:
+  `gate-logs/p008-final-gate-28d1796/es5-focused-security-0c784b8.log`.
+  Per protocol Juno STOPPED: no full E2E run, no retry, no edits,
+  no DB reset. Watchdog reported zero lock/idle-tx anomalies.
+- **Failure is a TEST-CONTRACT defect, not a product bug.** The
+  mid-suite membership-revocation test (spec.ts:706-730) deletes the
+  wsA coach `workspaceMember` row then upserts without an explicit id;
+  `@default(cuid())` mints a NEW member id, so the `coachMember.id`
+  captured once in `beforeAll` (spec.ts:468-475) is a dead handle for
+  every later test. The publishForm arm failed at spec.ts:1000
+  asserting `publishedByMemberId` equals the stale id while the action
+  correctly stamped the live rotated member row
+  (`forms.ts` writes `ctx.workspaceMemberId`). The failure fired on
+  the capture-press positive control, so publish's negative probes
+  never executed. Juno flagged one unresolved anomaly: openDraft and
+  archive arms later PASSED identical `toBe(coachMember.id)` asserts —
+  explanation pending from Atlas's repair.
+- Atlas was queued a bounded same-file repair (restore original member
+  id in the revocation test's upsert, or re-resolve the live coach
+  member per test; do NOT weaken member-stamp asserts; audit all
+  `coachMember.id` assertions; explain the openDraft/archive anomaly).
+  Static gates only — a new fixture-writing run needs fresh user
+  authorization. The pin remains unintegrated and NOT runtime-green;
+  the failed run stands as the runtime record for `0c784b8`.
+
+## 2026-10-05 — P-008 non-save HTTP tests repair PASS; E2E run not authorized yet
+
+- Atlas repaired the isolated tests-only candidate at
+  `0c784b8d41f0ce6d12776ffc9fdd7dd99f1b8cbd` (parent `e8969bf`);
+  Orion independently re-reviewed and returned PASS. Diff is only
+  `tests/e2e/onboarding-forms-security.spec.ts` (+54/-32), preserving
+  all prior assertions. Audit cleanup is namespace-ID scoped, the
+  ghost ID is confirmed nonexistent and CUID-shaped, lifecycle seeds
+  are all inside `try/finally`, and the legacy wsB fixture uses a real
+  wsB member. Static gates passed per Atlas (format/lint/typecheck).
+- The candidate remains UNEXECUTED in browser/DB; this is not runtime
+  evidence. It is isolated on `feature/p008-es5-nonsave-http-coverage`
+  and has NOT been integrated into this accepted worktree. User
+  authorization is still required for fixture-writing focused and
+  full E2E runs against disposable `p8e_e2e`, with focused green before
+  the conditional full run. No production change or release action.
+
+## 2026-10-05 — P-008 optional HTTP tests-only candidate BLOCKED for repair
+
+- Atlas committed isolated tests-only spec `e8969bf` off approved
+  plan `7ac83b9`; only `tests/e2e/onboarding-forms-security.spec.ts`
+  changed (+513/-6). Builder static format/lint/typecheck passed;
+  no browser/DB run occurred and this accepted worktree stayed
+  untouched. Juno's read-only test-contract review returned PASS,
+  but Orion's independent security review BLOCKED the pin on three
+  plan-conformance defects: namespace cleanup left audit events;
+  the claimed CUID-shaped ghost ID was mixed-case/31 characters;
+  and three lifecycle tests seeded before `try/finally` so partial
+  seed failures could leave rows.
+- Atlas was queued a bounded, same-file tests-only repair in its
+  isolated worktree: delete only namespace-associated audit rows,
+  use one genuinely CUID-shaped nonexistent ID, and wrap all seeding
+  in `try/finally`; static gates/commit only. Orion re-review is
+  required on the repair pin before any user-approved E2E run.
+  The prior local P-008 acceptance is unaffected; no production,
+  shared DB, edge, push, PR, merge or deploy change was authorized.
+
+## 2026-10-05 — P-008 non-save HTTP plan recheck PASS; tests-only assignment queued
+
+- Orion independently rechecked the corrected plan on clean `7ac83b9`
+  and returned PASS: R1–R6 detection fixes, second-A action-specific
+  replay, full A/B snapshots, namespace/finally cleanup, stale PD29
+  comment direction, and app-level Origin caveat are all pinned.
+  This was read-only plan review, not test execution or edge approval.
+- Atlas (SWE2 High) was queued for tests-only implementation in an
+  isolated worktree rooted at `7ac83b9`, with ownership restricted to
+  `tests/e2e/onboarding-forms-security.spec.ts`. No production, DB,
+  browser, dependency or config change was released. Atlas must stop
+  after a committed tests-only pin and static gates for independent
+  review; future fixture-writing E2E runs need explicit user approval.
+  Existing local P-008 acceptance is unchanged; no push/PR/merge/deploy.
+
+## 2026-10-05 — P-008 non-save HTTP plan — Orion conditional repairs folded in
+
+- Helios's read-only test-contract review of plan `2ed4b01` returned
+  PASS; Orion's different-model security review returned conditional
+  PASS with six detection-sensitivity corrections required before
+  implementation. The plan now pins action-specific positive replay,
+  one POST per press, publish with zero prior versions, reopen with
+  null draft and baseline revision, ACTIVE archive with null stamps,
+  B-member fixture attribution, namespaced finally-cleanup on bypass
+  failure, and full A/B row snapshots. It also calls out the stale
+  PD29 comment in the existing security spec. No tests or production
+  code were changed and no database/browser work was performed.
+- Helios acknowledged a second temporary review artifact created
+  despite read-only scope. He moved it byte-exact to outside-Git
+  `gate-logs/p008-final-gate-28d1796/helios-review-http-plan.md`
+  (SHA-256 `aead6c23…24b29`); the worktree has no untracked file.
+  Orion must recheck the corrected committed plan before tests-only
+  implementation. The previously accepted local P-008 checkpoint
+  remains unchanged; edge verification is still a co-founder gate.
+
+## 2026-10-05 — P-008 non-save HTTP coverage follow-up — PLAN ONLY
+
+- Atlas proposed a read-only, test-only extension for real-HTTP
+  foreign-ID denial of publish/reopen/archive and bound-workspace
+  denial of create. The bounded plan is committed in
+  `docs/tasks/p008-editor-lifecycle-security-plan.md` at `2ed4b01`:
+  same-build captured action protocol, positive writes, non-vacuous
+  B-target states, full-row zero-write checks, foreign/ghost parity
+  where formId exists, and namespace-scoped cleanup. B fixtures use
+  a real B member, not an A member. No test or production behavior
+  changed; no DB or browser run occurred.
+- This adds coverage of already guarded service actions, so a first
+  PASS would be immediate-GREEN evidence, not a retrospective RED.
+  Any negative write would instead block and require a new test-first
+  production-fix cycle. Independent plan review and explicit approval
+  for future disposable-E2E fixture writes/deletes are still needed.
+  Prior local P-008 acceptance is not reopened by planning alone;
+  owned-edge verification remains the co-founders' deployment gate.
+
+## 2026-10-05 — P-008 local code/evidence checkpoint ACCEPTED; edge gate OPEN
+
+- Atlas independently audited the final2 captures at clean committed
+  `6391f6131c502f041f5f3ff17675eb5a2d432fea`: VALID, zero
+  discrepancies. The failed full integration attempt at `28d1796`
+  remains disclosed; the user-authorized three-file retry on
+  `10acc9b` is a separate 62/62 capture; the later authorized final2
+  integration ran 289/289 (24/24 files) and conditional E2E ran
+  149 passed/12 skipped, both exit 0. The E2E BUILD_ID
+  `wyVUUGzregIu8WxhrmFuf` is inside the capture window. Every log
+  binds SHA, UTC, clean before/after porcelain, real exit and owned
+  disposable DB identity with credentials redacted.
+- Helios's bounded code/contract PASS and Orion's different-model
+  unified whole-diff security PASS cover the local code review lanes;
+  neither reviewer reran the builder's gates. The production/schema/
+  tests/lockfile bytes are unchanged from PD29 fix `814620a` to this
+  docs-only record. This is scoped LOCAL acceptance of the P-008
+  form-definition builder evidence, not a final release/edge verdict.
+- The low, non-blocking global audit `meta.status` vocabulary finding
+  remains a follow-up. The old integration stall's first wait and a
+  schema-less `public.users` lookup remain unproven diagnostics.
+  App-level missing-Origin and spoofed-XFH requests executed in local
+  testing; public-edge Origin/Host/X-Forwarded-Host/Forwarded header
+  behavior has NOT been verified. Whether to reject missing Origin or
+  require real-HTTP foreign-ID coverage for non-save actions is still
+  a separate policy/scope choice. No push/PR/merge/deploy was
+  authorized or performed.
+
+## 2026-10-05 — P-008 final2 local integrated gates GREEN; edge and release gates OPEN
+
+- The user authorized one full integration run on disposable `p8e_int`
+  and, only if green, one full browser run on disposable `p8e_e2e`.
+  Juno captured both on clean committed
+  `6391f6131c502f041f5f3ff17675eb5a2d432fea` under
+  `gate-logs/p008-final-gate-28d1796/`:
+  `final2-p008-integration-full.log` 24/24 files, 289/289 tests,
+  exit 0; `final2-p008-e2e-full.log` 149 passed, 12 pre-existing
+  password-reset skips, exit 0, in-window BUILD_ID
+  `wyVUUGzregIu8WxhrmFuf`. Both logs include stable SHA and empty
+  porcelain before/after; the earlier failed attempt remains preserved
+  below, not reclassified as green. Format/lint/typecheck/build and
+  full unit 588/588 were captured green on ancestor `28d1796`;
+  `28d1796..6391f61` changes docs only.
+- Orion returned a read-only different-model unified whole-diff PASS
+  for local code/security readiness at `6391f61` (base main
+  `5036796`); this is static inspection plus builder gate evidence,
+  not reviewer test execution or final feature approval. One
+  non-blocking finding remains: the shared audit `meta.status`
+  vocabulary permits onboarding-only ARCHIVED/PUBLISHED on unrelated
+  resource types, though no untrusted producer or policy read exists.
+  Atlas's independent audit of the new final2 gate evidence is pending.
+- The earlier timeout occurred alongside an approximately 2987s
+  checkpoint; later unchanged-code runs passed promptly. Transient
+  host/DB starvation is strongly supported, not a proven first-wait
+  trace. The schema-less `public.users` lookup remains unexplained.
+  Owned-edge Origin/Host/XFH/Forwarded behavior remains unverified;
+  missing-Origin and hostile-Origin plus spoofed XFH executed at the
+  app level. Non-save foreign-ID HTTP coverage is a separate open
+  decision. No push/PR/merge/deploy was authorized or performed.
+
+## 2026-10-05 — P-008 targeted integration retry GREEN; full gate remains FAILED
+
+- The user specifically authorized a three-file retry on the disposable
+  `p8e_int` database, including those files' fixture truncation. Juno
+  confirmed a clean worktree and healthy read-only database preflight,
+  then ran only the three failed files sequentially on committed
+  `10acc9b5293c1ed5e77a06a3aff1e5252b7d71be`:
+  `retry-p008-int-forms.log` 46/46, `retry-p008-int-s1c.log` 9/9,
+  `retry-p008-int-nutrition.log` 7/7, each exit 0 and bound to clean
+  before/after porcelain. All logs remain outside Git under
+  `gate-logs/p008-final-gate-28d1796/`. No full-suite or browser
+  rerun was authorized or performed.
+- The former 24-file integration capture remains FAILED (entry below).
+  A PostgreSQL checkpoint took approximately 2987s during that run;
+  later targeted runs passed in seconds with healthy I/O. Host/VM
+  starvation is a strong hypothesis, but the first wait was not
+  captured and the cause is not proven. A `public.users` lookup on a
+  schema-less database seen in the server log is unexplained.
+- Atlas completed a read-only whole-diff inventory. Helios's bounded
+  action/retry/migration review and Orion's bounded independent security
+  review returned PASS on `5036796..28d1796`, not a final feature
+  verdict. Orion noted a non-blocking global audit-status vocabulary
+  widening. Helios corrected an unsupported S1-C-first-stall claim;
+  his temporary review artifact was moved byte-exact outside Git
+  (SHA-256 `32f40871…3893a`), restoring clean porcelain.
+- Still required: specifically authorized full integration and E2E
+  runs on the eventual candidate tree, final evidence reconciliation,
+  owned-edge verification before deployment claim, and user authority
+  for any push/PR/merge/deploy. No such action was taken.
+
+## 2026-10-05 — P-008 final local gates — integration FAILED; browser not run
+
+- On clean committed `28d179690a51d0a5c1ebc954d8617ab779755885`, Juno
+  ran sequential outside-worktree captures in
+  `gate-logs/p008-final-gate-28d1796/`: `final-p008-format.log`,
+  `final-p008-lint.log`, `final-p008-typecheck.log`,
+  `final-p008-build.log` all exit 0; `final-p008-unit-full.log`
+  588/588 in 50 files, exit 0. The full integration capture
+  `final-p008-integration-full.log` exited 1 (21 files passed, 3
+  failed; 278 tests passed, 2 failed, 9 skipped out of 289).
+- The two test timeouts were the P-008 concurrent archive vs
+  save/publish case (60s) and the Phase 2.1 nutrition rollback case
+  (60s). The S1-C `beforeAll` migration hook timed out (120s), so its
+  9 tests skipped. Capture has the exact SHA before/after and empty
+  porcelain paths. Builder reports disposable `p8e_int` and no active
+  connections or ungranted locks after exit; a lock-contention cascade
+  is a hypothesis, not a proven root cause.
+- Juno stopped before focused/form-security or full browser runs, as
+  instructed. No final integrated GREEN exists on this tree. A bounded
+  read-only timeout investigation was queued for Juno; Helios and Orion
+  were queued disjoint, read-only whole-diff review areas from Atlas's
+  inventory. No retry, test/code edit, database reset, push, PR, merge,
+  or deploy was authorized by this record.
+
+## 2026-10-05 — P-008 PD29 DUAL-ROLE FIX — scoped local review acceptance
+
+- Production `814620a0aed638062ac85e52d9e7a8dee21b117d`, tests
+  `904cb1292c14975260618ab6b24c2c4e0aa21674`, and prior docs
+  `afa7cd230d2599bbef8300858afe1ce08b3fae26` received three
+  independent read-only reviews: Helios code/contract PASS; Orion
+  different-model security PASS; Atlas evidence VALID (zero discrepancies).
+- Helios and Orion verified both guard paths, exact resource scope,
+  denial ordering, all seven guarded service paths, dual-role tests and
+  unchanged USER/other-resource behavior. Atlas bound RED/GREEN chronology,
+  clean porcelain, exact SHA, redaction, gate counts and byte-bound GREEN
+  BUILD_IDs. No reviewer reran tests or changed files.
+- Scoped PD29 dual-role fix is locally accepted on these pins. This is
+  not whole-feature or merge readiness. The previous STOPPED-for-review
+  entries below describe the state before these receipts, not a current
+  production hold. The PD29 gate logs referenced by `afa7cd2` remain
+  the builder's captures on clean committed `814620a`; no new suite has
+  been run on this docs-only record.
+- Still open: final integrated gate set on the eventual candidate tree,
+  independent whole-diff review, owned-edge Origin/Host/XFH/Forwarded
+  verification before any deployment claim, unresolved missing-Origin
+  policy/HTTP foreign-ID coverage decisions, and explicit user authority
+  for push/PR/merge/deploy. No such action was taken.
+
+## 2026-10-04 — P-008 PD29 DUAL-ROLE FIX IMPLEMENTED `814620a` — all gates GREEN; STOPPED for review
+
+- Apollo bounded release `518b483f`, under the independently reviewed
+  RED at tests `904cb12` (Helios/Orion test-contract PASS, Atlas RED
+  evidence PASS).
+- Production commit `814620a` touches `lib/auth/guard.ts` only (+21):
+  - a resource-specific `PLATFORM_ADMIN_DENIED_RESOURCES =
+{onboardingFormTemplates}`;
+  - `authorize` and `authorizeCollection` deny with the existing
+    `role_denied` after the ACTIVE-membership check and before
+    `resolveScope`.
+
+  Unchanged: the no-membership denial and USER owner/coach grants. No
+  matrix, service, action, preview or other-resource change.
+
+- Precedence is an ENGINEERING INTERPRETATION of product decision #29
+  under the user-delegated least-privilege choice. It is not a new
+  founder decision.
+- Gates on clean `814620a`, run sequentially on owned infra with CI=1;
+  each log has empty porcelain and 0 credential bytes:
+  - format, lint, typecheck and build: all exit 0;
+  - guard unit 22/22;
+  - full unit 588/588 (includes DOM + helpers);
+  - P-008 integration 46/46;
+  - full integration 289/289;
+  - security spec 9/9, BUILD_ID `MNQjAyOlhfNaiMHgq3Cis`;
+  - full e2e 149 passed / 12 skipped, BUILD_ID
+    `lkfEntUVb1NrTd9ZvsWHg`.
+
+  Both BUILD_IDs are printed inside their capture window, so they are
+  byte-bound to their logs. Logs: `green-pd29-*.log`.
+
+- Deviation: one dirty-tree scratch run of the guard unit file was not
+  preserved and is not claimed. No failed attempts.
+- STOPPED for Helios code, Orion security and Atlas evidence review.
+  No push/PR/merge/deploy.
+
+## 2026-10-04 — P-008 PD29 DUAL-ROLE REPAIR — PLAN + TESTS-ONLY, prospective RED captured; STOPPED before production
+
+- Apollo request `f88468e4`. Policy chosen by Apollo under the user's
+  delegation (least privilege, form definitions only): `PLATFORM_ADMIN`
+  is denied `onboardingFormTemplates` read/write even with an ACTIVE
+  OWNER/COACH membership. USER owners/coaches are unchanged. No matrix
+  change and no change to other resources.
+- Plan `d3f6514`: `docs/tasks/p008-editor-lifecycle-security-plan.md`,
+  section "PD29 dual-role repair".
+- Tests only `904cb12`:
+  - unit guard: real `authorize` + `authorizeCollection`;
+  - integration: real PG, all 7 ops, full-row snapshots;
+  - real HTTP: arm A owner flipped to admin, arm B admin with a
+    temporary COACH membership; editor GET plus captured save replay;
+    restored in `finally`.
+- Prospective RED on clean `904cb12`, all exit 1, captured
+  sequentially on owned `juno-p8-pg`:
+  - `red-pd29-unit-guard.log`: 4 failed / 18 passed;
+  - `red-pd29-integration.log`: 1 failed / 45 passed (ops ALLOWED);
+  - `red-pd29-e2e-security.log`: 2 failed / 7 passed (GET 200, save
+    executed), BUILD_ID `YrH1HY-Jj2LqJkQSLrfKG` (attested).
+
+  Only the dual-role legs fail; controls and the old no-membership leg
+  pass.
+
+- Predicted minimum fix (NOT implemented):
+  - `lib/auth/guard.ts` only: a resource-specific
+    `PLATFORM_ADMIN_DENIED_RESOURCES = {onboardingFormTemplates}`;
+  - in `authorize` and `authorizeCollection`, after the ACTIVE
+    membership resolves, deny `role_denied` when
+    `platformRole === "PLATFORM_ADMIN"` and the resource is in that
+    set.
+
+  Regression scope: the full gate set.
+
+- No production/guard change yet; no push/PR/merge.
+
+## 2026-10-04 — P-008/P-009 INTEGRATION ACCOUNTING (PLAN-ONLY) — local completeness, NOT final sign-off
+
+- Apollo request `59423372`. ES-5 accepted SCOPED locally as
+  tests-only (Helios B1 PASS `b6d2ce6`, B2 wording PASS `793b0e0`,
+  Atlas evidence PASS on clean `b6d2ce6` captures, Orion contract
+  PASS `b6d2ce6`). This entry is accounting only: no infra run, no
+  production/test change. Full pin table, gate applicability and
+  open gates live in `docs/tasks/p008-es4a-forward-recovery.md`
+  § "Integration accounting".
+- Final local tree `793b0e0` on `feature/p008-es4a-closed-forward`
+  (base `main` `5036796`). Production is byte-unchanged since
+  `b4b19a0` (`git diff b4b19a0 793b0e0` outside tests/docs is empty);
+  `b6d2ce6..793b0e0` is comments/docs only.
+- Scope is the onboarding FORM-DEFINITION builder only — NO intake,
+  NO submissions, NO client-facing forms. No push/PR/merge/deploy
+  authority; no edge/deployment approval.
+
+## 2026-10-04 — P-008 ES-5 B2 TERMINOLOGY CORRECTION — comments/docs only, no assertion change
+
+- Apollo request `cbb3e4c4` (Helios B1 PASS; B2 terminology open on
+  tests `b6d2ce6` / docs `a82d5b9`). CORRECTION to the `b6d2ce6`
+  entry below: `expectTypedDenial` / `expectTypedSuccess` do NOT
+  "decode" the typed result. They are literal raw RSC flight-text
+  substring marker assertions (`"ok":false` + pinned DENIED message
+  string / `"ok":true`), backed by DB delta or zero-write checks —
+  not a formal flight decode and not structural attribution to the
+  action return value.
+- Scope CORRECTION: the marker checks cover only the named requests
+  passed through the helpers (no-session, forged-cookie,
+  revoked-session, membership-revoked, ws-tamper, foreign-formId,
+  fabricated-cuid ghost, platform-admin/nonmember/deactivated; success
+  markers on the positive control, missing-Origin, XFH). The no-Origin
+  companions `noSessionNoOrigin` / `revokedNoOrigin` are
+  OBSERVATION-ONLY for the response (status logged, no marker check);
+  the "every denial leg" wording below is therefore an overclaim. The
+  DB zero-write checks in those two legs do run after both requests.
+- Spec comments reworded to match; no assertion, production, guard or
+  edge change; no browser rerun (comments/docs only). `147p/12s`
+  below means passed/skipped, as written.
+
+## 2026-10-04 — P-008 ES-5 HELIOS B1/B2 REPAIR `b6d2ce6` — single-save delta + decoded typed results
+
+- Apollo request `ccb3a41b` (Helios blockers on `659d424`/`ca8235e`).
+  The `659d424` entry below OVERCLAIMED on two points, now corrected:
+  B1 — its "full-snapshot deltas" for missing-Origin/XFH were only
+  status + revision + audit COUNT + versions; B2 — its "HTTP 200
+  (`{ok:false}` channel)" pins asserted status only, never the decoded
+  body.
+- Commit `b6d2ce6` (spec only): `expectSingleSaveDelta` (positive
+  control + missing-Origin + XFH) — every form column except
+  draftRevision/draftSavedByMemberId/draftUpdatedAt/updatedAt equal
+  (incl. `draft`), revision +1, saver = owner member, both timestamps
+  advance, versions equal, pre-existing audit rows equal, exactly one
+  new audit row with pinned scope/workspaceId/actorUserId/actorRole/
+  action/resourceType/resourceId/result/subject fields (reason/ip/
+  meta/at/id NOT asserted). `expectTypedDenial` decodes the real RSC
+  flight body (`"ok":false` + pinned DENIED message, no `"ok":true`)
+  on every denial leg; `expectTypedSuccess` decodes `"ok":true`.
+  Header comment narrowed to the actual per-leg zero-write depth
+  (forged-cookie = revision only; revoked = revision + audits; tamper
+  = revision + empty audits). Hostile-Origin full equality unchanged.
+- Captures on clean committed `b6d2ce6` (run-capture.sh, empty
+  porcelain before/after, credential bytes 0, BUILD_ID read
+  immediately after each run): `green-fwd-es5-security-http-v4.log`
+  7/7 exit 0, BUILD_ID `e0yAwuslFUbH31P7w-Ptc`;
+  `green-fwd-es5-e2e-full-v3.log` 147p/12s exit 0, BUILD_ID
+  `Ti94CNVEv2_ozDDdxE1pJ`. New assertions are strengthened checks of
+  existing behavior — immediate-PASS, not a governing RED. One
+  pre-commit scratch run on the dirty tree (7/7) checked decoding
+  reliability; not preserved, not claimed as evidence.
+- Prior reviews do not transfer to `b6d2ce6`. No production/guards/
+  actions/edge changes; STOPPED; no push/PR/merge.
+
+## 2026-10-04 — P-008 ES-5 TESTS-ONLY CORRECTION `659d424` — full snapshots + reject-class pins
+
+- Apollo request `52ead226` (tests-only follow-up on base `3bab484` +
+  `a1ec048`): root found the hostile-Origin leg checked only
+  `draftRevision`. Commit `659d424` (spec only): hostile-Origin now
+  asserts FULL form/version/audit snapshot equality + the observed
+  framework reject class (HTTP 500 "Invalid Server Actions request");
+  every typed-denial leg pins HTTP 200 (`{ok:false}` channel) so the
+  two classes cannot blur; missing-Origin and hostile-Origin + spoofed
+  XFH assert their OBSERVED execution via full-snapshot deltas (200,
+  revision +1, audit +1, versions unchanged) — app-level diagnostic
+  record only, NO edge-safety claim; malformed body pinned to the
+  observed framework 500.
+- Captures on clean committed `659d424` (run-capture.sh, empty
+  porcelain before/after, credential bytes 0):
+  `green-fwd-es5-security-http-v3.log` 7/7 exit 0 ·
+  `green-fwd-es5-e2e-full-v2.log` 147p/12s (pre-existing gated
+  password-reset skips) exit 0, BUILD_ID `-rr_xTP_0bl7xnD9kJuvV`
+  (verified, last build).
+- Deviations (annotation-es5-build-identity.txt; logs untouched):
+  under CI=1 every playwright run rebuilds, so the v3 focused run's
+  BUILD_ID was overwritten and is NOT recorded; and the
+  `n8VinkBVcWqj2Kq8LsdXL` BUILD_ID recorded below for the v2 log was
+  MISATTRIBUTED — it was read before v2 ran and belongs to the
+  superseded run.
+- Helios/Atlas review of `3bab484`/`a1ec048` does not transfer to
+  `659d424`. No production/guards/actions/allowedOrigins changes;
+  STOPPED; no push/PR/merge.
+
+## 2026-10-04 — P-008 ES-5 TESTS-ONLY PREP COMMITTED — real-HTTP security matrix captured (7/7)
+
+- Apollo assignment `34b777d1` (tests-only; preserve `b4b19a0` +
+  `1b55dd0`; no guard/infra/allowedOrigins changes; PD29 dual-role
+  unresolved; XFH app-level diagnostic only): commit `3bab484` adds
+  `tests/e2e/onboarding-forms-security.spec.ts` (7 tests, ~600 lines).
+- Protocol discipline per plan B1/B6/B7: the genuine action wire
+  encoding (`next-action` id + multipart body) is CAPTURED from a live
+  browser-driven `saveDraft` in the same build — never hardcoded; the
+  positive control asserts the replay lands a real write + audit row.
+  Negative arms are detection-sensitive (`draftRevision` reset to the
+  captured expectedRevision before replay, so an executed replay
+  produces an observable write — zero-writes assertions are never
+  vacuous). Full-row form/version/audit snapshots, not counts.
+- Matrix: valid positive control · hostile `Origin` (observed 500
+  framework reject, zero writes) · missing `Origin` (OBSERVED —
+  recorded honestly, no assumed reject) · hostile `Origin` + spoofed
+  `X-Forwarded-Host` (app-level diagnostic only; owned edge remains a
+  deployment gate) · no-session / forged-cookie / `sessionVersion`
+  revocation (zero writes, version restored in finally) · mid-session
+  `workspaceMember` deletion (denied, row restored in finally) ·
+  workspaceId + formId tampering via the A-only coach (zero writes;
+  foreign-formId status parity vs fabricated cuid) · no-membership
+  `PLATFORM_ADMIN` denial labeled membership-gate proof only +
+  nonmember/deactivated parity · truncated body (safe 500, zero
+  writes, no internals echo).
+- Captures on committed `3bab484` (run-capture.sh, full
+  before/after markers): `green-fwd-es5-security-http-v2.log` 7/7
+  exit 0 · `green-fwd-es5-e2e-full.log` FULL e2e suite 147p/12s
+  (gated password-reset skips, pre-existing) exit 0 · BUILD_ID
+  `n8VinkBVcWqj2Kq8LsdXL`. One superseded capture preserved and
+  labeled (credential embedded in argv — recaptured with env-exported
+  DATABASE_URL, zero credential bytes in the governing log).
+- STOPPED before any ES-5 production/security fix; no push/PR/merge.
+
+## 2026-10-04 — P-009 ES-4b PREVIEW IMPLEMENTED — full onboarding-forms spec ALL GREEN (68/68)
+
+- Root release `170d0e36` under the corrected `749ef1e` RED
+  (8f/1p): ONE bounded production commit `b4b19a0` —
+  `forms/[formId]/preview/page.tsx` (server component, same
+  `requireSessionUser` + `getFormForWorkspace` guarded read;
+  explicit src resolution: missing|draft → open draft, version →
+  LATEST frozen seq, unknown/duplicated/malformed → same
+  non-disclosing 403, absent draft/zero history → same fail; all six
+  kinds from a sorted defensive copy, every control disabled, no
+  form/submit/button/client import; archived history stays an
+  allowed read), `preview-draft-link` on the open-draft editor,
+  `preview-version-link` on the non-archived no-draft branch only
+  when history exists. No guard/backend/actions/deps changes; no
+  historical-seq selector.
+- Gates on clean `b4b19a0` (all run-capture.sh): format 0 · lint 0 ·
+  typecheck 0 · build 0 · DOM 40/40 · helpers 17/17 · unit 580/580 ·
+  integration 288/288 (`p8e_int`, CI=1) · focused preview 9/9 ·
+  focused lifecycle 35/35 · FULL onboarding-forms spec 68/68 —
+  the 4 previously-named preview REDs are GREEN; zero remaining
+  named REDs in this spec. BUILD_ID `EZ17DdUJSOuL5ZRNcGcDF`.
+- STOPPED for parallel review before ES-5; F3 HTTP security gates
+  remain outstanding (separate slice), no merge/push.
+
+## 2026-10-04 — P-009 ES-4a ACCEPTED on forward line + ES-4b preview tests pinned/repaired
+
+- Root incremental ACCEPTANCE of ES-4a on this branch: prod `07c0d22`
+  - docs `a83af56` — root code inspection + Helios/Atlas/Orion new-code
+    PASSes. The old-B missing-checkpoint and the invalid first fwd logs
+    remain preserved, not waived, no historical approval. NOT final
+    P-008/HTTP-gate/merge. Platform dual-role question still human-pending.
+- ES-4b tests-only `3d9522f`: focused zero-mutation preview describe
+  (8 tests) — draft/src-selection/edge-src/denials/archived-read/link/
+  widths per the committed contract; historical-seq deliberately NOT
+  pinned (open product question #2).
+- Fresh prospective RED at `3d9522f`: `red-fwd-es4b-e2e-preview.log`
+  7f/1p (route/links absent; the unknown-src/no-history leg
+  immediate-PASSes under the framework 404 — named, not governing);
+  regressions `green-fwd-es4b-e2e-lifecycle-regress.log` 35/35,
+  `green-fwd-es4b-dom-regress.log` 40/40.
+- Root test inspection `cd035f04` ordered a tests-only repair before
+  any prod release: `{exact:true}` on all field-label assertions
+  (option labels share prefixes — substring match would mask later);
+  shared `assertPreviewReadonlyZeroDelta` wraps EVERY preview variant
+  (per-variant non-GET + storage VALUES + full workspace rows);
+  width variants now assert the six kinds actually render (disabled
+  counts can't be vacuous); missing-src/src=draft on a CLOSED form
+  pinned as a named fail; archived published history pinned as an
+  allowed read-only version preview under the same zero-delta
+  contract. `3d9522f`'s 7f/1p does not govern the fixed assertions —
+  a fresh RED on the repaired head is required before prod.
+
+## 2026-10-04 — P-009 ES-4a FORWARD RECOVERY — closed-branch controls + publish/reopen refresh (NEW cycle)
+
+- Root adjudication `cd81077c`: the missing committed RED between impl A
+  (`897f7c1`) and impl B (`7f9f47d`) on the `es2a` branch cannot be
+  retro-approved → this NEW forward cycle on
+  `feature/p008-es4a-closed-forward` (old branch preserved at `0ba8873`,
+  untouched). NEW evidence — not historical B RED, not a waiver.
+- Tests-only provenance `394704e`: carries the `43d49fb` DOM delta
+  verbatim (hoisted router spies, refresh-on-ok pins, corrected
+  pending-publish contract) + `docs/tasks/p008-es4a-forward-recovery.md`
+  scoped plan. Zero production code carried.
+- Prospective REDs on clean `394704e` via `run-capture.sh` (before+after
+  SHA, empty porcelain paths, UTC, exact cmd, real exit):
+  `red-fwd-final-dom-closed.log` 5f/35p; `red-fwd-final-e2e-closed.log`
+  3f/3p closed-control subset only (preview-dependent owner test
+  excluded). Earlier `red-fwd-es4aB-*` logs lacked in-file
+  before-markers — superseded, preserved unmodified except a truthful
+  append-only label fix; two invalid attempts preserved in-log.
+- Production `07c0d22` (ONE combined commit, released `7cfa7553`,
+  precondition verified `2ac32d9c`): fresh-authored `OpenDraftButton`
+  reopen+archive — shared pending, typed→safe / transport→generic,
+  replay-safe; `router.refresh()` on reopen-ok, `router.push()` to the
+  canonical list on archive-ok (both outside the action catch). Page
+  mounts it only on `!archived && draft===null`; archived keeps zero
+  controls. `DraftEditor` publish-ok `router.refresh()` (R1 contract)
+  - truthful preserve-draft comment. Backend/actions/helpers/save/
+    editor-A/deps untouched; no old-B/R1 transplant.
+- Gates on clean `07c0d22` (all captured): format 0 · lint 0 ·
+  typecheck 0 · build 0 · DOM 40/40 · helpers 17/17 · unit 580/580 ·
+  integration 288/288 (`p8e_int`, CI=1) · focused e2e 35/35 · full spec
+  55p/4f — only the 4 named preview-dependent REDs
+  (`preview-draft-link`, ES-4b scope). BUILD_ID `BwywS2uLkECuQeCzrCjTl`
+  sha256 `b90ff345…6842c59f`.
+- STOPPED before ES-4b preview and ES-5 security; reported to Apollo
+  for parallel code/evidence review.
+
+## 2026-10-04 — P-009 ES-4a prep CORRECTION — impossible-GREEN arithmetic + timing gates fixed
+
+- Root blocker `70bf24c3-dcc5-41c1-886a-f76714a29a50` before ES-4a
+  production, folded into `39a6427` (tests-only + plan wording):
+  publish→reopen browser case asserted rev 3/4 — impossible under the
+  locked service (publish never bumps `draftRevision`; reopen seeds
+  `+1`; save `+1`) → corrected to honest 2/3 with cited service lines.
+  Both 900ms pending cases (pending-publish + the older pending-save)
+  converted to deterministic `intercepted`/`releaseGate` + finally +
+  observed-POST response gate + `postCount === 1`. Plan: `archive-form`
+  renders on BOTH open-draft and closed branches (Helios note).
+- Fresh RED on clean `39a6427` (same evidence dir): e2e lifecycle
+  5f/0p · in-flight pair 1f/1p (hardened gate held the save write;
+  editor disables PASSED while held; RED only on absent `publish-form`;
+  sibling save pending GREEN proves the mechanics) · DOM lifecycle
+  9f/31p head-binding recapture. `build-id-es4a-prep-v2.txt`
+  `pCVwQUQPLuDACEun5FG2Y`; mid-sequence build-id deviation noted
+  in-log.
+- Still STOPPED before ES-4a production; new pin reported for
+  Helios/Atlas re-review (prior pin superseded, not verdict-transferred).
+
+## 2026-10-04 — P-009 ES-4a lifecycle TESTS-ONLY prep — committed + captured (STOPPED before impl)
+
+- Root released ES-4a tests-only preparation under corrected plan
+  `1ead789` (Apollo request
+  `caa50bf4-cf48-4833-9329-6d2584b3e5dd`): focused lifecycle pins ONLY,
+  no lifecycle production.
+- Tests commit `71ca892` — `tests/unit/onboarding-draft-editor.dom.test.tsx`
+  (+publish/archive/openDraft mocks; 9 focused lifecycle tests:
+  enablement/gating, payload `formId`/`expectedRevision`, pending
+  fieldset+name+Save+cross-lifecycle disable, typed/transport alert
+  safety, replay-safe same-revision retry, OpenDraft call/pending/
+  typed-failure) + `tests/e2e/onboarding-forms.spec.ts` (mount helpers
+  split: `expectArchivedReadOnly`/`expectNoDraftMount`/`expectEditorReady`
+  now expect lifecycle test IDs; new preview-independent
+  `editor lifecycle controls` describe: publish→closed→reopen→v2,
+  archive from open-draft + closed states, pending-publish breadth,
+  stale-publish safe alert) + new inert scaffold
+  `components/onboarding/open-draft-button.tsx` (explicit no-op button
+  - empty alert region — mountable module only, NO production wiring).
+- Lint-warning fix `47558a5` — scaffold `_props` → `props` + `void
+props`; ESLint clean. No behavior change.
+- Captures on clean committed `47558a5` (empty porcelain windows,
+  absolute logs in `gate-logs/p008-editor-recovery/es2a-clean-recovery/`):
+  `red-es4a-dom-lifecycle.log` 9 fail / 31 pass exit 1 (intended RED —
+  controls absent, scaffold inert) · `green-es4a-es1.log` 17/17 exit 0 ·
+  `raw-es4a-format.log` / `raw-es4a-typecheck.log` / `raw-es4a-lint.log`
+  exit 0.
+- Browser (`juno-p8-pg`/`p8e_e2e`, `CI=1`, production `build && start`,
+  port 3000 verified free, BUILD_ID `33PdvF-vYjceQEo21St7m`):
+  `red-es4a-e2e-lifecycle.log` 5 fail / 0 pass exit 1 (intended RED) ·
+  `red-es4a-e2e-mount.log` 11 fail / 6 pass exit 1 (intended RED on
+  updated lifecycle assertions; archived read-only cases remain GREEN) ·
+  `green-es4a-e2e-save-foundation.log` 12/12 exit 0 GREEN regression —
+  Save untouched.
+- Pre-lintfix captures on `71ca892` preserved as
+  `attempt-*-pre-lintfix.log` (5 files); not governing.
+- Existing Save/metadata/structure/read-only regressions preserved.
+  Preview-dependent full-lifecycle cases remain future RED through
+  ES-4b per plan; not claimed here.
+- STOPPED: no lifecycle production (publish/archive/openDraft UI
+  wiring) implemented; backend/service untouched; no push/PR/merge.
+  Awaiting root review/release of ES-4a implementation.
+
+## 2026-10-04 — P-009 Editor/Save recovery — root INCREMENTAL ACCEPTANCE
+
+- Root ACCEPTED the increment at production `0c6242b` / docs `d4cdd62`
+  (Apollo request `57523a99-a77e-467b-ba53-cc326b3076b5`): root
+  inspection + Helios code PASS + Atlas gates/mutant PASS + Orion
+  different-model implemented PASS. Incremental acceptance ONLY — not
+  final P-008 completion, not merge/PR/deploy approval.
+- Mutant resolution: the required double-kill is satisfied by
+  `mutant-es3-helper-rawname-dom.log` — isolated disposable worktree
+  `/tmp/p8-es3-mutant-wt` (detached `0c6242b`, disposed after);
+  `adoptSavedResult` raw-name mutant killed BOTH the direct ES-1b
+  helper test AND the real-DOM normalized-title test (46 pass / 2
+  fail); restored byte-exact (sha256 `9c92a802…` == committed blob).
+  The earlier DOM mutant disclosed as run in the recovery worktree
+  (append-only clarification in `mutant-es3-rawname-adoption.log`);
+  deviation preserved, not rewritten.
+- Next: bounded lifecycle/security PLAN ONLY under Apollo request
+  `57523a99` — see `docs/tasks/p008-editor-lifecycle-security-plan.md`.
+
+## 2026-10-04 — P-009 ES-3 Save implementation — committed + gates (STOPPED for review)
+
+- Root incrementally ACCEPTED ES-2B at `741336d`/docs `a6a0fb6` (not
+  final P-008/merge approval) and RELEASED ES-3 minimal Save
+  implementation (Apollo request
+  `0b4ac5d9-7c59-4717-8540-726c155369b9`), accepting the committed RED
+  at `d537ec4`.
+- Impl commit `0c6242b` — `components/onboarding/draft-editor.tsx` ONLY
+  (+73/−10): imports `saveDraft` + `adoptSavedResult` + `useTransition`;
+  explicit press → ONE `saveDraft(workspaceId, formData)` with
+  `formId`/`expectedRevision`/`name`/`draftJson` (editor-ordered fields);
+  pending/clean guard; `pending` disables the whole `<fieldset>` plus
+  the outside name input and save control; press clears prior alert;
+  typed rejection → boundary's safe message, transport rejection →
+  generic message only (no internals/ids/payload echo), edits + old
+  revision preserved, no blind retry, retry stays stale-guarded;
+  success adopts server-normalized title/fields/ids/revision via
+  `adoptSavedResult`; emptied `helpText` omitted in outgoing copied
+  fields without mutating local state. No backend/helper/page/
+  dependency changes; closed/archived surfaces unchanged.
+- Gates on clean committed head `0c6242b` (porcelain PATH snapshots
+  empty before/after, SHA stable in-window; logs under
+  `gate-logs/p008-editor-recovery/es2a-clean-recovery/`):
+  `green-es3-dom-fullfile.log` 31/31 exit 0 · `green-es3-es1.log`
+  17/17 exit 0 · `raw-es3-unit-full.log` 571/571 exit 0 ·
+  `raw-es3-format.log` / `raw-es3-typecheck.log` / `raw-es3-lint.log`
+  exit 0 · `raw-es3-build.log` exit 0 · `raw-es3-integration.log`
+  288/288 exit 0 (`juno-p8-pg`, disposable `p8e_int`, `CI=1`).
+- Browser full-spec baseline on owned `juno-p8-pg`/`p8e_e2e`, `CI=1`,
+  production `build && start`, port 3000 verified free:
+  `raw-es3-e2e-fullspec.log` — 49 pass / 5 fail exit 1. ALL 5 fails are
+  later-lifecycle controls that do not exist yet (NOT claimed
+  complete): `owner creates, edits, publishes, reopens, v2, and
+archives`, `editor controls disable while a mutation is in flight`
+  (both missing `preview-draft-link`/`publish-form`/`archive-form`),
+  and the 3 responsive `full lifecycle` cases at 1440/834/390.
+  Save-foundation (12), mount (17), and all other suites GREEN.
+  BUILD_ID `nnKimZIPjT1sVpmck2kfD` (`build-id-es3-fullspec.txt`).
+- Disposable raw-name mutant (required, `mutant-es3-rawname-adoption.log`):
+  `adoptSavedResult` bypassed so the raw local name is adopted — exactly
+  the server-normalized-title DOM test failed (30 pass / 1 fail, exit 1);
+  restored byte-exact (sha256 `a57b7492…` matches committed impl),
+  clean tree, post-restore DOM 31/31.
+- STOPPED for Helios code / Atlas evidence / Orion substantive review.
+  No push/PR/merge/deploy; lifecycle/preview/archive controls not
+  started.
+
+## 2026-10-04 — P-009 ES-3 tests-only prep — committed RED checkpoint (STOPPED before Save impl)
+
+- Root released ES-3 TESTS-ONLY preparation while ES-2B review runs
+  (Apollo directive): strengthen the Save contract with committed pins
+  on the inert implementation — NO production changes.
+- Tests-only commit `d537ec4d6863664889aaa19d2d970b2fc4650069` —
+  `tests/unit/onboarding-draft-editor.dom.test.tsx` +
+  `tests/e2e/onboarding-forms.spec.ts` ONLY. New pins: helpText
+  clear→omission (never an explicit empty string in payload);
+  field-only save preserves the existing/seeded form name (DOM +
+  browser); pending save disables the whole `<fieldset>` AND the
+  outside name/Save controls; a new save press clears a prior alert;
+  alerts never echo internals/IDs/raw payload; moved/removed surviving
+  choice fields preserve option values AND option IDs (DOM + deferred
+  payload). All prior save contracts retained (bounded payload,
+  once-per-press, normalized adoption, typed stale, transport failure,
+  unsaved-edit preservation, no blind retry, pending disable,
+  committed-but-lost) plus all deferred payload tests.
+- Production untouched: `components/onboarding/draft-editor.tsx` is
+  byte-identical to `741336d` (Save `noop`); no backend/helper/page/
+  dependency/action-import/useTransition changes.
+- Captures on clean committed head `d537ec4` (porcelain PATH snapshots
+  empty before/after, SHA stable in-window; absolute log paths under
+  `gate-logs/p008-editor-recovery/es2a-clean-recovery/`):
+  `red-es3-dom-save-payload.log` honest 14 fail exit 1 ·
+  `raw-es3prep-dom-fullfile.log` honest 17 pass / 14 fail exit 1
+  (all fails are save-not-called / inert-save / deferred-payload
+  assertions) · `green-es3prep-dom-metadata.log` 5/5 exit 0 ·
+  `green-es3prep-dom-structure.log` 12/12 exit 0 ·
+  `green-es3prep-es1.log` 17/17 exit 0 ·
+  `raw-es3prep-format.log` / `raw-es3prep-typecheck.log` /
+  `raw-es3prep-lint.log` exit 0.
+- Browser on owned `juno-p8-pg`/`p8e_e2e`, `CI=1`, production
+  `build && start`, port 3000 verified free:
+  `red-es3-e2e-save-foundation.log` honest 9 fail / 3 pass exit 1
+  (BUILD_ID `oJbklCdTqUIErY-pl6TtH`) ·
+  `green-es3prep-e2e-mount.log` 17/17 exit 0
+  (BUILD_ID `bzO-XCt3ogMdYABk-oGwQ`). Snapshots:
+  `build-id-es3prep-red.txt`, `build-id-es3prep-mount.txt`.
+- Process deviation disclosed + preserved: one mount-capture attempt
+  used a wrong `-g` pattern (no tests found) — preserved as
+  `attempt-green-es3prep-e2e-mount-badpattern.log`; recaptured with
+  `-g 'editor mount'`. Two BUILD_IDENTITY annotation blocks were
+  initially written with the ID+hash concatenated (no trailing newline
+  in `.next/BUILD_ID`); corrected in place with an inline CORRECTION
+  note — the blocks are post-capture annotations, not raw output.
+- STOPPED before ES-3 Save implementation. Save remains INERT; no
+  push/PR/merge/deploy. Awaiting root acceptance of this RED
+  checkpoint.
+
+## 2026-10-04 — P-009 ES-2B structure ops — implemented + gates (STOPPED for acceptance)
+
+- Root released ES-2B structure implementation (request
+  `3f8c0b3d-33c3-4ce3-b2e9-1229c7b9625c`), accepting the prospective RED
+  at `372499f` (record `88792af`); code-identical docs successors kept
+  that RED governing.
+- Production commit `741336d` — `components/onboarding/draft-editor.tsx`
+  ONLY: all six `add-field-*` route through `addDraftField`;
+  remove/move-up field with contiguous `0..n-1` `order` reindex; option
+  add/remove; immutable functional updates; surviving ids preserved,
+  new rows id-less, retired ids never reassigned; every real edit arms
+  dirty. Save stays INERT (`noop`, no action import/useTransition/
+  network/storage); closed/archived surfaces unchanged. No backend,
+  helper, page, or dependency changes.
+- Process deviation disclosed + preserved: the first post-impl capture
+  set wrote its logs INSIDE the worktree (relative-path capture
+  invocation) — its porcelain markers show accumulating `??` log files,
+  so the clean-window claim does not hold for that set. All ten
+  preserved as `attempt-*.log` (the 3 e2e carry an appended
+  misplacement ERRATUM + their real build identities); the NEWCURRENT
+  recapture used absolute log paths outside the worktree.
+- NEWCURRENT gates on clean committed head `741336d` (porcelain PATH
+  snapshots empty before/after, SHA stable in-window; logs under
+  `gate-logs/p008-editor-recovery/es2a-clean-recovery/`):
+  `green-es2b-dom-structure.log` 11/11 exit 0 ·
+  `green-es2b-dom-metadata-post-impl.log` 5/5 exit 0 ·
+  `green-es2b-es1-post-impl.log` 17/17 exit 0 ·
+  `raw-es2b-dom-fullfile-post-impl.log` honest 16 pass / 8 fail exit 1
+  (ES-3 save 5 + deferred payload 3 — all `saveDraft`-not-called /
+  inert-save assertions, enumerated) ·
+  `raw-es2b-format-post-impl.log` / `raw-es2b-typecheck-post-impl.log` /
+  `raw-es2b-lint-post-impl.log` exit 0.
+- Browser on owned `juno-p8-pg`/`p8e_e2e`, `CI=1`, production
+  `build && start`, port 3000 verified free:
+  `green-es2b-e2e-blank-option.log` 2/2 exit 0 ·
+  `green-es2b-e2e-local-structure.log` 3/3 exit 0 ·
+  `green-es2b-e2e-mount-describe.log` 17/17 exit 0 (superset:
+  mount/read-guards/widths/denial + local-edit + local-structure).
+- Build identity: per-run BUILD_ID snapshots `build-id-es2b-green-1/2/3.txt`;
+  run-set final `mHRDUx_GCuHTh5EMUgosR` sha256 `7370038a…`.
+- STOPPED for root incremental acceptance before ES-3. Save remains
+  INERT; no push/PR/merge/deploy.
+
+## 2026-10-04 — P-009 ES-2A root incremental ACCEPTANCE recorded; ES-2B clean-RED checkpoint standing (STOPPED)
+
+- Root issued incremental ACCEPTANCE of the ES-2A delivered record
+  `023de20`: scope/raw-gate markers inspected, Helios NEW code PASS,
+  Atlas NEW evidence VALID, zero blockers. This closes ES-2A as an
+  INCREMENTAL acceptance only — it is NOT final P-008 completion and
+  NOT merge/PR/deploy approval; the feature remains local-only.
+- Append-only errata directive adopted (Atlas, non-blocking): a prior
+  RED-log epoch annotation was corrected IN PLACE — disclosed
+  deviation. The original erroneous annotation `epoch 1759608439` is
+  preserved as a historical annotation alongside the corrected
+  `epoch 1791055639` (= 2026-10-03T19:27:19Z, the RED build mtime,
+  inside that capture window). ERRATUM appended to
+  `gate-logs/p008-editor-recovery/es2a-clean-recovery/red-es2a-e2e-local-edit.log`;
+  no other raw lines edited. All corrections going forward are
+  append-only ERRATUM blocks.
+- Build identity reconciled: actual RED BUILD_ID is
+  `0WkgVkNAMs3l60aq1YrLE` (sha256 `467fb76a…`); the `…467` suffix in
+  preserved build references was a stray sha256-prefix concatenation
+  against the no-trailing-newline snapshot file — cosmetic only, and
+  hashes/snapshots reconcile (appended ERRATUM in
+  `green-es2a-e2e-mount-describe.log`; docs fix `372499f`).
+- ES-2B prep release `7344de53` unchanged (entry below): tests
+  `13483f5`, docs `372499f`, clean-RED captures + honest positives
+  recorded at `88792af`. The ES-2B clean-RED checkpoint STANDS for
+  root review; structure implementation is NOT started and awaits the
+  root release. Save remains ES-3. No reruns/holds for cosmetics; no
+  source edits during capture.
+- Head: this commit (docs only). Production unchanged at `36a2f8f`;
+  tests unchanged at `13483f5`.
+
+## 2026-10-04 — P-009 ES-2B PREPARATION — tests committed + prospective RED (STOPPED for review)
+
+- Prep release `7344de53`. Tests-only commit `13483f5`: local-edit case
+  switched to `storageSnapshot` sorted key→value helper; both vitest
+  deferred/probe comments reworded to observed-symptom/defensive-guard
+  (comment-only); NEW browser `local structure edits arm save — zero
+network/storage/DB delta` at 3 widths; DOM structure describe gained
+  standalone option-add + all-six-kind add loop (choice→1 blank option,
+  non-choice→no options region). Docs `372499f` (BUILD_ID cosmetic fix +
+  ES-2B acceptance in narrow plan). Production unchanged at `36a2f8f`.
+- Captures on clean committed head `372499f` (porcelain path snapshots
+  empty before/after, SHA stable in-window):
+  `red-es2b-dom-structure.log` 11 meaningful failures (4 existing + 7
+  new), exit 1 · `red-es2b-e2e-blank-option.log` 2 meaningful failures
+  (single+multiChoice, option row absent after real click), exit 1 ·
+  `red-es2b-e2e-local-structure.log` 3 meaningful failures
+  (field-label-1 absent — inert handlers), exit 1.
+- Honest positive records at same head: `green-es2b-e2e-local-edit-
+strengthened.log` 3/3 pass (immediate PASS = additional proof, not
+  fabricated RED) · `green-es2b-dom-metadata-regression.log` 5/5 ·
+  `green-es2b-es1-regression.log` 17/17 · `raw-es2b-dom-fullfile.log`
+  honest 5 pass / 19 fail (save 5 + structure 11 + deferred payload 3).
+- Owned `juno-p8-pg`/`p8e_e2e`, `CI=1`, production build+start each run;
+  final BUILD_ID `oPIVPlHp75Htzn2Tkr3dQ` sha256 `57d18b61…`.
+- STOPPED for root checkpoint review before ES-2B implementation. Save
+  remains INERT; structure handlers remain no-op.
+
+## 2026-10-04 — P-009 ES-2A clean-recovery — implemented + gates (STOPPED for acceptance)
+
+- Root accepted the RED checkpoint (release `23cae652`). Fresh minimal
+  ES-2A implementation in `components/onboarding/draft-editor.tsx` ONLY,
+  committed `36a2f8f`: existing name/label/required/help/option-label
+  edits → local state + dirty arming; `useEffect` props reseed via
+  `reseedDraftState` (dirty preserve / clean monotonic adopt). Save
+  INERT; add/remove/move/option ops remain no-op. No transplant of
+  `d7cf860` — derived from the committed seam/test contracts.
+- Gates on clean committed head `63dfa4e` (docs-only delta from `36a2f8f`
+  — code/tests identical; NEWCURRENT recaptures):
+  `green-es2a-dom-subset-final.log` 5/5 exit 0 ·
+  `green-es2a-es1-regression-final.log` 17/17 exit 0 ·
+  `raw-es2a-format-final.log`/`raw-es2a-typecheck-final.log`/
+  `raw-es2a-lint-final.log` all exit 0 ·
+  `raw-es2a-dom-fullfile-final.log` honest 5 pass / 12 fail exit 1
+  (ES-3 save 5 + ES-2B structure 4 + deferred payload 3, enumerated) ·
+  `green-es2a-e2e-mount-describe.log` 14/14 exit 0 on owned
+  `juno-p8-pg`/`p8e_e2e`, `CI=1`, production build+start — incl. 3
+  local-edit widths asserting zero non-GET/storage/DB delta; GREEN
+  BUILD_ID `4oU0hfNUsx4w8ljkL2pup` sha256 `853886d0…`, RED BUILD_ID
+  `0WkgVkNAMs3l60aq1YrLE` snapshot preserved.
+- First format attempt `raw-es2a-format.log` @`36a2f8f` failed on a
+  STATUS.md whitespace issue — preserved; fixed docs-only `63dfa4e`,
+  NEWCURRENT recapture exit 0.
+- STOPPED for root acceptance before ES-2B. No push/PR/merge/deploy.
+
+## 2026-10-04 — P-009 ES-2A clean-recovery — prospective RED captured (STOPPED for review)
+
+- Head at capture: `65fdab4` (docs commit; code/tests identical to base
+  `ea8400e`). Both runs recorded clean `git status --porcelain` PATH
+  snapshots before AND after; SHA unchanged inside each capture window.
+- DOM subset RED `es2a-clean-recovery/red-es2a-dom-subset.log`:
+  `npx vitest run …dom.test.tsx -t 'mount surface|props reseed'` →
+  4 AssertionError + 1 markup pass + 12 skipped, exit 1. Failures are
+  absent-behavior on the inert scaffold (edit arming + 3 reseed cases),
+  identical contract to the prior cycle's RED.
+- Browser RED `es2a-clean-recovery/red-es2a-e2e-local-edit.log`:
+  `CI=1 DATABASE_URL=…/p8e_e2e npx playwright test … -g 'local metadata
+edits arm save'` → 3 meaningful failures (1440/834/390), exit 1 —
+  controlled `form-name` input reverts the typed value (inert scaffold).
+  Owned `juno-p8-pg`/`p8e_e2e` (fresh DB, negative existence check first);
+  port 3000 free; production `build && start`; BUILD_ID `0WkgVkNAMs3l60aq1YrLE`
+  (sha256 `467fb76a…`, snapshot copy preserved next to the log).
+- This RED is prospective evidence for the NEW cycle head only — it does
+  not repair the historical run and is not cited as its proof.
+- STOPPED for root review; no ES-2A implementation yet.
+
+## 2026-10-04 — P-009 ES-2A clean-recovery cycle — provenance doc (STOPPED before RED)
+
+- New branch `feature/p008-editor-save-recovery-es2a` + worktree
+  `../repo-p008-editor-es2a` rooted EXACTLY at `ea8400e` (ES-1 helpers +
+  inert ES-2 scaffold + corrected DOM tests + 3-width local-edit tests).
+  `feature/p008-editor-save-recovery` preserved at `db986a57` in
+  `../repo-p008-editor-tdd`; all historical logs preserved.
+- Reason: prior ES-2A browser RED logged `CLEAN_AFTER: 1` and its `.next`
+  build was later overwritten (see ERRATUM 2,
+  `gate-logs/p008-editor-recovery/red-es-2a-e2e-local-edit.log`) — the
+  `d7cf860` implementation does not sit behind a provably clean RED window.
+- Provenance/scope doc: `docs/tasks/p008-editor-save-recovery-es2a-recovery.md`
+  (additive; identifies the limitation without rewriting old evidence).
+- New owned disposable DB `p8e_e2e` created on `juno-p8-pg` after negative
+  existence check. Next: prospective DOM-subset + 3-width browser RED on
+  the clean committed head under
+  `gate-logs/p008-editor-recovery/es2a-clean-recovery/`, then STOP for root
+  review. No transplant of `d7cf860`; no implementation before review.
+
+## 2026-10-03 — P-008-R editor save recovery — ES-2 audit corrections applied (STOPPED)
+
+- Apollo audit `8b151ebc` of checkpoint `404b571`: scaffold/noops and
+  both RED bindings verified; authorship attestation recorded with
+  limits (not cryptographic proof). Three test-contract corrections
+  REQUIRED before any ES-2 behavior release — all applied tests-only:
+- Corrections commit `08ff818` (tests only, current code head):
+  1. `issues saveDraft` payload test asserted the deliberately-UNSORTED
+     fixture array (`baseProps.initialDraft.fields`, [order1, order0]) —
+     now pins the editor-ordered field list `[f_a, f_b]` explicitly;
+     production ordering policy unchanged (the test was wrong).
+  2. Disabled assertions switched from the `.disabled` PROPERTY (which
+     ignores `<fieldset disabled>` inheritance) to the effective
+     `:disabled` semantic via `el.matches(":disabled")` — no redundant
+     prod attributes needed.
+  3. Structure-ops split for save-separability: DOM-visible structural
+     tests (row sequence/labels/options/next-index — can GREEN at the
+     field-structure slice with no save) vs a `structure-ops payload
+subset` describe honestly labeled DEFERRED to ES-3 (id/order pins
+     read draftJson).
+- Fresh scoped RED `red-es-2-dom-scaffold-behavioral-postaudit.log` @
+  `08ff818`: 16 AssertionError REDs + 1 markup pass (17 tests), exit 1,
+  ~0.7s, clean before/after. Delta vs prior run: 14 → 17 tests
+  (4 structure tests became 4 DOM-visible + 3 deferred payload tests).
+- Dependency audit log `raw-es-2-deps-audit.log`: installed
+  jsdom@30.1.1 / @testing-library/react@16.3.3 /
+  @testing-library/dom@10.4.2 (lockfile exact); `npm audit` = 10
+  findings ALL pre-existing (next→postcss, eslint-config-next→braces,
+  prisma→deepmerge-ts) — none harness-attributable; no force-fix
+  (breaking changes).
+- All ES-2 attempt logs + harness-fix provenance preserved in
+  `gate-logs/p008-editor-recovery/`. STOPPED before ES-3 — no prod
+  behavior, no push/PR/GitHub actions.
+
+## 2026-10-03 — P-008-R editor save recovery — ES-2 tests/harness+scaffold checkpoint (STOPPED)
+
+- Apollo release authorized ES-2: ES-1 wrap-up, DOM harness deps,
+  adapted tests committed BEFORE the scaffold, inert callable
+  `DraftEditor`, honest RED evidence — then STOP before ES-3 behavior.
+- ES-1 wrap-up `ffc75ea` (tests-only): `initialDraftState` input-array
+  immutability proof — sorted output, caller array reference/order
+  unchanged. Immediate PASS, labeled additional proof (no manufactured
+  RED). Helper suite 17/17 exit 0.
+- Test-infra `2c46546` (+ correction `a86a453` for the oxc JSX runtime):
+  `jsdom@30.1.1`, `@testing-library/react@16.3.3`,
+  `@testing-library/dom@10.4.2` — dev-only, registry-verified publish
+  ages (20/37/11 days), React 19 + Node 26 compatible; `npm audit`
+  showed no harness-attributable findings (all findings pre-existing in
+  next/postcss, eslint-config-next/braces, prisma/deepmerge-ts).
+- Tests `4087c23` (DOM harness + adapted save-foundation E2E) +
+  `6dbeaeb` (Apollo-pinned structure ops): real `DraftEditor` mounted via
+  testing-library/jsdom; mount/edit/props-reseed/save contracts; remove
+  - reorder reindex pins (contiguous `0..n-1` orders, surviving
+    field/option ids preserved, retired ids never resurrected, post-remove
+    adds take the next order); dedicated blank-option test asserts the
+    newly RENDERED option row after the real `add-field-*` click.
+- Scaffold `b15a60f`: callable `DraftEditor` + open-draft page wiring —
+  real selector surface from props via `initialDraftState`, all handlers
+  no-op, save visible+disabled (clean), empty `role="alert"`, no state
+  mutation, no action invocation. Closed/archived read-only paths
+  unchanged.
+- Harness corrections committed before RED recapture: `6ba4c22` (lazy
+  pending/transport mocks), `d37673c` (probe-safe impls — vitest invokes
+  a mock's impl once during cleanup with ZERO args and awaits it; shared
+  deferred + args-gated rejection eliminate the teardown stall and the
+  phantom `network down` error).
+- DOM RED `red-es-2-dom-scaffold-behavioral-final.log` @ `6dbeaeb`:
+  13 AssertionError failures + 1 legit markup pass, exit 1, ~0.7s — all
+  failures are absent behavior (inert noops), no harness noise.
+- E2E RED `red-es-2-e2e-production-browser.log` @ `6dbeaeb`: owned
+  `juno-p8-pg`/`p8r_e2e2`, `CI=1`, production `build && start`:
+  31 passed / 16 failed, exit 1, 8.9m. Failures are all missing
+  behavior — add/remove/edit noops produce `field-label-*` element
+  timeouts; unwired save produces `waitForResponse` timeouts; the two
+  dedicated blank-option tests fail after REAL add-field clicks; the
+  reload/dirty-discard, stale-revision, transport, pending-disable,
+  double-save-id, owner-lifecycle, mid-flight-clobber, and 3×
+  responsive-lifecycle tests fail at the first missing behavior. Mount/
+  authz/read-only/overflow-markup tests pass legitimately (labeled
+  markup, not behavior, proof).
+- Authorship: state seam + component authored fresh on this branch from
+  the approved tests/contracts after committed RED — no old production
+  file/function was copied, cherry-picked, checked out, or transplanted.
+- STOPPED before ES-3 (edit/add/remove/reorder behavior + save wiring).
+  No push/PR/merge/deploy.
+
+## 2026-10-03 — P-008-R editor save recovery — ES-1 helpers complete (STOPPED)
+
+- Apollo release `a121bc12` authorized ES-1b then ES-1c as separate
+  sequential helper cycles (ES-1a `6e25230` incrementally accepted — not
+  final review).
+- ES-1b: RED recaptured on clean `8b3a095` (`red-es-1b-recapture-preimpl.log`
+  2/2 throws, exit 1) → impl `3d2e18c` (`adoptSavedResult`: server
+  `definition.title`/ordered fields+ids/revision, dirty clears; stale
+  scaffold header corrected). `green-es-1b-scoped.log` 2/2 exit 0;
+  `green-es-1a-regression.log` 6/6 exit 0; honest full-file
+  `raw-es-1b-fullfile.log` 8 pass/8 fail exit 1 (ES-1c still RED).
+- ES-1c: RED recaptured on clean `3d2e18c` (`red-es-1c-recapture-preimpl.log`
+  8/8 throws, exit 1) → impl `f13a970` (`addDraftField`: immutable append,
+  next contiguous order, blank metadata, no ids, dirty=true, exactly one
+  blank option for choice kinds, none otherwise).
+- Gates @ `f13a970`: `green-es-1c-fullfile.log` 16/16 exit 0;
+  `green-es-1c-fullunit.log` 49 files/539 tests exit 0 (rest of repo
+  unaffected); `raw-es-1c-format.log`/`raw-es-1c-typecheck.log`/
+  `raw-es-1c-lint.log` all exit 0 (the earlier 4 unused-param stub warnings
+  are gone — no lint findings at all now).
+- Mutant check (`mutant-monotonic-guard.log`): monotonic guard removed in
+  isolated detached worktree `../p008-mutant-1` → ES-1a stale-props test
+  FAILED as required (1 fail, exit 1); worktree removed; restoration proof
+  sha256 `ba04c28e…` identical before/after + clean porcelain.
+- STOPPED before DOM deps/tests/UI/editor wiring (ES-2). No push/PR/merge/
+  deploy.
+
+## 2026-10-03 — P-008-R editor save recovery — ES-1a implemented (STOPPED)
+
+- Apollo release `cdae666d` authorized ES-1a implementation ONLY. RED
+  recaptured on the current clean head `5734af4` BEFORE logic
+  (`red-es-1a-recapture-preimpl.log`: 6/6 real `not implemented` throws,
+  exit 1, CLEAN_BEFORE/AFTER markers + dirty counts).
+- Impl `6e25230` (production): `initialDraftState` (ordered mount seed)
+  - `reseedDraftState` (dirty-preserve, clean monotonic — equal/higher
+    adopt, older preserve). Fresh logic, no transplant.
+    `adoptSavedResult`/`addDraftField` still throw — ES-1b/1c intentionally
+    RED.
+- Gates @ `6e25230`: scoped GREEN `green-es-1a-scoped.log` 6/6 exit 0;
+  honest full-file `raw-es-1a-fullfile.log` 6 pass / 10 fail (exit 1 —
+  intentional stubs, not claimed green); `raw-es-1a-format.log` exit 0;
+  `raw-es-1a-typecheck.log` exit 0; `raw-es-1a-lint.log` exit 0 with 4
+  WARNINGS — `@typescript-eslint/no-unused-vars` on the two intentional
+  stub signatures (attributable, not errors).
+- STOPPED before ES-1b/1c/UI/deps. Prior disclosure stands: two
+  all-skipped log files from a wrong-case `-t` mistake were removed at
+  ES-1 setup and are not recoverable — going forward every attempt log is
+  preserved and labeled (Apollo execution note).
+
+## 2026-10-03 — P-008-R editor save recovery — ES-1 tests+scaffold checkpoint (STOPPED)
+
+- Apollo checkpoint release `538b5b56` authorized ES-1 TESTS+SCAFFOLD ONLY on
+  a fresh branch/worktree off verified base `61715321` (main-descended;
+  backend/security/read-only mount retained). `origin/main` re-verified live
+  = `50367963`, no change; refs clean, remote `The-great-tracker-` only.
+  `repo-p008-tdd` @ `bb5ef98` and `repo` @ `d10d788` preserved untouched.
+- Branch `feature/p008-editor-save-recovery`, worktree `../repo-p008-editor-tdd`.
+  Plan carried docs-only at `176740e`; tests-only contract suite
+  `tests/unit/onboarding-draft-editor.test.ts` committed `dd42327`
+  (adapted w/ provenance from `e157306`, extended: `adoptSavedResult`
+  normalized-title, `addDraftField` blank-option seed, `initialDraftState`
+  ordering). Scaffold `components/onboarding/state.ts` committed `54e211c`
+  — React-free types + signatures, all bodies throw `not implemented`,
+  zero helper logic.
+- RED evidence (raw logs outside Git, `gate-logs/p008-editor-recovery/`):
+  module-absent setup run `red-es1-module-absent{,-run}.log` @ `dd42327`
+  (16/16 module-not-found, exit 1 — setup record, NOT a behavioral gate);
+  behavioral REDs on the clean committed scaffold `54e211c`, real-module
+  `Error: not implemented` throws (never import errors):
+  `red-es-1a-scaffold.log` 6/6 exit 1, `red-es-1b-scaffold.log` 2/2 exit 1,
+  `red-es-1c-scaffold.log` 8/8 exit 1. Per-run UTC/SHA/clean-porcelain/
+  command/exit recorded; bash `pipefail` runner with immediate `rc=$?`
+  capture.
+- STOPPED before helper implementation per release. No deps/harness/UI yet,
+  no editing/save behavior, no reopen/publish/archive/preview, no
+  push/PR/merge/deploy. Old evidence (`e157306`) is reference-only and is
+  not retroactively waived or reused.
+
+## 2026-10-03 — P-008 slice 5C-1 list/create/nav (complete, awaiting audit)
+
+- Scoped release (Apollo `f469c9ae`) executed on
+  `feature/p008-onboarding-form-builder-tdd-5c` — head `14a7467`, tree clean.
+  Earlier candidate `../repo` @ `d10d788` untouched and distinct.
+- Corrections commit `40a5115` (docs/tests only): ARCHIVED never reopens
+  (plan text; service already denies `form_archived`); created rows can no
+  longer leak between widths (fixture-scoped beforeEach/afterEach on the
+  `E2E P8` namespace); held action POST released in `finally` + repeated
+  submit/Enter attempts while held must emit exactly one mutation request
+  and one workspace-scoped row; independent seeded draft/published/archived
+  list assertions with status+version metadata; real Tab/Enter traversal
+  replaces `.focus()`; overflow checked on list AND new at all widths; nav
+  visibility covers owner+coach and every denied role; foreign-workspace and
+  malformed-segment 403s added.
+- Prospective RED on the committed tree (no page code): `DATABASE_URL=
+…/p8r_e2e2 npx playwright test tests/e2e/onboarding-forms.spec.ts` → exit
+  1, 20/20 failed (15 scoped meaningful; 5 editor tests intentionally RED).
+  Disposable owned `juno-p8-pg` @5445, production `next build && next
+start`. Log `red-5c1-browser-v3.log`.
+- Implementation `8b0cb40` (list page + gated nav) + `e72b77b` (create page
+  - pending-safe name form) — fresh, no transplant. Per-page authorization:
+    list via boundary `listFormsForWorkspace` (fresh service re-authz every
+    request), new via `requireWorkspaceAccess` write; both fail closed to the
+    non-disclosing 403. Create navigates to the canonical editor route —
+    disclosed 5C-2 dependency, unimplemented.
+- `14a7467` test fixes from first GREEN attempt: alert locator scoped past
+  Next's `role="alert"` route announcer; editor URL wait excludes literal
+  `new` (the in-flight POST could no longer race the row count).
+- Gates @ `14a7467`: format 0 · lint 0 · typecheck 0 · unit 48 files/523 ·
+  FULL disposable integration (`p8r_int`) 24 files/281 · build 0 · targeted
+  5C-1 UI E2E 15/15 at 1440/834/390 vs production server (`p8r_e2e2`).
+  Full spec NOT green by design: 5 editor/preview tests remain RED for
+  5C-2/5C-3/5C-4. Logs: `gate-logs/p008-recovery/slice-5c1.md`.
+- Helios732 corrections `f7dbc0b` (tests/docs only): lifecycle post-reopen
+  saves `6 → 5` (publish never bumps `draftRevision`; verified vs service);
+  nav assistant hard-asserts 200 + hidden entry; later-slice gates pinned
+  (assistant deep links on editor/preview, identical foreign/nonexistent
+  403, archived read-only, preview src variants, per-variant audit delta,
+  save+open pending coverage, mid-session revoked denial). Timing
+  disclosed: no separate browser RED ran between `8b0cb40` and `e72b77b`;
+  the `40a5115` suite RED covered both increments prospectively. Evidence
+  logs sanitized (`<redacted-credentials>`, outside Git).
+- Review-repair (`453d2bf`): Helios pinned transport-rejection defect in
+  `create-form.tsx` — the action `await` had no catch, so an aborted POST
+  escaped the transition unhandled. Sequence kept test-first: `40bef8e`
+  committed the deterministic abort test + populated-list overflow (3
+  widths) on the clean tree → raw RED `red-5c1-transport.log` (alert
+  absent); `453d2bf` adds a catch narrowed to the action call → generic
+  inline error, pending clears, name preserved, retry usable, zero
+  DB/audit mutation proven for the aborted case. UI1 targeted green now
+  20/20 @ `453d2bf` (`green-5c1-transport-fix.log`); full gates re-raw'd
+  at the same head (`raw-5c1-*-final.log`: mech/unit523/integration281/
+  build all exit 0).
+- Post-repair test strengthening (`42d5a7b`, Apollo `a28cd235` + Atlas
+  mount-delta, tests/docs only — expected-PASS proofs, no manufactured
+  RED): exact tx-binding seam test captures the real transaction object
+  inside an injected `$transaction` wrapper and asserts the authz repo
+  is built with THAT tx for all five mutations / the injected client for
+  reads — never global or arbitrary (weaker `!==globalPrisma` assertion
+  replaced). Mid-retry user DEACTIVATED denial + zero deltas + finally-
+  restore added. Mount zero-delta snapshots now byte-compare ALL
+  workspace forms (serialized incl. name/status/draft/revision/updatedAt/
+  editor+archival stamps), ALL version rows, ALL ws audit rows before/
+  after mount across every state and width; non-GET tracking covers
+  every path post-signin (none observed). Raw: `raw-5b-txbinding.log`
+  2/2, `raw-5c2a-mount-delta.log` 11/11. Distinction recorded per Apollo:
+  the four retry ops shared the retry-stale-ctx defect; create had no
+  retry loop — its check/write gap is related but separately closed, NOT
+  the same proven defect. Read-only list/get/mount unaffected.
+- Security repair (`be20047`, security hold `bf80ae54`, Orion 435):
+  `authorize()` moved INSIDE every mutating tx attempt — save/publish/
+  open/archive re-read membership/role/workspace on the tx client per
+  `withSerializedRetry` attempt; create's check/write gap closed inside
+  its single tx. Tests first @`30a1796` (deterministic injected-client
+  first-attempt P2034 + separate-client revocation: save→demotion,
+  publish→member suspension, open→workspace suspension,
+  archive→demotion, create→in-gap demotion — zero deltas asserted).
+  Raw RED `red-5b-txreauth.log` 5/5 meaningful @`30a1796`. Seam test
+  contract correction disclosed in impl commit (repo now binds tx
+  client for mutating ops; never global). Gates @`be20047`: mech/unit523/
+  integration286(+5)/build/UI1+mount31 all exit 0 (`raw-5b-*.log`,
+  `green-5b-regression-ui1.log`). Lock ordering unchanged (plain authz
+  reads → FOR UPDATE form lock, uniform across ops — no new deadlock
+  channel); retry bounds + replay semantics unchanged.
+- 5C-2a implemented (`0293780`, conditional release `46a908c1`): canonical
+  `/onboarding/forms/[formId]` mounts with per-page boundary read —
+  read-only in EVERY state (disabled name + disabled field controls, zero
+  mutation/submit controls in the editor region), `draft-editor`/
+  `no-draft`/`archived-banner` states incl. archived-with-preserved-draft.
+  Sequence: `2afe9c4` strengthened tests (mount read-only everywhere,
+  archived-open-draft fixture, `access-denied` identity, nonmember,
+  platform-admin fixture named outstanding) → RED v2 `red-5c2a-editor-
+mount-v2.log` (11/11 @`2afe9c4`) → mount `5c36cbe` → test fixes
+  `0293780` (visible-region denial compare — RSC payload embeds URL;
+  mutation counter post-signin scoped to `/onboarding/`). GREEN
+  `green-5c2a-editor-mount-v2.log` 11/11; regression UI1+mount 31/31
+  `green-5c2a-regression-ui1.log`; mech/unit523/integration281/build all 0
+  (`raw-5c2a-*.log`). Record corrections: mount describe has 10→11 tests;
+  RED start 12:48:52Z. PLATFORM_ADMIN E2E fixture outstanding.
+- 5C-2a prep (`94a6141`, tests/docs only, Apollo `aa1e8611`): editor
+  mount + read-guard contract committed — per-page resource read via
+  `getFormForWorkspace`, assistant page-guard deep link, dual-member
+  wsA-form-under-wsB + nonexistent/malformed identical-403 probes,
+  draft/no-draft/archived-banner mount states, width overflow; ownership
+  `-g "editor mount"`. Raw prospective RED `red-5c2a-editor-mount.log`:
+  10/10 meaningful failures on p8r_e2e2 + prod server. Editor production
+  NOT started — held for Apollo release.
+- Evidence audit follow-up (`d628936`, tests/docs only): Helios40/14 prep —
+  `Prisma.DbNull` closed-draft seeds, mixed-state open-draft+published
+  list test (DRAFT badge + retained `v2`), pinned new testids + UI1
+  `--grep-invert` ownership command, dual-member cross-workspace isolation,
+  archived deep-link and exact preview version selection pinned for later
+  slices. Raw gate captures re-run on clean head — tee'd stdout/stderr/
+  exit/UTC/SHA: `raw-5c1-{mech,unit,integration,build,e2e-ui1,
+e2e-ui1-final}.log`; earlier `green-5c1-*` logs labeled SUMMARY (original
+  raw stdout was not persisted — recorded honestly). Credentials redacted
+  in all manifests. UI1 targeted green: 16/16 @ `d628936`.
+- **STOPPED for Apollo audit before editor work** — historical point in
+  time for the 5C-1 handoff. Since superseded: the read-only 5C-2a mount
+  passed Helios/model review and Atlas evidence audit; editor mutation UI
+  remains under an ACTIVE security hold (bf80ae54 repair landed `be20047`,
+  further reviews pending). No push/PR/deploy.
+
+- The first P-008 candidate (`feature/p008-onboarding-form-builder` @ `d10d788`)
+  passed all technical review but implemented production code before its tests;
+  the owner REJECTED the requested test-first exception. That branch is frozen
+  as a read-only reference — no cherry-pick/merge/transplant of its code.
+- Recovery branch `feature/p008-onboarding-form-builder-tdd` off verified
+  `origin/main` `50367963` (fetch-verified, no delta). Worktree:
+  `../repo-p008-tdd`. Recovery plan + slice map:
+  `docs/tasks/p008-onboarding-form-builder-tdd.md` (`fbaccae`).
+- Tests-only contract suite committed at `5debb24` (adapted tests-only from the
+  reference branch, provenance in headers): unit validation/boundary/RBAC/seam,
+  integration denial matrix + lifecycle + concurrency + Restrict-FK + audit
+  marker, e2e authz + pending-disable + full-width lifecycle.
+- Slice-0 RED on the committed tree `5debb24`: `vitest
+tests/unit/onboarding-forms.test.ts` exit 1 (module absent);
+  `tests/unit/rbac.test.ts` exit 1 (matrix missing `onboardingFormTemplates`
+  row — meaningful assertion); integration file exit 1 (module absent). Logs:
+  `gate-logs/p008-recovery/` outside Git.
+- **Held at the first RED checkpoint for Apollo audit — no production code
+  yet.** Scope unchanged (decision #29): owner + ACTIVE coach only, definitions
+  only, no submissions/intake/invites. Not pushed, no PR.
+
 ## 2026-10-02 — P-006 product-alignment blueprint (documentation only)
 
 - Authored `docs/product-alignment-blueprint.md` from Lilly's "Core coaching

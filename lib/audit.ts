@@ -71,6 +71,9 @@ export const AUDIT_RESOURCE_TYPES = [
   "user",
   // S1-G: allowlist export events only — no erasure event types exist yet.
   "client_export",
+  // P-008: onboarding form definition lifecycle events (IDs + structural
+  // markers only — never draft payloads or answers).
+  "onboarding_form",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 
@@ -85,7 +88,7 @@ export type AuditMeta = {
   changed?: boolean;
   count?: number;
   role?: "PRIMARY" | "COACH";
-  status?: "ACTIVE" | "REMOVED";
+  status?: "ACTIVE" | "REMOVED" | "ARCHIVED" | "PUBLISHED";
   /** S1-F2C: the invited member role on invitation events (invitable roles only). */
   targetRole?: "COACH" | "ASSISTANT_COACH" | "CLIENT";
   /** S1-F2C repair: structural acceptance outcome on INVITE/access_token events. */
@@ -136,7 +139,14 @@ const META_VALIDATORS = new Map<keyof AuditMeta, (v: unknown) => boolean>([
       typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 1_000_000,
   ],
   ["role", (v) => v === "PRIMARY" || v === "COACH"],
-  ["status", (v) => v === "ACTIVE" || v === "REMOVED"],
+  [
+    "status",
+    (v) =>
+      v === "ACTIVE" ||
+      v === "REMOVED" ||
+      v === "ARCHIVED" ||
+      v === "PUBLISHED",
+  ],
   [
     "targetRole",
     (v) => v === "COACH" || v === "ASSISTANT_COACH" || v === "CLIENT",

@@ -93,10 +93,37 @@ describe("sanitizeAuditMeta", () => {
     { meta: { changed: "yes" }, label: "non-boolean changed" },
     { meta: { role: "SUPERUSER" }, label: "unknown role" },
     { meta: { status: "DELETED" }, label: "unknown status" },
+    { meta: { status: "SUPERSEDED" }, label: "unknown archive-like status" },
+    { meta: { status: "draft" }, label: "lowercase non-status" },
   ])("rejects $label", ({ meta }) => {
     expect(() => sanitizeAuditMeta(meta as never)).toThrowError(
       /audit_metadata_forbidden/,
     );
+  });
+
+  it("accepts ARCHIVED status (P-008 archive marker)", () => {
+    // Archive events must carry a truthful marker — REMOVED misrepresents the
+    // lifecycle state; ARCHIVED is an approved value in the closed allowlist.
+    expect(sanitizeAuditMeta({ status: "ARCHIVED" })).toEqual({
+      status: "ARCHIVED",
+    });
+  });
+
+  it("accepts PUBLISHED status with a structural version identifier", () => {
+    // Publish events carry the marker + bounded version seq linkage —
+    // never definition/title/answers.
+    expect(sanitizeAuditMeta({ status: "PUBLISHED", version: "2" })).toEqual({
+      status: "PUBLISHED",
+      version: "2",
+    });
+  });
+
+  it("rejects a non-structural version identifier", () => {
+    for (const bad of [42, { seq: 1 }, ["1"], null]) {
+      expect(() =>
+        sanitizeAuditMeta({ status: "PUBLISHED", version: bad as never }),
+      ).toThrowError(/audit_metadata_forbidden/);
+    }
   });
 
   it("rejects non-plain-object metadata", () => {

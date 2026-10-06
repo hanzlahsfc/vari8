@@ -47,6 +47,7 @@ export const RESOURCES = [
   "exportsErasure",
   "auditLog",
   "privateMediaFiles",
+  "onboardingFormTemplates",
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
 
@@ -213,6 +214,17 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
     CLIENT: c("own", "own"),
+  },
+  // P-008 (owner decision #29): onboarding form DEFINITION management is
+  // scoped to workspace owners and ACTIVE coaches — definitions only, no
+  // submission domain exists. Assistant/support/client/platform denied.
+  onboardingFormTemplates: {
+    PLATFORM_ADMIN: D,
+    WORKSPACE_OWNER: c("workspace", "workspace"),
+    COACH: c("workspace", "workspace"),
+    ASSISTANT_COACH: D,
+    SUPPORT: D,
+    CLIENT: D,
   },
 };
 

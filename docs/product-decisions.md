@@ -137,6 +137,20 @@ engineering recommendation:
     and product name may be selected later; the backend remains
     provider-neutral.
 
+## P-008 scoped approval (relayed by Hanzlah via Apollo, 2026-10-02)
+
+29. **Onboarding-form builder permissions (P-008 slice only).** WORKSPACE_OWNER
+    and ACTIVE COACH may view/edit onboarding-form drafts in their workspace.
+    ASSISTANT_COACH, CLIENT, SUPPORT and PLATFORM_ADMIN are denied for this
+    slice. Published form versions are immutable; edits create a new
+    draft/version and never silently alter an existing client flow. Editor
+    identity and timestamps are recorded; ACTIVE user/membership/workspace is
+    enforced server-side on every operation (including preview/publish/
+    archive). Form-definition access never confers intake-submission access;
+    no submission domain exists in this slice. This approval is narrowly
+    scoped to P-008 and does not resolve blueprint D-03 (template library
+    ownership) or any other pending decision.
+
 ## Conservative engineering interpretations (NOT founder decisions)
 
 Recorded for traceability so reviewers can distinguish assumption from decision:

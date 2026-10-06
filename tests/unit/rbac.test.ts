@@ -168,6 +168,15 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "own"],
   },
+  // P-008 scoped approval (product-decisions #29): owner + active coach only.
+  onboardingFormTemplates: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "workspace"],
+    COACH: ["workspace", "workspace"],
+    ASSISTANT_COACH: ["denied", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["denied", "denied"],
+  },
 };
 
 const PRINCIPAL_ROLES: PrincipalRole[] = [
@@ -181,7 +190,7 @@ const PRINCIPAL_ROLES: PrincipalRole[] = [
 
 describe("RBAC matrix", () => {
   it("covers every resource × principal role × action", () => {
-    expect(RESOURCES).toHaveLength(19);
+    expect(RESOURCES).toHaveLength(20);
     for (const resource of RESOURCES) {
       for (const role of PRINCIPAL_ROLES) {
         const cell = RBAC_MATRIX[resource]?.[role];
@@ -215,6 +224,28 @@ describe("RBAC matrix", () => {
           `${resource}/${role}`,
         ).toEqual(expected);
       }
+    }
+  });
+
+  it("onboardingFormTemplates: direct per-role resolveScope cells (P-008)", () => {
+    // Direct per-role assertions against the live boundary — not just matrix
+    // shape. Owner decision #29: owner + ACTIVE coach read AND write at
+    // workspace scope; assistant/support/client/platform denied outright.
+    const expected: Record<PrincipalRole, Cell> = {
+      PLATFORM_ADMIN: ["denied", "denied"],
+      WORKSPACE_OWNER: ["workspace", "workspace"],
+      COACH: ["workspace", "workspace"],
+      ASSISTANT_COACH: ["denied", "denied"],
+      SUPPORT: ["denied", "denied"],
+      CLIENT: ["denied", "denied"],
+    };
+    for (const role of PRINCIPAL_ROLES) {
+      expect(resolveScope("onboardingFormTemplates", "read", role)).toBe(
+        expected[role][0],
+      );
+      expect(resolveScope("onboardingFormTemplates", "write", role)).toBe(
+        expected[role][1],
+      );
     }
   });
 
