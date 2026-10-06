@@ -49,6 +49,9 @@ export const RESOURCES = [
   "privateMediaFiles",
   "onboardingFormTemplates",
   "onboardingAssignments",
+  // P-014 (product-decisions #41–#42): workspace parameter/template library.
+  "parameterDefinitions",
+  "coachingTemplates",
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
 
@@ -238,6 +241,26 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
     WORKSPACE_OWNER: c("workspace", "workspace"),
     COACH: c("assigned", "assigned"),
     ASSISTANT_COACH: c("assigned", "denied"),
+    SUPPORT: D,
+    CLIENT: D,
+  },
+  // P-014 (product-decisions #41–#42): workspace-shared parameter
+  // definitions + coaching templates — owner and ACTIVE coach manage at
+  // workspace scope; no creator-only scope; assistant/client/support/
+  // platform-admin denied outright (incl. dual-role membership).
+  parameterDefinitions: {
+    PLATFORM_ADMIN: D,
+    WORKSPACE_OWNER: c("workspace", "workspace"),
+    COACH: c("workspace", "workspace"),
+    ASSISTANT_COACH: D,
+    SUPPORT: D,
+    CLIENT: D,
+  },
+  coachingTemplates: {
+    PLATFORM_ADMIN: D,
+    WORKSPACE_OWNER: c("workspace", "workspace"),
+    COACH: c("workspace", "workspace"),
+    ASSISTANT_COACH: D,
     SUPPORT: D,
     CLIENT: D,
   },

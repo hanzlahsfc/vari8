@@ -141,12 +141,16 @@ model Workspace {
   createdAt DateTime        @default(now()) @map("created_at")
   updatedAt DateTime        @updatedAt @map("updated_at")
 
-  members         WorkspaceMember[]
-  clientProfiles  ClientProfile[]
-  auditEvents     AuditEvent[]
-  accessTokens    AccessToken[]
-  onboardingForms OnboardingForm[]
-  onboardingFormAssignments OnboardingFormAssignment[]
+  members                       WorkspaceMember[]
+  clientProfiles                ClientProfile[]
+  auditEvents                   AuditEvent[]
+  accessTokens                  AccessToken[]
+  onboardingForms               OnboardingForm[]
+  onboardingFormAssignments     OnboardingFormAssignment[]
+  parameterDefinitions          ParameterDefinition[]
+  coachingTemplates             CoachingTemplate[]
+  coachingTemplateVersions      CoachingTemplateVersion[]
+  coachingTemplateVersionParams CoachingTemplateVersionParameter[]
 
   @@map("workspace")
 }
@@ -170,11 +174,18 @@ model WorkspaceMember {
   coachProfile CoachProfile?
   assignments  ClientAssignment[] @relation("ClientAssignmentCoach")
 
-  onboardingFormsCreated  OnboardingForm[]        @relation("OnboardingFormCreator")
-  onboardingFormsArchived OnboardingForm[]        @relation("OnboardingFormArchiver")
-  onboardingFormVersions  OnboardingFormVersion[] @relation("OnboardingFormVersionPublisher")
+  onboardingFormsCreated       OnboardingForm[]           @relation("OnboardingFormCreator")
+  onboardingFormsArchived      OnboardingForm[]           @relation("OnboardingFormArchiver")
+  onboardingFormVersions       OnboardingFormVersion[]    @relation("OnboardingFormVersionPublisher")
   onboardingAssignmentsCreated OnboardingFormAssignment[] @relation("OnboardingAssignmentAssignedBy")
   onboardingAssignmentsEnded   OnboardingFormAssignment[] @relation("OnboardingAssignmentEndedBy")
+
+  parametersCreated         ParameterDefinition[]     @relation("ParameterDefinitionCreator")
+  parametersUpdated         ParameterDefinition[]     @relation("ParameterDefinitionUpdater")
+  parametersArchived        ParameterDefinition[]     @relation("ParameterDefinitionArchiver")
+  coachingTemplatesCreated  CoachingTemplate[]        @relation("CoachingTemplateCreator")
+  coachingTemplatesArchived CoachingTemplate[]        @relation("CoachingTemplateArchiver")
+  coachingTemplateVersions  CoachingTemplateVersion[] @relation("CoachingTemplateVersionPublisher")
 
   @@unique([workspaceId, userId])
   // Composite target for the ClientAssignment same-workspace foreign key (raw SQL).
@@ -208,7 +219,7 @@ model ClientProfile {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  assignments           ClientAssignment[] @relation("ClientAssignmentClient")
+  assignments           ClientAssignment[]         @relation("ClientAssignmentClient")
   consents              ConsentRecord[]
   auditSubjectEvents    AuditEvent[]
   onboardingAssignments OnboardingFormAssignment[] @relation("OnboardingAssignmentClient")
@@ -536,15 +547,15 @@ model OnboardingForm {
   createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  workspace        Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  createdByMember  WorkspaceMember         @relation("OnboardingFormCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
-  archivedByMember WorkspaceMember?        @relation("OnboardingFormArchiver", fields: [archivedByMemberId], references: [id], onDelete: Restrict)
+  workspace        Workspace                  @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  createdByMember  WorkspaceMember            @relation("OnboardingFormCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  archivedByMember WorkspaceMember?           @relation("OnboardingFormArchiver", fields: [archivedByMemberId], references: [id], onDelete: Restrict)
   versions         OnboardingFormVersion[]
   assignments      OnboardingFormAssignment[] @relation("OnboardingAssignmentForm")
 
-  @@index([workspaceId, status])
   // Composite target for the OnboardingFormAssignment same-workspace foreign key (raw SQL).
   @@unique([id, workspaceId])
+  @@index([workspaceId, status])
   @@map("onboarding_form")
 }
 
@@ -557,8 +568,8 @@ model OnboardingFormVersion {
   publishedAt           DateTime @default(now()) @map("published_at") @db.Timestamptz(6)
   publishedByMemberId   String   @map("published_by_member_id")
 
-  form              OnboardingForm  @relation(fields: [formId], references: [id], onDelete: Restrict)
-  publishedByMember WorkspaceMember @relation("OnboardingFormVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
+  form              OnboardingForm             @relation(fields: [formId], references: [id], onDelete: Restrict)
+  publishedByMember WorkspaceMember            @relation("OnboardingFormVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
   assignments       OnboardingFormAssignment[] @relation("OnboardingAssignmentVersion")
 
   @@unique([formId, versionSeq])
@@ -612,4 +623,145 @@ model OnboardingFormAssignment {
   @@index([formId, status])
   @@index([formVersionId])
   @@map("onboarding_form_assignment")
+}
+
+// ── P-014 parameter library + coaching template foundation (decisions #41–#48)
+// Workspace-shared staff configuration only: no client data, no assignments,
+// no formulas. Server-minted opaque keys; immutable published snapshots.
+
+enum ParameterKind {
+  MEASUREMENT
+  RATING
+  TIME
+  DURATION
+  OPTION
+  TEXT
+}
+
+enum RatingScheme {
+  SCALE_1_10
+  SCALE_1_5
+  WORD_LABELS
+}
+
+enum ParameterStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum CoachingTemplateStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+model ParameterDefinition {
+  id                 String          @id @default(cuid())
+  workspaceId        String          @map("workspace_id")
+  // Server-minted opaque key (p_<uuid>) — immutable, never reusable.
+  key                String
+  // Kind is immutable from creation (no service path writes it).
+  kind               ParameterKind
+  // Display metadata — editable with revision even after first publish.
+  label              String
+  helpText           String?         @map("help_text")
+  group              String?         @map("group_label")
+  // Semantic metadata — locked after first published reference.
+  unit               String?
+  ratingScheme       RatingScheme?   @map("rating_scheme")
+  options            Json?
+  retiredOptionIds   Json?           @map("retired_option_ids")
+  // Closed declarative numeric bounds only; semantic field.
+  validation         Json?
+  revision           Int             @default(1)
+  status             ParameterStatus @default(ACTIVE)
+  createdByMemberId  String          @map("created_by_member_id")
+  updatedByMemberId  String          @map("updated_by_member_id")
+  archivedAt         DateTime?       @map("archived_at") @db.Timestamptz(6)
+  archivedByMemberId String?         @map("archived_by_member_id")
+  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace         Workspace                          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  createdByMember   WorkspaceMember                    @relation("ParameterDefinitionCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  updatedByMember   WorkspaceMember                    @relation("ParameterDefinitionUpdater", fields: [updatedByMemberId], references: [id], onDelete: Restrict)
+  archivedByMember  WorkspaceMember?                   @relation("ParameterDefinitionArchiver", fields: [archivedByMemberId], references: [id], onDelete: Restrict)
+  versionReferences CoachingTemplateVersionParameter[]
+
+  @@unique([workspaceId, key])
+  // Composite target for same-workspace foreign keys (raw SQL).
+  @@unique([id, workspaceId])
+  @@index([workspaceId, status])
+  @@map("parameter_definition")
+}
+
+model CoachingTemplate {
+  id                   String                 @id @default(cuid())
+  workspaceId          String                 @map("workspace_id")
+  // Duplicate display names are permitted (decision #46) — IDs authoritative.
+  name                 String
+  status               CoachingTemplateStatus @default(ACTIVE)
+  archivedAt           DateTime?              @map("archived_at") @db.Timestamptz(6)
+  archivedByMemberId   String?                @map("archived_by_member_id")
+  draft                Json?
+  draftRevision        Int                    @default(1) @map("draft_revision")
+  draftSavedByMemberId String?                @map("draft_saved_by_member_id")
+  draftUpdatedAt       DateTime?              @map("draft_updated_at") @db.Timestamptz(6)
+  createdByMemberId    String                 @map("created_by_member_id")
+  createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace         Workspace                          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  createdByMember   WorkspaceMember                    @relation("CoachingTemplateCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  archivedByMember  WorkspaceMember?                   @relation("CoachingTemplateArchiver", fields: [archivedByMemberId], references: [id], onDelete: Restrict)
+  versions          CoachingTemplateVersion[]
+  versionReferences CoachingTemplateVersionParameter[]
+
+  // Composite target for same-workspace foreign keys (raw SQL).
+  @@unique([id, workspaceId])
+  @@index([workspaceId, status])
+  @@map("coaching_template")
+}
+
+model CoachingTemplateVersion {
+  id                    String   @id @default(cuid())
+  workspaceId           String   @map("workspace_id")
+  templateId            String   @map("template_id")
+  versionSeq            Int      @map("version_seq")
+  // Frozen structure + embedded parameter metadata — never mutates.
+  definition            Json
+  // Publish replay key: same origin revision returns the same version.
+  publishOriginRevision Int      @map("publish_origin_revision")
+  publishedAt           DateTime @default(now()) @map("published_at") @db.Timestamptz(6)
+  publishedByMemberId   String   @map("published_by_member_id")
+
+  workspace         Workspace                          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  template          CoachingTemplate                   @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  publishedByMember WorkspaceMember                    @relation("CoachingTemplateVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
+  parameters        CoachingTemplateVersionParameter[]
+
+  @@unique([templateId, versionSeq])
+  @@unique([templateId, publishOriginRevision])
+  // Composite targets for coherence foreign keys (raw SQL):
+  // (id, workspace_id) version↔workspace; (id, template_id, workspace_id)
+  // version↔template↔workspace.
+  @@unique([id, workspaceId])
+  @@unique([id, templateId, workspaceId])
+  @@map("coaching_template_version")
+}
+
+model CoachingTemplateVersionParameter {
+  workspaceId String @map("workspace_id")
+  templateId  String @map("template_id")
+  versionId   String @map("version_id")
+  parameterId String @map("parameter_id")
+
+  workspace Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  template  CoachingTemplate        @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  version   CoachingTemplateVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+  parameter ParameterDefinition     @relation(fields: [parameterId], references: [id], onDelete: Restrict)
+
+  @@id([versionId, parameterId])
+  // Backs the post-publish semantic-lock EXISTS check and reverse usage.
+  @@index([parameterId])
+  @@map("coaching_template_version_parameter")
 }

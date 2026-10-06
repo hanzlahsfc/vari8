@@ -188,6 +188,25 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
     SUPPORT: ["denied", "denied"],
     CLIENT: ["denied", "denied"],
   },
+  // P-014 (product-decisions #41–#42): workspace-shared parameter/template
+  // library — owner + coach read/write at workspace scope; every other role
+  // denied outright (platform admin denied even with dual membership).
+  parameterDefinitions: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "workspace"],
+    COACH: ["workspace", "workspace"],
+    ASSISTANT_COACH: ["denied", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["denied", "denied"],
+  },
+  coachingTemplates: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "workspace"],
+    COACH: ["workspace", "workspace"],
+    ASSISTANT_COACH: ["denied", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["denied", "denied"],
+  },
 };
 
 const PRINCIPAL_ROLES: PrincipalRole[] = [
@@ -201,7 +220,7 @@ const PRINCIPAL_ROLES: PrincipalRole[] = [
 
 describe("RBAC matrix", () => {
   it("covers every resource × principal role × action", () => {
-    expect(RESOURCES).toHaveLength(21);
+    expect(RESOURCES).toHaveLength(23);
     for (const resource of RESOURCES) {
       for (const role of PRINCIPAL_ROLES) {
         const cell = RBAC_MATRIX[resource]?.[role];

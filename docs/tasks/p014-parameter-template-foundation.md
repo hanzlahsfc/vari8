@@ -153,3 +153,86 @@ PRGRSS starter seed (source-reviewed slice per #48) · template variants ·
 assignments/upgrade/rollback/overrides (§2 + D-11/D-12 pending) ·
 calculations (D-06 + #7) · client entries/submissions (#38–#40) · assistant
 read access if a later slice needs it · unarchive/duplicate (additive).
+
+---
+
+## P-014-I1 implementation record (2026-10-07)
+
+**Branch:** `feature/p014-parameter-template-foundation` (from `origin/main`
+`630fc4c`, PR #13 merge). Builder: Devin SWE-2 High. Independent review
+pending — required before any PR.
+
+### RED evidence (run before implementation)
+
+- `vitest run tests/unit/coaching-*.test.ts* tests/unit/rbac.test.ts`
+  → exit 1: 5 files failed on missing modules (`lib/coaching/gate`,
+  `parameters`, `templates`, both boundaries) and `RESOURCES` count
+  21 ≠ 23. Boundary-import ban passed vacuously (no app files existed).
+- Integration file added before schema existed — first real-PG run on the
+  migration produced 21 pass / 4 fail; failures traced to test-side fixture
+  gaps (missing `updatedByMemberId` on direct creates, wrong error class on
+  a foreign-id read, eager promise rejection). Service code unchanged.
+- E2E first run: 11 pass / 2 fail — parameter `key` leaked into DOM
+  `option[value]` attributes (fixed: picker carries positional indices) and
+  a row-locator test bug. Both fixed; keys now never enter the DOM — only
+  the server-boundary payload.
+
+### What was built
+
+- **Schema/migration** `db/migrations/20261007090000_p014_coaching_foundation/`:
+  `ParameterDefinition`, `CoachingTemplate`, `CoachingTemplateVersion`,
+  `CoachingTemplateVersionParameter`; enums `ParameterKind` (MEASUREMENT,
+  RATING, TIME, DURATION, OPTION, TEXT), `RatingScheme`, `ParameterStatus`,
+  `CoachingTemplateStatus`. Uniques: `(workspace_id, key)`,
+  `(template_id, version_seq)`, `(template_id, publish_origin_revision)` —
+  the replay key. Composite FKs enforce param/ws, template/ws, and
+  version/template/ws coherence; archive provenance CHECKs on both
+  lifecycle tables; all FKs RESTRICT.
+- **Services** `lib/coaching/parameters.ts` + `templates.ts`: Serializable
+  transactions, in-tx `authorize`, scoped `FOR UPDATE` locks, optimistic
+  revisions, server-stamped acknowledgment revisions, deterministic
+  ascending parameter-ID lock order at publish, semantic lock via the
+  normalized reference table, option-ID tombstones, publish replay,
+  `versionSeq = max+1` under the container lock, audit-in-transaction.
+- **Boundaries** `parameters-boundary.ts` + `templates-boundary.ts`:
+  flag-off refusal before any service call (defense in depth behind the
+  action/route gates), byte-before-parse bounds, safe closed error map.
+- **Actions** `parameters/actions.ts` + `templates/actions.ts`: flag check
+  before `auth()`, before FormData reads, before boundary; success-only
+  revalidation.
+- **RBAC/audit:** resources `parameterDefinitions` + `coachingTemplates`
+  (owner+coach ws read/write; all others denied, platform-admin denied set
+  extended); audit types `parameter_definition`, `coaching_template`,
+  `coaching_template_version`.
+- **UI:** `/workspace/[id]/parameters` (list/create/edit/archive + semantic
+  -lock messaging), `/templates` (list/create), `/templates/[id]` (bounded
+  draft editor: sections/items/add/remove/reorder/picker/required + save/
+  publish), `/templates/[id]/preview?v=N` (immutable snapshot view).
+  `Parameters` + `Templates` nav entries gated on flag + owner/coach pin.
+
+### Gate results (implementation tree)
+
+- `npm test` — 724/724 unit (64 files), exit 0.
+- Full integration (fresh disposable PG `p014_integration_test`) —
+  353/353, 27 files, exit 0; P-014 file alone 25/25.
+- `npm run typecheck`, `lint`, `format:check` — exit 0.
+- `npm run build` — exit 0; all four routes compiled.
+- Focused E2E `coaching-templates` — 13/13 on real Chromium incl. flag-off
+  404s on :3101, owner/coach lifecycle, stale-revision and
+  `parameter_changed` conflicts, archive confirmation, deny matrix,
+  1440/834/390 no-overflow, keyboard focus, no raw IDs in DOM/visible text.
+- Full E2E suite run recorded in STATUS.
+
+### Known limitations / honest notes
+
+- `validation` = declarative `{min,max}` numeric bounds on MEASUREMENT and
+  DURATION only; no pattern/expression/conditional rule exists or is
+  representable (unknown keys are rejected).
+- Option labels are unique within a parameter at write time.
+- `openTemplateDraft` seeds from the latest version only; items referencing
+  since-archived parameters reopen with ack `-1` and fail closed at save.
+- Template editor renders labels + kind only — parameter keys/IDs never
+  reach DOM attributes.
+- E2E relies on the dedicated flag-off server on :3101 (Playwright
+  webServer config); the shared test DB accumulates run-unique rows and
+  the spec self-cleans in `afterAll`.
