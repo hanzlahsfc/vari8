@@ -244,6 +244,63 @@ authorized by these entries.**
     limits, idempotency, abuse protection, atomicity, audit, and input
     validation — neither automatically equated nor silently waived.
 
+## P-014 parameter/template foundation — owner approval (relayed 2026-10-06)
+
+The product owner approved the recommended P-014 decision package for the
+**workspace parameter-library + coaching-template versioning slice** —
+`client`-free staff configuration only. This round resolves blueprint D-03
+and narrows that slice's mechanics; it does not resolve §2
+upgrade/rollback/override policy, D-06, D-11, D-12, or #38–#40, and it does
+not authorize implementation by itself.
+
+41. **Workspace-shared ownership (D-03 resolved).** Parameter definitions
+    and coaching templates belong to the workspace — never privately owned
+    by their creator. Any authorized owner or coach may manage any
+    definition or template in that workspace; there is no creator-only
+    scope.
+42. **Management permissions.** WORKSPACE_OWNER: workspace read/write.
+    COACH: workspace read/write. Both may create, edit, publish, and
+    archive. ASSISTANT_COACH, CLIENT, and SUPPORT are denied for this first
+    management slice; PLATFORM_ADMIN is denied including when the same user
+    also holds a workspace membership.
+43. **Parameter identity and semantic stability.** The parameter key is
+    server-minted, immutable, and never reusable. `kind` is immutable from
+    creation. `unit`, `ratingScheme`, option identity/value set, and
+    `validation` constraints are semantic fields: editable only before the
+    parameter first appears in a published template; afterwards a semantic
+    change requires a new parameter with a new key. Display metadata
+    (`label`, `helpText`) may change with revision; existing published
+    snapshots never change. `required` belongs to the template item, not the
+    reusable parameter.
+44. **Terminal archive.** Parameter and template archive is terminal in
+    this slice — no restore/unarchive, no hard-delete product action;
+    stable keys remain reserved after archive; historical immutable
+    versions remain readable.
+45. **Archived-reference rule.** Draft save rejects archived parameter
+    references; publish rejects them even when the parameter was active at
+    draft save — the coach must remove or replace the reference. No
+    warning-only or retired-marker publication exception.
+46. **Template names.** Duplicate display names are permitted; immutable
+    IDs are authoritative; no workspace name-uniqueness constraint in this
+    slice.
+47. **Snapshot/version policy.** Publishing creates an immutable,
+    self-contained template version freezing structure AND complete
+    referenced-parameter metadata; later edits create a later version;
+    nothing automatically propagates, repins, or upgrades. Variants,
+    assignments, upgrade/rollback, and per-client overrides remain deferred.
+48. **PRGRSS starter data deferred.** P-014 carries no bundled
+    source-derived seed or automatically created definitions — the
+    management surface supports authorized staff-created parameter
+    definitions (WORKSPACE_OWNER and COACH are the authorized staff roles
+    per #41–#42), and development/test evidence uses synthetic fixtures
+    only. Any future starter set is a
+    separate source-fidelity-reviewed slice: every field enumerated with
+    per-field evidence; no inferred units, rating schemes, enums, bounds,
+    or formulas; `CALORIES` stays excluded unless authoritative evidence or
+    product approval resolves its automatic/computed status and unprinted
+    unit; composite and specialist fields need separate explicit treatment;
+    no raw exports or client data enter Git.
+
 ## Conservative engineering interpretations (NOT founder decisions)
 
 Recorded for traceability so reviewers can distinguish assumption from decision:

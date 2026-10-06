@@ -5,6 +5,41 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-06 — P-014 parameter/template decisions approved (docs only)
+
+- Recorded late for chronology: P-013 merged to `main` via PR #12 as merge
+  commit `49fc7654f7ac94d947d9e0a3e47d7f8e4198fd18` (parents `7ead948` +
+  reviewed head `10b3c74`); main-branch `verify` passed (run 37505250226);
+  remote feature branch deleted; nothing deployed.
+- Owner approved the P-014 decision package → `product-decisions.md`
+  **#41–#48**: workspace-shared library (D-03 resolved), owner+coach ws
+  read/write management (others denied, incl. dual-role platform admin),
+  immutable key/kind + post-publish semantic lock, terminal archive,
+  fail-closed archived-reference rule, duplicate template names allowed,
+  immutable self-contained snapshots, and **no PRGRSS seed** — the starter
+  set is deferred to a separate source-fidelity-reviewed slice.
+- History: original P-014 plan received DeepSeek **FAIL**; P-014-R2 revised
+  plan received **CONDITIONAL PASS**; remaining P2 engineering corrections
+  (reference-row integrity, deterministic lock order, replay key,
+  option tombstones, ack-revision protocol, validation lock) are folded
+  into `docs/tasks/p014-parameter-template-foundation.md`.
+- Docs-only branch `docs/p014-parameter-template-decisions`; no
+  implementation exists or is authorized by this entry; blueprint D-03 and
+  slice-2 language updated. Branch NOT independently reviewed yet.
+- P-014-R4 wording correction (orchestrator audit): "coach-created" phrases
+  replaced — the surface supports authorized staff-created definitions
+  (WORKSPACE_OWNER + COACH) while `synthetic` applies to dev/test fixtures
+  only; blueprint §3 parameter contract reconciled with #41–#48
+  (server-minted opaque key, no optionality-on-parameter, validation scope,
+  deferred wearable/visibility fields labeled as such).
+- P-014-R5: DeepSeek V4.1 Flash independently reviewed `313b82c` →
+  **CONDITIONAL PASS** (P0/P1 none; decisions, engineering plan, source
+  fidelity, boundaries PASS). Remaining P2 — a stale slice-order entry
+  still claiming a PRGRSS seed and assignment acceptance — corrected, plus
+  P3 items (W01 D-03 dependency + roster status, future-contract labeling,
+  owner/coach terminology, CI duration dropped). The R5 correction commit
+  is NOT yet independently reviewed; no implementation authorized.
+
 ## 2026-10-06 — P-013-R2 repair delta on reviewed be811f3
 
 - DeepSeek V4.1 Flash independently reviewed the pushed P-013 candidate
