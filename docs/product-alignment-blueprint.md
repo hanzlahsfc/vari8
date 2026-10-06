@@ -319,8 +319,12 @@ explicit order):
    profile fields + full retained form) — today Phase 3.1 already creates the
    ClientProfile at acceptance; "submission creates the client record" is
    satisfied in the workflow sense that the client becomes coaching-ready only
-   after intake. The invite-ridden intake flow itself is a PROPOSED design,
-   not yet approved.
+   after intake. Which answers may populate profile fields is a separate
+   field-catalog decision (still pending). Update (P-012 closure,
+   product-decisions #30–#40): the identity/entry path is APPROVED; assignment
+   authority, lifecycle, cardinality, and pinning are APPROVED for a
+   staff-only slice; answer storage itself remains BLOCKED on the pending
+   consent and retention gates.
 4. **Retries/concurrency** — idempotent on `submissionId`/attempt keys: a
    retried POST returns the same submission; duplicate invites for the same
    (workspaceId, email) reuse the open invitation rather than stacking.
@@ -339,12 +343,11 @@ Current staff routes are **not** client self-service: `/workspace/[id]/daily`,
 under the `own` scope (§5); nothing here assumes existing routes become
 client-visible.
 
-**PENDING D-01:** whether coaches may send intake _before_ any invite
-(pre-account intake collection). Recommendation: **no** — intake rides the
-invitation so a single identity path exists. Owner: product owner. Blocks: only
-the hypothetical pre-account intake UI. Note: the invite-ridden onboarding flow
-above is itself PROPOSED pending owner sign-off — D-01 governs only whether an
-_additional_ pre-account intake variant exists.
+**D-01 — RESOLVED (product-decisions #30, P-012 closure):** intake is
+authenticated and post-invite only; no anonymous or pre-account intake variant
+exists. Note: only the entry path is resolved — the submission mechanics above
+remain gated on the pending consent/retention decisions (product-decisions
+#38–#39).
 
 ---
 
@@ -621,26 +624,31 @@ Brief ID → proposed domain/workflow → current capability → disposition.
 | —             | Migration/export                                                                                     | in/out coverage agreement                            | export/erasure matrix row      | Deferred; scoped spec                  |
 | —             | Show-planning example                                                                                | optional roadmap content                             | none                           | Example only; no module authorized     |
 
-## 11. Pending owner decisions (all PROPOSED — none APPROVED)
+## 11. Pending owner decisions (PROPOSED unless marked)
 
-Owner = product owner (relayed via Hanzlah) unless noted. Status: all PENDING.
+Owner = product owner (relayed via Hanzlah) unless noted. Status: PENDING
+unless marked RESOLVED. P-012 closure additionally recorded approved
+assignment authority/lifecycle/pinning and submission semantics for the
+onboarding slice in `docs/product-decisions.md` #30–#40; submissions remain
+blocked on the pending consent/retention items, and the legal/privacy items in
+#38–#40 stay PENDING.
 
-| ID   | Decision                                                                    | Recommended option (reason / tradeoff)                                         | Alternative                   | Blocks                                              |
-| ---- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ----------------------------- | --------------------------------------------------- |
-| D-01 | Pre-account intake?                                                         | No — intake rides the invite (single identity path; avoids orphan PII)         | separate intake token         | only a pre-account intake UI variant; W11 unblocked |
-| D-02 | General-note visibility                                                     | per-note coach flag, default private (flexible; slight UI cost)                | all-private / all-shared      | W04 client surface                                  |
-| D-03 | Template ownership scope                                                    | workspace-shared library (covers coach absence; simple)                        | per-coach libraries / hybrid  | W10 slice 2                                         |
-| D-04 | Coach↔client dashboard relation                                             | same layout, client sees visibility subset (one config source)                 | separate client layout        | D05 + client roadmap                                |
-| D-05 | Custom check-in vs scheduled dates                                          | satisfies only when coach marks coverage (no silent fulfillment)               | auto-match nearest date       | C03/C04 + W06                                       |
-| D-06 | Formula supply path                                                         | owner supplies definitions per §7 catalog contract                             | defer calc-backed widgets     | §7 computed stories                                 |
-| D-07 | Profile label vocabulary                                                    | free-text labels + coach tag set (matches sheets practice)                     | fixed enum                    | W03                                                 |
-| D-08 | Wearables first move                                                        | defer all wearables until scoped provider contract exists                      | pick a first provider         | wearable direction only                             |
-| D-09 | Video feedback provider                                                     | embedded Loom-style link first (no build cost; external dep)                   | in-house recording            | C06/M05                                             |
-| D-10 | Submission/record retention                                                 | owner-defined retention window + deletion/consent enforcement (like #26)       | indefinite retention          | submission retention rule                           |
-| D-11 | Multi-coach setup edit rights                                               | any assigned ACTIVE coach edits client setup, audited (simple, covers handoff) | primary-coach-only edits      | ClientSetup writers                                 |
-| D-12 | Per-client configurable elements (edited by assigned coach, not the CLIENT) | variant choice, per-param show/hide, plan values only (predictable)            | wider per-client override set | override implementation                             |
-| D-13 | Coach-note staff visibility                                                 | keep workspace-scoped staff read (continuity)                                  | author-only                   | W04/W07                                             |
-| D-14 | Post-submit entry edit rules                                                | same-day client edit w/ history; coach edits = new effective-dated versions    | immutable entries             | entry-edit surfaces                                 |
+| ID   | Decision                                                                                   | Recommended option (reason / tradeoff)                                         | Alternative                   | Blocks                    |
+| ---- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ | ----------------------------- | ------------------------- |
+| D-01 | ~~Pre-account intake?~~ **RESOLVED (product-decisions #30)**: no — intake rides the invite | —                                                                              | —                             | resolved                  |
+| D-02 | General-note visibility                                                                    | per-note coach flag, default private (flexible; slight UI cost)                | all-private / all-shared      | W04 client surface        |
+| D-03 | Template ownership scope                                                                   | workspace-shared library (covers coach absence; simple)                        | per-coach libraries / hybrid  | W10 slice 2               |
+| D-04 | Coach↔client dashboard relation                                                            | same layout, client sees visibility subset (one config source)                 | separate client layout        | D05 + client roadmap      |
+| D-05 | Custom check-in vs scheduled dates                                                         | satisfies only when coach marks coverage (no silent fulfillment)               | auto-match nearest date       | C03/C04 + W06             |
+| D-06 | Formula supply path                                                                        | owner supplies definitions per §7 catalog contract                             | defer calc-backed widgets     | §7 computed stories       |
+| D-07 | Profile label vocabulary                                                                   | free-text labels + coach tag set (matches sheets practice)                     | fixed enum                    | W03                       |
+| D-08 | Wearables first move                                                                       | defer all wearables until scoped provider contract exists                      | pick a first provider         | wearable direction only   |
+| D-09 | Video feedback provider                                                                    | embedded Loom-style link first (no build cost; external dep)                   | in-house recording            | C06/M05                   |
+| D-10 | Submission/record retention                                                                | owner-defined retention window + deletion/consent enforcement (like #26)       | indefinite retention          | submission retention rule |
+| D-11 | Multi-coach setup edit rights                                                              | any assigned ACTIVE coach edits client setup, audited (simple, covers handoff) | primary-coach-only edits      | ClientSetup writers       |
+| D-12 | Per-client configurable elements (edited by assigned coach, not the CLIENT)                | variant choice, per-param show/hide, plan values only (predictable)            | wider per-client override set | override implementation   |
+| D-13 | Coach-note staff visibility                                                                | keep workspace-scoped staff read (continuity)                                  | author-only                   | W04/W07                   |
+| D-14 | Post-submit entry edit rules                                                               | same-day client edit w/ history; coach edits = new effective-dated versions    | immutable entries             | entry-edit surfaces       |
 
 Each row names one recommended model; alternatives exist only to show the
 tradeoff. Owner sign-off is additionally required on the §2
