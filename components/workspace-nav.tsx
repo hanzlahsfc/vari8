@@ -6,6 +6,7 @@ import {
   type Resource,
   type WorkspaceRole,
 } from "@/lib/auth/rbac";
+import { isOnboardingAssignmentsEnabled } from "@/lib/onboarding/assignments-gate";
 
 type NavItem = {
   href: string;
@@ -19,6 +20,8 @@ type NavItem = {
    * only — it narrows, never widens, what the scope filter would show.
    */
   roles?: readonly WorkspaceRole[];
+  /** Optional dev-flag pin — falsy hides the item regardless of role. */
+  enabled?: boolean;
 };
 
 /**
@@ -59,6 +62,19 @@ export function WorkspaceNav({
       resource: "onboardingFormTemplates",
       action: "read",
     },
+    // P-013: staff-only assignment surface — dev-flagged AND pinned to the
+    // three staff roles (the scope cells already deny CLIENT/SUPPORT; the pin
+    // keeps intent explicit like the roster entry). Cosmetic only.
+    {
+      href: `/workspace/${workspaceId}/onboarding/assignments`,
+      label: "Onboarding Assignments",
+      resource: "onboardingAssignments",
+      action: "read",
+      roles: ["WORKSPACE_OWNER", "COACH", "ASSISTANT_COACH"],
+      enabled: isOnboardingAssignmentsEnabled(
+        process.env.ENABLE_ONBOARDING_ASSIGNMENTS,
+      ),
+    },
     {
       href: `/workspace/${workspaceId}/nutrition`,
       label: "Nutrition Database",
@@ -80,6 +96,7 @@ export function WorkspaceNav({
   ] as const;
 
   const visible = items.filter((item) => {
+    if (item.enabled === false) return false;
     if (item.roles !== undefined && !item.roles.includes(role)) return false;
     const scope = resolveScope(item.resource, item.action, role);
     return scope === "workspace" || scope === "assigned" || scope === "own";

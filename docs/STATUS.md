@@ -5,6 +5,31 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-06 — P-013 dev-gated staff onboarding assignments (candidate)
+
+- Implemented on `feature/p013-onboarding-assignments` from verified
+  `origin/main` `7ead948`: staff-only assignment management for
+  onboarding forms (client + immutable published version + lifecycle —
+  decisions #31–#34). New `onboarding_form_assignment` table with
+  partial-unique ACTIVE key, composite same-workspace/version-coherence
+  FKs, and provenance CHECKs; new `onboardingAssignments` RBAC resource
+  (owner ws/ws, coach asg/asg, assistant asg/—, others denied); guarded
+  service + boundary + actions with Serializable txs, advisory tuple
+  locks, transactional audits (`ASSIGN`/`UPDATE`, `changed:true` only);
+  staff route `/onboarding/assignments` with owner/coach mutation
+  controls and read-only assistant view — all behind
+  `ENABLE_ONBOARDING_ASSIGNMENTS=1` (exact match, off by default; flag-off
+  → 404, no nav, zero mutations/audits, proven by a dedicated flag-off
+  E2E server on :3101).
+- No answers/submissions/drafts/consent/retention/invitation changes.
+  RED-first: unit (4 failing files) + integration (11 service-path
+  failures first run) + E2E iterated to green. Gates: typecheck 0,
+  unit 658/658, integration all-green, focused E2E 12/12 on a real
+  browser incl. flag-off, scoped roles, revocation, 1440/834/390.
+- Full record: `docs/tasks/p013-onboarding-assignments.md`. Awaits the
+  remaining gate suite, same-model self-review, push, then independent
+  DeepSeek review.
+
 ## 2026-10-06 — P-012-R3 docs-only clarity repairs on reviewed 9e59170
 
 - `opencode-go/deepseek-v4.1-flash` reviewed `9e59170`: **PASS, no

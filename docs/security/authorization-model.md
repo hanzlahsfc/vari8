@@ -43,6 +43,7 @@ Every cell is written `read / write`; `—/—` means both denied.
 | exports & erasure         | — / —         | ws / ws | asg / —     | — / —     | — / —   | own / own |
 | audit-log access          | plat / —      | ws / —  | — / —       | — / —     | — / —   | — / —     |
 | private media/files       | — / —         | ws / —  | asg / asg   | asg / —   | — / —   | own / own |
+| onboarding assignments    | — / —         | ws / ws | asg / asg   | asg / —   | — / —   | — / —     |
 
 Legend / decisions:
 
@@ -57,6 +58,14 @@ Legend / decisions:
 - ⚠ **Coach notes → client is denied** pending an approved shared-visibility model
   (`TODO(human)`); internal notes must never be client-visible.
 - **Consent** is a client-only resource (`own/own`); see `consent-audit.md`.
+- **Onboarding assignments** (P-013, product-decisions #31): staff-only
+  assignment records — client + immutable published form version + lifecycle,
+  never answers. `assigned` scope resolves through the actor's current ACTIVE
+  `ClientAssignment` at query time on every call; a coach's write here never
+  mutates `ClientAssignment`. The surface is additionally dev-gated
+  (`ENABLE_ONBOARDING_ASSIGNMENTS=1`) and returns 404 when disabled. The P-008
+  `onboardingFormTemplates` resource (ws/ws owner, ws/ws coach, all others
+  denied) governs form-definition management and is unchanged.
 - **Invitations** (S1-F2C): `members & invitations` covers staff invitation
   creation (COACH/ASSISTANT_COACH), owner-only listing, and owner-only
   revocation — deliberately owner-exclusive. `client invitations` is a distinct

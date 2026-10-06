@@ -146,6 +146,7 @@ model Workspace {
   auditEvents     AuditEvent[]
   accessTokens    AccessToken[]
   onboardingForms OnboardingForm[]
+  onboardingFormAssignments OnboardingFormAssignment[]
 
   @@map("workspace")
 }
@@ -172,6 +173,8 @@ model WorkspaceMember {
   onboardingFormsCreated  OnboardingForm[]        @relation("OnboardingFormCreator")
   onboardingFormsArchived OnboardingForm[]        @relation("OnboardingFormArchiver")
   onboardingFormVersions  OnboardingFormVersion[] @relation("OnboardingFormVersionPublisher")
+  onboardingAssignmentsCreated OnboardingFormAssignment[] @relation("OnboardingAssignmentAssignedBy")
+  onboardingAssignmentsEnded   OnboardingFormAssignment[] @relation("OnboardingAssignmentEndedBy")
 
   @@unique([workspaceId, userId])
   // Composite target for the ClientAssignment same-workspace foreign key (raw SQL).
@@ -205,9 +208,10 @@ model ClientProfile {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  assignments        ClientAssignment[] @relation("ClientAssignmentClient")
-  consents           ConsentRecord[]
-  auditSubjectEvents AuditEvent[]
+  assignments           ClientAssignment[] @relation("ClientAssignmentClient")
+  consents              ConsentRecord[]
+  auditSubjectEvents    AuditEvent[]
+  onboardingAssignments OnboardingFormAssignment[] @relation("OnboardingAssignmentClient")
 
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
   @@unique([workspaceId, userId])
@@ -536,8 +540,11 @@ model OnboardingForm {
   createdByMember  WorkspaceMember         @relation("OnboardingFormCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
   archivedByMember WorkspaceMember?        @relation("OnboardingFormArchiver", fields: [archivedByMemberId], references: [id], onDelete: Restrict)
   versions         OnboardingFormVersion[]
+  assignments      OnboardingFormAssignment[] @relation("OnboardingAssignmentForm")
 
   @@index([workspaceId, status])
+  // Composite target for the OnboardingFormAssignment same-workspace foreign key (raw SQL).
+  @@unique([id, workspaceId])
   @@map("onboarding_form")
 }
 
@@ -552,8 +559,57 @@ model OnboardingFormVersion {
 
   form              OnboardingForm  @relation(fields: [formId], references: [id], onDelete: Restrict)
   publishedByMember WorkspaceMember @relation("OnboardingFormVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
+  assignments       OnboardingFormAssignment[] @relation("OnboardingAssignmentVersion")
 
   @@unique([formId, versionSeq])
+  // Composite target for the OnboardingFormAssignment version∈form foreign key (raw SQL).
+  @@unique([id, formId])
   @@index([formId, publishOriginRevision])
   @@map("onboarding_form_version")
+}
+
+// P-013: staff-only onboarding-form assignment records — client-associated
+// operational metadata only (product-decisions #31–#34). Pins a client to one
+// immutable published form version; stores NO answers. Lifecycle: ACTIVE makes
+// exactly one terminal transition (SUPERSEDED | CANCELLED | future COMPLETED);
+// provenance shape, one-ACTIVE-per-(ws,client,form) partial unique, and
+// same-workspace/version-belongs-to-form composite foreign keys are enforced
+// by raw SQL in the migration (Prisma cannot express them).
+enum OnboardingAssignmentStatus {
+  ACTIVE
+  SUPERSEDED
+  CANCELLED
+  COMPLETED // schema-reserved for the future submission transaction; no P-013 service may set it
+}
+
+model OnboardingFormAssignment {
+  id                 String                     @id @default(cuid())
+  workspaceId        String                     @map("workspace_id")
+  clientProfileId    String                     @map("client_profile_id")
+  formId             String                     @map("form_id")
+  formVersionId      String                     @map("form_version_id")
+  status             OnboardingAssignmentStatus @default(ACTIVE)
+  assignedByMemberId String                     @map("assigned_by_member_id")
+  assignedAt         DateTime                   @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  endedByMemberId    String?                    @map("ended_by_member_id")
+  endedAt            DateTime?                  @map("ended_at") @db.Timestamptz(6)
+  createdAt          DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace        Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile    ClientProfile         @relation("OnboardingAssignmentClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  form             OnboardingForm        @relation("OnboardingAssignmentForm", fields: [formId], references: [id], onDelete: Restrict)
+  formVersion      OnboardingFormVersion @relation("OnboardingAssignmentVersion", fields: [formVersionId], references: [id], onDelete: Restrict)
+  assignedByMember WorkspaceMember       @relation("OnboardingAssignmentAssignedBy", fields: [assignedByMemberId], references: [id], onDelete: Restrict)
+  endedByMember    WorkspaceMember?      @relation("OnboardingAssignmentEndedBy", fields: [endedByMemberId], references: [id], onDelete: Restrict)
+
+  // (workspaceId, id) serves the workspace-scoped id-cursor pagination;
+  // client/status and form/status serve scoped reads; formVersionId backs the
+  // FK parent-delete scan. The ACTIVE cardinality lives in the raw partial
+  // unique index "onboarding_assignment_one_active_key" (migration only).
+  @@index([workspaceId, id])
+  @@index([clientProfileId, status])
+  @@index([formId, status])
+  @@index([formVersionId])
+  @@map("onboarding_form_assignment")
 }
