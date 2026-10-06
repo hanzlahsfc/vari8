@@ -28,11 +28,7 @@ const url = process.env.INTEGRATION_DATABASE_URL;
 const enabled = typeof url === "string" && url.length > 0;
 
 type Role =
-  | "WORKSPACE_OWNER"
-  | "COACH"
-  | "ASSISTANT_COACH"
-  | "SUPPORT"
-  | "CLIENT";
+  "WORKSPACE_OWNER" | "COACH" | "ASSISTANT_COACH" | "SUPPORT" | "CLIENT";
 
 describe.skipIf(!enabled)("P-010 client roster (real PG)", () => {
   let prisma: PrismaClient;
@@ -85,9 +81,10 @@ describe.skipIf(!enabled)("P-010 client roster (real PG)", () => {
     clientProfileId: string,
     coachMemberId: string,
     status: "ACTIVE" | "REMOVED" = "ACTIVE",
+    role: "PRIMARY" | "COACH" = "COACH",
   ) =>
     prisma.clientAssignment.create({
-      data: { workspaceId, clientProfileId, coachMemberId, status },
+      data: { workspaceId, clientProfileId, coachMemberId, status, role },
     });
   const s = (id: string) => ({ user: { id } }) as never;
 
@@ -139,7 +136,11 @@ describe.skipIf(!enabled)("P-010 client roster (real PG)", () => {
     expect(list.items.map((i) => i.id)).toEqual([c1.id]);
 
     const assistant = await user();
-    const assistantMember = await member(ws.id, assistant.id, "ASSISTANT_COACH");
+    const assistantMember = await member(
+      ws.id,
+      assistant.id,
+      "ASSISTANT_COACH",
+    );
     await assign(ws.id, c3.id, assistantMember.id, "ACTIVE");
     const assistantList = await listAccessibleClientProfiles(
       s(assistant.id),
@@ -179,11 +180,7 @@ describe.skipIf(!enabled)("P-010 client roster (real PG)", () => {
 
     for (const u of [support, nonmember, suspended, removed, foreignOwner]) {
       await expect(
-        listAccessibleClientProfiles(
-          s(u.id),
-          { workspaceId: ws.id },
-          prisma,
-        ),
+        listAccessibleClientProfiles(s(u.id), { workspaceId: ws.id }, prisma),
       ).rejects.toBeInstanceOf(AccessDeniedError);
     }
   });
@@ -196,11 +193,7 @@ describe.skipIf(!enabled)("P-010 client roster (real PG)", () => {
     await member(ws.id, deactivated.id, "WORKSPACE_OWNER");
     for (const u of [admin, deactivated]) {
       await expect(
-        listAccessibleClientProfiles(
-          s(u.id),
-          { workspaceId: ws.id },
-          prisma,
-        ),
+        listAccessibleClientProfiles(s(u.id), { workspaceId: ws.id }, prisma),
       ).rejects.toBeInstanceOf(AccessDeniedError);
     }
   });
@@ -286,8 +279,7 @@ describe.skipIf(!enabled)("P-010 client roster (real PG)", () => {
     expect(deep).not.toBeNull();
     const back = prevRosterHref("/x", deep!.history);
     expect(back).not.toBeNull();
-    const backParams = new URL(back as string, "http://localhost")
-      .searchParams;
+    const backParams = new URL(back as string, "http://localhost").searchParams;
     const backQuery = parseRosterQuery({
       c: backParams.get("c") ?? undefined,
       p: backParams.get("p") ?? undefined,

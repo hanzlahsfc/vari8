@@ -5,6 +5,42 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-06 — P-010 read-only staff client roster implemented (builder gates green)
+
+- Branch `feature/p010-read-only-client-roster` cut from verified
+  `origin/main` `d050566a13781bb7d2b9bafa9ee3147527d28b37` (P-008 merged).
+  Worktree was clean; local `main` untouched.
+- Scope: one read-only route `GET /workspace/[workspaceId]/clients` inside the
+  authenticated workspace shell + a "Clients" nav entry. Re-authorizes through
+  the existing reviewed `listAccessibleClientProfiles`; no schema, RBAC,
+  service, dependency, or invitation/token change. Fixed page size 25;
+  `?c=`/`?p=` strictly validated (duplicated/malformed/oversized/incoherent →
+  non-disclosing 403); prev/next links carry only `c`/`p`. Empty state, table
+  with name + created/updated dates only; zero mutation surface.
+- RED evidence (task record has exact commands): unit `client-roster.test.ts`
+  ERR_MODULE_NOT_FOUND; nav DOM 3/4 fail; integration import failure; e2e
+  23/23 fail on absent route (404). Committed as tests-only `88fcc56`.
+- Fixture repairs (tests-only): `assign` helper needed required `role`; the
+  no-mutation probe attached its request listener before sign-in and captured
+  the login POST — listener now attaches after sign-in.
+- Gates on the final tree (disposable `p010_int` / `p010_e2e` databases on the
+  repo's compose PostgreSQL): `git diff --check` 0; `format:check` 0;
+  `typecheck` 0; `lint` 0; unit **613/613**; integration **298/298**;
+  `prisma validate`/`format --check`/`migrate status` all clean (13 applied,
+  none pending — no schema change); `build` 0 (`/workspace/[id]/clients`
+  dynamic, 0 B); e2e suite **175 passed / 12 pre-existing reset skips**.
+- Honest flake record: one P-008 e2e test (`onboarding-forms.spec.ts:2209`
+  "a pending publish disables every editor + lifecycle control") timed out on
+  `no-draft` in the full-suite run (line-2262 wait), then passed isolated in
+  706ms on rerun. Matches that test's recorded lower-boundary flake history;
+  unrelated to this diff (no onboarding bytes changed).
+- `npm audit` now reports 11 vulnerabilities (1 moderate, 10 high) vs the
+  previously recorded 5 — advisory-database drift on `npm ci`, no dependency
+  change; recorded, not actioned.
+- Same-model self-review performed after gates; **independent different-model
+  review pending** (orchestrator issues P-010-R1 separately). No push to main,
+  no PR, no merge, no deploy.
+
 ## 2026-10-06 — P-008 ES-5 local integration ACCEPTED after independent review
 
 - Orion's independent read-only final-pin review returned PASS on clean

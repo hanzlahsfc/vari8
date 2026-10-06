@@ -83,14 +83,14 @@ describe("parseRosterQuery — history `p`", () => {
   });
 
   it("rejects malformed history entries", () => {
-    expect(parseRosterQuery({ c: "cX", p: `${HISTORY_START},bad id` })).toBeNull();
+    expect(
+      parseRosterQuery({ c: "cX", p: `${HISTORY_START},bad id` }),
+    ).toBeNull();
     expect(parseRosterQuery({ c: "cX", p: `${HISTORY_START},` })).toBeNull();
   });
 
   it("rejects the start sentinel anywhere but index 0", () => {
-    expect(
-      parseRosterQuery({ c: "cX", p: `c1,${HISTORY_START}` }),
-    ).toBeNull();
+    expect(parseRosterQuery({ c: "cX", p: `c1,${HISTORY_START}` })).toBeNull();
   });
 });
 
@@ -102,7 +102,11 @@ describe("roster pagination hrefs", () => {
   });
 
   it("next from page 1 pushes the start sentinel", () => {
-    const href = nextRosterHref(BASE, { history: [] }, "NEXT1");
+    const href = nextRosterHref(
+      BASE,
+      { cursor: undefined, history: [] },
+      "NEXT1",
+    );
     expect(href).toBe(`${BASE}?c=NEXT1&p=${HISTORY_START}`);
   });
 

@@ -20,7 +20,10 @@ import { E2E, e2eDatabaseUrl } from "./global-setup";
  * `roster-admin` is a PLATFORM_ADMIN with no membership.
  */
 
-const ROSTER_EMAILS = ["roster-empty@p010-e2e.test", "roster-admin@p010-e2e.test"];
+const ROSTER_EMAILS = [
+  "roster-empty@p010-e2e.test",
+  "roster-admin@p010-e2e.test",
+];
 const CLIENT_NAME_PREFIX = "P010";
 const PAGE_TWO_EXTRA = 2;
 const PAGE_SIZE = 25;
@@ -143,13 +146,10 @@ test.beforeAll(async () => {
 
   // Pagination fixtures on workspace B (owner-only membership).
   await prisma.clientProfile.createMany({
-    data: Array.from(
-      { length: PAGE_SIZE + PAGE_TWO_EXTRA - 1 },
-      (_, i) => ({
-        workspaceId: wsBId,
-        name: `${CLIENT_NAME_PREFIX}B ${String(i + 1).padStart(2, "0")}`,
-      }),
-    ),
+    data: Array.from({ length: PAGE_SIZE + PAGE_TWO_EXTRA - 1 }, (_, i) => ({
+      workspaceId: wsBId,
+      name: `${CLIENT_NAME_PREFIX}B ${String(i + 1).padStart(2, "0")}`,
+    })),
   });
 });
 
@@ -197,9 +197,7 @@ test("owner sees every workspace client and none from another workspace", async 
     `${CLIENT_NAME_PREFIX} Beta`,
     `${CLIENT_NAME_PREFIX} Gamma`,
   ]) {
-    await expect(
-      page.getByRole("cell", { name, exact: true }),
-    ).toBeVisible();
+    await expect(page.getByRole("cell", { name, exact: true })).toBeVisible();
   }
   await expect(
     page.getByText(`${CLIENT_NAME_PREFIX} OtherWorkspace`),
@@ -301,25 +299,19 @@ test("pagination is bounded and traversable next/prev", async ({ page }) => {
   await page.goto(rosterUrl(wsBId));
   await expect(page.getByTestId("client-roster")).toBeVisible();
   await expect(page.getByTestId("roster-row")).toHaveCount(PAGE_SIZE);
-  await expect(page.getByTestId("roster-page-indicator")).toHaveText(
-    "Page 1",
-  );
+  await expect(page.getByTestId("roster-page-indicator")).toHaveText("Page 1");
   const next = page.getByRole("link", { name: "Next page" });
   await expect(next).toBeVisible();
   await next.click();
   await expect(page.getByTestId("roster-row")).toHaveCount(
     PAGE_SIZE + PAGE_TWO_EXTRA - PAGE_SIZE,
   );
-  await expect(page.getByTestId("roster-page-indicator")).toHaveText(
-    "Page 2",
-  );
+  await expect(page.getByTestId("roster-page-indicator")).toHaveText("Page 2");
   const prev = page.getByRole("link", { name: "Previous page" });
   await expect(prev).toBeVisible();
   await prev.click();
   await expect(page.getByTestId("roster-row")).toHaveCount(PAGE_SIZE);
-  await expect(page.getByTestId("roster-page-indicator")).toHaveText(
-    "Page 1",
-  );
+  await expect(page.getByTestId("roster-page-indicator")).toHaveText("Page 1");
 });
 
 for (const bad of [
@@ -339,11 +331,12 @@ for (const bad of [
 }
 
 test("the roster page issues no mutation requests", async ({ page }) => {
+  await signIn(page, E2E.owner);
+  // Attach after sign-in: only requests the roster page itself may issue.
   const mutations: string[] = [];
   page.on("request", (req) => {
     if (req.method() !== "GET") mutations.push(`${req.method()} ${req.url()}`);
   });
-  await signIn(page, E2E.owner);
   await page.goto(rosterUrl(wsAId));
   await expect(page.getByTestId("client-roster")).toBeVisible();
   // Paginating on wsB is link navigation only — still zero mutations.
@@ -363,9 +356,7 @@ test("keyboard traversal reaches pagination links with visible focus", async ({
   let focused = false;
   for (let i = 0; i < 40 && !focused; i++) {
     await page.keyboard.press("Tab");
-    focused = await next.evaluate(
-      (el) => document.activeElement === el,
-    );
+    focused = await next.evaluate((el) => document.activeElement === el);
   }
   expect(focused).toBe(true);
   const outline = await next.evaluate(

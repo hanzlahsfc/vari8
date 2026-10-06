@@ -22,6 +22,12 @@ export function WorkspaceNav({
       action: "read",
     },
     {
+      href: `/workspace/${workspaceId}/clients`,
+      label: "Clients",
+      resource: "clientProfiles",
+      action: "read",
+    },
+    {
       href: `/workspace/${workspaceId}/daily`,
       label: "Daily Tracker",
       resource: "dailyTracking",

@@ -1,6 +1,7 @@
 # P-010 — Read-only staff client roster
 
-- **Status:** plan committed before any production code (TDD recovery discipline)
+- **Status:** implemented; all builder gates green; same-model self-review
+  done; independent different-model review pending (P-010-R1)
 - **Branch:** `feature/p010-read-only-client-roster`
 - **Base:** verified `origin/main` `d050566a13781bb7d2b9bafa9ee3147527d28b37`
   (contains the merged P-008 onboarding form-definition builder)
@@ -91,3 +92,49 @@ Effective visibility (existing `clientProfiles/read` matrix, unchanged):
 
 No create/edit/delete, no assignments UI, no intake/submissions, no invitations
 or tokens, no email delivery, no formulas, no client-visible surface, no deploy.
+
+## Execution record (real commands, real exit codes)
+
+RED (observed before any production code):
+
+- `npx vitest run tests/unit/client-roster.test.ts tests/unit/client-roster-nav.dom.test.tsx`
+  → exit 1: `ERR_MODULE_NOT_FOUND` for `lib/workspace/roster-query`; nav DOM
+  3/4 fail (no Clients link for owner/coach/assistant; SUPPORT pass).
+- `INTEGRATION_DATABASE_URL=postgresql://app:app_dev_password@127.0.0.1:5433/p010_int?schema=public
+npx vitest run --config vitest.integration.config.ts tests/integration/p010-client-roster.test.ts`
+  → exit 1: module import failure on `roster-query`.
+- `DATABASE_URL=postgresql://app:app_dev_password@127.0.0.1:5433/p010_e2e?schema=public
+npx playwright test tests/e2e/client-roster.spec.ts` → exit 1: 23/23 fail
+  (route absent — 404/redirect assertions).
+
+GREEN (same commands after implementation):
+
+- Unit `25/25` (21 query seam + 4 nav DOM); integration `9/9`; e2e `23/23`.
+- Test-side repairs during integration/e2e bring-up (tests only, recorded):
+  `assign` fixture helper gained the required `role` argument; the
+  no-mutation request listener moved after `signIn` so the login POST is not
+  counted.
+- Full gates on the final tree: `git diff --check` 0; `npm run format:check` 0;
+  `npm run typecheck` 0; `npm run lint` 0; `npm run test` → **613/613**;
+  `npm run test:integration` on disposable `p010_int` → **298/298**;
+  `npx prisma validate` OK, `prisma format --check` OK,
+  `prisma migrate status` → 13 applied / none pending (no schema change);
+  `npm run build` → 0 (`/workspace/[workspaceId]/clients` dynamic, 0 B);
+  full `npx playwright test` → **175 passed / 12 skipped** (pre-existing
+  reset-route skips) + 1 flake: `onboarding-forms.spec.ts:2209` timed out on
+  `no-draft` in the full run, passed isolated rerun in 706ms — recorded, not
+  related to this diff.
+
+Same-model self-review notes (not independent review):
+
+- Page re-authorizes via the reviewed service; `AccessDeniedError` →
+  `forbidden()`, all other errors propagate to 500 (repo convention).
+- Cursor charset bound (`^[a-z0-9]{1,64}$`i) plus history depth/length bounds
+  keep `c`/`p` strictly server-safe; malformed input never reaches the service.
+- Rendered fields are exactly `name`, `createdAt`, `updatedAt` — the
+  `ClientProfileSummary` select; no ids/emails/assignments/tokens exposed.
+- CLIENT nav entry: the generic scope filter (`own` ≠ denied) would include it,
+  but the shell's `workspaceSettings/read` gate 403s CLIENT before nav renders;
+  e2e pins the route denial.
+- Disposable DBs `p010_int`/`p010_e2e` live on the repo's compose PostgreSQL;
+  they are scratch fixtures, droppable after review.
