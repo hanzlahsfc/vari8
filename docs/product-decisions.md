@@ -182,13 +182,17 @@ authorized by these entries.**
     immutable `OnboardingFormVersion`; republishing never moves assignments;
     no in-place repinning.
 33. **Assignment lifecycle and provenance.** Statuses `ACTIVE`, `SUPERSEDED`,
-    `CANCELLED`, `COMPLETED`. Replacing an ACTIVE assignment for the same
-    client/form atomically supersedes the prior row; manual cancel marks it
-    `CANCELLED`; `COMPLETED` is reserved for the future submission transaction
-    and must not be claimed by the assignment-only slice. Historical rows are
-    never overwritten or hard-deleted through ordinary product actions.
-    `assignedByMemberId`/`assignedAt` and `endedByMemberId`/`endedAt` are
-    recorded; the assignment ID is stable for a future submission foreign key.
+    `CANCELLED`, `COMPLETED`. An ACTIVE assignment makes exactly one
+    authorized terminal transition — to `SUPERSEDED` (atomic replacement for
+    the same client/form), `CANCELLED` (manual cancel), or, in the future
+    submission transaction, `COMPLETED`. A transition may update only `status`
+    and the applicable ending provenance (`endedByMemberId`/`endedAt`); the
+    immutable form/version pin, the assignment's own identity,
+    `assignedByMemberId`, and `assignedAt` never change. Terminal rows are
+    never reused, repinned, returned to `ACTIVE`, or hard-deleted through
+    ordinary product actions. `COMPLETED` is reserved for the future
+    submission implementation and must not be claimed by the assignment-only
+    slice.
 34. **Assignment data classification.** Onboarding assignments are
     client-associated operational metadata (client + form/version + staff
     actor + lifecycle + timestamps) — correcting an earlier "zero client data"

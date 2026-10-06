@@ -5,6 +5,21 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-06 — P-012-R3 docs-only clarity repairs on reviewed 9e59170
+
+- `opencode-go/deepseek-v4.1-flash` reviewed `9e59170`: **PASS, no
+  P0/P1/P2**; two P3 clarity issues plus one orchestrator-flagged
+  lifecycle-notation ambiguity repaired in a new docs commit on
+  `docs/p012-onboarding-decision-closure`. Repairs: dangling "§N of the
+  corrected set" references replaced with explicit product-decision
+  numbers; lifecycle language made terminal-transition precise
+  (exactly one transition from ACTIVE; only status + ending provenance
+  mutate; terminal rows never reused/repinned/hard-deleted); summary
+  notation `ACTIVE → SUPERSEDED | CANCELLED → COMPLETED` replaced with
+  unambiguous wording (all three terminal, no terminal-to-terminal).
+- Docs-only; no implementation authorized; the repair delta itself awaits
+  independent review. `origin/main` remains `6d4ac03`.
+
 ## 2026-10-06 — P-012 onboarding-submission decisions recorded (docs-only)
 
 - Devin's P-012 decision package was independently reviewed by

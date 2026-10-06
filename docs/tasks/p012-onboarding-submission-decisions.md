@@ -1,8 +1,12 @@
 # P-012 — Client onboarding submission: decision record
 
 - **Status:** decision package produced, independently reviewed, corrected
-  decisions recorded. **Documentation only — no implementation is authorized
-  by this record.**
+  decisions recorded; `9e59170` independently reviewed **PASS** (no
+  P0/P1/P2) by `opencode-go/deepseek-v4.1-flash`; two P3 clarity issues
+  plus one orchestrator-flagged lifecycle-notation ambiguity repaired in
+  the following delta — **that delta has not yet received independent
+  review. Documentation only — no implementation is authorized by this
+  record.**
 - **Branch:** `docs/p012-onboarding-decision-closure` (from `origin/main`
   `6d4ac03dc4e917564b7c3dbcf558f58dffe44a97`).
 - **Authority:** the product owner delegated the product/engineering decisions
@@ -23,17 +27,17 @@
 
 ## 2. Reviewer findings (as relayed) and their resolution
 
-| #   | Finding in the original package                                                                                                                                                                                                                     | Resolution in the corrected decisions                                                                                                                                         |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P1  | Assignment metadata was described as containing "zero client data" — wrong: it links client, form/version, staff actor, and lifecycle state, so it is client-associated operational metadata with authorization, export, and retention consequences | §5 of the corrected set: classified as operational metadata; included in future export; preserved during the relationship; post-termination handling pending retention policy |
-| P1  | Submission immutability was worded as "can never be deleted by anyone" — contradicted lawful retention/erasure/legal-hold handling                                                                                                                  | §7: immutable during the approved retention period; no in-place edits; authorized deletion/anonymization may still occur                                                      |
-| P1  | Owner "review/mark" submissions was proposed on the strength of the administrator role                                                                                                                                                              | §8: rejected — workspace administration is distinct from coaching work; owner gets read at workspace scope only                                                               |
-| P1  | "No server draft" was paired with browser-local autosave via local/session storage — still client-data persistence, unreviewed                                                                                                                      | §6: no server drafts **and** no web-storage autosave; submit-only persistence with an explicit disclosure; draft persistence is a later separately-reviewed feature           |
-| P2  | Cardinality was framed as one active assignment per client — did not distinguish per-form concurrency                                                                                                                                               | §3: one ACTIVE assignment per (client, form); different forms may be concurrently active                                                                                      |
-| P2  | No explicit rule that assignment must pin the latest published version / that historical versions are view-only for new assignments                                                                                                                 | §3: assign latest published only; historical versions staff-viewable, not assignable                                                                                          |
-| P2  | Lifecycle vocabulary was borrowed from coach assignments (ACTIVE/REMOVED) and could not express submission linkage or supersede provenance                                                                                                          | §4: ACTIVE / SUPERSEDED / CANCELLED / COMPLETED with actor+timestamp provenance on both ends; COMPLETED reserved for the future submission transaction                        |
-| P2  | Consent framing implied consent records are retained as evidence indefinitely                                                                                                                                                                       | §9: consent-record retention itself is a pending legal/product decision; nothing is asserted as retained forever                                                              |
-| P2  | Security framing risked equating an authenticated client submit with a public token endpoint (or waiving abuse checks)                                                                                                                              | §11: the two surfaces get separate security bars; the authenticated submit still requires its own review                                                                      |
+| #   | Finding in the original package                                                                                                                                                                                                                     | Resolution in the corrected decisions                                                                                                                                                  |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1  | Assignment metadata was described as containing "zero client data" — wrong: it links client, form/version, staff actor, and lifecycle state, so it is client-associated operational metadata with authorization, export, and retention consequences | product-decisions #34: classified as operational metadata; included in future export; preserved during the relationship; post-termination handling pending retention policy            |
+| P1  | Submission immutability was worded as "can never be deleted by anyone" — contradicted lawful retention/erasure/legal-hold handling                                                                                                                  | product-decisions #36: immutable during the approved retention period; no in-place edits; authorized deletion/anonymization may still occur                                            |
+| P1  | Owner "review/mark" submissions was proposed on the strength of the administrator role                                                                                                                                                              | product-decisions #37: rejected — workspace administration is distinct from coaching work; owner gets read at workspace scope only                                                     |
+| P1  | "No server draft" was paired with browser-local autosave via local/session storage — still client-data persistence, unreviewed                                                                                                                      | product-decisions #35: no server drafts **and** no web-storage autosave; submit-only persistence with an explicit disclosure; draft persistence is a later separately-reviewed feature |
+| P2  | Cardinality was framed as one active assignment per client — did not distinguish per-form concurrency                                                                                                                                               | product-decisions #32: one ACTIVE assignment per (client, form); different forms may be concurrently active                                                                            |
+| P2  | No explicit rule that assignment must pin the latest published version / that historical versions are view-only for new assignments                                                                                                                 | product-decisions #32: assign latest published only; historical versions staff-viewable, not assignable                                                                                |
+| P2  | Lifecycle vocabulary was borrowed from coach assignments (ACTIVE/REMOVED) and could not express submission linkage or supersede provenance                                                                                                          | product-decisions #33: ACTIVE / SUPERSEDED / CANCELLED / COMPLETED with actor+timestamp provenance on both ends; COMPLETED reserved for the future submission transaction              |
+| P2  | Consent framing implied consent records are retained as evidence indefinitely                                                                                                                                                                       | product-decisions #38: consent-record retention itself is a pending legal/product decision; nothing is asserted as retained forever                                                    |
+| P2  | Security framing risked equating an authenticated client submit with a public token endpoint (or waiving abuse checks)                                                                                                                              | product-decisions #40: the two surfaces get separate security bars; the authenticated submit still requires its own review                                                             |
 
 ## 3. Approved product/engineering decisions
 
@@ -52,8 +56,10 @@ Recorded in `docs/product-decisions.md` as items 30–40 (P-012 closure). Summar
   published version only; permanent pin to the immutable
   `OnboardingFormVersion`; republishing never moves assignments; no in-place
   repinning.
-- **Lifecycle:** `ACTIVE → SUPERSEDED | CANCELLED → COMPLETED` (COMPLETED
-  reserved for the future submission transaction); atomic supersede;
+- **Lifecycle:** `ACTIVE` makes exactly one terminal transition — to
+  `SUPERSEDED`, `CANCELLED`, or (in the future submission transaction)
+  `COMPLETED`; all three are terminal states and no terminal-to-terminal
+  transition is allowed. Atomic supersede on replacement;
   `assignedBy/assignedAt` + `endedBy/endedAt` provenance; stable assignment ID
   suitable as a future `OnboardingSubmission` foreign key; no hard delete or
   overwrite.
@@ -91,14 +97,14 @@ implemented.**
 
 ## 5. Boundary: assignment-only slice vs blocked submission feature
 
-|                    | Staff-only assignment slice (future)                            | Submission slice (blocked)                                                                                                                             |
-| ------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Stores             | IDs, status, actor, timestamps only                             | Client-authored answers (personal data)                                                                                                                |
-| Client surface     | none                                                            | required (blocked)                                                                                                                                     |
-| Consent required   | no                                                              | yes — pending §4                                                                                                                                       |
-| Retention duration | pending policy; fail-closed                                     | pending policy; hard gate                                                                                                                              |
-| Security bar       | authenticated staff mutations                                   | client-facing action needs its own reviewed bar (authorization, Origin/CSRF, size limits, idempotency, abuse protection, atomicity, audit, validation) |
-| Deployable         | not while retention/erasure unresolved (§5 data classification) | no                                                                                                                                                     |
+|                    | Staff-only assignment slice (future)                           | Submission slice (blocked)                                                                                                                             |
+| ------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Stores             | IDs, status, actor, timestamps only                            | Client-authored answers (personal data)                                                                                                                |
+| Client surface     | none                                                           | required (blocked)                                                                                                                                     |
+| Consent required   | no                                                             | yes — pending section 4                                                                                                                                |
+| Retention duration | pending policy; fail-closed                                    | pending policy; hard gate                                                                                                                              |
+| Security bar       | authenticated staff mutations                                  | client-facing action needs its own reviewed bar (authorization, Origin/CSRF, size limits, idempotency, abuse protection, atomicity, audit, validation) |
+| Deployable         | not while retention/erasure unresolved (product-decisions #34) | no                                                                                                                                                     |
 
 ## 6. Confirmation
 
