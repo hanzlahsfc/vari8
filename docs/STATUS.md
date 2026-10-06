@@ -28,9 +28,14 @@ are complete; product direction is now the configurable coaching system in
   `3965792`; `format:check` 0; `typecheck` 0; `lint` 0; `build` 0; focused
   e2e 23/23; full e2e 176 passed / 12 pre-existing skips (the P-008
   pending-publish flake did not recur in the full run).
-- Same-model self-review of `3965792..HEAD` only. Commit `6017a45` pushed
-  to `feature/p010-read-only-client-roster` only; no PR, no main change,
-  no merge, no deploy, no history rewrite.
+- Same-model self-review of `3965792..HEAD` only. Commit
+  `8d80ff8eba9368b7f930539b7848195d3202c734` — the reviewed R2 repair
+  implementation commit (independently verified PASS by
+  `opencode-go/deepseek-v4.1-flash`) — pushed to
+  `feature/p010-read-only-client-roster` only; no PR, no main change,
+  no merge, no deploy, no published history rewritten. (An earlier edit of
+  this line cited `6017a45`, an intermediate unpushed amend; corrected
+  docs-only in the commit containing this note.)
 
 ## 2026-10-06 — P-010 read-only staff client roster implemented (builder gates green)
 
