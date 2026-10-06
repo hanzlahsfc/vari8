@@ -5,6 +5,54 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-06 — P-012-R3 docs-only clarity repairs on reviewed 9e59170
+
+- `opencode-go/deepseek-v4.1-flash` reviewed `9e59170`: **PASS, no
+  P0/P1/P2**; two P3 clarity issues plus one orchestrator-flagged
+  lifecycle-notation ambiguity repaired in a new docs commit on
+  `docs/p012-onboarding-decision-closure`. Repairs: dangling "§N of the
+  corrected set" references replaced with explicit product-decision
+  numbers; lifecycle language made terminal-transition precise
+  (exactly one transition from ACTIVE; only status + ending provenance
+  mutate; terminal rows never reused/repinned/hard-deleted); summary
+  notation `ACTIVE → SUPERSEDED | CANCELLED → COMPLETED` replaced with
+  unambiguous wording (all three terminal, no terminal-to-terminal).
+- Docs-only; no implementation authorized; the repair delta itself awaits
+  independent review. `origin/main` remains `6d4ac03`.
+
+## 2026-10-06 — P-012 onboarding-submission decisions recorded (docs-only)
+
+- Devin's P-012 decision package was independently reviewed by
+  `opencode-go/deepseek-v4.1-flash` and returned **FAIL**; the orchestrator
+  relayed corrected decisions under the owner's delegated authority
+  ("most professional, common, recommended approach").
+- Corrections captured in `docs/tasks/p012-onboarding-submission-decisions.md`
+  and `docs/product-decisions.md` #30–#40; blueprint D-01 resolved to
+  post-invite intake and §4/§11 annotated. Key fixes: assignments are
+  client-associated operational metadata (not "zero client data");
+  "immutable" ≠ "never deletable"; owner gets read-only on submissions
+  (no review/mark); no draft persistence including web-storage autosave;
+  one ACTIVE assignment per (client, form) pinned to latest published
+  version forever; lifecycle ACTIVE/SUPERSEDED/CANCELLED/COMPLETED with
+  provenance; consent + retention + erasure remain PENDING legal gates.
+- Docs-only: no code, tests, schema, RBAC, or workflow changes; no
+  implementation authorized. Branch `docs/p012-onboarding-decision-closure`;
+  no PR, no merge, no deploy. `origin/main` remains `6d4ac03` and protected.
+
+## 2026-10-06 — P-010 merged via PR #10; main protected (P-011)
+
+- PR #10 (`feat: add read-only staff client roster`) created on reviewed head
+  `d72b08d` after DeepSeek V4.1 Flash's PASS verdicts on the implementation,
+  R2 hardening, and R3 docs-only deltas (no remaining findings). PR CI `verify`
+  passed in 6m54s.
+- Merged by normal merge commit **`6d4ac03dc4e917564b7c3dbcf558f58dffe44a97`**
+  (parents `d050566` + `d72b08d`); main CI on the merge commit passed (5m47s);
+  remote feature branch deleted. `origin/main` = `6d4ac03`.
+- P-011: `main` branch protection enabled — PRs required, `verify` strict
+  required check, conversation resolution, `enforce_admins`, force-push and
+  deletion blocked, 0 mandatory GitHub approvals (external model-diverse
+  review remains the review mechanism).
+
 ## 2026-10-06 — P-010-R2 hardening repairs on reviewed 3965792 (P3-1, P3-2)
 
 - DeepSeek V4.1 Flash (`opencode-go/deepseek-v4.1-flash`) independently

@@ -151,6 +151,99 @@ engineering recommendation:
     scoped to P-008 and does not resolve blueprint D-03 (template library
     ownership) or any other pending decision.
 
+## P-012 onboarding-submission decision closure (delegated authority, relayed 2026-10-06)
+
+The product owner delegated these product/engineering decisions to the
+orchestrator (instruction: apply the most professional, common, recommended
+approach), following `opencode-go/deepseek-v4.1-flash`'s FAIL review of the
+initial P-012 package. The corrected set below replaces the earlier proposals.
+These are product/engineering decisions — **not** legal conclusions; the
+legal/privacy items in #38–#40 remain pending. Full record:
+`docs/tasks/p012-onboarding-submission-decisions.md`. **No implementation is
+authorized by these entries.**
+
+30. **Intake entry point.** Client intake is authenticated and post-invite
+    only. No anonymous or pre-account intake exists. Invite acceptance creates
+    or links the account, membership, and `ClientProfile` before intake.
+    Invitation issuance remains externally fail-closed until its delivery and
+    security prerequisites are met; no raw-token manual-delivery workaround.
+31. **Onboarding-form assignment authority (staff slice).** WORKSPACE_OWNER
+    may create/replace/cancel assignments for any workspace client. COACH may
+    do so only for clients under that coach's current ACTIVE assignment scope.
+    ASSISTANT_COACH reads assignments for actively assigned clients but cannot
+    create/replace/cancel. CLIENT gets no assignment-record access in the
+    staff-only slice. SUPPORT and PLATFORM_ADMIN are denied. Coach
+    form-assignment is a newly approved onboarding capability only — it does
+    not permit creating `ClientAssignment` rows or self-assigning clients.
+32. **Assignment cardinality and pinning.** One ACTIVE onboarding assignment
+    per (client, form); different forms may be active concurrently. New
+    assignments pin the latest published version only; historical versions are
+    staff-viewable but not assignable. An assignment pins permanently to its
+    immutable `OnboardingFormVersion`; republishing never moves assignments;
+    no in-place repinning.
+33. **Assignment lifecycle and provenance.** Statuses `ACTIVE`, `SUPERSEDED`,
+    `CANCELLED`, `COMPLETED`. An ACTIVE assignment makes exactly one
+    authorized terminal transition — to `SUPERSEDED` (atomic replacement for
+    the same client/form), `CANCELLED` (manual cancel), or, in the future
+    submission transaction, `COMPLETED`. A transition may update only `status`
+    and the applicable ending provenance (`endedByMemberId`/`endedAt`); the
+    immutable form/version pin, the assignment's own identity,
+    `assignedByMemberId`, and `assignedAt` never change. Terminal rows are
+    never reused, repinned, returned to `ACTIVE`, or hard-deleted through
+    ordinary product actions. `COMPLETED` is reserved for the future
+    submission implementation and must not be claimed by the assignment-only
+    slice.
+34. **Assignment data classification.** Onboarding assignments are
+    client-associated operational metadata (client + form/version + staff
+    actor + lifecycle + timestamps) — correcting an earlier "zero client data"
+    characterization. Normal workspace/assignment authorization applies; never
+    expose emails, answers, tokens, or health data through them; include them
+    in the future client-data export; preserve during the active relationship.
+    Post-termination retention/deletion/anonymization/backup/legal-hold
+    handling stays pending the wider retention/erasure policy. No deployment
+    or real-client collection may claim GDPR/retention readiness while those
+    are unresolved.
+35. **No draft persistence.** The first submission release stores answers only
+    on successful submit: no server-side drafts, no `localStorage`/
+    `sessionStorage`, no autosave or cross-device resume claims. The UI must
+    disclose submit-only persistence. Real draft persistence is a later,
+    separately-reviewed privacy/security feature.
+36. **Submission immutability.** A submitted response is immutable during its
+    approved retention period; nobody edits a submitted revision in place —
+    corrections are new append-only revisions in the same chain. Coaches
+    record observations separately, never rewrite client answers. Authorized
+    deletion/anonymization may still occur under an approved retention,
+    erasure, or legal-hold policy; "immutable" never means "can never be
+    deleted by anyone."
+37. **Submission authorization direction.** CLIENT submits and reads own
+    submissions; WORKSPACE_OWNER reads at workspace scope but does not review,
+    approve, mark, or modify submissions (administration is distinct from
+    coaching work); COACH reads and reviews only actively-assigned clients;
+    ASSISTANT_COACH reads assigned clients, no review/mark; SUPPORT and
+    PLATFORM_ADMIN denied; multiple ACTIVE assigned coaches may read; review
+    writes stay assigned-coach scoped and audited; revocation fails closed.
+38. **Consent gates — pending.** Applicable jurisdiction/legal basis; notice
+    and consent text + versions; whether consent precedes viewing a blank form
+    or precedes collecting/submitting; form-level vs question-level
+    sensitivity; withdrawal effects on client writes, staff reads, processing,
+    retention, and erasure; retention of `ConsentRecord` evidence itself.
+    Conservative boundary stands: no real answer collection until an approved
+    consent policy is configured; operations on unconfigured policy fail
+    closed; PED/HRT, cycle, and bloodwork remain excluded.
+39. **Retention, erasure, export — pending.** Jurisdiction, legal basis,
+    controller/processor duties, numerical periods, post-termination window,
+    withdrawal treatment, erasure/anonymization behavior, backup expiry,
+    legal holds, minor/age policy, submission export format, and erasure
+    operations all require product-owner + legal/privacy input. No real
+    onboarding answers may be stored and no submission feature may deploy
+    until these are approved and implemented.
+40. **Security boundary distinction.** Public anonymous token routes keep
+    their existing delivery/throttling/timing/route-security prerequisites.
+    An authenticated client submission action is a different surface and needs
+    its own review for authorization, Origin/CSRF behavior, request-size
+    limits, idempotency, abuse protection, atomicity, audit, and input
+    validation — neither automatically equated nor silently waived.
+
 ## Conservative engineering interpretations (NOT founder decisions)
 
 Recorded for traceability so reviewers can distinguish assumption from decision:
