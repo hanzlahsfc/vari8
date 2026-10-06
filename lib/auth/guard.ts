@@ -130,6 +130,7 @@ function deny(reason: DenialReason, resource: string, action: string): never {
  */
 const PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> = new Set([
   "onboardingFormTemplates",
+  "onboardingAssignments",
 ]);
 
 /**

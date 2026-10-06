@@ -5,6 +5,54 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-06 — P-013-R2 repair delta on reviewed be811f3
+
+- DeepSeek V4.1 Flash independently reviewed the pushed P-013 candidate
+  `be811f3` → **CONDITIONAL PASS** (no P0/P1; three P2 repairs, five P3
+  hardening items; reviewer gates all passed). Reviewer-corrected record:
+  the original candidate is 27 files (14 modified + 13 added); original
+  integration result 323 tests / 26 files including 25 P-013 tests.
+- Repairs implemented as a forward commit (reviewed commit preserved, no
+  amend): (P2-1) replace/cancel now resolve the immutable tuple via a
+  non-locking scoped read, authorize inside the tx, then take tuple +
+  row locks — denied callers get identical `assignment_not_accessible`
+  for missing/active/terminal/foreign; (P2-2) the page and client
+  component route through the boundary only, with a mechanical test
+  forbidding direct `app/**` service imports; (P2-3)
+  `listAssignableForms` now requires `onboardingFormTemplates/read`
+  (assistant denied). P3: `hashtextextended` advisory keys, flag check
+  before `auth()` in all three actions (action-layer mocked test), an
+  honest transport-level POST test name, dual-role platform-admin and
+  positive assistant-scope integration tests.
+- `be811f3` was the independently reviewed original; the R2 delta is NOT
+  yet independently reviewed. Full record in
+  `docs/tasks/p013-onboarding-assignments.md`.
+
+## 2026-10-06 — P-013 dev-gated staff onboarding assignments (candidate)
+
+- Implemented on `feature/p013-onboarding-assignments` from verified
+  `origin/main` `7ead948`: staff-only assignment management for
+  onboarding forms (client + immutable published version + lifecycle —
+  decisions #31–#34). New `onboarding_form_assignment` table with
+  partial-unique ACTIVE key, composite same-workspace/version-coherence
+  FKs, and provenance CHECKs; new `onboardingAssignments` RBAC resource
+  (owner ws/ws, coach asg/asg, assistant asg/—, others denied); guarded
+  service + boundary + actions with Serializable txs, advisory tuple
+  locks, transactional audits (`ASSIGN`/`UPDATE`, `changed:true` only);
+  staff route `/onboarding/assignments` with owner/coach mutation
+  controls and read-only assistant view — all behind
+  `ENABLE_ONBOARDING_ASSIGNMENTS=1` (exact match, off by default; flag-off
+  → 404, no nav, zero mutations/audits, proven by a dedicated flag-off
+  E2E server on :3101).
+- No answers/submissions/drafts/consent/retention/invitation changes.
+  RED-first: unit (4 failing files) + integration (11 service-path
+  failures first run) + E2E iterated to green. Gates: typecheck 0,
+  unit 658/658, integration all-green, focused E2E 12/12 on a real
+  browser incl. flag-off, scoped roles, revocation, 1440/834/390.
+- Full record: `docs/tasks/p013-onboarding-assignments.md`. Awaits the
+  remaining gate suite, same-model self-review, push, then independent
+  DeepSeek review.
+
 ## 2026-10-06 — P-012-R3 docs-only clarity repairs on reviewed 9e59170
 
 - `opencode-go/deepseek-v4.1-flash` reviewed `9e59170`: **PASS, no

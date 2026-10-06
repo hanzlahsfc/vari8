@@ -102,6 +102,32 @@ export async function requireDailyTrackerAccess(
 }
 
 /**
+ * P-013 — staff-only onboarding-assignment collection guard. The assignments
+ * list is a workspace collection view (no single client record), so it uses
+ * `authorizeCollection("onboardingAssignments/read")`: owner resolves
+ * workspace scope, coach/assistant resolve assigned scope (filtered through
+ * the actor's ACTIVE ClientAssignment at query time), and CLIENT/SUPPORT/
+ * non-member/inactive/cross-workspace/platform-admin requests deny with a
+ * real HTTP 403. The dev gate's route-level 404 runs before this.
+ */
+export async function requireOnboardingAssignmentsAccess(
+  session: SessionLike,
+  workspaceId: string,
+  client: PrismaLike = prisma,
+): Promise<CollectionContext> {
+  try {
+    return await authorizeCollection(
+      session,
+      { resource: "onboardingAssignments", action: "read", workspaceId },
+      createPrismaAuthorizationRepo(client),
+    );
+  } catch (error) {
+    if (error instanceof AccessDeniedError) forbidden();
+    throw error;
+  }
+}
+
+/**
  * Session gate. Returns the session user id plus the raw session, or redirects
  * to the sign-in page. Memoized per request via React `cache()`.
  */

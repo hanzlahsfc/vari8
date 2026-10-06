@@ -306,6 +306,8 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         "nutrition_import_run",
         // P-008: onboarding form definitions + immutable versions (reviewed).
         "onboarding_form",
+        // P-013: staff-only assignment records — operational metadata only.
+        "onboarding_form_assignment",
         "onboarding_form_version",
         "users",
         "workspace",

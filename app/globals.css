@@ -953,3 +953,76 @@ body {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
+
+/* --- P-013 onboarding assignments ------------------------------------------
+ * Create panel + per-row lifecycle controls. Buttons/controls keep ≥44px hit
+ * areas at every width; the create panel stacks on narrow viewports.
+ */
+.assignment-manager {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.assignment-manager__subtitle {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.assignment-manager__alert {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-accent);
+}
+
+.assignment-create {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .assignment-create {
+    grid-template-columns: 1fr;
+  }
+}
+
+.assignment-row__actions {
+  /* No nowrap — the 390px layout must wrap instead of overflowing. */
+  min-width: 0;
+}
+
+.assignment-button-secondary {
+  min-width: 44px;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.assignment-button-secondary:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.assignment-button-secondary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.assignment-confirm {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+}

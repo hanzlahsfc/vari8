@@ -74,6 +74,11 @@ export const AUDIT_RESOURCE_TYPES = [
   // P-008: onboarding form definition lifecycle events (IDs + structural
   // markers only — never draft payloads or answers).
   "onboarding_form",
+  // P-013: onboarding-form assignment lifecycle events (IDs + structural
+  // markers only — never form/client names, answers, or content). Terminal
+  // states are recorded on the rows; the shared `status` vocabulary is not
+  // widened for SUPERSEDED/CANCELLED (decision documented in P-013).
+  "onboarding_assignment",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 

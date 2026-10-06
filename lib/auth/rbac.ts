@@ -48,6 +48,7 @@ export const RESOURCES = [
   "auditLog",
   "privateMediaFiles",
   "onboardingFormTemplates",
+  "onboardingAssignments",
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
 
@@ -223,6 +224,20 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
     WORKSPACE_OWNER: c("workspace", "workspace"),
     COACH: c("workspace", "workspace"),
     ASSISTANT_COACH: D,
+    SUPPORT: D,
+    CLIENT: D,
+  },
+  // P-013 (product-decisions #31): staff-only onboarding-form assignment
+  // RECORDS — assignment metadata, not answers. Coach/assistant access is
+  // constrained to clients covered by their current ACTIVE ClientAssignment
+  // ("assigned" scope resolves at query time; a coach's write here never
+  // mutates ClientAssignment). Assistant reads but cannot mutate;
+  // client/support/platform denied.
+  onboardingAssignments: {
+    PLATFORM_ADMIN: D,
+    WORKSPACE_OWNER: c("workspace", "workspace"),
+    COACH: c("assigned", "assigned"),
+    ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
     CLIENT: D,
   },
