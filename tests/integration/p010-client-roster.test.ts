@@ -310,6 +310,9 @@ describe.skipIf(!enabled)("P-010 client roster (real PG)", () => {
       (await member(ws.id, (await user()).id, "COACH")).id,
     );
 
+    // The denied-read actor is created BEFORE the snapshot so the users-count
+    // invariant compares identical populations around every read attempt.
+    const intruder = await user();
     const countRows = async () => ({
       audit: await prisma.auditEvent.count(),
       clients: await prisma.clientProfile.count(),
@@ -318,6 +321,7 @@ describe.skipIf(!enabled)("P-010 client roster (real PG)", () => {
       tokens: await prisma.accessToken.count(),
       forms: await prisma.onboardingForm.count(),
       versions: await prisma.onboardingFormVersion.count(),
+      users: await prisma.user.count(),
     });
     const before = await countRows();
     await listAccessibleClientProfiles(
@@ -332,7 +336,7 @@ describe.skipIf(!enabled)("P-010 client roster (real PG)", () => {
     );
     await expect(
       listAccessibleClientProfiles(
-        s((await user()).id),
+        s(intruder.id),
         { workspaceId: ws.id },
         prisma,
       ),

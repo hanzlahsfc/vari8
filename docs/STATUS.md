@@ -5,6 +5,33 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-06 — P-010-R2 hardening repairs on reviewed 3965792 (P3-1, P3-2)
+
+- DeepSeek V4.1 Flash (`opencode-go/deepseek-v4.1-flash`) independently
+  reviewed `396579290ad4660d380fbd61265c83487e9434eb`: **PASS, no P0/P1/P2**;
+  eight P3 observations dispositioned in the task record. The repair delta
+  below is a separate review target — the reviewer has NOT reviewed it.
+- P3-1 staff-only Clients nav (REPAIRED): `WorkspaceNav` items gained an
+  optional declarative `roles` pin; the Clients entry is pinned to
+  owner/coach/assistant. RED observed first (`role="CLIENT"` rendered the
+  link — 1 failed/4 passed), then minimum change, then 5/5 GREEN. Cosmetic
+  only: route authorization untouched, RBAC matrix untouched, no other nav
+  item altered.
+- P3-2 users-table invariant (REPAIRED): the zero-mutation snapshot in
+  `tests/integration/p010-client-roster.test.ts` now includes `users`; the
+  denied-read fixture user is created before the snapshot so the population
+  is identical on both sides. Passes immediately — recorded as
+  defense-in-depth, not fabricated RED.
+- Gates for this delta (fresh disposables `p010_r2_int` / `p010_r2_e2e`):
+  focused nav unit 5/5; P-010 unit 26/26; P-010 integration 9/9;
+  full unit 614/614; full integration 298/298; `git diff --check` 0 vs
+  `3965792`; `format:check` 0; `typecheck` 0; `lint` 0; `build` 0; focused
+  e2e 23/23; full e2e 176 passed / 12 pre-existing skips (the P-008
+  pending-publish flake did not recur in the full run).
+- Same-model self-review of `3965792..HEAD` only. Commit `6017a45` pushed
+  to `feature/p010-read-only-client-roster` only; no PR, no main change,
+  no merge, no deploy, no history rewrite.
+
 ## 2026-10-06 — P-010 read-only staff client roster implemented (builder gates green)
 
 - Branch `feature/p010-read-only-client-roster` cut from verified

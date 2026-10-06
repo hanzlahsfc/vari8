@@ -1,7 +1,9 @@
 # P-010 — Read-only staff client roster
 
-- **Status:** implemented; all builder gates green; same-model self-review
-  done; independent different-model review pending (P-010-R1)
+- **Status:** `3965792` independently reviewed PASS (no P0/P1/P2) by
+  `opencode-go/deepseek-v4.1-flash`; two P3 hardening repairs applied in R2
+  (staff-only nav pin, users-table invariant) — repair delta awaits its own
+  independent review
 - **Branch:** `feature/p010-read-only-client-roster`
 - **Base:** verified `origin/main` `d050566a13781bb7d2b9bafa9ee3147527d28b37`
   (contains the merged P-008 onboarding form-definition builder)
@@ -138,3 +140,21 @@ Same-model self-review notes (not independent review):
   e2e pins the route denial.
 - Disposable DBs `p010_int`/`p010_e2e` live on the repo's compose PostgreSQL;
   they are scratch fixtures, droppable after review.
+
+## Independent review disposition (P-010-R1 → P-010-R2)
+
+Independent reviewer `opencode-go/deepseek-v4.1-flash` reviewed `3965792`:
+**PASS, no P0/P1/P2 findings.** Eight P3 observations, dispositioned below;
+the repairs in this round were reviewed-separately deltas (the repair commit
+itself gets its own independent review — not claimed here).
+
+| Ref  | Finding                                                                                                     | Disposition                                                                                                                                                              |
+| ---- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| P3-1 | Staff-only nav pin missing (CLIENT resolves `own` scope; hidden only because the shell denies CLIENT first) | **Repaired (R2):** item-level `roles` pin on the Clients entry; DOM spec adds the CLIENT assertion (observed RED → GREEN). Cosmetic only; route authorization unchanged. |
+| P3-2 | Read-only invariant did not snapshot `users`                                                                | **Repaired (R2):** `users` count added to the zero-mutation snapshot (authorized + denied reads). Passes immediately — defense-in-depth, not fabricated RED.             |
+| P3-3 | Client-profile id exposed as URL cursor                                                                     | Accepted: opaque identifier; authorization stays workspace/scope-constrained; fixing requires an out-of-scope service-contract change.                                   |
+| P3-4 | URL history/page-number fabrication                                                                         | Accepted: cosmetic only; cannot alter authorization or query scope.                                                                                                      |
+| P3-5 | UTC date rendering                                                                                          | Deferred: cosmetic until a product timezone/display policy exists.                                                                                                       |
+| P3-6 | Test-harness adjustments inside the implementation commit                                                   | Accepted: no assertions were removed.                                                                                                                                    |
+| P3-7 | Platform-admin-with-membership resolves member scope                                                        | Pre-existing dual-role policy question, not widened by P-010; tracked separately — no redesign here.                                                                     |
+| P3-8 | Unknown query parameters ignored                                                                            | Accepted: consistent with route conventions; generated links preserve only `c`/`p`.                                                                                      |

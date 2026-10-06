@@ -3,10 +3,9 @@
 // P-010 — WorkspaceNav "Clients" visibility pin (jsdom + testing-library).
 // `next/link` is mocked to a plain anchor so the server component renders
 // standalone. Cosmetic visibility only — the route itself re-authorizes.
-// Note: CLIENT also resolves `clientProfiles/read` → `own`, so the generic
-// filter would show the link — but the workspace shell denies CLIENT via
-// `workspaceSettings/read` before nav ever renders; that denial is pinned
-// in the E2E spec, not here.
+// P-010-R2: CLIENT resolves `clientProfiles/read` → `own`, so the item carries
+// an explicit staff-role pin; the route-level CLIENT denial stays covered by
+// the E2E spec.
 
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -45,6 +44,18 @@ describe("P-010 workspace nav — Clients entry", () => {
   it("hides the Clients link for SUPPORT", () => {
     const { container } = render(
       <WorkspaceNav workspaceId={WS} role="SUPPORT" />,
+    );
+    expect(
+      container.querySelector(`a[href="/workspace/${WS}/clients"]`),
+    ).toBeNull();
+  });
+
+  // P-010-R2: the roster is a STAFF-only surface. CLIENT resolves
+  // `clientProfiles/read` → `own`, so the generic scope filter alone would
+  // render the link — the item must carry an explicit staff-role pin.
+  it("hides the Clients link for CLIENT (staff-only surface)", () => {
+    const { container } = render(
+      <WorkspaceNav workspaceId={WS} role="CLIENT" />,
     );
     expect(
       container.querySelector(`a[href="/workspace/${WS}/clients"]`),

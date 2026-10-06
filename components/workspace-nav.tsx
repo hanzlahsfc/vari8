@@ -1,6 +1,25 @@
 import Link from "next/link";
 
-import { resolveScope, type WorkspaceRole } from "@/lib/auth/rbac";
+import {
+  resolveScope,
+  type Action,
+  type Resource,
+  type WorkspaceRole,
+} from "@/lib/auth/rbac";
+
+type NavItem = {
+  href: string;
+  label: string;
+  resource: Resource;
+  action: Action;
+  /**
+   * Optional explicit role pin for staff-only surfaces whose resource scope is
+   * non-empty for a non-staff role (e.g. `clientProfiles/read` resolves `own`
+   * for CLIENT, but the roster is staff-only by product contract). Cosmetic
+   * only — it narrows, never widens, what the scope filter would show.
+   */
+  roles?: readonly WorkspaceRole[];
+};
 
 /**
  * Role-aware workspace navigation (S1-H). This is COSMETIC only: it hides links
@@ -14,7 +33,7 @@ export function WorkspaceNav({
   workspaceId: string;
   role: WorkspaceRole;
 }) {
-  const items = [
+  const items: readonly NavItem[] = [
     {
       href: `/workspace/${workspaceId}`,
       label: "Overview",
@@ -26,6 +45,7 @@ export function WorkspaceNav({
       label: "Clients",
       resource: "clientProfiles",
       action: "read",
+      roles: ["WORKSPACE_OWNER", "COACH", "ASSISTANT_COACH"],
     },
     {
       href: `/workspace/${workspaceId}/daily`,
@@ -60,6 +80,7 @@ export function WorkspaceNav({
   ] as const;
 
   const visible = items.filter((item) => {
+    if (item.roles !== undefined && !item.roles.includes(role)) return false;
     const scope = resolveScope(item.resource, item.action, role);
     return scope === "workspace" || scope === "assigned" || scope === "own";
   });
