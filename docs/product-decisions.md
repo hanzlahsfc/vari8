@@ -288,8 +288,12 @@ not authorize implementation by itself.
     referenced-parameter metadata; later edits create a later version;
     nothing automatically propagates, repins, or upgrades. Variants,
     assignments, upgrade/rollback, and per-client overrides remain deferred.
-48. **PRGRSS starter data deferred.** P-014 carries no starter seed — only
-    synthetic coach-created parameters. Any future starter set is a
+48. **PRGRSS starter data deferred.** P-014 carries no bundled
+    source-derived seed or automatically created definitions — the
+    management surface supports authorized staff-created parameter
+    definitions (WORKSPACE_OWNER and COACH are the authorized staff roles
+    per #41–#42), and development/test evidence uses synthetic fixtures
+    only. Any future starter set is a
     separate source-fidelity-reviewed slice: every field enumerated with
     per-field evidence; no inferred units, rating schemes, enums, bounds,
     or formulas; `CALORIES` stays excluded unless authoritative evidence or

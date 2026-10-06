@@ -28,14 +28,17 @@ independently reviewed yet.
 ## Approved slice definition
 
 > "Workspace-shared parameter-library and immutable coaching-template
-> versioning mechanics using synthetic, coach-created parameter
-> definitions."
+> versioning mechanics. Definitions are created by authorized staff —
+> WORKSPACE_OWNER and COACH per decisions #41–#42; synthetic fixtures are
+> used for development/test evidence only."
 
 **In scope:** `ParameterDefinition`, `CoachingTemplate`,
 `CoachingTemplateVersion`, `CoachingTemplateVersionParameter`; bounded
 mutable drafts; immutable published snapshots; optimistic revisions;
 transactional audit; dev-only feature gate; staff-only management UI;
-synthetic fixtures only.
+synthetic fixtures only. (The earlier "coach-created" wording wrongly
+excluded workspace owners and conflated real staff-authored configuration
+with test fixtures — corrected P-014-R4.)
 
 **Out of scope:** PRGRSS seed or any source-derived production row · client
 data/assignments · variants · per-client overrides · entries, plans,

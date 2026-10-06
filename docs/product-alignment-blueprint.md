@@ -88,9 +88,11 @@ is assumed.
   (workspaceId, templateId). Holds versions; never holds client data.
 - _TemplateVersion_ — immutable published snapshot of a template, including a
   frozen copy of every referenced parameter's metadata (label, unit, rating
-  scheme, optionality) — **versioned snapshots, not live references**, so later
+  scheme, options) — **versioned snapshots, not live references**, so later
   edits to shared parameter metadata can never rewrite how historical data
-  renders. Key: (templateId, versionSeq). Once published it never mutates.
+  renders. (Item-level `required`/placement config is frozen inside the
+  version's section/item structure, not the parameter — per decision #43.)
+  Key: (templateId, versionSeq). Once published it never mutates.
 - _TemplateVariant_ — named presentation alternative inside a version (e.g.
   meal-plan-based vs IIFYM-based). Key: (versionId, variantKey). A variant is a
   _view selection_, not a data fork.
@@ -259,26 +261,45 @@ reassignment).
 
 ## 3. Configurable parameter library
 
-PROPOSED contract for each _ParameterDefinition_:
+_Approved_ P-014 contract for each _ParameterDefinition_
+(product-decisions #41–#45; binding details in
+`docs/tasks/p014-parameter-template-foundation.md`):
 
-- `parameterId` (stable, slug-form), `kind` ∈ {measurement, rating, time,
-  duration, option, text}, `unit` (measurements only; canonical + display),
-  `ratingScheme` ∈ {scale-1-10, scale-1-5, word-labels} (ratings only),
-  `optionality` (required/optional/hidden per template selection),
-  `validation` (min/max/pattern where derivable), `source` ∈ {manual, wearable:*
-  (provider-specific — deferred)}, `defaultVisibility` (coach/client/check-in/
-  dashboard/roadmap), `group` (bodyweight, health, sleep, activity, biofeedback,
-  nutrition, …), and a `version`/metadata-snapshot mechanism per §2.
+- **Identity:** a server-minted opaque stable key — immutable, never
+  reusable, never caller-chosen; human naming lives in `label`. `kind` ∈
+  {measurement, rating, time, duration, option, text} — immutable from
+  creation.
+- **Semantic metadata:** `unit` (measurement/time/duration only),
+  `ratingScheme` ∈ {scale-1-10, scale-1-5, word-labels} (ratings only), and
+  option identity/value set (OPTION kind only; option IDs server-minted,
+  never reused) — editable only before the parameter first appears in a
+  published template; afterwards a change requires a new parameter with a
+  new key. `validation`, if included in the first implementation, is
+  declarative `min`/`max` only, is semantic metadata (same post-publish
+  lock), and is omitted entirely if its semantics cannot be made
+  unambiguous — patterns, formulas, expressions, arithmetic, conditional or
+  cross-field rules, and derived output are never part of P-014.
+- **Placement fields are NOT on the parameter:** `required`/optional/hidden
+  placement behavior belongs to the template item, per decision #43.
+- `group` may carry the coarse library grouping (bodyweight, health, sleep,
+  activity, biofeedback, nutrition, …).
+- **Deferred wider contract (NOT P-014 implementation scope):**
+  `source`/wearable provider configuration, `defaultVisibility`, dashboard/
+  roadmap/check-in bindings, variants, and per-client overrides are future
+  conceptual fields awaiting their own reviewed slices — they authorize
+  nothing here.
 - The same contract types the library entries for tracker fields, dashboard
   widget data sources, roadmap selections, exercise prescription fields
   (tempo/set-type/rest etc. — P01), and versioned check-in form questions.
 - **PRGRSS 2.0 ships as one source-backed starter configuration** —
   _deferred per product-decisions #48_: the initial parameter/template
-  foundation slice ships **without** a seed (synthetic coach-created
-  parameters only). A future starter set is a separate slice with its own
-  source-fidelity review: every field enumerated with per-field evidence
-  and no inferred units/schemes/enums/bounds; `CALORIES` stays excluded
-  absent new evidence. Coaches may add, hide, or relabel; a starter set is never
+  foundation slice ships **without** a seed — it supports authorized
+  staff-created parameter definitions (owner + coach), with synthetic
+  fixtures for development/test evidence only. A future starter set is a
+  separate slice with its own source-fidelity review: every field
+  enumerated with per-field evidence and no inferred
+  units/schemes/enums/bounds; `CALORIES` stays excluded absent new
+  evidence. Coaches may add, hide, or relabel; a starter set is never
   mandatory and never blocks specialist history — a coach who removes a
   group still retains any client data logged against it
   (hidden-but-readable).
@@ -523,7 +544,7 @@ Classification of existing work (keep/adapt/defer/supersede):
 | Daily Tracker shell (Phase 1.1, staff, nonpersistent)                    | adapt → staff preview of a client-configured tracker once parameters exist | hardcoded PRGRSS sections become one template's rendering                                              |
 | Nutrition catalog route + import (Phase 2.1)                             | keep (staff catalog)                                                       | feeds food logging/search later; client surface is new work                                            |
 | Exercise catalog route + import (Phase 2.2)                              | keep (staff catalog)                                                       | feeds training prescription pickers                                                                    |
-| PRGRSS extraction pipeline + spec artifacts                              | keep (evidence + starter-config seed)                                      | no longer the universal schema                                                                         |
+| PRGRSS extraction pipeline + spec artifacts                              | keep (evidence; starter seed deferred per #48)                             | no longer the universal schema                                                                         |
 | Phase 0.1 blueprint doc                                                  | supersede (preserved)                                                      | this document supersedes its universal-schema assumption only                                          |
 | Sheet/dev viewers (`/sheets`, `/daily` prototype flags)                  | defer → keep dev-only fail-closed                                          | unchanged policy                                                                                       |
 | Menses / peaking / showday / supplementation / PED-HRT                   | defer                                                                      | specialist modules; legal/consent gates open                                                           |

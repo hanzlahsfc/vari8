@@ -26,6 +26,12 @@ are complete; product direction is now the configurable coaching system in
 - Docs-only branch `docs/p014-parameter-template-decisions`; no
   implementation exists or is authorized by this entry; blueprint D-03 and
   slice-2 language updated. Branch NOT independently reviewed yet.
+- P-014-R4 wording correction (orchestrator audit): "coach-created" phrases
+  replaced — the surface supports authorized staff-created definitions
+  (WORKSPACE_OWNER + COACH) while `synthetic` applies to dev/test fixtures
+  only; blueprint §3 parameter contract reconciled with #41–#48
+  (server-minted opaque key, no optionality-on-parameter, validation scope,
+  deferred wearable/visibility fields labeled as such).
 
 ## 2026-10-06 — P-013-R2 repair delta on reviewed be811f3
 
