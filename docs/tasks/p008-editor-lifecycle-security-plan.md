@@ -599,6 +599,24 @@ pin. No push/PR/merge/deploy.
 
 ### Tests-only implementation review hold — 2026-10-05
 
+**Update — authorized local integration (2026-10-06), independent
+applicability review pending:** After Juno's removal, Apollo applied
+the three reviewed tests-only commits to clean accepted base
+`4074a46`, yielding `b6e51dc`, `3ff70af`, then
+`3f42980c8af9f703baee53a45a08471546800019`. Only the security
+spec changed. All tracked non-docs bytes match the tested `7431099`
+candidate (`git diff --exit-code 7431099 HEAD -- .
+':(exclude)docs/**'`, exit 0).
+The spec blob `4d3c63d4083aa06da2fc270be84d2962d85288eb`
+matches on both pins. Diff-check, format, lint and typecheck each
+exited 0 on clean `3f42980`. The prior 13/13 and 153 passed / 12
+skipped runtime captures remain captures on `7431099`, applicable
+by byte equality, not new executions on the integrated SHA.
+No DB/browser/test rerun occurred. Independent Orion applicability
+review remains pending; original failed history stays intact.
+The isolated worktree remains clean and untouched. No main mutation,
+push, PR, merge to main or deploy; owned-edge limitations remain.
+
 **Update — repaired pin runtime-GREEN, anomaly resolved
 (2026-10-05):** Under fresh user authorization Juno ran the exact
 clean pin `743109964c16e01e8039ebe104e1d048b03f469b` on disposable

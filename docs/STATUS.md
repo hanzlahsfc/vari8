@@ -5,6 +5,39 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-06 — P-008 ES-5 locally integrated; independent applicability review pending
+
+- The user delegated the recommended local feature-branch integration.
+  Juno's queued assignment was never delivered before his canvas removal;
+  Apollo then performed it on the verified clean accepted base
+  `4074a46131897696a7b3893572c6354fd1f8197e`.
+- Three reviewed tests-only commits were cherry-picked in order without
+  conflicts: `e8969bf` -> `b6e51dc`, `0c784b8` -> `3ff70af`,
+  `7431099` -> `3f42980c8af9f703baee53a45a08471546800019`.
+  The integration delta changes only
+  `tests/e2e/onboarding-forms-security.spec.ts`; no production,
+  configuration, schema or dependency bytes changed.
+- On clean `3f42980`, `git diff --exit-code 7431099 HEAD -- .
+':(exclude)docs/**'` exited 0: ALL tracked non-documentation bytes
+  equal the runtime-tested candidate. The security-spec blob on both
+  pins is `4d3c63d4083aa06da2fc270be84d2962d85288eb`.
+  `git diff --check 4074a46 HEAD`, `npm run format:check`,
+  `npm run lint` and `npm run typecheck` each exited 0; porcelain
+  remained empty after the checks. Outside-Git summary:
+  `gate-logs/p008-es5-7431099/local-integration-verification.md`.
+- Focused 13/13 and full 153 passed / 12 pre-existing skips were
+  executed on `7431099`, with Orion's static PASS and independent
+  evidence VALID. Byte equality establishes applicability to this
+  local integration; these are NOT newly executed gates on `3f42980`.
+  No browser, database, unit or integration suite was rerun here.
+  Orion's independent integration/applicability review is pending.
+- The isolated candidate remains clean at `7431099`; prior failed-run
+  records and corrected Q3 lifecycle explanation are preserved below.
+  Local `main` and `origin/main` remain `5036796` (no fresh fetch
+  claimed). No push, PR, merge to main or deployment; public-edge
+  verification remains a separate co-founder pre-deployment gate.
+  Helios remains paused and the wake loop remains stopped.
+
 ## 2026-10-05 — P-008 ES-5 repaired pin runtime-GREEN on disposable p8e_e2e (isolated)
 
 - Fresh user authorization ("follow your decision" release) allowed one
