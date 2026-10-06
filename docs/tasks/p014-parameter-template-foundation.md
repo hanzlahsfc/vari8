@@ -24,6 +24,12 @@ independently reviewed yet.
   validation-field lock).
 - Owner then approved the recommended decision package →
   `docs/product-decisions.md` **#41–#48** (recorded verbatim there).
+- Docs head `313b82c` independently reviewed by DeepSeek V4.1 Flash →
+  **CONDITIONAL PASS** (no P0/P1; decisions, engineering plan, source
+  fidelity, and boundaries passed). One stale blueprint slice-order entry
+  (PRGRSS seed + assignment claims) and three P3 documentation items
+  corrected in the forward R5 commit — that commit is NOT yet independently
+  reviewed.
 
 ## Approved slice definition
 

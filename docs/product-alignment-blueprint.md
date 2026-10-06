@@ -288,9 +288,13 @@ _Approved_ P-014 contract for each _ParameterDefinition_
   roadmap/check-in bindings, variants, and per-client overrides are future
   conceptual fields awaiting their own reviewed slices — they authorize
   nothing here.
-- The same contract types the library entries for tracker fields, dashboard
-  widget data sources, roadmap selections, exercise prescription fields
+- **Broader future direction (NOT P-014 scope):** the same contract is
+  intended to type the library entries for tracker fields, dashboard widget
+  data sources, roadmap selections, exercise prescription fields
   (tempo/set-type/rest etc. — P01), and versioned check-in form questions.
+  Those consumers are not part of P-014 — their permissions, formulas,
+  visibility rules, assignments, and persistence remain separately gated;
+  P-014 provides only the staff-managed parameter/template foundation.
 - **PRGRSS 2.0 ships as one source-backed starter configuration** —
   _deferred per product-decisions #48_: the initial parameter/template
   foundation slice ships **without** a seed — it supports authorized
@@ -299,7 +303,8 @@ _Approved_ P-014 contract for each _ParameterDefinition_
   separate slice with its own source-fidelity review: every field
   enumerated with per-field evidence and no inferred
   units/schemes/enums/bounds; `CALORIES` stays excluded absent new
-  evidence. Coaches may add, hide, or relabel; a starter set is never
+  evidence. Authorized workspace owners or coaches may add, hide, or
+  relabel; a starter set is never
   mandatory and never blocks specialist history — a coach who removes a
   group still retains any client data logged against it
   (hidden-but-readable).
@@ -560,9 +565,12 @@ client existing — it cannot trail the persistence slices:
    ClientProfile + one submission revision; re-invite links existing identity
    (PD#21); E2E at 1440/834/390.
 2. _Parameter library + template draft/publish skeleton_ — config tables,
-   PRGRSS starter seed, publish immutability + snapshots. Acceptance:
-   publish→edit→publish creates v2; v1 assignments untouched; unit/
-   integration green.
+   authorized staff-created definitions (owner + coach per #41–#42), publish
+   immutability + snapshots. No source-derived seed ships in this slice
+   (#48); development/test evidence uses synthetic fixtures. Acceptance:
+   create draft → publish immutable v1 → edit a later draft → publish v2;
+   v1 remains byte/semantically unchanged; no assignment or propagation
+   behavior exists yet; unit/integration green.
 3. _Client setup + variant switch_ — pin version, switch variant, history
    unchanged, ClientAssignment untouched. Acceptance: variant flip preserves
    entry count/content (E2E at 1440/834/390).
@@ -629,30 +637,30 @@ only, at desktop 1440px, tablet 834px, mobile 390px:
 
 Brief ID → proposed domain/workflow → current capability → disposition.
 
-| ID            | Brief function                                                                                       | Proposed domain/workflow                             | Current capability             | Disposition                            |
-| ------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------ | -------------------------------------- |
-| W01           | Roster (table/cards, filter/sort)                                                                    | workspace roster over ClientProfile+Assignment       | models exist; no UI            | Slice 6; D-03                          |
-| W02           | Attention summary                                                                                    | overdue/unread/pending aggregates                    | none                           | Slice 6; needs check-ins+tasks         |
-| W03           | Client profile                                                                                       | profile + labels + check-in days + links             | ClientProfile model only       | Slice 6; D-07                          |
-| W04           | Coach notes + general notes                                                                          | staff-visible internal notes; general-note rule      | `coach notes` matrix row       | Slice 6; **D-02, D-13**                |
-| W05           | Client tasks                                                                                         | ClientTask completion/overdue                        | none                           | Slice 6; PROPOSED matrix row           |
-| W06           | Check-in calendar                                                                                    | recurring + additional out-of-plan dates             | none                           | Slice 5                                |
-| W07           | Universal coach work items                                                                           | CoachNote/CoachTask + client link                    | none                           | Slice 6; D-13                          |
-| W08           | Priority-message permission                                                                          | per-client flag on setup/assignment                  | none                           | Slice 6; PROPOSED field                |
-| W09           | Check-in history/awaiting                                                                            | submittedAt/openedAt/respondedAt states              | none                           | Slice 5                                |
-| W10           | Template library                                                                                     | CoachingTemplate/Version + ParameterDefinition       | none                           | Slice 2; D-03 resolved (#41–#48)       |
-| W11           | Onboarding builder + send                                                                            | versioned intake; submission→client record           | invite flow (identity only)    | **Slice 1**; D-01                      |
-| D01–D05       | Dashboard grid/widgets/sizing/client view                                                            | DashboardLayout+WidgetSelection                      | none                           | Slice 6; D-04; calc widgets §7-blocked |
-| T01–T04       | Parameter library + units/ratings + entry                                                            | ParameterDefinition; DailyEntry `own`                | staff-only nonpersistent shell | Slices 2–4 (adapt shell)               |
-| R01–R04       | Roadmap parameter/calc/planning selection                                                            | RoadmapSelection binds approved calcs                | none                           | Slice 6; **BLOCKED §7 + D-06**         |
-| N01–N08       | Mealplan setup/targets/variants/logging/history incl. N05 recipes/favorites/copy-meals+days/servings | MealPlanConfig + effective-dated targets + FoodEntry | nutrition staff catalog        | Slice 6; provider contracts deferred   |
-| P01–P08       | Prescription fields, volume, evergreen/week-count, carry-forward, set flags, future-set notes        | TrainingProgram/SetLog/SetNote                       | exercise staff catalog         | Slice 6; volume §7                     |
-| C01–C07       | Check-in builder, full/custom, review, video, change summary                                         | CheckInForm/Submission + FeedbackResponse            | none                           | Slice 5; video provider deferred       |
-| Habit Tracker | optional feature, own setup/status                                                                   | HabitDefinition/HabitStatus                          | none                           | Slice 6; Tracker-independent           |
-| M01–M05       | Messaging + voice/files/photos/videos, context links, controls, priority, review feedback            | Conversation/Message + context links                 | none                           | Slice 6; attachment policy needed      |
-| —             | Wearables                                                                                            | connector direction                                  | none                           | Deferred; scoped contracts             |
-| —             | Migration/export                                                                                     | in/out coverage agreement                            | export/erasure matrix row      | Deferred; scoped spec                  |
-| —             | Show-planning example                                                                                | optional roadmap content                             | none                           | Example only; no module authorized     |
+| ID            | Brief function                                                                                       | Proposed domain/workflow                             | Current capability                                                           | Disposition                            |
+| ------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------- |
+| W01           | Roster (table/cards, filter/sort)                                                                    | workspace roster over ClientProfile+Assignment       | P-010 read-only staff roster exists; filtering/sort/profile features pending | Slice 6                                |
+| W02           | Attention summary                                                                                    | overdue/unread/pending aggregates                    | none                                                                         | Slice 6; needs check-ins+tasks         |
+| W03           | Client profile                                                                                       | profile + labels + check-in days + links             | ClientProfile model only                                                     | Slice 6; D-07                          |
+| W04           | Coach notes + general notes                                                                          | staff-visible internal notes; general-note rule      | `coach notes` matrix row                                                     | Slice 6; **D-02, D-13**                |
+| W05           | Client tasks                                                                                         | ClientTask completion/overdue                        | none                                                                         | Slice 6; PROPOSED matrix row           |
+| W06           | Check-in calendar                                                                                    | recurring + additional out-of-plan dates             | none                                                                         | Slice 5                                |
+| W07           | Universal coach work items                                                                           | CoachNote/CoachTask + client link                    | none                                                                         | Slice 6; D-13                          |
+| W08           | Priority-message permission                                                                          | per-client flag on setup/assignment                  | none                                                                         | Slice 6; PROPOSED field                |
+| W09           | Check-in history/awaiting                                                                            | submittedAt/openedAt/respondedAt states              | none                                                                         | Slice 5                                |
+| W10           | Template library                                                                                     | CoachingTemplate/Version + ParameterDefinition       | none                                                                         | Slice 2; D-03 resolved (#41–#48)       |
+| W11           | Onboarding builder + send                                                                            | versioned intake; submission→client record           | invite flow (identity only)                                                  | **Slice 1**; D-01                      |
+| D01–D05       | Dashboard grid/widgets/sizing/client view                                                            | DashboardLayout+WidgetSelection                      | none                                                                         | Slice 6; D-04; calc widgets §7-blocked |
+| T01–T04       | Parameter library + units/ratings + entry                                                            | ParameterDefinition; DailyEntry `own`                | staff-only nonpersistent shell                                               | Slices 2–4 (adapt shell)               |
+| R01–R04       | Roadmap parameter/calc/planning selection                                                            | RoadmapSelection binds approved calcs                | none                                                                         | Slice 6; **BLOCKED §7 + D-06**         |
+| N01–N08       | Mealplan setup/targets/variants/logging/history incl. N05 recipes/favorites/copy-meals+days/servings | MealPlanConfig + effective-dated targets + FoodEntry | nutrition staff catalog                                                      | Slice 6; provider contracts deferred   |
+| P01–P08       | Prescription fields, volume, evergreen/week-count, carry-forward, set flags, future-set notes        | TrainingProgram/SetLog/SetNote                       | exercise staff catalog                                                       | Slice 6; volume §7                     |
+| C01–C07       | Check-in builder, full/custom, review, video, change summary                                         | CheckInForm/Submission + FeedbackResponse            | none                                                                         | Slice 5; video provider deferred       |
+| Habit Tracker | optional feature, own setup/status                                                                   | HabitDefinition/HabitStatus                          | none                                                                         | Slice 6; Tracker-independent           |
+| M01–M05       | Messaging + voice/files/photos/videos, context links, controls, priority, review feedback            | Conversation/Message + context links                 | none                                                                         | Slice 6; attachment policy needed      |
+| —             | Wearables                                                                                            | connector direction                                  | none                                                                         | Deferred; scoped contracts             |
+| —             | Migration/export                                                                                     | in/out coverage agreement                            | export/erasure matrix row                                                    | Deferred; scoped spec                  |
+| —             | Show-planning example                                                                                | optional roadmap content                             | none                                                                         | Example only; no module authorized     |
 
 ## 11. Pending owner decisions (PROPOSED unless marked)
 
