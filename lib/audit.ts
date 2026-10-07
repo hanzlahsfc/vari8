@@ -79,6 +79,12 @@ export const AUDIT_RESOURCE_TYPES = [
   // states are recorded on the rows; the shared `status` vocabulary is not
   // widened for SUPERSEDED/CANCELLED (decision documented in P-013).
   "onboarding_assignment",
+  // P-014: parameter/template definition + publish lifecycle (IDs +
+  // structural markers only — never labels, options, draft JSON, or
+  // parameter content).
+  "parameter_definition",
+  "coaching_template",
+  "coaching_template_version",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 

@@ -7,6 +7,7 @@ import {
   type WorkspaceRole,
 } from "@/lib/auth/rbac";
 import { isOnboardingAssignmentsEnabled } from "@/lib/onboarding/assignments-gate";
+import { isCoachingTemplatesEnabled } from "@/lib/coaching/gate";
 
 type NavItem = {
   href: string;
@@ -73,6 +74,29 @@ export function WorkspaceNav({
       roles: ["WORKSPACE_OWNER", "COACH", "ASSISTANT_COACH"],
       enabled: isOnboardingAssignmentsEnabled(
         process.env.ENABLE_ONBOARDING_ASSIGNMENTS,
+      ),
+    },
+    // P-014: parameter/template library — dev-flagged AND owner/coach-pinned
+    // (the scope cells already deny assistant/client/support; the pin keeps
+    // intent explicit). Cosmetic only — routes re-authorize server-side.
+    {
+      href: `/workspace/${workspaceId}/parameters`,
+      label: "Parameters",
+      resource: "parameterDefinitions",
+      action: "read",
+      roles: ["WORKSPACE_OWNER", "COACH"],
+      enabled: isCoachingTemplatesEnabled(
+        process.env.ENABLE_COACHING_TEMPLATES,
+      ),
+    },
+    {
+      href: `/workspace/${workspaceId}/templates`,
+      label: "Templates",
+      resource: "coachingTemplates",
+      action: "read",
+      roles: ["WORKSPACE_OWNER", "COACH"],
+      enabled: isCoachingTemplatesEnabled(
+        process.env.ENABLE_COACHING_TEMPLATES,
       ),
     },
     {

@@ -66,6 +66,15 @@ Legend / decisions:
   (`ENABLE_ONBOARDING_ASSIGNMENTS=1`) and returns 404 when disabled. The P-008
   `onboardingFormTemplates` resource (ws/ws owner, ws/ws coach, all others
   denied) governs form-definition management and is unchanged.
+- **Coaching library** (P-014, product-decisions #41–#42): two closed
+  resources — `parameterDefinitions` and `coachingTemplates` — both
+  workspace-shared at ws/ws for WORKSPACE_OWNER and COACH; ASSISTANT_COACH,
+  SUPPORT, CLIENT, and PLATFORM_ADMIN are denied outright (platform admin
+  denied even with an active membership — the denied-resource set covers
+  both). The surface is dev-gated (`ENABLE_COACHING_TEMPLATES=1`): routes
+  404 and every server action/boundary refuses before auth or input binding
+  when the flag is off. Template definitions only — no client data,
+  assignments, or answers exist on these resources.
 - **Invitations** (S1-F2C): `members & invitations` covers staff invitation
   creation (COACH/ASSISTANT_COACH), owner-only listing, and owner-only
   revocation — deliberately owner-exclusive. `client invitations` is a distinct

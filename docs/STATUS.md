@@ -5,6 +5,48 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-07 — P-014-I1-R2 repaired parameter pagination after independent review
+
+- Independent DeepSeek review of `14e12c0`: **CONDITIONAL PASS**, no P0/P1.
+  Repaired forward on `feature/p014-parameter-template-foundation`.
+- P2-1 fixed: `listParameters` returns `{parameters, nextCursor}` with
+  workspace-scoped keyset pagination (foreign/unknown cursor fails closed);
+  the boundary validates `limit` (1..100) + `cursor`; the Parameter Library
+  got `?cursor=` server-side Next/First-page links; the template editor
+  pages to completeness so every ACTIVE parameter is selectable.
+- Copy fix: `parameter_not_publishable` no longer says only "before
+  publishing" (it applies to saves too). New PG test proves removed
+  option-ID tombstones survive later transactions and cannot be reused.
+- Gates on the repaired tree: unit 732/732; integration 356/356 fresh PG
+  (P-014 28/28); typecheck/lint/format/build clean; fresh migrate deploy
+  clean; focused E2E 15/15; full E2E 203 pass / 12 skip / 0 fail.
+- E2E count correction: on the reviewed `14e12c0` the focused spec was 14
+  passed and the independent full-suite run was 202 pass / 12 skip
+  (builder-run recorded 201/12 — fixture-cleanup flake resolved in R1).
+- Still no PR; another independent DeepSeek review of the repaired head is
+  required before one exists.
+
+## 2026-10-07 — P-014 parameter library + coaching template foundation implemented
+
+- Implementation branch `feature/p014-parameter-template-foundation` (from
+  merged P-014 docs head `630fc4c`). Delivers decisions #41–#48:
+  workspace-shared parameter library (server-minted opaque `p_` keys, closed
+  kind vocabulary, immutable kind/key, post-publish semantic lock, option
+  tombstones, terminal archive) + coaching templates (bounded drafts,
+  server-stamped acknowledgment revisions, `parameter_changed`/
+  `parameter_not_publishable` publish protocol, immutable snapshots with
+  embedded parameter metadata, normalized reference rows, idempotent
+  publish replay via `(template_id, publish_origin_revision)`).
+- Dev-gated `ENABLE_COACHING_TEMPLATES` (exact `"1"`): flag-off routes 404,
+  nav entries absent, actions refuse before `auth()`/FormData/boundary.
+- Gates on the implementation tree: unit 724/724; integration 353/353 on a
+  fresh disposable PG (P-014 suite 25/25 incl. concurrency, replay, archive
+  race, audit rollback); typecheck/lint/format/build all clean; focused
+  E2E 13/13; full E2E 201 pass / 12 skipped (delivery-gated reset specs).
+- No PR opened; independent DeepSeek review required before one exists.
+  Deferred per the task record: PRGRSS seed (source-fidelity slice),
+  assignments/variants/upgrades, calculations, client-facing surfaces.
+
 ## 2026-10-06 — P-014 parameter/template decisions approved (docs only)
 
 - Recorded late for chronology: P-013 merged to `main` via PR #12 as merge
