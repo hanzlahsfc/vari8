@@ -5,6 +5,29 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-08 — P-018 C3 variants deferred (docs only)
+
+- C3 feasibility planning completed: **no variant implementation or
+  approved payload exists** — every candidate payload is C4 or a
+  deferred/absent capability; the blueprint's earlier meal-plan/IIFYM
+  template-variant example was corrected (meal-plan structure is
+  per-client, not template config).
+- Independent review (`opencode-go/deepseek-v4.1-flash`, P-018-R1):
+  **PASS**, no P0/P1/P2; P3 wording corrections folded in (Option-C
+  deferral label, archive-switching stays unresolved, no persistence
+  shape recommended).
+- Owner approved **#63**: defer both C3 product decisions and
+  implementation until the first specifically named, approved
+  variant-controlled consumer exists; no empty variant registry/
+  selector/history/schema/route/UI; data-preservation invariant
+  preserved; all variant mechanics non-binding; D-12 and C4 pending.
+- **DailyEntry is the next recommended planning slice** (does not require
+  C3); per #62 the C2 implementation-planning gate reopens immediately
+  before the first data-consuming implementation. No C2/C3/C4/DailyEntry
+  implementation is authorized; nothing is deployed.
+- Docs-only branch `docs/p018-c3-deferral`; full record:
+  `docs/tasks/p018-c3-variant-feasibility.md`.
+
 ## 2026-10-08 — P-017 C2 transition decisions approved (docs only)
 
 - Owner approved the complete five-item P-017 package →
