@@ -43,7 +43,7 @@ unauthorized.
   the browser never submits a raw ParameterDefinition id.
 - Success: `revision` increments exactly once, `updatedByMemberId` set to the
   authorized member, `parameter_definition`/`UPDATE` audit in the same
-  transaction (`meta: {changed:true, version:String(revision)}`). Denial,
+  transaction (`meta: {changed:true, version:"v<revision>"}`). Denial,
   stale input, archive race loss, or audit failure → zero mutation, zero
   revision bump, zero audit.
 - Lock order: `lockParameter` (parameter row `FOR UPDATE`) only — never a
@@ -64,9 +64,8 @@ RED at HEAD `93242bcb1798c45518e86f599fec150cf31f4aab`:
   `../../lib/coaching/daily-entry-eligibility` did not exist.
 - `INTEGRATION_DATABASE_URL=…p020a_integration npx vitest run --config
 vitest.integration.config.ts tests/integration/p020a-parameter-classification.test.ts`
-  → 17 tests failed: `classifyParameter`, `listClassifiableParameterIds`,
-  and `resolveClassifySelection` were not exported; the
-  `data_classification` column did not exist.
+  → 17 tests failed: `classifyParameter` and `listClassifiableParameterIds`
+  were not exported; the `data_classification` column did not exist.
 
 GREEN evidence recorded in `docs/STATUS.md`.
 
@@ -77,15 +76,29 @@ GREEN evidence recorded in `docs/STATUS.md`.
   specialist classes, unsupported kinds/schemes, duplicate parameterId,
   incoherent metadata, malformed structure, deterministic reason ordering);
   boundary flag-off refusal before session/input/db.
-- Integration (disposable PostgreSQL, `p020a_integration`): migration leaves
-  NULL; owner/coach permitted transitions; reserved-classification rejection
-  for every role incl. platform admin; non-manager/dual-role denials;
+- Integration (disposable PostgreSQL): migration leaves NULL; owner/coach
+  permitted transitions; reserved-classification rejection for every role
+  incl. platform admin; non-manager/dual-role denials;
   archive/reclassification/stale-revision/foreign-workspace failures with
   zero mutation+audit; concurrent classification → one success; classify vs
-  archive both orderings; publish-snapshot persistence of classification +
-  revision and byte-identical pre-classification versions; universal
-  duplicate rejection with zero writes/audits and draft preserved;
-  positional selection + stale fingerprint + out-of-range index.
+  archive AND classify vs publish in **both orderings under genuine overlap**
+  — a test-only proxy wraps the injected `client` and uses deferred barriers
+  inside the transaction (winner parks holding the parameter row lock while
+  the loser's FOR UPDATE request is provably in flight; arrival order is
+  forced by gating the loser's authorize read). No sleeps; no production
+  test hooks. Publish-snapshot persistence of classification + revision and
+  byte-identical pre-classification versions; universal duplicate rejection
+  with zero writes/audits and draft preserved; positional selection +
+  stale fingerprint + out-of-range index resolved inside the mutation
+  transaction.
+- Action-layer gate ordering pinned directly: with the classification flag
+  off, the exported Server Action returns the flag-off result before
+  `auth()`, before any FormData accessor runs, and before the boundary —
+  proven with spies (`coaching-classification-actions.test.ts`).
+- Audit `meta.version` follows the established coaching-domain convention
+  `v<N>` (`client-setup.ts` writes `v${versionSeq}`); the plan's `"rev<N>"`
+  example was intentionally not adopted — a bare `v`-prefixed structural
+  string is the repo convention and stays inside the shared allowlist.
 - E2E: owner classify journey; coach control visibility; reserved options
   absent; flag-off 404 + absent control; assistant denial; no raw parameter
   id in the classify DOM; horizontal-overflow checks at 1440/834/390.

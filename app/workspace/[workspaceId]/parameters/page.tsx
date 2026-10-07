@@ -54,19 +54,24 @@ export default async function ParametersPage({
   const classification = classificationEnabled
     ? await listClassificationContext(session, { workspaceId })
     : null;
+  // The raw id→index map stays server-side; each row carries only its
+  // positional ordinal and the single fingerprint binds the selection.
+  const indexByParameterId = classification?.ok
+    ? classification.value.indexByParameterId
+    : {};
   const base = `/workspace/${encodeURIComponent(workspaceId)}/parameters`;
   return (
     <>
       <ParameterManager
         classification={
           classification?.ok
-            ? {
-                fingerprint: classification.value.fingerprint,
-                indexByParameterId: classification.value.indexByParameterId,
-              }
+            ? { fingerprint: classification.value.fingerprint }
             : undefined
         }
-        parameters={result.value.parameters}
+        parameters={result.value.parameters.map((p) => ({
+          ...p,
+          classifyIndex: indexByParameterId[p.id],
+        }))}
         workspaceId={workspaceId}
       />
       <nav

@@ -819,32 +819,6 @@ function boundedIndex(value: unknown): number | null {
     : null;
 }
 
-/** Resolves the browser's positional (index + fingerprint) selection to a
- * server-side parameter id. A list change between render and submit —
- * creation, archive, deletion — changes the fingerprint and fails closed
- * with `stale_selection`; a matching fingerprint with an out-of-range index
- * is tampered input (`invalid_input`). */
-export async function resolveClassifySelection(
-  session: SessionLike,
-  input: {
-    workspaceId: string;
-    parameterIndex: number;
-    fingerprint: string;
-  },
-  client: PrismaClient = defaultPrisma,
-): Promise<{ parameterId: string }> {
-  const { ids, fingerprint: expected } = await listClassifiableParameterIds(
-    session,
-    { workspaceId: input.workspaceId },
-    client,
-  );
-  if (input.fingerprint !== expected)
-    throw new ParameterError("stale_selection");
-  const parameterId = ids[boundedIndex(input.parameterIndex) ?? -1];
-  if (!parameterId) throw new ParameterError("invalid_input");
-  return { parameterId };
-}
-
 /**
  * One-time audited `NULL → GENERAL_HEALTH|CYCLE` classification (#78). The
  * sole approved exception letting a NULL semantic field change on a
@@ -917,7 +891,7 @@ export async function classifyParameter(
           action: "UPDATE",
           resourceType: "parameter_definition",
           resourceId: row.id,
-          meta: { changed: true, version: String(revision) },
+          meta: { changed: true, version: `v${revision}` },
         });
         return revision;
       },

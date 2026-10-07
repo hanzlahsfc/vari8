@@ -21,12 +21,23 @@ are complete; product direction is now the configurable coaching system in
   row `FOR UPDATE` only (no template lock); single revision bump +
   `updatedByMemberId` + tx-bound `parameter_definition`/`UPDATE` audit.
 - Disposable DB `p020a_integration` (local docker `app-db-1`, created for
-  this run — not shared infra): `prisma migrate deploy` + 415/415
+  this run — not shared infra): `prisma migrate deploy` + 417/417
   integration tests pass; 814/814 unit; focused + full E2E green; build ok.
+- Independent review (`opencode-go/deepseek-v4.1-flash`, P-020A-I1-R1):
+  **CONDITIONAL PASS** — no P0/P1; two P2 evidence repairs + P3 cleanups.
+  Repaired in `3b355df..`: genuinely concurrent classify-vs-archive and
+  classify-vs-publish tests (tx-client proxy barriers on the injected
+  `client` seam — both ops in flight, deterministic lock-arrival order, no
+  sleeps, no production test API); action-layer test pinning
+  gate-before-auth/FormData/DB ordering; `indexByParameterId` removed from
+  client props (server-side ordinal → per-row `classifyIndex`); dead
+  `resolveClassifySelection` export removed; audit `meta.version` aligned to
+  the established `v<N>` convention (`client-setup.ts`); this entry
+  corrected 415→417.
 - Record: `docs/tasks/p020a-parameter-classification-foundation.md`.
   **P-020B, DailyEntry, C3, C4, production enablement, and deployment remain
-  unauthorized; nothing deployed.** Next: independent different-model review
-  of the branch before any PR/merge.
+  unauthorized; nothing deployed.** Next: lightweight independent re-review
+  of the repair commit before any PR/merge.
 
 ## 2026-10-08 — P-019 DailyEntry decisions approved (docs only)
 

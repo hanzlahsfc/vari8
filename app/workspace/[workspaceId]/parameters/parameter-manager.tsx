@@ -32,11 +32,13 @@ type ParameterRow = {
   revision: number;
   publishedReferenced: boolean;
   updatedAt: string;
+  /** Positional ordinal inside the authorized classification list — the only
+   * binding the classification form submits. Never a database id. */
+  classifyIndex?: number;
 };
 
 type ClassificationContext = {
   fingerprint: string;
-  indexByParameterId: Record<string, number>;
 };
 
 const KINDS = [
@@ -68,17 +70,15 @@ export function ParameterManager({
   >({});
 
   function submitClassify(row: ParameterRow) {
-    if (!classification) return;
-    const index = classification.indexByParameterId[row.id];
-    const choice = classifyChoice[row.id] ?? "GENERAL_HEALTH";
-    if (index === undefined) {
+    if (!classification || row.classifyIndex === undefined) {
       setError(
         "This list changed while you were deciding. Reload and try again.",
       );
       return;
     }
+    const choice = classifyChoice[row.id] ?? "GENERAL_HEALTH";
     const body = new FormData();
-    body.append("parameterIndex", String(index));
+    body.append("parameterIndex", String(row.classifyIndex));
     body.append("expectedRevision", String(row.revision));
     body.append("fingerprint", classification.fingerprint);
     body.append("classification", choice);
@@ -358,7 +358,7 @@ export function ParameterManager({
                           aria-label={`Data classification for ${row.label}`}
                           className="auth-input"
                           data-testid="classification-select"
-                          id={`classification-select-${classification.indexByParameterId[row.id]}`}
+                          id={`classification-select-${row.classifyIndex ?? 0}`}
                           onChange={(e) =>
                             setClassifyChoice((c) => ({
                               ...c,
