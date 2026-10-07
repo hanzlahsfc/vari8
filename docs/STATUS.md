@@ -5,6 +5,29 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-08 — P-017 C2 transition decisions approved (docs only)
+
+- Owner approved the complete five-item P-017 package →
+  `product-decisions.md` **#58–#62**: server-selected latest-published
+  upgrade target, any-earlier-retained rollback target, frozen archived
+  templates (no new pins — exit = cancel + different-template assign),
+  mandatory bound structural review (incl. empty diffs, stale fails
+  closed), and **implementation deferred until immediately before
+  DailyEntry or the first data-consuming slice**. Binding boundary:
+  free-text transition reasons excluded pending D-10/legal.
+- Review chain: P-017 plan → independent `opencode-go/deepseek-v4.1-flash`
+  R1 CONDITIONAL PASS (replay semantics, reason/D-10, diff identity keys,
+  auth-before-resolution, coupled schema invariants, audit honesty,
+  empty states, timing, stale-resubmit test) → P-017-R2 corrected plan →
+  R2-R1 independent **PASS** → owner approval.
+- Also merged since last entry: **P-016 C1 shipped** — PR #16 merged as
+  `e7fd73b` (main CI `37645144594` SUCCESS; remote feature branch
+  deleted); blueprint §2 C2 questions now marked resolved-for-rules.
+- Docs-only branch `docs/p017-c2-transition-decisions`; full record:
+  `docs/tasks/p017-template-version-transitions.md`. C2/C3/C4
+  implementation is NOT authorized — no schema, code, tests, PR, merge,
+  or deployment.
+
 ## 2026-10-07 — P-016-R2 ID-free selection contract repaired
 
 - Independent different-model review (`opencode-go/deepseek-v4.1-flash`)
