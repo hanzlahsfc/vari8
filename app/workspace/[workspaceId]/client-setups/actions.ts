@@ -86,7 +86,7 @@ async function sessionGate(): Promise<
 }
 
 const listPath = (workspaceId: string) =>
-  `/workspace/${encodeURIComponent(workspaceId)}/client-setup`;
+  `/workspace/${encodeURIComponent(workspaceId)}/client-setups`;
 
 /** Revalidation is best-effort: a committed mutation stays successful even
  * when the cache layer throws. Never echoes the exception. */

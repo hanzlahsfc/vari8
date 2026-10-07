@@ -83,7 +83,7 @@ export default async function ClientSetupPage({
     templates = templatesResult.value;
   }
 
-  const basePath = `/workspace/${encodeURIComponent(workspaceId)}/client-setup`;
+  const basePath = `/workspace/${encodeURIComponent(workspaceId)}/client-setups`;
   const prevHref = prevRosterHref(basePath, query.history);
   const nextHref =
     assignments.nextCursor === null

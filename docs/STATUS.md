@@ -27,13 +27,23 @@ are complete; product direction is now the configurable coaching system in
   reuses the stable setup with seq+1.
 - Boundary (`ENABLE_CLIENT_SETUP=1` gate first, before input binding),
   `requireClientSetupAccess` route guard, staff UI at
-  `/workspace/[workspaceId]/client-setup` (assign form + current/history
+  `/workspace/[workspaceId]/client-setups` (assign form + current/history
   table + confirmed cancel; assistants read-only), dev-flagged nav entry.
-- Local gates green: 776 unit tests, typecheck, lint, format, build.
-  Integration (22 tests) + E2E need disposable PG — CI runs them.
+- Gate completion (P-016-G1, forward commits — `8fee131` preserved):
+  route corrected singular→plural (singular 404 covered), integration
+  extended to 29 tests (audit rollback, assign/archive/cancel races, no
+  SUPERSEDED, deactivation cancel, unassigned-coach, assistant revocation),
+  E2E extended to 13 tests, S1-A table allowlist updated. The original
+  commit's report had skipped the disposable-PG and browser gates — all
+  now executed locally, not deferred to CI.
+- Local gates on disposable Compose PG: unit 776/776; focused integration
+  29/29; full integration 385/385; focused E2E 13/13 (Chromium,
+  1440/834/390); full E2E 216 passed / 12 skipped / 0 failed;
+  typecheck/lint/format/build/migrate-deploy/status/drift all clean.
 - Full record: `docs/tasks/p016-client-setup-assignments.md`. Next gates:
-  independent different-model review → PR → `verify` CI → separate merge
-  approval. No PR/merge/deploy authorized.
+  fresh-context same-model review → push branch (no PR) → independent
+  different-model review → PR → `verify` CI → separate merge approval.
+  No PR/merge/deploy authorized.
 
 ## 2026-10-07 — P-015 client-setup decisions approved (docs only)
 

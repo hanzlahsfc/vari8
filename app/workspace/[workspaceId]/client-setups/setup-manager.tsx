@@ -80,6 +80,23 @@ export function SetupManager({
     CANCELLED: "Cancelled",
   };
 
+  // Duplicate template names are permitted (#46): when the same label would
+  // render twice, append a positional marker — never an ID. Precomputed once
+  // per render so the markers stay stable under double-render.
+  const labeledTemplates = (() => {
+    const counts = new Map<string, number>();
+    for (const t of templates)
+      counts.set(t.name, (counts.get(t.name) ?? 0) + 1);
+    const seen = new Map<string, number>();
+    return templates.map((t) => {
+      const base = `${t.name} (version ${t.latestVersionSeq})`;
+      if ((counts.get(t.name) ?? 0) < 2) return { t, label: base };
+      const nth = (seen.get(t.name) ?? 0) + 1;
+      seen.set(t.name, nth);
+      return { t, label: `${base} · ${nth} of ${counts.get(t.name)}` };
+    });
+  })();
+
   const dateOf = (iso: string | null) => (iso ? iso.slice(0, 10) : "—");
 
   return (
@@ -133,9 +150,9 @@ export function SetupManager({
                   disabled={pending}
                 >
                   <option value="">Choose a template…</option>
-                  {templates.map((t) => (
+                  {labeledTemplates.map(({ t, label }) => (
                     <option key={t.id} value={t.id}>
-                      {t.name} (version {t.latestVersionSeq})
+                      {label}
                     </option>
                   ))}
                 </select>

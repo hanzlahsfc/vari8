@@ -80,8 +80,10 @@ describe.skipIf(!enabled)(
       });
     const s = (userId: string) => ({ user: { id: userId } });
     const auditCount = () => prisma.auditEvent.count();
-    const pinCount = () => prisma.clientSetupPin.count();
-    const setupCount = () => prisma.clientSetup.count();
+    const pinCount = (workspaceId: string) =>
+      prisma.clientSetupPin.count({ where: { workspaceId } });
+    const setupCount = (workspaceId: string) =>
+      prisma.clientSetup.count({ where: { workspaceId } });
 
     /** Eligible client: profile linked to an ACTIVE user with ACTIVE CLIENT
      * membership in the same workspace. */
@@ -115,6 +117,19 @@ describe.skipIf(!enabled)(
           name: `Template ${uid()}`,
           status,
           createdByMemberId,
+          // P-014 provenance CHECK: ARCHIVED requires archivedAt/archivedBy.
+          ...(status === "ARCHIVED"
+            ? { archivedAt: new Date(), archivedByMemberId: createdByMemberId }
+            : {}),
+        },
+      });
+    const archiveTemplate = (templateId: string, archivedByMemberId: string) =>
+      prisma.coachingTemplate.update({
+        where: { id: templateId },
+        data: {
+          status: "ARCHIVED",
+          archivedAt: new Date(),
+          archivedByMemberId,
         },
       });
     const version = (
@@ -197,7 +212,7 @@ describe.skipIf(!enabled)(
             seq: 1,
           },
         });
-        expect(await pinCount()).toBe(3);
+        expect(await pinCount(ws.id)).toBe(3);
       });
 
       it("rejects cross-workspace, wrong-setup, and version∉template targets", async () => {
@@ -593,7 +608,7 @@ describe.skipIf(!enabled)(
           where: { id: pin.clientSetupId },
         });
         expect(setup.clientProfileId).toBe(cp.id);
-        expect(await setupCount()).toBe(1);
+        expect(await setupCount(ws.id)).toBe(1);
         expect(await auditCount()).toBe(auditsBefore + 1);
         const event = await prisma.auditEvent.findFirstOrThrow({
           where: {
@@ -618,7 +633,7 @@ describe.skipIf(!enabled)(
           prisma,
         );
         const auditsBefore = await auditCount();
-        const pinsBefore = await pinCount();
+        const pinsBefore = await pinCount(ws.id);
         await expect(
           createClientSetupAssignment(
             s(m.userId),
@@ -626,7 +641,7 @@ describe.skipIf(!enabled)(
             prisma,
           ),
         ).rejects.toMatchObject({ code: "assignment_conflict" });
-        expect(await pinCount()).toBe(pinsBefore);
+        expect(await pinCount(ws.id)).toBe(pinsBefore);
         expect(await auditCount()).toBe(auditsBefore);
       });
 
@@ -692,7 +707,7 @@ describe.skipIf(!enabled)(
         // Stable aggregate identity — the same setup row holds both pins.
         expect(pin2.clientSetupId).toBe(pin1.clientSetupId);
         expect(pin2.seq).toBe(pin1.seq + 1);
-        expect(await setupCount()).toBe(1);
+        expect(await setupCount(ws.id)).toBe(1);
         const list = await listClientSetups(
           s(m.userId),
           { workspaceId: ws.id },
@@ -711,10 +726,7 @@ describe.skipIf(!enabled)(
           { workspaceId: ws.id, clientProfileId: cp.id, templateId: t.id },
           prisma,
         );
-        await prisma.coachingTemplate.update({
-          where: { id: t.id },
-          data: { status: "ARCHIVED" },
-        });
+        await archiveTemplate(t.id, m.id);
         // Existing pin stays ACTIVE and visible after archive (decision #53).
         const list = await listClientSetups(
           s(m.userId),
@@ -735,10 +747,7 @@ describe.skipIf(!enabled)(
         const cp = await eligibleClient(ws.id);
         const t = await template(ws.id, m.id);
         await version(ws.id, t.id, 1, m.id);
-        await prisma.coachingTemplate.update({
-          where: { id: t.id },
-          data: { status: "ARCHIVED" },
-        });
+        await archiveTemplate(t.id, m.id);
         const auditsBefore = await auditCount();
         await expect(
           createClientSetupAssignment(
@@ -748,7 +757,7 @@ describe.skipIf(!enabled)(
           ),
         ).rejects.toMatchObject({ code: "template_not_eligible" });
         expect(await auditCount()).toBe(auditsBefore);
-        expect(await pinCount()).toBe(0);
+        expect(await pinCount(ws.id)).toBe(0);
       });
 
       it("a later published version never moves an existing pin", async () => {
@@ -827,8 +836,8 @@ describe.skipIf(!enabled)(
             prisma,
           ),
         ).rejects.toMatchObject({ code: "client_not_eligible" });
-        expect(await pinCount()).toBe(0);
-        expect(await setupCount()).toBe(0);
+        expect(await pinCount(ws.id)).toBe(0);
+        expect(await setupCount(ws.id)).toBe(0);
       });
 
       it("concurrent creates for one client commit exactly one ACTIVE pin and one audit", async () => {
@@ -847,12 +856,244 @@ describe.skipIf(!enabled)(
           ),
         );
         const activePins = await prisma.clientSetupPin.count({
-          where: { status: "ACTIVE" },
+          where: { workspaceId: ws.id, status: "ACTIVE" },
         });
         expect(activePins).toBe(1);
-        expect(await setupCount()).toBe(1);
+        expect(await setupCount(ws.id)).toBe(1);
         expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
         expect(await auditCount()).toBe(auditsBefore + 1);
+      });
+
+      it("concurrent cancels produce exactly one transition with a single writer's provenance", async () => {
+        const { ws, m } = await staffFixture();
+        const cp = await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        const res = await createClientSetupAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, clientProfileId: cp.id, templateId: t.id },
+          prisma,
+        );
+        const auditsBefore = await auditCount();
+        const results = await Promise.allSettled(
+          Array.from({ length: 3 }, () =>
+            cancelClientSetupAssignment(
+              s(m.userId),
+              { workspaceId: ws.id, pinId: res.assignmentId },
+              prisma,
+            ),
+          ),
+        );
+        const fulfilled = results.filter((r) => r.status === "fulfilled");
+        expect(fulfilled.length).toBe(1);
+        const pin = await prisma.clientSetupPin.findUniqueOrThrow({
+          where: { id: res.assignmentId },
+        });
+        expect(pin.status).toBe("CANCELLED");
+        expect(pin.endedByMemberId).toBe(m.id);
+        expect(await auditCount()).toBe(auditsBefore + 1);
+      });
+
+      it("assign vs archive race serializes deterministically with no torn state", async () => {
+        const { ws, m } = await staffFixture();
+        const cp = await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        const auditsBefore = await auditCount();
+        const [assign] = await Promise.allSettled([
+          createClientSetupAssignment(
+            s(m.userId),
+            { workspaceId: ws.id, clientProfileId: cp.id, templateId: t.id },
+            prisma,
+          ),
+          archiveTemplate(t.id, m.id),
+        ]);
+        const tpl = await prisma.coachingTemplate.findUniqueOrThrow({
+          where: { id: t.id },
+        });
+        const pins = await prisma.clientSetupPin.findMany({
+          where: { workspaceId: ws.id },
+        });
+        expect(tpl.status).toBe("ARCHIVED");
+        // Exactly two legal outcomes: assignment committed then archive (pin
+        // survives, per decision #53), or archive first → not_eligible. Never
+        // a torn intermediate.
+        if (assign.status === "fulfilled") {
+          expect(pins).toHaveLength(1);
+          expect(pins[0].status).toBe("ACTIVE");
+        } else {
+          expect(pins).toHaveLength(0);
+        }
+        expect(await auditCount()).toBeLessThanOrEqual(auditsBefore + 1);
+      });
+
+      it("no C1 path ever writes SUPERSEDED", async () => {
+        const { ws, m } = await staffFixture();
+        const cp = await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        const v2 = await version(ws.id, t.id, 2, m.id);
+        const res = await createClientSetupAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, clientProfileId: cp.id, templateId: t.id },
+          prisma,
+        );
+        await cancelClientSetupAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, pinId: res.assignmentId },
+          prisma,
+        );
+        const res2 = await createClientSetupAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, clientProfileId: cp.id, templateId: t.id },
+          prisma,
+        );
+        await cancelClientSetupAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, pinId: res2.assignmentId },
+          prisma,
+        );
+        const statuses = await prisma.clientSetupPin.findMany({
+          select: { status: true },
+        });
+        expect(statuses.every((p) => p.status !== "SUPERSEDED")).toBe(true);
+        // Reassignment pinned the newer latest version (v2) with seq 2.
+        const pin2 = await prisma.clientSetupPin.findUniqueOrThrow({
+          where: { id: res2.assignmentId },
+        });
+        expect(pin2.templateVersionId).toBe(v2.id);
+        expect(pin2.seq).toBe(2);
+      });
+
+      it("owner cancellation still succeeds after the client's linked user is deactivated", async () => {
+        const { ws, m } = await staffFixture();
+        const cp = await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        const res = await createClientSetupAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, clientProfileId: cp.id, templateId: t.id },
+          prisma,
+        );
+        // Deactivate the client's linked user — new assignment would now be
+        // ineligible, but cancellation requires no eligibility (decision #51).
+        await prisma.user.update({
+          where: { id: cp.userId as string },
+          data: { status: "DEACTIVATED" },
+        });
+        await cancelClientSetupAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, pinId: res.assignmentId },
+          prisma,
+        );
+        const pin = await prisma.clientSetupPin.findUniqueOrThrow({
+          where: { id: res.assignmentId },
+        });
+        expect(pin.status).toBe("CANCELLED");
+      });
+
+      it("a coach with no ClientAssignment is denied even for a client they could name", async () => {
+        const { ws, m } = await staffFixture("WORKSPACE_OWNER");
+        const otherCoachU = await user();
+        await member(ws.id, otherCoachU.id, "COACH");
+        const cp = await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        await expect(
+          createClientSetupAssignment(
+            s(otherCoachU.id),
+            {
+              workspaceId: ws.id,
+              clientProfileId: cp.id,
+              templateId: t.id,
+            },
+            prisma,
+          ),
+        ).rejects.toBeInstanceOf(AccessDeniedError);
+        const list = await listClientSetups(
+          s(otherCoachU.id),
+          { workspaceId: ws.id },
+          prisma,
+        );
+        expect(list.items).toHaveLength(0);
+      });
+
+      it("assistant scope collapses immediately after ClientAssignment removal", async () => {
+        const { ws, m } = await staffFixture("WORKSPACE_OWNER");
+        const asU = await user();
+        const asM = await member(ws.id, asU.id, "ASSISTANT_COACH");
+        const cp = await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        const ca = await assignCoach(ws.id, cp.id, asM.id);
+        await createClientSetupAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, clientProfileId: cp.id, templateId: t.id },
+          prisma,
+        );
+        expect(
+          (await listClientSetups(s(asU.id), { workspaceId: ws.id }, prisma))
+            .items,
+        ).toHaveLength(1);
+        await prisma.clientAssignment.update({
+          where: { id: ca.id },
+          data: { status: "REMOVED" },
+        });
+        expect(
+          (await listClientSetups(s(asU.id), { workspaceId: ws.id }, prisma))
+            .items,
+        ).toHaveLength(0);
+      });
+
+      it("forced audit failure rolls the entire mutation back — no setup, pin, or audit", async () => {
+        const { ws, m } = await staffFixture();
+        const cp = await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        const failing = new Proxy(prisma, {
+          get(target, property) {
+            if (property !== "$transaction")
+              return Reflect.get(target, property);
+            return async (
+              callback: (
+                tx: import("@prisma/client").Prisma.TransactionClient,
+              ) => Promise<unknown>,
+              options: unknown,
+            ) =>
+              target.$transaction(
+                async (tx) => {
+                  const txClient = new Proxy(tx, {
+                    get(transaction, key) {
+                      if (key !== "auditEvent")
+                        return Reflect.get(transaction, key);
+                      return new Proxy(transaction.auditEvent, {
+                        get(delegate, operation) {
+                          if (operation !== "create")
+                            return Reflect.get(delegate, operation);
+                          return async () => {
+                            throw new Error("forced audit failure");
+                          };
+                        },
+                      });
+                    },
+                  });
+                  return callback(txClient);
+                },
+                options as Parameters<typeof target.$transaction>[1],
+              );
+          },
+        });
+        const auditsBefore = await auditCount();
+        await expect(
+          createClientSetupAssignment(
+            s(m.userId),
+            { workspaceId: ws.id, clientProfileId: cp.id, templateId: t.id },
+            failing as PrismaClient,
+          ),
+        ).rejects.toThrow("audit_write_failed");
+        expect(await pinCount(ws.id)).toBe(0);
+        expect(await setupCount(ws.id)).toBe(0);
+        expect(await auditCount()).toBe(auditsBefore);
       });
     });
   },

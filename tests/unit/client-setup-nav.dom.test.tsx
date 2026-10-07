@@ -26,7 +26,7 @@ afterEach(() => {
 });
 
 const WS = "ws_test";
-const HREF = `/workspace/${WS}/client-setup`;
+const HREF = `/workspace/${WS}/client-setups`;
 
 describe("P-016 workspace nav — Client Setup entry", () => {
   it.each(["WORKSPACE_OWNER", "COACH", "ASSISTANT_COACH"] as const)(

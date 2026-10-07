@@ -43,7 +43,7 @@ real-client data, and deployment.
 New: `db/migrations/20261007170000_p016_client_setup_assignments/`,
 `lib/coaching/client-setup-gate.ts`, `lib/coaching/client-setup.ts`,
 `lib/coaching/client-setup-boundary.ts`,
-`app/workspace/[workspaceId]/client-setup/{page,actions,setup-manager}.*`,
+`app/workspace/[workspaceId]/client-setups/{page,actions,setup-manager}.*`,
 `tests/unit/client-setup{,-rbac,-actions,-boundary,-boundary-imports,-nav.dom}.test.ts*`,
 `tests/integration/p016-client-setup.test.ts`,
 `tests/e2e/client-setup.spec.ts`.
@@ -70,21 +70,64 @@ ACTIVE→CANCELLED transition + transaction-bound audit.
 `npx vitest run` on the six new unit specs against `767f19d` →
 10 failed / 6 passed: `clientSetups` unknown to RBAC (`resolveScope` →
 undefined), `lib/coaching/client-setup{,-gate,-boundary}` and
-`app/.../client-setup/actions` modules not found. The import-walker spec
+`app/.../client-setups/actions` modules not found. The import-walker spec
 passed trivially (regression guard only). Integration spec skipped without
 `INTEGRATION_DATABASE_URL`.
 
-## Local verification (this tree)
+## Gate-completion corrections (forward commits after `8fee131`)
 
-- `npx vitest run` (all): 70 files / 776 tests — PASS (exit 0).
+The original implementation commit `8fee131` shipped the singular route
+`/client-setup` (contract is plural `/client-setups`) and its report
+claimed completion without real disposable-PostgreSQL or browser runs.
+P-016-G1 corrected both in forward commits — `8fee131` is untouched:
+
+- Route renamed to `app/.../client-setups/`; nav href, actions
+  `revalidatePath`, docs, and all URL assertions use the plural path. The
+  singular URL is covered by an explicit 404 E2E case.
+- Integration spec extended 22→29 tests: audit-write rollback (zero
+  mutation/audit), concurrent assign + assign-vs-archive + cancel races,
+  no `SUPERSEDED` writes, cancellation after client deactivation,
+  unassigned-coach denial, assistant scope collapse on removal,
+  workspace-scoped mutation counts. Fixture/provenance calls corrected to
+  satisfy the P-014 archive CHECK.
+- `tests/integration/s1-a-identity.test.ts` table allowlist extended with
+  the two approved tables (`client_setup`, `client_setup_pin`).
+- E2E spec extended 7→13 tests: flag-off route+nav+zero-effect POST probe,
+  singular-route 404, duplicate-name disambiguation, assigned/unassigned/
+  revoked coach, assistant read-only, client/support/dual-role platform
+  denials, archived readability + authorized cancellation, keyboard
+  assign/cancel + alert focus, 44px touch targets, no-overflow at
+  1440/834/390, no raw IDs. Each test seeds/cleans its own pin state via
+  the real service (Playwright restarts workers after failures — no
+  cross-test DB state is safe to share).
+
+## Local verification (this tree, disposable infrastructure)
+
+All suites executed locally against disposable databases on the repo's
+own Compose PostgreSQL 16 (`app_integration_test`, `app_e2e`,
+`app_p016_final`, `app_shadow` — all disposable, no shared data):
+
+- `npx prisma generate` / `validate` — exit 0.
+- `prisma migrate deploy` on fresh `app_p016_final` — 16/16 applied;
+  `migrate status` — "up to date"; `migrate diff` migrations↔DB — no
+  drift; schema.prisma↔migrations shows only the intentional raw-SQL
+  composite-FK/GIN constructs (same footprint as P-013/P-014).
+- `npx vitest run` (all): 70 files / 776 tests — PASS (exit 0, ~17.5s).
 - `npm run typecheck` / `lint` / `format:check` — all clean (exit 0).
-- `npx prisma validate` / `prisma generate` — clean; `npm run build` —
-  `/workspace/[workspaceId]/client-setup` compiled (exit 0).
-- Integration + E2E need the disposable PostgreSQL — no local
-  Docker/PG on this host; they run in the required `verify` CI job.
+- Focused P-016 integration: **29 tests PASS** on real PG (~2s); full
+  integration: **28 files / 385 tests PASS** (~50s).
+- `npm run build` — `/workspace/[workspaceId]/client-setups` compiled
+  (exit 0).
+- Focused P-016 E2E (Chromium): **13 tests PASS** (~24s) covering the
+  three form-factor checks at 1440/834/390; singular route 404 and
+  flag-off 404/nav/POST-mutation checks included.
+- Full E2E: **216 passed / 12 skipped / 0 failed** (~1.9m) — skips are the
+  pre-existing gated password-reset block, unrelated to P-016.
+- No CI run exists yet for this branch — all evidence above is local.
 
 ## Next gates
 
-Independent different-model review → PR → `verify` CI (includes real-DB
-integration + real-browser E2E) → separate merge approval. No PR, merge,
-push to main, or deployment is authorized by this record.
+Fresh-context same-model review of base-to-head → push
+`feature/p016-client-setup-assignments` (no PR) → independent
+different-model review → PR → `verify` CI → separate merge approval.
+No PR, merge, push to main, or deployment is authorized by this record.

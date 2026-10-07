@@ -75,6 +75,10 @@ export type AssignableTemplate = {
   id: string;
   name: string;
   latestVersionSeq: number;
+  /** Structural only (ISO timestamp) — used to order and disambiguate
+   * duplicate display names in the picker without exposing IDs (decision
+   * #46 permits duplicate names). */
+  createdAt: string;
 };
 
 // ── Concurrency protocol (mirrors the reviewed assignments service) ────────
@@ -386,10 +390,11 @@ export async function listAssignableTemplates(
       status: "ACTIVE",
       versions: { some: {} },
     },
-    orderBy: { name: "asc" },
+    orderBy: [{ name: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     select: {
       id: true,
       name: true,
+      createdAt: true,
       versions: {
         select: { versionSeq: true },
         orderBy: { versionSeq: "desc" },
@@ -401,6 +406,7 @@ export async function listAssignableTemplates(
     id: row.id,
     name: row.name,
     latestVersionSeq: row.versions[0]!.versionSeq,
+    createdAt: row.createdAt.toISOString(),
   }));
 }
 

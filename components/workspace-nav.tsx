@@ -105,7 +105,7 @@ export function WorkspaceNav({
     // already deny CLIENT/SUPPORT; the pin keeps intent explicit). Cosmetic
     // only — the route re-authorizes server-side.
     {
-      href: `/workspace/${workspaceId}/client-setup`,
+      href: `/workspace/${workspaceId}/client-setups`,
       label: "Client Setup",
       resource: "clientSetups",
       action: "read",

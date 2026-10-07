@@ -34,7 +34,7 @@ import {
 import {
   assignTemplate,
   cancelSetupAssignment,
-} from "../../app/workspace/[workspaceId]/client-setup/actions";
+} from "../../app/workspace/[workspaceId]/client-setups/actions";
 
 const FLAG = "ENABLE_CLIENT_SETUP";
 
