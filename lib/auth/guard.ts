@@ -134,6 +134,9 @@ const PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> = new Set([
   // P-014: workspace parameter/template definitions (product-decision #42).
   "parameterDefinitions",
   "coachingTemplates",
+  // P-016: client setup + template assignments (product-decision #54 —
+  // denied including dual-role platform administrators).
+  "clientSetups",
 ]);
 
 /**

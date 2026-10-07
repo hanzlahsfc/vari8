@@ -35,4 +35,10 @@ describe("playwright web server environment", () => {
     expect(offEnv.ENABLE_ONBOARDING_ASSIGNMENTS).toBe("");
     expect(servers[1]?.url).toContain("3101");
   });
+
+  it("enables client setup only on the primary server", () => {
+    expect(env.ENABLE_CLIENT_SETUP).toBe("1");
+    // Pinned empty on the flag-off server — an inherited "1" must not leak.
+    expect(offEnv.ENABLE_CLIENT_SETUP).toBe("");
+  });
 });

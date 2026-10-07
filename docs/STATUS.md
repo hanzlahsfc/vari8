@@ -5,6 +5,78 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-07 — P-016-R2 ID-free selection contract repaired
+
+- Independent different-model review (`opencode-go/deepseek-v4.1-flash`)
+  of head `a757c9d` returned **PASS, no P0/P1/P2**; it classified raw
+  internal IDs in `<option value>` DOM selections as P3. The orchestrator
+  treats the task's hard acceptance criterion ("no internal IDs as DOM
+  option values — use server-validated positional selections") as binding,
+  so the contract was repaired in a forward commit (`8fee131`/`a757c9d`
+  preserved).
+- **Repair:** browser selections are now positional — `<option value>` is
+  the list index; the assign form carries one sha-256 `listFingerprint`
+  over the ordered authorized client/template id lists; cancellation
+  submits `pinIndex` + `rowFingerprint` (sha-256 over the authorized
+  ordered pin list). The service re-fetches the authorized lists, verifies
+  the fingerprint, maps the bounded index to a server-side identity, then
+  runs the unchanged mutation transaction. Stale/tampered input →
+  `stale_selection`/`invalid_input`, zero mutation, zero audit. Serialized
+  choices/rows carry only display fields + `index` — no client/setup/pin/
+  template/version ids.
+- Builder-report correction: the reviewed candidate diff was **28 files**
+  (not 27) and **11 test files** (not 9) — count error only, no omitted
+  scope.
+- Remaining documented P3: the `?c=` keyset cursor is still an opaque pin
+  id in the authenticated staff URL/props (P-010/P-013 convention;
+  workspace-scoped, reauthorized, no PII) — opaque cursor-token hardening
+  is optional future work.
+- Gates on the repaired tree: unit 796/796; focused integration 42/42;
+  full integration 398/398; focused E2E 15/15 (adds DOM-id scan + stale-list
+  journey); full E2E 218 passed / 12 skipped / 0 failed; typecheck/lint/
+  format/build/migrations/drift clean. No schema, RBAC, concurrency, audit,
+  gate, or route change. No PR/merge/deploy authorized.
+
+## 2026-10-07 — P-016 C1 client setup + template assignments implemented
+
+- Tests-first on `feature/p016-client-setup-assignments` (from `767f19d`):
+  RED run of six new unit specs failed on missing modules/resource (10
+  failed / 6 passed) before any production code existed.
+- One migration adds `ClientSetup` (stable per-(workspace, client)
+  aggregate) + `ClientSetupPin` (append-only assignment/version-pin
+  history) with composite same-workspace + version∈template∈workspace
+  FKs, provenance CHECK, one-ACTIVE-per-setup partial unique, and the
+  `(clientSetupId, seq)` backstop. `SUPERSEDED` is schema-reserved for C2 —
+  no service writes it.
+- `clientSetups` RBAC per decisions #51–#54 (owner workspace; coach
+  assigned read/write — any ACTIVE assigned coach; assistant read-only;
+  client/support/platform-admin denied incl. dual-role).
+- Service `lib/coaching/client-setup.ts`: Serializable tx + per-client
+  advisory lock → aggregate FOR UPDATE → template FOR UPDATE → insert under
+  the partial unique index; in-transaction authorization; transaction-bound
+  audits (`client_setup_pin`, `meta.version` = pinned versionSeq); uniform
+  non-disclosure. Cancellation requires no eligibility (#51); reassign
+  reuses the stable setup with seq+1.
+- Boundary (`ENABLE_CLIENT_SETUP=1` gate first, before input binding),
+  `requireClientSetupAccess` route guard, staff UI at
+  `/workspace/[workspaceId]/client-setups` (assign form + current/history
+  table + confirmed cancel; assistants read-only), dev-flagged nav entry.
+- Gate completion (P-016-G1, forward commits — `8fee131` preserved):
+  route corrected singular→plural (singular 404 covered), integration
+  extended to 29 tests (audit rollback, assign/archive/cancel races, no
+  SUPERSEDED, deactivation cancel, unassigned-coach, assistant revocation),
+  E2E extended to 13 tests, S1-A table allowlist updated. The original
+  commit's report had skipped the disposable-PG and browser gates — all
+  now executed locally, not deferred to CI.
+- Local gates on disposable Compose PG: unit 776/776; focused integration
+  29/29; full integration 385/385; focused E2E 13/13 (Chromium,
+  1440/834/390); full E2E 216 passed / 12 skipped / 0 failed;
+  typecheck/lint/format/build/migrate-deploy/status/drift all clean.
+- Full record: `docs/tasks/p016-client-setup-assignments.md`. Next gates:
+  fresh-context same-model review → push branch (no PR) → independent
+  different-model review → PR → `verify` CI → separate merge approval.
+  No PR/merge/deploy authorized.
+
 ## 2026-10-07 — P-015 client-setup decisions approved (docs only)
 
 - Owner approved the complete nine-decision P-015 C1 package →

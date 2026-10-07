@@ -85,6 +85,10 @@ export const AUDIT_RESOURCE_TYPES = [
   "parameter_definition",
   "coaching_template",
   "coaching_template_version",
+  // P-016: client-setup template-assignment pin lifecycle (IDs + structural
+  // markers only — never client names, template content, or labels).
+  // meta.version carries the pinned template's versionSeq, never pin seq.
+  "client_setup_pin",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 

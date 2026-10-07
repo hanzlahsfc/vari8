@@ -296,6 +296,10 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         "audit_event",
         "client_assignment",
         "client_profile",
+        // P-016: staff-only client setup aggregate + append-only template
+        // assignment/version pins — operational metadata only (#49–#57).
+        "client_setup",
+        "client_setup_pin",
         "coach_profile",
         "consent_record",
         "exercise_catalog_item",
