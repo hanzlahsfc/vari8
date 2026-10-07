@@ -4,8 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import { isCoachingTemplatesEnabled } from "@/lib/coaching/gate";
+import { isParameterClassificationEnabled } from "@/lib/coaching/parameter-classification-gate";
 import {
   archiveParameterFromAction,
+  classifyParameterFromAction,
   createParameterFromAction,
   updateParameterFromAction,
   type ActionResult,
@@ -73,10 +75,18 @@ function singleStringBytes(
 }
 
 function strictRevision(formData: FormData): number | null {
-  const raw = singleString(formData, "expectedRevision", 16);
+  return strictInt(formData, "expectedRevision", MAX_REVISION);
+}
+
+function strictInt(
+  formData: FormData,
+  key: string,
+  max: number,
+): number | null {
+  const raw = singleString(formData, key, 16);
   if (raw === null || !/^[0-9]+$/.test(raw)) return null;
   const n = Number(raw);
-  return Number.isSafeInteger(n) && n <= MAX_REVISION ? n : null;
+  return Number.isSafeInteger(n) && n <= max ? n : null;
 }
 
 function boundedArg(value: unknown): string | null {
@@ -202,6 +212,61 @@ export async function archiveParameter(
       archiveParameterFromAction(gate.session, {
         workspaceId: ws,
         parameterId,
+      }),
+    listPath(ws),
+  );
+}
+
+/**
+ * P-020A — one-time parameter classification (decisions #73/#78). The
+ * classification management gate is checked FIRST — before the library flag,
+ * before `auth()`, before any FormData binding — so a flag-off call performs
+ * zero observable work. The browser binds the target by positional index +
+ * selection fingerprint + expectedRevision only; no raw parameter id is
+ * accepted.
+ */
+export async function classifyParameter(
+  workspaceId: string,
+  formData: FormData,
+): Promise<ParameterActionResult<{ revision: number }>> {
+  if (
+    !isParameterClassificationEnabled(
+      process.env.ENABLE_PARAMETER_CLASSIFICATION,
+    ) ||
+    !isCoachingTemplatesEnabled(process.env.ENABLE_COACHING_TEMPLATES)
+  )
+    return fail(OFF);
+  const gate = await sessionGate();
+  if (!gate.ok) return gate;
+  const ws = boundedArg(workspaceId);
+  const parameterIndex = isFormData(formData)
+    ? strictInt(formData, "parameterIndex", 100_000)
+    : null;
+  const expectedRevision = isFormData(formData)
+    ? strictInt(formData, "expectedRevision", MAX_REVISION)
+    : null;
+  const fingerprint = isFormData(formData)
+    ? singleString(formData, "fingerprint", MAX_ID_LEN)
+    : null;
+  const classification = isFormData(formData)
+    ? singleString(formData, "classification", 64)
+    : null;
+  if (
+    !ws ||
+    parameterIndex === null ||
+    expectedRevision === null ||
+    !fingerprint ||
+    !classification
+  )
+    return fail(INVALID);
+  return delegate(
+    () =>
+      classifyParameterFromAction(gate.session, {
+        workspaceId: ws,
+        parameterIndex,
+        expectedRevision,
+        fingerprint,
+        classification,
       }),
     listPath(ws),
   );

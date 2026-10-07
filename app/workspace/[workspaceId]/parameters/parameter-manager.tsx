@@ -3,13 +3,24 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { archiveParameter, createParameter, updateParameter } from "./actions";
+import {
+  archiveParameter,
+  classifyParameter,
+  createParameter,
+  updateParameter,
+} from "./actions";
 
 /**
  * P-014 parameter library manager — create / display-edit / archive for
  * workspace-shared parameter definitions. Semantic-lock messaging reflects
  * the post-publish state reported by the server (`publishedReferenced`);
  * the server remains the sole authority on what may change.
+ *
+ * P-020A: the classification control appears only while
+ * ENABLE_PARAMETER_CLASSIFICATION=1 (the page supplies a selection context).
+ * Classification assigns `GENERAL_HEALTH` or `CYCLE` once — it never enables
+ * data collection and cannot be changed; the browser binds the target by
+ * positional index + server fingerprint, never a raw parameter id.
  */
 type ParameterRow = {
   id: string;
@@ -17,9 +28,15 @@ type ParameterRow = {
   kind: string;
   label: string;
   status: "ACTIVE" | "ARCHIVED";
+  dataClassification: string | null;
   revision: number;
   publishedReferenced: boolean;
   updatedAt: string;
+};
+
+type ClassificationContext = {
+  fingerprint: string;
+  indexByParameterId: Record<string, number>;
 };
 
 const KINDS = [
@@ -34,9 +51,11 @@ const KINDS = [
 export function ParameterManager({
   parameters,
   workspaceId,
+  classification,
 }: {
   parameters: ParameterRow[];
   workspaceId: string;
+  classification?: ClassificationContext;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -44,6 +63,33 @@ export function ParameterManager({
   const [kind, setKind] = useState<(typeof KINDS)[number]>("MEASUREMENT");
   const [confirmArchive, setConfirmArchive] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
+  const [classifyChoice, setClassifyChoice] = useState<
+    Record<string, "GENERAL_HEALTH" | "CYCLE">
+  >({});
+
+  function submitClassify(row: ParameterRow) {
+    if (!classification) return;
+    const index = classification.indexByParameterId[row.id];
+    const choice = classifyChoice[row.id] ?? "GENERAL_HEALTH";
+    if (index === undefined) {
+      setError(
+        "This list changed while you were deciding. Reload and try again.",
+      );
+      return;
+    }
+    const body = new FormData();
+    body.append("parameterIndex", String(index));
+    body.append("expectedRevision", String(row.revision));
+    body.append("fingerprint", classification.fingerprint);
+    body.append("classification", choice);
+    startTransition(async () => {
+      const r = await classifyParameter(workspaceId, body);
+      if (r.ok) {
+        setError(null);
+        router.refresh();
+      } else setError(r.message);
+    });
+  }
 
   function submitCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -303,6 +349,50 @@ export function ParameterManager({
                         </button>
                       )}
                     </>
+                  ) : null}
+                  {classification && row.status === "ACTIVE" ? (
+                    row.dataClassification === null ? (
+                      <div className="classification-control">
+                        {" "}
+                        <select
+                          aria-label={`Data classification for ${row.label}`}
+                          className="auth-input"
+                          data-testid="classification-select"
+                          id={`classification-select-${classification.indexByParameterId[row.id]}`}
+                          onChange={(e) =>
+                            setClassifyChoice((c) => ({
+                              ...c,
+                              [row.id]: e.target.value as
+                                "GENERAL_HEALTH" | "CYCLE",
+                            }))
+                          }
+                          value={classifyChoice[row.id] ?? "GENERAL_HEALTH"}
+                        >
+                          <option value="GENERAL_HEALTH">General health</option>
+                          <option value="CYCLE">Cycle</option>
+                        </select>{" "}
+                        <button
+                          className="auth-button"
+                          data-testid="classify-parameter"
+                          disabled={pending}
+                          onClick={() => submitClassify(row)}
+                          type="button"
+                        >
+                          Classify
+                        </button>{" "}
+                        <span className="auth-hint">
+                          One-time label; does not enable data collection.
+                        </span>
+                      </div>
+                    ) : (
+                      <span
+                        className="auth-hint"
+                        data-testid="classification-state"
+                      >
+                        {" "}
+                        Classified: {row.dataClassification} — immutable
+                      </span>
+                    )
                   ) : null}
                 </td>
               </tr>

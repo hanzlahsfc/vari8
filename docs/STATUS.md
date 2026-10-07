@@ -5,6 +5,29 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-08 — P-020A parameter classification foundation implemented
+
+- Owner-authorized P-020A slice of the two-slice C2 plan (P-020-R3 + R3.1
+  addendum). Branch `feature/p020a-parameter-classification-foundation`.
+- Live on merge: nullable `data_classification` enum column (no default, no
+  backfill — existing rows NULL); `dataClassification` on new published
+  version snapshots; **universal duplicate-parameter publish rejection
+  (#64)**; shared pure `evaluateDailyEntryVersionEligibility` module (unused
+  by user-facing code until P-020B).
+- Flag-gated (`ENABLE_PARAMETER_CLASSIFICATION === "1"`, default off):
+  classification control + `classifyParameter` action — NULL→GENERAL_HEALTH /
+  NULL→CYCLE only; `BLOODWORK`/`PED_HRT` unassignable by every role; ACTIVE
+  only; positional index + fingerprint + expectedRevision binding; parameter
+  row `FOR UPDATE` only (no template lock); single revision bump +
+  `updatedByMemberId` + tx-bound `parameter_definition`/`UPDATE` audit.
+- Disposable DB `p020a_integration` (local docker `app-db-1`, created for
+  this run — not shared infra): `prisma migrate deploy` + 415/415
+  integration tests pass; 814/814 unit; focused + full E2E green; build ok.
+- Record: `docs/tasks/p020a-parameter-classification-foundation.md`.
+  **P-020B, DailyEntry, C3, C4, production enablement, and deployment remain
+  unauthorized; nothing deployed.** Next: independent different-model review
+  of the branch before any PR/merge.
+
 ## 2026-10-08 — P-019 DailyEntry decisions approved (docs only)
 
 - Owner approved the corrected P-019 package → `product-decisions.md`

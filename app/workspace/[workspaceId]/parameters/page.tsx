@@ -4,7 +4,11 @@ import { forbidden } from "next/navigation";
 
 import { requireSessionUser } from "@/lib/auth/route-guard";
 import { isCoachingTemplatesEnabled } from "@/lib/coaching/gate";
-import { listParametersForWorkspace } from "@/lib/coaching/parameters-boundary";
+import { isParameterClassificationEnabled } from "@/lib/coaching/parameter-classification-gate";
+import {
+  listClassificationContext,
+  listParametersForWorkspace,
+} from "@/lib/coaching/parameters-boundary";
 import { ParameterManager } from "./parameter-manager";
 
 export const dynamic = "force-dynamic";
@@ -41,10 +45,27 @@ export default async function ParametersPage({
     ...(typeof cursor === "string" ? { cursor } : {}),
   });
   if (!result.ok) forbidden();
+  // P-020A: the classification control exists only while the exact-match
+  // classification gate is on; the selection context binds the browser's
+  // positional choice to a server-recomputed authorized list fingerprint.
+  const classificationEnabled = isParameterClassificationEnabled(
+    process.env.ENABLE_PARAMETER_CLASSIFICATION,
+  );
+  const classification = classificationEnabled
+    ? await listClassificationContext(session, { workspaceId })
+    : null;
   const base = `/workspace/${encodeURIComponent(workspaceId)}/parameters`;
   return (
     <>
       <ParameterManager
+        classification={
+          classification?.ok
+            ? {
+                fingerprint: classification.value.fingerprint,
+                indexByParameterId: classification.value.indexByParameterId,
+              }
+            : undefined
+        }
         parameters={result.value.parameters}
         workspaceId={workspaceId}
       />

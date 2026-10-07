@@ -3,13 +3,17 @@ import type { PrismaClient } from "@prisma/client";
 import { prisma as defaultPrisma } from "../db";
 import { AccessDeniedError, type SessionLike } from "../auth/guard";
 import { isCoachingTemplatesEnabled, COACHING_LIMITS } from "./gate";
+import { isParameterClassificationEnabled } from "./parameter-classification-gate";
 import {
   archiveParameter,
+  classifyParameter,
   createParameter,
   getParameter,
+  listClassifiableParameterIds,
   listParameters,
   ParameterError,
   updateParameter,
+  type ParameterDataClassification,
   type ParameterDetail,
   type ParameterSummary,
 } from "./parameters";
@@ -52,6 +56,12 @@ const ERROR_MESSAGES: Record<string, string> = {
     "This parameter is used in a published template. Labels and help text can still change; units, ratings, and options are locked.",
   serialization_conflict: "A conflict occurred. Please try again.",
   parameter_not_accessible: DENIED_ERROR,
+  stale_selection:
+    "This list changed while you were deciding. Reload and try again.",
+  already_classified:
+    "This parameter already has a classification. Classifications cannot be changed.",
+  classification_not_permitted:
+    "That classification is not available. Only GENERAL_HEALTH and CYCLE can be assigned.",
 };
 
 function mapError(error: unknown): { ok: false; message: string } {
@@ -211,6 +221,96 @@ export async function listParametersForWorkspace(
         workspaceId,
         ...(limit !== undefined ? { limit } : {}),
         ...(cursor !== undefined ? { cursor } : {}),
+      },
+      _deps.db ?? defaultPrisma,
+    );
+    return { ok: true, value };
+  } catch (e) {
+    return mapError(e);
+  }
+}
+
+// ── P-020A classification boundary ─────────────────────────────────────────
+
+/** Positional-selection context for the classification control: the full
+ * authorized ordered id list's fingerprint plus each rendered row's index —
+ * the browser never submits a raw ParameterDefinition id. */
+export async function listClassificationContext(
+  _session: SessionLike,
+  _input: { workspaceId: string },
+  _deps: BoundaryDeps = {},
+): Promise<
+  ActionResult<{
+    fingerprint: string;
+    indexByParameterId: Record<string, number>;
+  }>
+> {
+  const off = flagOff();
+  if (off) return off;
+  const workspaceId = boundedId(_input.workspaceId);
+  if (!workspaceId) return fail(INVALID_INPUT);
+  try {
+    const { ids, fingerprint } = await listClassifiableParameterIds(
+      _session,
+      { workspaceId },
+      _deps.db ?? defaultPrisma,
+    );
+    const indexByParameterId: Record<string, number> = {};
+    ids.forEach((id, i) => {
+      indexByParameterId[id] = i;
+    });
+    return { ok: true, value: { fingerprint, indexByParameterId } };
+  } catch (e) {
+    return mapError(e);
+  }
+}
+
+export async function classifyParameterFromAction(
+  _session: SessionLike,
+  _input: {
+    workspaceId: string;
+    parameterIndex: number;
+    expectedRevision: number;
+    fingerprint: string;
+    classification: string;
+  },
+  _deps: BoundaryDeps = {},
+): Promise<ActionResult<{ revision: number }>> {
+  // The classification management gate is distinct from the library gate and
+  // is checked FIRST — before session-dependent service work, input binding,
+  // or any database access via the service below.
+  if (
+    !isParameterClassificationEnabled(
+      process.env.ENABLE_PARAMETER_CLASSIFICATION,
+    )
+  )
+    return fail(OFF_ERROR);
+  const off = flagOff();
+  if (off) return off;
+  const workspaceId = boundedId(_input.workspaceId);
+  const parameterIndex = _input.parameterIndex;
+  const expectedRevision = boundedRevision(_input.expectedRevision);
+  const fingerprint = boundedId(_input.fingerprint);
+  const classification = _input.classification;
+  if (
+    !workspaceId ||
+    !Number.isSafeInteger(parameterIndex) ||
+    parameterIndex < 0 ||
+    parameterIndex > COACHING_LIMITS.indexMax ||
+    expectedRevision === null ||
+    !fingerprint ||
+    typeof classification !== "string"
+  )
+    return fail(INVALID_INPUT);
+  try {
+    const value = await classifyParameter(
+      _session,
+      {
+        workspaceId,
+        parameterIndex,
+        expectedRevision,
+        fingerprint,
+        classification: classification as ParameterDataClassification,
       },
       _deps.db ?? defaultPrisma,
     );

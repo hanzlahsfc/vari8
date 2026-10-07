@@ -23,6 +23,7 @@ const baseState = (over: Partial<ParameterState> = {}): ParameterState => ({
   helpText: null,
   unit: "kg",
   ratingScheme: null,
+  dataClassification: null,
   options: [],
   retiredOptionIds: [],
   validation: null,

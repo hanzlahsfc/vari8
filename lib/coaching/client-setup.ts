@@ -32,8 +32,6 @@
  * template's versionSeq — never the pin's seq.
  */
 
-import { createHash } from "node:crypto";
-
 import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { prisma as defaultPrisma } from "../db";
@@ -92,14 +90,8 @@ export type AssignableTemplate = {
  * authorization: every resolved identity is reauthorized and
  * workspace-scoped before any mutation.
  */
-export function computeSelectionFingerprint(...groups: string[][]): string {
-  const hash = createHash("sha256");
-  for (const [gi, group] of groups.entries()) {
-    if (gi > 0) hash.update("\x00");
-    for (const id of group) hash.update(`${id}\n`);
-  }
-  return hash.digest("hex");
-}
+export { computeSelectionFingerprint } from "./selection-fingerprint";
+import { computeSelectionFingerprint } from "./selection-fingerprint";
 
 function fingerprintMismatch(fingerprint: string, expected: string): boolean {
   return fingerprint !== expected;
