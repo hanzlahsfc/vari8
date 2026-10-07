@@ -375,6 +375,71 @@ authorize implementation. Full record:
     does not claim GDPR readiness, does not authorize real-client use or
     deployment, and infers no retention duration or erasure mechanism.
 
+## P-017 C2 template-version transitions — owner approval (relayed 2026-10-08)
+
+The product owner approved the complete five-item P-017 decision package for
+the **template-version transition (C2) slice**, following independent
+`opencode-go/deepseek-v4.1-flash` review (P-017-R2-R1: PASS — P0/P1/P2 none).
+This round resolves the C2 product rules only; **implementation is deferred
+until immediately before DailyEntry or another first data-consuming slice**
+and remains unauthorized. Full record:
+`docs/tasks/p017-template-version-transitions.md`.
+
+58. **Upgrade target.** A client's template-version upgrade moves only to
+    the template's latest published version, selected by the server. Staff
+    do not select among arbitrary newer versions. Publication occurring
+    after review invalidates the reviewed state and requires refresh and
+    re-review. Nothing upgrades automatically.
+59. **Rollback target.** A rollback may select any earlier retained
+    published version of the same template; the target need not have been
+    previously used by that client. Same-version transitions are not
+    offered. Rollback never changes the client's coach assignment.
+60. **Archived-template transitions.** Archived templates are frozen: no
+    upgrade or rollback may create a new pin on an archived template.
+    Existing pins remain readable and cancellable per #51–#53; the exit
+    path remains cancellation followed by assignment of a different
+    eligible template. The rejected alternative was rollback-only within
+    an existing archived-template relationship.
+61. **Mandatory structural review.** Every template-version transition
+    requires an explicit structural review and confirmation before it may
+    be applied — including transitions whose computed structural diff is
+    empty. The review is bound to the exact active pin, target version,
+    and structural diff; stale review state fails closed and requires
+    refresh; no internal database IDs are exposed through
+    browser-controlled values.
+62. **Timing.** The C2 rules are approved and recorded now; C2
+    implementation is deferred until immediately before DailyEntry or
+    another first data-consuming slice. The existing C1 cancel-then-assign
+    workflow remains the available behavior. Before C2 implementation the
+    plan must be revisited alongside the first consumer's data-aware
+    conflict and blocking rules. This approval authorizes no schema,
+    service, route, UI, test, branch, PR, merge, or deployment work.
+
+**Binding safety boundary (not an optional decision):** free-text
+transition reasons are excluded from C2 — no transition-reason column,
+summary field, audit field, browser value, or UI input. Explanatory free
+text remains deferred until D-10 retention, erasure, export, and
+legal/data-classification policy is resolved; D-10 is not resolved here.
+
+**Engineering constraints (recorded for the future C2 implementation —
+NOT owner decisions, and they authorize nothing):** a transition
+atomically supersedes the current ACTIVE pin and creates exactly one
+successor ACTIVE pin; `supersedesPinId` is lineage/anti-branching, not an
+idempotency key; post-commit resubmission fails stale with no additional
+writes or audits; structural diffs identify sections by `sectionId` and
+items by `itemId`, with parameter identity demoted to an attribute and
+multiple items per parameter supported; authorization precedes selection
+resolution and any selection-derived response; transition-history
+visibility follows #54; `clientSetups` RBAC is unchanged; audit metadata
+carries no IDs, labels, free text, answers, or sensitive values; a
+separate exact-match `ENABLE_CLIENT_SETUP_TRANSITIONS=1` gate is planned
+beneath the existing client-setup gate; canonical hashing uses a
+versioned, domain-separated, strictly unambiguous encoding with fixed
+integer, boolean, and length-prefix representations; versioned
+`transition_summary` JSON uses a closed allowlist and validated schema;
+evidence prioritizes disposable-PostgreSQL integration and real-browser
+tests, with focused unit tests for pure logic only.
+
 ## Conservative engineering interpretations (NOT founder decisions)
 
 Recorded for traceability so reviewers can distinguish assumption from decision:

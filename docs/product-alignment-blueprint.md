@@ -187,8 +187,13 @@ is assumed.
 Lifecycle (PROPOSED mechanics implementing the brief's "name, save, assign"
 flow; **P-015 update:** the C1 subset — server-pinned latest-published
 assignment, scoped cancellation, retained history, archive effects — is
-APPROVED per product-decisions #49–#57; upgrade/rollback (C2), variants (C3),
-and per-parameter visibility (C4) remain PROPOSED/pending):
+APPROVED and implemented per product-decisions #49–#57; **P-017 update:** the
+C2 product rules — latest-published-only upgrade target, any-earlier-retained
+rollback target, frozen archived templates, mandatory structural review, and
+timing — are APPROVED per product-decisions #58–#62 with implementation
+explicitly deferred until immediately before DailyEntry or another first
+data-consuming slice; variants (C3) and per-parameter visibility (C4) remain
+PROPOSED/pending):
 
 - **Draft** — mutable; workspace-staff visible; assignable to nothing.
 - **Publish** — freezes the draft into an immutable TemplateVersion containing
@@ -196,27 +201,35 @@ and per-parameter visibility (C4) remain PROPOSED/pending):
   to the mutable template.
 - **Edit** — opens a new draft seeded from a chosen version. Publishing creates
   versionSeq+1; existing assignments stay pinned to their version.
-- **Upgrade** — explicit coach action reassigning a client to a newer version
-  (C2 — deferred, not approved). PROPOSED: an upgrade produces a _mapping
-  record_ (added / hidden / removed /
-  type-or-unit-changed parameter and question IDs) that the coach reviews before
-  applying; the repin applies **atomically** (all-or-nothing — a failed mapping
-  never leaves the client half-upgraded). Conflicts — e.g. a removed parameter
-  that still has client data — are flagged, not auto-resolved: the data stays
-  readable under its write-time snapshot and the parameter becomes
-  hidden-in-current-version; a genuinely incompatible mapping is rejected
-  rather than applied. **No silent propagation**: editing a template never moves
-  any client.
-- **Rollback** = explicit reassignment to an earlier retained version (C2 —
-  deferred, not approved; versions are retained, not destroyed — same PENDING
+- **Upgrade** — explicit coach action reassigning a client to the template's
+  **latest published version only, selected by the server** (**C2 rule
+  APPROVED**, product-decisions #58; implementation deferred per #62). The
+  earlier proposal text (coach-reviewed mapping record, atomic repin, flagged
+  conflicts) is retained as the engineering shape of the approved mandatory
+  structural review: an upgrade produces a structural change summary (added /
+  removed / moved / required-or-semantic-changed items) that the coach reviews
+  and confirms before applying; the repin applies **atomically** — a failed or
+  unconfirmed review never leaves the client half-upgraded. A version
+  published between review and apply invalidates the review (stale, refresh
+  required). Nothing upgrades automatically; editing a template never moves
+  any client. Conflicts (e.g. a removed parameter) are flagged to the coach,
+  not auto-resolved; data-aware blocking rules are defined with the first
+  data-consuming slice, not pre-decided here.
+- **Rollback** = explicit reassignment to any earlier retained published
+  version of the same template (**C2 rule APPROVED**, product-decisions #59;
+  implementation deferred per #62). The target need not have been previously
+  used by the client; same-version transitions are not offered; rollback never
+  changes `ClientAssignment`. Versions are retained, not destroyed (PENDING
   retention policy family, D-10).
 - **Archive/retire** — hides the template from new assignment; existing
   assignments keep working. **APPROVED for template assignments**
   (product-decisions #53): archived templates cannot be newly assigned;
   existing pins to their immutable versions stay effective and readable;
   archive never silently cancels or rewrites client setup/history; authorized
-  cancellation remains possible. Upgrade/rollback interaction with archived
-  templates stays deferred to C2.
+  cancellation remains possible. **Upgrade/rollback interaction RESOLVED
+  (product-decisions #60):** archived templates are frozen — no upgrade or
+  rollback may create a new pin on an archived template; the exit path is
+  cancellation followed by assignment of a different eligible template.
 - **Variant switch** — picks another TemplateVariant inside the _same_ assigned
   version (C3 — deferred, not approved). SOURCE-CONFIRMED invariant: identical
   client/assignment/history/plans/check-ins/messages; no new tracker; nothing
@@ -242,10 +255,12 @@ Per-client configuration and precedence (PROPOSED):
   version's selected set, and may not alter parameter types/units — those
   require a version upgrade. Which elements are per-client configurable at
   all is **PENDING D-12** (recommendation: the three listed above only).
-- Upgrade/rollback override handling: on a version repin, per-client overrides
-  that remain compatible are **retained**; overrides referencing removed or
-  incompatibly-changed parameters are **flagged to the coach and rejected
-  before the repin applies** — never silently reset, never dropped history.
+- Upgrade/rollback override handling (**PENDING D-12** — per-client overrides
+  do not exist yet; C2 decision #58–#62 did not resolve them): on a version
+  repin, per-client overrides that remain compatible are **retained**;
+  overrides referencing removed or incompatibly-changed parameters are
+  **flagged to the coach and rejected before the repin applies** — never
+  silently reset, never dropped history.
 - What survives upgrade/rollback: all client data, all prior version snapshots
   needed to render it, plan/target effective-dated history, submissions,
   messages, habit data.
@@ -592,7 +607,10 @@ client existing — it cannot trail the persistence slices:
    behavior APPROVED — product-decisions #49–#57**; acceptance: assign yields
    one current assignment + retained history, cancel works for authorized
    actors only, assistant/client read rules hold — E2E at 1440/834/390);
-   **C2** explicit upgrade/rollback with reviewed structural diff (PENDING);
+   **C2** explicit upgrade/rollback with reviewed structural diff (product
+   rules APPROVED — product-decisions #58–#62; implementation DEFERRED until
+   immediately before DailyEntry or another first data-consuming slice, not
+   authorized);
    **C3** versioned variants + switching (PENDING; variant flip preserves
    client/setup/history, ClientAssignment untouched);
    **C4** per-parameter visibility (PENDING).
@@ -621,9 +639,14 @@ client, server-pinned latest published version, scoped cancellation, D-11
 any-assigned-coach editing, archived-template rules, history visibility,
 deferred cross-template change, terminology, and the interim data posture
 (immutable through ordinary product editing — never legally undeletable;
-retention/erasure pending D-10/legal). C2 upgrade/rollback, C3 variants, and
-C4 per-parameter visibility remain PENDING/proposed; nothing about this
-record authorizes implementation.
+retention/erasure pending D-10/legal). **Update (P-017 approvals, #58–#62):**
+the C2 product rules are approved — server-selected latest-published upgrade
+target, any-earlier-retained rollback target, frozen archived templates,
+mandatory bound structural review (including empty diffs, stale-fails-closed),
+and deferral of implementation until immediately before DailyEntry or the
+first data-consuming slice; free-text transition reasons are excluded pending
+D-10/legal. C3 variants and C4 per-parameter visibility remain
+PENDING/proposed; nothing about this record authorizes implementation.
 
 ---
 
