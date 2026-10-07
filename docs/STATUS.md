@@ -5,6 +5,28 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-07 — P-015 client-setup decisions approved (docs only)
+
+- Owner approved the complete nine-decision P-015 C1 package →
+  `product-decisions.md` **#49–#57**: one current template assignment with
+  append-only retained history, server-pinned latest published version,
+  scoped cancellation authority, **D-11 resolved** (any ACTIVE assigned
+  coach), archived-template behavior, history visibility matrix, deferred
+  cross-template change, user-facing terminology, and the interim data
+  posture (client-associated operational metadata; retention/erasure
+  pending D-10/legal — immutable ≠ legally undeletable).
+- Final independent planning review by `opencode-go/deepseek-v4.1-flash`
+  (P-015-R4-R1): **PASS** — P0/P1/P2 none.
+- Docs-only branch `docs/p015-client-setup-decisions`; full record in
+  `docs/tasks/p015-client-setup-decisions.md`. No implementation, schema,
+  tests, PR, merge, or deployment exists or is authorized by this entry.
+- Blueprint reconciled: D-11 RESOLVED; the broad "Client setup + variant
+  switch" slice is replaced by the reviewed C1–C4 decomposition; only C1
+  product behavior is approved — C2/C3/C4 stay PENDING.
+- Next gates: independent different-model review of this docs record →
+  PR/CI → separate merge approval → a separately authorized C1
+  implementation task. This branch is NOT yet independently reviewed.
+
 ## 2026-10-07 — P-014-I1-R2 repaired parameter pagination after independent review
 
 - Independent DeepSeek review of `14e12c0`: **CONDITIONAL PASS**, no P0/P1.
