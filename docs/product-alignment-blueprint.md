@@ -114,6 +114,10 @@ is assumed.
   active variant + per-client plans. One active setup per client. **Distinct
   from ClientAssignment**: ClientSetup selects configuration; ClientAssignment
   grants authorization. Version/variant changes never modify ClientAssignment.
+  **Update (product-decisions #49–#57):** the C1 product behavior — one current
+  assignment, server-pinned latest published version, scoped cancellation,
+  retained history — is approved; variant choice and per-client plans remain
+  deferred (C3+, D-12); the concrete schema stays an engineering decision.
 - _DailyEntry_ — client-owned dated measurement values keyed by parameter ID and
   carrying the **write-time metadata snapshot** (unit, rating scheme, label) so
   history renders as entered regardless of later configuration edits.
@@ -170,16 +174,21 @@ is assumed.
   (matrix-supported), template _editing_ is a workspace-library operation while
   _that client's setup_ (variant choice, per-client overrides, plans) is
   editable by that client's assigned coaches only — multi-coach edit rights for
-  a shared active setup are **PENDING D-11** (recommendation: any assigned
-  ACTIVE coach may edit the setup; changes audited; template library is
-  workspace-shared — D-03 RESOLVED, product-decisions #41–#42).
+  a shared active setup are **RESOLVED (D-11, product-decisions #52)**: any
+  currently ACTIVE assigned coach may manage the client's template assignment,
+  audited; a revoked or unassigned coach fails closed; assistant coaches stay
+  write-denied. (Template library is workspace-shared — D-03 RESOLVED,
+  product-decisions #41–#42.)
 
 ---
 
 ## 2. Template / version / variant rules
 
 Lifecycle (PROPOSED mechanics implementing the brief's "name, save, assign"
-flow):
+flow; **P-015 update:** the C1 subset — server-pinned latest-published
+assignment, scoped cancellation, retained history, archive effects — is
+APPROVED per product-decisions #49–#57; upgrade/rollback (C2), variants (C3),
+and per-parameter visibility (C4) remain PROPOSED/pending):
 
 - **Draft** — mutable; workspace-staff visible; assignable to nothing.
 - **Publish** — freezes the draft into an immutable TemplateVersion containing
@@ -187,8 +196,9 @@ flow):
   to the mutable template.
 - **Edit** — opens a new draft seeded from a chosen version. Publishing creates
   versionSeq+1; existing assignments stay pinned to their version.
-- **Upgrade** — explicit coach action reassigning a client to a newer version.
-  PROPOSED: an upgrade produces a _mapping record_ (added / hidden / removed /
+- **Upgrade** — explicit coach action reassigning a client to a newer version
+  (C2 — deferred, not approved). PROPOSED: an upgrade produces a _mapping
+  record_ (added / hidden / removed /
   type-or-unit-changed parameter and question IDs) that the coach reviews before
   applying; the repin applies **atomically** (all-or-nothing — a failed mapping
   never leaves the client half-upgraded). Conflicts — e.g. a removed parameter
@@ -197,14 +207,20 @@ flow):
   hidden-in-current-version; a genuinely incompatible mapping is rejected
   rather than applied. **No silent propagation**: editing a template never moves
   any client.
-- **Rollback** = explicit reassignment to an earlier retained version (versions
-  are retained, not destroyed — same PENDING retention policy family, D-10).
+- **Rollback** = explicit reassignment to an earlier retained version (C2 —
+  deferred, not approved; versions are retained, not destroyed — same PENDING
+  retention policy family, D-10).
 - **Archive/retire** — hides the template from new assignment; existing
-  assignments keep working.
+  assignments keep working. **APPROVED for template assignments**
+  (product-decisions #53): archived templates cannot be newly assigned;
+  existing pins to their immutable versions stay effective and readable;
+  archive never silently cancels or rewrites client setup/history; authorized
+  cancellation remains possible. Upgrade/rollback interaction with archived
+  templates stays deferred to C2.
 - **Variant switch** — picks another TemplateVariant inside the _same_ assigned
-  version. SOURCE-CONFIRMED invariant: identical client/assignment/history/
-  plans/check-ins/messages; no new tracker; nothing deleted; ClientAssignment
-  untouched.
+  version (C3 — deferred, not approved). SOURCE-CONFIRMED invariant: identical
+  client/assignment/history/plans/check-ins/messages; no new tracker; nothing
+  deleted; ClientAssignment untouched.
 
 Per-client configuration and precedence (PROPOSED):
 
@@ -571,9 +587,15 @@ client existing — it cannot trail the persistence slices:
    create draft → publish immutable v1 → edit a later draft → publish v2;
    v1 remains byte/semantically unchanged; no assignment or propagation
    behavior exists yet; unit/integration green.
-3. _Client setup + variant switch_ — pin version, switch variant, history
-   unchanged, ClientAssignment untouched. Acceptance: variant flip preserves
-   entry count/content (E2E at 1440/834/390).
+3. _Client setup_ — reviewed decomposition (P-015): **C1** client-setup
+   identity + latest-published assignment + cancellation/history (**product
+   behavior APPROVED — product-decisions #49–#57**; acceptance: assign yields
+   one current assignment + retained history, cancel works for authorized
+   actors only, assistant/client read rules hold — E2E at 1440/834/390);
+   **C2** explicit upgrade/rollback with reviewed structural diff (PENDING);
+   **C3** versioned variants + switching (PENDING; variant flip preserves
+   client/setup/history, ClientAssignment untouched);
+   **C4** per-parameter visibility (PENDING).
 4. _Configured daily entry persistence_ — client `own`-scoped writes for
    selected parameters only, write-time metadata snapshot. Acceptance:
    unselected parameter write denied (403); entry readable as entered.
@@ -593,7 +615,15 @@ parameter/template foundation slice, the draft → immutable-publish →
 terminal-archive mechanics, semantic-stability rule, archived-reference
 fail-closed rule, and duplicate-name policy ARE approved; upgrade/rollback/
 variant/override policy remains PENDING and untouched — no assignments or
-propagation exist in that slice.
+propagation exist in that slice. **Update (P-015 approvals, #49–#57):** only
+C1 client-setup product behavior is approved — one current assignment per
+client, server-pinned latest published version, scoped cancellation, D-11
+any-assigned-coach editing, archived-template rules, history visibility,
+deferred cross-template change, terminology, and the interim data posture
+(immutable through ordinary product editing — never legally undeletable;
+retention/erasure pending D-10/legal). C2 upgrade/rollback, C3 variants, and
+C4 per-parameter visibility remain PENDING/proposed; nothing about this
+record authorizes implementation.
 
 ---
 
@@ -671,22 +701,22 @@ onboarding slice in `docs/product-decisions.md` #30–#40; submissions remain
 blocked on the pending consent/retention items, and the legal/privacy items in
 #38–#40 stay PENDING.
 
-| ID   | Decision                                                                                                                                                                              | Recommended option (reason / tradeoff)                                         | Alternative                   | Blocks                    |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ----------------------------- | ------------------------- |
-| D-01 | ~~Pre-account intake?~~ **RESOLVED (product-decisions #30)**: no — intake rides the invite                                                                                            | —                                                                              | —                             | resolved                  |
-| D-02 | General-note visibility                                                                                                                                                               | per-note coach flag, default private (flexible; slight UI cost)                | all-private / all-shared      | W04 client surface        |
-| D-03 | ~~Template ownership scope~~ **RESOLVED (product-decisions #41–#42)**: workspace-shared library; owner+coach ws read/write management; assistant/client/support/platform-admin denied | —                                                                              | —                             | resolved                  |
-| D-04 | Coach↔client dashboard relation                                                                                                                                                       | same layout, client sees visibility subset (one config source)                 | separate client layout        | D05 + client roadmap      |
-| D-05 | Custom check-in vs scheduled dates                                                                                                                                                    | satisfies only when coach marks coverage (no silent fulfillment)               | auto-match nearest date       | C03/C04 + W06             |
-| D-06 | Formula supply path                                                                                                                                                                   | owner supplies definitions per §7 catalog contract                             | defer calc-backed widgets     | §7 computed stories       |
-| D-07 | Profile label vocabulary                                                                                                                                                              | free-text labels + coach tag set (matches sheets practice)                     | fixed enum                    | W03                       |
-| D-08 | Wearables first move                                                                                                                                                                  | defer all wearables until scoped provider contract exists                      | pick a first provider         | wearable direction only   |
-| D-09 | Video feedback provider                                                                                                                                                               | embedded Loom-style link first (no build cost; external dep)                   | in-house recording            | C06/M05                   |
-| D-10 | Submission/record retention                                                                                                                                                           | owner-defined retention window + deletion/consent enforcement (like #26)       | indefinite retention          | submission retention rule |
-| D-11 | Multi-coach setup edit rights                                                                                                                                                         | any assigned ACTIVE coach edits client setup, audited (simple, covers handoff) | primary-coach-only edits      | ClientSetup writers       |
-| D-12 | Per-client configurable elements (edited by assigned coach, not the CLIENT)                                                                                                           | variant choice, per-param show/hide, plan values only (predictable)            | wider per-client override set | override implementation   |
-| D-13 | Coach-note staff visibility                                                                                                                                                           | keep workspace-scoped staff read (continuity)                                  | author-only                   | W04/W07                   |
-| D-14 | Post-submit entry edit rules                                                                                                                                                          | same-day client edit w/ history; coach edits = new effective-dated versions    | immutable entries             | entry-edit surfaces       |
+| ID   | Decision                                                                                                                                                                                | Recommended option (reason / tradeoff)                                      | Alternative                   | Blocks                    |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------- | ------------------------- |
+| D-01 | ~~Pre-account intake?~~ **RESOLVED (product-decisions #30)**: no — intake rides the invite                                                                                              | —                                                                           | —                             | resolved                  |
+| D-02 | General-note visibility                                                                                                                                                                 | per-note coach flag, default private (flexible; slight UI cost)             | all-private / all-shared      | W04 client surface        |
+| D-03 | ~~Template ownership scope~~ **RESOLVED (product-decisions #41–#42)**: workspace-shared library; owner+coach ws read/write management; assistant/client/support/platform-admin denied   | —                                                                           | —                             | resolved                  |
+| D-04 | Coach↔client dashboard relation                                                                                                                                                         | same layout, client sees visibility subset (one config source)              | separate client layout        | D05 + client roadmap      |
+| D-05 | Custom check-in vs scheduled dates                                                                                                                                                      | satisfies only when coach marks coverage (no silent fulfillment)            | auto-match nearest date       | C03/C04 + W06             |
+| D-06 | Formula supply path                                                                                                                                                                     | owner supplies definitions per §7 catalog contract                          | defer calc-backed widgets     | §7 computed stories       |
+| D-07 | Profile label vocabulary                                                                                                                                                                | free-text labels + coach tag set (matches sheets practice)                  | fixed enum                    | W03                       |
+| D-08 | Wearables first move                                                                                                                                                                    | defer all wearables until scoped provider contract exists                   | pick a first provider         | wearable direction only   |
+| D-09 | Video feedback provider                                                                                                                                                                 | embedded Loom-style link first (no build cost; external dep)                | in-house recording            | C06/M05                   |
+| D-10 | Submission/record retention                                                                                                                                                             | owner-defined retention window + deletion/consent enforcement (like #26)    | indefinite retention          | submission retention rule |
+| D-11 | ~~Multi-coach setup edit rights~~ **RESOLVED (product-decisions #52)**: any currently ACTIVE assigned coach may manage the client's template assignment, audited; PRIMARY-only rejected | —                                                                           | —                             | resolved                  |
+| D-12 | Per-client configurable elements (edited by assigned coach, not the CLIENT)                                                                                                             | variant choice, per-param show/hide, plan values only (predictable)         | wider per-client override set | override implementation   |
+| D-13 | Coach-note staff visibility                                                                                                                                                             | keep workspace-scoped staff read (continuity)                               | author-only                   | W04/W07                   |
+| D-14 | Post-submit entry edit rules                                                                                                                                                            | same-day client edit w/ history; coach edits = new effective-dated versions | immutable entries             | entry-edit surfaces       |
 
 Each row names one recommended model; alternatives exist only to show the
 tradeoff. Owner sign-off is additionally required on the §2

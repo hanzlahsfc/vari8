@@ -301,6 +301,80 @@ not authorize implementation by itself.
     unit; composite and specialist fields need separate explicit treatment;
     no raw exports or client data enter Git.
 
+## P-015 client-setup decision closure — owner approval (relayed 2026-10-07)
+
+The product owner approved the complete nine-decision P-015 C1 package for
+the **client-setup / template-assignment slice**, following a final
+independent `opencode-go/deepseek-v4.1-flash` planning review (PASS —
+P0/P1/P2 none). This round resolves blueprint D-11 and approves **C1
+product behavior only**; it does not resolve D-12, the §2
+upgrade/rollback/variant/override policies, or #38–#40, and it does not
+authorize implementation. Full record:
+`docs/tasks/p015-client-setup-decisions.md`.
+
+49. **Current template assignment and history.** Each client has exactly
+    one current template assignment at a time; multiple concurrent
+    current assignments are not approved. Prior assignments are preserved
+    as append-only, immutable product history under the approved/interim
+    retention posture — no ordinary product action rewrites, reactivates,
+    reuses, or hard-deletes a historical assignment/version-pin record.
+    Future authorized retention, erasure, anonymization, legal-hold, or
+    regulatory workflows may act on these records once D-10 and the
+    legal/privacy policy are approved and implemented. "Immutable" means
+    no in-place business edit, never legally undeletable.
+50. **Initial assignment version.** A new template assignment always uses
+    the template's latest published version, selected and pinned
+    atomically by the server; staff cannot initially select an older
+    historical version. This does not authorize upgrade or rollback
+    behavior.
+51. **Cancellation authority.** WORKSPACE_OWNER may cancel any client's
+    current template assignment. COACH may cancel only while currently
+    and actively assigned to that client through `ClientAssignment`; a
+    revoked or unassigned coach cannot cancel merely because they created
+    the assignment. An actor who remains authorized may cancel even when
+    the client, template, or pinned version is no longer otherwise
+    eligible. Cancellation does not delete history.
+52. **Multi-coach editing (D-11 resolved).** Any currently ACTIVE
+    assigned coach may manage the client's template assignment, with
+    audit evidence; management is not restricted to PRIMARY coaches.
+    Template assignment never creates, modifies, or confers coaching
+    `ClientAssignment` scope. ASSISTANT_COACH remains write-denied.
+53. **Archived-template behavior.** Archived templates cannot be newly
+    assigned. Existing assignments pinned to immutable versions of an
+    archived template remain effective and readable; archiving never
+    silently cancels or rewrites client setup/history, and authorized
+    cancellation remains possible. Upgrade/rollback behavior for archived
+    templates stays deferred to C2 and is not approved here.
+54. **Assignment-history visibility.** WORKSPACE_OWNER may read all
+    setup/assignment history in the workspace. COACH may read history
+    only for clients currently assigned to that coach. ASSISTANT_COACH
+    may read history only for clients currently assigned to that
+    assistant and remains write-denied. CLIENT receives no
+    setup/assignment-history access in this staff-only slice; SUPPORT and
+    PLATFORM_ADMIN remain denied, including dual-role platform
+    administrators.
+55. **Cross-template change.** Atomic cross-template replacement is
+    deferred; in C1, changing to another template requires two explicit
+    audited actions — cancel the current assignment, then assign the
+    different template. The temporary state with no current template
+    assignment is valid and visible. No silent replacement or automatic
+    propagation.
+56. **User-facing terminology.** "Client setup" means the client's stable
+    configuration context; "template assignment" and "version history"
+    describe which template/version is or was applied; "coach assignment"
+    is reserved for the `ClientAssignment` authorization relationship.
+    UI and documentation must not conflate these concepts; internal
+    database/table names remain engineering decisions.
+57. **Data classification and interim posture.** Client setup and
+    template-assignment records are client-associated operational
+    metadata. Preserve them under the interim posture — ordinary product
+    actions do not hard-delete them. Future client-data export must
+    include the records that remain within the approved retention period.
+    Retention, erasure, anonymization, legal-hold, backup, and regulatory
+    behavior remain pending D-10/legal/privacy approval. This decision
+    does not claim GDPR readiness, does not authorize real-client use or
+    deployment, and infers no retention duration or erasure mechanism.
+
 ## Conservative engineering interpretations (NOT founder decisions)
 
 Recorded for traceability so reviewers can distinguish assumption from decision:
