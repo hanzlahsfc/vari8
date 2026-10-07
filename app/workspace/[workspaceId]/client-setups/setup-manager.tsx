@@ -4,8 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition, type FormEvent } from "react";
 
 import type {
-  AssignableSetupClient,
-  AssignableTemplate,
+  AssignFormChoices,
   TemplateAssignmentSummary,
 } from "@/lib/coaching/client-setup-boundary";
 import { assignTemplate, cancelSetupAssignment } from "./actions";
@@ -20,6 +19,9 @@ const GENERIC = "Something went wrong. Please try again in a moment.";
  * - Assign picks a client + an ACTIVE template; the server atomically
  *   resolves and pins the latest published version (the browser never picks
  *   a version and never sends one).
+ * - Selections are POSITIONAL (P-016-R2): options carry list indices and a
+ *   hidden list fingerprint — never raw internal ids. Cancels submit the
+ *   row's absolute index + the row-list fingerprint.
  * - Cancel appears only on ACTIVE rows and requires an explicit confirm
  *   step.
  * - One transition guards every control, so a pending action disables all
@@ -29,21 +31,21 @@ const GENERIC = "Something went wrong. Please try again in a moment.";
 export function SetupManager({
   workspaceId,
   canWrite,
-  clients,
-  templates,
+  choices,
   rows,
+  rowFingerprint,
 }: {
   workspaceId: string;
   canWrite: boolean;
-  clients: AssignableSetupClient[];
-  templates: AssignableTemplate[];
+  choices: AssignFormChoices | null;
   rows: TemplateAssignmentSummary[];
+  rowFingerprint: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  /** Two-step confirm state: which row is awaiting cancel confirmation. */
-  const [confirming, setConfirming] = useState<string | null>(null);
+  /** Two-step confirm state: which row index is awaiting confirmation. */
+  const [confirming, setConfirming] = useState<number | null>(null);
 
   function run(action: () => Promise<{ ok: boolean; message?: string }>) {
     setError(null);
@@ -67,7 +69,10 @@ export function SetupManager({
     event.preventDefault();
     if (pending) return;
     const formData = new FormData(event.currentTarget);
-    if (!formData.get("clientProfileId") || !formData.get("templateId")) {
+    if (
+      formData.get("clientIndex") === "" ||
+      formData.get("templateIndex") === ""
+    ) {
       setError("Choose a client and a template.");
       return;
     }
@@ -84,16 +89,20 @@ export function SetupManager({
   // render twice, append a positional marker — never an ID. Precomputed once
   // per render so the markers stay stable under double-render.
   const labeledTemplates = (() => {
+    const templates = choices?.templates ?? [];
     const counts = new Map<string, number>();
     for (const t of templates)
       counts.set(t.name, (counts.get(t.name) ?? 0) + 1);
     const seen = new Map<string, number>();
-    return templates.map((t) => {
+    return templates.map((t, i) => {
       const base = `${t.name} (version ${t.latestVersionSeq})`;
-      if ((counts.get(t.name) ?? 0) < 2) return { t, label: base };
       const nth = (seen.get(t.name) ?? 0) + 1;
       seen.set(t.name, nth);
-      return { t, label: `${base} · ${nth} of ${counts.get(t.name)}` };
+      const label =
+        (counts.get(t.name) ?? 0) < 2
+          ? base
+          : `${base} · ${nth} of ${counts.get(t.name)}`;
+      return { index: i, label };
     });
   })();
 
@@ -101,10 +110,10 @@ export function SetupManager({
 
   return (
     <div className="assignment-manager">
-      {canWrite ? (
+      {canWrite && choices !== null ? (
         <section aria-label="Assign a template">
           <h2 className="assignment-manager__subtitle">Assign a template</h2>
-          {clients.length === 0 || templates.length === 0 ? (
+          {choices.clients.length === 0 || choices.templates.length === 0 ? (
             <div
               className="empty-state"
               data-testid="setup-pickers-empty"
@@ -112,7 +121,7 @@ export function SetupManager({
             >
               <p>Nothing to assign yet.</p>
               <p>
-                {clients.length === 0
+                {choices.clients.length === 0
                   ? "There are no eligible clients you can assign a template to."
                   : "There are no active templates with a published version."}
               </p>
@@ -123,18 +132,23 @@ export function SetupManager({
               onSubmit={onCreate}
               data-testid="setup-create"
             >
+              <input
+                type="hidden"
+                name="listFingerprint"
+                value={choices.listFingerprint}
+              />
               <label className="catalog-search__field" htmlFor="setup-client">
                 Client
                 <select
                   id="setup-client"
-                  name="clientProfileId"
+                  name="clientIndex"
                   className="catalog-search__input"
                   required
                   disabled={pending}
                 >
                   <option value="">Choose a client…</option>
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.id}>
+                  {choices.clients.map((c, i) => (
+                    <option key={i} value={i}>
                       {c.name}
                     </option>
                   ))}
@@ -144,14 +158,14 @@ export function SetupManager({
                 Coaching template
                 <select
                   id="setup-template"
-                  name="templateId"
+                  name="templateIndex"
                   className="catalog-search__input"
                   required
                   disabled={pending}
                 >
                   <option value="">Choose a template…</option>
-                  {labeledTemplates.map(({ t, label }) => (
-                    <option key={t.id} value={t.id}>
+                  {labeledTemplates.map(({ index, label }) => (
+                    <option key={index} value={index}>
                       {label}
                     </option>
                   ))}
@@ -203,10 +217,10 @@ export function SetupManager({
           </thead>
           <tbody>
             {rows.map((row) => {
-              const isConfirming = confirming === row.id;
+              const isConfirming = confirming === row.index;
               const canCancel = canWrite && row.status === "ACTIVE";
               return (
-                <tr key={row.id} data-testid="setup-row">
+                <tr key={row.index} data-testid="setup-row">
                   <td>{row.clientName}</td>
                   <td>
                     {row.templateName}
@@ -231,7 +245,8 @@ export function SetupManager({
                             onClick={() =>
                               run(() => {
                                 const fd = new FormData();
-                                fd.set("pinId", row.id);
+                                fd.set("pinIndex", String(row.index));
+                                fd.set("rowFingerprint", rowFingerprint);
                                 return cancelSetupAssignment(workspaceId, fd);
                               })
                             }
@@ -253,7 +268,7 @@ export function SetupManager({
                             type="button"
                             className="assignment-button-secondary"
                             disabled={pending}
-                            onClick={() => setConfirming(row.id)}
+                            onClick={() => setConfirming(row.index)}
                           >
                             Cancel
                           </button>

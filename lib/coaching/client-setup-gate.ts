@@ -20,6 +20,8 @@ export const CLIENT_SETUP_LIMITS = {
   idMax: 128,
   listDefaultLimit: 25,
   listMaxLimit: 100,
+  /** Hard ceiling on positional list indices submitted by the browser. */
+  indexMax: 100_000,
 } as const;
 
 export type ClientSetupErrorCode =
@@ -29,7 +31,8 @@ export type ClientSetupErrorCode =
   | "client_not_eligible"
   | "template_not_eligible"
   | "assignment_conflict"
-  | "serialization_conflict";
+  | "serialization_conflict"
+  | "stale_selection";
 
 export class ClientSetupError extends Error {
   constructor(readonly code: ClientSetupErrorCode) {

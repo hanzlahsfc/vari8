@@ -9,12 +9,13 @@ import {
 } from "./client-setup-gate";
 import {
   cancelClientSetupAssignment,
+  computeSelectionFingerprint,
   createClientSetupAssignment,
   listAssignableSetupClients,
   listAssignableTemplates,
   listClientSetups,
-  type AssignableSetupClient,
-  type AssignableTemplate,
+  resolveAssignSelection,
+  resolveCancelSelection,
   type TemplateAssignmentSummary,
 } from "./client-setup";
 
@@ -34,6 +35,14 @@ import {
  *     denied);
  *  5. returns Result objects — it never throws for expected failures and
  *     never leaks service internals.
+ *
+ * Browser selection contract (P-016-R2): rendered choices carry display
+ * labels, positional indices, and an opaque list fingerprint — never raw
+ * client/setup/pin/template/version/member ids. Mutations submit index +
+ * fingerprint; the service re-fetches the authorized list, verifies the
+ * fingerprint, and maps the bounded index back to a server-side identity.
+ * Stale/tampered input fails with `stale_selection`/`invalid_input` and
+ * zero writes.
  */
 
 export type ActionResult<T> =
@@ -43,6 +52,8 @@ const DENIED = "You don't have access to do that.";
 const INVALID = "Check the form details and try again.";
 const GENERIC = "Something went wrong. Please try again in a moment.";
 const OFF = "This feature is not available.";
+const STALE =
+  "The list changed while you were working — refresh and try again.";
 
 const CODE_TO_MESSAGE: Record<string, string> = {
   invalid_input: INVALID,
@@ -52,6 +63,7 @@ const CODE_TO_MESSAGE: Record<string, string> = {
   template_not_eligible: "This template can't be assigned right now.",
   assignment_conflict: "This client already has a current template assignment.",
   serialization_conflict: "A conflict occurred. Please try again.",
+  stale_selection: STALE,
 };
 
 function isWellFormedString(value: string): boolean {
@@ -72,6 +84,15 @@ function boundedId(value: unknown): string | null {
     : null;
 }
 
+function boundedIndex(value: unknown): number | null {
+  return typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= 0 &&
+    value <= CLIENT_SETUP_LIMITS.indexMax
+    ? value
+    : null;
+}
+
 function mapError(error: unknown): { ok: false; message: string } {
   if (error instanceof ClientSetupError) {
     return { ok: false, message: CODE_TO_MESSAGE[error.code] ?? GENERIC };
@@ -86,22 +107,37 @@ function enabled(): boolean {
   return isClientSetupEnabled(process.env.ENABLE_CLIENT_SETUP);
 }
 
-export type {
-  AssignableSetupClient,
-  AssignableTemplate,
-  TemplateAssignmentSummary,
+// ── Display-safe output types (no internal identifiers) ────────────────────
+
+export type { TemplateAssignmentSummary };
+
+export type SetupClientChoice = { name: string };
+export type SetupTemplateChoice = {
+  name: string;
+  latestVersionSeq: number;
+};
+
+export type SetupRowList = {
+  items: TemplateAssignmentSummary[];
+  nextCursor: string | null;
+  /** Opaque sha-256 of the caller's ordered authorized pin list — submitted
+   * back with every cancel so the server can detect list drift. */
+  fingerprint: string;
+};
+
+export type AssignFormChoices = {
+  clients: SetupClientChoice[];
+  templates: SetupTemplateChoice[];
+  /** sha-256 over the ordered client-id list and template-id list — one
+   * consistency token for the whole assign form. */
+  listFingerprint: string;
 };
 
 export async function listClientSetupsForWorkspace(
   session: SessionLike,
   input: { workspaceId: string; limit?: number; cursor?: string },
   deps: { db?: PrismaClient } = {},
-): Promise<
-  ActionResult<{
-    items: TemplateAssignmentSummary[];
-    nextCursor: string | null;
-  }>
-> {
+): Promise<ActionResult<SetupRowList>> {
   if (!enabled()) return { ok: false, message: OFF };
   const workspaceId = boundedId(input?.workspaceId);
   if (workspaceId === null) return { ok: false, message: INVALID };
@@ -117,43 +153,34 @@ export async function listClientSetupsForWorkspace(
   }
 }
 
-export async function listAssignableClientsForSetup(
-  session: SessionLike,
-  input: { workspaceId: string; limit?: number; cursor?: string },
-  deps: { db?: PrismaClient } = {},
-): Promise<
-  ActionResult<{ items: AssignableSetupClient[]; nextCursor: string | null }>
-> {
-  if (!enabled()) return { ok: false, message: OFF };
-  const workspaceId = boundedId(input?.workspaceId);
-  if (workspaceId === null) return { ok: false, message: INVALID };
-  try {
-    const value = await listAssignableSetupClients(
-      session,
-      { workspaceId, limit: input.limit, cursor: input.cursor },
-      deps.db ?? prisma,
-    );
-    return { ok: true, value };
-  } catch (error) {
-    return mapError(error);
-  }
-}
-
-export async function listAssignableTemplatesForSetup(
+export async function listAssignFormChoices(
   session: SessionLike,
   input: { workspaceId: string },
   deps: { db?: PrismaClient } = {},
-): Promise<ActionResult<AssignableTemplate[]>> {
+): Promise<ActionResult<AssignFormChoices>> {
   if (!enabled()) return { ok: false, message: OFF };
   const workspaceId = boundedId(input?.workspaceId);
   if (workspaceId === null) return { ok: false, message: INVALID };
   try {
-    const value = await listAssignableTemplates(
-      session,
-      { workspaceId },
-      deps.db ?? prisma,
-    );
-    return { ok: true, value };
+    const db = deps.db ?? prisma;
+    const [clients, templates] = await Promise.all([
+      listAssignableSetupClients(session, { workspaceId }, db),
+      listAssignableTemplates(session, { workspaceId }, db),
+    ]);
+    return {
+      ok: true,
+      value: {
+        clients: clients.map(({ name }) => ({ name })),
+        templates: templates.map(({ name, latestVersionSeq }) => ({
+          name,
+          latestVersionSeq,
+        })),
+        listFingerprint: computeSelectionFingerprint(
+          clients.map((c) => c.id),
+          templates.map((t) => t.id),
+        ),
+      },
+    };
   } catch (error) {
     return mapError(error);
   }
@@ -161,20 +188,46 @@ export async function listAssignableTemplatesForSetup(
 
 export async function assignTemplateFromAction(
   session: SessionLike,
-  input: { workspaceId: string; clientProfileId: string; templateId: string },
+  input: {
+    workspaceId: string;
+    clientIndex: number;
+    templateIndex: number;
+    listFingerprint: string;
+  },
   deps: { db?: PrismaClient } = {},
 ): Promise<ActionResult<{ assignmentId: string }>> {
   if (!enabled()) return { ok: false, message: OFF };
   const workspaceId = boundedId(input?.workspaceId);
-  const clientProfileId = boundedId(input?.clientProfileId);
-  const templateId = boundedId(input?.templateId);
-  if (workspaceId === null || clientProfileId === null || templateId === null)
+  const clientIndex = boundedIndex(input?.clientIndex);
+  const templateIndex = boundedIndex(input?.templateIndex);
+  const fingerprint = boundedId(input?.listFingerprint);
+  if (
+    workspaceId === null ||
+    clientIndex === null ||
+    templateIndex === null ||
+    fingerprint === null
+  )
     return { ok: false, message: INVALID };
+  const db = deps.db ?? prisma;
   try {
+    const resolved = await resolveAssignSelection(
+      session,
+      {
+        workspaceId,
+        clientIndex,
+        templateIndex,
+        fingerprint,
+      },
+      db,
+    );
     const value = await createClientSetupAssignment(
       session,
-      { workspaceId, clientProfileId, templateId },
-      deps.db ?? prisma,
+      {
+        workspaceId,
+        clientProfileId: resolved.clientProfileId,
+        templateId: resolved.templateId,
+      },
+      db,
     );
     return { ok: true, value };
   } catch (error) {
@@ -184,20 +237,23 @@ export async function assignTemplateFromAction(
 
 export async function cancelSetupAssignmentFromAction(
   session: SessionLike,
-  input: { workspaceId: string; pinId: string },
+  input: { workspaceId: string; pinIndex: number; rowFingerprint: string },
   deps: { db?: PrismaClient } = {},
 ): Promise<ActionResult<{ cancelled: true }>> {
   if (!enabled()) return { ok: false, message: OFF };
   const workspaceId = boundedId(input?.workspaceId);
-  const pinId = boundedId(input?.pinId);
-  if (workspaceId === null || pinId === null)
+  const pinIndex = boundedIndex(input?.pinIndex);
+  const fingerprint = boundedId(input?.rowFingerprint);
+  if (workspaceId === null || pinIndex === null || fingerprint === null)
     return { ok: false, message: INVALID };
+  const db = deps.db ?? prisma;
   try {
-    await cancelClientSetupAssignment(
+    const { pinId } = await resolveCancelSelection(
       session,
-      { workspaceId, pinId },
-      deps.db ?? prisma,
+      { workspaceId, pinIndex, fingerprint },
+      db,
     );
+    await cancelClientSetupAssignment(session, { workspaceId, pinId }, db);
     return { ok: true, value: { cancelled: true } };
   } catch (error) {
     return mapError(error);

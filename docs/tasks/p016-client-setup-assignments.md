@@ -125,9 +125,63 @@ own Compose PostgreSQL 16 (`app_integration_test`, `app_e2e`,
   pre-existing gated password-reset block, unrelated to P-016.
 - No CI run exists yet for this branch — all evidence above is local.
 
+## P-016-R2 — ID-free browser selection contract (post-review repair)
+
+Independent different-model review (`opencode-go/deepseek-v4.1-flash`) of
+head `a757c9d` returned **PASS, no P0/P1/P2**, classifying internal IDs in
+`<option value>` DOM selections as P3 — unless the original acceptance
+criterion was hard. The orchestrator confirmed it is hard ("no internal
+IDs as DOM option values; server-validated positional selections"), so a
+forward-commit repair was required before PR creation. `8fee131` and
+`a757c9d` are preserved; RED evidence: a new unit spec asserting the
+id-free serialized contract + positional/fingerprint signatures failed 8
+assertions against `a757c9d` before the implementation existed.
+
+### Mechanism
+
+- Server renders a deterministic authorized ordered list (clients
+  `ORDER BY id`, templates `ORDER BY name, createdAt, id`, pins
+  `ORDER BY id`) and computes `sha256` over the ordered internal id
+  list(s) via `computeSelectionFingerprint` (node:crypto only).
+- Serialized choices carry display labels + positional `index` + the
+  fingerprint — no client/setup/pin/template/version/member ids.
+- Forms submit bounded indices + fingerprint. The service re-fetches the
+  authorized list(s), recomputes the fingerprint, and fails with
+  `stale_selection` on mismatch or `invalid_input` on an out-of-range
+  index under a matching fingerprint (tamper). Zero mutation, zero audit.
+- Cancellation: rows expose an absolute `index` into the caller's
+  authorized ordered pin list + `rowFingerprint`;
+  `resolveCancelSelection` maps index→pin id server-side, then the
+  unchanged cancel transaction runs. A changed list fails stale; a
+  concurrent cancel surfaces `assignment_not_active`.
+- The fingerprint is a consistency token, never authorization — every
+  resolved identity is reauthorized and workspace-scoped.
+- Documented P3 retained: the `?c=` keyset cursor is an opaque pin id in
+  the authenticated staff URL/props (P-010/P-013 convention) — optional
+  cursor-token hardening, not redesigned here.
+
+### Evidence (repaired tree, disposable infrastructure)
+
+- Unit: 796/796 (new `client-setup-selection.test.ts` — serialized-shape,
+  index/fingerprint binding, stale/denied mapping; actions spec gains
+  malformed/duplicate-index rejection cases).
+- Integration: focused **42/42**, full **398/398** on real PG — includes
+  client-list change, mid-flight archive, client ineligibility, coach
+  scope revocation, cross-workspace fingerprint, tampered index,
+  cancel-list change, concurrent-cancel no-change, and the full
+  boundary index+fingerprint round-trip with zero-write assertions.
+- E2E: focused **15/15**, full **218 passed / 12 skipped / 0 failed** —
+  adds a DOM scan (positional option values, hex fingerprints only, no
+  raw-id fields/data-attrs) and a stale-list journey asserting the
+  refresh alert + zero writes. All prior journeys unchanged.
+
+### Builder-report count correction
+
+The R1-review candidate diff was **28 files / 11 test files** (the
+builder reported 27/9). Count error only — no omitted scope.
+
 ## Next gates
 
-Fresh-context same-model review of base-to-head → push
-`feature/p016-client-setup-assignments` (no PR) → independent
-different-model review → PR → `verify` CI → separate merge approval.
+Push `feature/p016-client-setup-assignments` (no PR) → PR creation →
+`verify` CI → separate merge approval.
 No PR, merge, push to main, or deployment is authorized by this record.

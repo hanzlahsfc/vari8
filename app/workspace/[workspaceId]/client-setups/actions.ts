@@ -103,6 +103,14 @@ function isFormData(value: unknown): value is FormData {
   return value instanceof FormData;
 }
 
+/** A positional selection index: decimal digits only, integer, bounded. */
+function indexField(formData: FormData, key: string): number | null {
+  const raw = singleString(formData, key, 9);
+  if (raw === null || !/^\d+$/.test(raw)) return null;
+  const value = Number(raw);
+  return Number.isSafeInteger(value) ? value : null;
+}
+
 async function delegate<T>(
   fn: () => Promise<ActionResult<T>>,
   path: string,
@@ -126,15 +134,24 @@ export async function assignTemplate(
   if (!gate.ok) return gate;
   const ws = boundedArg(workspaceId);
   if (!ws || !isFormData(formData)) return fail(INVALID);
-  const clientProfileId = singleString(formData, "clientProfileId", MAX_ID_LEN);
-  const templateId = singleString(formData, "templateId", MAX_ID_LEN);
-  if (clientProfileId === null || templateId === null) return fail(INVALID);
+  // Positional contract: the browser submits indices + the rendered list
+  // fingerprint — never raw client/template ids (P-016-R2).
+  const clientIndex = indexField(formData, "clientIndex");
+  const templateIndex = indexField(formData, "templateIndex");
+  const listFingerprint = singleString(formData, "listFingerprint", MAX_ID_LEN);
+  if (
+    clientIndex === null ||
+    templateIndex === null ||
+    listFingerprint === null
+  )
+    return fail(INVALID);
   return delegate(
     () =>
       assignTemplateFromAction(gate.session, {
         workspaceId: ws,
-        clientProfileId,
-        templateId,
+        clientIndex,
+        templateIndex,
+        listFingerprint,
       }),
     listPath(ws),
   );
@@ -149,13 +166,15 @@ export async function cancelSetupAssignment(
   if (!gate.ok) return gate;
   const ws = boundedArg(workspaceId);
   if (!ws || !isFormData(formData)) return fail(INVALID);
-  const pinId = singleString(formData, "pinId", MAX_ID_LEN);
-  if (pinId === null) return fail(INVALID);
+  const pinIndex = indexField(formData, "pinIndex");
+  const rowFingerprint = singleString(formData, "rowFingerprint", MAX_ID_LEN);
+  if (pinIndex === null || rowFingerprint === null) return fail(INVALID);
   return delegate(
     () =>
       cancelSetupAssignmentFromAction(gate.session, {
         workspaceId: ws,
-        pinId,
+        pinIndex,
+        rowFingerprint,
       }),
     listPath(ws),
   );

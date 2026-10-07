@@ -6,11 +6,21 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AccessDeniedError } from "../../lib/auth/guard";
 import {
   cancelClientSetupAssignment,
+  computeSelectionFingerprint,
   createClientSetupAssignment,
   listAssignableSetupClients,
   listAssignableTemplates,
+  listClientSetupPinIds,
   listClientSetups,
+  resolveAssignSelection,
+  resolveCancelSelection,
 } from "../../lib/coaching/client-setup";
+import {
+  assignTemplateFromAction,
+  cancelSetupAssignmentFromAction,
+  listAssignFormChoices,
+  listClientSetupsForWorkspace,
+} from "../../lib/coaching/client-setup-boundary";
 
 /**
  * P-016 C1 client setup / template assignments — real-PostgreSQL contract
@@ -553,15 +563,13 @@ describe.skipIf(!enabled)(
           { workspaceId: ws.id },
           prisma,
         );
-        expect(all.items.map((i) => i.id).sort()).toEqual(
-          [ok.id, ok2.id].sort(),
-        );
+        expect(all.map((i) => i.id).sort()).toEqual([ok.id, ok2.id].sort());
         const coachList = await listAssignableSetupClients(
           s(coachU.id),
           { workspaceId: ws.id },
           prisma,
         );
-        expect(coachList.items.map((i) => i.id)).toEqual([ok.id]);
+        expect(coachList.map((i) => i.id)).toEqual([ok.id]);
       });
 
       it("lists only ACTIVE templates with a published version", async () => {
@@ -1094,6 +1102,508 @@ describe.skipIf(!enabled)(
         expect(await pinCount(ws.id)).toBe(0);
         expect(await setupCount(ws.id)).toBe(0);
         expect(await auditCount()).toBe(auditsBefore);
+      });
+    });
+
+    describe("P-016-R2 positional selection + fingerprint resolution", () => {
+      /** Renders the assign form the way the boundary would (server-side
+       * lists + one fingerprint over both ordered id lists). */
+      const renderAssignForm = async (
+        session: { user: { id: string } },
+        workspaceId: string,
+      ) => {
+        const [clients, templates] = await Promise.all([
+          listAssignableSetupClients(session, { workspaceId }, prisma),
+          listAssignableTemplates(session, { workspaceId }, prisma),
+        ]);
+        return {
+          clients,
+          templates,
+          fingerprint: computeSelectionFingerprint(
+            clients.map((c) => c.id),
+            templates.map((t) => t.id),
+          ),
+        };
+      };
+
+      it("resolveAssignSelection maps a valid index+fingerprint to the right identities", async () => {
+        const { ws, m } = await staffFixture();
+        const cp = await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        const form = await renderAssignForm(s(m.userId), ws.id);
+        const resolved = await resolveAssignSelection(
+          s(m.userId),
+          {
+            workspaceId: ws.id,
+            clientIndex: form.clients.findIndex((c) => c.id === cp.id),
+            templateIndex: form.templates.findIndex((x) => x.id === t.id),
+            fingerprint: form.fingerprint,
+          },
+          prisma,
+        );
+        expect(resolved).toEqual({
+          clientProfileId: cp.id,
+          templateId: t.id,
+        });
+      });
+
+      it("a client-list change between render and submit fails stale with zero writes", async () => {
+        const { ws, m } = await staffFixture();
+        await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        const form = await renderAssignForm(s(m.userId), ws.id);
+        // A new eligible client appears between render and submit.
+        await eligibleClient(ws.id);
+        const auditsBefore = await auditCount();
+        await expect(
+          resolveAssignSelection(
+            s(m.userId),
+            {
+              workspaceId: ws.id,
+              clientIndex: 0,
+              templateIndex: 0,
+              fingerprint: form.fingerprint,
+            },
+            prisma,
+          ),
+        ).rejects.toMatchObject({ code: "stale_selection" });
+        expect(await pinCount(ws.id)).toBe(0);
+        expect(await auditCount()).toBe(auditsBefore);
+      });
+
+      it("a template archived between render and submit fails stale", async () => {
+        const { ws, m } = await staffFixture();
+        await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        const form = await renderAssignForm(s(m.userId), ws.id);
+        await archiveTemplate(t.id, m.id);
+        await expect(
+          resolveAssignSelection(
+            s(m.userId),
+            {
+              workspaceId: ws.id,
+              clientIndex: 0,
+              templateIndex: 0,
+              fingerprint: form.fingerprint,
+            },
+            prisma,
+          ),
+        ).rejects.toMatchObject({ code: "stale_selection" });
+      });
+
+      it("a client becoming ineligible between render and submit fails stale", async () => {
+        const { ws, m } = await staffFixture();
+        const cp = await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        const form = await renderAssignForm(s(m.userId), ws.id);
+        await prisma.user.update({
+          where: {
+            id: (
+              await prisma.clientProfile.findUniqueOrThrow({
+                where: { id: cp.id },
+                select: { userId: true },
+              })
+            ).userId!,
+          },
+          data: { status: "DEACTIVATED" },
+        });
+        await expect(
+          resolveAssignSelection(
+            s(m.userId),
+            {
+              workspaceId: ws.id,
+              clientIndex: 0,
+              templateIndex: 0,
+              fingerprint: form.fingerprint,
+            },
+            prisma,
+          ),
+        ).rejects.toMatchObject({ code: "stale_selection" });
+      });
+
+      it("a coach's revoked scope leaves a different list — stale fails closed", async () => {
+        const { ws, m } = await staffFixture();
+        const coachU = await user();
+        const coachM = await member(ws.id, coachU.id, "COACH");
+        const cp = await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        const ca = await assignCoach(ws.id, cp.id, coachM.id);
+        const form = await renderAssignForm(s(coachU.id), ws.id);
+        await prisma.clientAssignment.update({
+          where: { id: ca.id },
+          data: { status: "REMOVED" },
+        });
+        await expect(
+          resolveAssignSelection(
+            s(coachU.id),
+            {
+              workspaceId: ws.id,
+              clientIndex: 0,
+              templateIndex: 0,
+              fingerprint: form.fingerprint,
+            },
+            prisma,
+          ),
+        ).rejects.toMatchObject({ code: "stale_selection" });
+      });
+
+      it("a tampered index against a valid fingerprint fails without mutation", async () => {
+        const { ws, m } = await staffFixture();
+        await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        const form = await renderAssignForm(s(m.userId), ws.id);
+        const auditsBefore = await auditCount();
+        // Valid fingerprint, but the client index is out of range.
+        await expect(
+          resolveAssignSelection(
+            s(m.userId),
+            {
+              workspaceId: ws.id,
+              clientIndex: 99,
+              templateIndex: 0,
+              fingerprint: form.fingerprint,
+            },
+            prisma,
+          ),
+        ).rejects.toMatchObject({ code: "invalid_input" });
+        await expect(
+          resolveAssignSelection(
+            s(m.userId),
+            {
+              workspaceId: ws.id,
+              clientIndex: -1,
+              templateIndex: 0,
+              fingerprint: form.fingerprint,
+            },
+            prisma,
+          ),
+        ).rejects.toMatchObject({ code: "invalid_input" });
+        expect(await pinCount(ws.id)).toBe(0);
+        expect(await auditCount()).toBe(auditsBefore);
+      });
+
+      it("a fingerprint from another workspace cannot resolve here", async () => {
+        const { ws, m } = await staffFixture();
+        const cp = await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        // Second workspace whose owner is a different user entirely.
+        const other = await staffFixture();
+        const cpB = await eligibleClient(other.ws.id);
+        const tB = await template(other.ws.id, other.m.id);
+        await version(other.ws.id, tB.id, 1, other.m.id);
+        const formB = await renderAssignForm(s(other.m.userId), other.ws.id);
+        // Using B's fingerprint inside A's workspace: A's owner is not a
+        // member of B (and vice versa), so the call either denies outright
+        // or recomputes a different fingerprint — never resolves an id.
+        await expect(
+          resolveAssignSelection(
+            s(other.m.userId),
+            {
+              workspaceId: ws.id,
+              clientIndex: 0,
+              templateIndex: 0,
+              fingerprint: formB.fingerprint,
+            },
+            prisma,
+          ),
+        ).rejects.toBeInstanceOf(AccessDeniedError);
+        await expect(
+          resolveAssignSelection(
+            s(m.userId),
+            {
+              workspaceId: ws.id,
+              clientIndex: 0,
+              templateIndex: 0,
+              fingerprint: formB.fingerprint,
+            },
+            prisma,
+          ),
+        ).rejects.toMatchObject({ code: "stale_selection" });
+        void cp;
+        void cpB;
+      });
+
+      it("listClientSetups rows carry absolute positional indices over the full ordered list", async () => {
+        const { ws, m } = await staffFixture();
+        const cpA = await eligibleClient(ws.id);
+        const cpB = await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        await createClientSetupAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, clientProfileId: cpA.id, templateId: t.id },
+          prisma,
+        );
+        await createClientSetupAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, clientProfileId: cpB.id, templateId: t.id },
+          prisma,
+        );
+        const { ids, fingerprint } = await listClientSetupPinIds(
+          s(m.userId),
+          { workspaceId: ws.id },
+          prisma,
+        );
+        expect(ids).toHaveLength(2);
+        const list = await listClientSetups(
+          s(m.userId),
+          { workspaceId: ws.id },
+          prisma,
+        );
+        expect(list.fingerprint).toBe(fingerprint);
+        // Each displayed row's index is its absolute position in the
+        // ordered authorized id list — never a raw id.
+        const seen = list.items.map((r) => r.index).sort();
+        expect(seen).toEqual([0, 1]);
+        expect(
+          list.items.every(
+            (r) => !Object.keys(r).some((k) => /(^|_)id$/i.test(k)),
+          ),
+        ).toBe(true);
+      });
+
+      it("resolveCancelSelection resolves the indexed pin; a changed row list fails stale", async () => {
+        const { ws, m } = await staffFixture();
+        const cp = await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        const created = await createClientSetupAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, clientProfileId: cp.id, templateId: t.id },
+          prisma,
+        );
+        const { ids, fingerprint } = await listClientSetupPinIds(
+          s(m.userId),
+          { workspaceId: ws.id },
+          prisma,
+        );
+        const resolved = await resolveCancelSelection(
+          s(m.userId),
+          {
+            workspaceId: ws.id,
+            pinIndex: ids.indexOf(created.assignmentId),
+            fingerprint,
+          },
+          prisma,
+        );
+        expect(resolved).toEqual({ pinId: created.assignmentId });
+
+        // A second assignment elsewhere in the list rewrites the ordered
+        // id list → the old fingerprint is stale.
+        const cpB = await eligibleClient(ws.id);
+        await createClientSetupAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, clientProfileId: cpB.id, templateId: t.id },
+          prisma,
+        );
+        const auditsBefore = await auditCount();
+        await expect(
+          resolveCancelSelection(
+            s(m.userId),
+            { workspaceId: ws.id, pinIndex: 0, fingerprint },
+            prisma,
+          ),
+        ).rejects.toMatchObject({ code: "stale_selection" });
+        expect(await auditCount()).toBe(auditsBefore);
+      });
+
+      it("a tampered cancel index cannot reach another client's pin", async () => {
+        const { ws, m } = await staffFixture();
+        const coachU = await user();
+        const coachM = await member(ws.id, coachU.id, "COACH");
+        const cpA = await eligibleClient(ws.id); // coach's client
+        const cpB = await eligibleClient(ws.id); // owner's other client
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        await assignCoach(ws.id, cpA.id, coachM.id);
+        const mine = await createClientSetupAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, clientProfileId: cpA.id, templateId: t.id },
+          prisma,
+        );
+        const other = await createClientSetupAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, clientProfileId: cpB.id, templateId: t.id },
+          prisma,
+        );
+        // The coach's authorized ordered list contains only cpA's pin —
+        // index 1 (the other client's position in the owner's full list)
+        // resolves nothing.
+        const coachIds = await listClientSetupPinIds(
+          s(coachU.id),
+          { workspaceId: ws.id },
+          prisma,
+        );
+        expect(coachIds.ids).toEqual([mine.assignmentId]);
+        const auditsBefore = await auditCount();
+        await expect(
+          resolveCancelSelection(
+            s(coachU.id),
+            {
+              workspaceId: ws.id,
+              pinIndex: 1,
+              fingerprint: coachIds.fingerprint,
+            },
+            prisma,
+          ),
+        ).rejects.toMatchObject({ code: "invalid_input" });
+        expect(
+          await prisma.clientSetupPin.findUniqueOrThrow({
+            where: { id: other.assignmentId },
+            select: { status: true },
+          }),
+        ).toMatchObject({ status: "ACTIVE" });
+        expect(await auditCount()).toBe(auditsBefore);
+      });
+
+      it("a concurrent cancel leaves a safe no-change result, not a wrong-target write", async () => {
+        const { ws, m } = await staffFixture();
+        const cp = await eligibleClient(ws.id);
+        const t = await template(ws.id, m.id);
+        await version(ws.id, t.id, 1, m.id);
+        await createClientSetupAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, clientProfileId: cp.id, templateId: t.id },
+          prisma,
+        );
+        const { ids, fingerprint } = await listClientSetupPinIds(
+          s(m.userId),
+          { workspaceId: ws.id },
+          prisma,
+        );
+        const { pinId } = await resolveCancelSelection(
+          s(m.userId),
+          { workspaceId: ws.id, pinIndex: 0, fingerprint },
+          prisma,
+        );
+        // The status set is unchanged (ids identical) so the fingerprint
+        // still matches — the resolved pin is the SAME row, and the second
+        // cancel surfaces assignment_not_active rather than a blind write.
+        expect(ids).toHaveLength(1);
+        await cancelClientSetupAssignment(
+          s(m.userId),
+          { workspaceId: ws.id, pinId },
+          prisma,
+        );
+        const resolved2 = await resolveCancelSelection(
+          s(m.userId),
+          { workspaceId: ws.id, pinIndex: 0, fingerprint },
+          prisma,
+        );
+        expect(resolved2.pinId).toBe(pinId);
+        const auditsBefore = await auditCount();
+        await expect(
+          cancelClientSetupAssignment(
+            s(m.userId),
+            { workspaceId: ws.id, pinId: resolved2.pinId },
+            prisma,
+          ),
+        ).rejects.toMatchObject({ code: "assignment_not_active" });
+        expect(await auditCount()).toBe(auditsBefore);
+      });
+
+      it("the full boundary contract: index+fingerprint assign/cancel preserves behavior", async () => {
+        process.env.ENABLE_CLIENT_SETUP = "1";
+        try {
+          const { ws, m } = await staffFixture();
+          const cp = await eligibleClient(ws.id);
+          const t = await template(ws.id, m.id);
+          await version(ws.id, t.id, 1, m.id);
+          const choices = await listAssignFormChoices(
+            s(m.userId),
+            { workspaceId: ws.id },
+            { db: prisma },
+          );
+          expect(choices.ok).toBe(true);
+          if (!choices.ok) return;
+          expect(choices.value.clients).toEqual([{ name: cp.name }]);
+          const created = await assignTemplateFromAction(
+            s(m.userId),
+            {
+              workspaceId: ws.id,
+              clientIndex: 0,
+              templateIndex: 0,
+              listFingerprint: choices.value.listFingerprint,
+            },
+            { db: prisma },
+          );
+          expect(created.ok).toBe(true);
+          expect(await pinCount(ws.id)).toBe(1);
+
+          const rows = await listClientSetupsForWorkspace(
+            s(m.userId),
+            { workspaceId: ws.id },
+            { db: prisma },
+          );
+          expect(rows.ok).toBe(true);
+          if (!rows.ok) return;
+          expect(rows.value.items[0].index).toBe(0);
+          const cancelled = await cancelSetupAssignmentFromAction(
+            s(m.userId),
+            {
+              workspaceId: ws.id,
+              pinIndex: 0,
+              rowFingerprint: rows.value.fingerprint,
+            },
+            { db: prisma },
+          );
+          expect(cancelled).toEqual({ ok: true, value: { cancelled: true } });
+          expect(
+            await prisma.clientSetupPin.count({
+              where: {
+                clientSetup: { workspaceId: ws.id },
+                status: "CANCELLED",
+              },
+            }),
+          ).toBe(1);
+        } finally {
+          delete process.env.ENABLE_CLIENT_SETUP;
+        }
+      });
+
+      it("the boundary surfaces a safe message for a stale form", async () => {
+        process.env.ENABLE_CLIENT_SETUP = "1";
+        try {
+          const { ws, m } = await staffFixture();
+          await eligibleClient(ws.id);
+          const t = await template(ws.id, m.id);
+          await version(ws.id, t.id, 1, m.id);
+          const choices = await listAssignFormChoices(
+            s(m.userId),
+            { workspaceId: ws.id },
+            { db: prisma },
+          );
+          expect(choices.ok).toBe(true);
+          if (!choices.ok) return;
+          await archiveTemplate(t.id, m.id);
+          const auditsBefore = await auditCount();
+          const result = await assignTemplateFromAction(
+            s(m.userId),
+            {
+              workspaceId: ws.id,
+              clientIndex: 0,
+              templateIndex: 0,
+              listFingerprint: choices.value.listFingerprint,
+            },
+            { db: prisma },
+          );
+          expect(result).toEqual({
+            ok: false,
+            message:
+              "The list changed while you were working — refresh and try again.",
+          });
+          expect(await pinCount(ws.id)).toBe(0);
+          expect(await auditCount()).toBe(auditsBefore);
+        } finally {
+          delete process.env.ENABLE_CLIENT_SETUP;
+        }
       });
     });
   },

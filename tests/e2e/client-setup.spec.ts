@@ -412,7 +412,11 @@ test.describe("feature flag OFF (port 3101)", () => {
     const resp = await request.post(
       `${FLAG_OFF}/workspace/${wsAId}/client-setups`,
       {
-        form: { clientProfileId: cpOneId, templateId },
+        form: {
+          clientIndex: "0",
+          templateIndex: "0",
+          listFingerprint: "x",
+        },
         failOnStatusCode: false,
       },
     );
@@ -469,7 +473,7 @@ test.describe("owner journey (flag on)", () => {
 
     // A second assignment for the same client is refused with a safe alert.
     await page.getByLabel("Client").selectOption({ label: CLIENT_ONE });
-    await page.getByLabel("Coaching template").selectOption(templateId);
+    await page.getByLabel("Coaching template").selectOption({ index: 1 });
     await page.getByRole("button", { name: "Assign latest version" }).click();
     await expect(page.getByTestId("setup-alert")).toBeVisible();
 
@@ -503,10 +507,9 @@ test.describe("owner journey (flag on)", () => {
     expect(pin1.status).toBe("CANCELLED");
 
     // Reassign appends a new row on the same stable setup — now pinned v2.
-    // (The reload reset both selects — pick template by value this time; the
-    // raw id is fine inside the test, it is never displayed.)
+    // (The reload reset both selects — pick the first template positionally.)
     await page.getByLabel("Client").selectOption({ label: CLIENT_ONE });
-    await page.getByLabel("Coaching template").selectOption(templateId);
+    await page.getByLabel("Coaching template").selectOption({ index: 1 });
     await page.getByRole("button", { name: "Assign latest version" }).click();
     const rows = page.getByTestId("setup-row").filter({ hasText: CLIENT_ONE });
     await expect(rows).toHaveCount(2);
@@ -521,6 +524,106 @@ test.describe("owner journey (flag on)", () => {
     // The server pinned the LATEST published version at assign time (#50).
     expect(pins[1].templateVersionId).toBe(v2.id);
     await cleanupClientPins(cpOneId);
+  });
+
+  test("no internal identifiers appear in form values, hidden fields, or data attributes", async ({
+    page,
+  }) => {
+    await signIn(page, E2E.owner);
+    await page.goto(setupUrl());
+
+    // Every selectable value is a bounded positional index — never an id.
+    const optionValues = await page
+      .locator("option")
+      .evaluateAll((els) => els.map((el) => el.getAttribute("value") ?? ""));
+    for (const v of optionValues)
+      expect(v === "" || /^\d{1,6}$/.test(v)).toBe(true);
+
+    // Hidden inputs carry only the opaque 64-hex list fingerprints.
+    const hiddenValues = await page
+      .locator('input[type="hidden"]')
+      .evaluateAll((els) =>
+        els
+          .map((el) => (el as HTMLInputElement).value)
+          .filter((v) => v.length > 0),
+      );
+    expect(hiddenValues.length).toBeGreaterThan(0);
+    for (const v of hiddenValues) expect(/^[0-9a-f]{64}$/.test(v)).toBe(true);
+
+    // No raw-id form fields exist at all.
+    await expect(
+      page.locator(
+        "[name=clientProfileId], [name=templateId], [name=pinId], [name=clientSetupId], [name=templateVersionId]",
+      ),
+    ).toHaveCount(0);
+
+    // No data-* attribute leaks an internal identifier.
+    const dataValues = await page.evaluate(() =>
+      Array.from(document.querySelectorAll("*"))
+        .flatMap((el) => Array.from(el.attributes))
+        .filter((a) => a.name.startsWith("data-"))
+        .map((a) => a.value),
+    );
+    for (const v of dataValues)
+      expect(v).not.toMatch(/p016_e2e|client_setup_pin|cm[a-z0-9]{20,}/);
+  });
+
+  test("a stale picker list fails safely with the refresh alert and zero writes", async ({
+    page,
+  }) => {
+    await signIn(page, E2E.owner);
+    await page.goto(setupUrl());
+    const pinsBefore = await prisma.clientSetupPin.count({
+      where: { workspaceId: wsAId },
+    });
+    const setupsBefore = await prisma.clientSetup.count({
+      where: { workspaceId: wsAId },
+    });
+
+    // A new eligible client appears between render and submit → the form's
+    // list fingerprint no longer matches the re-fetched authorized list.
+    const staleUser = await prisma.user.create({
+      data: {
+        email: "p016-e2e-stale@p016-e2e.test",
+        // Never authenticates — any non-null hash satisfies the column.
+        passwordHash: "stale-fixture-hash",
+        status: "ACTIVE",
+      },
+    });
+    const staleMember = await prisma.workspaceMember.create({
+      data: {
+        workspaceId: wsAId,
+        userId: staleUser.id,
+        role: "CLIENT",
+        status: "ACTIVE",
+      },
+    });
+    const staleClient = await prisma.clientProfile.create({
+      data: {
+        workspaceId: wsAId,
+        userId: staleUser.id,
+        name: "Stale Client",
+      },
+    });
+    try {
+      await page.getByLabel("Client").selectOption({ index: 1 });
+      await page.getByLabel("Coaching template").selectOption({ index: 1 });
+      await page.getByRole("button", { name: "Assign latest version" }).click();
+      const alert = page.getByTestId("setup-alert");
+      await expect(alert).toBeVisible();
+      await expect(alert).toHaveAttribute("role", "alert");
+      await expect(alert).toContainText("refresh");
+      expect(
+        await prisma.clientSetupPin.count({ where: { workspaceId: wsAId } }),
+      ).toBe(pinsBefore);
+      expect(
+        await prisma.clientSetup.count({ where: { workspaceId: wsAId } }),
+      ).toBe(setupsBefore);
+    } finally {
+      await prisma.clientProfile.delete({ where: { id: staleClient.id } });
+      await prisma.workspaceMember.delete({ where: { id: staleMember.id } });
+      await prisma.user.delete({ where: { id: staleUser.id } });
+    }
   });
 
   test("client, support, and dual-role platform admin are denied", async ({
@@ -579,7 +682,7 @@ test.describe("coach and assistant scoping (flag on)", () => {
 
       // The coach can also create and cancel their own assignment.
       await page.getByLabel("Client").selectOption({ label: CLIENT_ONE });
-      await page.getByLabel("Coaching template").selectOption(templateId);
+      await page.getByLabel("Coaching template").selectOption({ index: 1 });
       await page.getByRole("button", { name: "Assign latest version" }).click();
       const createdRow = page
         .getByTestId("setup-row")

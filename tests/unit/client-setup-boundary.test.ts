@@ -4,23 +4,32 @@ import { AccessDeniedError } from "../../lib/auth/guard";
 import {
   assignTemplateFromAction,
   cancelSetupAssignmentFromAction,
-  listAssignableClientsForSetup,
-  listAssignableTemplatesForSetup,
+  listAssignFormChoices,
   listClientSetupsForWorkspace,
 } from "../../lib/coaching/client-setup-boundary";
 import { ClientSetupError } from "../../lib/coaching/client-setup-gate";
 
-vi.mock("../../lib/coaching/client-setup", () => ({
-  createClientSetupAssignment: vi.fn(),
-  cancelClientSetupAssignment: vi.fn(),
-  listClientSetups: vi.fn(),
-  listAssignableSetupClients: vi.fn(),
-  listAssignableTemplates: vi.fn(),
-}));
+vi.mock("../../lib/coaching/client-setup", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../lib/coaching/client-setup")
+  >("../../lib/coaching/client-setup");
+  return {
+    ...actual,
+    createClientSetupAssignment: vi.fn(),
+    cancelClientSetupAssignment: vi.fn(),
+    listClientSetups: vi.fn(),
+    listClientSetupPinIds: vi.fn(),
+    listAssignableSetupClients: vi.fn(),
+    listAssignableTemplates: vi.fn(),
+    resolveAssignSelection: vi.fn(),
+    resolveCancelSelection: vi.fn(),
+  };
+});
 
 import {
   cancelClientSetupAssignment,
   createClientSetupAssignment,
+  resolveCancelSelection,
 } from "../../lib/coaching/client-setup";
 
 /**
@@ -36,6 +45,8 @@ const DENIED = "You don't have access to do that.";
 const INVALID = "Check the form details and try again.";
 const OFF = "This feature is not available.";
 const GENERIC = "Something went wrong. Please try again in a moment.";
+const STALE =
+  "The list changed while you were working — refresh and try again.";
 
 const unreachableDb = new Proxy({} as never, {
   get: () => {
@@ -71,18 +82,9 @@ describe("P-016 boundary — flag-off fails before any input work", () => {
         ),
     ],
     [
-      "listAssignableClientsForSetup",
+      "listAssignFormChoices",
       () =>
-        listAssignableClientsForSetup(
-          session,
-          { workspaceId: "w" },
-          { db: unreachableDb },
-        ),
-    ],
-    [
-      "listAssignableTemplatesForSetup",
-      () =>
-        listAssignableTemplatesForSetup(
+        listAssignFormChoices(
           session,
           { workspaceId: "w" },
           { db: unreachableDb },
@@ -93,7 +95,12 @@ describe("P-016 boundary — flag-off fails before any input work", () => {
       () =>
         assignTemplateFromAction(
           session,
-          { workspaceId: "w", clientProfileId: "c", templateId: "t" },
+          {
+            workspaceId: "w",
+            clientIndex: 0,
+            templateIndex: 0,
+            listFingerprint: "fp",
+          },
           { db: unreachableDb },
         ),
     ],
@@ -102,7 +109,7 @@ describe("P-016 boundary — flag-off fails before any input work", () => {
       () =>
         cancelSetupAssignmentFromAction(
           session,
-          { workspaceId: "w", pinId: "p" },
+          { workspaceId: "w", pinIndex: 0, rowFingerprint: "fp" },
           { db: unreachableDb },
         ),
     ],
@@ -117,20 +124,44 @@ describe("P-016 boundary — flag-off fails before any input work", () => {
 });
 
 describe("P-016 boundary — input binding", () => {
-  it("rejects overlong/missing ids before delegating", async () => {
+  it("rejects overlong/missing/malformed inputs before delegating", async () => {
     flagOn();
     const long = "x".repeat(200);
     expect(
       await assignTemplateFromAction(
         session,
-        { workspaceId: long, clientProfileId: "c", templateId: "t" },
+        {
+          workspaceId: long,
+          clientIndex: 0,
+          templateIndex: 0,
+          listFingerprint: "fp",
+        },
         { db: unreachableDb },
       ),
     ).toEqual({ ok: false, message: INVALID });
     expect(
       await cancelSetupAssignmentFromAction(
         session,
-        { workspaceId: "w", pinId: "" },
+        { workspaceId: "w", pinIndex: 0, rowFingerprint: "" },
+        { db: unreachableDb },
+      ),
+    ).toEqual({ ok: false, message: INVALID });
+    expect(
+      await assignTemplateFromAction(
+        session,
+        {
+          workspaceId: "w",
+          clientIndex: -1,
+          templateIndex: 0,
+          listFingerprint: "fp",
+        },
+        { db: unreachableDb },
+      ),
+    ).toEqual({ ok: false, message: INVALID });
+    expect(
+      await cancelSetupAssignmentFromAction(
+        session,
+        { workspaceId: "w", pinIndex: 0.5, rowFingerprint: "fp" },
         { db: unreachableDb },
       ),
     ).toEqual({ ok: false, message: INVALID });
@@ -142,6 +173,7 @@ describe("P-016 boundary — input binding", () => {
 describe("P-016 boundary — error mapping", () => {
   it("maps service error codes to stable messages", async () => {
     flagOn();
+    vi.mocked(resolveCancelSelection).mockResolvedValue({ pinId: "p" });
     for (const [code, message] of [
       ["assignment_not_accessible", DENIED],
       ["assignment_not_active", "This assignment is no longer active."],
@@ -152,13 +184,14 @@ describe("P-016 boundary — error mapping", () => {
         "This client already has a current template assignment.",
       ],
       ["serialization_conflict", "A conflict occurred. Please try again."],
+      ["stale_selection", STALE],
     ] as const) {
       vi.mocked(cancelClientSetupAssignment).mockRejectedValueOnce(
         new ClientSetupError(code),
       );
       const result = await cancelSetupAssignmentFromAction(
         session,
-        { workspaceId: "w", pinId: "p" },
+        { workspaceId: "w", pinIndex: 0, rowFingerprint: "fp" },
         { db: {} as never },
       );
       expect(result).toEqual({ ok: false, message });
@@ -167,13 +200,14 @@ describe("P-016 boundary — error mapping", () => {
 
   it("maps access denials and unknown errors to non-disclosing messages", async () => {
     flagOn();
+    vi.mocked(resolveCancelSelection).mockResolvedValue({ pinId: "p" });
     vi.mocked(cancelClientSetupAssignment).mockRejectedValueOnce(
       new AccessDeniedError("not_assigned", "clientSetups", "write"),
     );
     expect(
       await cancelSetupAssignmentFromAction(
         session,
-        { workspaceId: "w", pinId: "p" },
+        { workspaceId: "w", pinIndex: 0, rowFingerprint: "fp" },
         { db: {} as never },
       ),
     ).toEqual({ ok: false, message: DENIED });
@@ -183,7 +217,7 @@ describe("P-016 boundary — error mapping", () => {
     expect(
       await cancelSetupAssignmentFromAction(
         session,
-        { workspaceId: "w", pinId: "p" },
+        { workspaceId: "w", pinIndex: 0, rowFingerprint: "fp" },
         { db: {} as never },
       ),
     ).toEqual({ ok: false, message: GENERIC });

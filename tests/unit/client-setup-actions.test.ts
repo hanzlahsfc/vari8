@@ -63,12 +63,20 @@ describe("P-016 server actions — flag-off ordering", () => {
       () =>
         assignTemplate(
           "ws1",
-          trackedFormData({ clientProfileId: "c", templateId: "t" }).fd,
+          trackedFormData({
+            clientIndex: "0",
+            templateIndex: "1",
+            listFingerprint: "fp",
+          }).fd,
         ),
     ],
     [
       "cancelSetupAssignment",
-      () => cancelSetupAssignment("ws1", trackedFormData({ pinId: "p" }).fd),
+      () =>
+        cancelSetupAssignment(
+          "ws1",
+          trackedFormData({ pinIndex: "0", rowFingerprint: "fp" }).fd,
+        ),
     ],
   ])(
     "%s fails closed before auth, FormData, or the boundary",
@@ -86,7 +94,7 @@ describe("P-016 server actions — flag-off ordering", () => {
 
   it("flag-off never reads FormData entries", async () => {
     delete process.env[FLAG];
-    const { fd, getAll, get } = trackedFormData({ pinId: "p" });
+    const { fd, getAll, get } = trackedFormData({ pinIndex: "0" });
     await cancelSetupAssignment("ws1", fd);
     expect(getAll).not.toHaveBeenCalled();
     expect(get).not.toHaveBeenCalled();
@@ -115,26 +123,67 @@ describe("P-016 server actions — flag-on validation", () => {
     expect(assignTemplateFromAction).not.toHaveBeenCalled();
   });
 
-  it("assignTemplate delegates with bounded inputs", async () => {
+  it("assignTemplate delegates with parsed positional inputs", async () => {
     const fd = new FormData();
-    fd.set("clientProfileId", "client_1");
-    fd.set("templateId", "tpl_1");
+    fd.set("clientIndex", "0");
+    fd.set("templateIndex", "1");
+    fd.set("listFingerprint", "fp_abc");
     const result = await assignTemplate("ws1", fd);
     expect(result).toEqual({ ok: true, value: { assignmentId: "pin_x" } });
     expect(assignTemplateFromAction).toHaveBeenCalledWith(
       { user: { id: "u_test" } },
-      { workspaceId: "ws1", clientProfileId: "client_1", templateId: "tpl_1" },
+      {
+        workspaceId: "ws1",
+        clientIndex: 0,
+        templateIndex: 1,
+        listFingerprint: "fp_abc",
+      },
     );
   });
 
-  it("cancelSetupAssignment delegates with the pin id", async () => {
+  it.each([
+    ["a missing index", { templateIndex: "1", listFingerprint: "fp" }],
+    [
+      "a non-numeric index",
+      { clientIndex: "abc", templateIndex: "1", listFingerprint: "fp" },
+    ],
+    [
+      "a negative index",
+      { clientIndex: "-1", templateIndex: "1", listFingerprint: "fp" },
+    ],
+    [
+      "a decimal index",
+      { clientIndex: "0.5", templateIndex: "1", listFingerprint: "fp" },
+    ],
+    ["a missing fingerprint", { clientIndex: "0", templateIndex: "1" }],
+  ])("rejects %s before delegating", async (_name, fields) => {
     const fd = new FormData();
-    fd.set("pinId", "pin_1");
+    for (const [k, v] of Object.entries(fields)) fd.append(k, v);
+    const result = await assignTemplate("ws1", fd);
+    expect(result.ok).toBe(false);
+    expect(assignTemplateFromAction).not.toHaveBeenCalled();
+  });
+
+  it("rejects duplicate index fields before delegating", async () => {
+    const fd = new FormData();
+    fd.append("clientIndex", "0");
+    fd.append("clientIndex", "1");
+    fd.set("templateIndex", "1");
+    fd.set("listFingerprint", "fp");
+    const result = await assignTemplate("ws1", fd);
+    expect(result.ok).toBe(false);
+    expect(assignTemplateFromAction).not.toHaveBeenCalled();
+  });
+
+  it("cancelSetupAssignment delegates with the positional pin index", async () => {
+    const fd = new FormData();
+    fd.set("pinIndex", "2");
+    fd.set("rowFingerprint", "fp_rows");
     const result = await cancelSetupAssignment("ws1", fd);
     expect(result).toEqual({ ok: true, value: { cancelled: true } });
     expect(cancelSetupAssignmentFromAction).toHaveBeenCalledWith(
       { user: { id: "u_test" } },
-      { workspaceId: "ws1", pinId: "pin_1" },
+      { workspaceId: "ws1", pinIndex: 2, rowFingerprint: "fp_rows" },
     );
   });
 });

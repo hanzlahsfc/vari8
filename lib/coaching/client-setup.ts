@@ -32,6 +32,8 @@
  * template's versionSeq — never the pin's seq.
  */
 
+import { createHash } from "node:crypto";
+
 import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { prisma as defaultPrisma } from "../db";
@@ -48,14 +50,15 @@ import {
 } from "../workspace/access";
 import { writeAuditEvent } from "../audit";
 import { buildClientProfileWhere, normalizeLimit } from "../workspace/clients";
-import { ClientSetupError } from "./client-setup-gate";
+import { CLIENT_SETUP_LIMITS, ClientSetupError } from "./client-setup-gate";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
 export type TemplateAssignmentSummary = {
-  id: string;
+  /** Absolute position in the caller's authorized ordered row list —
+   * the only selection token the browser ever sends back (P-016-R2). */
+  index: number;
   clientName: string;
-  templateId: string;
   templateName: string;
   /** Whether the pinned template is currently archived — archived templates
    * accept no new assignments but existing pins stay effective and readable
@@ -63,8 +66,6 @@ export type TemplateAssignmentSummary = {
   templateArchived: boolean;
   /** The immutable pinned template version's seq (the audit version marker). */
   versionSeq: number;
-  /** Per-setup append-only ordering. */
-  seq: number;
   status: "ACTIVE" | "SUPERSEDED" | "CANCELLED";
   assignedAt: string;
   endedAt: string | null;
@@ -80,6 +81,38 @@ export type AssignableTemplate = {
    * #46 permits duplicate names). */
   createdAt: string;
 };
+
+// ── Positional selection + fingerprint contract (P-016-R2) ────────────────
+
+/**
+ * Canonical fingerprint of an ordered identity list (or several lists joined
+ * in fixed order). The fingerprint is a CONSISTENCY token only — it proves
+ * the browser's positional selection was made against the same authorized
+ * list the server re-resolves at submit time. It never replaces
+ * authorization: every resolved identity is reauthorized and
+ * workspace-scoped before any mutation.
+ */
+export function computeSelectionFingerprint(...groups: string[][]): string {
+  const hash = createHash("sha256");
+  for (const [gi, group] of groups.entries()) {
+    if (gi > 0) hash.update("\x00");
+    for (const id of group) hash.update(`${id}\n`);
+  }
+  return hash.digest("hex");
+}
+
+function fingerprintMismatch(fingerprint: string, expected: string): boolean {
+  return fingerprint !== expected;
+}
+
+function boundedIndex(value: unknown): number | null {
+  return typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= 0 &&
+    value <= CLIENT_SETUP_LIMITS.indexMax
+    ? value
+    : null;
+}
 
 // ── Concurrency protocol (mirrors the reviewed assignments service) ────────
 
@@ -176,15 +209,13 @@ type SummaryRow = Prisma.ClientSetupPinGetPayload<{
   select: typeof summarySelect;
 }>;
 
-function toSummary(row: SummaryRow): TemplateAssignmentSummary {
+function toSummary(row: SummaryRow, index: number): TemplateAssignmentSummary {
   return {
-    id: row.id,
+    index,
     clientName: row.clientProfile.name,
-    templateId: row.template.id,
     templateName: row.template.name,
     templateArchived: row.template.status === "ARCHIVED",
     versionSeq: row.templateVersion.versionSeq,
-    seq: row.seq,
     status: row.status,
     assignedAt: row.assignedAt.toISOString(),
     endedAt: row.endedAt?.toISOString() ?? null,
@@ -303,7 +334,11 @@ export async function listClientSetups(
   session: SessionLike,
   input: { workspaceId: string; limit?: number; cursor?: string },
   client: PrismaClient = defaultPrisma,
-): Promise<{ items: TemplateAssignmentSummary[]; nextCursor: string | null }> {
+): Promise<{
+  items: TemplateAssignmentSummary[];
+  nextCursor: string | null;
+  fingerprint: string;
+}> {
   const ctx = await authorizeCollection(
     session,
     {
@@ -314,27 +349,66 @@ export async function listClientSetups(
     createPrismaAuthorizationRepo(client),
   );
   const limit = normalizeLimit(input.limit);
-  const rows = await client.clientSetupPin.findMany({
-    where: {
-      ...setupWhere(ctx),
-      ...(input.cursor !== undefined ? { id: { gt: input.cursor } } : {}),
-    },
-    orderBy: { id: "asc" },
-    take: limit + 1,
-    select: summarySelect,
-  });
+  const where = {
+    ...setupWhere(ctx),
+    ...(input.cursor !== undefined ? { id: { gt: input.cursor } } : {}),
+  };
+  // The full authorized ordered id list backs both the list fingerprint and
+  // each row's absolute positional index — a single indexed id-only scan.
+  const [idRows, rows] = await Promise.all([
+    client.clientSetupPin.findMany({
+      where: setupWhere(ctx),
+      orderBy: { id: "asc" },
+      select: { id: true },
+    }),
+    client.clientSetupPin.findMany({
+      where,
+      orderBy: { id: "asc" },
+      take: limit + 1,
+      select: summarySelect,
+    }),
+  ]);
+  const orderedIds = idRows.map((r) => r.id);
+  const indexOf = new Map(orderedIds.map((id, i) => [id, i] as const));
   const page = rows.slice(0, limit);
   return {
-    items: page.map(toSummary),
+    items: page.map((row) => toSummary(row, indexOf.get(row.id)!)),
     nextCursor: rows.length > limit ? page[page.length - 1].id : null,
+    fingerprint: computeSelectionFingerprint(orderedIds),
   };
+}
+
+/** Ordered authorized pin ids — the canonical row list for positional
+ * cancel resolution. Reauthorizes on every call; returns ids server-side
+ * only (the boundary never serializes them to the browser). */
+export async function listClientSetupPinIds(
+  session: SessionLike,
+  input: { workspaceId: string },
+  client: PrismaClient = defaultPrisma,
+): Promise<{ ids: string[]; fingerprint: string }> {
+  const ctx = await authorizeCollection(
+    session,
+    {
+      resource: "clientSetups",
+      action: "read",
+      workspaceId: input.workspaceId,
+    },
+    createPrismaAuthorizationRepo(client),
+  );
+  const rows = await client.clientSetupPin.findMany({
+    where: setupWhere(ctx),
+    orderBy: { id: "asc" },
+    select: { id: true },
+  });
+  const ids = rows.map((r) => r.id);
+  return { ids, fingerprint: computeSelectionFingerprint(ids) };
 }
 
 export async function listAssignableSetupClients(
   session: SessionLike,
-  input: { workspaceId: string; limit?: number; cursor?: string },
+  input: { workspaceId: string },
   client: PrismaClient = defaultPrisma,
-): Promise<{ items: AssignableSetupClient[]; nextCursor: string | null }> {
+): Promise<AssignableSetupClient[]> {
   const ctx = await authorizeCollection(
     session,
     {
@@ -344,8 +418,9 @@ export async function listAssignableSetupClients(
     },
     createPrismaAuthorizationRepo(client),
   );
-  const limit = normalizeLimit(input.limit);
-  const rows = await client.clientProfile.findMany({
+  // The picker list is the resolution table for positional selection — it
+  // must be the full authorized set with a deterministic order.
+  return client.clientProfile.findMany({
     where: {
       ...buildClientProfileWhere(ctx.grantedScope, {
         workspaceId: ctx.workspaceId,
@@ -353,17 +428,10 @@ export async function listAssignableSetupClients(
         workspaceMemberId: ctx.workspaceMemberId,
       }),
       ...ELIGIBLE_CLIENT_PREDICATE(ctx.workspaceId),
-      ...(input.cursor !== undefined ? { id: { gt: input.cursor } } : {}),
     },
     orderBy: { id: "asc" },
-    take: limit + 1,
     select: { id: true, name: true },
   });
-  const page = rows.slice(0, limit);
-  return {
-    items: page,
-    nextCursor: rows.length > limit ? page[page.length - 1].id : null,
-  };
 }
 
 export async function listAssignableTemplates(
@@ -408,6 +476,70 @@ export async function listAssignableTemplates(
     latestVersionSeq: row.versions[0]!.versionSeq,
     createdAt: row.createdAt.toISOString(),
   }));
+}
+
+// ── Positional resolution (P-016-R2) ───────────────────────────────────────
+
+/**
+ * Resolves the browser's positional (index + fingerprint) selection for the
+ * assign form back to server-side identities. Re-fetches the SAME authorized
+ * ordered lists the render used — any change to eligibility, archive state,
+ * scope, or membership between render and submit changes the fingerprint and
+ * fails closed with `stale_selection` and zero writes. A fingerprint that
+ * matches but an index outside the resolved list is tampered input, not a
+ * staleness signal, so it fails with `invalid_input`.
+ */
+export async function resolveAssignSelection(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    clientIndex: number;
+    templateIndex: number;
+    fingerprint: string;
+  },
+  client: PrismaClient = defaultPrisma,
+): Promise<{ clientProfileId: string; templateId: string }> {
+  const [clients, templates] = await Promise.all([
+    listAssignableSetupClients(
+      session,
+      { workspaceId: input.workspaceId },
+      client,
+    ),
+    listAssignableTemplates(
+      session,
+      { workspaceId: input.workspaceId },
+      client,
+    ),
+  ]);
+  const expected = computeSelectionFingerprint(
+    clients.map((c) => c.id),
+    templates.map((t) => t.id),
+  );
+  if (fingerprintMismatch(input.fingerprint, expected))
+    throw new ClientSetupError("stale_selection");
+  const clientRow = clients[boundedIndex(input.clientIndex) ?? -1];
+  const templateRow = templates[boundedIndex(input.templateIndex) ?? -1];
+  if (!clientRow || !templateRow) throw new ClientSetupError("invalid_input");
+  return { clientProfileId: clientRow.id, templateId: templateRow.id };
+}
+
+/** Same contract for the cancellation row list — the submitted index is an
+ * absolute position in the caller's authorized ordered pin list. */
+export async function resolveCancelSelection(
+  session: SessionLike,
+  input: { workspaceId: string; pinIndex: number; fingerprint: string },
+  client: PrismaClient = defaultPrisma,
+): Promise<{ pinId: string }> {
+  const { ids, fingerprint: expected } = await listClientSetupPinIds(
+    session,
+    { workspaceId: input.workspaceId },
+    client,
+  );
+  if (fingerprintMismatch(input.fingerprint, expected))
+    throw new ClientSetupError("stale_selection");
+  const pinId = ids[boundedIndex(input.pinIndex) ?? -1];
+  if (!pinId) throw new ClientSetupError("invalid_input");
+  return { pinId };
 }
 
 // ── Mutations ──────────────────────────────────────────────────────────────

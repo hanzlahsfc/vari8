@@ -8,11 +8,9 @@ import {
 import { resolveScope } from "@/lib/auth/rbac";
 import { isClientSetupEnabled } from "@/lib/coaching/client-setup-gate";
 import {
-  listAssignableClientsForSetup,
-  listAssignableTemplatesForSetup,
+  listAssignFormChoices,
   listClientSetupsForWorkspace,
-  type AssignableSetupClient,
-  type AssignableTemplate,
+  type AssignFormChoices,
 } from "@/lib/coaching/client-setup-boundary";
 import {
   nextRosterHref,
@@ -70,17 +68,13 @@ export default async function ClientSetupPage({
   const canWrite =
     resolveScope("clientSetups", "write", ctx.workspaceRole) !== "denied";
 
-  // Picker lists are only fetched when mutation controls render.
-  let clients: AssignableSetupClient[] = [];
-  let templates: AssignableTemplate[] = [];
+  // Picker choices are only fetched when mutation controls render — they
+  // carry display labels, positions, and a list fingerprint, never ids.
+  let choices: AssignFormChoices | null = null;
   if (canWrite) {
-    const [clientsPage, templatesResult] = await Promise.all([
-      listAssignableClientsForSetup(session, { workspaceId, limit: 100 }),
-      listAssignableTemplatesForSetup(session, { workspaceId }),
-    ]);
-    if (!clientsPage.ok || !templatesResult.ok) forbidden();
-    clients = clientsPage.value.items;
-    templates = templatesResult.value;
+    const choicesResult = await listAssignFormChoices(session, { workspaceId });
+    if (!choicesResult.ok) forbidden();
+    choices = choicesResult.value;
   }
 
   const basePath = `/workspace/${encodeURIComponent(workspaceId)}/client-setups`;
@@ -106,9 +100,9 @@ export default async function ClientSetupPage({
       <SetupManager
         workspaceId={workspaceId}
         canWrite={canWrite}
-        clients={clients}
-        templates={templates}
+        choices={choices}
         rows={assignments.items}
+        rowFingerprint={assignments.fingerprint}
       />
 
       {prevHref !== null || nextHref !== null ? (
