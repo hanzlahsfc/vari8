@@ -5,6 +5,36 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-07 — P-016 C1 client setup + template assignments implemented
+
+- Tests-first on `feature/p016-client-setup-assignments` (from `767f19d`):
+  RED run of six new unit specs failed on missing modules/resource (10
+  failed / 6 passed) before any production code existed.
+- One migration adds `ClientSetup` (stable per-(workspace, client)
+  aggregate) + `ClientSetupPin` (append-only assignment/version-pin
+  history) with composite same-workspace + version∈template∈workspace
+  FKs, provenance CHECK, one-ACTIVE-per-setup partial unique, and the
+  `(clientSetupId, seq)` backstop. `SUPERSEDED` is schema-reserved for C2 —
+  no service writes it.
+- `clientSetups` RBAC per decisions #51–#54 (owner workspace; coach
+  assigned read/write — any ACTIVE assigned coach; assistant read-only;
+  client/support/platform-admin denied incl. dual-role).
+- Service `lib/coaching/client-setup.ts`: Serializable tx + per-client
+  advisory lock → aggregate FOR UPDATE → template FOR UPDATE → insert under
+  the partial unique index; in-transaction authorization; transaction-bound
+  audits (`client_setup_pin`, `meta.version` = pinned versionSeq); uniform
+  non-disclosure. Cancellation requires no eligibility (#51); reassign
+  reuses the stable setup with seq+1.
+- Boundary (`ENABLE_CLIENT_SETUP=1` gate first, before input binding),
+  `requireClientSetupAccess` route guard, staff UI at
+  `/workspace/[workspaceId]/client-setup` (assign form + current/history
+  table + confirmed cancel; assistants read-only), dev-flagged nav entry.
+- Local gates green: 776 unit tests, typecheck, lint, format, build.
+  Integration (22 tests) + E2E need disposable PG — CI runs them.
+- Full record: `docs/tasks/p016-client-setup-assignments.md`. Next gates:
+  independent different-model review → PR → `verify` CI → separate merge
+  approval. No PR/merge/deploy authorized.
+
 ## 2026-10-07 — P-015 client-setup decisions approved (docs only)
 
 - Owner approved the complete nine-decision P-015 C1 package →

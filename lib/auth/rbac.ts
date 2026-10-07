@@ -52,6 +52,8 @@ export const RESOURCES = [
   // P-014 (product-decisions #41–#42): workspace parameter/template library.
   "parameterDefinitions",
   "coachingTemplates",
+  // P-016 (product-decisions #49–#57): client setup + template assignments.
+  "clientSetups",
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
 
@@ -261,6 +263,21 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
     WORKSPACE_OWNER: c("workspace", "workspace"),
     COACH: c("workspace", "workspace"),
     ASSISTANT_COACH: D,
+    SUPPORT: D,
+    CLIENT: D,
+  },
+  // P-016 (product-decisions #51–#54): staff-only client setup + template
+  // assignment RECORDS — assignment metadata, not client content. Same scope
+  // shape as onboardingAssignments: owner workspace-wide; coach/assistant
+  // constrained to clients covered by their current ACTIVE ClientAssignment
+  // (any ACTIVE assigned coach may manage — D-11 resolved; never PRIMARY-only
+  // and never confers ClientAssignment scope); assistant read-only;
+  // client/support/platform-admin denied outright (incl. dual-role).
+  clientSetups: {
+    PLATFORM_ADMIN: D,
+    WORKSPACE_OWNER: c("workspace", "workspace"),
+    COACH: c("assigned", "assigned"),
+    ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
     CLIENT: D,
   },

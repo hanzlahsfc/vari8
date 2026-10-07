@@ -8,6 +8,7 @@ import {
 } from "@/lib/auth/rbac";
 import { isOnboardingAssignmentsEnabled } from "@/lib/onboarding/assignments-gate";
 import { isCoachingTemplatesEnabled } from "@/lib/coaching/gate";
+import { isClientSetupEnabled } from "@/lib/coaching/client-setup-gate";
 
 type NavItem = {
   href: string;
@@ -98,6 +99,18 @@ export function WorkspaceNav({
       enabled: isCoachingTemplatesEnabled(
         process.env.ENABLE_COACHING_TEMPLATES,
       ),
+    },
+    // P-016: staff-only client setup / template assignment surface —
+    // dev-flagged AND pinned to the three staff roles (the scope cells
+    // already deny CLIENT/SUPPORT; the pin keeps intent explicit). Cosmetic
+    // only — the route re-authorizes server-side.
+    {
+      href: `/workspace/${workspaceId}/client-setup`,
+      label: "Client Setup",
+      resource: "clientSetups",
+      action: "read",
+      roles: ["WORKSPACE_OWNER", "COACH", "ASSISTANT_COACH"],
+      enabled: isClientSetupEnabled(process.env.ENABLE_CLIENT_SETUP),
     },
     {
       href: `/workspace/${workspaceId}/nutrition`,

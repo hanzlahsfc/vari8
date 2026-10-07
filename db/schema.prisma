@@ -151,6 +151,8 @@ model Workspace {
   coachingTemplates             CoachingTemplate[]
   coachingTemplateVersions      CoachingTemplateVersion[]
   coachingTemplateVersionParams CoachingTemplateVersionParameter[]
+  clientSetups                  ClientSetup[]
+  clientSetupPins               ClientSetupPin[]
 
   @@map("workspace")
 }
@@ -179,6 +181,8 @@ model WorkspaceMember {
   onboardingFormVersions       OnboardingFormVersion[]    @relation("OnboardingFormVersionPublisher")
   onboardingAssignmentsCreated OnboardingFormAssignment[] @relation("OnboardingAssignmentAssignedBy")
   onboardingAssignmentsEnded   OnboardingFormAssignment[] @relation("OnboardingAssignmentEndedBy")
+  clientSetupPinsAssigned      ClientSetupPin[]           @relation("ClientSetupPinAssignedBy")
+  clientSetupPinsEnded         ClientSetupPin[]           @relation("ClientSetupPinEndedBy")
 
   parametersCreated         ParameterDefinition[]     @relation("ParameterDefinitionCreator")
   parametersUpdated         ParameterDefinition[]     @relation("ParameterDefinitionUpdater")
@@ -223,6 +227,8 @@ model ClientProfile {
   consents              ConsentRecord[]
   auditSubjectEvents    AuditEvent[]
   onboardingAssignments OnboardingFormAssignment[] @relation("OnboardingAssignmentClient")
+  clientSetups          ClientSetup[]              @relation("ClientSetupClient")
+  clientSetupPins       ClientSetupPin[]           @relation("ClientSetupPinClient")
 
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
   @@unique([workspaceId, userId])
@@ -715,6 +721,7 @@ model CoachingTemplate {
   archivedByMember  WorkspaceMember?                   @relation("CoachingTemplateArchiver", fields: [archivedByMemberId], references: [id], onDelete: Restrict)
   versions          CoachingTemplateVersion[]
   versionReferences CoachingTemplateVersionParameter[]
+  clientSetupPins   ClientSetupPin[] @relation("ClientSetupPinTemplate")
 
   // Composite target for same-workspace foreign keys (raw SQL).
   @@unique([id, workspaceId])
@@ -738,6 +745,7 @@ model CoachingTemplateVersion {
   template          CoachingTemplate                   @relation(fields: [templateId], references: [id], onDelete: Restrict)
   publishedByMember WorkspaceMember                    @relation("CoachingTemplateVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
   parameters        CoachingTemplateVersionParameter[]
+  clientSetupPins   ClientSetupPin[] @relation("ClientSetupPinVersion")
 
   @@unique([templateId, versionSeq])
   @@unique([templateId, publishOriginRevision])
@@ -764,4 +772,82 @@ model CoachingTemplateVersionParameter {
   // Backs the post-publish semantic-lock EXISTS check and reverse usage.
   @@index([parameterId])
   @@map("coaching_template_version_parameter")
+}
+
+// ── P-016 C1 client setup + template assignments (product-decisions #49–#57)
+// ClientSetup is the stable per-client configuration aggregate — it survives
+// cancellation and reassignment and never carries a status. ClientSetupPin is
+// the append-only assignment/version-pin history: exactly one ACTIVE pin per
+// setup, immutable (templateId, templateVersionId, assignedBy, assignedAt)
+// tuple, exactly one terminal transition (CANCELLED in C1; SUPERSEDED is
+// schema-reserved for C2). Same-workspace coherence, setup↔pin membership,
+// version∈template∈workspace pinning, provenance shape, the one-ACTIVE
+// partial unique, and the (clientSetupId, seq) backstop are enforced by raw
+// SQL in the migration (Prisma cannot express them).
+
+enum ClientSetupPinStatus {
+  ACTIVE
+  SUPERSEDED // schema-reserved for C2 transitions; no C1 service may set it
+  CANCELLED
+}
+
+model ClientSetup {
+  id              String   @id @default(cuid())
+  workspaceId     String   @map("workspace_id")
+  clientProfileId String   @map("client_profile_id")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace     Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile    @relation("ClientSetupClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  pins          ClientSetupPin[]
+
+  // One stable setup per (workspace, client) — created on first assignment,
+  // reused by every later pin (decision #49). The two composite uniques are
+  // targets for the pin's setup∈workspace and pin.client↔setup.client
+  // foreign keys (raw SQL).
+  @@unique([workspaceId, clientProfileId])
+  @@unique([id, workspaceId])
+  @@unique([id, clientProfileId])
+  @@index([clientProfileId])
+  @@map("client_setup")
+}
+
+model ClientSetupPin {
+  id                 String               @id @default(cuid())
+  clientSetupId      String               @map("client_setup_id")
+  workspaceId        String               @map("workspace_id")
+  clientProfileId    String               @map("client_profile_id")
+  // Per-setup append-only ordering, allocated as max(seq)+1 under the
+  // per-client advisory lock + aggregate row lock (never the audit
+  // meta.version — that carries the pinned template versionSeq).
+  seq                Int
+  templateId         String               @map("template_id")
+  templateVersionId  String               @map("template_version_id")
+  status             ClientSetupPinStatus @default(ACTIVE)
+  assignedByMemberId String               @map("assigned_by_member_id")
+  assignedAt         DateTime             @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  endedByMemberId    String?              @map("ended_by_member_id")
+  endedAt            DateTime?            @map("ended_at") @db.Timestamptz(6)
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  clientSetup      ClientSetup            @relation(fields: [clientSetupId], references: [id], onDelete: Restrict)
+  workspace        Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile    ClientProfile          @relation("ClientSetupPinClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  template         CoachingTemplate       @relation("ClientSetupPinTemplate", fields: [templateId], references: [id], onDelete: Restrict)
+  templateVersion  CoachingTemplateVersion @relation("ClientSetupPinVersion", fields: [templateVersionId], references: [id], onDelete: Restrict)
+  assignedByMember WorkspaceMember        @relation("ClientSetupPinAssignedBy", fields: [assignedByMemberId], references: [id], onDelete: Restrict)
+  endedByMember    WorkspaceMember?       @relation("ClientSetupPinEndedBy", fields: [endedByMemberId], references: [id], onDelete: Restrict)
+
+  // (workspaceId, id) serves the workspace-scoped id-cursor pagination;
+  // client/status and template/status serve scoped reads; versionId backs
+  // the FK parent-delete scan. The ACTIVE cardinality lives in the raw
+  // partial unique index "client_setup_pin_one_active_key" (migration only).
+  @@unique([clientSetupId, seq])
+  @@index([workspaceId, id])
+  @@index([clientProfileId, status])
+  @@index([templateId, status])
+  @@index([templateVersionId])
+  @@map("client_setup_pin")
 }

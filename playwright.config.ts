@@ -30,6 +30,9 @@ export default defineConfig({
         // P-014: parameter + coaching template library enabled on the
         // primary test server only.
         ENABLE_COACHING_TEMPLATES: "1",
+        // P-016: staff-only client setup surface enabled on the primary
+        // test server so E2E exercises the real feature-on flows.
+        ENABLE_CLIENT_SETUP: "1",
         // Deterministic test-only secret (NOT a real credential). CI/local may
         // override AUTH_SECRET; the fallback keeps the suite self-contained.
         AUTH_SECRET:
@@ -57,6 +60,9 @@ export default defineConfig({
         // P-014 flag-off: explicitly empty so an inherited
         // ENABLE_COACHING_TEMPLATES=1 cannot leak into the proof server.
         ENABLE_COACHING_TEMPLATES: "",
+        // P-016 flag-off: explicitly empty so an inherited
+        // ENABLE_CLIENT_SETUP=1 cannot leak into the proof server.
+        ENABLE_CLIENT_SETUP: "",
         AUTH_SECRET:
           process.env.AUTH_SECRET ?? "test-only-auth-secret-not-for-production",
         DATABASE_URL:
