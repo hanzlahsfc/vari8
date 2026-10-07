@@ -122,9 +122,16 @@ is assumed.
   assignment, server-pinned latest published version, scoped cancellation,
   retained history — is approved; variant choice and per-client plans remain
   deferred (C3+, D-12); the concrete schema stays an engineering decision.
-- _DailyEntry_ — client-owned dated measurement values keyed by parameter ID and
-  carrying the **write-time metadata snapshot** (unit, rating scheme, label) so
-  history renders as entered regardless of later configuration edits.
+- _DailyEntry_ — client-owned dated measurement values keyed by **parameter
+  identity** and carrying the **write-time metadata snapshot** (unit, rating
+  scheme, label) so history renders as entered regardless of later
+  configuration edits. **Update (product-decisions #64–#78, P-019):** the
+  product rules are approved — one entry per client per declared date,
+  append-only revisions, explicit save, client-only writes, fail-closed
+  stale/revocation behavior, `GENERAL_HEALTH`-only eligibility, normalized
+  parameter-keyed values, and binding structural-eligibility-vs-runtime-access
+  constraints. Implementation and production remain separately gated; full
+  record: `docs/tasks/p019-daily-entry-persistence-decisions.md`.
 - _ClientTargets / PlanSet_ — effective-dated coach-prescribed targets
   (nutrition/activity/etc.); each change appends a new effective-dated version;
   old versions stay readable for history and roadmap comparisons.
@@ -630,11 +637,15 @@ client existing — it cannot trail the persistence slices:
 4. _Configured daily entry persistence_ — client `own`-scoped writes for
    selected parameters only, write-time metadata snapshot. Acceptance:
    unselected parameter write denied (403); entry readable as entered.
-   **Sequencing note (product-decisions #62–#63):** DailyEntry is the next
-   recommended planning slice; it does not require C3, and per #62 the
-   deferred C2 implementation-planning gate reopens immediately before the
-   first data-consuming implementation. Nothing here authorizes DailyEntry
-   or C2 implementation.
+   **Sequencing note (product-decisions #62–#63, P-019 #64–#78):** the
+   DailyEntry product rules are now approved; it does not require C3 or C4.
+   Fixed order ahead: corrected C2 data-aware plan (folding #71's
+   warn/confirm/block rules) → independent review → separately authorized
+   C2 implementation/merge → separately authorized dev-gated DailyEntry
+   implementation/merge → D-10/consent/privacy readiness → deployment by
+   separate authorization. C2 must merge before DailyEntry. Nothing here
+   authorizes C2 or DailyEntry implementation, production enablement, or
+   deployment.
 5. _Check-in v1_ — versioned form, immutable submissions, awaiting-feedback
    states. Acceptance: open≠respond; submit idempotent.
 6. Later: coach workspace surfaces (W01–W11 remainder), mealplan setup,

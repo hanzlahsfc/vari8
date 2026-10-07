@@ -5,6 +5,28 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-08 — P-019 DailyEntry decisions approved (docs only)
+
+- Owner approved the corrected P-019 package → `product-decisions.md`
+  **#64–#78** plus binding correctness constraints: one value per parameter
+  (universal duplicate rejection), one entry/client/date with append-only
+  revisions, declared-date bounds, explicit save, client-only writes,
+  fail-closed stale/revocation behavior, `GENERAL_HEALTH`-only eligibility,
+  normalized parameter-keyed values, dev-gated implementation, D-10-gated
+  production.
+- Review chain: P-019 → R1 FAIL → R2 → R2-R1 FAIL → R3 → R3-R1 FAIL →
+  R4 → **R4-R1 CONDITIONAL PASS** (`opencode-go/deepseek-v4.1-flash`, no
+  P0/P1) → R5 bounded reviewer synthesis → owner approval.
+- Reserved classifications `BLOODWORK`/`PED_HRT` unassignable by every
+  role; CALORIES stays excluded; cycle fields excluded this slice;
+  restoration deferred; structural-vs-runtime eligibility separation is a
+  binding constraint.
+- Docs-only branch `docs/p019-daily-entry-decisions`; full record:
+  `docs/tasks/p019-daily-entry-persistence-decisions.md`.
+  **C2 implementation and DailyEntry implementation remain unauthorized;
+  no production enablement or deployment.** Next: corrected C2
+  data-aware plan (C2 must merge before DailyEntry).
+
 ## 2026-10-08 — P-018 C3 variants deferred (docs only)
 
 - C3 feasibility planning completed: **no variant implementation or

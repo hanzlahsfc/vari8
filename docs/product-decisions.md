@@ -478,6 +478,188 @@ Full record: `docs/tasks/p018-c3-variant-feasibility.md`.
     DailyEntry planning. This approval is documentation only — it
     authorizes no implementation.
 
+## P-019 DailyEntry persistence — owner approval (relayed 2026-10-08)
+
+The product owner approved the corrected P-019 DailyEntry persistence plan and
+its fifteen-item decision package, including the binding correctness
+constraints, following the P-019→R4 review chain (final independent review
+P-019-R4-R1 CONDITIONAL PASS by `opencode-go/deepseek-v4.1-flash`, no P0/P1).
+Full record: `docs/tasks/p019-daily-entry-persistence-decisions.md`. This
+records product rules only — it authorizes **no** C2 implementation, DailyEntry
+implementation, production enablement, specialist-data collection, real-client
+data, or deployment.
+
+64. **One value per parameter.** Every future `CoachingTemplateVersion`
+    publish universally rejects duplicate references to the same parameter.
+    DailyEntry exposes one logical input per parameter (parameter identity is
+    the metric identity; `itemId`/`sectionId` are presentation provenance).
+    Existing immutable versions are not rewritten; legacy duplicate-bearing
+    versions are structurally ineligible for DailyEntry. Repeated placements
+    sharing one value are rejected for v1 — no approved product need supports
+    canonical repeated rendering.
+
+65. **Cardinality + append-only revisions.** At most one DailyEntry per
+    workspace, client, and declared calendar date. Every changed save appends
+    an immutable revision; current state is selected through the
+    current-revision pointer. Multiple independent entries per day are not
+    approved.
+
+66. **Declared-date semantics.** The entry date is a client-declared calendar
+    `DATE`. Lower bound `1970-01-01`; upper bound = server UTC calendar date
+    plus exactly one day — a tolerance/sanity limit, not a claim about the
+    client's local today. Backdating is allowed within the range. No timezone
+    conversion rewrites stored dates. IANA timezone behavior remains
+    unresolved and separately gated.
+
+67. **Explicit save.** DailyEntry v1 uses an explicit Save action — no
+    drafts, autosave, or submitted/final workflow. Failed or incomplete
+    requests persist nothing. Autosave remains deferred and would require
+    later D-10 analysis.
+
+68. **Client editing + read-only history.** Clients may revise their own
+    current and past entries; revisions are append-only; history is
+    read-only. Restoration is not included — separately deferred.
+
+69. **No staff writes.** Staff do not write or correct client-authored
+    DailyEntry data in v1; authorized staff access stays read-only per the
+    approved RBAC. Attributed staff corrections remain deferred pending the
+    unresolved D-14 staff-write decision.
+
+70. **Stale-selection fails closed.** Saves fail closed when assignment, pin,
+    C2 transition, authorization, or consent state changed after rendering;
+    the user must reload before retrying; a stale request produces zero
+    revision, value, or audit writes; silent remapping is forbidden. Safety
+    boundary, not an optional preference.
+
+71. **C2 transitions with DailyEntry history.** A C2 transition removing a
+    parameter with history or rebinding an item to another parameter requires
+    explicit warning + confirmation; authorized reviewers see counts and date
+    bounds only, never stored health values; structurally ineligible targets
+    are blocked; display-only/required-state changes may stay informational;
+    the review stays bound to the exact pin, target, and diff and fails
+    stale. These approved rules do not authorize C2 implementation.
+
+72. **Development/production boundary.** DailyEntry implementation, if
+    separately authorized later, must remain development-gated. Production
+    enablement requires resolved D-10 controls, current approved
+    consent-policy versions, privacy/deletion/export readiness, and separate
+    authorization. No real-client health-data collection is approved;
+    deployment remains separately authorized.
+
+73. **Specialist-data boundary.** DailyEntry v1 accepts structurally eligible
+    `GENERAL_HEALTH` parameters only. `CYCLE` may be classified solely so it
+    can be identified and excluded — classification does not authorize
+    collection. `BLOODWORK` and `PED_HRT` are reserved and unassignable by
+    every role — including workspace owners, coaches, support, and platform
+    administrators — pending their legal/policy gates. Specialist-data
+    collection remains unauthorized. Safety boundary.
+
+74. **Decimal input.** Input may use a comma or period decimal separator;
+    values normalize to one canonical decimal representation; zero stays
+    distinct from missing; overflow/excess precision is rejected; values are
+    never silently rounded. Database precision/scale is a documented
+    engineering safety bound, not a source-confirmed range.
+
+75. **Unsupported kinds.** `TIME`, `DURATION`, and `RATING`/`WORD_LABELS` are
+    ineligible for DailyEntry v1; their formats/vocabularies remain
+    unresolved; no format may be invented in this slice.
+
+76. **Post-revocation behavior (interim).** Both reads and writes fail closed
+    after required consent is revoked or no longer current; stored rows are
+    retained. Retention, erasure, export, and any legally required access
+    remain governed by unresolved D-10. This makes no legal claim and does
+    not authorize production collection.
+
+77. **Restoration deferred.** Revision history remains read-only; no restore
+    control or restoration service is approved. Any future restoration must
+    validate against the current pin, current structural eligibility,
+    current authorization, and current consent using new snapshots; old pin
+    field sets must never be silently revived.
+
+78. **Classification migration.** Parameter classifications have no default.
+    Existing `NULL` classifications may transition only to `GENERAL_HEALTH`
+    or `CYCLE` — every permitted transition is immutable and audited;
+    `NULL→BLOODWORK`, `NULL→PED_HRT`, and every non-NULL→non-NULL change are
+    rejected. Existing immutable published versions are not rewritten and
+    remain structurally ineligible until a new version is published.
+    Classification never authorizes collection.
+
+### P-019 binding correctness constraints (not owner choices)
+
+The following are binding engineering/security constraints recorded with the
+approval; owner approval cannot waive them:
+
+- **Structural eligibility vs runtime access.** `DailyEntryVersionEligibility`
+  is a pure deterministic function of the immutable template-version snapshot
+  (schema validity, duplicate references, snapshotted classification,
+  supported kinds/schemes, option/validation coherence) — it never inspects or
+  caches feature flags, identity, membership, role, assignment, pin, consent,
+  or operation authority. Runtime access separately checks mode, session,
+  RBAC, active `ClientSetup`/pin, structural eligibility, configured consent
+  policy, current active consent, and operation authority. UI states must
+  distinguish no-assignment, structurally-ineligible, consent-unavailable,
+  denied, and stale without disclosing protected data. Neither layer is ever
+  cached into the other.
+- **Feature-mode conflict.** One shared resolver governs the DailyEntry page,
+  route handlers, persistent actions, and prototype actions. Persistent and
+  prototype flags enabled together are a configuration error — pages show a
+  non-disclosing unavailable state and actions refuse before session lookup,
+  input parsing, fingerprint resolution, or database access. Any flag value
+  other than exact `"1"` is disabled.
+- **Relational/service coherence.** Planned `ClientSetupPin` unique target
+  `(id, workspaceId, templateVersionId)`; planned `DailyEntryRevision`
+  composite FK `(clientSetupPinId, workspaceId, templateVersionId)` → that
+  target (named raw-SQL constraint/FK acceptable where Prisma cannot express
+  it; a non-unique index is never an FK target). Revision→entry membership,
+  entry workspace/client identity, and revision→pin workspace/version
+  identity are database-enforced; entry-client↔pin-client equality is a
+  mandatory locked-transaction service invariant unless a later reviewed
+  schema adds the redundant columns + composite FK for DB enforcement. Any
+  coherence failure occurs before revision/value/audit writes and must be
+  integration-tested for zero mutation.
+- **Current revision.** When non-null, `currentRevisionId` references a
+  revision of the same DailyEntry; creation may temporarily use null inside
+  one transaction; the service sets the pointer before commit; the database
+  does not independently prevent a committed null pointer — integration tests
+  must prove successful creation never commits null and injected failure
+  rolls back everything.
+- **Atomicity/locking/audit.** All client-scoped C1, future C2, and
+  DailyEntry mutations take the shared per-client advisory lock first; order
+  = advisory → `ClientSetup` → template when needed → active pin →
+  `DailyEntry` → revision/values → audit. Retries recompute authorization,
+  consent, setup/pin, structural eligibility, current revision, and dedup
+  inside a fresh transaction. Audit failure rolls back all persistence.
+- **Canonical deduplication.** The canonical identity binds the ClientSetup
+  pin, template version, parameter identity, classification, full immutable
+  metadata snapshot, and typed values; `itemId`/`sectionId` are included via
+  explicit tagged-nullable encoding distinguishing NULL, empty string, and an
+  actual identifier — changed placement provenance produces a new hash and
+  revision. A fixed synthetic canonical input + expected SHA-256 output is
+  required before implementation acceptance (covering both fields-present and
+  nullable-provenance-absent cases). Identical provenance/snapshot/values is
+  a no-op with no new revision or audit; differing provenance creates a new
+  revision.
+
+### Residual classification trust risk (transparent, non-blocking)
+
+Existing `WORKSPACE_OWNER` and `COACH` parameter managers may perform the
+permitted `NULL→GENERAL_HEALTH`/`NULL→CYCLE` transitions; `BLOODWORK`/`PED_HRT`
+stay unassignable by every role; transitions are immutable and audited;
+accuracy cannot be inferred from labels, groups, units, or source columns —
+**misclassification of a specialist field as `GENERAL_HEALTH` remains a trust
+risk**. Owner-only classification or an owner-review workflow is optional
+future hardening requiring separate approval; it is not a new approval here.
+
+### Source-fidelity boundaries
+
+Biofeedback remains Scale 1–10; DAY LABEL remains its source-confirmed enum;
+cycle-related fields remain excluded from this slice; `CALORIES` stays
+excluded and must not become an ordinary user-entered parameter without new
+evidence and approval; no formulas, targets, transformations, units, numeric
+ranges, or specialist consent semantics may be invented. Both decimal
+separators are source-supported; numeric precision/range is an engineering
+safety bound.
+
 ## Conservative engineering interpretations (NOT founder decisions)
 
 Recorded for traceability so reviewers can distinguish assumption from decision:
