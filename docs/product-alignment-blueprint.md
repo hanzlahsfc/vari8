@@ -93,9 +93,13 @@ is assumed.
   renders. (Item-level `required`/placement config is frozen inside the
   version's section/item structure, not the parameter — per decision #43.)
   Key: (templateId, versionSeq). Once published it never mutates.
-- _TemplateVariant_ — named presentation alternative inside a version (e.g.
-  meal-plan-based vs IIFYM-based). Key: (versionId, variantKey). A variant is a
-  _view selection_, not a data fork.
+- _TemplateVariant_ — named presentation alternative inside a version. Key:
+  (versionId, variantKey). A variant is a _view selection_, not a data fork.
+  (Earlier drafts gave "meal-plan-based vs IIFYM-based" as an example —
+  corrected: meal-plan structure is SOURCE-CONFIRMED per-client
+  `MealPlanConfig`, not template-editor configuration. No approved variant
+  payload exists yet; the concept remains unimplemented and deferred — see
+  §2 and product-decisions #63.)
 - _ParameterDefinition_ — stable-identity field in the parameter library (§3).
   Parameter _data semantics_ (kind, unit family, rating scheme) are versioned;
   a TemplateVersion references parameter ID **and** the parameter-metadata
@@ -192,7 +196,10 @@ C2 product rules — latest-published-only upgrade target, any-earlier-retained
 rollback target, frozen archived templates, mandatory structural review, and
 timing — are APPROVED per product-decisions #58–#62 with implementation
 explicitly deferred until immediately before DailyEntry or another first
-data-consuming slice; variants (C3) and per-parameter visibility (C4) remain
+data-consuming slice; **P-018 update:** C3 template variants are DELIBERATELY
+DEFERRED — product-decisions #63 records that no approved variant payload
+exists; both C3 decisions and implementation await a specifically named,
+approved variant-controlled consumer; per-parameter visibility (C4) remains
 PROPOSED/pending):
 
 - **Draft** — mutable; workspace-staff visible; assignable to nothing.
@@ -231,9 +238,13 @@ PROPOSED/pending):
   rollback may create a new pin on an archived template; the exit path is
   cancellation followed by assignment of a different eligible template.
 - **Variant switch** — picks another TemplateVariant inside the _same_ assigned
-  version (C3 — deferred, not approved). SOURCE-CONFIRMED invariant: identical
+  version (C3 — **deferred by decision #63: no approved payload exists**; both
+  product decisions and implementation await a named approved consumer).
+  SOURCE-CONFIRMED invariant (preserved regardless): identical
   client/assignment/history/plans/check-ins/messages; no new tracker; nothing
-  deleted; ClientAssignment untouched.
+  deleted; ClientAssignment untouched. All variant mechanics — stable keys,
+  tombstones, defaults, archive interaction, upgrade mapping, persistence
+  shape, authority, audit, UI — remain unresolved and non-binding.
 
 Per-client configuration and precedence (PROPOSED):
 
@@ -611,12 +622,19 @@ client existing — it cannot trail the persistence slices:
    rules APPROVED — product-decisions #58–#62; implementation DEFERRED until
    immediately before DailyEntry or another first data-consuming slice, not
    authorized);
-   **C3** versioned variants + switching (PENDING; variant flip preserves
-   client/setup/history, ClientAssignment untouched);
+   **C3** versioned variants + switching (DEFERRED by product-decisions #63 —
+   no approved variant payload exists; both decisions and implementation await
+   a named variant-controlled consumer; the data-preservation invariant is
+   preserved);
    **C4** per-parameter visibility (PENDING).
 4. _Configured daily entry persistence_ — client `own`-scoped writes for
    selected parameters only, write-time metadata snapshot. Acceptance:
    unselected parameter write denied (403); entry readable as entered.
+   **Sequencing note (product-decisions #62–#63):** DailyEntry is the next
+   recommended planning slice; it does not require C3, and per #62 the
+   deferred C2 implementation-planning gate reopens immediately before the
+   first data-consuming implementation. Nothing here authorizes DailyEntry
+   or C2 implementation.
 5. _Check-in v1_ — versioned form, immutable submissions, awaiting-feedback
    states. Acceptance: open≠respond; submit idempotent.
 6. Later: coach workspace surfaces (W01–W11 remainder), mealplan setup,
@@ -645,8 +663,12 @@ target, any-earlier-retained rollback target, frozen archived templates,
 mandatory bound structural review (including empty diffs, stale-fails-closed),
 and deferral of implementation until immediately before DailyEntry or the
 first data-consuming slice; free-text transition reasons are excluded pending
-D-10/legal. C3 variants and C4 per-parameter visibility remain
-PENDING/proposed; nothing about this record authorizes implementation.
+D-10/legal. **Update (P-018 approval, #63):** C3 template variants are
+deliberately deferred — no approved payload exists; both decisions and
+implementation await a named variant-controlled consumer; the
+data-preservation invariant is preserved; all variant mechanics remain
+non-binding. C4 per-parameter visibility remains PENDING/proposed; nothing
+about these records authorizes implementation.
 
 ---
 

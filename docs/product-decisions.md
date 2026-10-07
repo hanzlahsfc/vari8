@@ -440,6 +440,44 @@ integer, boolean, and length-prefix representations; versioned
 evidence prioritizes disposable-PostgreSQL integration and real-browser
 tests, with focused unit tests for pure logic only.
 
+## P-018 C3 template-variant disposition — owner approval (relayed 2026-10-08)
+
+The product owner approved the single-item P-018 package for the
+**template-variant (C3) slice**, following independent
+`opencode-go/deepseek-v4.1-flash` review (P-018-R1: PASS — P0/P1/P2 none).
+Full record: `docs/tasks/p018-c3-variant-feasibility.md`.
+
+63. **C3 deferral — no approved payload.** Defer both C3 product decisions
+    and C3 implementation until the first specifically named, approved
+    variant-controlled consumer exists. No approved variant payload exists
+    today: every meaningful candidate is either C4 per-parameter visibility
+    or a deferred/absent capability (dashboards, roadmap, check-in or
+    onboarding form selection, meal/training configuration, plans/targets,
+    DailyEntry, themes); alternate section/item order, grouping, or
+    presentation are theoretical and unevidenced. Do not create an empty
+    variant registry, selector, default-variant model, switching history,
+    schema, route, or UI without a defined payload.
+
+    The SOURCE-CONFIRMED invariant is preserved unchanged: any future
+    variant switch must keep the same client, must not create a new
+    tracker, must not alter `ClientAssignment`, and must not delete or
+    rewrite client-owned history.
+
+    All proposed variant mechanics remain **unresolved and non-binding
+    engineering considerations**: stable keys, tombstones, default
+    variants, archived-template variant switching (unresolved — decision
+    #60 governs C2 pin transitions only, not future variant switching),
+    upgrade-time variant mapping, persistence/history shape (depends on
+    the future payload and consumer), switching authority details, audit
+    shape, and UI behavior.
+
+    D-12 remains pending in full; C4 per-parameter visibility remains
+    separate and pending; nutrition variants remain distinct from
+    template variants; meal-plan configuration remains per-client and is
+    not a template-variant payload. C3 deferral does not block C2, C4, or
+    DailyEntry planning. This approval is documentation only — it
+    authorizes no implementation.
+
 ## Conservative engineering interpretations (NOT founder decisions)
 
 Recorded for traceability so reviewers can distinguish assumption from decision:
