@@ -68,6 +68,18 @@ async function signIn(page: Page, email: string) {
   await expect(page).not.toHaveURL(/login/);
 }
 
+/** Post-lifecycle settle wait: publish/reopen hand the DOM swap to an
+ * async `router.refresh()` RSC round-trip after the action commits, so the
+ * refreshed `no-draft` render gets an explicit bounded wait. The default
+ * 5s proved too tight under full-suite CI load (main run 37805927195) —
+ * 15s stays bounded and still fails if the closed branch never renders.
+ * Mount-time `no-draft` reads (SSR'd by `page.goto`) do not need this. */
+async function expectNoDraftSettled(page: Page) {
+  await expect(page.getByTestId("no-draft")).toBeVisible({
+    timeout: 15_000,
+  });
+}
+
 const seedDefinition = (title: string) => ({
   title,
   fields: [
@@ -1713,7 +1725,7 @@ test("owner creates, edits, publishes, reopens, v2, and archives", async ({
       prisma.onboardingFormVersion.count({ where: { formId: form.id } }),
     )
     .toBe(1);
-  await expect(page.getByTestId("no-draft")).toBeVisible();
+  await expectNoDraftSettled(page);
 
   // Version preview renders the frozen v1 snapshot.
   await page.getByTestId("preview-version-link").click();
@@ -1997,7 +2009,7 @@ async function fullLifecycle(page: Page, tag: string, width: number) {
       prisma.onboardingFormVersion.count({ where: { formId: form.id } }),
     )
     .toBe(1);
-  await expect(page.getByTestId("no-draft")).toBeVisible();
+  await expectNoDraftSettled(page);
   await page.getByTestId("preview-version-link").click();
   await expect(page.getByTestId("preview-source")).toContainText("version 1");
   await expect(page.getByText(`${tag} renamed`)).toBeVisible();
@@ -2105,7 +2117,7 @@ test.describe("editor lifecycle controls (ES-4a — preview independent)", () =>
         prisma.onboardingFormVersion.count({ where: { formId: form.id } }),
       )
       .toBe(1);
-    await expect(page.getByTestId("no-draft")).toBeVisible();
+    await expectNoDraftSettled(page);
     await expect(page.getByTestId("draft-editor")).toHaveCount(0);
 
     // Reopen seeds a fresh draft from v1. Publish does NOT bump
@@ -2259,7 +2271,7 @@ test.describe("editor lifecycle controls (ES-4a — preview independent)", () =>
         prisma.onboardingFormVersion.count({ where: { formId: form.id } }),
       )
       .toBe(1);
-    await expect(page.getByTestId("no-draft")).toBeVisible();
+    await expectNoDraftSettled(page);
   });
 
   test("a stale publish shows the safe alert and writes no version", async ({
