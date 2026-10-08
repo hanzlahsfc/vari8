@@ -5,6 +5,21 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-09 — P-021 branch committed + pushed (no PR)
+
+- Implementation committed as `01cb382ebc1777d7c6db135e56cb1dd80b52df29`
+  on `feature/p021-daily-entry-persistence` and pushed normally; remote
+  `main` remains `2d9bfc8` untouched; **no PR opened**. Awaiting fresh
+  independent review by `opencode-go/deepseek-v4.1-flash` before any PR.
+- Final gates on the exact committed tree: `git diff --check` 0;
+  prettier 0; `tsc --noEmit` 0; `eslint .` 0; `prisma validate` +
+  `generate` ok; `next build` 0; full unit 972/972; full integration
+  458/458 (disposable PG `p021_impl_1`); full E2E 248/12-skip/0-fail.
+- Self-review repairs applied pre-commit: per-revision immutable-version
+  history rendering (regression test added); transition panel renders
+  provider impacts (counts/dates only) and the P-020B "no providers"
+  assertion was updated to the registered-consumer state.
+
 ## 2026-10-09 — P-021 DailyEntry persistence implemented (branch, no PR)
 
 - Owner-authorized P-021-I1 atomic slice implemented on
