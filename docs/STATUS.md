@@ -5,6 +5,29 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-08 — P-020B merged; post-merge E2E timeout repaired (test-only)
+
+- PR #21 merged correctly via pinned-head merge `58b54252bc815bee8087e260d6a2af1f237f3a62`
+  (parents `c790a6b` + `aa4a0f4`; merged tree byte-identical to the reviewed
+  head; the feature branch `feature/p020b-template-version-transitions` is
+  retained pending the main-CI outcome).
+- The first main CI run (`CI` run 37805927195, job `verify` 113410070804)
+  **failed** on `tests/e2e/onboarding-forms.spec.ts:2209` — `no-draft` not
+  visible within the default 5s; every prior step (unit/integration/build)
+  was green. The DB poll inside the test proved the publish committed —
+  the failure was the asynchronous `router.refresh()` render exceeding the
+  assertion window under full-suite CI load (three test webservers).
+- Read-only diagnosis (`P-020B-M2`): on exact `58b5425` in a disposable
+  worktree+DB the isolated test passed, the spec passed 68/68, and the full
+  suite passed 238/12-skip — environment/resource flake on a
+  timeout-bound post-refresh assertion; **no production or P-020B defect**.
+- Repair branch `fix/p020b-onboarding-e2e-settlement` (from `58b5425`):
+  new `expectNoDraftSettled` helper waits for `no-draft` with an explicit
+  15s bound at the four post-publish/reopen assertion sites; mount-time
+  reads unchanged; **production behavior unchanged; test + docs only**.
+  Awaits independent `opencode-go/deepseek-v4.1-flash` review before a PR.
+- No production enablement, deployment, DailyEntry, C3, or C4 work.
+
 ## 2026-10-08 — P-020B-I1-R2 review cleanups applied (P3s, forward commit)
 
 - Independent review (`opencode-go/deepseek-v4.1-flash`, P-020B-I1-R1,

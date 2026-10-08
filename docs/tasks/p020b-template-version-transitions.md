@@ -211,6 +211,26 @@ enablement; no deployment; no PR; no merge.
   ran them; PR CI reruns all). Old builder DB `p020b_it_1791461647` dropped
   after verification — no other database touched.
 
+### Merge + post-merge CI event
+
+- PR #21 (`feat: add template version upgrades and rollbacks`) merged via
+  pinned-head merge commit `58b54252bc815bee8087e260d6a2af1f237f3a62`
+  (parents `c790a6b` + `aa4a0f4`; merged tree byte-identical to reviewed
+  head). Feature branch retained.
+- First main CI (`CI` run 37805927195, `verify` 113410070804) **failed**:
+  `tests/e2e/onboarding-forms.spec.ts:2209` — `no-draft` not visible in 5s.
+  All earlier steps green; the in-test DB poll proved the publish committed
+  before the UI assertion timed out. Preserved as a failure — not rewritten.
+- `P-020B-M2` read-only diagnosis on exact `58b5425` (disposable worktree +
+  `p020b_diag_1791476292`): isolated test pass (901ms), spec 68/68, full
+  E2E 238/12-skip — classified environment/resource flake on a
+  timeout-bound post-`router.refresh()` assertion; no P-020B interaction
+  (no shared code path; the third test webserver adds runner load).
+- `P-020B-M3` repair branch `fix/p020b-onboarding-e2e-settlement`:
+  test-only — `expectNoDraftSettled` gives the four post-lifecycle
+  `no-draft` assertions an explicit bounded 15s wait. Production behavior
+  unchanged. Requires independent different-model review before a PR.
+
 ### Live-on-merge versus gated
 
 - Live on merge: schema columns/constraints, diff/provider/fingerprint
