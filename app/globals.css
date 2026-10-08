@@ -1053,3 +1053,44 @@ body {
 .classification-control .auth-hint {
   overflow-wrap: anywhere;
 }
+
+/* --- P-020B template-version transition panel ------------------------------
+ * Review region under the client-setup table; wraps within the viewport at
+ * every supported width; all interactive targets stay >= 44px.
+ */
+.transition-panel {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+}
+
+.transition-panel__choices,
+.transition-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.transition-panel__choices .catalog-search__input {
+  min-height: 44px;
+}
+
+.transition-panel__review {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.transition-panel__changes {
+  margin: 0;
+  padding-inline-start: var(--space-4);
+  overflow-wrap: anywhere;
+}

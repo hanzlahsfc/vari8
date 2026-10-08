@@ -36,6 +36,9 @@ export default defineConfig({
         // P-020A: parameter classification control enabled on the primary
         // test server only.
         ENABLE_PARAMETER_CLASSIFICATION: "1",
+        // P-020B: template-version transitions enabled on the primary test
+        // server only.
+        ENABLE_CLIENT_SETUP_TRANSITIONS: "1",
         // Deterministic test-only secret (NOT a real credential). CI/local may
         // override AUTH_SECRET; the fallback keeps the suite self-contained.
         AUTH_SECRET:
@@ -69,6 +72,35 @@ export default defineConfig({
         // P-020A flag-off: explicitly empty so an inherited
         // ENABLE_PARAMETER_CLASSIFICATION=1 cannot leak into the proof server.
         ENABLE_PARAMETER_CLASSIFICATION: "",
+        // P-020B flag-off: parent gate is also off on this server, so this
+        // stays consistent; the dedicated transition flag-off proof server
+        // below keeps ENABLE_CLIENT_SETUP on.
+        ENABLE_CLIENT_SETUP_TRANSITIONS: "",
+        AUTH_SECRET:
+          process.env.AUTH_SECRET ?? "test-only-auth-secret-not-for-production",
+        DATABASE_URL:
+          process.env.DATABASE_URL ??
+          "postgresql://app:app_dev_password@127.0.0.1:5433/app_dev?schema=public",
+      },
+    },
+    {
+      // P-020B transitions flag-OFF server: parent ENABLE_CLIENT_SETUP stays
+      // "1" so the real page renders, but the transitions gate is off — the
+      // E2E proof that the control is hidden and the actions refuse.
+      command: "npm run start -- -p 3102",
+      url: "http://127.0.0.1:3102",
+      reuseExistingServer: false,
+      timeout: 180_000,
+      env: {
+        ENABLE_DAILY_PROTOTYPE: "1",
+        ENABLE_SHEET_VIEWER: "1",
+        ENABLE_ONBOARDING_ASSIGNMENTS: "",
+        ENABLE_COACHING_TEMPLATES: "1",
+        ENABLE_CLIENT_SETUP: "1",
+        ENABLE_PARAMETER_CLASSIFICATION: "",
+        // P-020B flag-off: explicitly empty so an inherited
+        // ENABLE_CLIENT_SETUP_TRANSITIONS=1 cannot leak into the proof server.
+        ENABLE_CLIENT_SETUP_TRANSITIONS: "",
         AUTH_SECRET:
           process.env.AUTH_SECRET ?? "test-only-auth-secret-not-for-production",
         DATABASE_URL:

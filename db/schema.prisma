@@ -802,6 +802,13 @@ enum ClientSetupPinStatus {
   CANCELLED
 }
 
+// P-020B (decisions #58–#62): transition kind for superseded-by-transition
+// successor pins. NULL on every C1 (initial assignment / cancel) pin.
+enum PinTransitionKind {
+  UPGRADE
+  ROLLBACK
+}
+
 model ClientSetup {
   id              String   @id @default(cuid())
   workspaceId     String   @map("workspace_id")
@@ -840,10 +847,19 @@ model ClientSetupPin {
   assignedAt         DateTime             @default(now()) @map("assigned_at") @db.Timestamptz(6)
   endedByMemberId    String?              @map("ended_by_member_id")
   endedAt            DateTime?            @map("ended_at") @db.Timestamptz(6)
+  // P-020B C2 lineage: a successor pin records which pin it supersedes, the
+  // transition direction, and the structural-only summary. All three are
+  // NULL on initial-assignment pins; all three non-NULL on transition pins
+  // (coupled + shape CHECKs in the migration's raw SQL).
+  supersedesPinId    String?              @unique @map("supersedes_pin_id")
+  transitionKind     PinTransitionKind?   @map("transition_kind")
+  transitionSummary  Json?                @map("transition_summary")
   createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   clientSetup      ClientSetup            @relation(fields: [clientSetupId], references: [id], onDelete: Restrict)
+  supersedesPin    ClientSetupPin?        @relation("PinSupersession", fields: [supersedesPinId], references: [id], onDelete: Restrict)
+  supersededByPin  ClientSetupPin?        @relation("PinSupersession")
   workspace        Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   clientProfile    ClientProfile          @relation("ClientSetupPinClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
   template         CoachingTemplate       @relation("ClientSetupPinTemplate", fields: [templateId], references: [id], onDelete: Restrict)
@@ -856,6 +872,8 @@ model ClientSetupPin {
   // the FK parent-delete scan. The ACTIVE cardinality lives in the raw
   // partial unique index "client_setup_pin_one_active_key" (migration only).
   @@unique([clientSetupId, seq])
+  // Composite target for the same-setup lineage foreign key (raw SQL).
+  @@unique([id, clientSetupId])
   @@index([workspaceId, id])
   @@index([clientProfileId, status])
   @@index([templateId, status])

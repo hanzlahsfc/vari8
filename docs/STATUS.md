@@ -5,6 +5,68 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-08 — P-020B-I1-R2 review cleanups applied (P3s, forward commit)
+
+- Independent review (`opencode-go/deepseek-v4.1-flash`, P-020B-I1-R1,
+  artifact `da0405bf…4db6`): **PASS, no P0/P1/P2.** Three P3 notes repaired
+  forward on the same branch.
+- P3-1: canonical diff ordering moved from `localeCompare` to an explicit
+  code-unit comparator (`compareCodeUnits`) — `diffHash`/fingerprint input
+  ordering is now locale-independent; RED test proves the canonical path
+  works with `localeCompare` throwing, and no hash vector changed.
+- P3-2 (test-only): the assigned-coach integration test now deep-compares
+  the complete `ClientAssignment` row (all persisted columns incl.
+  timestamps) plus the row count — no insert/update/delete/timestamp change.
+- P3-3 (docs): builder's full E2E passed 238/12-skip; the independent
+  reviewer's full-E2E run reported 237 passed / 12 skipped / 1 failed in
+  `onboarding-forms.spec.ts:2209` ("pending publish disables every
+  editor…"), a pre-existing spec outside the P-020B diff that passed on
+  isolated rerun — an environmental flake, not a P-020B regression.
+- Gates on new disposable PG `p020b_r2_1791466866` (recorded in the task
+  file):
+  focused unit 64/64; focused integration 20/20; full integration suite
+  green; typecheck/lint/format/prisma/build all 0. Full unit + full E2E not
+  rerun — behavior change is canonical ordering only; the parent candidate
+  passed the complete suites, the reviewer reran them, and PR CI reruns all.
+- Builder disposable DB `p020b_it_1791461647` dropped after verification
+  (reviewer finished without using it). **No PR, merge, main change,
+  deployment, or production enablement.**
+
+## 2026-10-08 — P-020B template-version transitions implemented (candidate)
+
+- Owner-authorized P-020B slice of the two-slice C2 plan (P-020-R3 + R3.1
+  addendum): dev-gated review + execution of Coaching Template version
+  upgrades/rollbacks for existing Client Setups. Branch
+  `feature/p020b-template-version-transitions` based on `c790a6b`.
+- RED-first: four unit specs failed on missing modules at base HEAD `c790a6b`
+  (exit 1, module-not-found); implementation then made them green. RED test
+  SHAs recorded in `docs/tasks/p020b-template-version-transitions.md`.
+- Live on merge: `client_setup_pin` gains `supersedes_pin_id` (unique,
+  self-ref FK, same-setup composite FK, `<> id`), `transition_kind`
+  {UPGRADE,ROLLBACK}, `transition_summary` JSONB with coupled all-NULL /
+  all-non-NULL + direction-consistency + shape CHECKs; old C1 pins valid via
+  the all-NULL branch. Diff/eligibility/provider/fingerprint modules and the
+  transition service are flag-independent.
+- Gated (`ENABLE_CLIENT_SETUP_TRANSITIONS === "1"` AND
+  `ENABLE_CLIENT_SETUP === "1"`, default off): transition actions, boundary,
+  and the per-row "Change version" UI. Owner/assigned-coach write only;
+  every other role denied before any review/impact output. Mandatory review
+  - confirmation for every transition (including empty diffs); reviews bound
+    to pin/target/diff/actor via `C2-REVIEW-v1` fingerprint — stale ⇒
+    zero-write `stale_selection`. Upgrade targets the server-selected latest
+    published version only; rollback is positional over earlier retained
+    versions. Serializable tx + advisory/row locks in the reviewed order;
+    exactly-one-winner races proven; `ClientAssignment` untouched; audits are
+    structural-only.
+- Zero declared data consumers / zero production providers — honest empty
+  provider-set identity; a fake DailyEntry provider was deliberately NOT
+  created.
+- Disposable PG `p020b_it_1791461647`: migrate deploy 0; focused unit 63/63;
+  full unit 886/886; focused integration 20/20; full integration 439/439;
+  `next build` 0; focused E2E 11/11 at 1440/834/390; full E2E 238/12-skip.
+- **No PR, merge, main change, deployment, or production enablement.** Awaits
+  same-model self-review, then independent different-model review.
+
 ## 2026-10-08 — P-020A-I1-R3 final repair (re-review residuals closed)
 
 - Independent re-review of `99883cb` (`opencode-go/deepseek-v4.1-flash`,
