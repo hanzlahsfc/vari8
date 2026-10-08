@@ -7,6 +7,7 @@ import {
 } from "@/lib/auth/route-guard";
 import { resolveScope } from "@/lib/auth/rbac";
 import { isClientSetupEnabled } from "@/lib/coaching/client-setup-gate";
+import { isClientSetupTransitionsEnabled } from "@/lib/coaching/client-setup-transition-gate";
 import {
   listAssignFormChoices,
   listClientSetupsForWorkspace,
@@ -103,6 +104,10 @@ export default async function ClientSetupPage({
         choices={choices}
         rows={assignments.items}
         rowFingerprint={assignments.fingerprint}
+        transitionsEnabled={isClientSetupTransitionsEnabled(
+          process.env.ENABLE_CLIENT_SETUP_TRANSITIONS,
+          process.env.ENABLE_CLIENT_SETUP,
+        )}
       />
 
       {prevHref !== null || nextHref !== null ? (

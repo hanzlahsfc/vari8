@@ -8,6 +8,7 @@ import type {
   TemplateAssignmentSummary,
 } from "@/lib/coaching/client-setup-boundary";
 import { assignTemplate, cancelSetupAssignment } from "./actions";
+import { TransitionPanel } from "./transition-panel";
 
 const GENERIC = "Something went wrong. Please try again in a moment.";
 
@@ -34,18 +35,24 @@ export function SetupManager({
   choices,
   rows,
   rowFingerprint,
+  transitionsEnabled,
 }: {
   workspaceId: string;
   canWrite: boolean;
   choices: AssignFormChoices | null;
   rows: TemplateAssignmentSummary[];
   rowFingerprint: string;
+  /** P-020B transitions gate — when false the "Change version" control is
+   * never rendered and the actions refuse before any work. */
+  transitionsEnabled: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   /** Two-step confirm state: which row index is awaiting confirmation. */
   const [confirming, setConfirming] = useState<number | null>(null);
+  /** Which row's transition review panel is open (absolute pin index). */
+  const [transitionRow, setTransitionRow] = useState<number | null>(null);
 
   function run(action: () => Promise<{ ok: boolean; message?: string }>) {
     setError(null);
@@ -264,14 +271,27 @@ export function SetupManager({
                         </div>
                       ) : (
                         canCancel && (
-                          <button
-                            type="button"
-                            className="assignment-button-secondary"
-                            disabled={pending}
-                            onClick={() => setConfirming(row.index)}
-                          >
-                            Cancel
-                          </button>
+                          <div className="assignment-confirm">
+                            <button
+                              type="button"
+                              className="assignment-button-secondary"
+                              disabled={pending}
+                              onClick={() => setConfirming(row.index)}
+                            >
+                              Cancel
+                            </button>
+                            {transitionsEnabled && !row.templateArchived ? (
+                              <button
+                                type="button"
+                                className="assignment-button-secondary"
+                                disabled={pending}
+                                onClick={() => setTransitionRow(row.index)}
+                                data-testid="transition-open"
+                              >
+                                Change version
+                              </button>
+                            ) : null}
+                          </div>
                         )
                       )}
                     </td>
@@ -282,6 +302,28 @@ export function SetupManager({
           </tbody>
         </table>
       )}
+
+      {transitionRow !== null
+        ? (() => {
+            const row = rows.find((r) => r.index === transitionRow);
+            if (!row) return null;
+            return (
+              <TransitionPanel
+                workspaceId={workspaceId}
+                rowIndex={row.index}
+                rowFingerprint={rowFingerprint}
+                clientName={row.clientName}
+                templateName={row.templateName}
+                pending={pending}
+                onDone={() => {
+                  setTransitionRow(null);
+                  router.refresh();
+                }}
+                onClose={() => setTransitionRow(null)}
+              />
+            );
+          })()
+        : null}
     </div>
   );
 }
