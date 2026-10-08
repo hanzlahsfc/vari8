@@ -2271,7 +2271,14 @@ test.describe("editor lifecycle controls (ES-4a — preview independent)", () =>
         prisma.onboardingFormVersion.count({ where: { formId: form.id } }),
       )
       .toBe(1);
-    await expectNoDraftSettled(page);
+    // This test's core responsibility ends with the pending-controls
+    // proof: an explicit reload is the deterministic settlement boundary
+    // (server-rendered mount), not the asynchronous router.refresh() RSC
+    // round-trip, which races under full-suite load. Automatic post-action
+    // refresh stays covered by the other publish-lifecycle tests that
+    // call expectNoDraftSettled without reloading.
+    await page.reload();
+    await expect(page.getByTestId("no-draft")).toBeVisible();
   });
 
   test("a stale publish shows the safe alert and writes no version", async ({

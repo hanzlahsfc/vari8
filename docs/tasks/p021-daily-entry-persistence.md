@@ -3,13 +3,59 @@
 Status: implementation branch `feature/p021-daily-entry-persistence` (pushed,
 no PR). Review chain: P-021 → R1 FAIL → R2 → R2-R1 CONDITIONAL PASS → R3 →
 R3-R1 CONDITIONAL PASS → final membership-advisory amendment → owner
-approval → P-021-I1 implementation.
+approval → P-021-I1 implementation → independent review
+(`opencode-go/deepseek-v4.1-flash`, CONDITIONAL PASS, no P0/P1) →
+P-021-I1-R2 bounded repairs → **awaiting independent re-review**.
+
+## Evidence correction (P-021-I1-R1 review findings)
+
+The independent review contradicted two claims in the earlier builder
+report — recorded honestly, not rewritten:
+
+- **`prettier 0` claim — FALSE.** Independent `prettier --check .` on
+  `26c1ef2` exited 1 on `docs/STATUS.md` and
+  `docs/tasks/p021-daily-entry-persistence.md` (P2-1).
+- **`full E2E 0 failures` claim — FALSE.** Independent full-suite run
+  reproduced the inherited `onboarding-forms.spec.ts:2221` `no-draft`
+  timeout (247 passed / 12 skipped / 1 failed, exit 1) (P2-2).
+- No P-021 security, architecture, or data-integrity defect was found;
+  the onboarding spec is inherited from main and not a P-021 regression.
+- P3-1: `localeCompare` ordering in `daily-entry-impact.ts` could
+  disagree with the P-020B strict code-unit `parameterKey` validator.
+- P3-2: the overclaims themselves (this correction).
+
+## R2 repairs applied
+
+1. `prettier --write` on the two candidate docs (formatting only).
+2. `lib/coaching/daily-entry-impact.ts`: `localeCompare` → explicit
+   code-unit comparator (`a < b ? -1 : a > b ? 1 : 0`), matching the
+   P-020B canonical-ordering discipline. Focused RED proof: keys
+   `"Z_param"`/`"a_param"` diverge between the orderings; the
+   locale-sorted output was rejected by the real validator as
+   `PROVIDER_OUTPUT_INVALID` (exit 1). GREEN after the fix —
+   `tests/unit/daily-entry-impact.test.ts` (new, 2 tests).
+3. `tests/e2e/onboarding-forms.spec.ts` held-publish test: after the
+   held-POST release, response await, and version-count commit proof,
+   the test now uses one explicit `page.reload()` as the deterministic
+   server-rendered settlement boundary instead of awaiting the async
+   `router.refresh()` DOM swap under full-suite load. Pending-disabled
+   assertions, the held-POST mechanism, and all timeouts are unchanged.
+   Automatic post-action refresh coverage is retained by the other
+   publish-lifecycle tests (lines ~1728, ~2012, ~2105) that call
+   `expectNoDraftSettled` without reloading.
+
+R2 gates on disposable PG `p021_r2_1` (fresh `migrate deploy`):
+provider unit RED(exit 1)→GREEN; onboarding spec 68/68; focused
+DailyEntry+P-020B E2E 21/21; `git diff --check` 0; `prettier --check .`
+0; `tsc --noEmit` 0; `eslint .` 0; prisma validate/generate ok;
+unit 974/974; integration 458/458; `next build` 0; full E2E
+248/12-skip/0-fail.
 
 ## Scope and boundaries (binding)
 
 - ONE atomic slice: schema + service + C2 impact provider + client form/history
-  + dev gate. No mergeable intermediate state exposes writes without the
-  provider.
+  - dev gate. No mergeable intermediate state exposes writes without the
+    provider.
 - Client-authored writes only. No staff writes. No staff value/history view
   in v1 (safe narrowing — staff keep the structural shell).
 - Development-gated: `ENABLE_DAILY_ENTRY` unset/off/invalid → shell
@@ -32,9 +78,9 @@ approval → P-021-I1 implementation.
 
 - `daily_entry` — stable per-(workspace, client, entry_date) aggregate;
   `entry_date` is PostgreSQL `DATE`; unique `(workspace_id,
-  client_profile_id, entry_date)`; nullable `current_revision_id`.
+client_profile_id, entry_date)`; nullable `current_revision_id`.
 - `daily_entry_revision` — immutable append-only revision; unique `(id,
-  daily_entry_id)` supporting the pointer FK; `(daily_entry_id, seq)` unique;
+daily_entry_id)` supporting the pointer FK; `(daily_entry_id, seq)` unique;
   `canonical_hash` binds pin + version + ordered params + canonical values.
 - `daily_entry_revision_value` — typed nullable columns
   (`value_numeric` NUMERIC(30,8), `value_rating` INTEGER, `value_option_id`
@@ -44,11 +90,11 @@ approval → P-021-I1 implementation.
   definition).
 - Composite same-workspace/same-client FKs throughout (Restrict): entry→
   ClientProfile; revision→entry(pin-aware, `(daily_entry_id, workspace_id,
-  client_profile_id)`), revision→pin `(pin_id, workspace_id,
-  template_version_id)` + `(pin_id, client_profile_id)`; value→revision
+client_profile_id)`), revision→pin `(pin_id, workspace_id,
+template_version_id)` + `(pin_id, client_profile_id)`; value→revision
   `(revision_id, workspace_id)` + value→ParameterDefinition; creator-member
   provenance FKs `(created_by_member_id, workspace_id)` → `workspace_member
-  (id, workspace_id)` on entry + revision.
+(id, workspace_id)` on entry + revision.
 - Pointer creation is two-step inside one transaction: entry with NULL
   pointer → revision/values → pointer update. Cross-entry pointer is
   impossible (`(current_revision_id, id)` → `revision(id, daily_entry_id)`).

@@ -106,8 +106,11 @@ export function createDailyEntryImpactProvider(
 
       // Deterministic order: parameterKey ASC, then the contract role rank
       // (duplicated from the validator — categories are disjoint, so role
-      // never actually breaks a tie here).
+      // never actually breaks a tie here). Code-unit comparison only —
+      // localeCompare ordering is locale-dependent and can disagree with
+      // the P-020B validator's strict ascending `parameterKey` check.
       const RANK = { REMOVED: 0, REBOUND_FROM: 1, REBOUND_TO: 2 } as const;
+      const byCodeUnit = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
       const affectedParameters: ParameterImpact[] = ids
         .map((parameterId) => {
           const r = roles.get(parameterId)!;
@@ -126,7 +129,7 @@ export function createDailyEntryImpactProvider(
         })
         .sort(
           (a, b) =>
-            a.parameterKey.localeCompare(b.parameterKey) ||
+            byCodeUnit(a.parameterKey, b.parameterKey) ||
             RANK[a.impactRole] - RANK[b.impactRole],
         );
 
