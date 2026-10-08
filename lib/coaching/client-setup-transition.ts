@@ -31,13 +31,12 @@ import {
   BLOCKED_REASON_RANK,
   canonicalProviderOutputsHash,
   collectProviderImpacts,
-  DECLARED_CONSUMERS,
-  PROVIDERS,
   providerSetIdentity,
   type BlockedReasonCode,
   type ProviderImpact,
   type ProviderSet,
 } from "./transition-impact";
+import { composeProviderSet } from "./impact-consumers";
 
 /**
  * P-020B — C2 guarded service: dev-gated review + execution of coaching
@@ -143,10 +142,9 @@ export function isTransitionDirection(
   return value === "UPGRADE" || value === "ROLLBACK";
 }
 
-const DEFAULT_PROVIDER_SET: ProviderSet = {
-  declarations: DECLARED_CONSUMERS,
-  providers: PROVIDERS,
-};
+// Providers are composed per request from ./impact-consumers.ts with the
+// server-resolved client identity (see `buildReview`). The parameter stays
+// injectable so tests can pass an explicit ProviderSet.
 
 // ── Review fingerprint (R3 §20 + addendum 6) ─────────────────────────────
 
@@ -364,8 +362,10 @@ async function buildReview(
   template: { id: string; name: string; status: string },
   direction: TransitionDirection,
   targetIndex: number | null,
-  providerSet: ProviderSet,
+  providerSet?: ProviderSet,
 ): Promise<InternalTransitionReview> {
+  const effectiveSet =
+    providerSet ?? composeProviderSet(db, pin.clientProfileId);
   const versions = await loadVersions(db, workspaceId, template.id);
   const current = versions.find((v) => v.id === pin.templateVersionId);
   if (!current) throw new ClientSetupTransitionError("incoherent_definition");
@@ -426,7 +426,7 @@ async function buildReview(
       })),
   };
   const { impacts, blockedReasonCodes } = await collectProviderImpacts(
-    providerSet,
+    effectiveSet,
     providerInput,
   );
   const blocked = unionBlocked(eligibilityBlocked, blockedReasonCodes);
@@ -444,7 +444,7 @@ async function buildReview(
     diffHash: diff.diffHash,
     eligible: eligibility.eligible,
     eligibilityReasonCodes: eligibility.reasonCodes,
-    providerSetIdentity: providerSetIdentity(providerSet.declarations),
+    providerSetIdentity: providerSetIdentity(effectiveSet.declarations),
     providerOutputsHash: canonicalProviderOutputsHash(impacts),
     templateStatus: template.status,
     confirmRequired: true,
@@ -471,7 +471,7 @@ async function buildReview(
     eligibilityReasonCodes: eligibility.reasonCodes,
     providerImpacts: impacts,
     blockedReasonCodes: blocked,
-    providersDeclared: providerSet.declarations.length,
+    providersDeclared: effectiveSet.declarations.length,
     summary,
     reviewFingerprint,
   };
@@ -541,7 +541,7 @@ export async function reviewClientSetupTransition(
     targetIndex?: number;
   },
   client: PrismaClient = defaultPrisma,
-  providerSet: ProviderSet = DEFAULT_PROVIDER_SET,
+  providerSet?: ProviderSet,
 ): Promise<InternalTransitionReview> {
   if (!isTransitionDirection(input.direction))
     throw new ClientSetupTransitionError("invalid_input");
@@ -599,7 +599,7 @@ export async function executeClientSetupTransition(
     reviewFingerprint: string;
   },
   client: PrismaClient = defaultPrisma,
-  providerSet: ProviderSet = DEFAULT_PROVIDER_SET,
+  providerSet?: ProviderSet,
 ): Promise<{
   applied: true;
   direction: TransitionDirection;

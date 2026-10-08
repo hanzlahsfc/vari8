@@ -153,6 +153,7 @@ model Workspace {
   coachingTemplateVersionParams CoachingTemplateVersionParameter[]
   clientSetups                  ClientSetup[]
   clientSetupPins               ClientSetupPin[]
+  dailyEntries                  DailyEntry[]
 
   @@map("workspace")
 }
@@ -183,6 +184,9 @@ model WorkspaceMember {
   onboardingAssignmentsEnded   OnboardingFormAssignment[] @relation("OnboardingAssignmentEndedBy")
   clientSetupPinsAssigned      ClientSetupPin[]           @relation("ClientSetupPinAssignedBy")
   clientSetupPinsEnded         ClientSetupPin[]           @relation("ClientSetupPinEndedBy")
+
+  dailyEntriesCreated       DailyEntry[]            @relation("DailyEntryCreator")
+  dailyEntryRevisionsCreated DailyEntryRevision[]   @relation("DailyEntryRevisionCreator")
 
   parametersCreated         ParameterDefinition[]     @relation("ParameterDefinitionCreator")
   parametersUpdated         ParameterDefinition[]     @relation("ParameterDefinitionUpdater")
@@ -229,6 +233,7 @@ model ClientProfile {
   onboardingAssignments OnboardingFormAssignment[] @relation("OnboardingAssignmentClient")
   clientSetups          ClientSetup[]              @relation("ClientSetupClient")
   clientSetupPins       ClientSetupPin[]           @relation("ClientSetupPinClient")
+  dailyEntries          DailyEntry[]               @relation("ClientProfileDailyEntries")
 
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
   @@unique([workspaceId, userId])
@@ -703,6 +708,7 @@ model ParameterDefinition {
   updatedByMember   WorkspaceMember                    @relation("ParameterDefinitionUpdater", fields: [updatedByMemberId], references: [id], onDelete: Restrict)
   archivedByMember  WorkspaceMember?                   @relation("ParameterDefinitionArchiver", fields: [archivedByMemberId], references: [id], onDelete: Restrict)
   versionReferences CoachingTemplateVersionParameter[]
+  dailyEntryValues  DailyEntryRevisionValue[]
 
   @@unique([workspaceId, key])
   // Composite target for same-workspace foreign keys (raw SQL).
@@ -757,6 +763,7 @@ model CoachingTemplateVersion {
   publishedByMember WorkspaceMember                    @relation("CoachingTemplateVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
   parameters        CoachingTemplateVersionParameter[]
   clientSetupPins   ClientSetupPin[] @relation("ClientSetupPinVersion")
+  dailyEntryRevisions DailyEntryRevision[]
 
   @@unique([templateId, versionSeq])
   @@unique([templateId, publishOriginRevision])
@@ -867,6 +874,8 @@ model ClientSetupPin {
   assignedByMember WorkspaceMember        @relation("ClientSetupPinAssignedBy", fields: [assignedByMemberId], references: [id], onDelete: Restrict)
   endedByMember    WorkspaceMember?       @relation("ClientSetupPinEndedBy", fields: [endedByMemberId], references: [id], onDelete: Restrict)
 
+  dailyEntryRevisions DailyEntryRevision[]
+
   // (workspaceId, id) serves the workspace-scoped id-cursor pagination;
   // client/status and template/status serve scoped reads; versionId backs
   // the FK parent-delete scan. The ACTIVE cardinality lives in the raw
@@ -874,9 +883,108 @@ model ClientSetupPin {
   @@unique([clientSetupId, seq])
   // Composite target for the same-setup lineage foreign key (raw SQL).
   @@unique([id, clientSetupId])
+  // P-021: composite targets for DailyEntry revision→pin coherence foreign
+  // keys (raw SQL) — pin+workspace+version identity and pin+client equality.
+  @@unique([id, workspaceId, templateVersionId])
+  @@unique([id, clientProfileId])
   @@index([workspaceId, id])
   @@index([clientProfileId, status])
   @@index([templateId, status])
   @@index([templateVersionId])
   @@map("client_setup_pin")
+}
+
+// ── P-021 DailyEntry (decisions #64–#78) ──────────────────────────────────
+// One logical entry per (workspace, client, declared DATE) with append-only
+// revisions and a current-revision pointer. Composite coherence foreign keys
+// (entry↔client+workspace, revision↔entry/pin/creator, value↔revision/
+// parameter, pointer→own revision) live in the migration's raw SQL.
+
+model DailyEntry {
+  id                String   @id @default(cuid())
+  workspaceId       String   @map("workspace_id")
+  clientProfileId   String   @map("client_profile_id")
+  // Declared client calendar date (#66) — DATE column, no timezone column.
+  entryDate         DateTime @db.Date @map("entry_date")
+  // Nullable at insert; set to the first revision inside the same
+  // transaction. The composite pointer foreign key
+  // (current_revision_id, id) → daily_entry_revision(id, daily_entry_id)
+  // is raw SQL — Prisma cannot express the cyclic composite relation.
+  currentRevisionId String?  @map("current_revision_id")
+  createdByMemberId String   @map("created_by_member_id")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace       Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile   ClientProfile   @relation("ClientProfileDailyEntries", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  createdByMember WorkspaceMember @relation("DailyEntryCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  revisions       DailyEntryRevision[]
+
+  // One logical entry per client per declared date (#65).
+  @@unique([workspaceId, clientProfileId, entryDate])
+  // Composite targets for same-workspace / entry-coherence foreign keys
+  // (raw SQL).
+  @@unique([id, workspaceId])
+  @@unique([id, clientProfileId])
+  @@unique([id, workspaceId, clientProfileId])
+  @@index([clientProfileId, entryDate])
+  @@map("daily_entry")
+}
+
+model DailyEntryRevision {
+  id                String   @id @default(cuid())
+  dailyEntryId      String   @map("daily_entry_id")
+  workspaceId       String   @map("workspace_id")
+  clientProfileId   String   @map("client_profile_id")
+  // Write-time pin + version lineage — never rewritten by later C2
+  // transitions; historical semantics render from the immutable version
+  // definition (P-021-R3 §10).
+  clientSetupPinId  String   @map("client_setup_pin_id")
+  templateVersionId String   @map("template_version_id")
+  // Per-entry append-only order, allocated max(seq)+1 under the entry lock.
+  seq               Int
+  // Entry-local dedup identity (DAILY-ENTRY-REV-v1 canonical encoding).
+  canonicalHash     String   @map("canonical_hash")
+  declaredAt        DateTime @map("declared_at") @db.Timestamptz(6)
+  createdByMemberId String   @map("created_by_member_id")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  entry           DailyEntry              @relation(fields: [dailyEntryId], references: [id], onDelete: Restrict)
+  pin             ClientSetupPin          @relation(fields: [clientSetupPinId], references: [id], onDelete: Restrict)
+  templateVersion CoachingTemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  createdByMember WorkspaceMember         @relation("DailyEntryRevisionCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  values          DailyEntryRevisionValue[]
+
+  @@unique([dailyEntryId, seq])
+  // Composite targets for coherence foreign keys (raw SQL): pointer→own
+  // revision, value→revision+workspace, revision→pin+workspace+version,
+  // revision→pin+client.
+  @@unique([id, dailyEntryId])
+  @@unique([id, workspaceId])
+  @@unique([id, clientProfileId])
+  @@index([clientSetupPinId])
+  @@index([clientProfileId])
+  @@index([dailyEntryId, declaredAt])
+  @@map("daily_entry_revision")
+}
+
+model DailyEntryRevisionValue {
+  revisionId    String        @map("revision_id")
+  workspaceId   String        @map("workspace_id")
+  parameterId   String        @map("parameter_id")
+  // Closed ParameterKind — the exactly-one-column CHECK in raw SQL makes
+  // unsupported kinds incapable of producing a row.
+  kind          ParameterKind
+  valueNumeric  Decimal?      @db.Decimal(30, 8) @map("value_numeric")
+  valueRating   Int?          @map("value_rating")
+  valueOptionId String?       @map("value_option_id")
+  valueText     String?       @map("value_text")
+
+  revision  DailyEntryRevision  @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+  parameter ParameterDefinition @relation(fields: [parameterId], references: [id], onDelete: Restrict)
+
+  // One value per parameter per revision (#64).
+  @@id([revisionId, parameterId])
+  @@index([parameterId])
+  @@map("daily_entry_revision_value")
 }

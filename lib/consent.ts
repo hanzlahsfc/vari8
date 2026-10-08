@@ -148,6 +148,15 @@ export type ConsentServiceDeps = {
   registry?: ConsentPolicyRegistry;
 };
 
+/** Read-path-only deps: `authorizeHealthOperation` performs no writes of
+ * its own, so its client may be a transaction client (P-021 — consent
+ * reads must run on the same client as the surrounding health-data
+ * transaction). Mutation services keep requiring `PrismaClient`. */
+export type HealthOperationDeps = {
+  client?: PrismaLike;
+  registry?: ConsentPolicyRegistry;
+};
+
 export type ConsentMutationResult = { kind: ConsentKind; changed: boolean };
 export type ConsentStatusRow = {
   id: string;
@@ -547,7 +556,7 @@ export async function authorizeHealthOperation(
     workspaceId?: string;
     clientProfileId?: string;
   },
-  deps: ConsentServiceDeps = {},
+  deps: HealthOperationDeps = {},
 ): Promise<AuthorizedHealthOperation> {
   const required = requiredConsentsFor(input.resource);
   if (!required) throw new ConsentError("invalid_input");

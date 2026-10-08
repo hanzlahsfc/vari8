@@ -599,7 +599,7 @@ describe.skipIf(!enabled)("P-020B template transitions (real PG)", () => {
       expect(review.eligible).toBe(true);
       expect(review.blockedReasonCodes).toEqual([]);
       expect(review.diff.categories.added).toBe(1);
-      expect(review.providersDeclared).toBe(0);
+      expect(review.providersDeclared).toBe(1);
       expect(review.reviewFingerprint).toMatch(/^[0-9a-f]{64}$/);
 
       const applied = await executeClientSetupTransition(f.sess, {
@@ -1067,7 +1067,7 @@ describe.skipIf(!enabled)("P-020B template transitions (real PG)", () => {
       ]) {
         expect(json).not.toContain(secret);
       }
-      expect(payload.providersDeclared).toBe(0);
+      expect(payload.providersDeclared).toBe(1);
       expect(payload.requiresConfirmation).toBe(true);
     });
   });
