@@ -20,6 +20,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { prisma as defaultPrisma } from "../db";
 import { authorize, type SessionLike } from "../auth/guard";
+import { computeSelectionFingerprint } from "./selection-fingerprint";
 import { createPrismaAuthorizationRepo } from "../workspace/access";
 import { writeAuditEvent } from "../audit";
 import { COACHING_LIMITS } from "./gate";
@@ -29,7 +30,10 @@ export type ParameterErrorCode =
   | "parameter_not_accessible"
   | "parameter_archived"
   | "stale_revision"
+  | "stale_selection"
   | "semantics_locked"
+  | "already_classified"
+  | "classification_not_permitted"
   | "serialization_conflict";
 
 export class ParameterError extends Error {
@@ -56,6 +60,24 @@ export const RATING_SCHEMES = [
 ] as const;
 export type RatingScheme = (typeof RATING_SCHEMES)[number];
 
+/** P-020A (#73/#78): closed parameter data classification. */
+export const PARAMETER_CLASSIFICATIONS = [
+  "GENERAL_HEALTH",
+  "CYCLE",
+  "BLOODWORK",
+  "PED_HRT",
+] as const;
+export type ParameterDataClassification =
+  (typeof PARAMETER_CLASSIFICATIONS)[number];
+
+/** The ONLY classifications any application role may assign. BLOODWORK and
+ * PED_HRT are vocabulary-reserved — unassignable pending their legal/policy
+ * gates — and every non-NULL transition is rejected. */
+export const ASSIGNABLE_CLASSIFICATIONS = [
+  "GENERAL_HEALTH",
+  "CYCLE",
+] as const satisfies readonly ParameterDataClassification[];
+
 export type ParameterOption = { optionId: string; label: string };
 export type ParameterValidation = { min?: number; max?: number };
 
@@ -72,6 +94,7 @@ export type ParameterState = {
   retiredOptionIds: string[];
   validation: ParameterValidation | null;
   group: string | null;
+  dataClassification: ParameterDataClassification | null;
   revision: number;
   status: "ACTIVE" | "ARCHIVED";
 };
@@ -82,6 +105,7 @@ export type ParameterSummary = {
   kind: ParameterKind;
   label: string;
   status: "ACTIVE" | "ARCHIVED";
+  dataClassification: ParameterDataClassification | null;
   revision: number;
   publishedReferenced: boolean;
   updatedAt: string;
@@ -404,6 +428,7 @@ function rowToState(row: {
   retiredOptionIds: unknown;
   validation: unknown;
   group: string | null;
+  dataClassification: string | null;
   revision: number;
   status: string;
 }): ParameterState {
@@ -419,6 +444,8 @@ function rowToState(row: {
     retiredOptionIds: (row.retiredOptionIds as string[] | null) ?? [],
     validation: (row.validation as ParameterValidation | null) ?? null,
     group: row.group,
+    dataClassification:
+      (row.dataClassification as ParameterDataClassification | null) ?? null,
     revision: row.revision,
     status: row.status as "ACTIVE" | "ARCHIVED",
   };
@@ -478,6 +505,7 @@ type LockedParameterRow = {
   options: unknown;
   retired_option_ids: unknown;
   validation: unknown;
+  data_classification: string | null;
   revision: number;
   status: string;
 };
@@ -490,8 +518,8 @@ async function lockParameter(
 ): Promise<LockedParameterRow | null> {
   const rows = await tx.$queryRawUnsafe<LockedParameterRow[]>(
     `SELECT id, workspace_id, key, kind, label, help_text, group_label, unit,
-            rating_scheme, options, retired_option_ids, validation, revision,
-            status
+            rating_scheme, options, retired_option_ids, validation,
+            data_classification, revision, status
      FROM "parameter_definition"
      WHERE id = $1 AND workspace_id = $2 FOR UPDATE`,
     parameterId,
@@ -551,6 +579,7 @@ export async function listParameters(
       kind: true,
       label: true,
       status: true,
+      dataClassification: true,
       revision: true,
       updatedAt: true,
       versionReferences: { select: { versionId: true }, take: 1 },
@@ -568,6 +597,7 @@ export async function listParameters(
       kind: row.kind,
       label: row.label,
       status: row.status,
+      dataClassification: row.dataClassification,
       revision: row.revision,
       publishedReferenced: row.versionReferences.length > 0,
       updatedAt: row.updatedAt.toISOString(),
@@ -603,6 +633,7 @@ export async function getParameter(
     kind: row.kind,
     label: row.label,
     status: row.status,
+    dataClassification: row.dataClassification,
     revision: row.revision,
     publishedReferenced: row.versionReferences.length > 0,
     updatedAt: row.updatedAt.toISOString(),
@@ -711,6 +742,7 @@ export async function updateParameter(
           retiredOptionIds: row.retired_option_ids,
           validation: row.validation,
           group: row.group_label,
+          dataClassification: row.data_classification,
           revision: row.revision,
           status: row.status,
         });
@@ -747,6 +779,126 @@ export async function updateParameter(
       { isolationLevel: "Serializable" },
     ),
   );
+}
+
+// ── P-020A classification (decisions #73/#78) ──────────────────────────────
+
+/** Full authorized ordered id list backing positional classification
+ * selection + fingerprint. Same ordering as `listParameters` so a rendered
+ * row's index is stable; fetched under `parameterDefinitions` read scope —
+ * the mutation separately write-authorizes. */
+export async function listClassifiableParameterIds(
+  session: SessionLike,
+  input: { workspaceId: string },
+  client: PrismaClient | Prisma.TransactionClient = defaultPrisma,
+): Promise<{ ids: string[]; fingerprint: string }> {
+  const ctx = await authorize(
+    session,
+    {
+      resource: "parameterDefinitions",
+      action: "read",
+      workspaceId: input.workspaceId,
+    },
+    createPrismaAuthorizationRepo(client),
+  );
+  const rows = await client.parameterDefinition.findMany({
+    where: { workspaceId: ctx.workspaceId },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    select: { id: true },
+  });
+  const ids = rows.map((r) => r.id);
+  return { ids, fingerprint: computeSelectionFingerprint(ids) };
+}
+
+function boundedIndex(value: unknown): number | null {
+  return typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= 0 &&
+    value <= COACHING_LIMITS.indexMax
+    ? value
+    : null;
+}
+
+/**
+ * One-time audited `NULL → GENERAL_HEALTH|CYCLE` classification (#78). The
+ * sole approved exception letting a NULL semantic field change on a
+ * parameter already referenced by published versions — existing snapshots
+ * are never rewritten. Locks ONLY the parameter row (never a
+ * coaching_template lock — no parameter→template reverse edge); publish and
+ * archive serialize through the same row lock.
+ */
+export async function classifyParameter(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    parameterIndex: number;
+    expectedRevision: number;
+    fingerprint: string;
+    classification: ParameterDataClassification;
+  },
+  client?: PrismaClient,
+): Promise<{ revision: number }> {
+  const db = client ?? defaultPrisma;
+  if (
+    !(ASSIGNABLE_CLASSIFICATIONS as readonly string[]).includes(
+      input.classification,
+    )
+  )
+    throw new ParameterError("classification_not_permitted");
+  const nextRevision = await withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const ctx = await authorize(
+          session,
+          {
+            resource: "parameterDefinitions",
+            action: "write",
+            workspaceId: input.workspaceId,
+          },
+          createPrismaAuthorizationRepo(tx),
+        );
+        // Re-resolve the authorized ordered list inside the transaction:
+        // stale fingerprint → `stale_selection`; in-range tampered index →
+        // `invalid_input`. Only then lock the resolved parameter row.
+        const { ids, fingerprint: expectedFp } =
+          await listClassifiableParameterIds(
+            session,
+            { workspaceId: input.workspaceId },
+            tx,
+          );
+        if (input.fingerprint !== expectedFp)
+          throw new ParameterError("stale_selection");
+        const parameterId = ids[boundedIndex(input.parameterIndex) ?? -1];
+        if (!parameterId) throw new ParameterError("invalid_input");
+        const row = await lockParameter(tx, input.workspaceId, parameterId);
+        if (!row) throw new ParameterError("parameter_not_accessible");
+        if (row.status === "ARCHIVED")
+          throw new ParameterError("parameter_archived");
+        if (row.revision !== input.expectedRevision)
+          throw new ParameterError("stale_revision");
+        if (row.data_classification !== null)
+          throw new ParameterError("already_classified");
+        const revision = row.revision + 1;
+        await tx.parameterDefinition.update({
+          where: { id: row.id },
+          data: {
+            dataClassification: input.classification,
+            revision,
+            updatedByMemberId: ctx.workspaceMemberId as string,
+          },
+        });
+        await writeAuditEvent(tx, ctx, {
+          action: "UPDATE",
+          resourceType: "parameter_definition",
+          resourceId: row.id,
+          meta: { changed: true, version: `v${revision}` },
+        });
+        return revision;
+      },
+      { isolationLevel: "Serializable" },
+    ),
+  );
+  return { revision: nextRevision };
 }
 
 export async function archiveParameter(

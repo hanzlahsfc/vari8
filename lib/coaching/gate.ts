@@ -28,4 +28,6 @@ export const COACHING_LIMITS = {
   nameMax: 120,
   listDefaultLimit: 25,
   listMaxLimit: 100,
+  /** Hard ceiling on positional list indices submitted by the browser. */
+  indexMax: 100_000,
 } as const;

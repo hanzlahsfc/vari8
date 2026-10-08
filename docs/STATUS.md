@@ -5,6 +5,69 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-08 — P-020A-I1-R3 final repair (re-review residuals closed)
+
+- Independent re-review of `99883cb` (`opencode-go/deepseek-v4.1-flash`,
+  P-020A-I1-R2-R1): **CONDITIONAL PASS** — no P0/P1; both prior P2s and all
+  P3s closed; every executed gate reproduced green. Two residuals repaired
+  forward on `feature/p020a-parameter-classification-foundation`.
+- Residual P2 (test-proof tightening only): the archive-wins and
+  publish-wins overlap tests now await the losing classification's
+  `onParameterLockIssued` signal before releasing the parked winner — all
+  four concurrency orderings now prove literal lock-queue contention, not
+  just overlap + arrival order. If the loser never issued its
+  `parameter_definition … FOR UPDATE` request the await would hang and the
+  test would fail by bounded timeout. No production transaction or lock
+  behavior changed.
+- Residual P3 (UI edge): the classification control now renders only when
+  `classifyIndex` is a defined ordinal — the `?? 0` fallback (which could
+  render `classification-select-0` on a row outside the classifiable list)
+  is removed; ordinal-less rows render no control and cannot submit. DOM
+  test updated RED-first; classified/archived/denied/flag-off displays
+  unchanged.
+- Gates (fresh disposable PG `p020a_r3_repair_1791455741`, local
+  `app-db-1`): diff-check/prettier/tsc/eslint/prisma generate+validate all
+  exit 0; focused unit 27/27; focused integration 21/21; "both in flight"
+  3 passed; full integration 419/419; `next build` 0; focused
+  classification E2E 9/9. Full unit + full E2E intentionally not rerun —
+  the parent passed the complete suites and PR CI reruns everything.
+- **No PR, merge, main change, deployment, production enablement, P-020B,
+  or DailyEntry work.** Next: final lightweight independent confirmation.
+
+## 2026-10-08 — P-020A parameter classification foundation implemented
+
+- Owner-authorized P-020A slice of the two-slice C2 plan (P-020-R3 + R3.1
+  addendum). Branch `feature/p020a-parameter-classification-foundation`.
+- Live on merge: nullable `data_classification` enum column (no default, no
+  backfill — existing rows NULL); `dataClassification` on new published
+  version snapshots; **universal duplicate-parameter publish rejection
+  (#64)**; shared pure `evaluateDailyEntryVersionEligibility` module (unused
+  by user-facing code until P-020B).
+- Flag-gated (`ENABLE_PARAMETER_CLASSIFICATION === "1"`, default off):
+  classification control + `classifyParameter` action — NULL→GENERAL_HEALTH /
+  NULL→CYCLE only; `BLOODWORK`/`PED_HRT` unassignable by every role; ACTIVE
+  only; positional index + fingerprint + expectedRevision binding; parameter
+  row `FOR UPDATE` only (no template lock); single revision bump +
+  `updatedByMemberId` + tx-bound `parameter_definition`/`UPDATE` audit.
+- Disposable DB `p020a_integration` (local docker `app-db-1`, created for
+  this run — not shared infra): `prisma migrate deploy` + 417/417
+  integration tests pass; 814/814 unit; focused + full E2E green; build ok.
+- Independent review (`opencode-go/deepseek-v4.1-flash`, P-020A-I1-R1):
+  **CONDITIONAL PASS** — no P0/P1; two P2 evidence repairs + P3 cleanups.
+  Repaired in `3b355df..`: genuinely concurrent classify-vs-archive and
+  classify-vs-publish tests (tx-client proxy barriers on the injected
+  `client` seam — both ops in flight, deterministic lock-arrival order, no
+  sleeps, no production test API); action-layer test pinning
+  gate-before-auth/FormData/DB ordering; `indexByParameterId` removed from
+  client props (server-side ordinal → per-row `classifyIndex`); dead
+  `resolveClassifySelection` export removed; audit `meta.version` aligned to
+  the established `v<N>` convention (`client-setup.ts`); this entry
+  corrected 415→417.
+- Record: `docs/tasks/p020a-parameter-classification-foundation.md`.
+  **P-020B, DailyEntry, C3, C4, production enablement, and deployment remain
+  unauthorized; nothing deployed.** Next: lightweight independent re-review
+  of the repair commit before any PR/merge.
+
 ## 2026-10-08 — P-019 DailyEntry decisions approved (docs only)
 
 - Owner approved the corrected P-019 package → `product-decisions.md`

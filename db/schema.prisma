@@ -655,6 +655,13 @@ enum ParameterStatus {
   ARCHIVED
 }
 
+enum ParameterDataClassification {
+  GENERAL_HEALTH
+  CYCLE
+  BLOODWORK
+  PED_HRT
+}
+
 enum CoachingTemplateStatus {
   ACTIVE
   ARCHIVED
@@ -678,6 +685,10 @@ model ParameterDefinition {
   retiredOptionIds   Json?           @map("retired_option_ids")
   // Closed declarative numeric bounds only; semantic field.
   validation         Json?
+  // P-020A (decisions #73/#78): closed data classification — no default, no
+  // backfill; NULL until the explicit audited classification action runs.
+  // BLOODWORK/PED_HRT are unassignable by every application role.
+  dataClassification ParameterDataClassification? @map("data_classification")
   revision           Int             @default(1)
   status             ParameterStatus @default(ACTIVE)
   createdByMemberId  String          @map("created_by_member_id")

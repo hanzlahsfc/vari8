@@ -34,6 +34,7 @@ export type CoachingTemplateErrorCode =
   | "parameter_not_publishable"
   | "parameter_changed"
   | "publish_incomplete"
+  | "duplicate_parameter"
   | "serialization_conflict";
 
 export class CoachingTemplateError extends Error {
@@ -86,6 +87,8 @@ export type TemplateVersionDefinition = {
       options: ParameterOption[];
       validation: ParameterValidation | null;
       group: string | null;
+      /** P-020A: classification at publish time; absent on legacy versions. */
+      dataClassification?: string | null;
       revision: number;
     }
   >;
@@ -363,6 +366,7 @@ type ParameterRow = {
   rating_scheme: string | null;
   options: unknown;
   validation: unknown;
+  data_classification: string | null;
   revision: number;
   status: string;
 };
@@ -377,7 +381,8 @@ async function lockParametersForPublish(
   if (parameterIds.length === 0) return [];
   const rows = await tx.$queryRawUnsafe<ParameterRow[]>(
     `SELECT id, key, kind, label, help_text, group_label, unit,
-            rating_scheme, options, validation, revision, status
+            rating_scheme, options, validation, data_classification,
+            revision, status
      FROM "parameter_definition"
      WHERE workspace_id = $1 AND id = ANY($2::text[])
      ORDER BY id ASC FOR UPDATE`,
@@ -420,6 +425,7 @@ function snapshotParameter(
     options: (row.options as ParameterOption[] | null) ?? [],
     validation: (row.validation as ParameterValidation | null) ?? null,
     group: row.group_label,
+    dataClassification: row.data_classification,
     revision: row.revision,
   };
 }
@@ -786,6 +792,17 @@ export async function publishTemplate(
 
         // 2. Resolve the complete referenced parameter set.
         const draft = row.draft as TemplateDraft;
+        // Universal #64 invariant — live on merge: every draft item must
+        // reference a DISTINCT parameter definition. Identity is the
+        // server-resolved `parameterId` (parameterKey verified through the
+        // same resolver); section/item ids are provenance only. Zero writes,
+        // zero audit on rejection — the stored draft is left untouched so a
+        // coach can repair it.
+        const allItemParameterIds = draft.sections.flatMap((sec) =>
+          sec.items.map((item) => item.parameterId),
+        );
+        if (new Set(allItemParameterIds).size !== allItemParameterIds.length)
+          throw new CoachingTemplateError("duplicate_parameter");
         const parameterIds = [
           ...new Set(
             draft.sections.flatMap((sec) =>

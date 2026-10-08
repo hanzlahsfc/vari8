@@ -60,6 +60,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   template_archived: "This template is archived.",
   no_open_draft: "There's no open draft. Reopen the draft to edit.",
   publish_incomplete: "A publish needs at least one item.",
+  duplicate_parameter:
+    "Each parameter can appear only once in a template version. Remove the extra placement and try again.",
   parameter_changed:
     "A referenced parameter changed since this draft was saved. Review the draft and save it again before publishing.",
   parameter_not_publishable:
