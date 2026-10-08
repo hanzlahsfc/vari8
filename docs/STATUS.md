@@ -35,7 +35,9 @@ are complete; product direction is now the configurable coaching system in
   `next build` 0; full E2E 248/12-skip/0-fail (~2.2m).
 - Old builder DB `p021_impl_1` retained untouched (task-owned, may be
   needed for diagnostics); review DBs were dropped by the reviewer.
-  **Branch still awaits independent re-review before any PR.**
+- Repair committed `cf8484f` (forward, on top of `26c1ef2`) and pushed
+  normally; remote `main` remains `2d9bfc8`; **no PR opened**. Branch
+  awaits lightweight independent re-review.
 
 ## 2026-10-09 — P-021 branch committed + pushed (no PR)
 
