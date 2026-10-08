@@ -648,6 +648,14 @@ describe.skipIf(!enabled)("P-020B template transitions (real PG)", () => {
       const assignment = await assignCoach(f.ws.id, f.cp.id, coach.m.id);
       const sess = s(coach.u.id);
 
+      // Complete-row preservation fixture: capture every persisted column
+      // (identity, status, coach/client/workspace linkage, timestamps) plus
+      // the total row set before the transition.
+      const before = await prisma.clientAssignment.findUniqueOrThrow({
+        where: { id: assignment.id },
+      });
+      const countBefore = await prisma.clientAssignment.count();
+
       const { ids, rowFingerprint } = await reviewArgs(sess, f.ws.id);
       const pinIndex = ids.indexOf(f.pin.id);
       const review = await reviewClientSetupTransition(sess, {
@@ -667,11 +675,12 @@ describe.skipIf(!enabled)("P-020B template transitions (real PG)", () => {
         where: { clientSetupId: f.setup.id, status: "ACTIVE" },
       });
       expect(next.transitionKind).toBe("UPGRADE");
+      // No ClientAssignment insert/update/delete/timestamp change occurred.
       const after = await prisma.clientAssignment.findUniqueOrThrow({
         where: { id: assignment.id },
       });
-      expect(after.status).toBe("ACTIVE");
-      expect(after.coachMemberId).toBe(coach.m.id);
+      expect(after).toEqual(before);
+      expect(await prisma.clientAssignment.count()).toBe(countBefore);
     });
 
     it("rollback reaches an earlier retained version positionally", async () => {

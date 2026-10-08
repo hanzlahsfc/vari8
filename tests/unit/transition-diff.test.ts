@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   buildTransitionSummary,
@@ -283,6 +283,86 @@ describe("P-020B computeTransitionDiff", () => {
     for (const e of d.entries) {
       expect(DIFF_CATEGORY_RANK[e.category]).toBeTypeOf("number");
     }
+  });
+
+  it("canonical ordering is locale-independent (code-unit compare only)", () => {
+    // Multiple same-category entries force every tie-break field
+    // (parameterKey, reboundParameterKey, itemId, detail) to be compared.
+    const from = def({
+      title: "Old",
+      sections: [
+        {
+          sectionId: "sec_a",
+          label: "Section A",
+          order: 0,
+          items: [
+            item("itm_1", "p1"),
+            item("itm_2", "p2", { order: 1 }),
+            item("itm_9", "p9", { order: 2 }),
+          ],
+        },
+        {
+          sectionId: "sec_b",
+          label: "Section B",
+          order: 1,
+          items: [item("itm_4", "p4")],
+        },
+      ],
+      parameters: {
+        p1: snapParam("p1"),
+        p2: snapParam("p2"),
+        p4: snapParam("p4"),
+        p9: snapParam("p9"),
+      },
+    });
+    const to = def({
+      title: "New",
+      sections: [
+        {
+          sectionId: "sec_a",
+          label: "Section A2",
+          order: 0,
+          items: [
+            item("itm_1", "p1", { required: true }),
+            item("itm_2", "p8", { order: 2 }),
+            item("itm_3", "p3", { order: 1 }),
+          ],
+        },
+        {
+          sectionId: "sec_b",
+          label: "Section B",
+          order: 1,
+          items: [item("itm_4", "p4")],
+        },
+      ],
+      parameters: {
+        p1: snapParam("p1", { label: "Renamed" }),
+        p2: snapParam("p2"),
+        p3: snapParam("p3"),
+        p4: snapParam("p4"),
+        p8: snapParam("p8"),
+        p9: snapParam("p9"),
+      },
+    });
+    // Baseline under the real comparator.
+    const baseline = computeTransitionDiff(from, to);
+    expect(baseline.entries.length).toBeGreaterThan(3);
+
+    // Canonical paths must not depend on locale: prove computation and the
+    // hash succeed identically when localeCompare is unavailable (throws).
+    const spy = vi
+      .spyOn(String.prototype, "localeCompare")
+      .mockImplementation(() => {
+        throw new Error("localeCompare must not be used in canonical paths");
+      });
+    try {
+      const underMock = computeTransitionDiff(from, to);
+      expect(underMock.diffHash).toBe(baseline.diffHash);
+      expect(underMock.entries).toEqual(baseline.entries);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(spy).not.toHaveBeenCalled();
   });
 });
 

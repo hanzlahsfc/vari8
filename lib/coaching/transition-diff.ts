@@ -218,6 +218,14 @@ function semanticDrift(
 
 const lp = (s: string) => `${Buffer.byteLength(s, "utf8")}:${s}`;
 
+/** Locale-independent code-unit ordering — canonical paths must never sort
+ * by locale (host/environment dependent). */
+function compareCodeUnits(left: string, right: string): number {
+  if (left < right) return -1;
+  if (left > right) return 1;
+  return 0;
+}
+
 /** Versioned, domain-separated, length-prefixed canonical diff hash. */
 export function computeDiffHash(entries: TransitionDiffEntry[]): string {
   const hash = createHash("sha256");
@@ -385,12 +393,13 @@ export function computeTransitionDiff(
   entries.sort(
     (a, b) =>
       DIFF_CATEGORY_RANK[a.category] - DIFF_CATEGORY_RANK[b.category] ||
-      a.parameterKey.localeCompare(b.parameterKey) ||
-      (a.reboundParameterKey ?? "").localeCompare(
+      compareCodeUnits(a.parameterKey, b.parameterKey) ||
+      compareCodeUnits(
+        a.reboundParameterKey ?? "",
         b.reboundParameterKey ?? "",
       ) ||
-      a.itemId.localeCompare(b.itemId) ||
-      a.detail.localeCompare(b.detail),
+      compareCodeUnits(a.itemId, b.itemId) ||
+      compareCodeUnits(a.detail, b.detail),
   );
 
   const categories: TransitionCategories = {

@@ -183,6 +183,34 @@ enablement; no deployment; no PR; no merge.
   response assertion over-constrained → simplified to control-absence;
   keyboard test raced async target loading → await control visibility.
 
+### Independent review + R2 cleanups
+
+- Independent review (`opencode-go/deepseek-v4.1-flash`, P-020B-I1-R1,
+  artifact SHA-256 `da0405bf2afca1e1226cec1a669c2caf86ee06d25ede9cbffe012713a6c34db6`):
+  **PASS, no P0/P1/P2.** Three P3 notes:
+  1. `transition-diff.ts` canonical ordering used `localeCompare` → repaired:
+     explicit `compareCodeUnits` (code-unit `<`/`>`) for every tie-break
+     field; RED regression proves the canonical diff/hash path succeeds
+     identically while `localeCompare` is mocked to throw; no hash vector
+     changed.
+  2. The assigned-coach test compared only status/coach → strengthened to
+     deep-compare the complete `ClientAssignment` row (all persisted
+     columns) and the total row count before/after transition.
+  3. Docs: builder full E2E = 238 passed / 12 skipped; the reviewer's
+     full-E2E run hit a pre-existing `onboarding-forms.spec.ts:2209` flake
+     (outside the P-020B diff, green on isolated rerun — no P-020B
+     regression).
+- R2 verification on new disposable PG `p020b_r2_1791466866`
+  (`prisma migrate deploy` exit 0): `git diff --check` 0; `format:check` 0;
+  `tsc --noEmit` 0; `eslint` 0; `prisma validate`/`generate` 0; focused unit
+  (4 P-020B specs) **64/64** exit 0 (includes the new locale-independence
+  regression — RED at `2f171ee` via a throwing `localeCompare` spy);
+  focused integration **20/20** exit 0; full integration **439/439** exit 0;
+  `next build` exit 0. Full unit + full E2E intentionally not rerun
+  (canonical-ordering + test/docs-only delta; parent candidate and reviewer
+  ran them; PR CI reruns all). Old builder DB `p020b_it_1791461647` dropped
+  after verification — no other database touched.
+
 ### Live-on-merge versus gated
 
 - Live on merge: schema columns/constraints, diff/provider/fingerprint
