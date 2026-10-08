@@ -275,19 +275,13 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
       "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'",
     );
     const names = rows.map((r) => r.table_name);
-    for (const forbidden of [
-      "audit_log",
-      "daily_entry",
-      "food",
-      "meal",
-      "program",
-    ]) {
+    for (const forbidden of ["audit_log", "food", "meal", "program"]) {
       expect(names.some((n) => n.includes(forbidden))).toBe(false);
     }
     // Identity/tenancy (S1-A), versioned consent (S1-D), audit events (S1-E),
     // access tokens (S1-F1), and the Phase 2.1 Nutrition + Phase 2.2 Exercise
     // catalogs with their import provenance. The forbidden-table guard above
-    // still proves no premature health/meal/program tables exist; the
+    // still proves no premature meal/program tables exist; the
     // exercise_catalog/exercise_import tables are the intentional catalog.
     expect(names.sort()).toEqual(
       [
@@ -296,6 +290,12 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         "audit_event",
         "client_assignment",
         "client_profile",
+        // P-021: client-owned DailyEntry records + append-only revisions and
+        // values — consent-gated health data, reviewed in
+        // product-decisions #64–#78.
+        "daily_entry",
+        "daily_entry_revision",
+        "daily_entry_revision_value",
         // P-016: staff-only client setup aggregate + append-only template
         // assignment/version pins — operational metadata only (#49–#57).
         "client_setup",

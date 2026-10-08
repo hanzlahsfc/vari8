@@ -21,7 +21,6 @@ import type {
   ImpactRole,
   ProviderSet,
 } from "./transition-impact";
-import { DECLARED_CONSUMERS, PROVIDERS } from "./transition-impact";
 
 /**
  * P-020B client-setup transition boundary — the single app-facing surface
@@ -290,10 +289,7 @@ export async function reviewTransitionFromAction(
         targetIndex: targetIndex ?? undefined,
       },
       deps.db ?? prisma,
-      deps.providers ?? {
-        declarations: DECLARED_CONSUMERS,
-        providers: PROVIDERS,
-      },
+      deps.providers,
     );
     return { ok: true, value: serializeTransitionReview(review) };
   } catch (error) {
@@ -343,10 +339,7 @@ export async function executeTransitionFromAction(
         reviewFingerprint,
       },
       deps.db ?? prisma,
-      deps.providers ?? {
-        declarations: DECLARED_CONSUMERS,
-        providers: PROVIDERS,
-      },
+      deps.providers,
     );
     return { ok: true, value };
   } catch (error) {

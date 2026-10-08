@@ -317,10 +317,13 @@ test.describe("P-020B transitions — owner", () => {
       await expect(review).toContainText("version 1 → version 2");
       await expect(review).toContainText("Parameter added");
       await expect(review).toContainText("Waist");
-      // Honest zero-provider state.
-      await expect(page.getByTestId("transition-no-providers")).toContainText(
-        "No data-collection features",
-      );
+      // P-021: the daily-entry consumer is registered, so the honest
+      // zero-provider notice is gone; this client's fixture has no recorded
+      // history, so no impact list renders either.
+      await expect(page.getByTestId("transition-no-providers")).toHaveCount(0);
+      await expect(
+        page.getByTestId("transition-impact-daily-entry"),
+      ).toHaveCount(0);
       await expect(page.getByTestId("transition-blocked")).toHaveCount(0);
 
       await page.getByTestId("transition-confirm").click();

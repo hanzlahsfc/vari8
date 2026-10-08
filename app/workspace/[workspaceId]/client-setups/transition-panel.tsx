@@ -327,6 +327,35 @@ export function TransitionPanel({
             </p>
           ) : null}
 
+          {review.providerImpacts.map((impact) =>
+            impact.affectedParameters.length === 0 ? null : (
+              <div
+                key={impact.consumerKey}
+                className="transition-panel__choices"
+                data-testid={`transition-impact-${impact.consumerKey}`}
+              >
+                <p className="app-lede">
+                  Recorded daily-tracking history that this change affects —
+                  counts and dates only, never stored values:
+                </p>
+                <ul>
+                  {impact.affectedParameters.map((a) => (
+                    <li key={`${a.parameterKey}:${a.impactRole}`}>
+                      <strong>{a.parameterKey}</strong>
+                      {a.impactRole === "REMOVED" ? " (removed)" : " (rebound)"}
+                      {` — ${a.count} ${a.count === "1" ? "entry" : "entries"}`}
+                      {a.earliestDate !== null && a.latestDate !== null
+                        ? a.earliestDate === a.latestDate
+                          ? ` on ${a.earliestDate}`
+                          : ` from ${a.earliestDate} to ${a.latestDate}`
+                        : ""}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ),
+          )}
+
           {review.blockedReasonCodes.length > 0 ? (
             <div role="alert" data-testid="transition-blocked">
               <p>This transition is blocked:</p>

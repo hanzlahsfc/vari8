@@ -150,12 +150,10 @@ export type ProviderSet = {
   providers: Readonly<Record<string, TransitionImpactProvider>>;
 };
 
-// ── Production provider set — honestly empty ─────────────────────────────
-
-/** No data-consuming feature exists yet — the empty identity means exactly
- * that (never "history is zero"). */
-export const DECLARED_CONSUMERS: readonly ConsumerDeclaration[] = [];
-export const PROVIDERS: Readonly<Record<string, TransitionImpactProvider>> = {};
+// ── Production consumer registry lives in ./impact-consumers.ts ──────────
+// Providers are bound per request (client identity is server-resolved), so
+// the registry is a declaration/factory set composed by
+// `composeProviderSet` — never a statically bound provider map.
 
 // ── Set validation (module-init + injectable for tests) ──────────────────
 
@@ -428,4 +426,5 @@ export async function collectProviderImpacts(
 
 // Module-init contract validation — a misconfigured production provider set
 // fails closed at import time, not at first request.
-validateProviderSet(DECLARED_CONSUMERS, PROVIDERS);
+// The production registry self-validates at module load in
+// ./impact-consumers.ts (declaration↔factory exact-set equality).

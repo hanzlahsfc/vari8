@@ -39,6 +39,10 @@ export default defineConfig({
         // P-020B: template-version transitions enabled on the primary test
         // server only.
         ENABLE_CLIENT_SETUP_TRANSITIONS: "1",
+        // P-021: DailyEntry persistence flag on the primary server — with
+        // ENABLE_DAILY_PROTOTYPE also on, the resolver is "conflict", so the
+        // shell stays up while persistence affordances are unavailable.
+        ENABLE_DAILY_ENTRY: "1",
         // Deterministic test-only secret (NOT a real credential). CI/local may
         // override AUTH_SECRET; the fallback keeps the suite self-contained.
         AUTH_SECRET:
@@ -76,6 +80,10 @@ export default defineConfig({
         // stays consistent; the dedicated transition flag-off proof server
         // below keeps ENABLE_CLIENT_SETUP on.
         ENABLE_CLIENT_SETUP_TRANSITIONS: "",
+        // P-021 flag-off: explicitly empty so an inherited
+        // ENABLE_DAILY_ENTRY=1 cannot leak into the proof server — the
+        // workspace Daily shell stays fully available with persistence off.
+        ENABLE_DAILY_ENTRY: "",
         AUTH_SECRET:
           process.env.AUTH_SECRET ?? "test-only-auth-secret-not-for-production",
         DATABASE_URL:
@@ -87,12 +95,21 @@ export default defineConfig({
       // P-020B transitions flag-OFF server: parent ENABLE_CLIENT_SETUP stays
       // "1" so the real page renders, but the transitions gate is off — the
       // E2E proof that the control is hidden and the actions refuse.
+      // P-021: this server also resolves DailyEntry mode "persistent"
+      // (entry flag on, prototype flag explicitly off), so the real
+      // save/edit/history client flow runs on a real browser target without
+      // a fourth webServer.
       command: "npm run start -- -p 3102",
       url: "http://127.0.0.1:3102",
       reuseExistingServer: false,
       timeout: 180_000,
       env: {
-        ENABLE_DAILY_PROTOTYPE: "1",
+        // Explicitly empty: persistent mode requires the prototype flag
+        // off; an inherited ENABLE_DAILY_PROTOTYPE=1 would flip the server
+        // to "conflict".
+        ENABLE_DAILY_PROTOTYPE: "",
+        // P-021: DailyEntry persistence enabled on this proof server only.
+        ENABLE_DAILY_ENTRY: "1",
         ENABLE_SHEET_VIEWER: "1",
         ENABLE_ONBOARDING_ASSIGNMENTS: "",
         ENABLE_COACHING_TEMPLATES: "1",

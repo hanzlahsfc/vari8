@@ -3,17 +3,20 @@ import { describe, expect, it } from "vitest";
 import {
   BLOCKED_REASON_RANK,
   collectProviderImpacts,
-  DECLARED_CONSUMERS,
   IMPACT_ROLE_RANK,
   isCanonicalCalendarDate,
   isCanonicalCount,
   isValidImpactBounds,
-  PROVIDERS,
   providerSetIdentity,
   validateProviderSet,
   type ConsumerDeclaration,
   type TransitionImpactProvider,
 } from "../../lib/coaching/transition-impact";
+import {
+  DECLARED_CONSUMERS,
+  PROVIDER_FACTORIES,
+  validateProviderFactories,
+} from "../../lib/coaching/impact-consumers";
 import { ClientSetupTransitionError } from "../../lib/coaching/client-setup-transition-gate";
 
 /**
@@ -101,12 +104,28 @@ describe("P-020B canonical count + date validation", () => {
 });
 
 describe("P-020B provider declaration/set equality", () => {
-  it("the production provider set is empty and consistent", () => {
-    expect(DECLARED_CONSUMERS).toEqual([]);
-    expect(PROVIDERS).toEqual({});
+  it("the production registry declares daily-entry with a matching factory", () => {
+    expect(DECLARED_CONSUMERS.map((d) => d.consumerKey)).toEqual([
+      "daily-entry",
+    ]);
+    expect(Object.keys(PROVIDER_FACTORIES)).toEqual(["daily-entry"]);
     expect(() =>
-      validateProviderSet(DECLARED_CONSUMERS, PROVIDERS),
+      validateProviderFactories(DECLARED_CONSUMERS, PROVIDER_FACTORIES),
     ).not.toThrow();
+  });
+
+  it("rejects declaration-without-factory and factory-without-declaration", () => {
+    expect(() =>
+      validateProviderFactories([...DECLARED_CONSUMERS, decl("x")], {
+        ...PROVIDER_FACTORIES,
+      }),
+    ).toThrowError(ClientSetupTransitionError);
+    expect(() =>
+      validateProviderFactories(DECLARED_CONSUMERS, {
+        ...PROVIDER_FACTORIES,
+        x: () => ({}) as never,
+      }),
+    ).toThrowError(ClientSetupTransitionError);
   });
 
   it("rejects declaration-without-provider and provider-without-declaration", () => {
@@ -283,9 +302,9 @@ describe("P-020B provider execution + output validation", () => {
     expect(result.blockedReasonCodes).toEqual(["PROVIDER_REPORTED_BLOCK"]);
   });
 
-  it("the empty production set reports no impacts and no blocks", async () => {
+  it("a set with no real provider invocable reports no impacts", async () => {
     const result = await collectProviderImpacts(
-      { declarations: DECLARED_CONSUMERS, providers: PROVIDERS },
+      { declarations: [], providers: {} },
       input,
     );
     expect(result.impacts).toEqual([]);

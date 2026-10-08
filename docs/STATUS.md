@@ -5,6 +5,44 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-09 — P-021 DailyEntry persistence implemented (branch, no PR)
+
+- Owner-authorized P-021-I1 atomic slice implemented on
+  `feature/p021-daily-entry-persistence` from exact `origin/main`
+  `2d9bfc8`, under P-021-R2 architecture + R3 corrections + final
+  membership-advisory amendment. Full record:
+  `docs/tasks/p021-daily-entry-persistence.md`.
+- Three append-only models (`daily_entry`, `daily_entry_revision`,
+  `daily_entry_revision_value`) with composite same-workspace/same-client
+  FKs, pointer-owning direction `(current_revision_id, id) →
+  revision(id, daily_entry_id)`, typed value CHECK, creator-member
+  provenance FKs — migration `20261009230000_p021_daily_entry`.
+- Canonicalization: raw-fraction-length-before-normalization decimals,
+  `abs < 10^22` pre-insert bound, tagged length-prefixed SHA-256 revision
+  hash + actor-bound stale token (`DAILY-ENTRY-FORM-v1` binds session user
+  + current member row). Lock order: `csetup` advisory → `member`
+  advisory → member row → profile → setup → pin → consents → entry →
+  current revision → inserts/pointer → audit; Serializable + bounded
+  retry; audit `{changed: true, count}` only.
+- Client surface: `/workspace/[workspaceId]/daily` moved to route group
+  `app/(tracker)/...` with a dual-role layout — staff keep full chrome,
+  ACTIVE CLIENT members get a reduced shell (Daily Tracker link only);
+  the staff workspace layout is unchanged, so no sibling page is exposed.
+- C2 provider `daily-entry` registered atomically; per-request provider
+  composition; counts distinct entries, never values.
+- Self-review repairs on the final tree: history now renders each revision
+  through ITS OWN immutable template version (labels/options stable after
+  later edits/transitions — regression test added); the transition panel
+  now renders provider impacts (counts/dates only) and the P-020B E2E
+  "no providers" assertion was updated to the registered-provider state.
+- Final gates on the exact final tree (disposable PG `p021_impl_1`,
+  fresh `migrate deploy`): `git diff --check` 0; prettier --check clean;
+  `tsc --noEmit` 0; `eslint .` 0; `prisma validate` + `generate` ok;
+  production `next build` 0; full unit 972/972; full integration
+  458/458; full E2E 248 passed/12 skipped/0 failed (~2.5m) incl.
+  responsive 1440/834/390, conflict + flag-off shell preservation.
+  **No PR, merge, deploy, or production collection.**
+
 ## 2026-10-08 — P-020B merged; post-merge E2E timeout repaired (test-only)
 
 - PR #21 merged correctly via pinned-head merge `58b54252bc815bee8087e260d6a2af1f237f3a62`

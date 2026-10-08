@@ -89,6 +89,9 @@ export const AUDIT_RESOURCE_TYPES = [
   // markers only — never client names, template content, or labels).
   // meta.version carries the pinned template's versionSeq, never pin seq.
   "client_setup_pin",
+  // P-021: DailyEntry revision creation (IDs + changed/count markers only —
+  // never values, dates, labels, options, units, hashes, or fingerprints).
+  "daily_entry",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 
