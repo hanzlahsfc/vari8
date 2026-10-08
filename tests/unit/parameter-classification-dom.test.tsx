@@ -104,22 +104,26 @@ describe("P-020A classification serialization — no raw ids", () => {
     for (const v of fd.values()) expect(String(v)).not.toContain(RAW_ID);
   });
 
-  it("a row without classifyIndex shows the stale-selection state and submits nothing", async () => {
-    const { container, getByRole } = render(
+  it("a row without classifyIndex renders no classification control and cannot submit", () => {
+    const { container } = render(
       <ParameterManager
         parameters={[{ ...ROW, classifyIndex: undefined }]}
         workspaceId="ws_test"
         classification={{ fingerprint: "fp_test" }}
       />,
     );
-    container
-      .querySelector<HTMLButtonElement>('[data-testid="classify-parameter"]')!
-      .click();
-    await vi.waitFor(() =>
-      expect(getByRole("alert").textContent).toContain(
-        "list changed while you were deciding",
-      ),
-    );
+    // The row still renders, but no classification select or submit control
+    // exists — no fallback `classification-select-0` id is ever created and
+    // no classification FormData can be submitted for the row.
+    expect(container.querySelector("tbody")).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="classification-select"]'),
+    ).toBeNull();
+    expect(
+      container.querySelector('[data-testid="classify-parameter"]'),
+    ).toBeNull();
+    expect(container.querySelector("#classification-select-0")).toBeNull();
+    expect(container.innerHTML).not.toContain("classification-select-");
     expect(vi.mocked(classifyParameter)).not.toHaveBeenCalled();
   });
 });

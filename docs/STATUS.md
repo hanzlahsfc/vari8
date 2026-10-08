@@ -5,6 +5,35 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-08 — P-020A-I1-R3 final repair (re-review residuals closed)
+
+- Independent re-review of `99883cb` (`opencode-go/deepseek-v4.1-flash`,
+  P-020A-I1-R2-R1): **CONDITIONAL PASS** — no P0/P1; both prior P2s and all
+  P3s closed; every executed gate reproduced green. Two residuals repaired
+  forward on `feature/p020a-parameter-classification-foundation`.
+- Residual P2 (test-proof tightening only): the archive-wins and
+  publish-wins overlap tests now await the losing classification's
+  `onParameterLockIssued` signal before releasing the parked winner — all
+  four concurrency orderings now prove literal lock-queue contention, not
+  just overlap + arrival order. If the loser never issued its
+  `parameter_definition … FOR UPDATE` request the await would hang and the
+  test would fail by bounded timeout. No production transaction or lock
+  behavior changed.
+- Residual P3 (UI edge): the classification control now renders only when
+  `classifyIndex` is a defined ordinal — the `?? 0` fallback (which could
+  render `classification-select-0` on a row outside the classifiable list)
+  is removed; ordinal-less rows render no control and cannot submit. DOM
+  test updated RED-first; classified/archived/denied/flag-off displays
+  unchanged.
+- Gates (fresh disposable PG `p020a_r3_repair_1791455741`, local
+  `app-db-1`): diff-check/prettier/tsc/eslint/prisma generate+validate all
+  exit 0; focused unit 27/27; focused integration 21/21; "both in flight"
+  3 passed; full integration 419/419; `next build` 0; focused
+  classification E2E 9/9. Full unit + full E2E intentionally not rerun —
+  the parent passed the complete suites and PR CI reruns everything.
+- **No PR, merge, main change, deployment, production enablement, P-020B,
+  or DailyEntry work.** Next: final lightweight independent confirmation.
+
 ## 2026-10-08 — P-020A parameter classification foundation implemented
 
 - Owner-authorized P-020A slice of the two-slice C2 plan (P-020-R3 + R3.1

@@ -352,38 +352,42 @@ export function ParameterManager({
                   ) : null}
                   {classification && row.status === "ACTIVE" ? (
                     row.dataClassification === null ? (
-                      <div className="classification-control">
-                        {" "}
-                        <select
-                          aria-label={`Data classification for ${row.label}`}
-                          className="auth-input"
-                          data-testid="classification-select"
-                          id={`classification-select-${row.classifyIndex ?? 0}`}
-                          onChange={(e) =>
-                            setClassifyChoice((c) => ({
-                              ...c,
-                              [row.id]: e.target.value as
-                                "GENERAL_HEALTH" | "CYCLE",
-                            }))
-                          }
-                          value={classifyChoice[row.id] ?? "GENERAL_HEALTH"}
-                        >
-                          <option value="GENERAL_HEALTH">General health</option>
-                          <option value="CYCLE">Cycle</option>
-                        </select>{" "}
-                        <button
-                          className="auth-button"
-                          data-testid="classify-parameter"
-                          disabled={pending}
-                          onClick={() => submitClassify(row)}
-                          type="button"
-                        >
-                          Classify
-                        </button>{" "}
-                        <span className="auth-hint">
-                          One-time label; does not enable data collection.
-                        </span>
-                      </div>
+                      row.classifyIndex === undefined ? null : (
+                        <div className="classification-control">
+                          {" "}
+                          <select
+                            aria-label={`Data classification for ${row.label}`}
+                            className="auth-input"
+                            data-testid="classification-select"
+                            id={`classification-select-${row.classifyIndex}`}
+                            onChange={(e) =>
+                              setClassifyChoice((c) => ({
+                                ...c,
+                                [row.id]: e.target.value as
+                                  "GENERAL_HEALTH" | "CYCLE",
+                              }))
+                            }
+                            value={classifyChoice[row.id] ?? "GENERAL_HEALTH"}
+                          >
+                            <option value="GENERAL_HEALTH">
+                              General health
+                            </option>
+                            <option value="CYCLE">Cycle</option>
+                          </select>{" "}
+                          <button
+                            className="auth-button"
+                            data-testid="classify-parameter"
+                            disabled={pending}
+                            onClick={() => submitClassify(row)}
+                            type="button"
+                          >
+                            Classify
+                          </button>{" "}
+                          <span className="auth-hint">
+                            One-time label; does not enable data collection.
+                          </span>
+                        </div>
+                      )
                     ) : (
                       <span
                         className="auth-hint"

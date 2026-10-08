@@ -103,6 +103,52 @@ GREEN evidence recorded in `docs/STATUS.md`.
   absent; flag-off 404 + absent control; assistant denial; no raw parameter
   id in the classify DOM; horizontal-overflow checks at 1440/834/390.
 
+## P-020A-I1-R3 — final repair round
+
+Independent re-review of `99883cb` (`opencode-go/deepseek-v4.1-flash`,
+P-020A-I1-R2-R1): **CONDITIONAL PASS** — no P0/P1; both prior P2s and all
+four P3s closed; every executed gate reproduced green. Two residuals
+remained and are repaired in one forward commit:
+
+- **Residual P2 (evidence tightening, test-only):** the archive-wins and
+  publish-wins orderings proved genuine overlap and forced arrival order
+  but released the parked winner after the loser's in-transaction list
+  read — they did not await the loser's `onParameterLockIssued` signal.
+  Both tests now add `onParameterLockIssued` on the losing classify client
+  and await it before releasing the winner (which is still parked holding
+  the row lock), so all four orderings prove the loser's
+  `parameter_definition … FOR UPDATE` request was issued and queued while
+  the winner held the lock — literal lock contention. A loser that never
+  issued the request would hang the await and fail by the bounded test
+  timeout. Honest note: the prior tests lacked this awaited proof signal;
+  the tightened tests now pin it — no RED production failure was fabricated
+  and no production transaction or lock behavior changed.
+- **Residual P3 (UI edge):** an ACTIVE, unclassified row missing
+  `classifyIndex` (e.g. excluded from the authorized classifiable list)
+  rendered the control under a `?? 0` fallback id (`classification-select-0`)
+  and only revealed the stale state on click. The control now renders only
+  for a defined ordinal; ordinal-less rows render no classification control
+  and cannot submit — the `submitClassify` undefined-ordinal guard remains
+  as defense in depth. The focused DOM test was updated RED-first (it
+  failed on the pre-repair render of `classification-select-0`) and also
+  pins the absence of the fallback id, no FormData submission, and a valid
+  ordinal still rendering/submitting the exact positional fields.
+
+Gates on the repair (fresh disposable PG `p020a_r3_repair_1791455741` on
+local `app-db-1`): `git diff --check` 0; `prettier --check .` 0;
+`tsc --noEmit` 0; `eslint` 0; `prisma generate` 0; `prisma validate` 0;
+focused unit (`coaching-classification` + `coaching-classification-actions`
+
+- `parameter-classification-dom`) 27/27; focused P-020A integration 21/21;
+  `-t "both in flight"` 3 passed; full integration 419/419;
+  `next build` (turbopack) 0; focused classification E2E 9/9 (Chromium).
+  Full unit and full E2E suites intentionally not rerun — the parent
+  candidate passed both complete suites, the reviewers reproduced the
+  relevant gates, and PR CI runs the complete pipeline.
+
+No PR, merge, main change, deployment, production enablement, P-020B, or
+DailyEntry implementation occurred; no approved product decision altered.
+
 ## Exclusions
 
 No P-020B transitions, DailyEntry persistence/submission/history, C3, C4,

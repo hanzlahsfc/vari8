@@ -457,6 +457,7 @@ describe.skipIf(!enabled)("P-020A parameter classification (real PG)", () => {
       const archiveLocked = deferred();
       const releaseArchive = deferred();
       const classifyEntered = deferred();
+      const classifyLockIssued = deferred();
       const archiveDb = instrumentedClient(prisma, {
         afterParameterLock: () => archiveLocked.resolve(),
         beforeParameterUpdate: () => releaseArchive.promise,
@@ -466,6 +467,7 @@ describe.skipIf(!enabled)("P-020A parameter classification (real PG)", () => {
         // deterministic arrival order at the FOR UPDATE queue.
         onWorkspaceMemberRead: () => archiveLocked.promise,
         onParameterList: () => classifyEntered.resolve(),
+        onParameterLockIssued: () => classifyLockIssued.resolve(),
       });
 
       const archiveP = archiveParameter(
@@ -484,9 +486,14 @@ describe.skipIf(!enabled)("P-020A parameter classification (real PG)", () => {
         },
         classifyDb,
       );
-      // Both operations are provably in flight before release.
+      // Both operations are provably in flight before release: the archive
+      // winner is still parked at beforeParameterUpdate holding the row
+      // lock while the loser's FOR UPDATE request is already issued and
+      // queued — literal lock contention. If classify never issued its lock
+      // request this await would hang and the test would time out.
       await archiveLocked.promise;
       await classifyEntered.promise;
+      await classifyLockIssued.promise;
       releaseArchive.resolve();
       await archiveP;
       await expect(classifyP).rejects.toMatchObject({
@@ -695,6 +702,7 @@ describe.skipIf(!enabled)("P-020A parameter classification (real PG)", () => {
       const publishLocked = deferred();
       const releasePublish = deferred();
       const classifyEntered = deferred();
+      const classifyLockIssued = deferred();
       const publishDb = instrumentedClient(prisma, {
         afterParameterLock: async () => {
           publishLocked.resolve();
@@ -706,6 +714,7 @@ describe.skipIf(!enabled)("P-020A parameter classification (real PG)", () => {
         // deterministic arrival order at the FOR UPDATE queue.
         onWorkspaceMemberRead: () => publishLocked.promise,
         onParameterList: () => classifyEntered.resolve(),
+        onParameterLockIssued: () => classifyLockIssued.resolve(),
       });
 
       const publishP = publishTemplate(
@@ -728,9 +737,14 @@ describe.skipIf(!enabled)("P-020A parameter classification (real PG)", () => {
         },
         classifyDb,
       );
-      // Both in flight: publish holds the locks; classify's tx is live.
+      // Both in flight: publish is still parked in afterParameterLock
+      // holding its template + parameter locks while classify's contested
+      // FOR UPDATE request is already issued and queued — literal lock
+      // contention. If classify never issued it this await would hang and
+      // the test would time out.
       await publishLocked.promise;
       await classifyEntered.promise;
+      await classifyLockIssued.promise;
       releasePublish.resolve();
       const pub = await publishP;
       const classified = await classifyP;
