@@ -290,9 +290,30 @@ BASE_CONSENTS` for synthetic dev/test only (decision #83); production
 
 ### Held boundary
 
-Not pushed, no PR, no merge, nothing deployed, flag never enabled in
-production, no real-client data, no staff answer review, no
+No PR, no merge, nothing deployed, flag never enabled in production, no
+real-client data, no staff answer review, no
 resubmission/drafts/C3/C4/cycle/MENSES/CALORIES.
+
+### Same-model review (non-independent) — 2026-10-09
+
+Post-push review of head `44e8eac` by the same model (explicitly NOT the
+required independent review). One genuine finding, repaired forward:
+
+- `next.config.ts` no-store source `/workspace/:ws/onboarding/:assignmentId`
+  also matched the staff `onboarding/assignments` + `onboarding/forms`
+  leaves — an unrelated-route header change. Forward fix narrowed the
+  source to `(?!assignments|forms)[^/]+`; production-build curl probes
+  confirm staff leaves keep their own dynamic headers while the client
+  leaves get explicit `no-store`.
+
+Otherwise verified clean: tx order vs R3 §13, lock order (advisories →
+member FOR UPDATE → post-lock authorize), idempotency-before-ACTIVE +
+P2002 backstop, consent fail-closed detail writes AND fills, audit-last
+atomicity, zero-answer-reflecting errors, no browser-supplied
+profile/user IDs, no secrets or real data, all six mutations bite.
+
+Branch pushed: `feature/p023-client-onboarding-submission` @
+`44e8eacc02e8ffc7da36746715ac30a9130f52f2` (3 commits on `bb9e42d`).
 
 ## Next gate
 

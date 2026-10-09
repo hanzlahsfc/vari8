@@ -29,9 +29,15 @@ onboardingSubmissions = BASE_CONSENTS` is the dev/test-only mapping —
   rejection, replay idempotency, concurrent double-submit, audit
   rollback, post-withdrawal behavior; focused E2E 10/10 at 1440/834/390;
   six mutations proven to fail their targeted assertions and reverted.
-- **Held:** not pushed, no PR, not deployed, flag never enabled in
-  production; P-023 requires fresh different-model review of the pushed
-  head before any PR.
+- Pushed: `feature/p023-client-onboarding-submission` @
+  `44e8eacc02e8ffc7da36746715ac30a9130f52f2` (3 forward commits on
+  `bb9e42d`; `origin/main` unchanged). Same-model post-push review —
+  explicitly non-independent — found + repaired one header-scope issue
+  (no-store wildcard had matched the staff onboarding leaves; narrowed
+  and re-verified on the production build).
+- **Held:** no PR, not deployed, flag never enabled in production;
+  P-023 requires fresh different-model review of the pushed head before
+  any PR.
 
 ## 2026-10-09 — P-023-D-M2 flaky P-021 assertion repair (in progress)
 
