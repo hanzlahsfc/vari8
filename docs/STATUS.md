@@ -5,6 +5,28 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-09 — P-023-D-M2 flaky P-021 assertion repair (in progress)
+
+- PR #26 merged correctly at `7e3d007` (parents `721359d` + `e536dd9`);
+  merged tree byte-identical to the reviewed docs head.
+- Post-merge main CI run `37944252862` / job `113866287625` **failed** in
+  the pre-existing `tests/integration/p021-daily-entry.test.ts` test
+  "counts distinct entries once across superseded revisions" — the
+  assertion `expect(JSON.stringify(out)).not.toContain("75")` matched a
+  randomly generated parameter ID ending in `75` (`pd_w_..._...86175`).
+  No raw answer value was actually present; the merged tree is
+  byte-identical to the PR-CI-green head. The failed run remains part of
+  repository history; no rerun, revert, or branch deletion preceded this
+  repair.
+- Repair (branch `fix/p023-main-ci-p021-impact-assertion`): the fixture
+  now deterministically uses a parameter ID containing `75` (`pd_75_*`)
+  and the substring assertion is replaced by an exact `toStrictEqual`
+  structural match on the full provider output — unexpected top-level or
+  nested fields (values, labels, units, options, free text) fail.
+  Production code is byte-identical to `origin/main`; mutation-verified.
+- P-023 implementation remains held; this repair is a test-only
+  stabilization requiring a different-model review before its PR.
+
 ## 2026-10-09 — P-023 onboarding-submission decisions recorded (#82–#85)
 
 - Planning chain P-023 → R1 (CONDITIONAL PASS, 2×P1/4×P2/4×P3) → R2 →

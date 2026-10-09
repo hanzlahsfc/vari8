@@ -122,6 +122,31 @@ email; production privacy wording; retention/erasure/export (#39/D-10);
 consent classification (#38); C3/C4; real-client data; deployment;
 CALORIES/cycle/medical inference; broad UI redesign.
 
+## Post-merge CI incident (P-023-D-M2 test-only repair)
+
+- PR #26 (this decision record) merged correctly at
+  `7e3d007bd2284156b133967bae2a271ceb3b24a7`; merged tree byte-identical
+  to the reviewed head `e536dd9`.
+- Post-merge main CI run `37944252862` / job `113866287625` **failed**:
+  `tests/integration/p021-daily-entry.test.ts` — "counts distinct entries
+  once across superseded revisions" — the pre-existing assertion
+  `expect(JSON.stringify(out)).not.toContain("75")` produced a false
+  positive when the randomly generated parameter ID
+  (`pd_w_p021_22_1791556186175`) happened to contain `75`. No raw answer
+  value was leaked; the same code passed PR CI on an identical tree.
+- No CI rerun, repair-in-place, revert, or branch deletion occurred
+  before this repair task.
+- Repair (branch `fix/p023-main-ci-p021-impact-assertion`, test-only):
+  fixture now deterministically uses a `pd_75_*` parameter ID; the
+  substring assertion is replaced by an exact `toStrictEqual` structural
+  match (permitted top-level and per-parameter fields pinned; any
+  unauthorized field — value, label, unit, option, free text — fails).
+  Production code remains byte-identical to `origin/main`; the repaired
+  assertion was mutation-verified (adding `value: "75"` to the provider
+  output fails the test). The failed CI run remains in repository
+  history; the repair is not merged or deployed and awaits
+  different-model review before PR creation.
+
 ## Next gate
 
 Independent different-model review of this documentation head before any PR

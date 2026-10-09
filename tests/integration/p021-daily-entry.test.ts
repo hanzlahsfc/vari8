@@ -1009,7 +1009,11 @@ describe.skipIf(!enabled)("P-021 DailyEntry (real PG)", () => {
 
   describe("daily-entry C2 impact provider", () => {
     it("counts distinct entries once across superseded revisions", async () => {
-      const c = await seedClient();
+      // Deterministic "75" inside an allowed identifier: the parameter id is
+      // pd_75_<tag>, proving allowed IDs may contain that substring.
+      const c = await seedClient([
+        { id: "pd_75", kind: "MEASUREMENT", required: true },
+      ]);
       // two entries; pd_w appears in both revisions of entry 1 and in entry 2
       for (const [date, val] of [
         ["2026-10-01", "75"],
@@ -1041,15 +1045,26 @@ describe.skipIf(!enabled)("P-021 DailyEntry (real PG)", () => {
         reboundFrom: [],
         reboundTo: [],
       });
-      const p = out.affectedParameters.find(
-        (x: { parameterId: string }) => x.parameterId === c.paramIds[0],
-      );
-      expect(p?.count).toBe("2"); // two logical entries, not three revisions
-      expect(p?.earliestDate).toBe("2026-10-01");
-      expect(p?.latestDate).toBe("2026-10-02");
-      expect(p?.reasonCode).toBe("REMOVED_WITH_HISTORY");
-      // no values/labels in output
-      expect(JSON.stringify(out)).not.toContain("75");
+      // Exact structural contract: the whole output equals this shape —
+      // every permitted field pinned, any unauthorized field (raw answer
+      // value, label, unit, option payload, free text) fails the match.
+      // count "2": two logical entries, not three revisions.
+      expect(out).toStrictEqual({
+        consumerKey: "daily-entry",
+        contractVersion: 1,
+        affectedParameters: [
+          {
+            parameterId: c.paramIds[0],
+            parameterKey: `p_${c.paramIds[0]}`,
+            impactRole: "REMOVED",
+            reasonCode: "REMOVED_WITH_HISTORY",
+            count: "2",
+            earliestDate: "2026-10-01",
+            latestDate: "2026-10-02",
+          },
+        ],
+        blockedReasonCodes: [],
+      });
     });
   });
 });
