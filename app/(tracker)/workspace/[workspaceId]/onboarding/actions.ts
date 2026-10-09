@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { isOnboardingSubmissionEnabled } from "@/lib/onboarding/submission-gate";
 import { submitOnboardingFromAction } from "@/lib/onboarding/submissions-boundary";
-import { onboardingSubmissionConsentRegistry } from "@/lib/onboarding/submissions";
 
 /**
  * P-023 — client onboarding submit server action (decisions #82–#85).
@@ -64,7 +63,6 @@ export async function submitOnboardingAction(
   const result = await submitOnboardingFromAction(
     { user: { id: session.user.id } },
     { workspaceId, assignmentId, answersJson },
-    { registry: onboardingSubmissionConsentRegistry(true) },
   );
   if (result.ok)
     revalidatePath(`/workspace/${workspaceId}/onboarding/${assignmentId}`);

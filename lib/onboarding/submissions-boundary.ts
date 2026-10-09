@@ -22,6 +22,7 @@ import {
   type OnboardingSubmissionErrorCode,
   SUBMISSION_LIMITS,
 } from "./submission-gate";
+import { resolveOnboardingSubmissionConsentPolicy } from "./submission-consent";
 import {
   listOwnOnboardingAssignments,
   loadOwnOnboardingDetail,
@@ -45,6 +46,14 @@ export type BoundaryDeps = {
   db?: PrismaClient;
   registry?: ConsentPolicyRegistry;
 };
+
+/**
+ * Consent registry for the real app path — the shared resolver when no
+ * registry is injected. Requires BOTH the flag AND a trusted dev/test
+ * runtime (#83); production/unknown always resolve unconfigured.
+ */
+const realRegistry = (): ConsentPolicyRegistry =>
+  resolveOnboardingSubmissionConsentPolicy();
 
 const INVALID_INPUT = "Check the form details and try again.";
 const GENERIC_ERROR = "Something went wrong. Please try again in a moment.";
@@ -100,7 +109,10 @@ export async function listOwnAssignmentsForWorkspace(
     const value = await listOwnOnboardingAssignments(
       _session,
       { workspaceId },
-      { db: _deps.db ?? defaultPrisma, registry: _deps.registry },
+      {
+        db: _deps.db ?? defaultPrisma,
+        registry: _deps.registry ?? realRegistry(),
+      },
     );
     return { ok: true, value };
   } catch (e) {
@@ -121,7 +133,10 @@ export async function loadOwnDetailForRoute(
     const value = await loadOwnOnboardingDetail(
       _session,
       { workspaceId, assignmentId },
-      { db: _deps.db ?? defaultPrisma, registry: _deps.registry },
+      {
+        db: _deps.db ?? defaultPrisma,
+        registry: _deps.registry ?? realRegistry(),
+      },
     );
     return { ok: true, value };
   } catch (e) {
@@ -153,7 +168,10 @@ export async function submitOnboardingFromAction(
     const value = await submitOnboardingAssignment(
       _session,
       { workspaceId, assignmentId, answersJson: _input.answersJson },
-      { db: _deps.db ?? defaultPrisma, registry: _deps.registry },
+      {
+        db: _deps.db ?? defaultPrisma,
+        registry: _deps.registry ?? realRegistry(),
+      },
     );
     return { ok: true, value };
   } catch (e) {

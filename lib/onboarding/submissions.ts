@@ -13,7 +13,6 @@ import {
 } from "../workspace/access";
 import { writeAuditEvent } from "../audit";
 import {
-  createStaticConsentPolicy,
   hasExactActiveConsent,
   requiredConsentsFor,
   unconfiguredConsentPolicy,
@@ -52,22 +51,9 @@ export { OnboardingSubmissionError } from "./submission-gate";
  */
 
 // ── Development consent policy (#83, dev/test-only) ───────────────────────
-
-export const ONBOARDING_SUBMISSION_DEV_CONSENT = {
-  PRIVACY_NOTICE: "onboarding-submission-dev-privacy-v1",
-  HEALTH_DATA: "onboarding-submission-dev-health-v1",
-} as const;
-
-export function onboardingSubmissionConsentRegistry(
-  flagEnabled: boolean,
-): ConsentPolicyRegistry {
-  return flagEnabled
-    ? createStaticConsentPolicy({
-        PRIVACY_NOTICE: ONBOARDING_SUBMISSION_DEV_CONSENT.PRIVACY_NOTICE,
-        HEALTH_DATA: ONBOARDING_SUBMISSION_DEV_CONSENT.HEALTH_DATA,
-      })
-    : unconfiguredConsentPolicy;
-}
+// The dev consent versions and the trusted-environment resolver live in
+// ./submission-consent; re-exported here for the existing import path.
+export { ONBOARDING_SUBMISSION_DEV_CONSENT } from "./submission-consent";
 
 export type OnboardingSubmissionDeps = {
   db?: PrismaClient;
@@ -94,6 +80,15 @@ function isRetryableSerialization(error: unknown): boolean {
     );
   }
   return false;
+}
+
+/** P2002 — any unique-constraint violation (the submit path's relevant
+ * one is `unique(assignment_id)`, the final double-submit backstop). */
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  );
 }
 
 async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
@@ -469,8 +464,8 @@ export async function submitOnboardingAssignment(
   // replays are rejected here, never reaching the idempotency shortcut.
   const rawAnswers = parseAnswersJson(input.answersJson);
 
-  try {
-    return await withSerializedRetry(() =>
+  const attempt = (): Promise<SubmitOnboardingResult> =>
+    withSerializedRetry(() =>
       db.$transaction(
         async (tx) => {
           // 1. Caller's own ClientProfile — resolved server-side from
@@ -546,6 +541,8 @@ export async function submitOnboardingAssignment(
           // 7. Idempotency — the owned existing-submission lookup runs
           // BEFORE the ACTIVE check so every structurally valid replay
           // returns the original durable submission with zero writes.
+          // Finding a submission is not itself authority to disclose it:
+          // current consent must still hold before `already_submitted`.
           const existing = await tx.onboardingSubmission.findFirst({
             where: {
               assignmentId: input.assignmentId,
@@ -554,11 +551,13 @@ export async function submitOnboardingAssignment(
             },
             select: { id: true },
           });
-          if (existing)
+          if (existing) {
+            await checkRequiredConsent(tx, profile.id, registry, false);
             return {
               status: "already_submitted",
               submissionId: existing.id,
             } satisfies SubmitOnboardingResult;
+          }
 
           // 8. Locked assignment row — revalidate workspace, ownership,
           // ACTIVE state, and the pinned tuple (a cancel/replace between
@@ -679,32 +678,25 @@ export async function submitOnboardingAssignment(
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       ),
     );
+
+  try {
+    return await attempt();
   } catch (error) {
-    // unique(assignmentId) is the final double-submit backstop: a P2002
-    // aborts the failed transaction; the durable winner is looked up in a
-    // fresh read and replayed as `already_submitted`.
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      const profile = await db.clientProfile.findFirst({
-        where: { workspaceId: input.workspaceId, userId },
-        select: { id: true },
-      });
-      const existing = profile
-        ? await db.onboardingSubmission.findFirst({
-            where: {
-              assignmentId: input.assignmentId,
-              workspaceId: input.workspaceId,
-              clientProfileId: profile.id,
-            },
-            select: { id: true },
-          })
-        : null;
-      if (existing)
-        return { status: "already_submitted", submissionId: existing.id };
+    // unique(assignment_id) P2002 is the final double-submit backstop: the
+    // aborted attempt could not see the concurrent winner. Re-enter the
+    // SAME fully authorized protocol exactly once — fresh profile/member
+    // resolution, member FOR UPDATE, in-transaction authorize, current
+    // consent, tenant-scoped existing-submission lookup — never an
+    // outside-transaction shortcut. A second conflict exhausts to a safe
+    // error; there is no unbounded recursion.
+    if (!isUniqueViolation(error)) throw error;
+    try {
+      return await attempt();
+    } catch (second) {
+      if (isUniqueViolation(second))
+        throw new OnboardingSubmissionError("serialization_conflict");
+      throw second;
     }
-    throw error;
   }
 }
 
@@ -917,6 +909,11 @@ export async function loadOwnOnboardingDetail(
   if (!member || member.status !== "ACTIVE" || member.role !== "CLIENT")
     return { state: "unavailable" };
 
+  // Staged read (repair R2-B): the first query carries only non-answer
+  // header data — status, pinned definition, submission existence/date.
+  // Answer rows are materialized ONLY after authorization + current
+  // consent succeed, so a withdrawn/unconfigured/denied read never
+  // pulls answer values into process memory or query logs.
   const assignment = await db.onboardingFormAssignment.findFirst({
     where: {
       id: input.assignmentId,
@@ -932,22 +929,7 @@ export async function loadOwnOnboardingDetail(
           form: { select: { name: true } },
         },
       },
-      submission: {
-        select: {
-          submittedAt: true,
-          answers: {
-            select: {
-              fieldId: true,
-              kind: true,
-              valueText: true,
-              valueNumeric: true,
-              valueDate: true,
-              valueOptionIds: true,
-            },
-            orderBy: { id: "asc" },
-          },
-        },
-      },
+      submission: { select: { id: true, submittedAt: true } },
     },
   });
   if (!assignment) return { state: "unavailable" };
@@ -967,12 +949,26 @@ export async function loadOwnOnboardingDetail(
 
   const submission = assignment.submission;
   if (submission) {
+    // Consent + authorization verified — now materialize the caller's
+    // own answer rows for the read-only submitted view.
+    const answerRows = await db.onboardingSubmissionAnswer.findMany({
+      where: { submissionId: submission.id },
+      select: {
+        fieldId: true,
+        kind: true,
+        valueText: true,
+        valueNumeric: true,
+        valueDate: true,
+        valueOptionIds: true,
+      },
+      orderBy: { id: "asc" },
+    });
     return {
       state: "submitted",
       assignmentId: input.assignmentId,
       title,
       submittedAt: submission.submittedAt.toISOString(),
-      answers: renderSubmittedAnswers(submission.answers, fields),
+      answers: renderSubmittedAnswers(answerRows, fields),
     };
   }
   if (assignment.status !== "ACTIVE") return { state: "unavailable" };

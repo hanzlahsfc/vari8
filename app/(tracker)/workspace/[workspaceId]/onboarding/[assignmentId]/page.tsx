@@ -6,7 +6,6 @@ import {
 } from "@/lib/auth/route-guard";
 import { isOnboardingSubmissionEnabled } from "@/lib/onboarding/submission-gate";
 import { loadOwnDetailForRoute } from "@/lib/onboarding/submissions-boundary";
-import { onboardingSubmissionConsentRegistry } from "@/lib/onboarding/submissions";
 
 import { OnboardingPanel } from "../onboarding-panel";
 
@@ -38,7 +37,6 @@ export default async function OnboardingDetailPage({
   const result = await loadOwnDetailForRoute(
     { user: { id: userId } },
     { workspaceId, assignmentId },
-    { registry: onboardingSubmissionConsentRegistry(true) },
   );
   const detail = result.ok ? result.value : { state: "unavailable" as const };
 

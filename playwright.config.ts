@@ -46,6 +46,10 @@ export default defineConfig({
         // P-023: client onboarding submission flag on the primary test
         // server only — the synthetic submit/answer flow runs here.
         ENABLE_ONBOARDING_SUBMISSION: "1",
+        // P-023-I1-R2: `next start` is NODE_ENV=production, so the
+        // trusted dev/test consent boundary also requires an explicit
+        // APP_ENV=test — the flag alone can never configure consent.
+        APP_ENV: "test",
         // Deterministic test-only secret (NOT a real credential). CI/local may
         // override AUTH_SECRET; the fallback keeps the suite self-contained.
         AUTH_SECRET:
