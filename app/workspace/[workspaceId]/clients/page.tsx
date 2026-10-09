@@ -3,6 +3,9 @@ import { forbidden } from "next/navigation";
 
 import { AccessDeniedError } from "@/lib/auth/guard";
 import { requireSessionUser } from "@/lib/auth/route-guard";
+import { resolveScope } from "@/lib/auth/rbac";
+import { resolveDailyEntryMode } from "@/lib/daily-entry/gate";
+import { prisma } from "@/lib/db";
 import { listAccessibleClientProfiles } from "@/lib/workspace/clients";
 import {
   nextRosterHref,
@@ -39,7 +42,7 @@ export default async function ClientsPage({
 }) {
   const { workspaceId } = await params;
   const raw = await searchParams;
-  const { session } = await requireSessionUser();
+  const { session, userId } = await requireSessionUser();
 
   const query = parseRosterQuery({ c: raw.c, p: raw.p });
   if (query === null) forbidden();
@@ -63,6 +66,25 @@ export default async function ClientsPage({
       ? null
       : nextRosterHref(basePath, query, result.nextCursor);
   const pageNumber = rosterPageNumber(query.history);
+
+  // P-022 cosmetic entry point: the "Daily entries" link renders only when
+  // the actor's role resolves a staff (workspace/assigned) `dailyTracking`
+  // read scope AND persistence mode is active. Cosmetic convenience only —
+  // the destination route fully re-authorizes.
+  const member = await prisma.workspaceMember.findUnique({
+    where: { workspaceId_userId: { workspaceId, userId } },
+    select: { role: true, status: true },
+  });
+  const dailyLinkScope =
+    member?.status === "ACTIVE" && member.role !== undefined
+      ? resolveScope("dailyTracking", "read", member.role)
+      : "denied";
+  const showDailyLinks =
+    resolveDailyEntryMode(
+      process.env.ENABLE_DAILY_ENTRY,
+      process.env.ENABLE_DAILY_PROTOTYPE,
+    ) === "persistent" &&
+    (dailyLinkScope === "workspace" || dailyLinkScope === "assigned");
 
   return (
     <div className="catalog-page" data-testid="client-roster">
@@ -91,6 +113,7 @@ export default async function ClientsPage({
               <th scope="col">Name</th>
               <th scope="col">Added</th>
               <th scope="col">Updated</th>
+              {showDailyLinks ? <th scope="col">Daily</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -99,6 +122,16 @@ export default async function ClientsPage({
                 <td>{client.name}</td>
                 <td>{client.createdAt.toISOString().slice(0, 10)}</td>
                 <td>{client.updatedAt.toISOString().slice(0, 10)}</td>
+                {showDailyLinks ? (
+                  <td>
+                    <Link
+                      className="roster-pagination__link"
+                      href={`${basePath}/${encodeURIComponent(client.id)}/daily`}
+                    >
+                      Daily entries
+                    </Link>
+                  </td>
+                ) : null}
               </tr>
             ))}
           </tbody>

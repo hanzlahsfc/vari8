@@ -23,6 +23,14 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "no-store" },
         ],
       },
+      {
+        // P-022: the staff DailyEntry review route serves health data — an
+        // explicit no-store on the route path covers the page GET and the
+        // Server Action POST (path sources match all methods). No global
+        // change; sibling routes are unaffected.
+        source: "/workspace/:workspaceId/clients/:clientProfileId/daily",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
     ];
   },
 };

@@ -645,6 +645,421 @@ function countChanged(
   return changed;
 }
 
+// ── P-022 staff read surface (decisions #79–#81, P-022-R4 contract) ──────
+
+export const STAFF_ENTRY_PAGE_SIZE = 25;
+
+/** Strict declared-date keyset cursor (`YYYY-MM-DD`, real dates only).
+ * Anything else is rejected before it reaches the query; a well-formed but
+ * foreign cursor stays bound to the selected (workspace, client) pair by
+ * the `where` clause, so it can only ever filter the authorized scope. */
+export function parseStaffEntryCursor(raw: unknown): string | null {
+  if (typeof raw !== "string" || !DATE_RE.test(raw)) return null;
+  const [y, m, d] = raw.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (
+    dt.getUTCFullYear() !== y ||
+    dt.getUTCMonth() !== m - 1 ||
+    dt.getUTCDate() !== d
+  )
+    return null;
+  return raw;
+}
+
+export type StaffDailyEntryListItem = {
+  entryDate: string;
+  revisionCount: number;
+  /** Sequence of the current (latest) revision — null is the neutral
+   * marker for an entry without a coherent current pointer. */
+  currentRevisionSeq: number | null;
+};
+
+export type StaffDailyEntryListResult =
+  | {
+      state: "ready";
+      clientName: string;
+      items: StaffDailyEntryListItem[];
+      nextCursor: string | null;
+    }
+  | { state: "consent_missing" };
+
+/** Renders a revision's stored values through an immutable version snapshot.
+ * Parameters outside the snapshot — or not GENERAL_HEALTH — are dropped;
+ * OPTION values resolve to their snapshot labels. Display strings only. */
+function renderRevisionDisplayRows(
+  values: readonly StoredValue[],
+  snapshot: readonly SnapshotParam[],
+  def: VersionDefinition,
+): DailyEntryHistoryRow[] {
+  const paramById = new Map(snapshot.map((p) => [p.parameterId, p]));
+  return (values ?? [])
+    .map((v) => {
+      const p = paramById.get(v.parameterId);
+      if (!p || p.dataClassification !== "GENERAL_HEALTH") return null;
+      const meta = (def.parameters ?? {})[v.parameterId] ?? {};
+      let display = "";
+      switch (p.kind) {
+        case "MEASUREMENT":
+          display = String(v.valueNumeric ?? "");
+          break;
+        case "RATING":
+          display = v.valueRating === null ? "" : String(v.valueRating);
+          break;
+        case "OPTION":
+          display =
+            p.options.find((o) => o.optionId === v.valueOptionId)?.label ?? "";
+          break;
+        case "TEXT":
+          display = v.valueText ?? "";
+          break;
+        default:
+          return null;
+      }
+      return {
+        parameterKey: p.parameterKey,
+        label: meta.label ?? "",
+        unit: p.unit,
+        display,
+      };
+    })
+    .filter((v): v is DailyEntryHistoryRow => v !== null);
+}
+
+/**
+ * P-022 header-only staff entry list (#79/#80). Re-authorizes
+ * `dailyTracking/read` for the selected client — workspace and assigned
+ * scopes only; `own` (client self-view) and every denied scope throw. The
+ * consent check is unlocked (display only — the detail action re-locks it
+ * inside its Serializable transaction). Returns declared dates, revision
+ * counts, and the current-pointer marker ONLY: no values, labels, option
+ * text, or internal ids, and never an audit row. Newest-first keyset
+ * pagination over the unique (workspace, client, entryDate) index.
+ */
+export async function listStaffDailyEntries(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string; cursor?: string },
+  deps: DailyEntryDeps = {},
+): Promise<StaffDailyEntryListResult> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? unconfiguredConsentPolicy;
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0)
+    throw new AccessDeniedError("unauthenticated", "dailyTracking", "read");
+  if (
+    typeof input.workspaceId !== "string" ||
+    input.workspaceId.length === 0 ||
+    input.workspaceId.length > 128 ||
+    typeof input.clientProfileId !== "string" ||
+    input.clientProfileId.length === 0 ||
+    input.clientProfileId.length > 128
+  )
+    throw new DailyEntryError("invalid_input");
+  const cursor =
+    input.cursor === undefined ? null : parseStaffEntryCursor(input.cursor);
+  if (input.cursor !== undefined && cursor === null)
+    throw new DailyEntryError("invalid_input");
+
+  const ctx = await authorize(
+    session,
+    {
+      resource: "dailyTracking",
+      action: "read",
+      workspaceId: input.workspaceId,
+      clientProfileId: input.clientProfileId,
+    },
+    createPrismaAuthorizationRepo(db),
+  );
+  if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+    throw new AccessDeniedError("role_denied", "dailyTracking", "read");
+
+  const profile = await db.clientProfile.findFirst({
+    where: { id: input.clientProfileId, workspaceId: input.workspaceId },
+    select: { name: true },
+  });
+  if (!profile)
+    throw new AccessDeniedError(
+      "client_outside_workspace",
+      "dailyTracking",
+      "read",
+    );
+
+  try {
+    await checkRequiredConsent(db, input.clientProfileId, registry, false);
+  } catch (error) {
+    if (error instanceof DailyEntryError) return { state: "consent_missing" };
+    throw error;
+  }
+
+  const where: Prisma.DailyEntryWhereInput = {
+    workspaceId: input.workspaceId,
+    clientProfileId: input.clientProfileId,
+  };
+  if (cursor !== null)
+    where.entryDate = { lt: new Date(`${cursor}T00:00:00Z`) };
+  const rows = await db.dailyEntry.findMany({
+    where,
+    orderBy: { entryDate: "desc" },
+    take: STAFF_ENTRY_PAGE_SIZE + 1,
+    select: {
+      entryDate: true,
+      currentRevisionId: true,
+      _count: { select: { revisions: true } },
+    },
+  });
+  const pageRows = rows.slice(0, STAFF_ENTRY_PAGE_SIZE);
+  // Latest-revision sequence — one bounded batched lookup, never per-row.
+  const revIds = pageRows
+    .map((r) => r.currentRevisionId)
+    .filter((id): id is string => id !== null);
+  const revs = revIds.length
+    ? await db.dailyEntryRevision.findMany({
+        where: { id: { in: revIds } },
+        select: { id: true, seq: true },
+      })
+    : [];
+  const seqById = new Map(revs.map((r) => [r.id, r.seq]));
+  const items: StaffDailyEntryListItem[] = pageRows.map((r) => ({
+    entryDate: r.entryDate.toISOString().slice(0, 10),
+    revisionCount: r._count.revisions,
+    currentRevisionSeq:
+      r.currentRevisionId === null
+        ? null
+        : (seqById.get(r.currentRevisionId) ?? null),
+  }));
+  const nextCursor =
+    rows.length > STAFF_ENTRY_PAGE_SIZE
+      ? (items[items.length - 1]?.entryDate ?? null)
+      : null;
+  return { state: "ready", clientName: profile.name, items, nextCursor };
+}
+
+export type StaffDailyEntryDetail = {
+  entryDate: string;
+  revisionSeq: number;
+  revisionCount: number;
+  declaredAt: string;
+  values: DailyEntryHistoryRow[];
+};
+
+/**
+ * P-022 transaction-bound staff detail read (P-022-R4 §4). Everything
+ * health-adjacent happens inside ONE fresh Serializable transaction:
+ *   csetup + member advisories → actor member row FOR UPDATE → in-tx
+ *   `authorize` (authoritative) → assigned-scope ClientAssignment
+ *   re-resolve + FOR UPDATE recheck → client_profile FOR UPDATE → consent
+ *   rows FOR UPDATE in kind order → entry/pointer/snapshot render →
+ *   structural READ audit LAST → commit → only then do sanitized values
+ *   leave the boundary. Bounded fresh-transaction retry; nothing crosses
+ *   attempts; denial/failure yields zero values and zero audit rows.
+ */
+export async function readStaffDailyEntryDetail(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string; entryDate: string },
+  deps: DailyEntryDeps = {},
+): Promise<StaffDailyEntryDetail> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? unconfiguredConsentPolicy;
+  const entryDate = parseDeclaredDate(input.entryDate);
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0)
+    throw new AccessDeniedError("unauthenticated", "dailyTracking", "read");
+  if (
+    typeof input.workspaceId !== "string" ||
+    input.workspaceId.length === 0 ||
+    input.workspaceId.length > 128 ||
+    typeof input.clientProfileId !== "string" ||
+    input.clientProfileId.length === 0 ||
+    input.clientProfileId.length > 128
+  )
+    throw new DailyEntryError("invalid_input");
+
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        // 1–2. Advisories — identical keys/order to the write path.
+        await advisoryLock(
+          tx,
+          `csetup:${input.workspaceId}:${input.clientProfileId}`,
+        );
+        await advisoryLock(tx, `member:${input.workspaceId}:${userId}`);
+
+        // 3. Locked actor member row — authoritative actor state.
+        const memberRows = await tx.$queryRawUnsafe<
+          { id: string; role: string; status: string }[]
+        >(
+          `SELECT id, role, status FROM "workspace_member"
+           WHERE workspace_id = $1 AND user_id = $2 FOR UPDATE`,
+          input.workspaceId,
+          userId,
+        );
+        const member = memberRows[0];
+        if (!member || member.status !== "ACTIVE")
+          throw new AccessDeniedError(
+            "membership_missing_or_inactive",
+            "dailyTracking",
+            "read",
+          );
+
+        // 4. In-transaction authorization — the authoritative decision.
+        const ctx = await authorize(
+          session,
+          {
+            resource: "dailyTracking",
+            action: "read",
+            workspaceId: input.workspaceId,
+            clientProfileId: input.clientProfileId,
+          },
+          createPrismaAuthorizationRepo(tx),
+        );
+        if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+          throw new AccessDeniedError("role_denied", "dailyTracking", "read");
+        if (ctx.workspaceMemberId !== member.id)
+          throw new AccessDeniedError(
+            "membership_missing_or_inactive",
+            "dailyTracking",
+            "read",
+          );
+
+        // 5. Assigned scope: re-resolve the ACTIVE assignment, lock that
+        // exact row FOR UPDATE, and recheck every binding after the lock.
+        if (ctx.grantedScope === "assigned") {
+          const resolved = await tx.clientAssignment.findFirst({
+            where: {
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+              coachMemberId: member.id,
+              status: "ACTIVE",
+            },
+            select: { id: true },
+          });
+          if (!resolved)
+            throw new AccessDeniedError(
+              "not_assigned",
+              "dailyTracking",
+              "read",
+            );
+          const rows = await tx.$queryRawUnsafe<{ status: string }[]>(
+            `SELECT status FROM "client_assignment"
+             WHERE id = $1 AND workspace_id = $2 AND client_profile_id = $3
+               AND coach_member_id = $4 FOR UPDATE`,
+            resolved.id,
+            input.workspaceId,
+            input.clientProfileId,
+            member.id,
+          );
+          if (!rows[0] || rows[0].status !== "ACTIVE")
+            throw new AccessDeniedError(
+              "not_assigned",
+              "dailyTracking",
+              "read",
+            );
+        }
+
+        // 6. Locked client profile — exact id + workspace equality.
+        const profileRows = await tx.$queryRawUnsafe<{ id: string }[]>(
+          `SELECT id FROM "client_profile"
+           WHERE id = $1 AND workspace_id = $2 FOR UPDATE`,
+          input.clientProfileId,
+          input.workspaceId,
+        );
+        if (!profileRows[0])
+          throw new AccessDeniedError(
+            "client_outside_workspace",
+            "dailyTracking",
+            "read",
+          );
+
+        // 7. Consent — deterministic kind order, rows FOR UPDATE.
+        await checkRequiredConsent(tx, input.clientProfileId, registry, true);
+
+        // 8–9. Entry + coherent current pointer + count.
+        const entry = await tx.dailyEntry.findUnique({
+          where: {
+            workspaceId_clientProfileId_entryDate: {
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+              entryDate: new Date(`${entryDate}T00:00:00Z`),
+            },
+          },
+          select: { id: true, currentRevisionId: true },
+        });
+        if (!entry) throw new DailyEntryError("not_available");
+        const revision = entry.currentRevisionId
+          ? await tx.dailyEntryRevision.findUnique({
+              where: { id: entry.currentRevisionId },
+              select: {
+                id: true,
+                dailyEntryId: true,
+                workspaceId: true,
+                clientProfileId: true,
+                templateVersionId: true,
+                seq: true,
+                declaredAt: true,
+                values: {
+                  select: {
+                    parameterId: true,
+                    kind: true,
+                    valueNumeric: true,
+                    valueRating: true,
+                    valueOptionId: true,
+                    valueText: true,
+                  },
+                },
+              },
+            })
+          : null;
+        if (
+          !revision ||
+          revision.dailyEntryId !== entry.id ||
+          revision.workspaceId !== input.workspaceId ||
+          revision.clientProfileId !== input.clientProfileId
+        )
+          throw new DailyEntryError("not_available");
+        const revisionCount = await tx.dailyEntryRevision.count({
+          where: { dailyEntryId: entry.id },
+        });
+
+        // 10. Render through the revision's OWN immutable template version —
+        // eligibility re-proved so only GENERAL_HEALTH values can surface.
+        const version = await tx.coachingTemplateVersion.findUnique({
+          where: { id: revision.templateVersionId },
+          select: { id: true, workspaceId: true, definition: true },
+        });
+        if (!version || version.workspaceId !== input.workspaceId)
+          throw new DailyEntryError("not_available");
+        if (!evaluateDailyEntryVersionEligibility(version.definition).eligible)
+          throw new DailyEntryError("ineligible");
+        const snapshot = projectSnapshot(version.definition);
+        if (!snapshot) throw new DailyEntryError("ineligible");
+        const values = renderRevisionDisplayRows(
+          revision.values,
+          snapshot,
+          version.definition as VersionDefinition,
+        );
+
+        // 11. Structural READ audit — last, inside the same transaction;
+        // a failed write rolls the detail read's audit (and result) back.
+        await writeAuditEvent(tx, ctx, {
+          action: "READ",
+          resourceType: "daily_entry",
+          resourceId: entry.id,
+          subjectClientProfileId: input.clientProfileId,
+          meta: { changed: false },
+        });
+
+        return {
+          entryDate,
+          revisionSeq: revision.seq,
+          revisionCount,
+          declaredAt: revision.declaredAt.toISOString(),
+          values,
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}
+
 // ── Read surface (form + history payload for the client's own page) ───────
 
 const HISTORY_ENTRY_LIMIT = 30;
@@ -961,41 +1376,15 @@ export async function loadDailyEntrySurface(
       const rev = revById.get(e.currentRevisionId!)!;
       const revSnapshot = snapshotByVersion.get(rev.templateVersionId) ?? [];
       const revDef = defByVersion.get(rev.templateVersionId) ?? def;
-      const paramById = new Map(revSnapshot.map((p) => [p.parameterId, p]));
       return {
         entryDate: e.entryDate.toISOString().slice(0, 10),
         declaredAt: rev.declaredAt.toISOString(),
         revisionCount: Math.min(e._count.revisions, HISTORY_REVISION_LIMIT),
-        values: (rev.values ?? [])
-          .map((v) => {
-            const p = paramById.get(v.parameterId);
-            if (!p) return null;
-            const meta = (revDef.parameters ?? {})[v.parameterId] ?? {};
-            let display = "";
-            switch (p.kind) {
-              case "MEASUREMENT":
-                display = String(v.valueNumeric ?? "");
-                break;
-              case "RATING":
-                display = v.valueRating === null ? "" : String(v.valueRating);
-                break;
-              case "OPTION":
-                display =
-                  p.options.find((o) => o.optionId === v.valueOptionId)
-                    ?.label ?? "";
-                break;
-              case "TEXT":
-                display = v.valueText ?? "";
-                break;
-            }
-            return {
-              parameterKey: p.parameterKey,
-              label: meta.label ?? "",
-              unit: p.unit,
-              display,
-            };
-          })
-          .filter((v): v is DailyEntryHistoryRow => v !== null),
+        values: renderRevisionDisplayRows(
+          rev.values ?? [],
+          revSnapshot,
+          revDef,
+        ),
       };
     });
 
