@@ -285,14 +285,33 @@ PostgreSQL integration + production-build browser runs.
   retries; full E2E single run 268/268 (12 skipped, 0 flaky);
   `git diff --check`, prettier, tsc, eslint, `next build` all 0. No
   unexpected audit rows observed.
-- Repair committed as `70b70e7` (forward, on top of `509e0a6`), pushing
-  `feature/p022-staff-daily-entry-review` to a final head still awaiting
-  independent different-model re-review before any PR.
-- Same-model fresh-context self-review of `509e0a6..HEAD` (3 files,
-  +108/−6 — test + docs only; production code byte-identical): the
+- Repair committed as `70b70e7` (the test repair, on top of `509e0a6`),
+  followed by `e4d7f75` (repair-record docs); `e4d7f75` is the final
+  repair/documentation head that was independently reviewed.
+- Same-model fresh-context self-review of `509e0a6..e4d7f75` (3 files,
+  +118/−6 — test + docs only; production code byte-identical): the
   traversal helper rethrows every error except the
   context-destruction-on-navigation signal, URL/state assertions prove
   each leg, and the zero-audit assertion is untouched. One doc gap found
   (missing repair-commit SHA) and corrected in `docs/STATUS.md` + this
-  record. Not the required independent review — a different-model
-  re-review of the final head is still required before any PR.
+  record. Not the required independent review.
+
+### P-022-I1-R2-R1 final independent review → P-022-I1-R3 docs correction
+
+- **Final independent review** by `opencode-go/deepseek-v4.1-flash` on
+  `e4d7f75`: **PASS — no P0/P1/P2; head `e4d7f75` is technically
+  PR-ready.** The reviewer reproduced the pre-repair failure class,
+  re-ran the deterministic test (individual 3/3, focused 20/20, full
+  268/268, all without retries), mutation-proved the traversal test
+  bites (disabling `history.forward()` makes it fail), and verified
+  production code is byte-identical to `509e0a6`.
+- **P3-1 (corrected):** this record previously stated the repair delta
+  as `3 files, +108/−6`; the independently verified exact
+  `509e0a6..e4d7f75` delta is **3 files, +118/−6** (the earlier figure
+  was the mid-repair stat before the `e4d7f75` docs commit).
+- **P3-2 (corrected):** `e4d7f75` is now identified above as the
+  independently reviewed final repair/documentation head.
+- **P-022-I1-R3:** this correction is the forward documentation-only
+  correction commit containing this note — it has not been reviewed and
+  does not carry the PASS; a lightweight different-model review of the
+  correction head is required before any PR creation.

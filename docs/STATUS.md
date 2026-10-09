@@ -5,6 +5,22 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-09 — P-022-I1-R2-R1 PASS + R3 docs correction
+
+- Final independent review by `opencode-go/deepseek-v4.1-flash` on
+  `e4d7f75`: **PASS — no P0/P1/P2; technically PR-ready** (deterministic
+  history-traversal test reproduced green without retries and proven to
+  bite under mutation; production byte-identical to `509e0a6`).
+- Two non-blocking P3 doc inaccuracies corrected in a forward
+  documentation-only commit: the repair delta is `509e0a6..e4d7f75` =
+  3 files/+118/−6 (this record had said `+108/−6`), and `e4d7f75` is
+  now identified as the independently reviewed head (`70b70e7` was the
+  test repair; `e4d7f75` the final repair+docs head).
+- The forward documentation-only correction commit containing this note
+  postdates the PASS and has not been independently reviewed; a
+  lightweight different-model review is required before PR creation.
+  `origin/main` unchanged; no PR, merge, deployment, or flag enablement.
+
 ## 2026-10-09 — P-022-I1-R2 E2E determinism repair (post independent review)
 
 - Independent review by `opencode-go/deepseek-v4.1-flash` on `509e0a6`:
