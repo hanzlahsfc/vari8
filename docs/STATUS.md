@@ -5,6 +5,31 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-09 — P-022-I1 staff DailyEntry review implemented (feature branch, no PR)
+
+- Implemented the merged decisions #79–#81 + P-022-R4 contract on
+  `feature/p022-staff-daily-entry-review` from exact `ea81502` — read-only
+  staff review of client DailyEntries under the dev gate: roster link,
+  `/workspace/[workspaceId]/clients/[clientProfileId]/daily` route
+  (`force-dynamic`, route-scoped `no-store` incl. action POST), bounded
+  newest-first header list (dates/revision counts/latest-revision marker,
+  no values, zero audits), and explicit `useActionState` "View details"
+  POST running the full lock-and-revalidate Serializable transaction with
+  one structural `READ` audit per committed action (`{changed:false}`).
+- Tests first: unit 3/3 and integration 32/32 verified RED before
+  implementation, GREEN after. Gates on final tree: diff-check/prettier/
+  tsc/eslint/prisma generate+validate 0; fresh `migrate deploy` on
+  disposable `p022_migrate_deploy_1` ok; unit 977/977; integration
+  490/490 on `p022_staff_review_1`; `next build` 0; focused E2E 20/20;
+  full E2E 268/268 (12 skip).
+- Failures repaired honestly: 4 initial E2E spec defects (weak sentinel
+  collisions, sibling-route no-store default, pending race, same-row
+  click timing), 1 integration over-assertion, 1 transient goForward
+  flake — see `docs/tasks/p022-staff-daily-entry-review.md`.
+- Forward commits `e9a8a17`, `ae1707c`, `188f610`; pushed branch only —
+  `origin/main` unchanged, **no PR, no merge, no deployment, no
+  production flag**. Head awaits independent different-model review.
+
 ## 2026-10-09 — P-022 staff DailyEntry review: decisions recorded (docs only)
 
 - P-021 merged via PR #23 at `eea87ae6d3e420a89a9af378fab448b296022084`;

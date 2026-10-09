@@ -198,4 +198,44 @@ PostgreSQL integration + production-build browser runs.
 
 ## Implementation record
 
-(to be appended as work lands)
+### P-022-I1 — 2026-10-09 (SWE-2 High, Cognition)
+
+- Branch `feature/p022-staff-daily-entry-review` from exact `ea81502`;
+  forward commits only; push authorized, no PR.
+- Plan committed `e9a8a17`; tests+implementation `ae1707c`; self-review
+  repairs `188f610`.
+- Tests first: unit 3/3 RED (missing exports) → GREEN; integration 32/32
+  RED (missing exports) → GREEN on disposable `p022_staff_review_1`;
+  E2E spec written with the suite (4 initial spec-bug failures repaired —
+  weak sentinels, Next's dynamic-page no-store default vs the
+  route-scoped literal, pending-assertion race, same-row re-click timing;
+  plus one transient `goForward` protocol flake fixed with settle waits).
+- Implemented exactly the approved contract: roster "Daily entries" link
+  (role-scope + persistent-mode gated, cosmetic), route
+  `/workspace/[workspaceId]/clients/[clientProfileId]/daily` under the
+  staff layout (`force-dynamic`, per-client `dailyTracking/read`
+  re-authorization, non-persistent modes → non-disclosing unavailable,
+  strict `?c=` keyset cursor, newest-first page of 25 + one extra row),
+  header-only list (dates, revision counts, latest-revision marker — no
+  values/labels/ids, zero audits), and the `useActionState` "View details"
+  Server Action whose Serializable transaction runs the R4 §4 sequence:
+  `csetup` + `member` advisories → actor `workspace_member` FOR UPDATE →
+  in-tx `authorize` → assigned-scope `ClientAssignment` re-resolve +
+  FOR UPDATE recheck → `client_profile` FOR UPDATE → consent rows
+  FOR UPDATE in kind order → entry/coherent-pointer/revision's-own
+  `templateVersionId` snapshot (GENERAL_HEALTH only) → structural READ
+  audit `{changed:false}` last → commit → sanitized detail. Bounded
+  fresh-transaction retry (P2034/40001/40P01, ≤8 attempts).
+- Route-scoped `Cache-Control: no-store` in `next.config.ts` covers GET
+  and the action POST; sibling routes keep only Next's own dynamic
+  default (proven distinct via `headerValues`).
+- Gates on the final tree: `git diff --check` 0; `prettier --check .` 0;
+  `tsc --noEmit` 0; `eslint` 0; `prisma generate`/`validate` ok; fresh
+  `migrate deploy` on `p022_migrate_deploy_1` ok; unit 977/977;
+  integration 490/490 on `p022_staff_review_1`; `next build` 0; focused
+  E2E 20/20; full E2E 268/268 (12 skipped, 0 failed).
+- Databases: `p022_staff_review_1` retained (task-owned, diagnostics);
+  `p022_migrate_deploy_1` dropped after the deploy proof.
+- No schema/migration/dependency/flag/allowlist change; no staff writes;
+  no C3/C4; nothing deployed; `ENABLE_DAILY_ENTRY` unchanged.
+- Head pushed awaits independent different-model review before any PR.
