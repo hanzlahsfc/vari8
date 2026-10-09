@@ -1,9 +1,9 @@
-# P-022 — Read-only staff DailyEntry review: planning, review chronology, and decision record
+# P-022 — Read-only staff DailyEntry review: planning, review chronology, decision record, and implementation record
 
-Documentation-only task. This record captures the complete P-022 planning
-and review chronology and the owner's three approved decisions (#79–#81)
-plus the binding engineering contract. **Staff DailyEntry review remains
-unimplemented; nothing here authorizes implementation.**
+This record captures the complete P-022 planning and review chronology,
+the owner's three approved decisions (#79–#81), the binding engineering
+contract, and — after the owner's separate P-022-I1 implementation
+authorization — the implementation plan and execution record.
 
 ## Verified starting state (2026-10-09)
 
@@ -135,5 +135,67 @@ real-client data, or deployment; no schema/dependency/flag/nav changes.
 
 ## Status
 
-Documentation complete. No schema, code, tests, flags, PR, merge,
-implementation, production enablement, or deployment is authorized.
+Documentation merged via PR #24 (`ea81502`, normal two-parent merge of
+`eea87ae` + `a2b3010`; main CI run `37911249880`/`113756657995` SUCCESS).
+A separate owner authorization (P-022-I1) approved tests-first dev-gated
+implementation on `feature/p022-staff-daily-entry-review` from exact
+`ea81502` — no PR, merge, production flag, or deployment.
+
+## Implementation plan (P-022-I1, written before code)
+
+Base: `origin/main` = `ea81502f0a4ce51380a1d7b712c0f7adec4b7eba`.
+Branch: `feature/p022-staff-daily-entry-review`. Disposable DB:
+`p022_staff_review_1` on the local docker PostgreSQL (created fresh,
+`migrate deploy` applied).
+
+Exact paths:
+
+- `lib/daily-entry/service.ts` — add `listStaffDailyEntries` (unlocked
+  header read: in-service `authorize` per selected client, consent check
+  via the existing module-private `checkRequiredConsent` in read mode,
+  newest-first `entryDate` keyset page `STAFF_ENTRY_PAGE_SIZE = 25` with
+  one extra row, strict `YYYY-MM-DD` cursor bound to the
+  `(workspaceId, clientProfileId)` where clause) and
+  `readStaffDailyEntryDetail` (the contract's Serializable transaction:
+  `csetup` + `member` advisories → actor `workspace_member FOR UPDATE` →
+  in-tx `authorize` → assigned-scope `client_assignment FOR UPDATE`
+  re-resolve/recheck → `client_profile FOR UPDATE` →
+  `checkRequiredConsent(..., true)` → entry by
+  `(workspaceId, clientProfileId, entryDate)` → pointer coherence →
+  revision's own `templateVersionId` snapshot render (GENERAL_HEALTH
+  eligible only) → `writeAuditEvent` `{READ, daily_entry, entry.id,
+  subjectClientProfileId, {changed:false}}` last → commit → sanitized
+  detail). Bounded fresh-transaction retry via the existing
+  `withSerializedRetry`.
+- `app/workspace/[workspaceId]/clients/[clientProfileId]/daily/page.tsx`
+  — `force-dynamic`; session gate; `authorize(dailyTracking/read)` early
+  denial (non-authoritative); deny `own`/`platform` scopes; mode resolver
+  (non-persistent → non-disclosing unavailable, no data fetched); strict
+  `?c=` cursor parse; server-rendered header list + states
+  (denied/unavailable/consent/empty/populated).
+- `app/workspace/[workspaceId]/clients/[clientProfileId]/daily/actions.ts`
+  — `"use server"` `viewStaffDailyEntryDetail(prev, formData)`: mode gate
+  → `auth()` → bounded `workspaceId`/`clientProfileId`/`entryDate` parse →
+  service → typed non-disclosing result.
+- `.../daily/staff-daily-review.tsx` — client component: one
+  `useActionState`, per-row `<form>` + pending-disabled View details
+  button, `aria-live` detail panel; failure replaces/clears prior result.
+- `app/workspace/[workspaceId]/clients/page.tsx` — cosmetic "Daily
+  entries" roster link per row, only when the actor's role resolves a
+  non-denied `dailyTracking/read` scope AND mode is `persistent`.
+- `next.config.ts` — route-scoped `Cache-Control: no-store` on
+  `/workspace/:workspaceId/clients/:clientProfileId/daily` (the `/reset`
+  path-match precedent; covers GET + action POST).
+- Tests first: `tests/integration/p022-staff-daily-review.test.ts`,
+  `tests/e2e/staff-daily-review.spec.ts`,
+  `tests/unit/staff-daily-review.test.ts`.
+- Docs: this record + `docs/STATUS.md`.
+
+No schema/migration/dependency/flag/allowlist changes. Acceptance: the
+merged contract's authorization matrix, lock order, audit atomicity,
+data-minimization, no-store, and race evidence, all proven by real
+PostgreSQL integration + production-build browser runs.
+
+## Implementation record
+
+(to be appended as work lands)
