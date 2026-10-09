@@ -14,7 +14,8 @@ are complete; product direction is now the configurable coaching system in
   authorization/consent), P2-B (answer rows materialized before consent),
   P2-L (initial implementation materially preceded tests — process
   deviation).
-- Repairs, all RED-first: (A) new shared server-only resolver
+- Repairs — RED-first on every repaired path: (A) new shared server-only
+  resolver
   `lib/onboarding/submission-consent.ts` — synthetic `BASE_CONSENTS`
   activates only when the flag is exactly `1` AND the runtime classifies
   as trusted `development`/`test` (explicit `APP_ENV` allowlist, else
@@ -35,13 +36,28 @@ are complete; product direction is now the configurable coaching system in
   Mutations R2A/R2B/R2C1/R2C2 all bit their targeted tests, all reverted.
 - **Process deviation (P2-L), recorded honestly:** the initial P-023-I1
   schema/core-service implementation materially preceded the first
-  tests; no owner/orchestrator exception has been granted. These R2
-  repairs were done strictly RED-first with preserved failing evidence.
-  Technical PASS and process acceptance are separate gates — even a
-  technical PASS cannot proceed to PR without the owner's explicit
-  decision on the bounded initial test-first exception.
+  tests; this bounded deviation is kept visible and was never rewritten
+  as test-first.
+- **RED accounting (corrected, review P3-1):** the R2 delta adds 18
+  tests — 5 resolver unit + 13 integration. Nine integration cases were
+  observed failing before the corresponding production changes; the
+  five resolver tests were written first but initially failed as a
+  module-missing import, not five separate behavioral failures; ~4
+  further integration tests (the forced-conflict replay and the
+  production/unclassified-env cases that coincidentally already held)
+  were added alongside or after implementation without preserved
+  initial RED. Every repaired security/privacy path — trusted runtime
+  boundary, consent-before-answer-query, authorized P2002 re-entry,
+  replay consent — has genuine RED and mutation evidence.
+- **Owner acceptance (2026-10-10):** the owner accepted the one-time
+  bounded initial test-first exception — acceptance covers only the
+  already-recorded initial ordering deviation and does not waive tests,
+  review, CI, merge approval, production restrictions, or future
+  test-first requirements. The independent technical PASS at `fceb037`
+  stands.
 - **Held:** no PR, not deployed, flag never enabled in production.
-  Next gate: fresh different-model review of the repaired head.
+  A lightweight different-model review of the final docs delta is
+  required before any PR is created.
 
 ## 2026-10-09 — P-023-I1 implementation (in progress)
 

@@ -318,21 +318,49 @@ Branch pushed: `feature/p023-client-onboarding-submission` @
 ## P-023-I1-R2 — independent-review FAIL repairs (2026-10-10)
 
 Different-model review `opencode-go/deepseek-v4.1-flash` returned FAIL on
-head `30f8f84` (two P1s + two P2s). All repairs below were done
-RED-first: failing tests were written and observed failing before each
-production change.
+head `30f8f84` (two P1s + two P2s). The repairs below were RED-first on
+every repaired path — precise RED accounting follows.
 
 ### Process deviation record (P2-L) — stated honestly
 
 The initial P-023-I1 implementation was NOT fully test-first: the Prisma
 schema/migration, gate module, and core service were authored before the
 first unit/integration test file existed. This is a bounded deviation
-from Conductor's RED-first rule. No owner/orchestrator exception has
-been granted. These R2 repairs followed RED-first strictly with real
-failing evidence (9 targeted failures observed before implementation).
-Technical review and process acceptance are separate gates — a technical
-PASS does not authorize a PR until the owner explicitly accepts or
-rejects this bounded exception.
+from Conductor's RED-first rule, kept visible and never rewritten as
+test-first.
+
+On 2026-10-10 the owner accepted this one-time bounded initial
+exception. The acceptance covers only the already-recorded initial
+ordering deviation — it does not waive tests, security findings,
+independent review, CI, separate merge approval, production
+restrictions, or test-first requirements for future work, and it sets no
+precedent. The independent technical PASS applies to exact head
+`fceb037`.
+
+### RED accounting for the R2 delta (corrected per review P3-1)
+
+The R2 delta adds 18 tests total — five resolver unit tests plus
+thirteen integration tests:
+
+- The five resolver tests were written before the resolver existed, but
+  their initial failure was a module-missing import — not five separate
+  behavioral failures.
+- Nine integration cases have preserved, directly observed RED failures
+  before the corresponding production repairs (the trusted-env real-path
+  collection case, both read-ordering cases, the suspended/removed/
+  consent-withdrawn conflict cases, the vanished- and persistent-
+  conflict cases, and replay-after-withdrawal).
+- Approximately four further integration tests — the forced-conflict
+  replay regression pin and the production/unclassified-env cases that
+  coincidentally already held under the prior code — were added
+  alongside or after implementation and have no preserved initial RED.
+
+Every repaired security/privacy path — the trusted runtime boundary,
+consent-before-answer-query ordering, the fully-authorized P2002
+re-entry, and consent before `already_submitted` — has genuine RED
+failures plus mutation evidence. The repairs therefore have real
+RED-first evidence per path; the whole 18-test delta is not claimed as
+strictly RED-first.
 
 ### Repair A — trusted dev/test consent boundary (P1-A)
 
@@ -388,8 +416,17 @@ fails the ordering test — reverted.
 Integration suite 31/31 on fresh disposable `app_integration_p023_r2`;
 unit 26/26; typecheck/lint clean.
 
+### Independent re-review + owner decision (2026-10-10)
+
+`opencode-go/deepseek-v4.1-flash` returned **PASS** on exact head
+`fceb037` (no P0/P1/P2; one non-blocking P3-1 chronology imprecision,
+corrected by this section). The owner then accepted the one-time bounded
+initial test-first exception — bounded to the already-recorded initial
+ordering deviation only, no precedent, no waiver of future test-first
+requirements.
+
 ## Next gate
 
-Independent different-model review of this documentation head before any PR
-is created. Implementation is not authorized until that review passes, the
-record merges, and a separate implementation prompt is issued.
+A lightweight different-model review of the final docs-only delta
+(`fceb037..new_head`) before any PR is created. PR creation remains held
+until that review returns PASS; merge is separately authorized.
