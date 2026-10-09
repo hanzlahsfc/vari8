@@ -92,6 +92,10 @@ export const AUDIT_RESOURCE_TYPES = [
   // P-021: DailyEntry revision creation (IDs + changed/count markers only —
   // never values, dates, labels, options, units, hashes, or fingerprints).
   "daily_entry",
+  // P-023: first committed client onboarding submission (IDs + structural
+  // markers only — never answer content, labels, option text, dates, or
+  // consent detail). Replay writes no event.
+  "onboarding_submission",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 

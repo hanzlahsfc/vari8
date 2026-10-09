@@ -5,6 +5,94 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-10 — P-023-I1-R2 repairs for independent-review FAIL
+
+- Independent review `opencode-go/deepseek-v4.1-flash` returned **FAIL** on
+  head `30f8f84`: P1-A (dev consent registry selected by flag alone — no
+  trusted environment boundary), P1-C (P2002 fallback replayed
+  `already_submitted` via an outside-transaction lookup with no fresh
+  authorization/consent), P2-B (answer rows materialized before consent),
+  P2-L (initial implementation materially preceded tests — process
+  deviation).
+- Repairs — RED-first on every repaired path: (A) new shared server-only
+  resolver
+  `lib/onboarding/submission-consent.ts` — synthetic `BASE_CONSENTS`
+  activates only when the flag is exactly `1` AND the runtime classifies
+  as trusted `development`/`test` (explicit `APP_ENV` allowlist, else
+  baked `NODE_ENV`; everything else production-safe unconfigured). The
+  flag-derived selector and both hardcoded route call sites are gone;
+  the boundary default consumes the shared resolver.
+  (C) P2002 now re-enters the SAME Serializable protocol exactly once —
+  fresh member lock, in-tx authorize, current consent, scoped owned
+  lookup — never an outside-transaction shortcut; a second conflict
+  exhausts to `serialization_conflict`. `already_submitted` also requires
+  current consent in the in-tx replay branch.
+  (B) `loadOwnOnboardingDetail` staged: assignment header (no answers) →
+  authorization + consent → only then a dedicated answer query.
+- New evidence: unit 26/26 (+5 resolver-matrix tests); integration
+  31/31 on disposable `app_integration_p023_r2` — forced-P2002
+  suspend/remove/withdraw fail closed, persistent-conflict exhaustion,
+  zero-answer-query-after-withdrawal proven via query interception.
+  Mutations R2A/R2B/R2C1/R2C2 all bit their targeted tests, all reverted.
+- **Process deviation (P2-L), recorded honestly:** the initial P-023-I1
+  schema/core-service implementation materially preceded the first
+  tests; this bounded deviation is kept visible and was never rewritten
+  as test-first.
+- **RED accounting (corrected, review P3-1):** the R2 delta adds 18
+  tests — 5 resolver unit + 13 integration. Nine integration cases were
+  observed failing before the corresponding production changes; the
+  five resolver tests were written first but initially failed as a
+  module-missing import, not five separate behavioral failures; ~4
+  further integration tests (the forced-conflict replay and the
+  production/unclassified-env cases that coincidentally already held)
+  were added alongside or after implementation without preserved
+  initial RED. Every repaired security/privacy path — trusted runtime
+  boundary, consent-before-answer-query, authorized P2002 re-entry,
+  replay consent — has genuine RED and mutation evidence.
+- **Owner acceptance (2026-10-10):** the owner accepted the one-time
+  bounded initial test-first exception — acceptance covers only the
+  already-recorded initial ordering deviation and does not waive tests,
+  review, CI, merge approval, production restrictions, or future
+  test-first requirements. The independent technical PASS at `fceb037`
+  stands.
+- **Held:** no PR, not deployed, flag never enabled in production.
+  A lightweight different-model review of the final docs delta is
+  required before any PR is created.
+
+## 2026-10-09 — P-023-I1 implementation (in progress)
+
+- Authorized dev-gated client onboarding submission slice implemented on
+  branch `feature/p023-client-onboarding-submission` (base `bb9e42d`):
+  additive migration `20261010000000_p023_onboarding_submissions` adds
+  `onboarding_submission` + `onboarding_submission_answer` (unique
+  `assignment_id`, composite-FK tenant/pin coherence, kind↔column CHECK
+  with choice cardinality) plus the wide assignment unique target.
+- `ENABLE_ONBOARDING_SUBMISSION` is default-off; `PROTECTED_OPERATIONS.
+onboardingSubmissions = BASE_CONSENTS` is the dev/test-only mapping —
+  production registry stays unconfigured/fail-closed (decisions #83–#85).
+- Serializable submit tx in the reviewed order (own-profile → own-scoped
+  pre-read → `onbassign`+`member` advisories → member `FOR UPDATE` →
+  in-tx `authorize` own → owned-submission idempotency → assignment
+  `FOR UPDATE` → profile `FOR UPDATE` → consent `FOR UPDATE` → pinned
+  definition → insert → `COMPLETED`+provenance → audit last).
+- New `(tracker)` routes `/workspace/[ws]/onboarding` +
+  `/…/onboarding/[assignmentId]` (no-store, flag-off 404, staff 403,
+  dirty-only `beforeunload`, irreversible confirm step, read-only
+  submitted view); no staff answer review built.
+- Evidence: unit 998/998; integration 508/508 incl. incoherent-tuple FK
+  rejection, replay idempotency, concurrent double-submit, audit
+  rollback, post-withdrawal behavior; focused E2E 10/10 at 1440/834/390;
+  six mutations proven to fail their targeted assertions and reverted.
+- Pushed: `feature/p023-client-onboarding-submission` @
+  `44e8eacc02e8ffc7da36746715ac30a9130f52f2` (3 forward commits on
+  `bb9e42d`; `origin/main` unchanged). Same-model post-push review —
+  explicitly non-independent — found + repaired one header-scope issue
+  (no-store wildcard had matched the staff onboarding leaves; narrowed
+  and re-verified on the production build).
+- **Held:** no PR, not deployed, flag never enabled in production;
+  P-023 requires fresh different-model review of the pushed head before
+  any PR.
+
 ## 2026-10-09 — P-023-D-M2 flaky P-021 assertion repair (in progress)
 
 - PR #26 merged correctly at `7e3d007` (parents `721359d` + `e536dd9`);

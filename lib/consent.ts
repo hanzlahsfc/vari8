@@ -106,6 +106,10 @@ const PROTECTED_OPERATIONS: Partial<Record<Resource, readonly ConsentKind[]>> =
     cycleData: [...BASE_CONSENTS, "CYCLE"],
     bloodwork: [...BASE_CONSENTS, "BLOODWORK"],
     pedHrt: [...BASE_CONSENTS, "PED_HRT"],
+    // P-023 (decision #83): synthetic dev/test-only mapping — the
+    // production consent registry stays unconfigured so production
+    // onboarding submission fails closed even if the flag is set.
+    onboardingSubmissions: BASE_CONSENTS,
   };
 
 /** Required consent kinds for a resource, or `undefined` when not consent-protected. */

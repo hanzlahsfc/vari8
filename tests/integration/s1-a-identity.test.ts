@@ -313,6 +313,10 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         // P-013: staff-only assignment records — operational metadata only.
         "onboarding_form_assignment",
         "onboarding_form_version",
+        // P-023: client-owned immutable submissions + revision-free answers
+        // — consent-gated health data, reviewed in decisions #82–#85.
+        "onboarding_submission",
+        "onboarding_submission_answer",
         // P-014: staff parameter/template definitions + immutable versions
         // (no client data; reviewed in product-decisions #41–#48).
         "coaching_template",

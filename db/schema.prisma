@@ -129,6 +129,8 @@ model User {
   subjectAuditedEvents AuditEvent[]      @relation("AuditSubjectUser")
   accessTokens         AccessToken[]     @relation("AccessTokenUser")
   issuedAccessTokens   AccessToken[]     @relation("AccessTokenCreator")
+  // P-023: durable submission provenance (the submitting client user).
+  onboardingSubmissionsSubmitted OnboardingSubmission[] @relation("OnboardingSubmissionSubmittedByUser")
 
   @@map("users")
 }
@@ -154,6 +156,8 @@ model Workspace {
   clientSetups                  ClientSetup[]
   clientSetupPins               ClientSetupPin[]
   dailyEntries                  DailyEntry[]
+  onboardingSubmissions         OnboardingSubmission[]
+  onboardingSubmissionAnswers   OnboardingSubmissionAnswer[]
 
   @@map("workspace")
 }
@@ -187,6 +191,7 @@ model WorkspaceMember {
 
   dailyEntriesCreated       DailyEntry[]            @relation("DailyEntryCreator")
   dailyEntryRevisionsCreated DailyEntryRevision[]   @relation("DailyEntryRevisionCreator")
+  onboardingSubmissionsSubmitted OnboardingSubmission[] @relation("OnboardingSubmissionSubmittedByMember")
 
   parametersCreated         ParameterDefinition[]     @relation("ParameterDefinitionCreator")
   parametersUpdated         ParameterDefinition[]     @relation("ParameterDefinitionUpdater")
@@ -234,6 +239,7 @@ model ClientProfile {
   clientSetups          ClientSetup[]              @relation("ClientSetupClient")
   clientSetupPins       ClientSetupPin[]           @relation("ClientSetupPinClient")
   dailyEntries          DailyEntry[]               @relation("ClientProfileDailyEntries")
+  onboardingSubmissions OnboardingSubmission[]     @relation("OnboardingSubmissionClient")
 
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
   @@unique([workspaceId, userId])
@@ -563,6 +569,7 @@ model OnboardingForm {
   archivedByMember WorkspaceMember?           @relation("OnboardingFormArchiver", fields: [archivedByMemberId], references: [id], onDelete: Restrict)
   versions         OnboardingFormVersion[]
   assignments      OnboardingFormAssignment[] @relation("OnboardingAssignmentForm")
+  submissions      OnboardingSubmission[]     @relation("OnboardingSubmissionForm")
 
   // Composite target for the OnboardingFormAssignment same-workspace foreign key (raw SQL).
   @@unique([id, workspaceId])
@@ -582,6 +589,7 @@ model OnboardingFormVersion {
   form              OnboardingForm             @relation(fields: [formId], references: [id], onDelete: Restrict)
   publishedByMember WorkspaceMember            @relation("OnboardingFormVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
   assignments       OnboardingFormAssignment[] @relation("OnboardingAssignmentVersion")
+  submissions       OnboardingSubmission[]     @relation("OnboardingSubmissionVersion")
 
   @@unique([formId, versionSeq])
   // Composite target for the OnboardingFormAssignment version∈form foreign key (raw SQL).
@@ -624,7 +632,13 @@ model OnboardingFormAssignment {
   formVersion      OnboardingFormVersion @relation("OnboardingAssignmentVersion", fields: [formVersionId], references: [id], onDelete: Restrict)
   assignedByMember WorkspaceMember       @relation("OnboardingAssignmentAssignedBy", fields: [assignedByMemberId], references: [id], onDelete: Restrict)
   endedByMember    WorkspaceMember?      @relation("OnboardingAssignmentEndedBy", fields: [endedByMemberId], references: [id], onDelete: Restrict)
+  submission       OnboardingSubmission?
 
+  // P-023: composite target for the submission's wide coherence foreign key —
+  // the submission's workspace/client/form/pinned-version tuple must provably
+  // belong to the referenced assignment (raw SQL FK). id-first implies the
+  // (id, workspaceId) prefix target as well.
+  @@unique([id, workspaceId, clientProfileId, formId, formVersionId])
   // (workspaceId, id) serves the workspace-scoped id-cursor pagination;
   // client/status and form/status serve scoped reads; formVersionId backs the
   // FK parent-delete scan. The ACTIVE cardinality lives in the raw partial
@@ -987,4 +1001,73 @@ model DailyEntryRevisionValue {
   @@id([revisionId, parameterId])
   @@index([parameterId])
   @@map("daily_entry_revision_value")
+}
+
+// P-023 (decisions #82–#85): client onboarding submission. Exactly one
+// immutable submission per assignment; answers are revision-free immutable
+// rows. Tenant coherence is enforced by composite foreign keys in the raw
+// migration; ACTIVE/ownership/idempotency are service-enforced under locks.
+enum OnboardingAnswerKind {
+  SHORT_TEXT
+  LONG_TEXT
+  NUMBER
+  DATE
+  SINGLE_CHOICE
+  MULTI_CHOICE
+}
+
+model OnboardingSubmission {
+  id                  String   @id @default(cuid())
+  workspaceId         String   @map("workspace_id")
+  clientProfileId     String   @map("client_profile_id")
+  formId              String   @map("form_id")
+  formVersionId       String   @map("form_version_id")
+  assignmentId        String   @map("assignment_id")
+  submittedByUserId   String   @map("submitted_by_user_id")
+  submittedByMemberId String   @map("submitted_by_member_id")
+  submittedAt         DateTime @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace         Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile     ClientProfile            @relation("OnboardingSubmissionClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  form              OnboardingForm           @relation("OnboardingSubmissionForm", fields: [formId], references: [id], onDelete: Restrict)
+  formVersion       OnboardingFormVersion    @relation("OnboardingSubmissionVersion", fields: [formVersionId], references: [id], onDelete: Restrict)
+  assignment        OnboardingFormAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  submittedByUser   User                     @relation("OnboardingSubmissionSubmittedByUser", fields: [submittedByUserId], references: [id], onDelete: Restrict)
+  submittedByMember WorkspaceMember          @relation("OnboardingSubmissionSubmittedByMember", fields: [submittedByMemberId], references: [id], onDelete: Restrict)
+  answers           OnboardingSubmissionAnswer[]
+
+  // At-most-one durable submission per assignment — the idempotency anchor
+  // and final concurrency authority (P2002 → abort → retry hits the
+  // existing-submission shortcut in a fresh transaction).
+  @@unique([assignmentId])
+  // Composite target for the answer same-workspace foreign key (raw SQL).
+  @@unique([id, workspaceId])
+  // Own-assignment discovery list and the workspace-scoped id-cursor convention.
+  @@index([workspaceId, clientProfileId])
+  @@index([workspaceId, id])
+  @@map("onboarding_submission")
+}
+
+model OnboardingSubmissionAnswer {
+  id             String               @id @default(cuid())
+  submissionId   String               @map("submission_id")
+  workspaceId    String               @map("workspace_id")
+  fieldId        String               @map("field_id")
+  kind           OnboardingAnswerKind
+  valueText      String?              @map("value_text")
+  valueNumeric   Decimal?             @map("value_numeric") @db.Decimal(23, 6)
+  valueDate      DateTime?            @map("value_date") @db.Date
+  valueOptionIds Json?                @map("value_option_ids")
+
+  submission OnboardingSubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  workspace  Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  // One answer per field per submission. The kind↔column shape is a raw
+  // CHECK in the migration (Prisma cannot express it); immutability is
+  // service contract — no write path ever updates these rows.
+  @@unique([submissionId, fieldId])
+  @@index([workspaceId])
+  @@map("onboarding_submission_answer")
 }

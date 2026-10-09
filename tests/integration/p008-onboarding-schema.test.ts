@@ -113,12 +113,19 @@ describe.skipIf(!enabled)("P-008 schema — tables/columns/constraints", () => {
     }
   });
 
-  it("no submission/intake tables exist in this slice", async () => {
+  it("no submission/intake tables beyond the reviewed P-023 pair", async () => {
     const rows = await prisma.$queryRawUnsafe<Array<{ table_name: string }>>(
       "SELECT table_name FROM information_schema.tables WHERE table_schema='public'",
     );
     const names = rows.map((r) => r.table_name);
+    // P-023 (decisions #82–#85) added exactly these two reviewed tables;
+    // any other submission/intake/answer table still proves scope creep.
+    const reviewed = new Set([
+      "onboarding_submission",
+      "onboarding_submission_answer",
+    ]);
     for (const n of names) {
+      if (reviewed.has(n)) continue;
       expect(n).not.toMatch(/submission|intake_response|answer/i);
     }
   });
