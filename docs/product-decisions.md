@@ -679,3 +679,105 @@ Recorded for traceability so reviewers can distinguish assumption from decision:
   the same transaction.
 - No user-facing token flow ships until password policy, email delivery configuration,
   audit ownership, throttling, and route security review are all complete.
+
+## P-022 read-only staff DailyEntry review — owner approval (relayed 2026-10-09)
+
+The product owner approved the three-item P-022 decision package for a
+read-only staff view of client DailyEntry history, following the
+P-022→R4 review chain (final independent review P-022-R4-R1 **PASS** by
+`opencode-go/deepseek-v4.1-flash`, no P0/P1/P2). Full record:
+`docs/tasks/p022-staff-daily-entry-review.md`. This records product rules
+only — it authorizes **no** implementation, production enablement,
+real-client data, or deployment. DailyEntry staff review remains
+development-gated and default-off.
+
+79. **Staff revision depth (minimization).** Authorized staff see each
+    entry's **latest revision only, plus its revision count**; superseded
+    answer values are withheld from staff in this first slice. The client's
+    own immutable revision history is unchanged. This is a
+    disclosure-minimization boundary — superseded revisions are retained,
+    never deleted or rewritten; widening staff visibility to full history
+    would require a new owner decision.
+
+80. **Staff-read audit.** One structural `READ` audit is recorded per
+    successfully committed, explicitly submitted "View details" Server
+    Action. List loads, pagination, link prefetch, refreshes, back/forward
+    navigation, and RSC/responsive rerenders create no audit — there is no
+    detail-bearing GET path. The action uses honest at-least-once POST
+    semantics: a second successfully committed submission may create a
+    second audit row; exact retry idempotency is deferred (no existing
+    repository primitive). Audit metadata is `{changed:false}` only — no
+    dates, values, labels, parameter keys, consent details, or
+    browser-controlled fields. Audit and detail access commit or fail
+    together in one transaction; audit failure returns no detail values.
+
+81. **Client-facing privacy disclosure (production gate).** Client-facing
+    disclosure that authorized workspace staff may view submitted
+    DailyEntry information is **required before production enablement**.
+    Legal/privacy wording is pending and must not be invented. This gate
+    does not block development-only implementation; production remains
+    unavailable and fail-closed until this and the other
+    production-readiness gates (D-10, consent-policy versions,
+    retention/erasure/export) are satisfied.
+
+### P-022 settled authorization (recorded context, not new decisions)
+
+The approved `dailyTracking/read` RBAC matrix plus decision #69 already
+authorize staff read; this slice honors it verbatim:
+
+- `WORKSPACE_OWNER`: workspace-scoped read (all workspace clients).
+- `COACH`: `assigned` scope — requires an ACTIVE `ClientAssignment` to the
+  member's row.
+- `ASSISTANT_COACH`: `assigned` scope — operationally reachable through a
+  `COACH`-role `ClientAssignment` (assistants are assignable only as
+  `COACH`, never `PRIMARY`).
+- `CLIENT`: `own` scope only; excluded from the staff route/layout.
+- `SUPPORT`: denied. Platform role alone: denied. `PLATFORM_ADMIN` with an
+  eligible ACTIVE workspace membership is evaluated through that membership
+  role (`dailyTracking` is not among the special platform-admin-denied
+  resources).
+- Terminal (`REMOVED`) assignment ends coach/assistant access; owner
+  workspace scope continues; retained data is not itself an access grant.
+
+### P-022 binding engineering contract (not owner choices)
+
+- Dedicated staff route `/workspace/[workspaceId]/clients/[clientProfileId]/daily`
+  under the existing staff layout; the roster gains the entry-point link.
+- Route is `force-dynamic` with route-scoped `Cache-Control: no-store`; the
+  detail action's POST response is likewise no-store and must be proven by
+  real HTTP/browser evidence.
+- The existing DailyEntry feature-mode resolver is reused; no new feature
+  flag. Off/invalid/conflicting/production-unconfigured modes reveal no
+  entry existence or count.
+- List GET: pure read, header data only (declared date, revision count,
+  current-revision presence), newest-first, bounded page size, validated
+  keyset cursor, zero health values, zero audits.
+- Detail access: explicit `useActionState`/Server Action only;
+  `workspaceId`/`clientProfileId`/`entryDate` are untrusted selection input,
+  never authority; sanitized detail returns only after successful commit.
+- Inside one `Serializable` transaction, in order: `csetup:{ws}:{client}`
+  advisory → `member:{ws}:{actorUserId}` advisory → actor `WorkspaceMember`
+  `FOR UPDATE` (re-derive status/role) → `authorize` via the
+  transaction-backed repo → for `assigned` scope, re-resolve the ACTIVE
+  `ClientAssignment` row id (authorization does not expose it;
+  `getActiveAssignment` returns `{id}`) and lock it `FOR UPDATE` →
+  `ClientProfile` `FOR UPDATE` with workspace/client equality → consent
+  rows `FOR UPDATE` in deterministic kind order → entry lookup →
+  current-revision coherence → per-revision immutable `templateVersionId`
+  snapshot rendering → structural `READ` audit (if enabled) → commit.
+- Serialization conflicts use the repository's bounded fresh-transaction
+  retry; every retry reacquires all locks and re-runs authorization/consent;
+  exhaustion fails closed with zero values and zero audit.
+- No schema, migration, dependency, audit-allowlist, or feature-flag change
+  is required. Existing indexes (`@@index([clientProfileId, entryDate])`
+  plus the unique `(workspaceId, clientProfileId, entryDate)`) support the
+  bounded queries.
+
+### P-022 required concurrent-behavior evidence (implementation-time)
+
+Membership-revocation race, assignment-removal race, and consent-revocation
+race must each prove deterministic read-before-revoke or revoke-before-read
+ordering; zero values and zero audit when the mutation wins; atomic
+detail+audit when the read wins; audit-write failure rolls back; no
+deadlock; zero audits from GET/prefetch/rerender; a second committed POST
+produces a second audit (at-least-once, honestly asserted).

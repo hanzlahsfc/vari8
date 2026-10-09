@@ -132,6 +132,12 @@ is assumed.
   parameter-keyed values, and binding structural-eligibility-vs-runtime-access
   constraints. Implementation and production remain separately gated; full
   record: `docs/tasks/p019-daily-entry-persistence-decisions.md`.
+  **Update (product-decisions #79–#81, P-022):** read-only staff review is
+  approved-but-not-implemented — authorized staff see each entry's latest
+  revision + revision count only (no superseded values), one structural
+  `READ` audit per committed explicit detail access, and client-facing
+  staff-visibility disclosure is required before production enablement.
+  Full record: `docs/tasks/p022-staff-daily-entry-review.md`.
 - _ClientTargets / PlanSet_ — effective-dated coach-prescribed targets
   (nutrition/activity/etc.); each change appends a new effective-dated version;
   old versions stay readable for history and roadmap comparisons.

@@ -5,6 +5,26 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-09 — P-022 staff DailyEntry review: decisions recorded (docs only)
+
+- P-021 merged via PR #23 at `eea87ae6d3e420a89a9af378fab448b296022084`;
+  main CI run `37836730067`/job `113515536636` SUCCESS; remote `main` only;
+  protection unchanged; nothing deployed; DailyEntry default-off.
+- P-022 planning completed through the full chain: P-022 → R1 CONDITIONAL
+  PASS → R2 → R2-R1 CONDITIONAL PASS → R3 → R3-R1 CONDITIONAL PASS →
+  R4 → **R4-R1 PASS** (`opencode-go/deepseek-v4.1-flash`, no P0/P1/P2).
+- Owner approved all three decisions — **#79** staff see latest revision +
+  count only (no superseded values); **#80** one structural `READ` audit
+  per committed explicit View Details action (at-least-once,
+  `{changed:false}` only, no audit on GET/prefetch/rerender);
+  **#81** client-facing staff-visibility disclosure required before
+  production enablement (wording pending; not a dev blocker).
+- Recorded on `docs/p022-staff-daily-review-decisions` in
+  `docs/product-decisions.md`, `docs/product-alignment-blueprint.md`, and
+  `docs/tasks/p022-staff-daily-entry-review.md`. **No implementation was
+  performed or authorized**; no PR, merge, production enablement, or
+  deployment in this task. Docs head awaits independent review.
+
 ## 2026-10-09 — P-021-I1-R2 bounded repairs (independent-review findings)
 
 - Independent review by `opencode-go/deepseek-v4.1-flash` on `26c1ef2`:
