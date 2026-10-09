@@ -239,3 +239,52 @@ PostgreSQL integration + production-build browser runs.
 - No schema/migration/dependency/flag/allowlist change; no staff writes;
   no C3/C4; nothing deployed; `ENABLE_DAILY_ENTRY` unchanged.
 - Head pushed awaits independent different-model review before any PR.
+
+### P-022-I1-R1 independent review → P-022-I1-R2 repair (2026-10-09)
+
+- **Independent review** by `opencode-go/deepseek-v4.1-flash` (different
+  model, not the builder) on `509e0a6`: **CONDITIONAL PASS — no P0/P1;
+  the production implementation is accepted.** Reviewer independently
+  verified the full diff, traced the production call path, ran the gates
+  fresh, and mutation-tested the audit assertion (it bites).
+- **P2-1 (blocking, test determinism only):** the E2E test
+  `GET/pagination/refresh/back-forward create zero READ audits` was not
+  deterministic — raw `page.goForward()` on the force-dynamic route
+  failed `net::ERR_ABORTED / frame detached` (reviewer: 19/1 focused,
+  deterministic first-attempt failure; a retry produced one flaky pass,
+  which the reviewer correctly refused to accept). Product behavior was
+  never in doubt — integration coverage and call-path inspection prove
+  GETs create zero READ audits.
+- **P3 evidence corrections the reviewer made:** the builder's report
+  claimed `10 files, +2719/−39`; independently recalculated
+  `origin/main...509e0a6` = **11 files, +2879/−39** (the docs commit
+  added `docs/STATUS.md`; builder's count was stale). The builder also
+  cited an older Tracker 3.0 (`57f6cd…`/1228); the tracker has since
+  legitimately advanced (reviewer observed `e00b03…`/1241; repair
+  dispatch verified `460df8…`/1251). All external-tracker versions are
+  orchestrator-owned appends, not defects.
+- **Repair diagnosis (builder, reproduced locally first):** focused spec
+  pre-repair = 19 passed / 1 failed; individual test fails on first
+  attempt at `page.goForward()` with
+  `Page.getNavigationHistory / Not attached to an active page`
+  (`ERR_ABORTED` class). Root cause is Playwright's
+  `Page.navigateToHistoryEntry` awaiting a document `load` that the
+  App Router history stack never emits — the traversal resolves via
+  session-history/popstate. A test/tooling race, not an app defect.
+- **Repair:** `page.goBack()/goForward()` replaced by traversal through
+  the page's own `history.back()/forward()` (identical to the browser
+  controls), proven per leg by `toHaveURL` predicates and a stable
+  element; expected evaluate context-loss is scoped-caught only when it
+  is the context-destruction signal of the navigation starting —
+  anything else rethrows, and the URL assertions fail if the traversal
+  never completes. The exact-zero READ-audit assertion is unchanged, as
+  are the GET/reload/back/forward/pagination coverage and every other
+  assertion in the spec. No production code touched.
+- **Verification on the repaired tree:** individual test 3/3 consecutive
+  without retries; focused spec 20/20 three consecutive runs without
+  retries; full E2E single run 268/268 (12 skipped, 0 flaky);
+  `git diff --check`, prettier, tsc, eslint, `next build` all 0. No
+  unexpected audit rows observed.
+- Same-model fresh-context self-review appended below (not the required
+  independent review — a different-model re-review of the final head is
+  still required before any PR).

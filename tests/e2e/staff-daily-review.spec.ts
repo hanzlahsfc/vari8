@@ -421,6 +421,34 @@ const readAuditCount = () =>
     },
   });
 
+/**
+ * Trigger a real history traversal through the page's own history API —
+ * the same mechanism as the browser's back/forward controls.
+ *
+ * Playwright's `goBack()`/`goForward()` issue
+ * `Page.navigateToHistoryEntry` and await a document-level `load` event;
+ * on an App Router history stack (mixed full-document navigations and
+ * Next.js `pushState` entries) the browser resolves the traversal via
+ * session-history restore/popstate, so that promise aborts
+ * (`net::ERR_ABORTED`) or the frame detaches mid-call. Calling
+ * `history.back()/forward()` in the page is the identical user action;
+ * the only expected failure mode is the evaluate call losing its context
+ * as the current document unloads — which is the traversal beginning.
+ * The URL/state assertions that follow prove the traversal completed and
+ * fail if it did not.
+ */
+async function traverseHistory(page: Page, dir: "back" | "forward") {
+  await page
+    .evaluate((d) => (d === "back" ? history.back() : history.forward()), dir)
+    .catch((error: unknown) => {
+      if (
+        !(error instanceof Error) ||
+        !/Execution context was destroyed/.test(error.message)
+      )
+        throw error;
+    });
+}
+
 test.describe("P-022 staff DailyEntry review", () => {
   test("roster exposes a Daily entries link and reaches the review route", async ({
     page,
@@ -556,13 +584,14 @@ test.describe("P-022 staff DailyEntry review", () => {
     const before = await readAuditCount();
     await page.goto(dailyUrl(CP_ID));
     await page.reload();
-    // Back/forward each produce a fresh GET of the route — settle each one
-    // before the next history op to avoid protocol-level races.
-    await page.goBack();
-    await page.waitForLoadState("domcontentloaded");
-    await page.goForward();
-    await page.waitForLoadState("domcontentloaded");
+    // Back/forward traversal through the page's own history API — proven
+    // deterministic by the URL and stable-element assertions, not by
+    // Playwright's brittle document-navigation promise.
+    await traverseHistory(page, "back");
+    await expect(page).toHaveURL((u) => !u.pathname.endsWith("/daily"));
+    await traverseHistory(page, "forward");
     await expect(page).toHaveURL(new RegExp(`/clients/${CP_ID}/daily`));
+    await expect(page.getByTestId("staff-daily-review")).toBeVisible();
     await page.goto(`${dailyUrl(CP_ID)}?c=2026-10-02`);
     expect(await readAuditCount()).toBe(before);
   });

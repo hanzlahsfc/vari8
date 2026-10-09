@@ -5,6 +5,30 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-09 — P-022-I1-R2 E2E determinism repair (post independent review)
+
+- Independent review by `opencode-go/deepseek-v4.1-flash` on `509e0a6`:
+  **CONDITIONAL PASS — no P0/P1; production implementation accepted.**
+  One blocking P2: the E2E test
+  `GET/pagination/refresh/back-forward create zero READ audits` was
+  nondeterministic (`page.goForward()` → `net::ERR_ABORTED`/detached
+  frame; retry gave one flaky pass, not acceptable evidence).
+- Diagnosis reproduced locally: 19/1 focused, deterministic first-attempt
+  failure. Root cause is the Playwright navigation-wait layer awaiting a
+  document `load` the App Router history traversal never emits — a test
+  tooling race, not a product defect. Repaired by driving real
+  `history.back()/forward()` traversals with URL/state assertions; the
+  exact-zero audit assertion and all coverage are unchanged.
+- Verified: individual test 3/3, focused spec 20/20 ×3 consecutive, full
+  E2E 268/268 (12 skip, 0 flaky) — all without retries; mechanism gates
+  all 0. Evidence corrections recorded in
+  `docs/tasks/p022-staff-daily-entry-review.md` (real diff
+  `origin/main...509e0a6` = 11 files/+2879/−39, not the 10/+2719 the
+  builder reported; tracker citation updated to the current
+  orchestrator-owned version).
+- Head still awaits independent different-model re-review before any PR.
+  `origin/main` unchanged; no PR, merge, deployment, or flag enablement.
+
 ## 2026-10-09 — P-022-I1 staff DailyEntry review implemented (feature branch, no PR)
 
 - Implemented the merged decisions #79–#81 + P-022-R4 contract on
