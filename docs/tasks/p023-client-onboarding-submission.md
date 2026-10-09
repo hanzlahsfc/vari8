@@ -147,6 +147,153 @@ CALORIES/cycle/medical inference; broad UI redesign.
   history; the repair is not merged or deployed and awaits
   different-model review before PR creation.
 
+## Implementation (P-023-I1)
+
+Authorized implementation slice — branch
+`feature/p023-client-onboarding-submission`, base `origin/main`
+`bb9e42d48b7ee763a76f26aa937b1796e247e7df` (post-PR-#27 merge, green main
+CI run `37968491394`). Synthetic-only, dev/test-only, default-off gate
+`ENABLE_ONBOARDING_SUBMISSION`, production fail-closed, no deployment.
+
+### First-inspection summary (recorded before implementation)
+
+- **Schema conventions:** `OnboardingFormAssignment` has `status`,
+  `endedByMemberId`, `endedAt` already; `COMPLETED` is a schema-reserved
+  enum value that no P-013 service writes. Composite-tenant uniques exist
+  on `ClientProfile(id,workspaceId)`, `OnboardingForm(id,workspaceId)`,
+  `OnboardingFormVersion(id,formId)`, `WorkspaceMember(id,workspaceId)`;
+  the one required new target is
+  `OnboardingFormAssignment @@unique([id, workspaceId, clientProfileId,
+formId, formVersionId])`. Composite FKs are expressed in raw SQL
+  migrations (P-021 precedent); partial indexes are migration-only.
+- **Service conventions (P-021/P-022):** `db.$transaction(Serializable)`
+  with bounded `P2034`/`P2010`-`40001`/`40P01` retry (≤8 attempts, capped
+  backoff); `pg_advisory_xact_lock(hashtextextended(key,0))`; row locks
+  via `SELECT … FOR UPDATE`; in-transaction `authorize` through
+  `createPrismaAuthorizationRepo(tx)`; consent rows locked in
+  deterministic kind order with exact-version match; `writeAuditEvent`
+  last so audit failure rolls back.
+- **Lock-order cross-check:** P-013 assignment writers take advisory
+  `onbassign:{ws}:{client}:{form}` then the assignment row lock; P-021/22
+  take `csetup` then `member` advisories then member→profile→consent
+  rows; P-023 takes `onbassign` → `member` advisories then
+  member→assignment→profile→consent→submission rows. No writer takes
+  `member` before `onbassign`, and row-lock order never inverts — the
+  graph is acyclic (no P-013 path acquires `member`, no P-021 path
+  acquires `onbassign`).
+- **Boundary conventions:** gate exact-match before session/FormData/DB;
+  generic non-disclosing messages; `ActionResult<T>` shape.
+- **Route conventions:** `(tracker)` dual-role chrome (staff →
+  `WorkspaceNav`; ACTIVE CLIENT → reduced nav); `force-dynamic`; flag-off
+  `notFound()`; `no-store` via route-scoped `next.config.ts` headers;
+  `useActionState`-style client panels; staff `onboarding/` tree lives
+  under `app/workspace/` — the new `(tracker)` leaf paths
+  (`/workspace/[ws]/onboarding`, `/…/onboarding/[assignmentId]`) do not
+  collide with staff leaves (`/…/onboarding/forms`, `/…/assignments`);
+  a leaf-uniqueness test binds this.
+- **Wire/validation conventions:** `FORM_LIMITS` (maxFields 100,
+  definitionMaxBytes 64 KiB, maxOptions 50) and `ASSIGNMENT_LIMITS.idMax`
+  (128) reused verbatim; array-of-records `answersJson` wire format;
+  pre-canonicalization duplicate rejection; NFC text; strict decimal
+  grammar; definition-order storage; optional-empty omitted.
+- **Consent:** `PROTECTED_OPERATIONS.onboardingSubmissions =
+BASE_CONSENTS` for synthetic dev/test only (decision #83); production
+  registry stays unconfigured → fail-closed even if the flag is set.
+- **Audit:** new `onboarding_submission` resource type; exactly one
+  `CREATE {changed:true}` per first committed submission.
+- **E2E:** Playwright multi-server layout (primary :3000 flags on;
+  :3101 all-off proof server; :3102 dedicated proof server); fixtures
+  seeded per-spec with deterministic reserved IDs and child-before-parent
+  cleanup.
+
+### Schema, migration, and DB-vs-service split
+
+- Migration `20261010000000_p023_onboarding_submissions` — additive:
+  `OnboardingAnswerKind` enum, `onboarding_submission` (unique
+  `assignment_id`; unique `(id, workspace_id)` answer-FK target;
+  `(workspace_id, client_profile_id)` discovery index; `(workspace_id,id)`
+  cursor index), `onboarding_submission_answer` (unique
+  `(submission_id, field_id)`), and the one new wide assignment unique
+  `(id, workspace_id, client_profile_id, form_id, form_version_id)`.
+- **DB-enforced:** all composite FKs — submission↔client/workspace,
+  form/workspace, version/form, the wide assignment coherence tuple,
+  member/workspace; answer↔submission/workspace; `ON DELETE RESTRICT`
+  everywhere; the kind↔typed-column CHECK including `jsonb` array shape,
+  single-choice = 1, multi-choice ≤ 50; `unique(assignment_id)` as the
+  final double-submit backstop (P2002 → abort → fresh read →
+  `already_submitted`).
+- **Service-enforced (inside the Serializable tx):** ownership, ACTIVE
+  state, idempotency ordering, option validity vs the pinned immutable
+  definition, multi-choice dedup+sort, per-kind bounds, definition-order
+  storage, completion provenance, single audit event. Immutability of
+  answers is service contract — no write path ever updates these rows.
+- Verified on a fresh disposable PG: `prisma migrate deploy` applied all
+  31 migrations; incoherent-tuple inserts (foreign workspace, version ∉
+  form) and CHECK violations rejected at the database.
+
+### RED-first evidence
+
+- `tests/integration/p023-onboarding-submission.test.ts` was written and
+  run before the full service existed: initial run failed (module/
+  behavior missing) — real RED. Subsequent failures during bring-up:
+  boundary returned "feature is not available" until
+  `ENABLE_ONBOARDING_SUBMISSION` was set in the suite; multi-choice
+  display order corrected to definition order (was stored order).
+- Two pre-existing guard tests legitimately updated: `s1-a-identity`
+  table allowlist now includes the two reviewed tables; the P-008
+  "no submission tables" guard now allows exactly the reviewed pair
+  (any other submission table still fails).
+- `tests/e2e/client-onboarding.spec.ts`: first runs exposed (a) a real
+  commit-vs-read race in the spec (fixed by polling DB state), (b) the
+  `(ws,client,form)` full-unique fixture constraint (extra assignments
+  now each get their own form), (c) Playwright's hanging `page.reload()`
+  after a dismissed beforeunload dialog (evaluate-driven reload), and
+  (d) a leaked fixture profile blocking global teardown (namespaced
+  cleanup).
+
+### Mutation evidence (all reverted)
+
+1. Duplicate-fieldId rejection disabled → unit test "rejects duplicate
+   fieldIds" FAILED; reverted.
+2. Locked assignment ACTIVE-state check removed → integration
+   "cancelled/superseded terminal assignments refuse" FAILED; reverted.
+3. Post-lock authorization bypassed (member role/status + in-tx
+   `authorize` removed) → integration "denies every non-CLIENT role and
+   inactive memberships" FAILED (suspended member submitted); reverted.
+4. Idempotency lookup + P2002 recovery removed → integration replay test
+   FAILED (P2002 surfaced raw); reverted.
+5. `writeAuditEvent` removed → integration "first submit → … + one
+   audit" FAILED; reverted.
+6. `beforeunload` cleanup removed (permanent listener) → E2E
+   "submitted form is not trapped" FAILED (post-submit navigation
+   aborted); reverted. Note: the normal dirty-clear is actually
+   belt-and-suspenders — the server re-render unmounts the form and the
+   unmount-cleanup removes the listener regardless.
+
+### Gate results on the implementation tree
+
+- `npx prisma validate` exit 0; `npx prisma generate` exit 0;
+  `prisma migrate deploy` on fresh disposable PG exit 0.
+- `npm run typecheck` exit 0; `npm run lint` exit 0 (0 warnings on final
+  tree); `npx prettier --check .` exit 0; `npm run build` exit 0 —
+  `/workspace/[ws]/onboarding` and `/…/onboarding/[assignmentId]` render
+  as dynamic leaves alongside the staff `onboarding/assignments|forms`
+  leaves with no collision.
+- Unit suite: 83 files / 998 tests PASS (incl. 21 new P-023 tests).
+- Integration suite (disposable `app_integration_p023_impl`): 18/18
+  P-023 tests + full suite PASS on the fixed tree.
+- E2E `client-onboarding.spec.ts`: 10/10 PASS — flag-off 404s, discover,
+  client-side + server-side validation, irreversible confirm, submit,
+  read-only submitted view, staff Completed-without-answers, consent
+  withdrawal, no-store headers, dirty-only beforeunload +
+  post-success-not-trapped, keyboard/overflow/≥44px at 1440/834/390.
+
+### Held boundary
+
+Not pushed, no PR, no merge, nothing deployed, flag never enabled in
+production, no real-client data, no staff answer review, no
+resubmission/drafts/C3/C4/cycle/MENSES/CALORIES.
+
 ## Next gate
 
 Independent different-model review of this documentation head before any PR

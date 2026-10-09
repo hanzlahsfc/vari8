@@ -5,6 +5,34 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-09 — P-023-I1 implementation (in progress)
+
+- Authorized dev-gated client onboarding submission slice implemented on
+  branch `feature/p023-client-onboarding-submission` (base `bb9e42d`):
+  additive migration `20261010000000_p023_onboarding_submissions` adds
+  `onboarding_submission` + `onboarding_submission_answer` (unique
+  `assignment_id`, composite-FK tenant/pin coherence, kind↔column CHECK
+  with choice cardinality) plus the wide assignment unique target.
+- `ENABLE_ONBOARDING_SUBMISSION` is default-off; `PROTECTED_OPERATIONS.
+onboardingSubmissions = BASE_CONSENTS` is the dev/test-only mapping —
+  production registry stays unconfigured/fail-closed (decisions #83–#85).
+- Serializable submit tx in the reviewed order (own-profile → own-scoped
+  pre-read → `onbassign`+`member` advisories → member `FOR UPDATE` →
+  in-tx `authorize` own → owned-submission idempotency → assignment
+  `FOR UPDATE` → profile `FOR UPDATE` → consent `FOR UPDATE` → pinned
+  definition → insert → `COMPLETED`+provenance → audit last).
+- New `(tracker)` routes `/workspace/[ws]/onboarding` +
+  `/…/onboarding/[assignmentId]` (no-store, flag-off 404, staff 403,
+  dirty-only `beforeunload`, irreversible confirm step, read-only
+  submitted view); no staff answer review built.
+- Evidence: unit 998/998; integration 508/508 incl. incoherent-tuple FK
+  rejection, replay idempotency, concurrent double-submit, audit
+  rollback, post-withdrawal behavior; focused E2E 10/10 at 1440/834/390;
+  six mutations proven to fail their targeted assertions and reverted.
+- **Held:** not pushed, no PR, not deployed, flag never enabled in
+  production; P-023 requires fresh different-model review of the pushed
+  head before any PR.
+
 ## 2026-10-09 — P-023-D-M2 flaky P-021 assertion repair (in progress)
 
 - PR #26 merged correctly at `7e3d007` (parents `721359d` + `e536dd9`);

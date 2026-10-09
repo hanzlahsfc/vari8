@@ -218,6 +218,17 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
     SUPPORT: ["denied", "denied"],
     CLIENT: ["denied", "denied"],
   },
+  // P-023 (decisions #82–#85): client-owned onboarding submissions —
+  // ACTIVE CLIENT own read/write; every staff role, SUPPORT, and
+  // PLATFORM_ADMIN denied outright.
+  onboardingSubmissions: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["denied", "denied"],
+    COACH: ["denied", "denied"],
+    ASSISTANT_COACH: ["denied", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "own"],
+  },
 };
 
 const PRINCIPAL_ROLES: PrincipalRole[] = [
@@ -231,7 +242,7 @@ const PRINCIPAL_ROLES: PrincipalRole[] = [
 
 describe("RBAC matrix", () => {
   it("covers every resource × principal role × action", () => {
-    expect(RESOURCES).toHaveLength(24);
+    expect(RESOURCES).toHaveLength(25);
     for (const resource of RESOURCES) {
       for (const role of PRINCIPAL_ROLES) {
         const cell = RBAC_MATRIX[resource]?.[role];

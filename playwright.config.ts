@@ -43,6 +43,9 @@ export default defineConfig({
         // ENABLE_DAILY_PROTOTYPE also on, the resolver is "conflict", so the
         // shell stays up while persistence affordances are unavailable.
         ENABLE_DAILY_ENTRY: "1",
+        // P-023: client onboarding submission flag on the primary test
+        // server only — the synthetic submit/answer flow runs here.
+        ENABLE_ONBOARDING_SUBMISSION: "1",
         // Deterministic test-only secret (NOT a real credential). CI/local may
         // override AUTH_SECRET; the fallback keeps the suite self-contained.
         AUTH_SECRET:
@@ -84,6 +87,9 @@ export default defineConfig({
         // ENABLE_DAILY_ENTRY=1 cannot leak into the proof server — the
         // workspace Daily shell stays fully available with persistence off.
         ENABLE_DAILY_ENTRY: "",
+        // P-023 flag-off: explicitly empty so an inherited
+        // ENABLE_ONBOARDING_SUBMISSION=1 cannot leak into the proof server.
+        ENABLE_ONBOARDING_SUBMISSION: "",
         AUTH_SECRET:
           process.env.AUTH_SECRET ?? "test-only-auth-secret-not-for-production",
         DATABASE_URL:
@@ -118,6 +124,9 @@ export default defineConfig({
         // P-020B flag-off: explicitly empty so an inherited
         // ENABLE_CLIENT_SETUP_TRANSITIONS=1 cannot leak into the proof server.
         ENABLE_CLIENT_SETUP_TRANSITIONS: "",
+        // P-023 flag-off: explicitly empty so an inherited
+        // ENABLE_ONBOARDING_SUBMISSION=1 cannot leak into the proof server.
+        ENABLE_ONBOARDING_SUBMISSION: "",
         AUTH_SECRET:
           process.env.AUTH_SECRET ?? "test-only-auth-secret-not-for-production",
         DATABASE_URL:
