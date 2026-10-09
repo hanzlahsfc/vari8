@@ -408,8 +408,13 @@ explicit order):
    field-catalog decision (still pending). Update (P-012 closure,
    product-decisions #30–#40): the identity/entry path is APPROVED; assignment
    authority, lifecycle, cardinality, and pinning are APPROVED for a
-   staff-only slice; answer storage itself remains BLOCKED on the pending
-   consent and retention gates.
+   staff-only slice. **Update (P-023 closure, product-decisions #82–#85):**
+   a dev-gated client submission slice is APPROVED in product terms —
+   synthetic-only, default-off, production fail-closed, no resubmission in
+   v1 — but real-answer collection remains BLOCKED on the pending consent
+   (#38) and retention (#39/D-10) gates, and implementation itself is not
+   yet begun (it requires a separate implementation prompt after the
+   decision record merges).
 4. **Retries/concurrency** — idempotent on `submissionId`/attempt keys: a
    retried POST returns the same submission; duplicate invites for the same
    (workspaceId, email) reuse the open invitation rather than stacking.
@@ -421,7 +426,10 @@ explicit order):
    its preserved history rather than minting a duplicate client.
 6. **Resubmission** — a corrected/refreshed intake creates a new immutable
    revision linked to the same submission chain; the original is never
-   overwritten.
+   overwritten. **Update (product-decisions #82):** v1 ships **no**
+   resubmission — COMPLETED is terminal and a future re-intake workflow
+   needs its own approved decision; this source-described revision model
+   remains deferred.
 
 Current staff routes are **not** client self-service: `/workspace/[id]/daily`,
 `/nutrition`, `/exercises` are staff-only surfaces. Client surfaces are new work
@@ -619,6 +627,13 @@ client existing — it cannot trail the persistence slices:
    idempotent submission, durable IDs per §4. Acceptance: retry → one
    ClientProfile + one submission revision; re-invite links existing identity
    (PD#21); E2E at 1440/834/390.
+   **Update (P-023, product-decisions #82–#85):** the form builder (P-008)
+   and staff assignment layer (P-013) are merged; the client submission
+   slice is independently reviewed PASS and owner-approved for
+   **synthetic-only, default-off, production-fail-closed** development —
+   no resubmission in v1, no staff answer-review surface, no drafts.
+   Real-answer collection stays blocked on #38/#39/D-10; implementation
+   requires a separate authorized prompt.
 2. _Parameter library + template draft/publish skeleton_ — config tables,
    authorized staff-created definitions (owner + coach per #41–#42), publish
    immutability + snapshots. No source-derived seed ships in this slice

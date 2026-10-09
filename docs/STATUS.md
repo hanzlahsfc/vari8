@@ -5,6 +5,25 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-09 — P-023 onboarding-submission decisions recorded (#82–#85)
+
+- Planning chain P-023 → R1 (CONDITIONAL PASS, 2×P1/4×P2/4×P3) → R2 →
+  R2-R1 (CONDITIONAL PASS, 6 bounded corrections) → R3 → R3-R1
+  (**PASS**, no P0/P1/P2) by `opencode-go/deepseek-v4.1-flash`; full
+  record: `docs/tasks/p023-client-onboarding-submission.md`.
+- Owner approved the four-question package, recorded as product-decisions
+  **#82–#85**: no v1 resubmission (COMPLETED terminal); dev/test-only
+  `BASE_CONSENTS` mapping with production consent unconfigured and
+  fail-closed; synthetic-only/default-off implementation boundary; and
+  fail-closed detail reads after consent withdrawal (bounded operational
+  list metadata may remain).
+- Blueprint updated: roadmap slice 1 status + §4 intake/resubmission notes
+  now reflect #82–#85; #38/#39/D-10 remain unresolved; production stays
+  fail-closed.
+- **Implementation has not begun** — no PR, merge, deployment,
+  production enablement, or real-client collection. Next gate:
+  different-model review of this docs head before PR creation.
+
 ## 2026-10-09 — P-022-I1-R2-R1 PASS + R3 docs correction
 
 - Final independent review by `opencode-go/deepseek-v4.1-flash` on
