@@ -21,6 +21,8 @@ const CP_EMPTY = "p022_e2e_empty_profile";
 const CP_NOCONSENT = "p022_e2e_noconsent_profile";
 const PARAM_W = "p022_e2e_pd_w";
 const PARAM_M = "p022_e2e_pd_m";
+const PARAM_T = "p022_e2e_pd_t";
+const SENTINEL_TEXT = "p022sentinel-text-7f3a9c";
 const TEMPLATE_ID = "p022_e2e_template";
 
 let prisma: PrismaClient;
@@ -57,6 +59,18 @@ function versionDef() {
       dataClassification: "GENERAL_HEALTH",
       revision: 1,
     },
+    [PARAM_T]: {
+      key: "p_t",
+      kind: "TEXT",
+      label: "Sentinel note",
+      unit: null,
+      ratingScheme: null,
+      options: [],
+      validation: null,
+      group: null,
+      dataClassification: "GENERAL_HEALTH",
+      revision: 1,
+    },
   };
   return {
     title: "T",
@@ -79,6 +93,13 @@ function versionDef() {
             parameterKey: "p_m",
             required: false,
             order: 1,
+          },
+          {
+            itemId: "itm_t",
+            parameterId: PARAM_T,
+            parameterKey: "p_t",
+            required: false,
+            order: 2,
           },
         ],
       },
@@ -131,6 +152,15 @@ async function seedEntry(
       parameterId: PARAM_M,
       kind: "RATING",
       valueRating: 7,
+    },
+  });
+  await prisma.dailyEntryRevisionValue.create({
+    data: {
+      revisionId: rev.id,
+      workspaceId: wsId,
+      parameterId: PARAM_T,
+      kind: "TEXT",
+      valueText: SENTINEL_TEXT,
     },
   });
   await prisma.dailyEntry.update({
@@ -296,12 +326,13 @@ test.beforeAll(async () => {
     .deleteMany({ where: { id: TEMPLATE_ID } })
     .catch(() => {});
   await prisma.parameterDefinition
-    .deleteMany({ where: { id: { in: [PARAM_W, PARAM_M] } } })
+    .deleteMany({ where: { id: { in: [PARAM_W, PARAM_M, PARAM_T] } } })
     .catch(() => {});
 
   for (const [id, kind, extra] of [
     [PARAM_W, "MEASUREMENT", { unit: "kg", validation: { min: 0, max: 500 } }],
     [PARAM_M, "RATING", { ratingScheme: "SCALE_1_10" }],
+    [PARAM_T, "TEXT", {}],
   ] as const) {
     await prisma.parameterDefinition.create({
       data: {
@@ -361,7 +392,7 @@ test.afterAll(async () => {
     .deleteMany({ where: { id: TEMPLATE_ID } })
     .catch(() => {});
   await prisma.parameterDefinition
-    .deleteMany({ where: { id: { in: [PARAM_W, PARAM_M] } } })
+    .deleteMany({ where: { id: { in: [PARAM_W, PARAM_M, PARAM_T] } } })
     .catch(() => {});
   const u = await prisma.user.findUnique({ where: { email: CLIENT_EMAIL } });
   if (u) {
@@ -447,14 +478,28 @@ test.describe("P-022 staff DailyEntry review", () => {
     await signIn(page, E2E.assistant);
     await page.goto(dailyUrl(CP_ID));
     const before = await readAuditCount();
-    const btn = page
-      .getByTestId("staff-daily-entry-row")
-      .filter({ hasText: "2026-10-01" })
-      .getByRole("button", { name: "View details" });
-    await btn.click();
-    await expect(page.getByTestId("staff-daily-detail")).toBeVisible();
-    await btn.click();
-    await expect(page.getByTestId("staff-daily-detail")).toBeVisible();
+    const rowBtn = (date: string) =>
+      page
+        .getByTestId("staff-daily-entry-row")
+        .filter({ hasText: date })
+        .getByRole("button", { name: "View details" });
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.request().method() === "POST" && r.url().includes("/daily"),
+      ),
+      rowBtn("2026-10-01").click(),
+    ]);
+    const detail = page.getByTestId("staff-daily-detail");
+    await expect(detail).toBeVisible();
+    // Second explicit action on a different row — the detail must switch,
+    // proving the second POST committed, and a second audit must exist.
+    await Promise.all([
+      page.waitForResponse(
+        (r) => r.request().method() === "POST" && r.url().includes("/daily"),
+      ),
+      rowBtn("2026-10-03").click(),
+    ]);
+    await expect(detail).toContainText("2026-10-03");
     expect(await readAuditCount()).toBe(before + 2);
   });
 
@@ -462,6 +507,7 @@ test.describe("P-022 staff DailyEntry review", () => {
     await signIn(page, E2E.owner);
     const res = await page.goto(dailyUrl(CP_EMPTY));
     expect(res?.status()).toBe(200);
+    expect(res?.headers()["cache-control"] ?? "").toContain("no-store");
     await expect(page.getByTestId("staff-daily-empty")).toBeVisible();
     await expect(page.getByTestId("staff-daily-entry-row")).toHaveCount(0);
   });
@@ -472,6 +518,7 @@ test.describe("P-022 staff DailyEntry review", () => {
     await signIn(page, E2E.owner);
     const res = await page.goto(dailyUrl(CP_NOCONSENT));
     expect(res?.status()).toBe(200);
+    expect(res?.headers()["cache-control"] ?? "").toContain("no-store");
     await expect(page.getByTestId("staff-daily-consent")).toBeVisible();
     await expect(page.getByTestId("staff-daily-entry-row")).toHaveCount(0);
   });
@@ -509,8 +556,13 @@ test.describe("P-022 staff DailyEntry review", () => {
     const before = await readAuditCount();
     await page.goto(dailyUrl(CP_ID));
     await page.reload();
+    // Back/forward each produce a fresh GET of the route — settle each one
+    // before the next history op to avoid protocol-level races.
     await page.goBack();
+    await page.waitForLoadState("domcontentloaded");
     await page.goForward();
+    await page.waitForLoadState("domcontentloaded");
+    await expect(page).toHaveURL(new RegExp(`/clients/${CP_ID}/daily`));
     await page.goto(`${dailyUrl(CP_ID)}?c=2026-10-02`);
     expect(await readAuditCount()).toBe(before);
   });
@@ -539,20 +591,28 @@ test.describe("P-022 staff DailyEntry review", () => {
     const post = cacheHeaders.find((r) => r.method === "POST");
     expect(get?.cc).toContain("no-store");
     expect(post?.cc).toContain("no-store");
-    // Sibling roster route must NOT carry the header.
+    // Sibling roster route must not carry the route-scoped header value —
+    // it may emit Next's own dynamic-page default, but never the literal
+    // "no-store" my headers() rule adds.
     const rosterRes = await page.goto(`${BASE}/workspace/${wsId}/clients`);
-    expect(rosterRes?.headers()["cache-control"] ?? "").not.toContain(
+    expect((await rosterRes?.allHeaders())?.["cache-control"] ?? "").not.toBe(
       "no-store",
     );
+    const vals = (await rosterRes?.headerValues("cache-control")) ?? [];
+    expect(vals).not.toContain("no-store");
   });
 
   test("denied responses carry no values or identifiers", async ({ page }) => {
     await signIn(page, E2E.support);
     const res = await page.goto(dailyUrl(CP_ID));
     expect(res?.status()).toBe(403);
-    const body = await res?.text();
-    expect(body ?? "").not.toContain("77");
-    expect(body ?? "").not.toContain("2026-10-0");
+    const body = (await res?.text()) ?? "";
+    // Distinctive sentinels: the seeded free-text value, the parameter
+    // label, and the declared date — none may appear in a denied response.
+    // ("Weight" alone collides with the error pages' `fontWeight` CSS.)
+    expect(body).not.toContain(SENTINEL_TEXT);
+    expect(body).not.toContain("Sentinel note");
+    expect(body).not.toContain("2026-10-03");
   });
 
   test("flag off (:3101) renders a non-disclosing unavailable state", async ({
@@ -563,6 +623,7 @@ test.describe("P-022 staff DailyEntry review", () => {
       `${OFF}/workspace/${wsId}/clients/${CP_ID}/daily`,
     );
     expect(res?.status()).toBe(200);
+    expect(res?.headers()["cache-control"] ?? "").toContain("no-store");
     await expect(page.getByTestId("staff-daily-unavailable")).toBeVisible();
     await expect(page.getByText("77")).toHaveCount(0);
     await expect(page.getByText("2026-10-03")).toHaveCount(0);
@@ -581,10 +642,31 @@ test.describe("P-022 staff DailyEntry review", () => {
   }) => {
     await signIn(page, E2E.owner);
     await page.goto(dailyUrl(CP_ID));
-    const buttons = page.getByRole("button", { name: "View details" });
-    await buttons.first().click();
-    // While pending, every View details control is disabled.
-    await expect(buttons.first()).toBeDisabled();
+    // Hold the action POST at the network layer so the disabled state can
+    // never race a fast server (repo convention: onboarding-forms.spec.ts).
+    let release!: () => void;
+    const hold = new Promise<void>((r) => (release = r));
+    await page.route(`**/clients/*/daily`, async (route) => {
+      if (route.request().method() === "POST") await hold;
+      await route.continue();
+    });
+    // Locate by testid: while pending the accessible name becomes
+    // "Loading…", so a name-based locator would stop matching.
+    const buttons = page.getByTestId("staff-daily-view-details");
+    const count = await buttons.count();
+    try {
+      await buttons.first().click();
+      // While pending, every View details control is disabled.
+      for (let i = 0; i < count; i++)
+        await expect(buttons.nth(i)).toBeDisabled();
+      // A second submit attempt must not produce another POST.
+      await buttons
+        .last()
+        .click({ timeout: 1_000 })
+        .catch(() => {});
+    } finally {
+      release();
+    }
     await expect(page.getByTestId("staff-daily-detail")).toBeVisible();
     await expect(buttons.first()).toBeEnabled();
   });
@@ -605,7 +687,7 @@ test.describe("P-022 staff DailyEntry review", () => {
     expect(focused).toBe(true);
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("staff-daily-detail")).toBeVisible();
-    await expect(page.getByTestId("staff-daily-detail")).toHaveAttribute(
+    await expect(page.getByTestId("staff-daily-detail-region")).toHaveAttribute(
       "aria-live",
       "polite",
     );

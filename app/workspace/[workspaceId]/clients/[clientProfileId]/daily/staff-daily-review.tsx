@@ -82,6 +82,7 @@ export function StaffDailyReview({
                     type="submit"
                     className="catalog-search__submit"
                     disabled={pending}
+                    data-testid="staff-daily-view-details"
                   >
                     {pending ? "Loading…" : "View details"}
                   </button>
@@ -106,28 +107,32 @@ export function StaffDailyReview({
         </p>
       ) : null}
 
-      {state.status === "ok" ? (
-        <section
-          className="daily-entry__history"
-          data-testid="staff-daily-detail"
-          aria-live="polite"
-          aria-busy={pending}
-          aria-label={`Entry details for ${state.entryDate}`}
-        >
-          <h3 className="assignment-manager__subtitle">
-            {state.entryDate} — revision {state.revisionSeq} of{" "}
-            {state.revisionCount}
-          </h3>
-          <ul>
-            {state.values.map((v) => (
-              <li key={v.parameterKey}>
-                <strong>{v.label}</strong>
-                {v.unit ? ` (${v.unit})` : ""}: {v.display}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      {/* Always-mounted polite live region so the selected detail — and its
+          replacement/clear — is announced rather than only the first mount. */}
+      <section
+        className="daily-entry__history"
+        aria-live="polite"
+        aria-busy={pending}
+        aria-label="Selected entry details"
+        data-testid="staff-daily-detail-region"
+      >
+        {state.status === "ok" ? (
+          <div data-testid="staff-daily-detail">
+            <h3 className="assignment-manager__subtitle">
+              {state.entryDate} — revision {state.revisionSeq} of{" "}
+              {state.revisionCount}
+            </h3>
+            <ul>
+              {state.values.map((v, i) => (
+                <li key={`${v.parameterKey}-${i}`}>
+                  <strong>{v.label}</strong>
+                  {v.unit ? ` (${v.unit})` : ""}: {v.display}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </section>
     </section>
   );
 }

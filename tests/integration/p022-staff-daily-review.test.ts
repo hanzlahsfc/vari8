@@ -41,6 +41,12 @@ describe.skipIf(!enabled)("P-022 staff DailyEntry review (real PG)", () => {
       env: { ...process.env, DATABASE_URL: url as string },
     });
     prisma = new PrismaClient({ datasources: { db: { url: url as string } } });
+    // Defensive cleanup — a crashed prior run could leave the forced-failure
+    // trigger behind and poison every audit insert.
+    await prisma.$executeRawUnsafe(
+      `DROP TRIGGER IF EXISTS p022_audit_fail_t ON "audit_event"`,
+    );
+    await prisma.$executeRawUnsafe(`DROP FUNCTION IF EXISTS p022_audit_fail()`);
     await prisma.$executeRawUnsafe(
       'TRUNCATE "daily_entry_revision_value","daily_entry_revision","daily_entry","audit_event","client_setup_pin","client_setup","consent_record","coaching_template_version_parameter","coaching_template_version","coaching_template","parameter_definition","client_assignment","client_profile","workspace_member","workspace","users" RESTART IDENTITY CASCADE',
     );
@@ -782,10 +788,12 @@ describe.skipIf(!enabled)("P-022 staff DailyEntry review (real PG)", () => {
       expect(audit.meta).toEqual({ changed: false });
       expect(audit.actorRole).toBe("COACH");
       expect(audit.workspaceId).toBe(c.ws.id);
-      // No date/value/label material in the audit row.
+      // No value/label/free-text material in the audit row (distinctive
+      // sentinels — bare digits could collide with ids/timestamps).
       const raw = JSON.stringify(audit);
-      expect(raw).not.toContain("2026-10-01");
-      expect(raw).not.toContain("75");
+      expect(raw).not.toContain("note-75");
+      expect(raw).not.toContain("Label");
+      expect(raw).not.toContain("opt_");
     });
 
     it("a second committed read writes a second audit (at-least-once)", async () => {

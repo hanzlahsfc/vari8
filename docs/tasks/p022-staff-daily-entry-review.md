@@ -164,7 +164,7 @@ Exact paths:
   `(workspaceId, clientProfileId, entryDate)` → pointer coherence →
   revision's own `templateVersionId` snapshot render (GENERAL_HEALTH
   eligible only) → `writeAuditEvent` `{READ, daily_entry, entry.id,
-  subjectClientProfileId, {changed:false}}` last → commit → sanitized
+subjectClientProfileId, {changed:false}}` last → commit → sanitized
   detail). Bounded fresh-transaction retry via the existing
   `withSerializedRetry`.
 - `app/workspace/[workspaceId]/clients/[clientProfileId]/daily/page.tsx`
