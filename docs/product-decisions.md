@@ -781,3 +781,116 @@ ordering; zero values and zero audit when the mutation wins; atomic
 detail+audit when the read wins; audit-write failure rolls back; no
 deadlock; zero audits from GET/prefetch/rerender; a second committed POST
 produces a second audit (at-least-once, honestly asserted).
+
+## P-023 client onboarding submission — owner approval (relayed 2026-10-09)
+
+The product owner approved the four-question P-023 package for a
+dev-gated client onboarding intake submission surface, after the
+P-023 → R1 → R2 → R2-R1 → R3 → R3-R1 plan/review chain (final
+independent review P-023-R3-R1 **PASS** by `opencode-go/deepseek-v4.1-flash`,
+no P0/P1/P2). Full record:
+`docs/tasks/p023-client-onboarding-submission.md`. These record product
+rules and an authorization boundary only — they authorize **no**
+implementation by themselves; implementation additionally requires the
+normal protected-branch process and a separate implementation prompt.
+
+82. **V1 resubmission lifecycle.** A client may submit an onboarding
+    assignment only once in v1. Successful submission transitions the
+    assignment from ACTIVE to terminal COMPLETED (#33). COMPLETED
+    assignments cannot be reopened, reactivated, edited, resubmitted, or
+    reused, and there is no same-chain submission-revision model in v1.
+    Any future re-intake or correction workflow requires a separately
+    approved product, consent, retention, and data-history decision. This
+    decision intentionally does not resolve the broader #33/#36 tension
+    beyond the bounded v1 rule.
+
+83. **Temporary consent mapping (development only).** `BASE_CONSENTS`
+    (PRIVACY_NOTICE + HEALTH_DATA) may be mapped to onboarding
+    submissions only for synthetic development and automated-test data.
+    This is a temporary technical mapping — not a claim that all
+    onboarding answers are health data and not an approved production
+    classification. The production consent registry for onboarding
+    submissions remains unconfigured, so production fails closed until a
+    field-level or form-level consent classification is explicitly
+    approved. Decision #38 and retention/erasure items (#39, D-10)
+    remain unresolved.
+
+84. **Implementation authorization boundary.** P-023 implementation is
+    authorized only under all of: synthetic data only; development and
+    automated-test environments only; a dedicated feature gate; gate
+    default-off; production fail-closed; no deployment; no production
+    flag enablement; no real-client intake or submission collection; no
+    real-client data; no staff answer-review surface; no resubmission; no
+    drafts or autosave; no C3/C4 implementation; no cycle/MENSES data; no
+    CALORIES input; no expansion into unrelated features. This
+    authorization becomes actionable only after this decision record is
+    independently reviewed and merged through the protected-branch
+    process and a separate implementation prompt is issued.
+
+85. **Reads after consent withdrawal.** After applicable consent is
+    withdrawn: all new submission writes fail closed; detailed
+    submission-answer reads fail closed, including the client's own
+    detail view; staff detail access likewise remains unavailable.
+    Bounded operational list metadata may remain visible where already
+    authorized — limited to information such as the existence of the
+    submission, assignment/form identity, status, and submission date —
+    and must not contain answer content or reveal superseded values.
+    Restoration or renewed-consent behavior remains deferred and requires
+    a separate decision.
+
+### P-023 binding engineering contract (not owner choices)
+
+The independently reviewed plan fixes these engineering requirements for
+the future implementation; they constrain the build, they are not
+additional owner decisions:
+
+- Answer payload is an ordered JSON **array** of `{fieldId, value}`
+  records (max length 100 = `FORM_LIMITS.maxFields`); every entry is a
+  plain object with exactly `fieldId` + `value`; duplicate `fieldId`s are
+  rejected **before** canonicalization; unknown keys, sparse/malformed
+  entries, and unsupported value shapes are rejected.
+- v1 has no submission-revision table, revision pointer, or revision
+  count — one immutable `OnboardingSubmission` plus revision-free
+  `OnboardingSubmissionAnswer` rows per assignment.
+- The existing `OnboardingForm @@unique([id, workspaceId])` is preserved
+  (verified present on exact `origin/main` — an earlier review claim that
+  it was missing was itself corrected).
+- Implementation adds one wide unique to `OnboardingFormAssignment`:
+  `@@unique([id, workspaceId, clientProfileId, formId, formVersionId])`,
+  backing a single composite submission FK that enforces
+  assignment/workspace/client/form/pinned-version coherence at the
+  database level; remaining FK targets (`ClientProfile(id,workspaceId)`,
+  `OnboardingFormVersion(id,formId)`, `WorkspaceMember(id,workspaceId)`)
+  already exist.
+- Transaction order (Serializable, bounded fresh-transaction retry):
+  resolve the caller's own `ClientProfile` from `(workspaceId,
+actorUserId)` server-side → scoped assignment pre-read (own profile +
+  workspace + id; foreign/missing fail non-disclosingly before any
+  advisory) → `onbassign` advisory → `member` advisory →
+  `workspace_member` `FOR UPDATE` re-derive ACTIVE+CLIENT →
+  `authorize(..., createPrismaAuthorizationRepo(tx))` requiring `own` →
+  existing-submission lookup by `assignmentId` **before** ACTIVE-state
+  enforcement → assignment `FOR UPDATE` full revalidation →
+  `ClientProfile` `FOR UPDATE` → consent rows `FOR UPDATE` in kind order
+  → pinned-version definition read → validate → insert submission +
+  answers → assignment → `COMPLETED` with `endedByMemberId`/`endedAt`
+  provenance → structural `CREATE onboarding_submission` audit last →
+  commit; values are served only after commit.
+- Replay: any structurally valid replay returns `already_submitted` plus
+  the original committed submission — no second write, no second audit;
+  malformed/oversized replay fails validation before the shortcut; the
+  guarantee is at-most-one durable submission, not cryptographic
+  exactly-once.
+- Bounds: reuse `FORM_LIMITS` and `ASSIGNMENT_LIMITS.idMax = 128`; the
+  R3-labeled engineering safety bounds (text char/byte caps, decimal
+  grammar, date range, choice counts, `answersJson` ≤ 64 KiB, zero answer
+  content in errors/logs/audit) are binding.
+- `beforeunload` registers only while the form is dirty and is removed
+  after a committed submit and on unmount; the irreversible-submit
+  confirmation and #35 submit-only disclosure are required.
+- The implementation record must state which typed-value cardinality
+  rules are database CHECKs versus service checks (R3-R1 P3 note).
+- Dedicated `(tracker)` client-onboarding layout; `no-store` on GET and
+  the action POST; responsive/a11y verification at 1440px/834px/390px;
+  synthetic fixtures only; production fail-closed; important assertions
+  require mutation evidence per the conductor skill.
