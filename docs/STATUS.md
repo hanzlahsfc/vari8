@@ -5,6 +5,35 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-10 — P-024 staff onboarding-review decisions recorded (docs only)
+
+- P-024 plan/review chain complete: R1 plan → independent R1 **FAIL**
+  (P1-1 fabricated-#37 dual-role citation, P1-2 wrong advisory key +
+  unspecified pre-read, P2-1 missing Prisma backfields, P2-2 raw-SQL-only
+  wide unique, P2-3 missing workspace/assigned branch) → corrected R2
+  plan (`P-024-R2-staff-onboarding-review-plan.md`,
+  `7abad9b84557acf9512327da3166b0b3534b7d8a80076bea19ae2a0e792d7202`) →
+  independent R2-R1 **PASS** by `opencode-go/deepseek-v4.1-flash`
+  (`P-024-R2-R1-independent-review.md`, `ac03d41b5f969d81c03b81ab05414bec3c42b2be6f9f362c601989c6758bf0be`), no P0/P1/P2.
+- Owner approved the six-question package (2026-10-10): **#86** one
+  workspace-wide terminal review; **#87** review is terminal/immutable;
+  **#88** informational only (no downstream gating); **#89** one
+  structural READ audit per committed explicit detail action, zero on
+  GETs; **#90** UI gates "Mark reviewed" behind a successful detail view
+  (server re-authorizes independently); **#91** reviewer identity is
+  bounded staff-only workflow metadata.
+- Settled #37 matrix recorded: owner ws-read/no-mark (no
+  `ClientAssignment`), coach asg read+mark, assistant asg read, client/
+  SUPPORT/PLATFORM_ADMIN denied — dual-role-inclusive via
+  `PLATFORM_ADMIN_DENIED_RESOURCES`.
+- Documentation only on `docs/p024-staff-onboarding-review-decisions`:
+  `docs/product-decisions.md` (#86–#91 + settled matrix + binding
+  contract), `docs/product-alignment-blueprint.md`, this file, and new
+  task record `docs/tasks/p024-staff-onboarding-review.md`. **No
+  implementation authorized** — synthetic-only, default-off, production
+  fail-closed; a separate implementation prompt is required after this
+  record is reviewed and merged.
+
 ## 2026-10-10 — P-023-I1-R2 repairs for independent-review FAIL
 
 - Independent review `opencode-go/deepseek-v4.1-flash` returned **FAIL** on

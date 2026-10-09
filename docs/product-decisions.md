@@ -894,3 +894,130 @@ actorUserId)` server-side → scoped assignment pre-read (own profile +
   the action POST; responsive/a11y verification at 1440px/834px/390px;
   synthetic fixtures only; production fail-closed; important assertions
   require mutation evidence per the conductor skill.
+
+## P-024 staff onboarding-submission review — owner approval (relayed 2026-10-10)
+
+The product owner approved the six-question P-024 package for a
+development-gated staff review surface over submitted onboarding
+responses, after the P-024 → R1 (FAIL, two P1s + three P2s) → R2 →
+P-024-R2-R1 (**PASS**, no P0/P1/P2, reviewer
+`opencode-go/deepseek-v4.1-flash`) plan/review chain. Full record:
+`docs/tasks/p024-staff-onboarding-review.md`. These record product rules
+and an authorization boundary only — they authorize **no** implementation
+by themselves; implementation additionally requires the normal
+protected-branch process and a separate implementation prompt.
+
+86. **One workspace-wide terminal review.** A submitted onboarding
+    response has exactly one workspace-wide review acknowledgement — not
+    a per-coach checklist. The review record belongs to the workspace
+    workflow; a later authorized staff member sees the existing reviewed
+    state rather than creating another acknowledgement. This does not
+    grant every workspace member permission to read the submission.
+87. **Review acknowledgement is terminal.** Once committed, the review
+    acknowledgement cannot be removed, reopened, reassigned, or replaced;
+    it is immutable workflow evidence. There is no review deletion or
+    "mark unreviewed" action in this slice. Correcting or changing
+    submitted client answers remains out of scope.
+88. **Review is informational, not a downstream gate.** The
+    acknowledgement records that an authorized coach reviewed the
+    submitted onboarding details. It does not block or unlock
+    assignments, plans, tracking, check-ins, dashboards, messaging, or
+    any other workflow. Any later downstream gating requires a separate
+    owner decision and implementation task.
+89. **Explicit detail reads receive structural READ audit evidence.** A
+    successfully committed explicit "View details" action creates one
+    structural READ audit record. List GETs, pagination, prefetch,
+    refresh, back/forward navigation, loading, rerendering, and failed or
+    unauthorized requests create zero READ audits. The detail response
+    and audit commit atomically; audit failure returns no answer values.
+    This is at-least-once POST behavior, not an exactly-once network
+    guarantee.
+90. **UI requires successful detail view before "Mark reviewed."** The
+    intended flow requires the coach to open the details successfully
+    before the interface enables "Mark reviewed"; the server still
+    independently re-authorizes the mark action — the UI sequence is a
+    user-experience rule, not a substitute for server authorization. A
+    stale, revoked, withdrawn, foreign, or otherwise unauthorized mark
+    request fails closed. Assistants cannot mark reviewed.
+91. **Reviewer identity is bounded staff workflow metadata.** The
+    reviewer's identity and review timestamp may be shown only to staff
+    currently authorized to access that client's onboarding submission
+    under the approved matrix. They are not public, client-facing, or
+    generally workspace-visible; they must not appear in unauthorized,
+    revoked, foreign-workspace, SUPPORT, PLATFORM_ADMIN, or client
+    responses. The bounded display covers only who reviewed and when —
+    never submission answers or superseded values.
+
+### P-024 settled authorization matrix (decision #37 — not part of the six forks)
+
+WORKSPACE_OWNER reads at workspace scope with no coaching
+`ClientAssignment` requirement and cannot mark reviewed in this slice;
+COACH reads and may mark only when the coherent coaching `ClientAssignment`
+is ACTIVE and all current authorization/consent checks pass;
+ASSISTANT_COACH reads through the same relationship and cannot mark;
+CLIENT is denied the staff-review surface; SUPPORT denied; PLATFORM_ADMIN
+denied **including a dual-role platform administrator holding an ACTIVE
+workspace membership of any role** (`onboardingSubmissionReviews` joins
+`PLATFORM_ADMIN_DENIED_RESOURCES` — a binding engineering requirement
+derived from settled policy, not a seventh decision). Terminal
+coaching-assignment removal or revocation ends coach/assistant access;
+workspace-owner access continues per workspace scope subject to current
+membership, workspace, consent, and feature-mode requirements.
+
+### P-024 binding engineering contract (not owner choices)
+
+The independently reviewed R2 plan fixes these requirements for the
+future implementation; they constrain the build and are not additional
+owner decisions:
+
+- Dedicated staff route `/workspace/[ws]/clients/[cp]/onboarding` +
+  `onboardingSubmissionReviews` resource; `force-dynamic` + route-scoped
+  `Cache-Control: no-store` on GET and both action POSTs.
+- Shared fail-closed resolver — the same flag + trusted dev/test runtime
+  boundary as P-023; production/unclassified resolves unconfigured.
+- Bounded header-only list (zero answer values, zero audits, strict
+  `?c=` cursor); explicit `useActionState` "View details" and "Mark
+  reviewed" POSTs.
+- Answer-free workspace/client-scoped pre-read before any advisory; the
+  advisory key `onbassign:{workspaceId}:{clientProfileId}:{formId}` is
+  derived only from the server-resolved coherent row — never caller-
+  supplied tuple components; foreign/missing/incoherent selections fail
+  non-disclosingly before lock acquisition. `OnboardingFormAssignment`
+  (intake pinning/completion) and `ClientAssignment` (coach↔client
+  authorization) are distinct and never conflated.
+- Explicit workspace vs assigned transaction branches: owner reads with
+  no `ClientAssignment` dependency; assigned scope re-resolves and locks
+  the coherent ACTIVE `ClientAssignment`. Member role, authorization,
+  consent, client, form assignment, submission, and review state are all
+  rebound inside the transaction.
+- Consent checked before any answer query or existing-review return;
+  review never mutates submission or answer rows.
+- `OnboardingSubmissionReview`: terminal immutable record — no answer
+  columns, no unjustified `updatedAt`, `unique(submissionId)` workspace-
+  terminal anchor, all required Prisma backrelations, Prisma-declared
+  composite coherence targets + raw-SQL composite FKs, `ON DELETE
+RESTRICT`.
+- Bounded one-time `P2002` recovery re-enters the full authorization +
+  consent protocol; no outside-transaction shortcut may return reviewed
+  state.
+- Structural audits: `READ onboarding_submission {changed:false}` per
+  committed detail; `CREATE onboarding_submission_review {changed:true}`
+  per committed review; audit last, failure rolls back everything.
+- Reviewer identity/timestamp exposure follows #91; the mark control
+  follows #90 with independent server enforcement; RED-first evidence and
+  mutation checks are required for the future implementation.
+
+### P-024 implementation authorization boundary
+
+Implementation is authorized only under: synthetic data only; development
+and automated-test environments only; the existing default-off feature
+gate; production fail-closed; no deployment; no production flag
+enablement; no real-client data; no answer editing/resubmission; no
+review notes/tasks/notifications/messaging; no check-ins, dashboards,
+meal plans, training, or habits; no downstream workflow gating; no
+C3/C4; no cycle/MENSES; no CALORIES input; no client-facing reviewer
+disclosure; no retention/erasure/export implementation; no D-10
+resolution; no expansion into unrelated features. This authorization
+becomes actionable only after this decision record is independently
+reviewed and merged through the protected-branch process and a separate
+implementation prompt is issued.
