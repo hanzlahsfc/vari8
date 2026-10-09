@@ -5,6 +5,73 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-09 — P-022-I1-R2-R1 PASS + R3 docs correction
+
+- Final independent review by `opencode-go/deepseek-v4.1-flash` on
+  `e4d7f75`: **PASS — no P0/P1/P2; technically PR-ready** (deterministic
+  history-traversal test reproduced green without retries and proven to
+  bite under mutation; production byte-identical to `509e0a6`).
+- Two non-blocking P3 doc inaccuracies corrected in a forward
+  documentation-only commit: the repair delta is `509e0a6..e4d7f75` =
+  3 files/+118/−6 (this record had said `+108/−6`), and `e4d7f75` is
+  now identified as the independently reviewed head (`70b70e7` was the
+  test repair; `e4d7f75` the final repair+docs head).
+- The forward documentation-only correction commit containing this note
+  postdates the PASS and has not been independently reviewed; a
+  lightweight different-model review is required before PR creation.
+  `origin/main` unchanged; no PR, merge, deployment, or flag enablement.
+
+## 2026-10-09 — P-022-I1-R2 E2E determinism repair (post independent review)
+
+- Independent review by `opencode-go/deepseek-v4.1-flash` on `509e0a6`:
+  **CONDITIONAL PASS — no P0/P1; production implementation accepted.**
+  One blocking P2: the E2E test
+  `GET/pagination/refresh/back-forward create zero READ audits` was
+  nondeterministic (`page.goForward()` → `net::ERR_ABORTED`/detached
+  frame; retry gave one flaky pass, not acceptable evidence).
+- Diagnosis reproduced locally: 19/1 focused, deterministic first-attempt
+  failure. Root cause is the Playwright navigation-wait layer awaiting a
+  document `load` the App Router history traversal never emits — a test
+  tooling race, not a product defect. Repaired by driving real
+  `history.back()/forward()` traversals with URL/state assertions; the
+  exact-zero audit assertion and all coverage are unchanged.
+- Verified: individual test 3/3, focused spec 20/20 ×3 consecutive, full
+  E2E 268/268 (12 skip, 0 flaky) — all without retries; mechanism gates
+  all 0. Evidence corrections recorded in
+  `docs/tasks/p022-staff-daily-entry-review.md` (real diff
+  `origin/main...509e0a6` = 11 files/+2879/−39, not the 10/+2719 the
+  builder reported; tracker citation updated to the current
+  orchestrator-owned version).
+- Repair commit `70b70e7` (test + docs only; production code
+  byte-identical to `509e0a6`). Head still awaits independent
+  different-model re-review before any PR. `origin/main` unchanged; no
+  PR, merge, deployment, or flag enablement.
+
+## 2026-10-09 — P-022-I1 staff DailyEntry review implemented (feature branch, no PR)
+
+- Implemented the merged decisions #79–#81 + P-022-R4 contract on
+  `feature/p022-staff-daily-entry-review` from exact `ea81502` — read-only
+  staff review of client DailyEntries under the dev gate: roster link,
+  `/workspace/[workspaceId]/clients/[clientProfileId]/daily` route
+  (`force-dynamic`, route-scoped `no-store` incl. action POST), bounded
+  newest-first header list (dates/revision counts/latest-revision marker,
+  no values, zero audits), and explicit `useActionState` "View details"
+  POST running the full lock-and-revalidate Serializable transaction with
+  one structural `READ` audit per committed action (`{changed:false}`).
+- Tests first: unit 3/3 and integration 32/32 verified RED before
+  implementation, GREEN after. Gates on final tree: diff-check/prettier/
+  tsc/eslint/prisma generate+validate 0; fresh `migrate deploy` on
+  disposable `p022_migrate_deploy_1` ok; unit 977/977; integration
+  490/490 on `p022_staff_review_1`; `next build` 0; focused E2E 20/20;
+  full E2E 268/268 (12 skip).
+- Failures repaired honestly: 4 initial E2E spec defects (weak sentinel
+  collisions, sibling-route no-store default, pending race, same-row
+  click timing), 1 integration over-assertion, 1 transient goForward
+  flake — see `docs/tasks/p022-staff-daily-entry-review.md`.
+- Forward commits `e9a8a17`, `ae1707c`, `188f610`; pushed branch only —
+  `origin/main` unchanged, **no PR, no merge, no deployment, no
+  production flag**. Head awaits independent different-model review.
+
 ## 2026-10-09 — P-022 staff DailyEntry review: decisions recorded (docs only)
 
 - P-021 merged via PR #23 at `eea87ae6d3e420a89a9af378fab448b296022084`;
