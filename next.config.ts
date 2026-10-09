@@ -39,7 +39,11 @@ const nextConfig: NextConfig = {
         headers: [{ key: "Cache-Control", value: "no-store" }],
       },
       {
-        source: "/workspace/:workspaceId/onboarding/:assignmentId",
+        // Excludes the staff "assignments"/"forms" leaves so their header
+        // behavior stays exactly as before; real assignment IDs never
+        // collide with those reserved segments.
+        source:
+          "/workspace/:workspaceId/onboarding/:assignmentId((?!assignments|forms)[^/]+)",
         headers: [{ key: "Cache-Control", value: "no-store" }],
       },
     ];
