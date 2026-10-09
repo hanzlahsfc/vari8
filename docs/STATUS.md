@@ -5,6 +5,44 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-10 — P-023-I1-R2 repairs for independent-review FAIL
+
+- Independent review `opencode-go/deepseek-v4.1-flash` returned **FAIL** on
+  head `30f8f84`: P1-A (dev consent registry selected by flag alone — no
+  trusted environment boundary), P1-C (P2002 fallback replayed
+  `already_submitted` via an outside-transaction lookup with no fresh
+  authorization/consent), P2-B (answer rows materialized before consent),
+  P2-L (initial implementation materially preceded tests — process
+  deviation).
+- Repairs, all RED-first: (A) new shared server-only resolver
+  `lib/onboarding/submission-consent.ts` — synthetic `BASE_CONSENTS`
+  activates only when the flag is exactly `1` AND the runtime classifies
+  as trusted `development`/`test` (explicit `APP_ENV` allowlist, else
+  baked `NODE_ENV`; everything else production-safe unconfigured). The
+  flag-derived selector and both hardcoded route call sites are gone;
+  the boundary default consumes the shared resolver.
+  (C) P2002 now re-enters the SAME Serializable protocol exactly once —
+  fresh member lock, in-tx authorize, current consent, scoped owned
+  lookup — never an outside-transaction shortcut; a second conflict
+  exhausts to `serialization_conflict`. `already_submitted` also requires
+  current consent in the in-tx replay branch.
+  (B) `loadOwnOnboardingDetail` staged: assignment header (no answers) →
+  authorization + consent → only then a dedicated answer query.
+- New evidence: unit 26/26 (+5 resolver-matrix tests); integration
+  31/31 on disposable `app_integration_p023_r2` — forced-P2002
+  suspend/remove/withdraw fail closed, persistent-conflict exhaustion,
+  zero-answer-query-after-withdrawal proven via query interception.
+  Mutations R2A/R2B/R2C1/R2C2 all bit their targeted tests, all reverted.
+- **Process deviation (P2-L), recorded honestly:** the initial P-023-I1
+  schema/core-service implementation materially preceded the first
+  tests; no owner/orchestrator exception has been granted. These R2
+  repairs were done strictly RED-first with preserved failing evidence.
+  Technical PASS and process acceptance are separate gates — even a
+  technical PASS cannot proceed to PR without the owner's explicit
+  decision on the bounded initial test-first exception.
+- **Held:** no PR, not deployed, flag never enabled in production.
+  Next gate: fresh different-model review of the repaired head.
+
 ## 2026-10-09 — P-023-I1 implementation (in progress)
 
 - Authorized dev-gated client onboarding submission slice implemented on

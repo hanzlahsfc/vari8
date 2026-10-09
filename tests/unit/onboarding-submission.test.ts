@@ -14,6 +14,11 @@ import {
   SUBMISSION_LIMITS,
 } from "../../lib/onboarding/submission-gate";
 import {
+  classifySubmissionRuntime,
+  resolveOnboardingSubmissionConsentPolicy,
+} from "../../lib/onboarding/submission-consent";
+import { unconfiguredConsentPolicy } from "../../lib/consent";
+import {
   canonicalizeAnswers,
   parseAnswersJson,
 } from "../../lib/onboarding/submissions";
@@ -103,6 +108,80 @@ describe("P-023 gate", () => {
     expect(isOnboardingSubmissionEnabled("1")).toBe(true);
     for (const v of [undefined, "", "0", "true", " 1", "1 ", "01"])
       expect(isOnboardingSubmissionEnabled(v)).toBe(false);
+  });
+});
+
+describe("P-023-I1-R2 trusted consent-policy resolver (Repair A)", () => {
+  const ON = { ENABLE_ONBOARDING_SUBMISSION: "1" };
+  const OFF = { ENABLE_ONBOARDING_SUBMISSION: "0" };
+
+  it("classifies only an explicit allowlist or trusted NODE_ENV", () => {
+    expect(classifySubmissionRuntime({ APP_ENV: "test" })).toBe("test");
+    expect(classifySubmissionRuntime({ APP_ENV: "development" })).toBe(
+      "development",
+    );
+    // Unknown/explicit-production values are never trusted.
+    for (const v of ["production", "staging", "preview", "", "TEST", "dev"])
+      expect(classifySubmissionRuntime({ APP_ENV: v })).toBe("production");
+    // Unset APP_ENV falls back to the baked NODE_ENV signal only.
+    expect(classifySubmissionRuntime({ NODE_ENV: "test" })).toBe("test");
+    expect(classifySubmissionRuntime({ NODE_ENV: "development" })).toBe(
+      "development",
+    );
+    expect(classifySubmissionRuntime({ NODE_ENV: "production" })).toBe(
+      "production",
+    );
+    expect(classifySubmissionRuntime({})).toBe("production");
+  });
+
+  it("flag off → unconfigured in every environment", () => {
+    for (const appEnv of ["test", "development", "production", undefined])
+      expect(
+        resolveOnboardingSubmissionConsentPolicy({
+          ...OFF,
+          APP_ENV: appEnv,
+        }).currentVersion("PRIVACY_NOTICE"),
+      ).toBeNull();
+  });
+
+  it("flag on + production remains unconfigured (fail closed)", () => {
+    for (const env of [
+      { ...ON, APP_ENV: "production" },
+      { ...ON, APP_ENV: "staging" },
+      { ...ON, APP_ENV: "unknown" },
+      { ...ON, NODE_ENV: "production" },
+      ON, // nothing classified at all
+    ])
+      expect(
+        resolveOnboardingSubmissionConsentPolicy(env).currentVersion(
+          "PRIVACY_NOTICE",
+        ),
+      ).toBeNull();
+  });
+
+  it("flag on + trusted dev/test resolves the synthetic dev policy", () => {
+    for (const env of [
+      { ...ON, APP_ENV: "test" },
+      { ...ON, APP_ENV: "development" },
+      { ...ON, NODE_ENV: "test" },
+    ]) {
+      const registry = resolveOnboardingSubmissionConsentPolicy(env);
+      expect(registry.currentVersion("PRIVACY_NOTICE")).toBe(
+        "onboarding-submission-dev-privacy-v1",
+      );
+      expect(registry.currentVersion("HEALTH_DATA")).toBe(
+        "onboarding-submission-dev-health-v1",
+      );
+    }
+  });
+
+  it("the unconfigured fallback IS the production-safe policy object", () => {
+    expect(
+      resolveOnboardingSubmissionConsentPolicy({
+        ENABLE_ONBOARDING_SUBMISSION: "1",
+        APP_ENV: "production",
+      }),
+    ).toBe(unconfiguredConsentPolicy);
   });
 });
 

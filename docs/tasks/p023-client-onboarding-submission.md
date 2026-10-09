@@ -315,6 +315,79 @@ profile/user IDs, no secrets or real data, all six mutations bite.
 Branch pushed: `feature/p023-client-onboarding-submission` @
 `44e8eacc02e8ffc7da36746715ac30a9130f52f2` (3 commits on `bb9e42d`).
 
+## P-023-I1-R2 — independent-review FAIL repairs (2026-10-10)
+
+Different-model review `opencode-go/deepseek-v4.1-flash` returned FAIL on
+head `30f8f84` (two P1s + two P2s). All repairs below were done
+RED-first: failing tests were written and observed failing before each
+production change.
+
+### Process deviation record (P2-L) — stated honestly
+
+The initial P-023-I1 implementation was NOT fully test-first: the Prisma
+schema/migration, gate module, and core service were authored before the
+first unit/integration test file existed. This is a bounded deviation
+from Conductor's RED-first rule. No owner/orchestrator exception has
+been granted. These R2 repairs followed RED-first strictly with real
+failing evidence (9 targeted failures observed before implementation).
+Technical review and process acceptance are separate gates — a technical
+PASS does not authorize a PR until the owner explicitly accepts or
+rejects this bounded exception.
+
+### Repair A — trusted dev/test consent boundary (P1-A)
+
+New `lib/onboarding/submission-consent.ts`:
+`resolveOnboardingSubmissionConsentPolicy()` requires BOTH
+`ENABLE_ONBOARDING_SUBMISSION === "1"` AND a trusted runtime
+classification (`APP_ENV` ∈ {development,test} wins when set; otherwise
+baked `NODE_ENV` ∈ {development,test}; missing/unknown/production →
+unconfigured). The flag-only `onboardingSubmissionConsentRegistry(true)`
+selector was deleted and both route call sites now consume the shared
+resolver via the boundary default — the flag alone can never configure
+consent in production. `APP_ENV=test` is injected only into the
+Playwright primary test server (`next start` is NODE_ENV=production).
+Unit matrix: 5 new tests (26/26). Real-path integration: production
+classification + flag on cannot collect or reveal; unclassified fails
+closed; trusted test env collects without injection (4 new tests).
+Mutation R2A (env distinction bypassed) → 2 unit + 3 integration
+failures incl. real-path collection — reverted.
+
+### Repair C — P2002 fully-authorized replay (P1-C)
+
+The outside-transaction catch shortcut was deleted. `submitOnboarding
+Assignment` now wraps the whole Serializable attempt in `attempt()`; on
+P2002 it re-enters the SAME protocol exactly once — fresh own-profile
+resolution, advisories, member FOR UPDATE, in-tx `authorize(own)`, and a
+scoped owned-submission lookup — so `already_submitted` is never returned
+without current membership, authorization, tenant scoping, and consent.
+A second P2002 exhausts to `serialization_conflict` (no recursion).
+Additionally, the in-tx replay branch now checks current consent BEFORE
+returning `already_submitted` — finding a submission is not authority to
+disclose it. New deterministic coverage via a one-shot miss proxy against
+a real planted unique violation: forced-conflict replay (1 sub, 0
+audits), suspended/removed member at conflict → denied, consent
+withdrawn at conflict → `consent_missing`, vanished-conflict → normal
+submit, persistent-conflict → `serialization_conflict`, replay after
+withdrawal → `consent_missing` (7 new tests). Mutations R2C1 (outside-tx
+shortcut restored) → 4 failures; R2C2 (replay consent skipped) → 2
+failures; both reverted.
+
+### Repair B — consent before answer materialization (P2-B)
+
+`loadOwnOnboardingDetail` now runs a staged read: assignment header
+(status, pinned definition, submission id/date — no answers) →
+authorization + `checkRequiredConsent` → only then a dedicated
+`onboardingSubmissionAnswer.findMany` for the submitted view. Proven by
+a query-interception proxy: post-withdrawal the assignment query's select
+contains no `answers` and zero `onboardingSubmissionAnswer` queries run
+(2 new tests). Mutation R2B (answers re-eagerized in the header select)
+fails the ordering test — reverted.
+
+### Repair totals
+
+Integration suite 31/31 on fresh disposable `app_integration_p023_r2`;
+unit 26/26; typecheck/lint clean.
+
 ## Next gate
 
 Independent different-model review of this documentation head before any PR
