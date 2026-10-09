@@ -154,6 +154,31 @@ export async function requireClientSetupAccess(
 }
 
 /**
+ * P-023 — client onboarding-submission collection guard. The own-assignment
+ * list is a workspace collection view, so it uses
+ * `authorizeCollection("onboardingSubmissions/read")`: an ACTIVE CLIENT
+ * resolves `own` scope; every staff role, SUPPORT, non-member, inactive,
+ * cross-workspace, and platform-admin request denies with a real HTTP 403.
+ * The dev gate's route-level 404 runs before this.
+ */
+export async function requireOnboardingSubmissionsAccess(
+  session: SessionLike,
+  workspaceId: string,
+  client: PrismaLike = prisma,
+): Promise<CollectionContext> {
+  try {
+    return await authorizeCollection(
+      session,
+      { resource: "onboardingSubmissions", action: "read", workspaceId },
+      createPrismaAuthorizationRepo(client),
+    );
+  } catch (error) {
+    if (error instanceof AccessDeniedError) forbidden();
+    throw error;
+  }
+}
+
+/**
  * Session gate. Returns the session user id plus the raw session, or redirects
  * to the sign-in page. Memoized per request via React `cache()`.
  */

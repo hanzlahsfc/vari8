@@ -31,6 +31,17 @@ const nextConfig: NextConfig = {
         source: "/workspace/:workspaceId/clients/:clientProfileId/daily",
         headers: [{ key: "Cache-Control", value: "no-store" }],
       },
+      {
+        // P-023: the client onboarding submission routes may carry own
+        // answer content — explicit no-store on both leaves covers the page
+        // GETs and the Server Action POST. Route-scoped; no global change.
+        source: "/workspace/:workspaceId/onboarding",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+      {
+        source: "/workspace/:workspaceId/onboarding/:assignmentId",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
     ];
   },
 };

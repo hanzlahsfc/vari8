@@ -137,6 +137,9 @@ const PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> = new Set([
   // P-016: client setup + template assignments (product-decision #54 —
   // denied including dual-role platform administrators).
   "clientSetups",
+  // P-023: client-owned onboarding submissions — denied including
+  // dual-role platform administrators.
+  "onboardingSubmissions",
 ]);
 
 /**

@@ -54,6 +54,8 @@ export const RESOURCES = [
   "coachingTemplates",
   // P-016 (product-decisions #49–#57): client setup + template assignments.
   "clientSetups",
+  // P-023 (product-decisions #82–#85): client-owned onboarding submissions.
+  "onboardingSubmissions",
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
 
@@ -280,6 +282,19 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
     CLIENT: D,
+  },
+  // P-023 (product-decisions #82–#85): client-owned submission records —
+  // read (own submitted view/list) and write (one-shot submit) for the
+  // ACTIVE CLIENT on their own profile only. Every staff role, SUPPORT,
+  // and PLATFORM_ADMIN are denied outright, including the dual-role
+  // membership path.
+  onboardingSubmissions: {
+    PLATFORM_ADMIN: D,
+    WORKSPACE_OWNER: D,
+    COACH: D,
+    ASSISTANT_COACH: D,
+    SUPPORT: D,
+    CLIENT: c("own", "own"),
   },
 };
 
