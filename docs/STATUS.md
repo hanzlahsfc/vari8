@@ -26,8 +26,10 @@ are complete; product direction is now the configurable coaching system in
   `origin/main...509e0a6` = 11 files/+2879/−39, not the 10/+2719 the
   builder reported; tracker citation updated to the current
   orchestrator-owned version).
-- Head still awaits independent different-model re-review before any PR.
-  `origin/main` unchanged; no PR, merge, deployment, or flag enablement.
+- Repair commit `70b70e7` (test + docs only; production code
+  byte-identical to `509e0a6`). Head still awaits independent
+  different-model re-review before any PR. `origin/main` unchanged; no
+  PR, merge, deployment, or flag enablement.
 
 ## 2026-10-09 — P-022-I1 staff DailyEntry review implemented (feature branch, no PR)
 

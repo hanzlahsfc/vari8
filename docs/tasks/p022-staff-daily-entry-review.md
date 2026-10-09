@@ -285,6 +285,14 @@ PostgreSQL integration + production-build browser runs.
   retries; full E2E single run 268/268 (12 skipped, 0 flaky);
   `git diff --check`, prettier, tsc, eslint, `next build` all 0. No
   unexpected audit rows observed.
-- Same-model fresh-context self-review appended below (not the required
-  independent review — a different-model re-review of the final head is
-  still required before any PR).
+- Repair committed as `70b70e7` (forward, on top of `509e0a6`), pushing
+  `feature/p022-staff-daily-entry-review` to a final head still awaiting
+  independent different-model re-review before any PR.
+- Same-model fresh-context self-review of `509e0a6..HEAD` (3 files,
+  +108/−6 — test + docs only; production code byte-identical): the
+  traversal helper rethrows every error except the
+  context-destruction-on-navigation signal, URL/state assertions prove
+  each leg, and the zero-audit assertion is untouched. One doc gap found
+  (missing repair-commit SHA) and corrected in `docs/STATUS.md` + this
+  record. Not the required independent review — a different-model
+  re-review of the final head is still required before any PR.
