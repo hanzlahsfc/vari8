@@ -121,16 +121,17 @@ model User {
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
-  memberships          WorkspaceMember[]
-  clientProfiles       ClientProfile[]
-  consentsGranted      ConsentRecord[]
-  auditEvents          AuditEvent[]
+  memberships                    WorkspaceMember[]
+  clientProfiles                 ClientProfile[]
+  consentsGranted                ConsentRecord[]
+  auditEvents                    AuditEvent[]
   // S1-F2B: account-scoped audit rows (e.g. reset activity) owned by this user.
-  subjectAuditedEvents AuditEvent[]      @relation("AuditSubjectUser")
-  accessTokens         AccessToken[]     @relation("AccessTokenUser")
-  issuedAccessTokens   AccessToken[]     @relation("AccessTokenCreator")
+  subjectAuditedEvents           AuditEvent[]           @relation("AuditSubjectUser")
+  accessTokens                   AccessToken[]          @relation("AccessTokenUser")
+  issuedAccessTokens             AccessToken[]          @relation("AccessTokenCreator")
   // P-023: durable submission provenance (the submitting client user).
   onboardingSubmissionsSubmitted OnboardingSubmission[] @relation("OnboardingSubmissionSubmittedByUser")
+  checkInSubmissionsSubmitted    CheckInSubmission[]    @relation("CheckInSubmissionSubmittedByUser")
 
   @@map("users")
 }
@@ -160,6 +161,9 @@ model Workspace {
   onboardingSubmissionAnswers   OnboardingSubmissionAnswer[]
   checkInForms                  CheckInForm[]
   checkInFormVersions           CheckInFormVersion[]
+  checkInInstances              CheckInInstance[]
+  checkInSubmissions            CheckInSubmission[]
+  checkInSubmissionAnswers      CheckInSubmissionAnswer[]
 
   @@map("workspace")
 }
@@ -191,13 +195,16 @@ model WorkspaceMember {
   clientSetupPinsAssigned      ClientSetupPin[]           @relation("ClientSetupPinAssignedBy")
   clientSetupPinsEnded         ClientSetupPin[]           @relation("ClientSetupPinEndedBy")
 
-  dailyEntriesCreated       DailyEntry[]            @relation("DailyEntryCreator")
-  dailyEntryRevisionsCreated DailyEntryRevision[]   @relation("DailyEntryRevisionCreator")
+  dailyEntriesCreated            DailyEntry[]           @relation("DailyEntryCreator")
+  dailyEntryRevisionsCreated     DailyEntryRevision[]   @relation("DailyEntryRevisionCreator")
   onboardingSubmissionsSubmitted OnboardingSubmission[] @relation("OnboardingSubmissionSubmittedByMember")
 
-  checkInFormsCreated  CheckInForm[]        @relation("CheckInFormCreator")
-  checkInFormsArchived CheckInForm[]        @relation("CheckInFormArchiver")
-  checkInFormVersions  CheckInFormVersion[] @relation("CheckInFormVersionPublisher")
+  checkInFormsCreated       CheckInForm[]        @relation("CheckInFormCreator")
+  checkInFormsArchived      CheckInForm[]        @relation("CheckInFormArchiver")
+  checkInFormVersions       CheckInFormVersion[] @relation("CheckInFormVersionPublisher")
+  checkInInstancesScheduled CheckInInstance[]    @relation("CheckInInstanceScheduler")
+  checkInInstancesCancelled CheckInInstance[]    @relation("CheckInInstanceCanceller")
+  checkInSubmissions        CheckInSubmission[]  @relation("CheckInSubmissionSubmittedByMember")
 
   parametersCreated         ParameterDefinition[]     @relation("ParameterDefinitionCreator")
   parametersUpdated         ParameterDefinition[]     @relation("ParameterDefinitionUpdater")
@@ -246,6 +253,9 @@ model ClientProfile {
   clientSetupPins       ClientSetupPin[]           @relation("ClientSetupPinClient")
   dailyEntries          DailyEntry[]               @relation("ClientProfileDailyEntries")
   onboardingSubmissions OnboardingSubmission[]     @relation("OnboardingSubmissionClient")
+  checkInInstances      CheckInInstance[]          @relation("CheckInInstanceClient")
+  checkInSubmissions    CheckInSubmission[]        @relation("CheckInSubmissionClient")
+  checkInAnswers        CheckInSubmissionAnswer[]  @relation("CheckInAnswerClient")
 
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
   @@unique([workspaceId, userId])
@@ -693,35 +703,35 @@ enum CoachingTemplateStatus {
 }
 
 model ParameterDefinition {
-  id                 String          @id @default(cuid())
-  workspaceId        String          @map("workspace_id")
+  id                 String                       @id @default(cuid())
+  workspaceId        String                       @map("workspace_id")
   // Server-minted opaque key (p_<uuid>) — immutable, never reusable.
   key                String
   // Kind is immutable from creation (no service path writes it).
   kind               ParameterKind
   // Display metadata — editable with revision even after first publish.
   label              String
-  helpText           String?         @map("help_text")
-  group              String?         @map("group_label")
+  helpText           String?                      @map("help_text")
+  group              String?                      @map("group_label")
   // Semantic metadata — locked after first published reference.
   unit               String?
-  ratingScheme       RatingScheme?   @map("rating_scheme")
+  ratingScheme       RatingScheme?                @map("rating_scheme")
   options            Json?
-  retiredOptionIds   Json?           @map("retired_option_ids")
+  retiredOptionIds   Json?                        @map("retired_option_ids")
   // Closed declarative numeric bounds only; semantic field.
   validation         Json?
   // P-020A (decisions #73/#78): closed data classification — no default, no
   // backfill; NULL until the explicit audited classification action runs.
   // BLOODWORK/PED_HRT are unassignable by every application role.
   dataClassification ParameterDataClassification? @map("data_classification")
-  revision           Int             @default(1)
-  status             ParameterStatus @default(ACTIVE)
-  createdByMemberId  String          @map("created_by_member_id")
-  updatedByMemberId  String          @map("updated_by_member_id")
-  archivedAt         DateTime?       @map("archived_at") @db.Timestamptz(6)
-  archivedByMemberId String?         @map("archived_by_member_id")
-  createdAt          DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+  revision           Int                          @default(1)
+  status             ParameterStatus              @default(ACTIVE)
+  createdByMemberId  String                       @map("created_by_member_id")
+  updatedByMemberId  String                       @map("updated_by_member_id")
+  archivedAt         DateTime?                    @map("archived_at") @db.Timestamptz(6)
+  archivedByMemberId String?                      @map("archived_by_member_id")
+  createdAt          DateTime                     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                     @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   workspace         Workspace                          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   createdByMember   WorkspaceMember                    @relation("ParameterDefinitionCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
@@ -758,7 +768,7 @@ model CoachingTemplate {
   archivedByMember  WorkspaceMember?                   @relation("CoachingTemplateArchiver", fields: [archivedByMemberId], references: [id], onDelete: Restrict)
   versions          CoachingTemplateVersion[]
   versionReferences CoachingTemplateVersionParameter[]
-  clientSetupPins   ClientSetupPin[] @relation("ClientSetupPinTemplate")
+  clientSetupPins   ClientSetupPin[]                   @relation("ClientSetupPinTemplate")
 
   // Composite target for same-workspace foreign keys (raw SQL).
   @@unique([id, workspaceId])
@@ -778,11 +788,11 @@ model CoachingTemplateVersion {
   publishedAt           DateTime @default(now()) @map("published_at") @db.Timestamptz(6)
   publishedByMemberId   String   @map("published_by_member_id")
 
-  workspace         Workspace                          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  template          CoachingTemplate                   @relation(fields: [templateId], references: [id], onDelete: Restrict)
-  publishedByMember WorkspaceMember                    @relation("CoachingTemplateVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
-  parameters        CoachingTemplateVersionParameter[]
-  clientSetupPins   ClientSetupPin[] @relation("ClientSetupPinVersion")
+  workspace           Workspace                          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  template            CoachingTemplate                   @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  publishedByMember   WorkspaceMember                    @relation("CoachingTemplateVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
+  parameters          CoachingTemplateVersionParameter[]
+  clientSetupPins     ClientSetupPin[]                   @relation("ClientSetupPinVersion")
   dailyEntryRevisions DailyEntryRevision[]
 
   @@unique([templateId, versionSeq])
@@ -884,15 +894,15 @@ model ClientSetupPin {
   createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  clientSetup      ClientSetup            @relation(fields: [clientSetupId], references: [id], onDelete: Restrict)
-  supersedesPin    ClientSetupPin?        @relation("PinSupersession", fields: [supersedesPinId], references: [id], onDelete: Restrict)
-  supersededByPin  ClientSetupPin?        @relation("PinSupersession")
-  workspace        Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  clientProfile    ClientProfile          @relation("ClientSetupPinClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
-  template         CoachingTemplate       @relation("ClientSetupPinTemplate", fields: [templateId], references: [id], onDelete: Restrict)
+  clientSetup      ClientSetup             @relation(fields: [clientSetupId], references: [id], onDelete: Restrict)
+  supersedesPin    ClientSetupPin?         @relation("PinSupersession", fields: [supersedesPinId], references: [id], onDelete: Restrict)
+  supersededByPin  ClientSetupPin?         @relation("PinSupersession")
+  workspace        Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile    ClientProfile           @relation("ClientSetupPinClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  template         CoachingTemplate        @relation("ClientSetupPinTemplate", fields: [templateId], references: [id], onDelete: Restrict)
   templateVersion  CoachingTemplateVersion @relation("ClientSetupPinVersion", fields: [templateVersionId], references: [id], onDelete: Restrict)
-  assignedByMember WorkspaceMember        @relation("ClientSetupPinAssignedBy", fields: [assignedByMemberId], references: [id], onDelete: Restrict)
-  endedByMember    WorkspaceMember?       @relation("ClientSetupPinEndedBy", fields: [endedByMemberId], references: [id], onDelete: Restrict)
+  assignedByMember WorkspaceMember         @relation("ClientSetupPinAssignedBy", fields: [assignedByMemberId], references: [id], onDelete: Restrict)
+  endedByMember    WorkspaceMember?        @relation("ClientSetupPinEndedBy", fields: [endedByMemberId], references: [id], onDelete: Restrict)
 
   dailyEntryRevisions DailyEntryRevision[]
 
@@ -925,7 +935,7 @@ model DailyEntry {
   workspaceId       String   @map("workspace_id")
   clientProfileId   String   @map("client_profile_id")
   // Declared client calendar date (#66) — DATE column, no timezone column.
-  entryDate         DateTime @db.Date @map("entry_date")
+  entryDate         DateTime @map("entry_date") @db.Date
   // Nullable at insert; set to the first revision inside the same
   // transaction. The composite pointer foreign key
   // (current_revision_id, id) → daily_entry_revision(id, daily_entry_id)
@@ -935,9 +945,9 @@ model DailyEntry {
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  workspace       Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  clientProfile   ClientProfile   @relation("ClientProfileDailyEntries", fields: [clientProfileId], references: [id], onDelete: Restrict)
-  createdByMember WorkspaceMember @relation("DailyEntryCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  workspace       Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile   ClientProfile        @relation("ClientProfileDailyEntries", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  createdByMember WorkspaceMember      @relation("DailyEntryCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
   revisions       DailyEntryRevision[]
 
   // One logical entry per client per declared date (#65).
@@ -969,10 +979,10 @@ model DailyEntryRevision {
   createdByMemberId String   @map("created_by_member_id")
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  entry           DailyEntry              @relation(fields: [dailyEntryId], references: [id], onDelete: Restrict)
-  pin             ClientSetupPin          @relation(fields: [clientSetupPinId], references: [id], onDelete: Restrict)
-  templateVersion CoachingTemplateVersion @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
-  createdByMember WorkspaceMember         @relation("DailyEntryRevisionCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  entry           DailyEntry                @relation(fields: [dailyEntryId], references: [id], onDelete: Restrict)
+  pin             ClientSetupPin            @relation(fields: [clientSetupPinId], references: [id], onDelete: Restrict)
+  templateVersion CoachingTemplateVersion   @relation(fields: [templateVersionId], references: [id], onDelete: Restrict)
+  createdByMember WorkspaceMember           @relation("DailyEntryRevisionCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
   values          DailyEntryRevisionValue[]
 
   @@unique([dailyEntryId, seq])
@@ -995,7 +1005,7 @@ model DailyEntryRevisionValue {
   // Closed ParameterKind — the exactly-one-column CHECK in raw SQL makes
   // unsupported kinds incapable of producing a row.
   kind          ParameterKind
-  valueNumeric  Decimal?      @db.Decimal(30, 8) @map("value_numeric")
+  valueNumeric  Decimal?      @map("value_numeric") @db.Decimal(30, 8)
   valueRating   Int?          @map("value_rating")
   valueOptionId String?       @map("value_option_id")
   valueText     String?       @map("value_text")
@@ -1035,13 +1045,13 @@ model OnboardingSubmission {
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  workspace         Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  clientProfile     ClientProfile            @relation("OnboardingSubmissionClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
-  form              OnboardingForm           @relation("OnboardingSubmissionForm", fields: [formId], references: [id], onDelete: Restrict)
-  formVersion       OnboardingFormVersion    @relation("OnboardingSubmissionVersion", fields: [formVersionId], references: [id], onDelete: Restrict)
-  assignment        OnboardingFormAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
-  submittedByUser   User                     @relation("OnboardingSubmissionSubmittedByUser", fields: [submittedByUserId], references: [id], onDelete: Restrict)
-  submittedByMember WorkspaceMember          @relation("OnboardingSubmissionSubmittedByMember", fields: [submittedByMemberId], references: [id], onDelete: Restrict)
+  workspace         Workspace                    @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile     ClientProfile                @relation("OnboardingSubmissionClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  form              OnboardingForm               @relation("OnboardingSubmissionForm", fields: [formId], references: [id], onDelete: Restrict)
+  formVersion       OnboardingFormVersion        @relation("OnboardingSubmissionVersion", fields: [formVersionId], references: [id], onDelete: Restrict)
+  assignment        OnboardingFormAssignment     @relation(fields: [assignmentId], references: [id], onDelete: Restrict)
+  submittedByUser   User                         @relation("OnboardingSubmissionSubmittedByUser", fields: [submittedByUserId], references: [id], onDelete: Restrict)
+  submittedByMember WorkspaceMember              @relation("OnboardingSubmissionSubmittedByMember", fields: [submittedByMemberId], references: [id], onDelete: Restrict)
   answers           OnboardingSubmissionAnswer[]
 
   // At-most-one durable submission per assignment — the idempotency anchor
@@ -1120,10 +1130,12 @@ model CheckInForm {
   createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  workspace        Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  createdByMember  WorkspaceMember @relation("CheckInFormCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
-  archivedByMember WorkspaceMember? @relation("CheckInFormArchiver", fields: [archivedByMemberId], references: [id], onDelete: Restrict)
+  workspace        Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  createdByMember  WorkspaceMember      @relation("CheckInFormCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  archivedByMember WorkspaceMember?     @relation("CheckInFormArchiver", fields: [archivedByMemberId], references: [id], onDelete: Restrict)
   versions         CheckInFormVersion[]
+  instances        CheckInInstance[]    @relation("CheckInInstanceForm")
+  submissions      CheckInSubmission[]  @relation("CheckInSubmissionForm")
 
   // Composite target for the CheckInFormVersion form∈workspace foreign key (raw SQL).
   @@unique([id, workspaceId])
@@ -1143,9 +1155,11 @@ model CheckInFormVersion {
   publishedAt           DateTime @default(now()) @map("published_at") @db.Timestamptz(6)
   publishedByMemberId   String   @map("published_by_member_id")
 
-  workspace         Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  form              CheckInForm     @relation(fields: [formId], references: [id], onDelete: Restrict)
-  publishedByMember WorkspaceMember @relation("CheckInFormVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  form              CheckInForm         @relation(fields: [formId], references: [id], onDelete: Restrict)
+  publishedByMember WorkspaceMember     @relation("CheckInFormVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
+  instances         CheckInInstance[]   @relation("CheckInInstanceFormVersion")
+  submissions       CheckInSubmission[] @relation("CheckInSubmissionFormVersion")
 
   @@unique([formId, versionSeq])
   // Composite coherence target for later client-scoped rows (raw SQL FKs in
@@ -1155,4 +1169,108 @@ model CheckInFormVersion {
   // revision (declared unique — matches the raw migration index name).
   @@unique([formId, publishOriginRevision], map: "checkin_form_version_publish_origin_key")
   @@map("checkin_form_version")
+}
+
+// ── P-025-B Check-In instances + client submissions (decisions #92–#97) ──
+// One-off scheduled instances (no recurrence/calendar — #92), immutable
+// submissions + typed answers. NO stored lifecycle status: effective state
+// derives from cancellation provenance + child submission rows through one
+// shared projector (§10). All history/provenance FKs are RESTRICT; the wide
+// composite coherence FKs + the paired-provenance and kind↔column CHECKs
+// are raw migration SQL (the established convention — Prisma cannot express
+// them). No CheckInReview in this slice (P-025-C).
+
+model CheckInInstance {
+  id                  String    @id @default(cuid())
+  workspaceId         String    @map("workspace_id")
+  clientProfileId     String    @map("client_profile_id")
+  formId              String    @map("form_id")
+  formVersionId       String    @map("form_version_id")
+  dueAt               DateTime  @map("due_at") @db.Timestamptz(6)
+  // Optional forward-compat label only — NOT a timezone policy (#93/Q2).
+  dueTz               String?   @map("due_tz")
+  scheduledByMemberId String    @map("scheduled_by_member_id")
+  scheduledAt         DateTime  @default(now()) @map("scheduled_at") @db.Timestamptz(6)
+  // Paired cancellation provenance — both null or both non-null (raw CHECK).
+  // A cancellation is the only permitted mutation on this row.
+  cancelledByMemberId String?   @map("cancelled_by_member_id")
+  cancelledAt         DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile     ClientProfile       @relation("CheckInInstanceClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  form              CheckInForm         @relation("CheckInInstanceForm", fields: [formId], references: [id], onDelete: Restrict)
+  formVersion       CheckInFormVersion  @relation("CheckInInstanceFormVersion", fields: [formVersionId], references: [id], onDelete: Restrict)
+  scheduledByMember WorkspaceMember     @relation("CheckInInstanceScheduler", fields: [scheduledByMemberId], references: [id], onDelete: Restrict)
+  cancelledByMember WorkspaceMember?    @relation("CheckInInstanceCanceller", fields: [cancelledByMemberId], references: [id], onDelete: Restrict)
+  submissions       CheckInSubmission[]
+
+  // Wide composite coherence target for the submission's full-tuple FK
+  // (raw SQL): the pinned (id, workspaceId, clientProfileId, formId,
+  // formVersionId) tuple can never drift apart.
+  @@unique([id, workspaceId, clientProfileId, formId, formVersionId], map: "checkin_instance_wide_coherence_key")
+  // Duplicate-scheduling authority: one instance per (client, form, dueAt).
+  @@unique([workspaceId, clientProfileId, formId, dueAt], map: "checkin_instance_duplicate_schedule_key")
+  @@index([workspaceId, clientProfileId, dueAt])
+  @@index([workspaceId, id])
+  @@index([formVersionId])
+  @@map("checkin_instance")
+}
+
+model CheckInSubmission {
+  id                  String   @id @default(cuid())
+  workspaceId         String   @map("workspace_id")
+  clientProfileId     String   @map("client_profile_id")
+  formId              String   @map("form_id")
+  formVersionId       String   @map("form_version_id")
+  instanceId          String   @map("instance_id")
+  submittedByUserId   String   @map("submitted_by_user_id")
+  submittedByMemberId String   @map("submitted_by_member_id")
+  submittedAt         DateTime @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  // Immutable — no updatedAt (P-024 P3-1 terminal-immutability precedent).
+
+  workspace         Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile     ClientProfile             @relation("CheckInSubmissionClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  form              CheckInForm               @relation("CheckInSubmissionForm", fields: [formId], references: [id], onDelete: Restrict)
+  formVersion       CheckInFormVersion        @relation("CheckInSubmissionFormVersion", fields: [formVersionId], references: [id], onDelete: Restrict)
+  instance          CheckInInstance           @relation(fields: [instanceId], references: [id], onDelete: Restrict)
+  submittedByUser   User                      @relation("CheckInSubmissionSubmittedByUser", fields: [submittedByUserId], references: [id], onDelete: Restrict)
+  submittedByMember WorkspaceMember           @relation("CheckInSubmissionSubmittedByMember", fields: [submittedByMemberId], references: [id], onDelete: Restrict)
+  answers           CheckInSubmissionAnswer[]
+
+  // At-most-one durable submission per instance — idempotency anchor and
+  // final concurrency authority (P2002 → bounded full-protocol re-entry).
+  @@unique([instanceId])
+  // Composite target for the answer same-(workspace,client) coherence FK
+  // (raw SQL) — an answer can never drift to a foreign submission tuple.
+  @@unique([id, workspaceId, clientProfileId], map: "checkin_submission_coherence_key")
+  @@index([workspaceId, clientProfileId])
+  @@index([workspaceId, id])
+  @@map("checkin_submission")
+}
+
+model CheckInSubmissionAnswer {
+  id              String            @id @default(cuid())
+  submissionId    String            @map("submission_id")
+  workspaceId     String            @map("workspace_id")
+  clientProfileId String            @map("client_profile_id")
+  fieldId         String            @map("field_id")
+  kind            CheckInAnswerKind
+  valueText       String?           @map("value_text")
+  valueNumeric    Decimal?          @map("value_numeric") @db.Decimal(23, 6)
+  valueDate       DateTime?         @map("value_date") @db.Date
+  valueOptionIds  Json?             @map("value_option_ids")
+
+  submission    CheckInSubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  workspace     Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile     @relation("CheckInAnswerClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+
+  // One answer per field per submission. kind↔column shape is a raw CHECK
+  // in the migration (Prisma cannot express it); immutability is a service
+  // contract — no write path ever updates these rows.
+  @@unique([submissionId, fieldId])
+  @@index([workspaceId])
+  @@map("checkin_submission_answer")
 }
