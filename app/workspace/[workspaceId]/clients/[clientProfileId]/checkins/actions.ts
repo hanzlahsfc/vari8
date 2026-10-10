@@ -7,8 +7,11 @@ import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
 import {
   cancelCheckInInstanceFromAction,
   listSchedulableVersionsForClient,
+  markCheckInSubmissionReviewedFromAction,
+  readStaffCheckInSubmissionDetail,
   scheduleCheckInInstanceFromAction,
 } from "@/lib/checkin/instances-boundary";
+import type { StaffCheckInSubmissionDetail } from "@/lib/checkin/instances";
 
 /**
  * P-025-B — staff Check-In instance schedule/cancel server actions
@@ -163,4 +166,104 @@ export async function cancelCheckInInstanceAction(
     `/workspace/${workspaceId}/clients/${clientProfileId}/checkins`,
   );
   return { ok: true, status: result.value.status };
+}
+
+/**
+ * P-025-C — staff Check-In submission detail + terminal review actions
+ * (decisions #86–#91 carried by #96). `viewCheckInSubmissionDetail` is the
+ * ONLY answer-bearing staff surface — an explicit POST; one committed call
+ * writes exactly one structural READ audit. `markCheckInSubmissionReviewed`
+ * creates at most one immutable acknowledgement — server-side
+ * reauthorization is authoritative; the UI's detail-gated enable is never
+ * trusted.
+ */
+
+export type StaffCheckInDetailState =
+  | { status: "idle" }
+  | { status: "error"; message: string }
+  | {
+      status: "ok";
+      submissionId: string;
+      formName: string;
+      versionSeq: number;
+      dueAt: string;
+      submittedAt: string;
+      late: boolean;
+      reviewed: { byName: string; at: string } | null;
+      fields: StaffCheckInSubmissionDetail["fields"];
+      /** Server-decided: the calling staff member may mark (assigned
+       * coach cell only). The mark action re-authorizes regardless. */
+      canMark: boolean;
+    };
+
+export async function viewCheckInSubmissionDetail(
+  _prev: StaffCheckInDetailState,
+  formData: FormData,
+): Promise<StaffCheckInDetailState> {
+  // 1. Feature resolver — before ANY session/FormData/DB work.
+  if (!isCheckInsEnabled()) return { status: "error", message: OFF };
+
+  // 2. Session gate.
+  const userId = await sessionUser();
+  if (userId === null) return { status: "error", message: DENIED };
+
+  // 3. Bounded opaque IDs — rebound server-side through authorization.
+  const workspaceId = singleString(formData, "workspaceId", 128);
+  const clientProfileId = singleString(formData, "clientProfileId", 128);
+  const submissionId = singleString(formData, "submissionId", 128);
+  if (workspaceId === null || clientProfileId === null || submissionId === null)
+    return { status: "error", message: INVALID };
+
+  const result = await readStaffCheckInSubmissionDetail(
+    { user: { id: userId } },
+    { workspaceId, clientProfileId, submissionId },
+  );
+  if (!result.ok) return { status: "error", message: result.message };
+
+  return {
+    status: "ok",
+    submissionId: result.value.submissionId,
+    formName: result.value.formName,
+    versionSeq: result.value.versionSeq,
+    dueAt: result.value.dueAt,
+    submittedAt: result.value.submittedAt,
+    late: result.value.late,
+    reviewed: result.value.reviewed,
+    fields: result.value.fields,
+    canMark: result.value.canMark,
+  };
+}
+
+export type StaffCheckInMarkState =
+  | { status: "idle" }
+  | { status: "error"; message: string }
+  | { status: "ok"; reviewedAt: string };
+
+export async function markCheckInSubmissionReviewed(
+  _prev: StaffCheckInMarkState,
+  formData: FormData,
+): Promise<StaffCheckInMarkState> {
+  // 1. Feature resolver first.
+  if (!isCheckInsEnabled()) return { status: "error", message: OFF };
+
+  // 2. Session gate.
+  const userId = await sessionUser();
+  if (userId === null) return { status: "error", message: DENIED };
+
+  // 3. Bounded opaque IDs.
+  const workspaceId = singleString(formData, "workspaceId", 128);
+  const clientProfileId = singleString(formData, "clientProfileId", 128);
+  const submissionId = singleString(formData, "submissionId", 128);
+  if (workspaceId === null || clientProfileId === null || submissionId === null)
+    return { status: "error", message: INVALID };
+
+  const result = await markCheckInSubmissionReviewedFromAction(
+    { user: { id: userId } },
+    { workspaceId, clientProfileId, submissionId },
+  );
+  if (!result.ok) return { status: "error", message: result.message };
+  revalidatePath(
+    `/workspace/${workspaceId}/clients/${clientProfileId}/checkins`,
+  );
+  return { status: "ok", reviewedAt: result.value.reviewedAt };
 }

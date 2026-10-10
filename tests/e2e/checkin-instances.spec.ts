@@ -615,7 +615,7 @@ for (const [name, width] of [
 
 // ── No P-025-C surface ─────────────────────────────────────────────────
 
-test("no staff review/acknowledgement controls exist anywhere", async ({
+test("client surfaces carry no review/acknowledgement metadata (P-025-C bounds it staff-side)", async ({
   page,
 }) => {
   const instance = await fixtureInstance(new Date("2031-11-01T00:00:00.000Z"));
@@ -628,8 +628,11 @@ test("no staff review/acknowledgement controls exist anywhere", async ({
     timeout: 15_000,
   });
 
-  await signIn(page, E2E.owner);
-  await page.goto(staffUrl());
+  // The client's own list + detail never mention review — the
+  // acknowledgement is staff-internal workflow state (#91).
+  await page.goto(clientListUrl());
+  await expect(page.getByText(/review/i)).toHaveCount(0);
+  await page.goto(clientDetailUrl(instance.id));
   await expect(page.getByText(/review/i)).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: /acknowledge|review/i }),

@@ -590,3 +590,115 @@ Fresh independent different-model review of the complete candidate
 `49408db..HEAD` including the repair delta and this owner-exception
 record, by `opencode-go/deepseek-v4.1-flash`. PR/merge remain separately
 authorized. P-025-C/D still unauthorized and unimplemented.
+
+## P-025-C implementation record (2026-10-10)
+
+**Scope** — staff submission-header list, explicit answer-detail reveal
+(one structural READ audit per committed view), terminal review
+acknowledgement (assigned coach only; exactly one immutable
+`checkin_review` row per submission — who + when only; no notes, no
+feedback, no workflow gate). Decisions #86–#91 carried by #96.
+
+**Schema** — `checkin_review` (migration
+`20261011010000_p025c_checkin_review`): `unique(submission_id)` terminal
+anchor (#86 analog); composite coherence FKs →
+`checkin_submission(id,workspace_id,client_profile_id)`,
+`client_profile(id,workspace_id)`, `workspace_member(id,workspace_id)`;
+RESTRICT everywhere; no `updated_at` (immutable). `checkin_review` added
+to `AUDIT_RESOURCE_TYPES`; projector inserts `REVIEWED` between
+CANCELLED and SUBMITTED.
+
+**Authorization** — `checkinsCoachReviews` already carries the split:
+staff detail read `ws`(owner)/`assigned`(coach,assistant); mark
+`assigned`(coach) only. Mark enforces `grantedScope === "assigned"` AND
+the unconditional ACTIVE-assignment re-resolve + FOR UPDATE — denied
+cells yield `grantedScope:"denied"` without throwing, so both barriers
+are load-bearing (proved by mutation). `checkInReview.reviewedByMemberId`
+is member provenance; `canMark` = assigned scope + `COACH` role.
+
+**Privacy/audit** — detail re-locks consent FOR UPDATE before any
+answer-row query (spy-proven zero answer reads after withdrawal); one
+`READ checkin_submission` audit per committed explicit detail; passive
+list/GET writes zero audits; audit-last rollback. Withdrawal blocks
+detail + mark; header list stays bounded (#85). Reviewer name/timestamp
+bounded to authorized staff only (#91) — client surfaces never join
+review rows and show the unchanged "Submitted" state.
+
+**UI** — server-rendered header rows (no answers); "View details" POST
+→ detail region (aria-live, labelled answers from the pinned version,
+bounded reviewer provenance); "Mark reviewed" appears only for the
+assigned-coach cell after a successful detail view — the mark action
+re-authorizes independently (UI hint never trusted). Two-step is not
+needed (acknowledgement is non-destructive). no-store + force-dynamic
+inherited; pending-disabled controls; ≥44px; no overflow at
+1440/834/390.
+
+**Repair during E2E** — `checkin-instances` spec's "no review controls"
+assertion updated to the client surface only (staff-side controls are
+the authorized P-025-C feature); `global-teardown.ts` reserved-user list
+gained assistant + support (pre-existing gap — first slice where the
+assistant is an audit actor); `p025a-checkin-schema`/`s1-a-identity`
+table allow-lists gained `checkin_review`.
+
+**Mutations (8, all reverted byte-identically):** deny-set removal →
+dual-role PA mark/read FAIL ×2; projector REVIEWED→SUBMITTED → unit
+FAIL ×2; assigned-gate+assignment-lock removal → owner-marks FAIL;
+consent-after-answers → zero-read spy FAIL; READ-audit omission →
+audit-count FAIL; idempotent-lookup omission → replay+concurrent FAIL
+×2; mark-consent omission → withdrawal FAIL; canMark role-check removal
+→ assistant-enable FAIL.
+
+**Verification** — tsc/eslint/prettier/prisma validate+generate clean;
+fresh disposable-PG migrate deploy; unit 1063; integration 594 (P-025-C
+file 15/15); build clean; **full E2E 310 passed / 12 skipped / 0
+failed** incl. review flow, provenance bounds, consent, flag-off,
+keyboard + responsive.
+
+## Next gate
+
+Independent different-model review of the complete P-025-C candidate on
+`feature/p025c-check-in-staff-review`. PR/merge remain separately
+authorized. P-025-D still unauthorized and unimplemented.
+
+## P-025-C-I1-R2 repair record (2026-10-10)
+
+**R1 outcome** — independent review `P-025-C-I1-R1` on `8616584`:
+CONDITIONAL PASS, P0/P1 none, PR clearance HELD FOR REPAIR.
+
+**P2-1** — the `markCheckInSubmissionReviewed` existing-review replay
+returned `{status:"already_reviewed", reviewedAt}` without a current
+consent check, unlike the detail path and the P-025-B submission replay.
+
+**RED (direct, on exact `8616584`)** — new integration test
+"R2: replayed mark after consent withdrawal fails consent_missing":
+first mark succeeded; consent withdrawn; replay **resolved**
+`{status:"already_reviewed", reviewedAt}` instead of rejecting — the
+reviewer timestamp leaked past the consent boundary. Confirmed the
+finding is the missing replay consent check, not a fixture error.
+
+**Repair** — in the existing-review branch, `checkRequiredConsent(
+tx, input.clientProfileId, registry, false)` runs before the
+`already_reviewed` return; consent failure throws the closed
+`consent_missing` — zero reviewer metadata, zero new rows, zero new
+audits. The P2002 full-protocol re-entry inherits the same check (the
+replay lookup is inside `attempt()`). No other behavior changed:
+authorization, assignment lock, derived-state check, consent-FOR-UPDATE
+on first mark, idempotency, and audit-last all preserved.
+
+**GREEN** — focused integration file 16/16; R2 test passes; full
+integration 595; unit 1063; build clean; **full E2E 310 passed / 12
+skipped / 0 failed**.
+
+**Repair-delta mutations (8 scratch, all reverted byte-identically):**
+consent-check removal → R2 FAIL; return-before-check → R2 FAIL;
+swallowed consent error → R2 FAIL; extra replay audit → audit-count
+FAIL ×2; outside-transaction fast-path → R2 FAIL; stale consent
+snapshot → R2 FAIL; empty-registry bypass → 3 FAILs; scope-gate
+widening → masked by the unconditional assignment lock (documented
+no-bite — both barriers remain load-bearing).
+
+## Next gate
+
+Lightweight independent different-model review of the complete
+candidate + R2 delta on `feature/p025c-check-in-staff-review`. PR/merge
+remain separately authorized; flag still default-off; nothing deployed.

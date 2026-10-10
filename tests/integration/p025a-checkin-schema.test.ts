@@ -181,15 +181,16 @@ describe.skipIf(!enabled)("P-025-A schema — tables/columns/constraints", () =>
       "SELECT table_name FROM information_schema.tables WHERE table_schema='public'",
     );
     const names = rows.map((r) => r.table_name);
-    // P-025-A reviewed the definition pair; P-025-B later reviewed the
-    // instance + submission pair. `checkin_review` (P-025-C) must NOT
-    // exist yet — anything else proves scope creep.
+    // P-025-A reviewed the definition pair; P-025-B reviewed the
+    // instance + submission pair; P-025-C reviewed `checkin_review`.
+    // Anything else proves scope creep (P-025-D has no schema yet).
     const reviewed = new Set([
       "checkin_form",
       "checkin_form_version",
       "checkin_instance",
       "checkin_submission",
       "checkin_submission_answer",
+      "checkin_review",
     ]);
     for (const n of names) {
       if (!n.startsWith("checkin_")) continue;

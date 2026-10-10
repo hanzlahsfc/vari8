@@ -14,6 +14,8 @@ export default async function globalTeardown(): Promise<void> {
       E2E.owner,
       E2E.coach,
       E2E.client,
+      E2E.assistant,
+      E2E.support,
       E2E.nonmember,
       E2E.deactivated,
     ];
