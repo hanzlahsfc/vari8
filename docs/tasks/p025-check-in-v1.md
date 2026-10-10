@@ -466,3 +466,127 @@ separately authorized. Next gate: independent different-model review of
 the exact final head by `opencode-go/deepseek-v4.1-flash`. P-025-C
 (coach review/acknowledgement) and P-025-D (recurrence/custom/feedback/
 notifications) remain unauthorized and unimplemented.
+
+## Independent review record — P-025-B-I1-R1 (2026-10-10)
+
+Reviewer `opencode-go/deepseek-v4.1-flash` reviewed the complete candidate
+`49408db..9b60cf3` (`P-025-B-I1-R1-independent-review.md`). **Technical
+verdict: FAIL**; PR clearance HELD FOR REPAIR; a separate owner process
+exception was also required.
+
+- **P1-1 (merge-blocking):** the new per-row roster "Check-Ins" link
+  added a focusable stop per row, so `tests/e2e/client-roster.spec.ts`
+  "keyboard traversal reaches pagination links with visible focus"
+  exhausted its hard-coded 40-tab budget before "Next page" — reproduced
+  3/3 on the candidate, passed on `origin/main`. CI `verify` runs the
+  full `npm run test:e2e`, so the candidate would have been red.
+- **P3-1..P3-3:** no-bite mutations without direct probes — assignment-
+  lock skip (no race probe), `unique(instance_id)` drop (no backstop
+  probe), answer→submission coherence FK drop (no answer-level
+  incoherent-tuple test).
+- **P3-4:** rebinding/replay-order/beforeunload no-bites masked by
+  second layers.
+- **P3-5:** builder ran only the focused P-025-B E2E, never the full
+  repository E2E gate — the gap that let P1-1 ship.
+- **P3-6:** pre-existing project-wide raw-SQL composite-FK naming drift
+  (not introduced by this slice).
+- The review also confirmed: scope fidelity vs decisions #92–#97, schema
+  soundness, derived-lifecycle correctness, RBAC/dual-role denial,
+  consent boundary, lock/idempotency correctness, no P-025-C/D surface —
+  and independently re-ran every gate (unit 1057, integration 575,
+  focused E2E 14/14, full E2E with the single deterministic failure).
+
+## Owner process exception (2026-10-10) — owner-granted, bounded
+
+The **owner** accepted the already-recorded initial P-025-B test-order
+deviation (the E2E spec was authored after the UI; the integration
+suite's initial all-fail run was a fixture bug, not contract RED).
+Recorded exactly:
+
+- applies **only** to that already-recorded deviation;
+- is **not precedent**;
+- does **not** retroactively make the original sequence RED-first;
+- does **not** waive the P1-1 repair, the new invariant tests,
+  full-suite verification, mutation testing, independent re-review, CI,
+  separate PR/merge authorization, production restrictions, or future
+  test-first requirements;
+- the acceptance is attributed to the owner, **not** the reviewer.
+
+## P-025-B-I1-R2 repair record (2026-10-10)
+
+On `feature/p025b-check-in-instances-submissions`, forward-only from
+`9b60cf3`.
+
+**P1-1 reproduction (before any edit):**
+`npx playwright test tests/e2e/client-roster.spec.ts -g "keyboard traversal"`
+→ `expect(focused).toBe(true)` / `Received: false` at spec line 361,
+exit 1 — reproduced **3/3** on the unmodified head.
+
+**Root cause:** wsB's page-1 roster renders 25 rows; the new per-row
+"Check-Ins" `<Link>` added 25 focusable stops, exhausting the test's
+fixed 40-tab budget before the "Next page" link. The production markup
+is correct — real `<Link>`, accessible name "Check-Ins", correct
+`/clients/{id}/checkins` destination — so the repair is a **test-contract
+update**, not a production change and not link removal.
+
+**Repair:** the test now derives its bound from the rendered focusable
+count (+4 slack) and records each visited stop's accessible text + href,
+asserting: every rendered "Check-Ins" row action is keyboard-reached
+(exactly `PAGE_SIZE` stops), every rendered "Daily entries" action is
+reached (flag-conditional count), all destinations match
+`/clients/{id}/checkins`, all row actions precede the pagination link,
+and focus-visible still shows an outline. GREEN 3/3 post-repair.
+
+**New invariant coverage (characterization + mutation evidence):**
+
+- `answer→submission composite FK rejects an incoherent answer tuple` —
+  direct insert with foreign workspaceId/clientProfileId rejected;
+  scratch-dropping the FK makes the test fail.
+- `unique(instance_id) is an independent DB backstop` — two competing
+  direct inserts bypassing the service → exactly one commits, loser is
+  P2002; scratch-dropping the index makes the test fail.
+- `assignment revoked while a coach schedule holds the lock` — a
+  barrier-held `FOR UPDATE` + REMOVED update races the real service
+  protocol → `not_assigned` denial, zero instance, zero audit, REMOVED
+  assignment. Skipping `lockAssignmentForScope` makes the test fail —
+  this is the direct race probe the R1 no-bite #5 lacked.
+- `replay is honored even though the derived lifecycle is already
+  SUBMITTED` — pins the pre-replay SUBMITTED projection; a genuine
+  control-flow swap (state rejection with real presence before the
+  lookup) fails three tests.
+- E2E `beforeunload is suppressed immediately on success — inside the
+  pre-unmount window` — synthetic cancelable beforeunload dispatch:
+  untouched→no handler, dirty→prevented, post-response→suppressed while
+  the refresh is held, submitted-state→no dialog. A leaked-listener
+  mutation fails it. (Honest note: `submittedRef`/`setDirty` alone are
+  not observable — the action's `revalidatePath` returns the new RSC
+  payload in the action response, making unmount atomic; the biting
+  mutation is the listener leak itself.)
+- **Rebinding probe disposition (D):** no clean behavioral probe exists —
+  `client_profile @@unique(workspaceId, userId)` gives a client exactly
+  one own profile, so a weakened rebind can only return a foreign
+  profile which the `authorize` own-check then denies (`not_owner`).
+  The rebinding's value is error-shape/ordering, not a separable
+  security outcome; retained as defense-in-depth, documented rather
+  than fabricated.
+
+**Repair-delta mutations (8, all reverted, byte-identical after):**
+link-out-of-tab-order → roster traversal FAIL; wrong accessible name →
+roster traversal FAIL; wrong destination → roster traversal FAIL;
+answer-FK drop → incoherent-answer test FAIL; `unique(instance_id)` drop
+→ backstop test FAIL; assigned-lock skip → race test FAIL; replay-after-
+state swap → 3 tests FAIL; beforeunload listener leak → window test FAIL.
+
+**Verification:** `git diff --check`, `tsc`, `eslint`, `prettier`,
+`prisma validate/generate` all clean; unit **1057/1057**; disposable-PG
+integration **579/579** (37 files; P-025-B file 27/27); `npm run build`
+clean; **full E2E `npm run test:e2e`: 303 passed / 12 skipped / 0
+failed** — the deterministic roster regression is gone and the new
+window test passes.
+
+## Next gate (post-repair)
+
+Fresh independent different-model review of the complete candidate
+`49408db..HEAD` including the repair delta and this owner-exception
+record, by `opencode-go/deepseek-v4.1-flash`. PR/merge remain separately
+authorized. P-025-C/D still unauthorized and unimplemented.
