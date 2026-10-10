@@ -96,6 +96,11 @@ export const AUDIT_RESOURCE_TYPES = [
   // markers only — never answer content, labels, option text, dates, or
   // consent detail). Replay writes no event.
   "onboarding_submission",
+  // P-025-A: Check-In form definition + publish/archive lifecycle (IDs +
+  // structural markers only — never labels, options, draft JSON, or field
+  // content). Instance/submission/review audit types arrive with later
+  // slices — they do not exist yet.
+  "checkin_form",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 

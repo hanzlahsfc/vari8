@@ -317,6 +317,11 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         // — consent-gated health data, reviewed in decisions #82–#85.
         "onboarding_submission",
         "onboarding_submission_answer",
+        // P-025-A: staff-managed Check-In form definitions + immutable
+        // published versions — no client data, reviewed in decisions
+        // #92–#97. No instance/submission/review tables exist yet.
+        "checkin_form",
+        "checkin_form_version",
         // P-014: staff parameter/template definitions + immutable versions
         // (no client data; reviewed in product-decisions #41–#48).
         "coaching_template",

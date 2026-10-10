@@ -56,6 +56,9 @@ export const RESOURCES = [
   "clientSetups",
   // P-023 (product-decisions #82–#85): client-owned onboarding submissions.
   "onboardingSubmissions",
+  // P-025-A (product-decisions #92–#97): staff-managed Check-In form
+  // definitions. Instance/submission resources arrive with later slices.
+  "checkinFormDefinitions",
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
 
@@ -227,6 +230,19 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
   // scoped to workspace owners and ACTIVE coaches — definitions only, no
   // submission domain exists. Assistant/support/client/platform denied.
   onboardingFormTemplates: {
+    PLATFORM_ADMIN: D,
+    WORKSPACE_OWNER: c("workspace", "workspace"),
+    COACH: c("workspace", "workspace"),
+    ASSISTANT_COACH: D,
+    SUPPORT: D,
+    CLIENT: D,
+  },
+  // P-025-A (product-decision #95): Check-In form DEFINITION management —
+  // workspace owners and coaches create/edit/publish/archive/schedule at
+  // workspace scope with no coaching-assignment dependency; assistants,
+  // clients, SUPPORT, and PLATFORM_ADMIN denied (the PLATFORM_ADMIN cell is
+  // additionally deny-set enforced in guard.ts — dual-role inclusive).
+  checkinFormDefinitions: {
     PLATFORM_ADMIN: D,
     WORKSPACE_OWNER: c("workspace", "workspace"),
     COACH: c("workspace", "workspace"),

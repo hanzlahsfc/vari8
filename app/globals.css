@@ -1094,3 +1094,10 @@ body {
   padding-inline-start: var(--space-4);
   overflow-wrap: anywhere;
 }
+
+/* P-025-A: ≥44px touch targets on staff catalog-surface action controls —
+ * scoped to .catalog-page so login/auth flows keep their reviewed sizing.
+ */
+.catalog-page .auth-button {
+  min-height: 44px;
+}
