@@ -5,8 +5,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 /**
  * P-025-A Check-In schema contract — asserted directly against real
- * PostgreSQL catalog. Synthetic fixtures only; this slice has NO
- * instance/submission/answer/review tables by contract.
+ * PostgreSQL catalog. Synthetic fixtures only. The P-025-B slice later
+ * added the instance/submission/answer trio (reviewed); the
+ * `checkin_review` table remains absent — P-025-C.
  */
 const url = process.env.INTEGRATION_DATABASE_URL;
 const enabled = typeof url === "string" && url.length > 0;
@@ -175,12 +176,21 @@ describe.skipIf(!enabled)("P-025-A schema — tables/columns/constraints", () =>
     }
   });
 
-  it("no Check-In instance/submission/answer/review tables exist in this slice", async () => {
+  it("no Check-In review table exists in this slice (P-025-C deferred)", async () => {
     const rows = await prisma.$queryRawUnsafe<Array<{ table_name: string }>>(
       "SELECT table_name FROM information_schema.tables WHERE table_schema='public'",
     );
     const names = rows.map((r) => r.table_name);
-    const reviewed = new Set(["checkin_form", "checkin_form_version"]);
+    // P-025-A reviewed the definition pair; P-025-B later reviewed the
+    // instance + submission pair. `checkin_review` (P-025-C) must NOT
+    // exist yet — anything else proves scope creep.
+    const reviewed = new Set([
+      "checkin_form",
+      "checkin_form_version",
+      "checkin_instance",
+      "checkin_submission",
+      "checkin_submission_answer",
+    ]);
     for (const n of names) {
       if (!n.startsWith("checkin_")) continue;
       expect(reviewed, `unexpected checkin table ${n}`).toContain(n);

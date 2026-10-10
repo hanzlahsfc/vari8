@@ -51,6 +51,24 @@ export default async function globalTeardown(): Promise<void> {
     await prisma.onboardingForm.deleteMany({
       where: { workspaceId: { in: workspaceIds } },
     });
+    // P-025: Check-In rows Restrict-reference workspaces, profiles,
+    // versions, and members — children first, then instances, then the
+    // version/form definitions.
+    await prisma.checkInSubmissionAnswer.deleteMany({
+      where: { workspaceId: { in: workspaceIds } },
+    });
+    await prisma.checkInSubmission.deleteMany({
+      where: { workspaceId: { in: workspaceIds } },
+    });
+    await prisma.checkInInstance.deleteMany({
+      where: { workspaceId: { in: workspaceIds } },
+    });
+    await prisma.checkInFormVersion.deleteMany({
+      where: { workspaceId: { in: workspaceIds } },
+    });
+    await prisma.checkInForm.deleteMany({
+      where: { workspaceId: { in: workspaceIds } },
+    });
     await prisma.workspaceMember.deleteMany({
       where: {
         OR: [
