@@ -5,6 +5,49 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-10 — P-025-A Check-In form definitions implemented (candidate branch)
+
+- Owner-authorized slice P-025-A on `feature/p025a-check-in-form-definitions`
+  from exact `origin/main` `89e9e1d` — staff-managed Check-In form
+  definitions only (create / draft edit / publish / preview / archive);
+  NO instances, scheduling, client submission, answers, reviews, feedback,
+  recurrence, or notifications.
+- Schema: `CheckInFormStatus`/`CheckInAnswerKind` enums + `checkin_form` /
+  `checkin_form_version` tables (migration `20261010170000_p025a_checkin_forms`),
+  composite tenant/provenance FKs, `UNIQUE(form_id,version_seq)` +
+  `UNIQUE(form_id,publish_origin_revision)` replay authority, RESTRICT
+  everywhere.
+- Boundary stack: `lib/checkin/forms-gate.ts` shared server-only resolver
+  (`ENABLE_CHECK_INS="1"` AND trusted dev/test runtime — production fails
+  closed), `lib/checkin/forms.ts` (validator + service: member advisory →
+  member FOR UPDATE → in-tx authorize → form lock → mutation → audit last,
+  Serializable + bounded retry), `lib/checkin/forms-boundary.ts` (byte-bounded
+  pre-parse, closed safe messages), `app/.../checkins/actions.ts` (feature
+  gate → session gate → bounded FormData → boundary).
+- RBAC `checkinFormDefinitions`: owner/coach workspace R/W; assistant,
+  client, SUPPORT, PLATFORM_ADMIN denied. Both `checkinFormDefinitions`
+  AND `checkinsCoachReviews` added to `PLATFORM_ADMIN_DENIED_RESOURCES`
+  (dual-role inclusive, per the binding security requirement).
+- Staff UI: library, create, editor (stable server-minted IDs, tombstones,
+  `beforeunload` dirty warning, two-step archive, ≥44px targets, aria-live
+  alert), read-only draft/version preview (zero persistence), gated nav
+  entry. `ENABLE_CHECK_INS` documented off-by-default in `.env.example`.
+- Verification: unit 1032 green; disposable-PG integration 30 new green
+  (`p025a_integration_test`, local docker-compose postgres only); full
+  integration suite green after two reviewed pin updates (resource count
+  25→26, S1-A table inventory +`checkin_form`/`checkin_form_version`);
+  production-build E2E `checkin-forms.spec.ts` 10/10 (lifecycle at
+  1440/834/390, denied roles 403, flag-off 404s + hidden nav, stale
+  revision, immutable v1-after-v2, beforeunload, ≥44px touch targets,
+  no overflow, preview zero-persistence probes).
+- Mutation testing: 14 scratch mutations applied, each reverted
+  byte-identical — all BITES (deny-set removals, assistant-allow,
+  flag-only bypass, hardcoded trusted env, stale-revision accept,
+  retired-ID resurrection, in-place publish overwrite, missing replay,
+  non-lock versionSeq, missing publish audit, archived writes allowed,
+  preview-persistence, dropped payload byte bound).
+- Candidate pushed, NO PR; independent review pending.
+
 ## 2026-10-10 — P-025 Check-In v1 decisions recorded (docs only)
 
 - P-025 plan/review chain complete: initial plan → independent R1

@@ -140,6 +140,12 @@ const PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> = new Set([
   // P-023: client-owned onboarding submissions — denied including
   // dual-role platform administrators.
   "onboardingSubmissions",
+  // P-025 (decisions #92–#97 — binding security requirement, not an owner
+  // choice): Check-In resources deny PLATFORM_ADMIN including a dual-role
+  // administrator with an ACTIVE membership of any role. `checkinInstances`
+  // joins this set when the resource is introduced in P-025-B.
+  "checkinFormDefinitions",
+  "checkinsCoachReviews",
 ]);
 
 /**

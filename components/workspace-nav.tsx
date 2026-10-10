@@ -6,6 +6,7 @@ import {
   type Resource,
   type WorkspaceRole,
 } from "@/lib/auth/rbac";
+import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
 import { isOnboardingAssignmentsEnabled } from "@/lib/onboarding/assignments-gate";
 import { isCoachingTemplatesEnabled } from "@/lib/coaching/gate";
 import { isClientSetupEnabled } from "@/lib/coaching/client-setup-gate";
@@ -123,6 +124,17 @@ export function WorkspaceNav({
       label: "Exercise Database",
       resource: "foodExerciseMasterData",
       action: "read",
+    },
+    // P-025-A: staff Check-In form-definition library — gated by the shared
+    // resolver (ENABLE_CHECK_INS + trusted dev/test runtime); the scope
+    // cell already pins it to owner/coach and denies every other role.
+    // Cosmetic only — every destination re-authorizes server-side.
+    {
+      href: `/workspace/${workspaceId}/checkins/forms`,
+      label: "Check-In Forms",
+      resource: "checkinFormDefinitions",
+      action: "read",
+      enabled: isCheckInsEnabled(),
     },
     {
       href: `/workspace/${workspaceId}/admin`,

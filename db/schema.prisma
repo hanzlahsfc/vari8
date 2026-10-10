@@ -158,6 +158,8 @@ model Workspace {
   dailyEntries                  DailyEntry[]
   onboardingSubmissions         OnboardingSubmission[]
   onboardingSubmissionAnswers   OnboardingSubmissionAnswer[]
+  checkInForms                  CheckInForm[]
+  checkInFormVersions           CheckInFormVersion[]
 
   @@map("workspace")
 }
@@ -192,6 +194,10 @@ model WorkspaceMember {
   dailyEntriesCreated       DailyEntry[]            @relation("DailyEntryCreator")
   dailyEntryRevisionsCreated DailyEntryRevision[]   @relation("DailyEntryRevisionCreator")
   onboardingSubmissionsSubmitted OnboardingSubmission[] @relation("OnboardingSubmissionSubmittedByMember")
+
+  checkInFormsCreated  CheckInForm[]        @relation("CheckInFormCreator")
+  checkInFormsArchived CheckInForm[]        @relation("CheckInFormArchiver")
+  checkInFormVersions  CheckInFormVersion[] @relation("CheckInFormVersionPublisher")
 
   parametersCreated         ParameterDefinition[]     @relation("ParameterDefinitionCreator")
   parametersUpdated         ParameterDefinition[]     @relation("ParameterDefinitionUpdater")
@@ -1070,4 +1076,83 @@ model OnboardingSubmissionAnswer {
   @@unique([submissionId, fieldId])
   @@index([workspaceId])
   @@map("onboarding_submission_answer")
+}
+
+// ── P-025-A Check-In form definitions (decisions #92–#97) ──────────────────
+// Staff-managed Check-In form definitions + immutable published versions.
+// Check-In is a DISTINCT domain from onboarding — its own tables, enum,
+// kinds, and lifecycle. No instance/scheduling/submission/review tables in
+// this slice (P-025-B+); no client answers exist anywhere. Restrict FKs:
+// deleting a workspace/member must not cascade away form history.
+
+enum CheckInFormStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+// Domain answer-kind vocabulary for future CheckInSubmissionAnswer rows and
+// the kind strings recorded in published definition snapshots. Never the
+// onboarding-named enum.
+enum CheckInAnswerKind {
+  SHORT_TEXT
+  LONG_TEXT
+  NUMBER
+  DATE
+  SINGLE_CHOICE
+  MULTI_CHOICE
+}
+
+model CheckInForm {
+  id                   String            @id @default(cuid())
+  workspaceId          String            @map("workspace_id")
+  name                 String
+  status               CheckInFormStatus @default(ACTIVE)
+  archivedAt           DateTime?         @map("archived_at") @db.Timestamptz(6)
+  archivedByMemberId   String?           @map("archived_by_member_id")
+  // Mutable working draft (open/closed lifecycle mirrors onboarding):
+  // publish sets it to null; openCheckInDraft seeds the next revision from
+  // the LATEST immutable version. Optimistic concurrency via draftRevision.
+  draft                Json?
+  draftRevision        Int               @default(1) @map("draft_revision")
+  draftSavedByMemberId String?           @map("draft_saved_by_member_id")
+  draftUpdatedAt       DateTime?         @map("draft_updated_at") @db.Timestamptz(6)
+  createdByMemberId    String            @map("created_by_member_id")
+  createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace        Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  createdByMember  WorkspaceMember @relation("CheckInFormCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  archivedByMember WorkspaceMember? @relation("CheckInFormArchiver", fields: [archivedByMemberId], references: [id], onDelete: Restrict)
+  versions         CheckInFormVersion[]
+
+  // Composite target for the CheckInFormVersion form∈workspace foreign key (raw SQL).
+  @@unique([id, workspaceId])
+  @@index([workspaceId, status])
+  @@map("checkin_form")
+}
+
+model CheckInFormVersion {
+  id                    String   @id @default(cuid())
+  // Denormalized tenant stamp — immutable, set at publish; part of the
+  // (id, workspaceId, formId) composite coherence target below.
+  workspaceId           String   @map("workspace_id")
+  formId                String   @map("form_id")
+  versionSeq            Int      @map("version_seq")
+  definition            Json
+  publishOriginRevision Int      @map("publish_origin_revision")
+  publishedAt           DateTime @default(now()) @map("published_at") @db.Timestamptz(6)
+  publishedByMemberId   String   @map("published_by_member_id")
+
+  workspace         Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  form              CheckInForm     @relation(fields: [formId], references: [id], onDelete: Restrict)
+  publishedByMember WorkspaceMember @relation("CheckInFormVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
+
+  @@unique([formId, versionSeq])
+  // Composite coherence target for later client-scoped rows (raw SQL FKs in
+  // a future migration when instance/submission tables arrive).
+  @@unique([id, workspaceId, formId])
+  // Deterministic publish-replay authority: one version per origin draft
+  // revision (partial unique in the raw migration).
+  @@index([formId, publishOriginRevision])
+  @@map("checkin_form_version")
 }

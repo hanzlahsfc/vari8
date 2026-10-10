@@ -228,15 +228,99 @@ privacy review if rich feedback is ever added; deployment configuration.
 
 ## Status
 
-Owner-approved decisions recorded on `docs/p025-check-in-decisions`.
-**Implementation remains unauthorized** — it requires a separate
-implementation prompt per slice after this record is independently
-reviewed and merged. No PR, merge, deployment, database mutation, or
-production enablement occurred for this task.
+Decisions #92–#97 are on `main` (merge `89e9e1d`, PR #30). **P-025-A
+implementation** — Check-In form definitions and immutable published
+versions — is complete on candidate branch
+`feature/p025a-check-in-form-definitions` pending independent review.
+The slice covers staff-managed definitions only; no instance,
+scheduling, client submission, answers, reviews, or feedback exists.
+P-025-B+ remain unauthorized.
+
+## P-025-A implementation record (2026-10-10)
+
+Branch `feature/p025a-check-in-form-definitions` from exact verified
+`origin/main` `89e9e1d1f266978bef804b01e766b5b4b94a1b3d`.
+
+**Schema** — migration `20261010170000_p025a_checkin_forms`: enum
+`CheckInFormStatus` (ACTIVE/ARCHIVED), enum `CheckInAnswerKind`
+(SHORT_TEXT/LONG_TEXT/NUMBER/DATE/SINGLE_CHOICE/MULTI_CHOICE), table
+`checkin_form` (mutable draft + status/provenance only), table
+`checkin_form_version` (immutable published snapshots).
+DB-enforced invariants: `UNIQUE(id, workspace_id)` coherence target,
+`UNIQUE(form_id, version_seq)` sequence authority,
+`UNIQUE(form_id, publish_origin_revision)` publish-replay authority,
+`UNIQUE(id, workspace_id, form_id)` on the version, composite same-
+workspace FKs for every member provenance column and the
+version→form coherence claim, `ON DELETE RESTRICT` on all
+relationships. No instance/submission/answer/review tables.
+
+**Domain + service** — `lib/checkin/forms.ts`: closed error vocabulary,
+server-minted `f_`/`o_` IDs, field-kind immutability per fieldId,
+tombstone enforcement (a presented ID must be bound in the CURRENT
+draft — retired IDs never resurrect), bounded normalization (field/option
+counts, label/help/classification lengths, 64KiB definition bytes),
+publish completeness. Service ops run the reviewed protocol: member
+advisory `member:{ws}:{user}` → `workspace_member` FOR UPDATE →
+in-transaction `authorize(checkinFormDefinitions,…)` → `checkin_form`
+FOR UPDATE → mutation → structural audit LAST — all inside one
+Serializable transaction with bounded retry. Publish pins the exact
+normalized draft revision in `publish_origin_revision`, closes the
+draft, and replay returns the existing committed version (no duplicate
+row/audit). `openCheckInDraft` seeds v2 editing from the LATEST
+immutable version — earlier versions are never touched. Archive is
+terminal, idempotent (no duplicate audit), preserves history.
+
+**Feature boundary** — `lib/checkin/forms-gate.ts`: the ONE shared
+server-only resolver `isCheckInsEnabled(env)` — `ENABLE_CHECK_INS ===
+"1"` AND trusted runtime classification (`APP_ENV` allowlist, else
+`NODE_ENV`; missing/unknown/malformed → production-safe). Pages
+`notFound()` and actions deny BEFORE session/FormData/DB work.
+`ENABLE_CHECK_INS` documented commented-off in `.env.example`.
+
+**Authorization** — `checkinFormDefinitions` in `RESOURCES` + matrix:
+WORKSPACE_OWNER and COACH get workspace read/write; ASSISTANT_COACH,
+CLIENT, SUPPORT, PLATFORM_ADMIN denied. `PLATFORM_ADMIN_DENIED_RESOURCES`
+now includes `checkinFormDefinitions` AND the pre-stubbed
+`checkinsCoachReviews` (dual-role-inclusive — binding requirement).
+`checkinInstances` does not exist yet; its deny-set inclusion is
+mandatory when introduced in P-025-B.
+
+**Boundary/actions/UI** — `lib/checkin/forms-boundary.ts` byte-bounds
+`draftJson` BEFORE `JSON.parse`, maps the closed error vocabulary to
+pinned safe copy. `app/workspace/[workspaceId]/checkins/actions.ts`:
+feature gate → session gate → bounded FormData → boundary; closed
+`{ok, value|message}` results, success-only revalidation. Staff pages
+under `checkins/forms/` (library, new, editor, preview), components
+`components/checkin/` (draft editor with `beforeunload` + two-step
+archive + aria-live alert, open-draft, create), gated nav entry.
+Preview is read-only with zero persistence (no form/action/storage);
+`src` selection is explicit, no fallback.
+
+**Verification** — unit suite green incl. `checkin-forms.test.ts` (25),
+`checkin-forms-boundary.test.ts` (4); disposable-PG integration green:
+`p025a-checkin-schema` (8: enums/columns/uniques/RESTRICT/no out-of-slice
+tables/composite-FK coherence), `p025a-checkin-forms` (14: lifecycle,
+denied roles incl. dual-role PA, stale revision, concurrent save/publish,
+deterministic seq, replay, v1-immutability-after-v2, archive
+restrictions, tenant isolation, revocation race, malformed-no-mutation,
+retired-ID resurrection denied), `p025a-checkin-actions` (8: action
+lifecycle, role/PA/dual denial, forged-tenant denial, flag-off zero
+writes, bounded-input contract). Production-build E2E
+`checkin-forms.spec.ts` 10/10 across 1440/834/390 incl. flag-off 404s,
+nav gating, stale-conflict, beforeunload, ≥44px targets, no overflow,
+preview zero-persistence probes (revision/versions/audit unchanged on
+both draft and version preview legs).
+**Mutation testing** — 14 scratch mutations each proved failing then
+reverted byte-identical (all BITES; the dropped-byte-bound mutation
+initially survived at the action layer and was re-proven against the
+new dedicated boundary unit test).
+**Databases** — `p025a_integration_test` (local docker-compose Postgres
+only); no production or builder/reviewer DBs touched. E2E ran on the
+dev `app_dev` database via the standard harness.
 
 ## Next gate
 
-Independent different-model review of this documentation head before
-any PR is created; merge remains separately authorized. Recommended
-first implementation slice after merge and separate prompt: **P-025-A
-— Check-In form definitions**.
+Independent different-model review of the P-025-A candidate branch;
+any PR/merge remains separately authorized after review. P-025-B —
+first client-visible slice — is NOT started and requires its own
+implementation prompt.
