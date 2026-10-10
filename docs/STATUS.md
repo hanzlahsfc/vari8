@@ -5,6 +5,21 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-10 — P-025-C Check-In staff review implemented (candidate branch)
+
+- Owner-authorized slice P-025-C on `feature/p025c-check-in-staff-review`
+  from exact `origin/main` `65fad84` — staff submission-header list,
+  explicit detail reveal (one structural READ audit per committed view),
+  terminal review acknowledgement (assigned coach only, one immutable
+  row per submission — provenance only; no notes/feedback/gate).
+- `checkin_review`: `unique(submission_id)` anchor + composite coherence
+  FKs + RESTRICT; `REVIEWED` inserted in the derived projector; mark
+  gated by `grantedScope==="assigned"` + unconditional ACTIVE
+  assignment lock; consent FOR UPDATE before answers; reviewer identity
+  staff-bounded (#91) — client surfaces unchanged.
+- Verification: unit 1063; integration 594 (15/15 P-025-C); full E2E
+  310/0-failed; 8 biting mutations reverted byte-identically.
+
 ## 2026-10-10 — P-025-B Check-In instances + client submissions implemented (candidate branch)
 
 - Owner-authorized slice P-025-B on `feature/p025b-check-in-instances-submissions`
