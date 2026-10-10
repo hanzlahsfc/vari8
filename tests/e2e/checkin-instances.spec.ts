@@ -635,3 +635,73 @@ test("no staff review/acknowledgement controls exist anywhere", async ({
     page.getByRole("button", { name: /acknowledge|review/i }),
   ).toHaveCount(0);
 });
+
+// ── beforeunload post-success window (R1 P3-4) ─────────────────────────
+
+test("beforeunload is suppressed immediately on success — inside the pre-unmount window", async ({
+  page,
+}) => {
+  const instance = await fixtureInstance(new Date("2032-02-01T00:00:00.000Z"));
+  await signIn(page, E2E.client);
+  await page.goto(clientDetailUrl(instance.id));
+  await expect(page.getByTestId("checkin-fill-form")).toBeVisible();
+
+  // Dispatch a real cancelable beforeunload and inspect defaultPrevented —
+  // behavioral probe, no internal-flag access.
+  const wouldWarn = () =>
+    page.evaluate(() => {
+      const e = new Event("beforeunload", { cancelable: true });
+      window.dispatchEvent(e);
+      return e.defaultPrevented;
+    });
+  expect(await wouldWarn()).toBe(false); // untouched form → no handler
+  await page.locator("#ci-f-f_summary").fill("Window probe");
+  expect(await wouldWarn()).toBe(true); // dirty → handler installed
+
+  // Stretch the post-response window: hold the router.refresh RSC GET so
+  // the dirty form stays mounted AFTER the action resolves. A successful
+  // submit must suppress the prompt in THIS window — not only when the
+  // submitted-state unmount eventually removes the listener.
+  let releaseRefresh!: () => void;
+  const gate = new Promise<void>((r) => {
+    releaseRefresh = r;
+  });
+  await page.route("**/*", async (route, request) => {
+    if (request.method() === "GET" && request.headers()["rsc"] === "1") {
+      await gate;
+    }
+    return route.continue();
+  });
+
+  const actionDone = page.waitForResponse(
+    (r) =>
+      r.url().includes(`/workspace/${wsId}/check-ins/`) &&
+      r.request().method() === "POST",
+  );
+  await page.locator("#ci-f-f_energy").selectOption("o_high");
+  await page.getByTestId("checkin-submit").click();
+  await actionDone;
+
+  // The fill form is STILL mounted (refresh is held) — yet the dirty
+  // handler must already be suppressed. A mutation that leaves the
+  // listener active after success keeps defaultPrevented true here.
+  await expect.poll(async () => wouldWarn(), { timeout: 8_000 }).toBe(false);
+
+  // Release the refresh → submitted state mounts → listener removed for
+  // real; navigating away immediately raises no dialog.
+  releaseRefresh();
+  await page.unrouteAll();
+  let dialogSeen = false;
+  page.on("dialog", async (d) => {
+    dialogSeen = true;
+    await d.dismiss();
+  });
+  await expect(page.getByTestId("checkin-submitted-state")).toBeVisible({
+    timeout: 15_000,
+  });
+  await page.goto(clientListUrl());
+  await expect(
+    page.getByTestId("checkin-item-submitted").first(),
+  ).toBeVisible();
+  expect(dialogSeen).toBe(false);
+});

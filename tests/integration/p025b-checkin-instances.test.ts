@@ -1108,4 +1108,194 @@ describe.skipIf(!enabled)("P-025-B check-in instances (real PG)", () => {
     expect(advisoryKeys[0]).toBe(`chkin:${s.w.id}:${s.cp.id}:${s.formId}`);
     expect(advisoryKeys[1]).toBe(`member:${s.w.id}:${s.clientUser.id}`);
   });
+
+  // ── P3 invariant coverage (R1 #31–#33): direct constraint + race proofs
+
+  it("answer→submission composite FK rejects an incoherent answer tuple", async () => {
+    const s = await setup();
+    const s2 = await setup(); // second workspace + client, fully coherent itself
+    const { instanceId } = await schedule(s.owner.id, s);
+    const res = await submitCheckInInstance(
+      session(s.clientUser.id),
+      {
+        workspaceId: s.w.id,
+        instanceId,
+        answersJson: answersJson(s.definition),
+      },
+      deps(),
+    );
+    const fieldId = s.definition.fields[0].fieldId;
+    // Right submission, wrong workspace → checkin_submission_answer_coherence_fkey.
+    await expect(
+      prisma.checkInSubmissionAnswer.create({
+        data: {
+          submissionId: res.submissionId,
+          workspaceId: s2.w.id, // foreign workspace
+          clientProfileId: s.cp.id,
+          fieldId: "f_foreign_ws",
+          kind: "SHORT_TEXT",
+          valueText: "x",
+        },
+      }),
+    ).rejects.toThrow();
+    // Right workspace, wrong client → same composite FK must reject.
+    await expect(
+      prisma.checkInSubmissionAnswer.create({
+        data: {
+          submissionId: res.submissionId,
+          workspaceId: s.w.id,
+          clientProfileId: s2.cp.id, // foreign client profile
+          fieldId: "f_foreign_cp",
+          kind: "SHORT_TEXT",
+          valueText: "x",
+        },
+      }),
+    ).rejects.toThrow();
+    // The coherent insert still works — the FK denies incoherence, not shape.
+    await prisma.checkInSubmissionAnswer.create({
+      data: {
+        submissionId: res.submissionId,
+        workspaceId: s.w.id,
+        clientProfileId: s.cp.id,
+        fieldId: "f_extra_ok",
+        kind: "SHORT_TEXT",
+        valueText: "ok",
+      },
+    });
+    expect(
+      await prisma.checkInSubmissionAnswer.count({
+        where: { submissionId: res.submissionId },
+      }),
+    ).toBe(4);
+  });
+
+  it("unique(instance_id) is an independent DB backstop — bypassing the service still yields one submission", async () => {
+    const s = await setup();
+    const { instanceId } = await schedule(s.owner.id, s);
+    const inst = await prisma.checkInInstance.findUniqueOrThrow({
+      where: { id: instanceId },
+    });
+    // Two competing DIRECT inserts — no chkin advisory, no service
+    // serialization: the unique index itself must permit exactly one.
+    const data = () => ({
+      workspaceId: inst.workspaceId,
+      clientProfileId: inst.clientProfileId,
+      formId: inst.formId,
+      formVersionId: inst.formVersionId,
+      instanceId: inst.id,
+      submittedByUserId: s.clientUser.id,
+      submittedByMemberId: s.clientMember.id,
+    });
+    const [r1, r2] = await Promise.allSettled([
+      prisma.checkInSubmission.create({ data: data() }),
+      prisma.checkInSubmission.create({ data: data() }),
+    ]);
+    const fulfilled = [r1, r2].filter((r) => r.status === "fulfilled");
+    const rejected = [r1, r2].filter((r) => r.status === "rejected");
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    expect(
+      (rejected[0] as PromiseRejectedResult).reason,
+    ).toMatchObject({ code: "P2002" });
+    expect(
+      await prisma.checkInSubmission.count({ where: { instanceId } }),
+    ).toBe(1);
+  });
+
+  it("assignment revoked while a coach schedule holds the lock → the action fails closed", async () => {
+    const s = await setup();
+    const coachUser = await user();
+    const coachMember = await member(s.w.id, coachUser.id, "COACH");
+    const asg = await assignment(s.w.id, s.cp.id, coachMember.id);
+
+    // Barrier: txn A locks the assignment row FOR UPDATE, then revokes it.
+    let releaseBarrier!: () => void;
+    const barrier = new Promise<void>((res) => {
+      releaseBarrier = res;
+    });
+    const revoker = prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(
+        `SELECT id FROM "client_assignment" WHERE id = $1 FOR UPDATE`,
+        asg.id,
+      );
+      await barrier; // hold the row lock until the service is blocked on it
+      await tx.clientAssignment.update({
+        where: { id: asg.id },
+        data: { status: "REMOVED" },
+      });
+    });
+
+    // The coach's schedule blocks on the same row inside the protocol.
+    const attempt = schedule(coachUser.id, s);
+    // Give the attempt time to reach the row lock before releasing.
+    await new Promise((res) => setTimeout(res, 400));
+    releaseBarrier();
+    await revoker;
+    await expect(attempt).rejects.toMatchObject({
+      reason: "not_assigned",
+    });
+    // Coherent end state: no instance, no audit, assignment REMOVED.
+    expect(
+      await prisma.checkInInstance.count({
+        where: { clientProfileId: s.cp.id },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.auditEvent.count({
+        where: { resourceType: "checkin_instance", workspaceId: s.w.id },
+      }),
+    ).toBe(0);
+    expect(
+      (
+        await prisma.clientAssignment.findUniqueOrThrow({
+          where: { id: asg.id },
+        })
+      ).status,
+    ).toBe("REMOVED");
+  });
+
+  it("replay is honored even though the derived lifecycle is already SUBMITTED", async () => {
+    const s = await setup();
+    const { instanceId } = await schedule(s.owner.id, s);
+    const first = await submitCheckInInstance(
+      session(s.clientUser.id),
+      {
+        workspaceId: s.w.id,
+        instanceId,
+        answersJson: answersJson(s.definition),
+      },
+      deps(),
+    );
+    // Pin the pre-replay truth: the derived state IS SUBMITTED — a state
+    // check ordered before the replay lookup would reject here.
+    const row = await prisma.checkInInstance.findUniqueOrThrow({
+      where: { id: instanceId },
+    });
+    expect(
+      projectCheckInInstanceState({
+        cancelledAt: row.cancelledAt,
+        cancelledByMemberId: row.cancelledByMemberId,
+        hasSubmission: true,
+      }),
+    ).toBe("SUBMITTED");
+    const replay = await submitCheckInInstance(
+      session(s.clientUser.id),
+      {
+        workspaceId: s.w.id,
+        instanceId,
+        answersJson: answersJson(s.definition),
+      },
+      deps(),
+    );
+    expect(replay).toEqual({
+      status: "already_submitted",
+      submissionId: first.submissionId,
+    });
+    expect(
+      await prisma.checkInSubmission.count({ where: { instanceId } }),
+    ).toBe(1);
+    expect(await audits("checkin_submission", first.submissionId)).toHaveLength(
+      1,
+    );
+  });
 });
