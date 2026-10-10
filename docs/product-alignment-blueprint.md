@@ -634,6 +634,13 @@ client existing — it cannot trail the persistence slices:
    no resubmission in v1, no staff answer-review surface, no drafts.
    Real-answer collection stays blocked on #38/#39/D-10; implementation
    requires a separate authorized prompt.
+   **Update (P-024 closure, product-decisions #86–#91):** a dev-gated
+   staff review surface over submitted onboarding responses is APPROVED
+   in product terms — one terminal workspace-wide review per submission,
+   informational only, explicit detail reads structurally audited,
+   UI-sequenced mark with independent server re-authorization, bounded
+   staff-only reviewer identity. Synthetic-only, default-off, production
+   fail-closed; implementation requires a separate authorized prompt.
 2. _Parameter library + template draft/publish skeleton_ — config tables,
    authorized staff-created definitions (owner + coach per #41–#42), publish
    immutability + snapshots. No source-derived seed ships in this slice
