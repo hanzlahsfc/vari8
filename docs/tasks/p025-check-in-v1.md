@@ -228,13 +228,15 @@ privacy review if rich feedback is ever added; deployment configuration.
 
 ## Status
 
-Decisions #92–#97 are on `main` (merge `89e9e1d`, PR #30). **P-025-A
-implementation** — Check-In form definitions and immutable published
-versions — is complete on candidate branch
-`feature/p025a-check-in-form-definitions` pending independent review.
-The slice covers staff-managed definitions only; no instance,
-scheduling, client submission, answers, reviews, or feedback exists.
-P-025-B+ remain unauthorized.
+Decisions #92–#97 are on `main` (merge `89e9e1d`, PR #30). **P-025-A** is
+merged on `main` (merge `49408db`, PR #31). **P-025-B implementation** —
+one-off Check-In instances, staff scheduling/cancellation, client
+list/detail/submission, consent-gated answers — is complete on candidate
+branch `feature/p025b-check-in-instances-submissions` pending
+independent different-model review. No review/feedback/recurrence/
+notification surface exists (P-025-C/P-025-D remain unauthorized and
+unimplemented). `ENABLE_CHECK_INS` remains default-off; nothing is
+deployed or production-enabled.
 
 ## P-025-A implementation record (2026-10-10)
 
@@ -329,8 +331,138 @@ archive → two-step Confirm/Cancel; P3s → create wrapped in bounded
 retry, `:3102` explicit flag-off, `name` well-formedness, nav `roles`
 pin, audit-rollback trigger test. Post-repair gates all green.
 
+## P-025-B implementation record (2026-10-10)
+
+Branch `feature/p025b-check-in-instances-submissions` from exact verified
+`origin/main` `49408db567b2359fade1a9499b5a02a4c58994c4` (the P-025-A
+merge). Authorized scope: one-off Check-In instances, staff
+scheduling/cancellation, client-owned list/detail/submission, typed
+immutable answers, consent-gated submit/history, derived lifecycle —
+NO review/acknowledgement (P-025-C), NO recurrence/custom/feedback/
+notifications/DailyEntry embedding (P-025-D).
+
+**Schema** — migration `20261010190000_p025b_checkin_instances`:
+`checkin_instance` (immutable ws/client/form/version pin, `due_at`
+Timestamptz, optional `due_tz` label, scheduling + nullable paired
+cancellation provenance, no stored status, no answer columns),
+`checkin_submission` (immutable, no `updated_at`,
+`UNIQUE(instance_id)` idempotency anchor, composite answer target
+`(id, workspaceId, clientProfileId)`), `checkin_submission_answer`
+(immutable typed rows, `UNIQUE(submission_id, field_id)`, raw-SQL
+kind↔column CHECK). Composite coherence FKs everywhere: instance →
+`(id, workspaceId)` ClientProfile, `version_coherence` →
+`(form_version_id, workspace_id, form_id)` CheckInFormVersion,
+provenance → `(member_id, workspace_id)` WorkspaceMember; submission →
+the full 5-column instance tuple; answers → `(submission_id,
+workspace_id, client_profile_id)`. Paired-provenance CHECK:
+`cancelled_at`/`cancelled_by_member_id` both-or-neither. All
+history-preserving FKs `ON DELETE RESTRICT`. Unanswered OPTIONAL
+fields store NO row — the CHECK makes an "empty answer" inexpressible.
+
+**Derived lifecycle** — one shared projector
+(`projectCheckInInstanceState`/`projectCheckInInstancePresentation` in
+`lib/checkin/instances.ts`): CANCELLED when valid paired provenance →
+SUBMITTED when a coherent submission exists → else SCHEDULED. No stored
+status column; `late` derives from `dueAt` vs `submittedAt`/now and
+never mutates state (#93). Designed so P-025-C can insert REVIEWED
+without a stored mutable column.
+
+**RBAC** — `checkinInstances` added with the decision-#95 matrix
+(owner ws/ws, coach asg/asg, assistant asg/—, client own/—, SUPPORT and
+PLATFORM_ADMIN denied); `checkinsCoachReviews` client own/own cell
+drives the submission domain. All three Check-In resources are in
+`PLATFORM_ADMIN_DENIED_RESOURCES` — dual-role PA denied in
+`authorize`/`authorizeCollection` before membership authority.
+
+**Locking/concurrency** — `chkin:{ws}:{clientProfileId}:{formId}`
+advisory → `member:{ws}:{userId}` advisory → member FOR UPDATE →
+in-transaction `authorize` → assigned-scope coherent ACTIVE
+`ClientAssignment` re-resolve+lock (owner takes NO assignment path) →
+profile FOR UPDATE → instance → submission → consents in kind order →
+mutation → structural audit last. Serializable + bounded retry; P2002
+re-enters the COMPLETE protocol once, second conflict →
+`serialization_conflict`. Answer-free bounded pre-read runs before any
+advisory so foreign/mutated tuples acquire ZERO locks (proven).
+Lock-order cross-check: `chkin` precedes `member` (same order as
+`csetup`→`member`, `onbassign`→`member`); no writer acquires `member`
+before `chkin`; row-lock order never inverts — acyclic.
+
+**Consent** — `resolveCheckInConsentPolicy` (trusted dev/test only →
+static `check-in-dev-*` registry; production/unknown/missing →
+unconfigured fail-closed). Submission locks required rows FOR UPDATE
+before any answer-row write; submitted-answer detail requires active
+consent on every read; withdrawal blocks new submission AND detail,
+list headers remain (#85-compatible).
+
+**Boundary/actions/UI** — `lib/checkin/instances-boundary.ts` maps the
+closed vocabulary (`denied`, `invalid_input`, `not_available`,
+`consent_missing`, `policy_not_configured`, `serialization_conflict`)
+to safe copy. Staff route
+`app/workspace/[workspaceId]/clients/[clientProfileId]/checkins/`
+(schedule form with positional select — no internal IDs in browser
+values — plus two-step destructive cancel). Client route
+`app/(tracker)/workspace/[workspaceId]/check-ins/` + `/[instanceId]`
+(force-dynamic, no-store headers via `next.config.ts`; list = bounded
+metadata only, zero answer values on GET). Client panel mirrors the
+P-023 onboarding panel (controlled fields, `aria-invalid`/
+`aria-describedby`/`role=alert`/`aria-live`, dirty-only `beforeunload`
+removed post-submit and on unmount, ≥44px targets, no raw internal
+IDs). Nav links in daily/onboarding shells + roster — all flag-gated.
+
+**Verification** — unit 1057 green incl. `checkin-instances.test.ts`
+(25: RBAC cells, dual-role deny-set, projector, parsers, canonicalizer,
+resolver, closed vocabulary); disposable-PG integration 575 green incl.
+`p025b-checkin-instances` (23: role matrix incl. dual-role PA + SUPPORT,
+owner-without-assignment, composite-FK/CHECK rejections, idempotent
+replay, concurrent schedule/submit/cancel races, consent lock/withdraw,
+audit-last trigger rollback, replay-no-second-audit, zero-advisory on
+foreign tuples); P-025-B E2E `checkin-instances.spec.ts` 14/14
+(flag-off 404s + zero audits, owner/coach schedule, two-step cancel,
+assistant/foreign-profile denial, client list/detail/submit,
+late marker, cancelled non-disclosure, consent-withdrawn detail deny,
+beforeunload lifecycle, no-store GET+POST, 1440/834/390, ≥44px, no
+overflow, positional select values, no P-025-C controls).
+`git diff --check`, `tsc --noEmit`, `eslint`, `prettier`,
+`prisma format/validate/generate`, fresh disposable-PG migrate deploy,
+and `migrate diff` all clean (the only remaining diff lines are the
+pre-existing SQL-only composite-FK/CHECK names every slice shares —
+same accepted class as P-021/P-023/P-025-A).
+
+**Bug found by the real-browser gate** — the first E2E submission run
+exposed a CHECK violation that unit+integration fixtures missed:
+unanswered OPTIONAL fields produced all-NULL answer rows that the
+kind↔column CHECK correctly rejected. Fixed by storing only answered
+rows (the CHECK semantics make "empty answer" inexpressible by design);
+regression coverage is the `expect(answers).toHaveLength(4)` assertion
+for a 5-field form submitted with one optional field empty.
+
+**Mutation testing** — 22 scratch mutations, each reverted. BITES:
+deny-set removal (×2), assistant-write grant, owner-requires-
+assignment, advisory-key weakening, pre-read removal, consent-reorder,
+trusted-env bypass, production-synthetic-consent, P2002 outside-
+transaction shortcut, cancel-after-submit acceptance, projector
+ignoring cancellation, submission→instance coherence-FK drop,
+kind↔column CHECK drop, audit-before-mutation, replay-second-audit,
+raw internal ID in browser value (real-browser E2E). NO-BITE (each
+masked by a second layer — recorded honestly): own-profile rebinding
+weakened (authorize `own` check still denies), assigned-scope lock skip
+(authorize's `getActiveAssignment` still denies), replay-lookup
+reordering (projector `hasSubmission` statically false in that path),
+`checkin_submission.instance_id` unique drop (chkin advisory + row
+locks serialize; unique remains the backstop), answer-level coherence-
+FK drop (no answer-level incoherent-tuple test exists — coverage note),
+beforeunload-after-submit (unmount cleanup removes the listener; the
+ref guards only the pre-refresh window).
+
+**Databases** — `p025b_integration_test` on the local docker-compose
+Postgres only; E2E ran on dev `app_dev` via the standard harness; a
+transient `dbg*` scratch fixture set was created and removed during
+E2E debugging. No production or unrelated databases touched.
+
 ## Next gate
 
-The reviewed P-025-A candidate branch is pushed for inspection; any
-PR/merge remains separately authorized. P-025-B — first client-visible
-slice — is NOT started and requires its own implementation prompt.
+The P-025-B candidate branch is pushed for inspection; PR/merge remain
+separately authorized. Next gate: independent different-model review of
+the exact final head by `opencode-go/deepseek-v4.1-flash`. P-025-C
+(coach review/acknowledgement) and P-025-D (recurrence/custom/feedback/
+notifications) remain unauthorized and unimplemented.

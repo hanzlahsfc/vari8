@@ -5,6 +5,56 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-10 — P-025-B Check-In instances + client submissions implemented (candidate branch)
+
+- Owner-authorized slice P-025-B on `feature/p025b-check-in-instances-submissions`
+  from exact `origin/main` `49408db` — one-off instances, staff
+  schedule/cancel, client own list/detail/submit, typed immutable answers,
+  consent-gated submit/history, derived lifecycle. NO review/ack (P-025-C),
+  NO recurrence/custom/feedback/notifications (P-025-D).
+- Schema: `checkin_instance`/`checkin_submission`/`checkin_submission_answer`
+  (migration `20261010190000_p025b_checkin_instances`) — immutable pins,
+  no stored status, `UNIQUE(instance_id)` submission anchor, composite
+  coherence FKs incl. the 5-col submission→instance tuple, paired-cancel
+  CHECK, kind↔column CHECK, RESTRICT everywhere.
+- RBAC `checkinInstances` (owner ws/ws, coach asg/asg, assistant asg/—,
+  client own/—); `checkinsCoachReviews` own/own drives submissions; all
+  three Check-In resources in `PLATFORM_ADMIN_DENIED_RESOURCES`.
+- Lock order: `chkin:{ws}:{cp}:{form}` advisory → `member` advisory →
+  member FOR UPDATE → in-tx authorize → assigned-scope assignment
+  re-resolve/lock (owner: none) → profile → instance → submission →
+  consents → mutation → audit last; Serializable + bounded retry; P2002
+  full-protocol re-entry once → `serialization_conflict` on second.
+- Consent: trusted dev/test-only `check-in-dev-*` registry via one shared
+  resolver; production/unknown → unconfigured fail-closed; FOR UPDATE
+  before answer access; withdrawal blocks submit + detail, list headers
+  remain.
+- UI: staff per-client schedule/cancel (positional select, two-step
+  destructive confirm), client `check-ins` list/detail/submit (no-store,
+  bounded metadata, pinned-definition fill form, dirty-only
+  `beforeunload`, ≥44px, no internal IDs in browser values), flag-gated
+  nav in daily/onboarding shells + roster.
+- Verification: unit 1057; disposable-PG integration 575 (P-025-B file
+  23/23 incl. dual-role PA, coherence-FK/CHECK rejections, races,
+  audit-last trigger rollback, zero-advisory foreign proof); E2E
+  `checkin-instances.spec.ts` 14/14 on the production build incl.
+  flag-off 404s, consent withdrawal, beforeunload lifecycle, responsive
+  1440/834/390; tsc/eslint/prettier/prisma format+validate+generate/
+  migrate deploy/migrate diff clean.
+- Real bug found by browser gate: unanswered OPTIONAL fields produced
+  all-NULL rows rejected by the kind↔column CHECK — fixed by storing only
+  answered rows (regression: 4 rows for a 5-field form with one empty
+  optional).
+- Mutation testing: 22 scratch mutations — 16 BITE, 6 recorded NO-BITE
+  each masked by a second layer (details in
+  `docs/tasks/p025-check-in-v1.md` P-025-B record). All reverted;
+  post-revert gates green.
+- `ENABLE_CHECK_INS` default-off/commented; nothing deployed; no PR
+  created. Next: push branch → independent `opencode-go/deepseek-v4.1-flash`
+  review of the exact head → separate merge authorization.
+- Full record: `docs/tasks/p025-check-in-v1.md` (P-025-B implementation
+  record). Builder report: `/Users/apple/Downloads/P-025-B-I1-builder-report.md`.
+
 ## 2026-10-10 — P-025-A Check-In form definitions implemented (candidate branch)
 
 - Owner-authorized slice P-025-A on `feature/p025a-check-in-form-definitions`

@@ -32,6 +32,7 @@ Every cell is written `read / write`; `—/—` means both denied.
 | daily tracking            | — / —         | ws / —  | asg / asg   | asg / —   | — / —   | own / own |
 | meal plans                | — / —         | ws / —  | asg / asg   | asg / —   | — / —   | own / —   |
 | training plans & logs     | — / —         | ws / —  | asg / asg   | asg / —   | — / —   | own / own |
+| check-in instances        | — / —         | ws / ws | asg / asg   | asg / —   | — / —   | own / —   |
 | check-ins & coach reviews | — / —         | ws / —  | asg / asg   | asg / —   | — / —   | own / own |
 | cycle data                | — / —         | — / — ⚠ | asg / asg ⚠ | — / —     | — / —   | own / own |
 | bloodwork                 | — / —         | — / — ⚠ | asg / asg ⚠ | — / —     | — / —   | own / own |
@@ -87,6 +88,17 @@ Legend / decisions:
   workspaces; a COACH cannot self-assign; every assignment change is audited. Creating an
   assignment **does not** bypass the cycle/bloodwork/PED policy gates above.
 - **Assistant write scope is TODO(human).** Default: read assigned, write denied.
+- **Check-In resources** (P-025-A/P-025-B, decisions #92–#97): three
+  closed resources — `checkinFormDefinitions` (staff-managed forms only),
+  `checkinInstances` (one-off schedule/cancel: owner ws/ws, coach asg/asg,
+  assistant asg/— read-only, client own/—), and `checkinsCoachReviews`
+  (client submission/history own/own; staff review write deferred to
+  P-025-C). SUPPORT and CLIENT writes are denied; **all three resources
+  are in the platform-admin denied set** — a PLATFORM_ADMIN is denied even
+  with an ACTIVE workspace membership of any role, enforced in
+  `authorize`/`authorizeCollection`, never by UI hiding. The surface is
+  dev-gated (`ENABLE_CHECK_INS="1"` AND trusted dev/test runtime;
+  production fails closed).
 - Master data is a **platform-owned** shared catalog (read-only to workspaces); only platform
   (and workspace owners for workspace-local extensions, if approved) administer it.
 - **Platform admin cannot read client health data or client exports** (`—/—`); audit read is
