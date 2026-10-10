@@ -548,6 +548,14 @@ Tab rules (SOURCE-CONFIRMED where cited):
   with links to changed plans. Custom check-in vs scheduled dates:
   **PENDING D-05** (recommendation: a custom submission satisfies a scheduled
   date only when the coach marks it as covering it).
+  **Update (P-025 closure, product-decisions #92–#97):** a dev-gated
+  Check-In v1 is APPROVED in product terms — one-off staff-scheduled
+  instances on immutable published forms, one due timestamp with visibly
+  marked late submission, owner+coach management (owner cannot mark),
+  terminal staff acknowledgement only, and cancellation only before
+  submission. Recurrence, custom Check-Ins (D-05 stays pending), and
+  rich feedback stay deferred. Synthetic-only, default-off, production
+  fail-closed; implementation requires a separate authorized prompt.
 - **Habit Tracker:** optional per-template feature; per-client habit
   definitions/frequency/goals/reasons; own status log.
 - **Messaging (M01–M05):** WhatsApp-like thread; **voice notes, files, photos
