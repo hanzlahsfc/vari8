@@ -204,13 +204,18 @@ export async function saveCheckInDraft(
     "draftJson",
     MAX_DRAFT_JSON_BYTES,
   );
+  // Optional `name` — absent ⇒ undefined (no rename); a present-but-
+  // malformed/duplicate/empty/oversized/unencodable value ⇒ null ⇒
+  // INVALID, same grammar as every other bound string.
   const names = formData.getAll("name");
   const name =
     names.length === 0
       ? undefined
       : names.length === 1 &&
           typeof names[0] === "string" &&
-          names[0].length <= MAX_NAME_LEN
+          names[0].length > 0 &&
+          names[0].length <= MAX_NAME_LEN &&
+          isWellFormedString(names[0])
         ? names[0]
         : null;
   if (

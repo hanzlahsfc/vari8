@@ -1152,7 +1152,7 @@ model CheckInFormVersion {
   // a future migration when instance/submission tables arrive).
   @@unique([id, workspaceId, formId])
   // Deterministic publish-replay authority: one version per origin draft
-  // revision (partial unique in the raw migration).
-  @@index([formId, publishOriginRevision])
+  // revision (declared unique — matches the raw migration index name).
+  @@unique([formId, publishOriginRevision], map: "checkin_form_version_publish_origin_key")
   @@map("checkin_form_version")
 }

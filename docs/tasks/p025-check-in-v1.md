@@ -315,12 +315,22 @@ reverted byte-identical (all BITES; the dropped-byte-bound mutation
 initially survived at the action layer and was re-proven against the
 new dedicated boundary unit test).
 **Databases** — `p025a_integration_test` (local docker-compose Postgres
-only); no production or builder/reviewer DBs touched. E2E ran on the
-dev `app_dev` database via the standard harness.
+only); `p025a_shadow` transient prisma-diff shadow created for the
+reviewer's drift check (dropped at cleanup); the reviewer's own
+`p025a_review` was dropped by the reviewer. No production or
+builder/reviewer DBs touched. E2E ran on the dev `app_dev` database via
+the standard harness.
+
+**Independent review** — `opencode-go/deepseek-v4.1-flash` on candidate
+`fca8854` vs base `89e9e1d`: **PASS**, no P0/P1. Findings repaired:
+P2-1 schema/index drift → `@@unique([formId,publishOriginRevision],
+map:"checkin_form_version_publish_origin_key")`; P2-2 closed-branch
+archive → two-step Confirm/Cancel; P3s → create wrapped in bounded
+retry, `:3102` explicit flag-off, `name` well-formedness, nav `roles`
+pin, audit-rollback trigger test. Post-repair gates all green.
 
 ## Next gate
 
-Independent different-model review of the P-025-A candidate branch;
-any PR/merge remains separately authorized after review. P-025-B —
-first client-visible slice — is NOT started and requires its own
-implementation prompt.
+The reviewed P-025-A candidate branch is pushed for inspection; any
+PR/merge remains separately authorized. P-025-B — first client-visible
+slice — is NOT started and requires its own implementation prompt.

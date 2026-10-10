@@ -126,14 +126,16 @@ export function WorkspaceNav({
       action: "read",
     },
     // P-025-A: staff Check-In form-definition library — gated by the shared
-    // resolver (ENABLE_CHECK_INS + trusted dev/test runtime); the scope
-    // cell already pins it to owner/coach and denies every other role.
-    // Cosmetic only — every destination re-authorizes server-side.
+    // resolver (ENABLE_CHECK_INS + trusted dev/test runtime) and pinned to
+    // owner/coach (the scope cell denies every other role; the explicit pin
+    // keeps the cosmetic gate honest). Every destination re-authorizes
+    // server-side.
     {
       href: `/workspace/${workspaceId}/checkins/forms`,
       label: "Check-In Forms",
       resource: "checkinFormDefinitions",
       action: "read",
+      roles: ["WORKSPACE_OWNER", "COACH"],
       enabled: isCheckInsEnabled(),
     },
     {

@@ -138,6 +138,10 @@ export default defineConfig({
         // P-023 flag-off: explicitly empty so an inherited
         // ENABLE_ONBOARDING_SUBMISSION=1 cannot leak into the proof server.
         ENABLE_ONBOARDING_SUBMISSION: "",
+        // P-025-A flag-off: explicitly empty — this server exercises
+        // other feature-on flows, but an inherited ENABLE_CHECK_INS=1
+        // must never leak in.
+        ENABLE_CHECK_INS: "",
         AUTH_SECRET:
           process.env.AUTH_SECRET ?? "test-only-auth-secret-not-for-production",
         DATABASE_URL:

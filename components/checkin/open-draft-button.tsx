@@ -36,6 +36,7 @@ export function CheckInOpenDraftButton({
 }) {
   const router = useRouter();
   const [alert, setAlert] = useState("");
+  const [archiveConfirm, setArchiveConfirm] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const reopen = () => {
@@ -67,6 +68,14 @@ export function CheckInOpenDraftButton({
     if (pending) {
       return;
     }
+    // Two-step destructive confirmation (same pattern as the open-draft
+    // editor path): first press arms, second press commits. Arming never
+    // performs any mutation.
+    if (!archiveConfirm) {
+      setArchiveConfirm(true);
+      return;
+    }
+    setArchiveConfirm(false);
     setAlert("");
     const formData = new FormData();
     formData.set("formId", formId);
@@ -102,15 +111,37 @@ export function CheckInOpenDraftButton({
       >
         Reopen draft
       </button>
-      <button
-        className="auth-button"
-        data-testid="checkin-archive-form"
-        disabled={pending}
-        onClick={archive}
-        type="button"
-      >
-        Archive
-      </button>
+      {archiveConfirm ? (
+        <>
+          <button
+            className="auth-button"
+            data-testid="checkin-archive-confirm"
+            disabled={pending}
+            onClick={archive}
+            type="button"
+          >
+            Confirm archive
+          </button>
+          <button
+            data-testid="checkin-archive-cancel"
+            disabled={pending}
+            onClick={() => setArchiveConfirm(false)}
+            type="button"
+          >
+            Cancel
+          </button>
+        </>
+      ) : (
+        <button
+          className="auth-button"
+          data-testid="checkin-archive-form"
+          disabled={pending}
+          onClick={archive}
+          type="button"
+        >
+          Archive
+        </button>
+      )}
     </>
   );
 }

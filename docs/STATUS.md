@@ -46,7 +46,17 @@ are complete; product direction is now the configurable coaching system in
   retired-ID resurrection, in-place publish overwrite, missing replay,
   non-lock versionSeq, missing publish audit, archived writes allowed,
   preview-persistence, dropped payload byte bound).
-- Candidate pushed, NO PR; independent review pending.
+- Independent review by `opencode-go/deepseek-v4.1-flash` on `fca8854`:
+  **PASS**, no P0/P1. P2-1 (replay-unique declared as plain `@@index` —
+  schema↔SQL drift) fixed to `@@unique(..., map:)` — migrate diff clean.
+  P2-2 (closed-branch archive was one-click) fixed to the same two-step
+  Confirm/Cancel as the editor. P3 follow-through: `createCheckInForm`
+  now inside `withSerializedRetry`; `ENABLE_CHECK_INS:""` pinned on the
+  :3102 proof server; `name` input enforces the well-formedness grammar;
+  nav entry carries an explicit `roles` pin; audit-failure rollback
+  proved on real PG via a trigger-level audit-block test. Post-repair
+  gates: lint/tsc/format clean, unit green, integration 31 green,
+  E2E 10/10 on the rebuilt production bundle.
 
 ## 2026-10-10 — P-025 Check-In v1 decisions recorded (docs only)
 

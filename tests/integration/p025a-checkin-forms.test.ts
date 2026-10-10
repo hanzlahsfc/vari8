@@ -431,6 +431,59 @@ describe.skipIf(!enabled)("P-025-A check-in form service (real PG)", () => {
     ).toBe(v1FieldId); // stable IDs across versions
   });
 
+  it("audit failure rolls back the publish — no version, no mutation, no half-state", async () => {
+    const { ws, owner, formId } = await ownedForm();
+    await saveCheckInFormDraft(
+      session(owner.id),
+      {
+        workspaceId: ws.id,
+        formId,
+        expectedRevision: 1,
+        draft: draftJson("Publishable"),
+      },
+      prisma,
+    );
+    // A trigger that refuses every audit insert simulates audit failure.
+    await prisma.$executeRawUnsafe(
+      `CREATE OR REPLACE FUNCTION audit_block() RETURNS trigger LANGUAGE plpgsql AS $$
+       BEGIN RAISE EXCEPTION 'audit channel forced failure'; END $$`,
+    );
+    await prisma.$executeRawUnsafe(
+      `CREATE TRIGGER audit_block_trg BEFORE INSERT ON "audit_event"
+       FOR EACH ROW EXECUTE FUNCTION audit_block()`,
+    );
+    const versionBefore = await prisma.checkInFormVersion.count({
+      where: { formId },
+    });
+    try {
+      const res = await publishCheckInForm(
+        session(owner.id),
+        { workspaceId: ws.id, formId, expectedRevision: 2 },
+        prisma,
+      ).then(
+        () => ({ outcome: "published" as const }),
+        (e) => ({ outcome: "rejected" as const, error: e }),
+      );
+      // The transaction must fail (not return success). Whatever the
+      // error mapping, the invariant is the rollback below.
+      expect(res.outcome).toBe("rejected");
+    } finally {
+      await prisma.$executeRawUnsafe(
+        'DROP TRIGGER IF EXISTS audit_block_trg ON "audit_event"',
+      );
+      await prisma.$executeRawUnsafe("DROP FUNCTION IF EXISTS audit_block()");
+    }
+    // No version row persisted; the draft is still open at revision 2.
+    expect(await prisma.checkInFormVersion.count({ where: { formId } })).toBe(
+      versionBefore,
+    );
+    const after = await prisma.checkInForm.findUniqueOrThrow({
+      where: { id: formId },
+    });
+    expect(after.draftRevision).toBe(2);
+    expect(after.draft).not.toBeNull();
+  });
+
   it("archived forms reject save/publish/reopen; archive is idempotent and versions survive", async () => {
     const { ws, owner, formId } = await ownedForm();
     await saveCheckInFormDraft(

@@ -499,34 +499,37 @@ export async function createCheckInForm(
   const name = cleanText(input.name, CHECKIN_FORM_LIMITS.nameMax);
   // Form + audit event are one transaction — an audit failure rolls the
   // whole create back; authorization re-reads inside the tx on the tx
-  // client (no check/write gap).
-  return db.$transaction(
-    async (tx) => {
-      const ctx = await lockedAuthorize(tx, session, {
-        resource: "checkinFormDefinitions",
-        action: "write",
-        workspaceId: input.workspaceId,
-      });
-      const form = await tx.checkInForm.create({
-        data: {
-          workspaceId: ctx.workspaceId as string,
-          name,
-          createdByMemberId: ctx.workspaceMemberId as string,
-          draft: { title: name, fields: [] },
-          draftRevision: 1,
-          draftSavedByMemberId: ctx.workspaceMemberId as string,
-          draftUpdatedAt: new Date(),
-        },
-        select: { id: true },
-      });
-      await writeAuditEvent(tx, ctx, {
-        action: "CREATE",
-        resourceType: "checkin_form",
-        resourceId: form.id,
-      });
-      return { formId: form.id };
-    },
-    { isolationLevel: "Serializable" },
+  // client (no check/write gap). Bounded retry absorbs serialization
+  // conflicts like every other mutation in this module.
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const ctx = await lockedAuthorize(tx, session, {
+          resource: "checkinFormDefinitions",
+          action: "write",
+          workspaceId: input.workspaceId,
+        });
+        const form = await tx.checkInForm.create({
+          data: {
+            workspaceId: ctx.workspaceId as string,
+            name,
+            createdByMemberId: ctx.workspaceMemberId as string,
+            draft: { title: name, fields: [] },
+            draftRevision: 1,
+            draftSavedByMemberId: ctx.workspaceMemberId as string,
+            draftUpdatedAt: new Date(),
+          },
+          select: { id: true },
+        });
+        await writeAuditEvent(tx, ctx, {
+          action: "CREATE",
+          resourceType: "checkin_form",
+          resourceId: form.id,
+        });
+        return { formId: form.id };
+      },
+      { isolationLevel: "Serializable" },
+    ),
   );
 }
 
