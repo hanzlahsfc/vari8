@@ -164,6 +164,7 @@ model Workspace {
   checkInInstances              CheckInInstance[]
   checkInSubmissions            CheckInSubmission[]
   checkInSubmissionAnswers      CheckInSubmissionAnswer[]
+  checkInReviews                CheckInReview[]
 
   @@map("workspace")
 }
@@ -205,6 +206,7 @@ model WorkspaceMember {
   checkInInstancesScheduled CheckInInstance[]    @relation("CheckInInstanceScheduler")
   checkInInstancesCancelled CheckInInstance[]    @relation("CheckInInstanceCanceller")
   checkInSubmissions        CheckInSubmission[]  @relation("CheckInSubmissionSubmittedByMember")
+  checkInReviews            CheckInReview[]      @relation("CheckInReviewReviewer")
 
   parametersCreated         ParameterDefinition[]     @relation("ParameterDefinitionCreator")
   parametersUpdated         ParameterDefinition[]     @relation("ParameterDefinitionUpdater")
@@ -255,6 +257,7 @@ model ClientProfile {
   onboardingSubmissions OnboardingSubmission[]     @relation("OnboardingSubmissionClient")
   checkInInstances      CheckInInstance[]          @relation("CheckInInstanceClient")
   checkInSubmissions    CheckInSubmission[]        @relation("CheckInSubmissionClient")
+  checkInReviews        CheckInReview[]            @relation("CheckInReviewClient")
   checkInAnswers        CheckInSubmissionAnswer[]  @relation("CheckInAnswerClient")
 
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
@@ -1239,6 +1242,7 @@ model CheckInSubmission {
   submittedByUser   User                      @relation("CheckInSubmissionSubmittedByUser", fields: [submittedByUserId], references: [id], onDelete: Restrict)
   submittedByMember WorkspaceMember           @relation("CheckInSubmissionSubmittedByMember", fields: [submittedByMemberId], references: [id], onDelete: Restrict)
   answers           CheckInSubmissionAnswer[]
+  reviews           CheckInReview[]
 
   // At-most-one durable submission per instance — idempotency anchor and
   // final concurrency authority (P2002 → bounded full-protocol re-entry).
@@ -1273,4 +1277,29 @@ model CheckInSubmissionAnswer {
   @@unique([submissionId, fieldId])
   @@index([workspaceId])
   @@map("checkin_submission_answer")
+}
+
+// P-025-C — staff review acknowledgement (decision #86: one
+// workspace-terminal review per submission; immutable provenance only —
+// who and when. No notes, no feedback, no workflow gate.)
+model CheckInReview {
+  id                 String   @id @default(cuid())
+  workspaceId        String   @map("workspace_id")
+  clientProfileId    String   @map("client_profile_id")
+  submissionId       String   @map("submission_id")
+  reviewedByMemberId String   @map("reviewed_by_member_id")
+  reviewedAt         DateTime @default(now()) @map("reviewed_at") @db.Timestamptz(6)
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  // Immutable — no updatedAt (terminal acknowledgement, P-024 precedent).
+
+  workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile    ClientProfile     @relation("CheckInReviewClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  submission       CheckInSubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  reviewedByMember WorkspaceMember   @relation("CheckInReviewReviewer", fields: [reviewedByMemberId], references: [id], onDelete: Restrict)
+
+  // #86-analog workspace-terminal anchor — at most one review per
+  // submission, idempotency + final concurrency authority.
+  @@unique([submissionId])
+  @@index([workspaceId, clientProfileId])
+  @@map("checkin_review")
 }

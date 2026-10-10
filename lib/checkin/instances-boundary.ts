@@ -28,6 +28,13 @@ import {
   type OwnCheckInInstanceItem,
   type SubmitCheckInInstanceInput,
   type SubmitCheckInInstanceResult,
+  listCheckInSubmissionsForClient,
+  readCheckInSubmissionDetail,
+  markCheckInSubmissionReviewed,
+  type StaffCheckInSubmissionItem,
+  type StaffCheckInSubmissionDetail,
+  type MarkCheckInSubmissionReviewedInput,
+  type MarkCheckInSubmissionReviewedResult,
 } from "./instances";
 
 export type CheckInSafeResult<T> =
@@ -144,6 +151,40 @@ export async function getOwnCheckInInstance(
 ): Promise<CheckInSafeResult<OwnCheckInInstanceDetail>> {
   return guard(process.env, () =>
     serviceGetOwnCheckInInstance(session as never, input, deps),
+  );
+}
+
+export async function listStaffCheckInSubmissions(
+  session: Session,
+  input: { workspaceId: string; clientProfileId: string },
+  deps: CheckInInstanceDeps = {},
+): Promise<CheckInSafeResult<{ items: StaffCheckInSubmissionItem[] }>> {
+  return guard(process.env, () =>
+    listCheckInSubmissionsForClient(session as never, input, deps),
+  );
+}
+
+export async function readStaffCheckInSubmissionDetail(
+  session: Session,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    submissionId: string;
+  },
+  deps: CheckInInstanceDeps = {},
+): Promise<CheckInSafeResult<StaffCheckInSubmissionDetail>> {
+  return guard(process.env, () =>
+    readCheckInSubmissionDetail(session as never, input, deps),
+  );
+}
+
+export async function markCheckInSubmissionReviewedFromAction(
+  session: Session,
+  input: MarkCheckInSubmissionReviewedInput,
+  deps: CheckInInstanceDeps = {},
+): Promise<CheckInSafeResult<MarkCheckInSubmissionReviewedResult>> {
+  return guard(process.env, () =>
+    markCheckInSubmissionReviewed(session as never, input, deps),
   );
 }
 

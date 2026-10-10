@@ -66,18 +66,21 @@ export class CheckInInstanceError extends Error {
 
 // ── Derived lifecycle projector (§10 — the single source of truth) ───────
 
-export type CheckInInstanceState = "CANCELLED" | "SUBMITTED" | "SCHEDULED";
+export type CheckInInstanceState =
+  "CANCELLED" | "REVIEWED" | "SUBMITTED" | "SCHEDULED";
 
 export type CheckInInstanceLifecycleInput = {
   cancelledAt: Date | null;
   cancelledByMemberId: string | null;
   hasSubmission: boolean;
+  /** P-025-C: a coherent CheckInReview exists on the submission. */
+  hasReview?: boolean;
 };
 
 /**
  * THE lifecycle projector — derivation order is fixed:
  *   1. CANCELLED when paired cancellation provenance exists;
- *   2. (P-025-C inserts REVIEWED here when a coherent review exists);
+ *   2. REVIEWED when a coherent review exists (P-025-C);
  *   3. SUBMITTED when a coherent submission exists;
  *   4. otherwise SCHEDULED.
  * Partial cancellation provenance is invalid — the paired CHECK makes it
@@ -88,15 +91,16 @@ export function projectCheckInInstanceState(
 ): CheckInInstanceState {
   if (row.cancelledAt !== null && row.cancelledByMemberId !== null)
     return "CANCELLED";
+  if (row.hasReview === true) return "REVIEWED";
   if (row.hasSubmission) return "SUBMITTED";
   return "SCHEDULED";
 }
 
 export type CheckInInstancePresentation = {
   state: CheckInInstanceState;
-  /** Late marker — submitted-after-due for SUBMITTED; past-due for
-   * SCHEDULED (#93: late submission allowed and marked; a passed dueAt
-   * never mutates state). CANCELLED is terminal — never late. */
+  /** Late marker — submitted-after-due for SUBMITTED/REVIEWED; past-due
+   * for SCHEDULED (#93: late submission allowed and marked; a passed
+   * dueAt never mutates state). CANCELLED is terminal — never late. */
   late: boolean;
 };
 
@@ -109,7 +113,8 @@ export function projectCheckInInstancePresentation(
 ): CheckInInstancePresentation {
   const state = projectCheckInInstanceState(row);
   if (state === "CANCELLED") return { state, late: false };
-  const reference = state === "SUBMITTED" ? row.submittedAt : now;
+  const reference =
+    state === "SUBMITTED" || state === "REVIEWED" ? row.submittedAt : now;
   const late = reference !== null && reference.getTime() > row.dueAt.getTime();
   return { state, late };
 }
@@ -1020,7 +1025,14 @@ export async function listCheckInInstancesForClient(
         scheduledAt: true,
         formVersion: { select: { versionSeq: true } },
         form: { select: { name: true } },
-        submissions: { select: { id: true, submittedAt: true }, take: 1 },
+        submissions: {
+          select: {
+            id: true,
+            submittedAt: true,
+            reviews: { select: { id: true }, take: 1 },
+          },
+          take: 1,
+        },
       },
       orderBy: [{ dueAt: "asc" }, { id: "asc" }],
       take: CHECKIN_INSTANCE_LIMITS.listMax,
@@ -1033,6 +1045,7 @@ export async function listCheckInInstancesForClient(
           cancelledAt: row.cancelledAt,
           cancelledByMemberId: row.cancelledByMemberId,
           hasSubmission: submission !== null,
+          hasReview: (submission?.reviews.length ?? 0) > 0,
           dueAt: row.dueAt,
           submittedAt: submission?.submittedAt ?? null,
         },
@@ -1602,4 +1615,574 @@ export async function listSchedulableFormVersions(
     });
   }
   return { options };
+}
+
+// ── P-025-C: staff submission headers + explicit detail + terminal mark ─
+
+export type StaffCheckInSubmissionItem = {
+  instanceId: string;
+  submissionId: string;
+  formName: string;
+  versionSeq: number;
+  dueAt: string;
+  dueTz: string | null;
+  submittedAt: string;
+  late: boolean;
+  reviewedAt: string | null;
+  /** #91 — bounded staff-only workflow metadata; never client-facing. */
+  reviewedByName: string | null;
+};
+
+/**
+ * Staff submission header list — answer-free. `checkinsCoachReviews/read`
+ * (owner `workspace`, coach/assistant `assigned`); zero audits on the
+ * passive list. Reviewer identity is bounded to currently authorized
+ * staff only (#91).
+ */
+export async function listCheckInSubmissionsForClient(
+  session: SessionLike,
+  input: ListCheckInInstancesInput,
+  deps: CheckInInstanceDeps = {},
+): Promise<{ items: StaffCheckInSubmissionItem[] }> {
+  const db = deps.db ?? defaultPrisma;
+  if (!validId(input.workspaceId) || !validId(input.clientProfileId))
+    throw new CheckInInstanceError("invalid_input");
+
+  return db.$transaction(async (tx) => {
+    const { ctx, member } = await lockedAuthorize(
+      tx,
+      session,
+      {
+        resource: "checkinsCoachReviews",
+        action: "read",
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+      },
+      "*",
+    );
+    if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+      throw new AccessDeniedError(
+        "role_denied",
+        "checkinsCoachReviews",
+        "read",
+      );
+    if (ctx.grantedScope === "assigned")
+      await lockAssignmentForScope(
+        tx,
+        input.workspaceId,
+        input.clientProfileId,
+        member.id,
+        "checkinsCoachReviews",
+      );
+    const profile = await lockProfile(
+      tx,
+      input.workspaceId,
+      input.clientProfileId,
+    );
+    if (!profile) throw new CheckInInstanceError("not_available");
+
+    const rows = await tx.checkInSubmission.findMany({
+      where: {
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+      },
+      select: {
+        id: true,
+        instanceId: true,
+        submittedAt: true,
+        instance: {
+          select: { dueAt: true, dueTz: true },
+        },
+        form: { select: { name: true } },
+        formVersion: { select: { versionSeq: true } },
+        reviews: {
+          select: {
+            reviewedAt: true,
+            reviewedByMember: {
+              select: { user: { select: { name: true, email: true } } },
+            },
+          },
+          take: 1,
+        },
+      },
+      orderBy: [{ submittedAt: "desc" }, { id: "asc" }],
+      take: CHECKIN_INSTANCE_LIMITS.listMax,
+    });
+    const items = rows.map((row) => {
+      const review = row.reviews[0] ?? null;
+      return {
+        instanceId: row.instanceId,
+        submissionId: row.id,
+        formName: row.form.name,
+        versionSeq: row.formVersion.versionSeq,
+        dueAt: row.instance.dueAt.toISOString(),
+        dueTz: row.instance.dueTz,
+        submittedAt: row.submittedAt.toISOString(),
+        late: row.submittedAt.getTime() > row.instance.dueAt.getTime(),
+        reviewedAt: review?.reviewedAt.toISOString() ?? null,
+        reviewedByName: review
+          ? (review.reviewedByMember.user.name ??
+            review.reviewedByMember.user.email)
+          : null,
+      } satisfies StaffCheckInSubmissionItem;
+    });
+    return { items };
+  });
+}
+
+export type StaffCheckInSubmissionFieldView = {
+  fieldId: string;
+  label: string;
+  kind: string;
+  required: boolean;
+  /** Sanitized display value — never the raw option/field identifiers. */
+  display: string;
+};
+
+export type StaffCheckInSubmissionDetail = {
+  submissionId: string;
+  instanceId: string;
+  formName: string;
+  versionSeq: number;
+  dueAt: string;
+  submittedAt: string;
+  late: boolean;
+  reviewed: { byName: string; at: string } | null;
+  /** True only when this caller holds the assigned-coach write cell
+   * (COACH + granted assigned scope — owner/assistant are read-only).
+   * The mark action re-authorizes independently; this is a UI hint. */
+  canMark: boolean;
+  fields: StaffCheckInSubmissionFieldView[];
+};
+
+function displayCheckInAnswer(
+  field: CheckInField,
+  answer:
+    | {
+        kind: string;
+        valueText: string | null;
+        valueNumeric: Prisma.Decimal | null;
+        valueDate: Date | null;
+        valueOptionIds: Prisma.JsonValue | null;
+      }
+    | undefined,
+): string {
+  if (!answer) return "—";
+  switch (answer.kind) {
+    case "SHORT_TEXT":
+    case "LONG_TEXT":
+      return answer.valueText ?? "—";
+    case "NUMBER":
+      return answer.valueNumeric !== null
+        ? answer.valueNumeric.toString()
+        : "—";
+    case "DATE":
+      return answer.valueDate
+        ? answer.valueDate.toISOString().slice(0, 10)
+        : "—";
+    case "SINGLE_CHOICE":
+    case "MULTI_CHOICE": {
+      const ids = Array.isArray(answer.valueOptionIds)
+        ? (answer.valueOptionIds as unknown[]).filter(
+            (v): v is string => typeof v === "string",
+          )
+        : [];
+      const labels = ids
+        .map(
+          (id) => (field.options ?? []).find((o) => o.optionId === id)?.label,
+        )
+        .filter((v): v is string => typeof v === "string");
+      return labels.length > 0 ? labels.join(", ") : "—";
+    }
+    default:
+      return "—";
+  }
+}
+
+/**
+ * P-025-C explicit staff submission detail read (P-022 mechanics,
+ * decisions #85/#89-analog). Everything sensitive happens inside ONE
+ * Serializable transaction: scoped answer-free pre-read → advisories →
+ * member FOR UPDATE → in-tx authorize → assigned-scope ACTIVE assignment
+ * re-resolve+lock → profile → submission/instance locks → consent rows
+ * FOR UPDATE → answers → ONE structural READ audit LAST → commit. A
+ * failed audit returns no values; passive GETs write zero audits.
+ */
+export async function readCheckInSubmissionDetail(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    submissionId: string;
+  },
+  deps: CheckInInstanceDeps = {},
+): Promise<StaffCheckInSubmissionDetail> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveCheckInConsentPolicy();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.clientProfileId) ||
+    !validId(input.submissionId)
+  )
+    throw new CheckInInstanceError("invalid_input");
+
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        // 1. Scoped answer-free pre-read — foreign/missing tuple fails
+        // BEFORE any foreign chkin advisory.
+        const pre = await tx.checkInSubmission.findFirst({
+          where: {
+            id: input.submissionId,
+            workspaceId: input.workspaceId,
+            clientProfileId: input.clientProfileId,
+          },
+          select: { formId: true },
+        });
+        if (!pre) throw new CheckInInstanceError("not_available");
+
+        // 2–4. chkin → member advisories → member lock → authorize.
+        const { ctx, member } = await lockedAuthorize(
+          tx,
+          session,
+          {
+            resource: "checkinsCoachReviews",
+            action: "read",
+            workspaceId: input.workspaceId,
+            clientProfileId: input.clientProfileId,
+          },
+          pre.formId,
+        );
+        if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+          throw new AccessDeniedError(
+            "role_denied",
+            "checkinsCoachReviews",
+            "read",
+          );
+
+        // 5. Assigned branch: coherent ACTIVE assignment lock.
+        if (ctx.grantedScope === "assigned")
+          await lockAssignmentForScope(
+            tx,
+            input.workspaceId,
+            input.clientProfileId,
+            member.id,
+            "checkinsCoachReviews",
+          );
+
+        // 6. Locked profile.
+        const profile = await lockProfile(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+        );
+        if (!profile) throw new CheckInInstanceError("not_available");
+
+        // 7. Locked submission + instance; derived state must be
+        // SUBMITTED or REVIEWED (a cancelled instance can never hold a
+        // submission under the serialized protocol — defensive recheck).
+        const submissionRows = await tx.$queryRawUnsafe<
+          {
+            id: string;
+            instanceId: string;
+            submittedAt: Date;
+          }[]
+        >(
+          `SELECT id, instance_id AS "instanceId", submitted_at AS "submittedAt"
+           FROM "checkin_submission"
+           WHERE id = $1 AND workspace_id = $2 AND client_profile_id = $3
+           FOR UPDATE`,
+          input.submissionId,
+          input.workspaceId,
+          input.clientProfileId,
+        );
+        const submission = submissionRows[0];
+        if (!submission) throw new CheckInInstanceError("not_available");
+        const instance = await lockInstance(
+          tx,
+          input.workspaceId,
+          submission.instanceId,
+        );
+        if (!instance || instance.clientProfileId !== input.clientProfileId)
+          throw new CheckInInstanceError("not_available");
+        const state = projectCheckInInstanceState({
+          cancelledAt: instance.cancelledAt,
+          cancelledByMemberId: instance.cancelledByMemberId,
+          hasSubmission: true,
+          hasReview: false,
+        });
+        if (state !== "SUBMITTED")
+          throw new CheckInInstanceError("not_available");
+
+        // 8. Consent rows FOR UPDATE before ANY answer read (#85).
+        await checkRequiredConsent(tx, input.clientProfileId, registry, true);
+
+        // 9. Pinned version + answers (only now — after consent holds).
+        const version = await tx.checkInFormVersion.findUnique({
+          where: { id: instance.formVersionId },
+          select: { workspaceId: true, formId: true, definition: true },
+        });
+        if (
+          !version ||
+          version.workspaceId !== input.workspaceId ||
+          version.formId !== instance.formId
+        )
+          throw new CheckInInstanceError("not_available");
+        const definition = version.definition as unknown as CheckInDefinition;
+        const answers = await tx.checkInSubmissionAnswer.findMany({
+          where: {
+            submissionId: submission.id,
+            workspaceId: input.workspaceId,
+            clientProfileId: input.clientProfileId,
+          },
+          select: {
+            fieldId: true,
+            kind: true,
+            valueText: true,
+            valueNumeric: true,
+            valueDate: true,
+            valueOptionIds: true,
+          },
+        });
+        const byField = new Map(answers.map((a) => [a.fieldId, a]));
+
+        // 10. Review provenance (bounded staff-only metadata, #91).
+        const review = await tx.checkInReview.findFirst({
+          where: { submissionId: submission.id },
+          select: {
+            reviewedAt: true,
+            reviewedByMember: {
+              select: { user: { select: { name: true, email: true } } },
+            },
+          },
+        });
+        const form = await tx.checkInForm.findUnique({
+          where: { id: instance.formId },
+          select: { name: true },
+        });
+
+        // 11. Structural READ audit — last; a failed write rolls the
+        // detail read (and its values) back (#89-analog).
+        await writeAuditEvent(tx, ctx, {
+          action: "READ",
+          resourceType: "checkin_submission",
+          resourceId: submission.id,
+          subjectClientProfileId: input.clientProfileId,
+          meta: { changed: false },
+        });
+
+        const late =
+          submission.submittedAt.getTime() > instance.dueAt.getTime();
+        return {
+          submissionId: submission.id,
+          instanceId: submission.instanceId,
+          formName: form?.name ?? "",
+          versionSeq: (definition as { versionSeq?: number }).versionSeq ?? 0,
+          dueAt: instance.dueAt.toISOString(),
+          submittedAt: submission.submittedAt.toISOString(),
+          late,
+          reviewed: review
+            ? {
+                byName:
+                  review.reviewedByMember.user.name ??
+                  review.reviewedByMember.user.email,
+                at: review.reviewedAt.toISOString(),
+              }
+            : null,
+          canMark: ctx.grantedScope === "assigned" && member.role === "COACH",
+          fields: definition.fields.map((f) => ({
+            fieldId: f.fieldId,
+            label: f.label,
+            kind: f.kind,
+            required: f.required,
+            display: displayCheckInAnswer(f, byField.get(f.fieldId)),
+          })),
+        } satisfies StaffCheckInSubmissionDetail;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}
+
+export type MarkCheckInSubmissionReviewedInput = {
+  workspaceId: string;
+  clientProfileId: string;
+  submissionId: string;
+};
+
+export type MarkCheckInSubmissionReviewedResult = {
+  status: "reviewed" | "already_reviewed";
+  reviewedAt: string;
+};
+
+/**
+ * P-025-C terminal review acknowledgement (decisions #86–#91): exactly
+ * one immutable review row per submission — reviewer + timestamp only;
+ * no notes, no feedback, no workflow gate. Assigned-coach only:
+ * `checkinsCoachReviews/write` denies the owner/assistant/client cells
+ * outright, and only the `assigned` branch proceeds to the ACTIVE
+ * assignment re-resolve + row lock. Idempotent replay returns the
+ * existing reviewed state (#86) with zero rows and zero audits; P2002
+ * on `unique(submission_id)` → bounded full-protocol re-entry.
+ */
+export async function markCheckInSubmissionReviewed(
+  session: SessionLike,
+  input: MarkCheckInSubmissionReviewedInput,
+  deps: CheckInInstanceDeps = {},
+): Promise<MarkCheckInSubmissionReviewedResult> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveCheckInConsentPolicy();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.clientProfileId) ||
+    !validId(input.submissionId)
+  )
+    throw new CheckInInstanceError("invalid_input");
+
+  const attempt = (): Promise<MarkCheckInSubmissionReviewedResult> =>
+    withSerializedRetry(() =>
+      db.$transaction(
+        async (tx) => {
+          // 1. Scoped answer-free pre-read — foreign/missing tuple fails
+          // BEFORE any foreign chkin advisory.
+          const pre = await tx.checkInSubmission.findFirst({
+            where: {
+              id: input.submissionId,
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+            },
+            select: { formId: true },
+          });
+          if (!pre) throw new CheckInInstanceError("not_available");
+
+          // 2–4. chkin → member advisories → member lock → authorize.
+          // checkinsCoachReviews/write: owner/assistant/client denied at
+          // the matrix — only an assigned coach survives this branch.
+          const { ctx, member } = await lockedAuthorize(
+            tx,
+            session,
+            {
+              resource: "checkinsCoachReviews",
+              action: "write",
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+            },
+            pre.formId,
+          );
+          if (ctx.grantedScope !== "assigned")
+            throw new AccessDeniedError(
+              "role_denied",
+              "checkinsCoachReviews",
+              "write",
+            );
+
+          // 5. Authoritative ACTIVE assignment re-resolve + lock.
+          await lockAssignmentForScope(
+            tx,
+            input.workspaceId,
+            input.clientProfileId,
+            member.id,
+            "checkinsCoachReviews",
+          );
+
+          // 6. Locked profile → submission → instance.
+          const profile = await lockProfile(
+            tx,
+            input.workspaceId,
+            input.clientProfileId,
+          );
+          if (!profile) throw new CheckInInstanceError("not_available");
+          const submissionRows = await tx.$queryRawUnsafe<
+            { id: string; instanceId: string }[]
+          >(
+            `SELECT id, instance_id AS "instanceId"
+             FROM "checkin_submission"
+             WHERE id = $1 AND workspace_id = $2 AND client_profile_id = $3
+             FOR UPDATE`,
+            input.submissionId,
+            input.workspaceId,
+            input.clientProfileId,
+          );
+          const submission = submissionRows[0];
+          if (!submission) throw new CheckInInstanceError("not_available");
+          const instance = await lockInstance(
+            tx,
+            input.workspaceId,
+            submission.instanceId,
+          );
+          if (!instance || instance.clientProfileId !== input.clientProfileId)
+            throw new CheckInInstanceError("not_available");
+
+          // 7. Idempotency BEFORE the derived-state mark check (#86): a
+          // structurally valid replay returns the existing reviewed
+          // state — zero new rows, zero audits.
+          const existing = await tx.checkInReview.findFirst({
+            where: { submissionId: submission.id },
+            select: { reviewedAt: true },
+          });
+          if (existing)
+            return {
+              status: "already_reviewed",
+              reviewedAt: existing.reviewedAt.toISOString(),
+            } satisfies MarkCheckInSubmissionReviewedResult;
+
+          // 8. Derived state must be SUBMITTED — a cancelled or
+          // submissionless instance fails closed inside the lock.
+          const state = projectCheckInInstanceState({
+            cancelledAt: instance.cancelledAt,
+            cancelledByMemberId: instance.cancelledByMemberId,
+            hasSubmission: true,
+            hasReview: false,
+          });
+          if (state !== "SUBMITTED")
+            throw new CheckInInstanceError("not_available");
+
+          // 9. Consent FOR UPDATE — the acknowledgement itself is
+          // health-adjacent provenance (#85: all new writes fail closed
+          // after withdrawal).
+          await checkRequiredConsent(tx, input.clientProfileId, registry, true);
+
+          // 10. Terminal immutable row.
+          const review = await tx.checkInReview.create({
+            data: {
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+              submissionId: submission.id,
+              reviewedByMemberId: member.id,
+            },
+            select: { id: true, reviewedAt: true },
+          });
+
+          // 11. Audit LAST — a failed audit rolls the review back.
+          await writeAuditEvent(tx, ctx, {
+            action: "CREATE",
+            resourceType: "checkin_review",
+            resourceId: review.id,
+            subjectClientProfileId: input.clientProfileId,
+            meta: { changed: true },
+          });
+          return {
+            status: "reviewed",
+            reviewedAt: review.reviewedAt.toISOString(),
+          } satisfies MarkCheckInSubmissionReviewedResult;
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      ),
+    );
+
+  try {
+    return await attempt();
+  } catch (error) {
+    // unique(submission_id) P2002 — the concurrent mark won. Re-enter the
+    // SAME fully authorized protocol exactly once (the replay lookup then
+    // returns already_reviewed); second conflict → closed error.
+    if (!isUniqueViolation(error)) throw error;
+    try {
+      return await attempt();
+    } catch (second) {
+      if (isUniqueViolation(second))
+        throw new CheckInInstanceError("serialization_conflict");
+      throw second;
+    }
+  }
 }

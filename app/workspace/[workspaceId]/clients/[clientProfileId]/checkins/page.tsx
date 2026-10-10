@@ -6,10 +6,12 @@ import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
 import {
   listSchedulableVersionsForClient,
   listStaffCheckInInstances,
+  listStaffCheckInSubmissions,
 } from "@/lib/checkin/instances-boundary";
 import { prisma } from "@/lib/db";
 
 import { CancelCheckInInstanceButton } from "@/components/checkin/cancel-instance-button";
+import { CheckInSubmissionReview } from "@/components/checkin/submission-review";
 import { ScheduleCheckInInstanceForm } from "@/components/checkin/schedule-instance-form";
 
 export const dynamic = "force-dynamic";
@@ -56,12 +58,17 @@ export default async function StaffClientCheckInsPage({
     select: { name: true },
   });
 
-  const [instances, versions] = await Promise.all([
+  const [instances, versions, submissions] = await Promise.all([
     listStaffCheckInInstances(
       { user: { id: userId } },
       { workspaceId, clientProfileId },
     ),
     listSchedulableVersionsForClient(
+      { user: { id: userId } },
+      { workspaceId, clientProfileId },
+    ),
+    // P-025-C — submission headers (answer-free) for the review queue.
+    listStaffCheckInSubmissions(
       { user: { id: userId } },
       { workspaceId, clientProfileId },
     ),
@@ -165,6 +172,14 @@ export default async function StaffClientCheckInsPage({
               </ul>
             )}
           </section>
+
+          {submissions.ok ? (
+            <CheckInSubmissionReview
+              workspaceId={workspaceId}
+              clientProfileId={clientProfileId}
+              items={submissions.value.items}
+            />
+          ) : null}
         </>
       )}
     </div>

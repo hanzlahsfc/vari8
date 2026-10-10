@@ -106,9 +106,14 @@ export const AUDIT_RESOURCE_TYPES = [
   "checkin_instance",
   // P-025-B: first committed Check-In client submission (IDs + structural
   // markers only — never answer content, labels, option text, dates, or
-  // consent detail). Replay writes no event. `checkin_review` does not
-  // exist — P-025-C.
+  // consent detail). Replay writes no event.
   "checkin_submission",
+  // P-025-C: one terminal staff review acknowledgement per Check-In
+  // submission (IDs + structural markers only — reviewer member ID and
+  // the fact of acknowledgement; never answer content or notes). Also
+  // the resource of the explicit staff detail READ audit (carried on
+  // `checkin_submission`). Idempotent replay writes no event.
+  "checkin_review",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 
