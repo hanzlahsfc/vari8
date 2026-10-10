@@ -659,3 +659,46 @@ keyboard + responsive.
 Independent different-model review of the complete P-025-C candidate on
 `feature/p025c-check-in-staff-review`. PR/merge remain separately
 authorized. P-025-D still unauthorized and unimplemented.
+
+## P-025-C-I1-R2 repair record (2026-10-10)
+
+**R1 outcome** — independent review `P-025-C-I1-R1` on `8616584`:
+CONDITIONAL PASS, P0/P1 none, PR clearance HELD FOR REPAIR.
+
+**P2-1** — the `markCheckInSubmissionReviewed` existing-review replay
+returned `{status:"already_reviewed", reviewedAt}` without a current
+consent check, unlike the detail path and the P-025-B submission replay.
+
+**RED (direct, on exact `8616584`)** — new integration test
+"R2: replayed mark after consent withdrawal fails consent_missing":
+first mark succeeded; consent withdrawn; replay **resolved**
+`{status:"already_reviewed", reviewedAt}` instead of rejecting — the
+reviewer timestamp leaked past the consent boundary. Confirmed the
+finding is the missing replay consent check, not a fixture error.
+
+**Repair** — in the existing-review branch, `checkRequiredConsent(
+tx, input.clientProfileId, registry, false)` runs before the
+`already_reviewed` return; consent failure throws the closed
+`consent_missing` — zero reviewer metadata, zero new rows, zero new
+audits. The P2002 full-protocol re-entry inherits the same check (the
+replay lookup is inside `attempt()`). No other behavior changed:
+authorization, assignment lock, derived-state check, consent-FOR-UPDATE
+on first mark, idempotency, and audit-last all preserved.
+
+**GREEN** — focused integration file 16/16; R2 test passes; full
+integration 595; unit 1063; build clean; **full E2E 310 passed / 12
+skipped / 0 failed**.
+
+**Repair-delta mutations (8 scratch, all reverted byte-identically):**
+consent-check removal → R2 FAIL; return-before-check → R2 FAIL;
+swallowed consent error → R2 FAIL; extra replay audit → audit-count
+FAIL ×2; outside-transaction fast-path → R2 FAIL; stale consent
+snapshot → R2 FAIL; empty-registry bypass → 3 FAILs; scope-gate
+widening → masked by the unconditional assignment lock (documented
+no-bite — both barriers remain load-bearing).
+
+## Next gate
+
+Lightweight independent different-model review of the complete
+candidate + R2 delta on `feature/p025c-check-in-staff-review`. PR/merge
+remain separately authorized; flag still default-off; nothing deployed.

@@ -5,6 +5,17 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-10 — P-025-C-I1-R2 repair: replay consent check
+
+- R1 CONDITIONAL PASS, HELD FOR REPAIR (P2-1): the
+  `markCheckInSubmissionReviewed` existing-review replay returned
+  `already_reviewed` without a current consent check.
+- Repair: `checkRequiredConsent(..., false)` before the replay return;
+  closed `consent_missing` on failure — zero metadata/rows/audits.
+  P2002 re-entry inherits the same check.
+- Gates: unit 1063; integration 595; full E2E 310/0-failed; 8 repair
+  mutations, 7 bite / 1 documented mask; byte-identical reverts.
+
 ## 2026-10-10 — P-025-C Check-In staff review implemented (candidate branch)
 
 - Owner-authorized slice P-025-C on `feature/p025c-check-in-staff-review`

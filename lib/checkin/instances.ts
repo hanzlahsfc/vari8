@@ -2115,16 +2115,26 @@ export async function markCheckInSubmissionReviewed(
 
           // 7. Idempotency BEFORE the derived-state mark check (#86): a
           // structurally valid replay returns the existing reviewed
-          // state — zero new rows, zero audits.
+          // state — zero new rows, zero audits. Current consent is
+          // verified first (P-025-C-I1-R2 / #85): the durable
+          // `already_reviewed` state is reviewer provenance; a withdrawn
+          // caller gets the closed consent_missing, never the timestamp.
           const existing = await tx.checkInReview.findFirst({
             where: { submissionId: submission.id },
             select: { reviewedAt: true },
           });
-          if (existing)
+          if (existing) {
+            await checkRequiredConsent(
+              tx,
+              input.clientProfileId,
+              registry,
+              false,
+            );
             return {
               status: "already_reviewed",
               reviewedAt: existing.reviewedAt.toISOString(),
             } satisfies MarkCheckInSubmissionReviewedResult;
+          }
 
           // 8. Derived state must be SUBMITTED — a cancelled or
           // submissionless instance fails closed inside the lock.

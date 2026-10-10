@@ -679,6 +679,49 @@ describe.skipIf(!enabled)("P-025-C check-in staff review (real PG)", () => {
     expect(list.items[0].submissionId).toBe(submissionId);
   });
 
+  it("R2: replayed mark after consent withdrawal fails consent_missing — no metadata, no second row/audit", async () => {
+    const s = await setup();
+    const { submissionId } = await submit(s);
+    const coach = await user();
+    const coachMember = await member(s.w.id, coach.id, "COACH");
+    await assignment(s.w.id, s.cp.id, coachMember.id);
+
+    // First mark succeeds with valid consent — one row + one audit.
+    const first = await markCheckInSubmissionReviewed(
+      session(coach.id),
+      {
+        workspaceId: s.w.id,
+        clientProfileId: s.cp.id,
+        submissionId,
+      },
+      deps(),
+    );
+    expect(first.status).toBe("reviewed");
+    expect(await prisma.checkInReview.count({ where: { submissionId } })).toBe(
+      1,
+    );
+    expect(await audits(s.w.id, "checkin_review")).toHaveLength(1);
+
+    // Withdraw consent → the replay must fail closed BEFORE it can
+    // return the durable reviewed state or reviewer provenance.
+    await revokeConsent(s.cp.id);
+    await expect(
+      markCheckInSubmissionReviewed(
+        session(coach.id),
+        {
+          workspaceId: s.w.id,
+          clientProfileId: s.cp.id,
+          submissionId,
+        },
+        deps(),
+      ),
+    ).rejects.toMatchObject({ code: "consent_missing" });
+    expect(await prisma.checkInReview.count({ where: { submissionId } })).toBe(
+      1,
+    );
+    expect(await audits(s.w.id, "checkin_review")).toHaveLength(1);
+  });
+
   it("withdrawn consent produces ZERO answer-row reads in the detail path", async () => {
     const s = await setup();
     const { submissionId } = await submit(s);
