@@ -5,6 +5,41 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-10 — P-025 Check-In v1 decisions recorded (docs only)
+
+- P-025 plan/review chain complete: initial plan → independent R1
+  **CONDITIONAL PASS** (no P0/P1; P2-1 dual-role platform-admin denial
+  misclassified as an owner question, P2-2 pre-stubbed
+  `checkinsCoachReviews` overstated as pre-approved, P2-3
+  status/pointer source-of-truth gap, P2-4 cancellation-after-
+  submission decided silently) → corrected R2 replacement plan
+  (`P-025-R2-check-in-v1-plan.md`,
+  `6df18364b763b8e5fbfe747cee0d1874ff57cd2acfb7d9c810a084ff2c5929cb`) →
+  independent R2-R1 **PASS** by `opencode-go/deepseek-v4.1-flash`
+  (`P-025-R2-R1-independent-review.md`,
+  `18462d88c3af8f224feffebcf52706fa11f0f732697758bb6a090b1c50fc7853`),
+  no P0/P1/P2.
+- Owner approved the six-question package (2026-10-10): **#92** one-off
+  Check-Ins only (recurrence/calendar deferred); **#93** single due
+  timestamp, late submissions allowed and visibly marked, no window;
+  **#94** client-created custom Check-Ins deferred with D-05; **#95**
+  owners+coaches manage Check-In forms (owner cannot mark reviewed);
+  **#96** terminal acknowledgement only (rich feedback deferred);
+  **#97** cancellation only before submission.
+- Binding security requirement recorded (not an owner choice):
+  `checkinFormDefinitions` + `checkinInstances` + `checkinsCoachReviews`
+  must join `PLATFORM_ADMIN_DENIED_RESOURCES` at implementation —
+  dual-role-inclusive; not yet implemented. Inherited precedents
+  #82/#85/#86/#91 recorded. The `checkinsCoachReviews` RBAC/consent
+  entries remain pre-stubbed targets, not prior approval.
+- Documentation only on `docs/p025-check-in-decisions`:
+  `docs/product-decisions.md` (#92–#97 + binding security + inherited
+  policy + engineering contract), `docs/product-alignment-blueprint.md`,
+  this file, and new task record `docs/tasks/p025-check-in-v1.md`.
+  **No implementation authorized** — synthetic-only, default-off,
+  production fail-closed; a separate implementation prompt per slice is
+  required after this record is reviewed and merged.
+
 ## 2026-10-10 — P-024 staff onboarding-review decisions recorded (docs only)
 
 - P-024 plan/review chain complete: R1 plan → independent R1 **FAIL**

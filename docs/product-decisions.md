@@ -1021,3 +1021,194 @@ resolution; no expansion into unrelated features. This authorization
 becomes actionable only after this decision record is independently
 reviewed and merged through the protected-branch process and a separate
 implementation prompt is issued.
+
+## P-025 Check-In v1 — owner approval (relayed 2026-10-10)
+
+The product owner approved the six-question P-025 package for a
+development-gated Check-In v1 slice, after the P-025 → R1
+(CONDITIONAL PASS, no P0/P1, four P2s) → R2 → P-025-R2-R1 (**PASS**,
+no P0/P1/P2, reviewer `opencode-go/deepseek-v4.1-flash`) plan/review
+chain. Full record: `docs/tasks/p025-check-in-v1.md`. These record
+product rules and an authorization boundary only — they authorize
+**no** implementation by themselves; implementation additionally
+requires the normal protected-branch process and a separate
+implementation prompt per slice.
+
+92. **One-off Check-Ins only in v1.** v1 supports individually
+    scheduled, one-off Check-In instances. Recurring schedules,
+    recurrence rules, calendar materialization, skipped occurrences,
+    rescheduling series, and reminder automation are deferred. A future
+    recurrence feature may materialize additional instances into the
+    same table but requires separate owner approval. This decision
+    neither implements nor authorizes recurrence.
+93. **Single due timestamp and late submissions.** Each v1 Check-In
+    instance has one due timestamp; there is no separate opening or
+    closing window in v1. Clients may submit after the due timestamp
+    while the instance remains otherwise eligible, and late submissions
+    are visibly marked late. `dueTz`, if retained as a display label,
+    does not constitute an approved timezone or calendar policy; full
+    timezone, DST, grace-period, and closure rules remain deferred.
+94. **Client-created custom Check-Ins deferred.** Clients cannot
+    create their own Check-In instances or questionnaires in v1; D-05
+    remains unresolved for future custom/client-initiated Check-Ins.
+    v1 Check-Ins originate from authorized staff-managed form
+    definitions and scheduling. Custom Check-Ins require separate
+    product, authorization, consent, and lifecycle decisions.
+95. **Workspace-owner and coach Check-In management.** Workspace
+    owners and coaches may create, edit, publish, archive, and schedule
+    Check-In forms under current workspace authorization.
+    Workspace-owner paths do not require a coaching `ClientAssignment`.
+    Coach client-specific scheduling and read operations require a
+    coherent ACTIVE `ClientAssignment`. Assistants cannot create, edit,
+    publish, archive, or schedule forms in v1. Clients cannot manage
+    form definitions or scheduling. Workspace owners may inspect
+    authorized workspace workflow state but cannot mark client Check-In
+    submissions reviewed in v1; assigned coaches perform review
+    acknowledgement. Assistants receive only the separately authorized
+    assigned read access and cannot mark reviewed. SUPPORT and
+    PLATFORM_ADMIN remain denied. This decision does not authorize
+    implementation.
+96. **Terminal acknowledgement only; richer feedback deferred.** v1
+    staff review is a terminal acknowledgement. Written feedback,
+    video, audio, attachments, change summaries, coaching messages,
+    and automated recommendations are deferred. The acknowledgement
+    does not create messaging or notification behavior. Reviewer
+    identity and timestamp follow decision #91's bounded staff-only
+    visibility. Review acknowledgement is separate from any future
+    feedback model.
+97. **Cancellation only before submission.** Only an unsubmitted
+    SCHEDULED Check-In instance may be cancelled. Submitted and
+    reviewed Check-Ins cannot be cancelled in v1: submitted answers and
+    review history remain immutable and historically visible, and no
+    `SUBMITTED→CANCELLED` or `REVIEWED→CANCELLED` transition exists.
+    Correcting, voiding, replacing, or administratively suppressing a
+    submitted Check-In requires a separate future policy. Cancellation
+    carries ending provenance and is terminal.
+
+### P-025 binding security requirements (not owner choices)
+
+These are binding fail-closed engineering requirements for the future
+implementation, derived from settled policy — they are recorded
+separately from the six owner decisions and are **not yet implemented**:
+
+- Future implementation must add `checkinFormDefinitions`,
+  `checkinInstances`, and `checkinsCoachReviews` to
+  `PLATFORM_ADMIN_DENIED_RESOURCES`. A platform administrator remains
+  denied **including a dual-role administrator holding an ACTIVE
+  workspace membership of any role**; SUPPORT and platform-only callers
+  remain denied.
+- The existing `checkinsCoachReviews` RBAC and consent entries are
+  pre-stubbed, unexercised targets — evidence of intended architecture,
+  **not** prior owner approval of any Check-In behavior.
+
+### P-025 inherited policy precedents
+
+- **#82** supplies the no-resubmission precedent: Check-In resubmission
+  remains excluded without separate approval.
+- **#85** supplies the consent-withdrawal visibility precedent: writes
+  and detail reads fail closed; bounded operational list metadata may
+  remain visible.
+- **#86** supplies the workspace-terminal review precedent.
+- **#91** governs reviewer identity and timestamp as bounded
+  authorized-staff metadata.
+- These are design precedents for P-025, not claims that Check-In
+  exists.
+
+### P-025 binding engineering contract (not owner choices)
+
+The independently reviewed R2 plan fixes these requirements for the
+future implementation; they constrain the build and are not additional
+owner decisions and are **not implemented**:
+
+- Check-In is a distinct domain from onboarding; safe reuse is limited
+  to validation, renderer, authorization, consent, audit, and
+  transaction patterns — no premature generic "everything is a form"
+  abstraction. Proposed models: `CheckInForm`, `CheckInFormVersion`,
+  `CheckInInstance`, `CheckInSubmission`, `CheckInSubmissionAnswer`,
+  `CheckInReview`; published versions are immutable self-contained
+  snapshots with a new domain `CheckInAnswerKind` preserving stable
+  field IDs, labels, kinds, option IDs/text, required state,
+  validation, display order, classification metadata, and
+  retired-option tombstones.
+- No mutable stored instance status: effective state is derived by one
+  shared projector — CANCELLED from coherent cancellation provenance,
+  else REVIEWED from a coherent review, else SUBMITTED from a coherent
+  submission, else SCHEDULED. Submission, review, and cancellation
+  serialize under the same advisory key
+  `chkin:{workspaceId}:{clientProfileId}:{formId}` plus the instance
+  row lock; lock tuples derive from bounded server-side tenant/client-
+  scoped pre-reads; foreign or incoherent input fails before advisory
+  acquisition.
+- Workspace-owner paths have no coaching-assignment dependency;
+  assigned coach/assistant paths re-resolve and lock a coherent ACTIVE
+  `ClientAssignment`; client operations rebind to the own profile;
+  consent is checked before answer queries; feature-mode and
+  authorization recheck inside transactions; `P2002` recovery re-enters
+  the full protocol once.
+- Audit writes occur last and roll back the operation on failure;
+  sensitive detail reads and structural audits commit atomically;
+  passive GET/list/pagination/prefetch/refresh creates zero sensitive
+  READ audits; lists carry bounded metadata and no answer values;
+  errors never reflect submitted answers.
+- Production consent classification remains unresolved and
+  fail-closed; synthetic `BASE_CONSENTS` behavior is dev/test only; the
+  shared server-only `ENABLE_CHECK_INS` resolver is default-off,
+  trusted development/test only, production/unknown fail-closed, shared
+  by pages/actions, and absent from client bundles.
+- Historical rows use `ON DELETE RESTRICT`; required Prisma composite
+  targets and relation backfields are declared; the answer coherence
+  target is `CheckInSubmission(id, workspaceId, clientProfileId)` with
+  answer FK `(submissionId, workspaceId, clientProfileId)`; no answer
+  values are copied into instance or review rows; no production
+  enablement or deployment.
+
+### P-025 implementation slices (each separately authorized)
+
+- **P-025-A** — Check-In form definitions and immutable published
+  versions: enabling infrastructure, not independently client-visible.
+- **P-025-B** — one-off instance scheduling and client submission:
+  the first client-visible Check-In value.
+- **P-025-C** — authorized staff detail and review acknowledgement.
+- **P-025-D** — deferred: recurrence, custom Check-Ins, richer
+  feedback.
+
+Each slice requires separate authorization, RED-first evidence, real
+disposable-PostgreSQL integration, production-build browser testing,
+mutation checks, different-model review, separate PR and merge
+approval, and default-off behavior. The currently recommended first
+implementation slice is P-025-A; it remains unauthorized.
+
+### P-025 future test/mutation contract (required at implementation)
+
+Dual-role PLATFORM_ADMIN denial plus deny-set-removal mutation;
+pre-stubbed RBAC cells not treated as approval; exact advisory-key
+shape; zero advisory acquisition for foreign input; owner path with no
+`ClientAssignment`; assigned path locking a coherent ACTIVE
+`ClientAssignment`; client-own rebinding; immutable form versions;
+derived-state consistency; cancellation/submission/review races; no
+cancellation after submission; duplicate submission and review;
+`P2002` full-protocol recovery; answer composite-FK coherence;
+answer-kind/typed-column CHECK; consent-before-answer query; consent
+withdrawal; audit atomicity and rollback; zero audit on passive reads;
+trusted-environment feature boundary; bounded-list privacy; browser
+behavior at 1440px/834px/390px; keyboard, focus, screen-reader, touch,
+overflow, loading, empty, error, revoked, closed, submitted, and late
+states; scratch mutations proving critical assertions fail.
+
+### P-025 implementation authorization boundary
+
+Implementation is authorized only under: synthetic data only;
+development and automated-test environments only; the shared
+default-off `ENABLE_CHECK_INS` feature gate; production fail-closed;
+no deployment; no production flag enablement; no real-client data; no
+recurrence/calendar materialization; no client-created Check-Ins; no
+resubmission; no cancellation after submission; no
+text/video/audio/attachment feedback; no notifications or messaging;
+no dashboards/analytics or automated advice; no nutrition/meal plans,
+training, or habits; no C3/C4; no cycle/MENSES; no CALORIES input; no
+billing; no retention/erasure/export implementation; no D-10
+resolution; no P-024 implementation; no expansion into unrelated
+features. This authorization becomes actionable only after this
+decision record is independently reviewed and merged through the
+protected-branch process and a separate implementation prompt is
+issued per slice.
