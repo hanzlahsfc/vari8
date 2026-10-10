@@ -1194,9 +1194,9 @@ describe.skipIf(!enabled)("P-025-B check-in instances (real PG)", () => {
     const rejected = [r1, r2].filter((r) => r.status === "rejected");
     expect(fulfilled).toHaveLength(1);
     expect(rejected).toHaveLength(1);
-    expect(
-      (rejected[0] as PromiseRejectedResult).reason,
-    ).toMatchObject({ code: "P2002" });
+    expect((rejected[0] as PromiseRejectedResult).reason).toMatchObject({
+      code: "P2002",
+    });
     expect(
       await prisma.checkInSubmission.count({ where: { instanceId } }),
     ).toBe(1);

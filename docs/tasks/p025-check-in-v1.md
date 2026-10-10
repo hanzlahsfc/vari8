@@ -551,11 +551,11 @@ and focus-visible still shows an outline. GREEN 3/3 post-repair.
   assignment. Skipping `lockAssignmentForScope` makes the test fail —
   this is the direct race probe the R1 no-bite #5 lacked.
 - `replay is honored even though the derived lifecycle is already
-  SUBMITTED` — pins the pre-replay SUBMITTED projection; a genuine
+SUBMITTED` — pins the pre-replay SUBMITTED projection; a genuine
   control-flow swap (state rejection with real presence before the
   lookup) fails three tests.
 - E2E `beforeunload is suppressed immediately on success — inside the
-  pre-unmount window` — synthetic cancelable beforeunload dispatch:
+pre-unmount window` — synthetic cancelable beforeunload dispatch:
   untouched→no handler, dirty→prevented, post-response→suppressed while
   the refresh is held, submitted-state→no dialog. A leaked-listener
   mutation fails it. (Honest note: `submittedRef`/`setDirty` alone are
