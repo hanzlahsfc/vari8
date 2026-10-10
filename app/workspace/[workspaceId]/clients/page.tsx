@@ -5,6 +5,7 @@ import { AccessDeniedError } from "@/lib/auth/guard";
 import { requireSessionUser } from "@/lib/auth/route-guard";
 import { resolveScope } from "@/lib/auth/rbac";
 import { resolveDailyEntryMode } from "@/lib/daily-entry/gate";
+import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
 import { prisma } from "@/lib/db";
 import { listAccessibleClientProfiles } from "@/lib/workspace/clients";
 import {
@@ -85,6 +86,16 @@ export default async function ClientsPage({
       process.env.ENABLE_DAILY_PROTOTYPE,
     ) === "persistent" &&
     (dailyLinkScope === "workspace" || dailyLinkScope === "assigned");
+  // P-025-B: Check-In instance links follow the same cosmetic-gate shape —
+  // flag on AND the role can read instance headers (workspace/assigned);
+  // the destination re-authorizes `checkinInstances` server-side.
+  const checkInLinkScope =
+    member?.status === "ACTIVE" && member.role !== undefined
+      ? resolveScope("checkinInstances", "read", member.role)
+      : "denied";
+  const showCheckInLinks =
+    isCheckInsEnabled() &&
+    (checkInLinkScope === "workspace" || checkInLinkScope === "assigned");
 
   return (
     <div className="catalog-page" data-testid="client-roster">
@@ -114,6 +125,7 @@ export default async function ClientsPage({
               <th scope="col">Added</th>
               <th scope="col">Updated</th>
               {showDailyLinks ? <th scope="col">Daily</th> : null}
+              {showCheckInLinks ? <th scope="col">Check-Ins</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -129,6 +141,16 @@ export default async function ClientsPage({
                       href={`${basePath}/${encodeURIComponent(client.id)}/daily`}
                     >
                       Daily entries
+                    </Link>
+                  </td>
+                ) : null}
+                {showCheckInLinks ? (
+                  <td>
+                    <Link
+                      className="roster-pagination__link"
+                      href={`${basePath}/${encodeURIComponent(client.id)}/checkins`}
+                    >
+                      Check-Ins
                     </Link>
                   </td>
                 ) : null}

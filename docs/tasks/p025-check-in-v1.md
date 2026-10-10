@@ -228,13 +228,15 @@ privacy review if rich feedback is ever added; deployment configuration.
 
 ## Status
 
-Decisions #92–#97 are on `main` (merge `89e9e1d`, PR #30). **P-025-A
-implementation** — Check-In form definitions and immutable published
-versions — is complete on candidate branch
-`feature/p025a-check-in-form-definitions` pending independent review.
-The slice covers staff-managed definitions only; no instance,
-scheduling, client submission, answers, reviews, or feedback exists.
-P-025-B+ remain unauthorized.
+Decisions #92–#97 are on `main` (merge `89e9e1d`, PR #30). **P-025-A** is
+merged on `main` (merge `49408db`, PR #31). **P-025-B implementation** —
+one-off Check-In instances, staff scheduling/cancellation, client
+list/detail/submission, consent-gated answers — is complete on candidate
+branch `feature/p025b-check-in-instances-submissions` pending
+independent different-model review. No review/feedback/recurrence/
+notification surface exists (P-025-C/P-025-D remain unauthorized and
+unimplemented). `ENABLE_CHECK_INS` remains default-off; nothing is
+deployed or production-enabled.
 
 ## P-025-A implementation record (2026-10-10)
 
@@ -329,8 +331,262 @@ archive → two-step Confirm/Cancel; P3s → create wrapped in bounded
 retry, `:3102` explicit flag-off, `name` well-formedness, nav `roles`
 pin, audit-rollback trigger test. Post-repair gates all green.
 
+## P-025-B implementation record (2026-10-10)
+
+Branch `feature/p025b-check-in-instances-submissions` from exact verified
+`origin/main` `49408db567b2359fade1a9499b5a02a4c58994c4` (the P-025-A
+merge). Authorized scope: one-off Check-In instances, staff
+scheduling/cancellation, client-owned list/detail/submission, typed
+immutable answers, consent-gated submit/history, derived lifecycle —
+NO review/acknowledgement (P-025-C), NO recurrence/custom/feedback/
+notifications/DailyEntry embedding (P-025-D).
+
+**Schema** — migration `20261010190000_p025b_checkin_instances`:
+`checkin_instance` (immutable ws/client/form/version pin, `due_at`
+Timestamptz, optional `due_tz` label, scheduling + nullable paired
+cancellation provenance, no stored status, no answer columns),
+`checkin_submission` (immutable, no `updated_at`,
+`UNIQUE(instance_id)` idempotency anchor, composite answer target
+`(id, workspaceId, clientProfileId)`), `checkin_submission_answer`
+(immutable typed rows, `UNIQUE(submission_id, field_id)`, raw-SQL
+kind↔column CHECK). Composite coherence FKs everywhere: instance →
+`(id, workspaceId)` ClientProfile, `version_coherence` →
+`(form_version_id, workspace_id, form_id)` CheckInFormVersion,
+provenance → `(member_id, workspace_id)` WorkspaceMember; submission →
+the full 5-column instance tuple; answers → `(submission_id,
+workspace_id, client_profile_id)`. Paired-provenance CHECK:
+`cancelled_at`/`cancelled_by_member_id` both-or-neither. All
+history-preserving FKs `ON DELETE RESTRICT`. Unanswered OPTIONAL
+fields store NO row — the CHECK makes an "empty answer" inexpressible.
+
+**Derived lifecycle** — one shared projector
+(`projectCheckInInstanceState`/`projectCheckInInstancePresentation` in
+`lib/checkin/instances.ts`): CANCELLED when valid paired provenance →
+SUBMITTED when a coherent submission exists → else SCHEDULED. No stored
+status column; `late` derives from `dueAt` vs `submittedAt`/now and
+never mutates state (#93). Designed so P-025-C can insert REVIEWED
+without a stored mutable column.
+
+**RBAC** — `checkinInstances` added with the decision-#95 matrix
+(owner ws/ws, coach asg/asg, assistant asg/—, client own/—, SUPPORT and
+PLATFORM_ADMIN denied); `checkinsCoachReviews` client own/own cell
+drives the submission domain. All three Check-In resources are in
+`PLATFORM_ADMIN_DENIED_RESOURCES` — dual-role PA denied in
+`authorize`/`authorizeCollection` before membership authority.
+
+**Locking/concurrency** — `chkin:{ws}:{clientProfileId}:{formId}`
+advisory → `member:{ws}:{userId}` advisory → member FOR UPDATE →
+in-transaction `authorize` → assigned-scope coherent ACTIVE
+`ClientAssignment` re-resolve+lock (owner takes NO assignment path) →
+profile FOR UPDATE → instance → submission → consents in kind order →
+mutation → structural audit last. Serializable + bounded retry; P2002
+re-enters the COMPLETE protocol once, second conflict →
+`serialization_conflict`. Answer-free bounded pre-read runs before any
+advisory so foreign/mutated tuples acquire ZERO locks (proven).
+Lock-order cross-check: `chkin` precedes `member` (same order as
+`csetup`→`member`, `onbassign`→`member`); no writer acquires `member`
+before `chkin`; row-lock order never inverts — acyclic.
+
+**Consent** — `resolveCheckInConsentPolicy` (trusted dev/test only →
+static `check-in-dev-*` registry; production/unknown/missing →
+unconfigured fail-closed). Submission locks required rows FOR UPDATE
+before any answer-row write; submitted-answer detail requires active
+consent on every read; withdrawal blocks new submission AND detail,
+list headers remain (#85-compatible).
+
+**Boundary/actions/UI** — `lib/checkin/instances-boundary.ts` maps the
+closed vocabulary (`denied`, `invalid_input`, `not_available`,
+`consent_missing`, `policy_not_configured`, `serialization_conflict`)
+to safe copy. Staff route
+`app/workspace/[workspaceId]/clients/[clientProfileId]/checkins/`
+(schedule form with positional select — no internal IDs in browser
+values — plus two-step destructive cancel). Client route
+`app/(tracker)/workspace/[workspaceId]/check-ins/` + `/[instanceId]`
+(force-dynamic, no-store headers via `next.config.ts`; list = bounded
+metadata only, zero answer values on GET). Client panel mirrors the
+P-023 onboarding panel (controlled fields, `aria-invalid`/
+`aria-describedby`/`role=alert`/`aria-live`, dirty-only `beforeunload`
+removed post-submit and on unmount, ≥44px targets, no raw internal
+IDs). Nav links in daily/onboarding shells + roster — all flag-gated.
+
+**Verification** — unit 1057 green incl. `checkin-instances.test.ts`
+(25: RBAC cells, dual-role deny-set, projector, parsers, canonicalizer,
+resolver, closed vocabulary); disposable-PG integration 575 green incl.
+`p025b-checkin-instances` (23: role matrix incl. dual-role PA + SUPPORT,
+owner-without-assignment, composite-FK/CHECK rejections, idempotent
+replay, concurrent schedule/submit/cancel races, consent lock/withdraw,
+audit-last trigger rollback, replay-no-second-audit, zero-advisory on
+foreign tuples); P-025-B E2E `checkin-instances.spec.ts` 14/14
+(flag-off 404s + zero audits, owner/coach schedule, two-step cancel,
+assistant/foreign-profile denial, client list/detail/submit,
+late marker, cancelled non-disclosure, consent-withdrawn detail deny,
+beforeunload lifecycle, no-store GET+POST, 1440/834/390, ≥44px, no
+overflow, positional select values, no P-025-C controls).
+`git diff --check`, `tsc --noEmit`, `eslint`, `prettier`,
+`prisma format/validate/generate`, fresh disposable-PG migrate deploy,
+and `migrate diff` all clean (the only remaining diff lines are the
+pre-existing SQL-only composite-FK/CHECK names every slice shares —
+same accepted class as P-021/P-023/P-025-A).
+
+**Bug found by the real-browser gate** — the first E2E submission run
+exposed a CHECK violation that unit+integration fixtures missed:
+unanswered OPTIONAL fields produced all-NULL answer rows that the
+kind↔column CHECK correctly rejected. Fixed by storing only answered
+rows (the CHECK semantics make "empty answer" inexpressible by design);
+regression coverage is the `expect(answers).toHaveLength(4)` assertion
+for a 5-field form submitted with one optional field empty.
+
+**Mutation testing** — 22 scratch mutations, each reverted. BITES:
+deny-set removal (×2), assistant-write grant, owner-requires-
+assignment, advisory-key weakening, pre-read removal, consent-reorder,
+trusted-env bypass, production-synthetic-consent, P2002 outside-
+transaction shortcut, cancel-after-submit acceptance, projector
+ignoring cancellation, submission→instance coherence-FK drop,
+kind↔column CHECK drop, audit-before-mutation, replay-second-audit,
+raw internal ID in browser value (real-browser E2E). NO-BITE (each
+masked by a second layer — recorded honestly): own-profile rebinding
+weakened (authorize `own` check still denies), assigned-scope lock skip
+(authorize's `getActiveAssignment` still denies), replay-lookup
+reordering (projector `hasSubmission` statically false in that path),
+`checkin_submission.instance_id` unique drop (chkin advisory + row
+locks serialize; unique remains the backstop), answer-level coherence-
+FK drop (no answer-level incoherent-tuple test exists — coverage note),
+beforeunload-after-submit (unmount cleanup removes the listener; the
+ref guards only the pre-refresh window).
+
+**Databases** — `p025b_integration_test` on the local docker-compose
+Postgres only; E2E ran on dev `app_dev` via the standard harness; a
+transient `dbg*` scratch fixture set was created and removed during
+E2E debugging. No production or unrelated databases touched.
+
 ## Next gate
 
-The reviewed P-025-A candidate branch is pushed for inspection; any
-PR/merge remains separately authorized. P-025-B — first client-visible
-slice — is NOT started and requires its own implementation prompt.
+The P-025-B candidate branch is pushed for inspection; PR/merge remain
+separately authorized. Next gate: independent different-model review of
+the exact final head by `opencode-go/deepseek-v4.1-flash`. P-025-C
+(coach review/acknowledgement) and P-025-D (recurrence/custom/feedback/
+notifications) remain unauthorized and unimplemented.
+
+## Independent review record — P-025-B-I1-R1 (2026-10-10)
+
+Reviewer `opencode-go/deepseek-v4.1-flash` reviewed the complete candidate
+`49408db..9b60cf3` (`P-025-B-I1-R1-independent-review.md`). **Technical
+verdict: FAIL**; PR clearance HELD FOR REPAIR; a separate owner process
+exception was also required.
+
+- **P1-1 (merge-blocking):** the new per-row roster "Check-Ins" link
+  added a focusable stop per row, so `tests/e2e/client-roster.spec.ts`
+  "keyboard traversal reaches pagination links with visible focus"
+  exhausted its hard-coded 40-tab budget before "Next page" — reproduced
+  3/3 on the candidate, passed on `origin/main`. CI `verify` runs the
+  full `npm run test:e2e`, so the candidate would have been red.
+- **P3-1..P3-3:** no-bite mutations without direct probes — assignment-
+  lock skip (no race probe), `unique(instance_id)` drop (no backstop
+  probe), answer→submission coherence FK drop (no answer-level
+  incoherent-tuple test).
+- **P3-4:** rebinding/replay-order/beforeunload no-bites masked by
+  second layers.
+- **P3-5:** builder ran only the focused P-025-B E2E, never the full
+  repository E2E gate — the gap that let P1-1 ship.
+- **P3-6:** pre-existing project-wide raw-SQL composite-FK naming drift
+  (not introduced by this slice).
+- The review also confirmed: scope fidelity vs decisions #92–#97, schema
+  soundness, derived-lifecycle correctness, RBAC/dual-role denial,
+  consent boundary, lock/idempotency correctness, no P-025-C/D surface —
+  and independently re-ran every gate (unit 1057, integration 575,
+  focused E2E 14/14, full E2E with the single deterministic failure).
+
+## Owner process exception (2026-10-10) — owner-granted, bounded
+
+The **owner** accepted the already-recorded initial P-025-B test-order
+deviation (the E2E spec was authored after the UI; the integration
+suite's initial all-fail run was a fixture bug, not contract RED).
+Recorded exactly:
+
+- applies **only** to that already-recorded deviation;
+- is **not precedent**;
+- does **not** retroactively make the original sequence RED-first;
+- does **not** waive the P1-1 repair, the new invariant tests,
+  full-suite verification, mutation testing, independent re-review, CI,
+  separate PR/merge authorization, production restrictions, or future
+  test-first requirements;
+- the acceptance is attributed to the owner, **not** the reviewer.
+
+## P-025-B-I1-R2 repair record (2026-10-10)
+
+On `feature/p025b-check-in-instances-submissions`, forward-only from
+`9b60cf3`.
+
+**P1-1 reproduction (before any edit):**
+`npx playwright test tests/e2e/client-roster.spec.ts -g "keyboard traversal"`
+→ `expect(focused).toBe(true)` / `Received: false` at spec line 361,
+exit 1 — reproduced **3/3** on the unmodified head.
+
+**Root cause:** wsB's page-1 roster renders 25 rows; the new per-row
+"Check-Ins" `<Link>` added 25 focusable stops, exhausting the test's
+fixed 40-tab budget before the "Next page" link. The production markup
+is correct — real `<Link>`, accessible name "Check-Ins", correct
+`/clients/{id}/checkins` destination — so the repair is a **test-contract
+update**, not a production change and not link removal.
+
+**Repair:** the test now derives its bound from the rendered focusable
+count (+4 slack) and records each visited stop's accessible text + href,
+asserting: every rendered "Check-Ins" row action is keyboard-reached
+(exactly `PAGE_SIZE` stops), every rendered "Daily entries" action is
+reached (flag-conditional count), all destinations match
+`/clients/{id}/checkins`, all row actions precede the pagination link,
+and focus-visible still shows an outline. GREEN 3/3 post-repair.
+
+**New invariant coverage (characterization + mutation evidence):**
+
+- `answer→submission composite FK rejects an incoherent answer tuple` —
+  direct insert with foreign workspaceId/clientProfileId rejected;
+  scratch-dropping the FK makes the test fail.
+- `unique(instance_id) is an independent DB backstop` — two competing
+  direct inserts bypassing the service → exactly one commits, loser is
+  P2002; scratch-dropping the index makes the test fail.
+- `assignment revoked while a coach schedule holds the lock` — a
+  barrier-held `FOR UPDATE` + REMOVED update races the real service
+  protocol → `not_assigned` denial, zero instance, zero audit, REMOVED
+  assignment. Skipping `lockAssignmentForScope` makes the test fail —
+  this is the direct race probe the R1 no-bite #5 lacked.
+- `replay is honored even though the derived lifecycle is already
+SUBMITTED` — pins the pre-replay SUBMITTED projection; a genuine
+  control-flow swap (state rejection with real presence before the
+  lookup) fails three tests.
+- E2E `beforeunload is suppressed immediately on success — inside the
+pre-unmount window` — synthetic cancelable beforeunload dispatch:
+  untouched→no handler, dirty→prevented, post-response→suppressed while
+  the refresh is held, submitted-state→no dialog. A leaked-listener
+  mutation fails it. (Honest note: `submittedRef`/`setDirty` alone are
+  not observable — the action's `revalidatePath` returns the new RSC
+  payload in the action response, making unmount atomic; the biting
+  mutation is the listener leak itself.)
+- **Rebinding probe disposition (D):** no clean behavioral probe exists —
+  `client_profile @@unique(workspaceId, userId)` gives a client exactly
+  one own profile, so a weakened rebind can only return a foreign
+  profile which the `authorize` own-check then denies (`not_owner`).
+  The rebinding's value is error-shape/ordering, not a separable
+  security outcome; retained as defense-in-depth, documented rather
+  than fabricated.
+
+**Repair-delta mutations (8, all reverted, byte-identical after):**
+link-out-of-tab-order → roster traversal FAIL; wrong accessible name →
+roster traversal FAIL; wrong destination → roster traversal FAIL;
+answer-FK drop → incoherent-answer test FAIL; `unique(instance_id)` drop
+→ backstop test FAIL; assigned-lock skip → race test FAIL; replay-after-
+state swap → 3 tests FAIL; beforeunload listener leak → window test FAIL.
+
+**Verification:** `git diff --check`, `tsc`, `eslint`, `prettier`,
+`prisma validate/generate` all clean; unit **1057/1057**; disposable-PG
+integration **579/579** (37 files; P-025-B file 27/27); `npm run build`
+clean; **full E2E `npm run test:e2e`: 303 passed / 12 skipped / 0
+failed** — the deterministic roster regression is gone and the new
+window test passes.
+
+## Next gate (post-repair)
+
+Fresh independent different-model review of the complete candidate
+`49408db..HEAD` including the repair delta and this owner-exception
+record, by `opencode-go/deepseek-v4.1-flash`. PR/merge remain separately
+authorized. P-025-C/D still unauthorized and unimplemented.

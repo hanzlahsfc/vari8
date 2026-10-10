@@ -12,6 +12,7 @@ import {
   requireSessionUser,
   resolveWorkspaceAccess,
 } from "@/lib/auth/route-guard";
+import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
 import { isOnboardingSubmissionEnabled } from "@/lib/onboarding/submission-gate";
 
 export const dynamic = "force-dynamic";
@@ -92,6 +93,11 @@ export default async function OnboardingLayout({
             {onboardingOn ? (
               <Link href={`/workspace/${workspaceId}/onboarding`}>
                 Onboarding
+              </Link>
+            ) : null}
+            {isCheckInsEnabled() ? (
+              <Link href={`/workspace/${workspaceId}/check-ins`}>
+                Check-Ins
               </Link>
             ) : null}
           </nav>

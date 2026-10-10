@@ -98,9 +98,17 @@ export const AUDIT_RESOURCE_TYPES = [
   "onboarding_submission",
   // P-025-A: Check-In form definition + publish/archive lifecycle (IDs +
   // structural markers only — never labels, options, draft JSON, or field
-  // content). Instance/submission/review audit types arrive with later
-  // slices — they do not exist yet.
+  // content).
   "checkin_form",
+  // P-025-B: one-off Check-In instance schedule/cancel events (IDs +
+  // structural markers only — never due-at beyond a coarse marker, never
+  // answer content). Replay/cancel-idempotency writes no event.
+  "checkin_instance",
+  // P-025-B: first committed Check-In client submission (IDs + structural
+  // markers only — never answer content, labels, option text, dates, or
+  // consent detail). Replay writes no event. `checkin_review` does not
+  // exist — P-025-C.
+  "checkin_submission",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 

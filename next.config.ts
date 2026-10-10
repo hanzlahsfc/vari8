@@ -46,6 +46,23 @@ const nextConfig: NextConfig = {
           "/workspace/:workspaceId/onboarding/:assignmentId((?!assignments|forms)[^/]+)",
         headers: [{ key: "Cache-Control", value: "no-store" }],
       },
+      {
+        // P-025-B: staff Check-In instance schedule/cancel surface — the
+        // per-client leaf covers its GET and the Server Action POSTs.
+        source: "/workspace/:workspaceId/clients/:clientProfileId/checkins",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+      {
+        // P-025-B: client Check-In routes carry consent-gated own answers —
+        // explicit no-store on the list and every instance detail leaf,
+        // covering page GETs and the submit Server Action POST.
+        source: "/workspace/:workspaceId/check-ins",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+      {
+        source: "/workspace/:workspaceId/check-ins/:instanceId",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
     ];
   },
 };

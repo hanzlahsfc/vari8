@@ -352,10 +352,35 @@ test("keyboard traversal reaches pagination links with visible focus", async ({
   await signIn(page, E2E.owner);
   await page.goto(rosterUrl(wsBId));
   const next = page.getByRole("link", { name: "Next page" });
-  // Real keypresses so :focus-visible heuristics apply.
+  // Structural bound — derived from the rendered focusable count, not a
+  // fixed number that silently rots when a row gains a legitimate action.
+  const budget =
+    (await page
+      .locator("a[href], button, input, select, textarea, [tabindex]")
+      .evaluateAll(
+        (els) =>
+          els.filter(
+            (e) =>
+              (e as HTMLElement).offsetWidth > 0 ||
+              (e as HTMLElement).offsetHeight > 0,
+          ).length,
+      )) + 4;
+  // Real keypresses so :focus-visible heuristics apply. Record the
+  // focused element's accessible text + destination each stop so the
+  // traversal ORDER is assertable, not just reachability.
+  const visited: { name: string; href: string }[] = [];
   let focused = false;
-  for (let i = 0; i < 40 && !focused; i++) {
+  for (let i = 0; i < budget && !focused; i++) {
     await page.keyboard.press("Tab");
+    visited.push(
+      await page.evaluate(() => {
+        const el = document.activeElement as HTMLAnchorElement | null;
+        return {
+          name: el?.textContent?.trim() ?? "",
+          href: el?.getAttribute("href") ?? "",
+        };
+      }),
+    );
     focused = await next.evaluate((el) => document.activeElement === el);
   }
   expect(focused).toBe(true);
@@ -363,6 +388,29 @@ test("keyboard traversal reaches pagination links with visible focus", async ({
     (el) => getComputedStyle(el).outlineWidth,
   );
   expect(outline).not.toBe("0px");
+
+  // Contract: EVERY rendered row action is keyboard-reached, in stable
+  // DOM order, all before the pagination link. A skipped, misnamed,
+  // mis-destined, or unreachable action — or unstable order — fails
+  // here. The Check-Ins link is the P-025-B action and is asserted
+  // unconditionally; other action classes are asserted against their
+  // rendered counts (flag-conditional).
+  const checkinsStops = visited.filter((s) => s.name === "Check-Ins");
+  const dailyStops = visited.filter((s) => s.name === "Daily entries");
+  const renderedDaily = await page
+    .getByRole("link", { name: "Daily entries" })
+    .count();
+  expect(checkinsStops).toHaveLength(PAGE_SIZE);
+  expect(dailyStops).toHaveLength(renderedDaily);
+  for (const stop of checkinsStops)
+    expect(stop.href).toMatch(/\/clients\/[^/]+\/checkins$/);
+  // Order: every row action precedes the pagination link (the last stop).
+  const lastActionIdx = Math.max(
+    visited.map((s) => s.name).lastIndexOf("Check-Ins"),
+    visited.map((s) => s.name).lastIndexOf("Daily entries"),
+  );
+  expect(lastActionIdx).toBeGreaterThanOrEqual(0);
+  expect(lastActionIdx).toBeLessThan(visited.length - 1);
 });
 
 for (const [name, viewport] of [

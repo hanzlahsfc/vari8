@@ -142,9 +142,11 @@ const PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> = new Set([
   "onboardingSubmissions",
   // P-025 (decisions #92–#97 — binding security requirement, not an owner
   // choice): Check-In resources deny PLATFORM_ADMIN including a dual-role
-  // administrator with an ACTIVE membership of any role. `checkinInstances`
-  // joins this set when the resource is introduced in P-025-B.
+  // administrator with an ACTIVE membership of any role. All three
+  // Check-In resources are members: definitions (P-025-A), instances
+  // (P-025-B), and the client submission/review resource (P-025-B).
   "checkinFormDefinitions",
+  "checkinInstances",
   "checkinsCoachReviews",
 ]);
 

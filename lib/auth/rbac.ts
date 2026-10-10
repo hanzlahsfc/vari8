@@ -57,8 +57,10 @@ export const RESOURCES = [
   // P-023 (product-decisions #82–#85): client-owned onboarding submissions.
   "onboardingSubmissions",
   // P-025-A (product-decisions #92–#97): staff-managed Check-In form
-  // definitions. Instance/submission resources arrive with later slices.
+  // definitions.
   "checkinFormDefinitions",
+  // P-025-B: one-off Check-In instance headers + schedule/cancel.
+  "checkinInstances",
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
 
@@ -137,6 +139,14 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
     CLIENT: c("own", "own"),
+  },
+  checkinInstances: {
+    PLATFORM_ADMIN: D,
+    WORKSPACE_OWNER: c("workspace", "workspace"),
+    COACH: c("assigned", "assigned"),
+    ASSISTANT_COACH: c("assigned", "denied"),
+    SUPPORT: D,
+    CLIENT: c("own", "denied"),
   },
   checkinsCoachReviews: {
     PLATFORM_ADMIN: D,

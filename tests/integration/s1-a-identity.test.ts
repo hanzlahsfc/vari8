@@ -319,9 +319,15 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         "onboarding_submission_answer",
         // P-025-A: staff-managed Check-In form definitions + immutable
         // published versions — no client data, reviewed in decisions
-        // #92–#97. No instance/submission/review tables exist yet.
+        // #92–#97.
         "checkin_form",
         "checkin_form_version",
+        // P-025-B: one-off Check-In instances + immutable client
+        // submissions/answers — consent-gated, reviewed in decisions
+        // #92–#97. No checkin_review table exists yet (P-025-C).
+        "checkin_instance",
+        "checkin_submission",
+        "checkin_submission_answer",
         // P-014: staff parameter/template definitions + immutable versions
         // (no client data; reviewed in product-decisions #41–#48).
         "coaching_template",

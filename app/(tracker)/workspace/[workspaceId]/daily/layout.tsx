@@ -12,6 +12,7 @@ import {
   requireSessionUser,
   resolveWorkspaceAccess,
 } from "@/lib/auth/route-guard";
+import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +85,11 @@ export default async function DailyTrackerLayout({
         {clientShell ? (
           <nav className="shell__nav" aria-label="Workspace">
             <Link href={`/workspace/${workspaceId}/daily`}>Daily Tracker</Link>
+            {isCheckInsEnabled() ? (
+              <Link href={`/workspace/${workspaceId}/check-ins`}>
+                Check-Ins
+              </Link>
+            ) : null}
           </nav>
         ) : (
           <WorkspaceNav workspaceId={workspaceId} role={role} />

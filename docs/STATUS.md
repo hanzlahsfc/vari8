@@ -5,6 +5,96 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-10 — P-025-B Check-In instances + client submissions implemented (candidate branch)
+
+- Owner-authorized slice P-025-B on `feature/p025b-check-in-instances-submissions`
+  from exact `origin/main` `49408db` — one-off instances, staff
+  schedule/cancel, client own list/detail/submit, typed immutable answers,
+  consent-gated submit/history, derived lifecycle. NO review/ack (P-025-C),
+  NO recurrence/custom/feedback/notifications (P-025-D).
+- Schema: `checkin_instance`/`checkin_submission`/`checkin_submission_answer`
+  (migration `20261010190000_p025b_checkin_instances`) — immutable pins,
+  no stored status, `UNIQUE(instance_id)` submission anchor, composite
+  coherence FKs incl. the 5-col submission→instance tuple, paired-cancel
+  CHECK, kind↔column CHECK, RESTRICT everywhere.
+- RBAC `checkinInstances` (owner ws/ws, coach asg/asg, assistant asg/—,
+  client own/—); `checkinsCoachReviews` own/own drives submissions; all
+  three Check-In resources in `PLATFORM_ADMIN_DENIED_RESOURCES`.
+- Lock order: `chkin:{ws}:{cp}:{form}` advisory → `member` advisory →
+  member FOR UPDATE → in-tx authorize → assigned-scope assignment
+  re-resolve/lock (owner: none) → profile → instance → submission →
+  consents → mutation → audit last; Serializable + bounded retry; P2002
+  full-protocol re-entry once → `serialization_conflict` on second.
+- Consent: trusted dev/test-only `check-in-dev-*` registry via one shared
+  resolver; production/unknown → unconfigured fail-closed; FOR UPDATE
+  before answer access; withdrawal blocks submit + detail, list headers
+  remain.
+- UI: staff per-client schedule/cancel (positional select, two-step
+  destructive confirm), client `check-ins` list/detail/submit (no-store,
+  bounded metadata, pinned-definition fill form, dirty-only
+  `beforeunload`, ≥44px, no internal IDs in browser values), flag-gated
+  nav in daily/onboarding shells + roster.
+- Verification: unit 1057; disposable-PG integration 575 (P-025-B file
+  23/23 incl. dual-role PA, coherence-FK/CHECK rejections, races,
+  audit-last trigger rollback, zero-advisory foreign proof); E2E
+  `checkin-instances.spec.ts` 14/14 on the production build incl.
+  flag-off 404s, consent withdrawal, beforeunload lifecycle, responsive
+  1440/834/390; tsc/eslint/prettier/prisma format+validate+generate/
+  migrate deploy/migrate diff clean.
+- Real bug found by browser gate: unanswered OPTIONAL fields produced
+  all-NULL rows rejected by the kind↔column CHECK — fixed by storing only
+  answered rows (regression: 4 rows for a 5-field form with one empty
+  optional).
+- Mutation testing: 22 scratch mutations — 16 BITE, 6 recorded NO-BITE
+  each masked by a second layer (details in
+  `docs/tasks/p025-check-in-v1.md` P-025-B record). All reverted;
+  post-revert gates green.
+- `ENABLE_CHECK_INS` default-off/commented; nothing deployed; no PR
+  created. Next: push branch → independent `opencode-go/deepseek-v4.1-flash`
+  review of the exact head → separate merge authorization.
+- Full record: `docs/tasks/p025-check-in-v1.md` (P-025-B implementation
+  record). Builder report: `/Users/apple/Downloads/P-025-B-I1-builder-report.md`.
+
+## 2026-10-10 — P-025-B-I1-R1 review FAIL → R2 repair + owner exception
+
+- Independent `opencode-go/deepseek-v4.1-flash` review of `49408db..9b60cf3`
+  returned **FAIL (PR held)** — P1-1: the new roster "Check-Ins" link's
+  per-row tab stop exhausted the roster keyboard test's fixed 40-tab
+  budget; deterministic 3/3 on candidate, green on main; the builder had
+  run only the focused E2E, never the full suite (P3-5). P3 gaps: no
+  answer-level incoherent-tuple test, no `unique(instance_id)` backstop
+  probe, no assignment-removal race probe. The reviewer also required a
+  separate owner process exception for the E2E-after-UI chronology.
+- **Owner exception:** owner accepted the bounded initial test-order
+  deviation — recorded in `docs/tasks/p025-check-in-v1.md`; not
+  precedent; waives nothing else; attributed to the owner, not the
+  reviewer.
+- **R2 repair (forward-only):** the production markup was correct; the
+  stale element was the test's fixed bound. The test now derives its
+  bound from the rendered focusable count and asserts the full keyboard
+  contract (all `PAGE_SIZE` Check-Ins stops with `/checkins` hrefs,
+  flag-conditional Daily stops, all actions before pagination,
+  focus-visible outline) — green 3/3.
+- **New invariant tests (4 integration + 1 E2E):** answer-level
+  incoherent-tuple FK rejection; `unique(instance_id)` independent
+  backstop probe (direct competing inserts, no service layer);
+  assignment-removal race with a barrier-held row lock (`not_assigned`,
+  zero instance/audit, REMOVED row); replay-honored-while-SUBMITTED pin;
+  beforeunload post-success window probe. Rebinding probe disposition:
+  no behavioral probe exists (`unique(ws,userId)` + authorize own-check)
+  — documented as defense-in-depth, not fabricated.
+- **8 repair-delta mutations — all BITE, all reverted:** tab-order
+  removal, wrong name, wrong href (→ roster traversal), answer-FK drop,
+  unique drop, assignment-lock skip (→ new race test — the direct probe
+  R1 lacked), replay-after-state swap (→ 3 tests), beforeunload listener
+  leak (→ new window test).
+- **Verification:** unit 1057; integration 579 (P-025-B 27/27); **full
+  E2E 303/0-failed/12-skipped**; tsc/eslint/prettier/prisma all clean.
+- Repair delta: 3 test files + docs only — zero production-code change.
+- Repair report: `/Users/apple/Downloads/P-025-B-I1-R2-builder-report.md`.
+  Next: fresh independent review of `49408db..HEAD` incl. the repair +
+  exception record.
+
 ## 2026-10-10 — P-025-A Check-In form definitions implemented (candidate branch)
 
 - Owner-authorized slice P-025-A on `feature/p025a-check-in-form-definitions`
