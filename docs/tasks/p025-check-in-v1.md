@@ -315,11 +315,11 @@ reverted byte-identical (all BITES; the dropped-byte-bound mutation
 initially survived at the action layer and was re-proven against the
 new dedicated boundary unit test).
 **Databases** — `p025a_integration_test` (local docker-compose Postgres
-only); `p025a_shadow` transient prisma-diff shadow created for the
-reviewer's drift check (dropped at cleanup); the reviewer's own
-`p025a_review` was dropped by the reviewer. No production or
-builder/reviewer DBs touched. E2E ran on the dev `app_dev` database via
-the standard harness.
+only), `p025a_shadow` (transient prisma-diff shadow for the reviewer's
+drift check), and the reviewer's own `p025a_review` — **all dropped and
+verified absent** after final verification (`pg_database` LIKE 'p025a%'
+→ empty). No production or builder/reviewer DBs touched. E2E ran on
+the dev `app_dev` database via the standard harness.
 
 **Independent review** — `opencode-go/deepseek-v4.1-flash` on candidate
 `fca8854` vs base `89e9e1d`: **PASS**, no P0/P1. Findings repaired:
