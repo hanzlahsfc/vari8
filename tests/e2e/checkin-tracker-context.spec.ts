@@ -526,9 +526,7 @@ test("denied roles see no values; client cannot reach the staff action", async (
   // SUPPORT is denied at the list layer — no submission rows, no detail
   // control, no context control.
   await expect(page.getByTestId("checkin-view-detail")).toHaveCount(0);
-  await expect(
-    page.getByTestId("checkin-show-tracker-context"),
-  ).toHaveCount(0);
+  await expect(page.getByTestId("checkin-show-tracker-context")).toHaveCount(0);
   expect((await contextAudits()).length).toBe(before.length);
 });
 

@@ -725,3 +725,38 @@ the P1→P3 planning/review cycle; recorded in `docs/product-decisions.md`
 **Next slice:** P-025-D6 is recommended but separately unauthorized.
 Documentation-only task — no implementation, no schema, no flag change,
 nothing deployed.
+
+---
+
+## P-025-D6-I1 tracker-context reveal implemented (candidate branch, 2026-10-11)
+
+Owner-authorized `feature/p025d6-checkin-tracker-context` (base `dabcdf0`)
+delivers decision #103 C1 exactly:
+
+- **UX:** inside the authorized staff submission detail, "Show tracker
+  context" reveals a manual `YYYY-MM-DD` date form (autofocused date
+  input, `aria-live` status); submitting is a separate explicit POST —
+  no passive load, no dropdown, no availability browsing (C2 not
+  approved), no fallback to due/submission/current/nearest date.
+- **Service** `readCheckInReviewTrackerContext` — ONE Serializable tx:
+  bounded answer-free pre-read → `csetup`→`member` advisories → member
+  FOR UPDATE → `authorize(checkinsCoachReviews)` + `authorize(dailyTracking)`
+  → `reconcileTrackerContextScopes` (ws+ws→ws, ws∩asg→asg, else deny;
+  `own`/unknown fail closed) → one shared ACTIVE-assignment re-resolve
+  - FOR UPDATE → profile FOR UPDATE → snapshot Check-In coherence (no
+    `chkin`, no Check-In row locks — #97 makes post-submission cancellation
+    impossible) → consent intersection FOR UPDATE at each side's registry
+    version → `readStaffDailyEntryDetailTx` (latest committed revision of
+    the exact date + `READ daily_entry` audit last). Retries re-run the
+    whole protocol.
+- **No new storage:** no schema, migration, table, RBAC, or audit
+  resource — the existing `daily_entry` READ audit is reused.
+- **Tests:** 23 unit + 30 real-PG integration + 6 production-build E2E —
+  full role matrix incl. dual-role PA deny-set path, injected asymmetric
+  authorization, consent per-side withdrawal, cross-tenant/coherence,
+  date bounds, latest-revision-only, no-fallback, audit counts, and
+  concurrent-vs-mark/save probes.
+- **Gates:** build/typecheck/lint/format clean; unit 1086; integration
+  624; E2E 316; mutation battery 10 bites + documented masks.
+- **State:** feature flag still default-off; nothing deployed; no PR —
+  independent different-model review is the next gate.

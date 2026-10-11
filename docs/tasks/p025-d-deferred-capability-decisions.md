@@ -86,8 +86,10 @@ audit rollback, biting mutations.
 
 ## Slice gates
 
-- **D6** — product gate RESOLVED (#103); implementation separately
-  unauthorized.
+- **D6** — product gate RESOLVED (#103). IMPLEMENTED on candidate
+  branch `feature/p025d6-checkin-tracker-context` (2026-10-11; record
+  `docs/tasks/p025-check-in-v1.md`) — unreviewed; no PR/merge until
+  independent different-model review.
 - **D2 Calendar** — may proceed independently (renders existing one-off
   instances).
 - **D1 Recurrence** — still gated by timezone/DST and remaining #98
