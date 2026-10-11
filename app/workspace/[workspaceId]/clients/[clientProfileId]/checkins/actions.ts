@@ -270,7 +270,7 @@ export async function markCheckInSubmissionReviewed(
 }
 
 /**
- * P-025-D6 — explicit DailyEntry tracker context (decision #103, C1
+ * P-025-D6 — explicit DailyEntry tracker context (decision 103, C1
  * manual date entry only). Staff deliberately enter ONE declared
  * `YYYY-MM-DD` `entryDate`; the server re-validates it, independently
  * re-authorizes the strict `checkinsCoachReviews/read` ∩
