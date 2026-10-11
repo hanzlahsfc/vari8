@@ -760,3 +760,18 @@ delivers decision #103 C1 exactly:
   624; E2E 316; mutation battery 10 bites + documented masks.
 - **State:** feature flag still default-off; nothing deployed; no PR —
   independent different-model review is the next gate.
+
+### I1-R2 repair — advisory-order sensitivity (P2-1)
+
+R1 (independent, DeepSeek): CONDITIONAL PASS — the member↔csetup
+inversion survived the suite (P2-1). Test-only repair on the same
+branch (production byte-identical): a transaction-preserving
+`advisoryProbe` wrapper observes real `pg_advisory_xact_lock` calls;
+asserts the exact `csetup:{ws}:{cp}` → `member:{ws}:{uid}` order and
+zero advisories for foreign submissions; adds barrier-driven
+same-coach P-022 ∥ D6 probes in both orderings plus a crossed-barrier
+arrangement whose committed assertion fails with 40P01/55P03 evidence
+under inversion (verified by scratch mutation — 3/5 new tests bite —
+then byte-identical revert). Stable ×3; focused 35/35; full
+integration 630/630. R1 P3 notes carried (in-tx coherence masked by
+pre-read; RED was module-absent; `revisionCount` retained).
