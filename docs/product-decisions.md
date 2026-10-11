@@ -1314,3 +1314,26 @@ features. This authorization becomes actionable only after this
 decision record is independently reviewed and merged through the
 protected-branch process and a separate implementation prompt is
 issued per slice.
+
+## FRONTEND-INTEGRATION-P1 — owner approval (2026-10-11, implementation prompt)
+
+**Decision #105 (APPROVED):** the Lily visual integration on the existing
+client DailyEntry workflow is approved under four owner choices:
+
+1. A declared-date picker with previous/next-day controls, using the
+   EXISTING `parseDeclaredDate` bounds (#66) — the declared date stays a
+   plain calendar date, never a timezone-converted instant.
+2. The visual treatment applies ONLY to the persistent client DailyEntry
+   form and its history — the surrounding application shell is unchanged.
+3. The backend's existing fonts are kept; Lily's font assets are not
+   copied.
+4. The existing bounded client history is grouped by week
+   (presentation-only, no new queries, aggregates, calculations, or
+   "load more").
+
+This approval covers the bounded implementation slice only — not PR
+merge, deployment, production enablement, staff views, comments,
+aggregates, new field kinds, or any other frontend feature. Decision
+number 104 remains reserved for the pending Check-In calendar product
+choices on `feature/p025d2-checkin-calendar` (proposed, unconfirmed) —
+no collision is created by this record.
