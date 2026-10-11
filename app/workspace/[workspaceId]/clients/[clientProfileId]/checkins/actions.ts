@@ -352,6 +352,7 @@ export async function readStaffCheckInCalendarAction(
   | {
       status: "ok";
       items: import("@/lib/checkin/instances").StaffCheckInInstanceItem[];
+      truncated: boolean;
     }
   | { status: "empty" }
   | { status: "error"; message: string }
@@ -392,5 +393,9 @@ export async function readStaffCheckInCalendarAction(
     if (result.code === "not_available") return { status: "empty" };
     return { status: "error", message: result.message };
   }
-  return { status: "ok", items: result.value.items };
+  return {
+    status: "ok",
+    items: result.value.items,
+    truncated: result.value.truncated === true,
+  };
 }

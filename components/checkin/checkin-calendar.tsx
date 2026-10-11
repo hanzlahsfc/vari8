@@ -9,7 +9,7 @@ import {
 } from "@/lib/checkin/calendar";
 
 /**
- * P-025-D2 — Check-In calendar (decision decision 104): read-only month grid +
+ * P-025-D2 — Check-In calendar (proposed rules entry 104): read-only month grid +
  * accessible agenda list over the existing answer-free header lists.
  * Day placement is viewer-local (browser timezone) — DISPLAY ONLY; it
  * sets no timezone authority, DST, or recurrence policy. Cancelled
@@ -27,7 +27,7 @@ export type CheckInCalendarItem = {
 };
 
 export type CheckInCalendarLoadResult =
-  | { status: "ok"; items: CheckInCalendarItem[] }
+  | { status: "ok"; items: CheckInCalendarItem[]; truncated: boolean }
   | { status: "empty" }
   | { status: "error"; message: string };
 
@@ -202,10 +202,22 @@ export function CheckInCalendar({
           ? "Loading…"
           : result.status === "error"
             ? null
-            : result.status === "ok" && result.items.length === 0
+            : result.status === "ok" &&
+                result.items.length === 0 &&
+                !result.truncated
               ? "No Check-Ins this month."
               : null}
       </p>
+      {result?.status === "ok" && result.truncated ? (
+        <p
+          className="daily-errors"
+          role="status"
+          data-testid="checkin-calendar-truncated"
+        >
+          This date range contains more than 200 Check-Ins. Only the first 200
+          are shown.
+        </p>
+      ) : null}
       {result?.status === "error" ? (
         <p
           className="daily-errors"

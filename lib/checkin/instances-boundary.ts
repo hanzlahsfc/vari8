@@ -173,7 +173,9 @@ export async function readStaffCheckInCalendar(
     to: string;
   },
   deps: CheckInInstanceDeps = {},
-): Promise<CheckInSafeResult<{ items: StaffCheckInInstanceItem[] }>> {
+): Promise<
+  CheckInSafeResult<{ items: StaffCheckInInstanceItem[]; truncated?: boolean }>
+> {
   return guard(process.env, () =>
     listCheckInInstancesForClient(
       session as never,
@@ -192,7 +194,9 @@ export async function readOwnCheckInCalendar(
   session: Session,
   input: { workspaceId: string; from: string; to: string },
   deps: CheckInInstanceDeps = {},
-): Promise<CheckInSafeResult<{ items: OwnCheckInInstanceItem[] }>> {
+): Promise<
+  CheckInSafeResult<{ items: OwnCheckInInstanceItem[]; truncated?: boolean }>
+> {
   return guard(process.env, () =>
     serviceListOwnCheckInInstances(
       session as never,

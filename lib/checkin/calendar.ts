@@ -1,5 +1,5 @@
 /**
- * P-025-D2 — Check-In calendar (decision decision 104). Pure display helpers
+ * P-025-D2 — Check-In calendar (proposed rules entry 104). Pure display helpers
  * for the viewer-local (browser timezone) day placement. Timezone use
  * here is DISPLAY ONLY — it establishes no timezone authority, DST, or
  * recurrence policy. The bounded range parser lives in `instances.ts`

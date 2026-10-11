@@ -995,7 +995,7 @@ export async function listCheckInInstancesForClient(
   session: SessionLike,
   input: ListCheckInInstancesInput,
   deps: CheckInInstanceDeps = {},
-): Promise<{ items: StaffCheckInInstanceItem[] }> {
+): Promise<{ items: StaffCheckInInstanceItem[]; truncated?: boolean }> {
   const db = deps.db ?? defaultPrisma;
   if (!validId(input.workspaceId) || !validId(input.clientProfileId))
     throw new CheckInInstanceError("invalid_input");
@@ -1065,10 +1065,18 @@ export async function listCheckInInstancesForClient(
         },
       },
       orderBy: [{ dueAt: "asc" }, { id: "asc" }],
-      take: CHECKIN_INSTANCE_LIMITS.listMax,
+      // P-025-D2-I1-R2: ranged (calendar) reads fetch one extra eligible
+      // row — the range predicate applies BEFORE the limit — so overflow
+      // is detectable instead of silently truncating at listMax.
+      take: CHECKIN_INSTANCE_LIMITS.listMax + (range !== null ? 1 : 0),
     });
+    // Ranged reads expose {items, truncated}; unbounded callers keep the
+    // legacy {items} contract exactly.
+    const truncated =
+      range !== null && rows.length > CHECKIN_INSTANCE_LIMITS.listMax;
+    const eligible = rows.slice(0, CHECKIN_INSTANCE_LIMITS.listMax);
     const now = new Date();
-    const items = rows.map((row) => {
+    const items = eligible.map((row) => {
       const submission = row.submissions[0] ?? null;
       const presentation = projectCheckInInstancePresentation(
         {
@@ -1094,7 +1102,7 @@ export async function listCheckInInstancesForClient(
         scheduledAt: row.scheduledAt.toISOString(),
       } satisfies StaffCheckInInstanceItem;
     });
-    return { items };
+    return range === null ? { items } : { items, truncated };
   });
 }
 
@@ -1114,7 +1122,7 @@ export async function listOwnCheckInInstances(
   session: SessionLike,
   input: OwnCheckInInstanceInput,
   deps: CheckInInstanceDeps = {},
-): Promise<{ items: OwnCheckInInstanceItem[] }> {
+): Promise<{ items: OwnCheckInInstanceItem[]; truncated?: boolean }> {
   const db = deps.db ?? defaultPrisma;
   if (!validId(input.workspaceId))
     throw new CheckInInstanceError("invalid_input");
@@ -1164,33 +1172,35 @@ export async function listOwnCheckInInstances(
         submissions: { select: { id: true, submittedAt: true }, take: 1 },
       },
       orderBy: [{ dueAt: "asc" }, { id: "asc" }],
-      take: CHECKIN_INSTANCE_LIMITS.listMax,
+      take: CHECKIN_INSTANCE_LIMITS.listMax + (range !== null ? 1 : 0),
     });
+    const truncated =
+      range !== null && rows.length > CHECKIN_INSTANCE_LIMITS.listMax;
+    const eligible = rows.slice(0, CHECKIN_INSTANCE_LIMITS.listMax);
     const now = new Date();
-    return {
-      items: rows.map((row) => {
-        const submission = row.submissions[0] ?? null;
-        const presentation = projectCheckInInstancePresentation(
-          {
-            cancelledAt: row.cancelledAt,
-            cancelledByMemberId: row.cancelledByMemberId,
-            hasSubmission: submission !== null,
-            dueAt: row.dueAt,
-            submittedAt: submission?.submittedAt ?? null,
-          },
-          now,
-        );
-        return {
-          instanceId: row.id,
-          formName: row.form.name,
-          versionSeq: row.formVersion.versionSeq,
-          dueAt: row.dueAt.toISOString(),
-          state: presentation.state,
-          late: presentation.late,
-          submittedAt: submission?.submittedAt.toISOString() ?? null,
-        } satisfies OwnCheckInInstanceItem;
-      }),
-    };
+    const items = eligible.map((row) => {
+      const submission = row.submissions[0] ?? null;
+      const presentation = projectCheckInInstancePresentation(
+        {
+          cancelledAt: row.cancelledAt,
+          cancelledByMemberId: row.cancelledByMemberId,
+          hasSubmission: submission !== null,
+          dueAt: row.dueAt,
+          submittedAt: submission?.submittedAt ?? null,
+        },
+        now,
+      );
+      return {
+        instanceId: row.id,
+        formName: row.form.name,
+        versionSeq: row.formVersion.versionSeq,
+        dueAt: row.dueAt.toISOString(),
+        state: presentation.state,
+        late: presentation.late,
+        submittedAt: submission?.submittedAt.toISOString() ?? null,
+      } satisfies OwnCheckInInstanceItem;
+    });
+    return range === null ? { items } : { items, truncated };
   });
 }
 
