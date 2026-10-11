@@ -9,6 +9,7 @@ import {
   listSchedulableVersionsForClient,
   markCheckInSubmissionReviewedFromAction,
   readCheckInReviewTrackerContextFromAction,
+  readStaffCheckInCalendar,
   readStaffCheckInSubmissionDetail,
   scheduleCheckInInstanceFromAction,
 } from "@/lib/checkin/instances-boundary";
@@ -336,4 +337,60 @@ export async function showCheckInReviewTrackerContext(
     declaredAt: result.value.declaredAt,
     values: result.value.values,
   };
+}
+
+/**
+ * P-025-D2 (#104): bounded-range calendar read for authorized staff —
+ * same `checkinInstances` protocol, range REQUIRED by the boundary.
+ * Called programmatically by the calendar component; feature resolver
+ * first, session second, bounded args only. Zero audits (header read).
+ */
+export async function readStaffCheckInCalendarAction(
+  ctx: { workspaceId: string; clientProfileId: string },
+  input: { from: string; to: string },
+): Promise<
+  | {
+      status: "ok";
+      items: import("@/lib/checkin/instances").StaffCheckInInstanceItem[];
+    }
+  | { status: "empty" }
+  | { status: "error"; message: string }
+> {
+  if (!isCheckInsEnabled()) return { status: "error", message: OFF };
+  const userId = await sessionUser();
+  if (userId === null) return { status: "error", message: DENIED };
+  if (
+    typeof ctx !== "object" ||
+    ctx === null ||
+    typeof ctx.workspaceId !== "string" ||
+    ctx.workspaceId.length === 0 ||
+    ctx.workspaceId.length > 128 ||
+    typeof ctx.clientProfileId !== "string" ||
+    ctx.clientProfileId.length === 0 ||
+    ctx.clientProfileId.length > 128 ||
+    typeof input !== "object" ||
+    input === null ||
+    typeof input.from !== "string" ||
+    input.from.length === 0 ||
+    input.from.length > 40 ||
+    typeof input.to !== "string" ||
+    input.to.length === 0 ||
+    input.to.length > 40
+  )
+    return { status: "error", message: INVALID };
+
+  const result = await readStaffCheckInCalendar(
+    { user: { id: userId } },
+    {
+      workspaceId: ctx.workspaceId,
+      clientProfileId: ctx.clientProfileId,
+      from: input.from,
+      to: input.to,
+    },
+  );
+  if (!result.ok) {
+    if (result.code === "not_available") return { status: "empty" };
+    return { status: "error", message: result.message };
+  }
+  return { status: "ok", items: result.value.items };
 }

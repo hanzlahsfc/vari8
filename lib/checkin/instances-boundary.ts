@@ -159,6 +159,52 @@ export async function getOwnCheckInInstance(
   );
 }
 
+/**
+ * P-025-D2 (#104): bounded-range calendar read for staff — the same
+ * `checkinInstances` authorization/protocol as the header list; the
+ * range is REQUIRED here (the unbounded list boundary is unchanged).
+ */
+export async function readStaffCheckInCalendar(
+  session: Session,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    from: string;
+    to: string;
+  },
+  deps: CheckInInstanceDeps = {},
+): Promise<CheckInSafeResult<{ items: StaffCheckInInstanceItem[] }>> {
+  return guard(process.env, () =>
+    listCheckInInstancesForClient(
+      session as never,
+      {
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+        range: { from: input.from, to: input.to },
+      },
+      deps,
+    ),
+  );
+}
+
+/** P-025-D2 (#104): bounded-range calendar read for the owning client. */
+export async function readOwnCheckInCalendar(
+  session: Session,
+  input: { workspaceId: string; from: string; to: string },
+  deps: CheckInInstanceDeps = {},
+): Promise<CheckInSafeResult<{ items: OwnCheckInInstanceItem[] }>> {
+  return guard(process.env, () =>
+    serviceListOwnCheckInInstances(
+      session as never,
+      {
+        workspaceId: input.workspaceId,
+        range: { from: input.from, to: input.to },
+      },
+      deps,
+    ),
+  );
+}
+
 export async function listStaffCheckInSubmissions(
   session: Session,
   input: { workspaceId: string; clientProfileId: string },

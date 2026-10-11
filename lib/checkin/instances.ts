@@ -644,13 +644,38 @@ export type CancelCheckInInstanceInput = {
   instanceId: string;
 };
 
+/** Max instant span a calendar range may request (~3 months). */
+export const CALENDAR_RANGE_MAX_DAYS = 95;
+
+/**
+ * P-025-D2 (#104): bounded instant range for the header lists — both
+ * sides must be strict ISO-8601 UTC instants, `from < to`, span ≤
+ * `CALENDAR_RANGE_MAX_DAYS`. Returns null on any violation.
+ */
+export function parseCheckInCalendarRange(raw: {
+  from?: unknown;
+  to?: unknown;
+}): { from: Date; to: Date } | null {
+  const from = parseCheckInDueAt(raw?.from);
+  const to = parseCheckInDueAt(raw?.to);
+  if (from === null || to === null) return null;
+  if (from.getTime() >= to.getTime()) return null;
+  if (to.getTime() - from.getTime() > CALENDAR_RANGE_MAX_DAYS * 86400_000)
+    return null;
+  return { from, to };
+}
+
 export type ListCheckInInstancesInput = {
   workspaceId: string;
   clientProfileId: string;
+  /** P-025-D2: optional bounded instant range on `dueAt`. */
+  range?: { from: string; to: string };
 };
 
 export type OwnCheckInInstanceInput = {
   workspaceId: string;
+  /** P-025-D2: optional bounded instant range on `dueAt`. */
+  range?: { from: string; to: string };
 };
 
 export type GetOwnCheckInInstanceInput = {
@@ -974,6 +999,10 @@ export async function listCheckInInstancesForClient(
   const db = deps.db ?? defaultPrisma;
   if (!validId(input.workspaceId) || !validId(input.clientProfileId))
     throw new CheckInInstanceError("invalid_input");
+  const range =
+    input.range === undefined ? null : parseCheckInCalendarRange(input.range);
+  if (input.range !== undefined && range === null)
+    throw new CheckInInstanceError("invalid_input");
 
   return db.$transaction(async (tx) => {
     // Bounded pre-read derives the chkin key (list is read-only but the
@@ -1014,6 +1043,7 @@ export async function listCheckInInstancesForClient(
       where: {
         workspaceId: input.workspaceId,
         clientProfileId: input.clientProfileId,
+        ...(range !== null ? { dueAt: { gte: range.from, lt: range.to } } : {}),
       },
       select: {
         id: true,
@@ -1091,6 +1121,10 @@ export async function listOwnCheckInInstances(
   const userId = session?.user?.id;
   if (typeof userId !== "string" || userId.length === 0)
     throw new AccessDeniedError("unauthenticated", "checkinInstances", "read");
+  const range =
+    input.range === undefined ? null : parseCheckInCalendarRange(input.range);
+  if (input.range !== undefined && range === null)
+    throw new CheckInInstanceError("invalid_input");
 
   return db.$transaction(async (tx) => {
     // Own-profile rebinding — the target is server-derived, never input.
@@ -1118,6 +1152,7 @@ export async function listOwnCheckInInstances(
       where: {
         workspaceId: input.workspaceId,
         clientProfileId: profile.id,
+        ...(range !== null ? { dueAt: { gte: range.from, lt: range.to } } : {}),
       },
       select: {
         id: true,

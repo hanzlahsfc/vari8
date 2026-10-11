@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
-import { submitCheckInInstanceFromAction } from "@/lib/checkin/instances-boundary";
+import {
+  readOwnCheckInCalendar,
+  submitCheckInInstanceFromAction,
+} from "@/lib/checkin/instances-boundary";
 
 /**
  * P-025-B — client Check-In submission server action (decisions #92–#97).
@@ -81,4 +84,53 @@ export async function submitCheckInInstanceAction(
     revalidatePath(`/workspace/${workspaceId}/check-ins/${instanceId}`);
   if (!result.ok) return result as SubmitCheckInState;
   return { ok: true, status: result.value.status };
+}
+
+/**
+ * P-025-D2 (#104): bounded-range calendar read for the owning client —
+ * same `checkinInstances` own-scope protocol. Programmatic load from
+ * the calendar component; resolver → session → bounded args → boundary.
+ * Zero audits (header read).
+ */
+export async function readOwnCheckInCalendarAction(
+  ctx: { workspaceId: string },
+  input: { from: string; to: string },
+): Promise<
+  | {
+      status: "ok";
+      items: import("@/lib/checkin/instances").OwnCheckInInstanceItem[];
+    }
+  | { status: "empty" }
+  | { status: "error"; message: string }
+> {
+  if (!isCheckInsEnabled()) return { status: "error", message: OFF };
+  const session = await auth();
+  if (!session?.user?.id) return { status: "error", message: DENIED };
+  const userId = session.user.id;
+  if (
+    typeof ctx !== "object" ||
+    ctx === null ||
+    typeof ctx.workspaceId !== "string" ||
+    ctx.workspaceId.length === 0 ||
+    ctx.workspaceId.length > 128 ||
+    typeof input !== "object" ||
+    input === null ||
+    typeof input.from !== "string" ||
+    input.from.length === 0 ||
+    input.from.length > 40 ||
+    typeof input.to !== "string" ||
+    input.to.length === 0 ||
+    input.to.length > 40
+  )
+    return { status: "error", message: INVALID };
+
+  const result = await readOwnCheckInCalendar(
+    { user: { id: userId } },
+    { workspaceId: ctx.workspaceId, from: input.from, to: input.to },
+  );
+  if (!result.ok) {
+    if (result.code === "not_available") return { status: "empty" };
+    return { status: "error", message: result.message };
+  }
+  return { status: "ok", items: result.value.items };
 }

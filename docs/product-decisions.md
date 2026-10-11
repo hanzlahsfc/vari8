@@ -1149,6 +1149,24 @@ implementation prompt per slice.
       D6. This resolves the product gate for P-025-D6 but does not
       authorize implementation.
 
+104.  **Check-In calendar: viewer-local day placement over one-off
+      instances.** P-025-D2 presents existing one-off Check-In instances
+      on a read-only calendar. Calendar day placement uses the
+      **viewer's browser timezone**: each viewer sees each instance on
+      their own local calendar day, and the surface is clearly labelled
+      so viewers understand why calendar days may differ across
+      timezones. This is a display-only rule — it does **not** establish
+      a timezone authority, DST, or recurrence policy (those remain
+      unresolved under #98). The calendar is provided to **staff and
+      clients**, each strictly within the existing `checkinInstances`
+      permission scopes. Presentation is a **month grid plus an
+      accessible agenda list** rendering the same bounded data.
+      **Cancelled instances remain visible** and are labelled with
+      explicit "Cancelled" text. The calendar is read-only: it creates
+      no stored status, no rescheduling, and no new mutations. This
+      resolves the product gate for P-025-D2 but does not authorize
+      implementation.
+
 ### P-025-D binding engineering contract (not owner choices)
 
 Independently reviewed requirements for the future P-025-D6

@@ -5,6 +5,10 @@ import { requireSessionUser } from "@/lib/auth/route-guard";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
 import { listOwnCheckInInstances } from "@/lib/checkin/instances-boundary";
 
+import { CheckInCalendar } from "@/components/checkin/checkin-calendar";
+
+import { readOwnCheckInCalendarAction } from "./actions";
+
 export const dynamic = "force-dynamic";
 
 export const metadata = { title: "Check-Ins" };
@@ -44,6 +48,10 @@ export default async function CheckInsListPage({
         <h1 className="app-title">Check-Ins</h1>
         <p className="app-lede">Check-Ins scheduled for you by your coach.</p>
       </header>
+      <CheckInCalendar
+        load={readOwnCheckInCalendarAction.bind(null, { workspaceId })}
+        detailHrefBase={`/workspace/${workspaceId}/check-ins`}
+      />
       {error !== null ? (
         <p className="daily-errors" role="alert">
           {error}

@@ -1101,3 +1101,91 @@ body {
 .catalog-page .auth-button {
   min-height: 44px;
 }
+
+/* P-025-D2 — Check-In calendar: layout only; colors come from themes. */
+.checkin-calendar__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.checkin-calendar__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.checkin-calendar__nav-btn {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 var(--space-3);
+}
+
+.checkin-calendar__status {
+  min-height: 1.25rem;
+  margin: 0;
+}
+
+.checkin-calendar__grid {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.checkin-calendar__grid th {
+  text-align: left;
+  font-size: 0.75rem;
+  padding: var(--space-1) var(--space-2);
+}
+
+.checkin-calendar__cell {
+  vertical-align: top;
+  padding: var(--space-1);
+  min-width: 0;
+  border-top: 1px solid transparent;
+}
+
+.checkin-calendar__cell--outside .checkin-calendar__day,
+.checkin-calendar__cell--outside .checkin-calendar__chip {
+  opacity: 0.45;
+}
+
+.checkin-calendar__cell--today .checkin-calendar__day {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.checkin-calendar__day {
+  display: block;
+  font-size: 0.75rem;
+}
+
+.checkin-calendar__chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.checkin-calendar__chip {
+  display: block;
+  min-width: 0;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  padding: var(--space-1);
+  border-radius: 4px;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.checkin-calendar__chip-state {
+  display: block;
+  font-style: italic;
+}
+
+.checkin-calendar__chip--cancelled {
+  text-decoration: line-through;
+}
