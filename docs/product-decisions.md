@@ -1150,7 +1150,12 @@ implementation prompt per slice.
       authorize implementation.
 
 104.  **Check-In calendar: viewer-local day placement over one-off
-      instances.** P-025-D2 presents existing one-off Check-In instances
+      instances — PROPOSED, pending owner confirmation.** _(Number
+      reserved; this entry records proposed rules under consideration,
+      not an approved decision. Owner confirmation of the four
+      calendar product choices is pending at the time of writing —
+      see the D2 review packet and `docs/STATUS.md`.)_ P-025-D2
+      presents existing one-off Check-In instances
       on a read-only calendar. Calendar day placement uses the
       **viewer's browser timezone**: each viewer sees each instance on
       their own local calendar day, and the surface is clearly labelled
@@ -1163,9 +1168,10 @@ implementation prompt per slice.
       accessible agenda list** rendering the same bounded data.
       **Cancelled instances remain visible** and are labelled with
       explicit "Cancelled" text. The calendar is read-only: it creates
-      no stored status, no rescheduling, and no new mutations. This
-      resolves the product gate for P-025-D2 but does not authorize
-      implementation.
+      no stored status, no rescheduling, and no new mutations.
+      Adoption of this entry as an approved decision requires direct
+      owner evidence; until then it does not resolve the P-025-D2
+      product gate and does not authorize implementation.
 
 ### P-025-D binding engineering contract (not owner choices)
 

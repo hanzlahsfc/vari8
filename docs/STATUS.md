@@ -5,13 +5,47 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-11 — P-025-D2-I1-R2 calendar truncation repair (candidate)
+
+- Independent R1 (DeepSeek, `bca61b98…`): technical CONDITIONAL PASS —
+  one material finding **P2-1**: ranged lists silently truncated at
+  `listMax` (200) with no signal. P2-2/P2-3 = product/process holds:
+  the four calendar choices and the skipped planning review remain
+  **pending** — this repair does NOT resolve them.
+- Repair: ranged reads fetch `listMax + 1` eligible rows (range
+  predicate applies BEFORE the limit) and return `{items, truncated}`;
+  unbounded callers keep the exact legacy `{items}` shape (asserted).
+  UI renders a visible `role="status"` notice ("This date range
+  contains more than 200 Check-Ins. Only the first 200 are shown.")
+  above both grid and agenda; it persists through the view toggle,
+  clears on navigation, and never implies a complete month (empty
+  state requires `items === 0 && !truncated`).
+- Tests-first: 4 RED integration tests (truncated absent →
+  `toBe(false|true)` failures) + 1 new production-build E2E seeded
+  with 201 instances (notice in grid+agenda, clears on nav).
+- Coverage: 200-eligible boundary, 201 → flag, out-of-range and
+  foreign-client rows excluded from overflow (no disclosure),
+  deterministic subset, own-list metadata, legacy shape, empty range.
+- Mutations: flag-false / +1-row removed / slice removed / notice
+  suppressed — 4/4 BITE; byte-identity sha-verified.
+- Doc corrections: file count 14→**16** (verified `git diff`); the
+  "owner-approved" claim reworded to PROPOSED/pending in
+  `product-decisions` #104, STATUS, and the task record;
+  `decision decision 104` wording fixed.
+- Gates: diff --check 0; format clean; tsc 0; lint 0; unit 1095;
+  integration 643; build OK; E2E 321 passed / 12 skipped.
+- State: candidate awaiting independent re-review AND pending owner
+  product/process decisions. Flag default-off; nothing deployed; no PR.
+
 ## 2026-10-11 — P-025-D2 Check-In calendar (implementation candidate)
 
-- Decision **104** recorded (owner-approved Q1-A/Q2-A/Q3-A/Q4-A):
-  viewer-local (browser) day placement DISPLAY-ONLY; staff + client
-  surfaces; month grid + accessible agenda list; cancelled visible
-  with explicit "Cancelled" text. Recurrence tz/DST policy remains
-  unresolved under #98.
+- Calendar product rules **PROPOSED** (Q1-A/Q2-A/Q3-A/Q4-A) — recorded
+  as reserved pending entry #104; owner confirmation pending at write
+  time: viewer-local (browser) day placement DISPLAY-ONLY; staff +
+  client surfaces; month grid + accessible agenda list; cancelled
+  visible with explicit "Cancelled" text. Recurrence tz/DST policy
+  remains unresolved under #98. Candidate awaits product/process
+  clearance; no owner approval or process exception is claimed.
 - Delivered: optional bounded instant `range` (strict ISO Z, `from<to`,
   span <= 95d) on the existing `checkinInstances` header lists
   (`listCheckInInstancesForClient`, `listOwnCheckInInstances`) —

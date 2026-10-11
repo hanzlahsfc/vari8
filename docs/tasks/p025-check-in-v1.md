@@ -776,10 +776,12 @@ then byte-identical revert). Stable ×3; focused 35/35; full
 integration 630/630. R1 P3 notes carried (in-tx coherence masked by
 pre-read; RED was module-absent; `revisionCount` retained).
 
-### P-025-D2 — Check-In calendar (decision 104, implementation candidate)
+### P-025-D2 — Check-In calendar (proposed rules, implementation candidate)
 
-Owner-approved product rules (recorded as decision 104 in
-`docs/product-decisions.md`):
+Proposed calendar product rules (recorded as reserved pending entry
+#104 in `docs/product-decisions.md`; owner confirmation pending —
+this implementation is a candidate awaiting product/process
+clearance, not an approved build):
 
 - Viewer-local (browser timezone) day placement — a DISPLAY-only rule;
   it establishes no timezone authority, DST, or recurrence policy (those
@@ -833,3 +835,19 @@ unit 1095/1095; integration 639/639; production build OK; E2E
 320 passed / 12 skipped. `ENABLE_CHECK_INS` still default-off; nothing
 deployed; no PR until independent different-model review of the exact
 head.
+
+### I1-R2 repair — bounded overflow detection (P2-1)
+
+R1 (independent, DeepSeek) flagged silent `listMax` truncation. Ranged
+list reads now fetch `listMax + 1` eligible rows and return
+`{items, truncated}` — range applied before the limit; unbounded
+callers keep the exact legacy `{items}` shape. The calendar shows a
+visible `role="status"` incomplete-results notice in grid AND agenda
+(the empty state requires zero items AND no truncation). Regression:
+4 integration tests (200/201 boundaries, out-of-range and
+foreign-client rows excluded, legacy shape, empty window) + 1
+production-build E2E (notice, toggle persistence, nav clearing).
+Mutations 4/4 BITE. Docs corrected: proposed/pending product rules,
+verified 16-file candidate, `decision decision` wording. Product
+(#104) and process (planning-review) holds remain OPEN — this repair
+is technical only.
