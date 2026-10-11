@@ -8,6 +8,7 @@ import {
   cancelCheckInInstanceFromAction,
   listSchedulableVersionsForClient,
   markCheckInSubmissionReviewedFromAction,
+  readCheckInReviewTrackerContextFromAction,
   readStaffCheckInSubmissionDetail,
   scheduleCheckInInstanceFromAction,
 } from "@/lib/checkin/instances-boundary";
@@ -266,4 +267,73 @@ export async function markCheckInSubmissionReviewed(
     `/workspace/${workspaceId}/clients/${clientProfileId}/checkins`,
   );
   return { status: "ok", reviewedAt: result.value.reviewedAt };
+}
+
+/**
+ * P-025-D6 — explicit DailyEntry tracker context (decision #103, C1
+ * manual date entry only). Staff deliberately enter ONE declared
+ * `YYYY-MM-DD` `entryDate`; the server re-validates it, independently
+ * re-authorizes the strict `checkinsCoachReviews/read` ∩
+ * `dailyTracking/read` intersection inside a separate Serializable
+ * transaction, and returns only the latest committed revision for that
+ * exact date — or a non-disclosing empty state. No fallback, no passive
+ * preload, no availability browsing; each committed call is one
+ * structural `READ daily_entry` audit.
+ */
+export type StaffCheckInTrackerContextState =
+  | { status: "idle" }
+  | { status: "error"; message: string }
+  | { status: "empty" }
+  | {
+      status: "ok";
+      entryDate: string;
+      revisionSeq: number;
+      declaredAt: string;
+      values: {
+        parameterKey: string;
+        label: string;
+        unit: string | null;
+        display: string;
+      }[];
+    };
+
+export async function showCheckInReviewTrackerContext(
+  _prev: StaffCheckInTrackerContextState,
+  formData: FormData,
+): Promise<StaffCheckInTrackerContextState> {
+  // 1. Feature resolver first.
+  if (!isCheckInsEnabled()) return { status: "error", message: OFF };
+
+  // 2. Session gate.
+  const userId = await sessionUser();
+  if (userId === null) return { status: "error", message: DENIED };
+
+  // 3. Bounded opaque IDs + the one declared date.
+  const workspaceId = singleString(formData, "workspaceId", 128);
+  const clientProfileId = singleString(formData, "clientProfileId", 128);
+  const submissionId = singleString(formData, "submissionId", 128);
+  const entryDate = singleString(formData, "entryDate", 32);
+  if (
+    workspaceId === null ||
+    clientProfileId === null ||
+    submissionId === null ||
+    entryDate === null
+  )
+    return { status: "error", message: INVALID };
+
+  const result = await readCheckInReviewTrackerContextFromAction(
+    { user: { id: userId } },
+    { workspaceId, clientProfileId, submissionId, entryDate },
+  );
+  if (!result.ok) {
+    if (result.code === "not_available") return { status: "empty" };
+    return { status: "error", message: result.message };
+  }
+  return {
+    status: "ok",
+    entryDate: result.value.entryDate,
+    revisionSeq: result.value.revisionSeq,
+    declaredAt: result.value.declaredAt,
+    values: result.value.values,
+  };
 }

@@ -36,6 +36,11 @@ import {
   type MarkCheckInSubmissionReviewedInput,
   type MarkCheckInSubmissionReviewedResult,
 } from "./instances";
+import {
+  readCheckInReviewTrackerContext,
+  type CheckInTrackerContextDeps,
+  type CheckInTrackerContextResult,
+} from "./tracker-context";
 
 export type CheckInSafeResult<T> =
   | { ok: true; value: T }
@@ -175,6 +180,27 @@ export async function readStaffCheckInSubmissionDetail(
 ): Promise<CheckInSafeResult<StaffCheckInSubmissionDetail>> {
   return guard(process.env, () =>
     readCheckInSubmissionDetail(session as never, input, deps),
+  );
+}
+
+/**
+ * P-025-D6 — explicit DailyEntry tracker context (decision #103). A
+ * separate explicit action; one committed call writes exactly one
+ * `READ daily_entry` audit. A missing entry maps to `not_available`
+ * (non-disclosing empty state) — never a fallback date.
+ */
+export async function readCheckInReviewTrackerContextFromAction(
+  session: Session,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    submissionId: string;
+    entryDate: string;
+  },
+  deps: CheckInTrackerContextDeps = {},
+): Promise<CheckInSafeResult<CheckInTrackerContextResult>> {
+  return guard(process.env, () =>
+    readCheckInReviewTrackerContext(session as never, input, deps),
   );
 }
 
