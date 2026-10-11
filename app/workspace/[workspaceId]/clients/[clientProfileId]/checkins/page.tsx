@@ -11,8 +11,11 @@ import {
 import { prisma } from "@/lib/db";
 
 import { CancelCheckInInstanceButton } from "@/components/checkin/cancel-instance-button";
+import { CheckInCalendar } from "@/components/checkin/checkin-calendar";
 import { CheckInSubmissionReview } from "@/components/checkin/submission-review";
 import { ScheduleCheckInInstanceForm } from "@/components/checkin/schedule-instance-form";
+
+import { readStaffCheckInCalendarAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -123,6 +126,13 @@ export default async function StaffClientCheckInsPage({
               />
             </section>
           ) : null}
+
+          <CheckInCalendar
+            load={readStaffCheckInCalendarAction.bind(null, {
+              workspaceId,
+              clientProfileId,
+            })}
+          />
 
           <section className="tracker-section">
             <h2 className="tracker-section__title">Scheduled Check-Ins</h2>

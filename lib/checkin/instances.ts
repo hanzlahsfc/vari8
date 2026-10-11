@@ -644,13 +644,38 @@ export type CancelCheckInInstanceInput = {
   instanceId: string;
 };
 
+/** Max instant span a calendar range may request (~3 months). */
+export const CALENDAR_RANGE_MAX_DAYS = 95;
+
+/**
+ * P-025-D2 (decision 104): bounded instant range for the header lists — both
+ * sides must be strict ISO-8601 UTC instants, `from < to`, span ≤
+ * `CALENDAR_RANGE_MAX_DAYS`. Returns null on any violation.
+ */
+export function parseCheckInCalendarRange(raw: {
+  from?: unknown;
+  to?: unknown;
+}): { from: Date; to: Date } | null {
+  const from = parseCheckInDueAt(raw?.from);
+  const to = parseCheckInDueAt(raw?.to);
+  if (from === null || to === null) return null;
+  if (from.getTime() >= to.getTime()) return null;
+  if (to.getTime() - from.getTime() > CALENDAR_RANGE_MAX_DAYS * 86400_000)
+    return null;
+  return { from, to };
+}
+
 export type ListCheckInInstancesInput = {
   workspaceId: string;
   clientProfileId: string;
+  /** P-025-D2: optional bounded instant range on `dueAt`. */
+  range?: { from: string; to: string };
 };
 
 export type OwnCheckInInstanceInput = {
   workspaceId: string;
+  /** P-025-D2: optional bounded instant range on `dueAt`. */
+  range?: { from: string; to: string };
 };
 
 export type GetOwnCheckInInstanceInput = {
@@ -970,9 +995,13 @@ export async function listCheckInInstancesForClient(
   session: SessionLike,
   input: ListCheckInInstancesInput,
   deps: CheckInInstanceDeps = {},
-): Promise<{ items: StaffCheckInInstanceItem[] }> {
+): Promise<{ items: StaffCheckInInstanceItem[]; truncated?: boolean }> {
   const db = deps.db ?? defaultPrisma;
   if (!validId(input.workspaceId) || !validId(input.clientProfileId))
+    throw new CheckInInstanceError("invalid_input");
+  const range =
+    input.range === undefined ? null : parseCheckInCalendarRange(input.range);
+  if (input.range !== undefined && range === null)
     throw new CheckInInstanceError("invalid_input");
 
   return db.$transaction(async (tx) => {
@@ -1014,6 +1043,7 @@ export async function listCheckInInstancesForClient(
       where: {
         workspaceId: input.workspaceId,
         clientProfileId: input.clientProfileId,
+        ...(range !== null ? { dueAt: { gte: range.from, lt: range.to } } : {}),
       },
       select: {
         id: true,
@@ -1035,10 +1065,18 @@ export async function listCheckInInstancesForClient(
         },
       },
       orderBy: [{ dueAt: "asc" }, { id: "asc" }],
-      take: CHECKIN_INSTANCE_LIMITS.listMax,
+      // P-025-D2-I1-R2: ranged (calendar) reads fetch one extra eligible
+      // row — the range predicate applies BEFORE the limit — so overflow
+      // is detectable instead of silently truncating at listMax.
+      take: CHECKIN_INSTANCE_LIMITS.listMax + (range !== null ? 1 : 0),
     });
+    // Ranged reads expose {items, truncated}; unbounded callers keep the
+    // legacy {items} contract exactly.
+    const truncated =
+      range !== null && rows.length > CHECKIN_INSTANCE_LIMITS.listMax;
+    const eligible = rows.slice(0, CHECKIN_INSTANCE_LIMITS.listMax);
     const now = new Date();
-    const items = rows.map((row) => {
+    const items = eligible.map((row) => {
       const submission = row.submissions[0] ?? null;
       const presentation = projectCheckInInstancePresentation(
         {
@@ -1064,7 +1102,7 @@ export async function listCheckInInstancesForClient(
         scheduledAt: row.scheduledAt.toISOString(),
       } satisfies StaffCheckInInstanceItem;
     });
-    return { items };
+    return range === null ? { items } : { items, truncated };
   });
 }
 
@@ -1084,13 +1122,17 @@ export async function listOwnCheckInInstances(
   session: SessionLike,
   input: OwnCheckInInstanceInput,
   deps: CheckInInstanceDeps = {},
-): Promise<{ items: OwnCheckInInstanceItem[] }> {
+): Promise<{ items: OwnCheckInInstanceItem[]; truncated?: boolean }> {
   const db = deps.db ?? defaultPrisma;
   if (!validId(input.workspaceId))
     throw new CheckInInstanceError("invalid_input");
   const userId = session?.user?.id;
   if (typeof userId !== "string" || userId.length === 0)
     throw new AccessDeniedError("unauthenticated", "checkinInstances", "read");
+  const range =
+    input.range === undefined ? null : parseCheckInCalendarRange(input.range);
+  if (input.range !== undefined && range === null)
+    throw new CheckInInstanceError("invalid_input");
 
   return db.$transaction(async (tx) => {
     // Own-profile rebinding — the target is server-derived, never input.
@@ -1118,6 +1160,7 @@ export async function listOwnCheckInInstances(
       where: {
         workspaceId: input.workspaceId,
         clientProfileId: profile.id,
+        ...(range !== null ? { dueAt: { gte: range.from, lt: range.to } } : {}),
       },
       select: {
         id: true,
@@ -1129,33 +1172,35 @@ export async function listOwnCheckInInstances(
         submissions: { select: { id: true, submittedAt: true }, take: 1 },
       },
       orderBy: [{ dueAt: "asc" }, { id: "asc" }],
-      take: CHECKIN_INSTANCE_LIMITS.listMax,
+      take: CHECKIN_INSTANCE_LIMITS.listMax + (range !== null ? 1 : 0),
     });
+    const truncated =
+      range !== null && rows.length > CHECKIN_INSTANCE_LIMITS.listMax;
+    const eligible = rows.slice(0, CHECKIN_INSTANCE_LIMITS.listMax);
     const now = new Date();
-    return {
-      items: rows.map((row) => {
-        const submission = row.submissions[0] ?? null;
-        const presentation = projectCheckInInstancePresentation(
-          {
-            cancelledAt: row.cancelledAt,
-            cancelledByMemberId: row.cancelledByMemberId,
-            hasSubmission: submission !== null,
-            dueAt: row.dueAt,
-            submittedAt: submission?.submittedAt ?? null,
-          },
-          now,
-        );
-        return {
-          instanceId: row.id,
-          formName: row.form.name,
-          versionSeq: row.formVersion.versionSeq,
-          dueAt: row.dueAt.toISOString(),
-          state: presentation.state,
-          late: presentation.late,
-          submittedAt: submission?.submittedAt.toISOString() ?? null,
-        } satisfies OwnCheckInInstanceItem;
-      }),
-    };
+    const items = eligible.map((row) => {
+      const submission = row.submissions[0] ?? null;
+      const presentation = projectCheckInInstancePresentation(
+        {
+          cancelledAt: row.cancelledAt,
+          cancelledByMemberId: row.cancelledByMemberId,
+          hasSubmission: submission !== null,
+          dueAt: row.dueAt,
+          submittedAt: submission?.submittedAt ?? null,
+        },
+        now,
+      );
+      return {
+        instanceId: row.id,
+        formName: row.form.name,
+        versionSeq: row.formVersion.versionSeq,
+        dueAt: row.dueAt.toISOString(),
+        state: presentation.state,
+        late: presentation.late,
+        submittedAt: submission?.submittedAt.toISOString() ?? null,
+      } satisfies OwnCheckInInstanceItem;
+    });
+    return range === null ? { items } : { items, truncated };
   });
 }
 

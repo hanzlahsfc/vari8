@@ -56,6 +56,9 @@ export default async function globalTeardown(): Promise<void> {
     // P-025: Check-In rows Restrict-reference workspaces, profiles,
     // versions, and members — children first, then instances, then the
     // version/form definitions.
+    await prisma.checkInReview.deleteMany({
+      where: { workspaceId: { in: workspaceIds } },
+    });
     await prisma.checkInSubmissionAnswer.deleteMany({
       where: { workspaceId: { in: workspaceIds } },
     });
@@ -69,6 +72,38 @@ export default async function globalTeardown(): Promise<void> {
       where: { workspaceId: { in: workspaceIds } },
     });
     await prisma.checkInForm.deleteMany({
+      where: { workspaceId: { in: workspaceIds } },
+    });
+    // DailyEntry fixture rows — values, pointer, revisions, entries —
+    // Restrict-reference workspaces/profiles/templates/members.
+    await prisma.dailyEntryRevisionValue.deleteMany({
+      where: { workspaceId: { in: workspaceIds } },
+    });
+    await prisma.dailyEntry.updateMany({
+      where: { workspaceId: { in: workspaceIds } },
+      data: { currentRevisionId: null },
+    });
+    await prisma.dailyEntryRevision.deleteMany({
+      where: { workspaceId: { in: workspaceIds } },
+    });
+    await prisma.dailyEntry.deleteMany({
+      where: { workspaceId: { in: workspaceIds } },
+    });
+    // Consent + setup + assignment + profile rows Restrict-reference the
+    // workspace and members — delete before members/workspaces.
+    await prisma.consentRecord.deleteMany({
+      where: { clientProfile: { workspaceId: { in: workspaceIds } } },
+    });
+    await prisma.clientSetupPin.deleteMany({
+      where: { workspaceId: { in: workspaceIds } },
+    });
+    await prisma.clientSetup.deleteMany({
+      where: { workspaceId: { in: workspaceIds } },
+    });
+    await prisma.clientAssignment.deleteMany({
+      where: { workspaceId: { in: workspaceIds } },
+    });
+    await prisma.clientProfile.deleteMany({
       where: { workspaceId: { in: workspaceIds } },
     });
     await prisma.workspaceMember.deleteMany({
@@ -85,6 +120,7 @@ export default async function globalTeardown(): Promise<void> {
     await prisma.auditEvent.deleteMany({
       where: {
         OR: [
+          { workspaceId: { in: workspaceIds } },
           { subjectUserId: { in: userIds } },
           { actorUserId: { in: userIds } },
         ],

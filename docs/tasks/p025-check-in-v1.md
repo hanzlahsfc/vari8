@@ -775,3 +775,105 @@ under inversion (verified by scratch mutation — 3/5 new tests bite —
 then byte-identical revert). Stable ×3; focused 35/35; full
 integration 630/630. R1 P3 notes carried (in-tx coherence masked by
 pre-read; RED was module-absent; `revisionCount` retained).
+
+### P-025-D2 — Check-In calendar (proposed rules, implementation candidate)
+
+Proposed calendar product rules (recorded as reserved pending entry
+#104 in `docs/product-decisions.md`; owner confirmation pending —
+this implementation is a candidate awaiting product/process
+clearance, not an approved build):
+
+- Viewer-local (browser timezone) day placement — a DISPLAY-only rule;
+  it establishes no timezone authority, DST, or recurrence policy (those
+  remain unresolved under #98).
+- Both audiences: the staff per-client Check-Ins page and the client's
+  own Check-Ins page, each strictly within existing `checkinInstances`
+  scopes.
+- Month grid plus an accessible agenda list rendering the same data.
+- Cancelled instances remain visible with explicit "Cancelled" text.
+- Read-only: no stored status, no rescheduling, no new mutations.
+
+**Data contract:** optional `range` ({from,to} — strict ISO-8601 UTC
+instants, `from < to`, span <= `CALENDAR_RANGE_MAX_DAYS` = 95 days) on
+`listCheckInInstancesForClient` and `listOwnCheckInInstances`. The same
+transaction protocol, authorization, own-profile rebinding, ordering
+(`dueAt asc, id asc`), `listMax` truncation, and zero-passive-READ-audit
+contract apply; the range only narrows the bounded set. Items remain
+answer-free. Boundary wrappers `readStaffCheckInCalendar` /
+`readOwnCheckInCalendar` REQUIRE the range.
+
+**UI:** `components/checkin/checkin-calendar.tsx` — 42-cell Monday-start
+month grid (`lib/checkin/calendar.ts` pure helpers: `checkInCalendarDayKey`,
+`checkInCalendarMonthCells`) + agenda toggle + prev/next/today + the
+owner-required "Days shown in your local timezone" disclosure; cancelled
+chips dimmed + labelled; client chips link to existing detail routes.
+Server actions bound via `.bind(null, ctx)`; programmatic bounded
+`{from,to}` instants only.
+
+**Tests:** unit 9 (range bounds/grammar/span, tz day-key incl. DST,
+grid cells + year edges); real-PG integration 9 (owner workspace,
+assigned coach AND assistant, client own, SUPPORT/PA/dual-PA deny,
+unassigned + suspended, cross-tenant, invalid/inverted/oversized
+ranges, empty window, zero audits, exact ordering + item key-shape,
+late + cancelled projection, optional-range compat); E2E 4 under an
+explicit `America/New_York` context (staff chips/cancelled/nav/agenda
+at 1440/834/390, UTC-midnight boundary placement, client chip → detail
+link, flag-off absent).
+
+**Mutations:** 4/4 BITE (span bound removed, staff range ignored, UTC
+bucketing, answer leak); byte-identical restores sha-verified.
+
+**Infra repair:** `tests/e2e/global-teardown.ts` — completed the missing
+Restrict-dependent deletes (checkInReview, DailyEntry chain,
+consent/setup-pin/setup/assignment/profile, workspace-scoped audits);
+latent bug surfaced when a spec-created `clientProfile` collided with
+later fixed-id fixtures (9 failures) — resolved by the conventional
+`findFirst`-reuse + conditional `afterAll` profile cleanup.
+
+**Gates:** diff --check 0; format:check clean; tsc 0; lint 0-errors;
+unit 1095/1095; integration 639/639; production build OK; E2E
+320 passed / 12 skipped. `ENABLE_CHECK_INS` still default-off; nothing
+deployed; no PR until independent different-model review of the exact
+head.
+
+### I1-R2 repair — bounded overflow detection (P2-1)
+
+R1 (independent, DeepSeek) flagged silent `listMax` truncation. Ranged
+list reads now fetch `listMax + 1` eligible rows and return
+`{items, truncated}` — range applied before the limit; unbounded
+callers keep the exact legacy `{items}` shape. The calendar shows a
+visible `role="status"` incomplete-results notice in grid AND agenda
+(the empty state requires zero items AND no truncation). Regression:
+4 integration tests (200/201 boundaries, out-of-range and
+foreign-client rows excluded, legacy shape, empty window) + 1
+production-build E2E (notice, toggle persistence, nav clearing).
+Mutations 4/4 BITE. Docs corrected: proposed/pending product rules,
+verified 16-file candidate, `decision decision` wording. Product
+(#104) and process (planning-review) holds remain OPEN — this repair
+is technical only.
+
+## P-025-D2-R3 — reconciliation onto current main (candidate)
+
+- `origin/main` `7c6e2ce` (includes merged FRONTEND-INTEGRATION-I1)
+  merged INTO this branch — forward-only merge `4314140`. Conflicts:
+  `globals.css` (kept both style blocks; restored the chip rule's
+  closing brace), `docs/STATUS.md` (all entries kept, newest-first;
+  FI-I1 entry annotated merged). `product-decisions.md` auto-merged.
+- **#104 updated to APPROVED** with the owner's product choices AND a
+  one-time process exception (implementation preceded decision
+  recording/planning review — bounded to this chronology; tests,
+  privacy/security, final review, CI and separate merge approval are
+  NOT waived). Earlier proposed/pending chronology preserved in the
+  entry text. #105 preserved.
+- Calendar contract verified unchanged: `listMax + 1` probe →
+  `{items, truncated}` for ranged reads only; legacy `{items}` shape;
+  visible >200 notice in both views; viewer-local day placement;
+  cancelled text; no new audits/queries.
+- Mutations 4/4 BITE on the merged tree (flag-false, +1 removed,
+  slice removed, notice suppressed — rebuild); byte-identity restores.
+- Gates: diff-check 0; format/tsc/lint clean; unit **1099/1099**
+  (main 1086 + FI 4 + D2 9); integration **643/643** (630+13);
+  build OK; **full E2E 338 collected → 326 passed / 12 skipped / 0
+  failed** (focused 10/10 across both suites).
+- Awaiting final independent DeepSeek review on the reconciled head;
+  no PR, no merge, flag default-off, nothing deployed.

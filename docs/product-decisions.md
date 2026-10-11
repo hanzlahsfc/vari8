@@ -1149,6 +1149,40 @@ implementation prompt per slice.
       D6. This resolves the product gate for P-025-D6 but does not
       authorize implementation.
 
+104.  **Check-In calendar: viewer-local day placement over one-off
+      instances — APPROVED.** _(Chronology: this entry was first
+      recorded as PROPOSED/pending at implementation time because
+      development preceded explicit decision recording — the
+      independent reviewer correctly held it as a product hold. The
+      owner has since directly approved the four calendar product
+      choices AND granted a one-time acceptance of starting the
+      implementation before decision recording and the separate
+      planning review, conditional on the truncation repair and a
+      final independent review. The exception is bounded to the D2
+      chronology: it waives neither tests, security/privacy
+      requirements, final independent review, CI, separate merge
+      approval, nor future planning discipline. Owner attribution —
+      the browser-local-timezone choice was also supported by
+      Marcel's conversation; the process exception is owner-supplied.)_
+      P-025-D2
+      presents existing one-off Check-In instances
+      on a read-only calendar. Calendar day placement uses the
+      **viewer's browser timezone**: each viewer sees each instance on
+      their own local calendar day, and the surface is clearly labelled
+      so viewers understand why calendar days may differ across
+      timezones. This is a display-only rule — it does **not** establish
+      a timezone authority, DST, or recurrence policy (those remain
+      unresolved under #98). The calendar is provided to **staff and
+      clients**, each strictly within the existing `checkinInstances`
+      permission scopes. Presentation is a **month grid plus an
+      accessible agenda list** rendering the same bounded data.
+      **Cancelled instances remain visible** and are labelled with
+      explicit "Cancelled" text. The calendar is read-only: it creates
+      no stored status, no rescheduling, and no new mutations.
+      Approval was granted directly by the owner after the technical
+      repair; the product gate is resolved, while PR merge and
+      deployment remain separately authorized.
+
 ### P-025-D binding engineering contract (not owner choices)
 
 Independently reviewed requirements for the future P-025-D6
