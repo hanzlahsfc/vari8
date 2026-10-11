@@ -1,31 +1,45 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import type {
+import {
   DailyEntrySurface,
   DailyEntrySurfaceItem,
 } from "@/lib/daily-entry/service";
+import { groupDailyHistoryByWeek } from "@/lib/daily-entry/week-groups";
 
 import { saveDailyEntryAction } from "./entry-actions";
 
 /**
- * P-021 — snapshot-driven persistent DailyEntry form + read-only history
- * (decisions #64–#78). Additive alongside the structural DailyTrackerShell;
- * arbitrary snapshot parameters are NOT forced into the nine source
- * sections — they render under their snapshot sections.
+ * FRONTEND-INTEGRATION-I1 — Lily-styled persistent DailyEntry form +
+ * bounded week-grouped history (owner-approved choices: date picker with
+ * prev/next day within backend bounds; panel+history restyle only;
+ * existing fonts; Monday-start presentation grouping).
  *
- * Browser-side values are positional ordinals + canonical strings only.
- * No internal identifiers appear in the DOM.
+ * The server contract is unchanged: fields come from the assigned pinned
+ * template via `DailyEntrySurface`, the save is an explicit POST of
+ * `formToken` + `v{ordinal}` raw inputs through `saveDailyEntryAction`.
+ * No autosave, no localStorage, no mode toggle, no aggregates.
  */
+
+const RATING_MAX: Record<string, number> = {
+  SCALE_1_5: 5,
+  SCALE_1_10: 10,
+};
 
 const UNAVAILABLE = "Daily tracking is currently unavailable.";
 
-const RATING_MAX: Record<string, number> = {
-  SCALE_1_10: 10,
-  SCALE_1_5: 5,
-};
+const UNSAVED = "You have unsaved changes. Leave this date?";
+
+/** Declared-date arithmetic — plain UTC-naive date math, never a
+ *  timezone conversion (the declared date is a day, not an instant). */
+function shiftDeclaredDate(iso: string, deltaDays: number): string {
+  const d = new Date(`${iso}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + deltaDays);
+  return d.toISOString().slice(0, 10);
+}
 
 function ItemField({
   item,
@@ -45,14 +59,14 @@ function ItemField({
   switch (item.kind) {
     case "MEASUREMENT":
       return (
-        <label className="daily-field" htmlFor={id}>
-          <span>
+        <label className="de-cell" htmlFor={id}>
+          <span className="de-cell__label">
             {label}
             {unit}
           </span>
           <input
             id={id}
-            className="catalog-search__input"
+            className="de-cell__input"
             type="text"
             inputMode="decimal"
             disabled={disabled}
@@ -60,18 +74,18 @@ function ItemField({
             onChange={(e) => onChange(e.target.value)}
           />
           {item.helpText ? (
-            <span className="daily-todo">{item.helpText}</span>
+            <span className="de-cell__hint">{item.helpText}</span>
           ) : null}
         </label>
       );
     case "RATING": {
       const max = item.ratingScheme ? RATING_MAX[item.ratingScheme] : undefined;
       return (
-        <label className="daily-field" htmlFor={id}>
-          <span>{label}</span>
+        <label className="de-cell" htmlFor={id}>
+          <span className="de-cell__label">{label}</span>
           <select
             id={id}
-            className="catalog-search__input"
+            className="de-cell__input"
             disabled={disabled || max === undefined}
             value={value}
             onChange={(e) => onChange(e.target.value)}
@@ -85,18 +99,18 @@ function ItemField({
               ))}
           </select>
           {item.helpText ? (
-            <span className="daily-todo">{item.helpText}</span>
+            <span className="de-cell__hint">{item.helpText}</span>
           ) : null}
         </label>
       );
     }
     case "OPTION":
       return (
-        <label className="daily-field" htmlFor={id}>
-          <span>{label}</span>
+        <label className="de-cell" htmlFor={id}>
+          <span className="de-cell__label">{label}</span>
           <select
             id={id}
-            className="catalog-search__input"
+            className="de-cell__input"
             disabled={disabled}
             value={value}
             onChange={(e) => onChange(e.target.value)}
@@ -109,30 +123,85 @@ function ItemField({
             ))}
           </select>
           {item.helpText ? (
-            <span className="daily-todo">{item.helpText}</span>
+            <span className="de-cell__hint">{item.helpText}</span>
           ) : null}
         </label>
       );
     case "TEXT":
       return (
-        <label className="daily-field" htmlFor={id}>
-          <span>{label}</span>
+        <label className="de-cell" htmlFor={id}>
+          <span className="de-cell__label">{label}</span>
           <textarea
             id={id}
-            className="catalog-search__input"
+            className="de-cell__input"
             rows={3}
             disabled={disabled}
             value={value}
             onChange={(e) => onChange(e.target.value)}
           />
           {item.helpText ? (
-            <span className="daily-todo">{item.helpText}</span>
+            <span className="de-cell__hint">{item.helpText}</span>
           ) : null}
         </label>
       );
     default:
       return null;
   }
+}
+
+/** Declared-date controls — links drive a plain GET navigation so the
+ *  date stays in the URL and survives refresh; dirty edits trigger a
+ *  confirmation before leaving the date (no silent loss). */
+function DailyDateNav({
+  workspaceId,
+  entryDate,
+  dirty,
+}: {
+  workspaceId: string;
+  entryDate: string;
+  dirty: boolean;
+}) {
+  const router = useRouter();
+  const guard = (e: { preventDefault(): void }) => {
+    if (dirty && !window.confirm(UNSAVED)) e.preventDefault();
+  };
+  const choose = (raw: string) => {
+    if (!raw || raw === entryDate) return;
+    if (dirty && !window.confirm(UNSAVED)) return;
+    router.push(`/workspace/${workspaceId}/daily?date=${raw}`);
+  };
+
+  return (
+    <div className="de-datenav" data-testid="daily-date-picker">
+      <Link
+        className="de-datenav__link"
+        href={`/workspace/${workspaceId}/daily?date=${shiftDeclaredDate(entryDate, -1)}`}
+        aria-label="Previous day"
+        onClick={guard}
+      >
+        ‹ Prev day
+      </Link>
+      <span className="de-datenav__date" data-testid="daily-date-value">
+        {entryDate}
+      </span>
+      <input
+        type="date"
+        className="de-datenav__input"
+        aria-label="Choose date"
+        value={entryDate}
+        max={shiftDeclaredDate(new Date().toISOString().slice(0, 10), 1)}
+        onChange={(e) => choose(e.target.value)}
+      />
+      <Link
+        className="de-datenav__link"
+        href={`/workspace/${workspaceId}/daily?date=${shiftDeclaredDate(entryDate, 1)}`}
+        aria-label="Next day"
+        onClick={guard}
+      >
+        Next day ›
+      </Link>
+    </div>
+  );
 }
 
 export function DailyEntryPanel({
@@ -205,6 +274,9 @@ function ReadyPanel({
   router: ReturnType<typeof useRouter>;
 }) {
   const [values, setValues] = useState<Record<number, string>>(initial);
+  const dirty = Object.keys(initial).some(
+    (o) => (values[Number(o)] ?? "") !== initial[Number(o)],
+  );
 
   const submit = () => {
     setMessage(null);
@@ -227,22 +299,31 @@ function ReadyPanel({
     });
   };
 
+  const weeks = groupDailyHistoryByWeek(surface.history);
+
   return (
-    <section className="daily-entry" aria-label="Daily entry">
+    <section className="daily-entry de-surface" aria-label="Daily entry">
       <h2 className="assignment-manager__subtitle">
         Daily entry — {surface.entryDate}
       </h2>
+
+      <DailyDateNav
+        workspaceId={workspaceId}
+        entryDate={surface.entryDate}
+        dirty={dirty}
+      />
+
       <form
-        className="daily-form"
+        className="daily-form de-form"
         onSubmit={(e) => {
           e.preventDefault();
           submit();
         }}
       >
         {surface.sections.map((section) => (
-          <fieldset key={section.sectionKey} className="daily-group">
-            <legend>{section.label}</legend>
-            <div className="daily-grid">
+          <fieldset key={section.sectionKey} className="daily-group de-card">
+            <legend className="de-card__legend">{section.label}</legend>
+            <div className="daily-grid de-grid">
               {section.items.map((item) => (
                 <ItemField
                   key={item.ordinal}
@@ -257,20 +338,21 @@ function ReadyPanel({
             </div>
           </fieldset>
         ))}
+
         {message ? (
           <p className="daily-errors" role="alert">
             {message}
           </p>
         ) : null}
         {saved ? (
-          <p className="app-lede" role="status">
+          <p className="daily-actions" role="status">
             Saved.
           </p>
         ) : null}
         <div className="daily-actions">
           <button
             type="submit"
-            className="catalog-search__submit"
+            className="catalog-search__submit de-save"
             disabled={pending}
           >
             {pending ? "Saving…" : "Save daily entry"}
@@ -279,21 +361,32 @@ function ReadyPanel({
       </form>
 
       {surface.history.length > 0 ? (
-        <div className="daily-entry__history">
+        <div className="daily-entry__history de-history">
           <h3 className="assignment-manager__subtitle">History</h3>
-          {surface.history.map((entry) => (
-            <section key={entry.entryDate} className="daily-group">
-              <h4 className="assignment-manager__subtitle">
-                {entry.entryDate}
-                {entry.revisionCount > 1
-                  ? ` — ${entry.revisionCount} revisions`
-                  : ""}
-              </h4>
-              <ul>
-                {entry.values.map((v) => (
-                  <li key={v.parameterKey}>
-                    <strong>{v.label}</strong>
-                    {v.unit ? ` (${v.unit})` : ""}: {v.display}
+          {weeks.map((week) => (
+            <section
+              key={week.weekStart}
+              className="de-week"
+              data-testid="de-week"
+            >
+              <h4 className="de-week__title">{week.label}</h4>
+              <ul className="de-week__entries">
+                {week.entries.map((entry) => (
+                  <li key={entry.entryDate} className="de-week__entry">
+                    <span className="de-week__date">
+                      {entry.entryDate}
+                      {entry.revisionCount > 1
+                        ? ` — ${entry.revisionCount} revisions`
+                        : ""}
+                    </span>
+                    <ul className="de-week__values">
+                      {entry.values.map((v) => (
+                        <li key={v.parameterKey}>
+                          <strong>{v.label}</strong>
+                          {v.unit ? ` (${v.unit})` : ""}: {v.display}
+                        </li>
+                      ))}
+                    </ul>
                   </li>
                 ))}
               </ul>
