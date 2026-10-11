@@ -5,6 +5,37 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-11 — FRONTEND-INTEGRATION-I1: Lily-styled DailyEntry (merged)
+
+- Owner-approved slice (decision #105): Lily visual treatment on the
+  persistent client DailyEntry panel + history only. Declared-date
+  picker (`?date=` → `parseDeclaredDate`; invalid → `role=alert`),
+  prev/next-day links with a dirty-edit `confirm()` guard, bounded
+  history regrouped Monday-start (presentation only, declared-date
+  math, no tz shifts). Server contract unchanged: `formToken` +
+  `v{ordinal}` → `saveDailyEntryAction`; all four kinds render from
+  `DailyEntrySurface`. No autosave, sensitive localStorage, mode
+  toggle, aggregates, comments, staff edits, new deps, or font assets.
+- Independent plan review R1 PASS (5 non-blocking P3 clarifications —
+  all resolved in implementation).
+- Tests-first: week-groups unit suite (module RED → green); E2E spec
+  written before impl; behavioral RED captured on `?date=`, fixture
+  eligibility (missing `dataClassification`), strict-mode alert,
+  mobile overflow (`fit-content` nav fix) — each repaired.
+- Mutations 6/6 BITE: `?date=` dropped, dirty-guard removed, week
+  grouping flattened, Sunday-start grouping, formToken dropped,
+  localStorage write — each bit its targeted test; byte-identity
+  restored.
+- Gates: `diff --check` 0; format/tsc/lint clean; unit 1090/1090
+  (incl. 4 new); integration 630/630; production build OK;
+  **full E2E 322 passed / 12 skipped**; pre-existing P-021 daily
+  regression suite green incl. its own mobile no-overflow test.
+- Known limitation: pre-existing `<390px` structural-shell page
+  overflow out of slice scope.
+- _(merged update: independent R1 PASS → PR #36 → merge `7c6e2ce`,
+  main CI run `38164664800` verify SUCCESS 11m42s; remote branch
+  deleted — see FRONTEND-INTEGRATION tracker entries)_
+
 ## 2026-10-11 — P-025-D2-I1-R2 calendar truncation repair (candidate)
 
 - Independent R1 (DeepSeek, `bca61b98…`): technical CONDITIONAL PASS —

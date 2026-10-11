@@ -1150,11 +1150,21 @@ implementation prompt per slice.
       authorize implementation.
 
 104.  **Check-In calendar: viewer-local day placement over one-off
-      instances — PROPOSED, pending owner confirmation.** _(Number
-      reserved; this entry records proposed rules under consideration,
-      not an approved decision. Owner confirmation of the four
-      calendar product choices is pending at the time of writing —
-      see the D2 review packet and `docs/STATUS.md`.)_ P-025-D2
+      instances — APPROVED.** _(Chronology: this entry was first
+      recorded as PROPOSED/pending at implementation time because
+      development preceded explicit decision recording — the
+      independent reviewer correctly held it as a product hold. The
+      owner has since directly approved the four calendar product
+      choices AND granted a one-time acceptance of starting the
+      implementation before decision recording and the separate
+      planning review, conditional on the truncation repair and a
+      final independent review. The exception is bounded to the D2
+      chronology: it waives neither tests, security/privacy
+      requirements, final independent review, CI, separate merge
+      approval, nor future planning discipline. Owner attribution —
+      the browser-local-timezone choice was also supported by
+      Marcel's conversation; the process exception is owner-supplied.)_
+      P-025-D2
       presents existing one-off Check-In instances
       on a read-only calendar. Calendar day placement uses the
       **viewer's browser timezone**: each viewer sees each instance on
@@ -1169,9 +1179,9 @@ implementation prompt per slice.
       **Cancelled instances remain visible** and are labelled with
       explicit "Cancelled" text. The calendar is read-only: it creates
       no stored status, no rescheduling, and no new mutations.
-      Adoption of this entry as an approved decision requires direct
-      owner evidence; until then it does not resolve the P-025-D2
-      product gate and does not authorize implementation.
+      Approval was granted directly by the owner after the technical
+      repair; the product gate is resolved, while PR merge and
+      deployment remain separately authorized.
 
 ### P-025-D binding engineering contract (not owner choices)
 
@@ -1338,3 +1348,26 @@ features. This authorization becomes actionable only after this
 decision record is independently reviewed and merged through the
 protected-branch process and a separate implementation prompt is
 issued per slice.
+
+## FRONTEND-INTEGRATION-P1 — owner approval (2026-10-11, implementation prompt)
+
+**Decision #105 (APPROVED):** the Lily visual integration on the existing
+client DailyEntry workflow is approved under four owner choices:
+
+1. A declared-date picker with previous/next-day controls, using the
+   EXISTING `parseDeclaredDate` bounds (#66) — the declared date stays a
+   plain calendar date, never a timezone-converted instant.
+2. The visual treatment applies ONLY to the persistent client DailyEntry
+   form and its history — the surrounding application shell is unchanged.
+3. The backend's existing fonts are kept; Lily's font assets are not
+   copied.
+4. The existing bounded client history is grouped by week
+   (presentation-only, no new queries, aggregates, calculations, or
+   "load more").
+
+This approval covers the bounded implementation slice only — not PR
+merge, deployment, production enablement, staff views, comments,
+aggregates, new field kinds, or any other frontend feature. Decision
+number 104 remains reserved for the pending Check-In calendar product
+choices on `feature/p025d2-checkin-calendar` (proposed, unconfirmed) —
+no collision is created by this record.

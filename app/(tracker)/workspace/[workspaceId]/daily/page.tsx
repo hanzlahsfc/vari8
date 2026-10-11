@@ -6,6 +6,7 @@ import {
 import { prisma } from "@/lib/db";
 import { DailyEntryError } from "@/lib/daily-entry/gate";
 import { resolveDailyEntryMode } from "@/lib/daily-entry/gate";
+import { parseDeclaredDate } from "@/lib/daily-entry/service";
 import {
   dailyEntryConsentRegistry,
   loadDailyEntrySurface,
@@ -35,19 +36,37 @@ export const metadata = { title: "Daily Tracker" };
  */
 export default async function DailyTrackerPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ workspaceId: string }>;
+  searchParams: Promise<{ date?: string }>;
 }) {
   const { workspaceId } = await params;
   const { session, userId } = await requireSessionUser();
   await requireDailyTrackerAccess(session, workspaceId);
+
+  // FRONTEND-INTEGRATION-I1 — declared-date selection (owner choice 1).
+  // `?date=` flows through the EXISTING parseDeclaredDate bounds — a
+  // declared YYYY-MM-DD, never a timezone-converted instant. Malformed
+  // or out-of-bounds dates produce a safe invalid-date alert state;
+  // the panel is not rendered with an unvalidated date.
+  const { date } = await searchParams;
+  let declaredDate: string | undefined;
+  let invalidDate = false;
+  if (typeof date === "string" && date.length > 0) {
+    try {
+      declaredDate = parseDeclaredDate(date);
+    } catch {
+      invalidDate = true;
+    }
+  }
 
   const mode = resolveDailyEntryMode(
     process.env.ENABLE_DAILY_ENTRY,
     process.env.ENABLE_DAILY_PROTOTYPE,
   );
   let surface: DailyEntrySurface | null = null;
-  if (mode === "persistent") {
+  if (mode === "persistent" && !invalidDate) {
     const member = await prisma.workspaceMember.findUnique({
       where: {
         workspaceId_userId: {
@@ -61,7 +80,7 @@ export default async function DailyTrackerPage({
       try {
         surface = await loadDailyEntrySurface(
           { user: { id: userId } },
-          { workspaceId },
+          { workspaceId, entryDate: declaredDate },
           { registry: dailyEntryConsentRegistry(true) },
         );
       } catch (error) {
@@ -107,6 +126,12 @@ export default async function DailyTrackerPage({
         </p>
       ) : null}
       <DailyTrackerShell />
+      {invalidDate ? (
+        <p className="daily-errors" role="alert">
+          That date is not valid. Choose a real calendar date within the allowed
+          range.
+        </p>
+      ) : null}
       {surface !== null ? (
         <DailyEntryPanel workspaceId={workspaceId} surface={surface} />
       ) : null}
