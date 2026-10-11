@@ -458,6 +458,22 @@ describe.skipIf(!enabled)("P-025-D6 tracker context (real PG)", () => {
     const s = await setup({ secondRevision: true });
     const r = await read(s, s.owner);
     expect(r.entryDate).toBe(ENTRY_DATE);
+    // Minimized response — no internal IDs, revision internals, or
+    // audit/consent metadata.
+    expect(Object.keys(r).sort()).toEqual([
+      "declaredAt",
+      "entryDate",
+      "revisionCount",
+      "revisionSeq",
+      "values",
+    ]);
+    for (const v of r.values)
+      expect(Object.keys(v).sort()).toEqual([
+        "display",
+        "label",
+        "parameterKey",
+        "unit",
+      ]);
     expect(r.values.map((v) => v.display)).toContain("81");
     expect(r.revisionSeq).toBe(2);
     const a = await audits(s.w.id);
@@ -538,6 +554,23 @@ describe.skipIf(!enabled)("P-025-D6 tracker context (real PG)", () => {
         throw new AccessDeniedError("role_denied", "dailyTracking", "read");
       return authorize(sess, req, repo);
     };
+    await expect(
+      read(s, s.owner, ENTRY_DATE, { authorize: spy }),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+    expect(await audits(s.w.id)).toHaveLength(0);
+  });
+
+  it("injected assigned scope without an ACTIVE assignment row still fails closed — the re-resolve is authoritative", async () => {
+    const s = await setup({ assign: "none" });
+    const { authorize } = await import("../../lib/auth/guard");
+    const spy = async (
+      sess: Parameters<typeof authorize>[0],
+      req: Parameters<typeof authorize>[1],
+      repo: Parameters<typeof authorize>[2],
+    ) => ({
+      ...(await authorize(sess, req, repo)),
+      grantedScope: "assigned" as const,
+    });
     await expect(
       read(s, s.owner, ENTRY_DATE, { authorize: spy }),
     ).rejects.toBeInstanceOf(AccessDeniedError);
