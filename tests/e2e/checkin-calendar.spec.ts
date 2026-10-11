@@ -363,6 +363,43 @@ test("client calendar: own chips link to the existing detail page", async ({
   await expect(page.getByTestId("checkin-detail")).toBeVisible();
 });
 
+test("truncation: a >200-month shows the incomplete notice in grid and agenda; navigating clears it", async ({
+  page,
+}) => {
+  // 201 distinct-dueAt instances inside the CURRENT month.
+  const now = new Date();
+  const base = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+  await prisma.checkInInstance.createMany({
+    data: Array.from({ length: 201 }, (_, i) => ({
+      workspaceId: wsId,
+      clientProfileId: profileId,
+      formId: FORM_ID,
+      formVersionId: VERSION_ID,
+      dueAt: new Date(base.getTime() + i * 60_000),
+      scheduledByMemberId: ownerMemberId,
+    })),
+  });
+
+  await signIn(page, E2E.owner);
+  await page.goto(`${BASE}/workspace/${wsId}/clients/${profileId}/checkins`);
+
+  const notice = page.getByTestId("checkin-calendar-truncated");
+  await expect(notice).toBeVisible();
+  await expect(notice).toContainText("more than 200 Check-Ins");
+
+  // Notice persists across the grid/agenda toggle.
+  await page.getByTestId("checkin-calendar-toggle").click();
+  await expect(page.getByTestId("checkin-calendar-agenda")).toBeVisible();
+  await expect(notice).toBeVisible();
+  await page.getByTestId("checkin-calendar-toggle").click();
+
+  // Navigate to an untruncated month — the notice clears (no stale state).
+  await page.getByRole("button", { name: "Next month" }).click();
+  await expect(notice).toHaveCount(0);
+  await page.getByRole("button", { name: "Today" }).click();
+  await expect(notice).toBeVisible();
+});
+
 test("flag-off: the calendar is absent on the production-fail-closed build", async ({
   page,
 }) => {
