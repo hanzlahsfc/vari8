@@ -104,6 +104,10 @@ test.beforeAll(async () => {
     where: { workspaceId: wsId, clientProfileId: profileId },
     select: { id: true },
   });
+  await prisma.dailyEntry.updateMany({
+    where: { id: { in: staleEntries.map((e) => e.id) } },
+    data: { currentRevisionId: null },
+  });
   await prisma.dailyEntryRevision.deleteMany({
     where: { dailyEntryId: { in: staleEntries.map((e) => e.id) } },
   });
@@ -325,6 +329,80 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
+  const staleEntries = await prisma.dailyEntry.findMany({
+    where: { workspaceId: wsId, clientProfileId: profileId },
+    select: { id: true },
+  });
+  await prisma.dailyEntry
+    .updateMany({
+      where: { id: { in: staleEntries.map((e) => e.id) } },
+      data: { currentRevisionId: null },
+    })
+    .catch(() => {});
+  await prisma.dailyEntryRevisionValue
+    .deleteMany({ where: { parameterId: PARAM_ID } })
+    .catch(() => {});
+  await prisma.dailyEntryRevision
+    .deleteMany({
+      where: { dailyEntryId: { in: staleEntries.map((e) => e.id) } },
+    })
+    .catch(() => {});
+  await prisma.dailyEntry
+    .deleteMany({ where: { clientProfileId: profileId } })
+    .catch(() => {});
+  const staleInst = await prisma.checkInInstance.findMany({
+    where: { formId: FORM_ID },
+    select: { id: true },
+  });
+  const staleSubs = await prisma.checkInSubmission.findMany({
+    where: { instanceId: { in: staleInst.map((i) => i.id) } },
+    select: { id: true },
+  });
+  await prisma.checkInReview
+    .deleteMany({
+      where: { submissionId: { in: staleSubs.map((s) => s.id) } },
+    })
+    .catch(() => {});
+  await prisma.checkInSubmissionAnswer
+    .deleteMany({
+      where: { submissionId: { in: staleSubs.map((s) => s.id) } },
+    })
+    .catch(() => {});
+  await prisma.checkInSubmission
+    .deleteMany({
+      where: { instanceId: { in: staleInst.map((i) => i.id) } },
+    })
+    .catch(() => {});
+  await prisma.checkInInstance
+    .deleteMany({ where: { formId: FORM_ID } })
+    .catch(() => {});
+  await prisma.clientSetupPin
+    .deleteMany({ where: { clientProfileId: profileId } })
+    .catch(() => {});
+  await prisma.clientSetup
+    .deleteMany({ where: { clientProfileId: profileId } })
+    .catch(() => {});
+  await prisma.clientAssignment
+    .deleteMany({ where: { clientProfileId: profileId } })
+    .catch(() => {});
+  await prisma.checkInFormVersion
+    .deleteMany({ where: { formId: FORM_ID } })
+    .catch(() => {});
+  await prisma.checkInForm
+    .deleteMany({ where: { id: FORM_ID } })
+    .catch(() => {});
+  await prisma.coachingTemplateVersion
+    .deleteMany({ where: { id: TV_ID } })
+    .catch(() => {});
+  await prisma.coachingTemplate
+    .deleteMany({ where: { id: TEMPLATE_ID } })
+    .catch(() => {});
+  await prisma.parameterDefinition
+    .deleteMany({ where: { id: PARAM_ID } })
+    .catch(() => {});
+  await prisma.consentRecord
+    .deleteMany({ where: { clientProfileId: profileId } })
+    .catch(() => {});
   if (profileCreated)
     await prisma.clientProfile
       .delete({ where: { id: profileId } })
@@ -347,7 +425,7 @@ async function fixtureSubmission() {
       clientProfileId: profileId,
       formId: FORM_ID,
       formVersionId: VERSION_ID,
-      dueAt: new Date("2030-06-01T09:00:00.000Z"),
+      dueAt: new Date(Date.now() + Math.random() * 3e9),
       scheduledByMemberId: ownerMemberId,
     },
   });
@@ -445,13 +523,12 @@ test("denied roles see no values; client cannot reach the staff action", async (
   const before = await contextAudits();
   await signIn(page, E2E.support);
   await page.goto(staffUrl());
-  await page.getByTestId("checkin-view-detail").first().click();
-  // SUPPORT is denied at the detail layer — the context control never
-  // becomes reachable.
+  // SUPPORT is denied at the list layer — no submission rows, no detail
+  // control, no context control.
+  await expect(page.getByTestId("checkin-view-detail")).toHaveCount(0);
   await expect(
     page.getByTestId("checkin-show-tracker-context"),
-  ).not.toBeVisible();
-  await page.goto(`${BASE}/workspace/${wsId}/clients/${profileId}/daily`);
+  ).toHaveCount(0);
   expect((await contextAudits()).length).toBe(before.length);
 });
 
@@ -469,7 +546,7 @@ test("keyboard + responsive: the reveal and date form work at all widths", async
     const box = await reveal.boundingBox();
     expect(box!.height).toBeGreaterThanOrEqual(40);
     await reveal.click();
-    await expect(page.getByTestId("checkin-context-date")).toBeFocused;
+    await expect(page.getByTestId("checkin-context-date")).toBeFocused();
     await page.getByTestId("checkin-context-date").fill(ENTRY_DATE);
     await page.getByTestId("checkin-context-submit").click();
     await expect(page.getByTestId("checkin-context-entry")).toBeVisible();

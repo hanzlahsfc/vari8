@@ -207,7 +207,14 @@ export async function readCheckInReviewTrackerContext(
   const workspaceId = boundedId(input.workspaceId);
   const clientProfileId = boundedId(input.clientProfileId);
   const submissionId = boundedId(input.submissionId);
-  const entryDate = parseDeclaredDate(input.entryDate);
+  // Declared-date contract — invalid grammar/calendar/bounds is an
+  // input error, never an empty state.
+  let entryDate: string;
+  try {
+    entryDate = parseDeclaredDate(input.entryDate);
+  } catch {
+    throw new CheckInInstanceError("invalid_input");
+  }
 
   // Bounded answer-free pre-read BEFORE any advisory — a foreign,
   // missing, or incoherent tuple fails non-disclosingly and acquires

@@ -244,6 +244,7 @@ export function CheckInSubmissionReview({
                     type="date"
                     name="entryDate"
                     required
+                    autoFocus
                     disabled={contextPending}
                     data-testid="checkin-context-date"
                     className="daily-entry__date"
