@@ -8,6 +8,7 @@ import { CheckInInstanceError } from "../../lib/checkin/instances";
 import { createStaticConsentPolicy } from "../../lib/consent";
 import {
   loadDailyEntrySurface,
+  readStaffDailyEntryDetail,
   saveDailyEntry,
 } from "../../lib/daily-entry/service";
 import {
@@ -759,4 +760,347 @@ describe.skipIf(!enabled)("P-025-D6 tracker context (real PG)", () => {
     });
     await expect(read(s, s.coach)).rejects.toBeInstanceOf(AccessDeniedError);
   });
+
+  // ── Advisory lock order + deterministic lock probes (P2-1 repair) ──
+
+  type LockEvent = {
+    svc: string;
+    key: string;
+    phase: "attempt" | "acquired" | "hold" | "released" | "error";
+    code?: string;
+  };
+
+  /**
+   * Transaction-preserving probe — wraps the injected `deps.db` so each
+   * service still runs its REAL Prisma Serializable transaction and real
+   * `pg_advisory_xact_lock` calls against real PostgreSQL; the wrapper
+   * only observes and optionally pauses around specific advisory keys.
+   * No production API surface is added for tests.
+   */
+  function advisoryProbe(real: PrismaClient, svc: string) {
+    const events: LockEvent[] = [];
+    const waiters: Array<() => void> = [];
+    const notify = () => waiters.splice(0).forEach((r) => r());
+    const push = (e: LockEvent) => {
+      events.push(e);
+      notify();
+    };
+    /** Deferred barriers keyed by advisory key — one shot each. */
+    const beforeGates = new Map<
+      string,
+      { promise: Promise<void>; release: () => void }
+    >();
+    const afterGates = new Map<
+      string,
+      { promise: Promise<void>; release: () => void }
+    >();
+    const arm = (
+      map: Map<string, { promise: Promise<void>; release: () => void }>,
+      key: string,
+    ) => {
+      let release!: () => void;
+      const promise = new Promise<void>((r) => (release = r));
+      map.set(key, { promise, release });
+    };
+    const armBefore = (key: string) => arm(beforeGates, key);
+    const armAfter = (key: string) => arm(afterGates, key);
+    const releaseBefore = (key: string) => beforeGates.get(key)?.release();
+    const releaseAfter = (key: string) => afterGates.get(key)?.release();
+
+    const waitFor = async (
+      phase: LockEvent["phase"],
+      key: string,
+      ms = 20000,
+    ) => {
+      const deadline = Date.now() + ms;
+      while (!events.some((e) => e.phase === phase && e.key === key)) {
+        if (Date.now() > deadline)
+          throw new Error(`probe timeout waiting ${phase} ${key}`);
+        await new Promise<void>((r) => {
+          waiters.push(r);
+          setTimeout(r, 25);
+        });
+      }
+    };
+
+    const wrapTx = (tx: {
+      $executeRawUnsafe: (
+        query: string,
+        ...args: unknown[]
+      ) => Promise<unknown>;
+    }) =>
+      new Proxy(tx, {
+        get(t, k) {
+          if (k !== "$executeRawUnsafe") return Reflect.get(t, k);
+          return async (query: unknown, ...args: unknown[]) => {
+            const key = args[0];
+            if (
+              typeof query !== "string" ||
+              !query.includes("pg_advisory_xact_lock") ||
+              typeof key !== "string"
+            )
+              return t.$executeRawUnsafe(query as string, ...args);
+            push({ svc, key, phase: "attempt" });
+            if (beforeGates.has(key)) {
+              await beforeGates.get(key)!.promise;
+              push({ svc, key, phase: "hold" });
+            }
+            try {
+              const r = await t.$executeRawUnsafe(query as string, ...args);
+              push({ svc, key, phase: "acquired" });
+              if (afterGates.has(key)) {
+                push({ svc, key, phase: "hold" });
+                await afterGates.get(key)!.promise;
+                push({ svc, key, phase: "released" });
+              }
+              return r;
+            } catch (e) {
+              const meta = (e as { meta?: { code?: string } } | null)?.meta;
+              push({
+                svc,
+                key,
+                phase: "error",
+                code:
+                  (typeof meta?.code === "string" && meta.code) ||
+                  (e as { code?: string } | null)?.code ||
+                  "unknown",
+              });
+              throw e;
+            }
+          };
+        },
+      });
+
+    const db = new Proxy(real, {
+      get(t, k) {
+        if (k === "$transaction")
+          return (fn: (tx: PrismaClient) => Promise<unknown>, opts: never) =>
+            t.$transaction((tx) => fn(wrapTx(tx) as never), opts);
+        return Reflect.get(t, k);
+      },
+    });
+
+    return {
+      db: db as unknown as PrismaClient,
+      events,
+      armBefore,
+      armAfter,
+      releaseBefore,
+      releaseAfter,
+      waitFor,
+    };
+  }
+
+  const csetupKey = (s: Awaited<ReturnType<typeof setup>>) =>
+    `csetup:${s.w.id}:${s.cp.id}`;
+  const memberKey = (s: Awaited<ReturnType<typeof setup>>, userId: string) =>
+    `member:${s.w.id}:${userId}`;
+
+  it("acquires the exact csetup advisory BEFORE member, never chkin — a reordered implementation must fail", async () => {
+    const s = await setup();
+    const probe = advisoryProbe(prisma, "d6");
+    const coachUserId = (s.coach as { user: { id: string } }).user.id;
+    await readCheckInReviewTrackerContext(
+      s.coach,
+      {
+        workspaceId: s.w.id,
+        clientProfileId: s.cp.id,
+        submissionId: s.submissionId,
+        entryDate: ENTRY_DATE,
+      },
+      { ...deps(), db: probe.db as never },
+    );
+    const acquired = probe.events
+      .filter((e) => e.phase === "acquired")
+      .map((e) => e.key);
+    // Expected keys are derived from the documented contract — not from
+    // the implementation expression under test.
+    expect(acquired[0]).toBe(csetupKey(s));
+    expect(acquired[1]).toBe(memberKey(s, coachUserId));
+    expect(acquired.some((k) => k.startsWith("chkin:"))).toBe(false);
+    expect(probe.events.filter((e) => e.phase === "error")).toHaveLength(0);
+  });
+
+  it("a foreign submissionId acquires ZERO advisories before rejection", async () => {
+    const s = await setup();
+    const other = await setup();
+    const probe = advisoryProbe(prisma, "d6");
+    await expect(
+      readCheckInReviewTrackerContext(
+        s.owner,
+        {
+          workspaceId: s.w.id,
+          clientProfileId: s.cp.id,
+          submissionId: other.submissionId,
+          entryDate: ENTRY_DATE,
+        },
+        { ...deps(), db: probe.db as never },
+      ),
+    ).rejects.toBeInstanceOf(CheckInInstanceError);
+    expect(probe.events).toHaveLength(0);
+  });
+
+  it(
+    "P-022 leads: the detail read holds csetup while same-coach D6 waits, then both complete coherently",
+    { timeout: 45000 },
+    async () => {
+      const s = await setup();
+      const coachUserId = (s.coach as { user: { id: string } }).user.id;
+      const p22 = advisoryProbe(prisma, "p22");
+      const d6 = advisoryProbe(prisma, "d6");
+      const ckey = csetupKey(s);
+      p22.armAfter(ckey);
+      // Same coach, same workspace, same client — identical keys.
+      const p22Read = readStaffDailyEntryDetail(
+        s.coach,
+        {
+          workspaceId: s.w.id,
+          clientProfileId: s.cp.id,
+          entryDate: ENTRY_DATE,
+        },
+        { db: p22.db as never, registry: DAILY_REGISTRY },
+      );
+      await p22.waitFor("hold", ckey);
+      const d6Read = readCheckInReviewTrackerContext(
+        s.coach,
+        {
+          workspaceId: s.w.id,
+          clientProfileId: s.cp.id,
+          submissionId: s.submissionId,
+          entryDate: ENTRY_DATE,
+        },
+        { ...deps(), db: d6.db as never },
+      );
+      // D6 must attempt the same csetup and BLOCK (no error, no acquire).
+      await d6.waitFor("attempt", ckey);
+      await new Promise((r) => setTimeout(r, 300));
+      expect(
+        d6.events.some((e) => e.key === ckey && e.phase === "acquired"),
+      ).toBe(false);
+      p22.releaseAfter(ckey);
+      const [d6Detail, p22Detail] = await Promise.all([d6Read, p22Read]);
+      expect(d6Detail.values.map((v) => v.display)).toContain("80");
+      expect(p22Detail.values.map((v) => v.display)).toContain("80");
+      expect(
+        [...d6.events, ...p22.events].filter((e) => e.phase === "error"),
+      ).toHaveLength(0);
+      // Exactly one acquisition round per participant — no hidden retry.
+      expect(
+        d6.events.filter((e) => e.key === ckey && e.phase === "attempt"),
+      ).toHaveLength(1);
+      expect(
+        d6.events.filter(
+          (e) => e.key === memberKey(s, coachUserId) && e.phase === "attempt",
+        ),
+      ).toHaveLength(1);
+      // Two committed reveals → two structural READ audits.
+      expect(
+        (await audits(s.w.id)).filter((a) => a.action === "READ"),
+      ).toHaveLength(2);
+    },
+  );
+
+  it(
+    "D6 leads: D6 holds csetup while same-coach P-022 waits, then both complete coherently",
+    { timeout: 45000 },
+    async () => {
+      const s = await setup();
+      const p22 = advisoryProbe(prisma, "p22");
+      const d6 = advisoryProbe(prisma, "d6");
+      const ckey = csetupKey(s);
+      d6.armAfter(ckey);
+      const d6Read = readCheckInReviewTrackerContext(
+        s.coach,
+        {
+          workspaceId: s.w.id,
+          clientProfileId: s.cp.id,
+          submissionId: s.submissionId,
+          entryDate: ENTRY_DATE,
+        },
+        { ...deps(), db: d6.db as never },
+      );
+      await d6.waitFor("hold", ckey);
+      const p22Read = readStaffDailyEntryDetail(
+        s.coach,
+        {
+          workspaceId: s.w.id,
+          clientProfileId: s.cp.id,
+          entryDate: ENTRY_DATE,
+        },
+        { db: p22.db as never, registry: DAILY_REGISTRY },
+      );
+      await p22.waitFor("attempt", ckey);
+      await new Promise((r) => setTimeout(r, 300));
+      expect(
+        p22.events.some((e) => e.key === ckey && e.phase === "acquired"),
+      ).toBe(false);
+      d6.releaseAfter(ckey);
+      const [p22Detail, d6Detail] = await Promise.all([p22Read, d6Read]);
+      expect(d6Detail.values.map((v) => v.display)).toContain("80");
+      expect(p22Detail.values.map((v) => v.display)).toContain("80");
+      expect(
+        [...d6.events, ...p22.events].filter((e) => e.phase === "error"),
+      ).toHaveLength(0);
+      expect(
+        (await audits(s.w.id)).filter((a) => a.action === "READ"),
+      ).toHaveLength(2);
+    },
+  );
+
+  it(
+    "crossed barrier: P-022 waits on member while D6 waits on csetup — correct order completes; a member↔csetup inversion MUST deadlock-fail",
+    { timeout: 45000 },
+    async () => {
+      const s = await setup();
+      const coachUserId = (s.coach as { user: { id: string } }).user.id;
+      const p22 = advisoryProbe(prisma, "p22");
+      const d6 = advisoryProbe(prisma, "d6");
+      const ckey = csetupKey(s);
+      const mkey = memberKey(s, coachUserId);
+      // P-022 acquires csetup then waits BEFORE attempting member.
+      p22.armBefore(mkey);
+      // D6 waits BEFORE attempting csetup (under correct order it holds
+      // nothing yet; under a member-first inversion it holds member).
+      d6.armBefore(ckey);
+      const p22Read = readStaffDailyEntryDetail(
+        s.coach,
+        {
+          workspaceId: s.w.id,
+          clientProfileId: s.cp.id,
+          entryDate: ENTRY_DATE,
+        },
+        { db: p22.db as never, registry: DAILY_REGISTRY },
+      );
+      await p22.waitFor("acquired", ckey);
+      const d6Read = readCheckInReviewTrackerContext(
+        s.coach,
+        {
+          workspaceId: s.w.id,
+          clientProfileId: s.cp.id,
+          submissionId: s.submissionId,
+          entryDate: ENTRY_DATE,
+        },
+        { ...deps(), db: d6.db as never },
+      );
+      await d6.waitFor("attempt", ckey);
+      // Correct order: D6 holds nothing while waiting on csetup → P-022
+      // proceeds through member freely. Under inversion D6 already holds
+      // member → P-022's member attempt blocks → PG must report deadlock.
+      d6.releaseBefore(ckey);
+      p22.releaseBefore(mkey);
+      const [p22Detail, d6Detail] = await Promise.all([p22Read, d6Read]);
+      expect(p22Detail.values.map((v) => v.display)).toContain("80");
+      expect(d6Detail.values.map((v) => v.display)).toContain("80");
+      // No lock/deadlock/serialization error may occur on the correct
+      // order — a reintroduced member↔csetup inversion produces 40P01 or
+      // 55P03 here and MUST fail this assertion (not a timing no-bite).
+      const lockErrors = [...d6.events, ...p22.events].filter(
+        (e) => e.phase === "error",
+      );
+      expect(lockErrors).toHaveLength(0);
+      expect(
+        (await audits(s.w.id)).filter((a) => a.action === "READ"),
+      ).toHaveLength(2);
+    },
+  );
 });
