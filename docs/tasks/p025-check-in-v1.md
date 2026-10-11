@@ -851,3 +851,29 @@ Mutations 4/4 BITE. Docs corrected: proposed/pending product rules,
 verified 16-file candidate, `decision decision` wording. Product
 (#104) and process (planning-review) holds remain OPEN — this repair
 is technical only.
+
+## P-025-D2-R3 — reconciliation onto current main (candidate)
+
+- `origin/main` `7c6e2ce` (includes merged FRONTEND-INTEGRATION-I1)
+  merged INTO this branch — forward-only merge `4314140`. Conflicts:
+  `globals.css` (kept both style blocks; restored the chip rule's
+  closing brace), `docs/STATUS.md` (all entries kept, newest-first;
+  FI-I1 entry annotated merged). `product-decisions.md` auto-merged.
+- **#104 updated to APPROVED** with the owner's product choices AND a
+  one-time process exception (implementation preceded decision
+  recording/planning review — bounded to this chronology; tests,
+  privacy/security, final review, CI and separate merge approval are
+  NOT waived). Earlier proposed/pending chronology preserved in the
+  entry text. #105 preserved.
+- Calendar contract verified unchanged: `listMax + 1` probe →
+  `{items, truncated}` for ranged reads only; legacy `{items}` shape;
+  visible >200 notice in both views; viewer-local day placement;
+  cancelled text; no new audits/queries.
+- Mutations 4/4 BITE on the merged tree (flag-false, +1 removed,
+  slice removed, notice suppressed — rebuild); byte-identity restores.
+- Gates: diff-check 0; format/tsc/lint clean; unit **1099/1099**
+  (main 1086 + FI 4 + D2 9); integration **643/643** (630+13);
+  build OK; **full E2E 338 collected → 326 passed / 12 skipped / 0
+  failed** (focused 10/10 across both suites).
+- Awaiting final independent DeepSeek review on the reconciled head;
+  no PR, no merge, flag default-off, nothing deployed.
