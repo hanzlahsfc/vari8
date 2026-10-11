@@ -5,6 +5,65 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-11 — P-025-D6-I1-R2 advisory-order test repair (candidate)
+
+- R1 (DeepSeek, independent): CONDITIONAL PASS — P2-1: the
+  member↔csetup advisory inversion survived 30/30 (the probes
+  exercised a client-own writer and a `chkin` participant, never the
+  true inversion partner — a same-coach P-022 read).
+- Test-only repair (production byte-identical to `d3e3016`):
+  proxy-observed `pg_advisory_xact_lock` events inside real
+  transactions — (a) exact-key/order assertion `csetup:{ws}:{cp}` then
+  `member:{ws}:{uid}` + zero advisories on foreign submission; (b)
+  barrier-driven same-coach P-022 ∥ D6 probes both orderings; (c)
+  crossed-barrier arrangement (P-022 holds csetup waits on member;
+  D6 waits on csetup) — completes under correct order and produces
+  40P01/55P03 evidence under inversion.
+- Inversion-mutation re-run: 3/5 new tests fail (order assertion,
+  P-022-leads probe, crossed barrier with captured lock error);
+  byte-identical restore; probes stable ×3.
+- Gates: focused 35/35 (stable ×3 new probes); full integration
+  630/630 incl. P-022 regression 32. Unit/build/E2E carried forward
+  from `d3e3016` (production unchanged).
+- No PR; flag default-off; nothing deployed. Next gate: independent
+  re-review of the repaired head.
+
+## 2026-10-11 — P-025-D6-I1 explicit DailyEntry tracker context implemented (candidate branch)
+
+- Owner-authorized slice P-025-D6 on `feature/p025d6-checkin-tracker-context`
+  from exact `origin/main` `dabcdf0`: authorized staff reviewing a submitted
+  Check-In may deliberately choose "Show tracker context," manually enter
+  one declared `entryDate`, and get the latest committed DailyEntry
+  revision for that exact date — or a non-disclosing empty state.
+- Contract delivered: separate explicit action in ONE Serializable
+  transaction; `csetup`→`member` advisories (never `chkin`); member lock;
+  `checkinsCoachReviews/read` ∩ `dailyTracking/read` with strict scope
+  reconciliation (ws+ws→ws, ws∩asg→asg, else deny); one shared assignment
+  re-resolve+lock; profile lock; Check-In coherence via snapshot reads
+  (no `chkin`, no Check-In row locks); fresh consent intersection
+  FOR UPDATE (each side's own registry version); latest-revision-only
+  render of the exact date — no fallback, no availability browsing, no
+  passive preload; `READ daily_entry` audit last (at-least-once on
+  repeats); audit failure rolls back values.
+- Reuse: the DailyEntry staff-detail tail was factored into an exported
+  tx-local primitive (`readStaffDailyEntryDetailTx`) shared by the
+  P-022 detail service and the D6 action — identical render + audit.
+- Chronology: unit + integration + E2E specs written RED-first (import
+  failure → module), then implementation; fixtures repaired forward.
+- Gates on the candidate head: `diff --check` 0; format:check clean;
+  typecheck 0; lint 0-errors/1-pre-existing-warning; production build OK;
+  unit 1086; integration 624/624 (incl. 30 D6); full E2E 316/316.
+- Mutation battery: 10 direct bites (both authorization sides, scope
+  widening, assignment re-resolve, each consent side, date substitution,
+  superseded revision, internal-ID leak); 3 documented masks (dual-role
+  PA masked by the layered re-resolve — bitten equivalently via injected
+  asymmetry; in-tx coherence masked by the pre-read layer; consent-
+  reorder masked structurally by the tx boundary); advisory-inversion
+  masked at timing level — covered by the lock-order composition
+  arrangement.
+- Default-off: `ENABLE_CHECK_INS` still commented-off; nothing deployed;
+  no PR created. Next gate: independent different-model review.
+
 ## 2026-10-11 — P-025-D deferred-capability decisions #98–#103 approved + recorded
 
 - P-025-A/B/C are merged on `main` (merge `9a05b0d`, CI green).

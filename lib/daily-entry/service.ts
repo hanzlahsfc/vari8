@@ -972,92 +972,119 @@ export async function readStaffDailyEntryDetail(
         // 7. Consent — deterministic kind order, rows FOR UPDATE.
         await checkRequiredConsent(tx, input.clientProfileId, registry, true);
 
-        // 8–9. Entry + coherent current pointer + count.
-        const entry = await tx.dailyEntry.findUnique({
-          where: {
-            workspaceId_clientProfileId_entryDate: {
-              workspaceId: input.workspaceId,
-              clientProfileId: input.clientProfileId,
-              entryDate: new Date(`${entryDate}T00:00:00Z`),
-            },
-          },
-          select: { id: true, currentRevisionId: true },
-        });
-        if (!entry) throw new DailyEntryError("not_available");
-        const revision = entry.currentRevisionId
-          ? await tx.dailyEntryRevision.findUnique({
-              where: { id: entry.currentRevisionId },
-              select: {
-                id: true,
-                dailyEntryId: true,
-                workspaceId: true,
-                clientProfileId: true,
-                templateVersionId: true,
-                seq: true,
-                declaredAt: true,
-                values: {
-                  select: {
-                    parameterId: true,
-                    kind: true,
-                    valueNumeric: true,
-                    valueRating: true,
-                    valueOptionId: true,
-                    valueText: true,
-                  },
-                },
-              },
-            })
-          : null;
-        if (
-          !revision ||
-          revision.dailyEntryId !== entry.id ||
-          revision.workspaceId !== input.workspaceId ||
-          revision.clientProfileId !== input.clientProfileId
-        )
-          throw new DailyEntryError("not_available");
-        const revisionCount = await tx.dailyEntryRevision.count({
-          where: { dailyEntryId: entry.id },
-        });
-
-        // 10. Render through the revision's OWN immutable template version —
-        // eligibility re-proved so only GENERAL_HEALTH values can surface.
-        const version = await tx.coachingTemplateVersion.findUnique({
-          where: { id: revision.templateVersionId },
-          select: { id: true, workspaceId: true, definition: true },
-        });
-        if (!version || version.workspaceId !== input.workspaceId)
-          throw new DailyEntryError("not_available");
-        if (!evaluateDailyEntryVersionEligibility(version.definition).eligible)
-          throw new DailyEntryError("ineligible");
-        const snapshot = projectSnapshot(version.definition);
-        if (!snapshot) throw new DailyEntryError("ineligible");
-        const values = renderRevisionDisplayRows(
-          revision.values,
-          snapshot,
-          version.definition as VersionDefinition,
-        );
-
-        // 11. Structural READ audit — last, inside the same transaction;
-        // a failed write rolls the detail read's audit (and result) back.
-        await writeAuditEvent(tx, ctx, {
-          action: "READ",
-          resourceType: "daily_entry",
-          resourceId: entry.id,
-          subjectClientProfileId: input.clientProfileId,
-          meta: { changed: false },
-        });
-
-        return {
+        // 8–11. Value-bearing read + audit — the shared tx-local primitive
+        // also used by the P-025-D6 Check-In tracker-context action.
+        return readStaffDailyEntryDetailTx(tx, {
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
           entryDate,
-          revisionSeq: revision.seq,
-          revisionCount,
-          declaredAt: revision.declaredAt.toISOString(),
-          values,
-        };
+          ctx,
+        });
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     ),
   );
+}
+
+/**
+ * Tx-local detail primitive — entry → coherent current revision →
+ * eligibility re-proof → minimized render → structural READ audit last.
+ * The caller must already hold the established advisory/member/
+ * assignment/profile/consent protocol inside THIS transaction and pass
+ * the dailyTracking authorization context for the audit. Used by the
+ * public detail service and by P-025-D6's Check-In tracker context.
+ */
+export async function readStaffDailyEntryDetailTx(
+  tx: Prisma.TransactionClient,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    entryDate: string;
+    ctx: Awaited<ReturnType<typeof authorize>>;
+  },
+): Promise<StaffDailyEntryDetail> {
+  // Entry + coherent current pointer + count.
+  const entry = await tx.dailyEntry.findUnique({
+    where: {
+      workspaceId_clientProfileId_entryDate: {
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+        entryDate: new Date(`${input.entryDate}T00:00:00Z`),
+      },
+    },
+    select: { id: true, currentRevisionId: true },
+  });
+  if (!entry) throw new DailyEntryError("not_available");
+  const revision = entry.currentRevisionId
+    ? await tx.dailyEntryRevision.findUnique({
+        where: { id: entry.currentRevisionId },
+        select: {
+          id: true,
+          dailyEntryId: true,
+          workspaceId: true,
+          clientProfileId: true,
+          templateVersionId: true,
+          seq: true,
+          declaredAt: true,
+          values: {
+            select: {
+              parameterId: true,
+              kind: true,
+              valueNumeric: true,
+              valueRating: true,
+              valueOptionId: true,
+              valueText: true,
+            },
+          },
+        },
+      })
+    : null;
+  if (
+    !revision ||
+    revision.dailyEntryId !== entry.id ||
+    revision.workspaceId !== input.workspaceId ||
+    revision.clientProfileId !== input.clientProfileId
+  )
+    throw new DailyEntryError("not_available");
+  const revisionCount = await tx.dailyEntryRevision.count({
+    where: { dailyEntryId: entry.id },
+  });
+
+  // Render through the revision's OWN immutable template version —
+  // eligibility re-proved so only GENERAL_HEALTH values can surface.
+  const version = await tx.coachingTemplateVersion.findUnique({
+    where: { id: revision.templateVersionId },
+    select: { id: true, workspaceId: true, definition: true },
+  });
+  if (!version || version.workspaceId !== input.workspaceId)
+    throw new DailyEntryError("not_available");
+  if (!evaluateDailyEntryVersionEligibility(version.definition).eligible)
+    throw new DailyEntryError("ineligible");
+  const snapshot = projectSnapshot(version.definition);
+  if (!snapshot) throw new DailyEntryError("ineligible");
+  const values = renderRevisionDisplayRows(
+    revision.values,
+    snapshot,
+    version.definition as VersionDefinition,
+  );
+
+  // Structural READ audit — last, inside the same transaction; a failed
+  // write rolls the detail read's audit (and result) back.
+  await writeAuditEvent(tx, input.ctx, {
+    action: "READ",
+    resourceType: "daily_entry",
+    resourceId: entry.id,
+    subjectClientProfileId: input.clientProfileId,
+    meta: { changed: false },
+  });
+
+  return {
+    entryDate: input.entryDate,
+    revisionSeq: revision.seq,
+    revisionCount,
+    declaredAt: revision.declaredAt.toISOString(),
+    values,
+  };
 }
 
 // ── Read surface (form + history payload for the client's own page) ───────

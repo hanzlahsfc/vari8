@@ -1,13 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import type { StaffCheckInSubmissionItem } from "@/lib/checkin/instances";
 import {
   markCheckInSubmissionReviewed,
+  showCheckInReviewTrackerContext,
   viewCheckInSubmissionDetail,
   type StaffCheckInDetailState,
   type StaffCheckInMarkState,
+  type StaffCheckInTrackerContextState,
 } from "@/app/workspace/[workspaceId]/clients/[clientProfileId]/checkins/actions";
 
 /**
@@ -38,6 +40,13 @@ export function CheckInSubmissionReview({
     StaffCheckInMarkState,
     FormData
   >(markCheckInSubmissionReviewed, { status: "idle" });
+  const [contextState, contextAction, contextPending] = useActionState<
+    StaffCheckInTrackerContextState,
+    FormData
+  >(showCheckInReviewTrackerContext, { status: "idle" });
+  // P-025-D6 (#103, C1): the deliberate reveal exposes a manual date
+  // form — never DailyEntry data. Passive render queries nothing.
+  const [contextOpen, setContextOpen] = useState(false);
 
   return (
     <section
@@ -194,6 +203,95 @@ export function CheckInSubmissionReview({
                 Reviewed.
               </p>
             ) : null}
+
+            {/* P-025-D6 — explicit DailyEntry tracker context (#103).
+                The control reveals a manual declared-date form only;
+                submitting it is a separate explicit server action. */}
+            <section
+              aria-label="Daily tracker context"
+              data-testid="checkin-tracker-context"
+            >
+              {!contextOpen ? (
+                <button
+                  type="button"
+                  className="catalog-search__submit"
+                  onClick={() => setContextOpen(true)}
+                  data-testid="checkin-show-tracker-context"
+                >
+                  Show tracker context
+                </button>
+              ) : (
+                <form action={contextAction}>
+                  <input type="hidden" name="workspaceId" value={workspaceId} />
+                  <input
+                    type="hidden"
+                    name="clientProfileId"
+                    value={clientProfileId}
+                  />
+                  <input
+                    type="hidden"
+                    name="submissionId"
+                    value={detailState.submissionId}
+                  />
+                  <label
+                    className="assignment-manager__subtitle"
+                    htmlFor="checkin-context-date"
+                  >
+                    Tracker date (YYYY-MM-DD)
+                  </label>
+                  <input
+                    id="checkin-context-date"
+                    type="date"
+                    name="entryDate"
+                    required
+                    autoFocus
+                    disabled={contextPending}
+                    data-testid="checkin-context-date"
+                    className="daily-entry__date"
+                  />
+                  <button
+                    type="submit"
+                    className="catalog-search__submit"
+                    disabled={contextPending}
+                    data-testid="checkin-context-submit"
+                  >
+                    {contextPending ? "Loading…" : "Show entry"}
+                  </button>
+                </form>
+              )}
+              {contextState.status === "error" ? (
+                <p
+                  className="daily-errors"
+                  role="alert"
+                  data-testid="checkin-context-error"
+                >
+                  {contextState.message}
+                </p>
+              ) : null}
+              <div aria-live="polite" aria-busy={contextPending}>
+                {contextState.status === "empty" ? (
+                  <p className="app-lede" data-testid="checkin-context-empty">
+                    No tracker entry for that date.
+                  </p>
+                ) : null}
+                {contextState.status === "ok" ? (
+                  <div data-testid="checkin-context-entry">
+                    <p className="tracker-list__sub">
+                      Entry for {contextState.entryDate} — revision{" "}
+                      {contextState.revisionSeq}
+                    </p>
+                    <ul data-testid="checkin-context-values">
+                      {contextState.values.map((v) => (
+                        <li key={v.parameterKey}>
+                          <strong>{v.label}</strong>: {v.display}
+                          {v.unit ? ` ${v.unit}` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            </section>
           </div>
         ) : null}
       </section>
