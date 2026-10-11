@@ -340,7 +340,7 @@ export async function showCheckInReviewTrackerContext(
 }
 
 /**
- * P-025-D2 (#104): bounded-range calendar read for authorized staff —
+ * P-025-D2 (decision 104): bounded-range calendar read for authorized staff —
  * same `checkinInstances` protocol, range REQUIRED by the boundary.
  * Called programmatically by the calendar component; feature resolver
  * first, session second, bounded args only. Zero audits (header read).

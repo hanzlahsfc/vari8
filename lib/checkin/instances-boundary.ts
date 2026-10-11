@@ -160,7 +160,7 @@ export async function getOwnCheckInInstance(
 }
 
 /**
- * P-025-D2 (#104): bounded-range calendar read for staff — the same
+ * P-025-D2 (decision 104): bounded-range calendar read for staff — the same
  * `checkinInstances` authorization/protocol as the header list; the
  * range is REQUIRED here (the unbounded list boundary is unchanged).
  */
@@ -187,7 +187,7 @@ export async function readStaffCheckInCalendar(
   );
 }
 
-/** P-025-D2 (#104): bounded-range calendar read for the owning client. */
+/** P-025-D2 (decision 104): bounded-range calendar read for the owning client. */
 export async function readOwnCheckInCalendar(
   session: Session,
   input: { workspaceId: string; from: string; to: string },

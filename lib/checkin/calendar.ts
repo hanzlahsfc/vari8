@@ -1,5 +1,5 @@
 /**
- * P-025-D2 — Check-In calendar (decision #104). Pure display helpers
+ * P-025-D2 — Check-In calendar (decision decision 104). Pure display helpers
  * for the viewer-local (browser timezone) day placement. Timezone use
  * here is DISPLAY ONLY — it establishes no timezone authority, DST, or
  * recurrence policy. The bounded range parser lives in `instances.ts`
@@ -8,7 +8,7 @@
 
 /**
  * Viewer-local calendar day key (`YYYY-MM-DD`) of an instant under an
- * IANA timezone — the #104 display-only placement rule.
+ * IANA timezone — the decision 104 display-only placement rule.
  */
 export function checkInCalendarDayKey(
   instantIso: string,

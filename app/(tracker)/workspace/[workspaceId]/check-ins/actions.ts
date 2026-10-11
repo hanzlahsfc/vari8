@@ -87,7 +87,7 @@ export async function submitCheckInInstanceAction(
 }
 
 /**
- * P-025-D2 (#104): bounded-range calendar read for the owning client —
+ * P-025-D2 (decision 104): bounded-range calendar read for the owning client —
  * same `checkinInstances` own-scope protocol. Programmatic load from
  * the calendar component; resolver → session → bounded args → boundary.
  * Zero audits (header read).

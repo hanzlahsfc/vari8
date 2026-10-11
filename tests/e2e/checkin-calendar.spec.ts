@@ -38,6 +38,7 @@ const DEF = {
 let prisma: PrismaClient;
 let wsId: string;
 let profileId: string;
+let profileCreated = false;
 let ownerMemberId: string;
 let coachMemberId: string;
 let clientMemberId: string;
@@ -109,6 +110,9 @@ test.beforeAll(async () => {
       },
     }));
   profileId = profile.id;
+  // Owned iff the profile is THIS spec's namespaced fixture — a reused
+  // fixture profile is managed by its own spec's cleanup.
+  profileCreated = existing === null || existing.name === "P025D2 E2E Client";
 
   // Clean namespaced fixtures (submission → instance → form order).
   const staleInst = await prisma.checkInInstance.findMany({
@@ -180,6 +184,48 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
+  const insts = await prisma.checkInInstance
+    .findMany({ where: { formId: FORM_ID }, select: { id: true } })
+    .catch(() => [] as { id: string }[]);
+  const subs = await prisma.checkInSubmission
+    .findMany({
+      where: { instanceId: { in: insts.map((i) => i.id) } },
+      select: { id: true },
+    })
+    .catch(() => [] as { id: string }[]);
+  await prisma.checkInReview
+    .deleteMany({ where: { submissionId: { in: subs.map((s) => s.id) } } })
+    .catch(() => {});
+  await prisma.checkInSubmissionAnswer
+    .deleteMany({ where: { submissionId: { in: subs.map((s) => s.id) } } })
+    .catch(() => {});
+  await prisma.checkInSubmission
+    .deleteMany({ where: { instanceId: { in: insts.map((i) => i.id) } } })
+    .catch(() => {});
+  await prisma.checkInInstance
+    .deleteMany({ where: { formId: FORM_ID } })
+    .catch(() => {});
+  await prisma.checkInFormVersion
+    .deleteMany({ where: { formId: FORM_ID } })
+    .catch(() => {});
+  await prisma.checkInForm
+    .deleteMany({ where: { id: FORM_ID } })
+    .catch(() => {});
+  await prisma.clientAssignment
+    .deleteMany({ where: { clientProfileId: profileId } })
+    .catch(() => {});
+  await prisma.consentRecord
+    .deleteMany({
+      where: {
+        clientProfileId: profileId,
+        version: { startsWith: "check-in-dev" },
+      },
+    })
+    .catch(() => {});
+  if (profileCreated)
+    await prisma.clientProfile
+      .delete({ where: { id: profileId } })
+      .catch(() => {});
   await prisma?.$disconnect();
 });
 

@@ -648,7 +648,7 @@ export type CancelCheckInInstanceInput = {
 export const CALENDAR_RANGE_MAX_DAYS = 95;
 
 /**
- * P-025-D2 (#104): bounded instant range for the header lists — both
+ * P-025-D2 (decision 104): bounded instant range for the header lists — both
  * sides must be strict ISO-8601 UTC instants, `from < to`, span ≤
  * `CALENDAR_RANGE_MAX_DAYS`. Returns null on any violation.
  */

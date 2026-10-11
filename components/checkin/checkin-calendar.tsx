@@ -9,7 +9,7 @@ import {
 } from "@/lib/checkin/calendar";
 
 /**
- * P-025-D2 — Check-In calendar (decision #104): read-only month grid +
+ * P-025-D2 — Check-In calendar (decision decision 104): read-only month grid +
  * accessible agenda list over the existing answer-free header lists.
  * Day placement is viewer-local (browser timezone) — DISPLAY ONLY; it
  * sets no timezone authority, DST, or recurrence policy. Cancelled

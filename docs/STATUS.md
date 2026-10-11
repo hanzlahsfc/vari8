@@ -5,6 +5,48 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-11 — P-025-D2 Check-In calendar (implementation candidate)
+
+- Decision **104** recorded (owner-approved Q1-A/Q2-A/Q3-A/Q4-A):
+  viewer-local (browser) day placement DISPLAY-ONLY; staff + client
+  surfaces; month grid + accessible agenda list; cancelled visible
+  with explicit "Cancelled" text. Recurrence tz/DST policy remains
+  unresolved under #98.
+- Delivered: optional bounded instant `range` (strict ISO Z, `from<to`,
+  span <= 95d) on the existing `checkinInstances` header lists
+  (`listCheckInInstancesForClient`, `listOwnCheckInInstances`) —
+  answer-free items only, same authorization/protocol, deterministic
+  `dueAt asc, id asc`, zero passive READ audits; boundary wrappers
+  `readStaffCheckInCalendar` / `readOwnCheckInCalendar` (range
+  required); server actions on both surfaces; `CheckInCalendar`
+  component (month grid + agenda toggle, prev/next/today, local-tz
+  disclosure label, cancelled styling, client chips link to existing
+  detail pages) wired into the staff per-client page and the client
+  Check-Ins page.
+- Tests-first: unit RED at module import; integration RED (range
+  ignored/invalid, out-of-range leaked) before implementation; E2E
+  spec written with the UI.
+- Coverage: unit 9 (range bounds, tz day-key, DST, 42-cell
+  Monday-start grid); real-PG integration 9 (owner/coach/assistant/
+  client scopes, SUPPORT + PA + dual-PA deny, unassigned/inactive,
+  cross-tenant, range bounds + invalid, zero audits, ordering,
+  cancelled/late projection, optional-range compat); E2E 4 (staff
+  chips + cancelled + month nav + agenda across 1440/834/390,
+  NY-tz boundary placement, client chip -> detail link, flag-off).
+- Mutations: 4/4 BITE (span bound, ignored range filter, UTC
+  bucketing, answer leak); byte-identical restores verified.
+- E2E infra repair: `global-teardown.ts` completed missing
+  Restrict-dependent deletes (checkInReview, DailyEntry chain,
+  consent/setup/assignment/profile, workspace-scoped audits) —
+  previously latent; a bare created `clientProfile` collided with
+  later fixed-id fixtures (9 spec failures) until the spec added
+  conventional `afterAll` profile cleanup.
+- Gates: diff --check 0; format:check clean; tsc 0; lint 0;
+  unit 1095/1095; integration 639/639; build OK; E2E 320 passed /
+  12 skipped. `ENABLE_CHECK_INS` default-off; nothing deployed.
+- Next gate: independent different-model review (packet prepared —
+  DeepSeek routing is external to this session).
+
 ## 2026-10-11 — P-025-D6-I1-R2 advisory-order test repair (candidate)
 
 - R1 (DeepSeek, independent): CONDITIONAL PASS — P2-1: the

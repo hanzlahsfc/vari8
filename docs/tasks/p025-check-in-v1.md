@@ -775,3 +775,61 @@ under inversion (verified by scratch mutation — 3/5 new tests bite —
 then byte-identical revert). Stable ×3; focused 35/35; full
 integration 630/630. R1 P3 notes carried (in-tx coherence masked by
 pre-read; RED was module-absent; `revisionCount` retained).
+
+### P-025-D2 — Check-In calendar (decision 104, implementation candidate)
+
+Owner-approved product rules (recorded as decision 104 in
+`docs/product-decisions.md`):
+
+- Viewer-local (browser timezone) day placement — a DISPLAY-only rule;
+  it establishes no timezone authority, DST, or recurrence policy (those
+  remain unresolved under #98).
+- Both audiences: the staff per-client Check-Ins page and the client's
+  own Check-Ins page, each strictly within existing `checkinInstances`
+  scopes.
+- Month grid plus an accessible agenda list rendering the same data.
+- Cancelled instances remain visible with explicit "Cancelled" text.
+- Read-only: no stored status, no rescheduling, no new mutations.
+
+**Data contract:** optional `range` ({from,to} — strict ISO-8601 UTC
+instants, `from < to`, span <= `CALENDAR_RANGE_MAX_DAYS` = 95 days) on
+`listCheckInInstancesForClient` and `listOwnCheckInInstances`. The same
+transaction protocol, authorization, own-profile rebinding, ordering
+(`dueAt asc, id asc`), `listMax` truncation, and zero-passive-READ-audit
+contract apply; the range only narrows the bounded set. Items remain
+answer-free. Boundary wrappers `readStaffCheckInCalendar` /
+`readOwnCheckInCalendar` REQUIRE the range.
+
+**UI:** `components/checkin/checkin-calendar.tsx` — 42-cell Monday-start
+month grid (`lib/checkin/calendar.ts` pure helpers: `checkInCalendarDayKey`,
+`checkInCalendarMonthCells`) + agenda toggle + prev/next/today + the
+owner-required "Days shown in your local timezone" disclosure; cancelled
+chips dimmed + labelled; client chips link to existing detail routes.
+Server actions bound via `.bind(null, ctx)`; programmatic bounded
+`{from,to}` instants only.
+
+**Tests:** unit 9 (range bounds/grammar/span, tz day-key incl. DST,
+grid cells + year edges); real-PG integration 9 (owner workspace,
+assigned coach AND assistant, client own, SUPPORT/PA/dual-PA deny,
+unassigned + suspended, cross-tenant, invalid/inverted/oversized
+ranges, empty window, zero audits, exact ordering + item key-shape,
+late + cancelled projection, optional-range compat); E2E 4 under an
+explicit `America/New_York` context (staff chips/cancelled/nav/agenda
+at 1440/834/390, UTC-midnight boundary placement, client chip → detail
+link, flag-off absent).
+
+**Mutations:** 4/4 BITE (span bound removed, staff range ignored, UTC
+bucketing, answer leak); byte-identical restores sha-verified.
+
+**Infra repair:** `tests/e2e/global-teardown.ts` — completed the missing
+Restrict-dependent deletes (checkInReview, DailyEntry chain,
+consent/setup-pin/setup/assignment/profile, workspace-scoped audits);
+latent bug surfaced when a spec-created `clientProfile` collided with
+later fixed-id fixtures (9 failures) — resolved by the conventional
+`findFirst`-reuse + conditional `afterAll` profile cleanup.
+
+**Gates:** diff --check 0; format:check clean; tsc 0; lint 0-errors;
+unit 1095/1095; integration 639/639; production build OK; E2E
+320 passed / 12 skipped. `ENABLE_CHECK_INS` still default-off; nothing
+deployed; no PR until independent different-model review of the exact
+head.
