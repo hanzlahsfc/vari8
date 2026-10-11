@@ -546,16 +546,27 @@ Tab rules (SOURCE-CONFIRMED where cited):
   full vs custom (bodyweight-default) submissions; review opens submission +
   tracker + flagged notes; integrated video feedback; automatic change-summary
   with links to changed plans. Custom check-in vs scheduled dates:
-  **PENDING D-05** (recommendation: a custom submission satisfies a scheduled
-  date only when the coach marks it as covering it).
+  **RESOLVED at the coverage level (product-decision #99)** — a custom
+  submission covers a scheduled date only when a coach explicitly marks
+  coverage (no silent fulfillment); D-05's remaining client-initiation/
+  eligibility/data-model details stay pending.
   **Update (P-025 closure, product-decisions #92–#97):** a dev-gated
-  Check-In v1 is APPROVED in product terms — one-off staff-scheduled
-  instances on immutable published forms, one due timestamp with visibly
-  marked late submission, owner+coach management (owner cannot mark),
-  terminal staff acknowledgement only, and cancellation only before
-  submission. Recurrence, custom Check-Ins (D-05 stays pending), and
-  rich feedback stay deferred. Synthetic-only, default-off, production
-  fail-closed; implementation requires a separate authorized prompt.
+  Check-In v1 is APPROVED and merged — one-off staff-scheduled instances
+  on immutable published forms, one due timestamp with visibly marked
+  late submission, owner+coach management (owner cannot mark), terminal
+  staff acknowledgement only, and cancellation only before submission.
+  **Update (P-025-D decisions, product-decisions #98–#103):** the six
+  deferred top-level directions are now approved — recurrence uses a rule
+  record + bounded materialized instances (#98, with timezone/DST details
+  still open); custom coverage is coach-marked (#99); selected summaries
+  are immutable build-time field flags (#100); feedback starts as bounded
+  staff-authored text (#101); new client-visible records use an
+  owner-defined retention direction (#102); DailyEntry tracker context
+  uses explicit manual declared-date selection (#103). Recurrence
+  timezone/DST, D-05 client-initiation details, D-09, D-10, summary
+  aggregation/display, and feedback lifecycle all remain pending.
+  Synthetic-only, default-off, production fail-closed; implementation
+  requires a separate authorized prompt.
 - **Habit Tracker:** optional per-template feature; per-client habit
   definitions/frequency/goals/reasons; own status log.
 - **Messaging (M01–M05):** WhatsApp-like thread; **voice notes, files, photos
@@ -799,7 +810,7 @@ blocked on the pending consent/retention items, and the legal/privacy items in
 | D-02 | General-note visibility                                                                                                                                                                 | per-note coach flag, default private (flexible; slight UI cost)             | all-private / all-shared      | W04 client surface        |
 | D-03 | ~~Template ownership scope~~ **RESOLVED (product-decisions #41–#42)**: workspace-shared library; owner+coach ws read/write management; assistant/client/support/platform-admin denied   | —                                                                           | —                             | resolved                  |
 | D-04 | Coach↔client dashboard relation                                                                                                                                                         | same layout, client sees visibility subset (one config source)              | separate client layout        | D05 + client roadmap      |
-| D-05 | Custom check-in vs scheduled dates                                                                                                                                                      | satisfies only when coach marks coverage (no silent fulfillment)            | auto-match nearest date       | C03/C04 + W06             |
+| D-05 | Custom check-in vs scheduled dates — **coverage rule RESOLVED (product-decision #99): coach marks coverage; client-initiation/eligibility/data-model details still pending**            | satisfies only when coach marks coverage (no silent fulfillment)            | auto-match nearest date       | C03/C04 + W06             |
 | D-06 | Formula supply path                                                                                                                                                                     | owner supplies definitions per §7 catalog contract                          | defer calc-backed widgets     | §7 computed stories       |
 | D-07 | Profile label vocabulary                                                                                                                                                                | free-text labels + coach tag set (matches sheets practice)                  | fixed enum                    | W03                       |
 | D-08 | Wearables first move                                                                                                                                                                    | defer all wearables until scoped provider contract exists                   | pick a first provider         | wearable direction only   |

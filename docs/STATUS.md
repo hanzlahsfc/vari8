@@ -5,6 +5,24 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-11 — P-025-D deferred-capability decisions #98–#103 approved + recorded
+
+- P-025-A/B/C are merged on `main` (merge `9a05b0d`, CI green).
+- Planning → independent review → owner package → approval completed:
+  P-025-D-P1/P2/P3 corrected through two CONDITIONAL PASS cycles to a
+  DeepSeek PASS, then the owner approved all six recommendations.
+- Decisions **#98–#103** recorded in `docs/product-decisions.md`:
+  recurrence = rule + bounded materialized instances; custom coverage =
+  coach-marked; summaries = immutable build-time field flags; feedback =
+  bounded text first; retention = owner-defined-window direction;
+  DailyEntry context = explicit manual declared-date selection (C1).
+- **P-025-D6** (explicit DailyEntry tracker-context reveal) is the
+  recommended next implementation slice — its product gate is resolved
+  but implementation requires separate authorization. D1 still needs
+  timezone/DST rules; D2 calendar may proceed independently; D3 gated by
+  remaining D-05 detail; D4 by D-09/D-10/legal; C07 deferred (no plan
+  domain). Full record: `docs/tasks/p025-d-deferred-capability-decisions.md`.
+
 ## 2026-10-10 — P-025-C-I1-R2 repair: replay consent check
 
 - R1 CONDITIONAL PASS, HELD FOR REPAIR (P2-1): the

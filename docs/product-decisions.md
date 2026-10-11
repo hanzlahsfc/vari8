@@ -1084,6 +1084,108 @@ implementation prompt per slice.
     Correcting, voiding, replacing, or administratively suppressing a
     submitted Check-In requires a separate future policy. Cancellation
     carries ending provenance and is terminal.
+98. **Recurring Check-Ins: rule record plus materialized instances.**
+    Recurring Check-Ins use one stored recurrence-rule record; the
+    system materializes ordinary Check-In instances ahead over a
+    bounded horizon. Submitted or reviewed instances are immutable and
+    are never rewritten by later schedule edits. **Unresolved:** the
+    recurrence grammar, timezone authority, DST behavior, horizon
+    length, pause/skip behavior, edit-future semantics, and any default
+    timezone remain unapproved — recurrence is not implementation-ready
+    until those rules are decided. Calendar presentation does not
+    depend on recurrence and may proceed independently over existing
+    one-off instances. This decision does not authorize implementation.
+99. **Custom Check-In coverage requires an explicit coach mark.** A
+    custom Check-In does not silently satisfy a scheduled occurrence; a
+    custom submission covers a scheduled date only when an authorized
+    coach explicitly marks that relationship, and no automatic
+    nearest-date matching exists. **Unresolved:** the D-05 details
+    governing whether clients may initiate custom Check-Ins, exact
+    eligibility and UI, and the future coverage-relationship data model
+    remain open. This decision does not authorize implementation.
+100.  **Selected summaries are immutable build-time field flags.**
+      Summary selection is defined at form-build time: the immutable
+      published Check-In definition records which of its own fields are
+      eligible to display a running summary, and later edits create a new
+      immutable version rather than altering prior submissions.
+      **Excluded:** no AI-generated summaries; no automatic DailyEntry
+      metric panel; no parameter foreign keys invented for this feature;
+      no cross-domain summary behavior unless separately approved.
+      **Unresolved:** exact supported field kinds, aggregation formulas,
+      minimum sample thresholds, display periods, and empty-state
+      behavior. This decision does not authorize implementation.
+101.  **Feedback: bounded staff-authored text first.** The first
+      feedback expansion beyond the terminal review acknowledgement is
+      bounded staff-authored text feedback, as a separate future slice.
+      Video links, attachments, messaging, tasks, notifications, and
+      richer channels are not authorized by this decision and remain
+      gated by D-09 (video provider), D-10 (retention), legal/privacy
+      review, attachment storage/scanning/download controls, and the
+      unresolved feedback edit/delete lifecycle. This decision does not
+      authorize implementation.
+102.  **Retention direction: owner-defined retention window.** New
+      client-visible feedback/attachment records use an owner-defined
+      retention window rather than indefinite retention. This is an
+      approved direction only: the actual retention duration, defaults,
+      per-workspace configurability, consent-withdrawal behavior, legal
+      holds, and deletion/anonymization behavior remain unresolved, and
+      D-10 is **not** resolved by this decision. This decision does not
+      authorize implementation.
+103.  **DailyEntry tracker context: explicit manual date selection.**
+      P-025-D6 uses explicit manual declared-date selection: after an
+      authorized staff member deliberately chooses "Show tracker
+      context," they manually enter one `YYYY-MM-DD` DailyEntry
+      `entryDate`; the server validates that date and independently
+      re-authorizes the request, and may return only the latest committed
+      revision of the DailyEntry for that exact selected date. There is
+      no fallback to the current date, Check-In due date, submission
+      date, nearest date, or latest entry across all dates; no passive
+      preload; no unbounded history browsing; no automatic
+      date-availability list; no new availability API; no raw internal
+      identifiers in browser values; a missing entry returns a
+      non-disclosing empty state; superseded DailyEntry values remain
+      hidden. Manual date entry was approved; bounded answer-free
+      available-date browsing was **not** approved and is not part of
+      D6. This resolves the product gate for P-025-D6 but does not
+      authorize implementation.
+
+### P-025-D binding engineering contract (not owner choices)
+
+Independently reviewed requirements for the future P-025-D6
+implementation, derived from the merged authorization/locking/consent/
+audit protocols — recorded separately from decisions #98–#103 and
+**not implemented**:
+
+- D6 is a separate explicit server action in its own Serializable
+  transaction — never nested inside the Check-In detail transaction.
+- Authorization is the strict intersection of
+  `checkinsCoachReviews/read` and `dailyTracking/read`; both scopes are
+  captured and reconciled (workspace+workspace → workspace;
+  workspace+assigned → assigned; assigned+assigned → assigned; any
+  denial or unsupported combination → fail closed). Dual-role platform
+  administrators remain denied through the Check-In resource before
+  values are accessed.
+- Assigned scope requires authoritative current assignment
+  re-resolution and locking.
+- Advisory order is `csetup → member` (the DailyEntry protocol order);
+  `chkin` is never acquired after `member`. Check-In instance/
+  submission coherence uses Serializable snapshot reads — no Check-In
+  row locks — while member, assignment, profile, consent, and
+  applicable DailyEntry locks/checks remain required.
+- Fresh consent intersection (Check-In + DailyEntry policy kinds) is
+  evaluated in-transaction before values.
+- The existing structural `READ daily_entry` audit is written last;
+  audit failure returns no values; passive rendering and denied/failed
+  requests produce zero successful-read audits; repeated committed
+  reveals keep the existing at-least-once semantics.
+- No new database table, RBAC resource, or audit resource is authorized
+  for D6; production remains default-off and fail-closed.
+- Required tests include real-PostgreSQL barrier-driven deadlock/
+  inversion coverage with explicit timeouts, the complete role/scope
+  matrix, both asymmetric authorization cases, consent withdrawal,
+  cross-tenant substitution, manual-date bounds, no-fallback behavior,
+  no-entry behavior, latest-revision-only behavior, passive-query
+  prevention, audit rollback, and biting security mutations.
 
 ### P-025 binding security requirements (not owner choices)
 
