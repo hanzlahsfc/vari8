@@ -702,3 +702,26 @@ no-bite — both barriers remain load-bearing).
 Lightweight independent different-model review of the complete
 candidate + R2 delta on `feature/p025c-check-in-staff-review`. PR/merge
 remain separately authorized; flag still default-off; nothing deployed.
+
+---
+
+## P-025-D decisions #98–#103 recorded (docs-only, 2026-10-11)
+
+Owner approved all six recommended deferred-capability directions after
+the P1→P3 planning/review cycle; recorded in `docs/product-decisions.md`
+(#98–#103) and `docs/tasks/p025-d-deferred-capability-decisions.md`:
+
+- **#98** recurrence = rule + bounded materialized instances (TZ/DST
+  sub-rules still open; calendar independent).
+- **#99** custom coverage = explicit coach mark only (client-initiation
+  D-05 detail still pending).
+- **#100** summaries = immutable build-time field flags (no AI summaries).
+- **#101** feedback = bounded staff-authored text first (video/
+  attachments still gated by D-09/D-10/legal).
+- **#102** retention direction = owner-defined window (D-10 NOT resolved).
+- **#103** tracker context = explicit manual `entryDate` selection (C1;
+  no passive load, no availability API, no fallback date).
+
+**Next slice:** P-025-D6 is recommended but separately unauthorized.
+Documentation-only task — no implementation, no schema, no flag change,
+nothing deployed.
