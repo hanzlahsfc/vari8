@@ -120,6 +120,68 @@ test("flag-off: gated cards are hidden like the client nav; Daily tracking remai
   ).toBeVisible();
 });
 
+test("an ACTIVE non-CLIENT member (SUPPORT) is denied with 403 — layout else-branch", async ({
+  page,
+}) => {
+  // SUPPORT is a real member but holds no workspaceSettings read, so it
+  // reaches the layout's non-CLIENT denial branch — distinct from the
+  // non-member (no row) and staff-owner (staff branch) paths.
+  await signIn(page, E2E.support);
+  await page.goto(HOME(wsId));
+  await expect(page.getByText(/403|forbidden|denied/i).first()).toBeVisible();
+  await expect(page.locator(".home-card")).toHaveCount(0);
+});
+
+test("inactive membership and foreign-workspace access deny with 403", async ({
+  page,
+}) => {
+  // Task-owned fixture: a REMOVED member row for the client on
+  // workspace B exercises BOTH the inactive-membership guard and the
+  // foreign-workspace denial (deleted after the test).
+  const { PrismaClient } = await import("@prisma/client");
+  const prisma = new PrismaClient();
+  let wsBId = "";
+  try {
+    const wsB = await prisma.workspace.findUniqueOrThrow({
+      where: { slug: E2E.workspaceBSlug },
+    });
+    wsBId = wsB.id;
+    const client = await prisma.user.findUniqueOrThrow({
+      where: { email: E2E.client },
+    });
+    await prisma.workspaceMember.create({
+      data: {
+        workspaceId: wsBId,
+        userId: client.id,
+        role: "CLIENT",
+        status: "REMOVED",
+      },
+    });
+  } finally {
+    await prisma.$disconnect();
+  }
+
+  await signIn(page, E2E.client);
+  await page.goto(HOME(wsBId));
+  await expect(page.getByText(/403|forbidden|denied/i).first()).toBeVisible();
+  await expect(page.locator(".home-card")).toHaveCount(0);
+
+  // Task-owned cleanup.
+  const prisma2 = new PrismaClient();
+  try {
+    const client = await prisma2.user.findUniqueOrThrow({
+      where: { email: E2E.client },
+    });
+    await prisma2.workspaceMember.delete({
+      where: {
+        workspaceId_userId: { workspaceId: wsBId, userId: client.id },
+      },
+    });
+  } finally {
+    await prisma2.$disconnect();
+  }
+});
+
 test("keyboard + a11y + responsive: every card reachable by tab; no overflow at 1440/834/390; no localStorage", async ({
   page,
 }) => {

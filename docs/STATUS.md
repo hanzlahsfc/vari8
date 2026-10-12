@@ -5,6 +5,18 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-11 — FRONTEND-INTEGRATION-I2-R2 coverage repair (candidate)
+
+- Independent-review P2-1 repaired: new E2E asserts an ACTIVE SUPPORT
+  member (reaches the layout's non-CLIENT else-branch — no
+  workspaceSettings read) is 403'd on `/home`, plus an inactive/
+  foreign-workspace denial test (task-owned REMOVED row, cleaned).
+- Mutation: layout role-check removal → SUPPORT test fails; other 6
+  pass. Byte-identical restore. Production files unchanged from
+  `62bd595` — coverage hardening only. P3-1 assessed + documented
+  (layout authoritative; page check is presentation-only).
+- Branch `feature/frontend-i2-client-home`, base `8ed3bd3`.
+
 ## 2026-10-11 — FRONTEND-INTEGRATION-I2 client Home navigation (candidate)
 
 - Owner-approved bounded slice (decision #106): Lily-styled navigation
