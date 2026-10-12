@@ -1371,3 +1371,16 @@ aggregates, new field kinds, or any other frontend feature. Decision
 number 104 remains reserved for the pending Check-In calendar product
 choices on `feature/p025d2-checkin-calendar` (proposed, unconfirmed) —
 no collision is created by this record.
+
+## FRONTEND-INTEGRATION-P2 — owner approval (2026-10-11, implementation prompt)
+
+**Decision #106 (APPROVED):** a bounded client Home navigation surface in
+Lily's visual direction is approved, connecting ONLY existing client
+routes (daily tracking with its history, onboarding, check-ins/calendar)
+with no next/latest data cards, no counts or aggregates, no dashboard
+persistence or widget configuration, no new domains/permissions/settings.
+Card visibility mirrors the existing client nav feature gates; staff see
+the staff shell with a client-surface note instead of cards. Unmatched
+Lily features stay on the roadmap (the P2 register); their intended
+functionality is preserved as product intent without claiming their
+behavior/permissions are settled.

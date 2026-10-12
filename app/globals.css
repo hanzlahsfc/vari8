@@ -1416,3 +1416,60 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── FI-I2 client Home — Lily-direction navigation cards ─────────────
+ * Translucent card treatment on the existing theme tokens — no new
+ * fonts, dependencies, or data. */
+
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  max-width: 56rem;
+  min-width: 0;
+}
+
+.home-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: 0.875rem;
+  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
+  color: var(--color-text-primary);
+  text-decoration: none;
+  min-width: 0;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+
+.home-card:hover {
+  border-color: var(--color-border-strong, var(--color-border));
+  background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+  transform: translateY(-1px);
+}
+
+.home-card:focus-visible {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+}
+
+.home-card__title {
+  font-weight: 600;
+}
+
+.home-card__meta {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-card {
+    transition: none;
+  }
+}
