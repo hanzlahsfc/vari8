@@ -89,6 +89,7 @@ export default async function OnboardingLayout({
         </div>
         {clientShell ? (
           <nav className="shell__nav" aria-label="Workspace">
+            <Link href={`/workspace/${workspaceId}/home`}>Home</Link>
             <Link href={`/workspace/${workspaceId}/daily`}>Daily Tracker</Link>
             {onboardingOn ? (
               <Link href={`/workspace/${workspaceId}/onboarding`}>

@@ -5,6 +5,27 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-11 — FRONTEND-INTEGRATION-I2 client Home navigation (candidate)
+
+- Owner-approved bounded slice (decision #106): Lily-styled navigation
+  cards to existing client routes only — `/workspace/[ws]/home` under
+  `(tracker)` with the same dual-role shell admission; the page loads
+  ZERO data (no next/latest selection, counts, aggregates, dashboard
+  persistence, or new domains). Cards mirror the client nav gates:
+  Daily tracking (incl. history), Onboarding, Check-Ins (calendar lives
+  on that route). Non-CLIENT members keep the staff chrome + a
+  client-surface note (no cards).
+- Implementation: `home/{layout,page}.tsx`, "Home" link in the 3 client
+  navs, `home-*` CSS on existing tokens, E2E spec.
+- Tests-first: module-missing RED (all 5 tests 404) labeled, then green;
+  test-5 loop bug caught and fixed honestly (all 3 widths + localStorage
+  check actually execute).
+- Mutations: wrong-destination card link BITE; ungated check-ins card
+  BITE; page-level non-client admission BITE; a layout member-role
+  mutation did NOT bite (owner never reaches the client branch —
+  disclosed honestly, replaced by the page-level mutation).
+- Base `origin/main` `8ed3bd3`; branch `feature/frontend-i2-client-home`.
+
 ## 2026-10-11 — FRONTEND-INTEGRATION-I1: Lily-styled DailyEntry (merged)
 
 - Owner-approved slice (decision #105): Lily visual treatment on the

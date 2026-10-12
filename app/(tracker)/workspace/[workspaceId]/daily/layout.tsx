@@ -84,6 +84,7 @@ export default async function DailyTrackerLayout({
         </div>
         {clientShell ? (
           <nav className="shell__nav" aria-label="Workspace">
+            <Link href={`/workspace/${workspaceId}/home`}>Home</Link>
             <Link href={`/workspace/${workspaceId}/daily`}>Daily Tracker</Link>
             {isCheckInsEnabled() ? (
               <Link href={`/workspace/${workspaceId}/check-ins`}>
