@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { SignOutButton } from "@/components/sign-out-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { WorkspaceNav } from "@/components/workspace-nav";
 import {
   getAuthorizedWorkspaceSummary,
@@ -55,6 +56,7 @@ export default async function WorkspaceLayout({
             </Link>
           ))}
         </nav>
+        <ThemeToggle />
         <SignOutButton />
       </aside>
       <main className="shell__main" data-testid="shell-main">

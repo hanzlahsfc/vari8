@@ -5,6 +5,27 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-12 — P-024-M1 staff onboarding review merged
+
+- PR #39 merged (`84bb4e06`, parents `a82225b`+`75fcdb8`, tree
+  byte-identical); main CI `verify` SUCCESS 10m49s (run `38238392048`);
+  remote feature branch deleted after green CI. Flags unchanged; nothing
+  deployed.
+
+## 2026-10-12 — FRONTEND-INTEGRATION-I3 light/dark appearance (candidate)
+
+- Owner-approved bounded slice: browser-local `pro-dark`/`pro-white`
+  switching. `ThemeToggle` client component next to `SignOutButton` in
+  the five shells; inline validated bootstrap in `app/layout.tsx`
+  (whitelist-only, no flash, no injection); `localStorage["appearance"]`
+  written on toggle only. No account/workspace persistence, accents,
+  fonts, or new palettes — roadmap preserved.
+- RED-first E2E (5 cases: default dark + both shells, switch+persist,
+  malformed/injection fallback, storage failure, keyboard/a11y×3 +
+  sensitive-storage assertion); 2 mutations BITE (whitelist removal,
+  ignored selection), byte-identical restores sha-verified.
+- Self-review NON-INDEPENDENT. No PR/merge/deploy/flag change.
+
 ## 2026-10-12 — P-024-I1 staff onboarding-review implementation (candidate)
 
 - Owner-authorized implementation (Prompt 81) of decisions #86–#91 +
