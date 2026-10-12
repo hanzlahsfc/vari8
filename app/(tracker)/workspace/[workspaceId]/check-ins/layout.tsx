@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import type { WorkspaceRole } from "@/lib/auth/rbac";
 import { SignOutButton } from "@/components/sign-out-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { WorkspaceNav } from "@/components/workspace-nav";
 import { prisma } from "@/lib/db";
 import {
@@ -118,6 +119,7 @@ export default async function CheckInsLayout({
             ))}
           </nav>
         ) : null}
+        <ThemeToggle />
         <SignOutButton />
       </aside>
       <main className="shell__main" data-testid="shell-main">
