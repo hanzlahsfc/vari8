@@ -119,11 +119,13 @@ describe.skipIf(!enabled)("P-008 schema — tables/columns/constraints", () => {
     );
     const names = rows.map((r) => r.table_name);
     // P-023 (decisions #82–#85) added exactly the reviewed onboarding
-    // pair; P-025-B (decisions #92–#97) later added the reviewed Check-In
+    // pair; P-024 (decisions #86–#91) added its terminal review table;
+    // P-025-B (decisions #92–#97) later added the reviewed Check-In
     // submission pair. Anything else still proves scope creep.
     const reviewed = new Set([
       "onboarding_submission",
       "onboarding_submission_answer",
+      "onboarding_submission_review",
       "checkin_submission",
       "checkin_submission_answer",
     ]);

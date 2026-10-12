@@ -6,6 +6,7 @@ import { requireSessionUser } from "@/lib/auth/route-guard";
 import { resolveScope } from "@/lib/auth/rbac";
 import { resolveDailyEntryMode } from "@/lib/daily-entry/gate";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
+import { isOnboardingSubmissionEnabled } from "@/lib/onboarding/submission-gate";
 import { prisma } from "@/lib/db";
 import { listAccessibleClientProfiles } from "@/lib/workspace/clients";
 import {
@@ -96,6 +97,17 @@ export default async function ClientsPage({
   const showCheckInLinks =
     isCheckInsEnabled() &&
     (checkInLinkScope === "workspace" || checkInLinkScope === "assigned");
+  // P-024: "Onboarding" review links follow the same cosmetic-gate shape —
+  // submission flag on AND the role can read review headers
+  // (workspace/assigned); the destination re-authorizes
+  // `onboardingSubmissionReviews` server-side.
+  const onboardingLinkScope =
+    member?.status === "ACTIVE" && member.role !== undefined
+      ? resolveScope("onboardingSubmissionReviews", "read", member.role)
+      : "denied";
+  const showOnboardingLinks =
+    isOnboardingSubmissionEnabled(process.env.ENABLE_ONBOARDING_SUBMISSION) &&
+    (onboardingLinkScope === "workspace" || onboardingLinkScope === "assigned");
 
   return (
     <div className="catalog-page" data-testid="client-roster">
@@ -126,6 +138,7 @@ export default async function ClientsPage({
               <th scope="col">Updated</th>
               {showDailyLinks ? <th scope="col">Daily</th> : null}
               {showCheckInLinks ? <th scope="col">Check-Ins</th> : null}
+              {showOnboardingLinks ? <th scope="col">Onboarding</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -151,6 +164,16 @@ export default async function ClientsPage({
                       href={`${basePath}/${encodeURIComponent(client.id)}/checkins`}
                     >
                       Check-Ins
+                    </Link>
+                  </td>
+                ) : null}
+                {showOnboardingLinks ? (
+                  <td>
+                    <Link
+                      className="roster-pagination__link"
+                      href={`${basePath}/${encodeURIComponent(client.id)}/onboarding`}
+                    >
+                      Onboarding
                     </Link>
                   </td>
                 ) : null}

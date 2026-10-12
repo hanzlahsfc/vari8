@@ -148,6 +148,10 @@ const PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> = new Set([
   "checkinFormDefinitions",
   "checkinInstances",
   "checkinsCoachReviews",
+  // P-024 (decisions #86–#91 — binding requirement): staff onboarding
+  // submission reviews deny PLATFORM_ADMIN including a dual-role
+  // administrator with an ACTIVE membership of any role.
+  "onboardingSubmissionReviews",
 ]);
 
 /**

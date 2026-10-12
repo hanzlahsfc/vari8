@@ -5,6 +5,27 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-12 — P-024-I1 staff onboarding-review implementation (candidate)
+
+- Owner-authorized implementation (Prompt 81) of decisions #86–#91 +
+  the binding R2 contract on `feature/p024-staff-onboarding-review`
+  (base `a82225b`): `OnboardingSubmissionReview` model (terminal
+  `unique(submissionId)`, declared wide unique for composite coherence
+  FKs, RESTRICT, immutable), `onboardingSubmissionReviews` RBAC
+  resource + platform-admin deny set, consent mapping,
+  `onboarding_submission_review` audit resource, `lib/onboarding/
+review.ts` locked protocol (pre-read → onbassign+member advisories →
+  member FOR UPDATE → in-tx authorize → scope branch → profile →
+  COMPLETED assignment → submission → consent → answers/review →
+  audit last), boundary, staff route + roster link, no-store headers.
+- Gates: unit 10 + new 5; integration 20/20 P-024 + 31/31 P-023
+  regression; E2E spec 9/9 (roster link, owner/assistant/coach paths,
+  denials, flag-off, no-store, a11y/3 widths). Mutations: 3 BITE
+  (consent-before-answers, READ audit, replay consent), 2 documented
+  no-bites (matrix re-denies first — defense-in-depth). Byte-identical
+  restores verified via SHA-256.
+- Self-review NON-INDEPENDENT. No PR/merge/deploy/production flag.
+
 ## 2026-10-11 — FRONTEND-INTEGRATION-I2-R2 coverage repair (candidate)
 
 - Independent-review P2-1 repaired: new E2E asserts an ACTIVE SUPPORT

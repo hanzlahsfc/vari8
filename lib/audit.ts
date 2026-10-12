@@ -96,6 +96,10 @@ export const AUDIT_RESOURCE_TYPES = [
   // markers only — never answer content, labels, option text, dates, or
   // consent detail). Replay writes no event.
   "onboarding_submission",
+  // P-024 (decisions #86–#91): one terminal staff review acknowledgement
+  // per onboarding submission (IDs + structural markers only — reviewer
+  // member ID and the fact of acknowledgement; never answer content).
+  "onboarding_submission_review",
   // P-025-A: Check-In form definition + publish/archive lifecycle (IDs +
   // structural markers only — never labels, options, draft JSON, or field
   // content).
