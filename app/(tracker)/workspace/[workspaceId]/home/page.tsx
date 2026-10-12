@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireSessionUser } from "@/lib/auth/route-guard";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
+import { readOwnNextCheckInInstance } from "@/lib/checkin/instances-boundary";
 import { isOnboardingSubmissionEnabled } from "@/lib/onboarding/submission-gate";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,19 @@ export default async function HomePage({
     process.env.ENABLE_ONBOARDING_SUBMISSION,
   );
   const checkInsOn = isCheckInsEnabled();
+
+  // FI-I4 (decision 107): earliest unfinished Check-In header for the
+  // due card. Own-scope service read; a non-ok result hides the card —
+  // never a fabricated "no pending" state.
+  const nextResult =
+    isClient && checkInsOn
+      ? await readOwnNextCheckInInstance(
+          { user: { id: userId } },
+          { workspaceId },
+        )
+      : null;
+  const nextCheckIn = nextResult?.ok ? nextResult.value.next : null;
+  const nextCheckInOk = nextResult?.ok === true;
 
   return (
     <div className="tracker-page" data-testid="client-home">
@@ -77,6 +91,43 @@ export default async function HomePage({
                 Your scheduled Check-Ins and calendar.
               </span>
             </Link>
+          ) : null}
+          {checkInsOn && nextCheckInOk ? (
+            nextCheckIn !== null ? (
+              <Link
+                className="home-card"
+                data-testid="home-next-checkin"
+                href={`/workspace/${workspaceId}/check-ins/${nextCheckIn.instanceId}`}
+              >
+                <span className="home-card__title">
+                  Next unfinished Check-In
+                </span>
+                <span className="home-card__meta">
+                  {nextCheckIn.formName} — due{" "}
+                  {new Date(nextCheckIn.dueAt).toLocaleString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                  {nextCheckIn.late ? " · Overdue" : ""}
+                </span>
+              </Link>
+            ) : (
+              <Link
+                className="home-card"
+                data-testid="home-next-checkin-empty"
+                href={`/workspace/${workspaceId}/check-ins`}
+              >
+                <span className="home-card__title">
+                  Next unfinished Check-In
+                </span>
+                <span className="home-card__meta">
+                  No unfinished Check-Ins — you&apos;re up to date.
+                </span>
+              </Link>
+            )
           ) : null}
         </nav>
       ) : null}

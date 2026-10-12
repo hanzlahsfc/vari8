@@ -1384,3 +1384,19 @@ the staff shell with a client-surface note instead of cards. Unmatched
 Lily features stay on the roadmap (the P2 register); their intended
 functionality is preserved as product intent without claiming their
 behavior/permissions are settled.
+
+## FRONTEND-INTEGRATION-I4 — owner approval (2026-10-12, implementation prompt)
+
+**Decision #107 (APPROVED):** exactly one functional client Home card is
+approved — the earliest unfinished scheduled Check-In — as a bounded
+exception to #106's "no next/latest data cards" scope. Owner-approved
+selection rule: overdue scheduled items precede future scheduled items;
+cancelled, submitted and reviewed instances are excluded; ordering is
+deterministic by `dueAt` ascending then instance id ascending;
+eligible-state filtering must occur inside the bounded database query —
+never post-filtered from a mixed-state limited list. The card links to
+the existing authorized instance detail route, shows an overdue label
+not carried by colour alone, reuses existing late/viewer-local
+semantics, and renders a truthful no-pending state. No other dashboard
+calculations, health-value cards, counts, aggregates, recurrence,
+reminders, schema changes, or stored lifecycle status are introduced.

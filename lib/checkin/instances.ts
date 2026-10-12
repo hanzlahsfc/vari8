@@ -1204,6 +1204,91 @@ export async function listOwnCheckInInstances(
   });
 }
 
+// ── FI-I4 (decision #107): earliest unfinished Check-In for Home ──────────
+
+/** Minimal authorized header for the Home due-Check-In card — the
+ *  instance id (link target), form name, due instant and the late flag.
+ *  No answers, reviewer identities or aggregates. */
+export type OwnNextCheckInInstance = {
+  instanceId: string;
+  formName: string;
+  dueAt: string;
+  late: boolean;
+};
+
+/**
+ * Earliest unfinished scheduled Check-In for the owning client — the
+ * Home card source (decision #107). Eligible-state filtering happens
+ * INSIDE the bounded query: an instance is eligible only while it
+ * derives SCHEDULED — `cancelledAt`/`cancelledByMemberId` both NULL
+ * (cancellation provenance is paired by CHECK) AND no submission exists
+ * (a submission makes it SUBMITTED or REVIEWED — the projector's
+ * `hasReview` can only hold on an existing submission). Overdue items
+ * precede future items because `dueAt` ascends; ties break on `id` —
+ * identical to the own-list ordering. `take: 1` bounds the read so
+ * excluded rows can never hide an eligible instance behind the shared
+ * 200-row list limit. Same own-scope authorization protocol as the
+ * header list — profile rebinding → lockedAuthorize → own scope.
+ */
+export async function getOwnNextCheckInInstance(
+  session: SessionLike,
+  input: { workspaceId: string },
+  deps: CheckInInstanceDeps = {},
+): Promise<OwnNextCheckInInstance | null> {
+  const db = deps.db ?? defaultPrisma;
+  if (!validId(input.workspaceId))
+    throw new CheckInInstanceError("invalid_input");
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0)
+    throw new AccessDeniedError("unauthenticated", "checkinInstances", "read");
+
+  return db.$transaction(async (tx) => {
+    // Own-profile rebinding — the target is server-derived, never input.
+    const profile = await tx.clientProfile.findFirst({
+      where: { workspaceId: input.workspaceId, userId },
+      select: { id: true },
+    });
+    if (!profile)
+      throw new AccessDeniedError("not_owner", "checkinInstances", "read");
+    const { ctx } = await lockedAuthorize(
+      tx,
+      session,
+      {
+        resource: "checkinInstances",
+        action: "read",
+        workspaceId: input.workspaceId,
+        clientProfileId: profile.id,
+      },
+      "*",
+    );
+    if (ctx.grantedScope !== "own")
+      throw new AccessDeniedError("role_denied", "checkinInstances", "read");
+
+    const row = await tx.checkInInstance.findFirst({
+      where: {
+        workspaceId: input.workspaceId,
+        clientProfileId: profile.id,
+        cancelledAt: null,
+        cancelledByMemberId: null,
+        submissions: { none: {} },
+      },
+      select: {
+        id: true,
+        dueAt: true,
+        form: { select: { name: true } },
+      },
+      orderBy: [{ dueAt: "asc" }, { id: "asc" }],
+    });
+    if (!row) return null;
+    return {
+      instanceId: row.id,
+      formName: row.form.name,
+      dueAt: row.dueAt.toISOString(),
+      late: new Date().getTime() > row.dueAt.getTime(),
+    } satisfies OwnNextCheckInInstance;
+  });
+}
+
 // ── Client: own detail (definition + consent-gated submitted answers) ───
 
 export type OwnCheckInInstanceDetail = {
