@@ -5,6 +5,15 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-12 — I4-R2 scope-barrier coverage (tests-only)
+
+- Review P3-1 closed with a real-PG regression: WORKSPACE_OWNER owning
+  a clientProfile with eligible data is denied by `grantedScope ===
+  "own"` after rebinding — zero result/audit/write; gate-removal
+  mutation BITES. Coverage hardening, not a repaired vulnerability.
+  P3-2 `take:1`→`findFirst` wording corrected. Production files
+  byte-identical. Full integration 671 (new spec 8/8, stable ×3).
+
 ## 2026-10-12 — FRONTEND-INTEGRATION-I4 client Home due-Check-In card (candidate)
 
 - Decision #107 recorded. New `getOwnNextCheckInInstance` service

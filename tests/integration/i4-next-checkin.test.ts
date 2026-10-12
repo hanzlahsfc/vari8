@@ -311,6 +311,40 @@ describe.skipIf(!enabled)("FI-I4 next-Check-In selection (real PG)", () => {
     expect((await next(s))?.instanceId).toBe(mine.id);
   });
 
+  // I4-R2 / review P3-1 regression coverage: a WORKSPACE_OWNER who ALSO
+  // owns a clientProfile passes profile rebinding, so this exercises the
+  // grantedScope === "own" barrier itself — distinct from the
+  // PLATFORM_ADMIN dual-role policy.
+  it("denies a workspace-scope member who owns a clientProfile — the grantedScope barrier", async () => {
+    const s = await setup();
+    // The owner user ALSO holds a coherent clientProfile in this
+    // workspace, so rebinding succeeds and only the scope gate stops them.
+    const ownerProfile = await prisma.clientProfile.create({
+      data: {
+        workspaceId: s.w.id,
+        userId: s.owner.id,
+        name: "Owner's own profile",
+      },
+    });
+    await prisma.checkInInstance.create({
+      data: {
+        workspaceId: s.w.id,
+        clientProfileId: ownerProfile.id,
+        formId: s.formId,
+        formVersionId: s.versionId,
+        dueAt: new Date("2020-01-01T00:00:00.000Z"),
+        scheduledByMemberId: s.ownerMember.id,
+      },
+    });
+    const auditsBefore = await prisma.auditEvent.count();
+    await expect(next(s, s.owner.id)).rejects.toBeInstanceOf(AccessDeniedError);
+    // Nothing returned, nothing audited, nothing written.
+    await expect(next(s, s.owner.id).catch((e) => e)).resolves.toBeInstanceOf(
+      AccessDeniedError,
+    );
+    expect(await prisma.auditEvent.count()).toBe(auditsBefore);
+  });
+
   it("denies non-own scopes + unauthenticated; returns only header fields; zero audits", async () => {
     const s = await setup();
     await schedule(s, "2030-01-01T00:00:00.000Z");

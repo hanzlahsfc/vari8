@@ -14,7 +14,8 @@
 - Query: single `checkInInstance.findFirst` —
   `cancelledAt IS NULL AND cancelledByMemberId IS NULL AND
 submissions: none` (projector-equivalent to derived SCHEDULED) →
-  `ORDER BY dueAt ASC, id ASC` → `take 1`. Filtering is fully in-SQL;
+  `ORDER BY dueAt ASC, id ASC` → `findFirst` (equivalent LIMIT 1).
+  Filtering is fully in-SQL;
   overdue precedes future by dueAt order.
 - Returns `{ instanceId, formName, dueAt, late }` — header-only, no
   answers/identities/aggregates; passive read, no audit (same as the
@@ -42,3 +43,17 @@ submissions: none` (projector-equivalent to derived SCHEDULED) →
 - E2E `home-next-checkin.spec.ts` 4/4 (browser): overdue card + detail
   link, earliest-future + cancelled excluded + truthful empty state,
   flag-off/staff hiding, keyboard focus + light theme at 390.
+
+## I4-R2 (review P3-1) — scope-barrier regression coverage
+
+Independent review P3-1: the prior owner-denial case failed at profile
+rebinding (owners have no clientProfile), so `grantedScope === "own"`
+was uncovered. New fixture: a WORKSPACE_OWNER who also owns a coherent
+clientProfile with an eligible instance — rebinding succeeds and the
+scope gate is the only barrier. Verified: unmodified service denies
+(AccessDeniedError), zero result/audit/write; removing ONLY the gate
+makes the forbidden principal read the instance (mutation BITES);
+restore byte-identical. This is coverage hardening — no production
+vulnerability was found or repaired. `findFirst` wording corrected
+(P3-2). "Overdue" vs list "Late" wording difference stays disclosed
+(P3-3 — UI unchanged in this task).
