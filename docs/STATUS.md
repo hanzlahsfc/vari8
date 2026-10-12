@@ -9,7 +9,7 @@ are complete; product direction is now the configurable coaching system in
 
 - Review P3-1 closed with a real-PG regression: WORKSPACE_OWNER owning
   a clientProfile with eligible data is denied by `grantedScope ===
-  "own"` after rebinding — zero result/audit/write; gate-removal
+"own"` after rebinding — zero result/audit/write; gate-removal
   mutation BITES. Coverage hardening, not a repaired vulnerability.
   P3-2 `take:1`→`findFirst` wording corrected. Production files
   byte-identical. Full integration 671 (new spec 8/8, stable ×3).
