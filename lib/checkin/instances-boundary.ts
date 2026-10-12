@@ -12,6 +12,7 @@ import {
   type CheckInInstanceState,
   listCheckInInstancesForClient,
   listOwnCheckInInstances as serviceListOwnCheckInInstances,
+  getOwnNextCheckInInstance as serviceGetOwnNextCheckInInstance,
   getOwnCheckInInstance as serviceGetOwnCheckInInstance,
   scheduleCheckInInstance,
   cancelCheckInInstance,
@@ -26,6 +27,7 @@ import {
   type ScheduleFormOption,
   type StaffCheckInInstanceItem,
   type OwnCheckInInstanceItem,
+  type OwnNextCheckInInstance,
   type SubmitCheckInInstanceInput,
   type SubmitCheckInInstanceResult,
   listCheckInSubmissionsForClient,
@@ -147,6 +149,21 @@ export async function listOwnCheckInInstances(
   return guard(process.env, () =>
     serviceListOwnCheckInInstances(session as never, input, deps),
   );
+}
+
+/**
+ * FI-I4 (decision #107): earliest unfinished Check-In for the client
+ * Home card. Feature gate first, own-scope rebinding inside the
+ * service; `next` is null for the truthful no-pending state.
+ */
+export async function readOwnNextCheckInInstance(
+  session: Session,
+  input: { workspaceId: string },
+  deps: CheckInInstanceDeps = {},
+): Promise<CheckInSafeResult<{ next: OwnNextCheckInInstance | null }>> {
+  return guard(process.env, async () => ({
+    next: await serviceGetOwnNextCheckInInstance(session as never, input, deps),
+  }));
 }
 
 export async function getOwnCheckInInstance(

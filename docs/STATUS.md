@@ -5,6 +5,23 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-12 — FRONTEND-INTEGRATION-I4 client Home due-Check-In card (candidate)
+
+- Decision #107 recorded. New `getOwnNextCheckInInstance` service
+  (`lib/checkin/instances.ts`): projector-equivalent eligible predicates
+  inside a bounded `findFirst` (`cancelled* IS NULL` + `submissions:
+none`, `dueAt asc, id asc`, take 1) — same own-profile-rebind +
+  lockedAuthorize + own-scope protocol as the header list.
+  Boundary `readOwnNextCheckInInstance` (flag-first, non-disclosing);
+  Home renders a "Next unfinished Check-In" card (overdue label,
+  truthful empty state, hidden on denial/off).
+- RED-first integration spec on disposable `i4_int` PG (7/7); 5
+  mutations BITE (submission exclusion, cancellation exclusion,
+  ordering, post-limit selection, own-profile scope) — grantedScope
+  gate is deliberate defense-in-depth parity (no-bite documented);
+  restores sha-verified. E2E `home-next-checkin.spec.ts` 4/4.
+- Branch `feature/frontend-i4-next-checkin` on `107860e4`.
+
 ## 2026-10-12 — P-024-M1 staff onboarding review merged
 
 - PR #39 merged (`84bb4e06`, parents `a82225b`+`75fcdb8`, tree
