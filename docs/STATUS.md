@@ -5,6 +5,17 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## 2026-10-12 — APPEARANCE-R2 live-switch staleness: NOT a defect (no code change)
+
+- Reproduced on an isolated prod build of `107860e4` + disposable
+  `acc2_db` (Chromium 153): after Dark→Light toggle, `color-mix(var())`
+  backgrounds interpolate over their declared ~180ms transition and
+  converge without navigation in both directions (Home `.home-card` +
+  DailyEntry `.de-card` verified; cold-load light correct before paint).
+  The acceptance report's "stuck until navigation" reading sampled the
+  mid-transition frame. Task record `docs/tasks/appearance-r2.md`;
+  builder report in Downloads. No production change made.
+
 ## 2026-10-12 — P-024-M1 staff onboarding review merged
 
 - PR #39 merged (`84bb4e06`, parents `a82225b`+`75fcdb8`, tree
