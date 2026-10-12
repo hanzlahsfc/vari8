@@ -63,6 +63,14 @@ const nextConfig: NextConfig = {
         source: "/workspace/:workspaceId/check-ins/:instanceId",
         headers: [{ key: "Cache-Control", value: "no-store" }],
       },
+      {
+        // P-024: staff onboarding-review route carries consent-gated
+        // client answer content — explicit no-store on the leaf covers
+        // the page GET and both Server Action POSTs; it does not overlap
+        // the P-023 `/workspace/:workspaceId/onboarding` client sources.
+        source: "/workspace/:workspaceId/clients/:clientProfileId/onboarding",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
     ];
   },
 };

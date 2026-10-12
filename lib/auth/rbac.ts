@@ -61,6 +61,8 @@ export const RESOURCES = [
   "checkinFormDefinitions",
   // P-025-B: one-off Check-In instance headers + schedule/cancel.
   "checkinInstances",
+  // P-024 (product-decisions #86–#91): staff onboarding-submission review.
+  "onboardingSubmissionReviews",
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
 
@@ -321,6 +323,18 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
     ASSISTANT_COACH: D,
     SUPPORT: D,
     CLIENT: c("own", "own"),
+  },
+  // P-024 (decision #37 direction, approved #86–#91): owner reads at
+  // workspace scope but may NOT mark; coach reads+marks at assigned scope;
+  // assistant reads assigned, no mark; SUPPORT/CLIENT/PLATFORM_ADMIN denied
+  // (the deny-set enforces the dual-role platform-admin case in guard.ts).
+  onboardingSubmissionReviews: {
+    PLATFORM_ADMIN: D,
+    WORKSPACE_OWNER: c("workspace", "denied"),
+    COACH: c("assigned", "assigned"),
+    ASSISTANT_COACH: c("assigned", "denied"),
+    SUPPORT: D,
+    CLIENT: D,
   },
 };
 

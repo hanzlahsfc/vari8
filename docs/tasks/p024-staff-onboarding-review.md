@@ -169,10 +169,43 @@ real-client data.
 ## Status
 
 Owner-approved decisions recorded on `origin/main`'s documentation line
-via `docs/p024-staff-onboarding-review-decisions`. **Implementation
-remains unauthorized** — it requires a separate implementation prompt
-after this record is reviewed and merged. No PR, merge, deployment,
-production flag, or real-client data occurred for this task.
+via `docs/p024-staff-onboarding-review-decisions`.
+
+**P-024-I1 implementation wave (this branch,
+`feature/p024-staff-onboarding-review`):** Prompt 81 authorized
+implementation within decisions #86–#91 and the binding R2 contract.
+Delivered on this branch:
+
+- `OnboardingSubmissionReview` Prisma model — `@@unique([submissionId])`
+  terminal anchor, `@@unique([id, workspaceId, clientProfileId])` on
+  `OnboardingSubmission` as the coherence-FK target, RESTRICT FKs, no
+  `updatedAt` — plus migration `20261012000000_p024_onboarding_review`
+  declaring the composite coherence/reviewer/client FKs in SQL.
+- `onboardingSubmissionReviews` RBAC resource (matrix per the settled
+  direction) + `PLATFORM_ADMIN_DENIED_RESOURCES` membership; consent
+  mapping; `onboarding_submission_review` audit resource.
+- `lib/onboarding/review.ts` — unlocked answer-free header list,
+  `readSubmissionReviewDetail` and `markSubmissionReviewed`, each one
+  Serializable transaction in the reviewed lock order
+  (`onbassign:{ws}:{cp}:{form}` → `member:{ws}:{user}` advisories →
+  member FOR UPDATE → in-tx authorize → assigned-scope ACTIVE
+  ClientAssignment re-resolve + FOR UPDATE / owner never touches it →
+  profile FOR UPDATE → COMPLETED form-assignment FOR UPDATE →
+  submission FOR UPDATE → consent FOR UPDATE → answers or review
+  insert → structural audit LAST). Replay returns `already_reviewed`
+  after re-checking current consent; P2002 re-enters the whole protocol
+  once.
+- `lib/onboarding/review-boundary.ts` — the only app-facing entry;
+  `ENABLE_ONBOARDING_SUBMISSION` gate first, non-disclosing vocabulary.
+- Route `/workspace/[ws]/clients/[cp]/onboarding` (page + actions +
+  panel), roster "Onboarding" column, route-scoped no-store in
+  `next.config.ts`.
+- Tests: unit RBAC/audit/consent (`tests/unit/onboarding-review.test.ts`),
+  20-case real-PG integration (`tests/integration/p024-onboarding-review.test.ts`),
+  9-case E2E (`tests/e2e/staff-onboarding-review.spec.ts`).
+
+Self-review is NON-INDEPENDENT. No PR, merge, deployment, production
+flag, or real-client data occurred for this task.
 
 ## Next gate
 

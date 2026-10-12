@@ -110,6 +110,9 @@ const PROTECTED_OPERATIONS: Partial<Record<Resource, readonly ConsentKind[]>> =
     // production consent registry stays unconfigured so production
     // onboarding submission fails closed even if the flag is set.
     onboardingSubmissions: BASE_CONSENTS,
+    // P-024 (decisions #86–#91): staff review rides the same dev/test
+    // registry resolution; production stays unconfigured/fail-closed.
+    onboardingSubmissionReviews: BASE_CONSENTS,
   };
 
 /** Required consent kinds for a resource, or `undefined` when not consent-protected. */

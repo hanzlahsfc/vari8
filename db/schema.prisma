@@ -165,6 +165,7 @@ model Workspace {
   checkInSubmissions            CheckInSubmission[]
   checkInSubmissionAnswers      CheckInSubmissionAnswer[]
   checkInReviews                CheckInReview[]
+  onboardingSubmissionReviews   OnboardingSubmissionReview[]
 
   @@map("workspace")
 }
@@ -207,6 +208,7 @@ model WorkspaceMember {
   checkInInstancesCancelled CheckInInstance[]    @relation("CheckInInstanceCanceller")
   checkInSubmissions        CheckInSubmission[]  @relation("CheckInSubmissionSubmittedByMember")
   checkInReviews            CheckInReview[]      @relation("CheckInReviewReviewer")
+  onboardingSubmissionReviewsReviewed OnboardingSubmissionReview[] @relation("OnboardingReviewReviewer")
 
   parametersCreated         ParameterDefinition[]     @relation("ParameterDefinitionCreator")
   parametersUpdated         ParameterDefinition[]     @relation("ParameterDefinitionUpdater")
@@ -259,6 +261,7 @@ model ClientProfile {
   checkInSubmissions    CheckInSubmission[]        @relation("CheckInSubmissionClient")
   checkInReviews        CheckInReview[]            @relation("CheckInReviewClient")
   checkInAnswers        CheckInSubmissionAnswer[]  @relation("CheckInAnswerClient")
+  onboardingSubmissionReviews OnboardingSubmissionReview[] @relation("OnboardingReviewClient")
 
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
   @@unique([workspaceId, userId])
@@ -1056,6 +1059,7 @@ model OnboardingSubmission {
   submittedByUser   User                         @relation("OnboardingSubmissionSubmittedByUser", fields: [submittedByUserId], references: [id], onDelete: Restrict)
   submittedByMember WorkspaceMember              @relation("OnboardingSubmissionSubmittedByMember", fields: [submittedByMemberId], references: [id], onDelete: Restrict)
   answers           OnboardingSubmissionAnswer[]
+  review            OnboardingSubmissionReview?
 
   // At-most-one durable submission per assignment — the idempotency anchor
   // and final concurrency authority (P2002 → abort → retry hits the
@@ -1063,6 +1067,11 @@ model OnboardingSubmission {
   @@unique([assignmentId])
   // Composite target for the answer same-workspace foreign key (raw SQL).
   @@unique([id, workspaceId])
+  // P-024: composite target for the review's (submission, workspace,
+  // client) coherence foreign key (raw SQL). `id` already implies
+  // uniqueness; the wider key exists specifically so a review row can
+  // never drift outside its submission's client/workspace tuple.
+  @@unique([id, workspaceId, clientProfileId])
   // Own-assignment discovery list and the workspace-scoped id-cursor convention.
   @@index([workspaceId, clientProfileId])
   @@index([workspaceId, id])
@@ -1089,6 +1098,33 @@ model OnboardingSubmissionAnswer {
   @@unique([submissionId, fieldId])
   @@index([workspaceId])
   @@map("onboarding_submission_answer")
+}
+
+// P-024 — staff onboarding-submission review acknowledgement (decision
+// #86: one workspace-terminal review per submission; immutable
+// provenance only — who and when. No notes, no feedback, no workflow
+// gate; submission and answer rows are never mutated.)
+model OnboardingSubmissionReview {
+  id                 String   @id @default(cuid())
+  workspaceId        String   @map("workspace_id")
+  clientProfileId    String   @map("client_profile_id")
+  submissionId       String   @map("submission_id")
+  reviewedByMemberId String   @map("reviewed_by_member_id")
+  reviewedAt         DateTime @default(now()) @map("reviewed_at") @db.Timestamptz(6)
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  // Immutable — no updatedAt (terminal acknowledgement).
+
+  workspace        Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile    ClientProfile         @relation("OnboardingReviewClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  submission       OnboardingSubmission  @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  reviewedByMember WorkspaceMember       @relation("OnboardingReviewReviewer", fields: [reviewedByMemberId], references: [id], onDelete: Restrict)
+
+  // #86 workspace-terminal anchor — at most one review per submission;
+  // idempotency + final concurrency authority.
+  @@unique([submissionId])
+  @@index([workspaceId, clientProfileId])
+  @@index([workspaceId, id])
+  @@map("onboarding_submission_review")
 }
 
 // ── P-025-A Check-In form definitions (decisions #92–#97) ──────────────────

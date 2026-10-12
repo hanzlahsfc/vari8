@@ -317,6 +317,9 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         // — consent-gated health data, reviewed in decisions #82–#85.
         "onboarding_submission",
         "onboarding_submission_answer",
+        // P-024: terminal staff review acknowledgement — immutable
+        // provenance only, reviewed in decisions #86–#91.
+        "onboarding_submission_review",
         // P-025-A: staff-managed Check-In form definitions + immutable
         // published versions — no client data, reviewed in decisions
         // #92–#97.
