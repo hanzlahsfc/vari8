@@ -319,7 +319,8 @@ export function DashboardEditor({
       <div className="dashboard-toolbar" role="status" aria-live="polite">
         <label>
           Dashboard name{" "}
-          <input autoComplete="off"
+          <input
+            autoComplete="off"
             value={config.name}
             maxLength={80}
             disabled={!canEdit}
@@ -450,7 +451,8 @@ export function DashboardEditor({
       {canEdit && !preview ? (
         <label>
           Add widget{" "}
-          <select autoComplete="off"
+          <select
+            autoComplete="off"
             data-testid="add-widget"
             onChange={(e) => {
               if (e.target.value) addWidget(e.target.value as WidgetKind);
@@ -624,7 +626,8 @@ function SettingsPanel({
       <legend>Widget settings</legend>
       <label>
         Title{" "}
-        <input autoComplete="off"
+        <input
+          autoComplete="off"
           value={s.title}
           maxLength={80}
           onChange={(e) => set({ title: e.target.value })}
@@ -632,7 +635,8 @@ function SettingsPanel({
       </label>
       <label>
         Source{" "}
-        <select autoComplete="off"
+        <select
+          autoComplete="off"
           value={s.source}
           onChange={(e) => set({ source: e.target.value })}
         >
@@ -645,7 +649,8 @@ function SettingsPanel({
       </label>
       <label>
         Summary{" "}
-        <select autoComplete="off"
+        <select
+          autoComplete="off"
           value={s.summary}
           onChange={(e) => set({ summary: e.target.value })}
         >
@@ -659,7 +664,8 @@ function SettingsPanel({
       {widgetPeriodOptions(widget.kind).length > 1 ? (
         <label>
           Period{" "}
-          <select autoComplete="off"
+          <select
+            autoComplete="off"
             value={s.period}
             onChange={(e) => set({ period: e.target.value })}
           >
@@ -673,7 +679,8 @@ function SettingsPanel({
       ) : null}
       <label>
         History{" "}
-        <select autoComplete="off"
+        <select
+          autoComplete="off"
           value={s.historyPeriod}
           onChange={(e) =>
             set({
@@ -691,7 +698,8 @@ function SettingsPanel({
       {widgetOptionOptions(widget.kind).length > 1 ? (
         <label>
           Option{" "}
-          <select autoComplete="off"
+          <select
+            autoComplete="off"
             value={s.option}
             onChange={(e) => set({ option: e.target.value })}
           >
@@ -705,7 +713,8 @@ function SettingsPanel({
       ) : null}
       <label>
         Unit{" "}
-        <input autoComplete="off"
+        <input
+          autoComplete="off"
           value={s.unit}
           maxLength={16}
           onChange={(e) => set({ unit: e.target.value })}
@@ -713,7 +722,8 @@ function SettingsPanel({
       </label>
       {widgetTargetAvailable(widget.kind) ? (
         <label>
-          <input autoComplete="off"
+          <input
+            autoComplete="off"
             type="checkbox"
             checked={s.target}
             onChange={(e) => set({ target: e.target.checked })}
@@ -726,7 +736,8 @@ function SettingsPanel({
           <legend>Fields</legend>
           {staticFields.map((f) => (
             <label key={f}>
-              <input autoComplete="off"
+              <input
+                autoComplete="off"
                 type="checkbox"
                 checked={s.fields.includes(f)}
                 onChange={(e) =>
@@ -744,7 +755,8 @@ function SettingsPanel({
       ) : (
         <label>
           Fields (bounded, ≤8){" "}
-          <input autoComplete="off"
+          <input
+            autoComplete="off"
             value={s.fields.join(", ")}
             onChange={(e) =>
               set({
@@ -764,7 +776,8 @@ function SettingsPanel({
           {s.fields.map((f) => (
             <label key={f}>
               {f}{" "}
-              <input autoComplete="off"
+              <input
+                autoComplete="off"
                 value={s.labels[f] ?? ""}
                 maxLength={80}
                 onChange={(e) =>
