@@ -166,6 +166,7 @@ model Workspace {
   checkInSubmissionAnswers      CheckInSubmissionAnswer[]
   checkInReviews                CheckInReview[]
   onboardingSubmissionReviews   OnboardingSubmissionReview[]
+  clientDashboardLayouts        ClientDashboardLayout[]
 
   @@map("workspace")
 }
@@ -201,14 +202,15 @@ model WorkspaceMember {
   dailyEntryRevisionsCreated     DailyEntryRevision[]   @relation("DailyEntryRevisionCreator")
   onboardingSubmissionsSubmitted OnboardingSubmission[] @relation("OnboardingSubmissionSubmittedByMember")
 
-  checkInFormsCreated       CheckInForm[]        @relation("CheckInFormCreator")
-  checkInFormsArchived      CheckInForm[]        @relation("CheckInFormArchiver")
-  checkInFormVersions       CheckInFormVersion[] @relation("CheckInFormVersionPublisher")
-  checkInInstancesScheduled CheckInInstance[]    @relation("CheckInInstanceScheduler")
-  checkInInstancesCancelled CheckInInstance[]    @relation("CheckInInstanceCanceller")
-  checkInSubmissions        CheckInSubmission[]  @relation("CheckInSubmissionSubmittedByMember")
-  checkInReviews            CheckInReview[]      @relation("CheckInReviewReviewer")
+  checkInFormsCreated                 CheckInForm[]                @relation("CheckInFormCreator")
+  checkInFormsArchived                CheckInForm[]                @relation("CheckInFormArchiver")
+  checkInFormVersions                 CheckInFormVersion[]         @relation("CheckInFormVersionPublisher")
+  checkInInstancesScheduled           CheckInInstance[]            @relation("CheckInInstanceScheduler")
+  checkInInstancesCancelled           CheckInInstance[]            @relation("CheckInInstanceCanceller")
+  checkInSubmissions                  CheckInSubmission[]          @relation("CheckInSubmissionSubmittedByMember")
+  checkInReviews                      CheckInReview[]              @relation("CheckInReviewReviewer")
   onboardingSubmissionReviewsReviewed OnboardingSubmissionReview[] @relation("OnboardingReviewReviewer")
+  dashboardLayoutsEdited              ClientDashboardLayout[]      @relation("DashboardLayoutEditor")
 
   parametersCreated         ParameterDefinition[]     @relation("ParameterDefinitionCreator")
   parametersUpdated         ParameterDefinition[]     @relation("ParameterDefinitionUpdater")
@@ -249,19 +251,20 @@ model ClientProfile {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  assignments           ClientAssignment[]         @relation("ClientAssignmentClient")
-  consents              ConsentRecord[]
-  auditSubjectEvents    AuditEvent[]
-  onboardingAssignments OnboardingFormAssignment[] @relation("OnboardingAssignmentClient")
-  clientSetups          ClientSetup[]              @relation("ClientSetupClient")
-  clientSetupPins       ClientSetupPin[]           @relation("ClientSetupPinClient")
-  dailyEntries          DailyEntry[]               @relation("ClientProfileDailyEntries")
-  onboardingSubmissions OnboardingSubmission[]     @relation("OnboardingSubmissionClient")
-  checkInInstances      CheckInInstance[]          @relation("CheckInInstanceClient")
-  checkInSubmissions    CheckInSubmission[]        @relation("CheckInSubmissionClient")
-  checkInReviews        CheckInReview[]            @relation("CheckInReviewClient")
-  checkInAnswers        CheckInSubmissionAnswer[]  @relation("CheckInAnswerClient")
+  assignments                 ClientAssignment[]           @relation("ClientAssignmentClient")
+  consents                    ConsentRecord[]
+  auditSubjectEvents          AuditEvent[]
+  onboardingAssignments       OnboardingFormAssignment[]   @relation("OnboardingAssignmentClient")
+  clientSetups                ClientSetup[]                @relation("ClientSetupClient")
+  clientSetupPins             ClientSetupPin[]             @relation("ClientSetupPinClient")
+  dailyEntries                DailyEntry[]                 @relation("ClientProfileDailyEntries")
+  onboardingSubmissions       OnboardingSubmission[]       @relation("OnboardingSubmissionClient")
+  checkInInstances            CheckInInstance[]            @relation("CheckInInstanceClient")
+  checkInSubmissions          CheckInSubmission[]          @relation("CheckInSubmissionClient")
+  checkInReviews              CheckInReview[]              @relation("CheckInReviewClient")
+  checkInAnswers              CheckInSubmissionAnswer[]    @relation("CheckInAnswerClient")
   onboardingSubmissionReviews OnboardingSubmissionReview[] @relation("OnboardingReviewClient")
+  dashboardLayouts            ClientDashboardLayout[]      @relation("ClientDashboardLayoutClient")
 
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
   @@unique([workspaceId, userId])
@@ -1114,10 +1117,10 @@ model OnboardingSubmissionReview {
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   // Immutable — no updatedAt (terminal acknowledgement).
 
-  workspace        Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  clientProfile    ClientProfile         @relation("OnboardingReviewClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
-  submission       OnboardingSubmission  @relation(fields: [submissionId], references: [id], onDelete: Restrict)
-  reviewedByMember WorkspaceMember       @relation("OnboardingReviewReviewer", fields: [reviewedByMemberId], references: [id], onDelete: Restrict)
+  workspace        Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile    ClientProfile        @relation("OnboardingReviewClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  submission       OnboardingSubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  reviewedByMember WorkspaceMember      @relation("OnboardingReviewReviewer", fields: [reviewedByMemberId], references: [id], onDelete: Restrict)
 
   // #86 workspace-terminal anchor — at most one review per submission;
   // idempotency + final concurrency authority.
@@ -1338,4 +1341,31 @@ model CheckInReview {
   @@unique([submissionId])
   @@index([workspaceId, clientProfileId])
   @@map("checkin_review")
+}
+
+model ClientDashboardLayout {
+  id                String   @id @default(cuid())
+  workspaceId       String   @map("workspace_id")
+  clientProfileId   String   @map("client_profile_id")
+  // Configuration only — widgets, per-breakpoint rects and bounded
+  // settings. No measurements, answers, fixture records or health
+  // values are ever stored here.
+  config            Json
+  configVersion     Int      @default(1) @map("config_version")
+  // Optimistic CAS — every autosave carries expectedRevision.
+  revision          Int      @default(1)
+  updatedByMemberId String?  @map("updated_by_member_id")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile   ClientProfile    @relation("ClientDashboardLayoutClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  updatedByMember WorkspaceMember? @relation("DashboardLayoutEditor", fields: [updatedByMemberId], references: [id], onDelete: Restrict)
+
+  // One arrangement per (workspace, client); (id, workspaceId) is the
+  // composite target for same-workspace coherence FKs (raw SQL).
+  @@unique([workspaceId, clientProfileId])
+  @@unique([id, workspaceId])
+  @@index([clientProfileId])
+  @@map("client_dashboard_layout")
 }

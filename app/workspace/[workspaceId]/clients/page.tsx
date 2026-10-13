@@ -6,6 +6,7 @@ import { requireSessionUser } from "@/lib/auth/route-guard";
 import { resolveScope } from "@/lib/auth/rbac";
 import { resolveDailyEntryMode } from "@/lib/daily-entry/gate";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
+import { isClientDashboardEnabled } from "@/lib/dashboard/gate";
 import { isOnboardingSubmissionEnabled } from "@/lib/onboarding/submission-gate";
 import { prisma } from "@/lib/db";
 import { listAccessibleClientProfiles } from "@/lib/workspace/clients";
@@ -108,6 +109,15 @@ export default async function ClientsPage({
   const showOnboardingLinks =
     isOnboardingSubmissionEnabled(process.env.ENABLE_ONBOARDING_SUBMISSION) &&
     (onboardingLinkScope === "workspace" || onboardingLinkScope === "assigned");
+  // DASHBOARD-I1 (decision 108): same cosmetic-gate shape — flag on AND
+  // the role can read layouts; the destination re-authorizes.
+  const dashboardLinkScope =
+    member?.status === "ACTIVE" && member.role !== undefined
+      ? resolveScope("clientDashboards", "read", member.role)
+      : "denied";
+  const showDashboardLinks =
+    isClientDashboardEnabled() &&
+    (dashboardLinkScope === "workspace" || dashboardLinkScope === "assigned");
 
   return (
     <div className="catalog-page" data-testid="client-roster">
@@ -139,6 +149,7 @@ export default async function ClientsPage({
               {showDailyLinks ? <th scope="col">Daily</th> : null}
               {showCheckInLinks ? <th scope="col">Check-Ins</th> : null}
               {showOnboardingLinks ? <th scope="col">Onboarding</th> : null}
+              {showDashboardLinks ? <th scope="col">Dashboard</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -164,6 +175,17 @@ export default async function ClientsPage({
                       href={`${basePath}/${encodeURIComponent(client.id)}/checkins`}
                     >
                       Check-Ins
+                    </Link>
+                  </td>
+                ) : null}
+                {showDashboardLinks ? (
+                  <td>
+                    <Link
+                      className="roster-pagination__link"
+                      href={`${basePath}/${encodeURIComponent(client.id)}/dashboard`}
+                      data-testid={`dashboard-link-${client.id}`}
+                    >
+                      Dashboard
                     </Link>
                   </td>
                 ) : null}

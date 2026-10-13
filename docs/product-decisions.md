@@ -1400,3 +1400,22 @@ not carried by colour alone, reuses existing late/viewer-local
 semantics, and renders a truthful no-pending state. No other dashboard
 calculations, health-value cards, counts, aggregates, recurrence,
 reminders, schema changes, or stored lifecycle status are introduced.
+
+**Decision #108 (APPROVED):** persisted coach-configured client dashboard
+layouts (DASHBOARD-I1, under the independently approved DASHBOARD-P3
+contract). Owner-approved product rules: one shared arrangement per
+client with a server-filtered client subset (`settings.visibility`
+staff/client, default staff); automatic saving with truthful
+Saving/Saved/Failed/Conflict feedback and no separate Save or Publish
+step; workspace owners and ACTIVE assigned coaches may edit; assigned
+assistants view only; clients view their own committed layout and
+cannot edit; layout permission never grants widget-data permission;
+unimplemented intended widgets remain truthful not-connected
+placeholders preserving the 20-widget/9-category Lily catalogue.
+Engineering contract: config-only `ClientDashboardLayout` (no
+measurements/answers), bounded allowlisted validation, `cdash`-then-
+`member` advisory order per the chkin/csetup convention, atomic
+revision CAS with reconcile-on-409, structural write audits only,
+trusted-runtime `ENABLE_CLIENT_DASHBOARD` gate. Personal appearance
+preferences remain separate; no widget calculations or new data
+domains.

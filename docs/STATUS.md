@@ -5,6 +5,196 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## DASHBOARD-I1-R6 — SSR-safe coordinator hardening (candidate)
+
+- `acquireDashboardSlot` returns a per-call ephemeral slot when
+  `typeof window === "undefined"` — SSR can never mutate the shared slot
+  map or `boundUserId`; two concurrent server renders cannot share
+  drafts. Client acquisition stays render-time (`useState` initializer):
+  a fresh slot's view is byte-identical to SSR props — no hydration
+  mismatch, no acquire-after-paint flicker.
+- Bounded clean-slot retention: `MAX_CLEAN_SLOTS=8`, oldest-clean evict;
+  dirty/pending/failed slots are never evicted.
+- Purge-while-in-flight covered: a cleared slot cannot resurrect drafts,
+  surface them, or queue further saves; already-dispatched writes may
+  still commit (honest wording retained).
+- New real bug fixed: Chromium form-value restoration repopulated the
+  controlled name input on revisit; React hydration replayed it as a
+  synthetic `onChange` → ghost commit overwrote the saved draft. Fixed
+  with `autoComplete="off"` on all editor form controls.
+- SSR suite added (`dashboard-autosave-ssr.test.ts`, node env = SSR
+  condition); coordinator suite moved to jsdom (browser path).
+- Mutation: SSR guard removed → SSR isolation test fails; restored
+  byte-identical.
+- Owner exception condition satisfied by R5-R1 technical PASS; E2E count
+  corrected to 370/12/0 (382) at `cc5df4d`; cross-engine evidence remains
+  Chromium-only + capability-stubbed (explicitly limited).
+
+## DASHBOARD-I1-R5 — autosave coordinator (candidate pushed)
+
+- `lib/dashboard/autosave-coordinator.ts` — module-level per-slot autosave
+  (draft/revision/timer/queue/history/save state) keyed by
+  userId:workspaceId:clientProfileId; observers subscribe/unsubscribe
+  without cancelling work; `abandon` = explicit discard; `acquire`
+  re-bases clean slots onto newer server revisions only.
+- Nav guard binds coordinator-backed callbacks once; api persists across
+  editor unmount so popstate/traverse interception keeps pending work
+  flushable. `download`, `//`, same-page-path links excluded.
+- `LoginForm` mount clears all slots (session boundary); a bind under a
+  different userId purges slots first.
+- Coverage: capability-absent Back persists edits; failed-away draft
+  recovery; per-client isolation; logout isolation; all R4 scenarios.
+- Mutations: component-only save lifetime → Back/draft-recovery tests
+  fail; restored byte-identical.
+- Gates: spec 19/19, unit 1129, full E2E 370/12sk/0f — 382 collected (CORRECTED: earlier report said 371/383 — inflated by a transient probe spec run pre-removal), tsc/eslint/prettier/
+  build clean.
+- Owner exception recorded: initial tests-after-code deviation accepted
+  conditionally (owner decision; not reviewer approval; PR clearance
+  still conditional on final independent review).
+
+Owner direction recorded: cross-browser Back/Forward must not lose pending
+edits; no Chromium-only restriction; the initial tests-after-code deviation
+is accepted as a one-time conditional exception (owner decision, not
+reviewer approval; does not waive review/CI/merge gates or set precedent).
+
+Design (specified before code per prompt):
+
+- **State lifetime/ownership:** `lib/dashboard/autosave-coordinator.ts`
+  module-level `Map<slotKey, Slot>`; each slot owns the draft
+  (`latestConfig`), `confirmedRevision`, dirty/in-flight/queued/timer,
+  retries, undo history, save state and the leave prompt. The editor is a
+  view over the slot — unmount detaches observers only; timers and
+  in-flight saves continue to completion.
+- **Identity binding:** slot key = `userId:workspaceId:clientProfileId`.
+  A bind under a different userId purges all prior slots (session change
+  cannot replay another user's config). `LoginForm` mount calls
+  `clearAllDashboardSlots()` — the login boundary covers sign-out
+  redirect and session-expiry flows.
+- **Observer cleanup vs save cancellation:** `subscribe`/`unsubscribe`
+  on unmount never cancels work; explicit `abandon(slot)` (Leave anyway)
+  cancels debounce+queue — an already-dispatched request may still commit.
+- **Failure recovery:** terminal failure/denial/conflict keeps the draft
+  and save state in the slot; returning to the editor restores draft +
+  revision + honest failure surface (never a false "Saved").
+- **Return-to-editor:** `acquire` reuses the slot when it has pending or
+  failed work; a fully clean slot re-bases onto the fresh server
+  `initialConfig`/`initialRevision` so a newer server truth wins.
+- **Nav guard:** listeners bind coordinator-level callbacks once
+  (`anyPending` scans slots), so `popstate`/`navigate`/`click` handlers
+  remain live after the editor unmounts — pending work is flushable and
+  completable independent of component lifetime. Inert when nothing is
+  pending (no interception residue).
+- Every save still POSTs through the existing server action → full
+  re-authorization per write. No localStorage/offline DB/sendBeacon/new
+  deps.
+
+## DASHBOARD-I1-R4 — stale nav guard + failure-state coverage (candidate)
+
+- Review `f992be30` P2 hold closed: the in-app guard moved to a
+  module-level singleton (`lib/dashboard/navigation-guard.ts`) whose
+  handlers are installed once per window and always call the editor's
+  ref-backed live callbacks — remounts/unmounts can never strand a
+  stale `pending()` closure (the R3 defect: post-failure clicks with
+  dirty state bypassed a stale handler).
+- Terminal failure/denial/conflict with a held navigation now requires
+  the explicit Leave/Stay decision; `Leave anyway` cancels pending work
+  and completes the held destination; `Stay` clears the hold.
+- URL handling: `//host` protocol-relative hrefs are rejected before
+  interception — never passed to `router.push`; hash/target/modifier/
+  middle/external and same-path links pass through untouched.
+- Back/Forward: the Navigation API's cancelable `navigate` event
+  (traverse) holds the traversal until the save commits, then
+  `traverseTo(key)` completes the intended history entry — verified
+  end-to-end in Chromium. Browsers without the Navigation API fall
+  back to a popstate flush (edit commits; traversal still completes) —
+  an honest, documented fallback, not silent protection.
+- E2E 15/15: debounce-window click, keyboard Enter, failed save +
+  prompt, conflict + prompt, in-flight+queued (deterministic gate —
+  navigation cannot fire after only the older save), multiple clicks,
+  `//` link, same-doc Back, document-exit Back, residue, subset,
+  flag-off 404, assistant read-only.
+- Mutations all bite and restored byte-identical: mount-time stale
+  `pending` closure + state-closing `pending` → failed-save test fails;
+  failure-guard bypass → failed+conflict fail; `//` allowed → proto
+  test fails; release-after-older-save → in-flight+queued fails.
+- `docs/STATUS.md` + spec only; no schema/permission/widget/appearance
+  changes. Unit (1116) + integration (681) carried — delta is client
+  component + nav module + E2E spec.
+- E2E process note: shared-fixture ordering failure traced to an
+  `expect()` inside a detached Playwright `dialog` handler — its
+  rejection crashed the worker, which restarted and re-ran `beforeAll`
+  (`deleteMany`), wiping the layout mid-suite. Assertions moved outside
+  handlers; documented so the pattern doesn't recur.
+- Process hold (tests-after-code) remains pending owner acceptance —
+  unchanged.
+
+## DASHBOARD-I1-R3 — in-app navigation guard (candidate)
+
+- Review `0179c46f` P2-3 hold closed: capture-phase link interception
+  holds in-app navigation while saves are pending; the debounce flushes
+  and the intended route is pushed only after commit; failed/conflict/
+  denied saves require an explicit Leave-anyway decision; popstate gets
+  best-effort `forward()` + immediate flush (documented — popstate is
+  not cancelable); `beforeunload` still covers document exits.
+- E2E: 8 dashboard tests (immediate link, keyboard Enter, residue-free
+  unmount). Mutation disabling the guard → both nav tests fail.
+- Unit/integration carried forward (delta is a client component + spec
+  only). Process hold for tests-after-code remains pending owner
+  acceptance — unchanged.
+
+## DASHBOARD-I1-R2 — review findings repaired (candidate)
+
+- Review `f683f6ea` (CONDITIONAL PASS, NOT PR-cleared) fully addressed:
+  - **P2-1:** migration `20261013120000_dashboard_i1_timestamptz` converts
+    `created_at`/`updated_at` to `TIMESTAMPTZ(6)` (session-zone cast of
+    synthetic rows, forward-only); new `information_schema` drift spec
+    proves the type; the earlier "zero drift" claim is corrected — it
+    was real new-table drift, distinct from the pre-existing
+    `coaching_template_version` index-name rename.
+  - **P2-2:** editor completed — breakpoint tabs + initialize-from-
+    desktop, drag/resize canvas (commits on pointer-up only), per-widget
+    settings panel bound to the same server allowlists, client preview
+    via the shared projection, plus the original controls/undo-redo.
+  - **P2-3:** `beforeunload` guard while saves are pending (debounce,
+    queued, in-flight, failed); E2E exercises the dialog.
+  - **P3s:** explicit depth≤6; labels⊆fields; CREATE-on-insert vs
+    UPDATE audit; client projection re-packs (compactRects);
+    deterministic barrier-held assignment-revocation race; denied
+    reconciliation → "Save denied"; bounded editor retry/backoff;
+    isolated 24-widget cap test.
+- Gates: unit **1116** · integration **681** (fresh `dash_r2`, upgrade
+  path) · build · E2E **356/12sk/0f** · format/tsc/lint clean · migrate
+  diff zero drift on the new table (pre-existing index rename remains,
+  unrelated). Mutations re-bitten (subset/CAS→audit/labels/visibility).
+- Process disposition **pending owner exception**: the original suite
+  is tests-after-code; recorded honestly, not closed.
+
+## DASHBOARD-I1 — persisted coach-configured client dashboards (candidate)
+
+- Decision **#108** records the owner-approved product rules under the
+  independently approved DASHBOARD-P3 contract (`371d4183`, P3-R1
+  `f81dd795` PASS). Implementation on `feature/dashboard-i1`.
+- `client_dashboard_layout`: standard `id` PK + `@@unique(ws,client)`;
+  RESTRICT provenance + composite coherence FKs (migration
+  `20261013000000_dashboard_i1_layouts`); config-only JSON + CAS
+  `revision`.
+- Bounded allowlist validation (`lib/dashboard/config-schema.ts`) —
+  24KB/depth-6 payload, closed settings keys incl. `visibility`,
+  per-kind source/summary/period/option/fields frozen from the pinned
+  Lily source; 20-widget catalogue preserved.
+- `clientDashboards` RBAC + platform-admin deny-set; `cdash`-then-
+  `member` advisory order (chkin/csetup convention); atomic CAS + no-op
+  dedupe + structural UPDATE audit only on real change; reconcile-on-
+  409 staff-boundary read + canonical compare in the autosave editor.
+- Surfaces: staff roster `Dashboard` link → editor
+  (`…/clients/[id]/dashboard`), client `/workspace/[ws]/dashboard`
+  renders the server-filtered subset; CU04/CU16 connected, 18 truthful
+  placeholders; `ENABLE_CLIENT_DASHBOARD` + trusted runtime.
+- Gates: tsc/lint/format clean · unit 1112 · integration 678 (fresh
+  `dash_i1_full`) · build · E2E 355+12sk · migrate-diff zero drift on
+  the new table (one pre-existing index rename unrelated). Mutations:
+  subset-leak/CAS-removal/audit-skip/visibility-enum all bit.
+
 ## 2026-10-12 — I4-R2 scope-barrier coverage (tests-only)
 
 - Review P3-1 closed with a real-PG regression: WORKSPACE_OWNER owning
