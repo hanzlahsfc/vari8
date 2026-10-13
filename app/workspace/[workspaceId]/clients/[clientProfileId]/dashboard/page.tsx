@@ -8,6 +8,7 @@ import { resolveScope } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db";
 
 import { DashboardEditor } from "./dashboard-editor";
+import { ClientTasksPanel } from "./client-tasks-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +85,11 @@ export default async function StaffClientDashboardPage({
         clientProfileId={clientProfileId}
         initialConfig={config}
         initialRevision={result.value.layout?.revision ?? 0}
+        canEdit={canEdit}
+      />
+      <ClientTasksPanel
+        workspaceId={workspaceId}
+        clientProfileId={clientProfileId}
         canEdit={canEdit}
       />
     </div>

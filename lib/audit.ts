@@ -122,6 +122,10 @@ export const AUDIT_RESOURCE_TYPES = [
   // structural markers only — never widget settings, titles, or config
   // content). No-op saves and failed writes produce no event.
   "client_dashboard_layout",
+  // CLIENT-TASKS-I1 (decision 109): task lifecycle mutations (IDs +
+  // structural markers only — never task title or text). Idempotent
+  // replays, denials and rollbacks write no event.
+  "client_task",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 

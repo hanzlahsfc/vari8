@@ -10,6 +10,8 @@ import {
   type DashboardConfig,
 } from "@/lib/dashboard/config-schema";
 import { prisma } from "@/lib/db";
+import { readOwnClientTasks } from "@/lib/tasks/boundary";
+import { ClientTasksWidget } from "./client-tasks-widget";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +54,33 @@ export default async function ClientDashboardPage({
     config?.widgets.some((w) => w.id === id),
   );
 
+  // CU03 connected data: loaded through the task boundary — dashboard
+  // placement grants no task-data permission (decision 109).
+  const ownProfile = await prisma.clientProfile.findFirst({
+    where: { workspaceId, userId },
+    select: { id: true },
+  });
+  const cu03Widgets = config
+    ? config.widgets.filter((w) => w.kind === "CU03")
+    : [];
+  const taskLists: Record<
+    string,
+    { tasks: import("@/lib/tasks/service").TaskView[]; hasMore: boolean }
+  > = {};
+  if (ownProfile) {
+    for (const w of cu03Widgets) {
+      const opt = w.settings.option;
+      const option = opt === "open" || opt === "completed" ? opt : "both";
+      const result = await readOwnClientTasks(
+        { user: { id: userId } },
+        { workspaceId, option },
+      );
+      taskLists[w.id] = result.ok
+        ? result.value
+        : { tasks: [], hasMore: false };
+    }
+  }
+
   const LINKS: Record<string, string> = {
     Tracker: `/workspace/${workspaceId}/daily`,
     "Check-in": `/workspace/${workspaceId}/check-ins`,
@@ -87,7 +116,13 @@ export default async function ClientDashboardPage({
                 data-testid={`client-widget-${widget.kind}`}
               >
                 <strong>{widget.settings.title}</strong>
-                {widget.kind === "CU04" ? (
+                {widget.kind === "CU03" ? (
+                  <ClientTasksWidget
+                    workspaceId={workspaceId}
+                    clientProfileId={ownProfile?.id ?? ""}
+                    tasks={taskLists[widget.id]?.tasks ?? []}
+                  />
+                ) : widget.kind === "CU04" ? (
                   <Link href={`/workspace/${workspaceId}/check-ins`}>
                     Open Check-Ins
                   </Link>

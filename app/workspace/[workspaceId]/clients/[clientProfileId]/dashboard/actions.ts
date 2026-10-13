@@ -29,3 +29,52 @@ export async function reloadClientDashboardLayout(input: {
   const { userId } = await requireSessionUser();
   return readStaffDashboardLayout({ user: { id: userId } }, input);
 }
+
+/* ---------------- CLIENT-TASKS-I1 staff task actions ---------------- */
+
+import {
+  assignClientTaskFromAction,
+  editClientTaskFromAction,
+  cancelClientTaskFromAction,
+  readStaffClientTasks,
+} from "@/lib/tasks/boundary";
+
+export async function assignClientTask(input: {
+  workspaceId: string;
+  clientProfileId: string;
+  title: unknown;
+  dueDate: unknown;
+}) {
+  const { userId } = await requireSessionUser();
+  return assignClientTaskFromAction({ user: { id: userId } }, input);
+}
+
+export async function editClientTask(input: {
+  workspaceId: string;
+  clientProfileId: string;
+  taskId: string;
+  title?: unknown;
+  dueDate?: unknown;
+  expectedRevision: number;
+}) {
+  const { userId } = await requireSessionUser();
+  return editClientTaskFromAction({ user: { id: userId } }, input);
+}
+
+export async function cancelClientTask(input: {
+  workspaceId: string;
+  clientProfileId: string;
+  taskId: string;
+  expectedRevision: number;
+}) {
+  const { userId } = await requireSessionUser();
+  return cancelClientTaskFromAction({ user: { id: userId } }, input);
+}
+
+export async function readClientTasks(input: {
+  workspaceId: string;
+  clientProfileId: string;
+}) {
+  const { userId } = await requireSessionUser();
+  return readStaffClientTasks({ user: { id: userId } }, input);
+}

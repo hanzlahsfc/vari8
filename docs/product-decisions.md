@@ -1419,3 +1419,28 @@ revision CAS with reconcile-on-409, structural write audits only,
 trusted-runtime `ENABLE_CLIENT_DASHBOARD` gate. Personal appearance
 preferences remain separate; no widget calculations or new data
 domains.
+
+**Decision #109 (APPROVED):** real client tasks (CLIENT-TASKS-I1, under the
+independently reviewed CLIENT-TASKS-P2/P3 contract). Owner-approved product
+rules: workspace owners and ACTIVE assigned coaches create/edit/cancel
+tasks; assigned assistants read only; the client reads their own tasks and
+performs complete/undo transitions only — staff cannot complete on a
+client's behalf even when they also own a client profile; cancelled tasks
+are hidden from the client but retained for authorized staff; tasks
+survive removal of the assigning coach and remain completable by the
+client while the removed coach loses access; overdue is computed display
+metadata against the server-UTC calendar date, never a stored status;
+CU03 "Client tasks" is the connected widget (`option` open/completed/both);
+task-data authorization is independent of dashboard placement; the
+`ENABLE_CLIENT_DASHBOARD` gate is reused. Engineering contract:
+`ClientTask` rows with declared `@db.Date` due dates (strict `YYYY-MM-DD`,
+proposed task-specific upper bound of server-UTC today + 5 calendar
+years, leap-normalized — an engineering safety bound, not decision #66's
+`today+1` rule); composite same-workspace coherence FKs; RESTRICT
+deletion; paired provenance CHECKs (`completed_at` durable, the SetNull
+`completedByUserId` pointer excluded); `ctask`-then-`member` advisory
+order; operation split enforced inside the transaction after scope
+resolution; explicit desired-state transitions (idempotent replay,
+CAS conflict, no blind toggle); audit on changed ALLOW mutations only.
+No attachments, comments, reminders, notifications, or private coach
+tasks; retention/deletion stays deferred under unresolved D-10.

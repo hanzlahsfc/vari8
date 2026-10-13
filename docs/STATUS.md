@@ -5,6 +5,30 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## CLIENT-TASKS-I1 — real client tasks + CU03 (candidate)
+
+- Independently reviewed contract: P2 (`7296937e…`) + P3 delta
+  (`241e59cc…`), P3-R1 PASS (`52ea53e1…`); decision #109 recorded.
+- Schema `client_task` + `ClientTaskStatus` + coherence/composite FKs +
+  CHECKs (title bound, COMPLETED⇔completed_at, CANCELLED⇔cancelled_at;
+  SetNull pointer excluded); migration `20261014000000_client_tasks`
+  applied to dev + isolated `client_tasks_i1_integration` DBs.
+- `clientTasks` RBAC cell + guard deny-set; `lib/tasks/{date,service,
+boundary}` — `parseTaskDueDate` (proposed 5-year UTC bound, leap-safe),
+  operation split inside serializable tx (management ⇒ workspace|
+  assigned; completion ⇒ own + profile-user binding), explicit
+  desired-state CAS transitions, SQL filter-before-LIMIT 21 (≤20 +
+  hasMore), audit on changed ALLOW only.
+- UI: staff `ClientTasksPanel` (assign/edit/cancel + read-only badges)
+  on the editor page; client CU03 adapter `ClientTasksWidget` with
+  explicit Mark done/Undo; `CONNECTED_KINDS += CU03`.
+- RED: date unit suite (8) + integration suite (9) failed before
+  implementation; mutations bit on own-scope removal, CANCELLED-filter
+  removal, blind toggle, audit omission — service restored byte-
+  identical; spec `tests/e2e/client-tasks.spec.ts` 5/5 green.
+- Gate: flag `ENABLE_CLIENT_DASHBOARD` reused (owner rule 5); flag-off
+  staff surface 404s proven in-browser.
+
 ## DASHBOARD-I1-R6 — SSR-safe coordinator hardening (candidate)
 
 - `acquireDashboardSlot` returns a per-call ephemeral slot when

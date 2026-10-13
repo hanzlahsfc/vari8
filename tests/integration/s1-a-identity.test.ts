@@ -291,6 +291,9 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         "client_assignment",
         "client_dashboard_layout",
         "client_profile",
+        // CLIENT-TASKS-I1 (decision 109): staff-assigned client tasks —
+        // bounded coaching text, not health data.
+        "client_task",
         // P-021: client-owned DailyEntry records + append-only revisions and
         // values — consent-gated health data, reviewed in
         // product-decisions #64–#78.
