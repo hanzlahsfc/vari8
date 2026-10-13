@@ -424,6 +424,206 @@ test.describe("DASHBOARD-I1", () => {
     await expect(page.getByText(/Saved/)).toBeVisible({ timeout: 10_000 });
   });
 
+  test("no Navigation API: same-document Back persists the pending edit", async ({
+    page,
+  }) => {
+    // capability-absent run: hide window.navigation so the guard falls
+    // back to popstate — the pending save must still durably commit
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "navigation", {
+        get: () => undefined,
+        configurable: true,
+      });
+    });
+    await signIn(page, E2E.owner);
+    // SPA entry: real roster link click creates a same-document history
+    // entry so Back stays inside this document's realm
+    await page.goto(`/workspace/${wsId}/clients`);
+    await page.getByTestId(`dashboard-link-${profileId}`).click();
+    await expect(page.getByTestId("dashboard-editor")).toBeVisible();
+    // edit inside the debounce window, then a real same-document Back —
+    // no Navigation API to cancel it; the coordinator's pending work
+    // must still durably commit after the editor unmounts
+    await page.getByTestId("dashboard-name").fill("Fallback-back name");
+    await page.goBack();
+    await expect(page).toHaveURL(new RegExp(`/workspace/${wsId}/clients$`));
+    // the pending edit must still reach the database — give the in-flight
+    // save room, then verify durable state + restored draft on return
+    await expect
+      .poll(
+        async () => {
+          const row = await prisma.clientDashboardLayout.findFirst({
+            where: { workspaceId: wsId, clientProfileId: profileId },
+          });
+          return (row?.config as { name?: string } | null)?.name;
+        },
+        { timeout: 10_000 },
+      )
+      .toBe("Fallback-back name");
+    await page.goForward();
+    await expect(page.getByTestId("dashboard-name")).toHaveValue(
+      "Fallback-back name",
+      { timeout: 10_000 },
+    );
+  });
+
+  test("failed save while away keeps a recoverable draft on return", async ({
+    page,
+  }) => {
+    // capability-absent so the traversal actually leaves (a held
+    // traverse would wait for an explicit Leave decision instead)
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "navigation", {
+        get: () => undefined,
+        configurable: true,
+      });
+    });
+    // fault every save POST — the retries exhaust while the editor is
+    // unmounted; the draft must survive and surface honestly on return
+    await page.route(
+      `**/workspace/${wsId}/clients/${profileId}/dashboard`,
+      (route) =>
+        route.request().method() === "POST"
+          ? route.fulfill({ status: 500 })
+          : route.continue(),
+    );
+    await signIn(page, E2E.owner);
+    await page.goto(`/workspace/${wsId}/clients`);
+    await page.getByTestId(`dashboard-link-${profileId}`).click();
+    await expect(page.getByTestId("dashboard-editor")).toBeVisible();
+    await page.getByTestId("dashboard-name").fill("Recoverable draft");
+    // same-document Back leaves the editor mid-save
+    await page.goBack({ waitUntil: "commit" });
+    await expect(page).toHaveURL(new RegExp(`/workspace/${wsId}/clients$`));
+    // forward again — the slot retained the draft + failed state
+    await page.goForward();
+    await expect(page.getByTestId("dashboard-name")).toHaveValue(
+      "Recoverable draft",
+      { timeout: 15_000 },
+    );
+    await expect(page.getByTestId("save-state")).toContainText(
+      /Failed|denied/,
+      { timeout: 15_000 },
+    );
+    await page.unroute(`**/workspace/${wsId}/clients/${profileId}/dashboard`);
+    // the draft is what the editor holds — whether a background retry
+    // has already committed it or a terminal failure is still pending,
+    // the user always sees their work + an honest state, never a false
+    // "Saved" over lost data
+    await expect(page.getByTestId("save-state")).not.toHaveText(/^Saved$/);
+  });
+
+  test("another client's editor never sees a different client's draft", async ({
+    page,
+  }) => {
+    // faulted save keeps client A's draft pending in its slot
+    await page.route(`**/workspace/${wsId}/clients/*/dashboard`, (route) =>
+      route.request().method() === "POST"
+        ? route.fulfill({ status: 500 })
+        : route.continue(),
+    );
+    const otherUser = await prisma.user.create({
+      data: {
+        email: "second-client@s1h-e2e.test",
+        passwordHash: "x",
+        status: "ACTIVE",
+        name: "Second Client",
+      },
+    });
+    const other = await prisma.clientProfile.create({
+      data: {
+        workspaceId: wsId,
+        userId: otherUser.id,
+        name: "Second Client",
+      },
+    });
+    try {
+      await signIn(page, E2E.owner);
+      await page.goto(`/workspace/${wsId}/clients`);
+      await page.getByTestId(`dashboard-link-${profileId}`).click();
+      await expect(page.getByTestId("dashboard-editor")).toBeVisible();
+      await page.getByTestId("dashboard-name").fill("Client-A draft");
+      // the save is faulted; leave via the explicit prompt, then SPA-
+      // navigate to the other client's editor via the roster link
+      await page
+        .getByTestId("shell-sidebar")
+        .getByRole("link", { name: "Clients" })
+        .click();
+      await expect(page.getByTestId("leave-prompt")).toBeVisible({
+        timeout: 15_000,
+      });
+      await page.getByTestId("leave-anyway").click();
+      await expect(page).toHaveURL(new RegExp(`/workspace/${wsId}/clients$`));
+      await page.getByTestId(`dashboard-link-${other.id}`).click();
+      await expect(page.getByTestId("dashboard-name")).toHaveValue(
+        "Second Client’s dashboard",
+        { timeout: 10_000 },
+      );
+      // return to A via the roster: the failed draft is restored — not
+      // B's config
+      await page
+        .getByTestId("shell-sidebar")
+        .getByRole("link", { name: "Clients" })
+        .click();
+      await expect(page).toHaveURL(new RegExp(`/workspace/${wsId}/clients$`));
+      await page.getByTestId(`dashboard-link-${profileId}`).click();
+      await expect(page.getByTestId("dashboard-name")).toHaveValue(
+        "Client-A draft",
+        { timeout: 15_000 },
+      );
+    } finally {
+      await page.unroute(`**/workspace/${wsId}/clients/*/dashboard`);
+      await prisma.clientDashboardLayout.deleteMany({
+        where: { clientProfileId: other.id },
+      });
+      await prisma.clientProfile.delete({ where: { id: other.id } });
+      await prisma.user.delete({ where: { id: otherUser.id } });
+    }
+  });
+
+  test("a pending draft cannot follow a sign-out into a new session", async ({
+    page,
+  }) => {
+    await page.route(
+      `**/workspace/${wsId}/clients/${profileId}/dashboard`,
+      (route) =>
+        route.request().method() === "POST"
+          ? route.fulfill({ status: 500 })
+          : route.continue(),
+    );
+    await signIn(page, E2E.owner);
+    await page.goto(staffUrl());
+    await page.getByTestId("dashboard-name").fill("Pre-logout draft");
+    // let the terminal failure settle, then leave via the held-nav
+    // prompt (the faulted route would swallow a sign-out POST here)
+    await expect(page.getByTestId("save-state")).toContainText(/Failed/, {
+      timeout: 15_000,
+    });
+    await page
+      .getByTestId("shell-sidebar")
+      .getByRole("link", { name: "Clients" })
+      .click();
+    await expect(page.getByTestId("leave-prompt")).toBeVisible({
+      timeout: 15_000,
+    });
+    await page.getByTestId("leave-anyway").click();
+    await expect(page).toHaveURL(new RegExp(`/workspace/${wsId}/clients$`));
+    await page.getByTestId("sign-out").click();
+    await expect(page).toHaveURL(/login/);
+    await page.unroute(`**/workspace/${wsId}/clients/${profileId}/dashboard`);
+    await signIn(page, E2E.owner);
+    await page.goto(staffUrl());
+    // the retained draft is gone — the editor re-bases to whatever the
+    // server truth is; the abandoned draft can never reappear
+    await expect(page.getByTestId("dashboard-name")).not.toHaveValue(
+      "Pre-logout draft",
+      { timeout: 10_000 },
+    );
+    await expect(page.getByTestId("dashboard-name")).not.toHaveValue("", {
+      timeout: 10_000,
+    });
+  });
+
   test("browser Back while pending is held until the save commits", async ({
     page,
   }) => {

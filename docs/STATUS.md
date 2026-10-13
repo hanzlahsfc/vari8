@@ -5,6 +5,64 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## DASHBOARD-I1-R5 — autosave coordinator (candidate pushed)
+
+- `lib/dashboard/autosave-coordinator.ts` — module-level per-slot autosave
+  (draft/revision/timer/queue/history/save state) keyed by
+  userId:workspaceId:clientProfileId; observers subscribe/unsubscribe
+  without cancelling work; `abandon` = explicit discard; `acquire`
+  re-bases clean slots onto newer server revisions only.
+- Nav guard binds coordinator-backed callbacks once; api persists across
+  editor unmount so popstate/traverse interception keeps pending work
+  flushable. `download`, `//`, same-page-path links excluded.
+- `LoginForm` mount clears all slots (session boundary); a bind under a
+  different userId purges slots first.
+- Coverage: capability-absent Back persists edits; failed-away draft
+  recovery; per-client isolation; logout isolation; all R4 scenarios.
+- Mutations: component-only save lifetime → Back/draft-recovery tests
+  fail; restored byte-identical.
+- Gates: spec 19/19, unit 1129, full E2E 371/12sk, tsc/eslint/prettier/
+  build clean.
+- Owner exception recorded: initial tests-after-code deviation accepted
+  conditionally (owner decision; not reviewer approval; PR clearance
+  still conditional on final independent review).
+
+Owner direction recorded: cross-browser Back/Forward must not lose pending
+edits; no Chromium-only restriction; the initial tests-after-code deviation
+is accepted as a one-time conditional exception (owner decision, not
+reviewer approval; does not waive review/CI/merge gates or set precedent).
+
+Design (specified before code per prompt):
+
+- **State lifetime/ownership:** `lib/dashboard/autosave-coordinator.ts`
+  module-level `Map<slotKey, Slot>`; each slot owns the draft
+  (`latestConfig`), `confirmedRevision`, dirty/in-flight/queued/timer,
+  retries, undo history, save state and the leave prompt. The editor is a
+  view over the slot — unmount detaches observers only; timers and
+  in-flight saves continue to completion.
+- **Identity binding:** slot key = `userId:workspaceId:clientProfileId`.
+  A bind under a different userId purges all prior slots (session change
+  cannot replay another user's config). `LoginForm` mount calls
+  `clearAllDashboardSlots()` — the login boundary covers sign-out
+  redirect and session-expiry flows.
+- **Observer cleanup vs save cancellation:** `subscribe`/`unsubscribe`
+  on unmount never cancels work; explicit `abandon(slot)` (Leave anyway)
+  cancels debounce+queue — an already-dispatched request may still commit.
+- **Failure recovery:** terminal failure/denial/conflict keeps the draft
+  and save state in the slot; returning to the editor restores draft +
+  revision + honest failure surface (never a false "Saved").
+- **Return-to-editor:** `acquire` reuses the slot when it has pending or
+  failed work; a fully clean slot re-bases onto the fresh server
+  `initialConfig`/`initialRevision` so a newer server truth wins.
+- **Nav guard:** listeners bind coordinator-level callbacks once
+  (`anyPending` scans slots), so `popstate`/`navigate`/`click` handlers
+  remain live after the editor unmounts — pending work is flushable and
+  completable independent of component lifetime. Inert when nothing is
+  pending (no interception residue).
+- Every save still POSTs through the existing server action → full
+  re-authorization per write. No localStorage/offline DB/sendBeacon/new
+  deps.
+
 ## DASHBOARD-I1-R4 — stale nav guard + failure-state coverage (candidate)
 
 - Review `f992be30` P2 hold closed: the in-app guard moved to a

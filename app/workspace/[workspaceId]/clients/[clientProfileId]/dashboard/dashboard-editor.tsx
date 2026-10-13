@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
   WIDGET_CATALOGUE,
   WIDGET_KINDS,
-  canonicalizeDashboardConfig,
   compactRects,
   defaultWidgetSettings,
   projectClientDashboardConfig,
@@ -25,27 +24,29 @@ import {
   type WidgetKind,
   type WidgetSettings,
 } from "@/lib/dashboard/config-schema";
-import type { DashboardSafeResult } from "@/lib/dashboard/boundary";
 import {
   bindDashboardNavGuard,
-  clearHeldNavigation,
   completeHeldNavigation,
   heldNavigation,
   unbindDashboardNavGuard,
 } from "@/lib/dashboard/navigation-guard";
+import {
+  abandonDashboardSlot,
+  acquireDashboardSlot,
+  anyPendingSlot,
+  cancelPendingTimer,
+  commitDashboardConfig,
+  flushPendingSlot,
+  reloadDashboardSlot,
+  stayDashboardSlot,
+  subscribeDashboardSlot,
+  travelDashboardConfig,
+} from "@/lib/dashboard/autosave-coordinator";
 
 import {
   reloadClientDashboardLayout,
   saveClientDashboardLayout,
 } from "./actions";
-
-type SaveState =
-  "idle" | "saving" | "saved" | "failed" | "conflict" | "denied" | "readonly";
-
-type SaveResult = DashboardSafeResult<{
-  revision: number;
-  config: DashboardConfig;
-}>;
 
 const COLUMNS: Record<BreakpointName, number> = {
   desktop: 12,
@@ -54,7 +55,6 @@ const COLUMNS: Record<BreakpointName, number> = {
 };
 const BREAKPOINTS: BreakpointName[] = ["desktop", "tablet", "mobile"];
 const ROW_PX = 72;
-const MAX_SAVE_ATTEMPTS = 3;
 
 /**
  * Lily-aligned autosaving builder (I1-R2): breakpoint canvas with
@@ -65,247 +65,74 @@ const MAX_SAVE_ATTEMPTS = 3;
  * reconcile-on-conflict via the staff boundary + canonical compare.
  */
 export function DashboardEditor({
+  userId,
   workspaceId,
   clientProfileId,
   initialConfig,
   initialRevision,
   canEdit,
 }: {
+  userId: string;
   workspaceId: string;
   clientProfileId: string;
   initialConfig: DashboardConfig;
   initialRevision: number;
   canEdit: boolean;
 }) {
-  const [config, setConfig] = useState<DashboardConfig>(initialConfig);
-  const [saveState, setSaveState] = useState<SaveState>(
-    canEdit ? "idle" : "readonly",
-  );
-  const [dirty, setDirty] = useState(false);
-  const dirtyRef = useRef(dirty);
-  dirtyRef.current = dirty;
   const [bp, setBp] = useState<BreakpointName>("desktop");
   const [editing, setEditing] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
-  const [leavePrompt, setLeavePrompt] = useState(false);
   const router = useRouter();
   const routerRef = useRef(router);
   routerRef.current = router;
 
+  // I1-R5: the autosave slot is owned by the module-level coordinator —
+  // drafts, debounce timers, queued saves and the confirmed revision all
+  // survive this component unmounting (same-document Back/Forward on any
+  // engine). Unmount detaches the observer only; work continues.
+  const slot = useMemo(
+    () =>
+      acquireDashboardSlot({
+        userId,
+        workspaceId,
+        clientProfileId,
+        initialConfig,
+        initialRevision,
+        canEdit,
+        actions: {
+          save: saveClientDashboardLayout,
+          reload: reloadClientDashboardLayout,
+        },
+      }),
+    // acquire is identity-keyed — config/revision rebasing is the slot's
+    // own concern, not a reason to replace it
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [userId, workspaceId, clientProfileId],
+  );
+  const [, bump] = useReducer((x: number) => x + 1, 0);
+  useEffect(() => subscribeDashboardSlot(slot, bump), [slot]);
+  const config = slot.latestConfig;
+  const dirty = slot.dirty;
+  const saveState = slot.saveState;
+  const leavePrompt = slot.leavePrompt;
   const latestConfig = useRef(config);
   latestConfig.current = config;
-  const confirmedRevision = useRef(initialRevision);
-  const inFlight = useRef(false);
-  const queued = useRef(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const retries = useRef(0);
-  const history = useRef<{
-    past: DashboardConfig[];
-    future: DashboardConfig[];
-  }>({ past: [], future: [] });
 
-  // reads refs only — always current inside long-lived listeners
-  const pending = useCallback(
-    () =>
-      dirtyRef.current ||
-      inFlight.current ||
-      queued.current ||
-      timer.current !== null,
-    [],
-  );
-
-  const flush = useCallback(
-    async (attempt = 1) => {
-      if (inFlight.current) {
-        queued.current = true;
-        return;
-      }
-      inFlight.current = true;
-      setSaveState("saving");
-      const snapshot = latestConfig.current;
-      const expected = confirmedRevision.current;
-      // a held in-app navigation proceeds only on confirmed persistence
-      const releaseNavIfResolved = () => {
-        if (!queued.current) completeHeldNavigation();
-      };
-      let result: SaveResult;
-      try {
-        result = (await saveClientDashboardLayout({
-          workspaceId,
-          clientProfileId,
-          config: snapshot,
-          expectedRevision: expected,
-        })) as SaveResult;
-      } catch {
-        result = {
-          ok: false,
-          code: "not_available",
-          message: "",
-        } as SaveResult;
-      }
-      inFlight.current = false;
-
-      if (result.ok) {
-        retries.current = 0;
-        confirmedRevision.current = result.value.revision;
-        setDirty(queued.current);
-        setSaveState("saved");
-        releaseNavIfResolved();
-      } else if (result.code === "denied") {
-        // truthful denial (e.g. revoked mid-save) — never "conflict"
-        setSaveState("denied");
-      } else if (
-        result.code === "conflict" ||
-        result.code === "serialization_conflict"
-      ) {
-        const reload = await reloadClientDashboardLayout({
-          workspaceId,
-          clientProfileId,
-        });
-        if (!reload.ok) {
-          // denied/failed reconciliation stays truthful
-          setSaveState(
-            !reload.ok && reload.code === "denied" ? "denied" : "failed",
-          );
-        } else {
-          const serverLayout = reload.value.layout;
-          if (
-            serverLayout &&
-            canonicalizeDashboardConfig(serverLayout.config) ===
-              canonicalizeDashboardConfig(snapshot)
-          ) {
-            retries.current = 0;
-            confirmedRevision.current = serverLayout.revision;
-            setDirty(queued.current);
-            setSaveState("saved");
-            // reconcile proved the submitted content committed — a held
-            // navigation may proceed on the confirmed revision
-            releaseNavIfResolved();
-          } else {
-            setSaveState("conflict");
-          }
-        }
-      } else {
-        // bounded retry with backoff on ambiguous/failed saves
-        if (attempt < MAX_SAVE_ATTEMPTS) {
-          retries.current = attempt;
-          timer.current = setTimeout(() => {
-            timer.current = null;
-            void flush(attempt + 1);
-          }, 1000 * attempt);
-          setSaveState("saving");
-        } else {
-          setSaveState("failed");
-        }
-      }
-      // a waiting navigation whose save did not cleanly commit requires
-      // an explicit discard decision — never a silent leave. Terminal
-      // outcomes: explicit denied/conflict, or retries exhausted
-      // (ambiguous/failed), or a failed reconcile.
-      const terminal =
-        !result.ok &&
-        (result.code === "denied" ||
-          result.code === "conflict" ||
-          attempt >= MAX_SAVE_ATTEMPTS);
-      if (heldNavigation() && terminal) setLeavePrompt(true);
-      if (queued.current) {
-        queued.current = false;
-        void flush();
-      }
-    },
-    [workspaceId, clientProfileId],
-  );
-
-  const flushRef = useRef<(() => Promise<void>) | null>(null);
-  const schedule = useCallback(() => {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      timer.current = null;
-      void flush();
-    }, 500);
-  }, [flush]);
-
-  const commit = useCallback(
-    (next: DashboardConfig) => {
-      history.current.past.push(latestConfig.current);
-      history.current.future = [];
-      setConfig(next);
-      setDirty(true);
-      setSaveState((s) => (s === "readonly" ? s : "saving"));
-      schedule();
-    },
-    [schedule],
-  );
-
-  const travel = useCallback(
-    (dir: "undo" | "redo") => {
-      const stack =
-        dir === "undo" ? history.current.past : history.current.future;
-      const target =
-        dir === "undo" ? history.current.future : history.current.past;
-      const prev = stack.pop();
-      if (!prev) return;
-      target.push(latestConfig.current);
-      setConfig(prev);
-      setDirty(true);
-      schedule();
-    },
-    [schedule],
-  );
-
-  // Navigation guard (P2-3/R4): singleton module-level listeners bound
-  // to this editor's live callbacks — remounts can never strand or
-  // duplicate them; unbind on unmount leaves no residue.
-  const pendingRef = useRef(pending);
-  pendingRef.current = pending;
-  flushRef.current = flush;
-
+  // Navigation guard: singleton module-level listeners bound once to
+  // coordinator-backed callbacks — pending work stays observable and
+  // flushable even after this component unmounts.
   useEffect(() => {
     if (!canEdit) return;
     bindDashboardNavGuard({
-      pending: () => pendingRef.current(),
-      cancelTimer: () => {
-        if (timer.current) {
-          clearTimeout(timer.current);
-          timer.current = null;
-        }
-      },
-      flush: () => void flushRef.current?.(),
+      pending: () => anyPendingSlot() !== null,
+      cancelTimer: cancelPendingTimer,
+      flush: () => flushPendingSlot(),
       navigateTo: (href) => routerRef.current.push(href),
     });
     return () => unbindDashboardNavGuard();
   }, [canEdit]);
 
-  // Document exits (reload/close/tab-close and document-level Back/
-  // Forward): beforeunload prompts while any edit is pending. pending()
-  // reads refs — always current inside the long-lived listener.
-  useEffect(() => {
-    const guard = (e: BeforeUnloadEvent) => {
-      if (pendingRef.current()) e.preventDefault();
-    };
-    window.addEventListener("beforeunload", guard);
-    return () => window.removeEventListener("beforeunload", guard);
-  }, []);
-
-  useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
-
-  const reload = useCallback(async () => {
-    const r = await reloadClientDashboardLayout({
-      workspaceId,
-      clientProfileId,
-    });
-    if (r.ok && r.value.layout) {
-      setConfig(r.value.layout.config);
-      confirmedRevision.current = r.value.layout.revision;
-      setDirty(false);
-      setSaveState(canEdit ? "idle" : "readonly");
-    }
-  }, [workspaceId, clientProfileId, canEdit]);
+  const reload = () => reloadDashboardSlot(slot);
 
   // ---------- canvas ----------
 
@@ -314,7 +141,7 @@ export function DashboardEditor({
   const columns = COLUMNS[bp];
 
   const setRect = (id: string, next: Rect) =>
-    commit({
+    commitDashboardConfig(slot, {
       ...latestConfig.current,
       layouts: {
         ...latestConfig.current.layouts,
@@ -389,7 +216,7 @@ export function DashboardEditor({
   // ---------- mutations ----------
 
   const mutate = (fn: (c: DashboardConfig) => DashboardConfig) =>
-    commit(fn(latestConfig.current));
+    commitDashboardConfig(slot, fn(latestConfig.current));
 
   const addWidget = (kind: WidgetKind) => {
     const id = `w-${kind.toLowerCase()}-${Date.now().toString(36)}`;
@@ -528,15 +355,10 @@ export function DashboardEditor({
               type="button"
               data-testid="leave-anyway"
               onClick={() => {
-                // explicit abandonment: stop the pending work — the
-                // debounce and queue are cancelled; an already-sent
-                // request may still have committed server-side.
-                if (timer.current) {
-                  clearTimeout(timer.current);
-                  timer.current = null;
-                }
-                queued.current = false;
-                setLeavePrompt(false);
+                // explicit abandonment: cancels the debounce and queue;
+                // an already-sent request may still have committed
+                // server-side.
+                abandonDashboardSlot(slot);
                 completeHeldNavigation();
               }}
             >
@@ -545,10 +367,7 @@ export function DashboardEditor({
             <button
               type="button"
               data-testid="stay"
-              onClick={() => {
-                clearHeldNavigation();
-                setLeavePrompt(false);
-              }}
+              onClick={() => stayDashboardSlot(slot)}
             >
               Stay
             </button>
@@ -556,10 +375,16 @@ export function DashboardEditor({
         ) : null}
         {canEdit ? (
           <>
-            <button type="button" onClick={() => travel("undo")}>
+            <button
+              type="button"
+              onClick={() => travelDashboardConfig(slot, "undo")}
+            >
               Undo
             </button>
-            <button type="button" onClick={() => travel("redo")}>
+            <button
+              type="button"
+              onClick={() => travelDashboardConfig(slot, "redo")}
+            >
               Redo
             </button>
           </>

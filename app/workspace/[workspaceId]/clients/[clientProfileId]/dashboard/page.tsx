@@ -79,6 +79,7 @@ export default async function StaffClientDashboardPage({
         </p>
       </header>
       <DashboardEditor
+        userId={userId}
         workspaceId={workspaceId}
         clientProfileId={clientProfileId}
         initialConfig={config}

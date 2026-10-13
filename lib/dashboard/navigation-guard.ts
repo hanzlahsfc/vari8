@@ -1,14 +1,17 @@
 "use client";
 
 /**
- * Module-level navigation guard for the dashboard editor (I1-R4).
+ * Module-level navigation guard for the dashboard editor (I1-R4/R5).
  *
  * A component-scoped listener can be stranded: React unmounts/remounts
  * the editor in ways that silently remove handlers (observed: the
  * router's popstate processing unmounts mid-dispatch, and remounts can
  * replace a listener with a stale closure). A module singleton is
- * immune — handlers are installed once per window and always call the
- * currently bound callbacks; the editor binds/unbinds on mount.
+ * immune — handlers are installed once per window and call the
+ * coordinator-backed api. The api is deliberately NOT cleared on editor
+ * unmount: pending autosave work belongs to the autosave coordinator,
+ * not the component, so popstate/navigate interception can still flush
+ * it after the view is gone (I1-R5 — the R4 fallback lost this).
  *
  * Contract (all navigation classes):
  *  - Internal <a href> clicks (pointer OR keyboard Enter): held via
@@ -87,16 +90,21 @@ const onClick = (e: MouseEvent) => {
   )
     return;
   const a = (e.target as Element).closest?.("a[href]");
-  if (!a || a.getAttribute("target")) return;
+  if (!a || a.getAttribute("target") || a.hasAttribute("download")) return;
   const href = a.getAttribute("href")!;
   // same-origin app routes only — reject protocol-relative `//host`
-  // (an open-redirect shape) alongside external/hash schemes
-  if (
-    !href.startsWith("/") ||
-    href.startsWith("//") ||
-    href === window.location.pathname
-  )
+  // (an open-redirect shape), download attributes, external/hash
+  // schemes, and same-page hrefs (anchors/query on this route)
+  if (!href.startsWith("/") || href.startsWith("//")) return;
+  try {
+    if (
+      new URL((a as HTMLAnchorElement).href).pathname ===
+      window.location.pathname
+    )
+      return;
+  } catch {
     return;
+  }
   e.preventDefault();
   e.stopPropagation();
   nav.held = { href };
@@ -136,12 +144,17 @@ const onPop = () => {
   api.flush();
 };
 
+const onBeforeUnload = (e: BeforeUnloadEvent) => {
+  if (nav.api?.pending()) e.preventDefault();
+};
+
 export const bindDashboardNavGuard = (api: DashboardNavApi) => {
   nav.api = api;
   if (nav.installed || typeof window === "undefined") return;
   nav.installed = true;
   document.addEventListener("click", onClick, true);
   window.addEventListener("popstate", onPop, true);
+  window.addEventListener("beforeunload", onBeforeUnload);
   const navigation = (
     window as unknown as {
       navigation?: {
@@ -152,9 +165,10 @@ export const bindDashboardNavGuard = (api: DashboardNavApi) => {
   navigation?.addEventListener("navigate", onNavigate);
 };
 
-/** Editor unmount: keep the listeners (singleton) but detach the live
- * callbacks so off-editor navigation is never intercepted. */
+/** Editor unmount: the api is coordinator-owned and must stay live so
+ * pending work can still be flushed/observed after unmount. Only a
+ * held destination is dropped — the interception already prevented the
+ * route change, so an unmounted editor cannot meaningfully resume it. */
 export const unbindDashboardNavGuard = () => {
-  nav.api = null;
   nav.held = null;
 };

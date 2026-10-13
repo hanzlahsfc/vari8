@@ -1,10 +1,19 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+
+import { clearAllDashboardSlots } from "@/lib/dashboard/autosave-coordinator";
 
 import { authenticate } from "./actions";
 
 export function LoginForm() {
+  // I1-R5 session boundary: sign-out/session-expiry lands here — drop any
+  // retained dashboard drafts/queued work so a new session can never
+  // replay the previous user's configuration.
+  useEffect(() => {
+    clearAllDashboardSlots();
+  }, []);
+
   const [error, formAction, pending] = useActionState(authenticate, undefined);
 
   return (
