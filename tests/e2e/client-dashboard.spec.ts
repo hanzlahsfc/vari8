@@ -81,10 +81,60 @@ test.describe("DASHBOARD-I1", () => {
     await page.getByTestId("add-widget").selectOption("CU01");
     await expect(page.getByText("Saved")).toBeVisible({ timeout: 10_000 });
     // share the CU04 widget with the client
-    const grid = page.getByTestId("widget-grid");
-    const widget = grid.locator("li", { hasText: "Check-in" }).first();
+    const canvas = page.getByTestId("dashboard-canvas");
+    const widget = canvas.locator("article", { hasText: "Check-in" }).first();
     await widget.getByTestId(/visibility-/).click();
     await expect(page.getByText("Saved")).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("editor covers settings, breakpoints, preview and nav guard", async ({
+    page,
+  }) => {
+    await signIn(page, E2E.owner);
+    await page.goto(staffUrl());
+    await expect(page.getByTestId("dashboard-canvas")).toBeVisible();
+    const widget = page
+      .getByTestId("dashboard-canvas")
+      .locator("article")
+      .first();
+    // per-widget settings: open panel, change a setting within the
+    // allowlist, save commits
+    await widget.getByTestId(/edit-/).click();
+    const settings = page.getByTestId("widget-settings").first();
+    await expect(settings).toBeVisible();
+    await settings.locator("input").first().fill("Custom title");
+    await expect(page.getByText("Saved")).toBeVisible({ timeout: 10_000 });
+    // breakpoint tabs + initialize
+    await page.getByTestId("bp-mobile").click();
+    const init = page.getByTestId("init-mobile");
+    if ((await init.count()) > 0) {
+      await init.click();
+      await expect(page.getByText("Saved")).toBeVisible({
+        timeout: 10_000,
+      });
+    }
+    await page.getByTestId("bp-desktop").click();
+    // client preview toggle — staff-only widget disappears
+    const staffWidget = page
+      .getByTestId("dashboard-canvas")
+      .locator("article", { hasText: "This week’s focus" });
+    await page.getByTestId("client-preview").click();
+    await expect(staffWidget).toHaveCount(0);
+    await page.getByTestId("client-preview").click();
+    // navigation guard: edit inside the debounce window, then try to
+    // leave — beforeunload fires
+    page.once("dialog", async (dialog) => {
+      expect(dialog.type()).toBe("beforeunload");
+      await dialog.dismiss();
+    });
+    await page.getByTestId("dashboard-name").fill("Renamed dashboard");
+    await page
+      .goto(`/workspace/${wsId}/clients`, { timeout: 3_000 })
+      .catch(() => {});
+    // still on the editor (dismissed the dialog)
+    await expect(page.getByTestId("dashboard-editor")).toBeVisible();
+    // let the pending save land
+    await expect(page.getByText(/Saved/)).toBeVisible({ timeout: 10_000 });
   });
 
   test("client view shows only the shared subset", async ({ page }) => {

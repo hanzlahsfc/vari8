@@ -401,7 +401,7 @@ export async function updateClientDashboardLayout(
         }
 
         await writeAuditEvent(tx, ctx, {
-          action: "UPDATE",
+          action: existing ? "UPDATE" : "CREATE",
           resourceType: "client_dashboard_layout",
           resourceId: row.id,
           subjectClientProfileId: input.clientProfileId,

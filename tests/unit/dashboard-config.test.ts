@@ -202,3 +202,71 @@ describe("canonical form", () => {
     );
   });
 });
+
+describe("hardened bounds (I1-R2)", () => {
+  it("rejects input nested deeper than depth 6", () => {
+    const r = validateDashboardConfig({ name: [[[[[["x"]]]]]] });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toBe("depth");
+  });
+
+  it("requires label keys ⊆ fields", () => {
+    const w = validWidget({
+      settings: { fields: [], labels: { ghost: "x" } },
+    });
+    expect(validateDashboardConfig({ ...validConfig(), widgets: [w] }).ok).toBe(
+      false,
+    );
+  });
+
+  it("isolates the 24-widget cap with otherwise coherent geometry", () => {
+    const widgets = Array.from({ length: 25 }, (_, i) =>
+      validWidget({ id: `w${i}` }),
+    );
+    const rects = Object.fromEntries(
+      widgets.map((w, i) => [
+        w.id,
+        { x: 0, y: i * 3, w: 4, h: 3, size: "Compact" as const },
+      ]),
+    );
+    expect(
+      validateDashboardConfig({
+        ...validConfig(),
+        widgets,
+        layouts: { desktop: rects },
+      }).ok,
+    ).toBe(false);
+    // control: 24 passes
+    const ok24 = widgets.slice(0, 24);
+    expect(
+      validateDashboardConfig({
+        ...validConfig(),
+        widgets: ok24,
+        layouts: {
+          desktop: Object.fromEntries(Object.entries(rects).slice(0, 24)),
+        },
+      }).ok,
+    ).toBe(true);
+  });
+
+  it("client projection re-packs: removing staff widgets compacts the grid", () => {
+    const cfg = {
+      ...validConfig(),
+      widgets: [
+        validWidget({ id: "top", settings: { visibility: "staff" } }),
+        validWidget({ id: "low", settings: { visibility: "client" } }),
+      ],
+      layouts: {
+        desktop: {
+          top: { x: 0, y: 0, w: 4, h: 3, size: "Compact" as const },
+          low: { x: 0, y: 6, w: 4, h: 3, size: "Compact" as const },
+        },
+      },
+    };
+    const r = validateDashboardConfig(cfg);
+    if (!r.ok) throw new Error("fixture invalid");
+    const proj = projectClientDashboardConfig(r.config);
+    // the surviving client widget is re-packed upward — no orphan gap
+    expect(proj.layouts.desktop!.low.y).toBe(0);
+  });
+});

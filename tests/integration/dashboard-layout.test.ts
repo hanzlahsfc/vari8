@@ -158,7 +158,7 @@ describe.skipIf(!enabled)("DASHBOARD-I1 layout persistence (real PG)", () => {
       where: { resourceType: "client_dashboard_layout" },
     });
     expect(audits).toHaveLength(1);
-    expect(audits[0].action).toBe("UPDATE");
+    expect(audits[0].action).toBe("CREATE");
   });
 
   it("no-op save writes nothing and audits nothing", async () => {
@@ -442,5 +442,221 @@ describe.skipIf(!enabled)("DASHBOARD-I1 layout persistence (real PG)", () => {
       deps(),
     );
     expect(act.ok).toBe(false);
+  });
+});
+
+describe.skipIf(!enabled)("DASHBOARD-I1 hardening (I1-R2)", () => {
+  let prisma: PrismaClient;
+  let n = 0;
+
+  beforeAll(async () => {
+    execFileSync("npx", ["prisma", "migrate", "deploy"], {
+      stdio: "pipe",
+      env: { ...process.env, DATABASE_URL: url as string },
+    });
+    prisma = new PrismaClient({ datasources: { db: { url: url as string } } });
+    await prisma.$executeRawUnsafe(
+      'TRUNCATE "client_dashboard_layout","audit_event","client_assignment","client_profile","coach_profile","access_token","workspace_member","workspace","users" RESTART IDENTITY CASCADE',
+    );
+  });
+  afterAll(async () => {
+    await prisma?.$disconnect();
+  });
+
+  const uid = () => `dr${++n}_${Date.now()}`;
+  const session = (userId: string) => ({ user: { id: userId } });
+  const deps = () => ({ db: prisma as never });
+
+  async function user() {
+    return prisma.user.create({
+      data: {
+        email: `${uid()}@example.test`,
+        passwordHash: "scrypt$fixture",
+        name: `Fixture ${uid()}`,
+        platformRole: "USER",
+        status: "ACTIVE",
+      },
+    });
+  }
+  async function ws() {
+    return prisma.workspace.create({
+      data: { name: `WS ${uid()}`, slug: `dr-${uid()}`, status: "ACTIVE" },
+    });
+  }
+  async function member(workspaceId: string, userId: string, role: string) {
+    return prisma.workspaceMember.create({
+      data: { workspaceId, userId, role: role as never, status: "ACTIVE" },
+    });
+  }
+  async function profile(workspaceId: string, userId: string) {
+    return prisma.clientProfile.create({
+      data: { workspaceId, userId, name: `Client ${uid()}` },
+    });
+  }
+  function cfg() {
+    return {
+      version: 1 as const,
+      name: "Maya",
+      widgets: [
+        {
+          id: "w1",
+          kind: "CU04",
+          settings: {
+            title: "T",
+            source: "checkins",
+            summary: "status",
+            period: "30d",
+            historyPeriod: "auto",
+            target: false,
+            size: "Compact",
+            fields: [],
+            labels: {},
+            option: "default",
+            unit: "",
+            visibility: "client",
+          },
+        },
+      ],
+      layouts: {
+        desktop: { w1: { x: 0, y: 0, w: 4, h: 3, size: "Compact" } },
+      },
+      widths: { desktop: 1040 },
+    };
+  }
+
+  it("schema drift guard: timestamps are TIMESTAMPTZ(6), not TIMESTAMP", async () => {
+    const cols = await prisma.$queryRawUnsafe<
+      { column_name: string; data_type: string }[]
+    >(
+      `SELECT column_name, data_type FROM information_schema.columns
+       WHERE table_name = 'client_dashboard_layout' AND table_schema = 'public'`,
+    );
+    const byName = Object.fromEntries(
+      cols.map((c) => [c.column_name, c.data_type]),
+    );
+    expect(byName.created_at).toBe("timestamp with time zone");
+    expect(byName.updated_at).toBe("timestamp with time zone");
+  });
+
+  it("initial create audits CREATE; later saves audit UPDATE", async () => {
+    const owner = await user();
+    const w = await ws();
+    await member(w.id, owner.id, "WORKSPACE_OWNER");
+    const cp = await profile(w.id, (await user()).id);
+    await updateClientDashboardLayout(
+      session(owner.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        config: cfg(),
+        expectedRevision: 0,
+      },
+      deps(),
+    );
+    const first = await prisma.auditEvent.findFirstOrThrow({
+      where: { resourceType: "client_dashboard_layout" },
+      orderBy: { at: "desc" },
+    });
+    expect(first.action).toBe("CREATE");
+    const changed = cfg();
+    changed.widgets[0].settings.title = "T2";
+    await updateClientDashboardLayout(
+      session(owner.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        config: changed,
+        expectedRevision: 1,
+      },
+      deps(),
+    );
+    const second = await prisma.auditEvent.findFirstOrThrow({
+      where: { resourceType: "client_dashboard_layout" },
+      orderBy: { at: "desc" },
+    });
+    expect(second.action).toBe("UPDATE");
+  });
+
+  it("assignment revoked while a save blocks on the row → fails closed", async () => {
+    const coach = await user();
+    const w = await ws();
+    const coachM = await member(w.id, coach.id, "COACH");
+    const cp = await profile(w.id, (await user()).id);
+    const asg = await prisma.clientAssignment.create({
+      data: {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        coachMemberId: coachM.id,
+        role: "PRIMARY",
+        status: "ACTIVE",
+      },
+    });
+
+    // Barrier: a separate tx holds the assignment row FOR UPDATE, then
+    // revokes — the save must observe REMOVED behind the lock. The
+    // revoker signals lock acquisition so the save is guaranteed to
+    // block inside lockAssignmentForScope's FOR UPDATE.
+    let releaseBarrier!: () => void;
+    let rowLocked!: () => void;
+    const barrier = new Promise<void>((res) => {
+      releaseBarrier = res;
+    });
+    const acquired = new Promise<void>((res) => {
+      rowLocked = res;
+    });
+    const revoker = prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(
+        `SELECT id FROM "client_assignment" WHERE id = $1 FOR UPDATE`,
+        asg.id,
+      );
+      rowLocked();
+      await barrier;
+      await tx.clientAssignment.update({
+        where: { id: asg.id },
+        data: { status: "REMOVED" },
+      });
+    });
+    await acquired;
+    const attempt = updateClientDashboardLayout(
+      session(coach.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        config: cfg(),
+        expectedRevision: 0,
+      },
+      deps(),
+    );
+    await new Promise((res) => setTimeout(res, 300));
+    releaseBarrier();
+    await revoker;
+    // Fail-closed either way: not_assigned behind the lock, or the
+    // serializable conflict P2010/P2034 — never a committed layout.
+    const outcome = await attempt.then(
+      () => ({ kind: "saved" as const }),
+      (error: unknown) => ({ kind: "failed" as const, error }),
+    );
+    expect(outcome.kind).toBe("failed");
+    if (outcome.kind === "failed") {
+      const err = outcome.error as { reason?: string; code?: string };
+      expect(
+        err.reason === "not_assigned" ||
+          err.code === "P2010" ||
+          err.code === "P2034",
+      ).toBe(true);
+    }
+    expect(
+      await prisma.clientDashboardLayout.count({
+        where: { workspaceId: w.id, clientProfileId: cp.id },
+      }),
+    ).toBe(0);
+    expect(
+      await prisma.auditEvent.count({
+        where: {
+          resourceType: "client_dashboard_layout",
+          subjectClientProfileId: cp.id,
+        },
+      }),
+    ).toBe(0);
   });
 });

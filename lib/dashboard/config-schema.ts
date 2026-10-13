@@ -280,6 +280,20 @@ export function validateDashboardConfig(value: unknown): ValidationResult {
   })();
   if (bytes > LIMITS.payloadBytes)
     return { ok: false, reason: "payload_too_large" };
+  // explicit depth bound — objects/arrays nested beyond 6 levels reject
+  // before any structural reading (P3-4)
+  const depthOf = (v: unknown, d: number): number => {
+    if (d > 6) return d;
+    if (Array.isArray(v))
+      return v.reduce<number>((m, i) => Math.max(m, depthOf(i, d + 1)), d);
+    if (isObj(v))
+      return Object.values(v).reduce<number>(
+        (m, i) => Math.max(m, depthOf(i, d + 1)),
+        d,
+      );
+    return d;
+  };
+  if (depthOf(value, 0) > 6) return { ok: false, reason: "depth" };
   if (!isObj(value)) return { ok: false, reason: "not_object" };
   for (const k of Object.keys(value))
     if (!TOP_KEYS.has(k)) return { ok: false, reason: "unknown_key" };
@@ -357,6 +371,9 @@ export function validateDashboardConfig(value: unknown): ValidationResult {
     }
     if (!isObj(s.labels) || Object.keys(s.labels).length > LIMITS.labels)
       return { ok: false, reason: "labels" };
+    const fieldSet = new Set(s.fields as string[]);
+    for (const k2 of Object.keys(s.labels))
+      if (!fieldSet.has(k2)) return { ok: false, reason: "labels" };
     for (const [k2, v2] of Object.entries(s.labels))
       if (
         typeof k2 !== "string" ||
@@ -460,7 +477,7 @@ export function projectClientDashboardConfig(
   for (const [bpKey, rects] of Object.entries(config.layouts)) {
     const sub: Record<string, Rect> = {};
     for (const [id, r] of Object.entries(rects)) if (keep.has(id)) sub[id] = r;
-    layouts[bpKey as BreakpointName] = sub;
+    layouts[bpKey as BreakpointName] = compactRects(sub);
   }
 
   return {
@@ -470,6 +487,34 @@ export function projectClientDashboardConfig(
     layouts,
     widths: config.widths,
   };
+}
+
+/**
+ * Gravity compaction — each widget rises until it would overlap another
+ * or leave the grid. Used after staff-widget removal so the client
+ * subset carries tight, coherent geometry (no orphan gaps).
+ */
+export function compactRects(
+  rects: Record<string, Rect>,
+): Record<string, Rect> {
+  const ordered = Object.entries(rects).sort(
+    ([, a], [, b]) => a.y - b.y || a.x - b.x,
+  );
+  const out: Record<string, Rect> = {};
+  const placed: Rect[] = [];
+  const overlaps = (a: Rect, b: Rect) =>
+    a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  for (const [id, r] of ordered) {
+    const next = { ...r };
+    while (
+      next.y > 0 &&
+      !placed.some((p) => overlaps({ ...next, y: next.y - 1 }, p))
+    )
+      next.y -= 1;
+    placed.push(next);
+    out[id] = next;
+  }
+  return out;
 }
 
 /** Canonical JSON for saved-content equality — key-sorted, stable. */
@@ -843,3 +888,21 @@ export function readingOrder(layout: Record<string, Rect>): string[] {
     )
     .map(([id]) => id);
 }
+
+// ---- Editor-facing allowlist accessors (same frozen tables the server
+// validates against — the editor can only choose valid values) ----
+
+export const SIZE_OPTIONS = SIZES;
+export const HISTORY_PERIODS = ["auto", "3m", "6m", "1y"] as const;
+
+export const widgetSourceOptions = (kind: WidgetKind) => SOURCE[kind];
+export const widgetSummaryOptions = (kind: WidgetKind, source: string) =>
+  summaryOptions(kind, source);
+export const widgetPeriodOptions = (kind: WidgetKind) => PERIOD[kind];
+export const widgetOptionOptions = (kind: WidgetKind) => OPTION[kind];
+export const widgetStaticFieldOptions = (kind: WidgetKind) =>
+  STATIC_FIELDS[kind];
+export const widgetTargetAvailable = (kind: WidgetKind) =>
+  TARGET_KINDS.has(kind);
+export const widgetSizeOptions = () => SIZES;
+export const SETTINGS_LIMITS = LIMITS;

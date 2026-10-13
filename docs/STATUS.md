@@ -5,6 +5,33 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## DASHBOARD-I1-R2 — review findings repaired (candidate)
+
+- Review `f683f6ea` (CONDITIONAL PASS, NOT PR-cleared) fully addressed:
+  - **P2-1:** migration `20261013120000_dashboard_i1_timestamptz` converts
+    `created_at`/`updated_at` to `TIMESTAMPTZ(6)` (session-zone cast of
+    synthetic rows, forward-only); new `information_schema` drift spec
+    proves the type; the earlier "zero drift" claim is corrected — it
+    was real new-table drift, distinct from the pre-existing
+    `coaching_template_version` index-name rename.
+  - **P2-2:** editor completed — breakpoint tabs + initialize-from-
+    desktop, drag/resize canvas (commits on pointer-up only), per-widget
+    settings panel bound to the same server allowlists, client preview
+    via the shared projection, plus the original controls/undo-redo.
+  - **P2-3:** `beforeunload` guard while saves are pending (debounce,
+    queued, in-flight, failed); E2E exercises the dialog.
+  - **P3s:** explicit depth≤6; labels⊆fields; CREATE-on-insert vs
+    UPDATE audit; client projection re-packs (compactRects);
+    deterministic barrier-held assignment-revocation race; denied
+    reconciliation → "Save denied"; bounded editor retry/backoff;
+    isolated 24-widget cap test.
+- Gates: unit **1116** · integration **681** (fresh `dash_r2`, upgrade
+  path) · build · E2E **356/12sk/0f** · format/tsc/lint clean · migrate
+  diff zero drift on the new table (pre-existing index rename remains,
+  unrelated). Mutations re-bitten (subset/CAS→audit/labels/visibility).
+- Process disposition **pending owner exception**: the original suite
+  is tests-after-code; recorded honestly, not closed.
+
 ## DASHBOARD-I1 — persisted coach-configured client dashboards (candidate)
 
 - Decision **#108** records the owner-approved product rules under the
