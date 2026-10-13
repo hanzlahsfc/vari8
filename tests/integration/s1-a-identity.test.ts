@@ -289,6 +289,7 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         "access_token",
         "audit_event",
         "client_assignment",
+        "client_dashboard_layout",
         "client_profile",
         // P-021: client-owned DailyEntry records + append-only revisions and
         // values — consent-gated health data, reviewed in

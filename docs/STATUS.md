@@ -5,6 +5,32 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## DASHBOARD-I1 — persisted coach-configured client dashboards (candidate)
+
+- Decision **#108** records the owner-approved product rules under the
+  independently approved DASHBOARD-P3 contract (`371d4183`, P3-R1
+  `f81dd795` PASS). Implementation on `feature/dashboard-i1`.
+- `client_dashboard_layout`: standard `id` PK + `@@unique(ws,client)`;
+  RESTRICT provenance + composite coherence FKs (migration
+  `20261013000000_dashboard_i1_layouts`); config-only JSON + CAS
+  `revision`.
+- Bounded allowlist validation (`lib/dashboard/config-schema.ts`) —
+  24KB/depth-6 payload, closed settings keys incl. `visibility`,
+  per-kind source/summary/period/option/fields frozen from the pinned
+  Lily source; 20-widget catalogue preserved.
+- `clientDashboards` RBAC + platform-admin deny-set; `cdash`-then-
+  `member` advisory order (chkin/csetup convention); atomic CAS + no-op
+  dedupe + structural UPDATE audit only on real change; reconcile-on-
+  409 staff-boundary read + canonical compare in the autosave editor.
+- Surfaces: staff roster `Dashboard` link → editor
+  (`…/clients/[id]/dashboard`), client `/workspace/[ws]/dashboard`
+  renders the server-filtered subset; CU04/CU16 connected, 18 truthful
+  placeholders; `ENABLE_CLIENT_DASHBOARD` + trusted runtime.
+- Gates: tsc/lint/format clean · unit 1112 · integration 678 (fresh
+  `dash_i1_full`) · build · E2E 355+12sk · migrate-diff zero drift on
+  the new table (one pre-existing index rename unrelated). Mutations:
+  subset-leak/CAS-removal/audit-skip/visibility-enum all bit.
+
 ## 2026-10-12 — I4-R2 scope-barrier coverage (tests-only)
 
 - Review P3-1 closed with a real-PG regression: WORKSPACE_OWNER owning

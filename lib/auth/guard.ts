@@ -147,6 +147,9 @@ const PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> = new Set([
   // (P-025-B), and the client submission/review resource (P-025-B).
   "checkinFormDefinitions",
   "checkinInstances",
+  // DASHBOARD-I1: layout records deny PLATFORM_ADMIN including the
+  // dual-role membership path (same posture as the other health surfaces).
+  "clientDashboards",
   "checkinsCoachReviews",
   // P-024 (decisions #86–#91 — binding requirement): staff onboarding
   // submission reviews deny PLATFORM_ADMIN including a dual-role

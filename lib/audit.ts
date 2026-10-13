@@ -118,6 +118,10 @@ export const AUDIT_RESOURCE_TYPES = [
   // the resource of the explicit staff detail READ audit (carried on
   // `checkin_submission`). Idempotent replay writes no event.
   "checkin_review",
+  // DASHBOARD-I1 (decision #108): committed coach layout saves (IDs +
+  // structural markers only — never widget settings, titles, or config
+  // content). No-op saves and failed writes produce no event.
+  "client_dashboard_layout",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 

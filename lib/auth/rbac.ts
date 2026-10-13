@@ -61,6 +61,8 @@ export const RESOURCES = [
   "checkinFormDefinitions",
   // P-025-B: one-off Check-In instance headers + schedule/cancel.
   "checkinInstances",
+  // DASHBOARD-I1 (decision #108): persisted per-client dashboard layouts.
+  "clientDashboards",
   // P-024 (product-decisions #86–#91): staff onboarding-submission review.
   "onboardingSubmissionReviews",
 ] as const;
@@ -310,6 +312,17 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
     CLIENT: D,
+  },
+  // DASHBOARD-I1 (decision #108): owner edits without an assignment;
+  // assigned ACTIVE coaches edit; assistants view; clients view their
+  // own server-filtered subset; support + platform-admin denied.
+  clientDashboards: {
+    PLATFORM_ADMIN: D,
+    WORKSPACE_OWNER: c("workspace", "workspace"),
+    COACH: c("assigned", "assigned"),
+    ASSISTANT_COACH: c("assigned", "denied"),
+    SUPPORT: D,
+    CLIENT: c("own", "denied"),
   },
   // P-023 (product-decisions #82–#85): client-owned submission records —
   // read (own submitted view/list) and write (one-shot submit) for the

@@ -50,6 +50,9 @@ export default defineConfig({
         // primary test server only — the shared resolver requires the flag
         // AND the trusted APP_ENV=test classification set below.
         ENABLE_CHECK_INS: "1",
+        // DASHBOARD-I1 (decision 108): enabled on the primary test
+        // server only — flag AND trusted APP_ENV below.
+        ENABLE_CLIENT_DASHBOARD: "1",
         // P-023-I1-R2: `next start` is NODE_ENV=production, so the
         // trusted dev/test consent boundary also requires an explicit
         // APP_ENV=test — the flag alone can never configure consent.
@@ -101,6 +104,9 @@ export default defineConfig({
         // P-025-A flag-off: explicitly empty so an inherited
         // ENABLE_CHECK_INS=1 cannot leak into the proof server.
         ENABLE_CHECK_INS: "",
+        // DASHBOARD-I1 flag-off: explicitly empty so an inherited
+        // ENABLE_CLIENT_DASHBOARD=1 cannot leak into the proof server.
+        ENABLE_CLIENT_DASHBOARD: "",
         AUTH_SECRET:
           process.env.AUTH_SECRET ?? "test-only-auth-secret-not-for-production",
         DATABASE_URL:
