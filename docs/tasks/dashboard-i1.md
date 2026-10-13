@@ -34,3 +34,21 @@ Approved contract: DASHBOARD-P3 (sha `371d4183…`, independently reviewed
   bounded editor retry/backoff; isolated 24-widget cap test.
 - Process disposition unchanged: the I1 suite remains tests-after-code;
   no owner exception claimed (recorded as pending).
+
+## I1-R3 repair — in-app navigation guard (review `0179c46f`)
+
+- Behavioral RED reproduced on the unmodified head: sidebar-link click
+  inside the 500 ms debounce navigated silently and the edit was lost
+  (beforeunload does not cover pushState routes).
+- Implemented: capture-phase click interception on internal links while
+  pending → preventDefault, flush now, `router.push` the stored href
+  only after the save commits; failed/conflict/denied saves surface an
+  explicit Leave-anyway/Stay prompt (queued + debounce cancelled on
+  abandon; already-sent saves honestly may commit). popstate (Back/
+  Forward) cannot be cancelled — the handler attempts `forward()`
+  restore AND flushes immediately so the pending edit still commits in
+  the same-document realm; documented as best-effort. `beforeunload`
+  still covers document exits. Listeners removed on unmount.
+- E2E: immediate-link, keyboard activation, unrelated-route residue,
+  existing reload guard. Mutation (guard registration removed) → both
+  nav tests fail; restored byte-identically.

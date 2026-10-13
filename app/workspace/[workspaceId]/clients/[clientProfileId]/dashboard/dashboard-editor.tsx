@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import {
   WIDGET_CATALOGUE,
@@ -77,6 +78,9 @@ export function DashboardEditor({
   const [bp, setBp] = useState<BreakpointName>("desktop");
   const [editing, setEditing] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
+  const [leavePrompt, setLeavePrompt] = useState(false);
+  const router = useRouter();
+  const navTarget = useRef<string | null>(null);
 
   const latestConfig = useRef(config);
   latestConfig.current = config;
@@ -125,6 +129,13 @@ export function DashboardEditor({
         confirmedRevision.current = result.value.revision;
         setDirty(queued.current);
         setSaveState("saved");
+        // a pending in-app navigation waited for this commit — now it
+        // may proceed with confirmed persistence
+        if (navTarget.current && !queued.current) {
+          const href = navTarget.current;
+          navTarget.current = null;
+          router.push(href);
+        }
       } else if (result.code === "denied") {
         // truthful denial (e.g. revoked mid-save) — never "conflict"
         setSaveState("denied");
@@ -160,26 +171,37 @@ export function DashboardEditor({
         // bounded retry with backoff on ambiguous/failed saves
         if (attempt < MAX_SAVE_ATTEMPTS) {
           retries.current = attempt;
-          timer.current = setTimeout(
-            () => void flush(attempt + 1),
-            1000 * attempt,
-          );
+          timer.current = setTimeout(() => {
+            timer.current = null;
+            void flush(attempt + 1);
+          }, 1000 * attempt);
           setSaveState("saving");
         } else {
           setSaveState("failed");
         }
       }
+      // a waiting navigation whose save did not cleanly commit requires
+      // an explicit discard decision — never a silent leave
+      if (
+        navTarget.current &&
+        !result.ok &&
+        ["failed", "denied", "conflict"].includes(result.code)
+      )
+        setLeavePrompt(true);
       if (queued.current) {
         queued.current = false;
         void flush();
       }
     },
-    [workspaceId, clientProfileId],
+    [workspaceId, clientProfileId, router],
   );
 
   const schedule = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => void flush(), 500);
+    timer.current = setTimeout(() => {
+      timer.current = null;
+      void flush();
+    }, 500);
   }, [flush]);
 
   const commit = useCallback(
@@ -210,10 +232,24 @@ export function DashboardEditor({
     [schedule],
   );
 
-  // Navigation guard (P2-3): warn while anything is pending — debounced
-  // edits, queued/in-flight requests, or unsaved failures. Kept edits
-  // survive a cancelled navigation; an accepted unload honestly risks
-  // losing the pending delta (no beacon claims).
+  // Navigation guard (P2-3/P2-3-R3):
+  // • beforeunload covers document exits (reload/close/Back leaving the
+  //   document) while anything is pending.
+  // • A capture-phase click listener intercepts internal <a href> clicks
+  //   (including keyboard activation — Enter fires click) while pending:
+  //   the navigation is held, the debounce is flushed immediately, and
+  //   the stored href is pushed once the save commits. A save that fails,
+  //   conflicts or is denied surfaces the explicit Leave-anyway prompt —
+  //   never a silent loss. Modifier clicks, external/hash links and
+  //   non-primary buttons pass through untouched.
+  // • popstate cannot be cancelled. On Back/Forward while pending we
+  //   attempt history.forward() to restore the editor AND flush the
+  //   pending save immediately — same-document SPA navigation keeps the
+  //   JS realm alive, so an already-started save still commits even if
+  //   the component unmounts. Forward-restore is best-effort; if the
+  //   navigation completes anyway the committed server state is intact.
+  //   The listener is removed on unmount — unrelated routes keep no
+  //   residual guard.
   useEffect(() => {
     const guard = (e: BeforeUnloadEvent) => {
       if (pending()) e.preventDefault();
@@ -223,6 +259,56 @@ export function DashboardEditor({
     // pending() reads refs — always current
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dirty]);
+
+  useEffect(() => {
+    if (!canEdit) return;
+    const onClick = (e: MouseEvent) => {
+      if (
+        e.defaultPrevented ||
+        e.button !== 0 ||
+        e.metaKey ||
+        e.ctrlKey ||
+        e.shiftKey ||
+        e.altKey
+      )
+        return;
+      const a = (e.target as Element).closest?.("a[href]");
+      if (!a || a.getAttribute("target")) return;
+      const href = a.getAttribute("href")!;
+      if (!href.startsWith("/") || href === window.location.pathname) return;
+      if (!pending()) return;
+      // hold the navigation; flush the pending save immediately, then
+      // push the intended destination once it commits
+      e.preventDefault();
+      e.stopPropagation();
+      navTarget.current = href;
+      if (inFlight.current) return; // resolves → navigates
+      if (timer.current) {
+        clearTimeout(timer.current);
+        timer.current = null;
+      }
+      void flush();
+    };
+    const onPop = () => {
+      if (!pending()) return;
+      try {
+        window.history.forward();
+      } catch {
+        /* best-effort restore — navigation may still proceed */
+      }
+      if (timer.current) {
+        clearTimeout(timer.current);
+        timer.current = null;
+      }
+      if (!inFlight.current) void flush();
+    };
+    document.addEventListener("click", onClick, true);
+    window.addEventListener("popstate", onPop);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      window.removeEventListener("popstate", onPop);
+    };
+  }, [canEdit, flush]);
 
   useEffect(
     () => () => {
@@ -457,6 +543,41 @@ export function DashboardEditor({
           <button type="button" onClick={() => void reload()}>
             Reload
           </button>
+        ) : null}
+        {leavePrompt && navTarget.current ? (
+          <span role="alert" data-testid="leave-prompt">
+            Save did not complete —{" "}
+            <button
+              type="button"
+              data-testid="leave-anyway"
+              onClick={() => {
+                // explicit abandonment: stop the pending work — the
+                // debounce and queue are cancelled; an already-sent
+                // request may still have committed server-side.
+                if (timer.current) {
+                  clearTimeout(timer.current);
+                  timer.current = null;
+                }
+                queued.current = false;
+                const href = navTarget.current;
+                navTarget.current = null;
+                setLeavePrompt(false);
+                router.push(href!);
+              }}
+            >
+              Leave anyway
+            </button>{" "}
+            <button
+              type="button"
+              data-testid="stay"
+              onClick={() => {
+                navTarget.current = null;
+                setLeavePrompt(false);
+              }}
+            >
+              Stay
+            </button>
+          </span>
         ) : null}
         {canEdit ? (
           <>

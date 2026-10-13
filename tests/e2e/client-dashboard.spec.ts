@@ -137,6 +137,78 @@ test.describe("DASHBOARD-I1", () => {
     await expect(page.getByText(/Saved/)).toBeVisible({ timeout: 10_000 });
   });
 
+  test("in-app link inside the debounce window must not drop the edit", async ({
+    page,
+  }) => {
+    await signIn(page, E2E.owner);
+    await page.goto(staffUrl());
+    await expect(page.getByTestId("dashboard-editor")).toBeVisible();
+    await page.getByTestId("dashboard-name").fill("Guarded name");
+    // click the real Clients link immediately — inside the 500ms debounce
+    await page
+      .getByTestId("shell-sidebar")
+      .getByRole("link", { name: "Clients" })
+      .click();
+    // contract: either the navigation waited for the save, or an
+    // explicit discard was chosen — never a silent loss. Assert the
+    // persisted name survives a fresh load.
+    await page.waitForLoadState("load").catch(() => {});
+    await page.goto(staffUrl());
+    await expect(page.getByTestId("dashboard-name")).toHaveValue(
+      "Guarded name",
+      { timeout: 10_000 },
+    );
+    // restore the original name so later specs see a stable fixture
+    await page
+      .getByTestId("dashboard-name")
+      .fill("Dashboard Client’s dashboard");
+    await expect(page.getByText(/Saved/)).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("keyboard-activated link inside the debounce window is held", async ({
+    page,
+  }) => {
+    await signIn(page, E2E.owner);
+    await page.goto(staffUrl());
+    await page.getByTestId("dashboard-name").fill("Keyboard name");
+    // focus + Enter on the sidebar link — same capture-phase click path
+    const link = page
+      .getByTestId("shell-sidebar")
+      .getByRole("link", { name: "Clients" });
+    await link.focus();
+    await page.keyboard.press("Enter");
+    await page.waitForURL(new RegExp(`/workspace/${wsId}/clients$`), {
+      timeout: 15_000,
+    });
+    await page.goto(staffUrl());
+    await expect(page.getByTestId("dashboard-name")).toHaveValue(
+      "Keyboard name",
+      { timeout: 10_000 },
+    );
+    await page
+      .getByTestId("dashboard-name")
+      .fill("Dashboard Client’s dashboard");
+    await expect(page.getByText(/Saved/)).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("no guard residue: unrelated routes navigate freely after unmount", async ({
+    page,
+  }) => {
+    await signIn(page, E2E.owner);
+    // clean state — leave and re-enter other pages without prompts
+    await page.goto(`${BASE}/workspace/${wsId}/clients`);
+    await page.getByRole("link", { name: "Check-ins" }).first().click();
+    await expect(page).toHaveURL(/checkins|check-ins/);
+    // with the editor mounted but NO pending edits, links work normally
+    await page.goto(staffUrl());
+    await expect(page.getByTestId("dashboard-editor")).toBeVisible();
+    await page
+      .getByTestId("shell-sidebar")
+      .getByRole("link", { name: "Clients" })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/workspace/${wsId}/clients$`));
+  });
+
   test("client view shows only the shared subset", async ({ page }) => {
     await signIn(page, E2E.client);
     await page.goto(clientUrl());

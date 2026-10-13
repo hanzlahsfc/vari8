@@ -5,6 +5,20 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## DASHBOARD-I1-R3 — in-app navigation guard (candidate)
+
+- Review `0179c46f` P2-3 hold closed: capture-phase link interception
+  holds in-app navigation while saves are pending; the debounce flushes
+  and the intended route is pushed only after commit; failed/conflict/
+  denied saves require an explicit Leave-anyway decision; popstate gets
+  best-effort `forward()` + immediate flush (documented — popstate is
+  not cancelable); `beforeunload` still covers document exits.
+- E2E: 8 dashboard tests (immediate link, keyboard Enter, residue-free
+  unmount). Mutation disabling the guard → both nav tests fail.
+- Unit/integration carried forward (delta is a client component + spec
+  only). Process hold for tests-after-code remains pending owner
+  acceptance — unchanged.
+
 ## DASHBOARD-I1-R2 — review findings repaired (candidate)
 
 - Review `f683f6ea` (CONDITIONAL PASS, NOT PR-cleared) fully addressed:
