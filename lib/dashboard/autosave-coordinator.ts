@@ -78,9 +78,41 @@ export type AutosaveSlot = {
 
 const MAX_SAVE_ATTEMPTS = 3;
 const DEBOUNCE_MS = 500;
+/** bounded retention: clean slots are evicted oldest-first beyond this
+ * cap; dirty/pending/failed slots are NEVER evicted — they hold the
+ * user's recoverable work. */
+const MAX_CLEAN_SLOTS = 8;
 
 const slots = new Map<string, AutosaveSlot>();
 let boundUserId: string | null = null;
+
+const ephemeralSlot = (input: {
+  userId: string;
+  workspaceId: string;
+  clientProfileId: string;
+  initialConfig: DashboardConfig;
+  initialRevision: number;
+  canEdit: boolean;
+  actions: AutosaveActions;
+}): AutosaveSlot => ({
+  key: `${input.userId}:${input.workspaceId}:${input.clientProfileId}`,
+  userId: input.userId,
+  workspaceId: input.workspaceId,
+  clientProfileId: input.clientProfileId,
+  canEdit: input.canEdit,
+  actions: input.actions,
+  latestConfig: input.initialConfig,
+  confirmedRevision: input.initialRevision,
+  dirty: false,
+  inFlight: false,
+  queued: false,
+  timer: null,
+  retries: 0,
+  history: { past: [], future: [] },
+  saveState: input.canEdit ? "idle" : "readonly",
+  leavePrompt: false,
+  listeners: new Set(),
+});
 
 const emit = (slot: AutosaveSlot) => {
   slot.listeners.forEach((l) => l());
@@ -308,6 +340,14 @@ export const acquireDashboardSlot = (input: {
   canEdit: boolean;
   actions: AutosaveActions;
 }): AutosaveSlot => {
+  // SSR boundary: server rendering has no window — return a per-call
+  // ephemeral slot that never registers in the shared map and never
+  // binds the user. Two concurrent server renders cannot share retained
+  // drafts, and server state stays deterministic per request.
+  if (typeof window === "undefined") {
+    // SSR marker omitted — too noisy
+    return ephemeralSlot(input);
+  }
   // session/user change: a different userId can never see or replay a
   // previous user's retained drafts
   if (boundUserId !== null && boundUserId !== input.userId) slots.clear();
@@ -354,6 +394,23 @@ export const acquireDashboardSlot = (input: {
     leavePrompt: false,
     listeners: new Set(),
   };
+  // bounded clean-slot retention: evict the oldest CLEAN slot when the
+  // cap is exceeded. Pending/failed/prompting slots are never evicted —
+  // they carry the user's uncommitted work.
+  if (slots.size >= MAX_CLEAN_SLOTS) {
+    for (const [k, s] of slots) {
+      if (
+        !slotPending(s) &&
+        !s.leavePrompt &&
+        (s.saveState === "idle" ||
+          s.saveState === "saved" ||
+          s.saveState === "readonly")
+      ) {
+        slots.delete(k);
+        break;
+      }
+    }
+  }
   slots.set(key, slot);
   return slot;
 };

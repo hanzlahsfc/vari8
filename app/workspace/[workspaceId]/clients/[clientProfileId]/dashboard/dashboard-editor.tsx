@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -41,6 +41,7 @@ import {
   stayDashboardSlot,
   subscribeDashboardSlot,
   travelDashboardConfig,
+  type AutosaveSlot,
 } from "@/lib/dashboard/autosave-coordinator";
 
 import {
@@ -86,28 +87,26 @@ export function DashboardEditor({
   const routerRef = useRef(router);
   routerRef.current = router;
 
-  // I1-R5: the autosave slot is owned by the module-level coordinator —
-  // drafts, debounce timers, queued saves and the confirmed revision all
-  // survive this component unmounting (same-document Back/Forward on any
-  // engine). Unmount detaches the observer only; work continues.
-  const slot = useMemo(
-    () =>
-      acquireDashboardSlot({
-        userId,
-        workspaceId,
-        clientProfileId,
-        initialConfig,
-        initialRevision,
-        canEdit,
-        actions: {
-          save: saveClientDashboardLayout,
-          reload: reloadClientDashboardLayout,
-        },
-      }),
-    // acquire is identity-keyed — config/revision rebasing is the slot's
-    // own concern, not a reason to replace it
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [userId, workspaceId, clientProfileId],
+  // I1-R5/R6: the autosave slot is owned by the module-level coordinator
+  // — drafts, debounce timers, queued saves and the confirmed revision
+  // all survive this component unmounting. The initializer runs once per
+  // mounted instance; on the SERVER acquire returns an ephemeral
+  // props-only slot (no shared mutation), and on the client a fresh
+  // slot's view is identical to the SSR output — deterministic
+  // hydration, no mismatch.
+  const [slot] = useState<AutosaveSlot>(() =>
+    acquireDashboardSlot({
+      userId,
+      workspaceId,
+      clientProfileId,
+      initialConfig,
+      initialRevision,
+      canEdit,
+      actions: {
+        save: saveClientDashboardLayout,
+        reload: reloadClientDashboardLayout,
+      },
+    }),
   );
   const [, bump] = useReducer((x: number) => x + 1, 0);
   useEffect(() => subscribeDashboardSlot(slot, bump), [slot]);
@@ -140,7 +139,7 @@ export function DashboardEditor({
   const rects = shown.layouts[bp] ?? {};
   const columns = COLUMNS[bp];
 
-  const setRect = (id: string, next: Rect) =>
+  const setRect = (id: string, next: Rect) => {
     commitDashboardConfig(slot, {
       ...latestConfig.current,
       layouts: {
@@ -151,6 +150,7 @@ export function DashboardEditor({
         }),
       },
     });
+  };
 
   const canvasRef = useRef<HTMLDivElement | null>(null);
 
@@ -215,8 +215,9 @@ export function DashboardEditor({
 
   // ---------- mutations ----------
 
-  const mutate = (fn: (c: DashboardConfig) => DashboardConfig) =>
+  const mutate = (fn: (c: DashboardConfig) => DashboardConfig) => {
     commitDashboardConfig(slot, fn(latestConfig.current));
+  };
 
   const addWidget = (kind: WidgetKind) => {
     const id = `w-${kind.toLowerCase()}-${Date.now().toString(36)}`;
@@ -318,7 +319,7 @@ export function DashboardEditor({
       <div className="dashboard-toolbar" role="status" aria-live="polite">
         <label>
           Dashboard name{" "}
-          <input
+          <input autoComplete="off"
             value={config.name}
             maxLength={80}
             disabled={!canEdit}
@@ -449,7 +450,7 @@ export function DashboardEditor({
       {canEdit && !preview ? (
         <label>
           Add widget{" "}
-          <select
+          <select autoComplete="off"
             data-testid="add-widget"
             onChange={(e) => {
               if (e.target.value) addWidget(e.target.value as WidgetKind);
@@ -623,7 +624,7 @@ function SettingsPanel({
       <legend>Widget settings</legend>
       <label>
         Title{" "}
-        <input
+        <input autoComplete="off"
           value={s.title}
           maxLength={80}
           onChange={(e) => set({ title: e.target.value })}
@@ -631,7 +632,7 @@ function SettingsPanel({
       </label>
       <label>
         Source{" "}
-        <select
+        <select autoComplete="off"
           value={s.source}
           onChange={(e) => set({ source: e.target.value })}
         >
@@ -644,7 +645,7 @@ function SettingsPanel({
       </label>
       <label>
         Summary{" "}
-        <select
+        <select autoComplete="off"
           value={s.summary}
           onChange={(e) => set({ summary: e.target.value })}
         >
@@ -658,7 +659,7 @@ function SettingsPanel({
       {widgetPeriodOptions(widget.kind).length > 1 ? (
         <label>
           Period{" "}
-          <select
+          <select autoComplete="off"
             value={s.period}
             onChange={(e) => set({ period: e.target.value })}
           >
@@ -672,7 +673,7 @@ function SettingsPanel({
       ) : null}
       <label>
         History{" "}
-        <select
+        <select autoComplete="off"
           value={s.historyPeriod}
           onChange={(e) =>
             set({
@@ -690,7 +691,7 @@ function SettingsPanel({
       {widgetOptionOptions(widget.kind).length > 1 ? (
         <label>
           Option{" "}
-          <select
+          <select autoComplete="off"
             value={s.option}
             onChange={(e) => set({ option: e.target.value })}
           >
@@ -704,7 +705,7 @@ function SettingsPanel({
       ) : null}
       <label>
         Unit{" "}
-        <input
+        <input autoComplete="off"
           value={s.unit}
           maxLength={16}
           onChange={(e) => set({ unit: e.target.value })}
@@ -712,7 +713,7 @@ function SettingsPanel({
       </label>
       {widgetTargetAvailable(widget.kind) ? (
         <label>
-          <input
+          <input autoComplete="off"
             type="checkbox"
             checked={s.target}
             onChange={(e) => set({ target: e.target.checked })}
@@ -725,7 +726,7 @@ function SettingsPanel({
           <legend>Fields</legend>
           {staticFields.map((f) => (
             <label key={f}>
-              <input
+              <input autoComplete="off"
                 type="checkbox"
                 checked={s.fields.includes(f)}
                 onChange={(e) =>
@@ -743,7 +744,7 @@ function SettingsPanel({
       ) : (
         <label>
           Fields (bounded, ≤8){" "}
-          <input
+          <input autoComplete="off"
             value={s.fields.join(", ")}
             onChange={(e) =>
               set({
@@ -763,7 +764,7 @@ function SettingsPanel({
           {s.fields.map((f) => (
             <label key={f}>
               {f}{" "}
-              <input
+              <input autoComplete="off"
                 value={s.labels[f] ?? ""}
                 maxLength={80}
                 onChange={(e) =>

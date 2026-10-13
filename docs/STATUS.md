@@ -5,6 +5,31 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## DASHBOARD-I1-R6 — SSR-safe coordinator hardening (candidate)
+
+- `acquireDashboardSlot` returns a per-call ephemeral slot when
+  `typeof window === "undefined"` — SSR can never mutate the shared slot
+  map or `boundUserId`; two concurrent server renders cannot share
+  drafts. Client acquisition stays render-time (`useState` initializer):
+  a fresh slot's view is byte-identical to SSR props — no hydration
+  mismatch, no acquire-after-paint flicker.
+- Bounded clean-slot retention: `MAX_CLEAN_SLOTS=8`, oldest-clean evict;
+  dirty/pending/failed slots are never evicted.
+- Purge-while-in-flight covered: a cleared slot cannot resurrect drafts,
+  surface them, or queue further saves; already-dispatched writes may
+  still commit (honest wording retained).
+- New real bug fixed: Chromium form-value restoration repopulated the
+  controlled name input on revisit; React hydration replayed it as a
+  synthetic `onChange` → ghost commit overwrote the saved draft. Fixed
+  with `autoComplete="off"` on all editor form controls.
+- SSR suite added (`dashboard-autosave-ssr.test.ts`, node env = SSR
+  condition); coordinator suite moved to jsdom (browser path).
+- Mutation: SSR guard removed → SSR isolation test fails; restored
+  byte-identical.
+- Owner exception condition satisfied by R5-R1 technical PASS; E2E count
+  corrected to 370/12/0 (382) at `cc5df4d`; cross-engine evidence remains
+  Chromium-only + capability-stubbed (explicitly limited).
+
 ## DASHBOARD-I1-R5 — autosave coordinator (candidate pushed)
 
 - `lib/dashboard/autosave-coordinator.ts` — module-level per-slot autosave
@@ -21,7 +46,7 @@ are complete; product direction is now the configurable coaching system in
   recovery; per-client isolation; logout isolation; all R4 scenarios.
 - Mutations: component-only save lifetime → Back/draft-recovery tests
   fail; restored byte-identical.
-- Gates: spec 19/19, unit 1129, full E2E 371/12sk, tsc/eslint/prettier/
+- Gates: spec 19/19, unit 1129, full E2E 370/12sk/0f — 382 collected (CORRECTED: earlier report said 371/383 — inflated by a transient probe spec run pre-removal), tsc/eslint/prettier/
   build clean.
 - Owner exception recorded: initial tests-after-code deviation accepted
   conditionally (owner decision; not reviewer approval; PR clearance

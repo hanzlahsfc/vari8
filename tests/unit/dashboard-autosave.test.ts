@@ -1,3 +1,5 @@
+// @vitest-environment jsdom — the coordinator's real path is
+// browser-only; this file exercises the client-side slot registry.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -240,5 +242,98 @@ describe("autosave coordinator (I1-R5)", () => {
     expect(slot.latestConfig.name).toBe("server");
     expect(slot.confirmedRevision).toBe(9);
     expect(slot.dirty).toBe(false);
+  });
+});
+
+describe("purge while in-flight (I1-R6 P3-3)", () => {
+  it("a cleared slot cannot resurrect its draft or schedule queued work", async () => {
+    let resolveSave: ((v: unknown) => void) | undefined;
+    const save = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise((r) => {
+            resolveSave = r;
+          }),
+      )
+      .mockImplementation(async (input) => ({
+        ok: true as const,
+        value: { revision: input.expectedRevision + 1, config: input.config },
+      }));
+    const slot = acquire({ actions: { save, reload: vi.fn() } });
+    commitDashboardConfig(slot, cfg("in-flight"));
+    await vi.advanceTimersByTimeAsync(600); // save dispatched
+    expect(slot.inFlight).toBe(true);
+    commitDashboardConfig(slot, cfg("queued-edit")); // queued behind it
+
+    // session ends / purge lands mid-flight
+    clearAllDashboardSlots();
+    expect(anyPendingSlot()).toBeNull();
+
+    // the old request resolves — it may still commit server-side
+    // (honest: an already-dispatched write lands), but it must NOT
+    // resurrect the slot, expose the draft, or queue further work
+    resolveSave!({
+      ok: true,
+      value: { revision: 2, config: cfg("in-flight") },
+    });
+    await vi.runAllTimersAsync();
+    expect(anyPendingSlot()).toBeNull();
+    expect(save).toHaveBeenCalledTimes(1);
+    const fresh = acquire();
+    expect(fresh).not.toBe(slot);
+    expect(fresh.latestConfig.name).toBe("base");
+  });
+
+  it("a user switch mid-flight cannot replay the old user's work", async () => {
+    let resolveSave: ((v: unknown) => void) | undefined;
+    const save = vi.fn().mockImplementationOnce(
+      () =>
+        new Promise((r) => {
+          resolveSave = r;
+        }),
+    );
+    const slot = acquire({ actions: { save, reload: vi.fn() } });
+    commitDashboardConfig(slot, cfg("user1-inflight"));
+    await vi.advanceTimersByTimeAsync(600);
+
+    const other = acquire({ userId: "u2" });
+    expect(other).not.toBe(slot);
+    expect(other.latestConfig.name).toBe("base");
+
+    resolveSave!({
+      ok: true,
+      value: { revision: 2, config: cfg("user1-inflight") },
+    });
+    await vi.runAllTimersAsync();
+    // u2's session sees nothing of u1's slot even after its save landed
+    expect(anyPendingSlot()?.userId ?? null).toBeNull();
+    const again = acquire({ userId: "u2" });
+    expect(again.latestConfig.name).toBe("base");
+  });
+});
+
+describe("bounded clean-slot retention (I1-R6 P3-4)", () => {
+  it("clean slots are evicted oldest-first beyond the cap; dirty slots are never evicted", async () => {
+    const slots = [];
+    for (let i = 0; i < 9; i++) {
+      slots.push(acquire({ clientProfileId: `cp${i}` }));
+    }
+    // 9 acquired; cap is 8 — the oldest CLEAN slot (cp0) was evicted
+    const reacquire0 = acquire({ clientProfileId: "cp0" });
+    expect(reacquire0).not.toBe(slots[0]);
+    expect(reacquire0.latestConfig.name).toBe("base");
+    // later clean slots are still retained
+    const reacquire8 = acquire({ clientProfileId: "cp8" });
+    expect(reacquire8).toBe(slots[8]);
+  });
+
+  it("a dirty slot is never evicted by clean-slot pressure", async () => {
+    const dirtySlot = acquire({ clientProfileId: "cpA" });
+    commitDashboardConfig(dirtySlot, cfg("keep-me"));
+    for (let i = 0; i < 12; i++) acquire({ clientProfileId: `x${i}` });
+    const again = acquire({ clientProfileId: "cpA" });
+    expect(again).toBe(dirtySlot);
+    expect(again.latestConfig.name).toBe("keep-me");
   });
 });
