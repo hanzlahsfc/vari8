@@ -26,6 +26,13 @@ import {
   type WidgetSettings,
 } from "@/lib/dashboard/config-schema";
 import type { DashboardSafeResult } from "@/lib/dashboard/boundary";
+import {
+  bindDashboardNavGuard,
+  clearHeldNavigation,
+  completeHeldNavigation,
+  heldNavigation,
+  unbindDashboardNavGuard,
+} from "@/lib/dashboard/navigation-guard";
 
 import {
   reloadClientDashboardLayout,
@@ -75,12 +82,15 @@ export function DashboardEditor({
     canEdit ? "idle" : "readonly",
   );
   const [dirty, setDirty] = useState(false);
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
   const [bp, setBp] = useState<BreakpointName>("desktop");
   const [editing, setEditing] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
   const [leavePrompt, setLeavePrompt] = useState(false);
   const router = useRouter();
-  const navTarget = useRef<string | null>(null);
+  const routerRef = useRef(router);
+  routerRef.current = router;
 
   const latestConfig = useRef(config);
   latestConfig.current = config;
@@ -94,8 +104,15 @@ export function DashboardEditor({
     future: DashboardConfig[];
   }>({ past: [], future: [] });
 
-  const pending = () =>
-    dirty || inFlight.current || queued.current || timer.current !== null;
+  // reads refs only — always current inside long-lived listeners
+  const pending = useCallback(
+    () =>
+      dirtyRef.current ||
+      inFlight.current ||
+      queued.current ||
+      timer.current !== null,
+    [],
+  );
 
   const flush = useCallback(
     async (attempt = 1) => {
@@ -107,6 +124,10 @@ export function DashboardEditor({
       setSaveState("saving");
       const snapshot = latestConfig.current;
       const expected = confirmedRevision.current;
+      // a held in-app navigation proceeds only on confirmed persistence
+      const releaseNavIfResolved = () => {
+        if (!queued.current) completeHeldNavigation();
+      };
       let result: SaveResult;
       try {
         result = (await saveClientDashboardLayout({
@@ -129,13 +150,7 @@ export function DashboardEditor({
         confirmedRevision.current = result.value.revision;
         setDirty(queued.current);
         setSaveState("saved");
-        // a pending in-app navigation waited for this commit — now it
-        // may proceed with confirmed persistence
-        if (navTarget.current && !queued.current) {
-          const href = navTarget.current;
-          navTarget.current = null;
-          router.push(href);
-        }
+        releaseNavIfResolved();
       } else if (result.code === "denied") {
         // truthful denial (e.g. revoked mid-save) — never "conflict"
         setSaveState("denied");
@@ -163,6 +178,9 @@ export function DashboardEditor({
             confirmedRevision.current = serverLayout.revision;
             setDirty(queued.current);
             setSaveState("saved");
+            // reconcile proved the submitted content committed — a held
+            // navigation may proceed on the confirmed revision
+            releaseNavIfResolved();
           } else {
             setSaveState("conflict");
           }
@@ -181,21 +199,24 @@ export function DashboardEditor({
         }
       }
       // a waiting navigation whose save did not cleanly commit requires
-      // an explicit discard decision — never a silent leave
-      if (
-        navTarget.current &&
+      // an explicit discard decision — never a silent leave. Terminal
+      // outcomes: explicit denied/conflict, or retries exhausted
+      // (ambiguous/failed), or a failed reconcile.
+      const terminal =
         !result.ok &&
-        ["failed", "denied", "conflict"].includes(result.code)
-      )
-        setLeavePrompt(true);
+        (result.code === "denied" ||
+          result.code === "conflict" ||
+          attempt >= MAX_SAVE_ATTEMPTS);
+      if (heldNavigation() && terminal) setLeavePrompt(true);
       if (queued.current) {
         queued.current = false;
         void flush();
       }
     },
-    [workspaceId, clientProfileId, router],
+    [workspaceId, clientProfileId],
   );
 
+  const flushRef = useRef<(() => Promise<void>) | null>(null);
   const schedule = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
@@ -232,83 +253,39 @@ export function DashboardEditor({
     [schedule],
   );
 
-  // Navigation guard (P2-3/P2-3-R3):
-  // • beforeunload covers document exits (reload/close/Back leaving the
-  //   document) while anything is pending.
-  // • A capture-phase click listener intercepts internal <a href> clicks
-  //   (including keyboard activation — Enter fires click) while pending:
-  //   the navigation is held, the debounce is flushed immediately, and
-  //   the stored href is pushed once the save commits. A save that fails,
-  //   conflicts or is denied surfaces the explicit Leave-anyway prompt —
-  //   never a silent loss. Modifier clicks, external/hash links and
-  //   non-primary buttons pass through untouched.
-  // • popstate cannot be cancelled. On Back/Forward while pending we
-  //   attempt history.forward() to restore the editor AND flush the
-  //   pending save immediately — same-document SPA navigation keeps the
-  //   JS realm alive, so an already-started save still commits even if
-  //   the component unmounts. Forward-restore is best-effort; if the
-  //   navigation completes anyway the committed server state is intact.
-  //   The listener is removed on unmount — unrelated routes keep no
-  //   residual guard.
-  useEffect(() => {
-    const guard = (e: BeforeUnloadEvent) => {
-      if (pending()) e.preventDefault();
-    };
-    window.addEventListener("beforeunload", guard);
-    return () => window.removeEventListener("beforeunload", guard);
-    // pending() reads refs — always current
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dirty]);
+  // Navigation guard (P2-3/R4): singleton module-level listeners bound
+  // to this editor's live callbacks — remounts can never strand or
+  // duplicate them; unbind on unmount leaves no residue.
+  const pendingRef = useRef(pending);
+  pendingRef.current = pending;
+  flushRef.current = flush;
 
   useEffect(() => {
     if (!canEdit) return;
-    const onClick = (e: MouseEvent) => {
-      if (
-        e.defaultPrevented ||
-        e.button !== 0 ||
-        e.metaKey ||
-        e.ctrlKey ||
-        e.shiftKey ||
-        e.altKey
-      )
-        return;
-      const a = (e.target as Element).closest?.("a[href]");
-      if (!a || a.getAttribute("target")) return;
-      const href = a.getAttribute("href")!;
-      if (!href.startsWith("/") || href === window.location.pathname) return;
-      if (!pending()) return;
-      // hold the navigation; flush the pending save immediately, then
-      // push the intended destination once it commits
-      e.preventDefault();
-      e.stopPropagation();
-      navTarget.current = href;
-      if (inFlight.current) return; // resolves → navigates
-      if (timer.current) {
-        clearTimeout(timer.current);
-        timer.current = null;
-      }
-      void flush();
+    bindDashboardNavGuard({
+      pending: () => pendingRef.current(),
+      cancelTimer: () => {
+        if (timer.current) {
+          clearTimeout(timer.current);
+          timer.current = null;
+        }
+      },
+      flush: () => void flushRef.current?.(),
+      navigateTo: (href) => routerRef.current.push(href),
+    });
+    return () => unbindDashboardNavGuard();
+  }, [canEdit]);
+
+  // Document exits (reload/close/tab-close and document-level Back/
+  // Forward): beforeunload prompts while any edit is pending. pending()
+  // reads refs — always current inside the long-lived listener.
+  useEffect(() => {
+    const guard = (e: BeforeUnloadEvent) => {
+      if (pendingRef.current()) e.preventDefault();
     };
-    const onPop = () => {
-      if (!pending()) return;
-      try {
-        window.history.forward();
-      } catch {
-        /* best-effort restore — navigation may still proceed */
-      }
-      if (timer.current) {
-        clearTimeout(timer.current);
-        timer.current = null;
-      }
-      if (!inFlight.current) void flush();
-    };
-    document.addEventListener("click", onClick, true);
-    window.addEventListener("popstate", onPop);
-    return () => {
-      document.removeEventListener("click", onClick, true);
-      window.removeEventListener("popstate", onPop);
-    };
-  }, [canEdit, flush]);
+    window.addEventListener("beforeunload", guard);
+    return () => window.removeEventListener("beforeunload", guard);
+  }, []);
 
   useEffect(
     () => () => {
@@ -544,7 +521,7 @@ export function DashboardEditor({
             Reload
           </button>
         ) : null}
-        {leavePrompt && navTarget.current ? (
+        {leavePrompt && heldNavigation() ? (
           <span role="alert" data-testid="leave-prompt">
             Save did not complete —{" "}
             <button
@@ -559,10 +536,8 @@ export function DashboardEditor({
                   timer.current = null;
                 }
                 queued.current = false;
-                const href = navTarget.current;
-                navTarget.current = null;
                 setLeavePrompt(false);
-                router.push(href!);
+                completeHeldNavigation();
               }}
             >
               Leave anyway
@@ -571,7 +546,7 @@ export function DashboardEditor({
               type="button"
               data-testid="stay"
               onClick={() => {
-                navTarget.current = null;
+                clearHeldNavigation();
                 setLeavePrompt(false);
               }}
             >

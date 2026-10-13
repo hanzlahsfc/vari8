@@ -122,19 +122,16 @@ test.describe("DASHBOARD-I1", () => {
     await expect(staffWidget).toHaveCount(0);
     await page.getByTestId("client-preview").click();
     // navigation guard: edit inside the debounce window, then try to
-    // leave — beforeunload fires
+    // leave via a document navigation — beforeunload must fire; the
+    // user accepts it (explicit leave) and the page exits
+    let dialogType = "";
     page.once("dialog", async (dialog) => {
-      expect(dialog.type()).toBe("beforeunload");
-      await dialog.dismiss();
+      dialogType = dialog.type();
+      await dialog.accept();
     });
     await page.getByTestId("dashboard-name").fill("Renamed dashboard");
-    await page
-      .goto(`/workspace/${wsId}/clients`, { timeout: 3_000 })
-      .catch(() => {});
-    // still on the editor (dismissed the dialog)
-    await expect(page.getByTestId("dashboard-editor")).toBeVisible();
-    // let the pending save land
-    await expect(page.getByText(/Saved/)).toBeVisible({ timeout: 10_000 });
+    await page.goto(`/workspace/${wsId}/clients`);
+    expect(dialogType).toBe("beforeunload");
   });
 
   test("in-app link inside the debounce window must not drop the edit", async ({
@@ -185,6 +182,271 @@ test.describe("DASHBOARD-I1", () => {
       "Keyboard name",
       { timeout: 10_000 },
     );
+    await page
+      .getByTestId("dashboard-name")
+      .fill("Dashboard Client’s dashboard");
+    await expect(page.getByText(/Saved/)).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("failed save then in-app link → held with explicit prompt", async ({
+    page,
+  }) => {
+    await signIn(page, E2E.owner);
+    await page.goto(staffUrl());
+    // abort server-action POSTs so every save fails
+    await page.route(
+      `**/workspace/${wsId}/clients/${profileId}/dashboard`,
+      async (route) => {
+        if (
+          route.request().method() === "POST" &&
+          route.request().headers()["next-action"]
+        )
+          await route.abort();
+        else await route.continue();
+      },
+    );
+    await page.getByTestId("dashboard-name").fill("Failing name");
+    await expect(page.getByText("Failed — edits kept")).toBeVisible({
+      timeout: 15_000,
+    });
+    // after a failed save the guard must still hold the navigation —
+    // never a silent loss
+    await page
+      .getByTestId("shell-sidebar")
+      .getByRole("link", { name: "Clients" })
+      .click();
+    await expect(page.getByTestId("leave-prompt")).toBeVisible({
+      timeout: 15_000,
+    });
+    // Stay preserves the edit and cancels the held destination
+    await page.getByTestId("stay").click();
+    await expect(page).toHaveURL(/dashboard/);
+    await expect(page.getByTestId("dashboard-name")).toHaveValue(
+      "Failing name",
+    );
+    // Leave anyway abandons the pending work and navigates
+    await page
+      .getByTestId("shell-sidebar")
+      .getByRole("link", { name: "Clients" })
+      .click();
+    await expect(page.getByTestId("leave-prompt")).toBeVisible({
+      timeout: 15_000,
+    });
+    await page.getByTestId("leave-anyway").click();
+    await expect(page).toHaveURL(new RegExp(`/workspace/${wsId}/clients$`));
+    await page.unrouteAll();
+  });
+
+  test("conflict save then link → explicit prompt, never silent", async ({
+    page,
+  }) => {
+    await signIn(page, E2E.owner);
+    await page.goto(staffUrl());
+    await page.getByTestId("dashboard-name").fill("Base name");
+    await expect(page.getByText("Saved")).toBeVisible({ timeout: 10_000 });
+    // a second writer moves the revision server-side
+    const row = await prisma.clientDashboardLayout.findFirstOrThrow({
+      where: { workspaceId: wsId, clientProfileId: profileId },
+    });
+    const cfg = row.config as { name: string };
+    cfg.name = "Other coach name";
+    await prisma.clientDashboardLayout.update({
+      where: { id: row.id },
+      data: { config: cfg as never, revision: { increment: 1 } },
+    });
+    // our save now conflicts
+    await page.getByTestId("dashboard-name").fill("My name");
+    await expect(page.getByText("Layout changed by another coach")).toBeVisible(
+      { timeout: 15_000 },
+    );
+    await page
+      .getByTestId("shell-sidebar")
+      .getByRole("link", { name: "Clients" })
+      .click();
+    await expect(page.getByTestId("leave-prompt")).toBeVisible({
+      timeout: 15_000,
+    });
+    await page.getByTestId("stay").click();
+    await expect(page).toHaveURL(/dashboard/);
+    // Leave abandons and navigates
+    await page
+      .getByTestId("shell-sidebar")
+      .getByRole("link", { name: "Clients" })
+      .click();
+    await expect(page.getByTestId("leave-prompt")).toBeVisible({
+      timeout: 15_000,
+    });
+    await page.getByTestId("leave-anyway").click();
+    await expect(page).toHaveURL(new RegExp(`/workspace/${wsId}/clients$`));
+  });
+
+  test("in-flight save + newer queued edit → navigation waits for both", async ({
+    page,
+  }) => {
+    await signIn(page, E2E.owner);
+    await page.goto(staffUrl());
+    // controlled request barrier: slow the first save; gate the second
+    let saveCount = 0;
+    let releaseSecond: (() => void) | undefined;
+    const secondGate = new Promise<void>((r) => {
+      releaseSecond = r;
+    });
+    await page.route(
+      `**/workspace/${wsId}/clients/${profileId}/dashboard`,
+      async (route) => {
+        if (route.request().method() !== "POST") {
+          await route.continue();
+          return;
+        }
+        saveCount += 1;
+        if (saveCount === 2) await secondGate;
+        else await new Promise((r) => setTimeout(r, 1200));
+        await route.continue();
+      },
+    );
+    await page.getByTestId("dashboard-name").fill("First name");
+    // wait for the first save to actually dispatch (in-flight)
+    await expect.poll(() => saveCount, { timeout: 15_000 }).toBe(1);
+    // second edit queues while the first is in-flight
+    await page.getByTestId("dashboard-name").fill("Second name");
+    // held navigation — must not leave on the older save alone
+    await page
+      .getByTestId("shell-sidebar")
+      .getByRole("link", { name: "Clients" })
+      .click();
+    // the first save commits; the queued second save is now in-flight
+    // and held at the gate — navigation must NOT have happened yet
+    await expect.poll(() => saveCount, { timeout: 15_000 }).toBe(2);
+    expect(page.url()).toContain("/dashboard");
+    releaseSecond!();
+    await page.waitForURL(new RegExp(`/workspace/${wsId}/clients$`), {
+      timeout: 20_000,
+    });
+    // the later queued edit was committed, not just the earlier one
+    await page.goto(staffUrl());
+    await expect(page.getByTestId("dashboard-name")).toHaveValue(
+      "Second name",
+      { timeout: 10_000 },
+    );
+    await page
+      .getByTestId("dashboard-name")
+      .fill("Dashboard Client’s dashboard");
+    await expect(page.getByText(/Saved/)).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("multiple destination clicks → the last intent wins once", async ({
+    page,
+  }) => {
+    await signIn(page, E2E.owner);
+    await page.goto(staffUrl());
+    await page.route(
+      `**/workspace/${wsId}/clients/${profileId}/dashboard`,
+      async (route) => {
+        if (route.request().method() === "POST")
+          await new Promise((r) => setTimeout(r, 1200));
+        await route.continue();
+      },
+    );
+    await page.getByTestId("dashboard-name").fill("Multi click");
+    await expect(page.getByText("Saving…")).toBeVisible({
+      timeout: 10_000,
+    });
+    await page
+      .getByTestId("shell-sidebar")
+      .getByRole("link", { name: "Daily Tracker" })
+      .click();
+    await page
+      .getByTestId("shell-sidebar")
+      .getByRole("link", { name: "Clients" })
+      .click();
+    // deterministic final intent: the last clicked destination, exactly
+    // once
+    await page.waitForURL(new RegExp(`/workspace/${wsId}/clients$`), {
+      timeout: 20_000,
+    });
+  });
+
+  test("protocol-relative // links are never intercepted", async ({ page }) => {
+    await signIn(page, E2E.owner);
+    await page.goto(staffUrl());
+    await page.getByTestId("dashboard-name").fill("Proto name");
+    // a protocol-relative anchor is not an app route — the document-exit
+    // guard (beforeunload), not the click interception, applies
+    await page.evaluate((ws) => {
+      const a = document.createElement("a");
+      a.href = `//127.0.0.1:3000/workspace/${ws}/clients`;
+      a.textContent = "proto";
+      a.setAttribute("data-testid", "proto-link");
+      document.body.appendChild(a);
+    }, wsId);
+    let protoDialogType = "";
+    page.once("dialog", async (d) => {
+      protoDialogType = d.type();
+      await d.accept();
+    });
+    await page.getByTestId("proto-link").click();
+    await page.waitForURL(new RegExp(`/workspace/${wsId}/clients$`), {
+      timeout: 10_000,
+    });
+    expect(protoDialogType).toBe("beforeunload");
+  });
+
+  test("same-document Back flushes the pending save; edit persists", async ({
+    page,
+  }) => {
+    await signIn(page, E2E.owner);
+    // enter the editor via a same-document (SPA) navigation so Back is a
+    // popstate, not a document exit
+    await page.goto(`${BASE}/workspace/${wsId}/clients`);
+    await page.getByRole("link", { name: "Dashboard" }).first().click();
+    await expect(page.getByTestId("dashboard-name")).toBeVisible();
+    await page.getByTestId("dashboard-name").fill("Back name");
+    await page.goBack();
+    // the popstate flush commits server-side even though the route left
+    await expect
+      .poll(
+        async () => {
+          const row = await prisma.clientDashboardLayout.findFirst({
+            where: { workspaceId: wsId, clientProfileId: profileId },
+          });
+          return (row?.config as { name?: string } | null)?.name;
+        },
+        { timeout: 15_000 },
+      )
+      .toBe("Back name");
+    await page.goto(staffUrl());
+    await expect(page.getByTestId("dashboard-name")).toHaveValue("Back name", {
+      timeout: 15_000,
+    });
+    await page
+      .getByTestId("dashboard-name")
+      .fill("Dashboard Client’s dashboard");
+    await expect(page.getByText(/Saved/)).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("browser Back while pending is held until the save commits", async ({
+    page,
+  }) => {
+    await signIn(page, E2E.owner);
+    // fresh document entry: Back is a traverse — the Navigation API
+    // intercept cancels it, the save commits, traverseTo completes it
+    await page.goto(staffUrl());
+    await page.getByTestId("dashboard-name").fill("Exit name");
+    await page.goBack();
+    // the traversal completed only after the pending save committed
+    await expect
+      .poll(
+        async () => {
+          const row = await prisma.clientDashboardLayout.findFirst({
+            where: { workspaceId: wsId, clientProfileId: profileId },
+          });
+          return (row?.config as { name?: string } | null)?.name;
+        },
+        { timeout: 15_000 },
+      )
+      .toBe("Exit name");
+    // restore the fixture name
+    await page.goto(staffUrl());
     await page
       .getByTestId("dashboard-name")
       .fill("Dashboard Client’s dashboard");

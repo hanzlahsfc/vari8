@@ -5,6 +5,46 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## DASHBOARD-I1-R4 — stale nav guard + failure-state coverage (candidate)
+
+- Review `f992be30` P2 hold closed: the in-app guard moved to a
+  module-level singleton (`lib/dashboard/navigation-guard.ts`) whose
+  handlers are installed once per window and always call the editor's
+  ref-backed live callbacks — remounts/unmounts can never strand a
+  stale `pending()` closure (the R3 defect: post-failure clicks with
+  dirty state bypassed a stale handler).
+- Terminal failure/denial/conflict with a held navigation now requires
+  the explicit Leave/Stay decision; `Leave anyway` cancels pending work
+  and completes the held destination; `Stay` clears the hold.
+- URL handling: `//host` protocol-relative hrefs are rejected before
+  interception — never passed to `router.push`; hash/target/modifier/
+  middle/external and same-path links pass through untouched.
+- Back/Forward: the Navigation API's cancelable `navigate` event
+  (traverse) holds the traversal until the save commits, then
+  `traverseTo(key)` completes the intended history entry — verified
+  end-to-end in Chromium. Browsers without the Navigation API fall
+  back to a popstate flush (edit commits; traversal still completes) —
+  an honest, documented fallback, not silent protection.
+- E2E 15/15: debounce-window click, keyboard Enter, failed save +
+  prompt, conflict + prompt, in-flight+queued (deterministic gate —
+  navigation cannot fire after only the older save), multiple clicks,
+  `//` link, same-doc Back, document-exit Back, residue, subset,
+  flag-off 404, assistant read-only.
+- Mutations all bite and restored byte-identical: mount-time stale
+  `pending` closure + state-closing `pending` → failed-save test fails;
+  failure-guard bypass → failed+conflict fail; `//` allowed → proto
+  test fails; release-after-older-save → in-flight+queued fails.
+- `docs/STATUS.md` + spec only; no schema/permission/widget/appearance
+  changes. Unit (1116) + integration (681) carried — delta is client
+  component + nav module + E2E spec.
+- E2E process note: shared-fixture ordering failure traced to an
+  `expect()` inside a detached Playwright `dialog` handler — its
+  rejection crashed the worker, which restarted and re-ran `beforeAll`
+  (`deleteMany`), wiping the layout mid-suite. Assertions moved outside
+  handlers; documented so the pattern doesn't recur.
+- Process hold (tests-after-code) remains pending owner acceptance —
+  unchanged.
+
 ## DASHBOARD-I1-R3 — in-app navigation guard (candidate)
 
 - Review `0179c46f` P2-3 hold closed: capture-phase link interception
