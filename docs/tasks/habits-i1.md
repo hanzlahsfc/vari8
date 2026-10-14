@@ -271,3 +271,8 @@ npx vitest run --config vitest.integration.config.ts tests/integration/habits-sc
   (transient conflicts retry, final failure → `serialization_conflict`),
   and `mapError` maps a raw P2034 → `serialization_conflict` as a
   backstop. `habits` integration 28/28 + boundary unit 5/5 re-green.
+- Full E2E round 2 (`DATABASE_URL` exported so `client-home`'s bare
+  PrismaClient works): 381 passed / 0 failed / 12 skipped of 393 —
+  `client-dashboard` 19/19 and `habits` 6/6 included. Final
+  `npm run build` green on the committed tree (`1ad6c11`).
+  Branch = verified base `6b24def` + 7 commits; review candidate only.

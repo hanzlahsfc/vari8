@@ -4442,6 +4442,12 @@ FATS (g)/COOKED/RAW/DRY/CAT`; columns 12–21 and the row-label column empty →
   water/salt average swap, sparkline config, SUPPLEMENTATION/PEAKING/SHOWDAY wiring.
 - Product name/branding, license terms, PED/HRT policy, i18n.
 
+- Full E2E round 2 (with `DATABASE_URL` exported): **381 passed /
+  0 failed / 12 skipped** (393 total) — including `client-dashboard`
+  19/19 and `habits` 6/6. Final build green on the committed tree.
+  Branch `feature/habits-i1` = verified base `6b24def` + 7 commits;
+  review candidate only — no PR/merge/deploy without authority.
+
 (Repair-round 2: independent re-review of `7f40106` verified all 9
 repairs; flagged one new failure mode — unretried P2034 from the
 RepeatableRead reads' member-row FOR UPDATE surfacing as
