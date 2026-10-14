@@ -276,3 +276,42 @@ npx vitest run --config vitest.integration.config.ts tests/integration/habits-sc
   `client-dashboard` 19/19 and `habits` 6/6 included. Final
   `npm run build` green on the committed tree (`1ad6c11`).
   Branch = verified base `6b24def` + 7 commits; review candidate only.
+
+## HABITS-I1-R2 — coverage/verification-hygiene repair (on `4ed94fe`)
+
+- DONE audit: new tests assert exactly one committed `habit_log` audit
+  with structural meta `{changed, date, logStatus}` only (no
+  name/target leakage), replay writes none, and an injected audit
+  failure rolls the `habit_logs` write back.
+- Retry/contention (real PG, no mocks for the conflict itself): a
+  coordinator transaction holds the caller's `workspace_member` row
+  lock after a real UPDATE; the reader's RepeatableRead `FOR UPDATE`
+  blocks, then aborts on commit. **This exposed a real defect:** the
+  conflict surfaces as `P2010` + `meta.code="40001"` (raw-query shape),
+  not `P2034` — so `1ad6c11`'s code check never matched and real
+  conflicts skipped retry and degraded to `not_available`. Fixed via
+  `isSerializationConflict` (P2034 + P2010/{40001,40P01}) shared by
+  `withSerializedRetry` and the `mapError` backstop.
+- Proven by test: retry on a fresh transaction re-authorizes and
+  returns coherent data; a member suspended during the conflict is
+  denied on retry (revocation cannot survive); bounded exhaustion via
+  real-shape injection inside live transactions returns
+  `serialization_conflict` (never `not_available`) with zero partial
+  log/audit rows. The boundary P2034/P2010→`serialization_conflict`
+  mapping is a unit-tested backstop — it is unreachable through the
+  normally wrapped service paths and is not exercised via a fabricated
+  scenario.
+- TL22 P3-4 repaired (plan §3: cohort = habits with ≥1 scheduled
+  habit×date pair): `habitConsistency` now drops zero-scheduled rows;
+  totals unchanged. Regression test asserts exclusion.
+- Teardown: the sweep omitted `clientDashboardLayout` and all habit
+  tables (not merely ordering). Extracted `tests/e2e/fixture-sweep.ts`
+  (fixture-scoped ids, RESTRICT order, idempotent `deleteMany`) used
+  by `global-teardown.ts`; `teardown-sweep.test.ts` populates all row
+  kinds + a sentinel workspace and proves scope + idempotency.
+- Mutations (7/7 bite; sha256-verified byte-identical restores):
+  DONE-audit removal; retry-`continue` removal; P2010-branch removal;
+  exhaustion-rethrow removal; sweep-lines removal; zero-scheduled
+  filter removal; boundary-backstop neutralization.
+- Focused green: `habits.test.ts` 35/35, `teardown-sweep.test.ts` 1/1,
+  `habits-boundary.test.ts` 6/6.

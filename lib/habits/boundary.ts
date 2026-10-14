@@ -3,12 +3,11 @@
  * feature gate (dashboard gate, decision 110) is checked FIRST; every
  * service-domain error maps to a closed, non-disclosing vocabulary.
  */
-import { Prisma } from "@prisma/client";
-
 import { AccessDeniedError } from "../auth/guard";
 import { isClientDashboardEnabled } from "../dashboard/gate";
 import {
   HabitError,
+  isSerializationConflict,
   archiveHabit as serviceArchive,
   createHabit as serviceCreate,
   editHabit as serviceEdit,
@@ -61,13 +60,10 @@ function mapError<T>(error: unknown): HabitSafeResult<T> {
     return fail("not_available");
   }
   // Raw serialization failures can still reach here from unwrapped
-  // paths (e.g. a FOR UPDATE conflict under RepeatableRead) — map to
-  // the honest retry vocabulary, never a misleading not_available.
-  if (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === "P2034"
-  )
-    return fail("serialization_conflict");
+  // paths (e.g. a FOR UPDATE conflict under RepeatableRead — P2034 for
+  // typed ops, P2010/40001 for raw statements) — map to the honest
+  // retry vocabulary, never a misleading not_available.
+  if (isSerializationConflict(error)) return fail("serialization_conflict");
   return fail("not_available");
 }
 

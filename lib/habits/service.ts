@@ -108,15 +108,29 @@ export type HabitConsistencyResult = {
   totals: { scheduled: number; done: number; skipped: number; missing: number };
 };
 
+/**
+ * Serialization conflicts arrive in two shapes: typed-query/transaction
+ * failures surface as P2034, while raw-statement failures (the FOR UPDATE
+ * member/profile/assignment locks) surface as P2010 "raw query failed"
+ * with the PostgreSQL SQLSTATE in `meta.code` (40001 conflict, 40P01
+ * deadlock). Both are the same retryable transient class.
+ */
+export function isSerializationConflict(error: unknown): boolean {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
+  if (error.code === "P2034") return true;
+  if (error.code === "P2010") {
+    const sqlstate = (error.meta as { code?: string } | undefined)?.code;
+    return sqlstate === "40001" || sqlstate === "40P01";
+  }
+  return false;
+}
+
 async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
       return await fn();
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2034"
-      ) {
+      if (isSerializationConflict(error)) {
         if (attempt < MAX_ATTEMPTS) continue;
         throw new HabitError("serialization_conflict");
       }
@@ -1094,6 +1108,10 @@ export async function habitConsistency(
             else if (status === "SKIPPED") row.skipped++;
             else row.missing++;
           }
+          // The TL22 cohort is habits with ≥1 scheduled habit×date pair in
+          // the period — zero-scheduled habits are not rows (they would
+          // contribute only zeroes to totals anyway).
+          if (row.scheduled === 0) continue;
           rows.push(row);
           totals.scheduled += row.scheduled;
           totals.done += row.done;

@@ -4,6 +4,7 @@
  * The service is mocked; flag-off calls must never reach it.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { Prisma } from "@prisma/client";
 
 import { AccessDeniedError } from "../../lib/auth/guard";
 
@@ -119,6 +120,43 @@ describe("habits boundary — closed vocabulary", () => {
       });
       expect(result.ok).toBe(false);
       if (!result.ok) expect(result.code).toBe(safeCode);
+    }
+  });
+
+  it("maps raw Prisma P2034 to serialization_conflict (backstop)", async () => {
+    // Normally unreachable: service ops are wrapped in withSerializedRetry
+    // which converts P2034 to HabitError("serialization_conflict") before it
+    // reaches the boundary. This backstop exists for unwrapped paths — the
+    // mapping is unit-tested here, not through a manufactured read scenario.
+    flagOn();
+    const shapes = [
+      // Typed-query / transaction-commit conflicts.
+      new Prisma.PrismaClientKnownRequestError(
+        "Transaction failed due to a write conflict or a deadlock",
+        { code: "P2034", clientVersion: Prisma.prismaVersion.client },
+      ),
+      // Raw-statement conflicts (the FOR UPDATE locks): P2010 with the
+      // SQLSTATE in meta — the shape real contention actually produces.
+      new Prisma.PrismaClientKnownRequestError(
+        "Raw query failed. Code: `40001`.",
+        {
+          code: "P2010",
+          clientVersion: Prisma.prismaVersion.client,
+          meta: { code: "40001", message: "could not serialize access" },
+        },
+      ),
+    ];
+    for (const shape of shapes) {
+      vi.mocked(setHabitLog).mockRejectedValue(shape);
+      const result = await setHabitLogFromAction(session, {
+        workspaceId: "w1",
+        clientProfileId: "c1",
+        habitId: "h1",
+        date: "2026-10-14",
+        desired: "DONE",
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.code).toBe("serialization_conflict");
     }
   });
 

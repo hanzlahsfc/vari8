@@ -94,6 +94,44 @@ are complete; product direction is now the configurable coaching system in
 - Pre-existing harness note (not HABITS-I1): E2E global teardown
   deletes `clientProfile` before `clientDashboardLayout` —
   FK-ordered sweep needed; left untouched as unrelated scope.
+- HABITS-I1-R2 (coverage/verification-hygiene repair on `4ed94fe`):
+  - **Real defect found and fixed:** genuine RepeatableRead
+    `FOR UPDATE` contention surfaces as `P2010` with
+    `meta.code = "40001"` (raw-query SQLSTATE), not `P2034` — the
+    `1ad6c11` retry/backstop matched only `error.code === "P2034"`,
+    so real member-lock conflicts never retried and degraded to
+    `not_available`. Added `isSerializationConflict` (P2034 +
+    P2010/40001/40P01) shared by `withSerializedRetry` and the
+    boundary backstop. Found by the new deterministic contention
+    test, not by review.
+  - New coverage (real PG): positive DONE `habit_log` audit
+    (exactly one, structural meta only, replay adds none);
+    audit-failure rollback on the log path; coordinator-held member
+    lock + post-snapshot commit → real 40001 → retry returns
+    coherent data; membership suspended mid-conflict → retry
+    re-authorizes → denied; bounded exhaustion (real-shape
+    injection inside live transactions) → `serialization_conflict`
+    with no partial log/audit rows; TL22 cohort excludes
+    zero-scheduled habits (plan §3 requires ≥1 scheduled pair —
+    P3-4 repaired rather than disclosed).
+  - Teardown repaired: the sweep omitted `clientDashboardLayout`
+    and all habit tables entirely (not merely ordering). Extracted
+    `tests/e2e/fixture-sweep.ts` — fixture-scoped, RESTRICT-ordered,
+    idempotent `deleteMany` sweep — used by `global-teardown.ts`;
+    `tests/integration/teardown-sweep.test.ts` populates
+    dashboard/habit/log/schedule rows and proves the sweep,
+    sentinel isolation, and a no-op second run.
+  - Unit backstop coverage: both raw shapes (P2034, P2010/40001)
+    map to `serialization_conflict`.
+  - Mutation sweep 7/7 bite, all restored byte-identical (sha256):
+    DONE-audit removal; retry `continue` removal (bites both
+    contention tests); P2010-branch removal (bites real
+    contention); exhaustion rethrow removal (bites both
+    exhaustion tests); habit sweep-lines removal (bites teardown
+    test); zero-scheduled filter removal (bites TL22 cohort);
+    boundary backstop neutralization (bites unit test).
+  - Focused green: `habits.test.ts` 35/35 +
+    `teardown-sweep.test.ts` 1/1 + `habits-boundary.test.ts` 6/6.
 
 ## CLIENT-TASKS-I1 — real client tasks + CU03 (candidate)
 

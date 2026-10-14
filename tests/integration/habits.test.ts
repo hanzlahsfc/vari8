@@ -7,7 +7,8 @@
  */
 import { execFileSync } from "node:child_process";
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
+import { AccessDeniedError } from "../../lib/auth/guard";
 import {
   archiveHabit,
   createHabit,
@@ -111,6 +112,65 @@ describe.skipIf(!enabled)("HABITS-I1 (real PG)", () => {
   }
   const todayOnly = todayBit;
   const neverToday = allDays & ~todayBit; // covers every day except today
+
+  /** Poll pg_stat_activity until a session blocks on the member FOR UPDATE. */
+  async function waitForBlockedMemberLock() {
+    const deadline = Date.now() + 15_000;
+    for (;;) {
+      const rows = await prisma.$queryRawUnsafe<{ blocked: number }[]>(
+        `SELECT count(*)::int AS blocked
+           FROM pg_stat_activity
+          WHERE wait_event_type = 'Lock'
+            AND query LIKE '%workspace_member%FOR UPDATE%'`,
+      );
+      if (Number(rows[0]?.blocked ?? 0) > 0) return;
+      if (Date.now() > deadline)
+        throw new Error("reader never blocked on the member row lock");
+      await new Promise((r) => setTimeout(r, 25));
+    }
+  }
+
+  const p2034 = () =>
+    new Prisma.PrismaClientKnownRequestError(
+      "Transaction failed due to a write conflict or a deadlock",
+      { code: "P2034", clientVersion: Prisma.prismaVersion.client },
+    );
+  // The shape a real FOR UPDATE conflict actually takes: raw-statement
+  // failures surface as P2010 with the PostgreSQL SQLSTATE in meta.code.
+  const p2010Conflict = () =>
+    new Prisma.PrismaClientKnownRequestError(
+      "Raw query failed. Code: `40001`. Message: `could not serialize access due to concurrent update`",
+      {
+        code: "P2010",
+        clientVersion: Prisma.prismaVersion.client,
+        meta: { code: "40001", message: "could not serialize access" },
+      },
+    );
+
+  /**
+   * db wrapper whose in-transaction delegate `prop` fails every call with a
+   * real P2034 — each attempt runs a genuine transaction that aborts and
+   * rolls back, exercising the retry bound and its mapping.
+   */
+  const p2034Db = (prop: string, method: string) => ({
+    ...prisma,
+    $transaction: (fn: (tx: unknown) => Promise<unknown>, opts?: unknown) =>
+      prisma.$transaction((tx) => {
+        const wrapped = new Proxy(tx as never, {
+          get(t, p) {
+            if (p === prop)
+              return new Proxy((t as never)[prop], {
+                get(a, m) {
+                  if (m === method) return () => Promise.reject(p2034());
+                  return (a as never)[m];
+                },
+              });
+            return (t as never)[p];
+          },
+        });
+        return fn(wrapped);
+      }, opts as never),
+  });
 
   async function schedulesOf(habitId: string) {
     const rows = await prisma.habitSchedule.findMany({
@@ -704,6 +764,130 @@ describe.skipIf(!enabled)("HABITS-I1 (real PG)", () => {
       deps(),
     );
     expect(clearedAgain).toMatchObject({ status: "NONE", changed: false });
+  });
+
+  it("DONE commits exactly one structural habit_log audit; replay adds none", async () => {
+    const f = await fixture();
+    const h = await createHabit(
+      sess(f.ownerU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        name: "Sensitive habit name",
+        target: "Sensitive target text",
+        startDate: today,
+        weekdays: todayOnly,
+      },
+      deps(),
+    );
+    const before = await prisma.auditEvent.count({
+      where: { resourceType: "habit_log" },
+    });
+    const done = await setHabitLog(
+      sess(f.clientU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        habitId: h.id,
+        date: today,
+        desired: "DONE",
+      },
+      deps(),
+    );
+    expect(done).toMatchObject({ status: "DONE", changed: true });
+
+    const audits = await prisma.auditEvent.findMany({
+      where: { resourceType: "habit_log" },
+      orderBy: { at: "asc" },
+    });
+    expect(audits).toHaveLength(before + 1);
+    const audit = audits[audits.length - 1];
+    expect(audit).toMatchObject({
+      action: "UPDATE",
+      resourceType: "habit_log",
+      resourceId: h.id,
+      subjectClientProfileId: f.cp.id,
+      actorUserId: f.clientU.id,
+      workspaceId: f.w.id,
+      result: "ALLOW",
+    });
+    // Structural metadata only — no name/target/value leakage.
+    expect(audit.meta).toEqual({
+      changed: true,
+      date: today,
+      logStatus: "DONE",
+    });
+    expect(JSON.stringify(audit.meta)).not.toMatch(/Sensitive/);
+
+    // Replay creates no duplicate audit.
+    const replay = await setHabitLog(
+      sess(f.clientU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        habitId: h.id,
+        date: today,
+        desired: "DONE",
+      },
+      deps(),
+    );
+    expect(replay).toMatchObject({ status: "DONE", changed: false });
+    expect(
+      await prisma.auditEvent.count({ where: { resourceType: "habit_log" } }),
+    ).toBe(before + 1);
+  });
+
+  it("audit failure on DONE rolls back the log write", async () => {
+    const f = await fixture();
+    const h = await createHabit(
+      sess(f.ownerU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        name: "Walk",
+        target: "T",
+        startDate: today,
+        weekdays: todayOnly,
+      },
+      deps(),
+    );
+    const failingDb = {
+      ...prisma,
+      $transaction: (fn: (tx: unknown) => Promise<unknown>, opts?: unknown) =>
+        prisma.$transaction((tx) => {
+          const wrapped = new Proxy(tx as never, {
+            get(t, p) {
+              if (p === "auditEvent")
+                return new Proxy((t as never)["auditEvent"], {
+                  get(a, m) {
+                    if (m === "create")
+                      return () =>
+                        Promise.reject(new Error("audit write failed"));
+                    return (a as never)[m];
+                  },
+                });
+              return (t as never)[p];
+            },
+          });
+          return fn(wrapped);
+        }, opts as never),
+    };
+    const auditsBefore = await prisma.auditEvent.count();
+    await expect(
+      setHabitLog(
+        sess(f.clientU.id),
+        {
+          workspaceId: f.w.id,
+          clientProfileId: f.cp.id,
+          habitId: h.id,
+          date: today,
+          desired: "DONE",
+        },
+        { db: failingDb as never },
+      ),
+    ).rejects.toThrow();
+    expect(await prisma.habitLog.count({ where: { habitId: h.id } })).toBe(0);
+    expect(await prisma.auditEvent.count()).toBe(auditsBefore);
   });
 
   it("rejects future, unscheduled and pre-enrollment dates", async () => {
@@ -1340,6 +1524,49 @@ describe.skipIf(!enabled)("HABITS-I1 (real PG)", () => {
     expect(out.rows).toHaveLength(0);
   });
 
+  it("TL22 cohort excludes habits with zero scheduled days in the period", async () => {
+    const f = await fixture();
+    const scheduled = await createHabit(
+      sess(f.ownerU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        name: "Today habit",
+        target: "T",
+        startDate: today,
+        weekdays: todayOnly,
+      },
+      deps(),
+    );
+    // Boundary effective today but today's weekday bit is off — zero
+    // scheduled habit×date pairs in the 7d window → not a TL22 row.
+    const never = await createHabit(
+      sess(f.ownerU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        name: "Never today",
+        target: "T",
+        startDate: today,
+        weekdays: neverToday,
+      },
+      deps(),
+    );
+    const out = await habitConsistency(
+      sess(f.clientU.id),
+      { workspaceId: f.w.id, period: "7d" },
+      deps(),
+    );
+    expect(out.rows.map((r) => r.habitId)).toEqual([scheduled.id]);
+    expect(out.rows.map((r) => r.habitId)).not.toContain(never.id);
+    expect(out.totals).toEqual({
+      scheduled: 1,
+      done: 0,
+      skipped: 0,
+      missing: 1,
+    });
+  });
+
   /* ---------------- transactions / audit ---------------- */
 
   it("concurrent same-day DONE logs converge — one winner, one no-op", async () => {
@@ -1410,6 +1637,173 @@ describe.skipIf(!enabled)("HABITS-I1 (real PG)", () => {
     expect(ok).toHaveLength(1);
     expect(rejected).toHaveLength(1);
     expect(await schedulesOf(h.id)).toHaveLength(2);
+  });
+
+  it("real P2034 on the RepeatableRead member lock: retry re-reads and succeeds", async () => {
+    const f = await fixture();
+    const h = await createHabit(
+      sess(f.ownerU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        name: "Walk",
+        target: "T",
+        startDate: today,
+        weekdays: todayOnly,
+      },
+      deps(),
+    );
+    const clientMember = await prisma.workspaceMember.findFirstOrThrow({
+      where: { workspaceId: f.w.id, userId: f.clientU.id },
+    });
+    // Coordinator holds the caller's member row lock after a real UPDATE.
+    // The reader's RepeatableRead snapshot predates the commit, so its
+    // member FOR UPDATE aborts with P2034 and the service retries.
+    let release!: () => void;
+    let lockHeld!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const held = new Promise<void>((r) => (lockHeld = r));
+    const coordinator = prisma.$transaction(async (tc) => {
+      await tc.$executeRawUnsafe(
+        `UPDATE "workspace_member" SET role = role WHERE id = $1`,
+        clientMember.id,
+      );
+      lockHeld();
+      await gate;
+    });
+    await held;
+    const reader = listTodayHabits(
+      sess(f.clientU.id),
+      { workspaceId: f.w.id },
+      deps(),
+    );
+    await waitForBlockedMemberLock();
+    release();
+    const result = await reader;
+    await coordinator;
+    // The retried read returns coherent data on a fresh snapshot.
+    expect(result.date).toBe(today);
+    expect(result.habits.map((x) => x.id)).toContain(h.id);
+    expect(result.habits.find((x) => x.id === h.id)?.status).toBe("NONE");
+  });
+
+  it("revoked membership cannot survive a serialization retry", async () => {
+    const f = await fixture();
+    const clientMember = await prisma.workspaceMember.findFirstOrThrow({
+      where: { workspaceId: f.w.id, userId: f.clientU.id },
+    });
+    let release!: () => void;
+    let lockHeld!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const held = new Promise<void>((r) => (lockHeld = r));
+    const coordinator = prisma.$transaction(async (tc) => {
+      await tc.$executeRawUnsafe(
+        `UPDATE "workspace_member" SET status = 'SUSPENDED'::"MemberStatus"
+          WHERE id = $1`,
+        clientMember.id,
+      );
+      lockHeld();
+      await gate;
+    });
+    await held;
+    const auditsBefore = await prisma.auditEvent.count();
+    const reader = listTodayHabits(
+      sess(f.clientU.id),
+      { workspaceId: f.w.id },
+      deps(),
+    );
+    await waitForBlockedMemberLock();
+    release();
+    // Attempt 1 aborts with P2034; the fresh-transaction retry
+    // re-authorizes and observes the suspended membership — denial, not
+    // stale authorized data.
+    await expect(reader).rejects.toBeInstanceOf(AccessDeniedError);
+    await coordinator;
+    expect(await prisma.auditEvent.count()).toBe(auditsBefore);
+  });
+
+  it("bounded P2034 exhaustion on the write path returns serialization_conflict with no partial rows", async () => {
+    const f = await fixture();
+    const h = await createHabit(
+      sess(f.ownerU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        name: "Walk",
+        target: "T",
+        startDate: today,
+        weekdays: todayOnly,
+      },
+      deps(),
+    );
+    // Every attempt runs a real transaction whose audit write aborts with
+    // a genuine P2034 shape — real rollback each time, bounded retries.
+    const auditsBefore = await prisma.auditEvent.count();
+    await expect(
+      setHabitLog(
+        sess(f.clientU.id),
+        {
+          workspaceId: f.w.id,
+          clientProfileId: f.cp.id,
+          habitId: h.id,
+          date: today,
+          desired: "DONE",
+        },
+        { db: p2034Db("auditEvent", "create") as never },
+      ),
+    ).rejects.toMatchObject({ code: "serialization_conflict" });
+    // No partial response: the upserted log row rolled back every attempt.
+    expect(await prisma.habitLog.count({ where: { habitId: h.id } })).toBe(0);
+    expect(await prisma.auditEvent.count()).toBe(auditsBefore);
+  });
+
+  it("bounded P2034 exhaustion on the read path returns serialization_conflict, not not_available", async () => {
+    const f = await fixture();
+    await createHabit(
+      sess(f.ownerU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        name: "Walk",
+        target: "T",
+        startDate: today,
+        weekdays: todayOnly,
+      },
+      deps(),
+    );
+    // Each attempt reaches the member FOR UPDATE raw statement inside a
+    // real transaction and aborts with the genuine P2010/40001 shape a
+    // real conflict produces; after the bound the service must surface
+    // serialization_conflict — never a misleading not_available.
+    const conflictingDb = {
+      ...prisma,
+      $transaction: (fn: (tx: unknown) => Promise<unknown>, opts?: unknown) =>
+        prisma.$transaction((tx) => {
+          const wrapped = new Proxy(tx as never, {
+            get(t, p) {
+              if (p === "$queryRawUnsafe") {
+                const raw = (t as never)[p] as (
+                  q: string,
+                  ...a: unknown[]
+                ) => Promise<unknown>;
+                return (query: string, ...args: unknown[]) =>
+                  typeof query === "string" && query.includes("FOR UPDATE")
+                    ? Promise.reject(p2010Conflict())
+                    : raw(query, ...args);
+              }
+              return (t as never)[p];
+            },
+          });
+          return fn(wrapped);
+        }, opts as never),
+    };
+    await expect(
+      listTodayHabits(
+        sess(f.clientU.id),
+        { workspaceId: f.w.id },
+        { db: conflictingDb as never },
+      ),
+    ).rejects.toMatchObject({ code: "serialization_conflict" });
   });
 
   it("audit write failure rolls the whole mutation back", async () => {
