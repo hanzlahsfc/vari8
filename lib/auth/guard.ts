@@ -150,6 +150,11 @@ const PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> = new Set([
   // DASHBOARD-I1: layout records deny PLATFORM_ADMIN including the
   // dual-role membership path (same posture as the other health surfaces).
   "clientDashboards",
+  // CLIENT-TASKS-I1 (decision 109): client task records deny
+  // PLATFORM_ADMIN including a dual-role administrator with an ACTIVE
+  // membership of any role — the matrix cell alone only covers the
+  // no-membership path.
+  "clientTasks",
   "checkinsCoachReviews",
   // P-024 (decisions #86–#91 — binding requirement): staff onboarding
   // submission reviews deny PLATFORM_ADMIN including a dual-role

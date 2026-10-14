@@ -28,6 +28,17 @@ boundary}` — `parseTaskDueDate` (proposed 5-year UTC bound, leap-safe),
   identical; spec `tests/e2e/client-tasks.spec.ts` 5/5 green.
 - Gate: flag `ENABLE_CLIENT_DASHBOARD` reused (owner rule 5); flag-off
   staff surface 404s proven in-browser.
+- **Correction (R2):** the line above originally claimed a guard
+  deny-set entry — that entry was missing (silent no-op) at `266077c`;
+  `clientTasks` actually joined `PLATFORM_ADMIN_DENIED_RESOURCES` in the
+  R2 commit below, with a dual-role regression test.
+
+## CLIENT-TASKS-I1-R2 — platform-admin deny-set repair (candidate)
+
+- P1 closed: `clientTasks` ∈ `PLATFORM_ADMIN_DENIED_RESOURCES`; direct
+  RED (unauthorized assign reproduced) + biting mutation (deny-set
+  removal) at unit (4 roles × read/write) + integration (all ops).
+- maxLength aligned to the 120-char contract; task-owned R2 DB used.
 
 ## DASHBOARD-I1-R6 — SSR-safe coordinator hardening (candidate)
 

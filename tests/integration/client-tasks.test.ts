@@ -400,6 +400,125 @@ describe.skipIf(!enabled)("CLIENT-TASKS-I1 (real PG)", () => {
     expect(own.tasks.every((t) => t.status === "OPEN")).toBe(true);
   });
 
+  it("PLATFORM_ADMIN with ACTIVE staff membership is denied everywhere", async () => {
+    const f = await fixture();
+    const task = await assignClientTask(
+      sess(f.ownerU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        title: "Legit",
+        dueDate: "2026-11-01",
+      },
+      deps(),
+    );
+    const tasksBefore = await prisma.clientTask.count();
+    const auditsBefore = await prisma.auditEvent.count();
+
+    // PLATFORM_ADMIN + ACTIVE WORKSPACE_OWNER membership — the dual-role
+    // path the matrix cell alone does not cover.
+    const adminU = await user("PLATFORM_ADMIN");
+    await member(f.w.id, adminU.id, "WORKSPACE_OWNER");
+    const admin = sess(adminU.id);
+
+    await expect(
+      assignClientTask(
+        admin,
+        {
+          workspaceId: f.w.id,
+          clientProfileId: f.cp.id,
+          title: "Injected",
+          dueDate: "2026-11-02",
+        },
+        deps(),
+      ),
+    ).rejects.toThrow();
+    await expect(
+      editClientTask(
+        admin,
+        {
+          workspaceId: f.w.id,
+          clientProfileId: f.cp.id,
+          taskId: task.id,
+          title: "X",
+          expectedRevision: 1,
+        },
+        deps(),
+      ),
+    ).rejects.toThrow();
+    await expect(
+      cancelClientTask(
+        admin,
+        {
+          workspaceId: f.w.id,
+          clientProfileId: f.cp.id,
+          taskId: task.id,
+          expectedRevision: 1,
+        },
+        deps(),
+      ),
+    ).rejects.toThrow();
+    await expect(
+      setClientTaskCompletion(
+        admin,
+        {
+          workspaceId: f.w.id,
+          clientProfileId: f.cp.id,
+          taskId: task.id,
+          desired: "COMPLETED",
+          expectedRevision: 1,
+        },
+        deps(),
+      ),
+    ).rejects.toThrow();
+    await expect(
+      listStaffClientTasks(
+        admin,
+        { workspaceId: f.w.id, clientProfileId: f.cp.id },
+        deps(),
+      ),
+    ).rejects.toThrow();
+    await expect(
+      listOwnClientTasks(admin, { workspaceId: f.w.id }, deps()),
+    ).rejects.toThrow();
+    expect(await prisma.clientTask.count()).toBe(tasksBefore);
+    expect(await prisma.auditEvent.count()).toBe(auditsBefore);
+
+    // PLATFORM_ADMIN + ACTIVE assigned COACH membership — same denial.
+    const adminCoachU = await user("PLATFORM_ADMIN");
+    const adminCoachM = await member(f.w.id, adminCoachU.id, "COACH");
+    await prisma.clientAssignment.create({
+      data: {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        coachMemberId: adminCoachM.id,
+        role: "COACH",
+        status: "ACTIVE",
+      },
+    });
+    await expect(
+      assignClientTask(
+        sess(adminCoachU.id),
+        {
+          workspaceId: f.w.id,
+          clientProfileId: f.cp.id,
+          title: "Injected2",
+          dueDate: "2026-11-02",
+        },
+        deps(),
+      ),
+    ).rejects.toThrow();
+    await expect(
+      listStaffClientTasks(
+        sess(adminCoachU.id),
+        { workspaceId: f.w.id, clientProfileId: f.cp.id },
+        deps(),
+      ),
+    ).rejects.toThrow();
+    expect(await prisma.clientTask.count()).toBe(tasksBefore);
+    expect(await prisma.auditEvent.count()).toBe(auditsBefore);
+  });
+
   it("denied attempts write no audit", async () => {
     const f = await fixture();
     const before = await prisma.auditEvent.count();

@@ -144,7 +144,7 @@ export function ClientTasksPanel({
             aria-label="Task title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            maxLength={140}
+            maxLength={120}
             placeholder="Task for the client"
             required
           />
@@ -180,6 +180,7 @@ export function ClientTasksPanel({
                 <input
                   aria-label="Edit title"
                   data-testid={`task-edit-title-${task.id}`}
+                  maxLength={120}
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
                 />

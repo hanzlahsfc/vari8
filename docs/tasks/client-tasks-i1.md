@@ -38,3 +38,28 @@ Recorded as decision #109 in `docs/product-decisions.md`.
 RED before each wave (date parser → service → UI). Mutations: operation-gate
 removal; widened `own` ownership; filter-after-limit; blind toggle;
 audit-on-noop; missing date bound; removed post-lock recheck.
+
+## R2 repair (2026-10-14, commit following `266077c`)
+
+- **P1 fixed:** `clientTasks` added to `PLATFORM_ADMIN_DENIED_RESOURCES`
+  in `lib/auth/guard.ts`. The R1 review reproduced that a PLATFORM_ADMIN
+  with an ACTIVE workspace membership could manage tasks — the matrix
+  cell only covers the no-membership path. The original candidate's
+  claim that this deny-set entry was already present was inaccurate
+  (the edit was a silent no-op); this is the correction — the earlier
+  record is preserved as written, not rewritten as accurate.
+- **Direct RED:** the reviewer's reproduction was re-run as a failing
+  test — PLATFORM_ADMIN + ACTIVE WORKSPACE_OWNER membership assigned a
+  task before the fix; both levels (unit guard 4 roles × read/write,
+  integration all ops) now deny with zero task/audit rows.
+- **Mutation:** removing only the new deny-set entry fails the dual-role
+  tests (4 unit + 1 integration); restored byte-identically, green.
+- **P3 fixed:** staff assign input `maxLength` 140→120 and the edit
+  input gained `maxLength=120` to match the server contract (no schema
+  or validation-policy change).
+- **P3 disclosed, kept:** per-CU03-widget `readOwnClientTasks` query —
+  correctness-neutral, deferred.
+- **Separate process record:** the original integration RED used
+  `not_available` stubs (a generic unimplemented failure), and parts of
+  the implementation preceded some tests — a tests-after-code deviation
+  reported as such, not relabelled as behavioral RED.
