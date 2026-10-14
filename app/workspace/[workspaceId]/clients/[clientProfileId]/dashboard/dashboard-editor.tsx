@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useRef, useState } from "react";
+import { Suspense, use, useEffect, useReducer, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -47,7 +47,6 @@ import {
 import {
   reloadClientDashboardLayout,
   saveClientDashboardLayout,
-  readClientHabitChoices,
 } from "./actions";
 
 const COLUMNS: Record<BreakpointName, number> = {
@@ -73,6 +72,7 @@ export function DashboardEditor({
   initialConfig,
   initialRevision,
   canEdit,
+  habitChoices,
 }: {
   userId: string;
   workspaceId: string;
@@ -80,27 +80,20 @@ export function DashboardEditor({
   initialConfig: DashboardConfig;
   initialRevision: number;
   canEdit: boolean;
+  // HABITS-I1 (decision 110): the TL21/TL22 field picker's authorized
+  // non-archived habit choices — streamed from the page as a deferred
+  // promise and resolved by the settings panel only when a habit
+  // widget's settings open, so the read never delays editor hydration
+  // (a mount-time action POST here serialized ahead of the autosave
+  // flush and could starve a pending layout save on navigation).
+  habitChoices: Promise<{
+    choices: { id: string; name: string }[];
+    hasMore: boolean;
+  }>;
 }) {
   const [bp, setBp] = useState<BreakpointName>("desktop");
   const [editing, setEditing] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
-  // HABITS-I1 (decision 110): the editor's field picker for TL21/TL22
-  // offers the authorized non-archived habit choices — loaded through
-  // the boundary, never a caller-supplied list.
-  const [habitChoices, setHabitChoices] = useState<
-    { id: string; name: string }[]
-  >([]);
-  useEffect(() => {
-    let live = true;
-    readClientHabitChoices({ workspaceId, clientProfileId })
-      .then((r) => {
-        if (live && r?.ok) setHabitChoices(r.value.choices);
-      })
-      .catch(() => {});
-    return () => {
-      live = false;
-    };
-  }, [workspaceId, clientProfileId]);
   const router = useRouter();
   const routerRef = useRef(router);
   routerRef.current = router;
@@ -610,11 +603,13 @@ export function DashboardEditor({
                   </div>
                 ) : null}
                 {canEdit && !preview && editing === id ? (
-                  <SettingsPanel
-                    widget={widget}
-                    onChange={(patch) => setSetting(id, patch)}
-                    habitChoices={habitChoices}
-                  />
+                  <Suspense fallback={null}>
+                    <SettingsPanel
+                      widget={widget}
+                      onChange={(patch) => setSetting(id, patch)}
+                      habitChoices={habitChoices}
+                    />
+                  </Suspense>
                 ) : null}
               </article>
             );
@@ -634,11 +629,16 @@ function SettingsPanel({
 }: {
   widget: { id: string; kind: WidgetKind; settings: WidgetSettings };
   onChange: (patch: Partial<WidgetSettings>) => void;
-  habitChoices: { id: string; name: string }[];
+  habitChoices: Promise<{
+    choices: { id: string; name: string }[];
+    hasMore: boolean;
+  }>;
 }) {
   const s = widget.settings;
   const staticFields = widgetStaticFieldOptions(widget.kind);
   const isHabitPicker = widget.kind === "TL21" || widget.kind === "TL22";
+  const { choices: habitChoiceList, hasMore: habitChoicesTruncated } =
+    use(habitChoices);
   const set = (patch: Partial<WidgetSettings>) => onChange(patch);
   return (
     <fieldset
@@ -756,10 +756,10 @@ function SettingsPanel({
       {isHabitPicker ? (
         <fieldset data-testid="habit-fields-picker">
           <legend>Habits (≤8 — empty selects all authorized)</legend>
-          {habitChoices.length === 0 && s.fields.length === 0 ? (
+          {habitChoiceList.length === 0 && s.fields.length === 0 ? (
             <p className="cc-empty">No active habits to pick from.</p>
           ) : null}
-          {habitChoices.map((c) => {
+          {habitChoiceList.map((c) => {
             const checked = s.fields.includes(c.id);
             return (
               <label key={c.id}>
@@ -784,7 +784,7 @@ function SettingsPanel({
               foreign): TL22 keeps their history — they stay selected
               until removed here. */}
           {s.fields
-            .filter((f) => !habitChoices.some((c) => c.id === f))
+            .filter((f) => !habitChoiceList.some((c) => c.id === f))
             .map((f) => (
               <label key={f}>
                 <input
@@ -798,6 +798,12 @@ function SettingsPanel({
                 {f} — archived or unavailable
               </label>
             ))}
+          {habitChoicesTruncated ? (
+            <p className="cc-hint" data-testid="habit-choices-more">
+              More habits exist beyond this list — they remain selectable only
+              if already chosen.
+            </p>
+          ) : null}
         </fieldset>
       ) : staticFields ? (
         <fieldset>

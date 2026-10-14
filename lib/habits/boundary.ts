@@ -146,8 +146,14 @@ export const readTodayHabits = (
   session: Session,
   input: { workspaceId: string; fields?: unknown },
   deps: HabitDeps = {},
-): Promise<HabitSafeResult<{ habits: TodayHabitView[]; hasMore: boolean }>> =>
-  guard(() => serviceListToday(session as never, input, deps));
+): Promise<
+  HabitSafeResult<{
+    habits: TodayHabitView[];
+    hasMore: boolean;
+    /** The server-UTC day the cohort was computed for (mark/undo date). */
+    date: string;
+  }>
+> => guard(() => serviceListToday(session as never, input, deps));
 
 export const readHabitConsistency = (
   session: Session,

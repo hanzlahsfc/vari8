@@ -23,9 +23,9 @@ export function ClientConsistencyWidget({
   const { totals, rows } = result;
   return (
     <div data-testid="client-consistency">
-      {rows.length === 0 ? (
+      {totals.scheduled === 0 ? (
         <p className="cc-empty" data-testid="consistency-empty">
-          No habits in this period.
+          No scheduled days in this period.
         </p>
       ) : (
         <>

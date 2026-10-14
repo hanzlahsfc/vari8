@@ -103,3 +103,8 @@ ALTER TABLE "public"."habit_schedules"
 ALTER TABLE "public"."habit_schedules"
     ADD CONSTRAINT "habit_schedules_end_after_start_chk"
     CHECK ("end_date" IS NULL OR "end_date" >= "effective_from");
+
+-- CAS revision is monotonic from 1 — never zero/negative.
+ALTER TABLE "public"."habits"
+    ADD CONSTRAINT "habits_revision_positive_chk"
+    CHECK ("revision" > 0);

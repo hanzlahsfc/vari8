@@ -209,3 +209,56 @@ npx vitest run --config vitest.integration.config.ts tests/integration/habits-sc
   weekday mask ignored (3), own-scope management (1), unscheduled log
   (3), skipped create audit (2), zero mask accepted (1),
   boundary-at-today (4), skipped gate (2), non-own log write (1).
+- Full E2E round 1 (393 tests): 371 pass / 4 fail. `client-home`
+  failure was environmental (that spec uses a bare `new PrismaClient()`
+  — needs `DATABASE_URL` in worker env; passes with it set). Three
+  `client-dashboard` autosave/nav-guard tests failed reproducibly;
+  control run on the base tree (`d279514` ≡ verified base `6b24def`)
+  passed 19/19 → a real branch regression, not the documented flake.
+- Regression mechanism + architectural fix: mount-time server-action
+  POSTs (editor `readClientHabitChoices`, panel `readClientHabits` +
+  `readClientHabitConsistency`) serialized on the same route ahead of
+  the nav-guard's flushed layout save, and the added serialized
+  boundary reads delayed hydration enough that a fill inside the
+  debounce window could land before `onChange` attached — no pending
+  slot, navigation proceeded, the edit was silently lost. Fix: the
+  staff page streams the habit cohort inside `<Suspense>` and passes
+  picker choices as a deferred promise resolved via `use()` only when
+  a TL21/TL22 settings panel opens. Zero mount-time action POSTs;
+  editor hydration restored to base latency. `client-dashboard`
+  19/19 + `habits` 6/6 green after the fix.
+- Independent read-only review (P4-R1 impl pass): NEEDS-FIXES — no
+  P0/P1; one P2 + eight P3s. Repairs:
+  - P2: `editHabit` validated `endDate` against `tomorrow` but could
+    write at a later future boundary — a date between the two passed
+    validation then violated `end_date >= effective_from`. Now
+    rejected `invalid_input` after `boundaryDate` is computed;
+    regression test (future-start habit, endDate inside the gap;
+    control ≥ boundary accepted) green.
+  - `withSerializedRetry`: final P2034 now maps to
+    `serialization_conflict` (the trailing unreachable throw stays as
+    a defensive default).
+  - Migration: added `habits_revision_positive_chk` (`revision > 0`)
+    per the contract constraint list.
+  - `setHabitLog`: `lockProfile` FOR UPDATE added before the habit
+    lock — same lock order as the management paths.
+  - TL21: `listTodayHabits` now returns the server-UTC `date` it
+    computed; the widget echoes it on mark/undo (browser clock no
+    longer picks the log date). `hasMore` surfaced in TL21
+    ("first page" hint) and the editor picker ("more exist" hint).
+  - TL22 + staff consistency: `totals.scheduled === 0` renders the
+    contracted "No scheduled days in this period." (never `0 of 0`).
+  - Multi-statement reads (`listStaffHabits`, `listHabitChoices`,
+    `listTodayHabits`, `habitConsistency`) now run at `RepeatableRead`
+    — authorization and cohort reads share one snapshot.
+  - `ClientHabitsWidget` re-syncs state from refreshed props so staff
+    mutations that arrive via `router.refresh()` are reflected.
+- Post-repair gates: `tsc --noEmit` clean; unit 1181/98; integration
+  re-run on fresh `habits_i1_integration` (migration checksum changed
+  by the CHECK addition) — 33/33 on the two habits files incl. the
+  new P2 regression; `client-dashboard` 19/19, `habits` 6/6.
+- Pre-existing harness defect (documented, not fixed — unrelated
+  scope): E2E global teardown deletes `clientProfile` before
+  `clientDashboardLayout`, tripping `client_dashboard_layout_…_fkey`
+  when a profile row exists. FK-ordered sweep is the fix when someone
+  owns it.

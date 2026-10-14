@@ -93,6 +93,7 @@ export default async function ClientDashboardPage({
     {
       habits: import("@/lib/habits/service").TodayHabitView[];
       hasMore: boolean;
+      date: string;
     }
   > = {};
   const consistency: Record<
@@ -108,7 +109,7 @@ export default async function ClientDashboardPage({
         );
         habitLists[w.id] = result.ok
           ? result.value
-          : { habits: [], hasMore: false };
+          : { habits: [], hasMore: false, date: "" };
       } else if (w.kind === "TL22") {
         const result = await readHabitConsistency(
           { user: { id: userId } },
@@ -168,7 +169,9 @@ export default async function ClientDashboardPage({
                   <ClientHabitsWidget
                     workspaceId={workspaceId}
                     clientProfileId={ownProfile?.id ?? ""}
+                    date={habitLists[widget.id]?.date ?? ""}
                     habits={habitLists[widget.id]?.habits ?? []}
+                    hasMore={habitLists[widget.id]?.hasMore ?? false}
                   />
                 ) : widget.kind === "TL22" ? (
                   <ClientConsistencyWidget

@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import type { TodayHabitView } from "@/lib/habits/service";
-import { serverTodayUtc } from "@/lib/habits/date";
 import { setMyHabitLog } from "./actions";
 
 /**
@@ -29,16 +28,29 @@ async function safeCall<T>(p: Promise<T>): Promise<T | null> {
 export function ClientHabitsWidget({
   workspaceId,
   clientProfileId,
+  date,
   habits: initial,
+  hasMore,
 }: {
   workspaceId: string;
   clientProfileId: string;
+  /** The server-UTC day this cohort was computed for — echoed back on
+   * mark/undo so the log date never trusts the browser clock. */
+  date: string;
   habits: TodayHabitView[];
+  hasMore: boolean;
 }) {
   const router = useRouter();
   const [habits, setHabits] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  // The server is the source of truth — after a refresh (own toggle or
+  // a staff schedule change) adopt the new cohort rather than keeping
+  // the first-render snapshot.
+  useEffect(() => {
+    setHabits(initial);
+  }, [initial]);
 
   const toggle = (habit: TodayHabitView) => {
     const desired = habit.status === "DONE" ? "CLEARED" : "DONE";
@@ -49,7 +61,7 @@ export function ClientHabitsWidget({
           workspaceId,
           clientProfileId,
           habitId: habit.id,
-          date: serverTodayUtc(),
+          date,
           desired,
         }),
       );
@@ -110,6 +122,11 @@ export function ClientHabitsWidget({
             );
           })}
         </ul>
+      )}
+      {hasMore && (
+        <p className="cc-hint" data-testid="habits-more">
+          More habits are scheduled — this view shows the first page.
+        </p>
       )}
       {error && (
         <p className="form-error" role="alert" data-testid="habits-error">

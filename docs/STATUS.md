@@ -48,6 +48,52 @@ are complete; product direction is now the configurable coaching system in
   (2), caller `weekdays=0` accepted (1), boundary at today not
   tomorrow (4), boundary gate skipped (2), log write non-`own` scope
   (1). No survivors, no masked assertions.
+- Gates: typecheck/lint/prisma-validate/build clean; fresh
+  `migrate deploy` from zero on `habits_i1_drift`; drift diff shows
+  only the documented raw-SQL FK/index conventions.
+- Full E2E round 1: 371 pass / 4 fail. `client-home` was
+  environmental (bare `new PrismaClient()` needs `DATABASE_URL` —
+  passes with it set). Three `client-dashboard` autosave/nav-guard
+  tests failed reproducibly while the identical run on the base tree
+  (`d279514` ≡ `6b24def`) passed 19/19 → real regression.
+- Regression mechanism: the initial implementation loaded habit data
+  via mount-time server-action POSTs (`readClientHabitChoices` in the
+  editor, `readClientHabits`/`readClientHabitConsistency` in the
+  panel). Those POSTs serialize on the same route ahead of the
+  nav-guard's flushed save, and the extra serialized boundary reads
+  delayed hydration enough that a fill inside the debounce window
+  could land before React attached `onChange` — no pending slot, the
+  navigation proceeded, the edit was lost. Fixed architecturally:
+  the staff page streams the habit cohort inside `<Suspense>` and
+  passes the picker choices as a deferred promise resolved by
+  `use()` only when a TL21/TL22 settings panel opens — zero
+  mount-time action POSTs, editor hydration back at base latency.
+  `client-dashboard` 19/19 + `habits` 6/6 green after the fix.
+- Independent read-only review (P4-R1 impl review): NEEDS-FIXES —
+  no P0/P1; one P2 + eight P3s. All repaired:
+  - P2 `editHabit` endDate validated against `tomorrow` but written
+    at a later future boundary → DB check violation. Now rejected
+    `invalid_input` once `boundaryDate` is known; regression test
+    added (future-start habit + endDate between tomorrow and the
+    boundary; control endDate ≥ boundary accepted).
+  - `withSerializedRetry` rethrew raw P2034 on the final attempt —
+    now maps to `HabitError("serialization_conflict")`.
+  - Migration gains `habits_revision_positive_chk` (`revision > 0`)
+    per the contract list.
+  - `setHabitLog` now `lockProfile` FOR UPDATE before the habit lock
+    (same order as management paths).
+  - TL21 echoes the server's `date` (returned by `listTodayHabits`)
+    instead of the browser clock; `hasMore` surfaced in TL21 and the
+    editor picker; TL22 + staff consistency render the contracted
+    "No scheduled days" empty-denominator state; multi-statement
+    reads run at `RepeatableRead`; `ClientHabitsWidget` re-syncs
+    from refreshed props.
+- Post-repair: unit 1181/98, integration suite re-run on a fresh
+  `habits_i1_integration` (migration checksum changed), targeted
+  E2E green. Full E2E re-run pending.
+- Pre-existing harness note (not HABITS-I1): E2E global teardown
+  deletes `clientProfile` before `clientDashboardLayout` —
+  FK-ordered sweep needed; left untouched as unrelated scope.
 
 ## CLIENT-TASKS-I1 — real client tasks + CU03 (candidate)
 

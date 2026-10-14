@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { requireSessionUser } from "@/lib/auth/route-guard";
 import { isClientDashboardEnabled } from "@/lib/dashboard/gate";
 import { readStaffDashboardLayout } from "@/lib/dashboard/boundary";
+import {
+  readStaffHabits,
+  readHabitChoices,
+  readHabitConsistency,
+} from "@/lib/habits/boundary";
 import { resolveScope } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db";
 
@@ -60,6 +66,26 @@ export default async function StaffClientDashboardPage({
   );
   if (!result.ok) notFound();
 
+  // HABITS-I1 (decision 110): habit data must not gate the editor's
+  // first paint or hydration — the serialized boundary reads would
+  // delay the shell, widening the window where a fast edit lands before
+  // hydration and is lost on navigation. The habit list streams inside
+  // a Suspense boundary; the picker choices stream as a deferred promise
+  // that only the TL21/TL22 settings panel resolves.
+  const habitChoices = readHabitChoices(
+    { user: { id: userId } },
+    { workspaceId, clientProfileId },
+  )
+    .then((r) =>
+      r.ok
+        ? r.value
+        : { choices: [] as { id: string; name: string }[], hasMore: false },
+    )
+    .catch(() => ({
+      choices: [] as { id: string; name: string }[],
+      hasMore: false,
+    }));
+
   const config = result.value.layout?.config ?? {
     version: 1 as const,
     name: `${client.name}’s dashboard`,
@@ -87,17 +113,60 @@ export default async function StaffClientDashboardPage({
         initialConfig={config}
         initialRevision={result.value.layout?.revision ?? 0}
         canEdit={canEdit}
+        habitChoices={habitChoices}
       />
       <ClientTasksPanel
         workspaceId={workspaceId}
         clientProfileId={clientProfileId}
         canEdit={canEdit}
       />
-      <ClientHabitsPanel
-        workspaceId={workspaceId}
-        clientProfileId={clientProfileId}
-        canEdit={canEdit}
-      />
+      <Suspense
+        fallback={
+          <section className="catalog-card" data-testid="staff-habits-loading">
+            <h2 className="catalog-card__title">Client habits</h2>
+            <p data-testid="habits-loading">Loading…</p>
+          </section>
+        }
+      >
+        <StaffHabitsSection
+          userId={userId}
+          workspaceId={workspaceId}
+          clientProfileId={clientProfileId}
+          canEdit={canEdit}
+        />
+      </Suspense>
     </div>
+  );
+}
+
+/** Streams the authorized habit cohort + weekly consistency into the
+ * staff panel after the editor shell has shipped. */
+async function StaffHabitsSection({
+  userId,
+  workspaceId,
+  clientProfileId,
+  canEdit,
+}: {
+  userId: string;
+  workspaceId: string;
+  clientProfileId: string;
+  canEdit: boolean;
+}) {
+  const [habits, consistency] = await Promise.all([
+    readStaffHabits({ user: { id: userId } }, { workspaceId, clientProfileId }),
+    readHabitConsistency(
+      { user: { id: userId } },
+      { workspaceId, clientProfileId, period: "7d" },
+    ),
+  ]);
+  return (
+    <ClientHabitsPanel
+      workspaceId={workspaceId}
+      clientProfileId={clientProfileId}
+      canEdit={canEdit}
+      initialHabits={habits.ok ? habits.value.habits : null}
+      initialHasMore={habits.ok ? habits.value.hasMore : false}
+      initialConsistency={consistency.ok ? consistency.value : null}
+    />
   );
 }

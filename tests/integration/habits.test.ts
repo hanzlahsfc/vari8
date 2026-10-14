@@ -524,6 +524,62 @@ describe.skipIf(!enabled)("HABITS-I1 (real PG)", () => {
     });
   });
 
+  // P4-R1 P2: an end date that is valid against tomorrow but precedes a
+  // still-future declared boundary must be invalid_input — before the fix
+  // the upsert violated the end_date >= effective_from check and surfaced
+  // a raw database error.
+  it("rejects endDate that precedes the real (future) effective boundary", async () => {
+    const f = await fixture();
+    const start = shiftDateUtc(today, 5);
+    const h = await createHabit(
+      sess(f.ownerU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        name: "Future habit",
+        target: "T",
+        startDate: start,
+        weekdays: allDays,
+      },
+      deps(),
+    );
+    // today+3 >= tomorrow (passes input grammar) but < start boundary.
+    await expect(
+      editHabit(
+        sess(f.ownerU.id),
+        {
+          workspaceId: f.w.id,
+          clientProfileId: f.cp.id,
+          habitId: h.id,
+          schedule: { weekdays: neverToday, endDate: shiftDateUtc(today, 3) },
+          expectedRevision: 1,
+        },
+        deps(),
+      ),
+    ).rejects.toMatchObject({ code: "invalid_input" });
+    // Control: an end date at/after the real boundary is accepted and
+    // written at the future boundary, not tomorrow.
+    const out = await editHabit(
+      sess(f.ownerU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        habitId: h.id,
+        schedule: { weekdays: neverToday, endDate: shiftDateUtc(today, 6) },
+        expectedRevision: 1,
+      },
+      deps(),
+    );
+    expect(out.changed).toBe(true);
+    expect(await schedulesOf(h.id)).toEqual([
+      {
+        effectiveFrom: start,
+        weekdays: neverToday,
+        endDate: shiftDateUtc(today, 6),
+      },
+    ]);
+  });
+
   it("archive writes a zero boundary at tomorrow and keeps history", async () => {
     const f = await fixture();
     const h = await createHabit(

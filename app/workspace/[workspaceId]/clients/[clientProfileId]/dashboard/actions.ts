@@ -86,7 +86,6 @@ import {
   editHabitFromAction,
   archiveHabitFromAction,
   readStaffHabits,
-  readHabitChoices,
   readHabitConsistency,
 } from "@/lib/habits/boundary";
 
@@ -132,14 +131,6 @@ export async function readClientHabits(input: {
 }) {
   const { userId } = await requireSessionUser();
   return readStaffHabits({ user: { id: userId } }, input);
-}
-
-export async function readClientHabitChoices(input: {
-  workspaceId: string;
-  clientProfileId: string;
-}) {
-  const { userId } = await requireSessionUser();
-  return readHabitChoices({ user: { id: userId } }, input);
 }
 
 export async function readClientHabitConsistency(input: {

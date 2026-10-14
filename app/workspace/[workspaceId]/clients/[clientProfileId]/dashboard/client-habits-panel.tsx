@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 
-import type { HabitView } from "@/lib/habits/service";
+import type { HabitConsistencyResult, HabitView } from "@/lib/habits/service";
 import { serverTodayUtc } from "@/lib/habits/date";
 import {
   readClientHabits,
@@ -75,6 +75,13 @@ function WeekdayPicker({
   );
 }
 
+/** Contract TL22 empty-denominator wording — never "0 of 0". */
+function consistencyText(r: HabitConsistencyResult): string {
+  return r.totals.scheduled === 0
+    ? "No scheduled days this week."
+    : `${r.totals.done} of ${r.totals.scheduled} done this week`;
+}
+
 async function safeCall<T>(p: Promise<T>): Promise<T | null> {
   try {
     return await p;
@@ -87,14 +94,23 @@ export function ClientHabitsPanel({
   workspaceId,
   clientProfileId,
   canEdit,
+  initialHabits,
+  initialHasMore,
+  initialConsistency,
 }: {
   workspaceId: string;
   clientProfileId: string;
   canEdit: boolean;
+  /** Server-rendered cohort — null when the boundary read failed. */
+  initialHabits: HabitView[] | null;
+  initialHasMore: boolean;
+  initialConsistency: HabitConsistencyResult | null;
 }) {
-  const [habits, setHabits] = useState<HabitView[] | null>(null);
-  const [hasMore, setHasMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [habits, setHabits] = useState<HabitView[] | null>(initialHabits);
+  const [hasMore, setHasMore] = useState(initialHasMore);
+  const [error, setError] = useState<string | null>(
+    initialHabits === null ? "Habits couldn’t be loaded — retry." : null,
+  );
   const [pending, startTransition] = useTransition();
 
   const [name, setName] = useState("");
@@ -109,8 +125,13 @@ export function ClientHabitsPanel({
   const [editDays, setEditDays] = useState<Set<number>>(new Set());
   const [editEnd, setEditEnd] = useState("");
 
-  const [consistency, setConsistency] = useState<string | null>(null);
+  const [consistency, setConsistency] = useState<string | null>(
+    initialConsistency ? consistencyText(initialConsistency) : null,
+  );
 
+  // Post-mutation refresh — user-driven only; the initial cohort arrives
+  // via server props so page mount fires no action POSTs that could
+  // serialize ahead of the editor's autosave flush.
   const load = () =>
     startTransition(async () => {
       const result = await safeCall(
@@ -130,18 +151,8 @@ export function ClientHabitsPanel({
           period: "7d",
         }),
       );
-      setConsistency(
-        c && c.ok
-          ? `${c.value.totals.done} of ${c.value.totals.scheduled} done this week`
-          : null,
-      );
+      setConsistency(c && c.ok ? consistencyText(c.value) : null);
     });
-
-  useEffect(() => {
-    load();
-    // `load` is recreated per render; the effect keys off the inputs only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspaceId, clientProfileId]);
 
   const create = () =>
     startTransition(async () => {
@@ -279,7 +290,9 @@ export function ClientHabitsPanel({
         </form>
       )}
       {habits === null ? (
-        <p data-testid="habits-loading">Loading…</p>
+        <p className="form-error" role="alert" data-testid="habits-loading">
+          Habits couldn’t be loaded — retry.
+        </p>
       ) : habits.length === 0 ? (
         <p className="cc-empty" data-testid="staff-habits-empty">
           No habits yet.
