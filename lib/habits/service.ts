@@ -389,7 +389,9 @@ function validateFields(fields: unknown): string[] | null {
       throw new HabitError("invalid_input");
     if (!out.includes(f)) out.push(f);
   }
-  return out;
+  // Empty/deduped-to-empty selects the full authorized cohort — a layout
+  // stores `fields: []` when no subset was picked.
+  return out.length === 0 ? null : out;
 }
 
 /** Resolve the caller's own client profile in the workspace. */

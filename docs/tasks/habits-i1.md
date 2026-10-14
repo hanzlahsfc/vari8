@@ -192,3 +192,20 @@ worktree `the-great-tracker-habits`, branch `feature/habits-i1`.
   no client log controls) + editor habit picker bounded at 8.
 - `tsc --noEmit` clean; unit 1181/98 files; integration 723/46 files.
 - E2E spec `tests/e2e/habits.spec.ts` — pending full run.
+- E2E round 2 — real bug found + fixed: a stored layout's `fields: []`
+  (staff picked no subset) was validated to `[]` and filtered the whole
+  cohort out; `validateFields` now maps empty→`null` ("all authorized")
+  with regression asserts on `fields: []` for both TL21 and TL22.
+  `ClientHabitsWidget` calls `router.refresh()` after a successful mark
+  so server-rendered TL22 totals update. Spec hardened: habit-name
+  assertions scoped to `client-habits` (names legitimately appear in
+  TL22 consistency rows), theme drive via post-load `localStorage`
+  writes (init scripts re-run on reload), and tests 2/3 are
+  self-sufficient — a failed test restarts the worker and re-runs
+  `beforeAll`/`afterAll`, so depending on another test's rows is unsafe.
+  `npx playwright test tests/e2e/habits.spec.ts` → 6/6 pass (exit 0).
+- Mutation sweep — 10 mutants, all killed, restores sha256-verified
+  byte-identical: fields-empty (2), boundary `<` off-by-one (11),
+  weekday mask ignored (3), own-scope management (1), unscheduled log
+  (3), skipped create audit (2), zero mask accepted (1),
+  boundary-at-today (4), skipped gate (2), non-own log write (1).

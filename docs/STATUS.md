@@ -29,6 +29,25 @@ are complete; product direction is now the configurable coaching system in
   723/46 pass (incl. `habits` 27 + `habits-schema` 5 on
   `habits_i1_integration`). E2E spec `tests/e2e/habits.spec.ts` written;
   full E2E + mutation + build gates pending.
+- E2E round 2 (after killing a stale port-3000 server): fixed a real
+  contract bug — stored `fields: []` (no subset picked) filtered out the
+  whole cohort instead of meaning "all authorized"; `validateFields`
+  now maps empty arrays to `null` + regression coverage in
+  `habits.test.ts` (TL21 + TL22). `ClientHabitsWidget` now
+  `router.refresh()`es after a successful mark so server-rendered TL22
+  counts update. Spec fixes: locators scoped to `client-habits` (habit
+  names correctly appear in TL22 rows), theme drive via `localStorage`
+  after load (init scripts re-run on reload), and tests 2/3 made
+  self-sufficient — a failed test restarts the worker, re-running
+  `beforeAll`/`afterAll`, so cross-test row dependencies are unsafe.
+  `npx playwright test tests/e2e/habits.spec.ts` — 6/6 pass.
+- Mutation sweep (10 mutants, all restored byte-identically via
+  sha256-verified backups): fields-empty (2 bites), boundary
+  effectiveFrom `<` (11), weekday mask ignored (3), management scope
+  admitting `own` (1), log without schedule (3), create-audit skipped
+  (2), caller `weekdays=0` accepted (1), boundary at today not
+  tomorrow (4), boundary gate skipped (2), log write non-`own` scope
+  (1). No survivors, no masked assertions.
 
 ## CLIENT-TASKS-I1 — real client tasks + CU03 (candidate)
 

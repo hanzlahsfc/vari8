@@ -200,9 +200,10 @@ test.describe("HABITS-I1", () => {
     // Client sees it via TL21 and marks done.
     await signIn(page, E2E.client);
     await page.goto(clientUrl());
-    const toggle = page.locator("[data-testid^=habit-toggle-]");
+    const clientHabits = page.getByTestId("client-habits");
+    const toggle = clientHabits.locator("[data-testid^=habit-toggle-]");
     await expect(toggle).toHaveText("Mark done", { timeout: 10_000 });
-    await expect(page.getByText("Walk the dog")).toBeVisible();
+    await expect(clientHabits.getByText("Walk the dog")).toBeVisible();
     await toggle.click();
     await expect(toggle).toHaveText("Undo", { timeout: 10_000 });
     await expect(page.locator("[data-testid^=habit-state-]")).toHaveText(
@@ -230,6 +231,9 @@ test.describe("HABITS-I1", () => {
   test("archived habit leaves TL21 but TL22 keeps its history", async ({
     page,
   }) => {
+    // Self-contained: the habit is created through the real staff flow
+    // inside this test — worker restarts after a failure re-run
+    // beforeAll, so no test may depend on another test's rows.
     await signIn(page, E2E.owner);
     await page.goto(staffUrl());
     await page.getByTestId("habit-name-input").fill("Archived habit");
@@ -240,6 +244,18 @@ test.describe("HABITS-I1", () => {
     await expect(page.getByText("Archived habit")).toBeVisible({
       timeout: 10_000,
     });
+
+    // The client sees it in TL21 while it is active.
+    await signIn(page, E2E.client);
+    await page.goto(clientUrl());
+    const clientHabits = page.getByTestId("client-habits");
+    await expect(clientHabits.getByText("Archived habit")).toBeVisible({
+      timeout: 10_000,
+    });
+
+    // Owner archives it — same-day archive still keeps it out of TL21.
+    await signIn(page, E2E.owner);
+    await page.goto(staffUrl());
     const row = page.locator("li", { hasText: "Archived habit" });
     await row.getByTestId(/^habit-archive-btn-/).click();
     await expect(row.locator("[data-testid^=staff-habit-state-]")).toHaveText(
@@ -250,10 +266,7 @@ test.describe("HABITS-I1", () => {
     await signIn(page, E2E.client);
     await page.goto(clientUrl());
     await expect(page.getByTestId("client-habits")).toBeVisible();
-    // The archived habit never enters the current scheduled list; the
-    // still-active habit from the earlier journey stays visible.
-    await expect(page.getByText("Archived habit")).not.toBeVisible();
-    await expect(page.getByText("Walk the dog")).toBeVisible();
+    await expect(clientHabits.getByText("Archived habit")).not.toBeVisible();
     // TL22 keeps the archived row's history — the row exists in counts.
     await expect(
       page.locator("[data-testid^=consistency-row-]", {
@@ -266,6 +279,24 @@ test.describe("HABITS-I1", () => {
   test("assistant reads habits but sees no management controls", async ({
     page,
   }) => {
+    // Seed directly — this test verifies the assistant's read-only view,
+    // not the creation flow (covered above), and must not depend on
+    // another test's rows.
+    const habit = await prisma.habit.create({
+      data: {
+        workspaceId: wsId,
+        clientProfileId: profileId,
+        name: "Seeded habit",
+        target: "T",
+      },
+    });
+    await prisma.habitSchedule.create({
+      data: {
+        habitId: habit.id,
+        effectiveFrom: new Date(`${utcToday()}T00:00:00Z`),
+        weekdays: 127,
+      },
+    });
     const assistantUser = await prisma.user.findUniqueOrThrow({
       where: { email: E2E.assistant },
     });
@@ -298,7 +329,7 @@ test.describe("HABITS-I1", () => {
     await signIn(page, E2E.assistant);
     await page.goto(staffUrl());
     await expect(page.getByTestId("staff-habits")).toBeVisible();
-    await expect(page.getByText("Archived habit")).toBeVisible();
+    await expect(page.getByText("Seeded habit")).toBeVisible();
     await expect(page.getByTestId("habit-create-btn")).not.toBeVisible();
     await expect(page.locator("[data-testid^=habit-archive-btn-]")).toHaveCount(
       0,
@@ -321,19 +352,23 @@ test.describe("HABITS-I1", () => {
   });
 
   test("both themes render the widgets", async ({ page }) => {
-    await page.addInitScript(
-      (theme) => window.localStorage.setItem("appearance", theme),
-      "pro-white",
-    );
     await signIn(page, E2E.client);
     await page.goto(clientUrl());
+    await expect(page.getByTestId("client-habits")).toBeVisible({
+      timeout: 10_000,
+    });
+
+    // Drive both themes via the same storage the appearance control
+    // writes — init scripts cannot be used here (they re-run on reload).
+    await page.evaluate(() =>
+      window.localStorage.setItem("appearance", "pro-white"),
+    );
+    await page.reload();
     await expect(page.locator("html")).toHaveAttribute(
       "data-theme",
       "pro-white",
     );
-    await expect(page.getByTestId("client-habits")).toBeVisible({
-      timeout: 10_000,
-    });
+    await expect(page.getByTestId("client-habits")).toBeVisible();
 
     await page.evaluate(() =>
       window.localStorage.setItem("appearance", "pro-dark"),

@@ -1063,6 +1063,14 @@ describe.skipIf(!enabled)("HABITS-I1 (real PG)", () => {
       deps(),
     );
     expect(subset.habits.map((x) => x.id)).toEqual([scheduled.id]);
+    // A stored layout carries `fields: []` when no subset was picked —
+    // that is the full authorized cohort, not an empty one.
+    const emptyArr = await listTodayHabits(
+      sess(f.clientU.id),
+      { workspaceId: f.w.id, fields: [] },
+      deps(),
+    );
+    expect(emptyArr.habits.map((x) => x.id)).toEqual([scheduled.id]);
   });
 
   it("TL22 aggregates the FULL authorized cohort (>20 habits)", async () => {
@@ -1169,7 +1177,8 @@ describe.skipIf(!enabled)("HABITS-I1 (real PG)", () => {
       },
       deps(),
     );
-    // Empty fields = all authorized (incl. archived).
+    // Empty fields = all authorized (incl. archived) — both when the key
+    // is omitted and when a stored layout carries `fields: []`.
     const all = await habitConsistency(
       sess(f.clientU.id),
       { workspaceId: f.w.id, period: "7d" },
@@ -1177,6 +1186,12 @@ describe.skipIf(!enabled)("HABITS-I1 (real PG)", () => {
     );
     expect(all.totals.scheduled).toBe(2);
     expect(all.totals.done).toBe(1);
+    const emptyArr = await habitConsistency(
+      sess(f.clientU.id),
+      { workspaceId: f.w.id, period: "7d", fields: [] },
+      deps(),
+    );
+    expect(emptyArr.totals.scheduled).toBe(2);
     // Subset keeps the archived habit's history; foreign IDs drop silently.
     const sub = await habitConsistency(
       sess(f.clientU.id),

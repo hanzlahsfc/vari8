@@ -63,6 +63,9 @@ export function ClientHabitsWidget({
           h.id === habit.id ? { ...h, status: result.value.status } : h,
         ),
       );
+      // TL22 is server-rendered — refresh so the sibling widget picks up
+      // the new done/missing counts.
+      router.refresh();
     });
   };
 
