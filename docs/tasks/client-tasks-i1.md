@@ -63,3 +63,34 @@ audit-on-noop; missing date bound; removed post-lock recheck.
   `not_available` stubs (a generic unimplemented failure), and parts of
   the implementation preceded some tests — a tests-after-code deviation
   reported as such, not relabelled as behavioral RED.
+
+## R3 repair (2026-10-14, commit following `c1e9b13`)
+
+- **Scope:** tests + teardown only — no production/schema/authorization
+  change; the P1 dual-role fix and its biting tests are preserved
+  byte-identically.
+- **Diagnosis:** the dashboard spec faulted/aborted/count-gated EVERY
+  POST to `**/clients/**/dashboard`. Server actions share the page URL,
+  so the new task-panel calls (`readClientTasks`, assign/edit/cancel)
+  entered the same fault path — aborted loads, corrupted the save-count
+  gate, and faulted 500s. Real request capture shows the save action's
+  serialized args carry `"config"`; task/reload action bodies do not.
+  Separately, the reviewer reproduced the held-traversal failure on
+  `main` (1/11), so the underlying flake is pre-existing — this repair
+  removes the candidate's amplification, not the original defect.
+- **Fix:** `isLayoutSave` matcher (POST + `next-action` + `"config"` in
+  body — derived from the real request shape, not a build-specific
+  action ID) applied to all six fault sites; task actions behave
+  normally. Teardown gained a `clientTask` sweep before the profile
+  delete (RESTRICT ordering).
+- **Sensitivity:** neutering the matcher (never matches) fails the
+  failed-save tests — the fault still reaches the intended save.
+- **Owner exception (one-time, this task only):** the owner has accepted
+  the original tests-after-code deviation for this implementation
+  (generic `not_available` RED + parts built before tests), conditional
+  on final independent technical approval. It is attributed to the
+  owner, chronology preserved, and does NOT reuse the earlier dashboard
+  exception as authority nor waive test-first for future work.
+- **Corrected count:** the committed unit suite is **1149** (the R2
+  report's 1148 was wrong — the deny-set block adds 5 role tests, of
+  which 4 were RED and SUPPORT was already matrix-denied).

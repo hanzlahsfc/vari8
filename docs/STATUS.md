@@ -33,6 +33,19 @@ boundary}` — `parseTaskDueDate` (proposed 5-year UTC bound, leap-safe),
   `clientTasks` actually joined `PLATFORM_ADMIN_DENIED_RESOURCES` in the
   R2 commit below, with a dual-role regression test.
 
+## CLIENT-TASKS-I1-R3 — dashboard test isolation (candidate)
+
+- Test-only repair: `isLayoutSave` (POST + next-action + `"config"`)
+  narrows all six dashboard-spec fault sites to the save action — task
+  POSTs pass normally; teardown gained the `clientTask` sweep.
+  Sensitivity proven (neutered matcher → failed-save tests fail);
+  focused specs green ×3; the pre-existing main flake is unchanged.
+- Unit count corrected to **1149**.
+- Owner granted a one-time exception for this task's original
+  tests-after-code deviation (conditional on final independent
+  technical approval); attributed to the owner, not the dashboard
+  exception.
+
 ## CLIENT-TASKS-I1-R2 — platform-admin deny-set repair (candidate)
 
 - P1 closed: `clientTasks` ∈ `PLATFORM_ADMIN_DENIED_RESOURCES`; direct
