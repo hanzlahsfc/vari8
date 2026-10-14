@@ -1444,3 +1444,35 @@ resolution; explicit desired-state transitions (idempotent replay,
 CAS conflict, no blind toggle); audit on changed ALLOW mutations only.
 No attachments, comments, reminders, notifications, or private coach
 tasks; retention/deletion stays deferred under unresolved D-10.
+
+**Decision #110 (APPROVED):** real habit tracking (HABITS-I1, under the
+independently reviewed HABITS-P4 contract `59222875…`, P4-R1 PASS
+`361a71ce…`). Owner-approved product rules: clients **Mark done / Undo**
+only (a separate Skip control is deferred — skipped state is modelled and
+rendered truthfully when present but no writer ships); weekday-set
+schedules with start/end; count-based consistency only — never
+percentages, streaks, or rewards; schedule edits and archive on existing
+habits take effect **tomorrow** (server-UTC); no hard product habit cap
+(bounded projection is engineering); new habits may start today or a
+future declared date within `[today, today+5y]` — no backdated
+enrollment. TL21 "Today's habits" and TL22 "Habit consistency" are the
+connected widgets; TL22 aggregates the full authorized cohort
+server-side over the configured period (never the first page); `fields`
+selects ≤8 habits with empty meaning the whole authorized cohort;
+archived selected habits retain their period history; foreign/missing
+IDs are dropped as a selection only. Widget-data authorization is
+independent of dashboard placement; staff configure and view, the client
+completes/undoes their own logs only — staff can never log on a client's
+behalf, and client write scope resolves only the log operation inside
+the transaction. Engineering contract: `Habit`/`HabitSchedule`/
+`HabitLog` with `HabitLogStatus {DONE, SKIPPED}`; many habits per
+client; `habit`-then-`member` advisory order, member FOR UPDATE,
+post-lock authorize, client profile FOR UPDATE, row CAS;
+`withSerializedRetry` on P2034; server-computed `effectiveFrom` only —
+rows at past boundaries are never mutated; archive writes a dedicated
+`weekdays = 0` boundary at tomorrow (caller-supplied `0` is rejected on
+create/edit); unique `(habit, date)` log state with clear = delete;
+composite same-workspace coherence FKs in raw SQL per repo convention;
+changed-ALLOW audit only, metadata-free of habit text. Retention/
+deletion stays deferred under unresolved D-10. The
+`ENABLE_CLIENT_DASHBOARD` gate is reused for every habit surface.

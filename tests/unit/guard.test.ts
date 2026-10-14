@@ -624,3 +624,50 @@ describe("CLIENT-TASKS-I1 (decision 109) — platform-admin deny-set", () => {
     });
   }
 });
+
+describe("HABITS-I1 (decision 110) — platform-admin deny-set", () => {
+  const adminRoles: {
+    role:
+      | "WORKSPACE_OWNER"
+      | "COACH"
+      | "ASSISTANT_COACH"
+      | "SUPPORT"
+      | "CLIENT";
+    label: string;
+  }[] = [
+    { role: "WORKSPACE_OWNER", label: "workspace-owner member" },
+    { role: "COACH", label: "assigned-coach member" },
+    { role: "ASSISTANT_COACH", label: "assistant member" },
+    { role: "SUPPORT", label: "support member" },
+    { role: "CLIENT", label: "client member" },
+  ];
+  for (const { role, label } of adminRoles) {
+    it(`denies a PLATFORM_ADMIN with an ACTIVE ${label} on habits (read + write)`, async () => {
+      const { repo } = makeRepo({
+        user: {
+          id: "u1",
+          platformRole: "PLATFORM_ADMIN",
+          status: "ACTIVE",
+        },
+        membership: { id: "m1", role, status: "ACTIVE" },
+        client: { id: c, workspaceId: w, userId: "u1" },
+        assignment: { id: "a1" },
+      });
+      for (const action of ["read", "write"] as const)
+        expect(
+          await reason(() =>
+            authorize(
+              session(),
+              {
+                resource: "habits",
+                action,
+                workspaceId: w,
+                clientProfileId: c,
+              },
+              repo,
+            ),
+          ),
+        ).toBe("role_denied");
+    });
+  }
+});

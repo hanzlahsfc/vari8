@@ -5,6 +5,20 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## HABITS-I1 — real habit tracking + TL21/TL22 (in progress)
+
+- Independently reviewed contract: HABITS-P4 (`59222875…`, 217 lines) +
+  P4-R1 PASS (`361a71ce…`, 107 lines); decision #110 recorded.
+- Base verified `6b24def` (`origin/main`); worktree
+  `the-great-tracker-habits` on `feature/habits-i1`; `appearance-r2`
+  untouched.
+- Review P3s resolved in `docs/tasks/habits-i1.md`: raw-SQL coherence FK
+  convention (not Prisma composite relation), caller `weekdays=0`
+  rejection on normal paths, `HabitLogStatus {DONE, SKIPPED}` shown,
+  `(id, workspace_id)` unique relabelled as identity target, real
+  constraint table documented.
+- Plan + decision + tracker recorded before code; test-first waves next.
+
 ## CLIENT-TASKS-I1 — real client tasks + CU03 (candidate)
 
 - Independently reviewed contract: P2 (`7296937e…`) + P3 delta

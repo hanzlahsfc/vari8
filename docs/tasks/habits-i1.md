@@ -1,0 +1,163 @@
+# HABITS-I1 — real habit tracking + TL21/TL22 connection
+
+**Contract:** `HABITS-P4-plan.md` (`59222875…`, 217 lines, SHA-256 verified) —
+final self-contained plan; `HABITS-P4-R1` independent review (`361a71ce…`,
+107 lines, PASS with four non-blocking P3s resolved below).
+**Base:** `origin/main` `6b24def401ef2da4b1c6cf977725af9b85055b1e` (verified);
+worktree `the-great-tracker-habits`, branch `feature/habits-i1`.
+**Lily source:** `/private/tmp/lily-ui` @ `ccef621141…` (pinned, verified).
+
+## Owner-approved rules (from contract, restated)
+
+1. Client **Mark done / Undo** only — no separate Skip control (skipped is
+   modelled; writer deferred).
+2. **Weekday-set** schedules with start/end.
+3. **Count-based** consistency only — never percentages/streaks.
+4. Existing-habit schedule edits and archive take effect **tomorrow**
+   (server-UTC).
+5. **No hard product habit cap** — bounded projection is engineering only.
+6. Creation `startDate ∈ [today, today+5y]` — no backdated enrollment; a habit
+   is scheduled today iff the weekday rule + start/end include today.
+
+## Owner choices recorded under this task (decision #110)
+
+- **P3-1 resolved → raw-SQL coherence FK.** `Habit` uses the repo convention:
+  single-column Prisma relation `clientProfile → ClientProfile(id)` plus a
+  raw-SQL composite FK `(client_profile_id, workspace_id) →
+  client_profile(id, workspace_id)` in the migration. The reviewed plan's
+  alternative (Prisma composite relation) was explicitly either/or; the repo
+  convention is authoritative for coherence (mirrors `client_task`,
+  `client_dashboard_layout`). The misleading "raw coherence composite FK"
+  comment now describes the actual mechanism.
+- **P3-3 resolved → relabelled, kept.** `Habit @@unique([id, workspaceId])`
+  stays as the generic same-workspace identity target (repo convention;
+  currently no composite child FK — honestly labelled, not claimed as a
+  coherence target of `habit_logs`).
+- **P3-4 resolved.** `HabitLogStatus` enum is defined in schema + migration:
+  `DONE`, `SKIPPED` (uppercase per `ClientTaskStatus` convention). Absence of
+  a log row = not logged; clear = delete.
+- **Caller `weekdays=0` rejected at the service layer on every normal path**
+  (create/edit). Only the archive operation writes a `0` boundary row.
+- **Constraint table is provided for real** (P3-2): see "Schema/constraint
+  table" below — no claimed table without contents.
+- **RBAC `habits` cell mirrors `clientTasks`** (owner workspace, coach
+  assigned, assistant read-assigned, client own, SUPPORT/PLATFORM_ADMIN
+  denied) — with `habits` added to the real
+  `PLATFORM_ADMIN_DENIED_RESOURCES` deny-set.
+- **Audit vocabulary:** new resource types `habit`, `habit_log`. Meta gains
+  `date` (`YYYY-MM-DD`-only structural) and `logStatus` (`DONE`/`CLEARED`) —
+  the shared `status` vocabulary is deliberately NOT widened (P-024
+  precedent). Habit archive events reuse the existing `status: "ARCHIVED"`.
+- **TL22 period mapping:** `today`=1d, `7d`=7, `14d`=14, `4w`=28, `6w`=42,
+  `8w`=56, `12w`=84; window `[to−(p−1), to]`, `to` = server-UTC today.
+- **Weekday mask:** bit `i` = ISO weekday `isodow−1` (Mon=bit0 … Sun=bit6);
+  callers supply 1..127.
+- **Gate:** `ENABLE_CLIENT_DASHBOARD` reused (habit widgets live on the gated
+  dashboard surfaces; staff habit panel lives on the gated editor page).
+- **Log desired-state:** `desired: "DONE" | "CLEARED"` — explicit state, never
+  a blind toggle; `CLEARED` deletes the row; replay converges idempotently.
+  Staff roles can never write logs (own-scope only, enforced in-tx).
+
+## File sequence
+
+1. `tests/unit/habits-date.test.ts` — RED: grammar/bounds/leap/UTC±/mask.
+2. `tests/unit/habits-rbac.test.ts` — RED: `habits` matrix cells + deny-set
+   + `resolveScope` coverage for all roles.
+3. `tests/unit/dashboard-config-habits.test.ts` — RED: TL21/TL22 connected
+   catalogue, `fields` cap/foreign handling at config layer.
+4. `tests/integration/habits-schema.test.ts` — RED: tables, enum,
+   uniqueness, CHECKs, FK coherence, DATE/TIMESTAMPTZ types, boundary
+   uniqueness, composite coherence.
+5. `tests/integration/habits.test.ts` — RED: full service matrix.
+6. `db/schema.prisma` — `HabitLogStatus`, `Habit`, `HabitSchedule`,
+   `HabitLog` + backrelations (`ClientProfile.habits`, `Workspace.habits`,
+   `User.habitLogs`, `Habit.schedules`, `Habit.logs`).
+7. `db/migrations/20261015000000_habits/migration.sql` — tables, enum,
+   indexes, composite coherence FK, CHECKs (see table below).
+8. `tests/integration/s1-a-identity.test.ts` — table allowlist += 3 tables.
+9. `lib/auth/rbac.ts` — `habits` resource + cell.
+10. `lib/auth/guard.ts` — `habits` ∈ `PLATFORM_ADMIN_DENIED_RESOURCES`.
+11. `lib/audit.ts` — `habit`, `habit_log` resource types + `date`/`logStatus`
+    meta keys.
+12. `lib/habits/date.ts` — `serverTodayUtc`, `parseHabitStartDate`,
+    `parseHabitEndDate`, `shiftDateUtc`, `utcWeekdayBit`, `parseWeekdayMask`
+    (rejects 0), `periodDays`, `formatHabitDate`.
+13. `lib/habits/service.ts` — `createHabit`, `editHabit`, `archiveHabit`,
+    `setHabitLog`, `listStaffHabits`, `listTodayHabits` (TL21),
+    `habitConsistency` (TL22); `habit:`-then-`member:` advisory order,
+    member FOR UPDATE, post-lock authorize, profile FOR UPDATE, row CAS;
+    `withSerializedRetry` on P2034; serializable txs; audit on changed
+    ALLOW only.
+14. `lib/habits/boundary.ts` — gate-first, closed result vocabulary,
+    `fields` ID resolution (foreign/missing dropped).
+15. `lib/dashboard/config-schema.ts` — `CONNECTED_KINDS += TL21/TL22`;
+    catalogue `connected: true`.
+16. `app/(tracker)/workspace/[workspaceId]/dashboard/actions.ts` —
+    `readMyTodayHabits`, `readMyHabitConsistency`, `setMyHabitLog`.
+17. `app/(tracker)/workspace/[workspaceId]/dashboard/habits-widget.tsx`
+    (TL21 client adapter — Mark done/Undo) and
+    `habit-consistency.tsx` (TL22 read-only counts).
+18. `app/(tracker)/workspace/[workspaceId]/dashboard/page.tsx` — TL21/TL22
+    adapters wired.
+19. `app/workspace/[workspaceId]/clients/[clientProfileId]/dashboard/actions.ts`
+    — staff `createHabit`/`editHabit`/`archiveHabit`/`readHabits` +
+    `readHabitChoices` (editor picker universe).
+20. `…/dashboard/habits-panel.tsx` — staff create/edit/archive surface.
+21. `…/dashboard/page.tsx` — mount `HabitsPanel`, load habit choices, pass
+    to `DashboardEditor`.
+22. `…/dashboard/dashboard-editor.tsx` — TL21/TL22 `fields` habit picker
+    (checkboxes over non-archived habits) replacing the free-text input
+    for those kinds only.
+23. `tests/e2e/habits.spec.ts` — staff journey + client journeys at
+    1440/834/390, light + dark, flag-off proof.
+24. `docs/product-decisions.md` (#110) + `docs/STATUS.md`.
+
+## Schema/constraint table (actual — P3-2)
+
+| Table | Constraint | Mechanism |
+|---|---|---|
+| `habits` | PK `id` | Prisma |
+| `habits` | `UNIQUE (id, workspace_id)` | Prisma `@@unique` |
+| `habits` | `INDEX (workspace_id, client_profile_id)` | Prisma `@@index` |
+| `habits` | FK `workspace_id → workspace.id` RESTRICT | Prisma relation |
+| `habits` | FK `client_profile_id → client_profile.id` RESTRICT | Prisma relation |
+| `habits` | FK `(client_profile_id, workspace_id) → client_profile(id, workspace_id)` RESTRICT | raw SQL coherence |
+| `habits` | CHECK `btrim(name) <> ''` AND `length(btrim(name)) <= 120` | raw SQL |
+| `habits` | CHECK `btrim(target) <> ''` AND `length(btrim(target)) <= 120` | raw SQL |
+| `habit_schedules` | PK `id` | Prisma |
+| `habit_schedules` | `UNIQUE (habit_id, effective_from)` | Prisma `@@unique` |
+| `habit_schedules` | FK `habit_id → habits.id` RESTRICT | Prisma relation |
+| `habit_schedules` | CHECK `weekdays BETWEEN 0 AND 127` | raw SQL |
+| `habit_schedules` | CHECK `end_date IS NULL OR end_date >= effective_from` | raw SQL |
+| `habit_logs` | PK `id` | Prisma |
+| `habit_logs` | `UNIQUE (habit_id, date)` | Prisma `@@unique` |
+| `habit_logs` | FK `habit_id → habits.id` RESTRICT | Prisma relation |
+| `habit_logs` | FK `logged_by_user_id → users.id` SET NULL | Prisma relation |
+| enums | `HabitLogStatus ∈ {DONE, SKIPPED}` | migration `CREATE TYPE` |
+| types | `effective_from`/`end_date`/`date` = `DATE`; `archived_at`/`logged_at`/`created_at`/`updated_at` = `TIMESTAMPTZ(6)` | DDL |
+
+## Commands / expected results (per wave)
+
+- `npx vitest run tests/unit/habits-date.test.ts` → fails to resolve
+  `@/lib/habits/date` (RED); green after `lib/habits/date.ts`.
+- `npx vitest run tests/unit/habits-rbac.test.ts tests/unit/dashboard-config-habits.test.ts`
+  → RED on matrix cells/deny-set/connected kinds; green after lib edits.
+- `INTEGRATION_DATABASE_URL=postgresql://app:app_dev_password@127.0.0.1:5433/habits_i1_integration
+  npx vitest run --config vitest.integration.config.ts tests/integration/habits-schema.test.ts`
+  → RED (tables absent); green after `prisma migrate deploy`.
+- Same DB, `tests/integration/habits.test.ts` → RED (service absent);
+  green after implementation.
+- `npx prisma validate`, `npx prisma generate`, fresh `migrate deploy`,
+  `migrate diff` drift check → clean.
+- `npm run typecheck && npm run lint && npm run format:check && npm run test`
+  → green.
+- `npm run build` + `npx playwright test tests/e2e/habits.spec.ts` → green.
+
+## Acceptance (observable)
+
+- Staff creates/edits/archives habits on the client dashboard editor page;
+  the client sees TL21 (today's scheduled habits, Mark done/Undo) and TL22
+  (count-based consistency) through dashboard widgets; TL22 aggregates the
+  full authorized cohort (not the first page); archived habits retain
+  period history; foreign `fields` IDs are dropped; dual-role platform
+  admins are denied at every operation; denials and no-ops write no audit.
