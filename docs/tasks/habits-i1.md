@@ -24,7 +24,7 @@ worktree `the-great-tracker-habits`, branch `feature/habits-i1`.
 - **P3-1 resolved → raw-SQL coherence FK.** `Habit` uses the repo convention:
   single-column Prisma relation `clientProfile → ClientProfile(id)` plus a
   raw-SQL composite FK `(client_profile_id, workspace_id) →
-  client_profile(id, workspace_id)` in the migration. The reviewed plan's
+client_profile(id, workspace_id)` in the migration. The reviewed plan's
   alternative (Prisma composite relation) was explicitly either/or; the repo
   convention is authoritative for coherence (mirrors `client_task`,
   `client_dashboard_layout`). The misleading "raw coherence composite FK"
@@ -62,7 +62,7 @@ worktree `the-great-tracker-habits`, branch `feature/habits-i1`.
 
 1. `tests/unit/habits-date.test.ts` — RED: grammar/bounds/leap/UTC±/mask.
 2. `tests/unit/habits-rbac.test.ts` — RED: `habits` matrix cells + deny-set
-   + `resolveScope` coverage for all roles.
+   - `resolveScope` coverage for all roles.
 3. `tests/unit/dashboard-config-habits.test.ts` — RED: TL21/TL22 connected
    catalogue, `fields` cap/foreign handling at config layer.
 4. `tests/integration/habits-schema.test.ts` — RED: tables, enum,
@@ -114,27 +114,27 @@ worktree `the-great-tracker-habits`, branch `feature/habits-i1`.
 
 ## Schema/constraint table (actual — P3-2)
 
-| Table | Constraint | Mechanism |
-|---|---|---|
-| `habits` | PK `id` | Prisma |
-| `habits` | `UNIQUE (id, workspace_id)` | Prisma `@@unique` |
-| `habits` | `INDEX (workspace_id, client_profile_id)` | Prisma `@@index` |
-| `habits` | FK `workspace_id → workspace.id` RESTRICT | Prisma relation |
-| `habits` | FK `client_profile_id → client_profile.id` RESTRICT | Prisma relation |
-| `habits` | FK `(client_profile_id, workspace_id) → client_profile(id, workspace_id)` RESTRICT | raw SQL coherence |
-| `habits` | CHECK `btrim(name) <> ''` AND `length(btrim(name)) <= 120` | raw SQL |
-| `habits` | CHECK `btrim(target) <> ''` AND `length(btrim(target)) <= 120` | raw SQL |
-| `habit_schedules` | PK `id` | Prisma |
-| `habit_schedules` | `UNIQUE (habit_id, effective_from)` | Prisma `@@unique` |
-| `habit_schedules` | FK `habit_id → habits.id` RESTRICT | Prisma relation |
-| `habit_schedules` | CHECK `weekdays BETWEEN 0 AND 127` | raw SQL |
-| `habit_schedules` | CHECK `end_date IS NULL OR end_date >= effective_from` | raw SQL |
-| `habit_logs` | PK `id` | Prisma |
-| `habit_logs` | `UNIQUE (habit_id, date)` | Prisma `@@unique` |
-| `habit_logs` | FK `habit_id → habits.id` RESTRICT | Prisma relation |
-| `habit_logs` | FK `logged_by_user_id → users.id` SET NULL | Prisma relation |
-| enums | `HabitLogStatus ∈ {DONE, SKIPPED}` | migration `CREATE TYPE` |
-| types | `effective_from`/`end_date`/`date` = `DATE`; `archived_at`/`logged_at`/`created_at`/`updated_at` = `TIMESTAMPTZ(6)` | DDL |
+| Table             | Constraint                                                                                                          | Mechanism               |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `habits`          | PK `id`                                                                                                             | Prisma                  |
+| `habits`          | `UNIQUE (id, workspace_id)`                                                                                         | Prisma `@@unique`       |
+| `habits`          | `INDEX (workspace_id, client_profile_id)`                                                                           | Prisma `@@index`        |
+| `habits`          | FK `workspace_id → workspace.id` RESTRICT                                                                           | Prisma relation         |
+| `habits`          | FK `client_profile_id → client_profile.id` RESTRICT                                                                 | Prisma relation         |
+| `habits`          | FK `(client_profile_id, workspace_id) → client_profile(id, workspace_id)` RESTRICT                                  | raw SQL coherence       |
+| `habits`          | CHECK `btrim(name) <> ''` AND `length(btrim(name)) <= 120`                                                          | raw SQL                 |
+| `habits`          | CHECK `btrim(target) <> ''` AND `length(btrim(target)) <= 120`                                                      | raw SQL                 |
+| `habit_schedules` | PK `id`                                                                                                             | Prisma                  |
+| `habit_schedules` | `UNIQUE (habit_id, effective_from)`                                                                                 | Prisma `@@unique`       |
+| `habit_schedules` | FK `habit_id → habits.id` RESTRICT                                                                                  | Prisma relation         |
+| `habit_schedules` | CHECK `weekdays BETWEEN 0 AND 127`                                                                                  | raw SQL                 |
+| `habit_schedules` | CHECK `end_date IS NULL OR end_date >= effective_from`                                                              | raw SQL                 |
+| `habit_logs`      | PK `id`                                                                                                             | Prisma                  |
+| `habit_logs`      | `UNIQUE (habit_id, date)`                                                                                           | Prisma `@@unique`       |
+| `habit_logs`      | FK `habit_id → habits.id` RESTRICT                                                                                  | Prisma relation         |
+| `habit_logs`      | FK `logged_by_user_id → users.id` SET NULL                                                                          | Prisma relation         |
+| enums             | `HabitLogStatus ∈ {DONE, SKIPPED}`                                                                                  | migration `CREATE TYPE` |
+| types             | `effective_from`/`end_date`/`date` = `DATE`; `archived_at`/`logged_at`/`created_at`/`updated_at` = `TIMESTAMPTZ(6)` | DDL                     |
 
 ## Commands / expected results (per wave)
 
@@ -143,7 +143,7 @@ worktree `the-great-tracker-habits`, branch `feature/habits-i1`.
 - `npx vitest run tests/unit/habits-rbac.test.ts tests/unit/dashboard-config-habits.test.ts`
   → RED on matrix cells/deny-set/connected kinds; green after lib edits.
 - `INTEGRATION_DATABASE_URL=postgresql://app:app_dev_password@127.0.0.1:5433/habits_i1_integration
-  npx vitest run --config vitest.integration.config.ts tests/integration/habits-schema.test.ts`
+npx vitest run --config vitest.integration.config.ts tests/integration/habits-schema.test.ts`
   → RED (tables absent); green after `prisma migrate deploy`.
 - Same DB, `tests/integration/habits.test.ts` → RED (service absent);
   green after implementation.

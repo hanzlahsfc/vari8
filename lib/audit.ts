@@ -223,10 +223,7 @@ const META_VALIDATORS = new Map<keyof AuditMeta, (v: unknown) => boolean>([
       v === "RESTORED",
   ],
   // HABITS-I1: declared calendar date — grammar-locked, no prose.
-  [
-    "date",
-    (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v),
-  ],
+  ["date", (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v)],
   ["logStatus", (v) => v === "DONE" || v === "SKIPPED" || v === "CLEARED"],
 ]);
 
