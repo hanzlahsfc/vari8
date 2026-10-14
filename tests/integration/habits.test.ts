@@ -635,9 +635,7 @@ describe.skipIf(!enabled)("HABITS-I1 (real PG)", () => {
       deps(),
     );
     expect(cleared).toMatchObject({ status: "NONE", changed: true });
-    expect(
-      await prisma.habitLog.count({ where: { habitId: h.id } }),
-    ).toBe(0);
+    expect(await prisma.habitLog.count({ where: { habitId: h.id } })).toBe(0);
     const clearedAgain = await setHabitLog(
       sess(f.clientU.id),
       {
@@ -1186,7 +1184,12 @@ describe.skipIf(!enabled)("HABITS-I1 (real PG)", () => {
       deps(),
     );
     expect(sub.rows.map((r) => r.habitId)).toEqual([a.id]);
-    expect(sub.totals).toEqual({ scheduled: 1, done: 1, skipped: 0, missing: 0 });
+    expect(sub.totals).toEqual({
+      scheduled: 1,
+      done: 1,
+      skipped: 0,
+      missing: 0,
+    });
     // A habit from another workspace is never resolved by a fields ID.
     const f2 = await fixture();
     const foreign = await createHabit(
@@ -1257,7 +1260,12 @@ describe.skipIf(!enabled)("HABITS-I1 (real PG)", () => {
       { workspaceId: f.w.id, period: "7d" },
       deps(),
     );
-    expect(out.totals).toEqual({ scheduled: 0, done: 0, skipped: 0, missing: 0 });
+    expect(out.totals).toEqual({
+      scheduled: 0,
+      done: 0,
+      skipped: 0,
+      missing: 0,
+    });
     expect(out.rows).toHaveLength(0);
   });
 
@@ -1294,9 +1302,7 @@ describe.skipIf(!enabled)("HABITS-I1 (real PG)", () => {
     );
     expect(results.map((r) => r.status)).toEqual(["DONE", "DONE"]);
     expect(results.filter((r) => r.changed)).toHaveLength(1);
-    expect(
-      await prisma.habitLog.count({ where: { habitId: h.id } }),
-    ).toBe(1);
+    expect(await prisma.habitLog.count({ where: { habitId: h.id } })).toBe(1);
   });
 
   it("concurrent same-revision edits: one commits, one conflicts", async () => {
@@ -1341,10 +1347,7 @@ describe.skipIf(!enabled)("HABITS-I1 (real PG)", () => {
     // not commit and no habit row may survive.
     const failingDb = {
       ...prisma,
-      $transaction: (
-        fn: (tx: unknown) => Promise<unknown>,
-        opts?: unknown,
-      ) =>
+      $transaction: (fn: (tx: unknown) => Promise<unknown>, opts?: unknown) =>
         prisma.$transaction((tx) => {
           const wrapped = new Proxy(tx as never, {
             get(t, p) {
@@ -1361,7 +1364,7 @@ describe.skipIf(!enabled)("HABITS-I1 (real PG)", () => {
             },
           });
           return fn(wrapped);
-        }, opts as never);
+        }, opts as never),
     };
     const habitsBefore = await prisma.habit.count();
     const auditsBefore = await prisma.auditEvent.count();

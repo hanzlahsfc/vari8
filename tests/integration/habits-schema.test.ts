@@ -83,9 +83,7 @@ describe.skipIf(!enabled)("HABITS-I1 schema (real PG)", () => {
     expect(typeOf("habit_schedules", "effective_from")).toBe("date");
     expect(typeOf("habit_schedules", "end_date")).toBe("date");
     expect(typeOf("habit_logs", "date")).toBe("date");
-    expect(typeOf("habit_logs", "logged_at")).toBe(
-      "timestamp with time zone",
-    );
+    expect(typeOf("habit_logs", "logged_at")).toBe("timestamp with time zone");
     expect(typeOf("habits", "archived_at")).toBe("timestamp with time zone");
     expect(typeOf("habits", "created_at")).toBe("timestamp with time zone");
     expect(typeOf("habits", "updated_at")).toBe("timestamp with time zone");
@@ -198,7 +196,11 @@ describe.skipIf(!enabled)("HABITS-I1 schema (real PG)", () => {
     ).rejects.toThrow(); // one boundary per habit per day
 
     await prisma.habitLog.create({
-      data: { habitId: habit.id, date: new Date("2026-10-14T00:00:00Z"), status: "DONE" },
+      data: {
+        habitId: habit.id,
+        date: new Date("2026-10-14T00:00:00Z"),
+        status: "DONE",
+      },
     });
     await expect(
       prisma.habitLog.create({
@@ -256,7 +258,9 @@ describe.skipIf(!enabled)("HABITS-I1 schema (real PG)", () => {
       prisma.clientProfile.delete({ where: { id: cpW1.id } }),
     ).rejects.toThrow();
     // RESTRICT: habit with schedules/logs cannot be deleted.
-    await expect(prisma.habit.delete({ where: { id: habit.id } })).rejects.toThrow();
+    await expect(
+      prisma.habit.delete({ where: { id: habit.id } }),
+    ).rejects.toThrow();
     // SET NULL: deleting the logging user nulls the pointer.
     await prisma.user.delete({ where: { id: u2.id } }).catch(() => undefined);
     await prisma.user.delete({ where: { id: u1.id } });

@@ -56,7 +56,9 @@ describe("parseHabitStartDate", () => {
     expect(parseHabitStartDate("2033-03-01", { today: "2028-02-29" })).toBe(
       "2033-03-01",
     );
-    expect(parseHabitStartDate("2033-03-02", { today: "2028-02-29" })).toBeNull();
+    expect(
+      parseHabitStartDate("2033-03-02", { today: "2028-02-29" }),
+    ).toBeNull();
     expect(parseHabitStartDate("2028-02-29", { today: "2028-02-29" })).toBe(
       "2028-02-29",
     );

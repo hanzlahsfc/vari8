@@ -9,6 +9,7 @@ import { prisma } from "@/lib/db";
 
 import { DashboardEditor } from "./dashboard-editor";
 import { ClientTasksPanel } from "./client-tasks-panel";
+import { ClientHabitsPanel } from "./client-habits-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -88,6 +89,11 @@ export default async function StaffClientDashboardPage({
         canEdit={canEdit}
       />
       <ClientTasksPanel
+        workspaceId={workspaceId}
+        clientProfileId={clientProfileId}
+        canEdit={canEdit}
+      />
+      <ClientHabitsPanel
         workspaceId={workspaceId}
         clientProfileId={clientProfileId}
         canEdit={canEdit}

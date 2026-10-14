@@ -76,16 +76,14 @@ describe("TL21/TL22 connected kinds", () => {
   it("TL22 honours the frozen period/summary/option allowlists", () => {
     for (const period of ["today", "7d", "14d", "4w", "6w", "8w", "12w"])
       expect(
-        validateDashboardConfig(
-          validConfig(habitWidget("TL22", { period })),
-        ).ok,
+        validateDashboardConfig(validConfig(habitWidget("TL22", { period })))
+          .ok,
         period,
       ).toBe(true);
     for (const summary of ["scheduled-statuses", "completion-count"])
       expect(
-        validateDashboardConfig(
-          validConfig(habitWidget("TL22", { summary })),
-        ).ok,
+        validateDashboardConfig(validConfig(habitWidget("TL22", { summary })))
+          .ok,
         summary,
       ).toBe(true);
     expect(

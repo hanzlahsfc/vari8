@@ -161,3 +161,34 @@ worktree `the-great-tracker-habits`, branch `feature/habits-i1`.
   full authorized cohort (not the first page); archived habits retain
   period history; foreign `fields` IDs are dropped; dual-role platform
   admins are denied at every operation; denials and no-ops write no audit.
+
+## Execution log (builder, NON-INDEPENDENT)
+
+- RED committed first: `habits-date`/`habits-boundary`/`dashboard-config-habits`
+  unit files + `habits`/`habits-schema`/`guard`/`rbac`/`s1-a-identity` changes —
+  7 failures across 5 files (missing modules, RBAC 30→31, deny-set
+  `invalid_resource`→`role_denied`, TL21/TL22 unconnected).
+- Schema + migration `20261015000000_habits_i1`: `prisma validate` OK,
+  `prisma generate` OK; `migrate deploy` on isolated DB
+  `habits_i1_integration` applied; `habits-schema` 5/5 green;
+  `s1-a-identity` 13/13 green (habit tables in the identity allowlist).
+- `lib/habits/date.ts` — 16/16 unit green (grammar, `[today,today+5y]`,
+  leap Mar-01 normalization, weekday bitmask, UTC-12/+14 pins).
+- `habits` RBAC cell + `PLATFORM_ADMIN_DENIED_RESOURCES` — `rbac`/`guard`
+  unit green incl. dual-role platform-admin denies (all five membership
+  roles, read+write).
+- `lib/habits/service.ts` + `lib/habits/boundary.ts` — integration
+  `habits` 27/27 green on real PG: multi-habit, backdate/zero-mask
+  rejection, historical preservation across edit/archive, same-day
+  future upsert, concurrent DONE convergence (one winner/one no-op),
+  same-revision edit conflict, audit rollback atomicity, >20 cohort
+  TL22, fields subset/foreign drop, empty denominator, dual-role
+  impersonation denial, revocation split.
+- TL21/TL22 connected: config-schema `CONNECTED_KINDS` + catalogue;
+  client dashboard page loads `readTodayHabits`/`readHabitConsistency`
+  through the boundary with per-widget `fields`/`period`; widgets
+  `ClientHabitsWidget` (Mark done/Undo only) + `ClientConsistencyWidget`
+  (count text, no %). Staff `ClientHabitsPanel` (create/edit/archive,
+  no client log controls) + editor habit picker bounded at 8.
+- `tsc --noEmit` clean; unit 1181/98 files; integration 723/46 files.
+- E2E spec `tests/e2e/habits.spec.ts` — pending full run.

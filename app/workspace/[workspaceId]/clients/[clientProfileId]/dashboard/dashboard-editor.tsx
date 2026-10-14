@@ -47,6 +47,7 @@ import {
 import {
   reloadClientDashboardLayout,
   saveClientDashboardLayout,
+  readClientHabitChoices,
 } from "./actions";
 
 const COLUMNS: Record<BreakpointName, number> = {
@@ -83,6 +84,23 @@ export function DashboardEditor({
   const [bp, setBp] = useState<BreakpointName>("desktop");
   const [editing, setEditing] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
+  // HABITS-I1 (decision 110): the editor's field picker for TL21/TL22
+  // offers the authorized non-archived habit choices — loaded through
+  // the boundary, never a caller-supplied list.
+  const [habitChoices, setHabitChoices] = useState<
+    { id: string; name: string }[]
+  >([]);
+  useEffect(() => {
+    let live = true;
+    readClientHabitChoices({ workspaceId, clientProfileId })
+      .then((r) => {
+        if (live && r?.ok) setHabitChoices(r.value.choices);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [workspaceId, clientProfileId]);
   const router = useRouter();
   const routerRef = useRef(router);
   routerRef.current = router;
@@ -595,6 +613,7 @@ export function DashboardEditor({
                   <SettingsPanel
                     widget={widget}
                     onChange={(patch) => setSetting(id, patch)}
+                    habitChoices={habitChoices}
                   />
                 ) : null}
               </article>
@@ -611,12 +630,15 @@ export function DashboardEditor({
 function SettingsPanel({
   widget,
   onChange,
+  habitChoices,
 }: {
   widget: { id: string; kind: WidgetKind; settings: WidgetSettings };
   onChange: (patch: Partial<WidgetSettings>) => void;
+  habitChoices: { id: string; name: string }[];
 }) {
   const s = widget.settings;
   const staticFields = widgetStaticFieldOptions(widget.kind);
+  const isHabitPicker = widget.kind === "TL21" || widget.kind === "TL22";
   const set = (patch: Partial<WidgetSettings>) => onChange(patch);
   return (
     <fieldset
@@ -731,7 +753,53 @@ function SettingsPanel({
           Show target
         </label>
       ) : null}
-      {staticFields ? (
+      {isHabitPicker ? (
+        <fieldset data-testid="habit-fields-picker">
+          <legend>Habits (≤8 — empty selects all authorized)</legend>
+          {habitChoices.length === 0 && s.fields.length === 0 ? (
+            <p className="cc-empty">No active habits to pick from.</p>
+          ) : null}
+          {habitChoices.map((c) => {
+            const checked = s.fields.includes(c.id);
+            return (
+              <label key={c.id}>
+                <input
+                  autoComplete="off"
+                  type="checkbox"
+                  checked={checked}
+                  disabled={!checked && s.fields.length >= 8}
+                  onChange={(e) =>
+                    set({
+                      fields: e.target.checked
+                        ? [...s.fields, c.id].slice(0, 8)
+                        : s.fields.filter((x) => x !== c.id),
+                    })
+                  }
+                />{" "}
+                {c.name}
+              </label>
+            );
+          })}
+          {/* Selected IDs that are no longer pickable (archived or
+              foreign): TL22 keeps their history — they stay selected
+              until removed here. */}
+          {s.fields
+            .filter((f) => !habitChoices.some((c) => c.id === f))
+            .map((f) => (
+              <label key={f}>
+                <input
+                  autoComplete="off"
+                  type="checkbox"
+                  checked
+                  onChange={() =>
+                    set({ fields: s.fields.filter((x) => x !== f) })
+                  }
+                />{" "}
+                {f} — archived or unavailable
+              </label>
+            ))}
+        </fieldset>
+      ) : staticFields ? (
         <fieldset>
           <legend>Fields</legend>
           {staticFields.map((f) => (

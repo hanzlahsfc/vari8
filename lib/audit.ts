@@ -126,6 +126,12 @@ export const AUDIT_RESOURCE_TYPES = [
   // structural markers only — never task title or text). Idempotent
   // replays, denials and rollbacks write no event.
   "client_task",
+  // HABITS-I1 (decision 110): habit lifecycle + log state mutations
+  // (IDs, declared dates and status markers only — never habit name or
+  // target text). Idempotent replays, denials and rollbacks write no
+  // event.
+  "habit",
+  "habit_log",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 
@@ -146,6 +152,10 @@ export type AuditMeta = {
   /** S1-F2C repair: structural acceptance outcome on INVITE/access_token events. */
   acceptedAs?:
     "NEW_USER" | "JOINED" | "ALREADY_MEMBER" | "ACTIVATED" | "RESTORED";
+  /** HABITS-I1: declared log date on habit_log events (YYYY-MM-DD only). */
+  date?: string;
+  /** HABITS-I1: the desired-state outcome written on habit_log events. */
+  logStatus?: "DONE" | "SKIPPED" | "CLEARED";
 };
 
 /** S1-F2D: metadata allowed on ACCOUNT-scoped audit events only. Deliberately
@@ -212,6 +222,12 @@ const META_VALIDATORS = new Map<keyof AuditMeta, (v: unknown) => boolean>([
       v === "ACTIVATED" ||
       v === "RESTORED",
   ],
+  // HABITS-I1: declared calendar date — grammar-locked, no prose.
+  [
+    "date",
+    (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v),
+  ],
+  ["logStatus", (v) => v === "DONE" || v === "SKIPPED" || v === "CLEARED"],
 ]);
 
 /** Account-scope metadata allowlist — a separate closed set. */

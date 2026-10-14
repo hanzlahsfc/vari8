@@ -628,11 +628,7 @@ describe("CLIENT-TASKS-I1 (decision 109) — platform-admin deny-set", () => {
 describe("HABITS-I1 (decision 110) — platform-admin deny-set", () => {
   const adminRoles: {
     role:
-      | "WORKSPACE_OWNER"
-      | "COACH"
-      | "ASSISTANT_COACH"
-      | "SUPPORT"
-      | "CLIENT";
+      "WORKSPACE_OWNER" | "COACH" | "ASSISTANT_COACH" | "SUPPORT" | "CLIENT";
     label: string;
   }[] = [
     { role: "WORKSPACE_OWNER", label: "workspace-owner member" },

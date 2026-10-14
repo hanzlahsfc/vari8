@@ -102,10 +102,7 @@ describe("habits boundary — closed vocabulary", () => {
 
   it("maps HabitError codes to the closed vocabulary", async () => {
     flagOn();
-    const cases: [
-      ConstructorParameters<typeof HabitError>[0],
-      string,
-    ][] = [
+    const cases: [ConstructorParameters<typeof HabitError>[0], string][] = [
       ["invalid_input", "invalid_input"],
       ["not_available", "not_available"],
       ["conflict", "conflict"],

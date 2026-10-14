@@ -11,7 +11,10 @@ import {
 } from "@/lib/dashboard/config-schema";
 import { prisma } from "@/lib/db";
 import { readOwnClientTasks } from "@/lib/tasks/boundary";
+import { readTodayHabits, readHabitConsistency } from "@/lib/habits/boundary";
 import { ClientTasksWidget } from "./client-tasks-widget";
+import { ClientHabitsWidget } from "./client-habits-widget";
+import { ClientConsistencyWidget } from "./client-consistency-widget";
 
 export const dynamic = "force-dynamic";
 
@@ -81,6 +84,45 @@ export default async function ClientDashboardPage({
     }
   }
 
+  // HABITS-I1 (decision 110): TL21/TL22 load through the habit boundary —
+  // dashboard placement grants no habit-data permission. `fields` is the
+  // reviewed subset selector (empty = full authorized cohort); TL22 keeps
+  // the configured period.
+  const habitLists: Record<
+    string,
+    {
+      habits: import("@/lib/habits/service").TodayHabitView[];
+      hasMore: boolean;
+    }
+  > = {};
+  const consistency: Record<
+    string,
+    import("@/lib/habits/service").HabitConsistencyResult | null
+  > = {};
+  if (ownProfile) {
+    for (const w of config?.widgets ?? []) {
+      if (w.kind === "TL21") {
+        const result = await readTodayHabits(
+          { user: { id: userId } },
+          { workspaceId, fields: w.settings.fields },
+        );
+        habitLists[w.id] = result.ok
+          ? result.value
+          : { habits: [], hasMore: false };
+      } else if (w.kind === "TL22") {
+        const result = await readHabitConsistency(
+          { user: { id: userId } },
+          {
+            workspaceId,
+            period: w.settings.period,
+            fields: w.settings.fields,
+          },
+        );
+        consistency[w.id] = result.ok ? result.value : null;
+      }
+    }
+  }
+
   const LINKS: Record<string, string> = {
     Tracker: `/workspace/${workspaceId}/daily`,
     "Check-in": `/workspace/${workspaceId}/check-ins`,
@@ -121,6 +163,16 @@ export default async function ClientDashboardPage({
                     workspaceId={workspaceId}
                     clientProfileId={ownProfile?.id ?? ""}
                     tasks={taskLists[widget.id]?.tasks ?? []}
+                  />
+                ) : widget.kind === "TL21" ? (
+                  <ClientHabitsWidget
+                    workspaceId={workspaceId}
+                    clientProfileId={ownProfile?.id ?? ""}
+                    habits={habitLists[widget.id]?.habits ?? []}
+                  />
+                ) : widget.kind === "TL22" ? (
+                  <ClientConsistencyWidget
+                    result={consistency[widget.id] ?? null}
                   />
                 ) : widget.kind === "CU04" ? (
                   <Link href={`/workspace/${workspaceId}/check-ins`}>

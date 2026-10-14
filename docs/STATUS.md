@@ -17,7 +17,18 @@ are complete; product direction is now the configurable coaching system in
   rejection on normal paths, `HabitLogStatus {DONE, SKIPPED}` shown,
   `(id, workspace_id)` unique relabelled as identity target, real
   constraint table documented.
-- Plan + decision + tracker recorded before code; test-first waves next.
+- Plan + decision + tracker recorded before code; RED committed.
+- GREEN: schema+migration `20261015000000_habits_i1` (Habit,
+  HabitSchedule, HabitLog + HabitLogStatus, coherence FK, CHECKs,
+  uniques); `lib/habits/{date,service,boundary}`; `habits` RBAC cell +
+  guard deny-set; audit resource types `habit`/`habit_log` + `date`/
+  `logStatus` meta keys; TL21/TL22 connected in config-schema; client
+  TL21 (Mark done/Undo only) + TL22 widgets wired on the client
+  dashboard; staff `ClientHabitsPanel` + editor habit picker.
+- Gates so far: `tsc --noEmit` clean; unit 1181/98 pass; integration
+  723/46 pass (incl. `habits` 27 + `habits-schema` 5 on
+  `habits_i1_integration`). E2E spec `tests/e2e/habits.spec.ts` written;
+  full E2E + mutation + build gates pending.
 
 ## CLIENT-TASKS-I1 — real client tasks + CU03 (candidate)
 
