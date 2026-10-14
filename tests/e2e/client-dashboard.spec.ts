@@ -65,6 +65,21 @@ test.afterAll(async () => {
   await prisma.$disconnect();
 });
 
+// CLIENT-TASKS-I1-R3: fault ONLY the layout save/reconcile POST. All
+// server actions on this URL share the route; the save action's
+// serialized args carry `"config"` — task-panel reads/writes
+// (`readClientTasks`, assign/edit/cancel) and `reloadClientDashboardLayout`
+// do not. Matching on the body keeps unrelated task POSTs out of the
+// fault path without hardcoding a build-specific `next-action` hash.
+const isLayoutSave = (req: {
+  method(): string;
+  headers(): Record<string, string>;
+  postData(): string | null;
+}) =>
+  req.method() === "POST" &&
+  !!req.headers()["next-action"] &&
+  (req.postData() ?? "").includes('"config"');
+
 const staffUrl = () => `/workspace/${wsId}/clients/${profileId}/dashboard`;
 const clientUrl = () => `/workspace/${wsId}/dashboard`;
 
@@ -197,11 +212,7 @@ test.describe("DASHBOARD-I1", () => {
     await page.route(
       `**/workspace/${wsId}/clients/${profileId}/dashboard`,
       async (route) => {
-        if (
-          route.request().method() === "POST" &&
-          route.request().headers()["next-action"]
-        )
-          await route.abort();
+        if (isLayoutSave(route.request())) await route.abort();
         else await route.continue();
       },
     );
@@ -294,7 +305,7 @@ test.describe("DASHBOARD-I1", () => {
     await page.route(
       `**/workspace/${wsId}/clients/${profileId}/dashboard`,
       async (route) => {
-        if (route.request().method() !== "POST") {
+        if (!isLayoutSave(route.request())) {
           await route.continue();
           return;
         }
@@ -342,7 +353,7 @@ test.describe("DASHBOARD-I1", () => {
     await page.route(
       `**/workspace/${wsId}/clients/${profileId}/dashboard`,
       async (route) => {
-        if (route.request().method() === "POST")
+        if (isLayoutSave(route.request()))
           await new Promise((r) => setTimeout(r, 1200));
         await route.continue();
       },
@@ -483,7 +494,7 @@ test.describe("DASHBOARD-I1", () => {
     await page.route(
       `**/workspace/${wsId}/clients/${profileId}/dashboard`,
       (route) =>
-        route.request().method() === "POST"
+        isLayoutSave(route.request())
           ? route.fulfill({ status: 500 })
           : route.continue(),
     );
@@ -518,7 +529,7 @@ test.describe("DASHBOARD-I1", () => {
   }) => {
     // faulted save keeps client A's draft pending in its slot
     await page.route(`**/workspace/${wsId}/clients/*/dashboard`, (route) =>
-      route.request().method() === "POST"
+      isLayoutSave(route.request())
         ? route.fulfill({ status: 500 })
         : route.continue(),
     );
@@ -587,7 +598,7 @@ test.describe("DASHBOARD-I1", () => {
     await page.route(
       `**/workspace/${wsId}/clients/${profileId}/dashboard`,
       (route) =>
-        route.request().method() === "POST"
+        isLayoutSave(route.request())
           ? route.fulfill({ status: 500 })
           : route.continue(),
     );

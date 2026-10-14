@@ -89,7 +89,7 @@ export type WidgetKind = (typeof WIDGET_KINDS)[number];
 
 // Placeholder-capable widget kinds whose data contract does not yet
 // exist — every kind except the first-slice connected CU04/CU16.
-export const CONNECTED_KINDS = new Set<WidgetKind>(["CU04", "CU16"]);
+export const CONNECTED_KINDS = new Set<WidgetKind>(["CU04", "CU16", "CU03"]);
 
 const SOURCE: Record<WidgetKind, readonly string[]> = {
   BN21: ["bodyweight", "waist", "steps"],
@@ -587,7 +587,7 @@ export const WIDGET_CATALOGUE: Record<
     category: "Coaching",
     connected: false,
   },
-  CU03: { name: "Client tasks", category: "Coaching", connected: false },
+  CU03: { name: "Client tasks", category: "Coaching", connected: true },
   CU04: { name: "Check-in status", category: "Coaching", connected: true },
   CU06: { name: "Coach feedback", category: "Coaching", connected: false },
   CU09: {

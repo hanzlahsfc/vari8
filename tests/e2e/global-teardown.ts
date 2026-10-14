@@ -103,6 +103,11 @@ export default async function globalTeardown(): Promise<void> {
     await prisma.clientAssignment.deleteMany({
       where: { workspaceId: { in: workspaceIds } },
     });
+    // CLIENT-TASKS-I1-R3: task rows RESTRICT-profile — drop them before
+    // the profile sweep so teardown cannot die on a leftover task.
+    await prisma.clientTask.deleteMany({
+      where: { workspaceId: { in: workspaceIds } },
+    });
     await prisma.clientProfile.deleteMany({
       where: { workspaceId: { in: workspaceIds } },
     });

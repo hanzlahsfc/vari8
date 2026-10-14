@@ -51,6 +51,12 @@ enum AssignmentStatus {
   REMOVED
 }
 
+enum ClientTaskStatus {
+  OPEN
+  COMPLETED
+  CANCELLED
+}
+
 enum ConsentKind {
   PRIVACY_NOTICE
   HEALTH_DATA
@@ -133,7 +139,10 @@ model User {
   onboardingSubmissionsSubmitted OnboardingSubmission[] @relation("OnboardingSubmissionSubmittedByUser")
   checkInSubmissionsSubmitted    CheckInSubmission[]    @relation("CheckInSubmissionSubmittedByUser")
 
+  completedClientTasks ClientTask[]       @relation("ClientTaskCompleter")
+
   @@map("users")
+
 }
 
 model Workspace {
@@ -167,6 +176,7 @@ model Workspace {
   checkInReviews                CheckInReview[]
   onboardingSubmissionReviews   OnboardingSubmissionReview[]
   clientDashboardLayouts        ClientDashboardLayout[]
+  clientTasks                   ClientTask[]
 
   @@map("workspace")
 }
@@ -211,6 +221,8 @@ model WorkspaceMember {
   checkInReviews                      CheckInReview[]              @relation("CheckInReviewReviewer")
   onboardingSubmissionReviewsReviewed OnboardingSubmissionReview[] @relation("OnboardingReviewReviewer")
   dashboardLayoutsEdited              ClientDashboardLayout[]      @relation("DashboardLayoutEditor")
+  assignedClientTasks                 ClientTask[]                 @relation("ClientTaskAssigner")
+  cancelledClientTasks                ClientTask[]                 @relation("ClientTaskCanceller")
 
   parametersCreated         ParameterDefinition[]     @relation("ParameterDefinitionCreator")
   parametersUpdated         ParameterDefinition[]     @relation("ParameterDefinitionUpdater")
@@ -225,6 +237,7 @@ model WorkspaceMember {
   @@index([workspaceId, status])
   @@index([workspaceId, role])
   @@index([userId])
+
   @@map("workspace_member")
 }
 
@@ -265,6 +278,7 @@ model ClientProfile {
   checkInAnswers              CheckInSubmissionAnswer[]    @relation("CheckInAnswerClient")
   onboardingSubmissionReviews OnboardingSubmissionReview[] @relation("OnboardingReviewClient")
   dashboardLayouts            ClientDashboardLayout[]      @relation("ClientDashboardLayoutClient")
+  clientTasks                 ClientTask[]                 @relation("ClientTaskClient")
 
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
   @@unique([workspaceId, userId])
@@ -1368,4 +1382,44 @@ model ClientDashboardLayout {
   @@unique([id, workspaceId])
   @@index([clientProfileId])
   @@map("client_dashboard_layout")
+}
+
+
+// CLIENT-TASKS-I1 (decision #109): staff-assigned client tasks — bounded
+// coach-authored title + declared due date + lifecycle/provenance. The
+// wide coherence key backs the composite same-workspace FK (raw SQL).
+model ClientTask {
+  id                  String           @id @default(cuid())
+  workspaceId         String           @map("workspace_id")
+  clientProfileId     String           @map("client_profile_id")
+  // Coach-authored free text; trimmed non-empty <= 120 (raw CHECK).
+  title               String
+  // Declared calendar date (@db.Date) — never an instant; overdue is
+  // computed against the server-UTC calendar date at read time.
+  dueDate             DateTime         @map("due_date") @db.Date
+  status              ClientTaskStatus @default(OPEN)
+  // CAS for every transition/edit/cancel.
+  revision            Int              @default(1)
+  assignedByMemberId  String           @map("assigned_by_member_id")
+  assignedAt          DateTime         @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  // completedByUserId is a best-effort pointer (SetNull, mirrors
+  // ConsentRecord.grantedBy); completedAt is the durable CHECK bound.
+  completedByUserId   String?          @map("completed_by_user_id")
+  completedAt         DateTime?        @map("completed_at") @db.Timestamptz(6)
+  cancelledByMemberId String?          @map("cancelled_by_member_id")
+  cancelledAt         DateTime?        @map("cancelled_at") @db.Timestamptz(6)
+  createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace         Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile     ClientProfile    @relation("ClientTaskClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  assignedByMember  WorkspaceMember  @relation("ClientTaskAssigner", fields: [assignedByMemberId], references: [id], onDelete: Restrict)
+  completedBy       User?            @relation("ClientTaskCompleter", fields: [completedByUserId], references: [id], onDelete: SetNull)
+  cancelledByMember WorkspaceMember? @relation("ClientTaskCanceller", fields: [cancelledByMemberId], references: [id], onDelete: Restrict)
+
+  // Composite same-workspace coherence target (raw SQL FKs).
+  @@unique([id, workspaceId])
+  @@index([workspaceId, clientProfileId, dueDate])
+  @@index([workspaceId, clientProfileId, status])
+  @@map("client_task")
 }
