@@ -833,42 +833,44 @@ export async function listStaffHabits(
   deps: HabitDeps = {},
 ): Promise<{ habits: HabitView[]; hasMore: boolean }> {
   const db = deps.db ?? prisma;
-  return db.$transaction(
-    async (tx) => {
-      const { ctx } = await lockedAuthorize(tx, session, {
-        action: "read",
-        workspaceId: input.workspaceId,
-        clientProfileId: input.clientProfileId,
-      });
-      requireManagementScope(ctx, "read");
-      const rows = (await tx.habit.findMany({
-        where: {
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const { ctx } = await lockedAuthorize(tx, session, {
+          action: "read",
           workspaceId: input.workspaceId,
           clientProfileId: input.clientProfileId,
-        },
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        take: PAGE_FETCH,
-      })) as unknown as HabitRow[];
-      const page = rows.slice(0, PAGE_SIZE);
-      const latest = await latestBoundaries(
-        tx,
-        page.map((r) => r.id),
-      );
-      return {
-        habits: page.map((r) => ({
-          id: r.id,
-          name: r.name,
-          target: r.target,
-          archived: r.archivedAt !== null,
-          revision: r.revision,
-          schedule: latest.get(r.id) ?? null,
-        })),
-        hasMore: rows.length > PAGE_SIZE,
-      };
-    },
-    // Multi-statement reads run under one snapshot — authorization and
-    // the cohort can never be read from different commit points.
-    { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+        });
+        requireManagementScope(ctx, "read");
+        const rows = (await tx.habit.findMany({
+          where: {
+            workspaceId: input.workspaceId,
+            clientProfileId: input.clientProfileId,
+          },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          take: PAGE_FETCH,
+        })) as unknown as HabitRow[];
+        const page = rows.slice(0, PAGE_SIZE);
+        const latest = await latestBoundaries(
+          tx,
+          page.map((r) => r.id),
+        );
+        return {
+          habits: page.map((r) => ({
+            id: r.id,
+            name: r.name,
+            target: r.target,
+            archived: r.archivedAt !== null,
+            revision: r.revision,
+            schedule: latest.get(r.id) ?? null,
+          })),
+          hasMore: rows.length > PAGE_SIZE,
+        };
+      },
+      // Multi-statement reads run under one snapshot — authorization
+      // and the cohort can never be read from different commit points.
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    ),
   );
 }
 
@@ -879,31 +881,33 @@ export async function listHabitChoices(
   deps: HabitDeps = {},
 ): Promise<{ choices: { id: string; name: string }[]; hasMore: boolean }> {
   const db = deps.db ?? prisma;
-  return db.$transaction(
-    async (tx) => {
-      const { ctx } = await lockedAuthorize(tx, session, {
-        action: "read",
-        workspaceId: input.workspaceId,
-        clientProfileId: input.clientProfileId,
-      });
-      requireManagementScope(ctx, "read");
-      const rows = (await tx.habit.findMany({
-        where: {
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const { ctx } = await lockedAuthorize(tx, session, {
+          action: "read",
           workspaceId: input.workspaceId,
           clientProfileId: input.clientProfileId,
-          archivedAt: null,
-        },
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-        take: PAGE_FETCH,
-      })) as unknown as HabitRow[];
-      return {
-        choices: rows
-          .slice(0, PAGE_SIZE)
-          .map((r) => ({ id: r.id, name: r.name })),
-        hasMore: rows.length > PAGE_SIZE,
-      };
-    },
-    { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+        });
+        requireManagementScope(ctx, "read");
+        const rows = (await tx.habit.findMany({
+          where: {
+            workspaceId: input.workspaceId,
+            clientProfileId: input.clientProfileId,
+            archivedAt: null,
+          },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          take: PAGE_FETCH,
+        })) as unknown as HabitRow[];
+        return {
+          choices: rows
+            .slice(0, PAGE_SIZE)
+            .map((r) => ({ id: r.id, name: r.name })),
+          hasMore: rows.length > PAGE_SIZE,
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    ),
   );
 }
 
@@ -924,58 +928,63 @@ export async function listTodayHabits(
   if (typeof userId !== "string" || userId.length === 0)
     throw new AccessDeniedError("unauthenticated", "habits", "read");
 
-  return db.$transaction(
-    async (tx) => {
-      const profile = await ownProfile(tx, input.workspaceId, userId);
-      const { ctx } = await lockedAuthorize(tx, session, {
-        action: "read",
-        workspaceId: input.workspaceId,
-        clientProfileId: profile.id,
-      });
-      if (ctx.grantedScope !== "own")
-        throw new AccessDeniedError("role_denied", "habits", "read");
-
-      // Eligibility is computed before the page bound — all non-archived
-      // habits' boundaries are resolved, then the fields filter applies,
-      // then the bound. An eligible row can never hide behind the limit.
-      const candidates = (await tx.habit.findMany({
-        where: {
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const profile = await ownProfile(tx, input.workspaceId, userId);
+        const { ctx } = await lockedAuthorize(tx, session, {
+          action: "read",
           workspaceId: input.workspaceId,
           clientProfileId: profile.id,
-          archivedAt: null,
-        },
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      })) as unknown as HabitRow[];
-      const boundaries = await boundariesOf(
-        tx,
-        candidates.map((c) => c.id),
-      );
-      let eligible = candidates.filter((c) =>
-        scheduledOn(boundaries.get(c.id) ?? [], today),
-      );
-      if (fields !== null)
-        eligible = eligible.filter((c) => fields.includes(c.id));
+        });
+        if (ctx.grantedScope !== "own")
+          throw new AccessDeniedError("role_denied", "habits", "read");
 
-      const page = eligible.slice(0, PAGE_SIZE);
-      const logs = await tx.habitLog.findMany({
-        where: { habitId: { in: page.map((h) => h.id) }, date: utcDate(today) },
-      });
-      const logByHabit = new Map(logs.map((l) => [l.habitId, l.status]));
-      return {
-        habits: page.map((h) => ({
-          id: h.id,
-          name: h.name,
-          target: h.target,
-          status: logByHabit.get(h.id) ?? "NONE",
-        })),
-        hasMore: eligible.length > PAGE_SIZE,
-        // The exact server-UTC day this cohort was computed for — the
-        // client echoes it back on mark/undo so a wrong browser clock
-        // can never pick the log date.
-        date: today,
-      };
-    },
-    { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+        // Eligibility is computed before the page bound — all non-archived
+        // habits' boundaries are resolved, then the fields filter applies,
+        // then the bound. An eligible row can never hide behind the limit.
+        const candidates = (await tx.habit.findMany({
+          where: {
+            workspaceId: input.workspaceId,
+            clientProfileId: profile.id,
+            archivedAt: null,
+          },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        })) as unknown as HabitRow[];
+        const boundaries = await boundariesOf(
+          tx,
+          candidates.map((c) => c.id),
+        );
+        let eligible = candidates.filter((c) =>
+          scheduledOn(boundaries.get(c.id) ?? [], today),
+        );
+        if (fields !== null)
+          eligible = eligible.filter((c) => fields.includes(c.id));
+
+        const page = eligible.slice(0, PAGE_SIZE);
+        const logs = await tx.habitLog.findMany({
+          where: {
+            habitId: { in: page.map((h) => h.id) },
+            date: utcDate(today),
+          },
+        });
+        const logByHabit = new Map(logs.map((l) => [l.habitId, l.status]));
+        return {
+          habits: page.map((h) => ({
+            id: h.id,
+            name: h.name,
+            target: h.target,
+            status: logByHabit.get(h.id) ?? "NONE",
+          })),
+          hasMore: eligible.length > PAGE_SIZE,
+          // The exact server-UTC day this cohort was computed for — the
+          // client echoes it back on mark/undo so a wrong browser clock
+          // can never pick the log date.
+          date: today,
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    ),
   );
 }
 
@@ -1006,98 +1015,100 @@ export async function habitConsistency(
   if (typeof userId !== "string" || userId.length === 0)
     throw new AccessDeniedError("unauthenticated", "habits", "read");
 
-  return db.$transaction(
-    async (tx) => {
-      let clientProfileId: string;
-      if (input.clientProfileId !== undefined) {
-        // Staff path — management read scope, or the owner reading their
-        // own profile explicitly.
-        const { ctx } = await lockedAuthorize(tx, session, {
-          action: "read",
-          workspaceId: input.workspaceId,
-          clientProfileId: input.clientProfileId,
-        });
-        if (ctx.grantedScope === "own") {
-          const client = await tx.clientProfile.findUnique({
-            where: { id: input.clientProfileId },
-            select: { userId: true },
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        let clientProfileId: string;
+        if (input.clientProfileId !== undefined) {
+          // Staff path — management read scope, or the owner reading their
+          // own profile explicitly.
+          const { ctx } = await lockedAuthorize(tx, session, {
+            action: "read",
+            workspaceId: input.workspaceId,
+            clientProfileId: input.clientProfileId,
           });
-          if (!client || client.userId !== userId)
-            throw new AccessDeniedError("not_owner", "habits", "read");
-        } else requireManagementScope(ctx, "read");
-        clientProfileId = input.clientProfileId;
-      } else {
-        const profile = await ownProfile(tx, input.workspaceId, userId);
-        const { ctx } = await lockedAuthorize(tx, session, {
-          action: "read",
-          workspaceId: input.workspaceId,
-          clientProfileId: profile.id,
-        });
-        if (ctx.grantedScope !== "own")
-          throw new AccessDeniedError("role_denied", "habits", "read");
-        clientProfileId = profile.id;
-      }
-
-      const cohort = (await tx.habit.findMany({
-        where: {
-          workspaceId: input.workspaceId,
-          clientProfileId,
-          ...(fields !== null ? { id: { in: fields } } : {}),
-        },
-        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      })) as unknown as HabitRow[];
-
-      const ids = cohort.map((h) => h.id);
-      const boundaries = await boundariesOf(tx, ids);
-      const logs = await tx.habitLog.findMany({
-        where: {
-          habitId: { in: ids },
-          date: { gte: utcDate(from), lte: utcDate(today) },
-        },
-      });
-      const logsByHabitDay = new Map<string, string>();
-      for (const l of logs)
-        logsByHabitDay.set(
-          `${l.habitId}:${l.date.toISOString().slice(0, 10)}`,
-          l.status,
-        );
-
-      const rows: HabitConsistencyRow[] = [];
-      const totals = { scheduled: 0, done: 0, skipped: 0, missing: 0 };
-      for (const habit of cohort) {
-        const list = boundaries.get(habit.id) ?? [];
-        const row = {
-          habitId: habit.id,
-          name: habit.name,
-          target: habit.target,
-          scheduled: 0,
-          done: 0,
-          skipped: 0,
-          missing: 0,
-        };
-        for (let i = 0; i < days; i++) {
-          const date = shiftDateUtc(from, i);
-          if (!scheduledOn(list, date)) continue;
-          row.scheduled++;
-          const status = logsByHabitDay.get(`${habit.id}:${date}`);
-          if (status === "DONE") row.done++;
-          else if (status === "SKIPPED") row.skipped++;
-          else row.missing++;
+          if (ctx.grantedScope === "own") {
+            const client = await tx.clientProfile.findUnique({
+              where: { id: input.clientProfileId },
+              select: { userId: true },
+            });
+            if (!client || client.userId !== userId)
+              throw new AccessDeniedError("not_owner", "habits", "read");
+          } else requireManagementScope(ctx, "read");
+          clientProfileId = input.clientProfileId;
+        } else {
+          const profile = await ownProfile(tx, input.workspaceId, userId);
+          const { ctx } = await lockedAuthorize(tx, session, {
+            action: "read",
+            workspaceId: input.workspaceId,
+            clientProfileId: profile.id,
+          });
+          if (ctx.grantedScope !== "own")
+            throw new AccessDeniedError("role_denied", "habits", "read");
+          clientProfileId = profile.id;
         }
-        rows.push(row);
-        totals.scheduled += row.scheduled;
-        totals.done += row.done;
-        totals.skipped += row.skipped;
-        totals.missing += row.missing;
-      }
-      return {
-        period: input.period as string,
-        from,
-        to: today,
-        rows,
-        totals,
-      };
-    },
-    { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+
+        const cohort = (await tx.habit.findMany({
+          where: {
+            workspaceId: input.workspaceId,
+            clientProfileId,
+            ...(fields !== null ? { id: { in: fields } } : {}),
+          },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        })) as unknown as HabitRow[];
+
+        const ids = cohort.map((h) => h.id);
+        const boundaries = await boundariesOf(tx, ids);
+        const logs = await tx.habitLog.findMany({
+          where: {
+            habitId: { in: ids },
+            date: { gte: utcDate(from), lte: utcDate(today) },
+          },
+        });
+        const logsByHabitDay = new Map<string, string>();
+        for (const l of logs)
+          logsByHabitDay.set(
+            `${l.habitId}:${l.date.toISOString().slice(0, 10)}`,
+            l.status,
+          );
+
+        const rows: HabitConsistencyRow[] = [];
+        const totals = { scheduled: 0, done: 0, skipped: 0, missing: 0 };
+        for (const habit of cohort) {
+          const list = boundaries.get(habit.id) ?? [];
+          const row = {
+            habitId: habit.id,
+            name: habit.name,
+            target: habit.target,
+            scheduled: 0,
+            done: 0,
+            skipped: 0,
+            missing: 0,
+          };
+          for (let i = 0; i < days; i++) {
+            const date = shiftDateUtc(from, i);
+            if (!scheduledOn(list, date)) continue;
+            row.scheduled++;
+            const status = logsByHabitDay.get(`${habit.id}:${date}`);
+            if (status === "DONE") row.done++;
+            else if (status === "SKIPPED") row.skipped++;
+            else row.missing++;
+          }
+          rows.push(row);
+          totals.scheduled += row.scheduled;
+          totals.done += row.done;
+          totals.skipped += row.skipped;
+          totals.missing += row.missing;
+        }
+        return {
+          period: input.period as string,
+          from,
+          to: today,
+          rows,
+          totals,
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    ),
   );
 }

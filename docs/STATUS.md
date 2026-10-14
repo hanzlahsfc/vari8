@@ -4441,3 +4441,9 @@ FATS (g)/COOKED/RAW/DRY/CAT`; columns 12–21 and the row-label column empty →
 - Formula semantics (calories, averages, cycle estimation, T-minus, meal subtotals),
   water/salt average swap, sparkline config, SUPPLEMENTATION/PEAKING/SHOWDAY wiring.
 - Product name/branding, license terms, PED/HRT policy, i18n.
+
+(Repair-round 2: independent re-review of `7f40106` verified all 9
+repairs; flagged one new failure mode — unretried P2034 from the
+RepeatableRead reads' member-row FOR UPDATE surfacing as
+`not_available`. Reads now use `withSerializedRetry`; `mapError` maps
+raw P2034 → `serialization_conflict`. Integration 28/28 re-green.)

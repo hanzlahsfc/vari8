@@ -262,3 +262,12 @@ npx vitest run --config vitest.integration.config.ts tests/integration/habits-sc
   `clientDashboardLayout`, tripping `client_dashboard_layout_…_fkey`
   when a profile row exists. FK-ordered sweep is the fix when someone
   owns it.
+- Re-review of repair commit `7f40106` (independent, read-only): all 9
+  repairs VERIFIED; one NEW defect flagged — reads at RepeatableRead can
+  hit `could not serialize` (P2034) on the `lockMember` FOR UPDATE when
+  a concurrent writer updates the member row, and read paths were not
+  retried, so raw P2034 surfaced as `not_available`. Fixed: the four
+  multi-statement reads are now wrapped in `withSerializedRetry`
+  (transient conflicts retry, final failure → `serialization_conflict`),
+  and `mapError` maps a raw P2034 → `serialization_conflict` as a
+  backstop. `habits` integration 28/28 + boundary unit 5/5 re-green.
