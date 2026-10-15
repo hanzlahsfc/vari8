@@ -32,6 +32,7 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { prisma as defaultPrisma } from "../db";
 import { AccessDeniedError, authorize, type SessionLike } from "../auth/guard";
+import { resolveScope, type PrincipalRole } from "../auth/rbac";
 import { createPrismaAuthorizationRepo } from "../workspace/access";
 import { writeAuditEvent } from "../audit";
 import {
@@ -2091,6 +2092,31 @@ export async function readCheckInSubmissionDetail(
           select: { name: true },
         });
 
+        // SOLO-COACH-I1 (decision 111): canMark reflects the caller's
+        // actual WRITE scope on checkinsCoachReviews (action-specific —
+        // an owner resolves `assigned` post-amendment), an ACTIVE
+        // ClientAssignment row, and lifecycle (already-reviewed → no
+        // affordance). Bounded indexed existence check — no answer rows.
+        // Advisory only: the write transaction independently
+        // re-authorizes and FOR UPDATE-locks the assignment.
+        const markWriteScope = resolveScope(
+          "checkinsCoachReviews",
+          "write",
+          member.role as PrincipalRole,
+        );
+        const markAssignment =
+          markWriteScope === "assigned"
+            ? await tx.clientAssignment.findFirst({
+                where: {
+                  workspaceId: input.workspaceId,
+                  clientProfileId: input.clientProfileId,
+                  coachMemberId: member.id,
+                  status: "ACTIVE",
+                },
+                select: { id: true },
+              })
+            : null;
+
         // 11. Structural READ audit — last; a failed write rolls the
         // detail read (and its values) back (#89-analog).
         await writeAuditEvent(tx, ctx, {
@@ -2119,7 +2145,10 @@ export async function readCheckInSubmissionDetail(
                 at: review.reviewedAt.toISOString(),
               }
             : null,
-          canMark: ctx.grantedScope === "assigned" && member.role === "COACH",
+          canMark:
+            markWriteScope === "assigned" &&
+            markAssignment !== null &&
+            review === null,
           fields: definition.fields.map((f) => ({
             fieldId: f.fieldId,
             label: f.label,

@@ -12,11 +12,20 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@/auth", () => ({
   auth: vi.fn(async () => ({ user: { id: "u_owner" } })),
 }));
-vi.mock("@/lib/workspace/clients", () => ({
-  assignCoach: vi.fn(async () => ({ changed: true })),
-  setPrimaryCoach: vi.fn(async () => ({ changed: true })),
-  removeClientAssignment: vi.fn(async () => ({ changed: true })),
-}));
+vi.mock("@/lib/workspace/clients", () => {
+  class WorkspaceServiceError extends Error {
+    constructor(readonly code: string) {
+      super(code);
+      this.name = "WorkspaceServiceError";
+    }
+  }
+  return {
+    assignCoach: vi.fn(async () => ({ changed: true })),
+    setPrimaryCoach: vi.fn(async () => ({ changed: true })),
+    removeClientAssignment: vi.fn(async () => ({ changed: true })),
+    WorkspaceServiceError,
+  };
+});
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 import { auth } from "@/auth";

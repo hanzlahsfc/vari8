@@ -5,6 +5,26 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## SOLO-COACH-I1 — owner-as-coach assignments + assigned-owner review (in progress)
+
+- Independently reviewed contract: SOLO-COACH-P2 (`2b0d7eca…`, 125
+  lines) + P2-R1 PASS (`549a2916…`, 119 lines); decision #111 recorded.
+- Base verified `c63ddfb` (`origin/main`); branch `feature/solo-coach-i1`;
+  `appearance-r2` untouched.
+- RED committed `9e5b538` (behavioral: deny-set hole shown granted,
+  owner eligibility missing, canMark role-only, actions absent).
+- GREEN: 2 owner write cells → `assigned` (#95 + #37/P-024 amendments),
+  `clientAssignments` in the platform-admin deny-set, owner PRIMARY/
+  COACH eligibility, bounded `listAssignableCoachMembers`, assignment-
+  aware `canMark` ×2 (also tightens coach visibility — P3-c noted),
+  owner-gated coaches page/actions/panel + roster link; the stale
+  `assertAssignmentMutationsExternallyExposable` blocker removed with
+  its protections replaced by the action contract + tests.
+- Gates so far: `tsc --noEmit` clean; focused unit 52/52; focused
+  integration 57/57 on disposable `app_integration_test` (solo-coach-i1
+  6, s1-c 9, p024 23, p025c 19). Full unit+integration+lint+format+
+  build+E2E and the mutation sweep pending.
+
 ## HABITS-I1 — real habit tracking + TL21/TL22 (in progress)
 
 - Independently reviewed contract: HABITS-P4 (`59222875…`, 217 lines) +

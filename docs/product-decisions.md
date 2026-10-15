@@ -1476,3 +1476,40 @@ composite same-workspace coherence FKs in raw SQL per repo convention;
 changed-ALLOW audit only, metadata-free of habit text. Retention/
 deletion stays deferred under unresolved D-10. The
 `ENABLE_CLIENT_DASHBOARD` gate is reused for every habit surface.
+
+**Decision #111 (APPROVED):** the solo-coach workflow (SOLO-COACH-I1,
+under the independently reviewed SOLO-COACH-P2 contract `2b0d7eca…`,
+P2-R1 PASS `549a2916…`). An owner may act as coach inside their own
+workspace through **explicit** `ClientAssignment` rows only — never
+implicitly. Approved rules: (a) a `WORKSPACE_OWNER` is an eligible
+assignment target for **PRIMARY or COACH**; COACH behavior is unchanged
+and ASSISTANT_COACH remains assignable as COACH only (never PRIMARY);
+(b) owner-managed assignment management ships as an owner-gated screen
+with explicit assign / set-primary / remove actions — assignment removal
+ends only the `ClientAssignment` and never touches workspace membership,
+role, or status; there is no automatic self-assignment, no duplicate
+membership, and no combined role; (c) `clientAssignments` is added to
+`PLATFORM_ADMIN_DENIED_RESOURCES` — a platform admin is denied on the
+assignment read/mutation surface **including** a dual-role account
+holding an ACTIVE owner membership; (d) amending **#95**, owner write on
+`checkinsCoachReviews` moves `denied → assigned` — the owner may mark a
+Check-In submission reviewed only where an ACTIVE assignment exists;
+(e) separately approved, amending **#37** (the general submission-
+authorization direction; the P-024 matrix is its onboarding
+instantiation), owner write on `onboardingSubmissionReviews` moves
+`denied → assigned` under the same rule; (f) both `canMark` predicates
+derive from actual write scope + ACTIVE-assignment existence + lifecycle
+state — owner role alone never grants the mark affordance, authorized
+reads remain when write capability is absent, and the write transaction
+independently re-authorizes and FOR UPDATE-locks the assignment
+(read-time capability is advisory, never authorization). Corrections
+recorded prospectively: the SOLO-COACH-P1 plan's claim that
+`clientAssignments` was already in the platform-admin deny-set was
+false; the P1-R1 review citation is `36b00197…`/113 lines (`9c73ca68…`
+is the CHECK-IN-FEEDBACK-P1-R1 review, not the solo-coach one); the
+assignment-aware `canMark` intentionally tightens ordinary coach button
+visibility too (the predicate now requires an ACTIVE assignment row, not
+role alone). No automatic privilege elevation: an unassigned or revoked
+owner can still read at workspace scope but cannot write reviews. This
+decision authorizes no feedback slice, staff queue, retention default,
+or production enablement.

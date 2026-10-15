@@ -118,6 +118,15 @@ export default async function ClientsPage({
   const showDashboardLinks =
     isClientDashboardEnabled() &&
     (dashboardLinkScope === "workspace" || dashboardLinkScope === "assigned");
+  // SOLO-COACH-I1 (decision 111): "Coaches" link renders only when the
+  // role resolves a `clientAssignments` write scope — owner only.
+  // Cosmetic convenience only; the destination re-authorizes (and the
+  // deny-set still catches a dual-role platform admin).
+  const coachesLinkScope =
+    member?.status === "ACTIVE" && member.role !== undefined
+      ? resolveScope("clientAssignments", "write", member.role)
+      : "denied";
+  const showCoachesLinks = coachesLinkScope !== "denied";
 
   return (
     <div className="catalog-page" data-testid="client-roster">
@@ -150,6 +159,7 @@ export default async function ClientsPage({
               {showCheckInLinks ? <th scope="col">Check-Ins</th> : null}
               {showOnboardingLinks ? <th scope="col">Onboarding</th> : null}
               {showDashboardLinks ? <th scope="col">Dashboard</th> : null}
+              {showCoachesLinks ? <th scope="col">Coaches</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -196,6 +206,16 @@ export default async function ClientsPage({
                       href={`${basePath}/${encodeURIComponent(client.id)}/onboarding`}
                     >
                       Onboarding
+                    </Link>
+                  </td>
+                ) : null}
+                {showCoachesLinks ? (
+                  <td>
+                    <Link
+                      className="roster-pagination__link"
+                      href={`${basePath}/${encodeURIComponent(client.id)}/coaches`}
+                    >
+                      Coaches
                     </Link>
                   </td>
                 ) : null}
