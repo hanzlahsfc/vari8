@@ -315,3 +315,24 @@ npx vitest run --config vitest.integration.config.ts tests/integration/habits-sc
   filter removal; boundary-backstop neutralization.
 - Focused green: `habits.test.ts` 35/35, `teardown-sweep.test.ts` 1/1,
   `habits-boundary.test.ts` 6/6.
+
+## HABITS-I1-PR2 — calendar late-flag test repair
+
+- PR #44 CI `verify` (run 38715045187) failed on
+  `tests/integration/p025d2-checkin-calendar.test.ts`: the "scheduled"
+  fixture dueAt `2026-10-15T09:00Z` had expired against the real wall
+  clock (CI ran ~09:47Z), so the service correctly returned `late=true`
+  where the test expected `false` — a test-clock defect, not a
+  production or habits regression.
+- Repair (tests/docs only): freeze `Date` at `2026-10-14T12:00Z` via
+  `vi.useFakeTimers({ toFake: ["Date"] })` + `vi.setSystemTime` inside
+  a `withFixedClock` wrapper that always restores the real clock
+  (`finally` + `vi.useRealTimers()`); only `Date` is faked — Prisma/
+  network timers stay real. All fixture dates, orderings, and
+  assertions preserved; nothing moved or weakened.
+- Added explicit before/after-due boundary test: the same SCHEDULED
+  row reads `late=false` at 10-14T12:00Z and `late=true` at
+  10-16T00:00Z — detects a broken comparator in both directions.
+- Production/schema/auth/habit code untouched (byte-identical to the
+  reviewed head); `lib/checkin/instances.ts` lateness semantics
+  unchanged.

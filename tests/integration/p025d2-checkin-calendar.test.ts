@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 
 import { PrismaClient } from "@prisma/client";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { AccessDeniedError } from "../../lib/auth/guard";
 import { CheckInInstanceError } from "../../lib/checkin/instances";
@@ -63,6 +63,28 @@ describe.skipIf(!enabled)("P-025-D2 calendar list (real PG)", () => {
     db: prisma as never,
     registry: CHECKIN_REGISTRY,
   });
+  /**
+   * Fixed wall clock for `late`-flag assertions: the service derives
+   * lateness from `new Date()` (submittedAt for submitted rows, now for
+   * scheduled rows). Frozen at 2026-10-14T12:00Z — after the lateSub
+   * dueAt (10-05) and before the scheduled/submitted/cancelled dueAts
+   * (10-15/10-20/10-25) — so every expectation is clock-independent.
+   * Only `Date` is faked; Prisma/network timers stay real, and the real
+   * clock is always restored.
+   */
+  const FIXED_NOW = "2026-10-14T12:00:00.000Z";
+  async function withFixedClock<T>(
+    at: string,
+    fn: () => Promise<T>,
+  ): Promise<T> {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(at));
+    try {
+      return await fn();
+    } finally {
+      vi.useRealTimers();
+    }
+  }
   const audits = (workspaceId: string) =>
     prisma.auditEvent.findMany({ where: { workspaceId } });
 
@@ -267,46 +289,79 @@ describe.skipIf(!enabled)("P-025-D2 calendar list (real PG)", () => {
     };
   }
 
-  it("owner workspace scope returns the bounded range in dueAt order — cancelled visible, late marked, out-of-range absent", async () => {
-    const s = await setup();
-    const r = await listCheckInInstancesForClient(
-      s.owner,
-      {
-        workspaceId: s.w.id,
-        clientProfileId: s.cp.id,
-        range: OCT,
-      },
-      deps(),
-    );
-    expect(r.items.map((i) => i.instanceId)).toEqual([
-      s.instanceIds.lateSub,
-      s.instanceIds.scheduled,
-      s.instanceIds.submitted,
-      s.instanceIds.cancelled,
-    ]);
-    expect(r.items.map((i) => i.state)).toEqual([
-      "SUBMITTED",
-      "SCHEDULED",
-      "SUBMITTED",
-      "CANCELLED",
-    ]);
-    expect(r.items.map((i) => i.late)).toEqual([true, false, false, false]);
-    // Answer-free — no answers/definition/values on the wire items.
-    for (const item of r.items)
-      expect(Object.keys(item).sort()).toEqual([
-        "dueAt",
-        "dueTz",
-        "formId",
-        "formName",
-        "instanceId",
-        "late",
-        "scheduledAt",
-        "state",
-        "submittedAt",
-        "versionSeq",
+  it("owner workspace scope returns the bounded range in dueAt order — cancelled visible, late marked, out-of-range absent", async () =>
+    withFixedClock(FIXED_NOW, async () => {
+      const s = await setup();
+      const r = await listCheckInInstancesForClient(
+        s.owner,
+        {
+          workspaceId: s.w.id,
+          clientProfileId: s.cp.id,
+          range: OCT,
+        },
+        deps(),
+      );
+      expect(r.items.map((i) => i.instanceId)).toEqual([
+        s.instanceIds.lateSub,
+        s.instanceIds.scheduled,
+        s.instanceIds.submitted,
+        s.instanceIds.cancelled,
       ]);
-    expect(await audits(s.w.id)).toHaveLength(s.baselineAudits);
-  });
+      expect(r.items.map((i) => i.state)).toEqual([
+        "SUBMITTED",
+        "SCHEDULED",
+        "SUBMITTED",
+        "CANCELLED",
+      ]);
+      expect(r.items.map((i) => i.late)).toEqual([true, false, false, false]);
+      // Answer-free — no answers/definition/values on the wire items.
+      for (const item of r.items)
+        expect(Object.keys(item).sort()).toEqual([
+          "dueAt",
+          "dueTz",
+          "formId",
+          "formName",
+          "instanceId",
+          "late",
+          "scheduledAt",
+          "state",
+          "submittedAt",
+          "versionSeq",
+        ]);
+      expect(await audits(s.w.id)).toHaveLength(s.baselineAudits);
+    }));
+
+  it("late flag flips around the due instant — before/after-due boundary", async () =>
+    withFixedClock(FIXED_NOW, async () => {
+      const s = await setup();
+      const list = () =>
+        listCheckInInstancesForClient(
+          s.owner,
+          {
+            workspaceId: s.w.id,
+            clientProfileId: s.cp.id,
+            range: OCT,
+          },
+          deps(),
+        );
+      const byId = (items: { instanceId: string; late: boolean }[]) =>
+        new Map(items.map((i) => [i.instanceId, i.late]));
+
+      // Before the scheduled item's dueAt: not late.
+      const before = byId((await list()).items);
+      expect(before.get(s.instanceIds.scheduled)).toBe(false);
+      expect(before.get(s.instanceIds.lateSub)).toBe(true);
+
+      // After its dueAt the same SCHEDULED row is late — a broken or
+      // hard-coded comparator cannot satisfy both sides.
+      vi.setSystemTime(new Date("2026-10-16T00:00:00.000Z"));
+      const after = byId((await list()).items);
+      expect(after.get(s.instanceIds.scheduled)).toBe(true);
+      // Submitted/cancelled lateness is immutable once decided.
+      expect(after.get(s.instanceIds.lateSub)).toBe(true);
+      expect(after.get(s.instanceIds.submitted)).toBe(false);
+      expect(after.get(s.instanceIds.cancelled)).toBe(false);
+    }));
 
   it("assigned coach and assistant both read the same bounded range", async () => {
     const s = await setup({ assign: "coach" });
