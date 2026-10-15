@@ -159,6 +159,11 @@ const PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> = new Set([
   // PLATFORM_ADMIN including a dual-role administrator with an ACTIVE
   // membership of any role.
   "habits",
+  // SOLO-COACH-I1 (decision 111): client coach assignments deny
+  // PLATFORM_ADMIN including a dual-role administrator holding an ACTIVE
+  // WORKSPACE_OWNER membership — without this entry the fall-through would
+  // resolve the membership role's owner scope on this slice's new surface.
+  "clientAssignments",
   "checkinsCoachReviews",
   // P-024 (decisions #86–#91 — binding requirement): staff onboarding
   // submission reviews deny PLATFORM_ADMIN including a dual-role

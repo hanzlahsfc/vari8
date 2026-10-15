@@ -130,7 +130,11 @@ describe("coachTargetRoleIsEligible", () => {
     expect(coachTargetRoleIsEligible("COACH", "COACH")).toBe(true);
     expect(coachTargetRoleIsEligible("ASSISTANT_COACH", "COACH")).toBe(true);
     expect(coachTargetRoleIsEligible("ASSISTANT_COACH", "PRIMARY")).toBe(false);
-    for (const role of ["WORKSPACE_OWNER", "SUPPORT", "CLIENT"] as const) {
+    // SOLO-COACH-I1 (decision 111): WORKSPACE_OWNER is eligible for
+    // PRIMARY or COACH through explicit assignment.
+    expect(coachTargetRoleIsEligible("WORKSPACE_OWNER", "PRIMARY")).toBe(true);
+    expect(coachTargetRoleIsEligible("WORKSPACE_OWNER", "COACH")).toBe(true);
+    for (const role of ["SUPPORT", "CLIENT"] as const) {
       expect(coachTargetRoleIsEligible(role, "COACH")).toBe(false);
       expect(coachTargetRoleIsEligible(role, "PRIMARY")).toBe(false);
     }

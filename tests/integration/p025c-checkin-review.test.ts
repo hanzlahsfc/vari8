@@ -1016,6 +1016,122 @@ describe.skipIf(!enabled)("P-025-C check-in staff review (real PG)", () => {
     expect(advisoryKeys[1]).toBe(`member:${s.w.id}:${coachUser.id}`);
   });
 
+  // ── SOLO-COACH-I1: assigned-owner review write (decision 111, amends #95)
+
+  it("owner with an ACTIVE assignment reads with canMark=true and marks reviewed", async () => {
+    const s = await setup();
+    const { submissionId } = await submit(s);
+    await assignment(s.w.id, s.cp.id, s.ownerMember.id);
+
+    const detail = await readCheckInSubmissionDetail(
+      session(s.owner.id),
+      {
+        workspaceId: s.w.id,
+        clientProfileId: s.cp.id,
+        submissionId,
+      },
+      deps(),
+    );
+    expect(detail.canMark).toBe(true);
+
+    const mark = await markCheckInSubmissionReviewed(
+      session(s.owner.id),
+      {
+        workspaceId: s.w.id,
+        clientProfileId: s.cp.id,
+        submissionId,
+      },
+      deps(),
+    );
+    expect(mark.status).toBe("reviewed");
+    const reviews = await prisma.checkInReview.findMany({
+      where: { submissionId },
+    });
+    expect(reviews).toHaveLength(1);
+    expect(reviews[0].reviewedByMemberId).toBe(s.ownerMember.id);
+    // Lifecycle: after the terminal ack, canMark turns false.
+    const after = await readCheckInSubmissionDetail(
+      session(s.owner.id),
+      {
+        workspaceId: s.w.id,
+        clientProfileId: s.cp.id,
+        submissionId,
+      },
+      deps(),
+    );
+    expect(after.canMark).toBe(false);
+    expect(after.reviewed).not.toBeNull();
+  });
+
+  it("owner WITHOUT an assignment reads detail with canMark=false and mark is denied not_assigned", async () => {
+    const s = await setup();
+    const { submissionId } = await submit(s);
+
+    const detail = await readCheckInSubmissionDetail(
+      session(s.owner.id),
+      {
+        workspaceId: s.w.id,
+        clientProfileId: s.cp.id,
+        submissionId,
+      },
+      deps(),
+    );
+    // Workspace-wide read preserved; write capability absent.
+    expect(detail.submissionId).toBe(submissionId);
+    expect(detail.fields).toHaveLength(3);
+    expect(detail.canMark).toBe(false);
+
+    await expect(
+      markCheckInSubmissionReviewed(
+        session(s.owner.id),
+        {
+          workspaceId: s.w.id,
+          clientProfileId: s.cp.id,
+          submissionId,
+        },
+        deps(),
+      ),
+    ).rejects.toMatchObject({ reason: "not_assigned" });
+    expect(await prisma.checkInReview.count({ where: { submissionId } })).toBe(
+      0,
+    );
+  });
+
+  it("owner whose assignment was REMOVED is denied on mark (revocation fails closed)", async () => {
+    const s = await setup();
+    const { submissionId } = await submit(s);
+    const row = await assignment(s.w.id, s.cp.id, s.ownerMember.id);
+    await prisma.clientAssignment.update({
+      where: { id: row.id },
+      data: { status: "REMOVED" },
+    });
+
+    const detail = await readCheckInSubmissionDetail(
+      session(s.owner.id),
+      {
+        workspaceId: s.w.id,
+        clientProfileId: s.cp.id,
+        submissionId,
+      },
+      deps(),
+    );
+    expect(detail.canMark).toBe(false);
+    await expect(
+      markCheckInSubmissionReviewed(
+        session(s.owner.id),
+        {
+          workspaceId: s.w.id,
+          clientProfileId: s.cp.id,
+          submissionId,
+        },
+        deps(),
+      ),
+    ).rejects.toMatchObject({ reason: "not_assigned" });
+    expect(await prisma.checkInReview.count({ where: { submissionId } })).toBe(
+      0,
+    );
+  });
+
   // ── Mark requires a real submission (SCHEDULED instance → not_available)
 
   it("mark on an instance with no submission fails closed", async () => {

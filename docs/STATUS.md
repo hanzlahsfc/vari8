@@ -5,6 +5,34 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## SOLO-COACH-I1 — owner-as-coach assignments + assigned-owner review (in progress)
+
+- Independently reviewed contract: SOLO-COACH-P2 (`2b0d7eca…`, 125
+  lines) + P2-R1 PASS (`549a2916…`, 119 lines); decision #111 recorded.
+- Base verified `c63ddfb` (`origin/main`); branch `feature/solo-coach-i1`;
+  `appearance-r2` untouched.
+- RED committed `9e5b538` (behavioral: deny-set hole shown granted,
+  owner eligibility missing, canMark role-only, actions absent).
+- GREEN: 2 owner write cells → `assigned` (#95 + #37/P-024 amendments),
+  `clientAssignments` in the platform-admin deny-set, owner PRIMARY/
+  COACH eligibility, bounded `listAssignableCoachMembers`, assignment-
+  aware `canMark` ×2 (also tightens coach visibility — P3-c noted),
+  owner-gated coaches page/actions/panel + roster link; the stale
+  `assertAssignmentMutationsExternallyExposable` blocker removed with
+  its protections replaced by the action contract + tests.
+- GREEN on `aae19f6` + contract-assertion updates on `e32f4ce`.
+- Gates on the final tree: `git diff --check` clean; prettier clean;
+  eslint 0 errors (3 pre-existing warnings elsewhere); `tsc --noEmit`
+  exit 0; `prisma validate` + `migrate status` up to date (no migration
+  needed); full unit 1209/1209; full integration 749/749 on disposable
+  `app_integration_test`; `next build` clean.
+- Mutation sweep 7/7 bitten (deny-set entry, owner eligibility, each
+  owner write cell, canMark assignment check, ASSIGN audit skip,
+  onboarding role-only canMark) — all restored byte-identically.
+- E2E: `coach-assignments` 3/3 (real-UI self-assign → both review
+  journeys; non-owner 403); checkin-review 7/7; staff-onboarding-review
+  9/9; client-roster 23/23; **full E2E suite 384 passed / 0 failed / 12 skipped** (396 total) — new spec included.
+
 ## HABITS-I1 — real habit tracking + TL21/TL22 (in progress)
 
 - Independently reviewed contract: HABITS-P4 (`59222875…`, 217 lines) +

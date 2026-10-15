@@ -80,9 +80,12 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "own"],
   },
+  // SOLO-COACH-I1 (decision 111): owner write is `assigned` — an owner
+  // marks Check-In submissions reviewed only for clients they hold an
+  // ACTIVE ClientAssignment to (amends #95). Read stays workspace-wide.
   checkinsCoachReviews: {
     PLATFORM_ADMIN: ["denied", "denied"],
-    WORKSPACE_OWNER: ["workspace", "denied"],
+    WORKSPACE_OWNER: ["workspace", "assigned"],
     COACH: ["assigned", "assigned"],
     ASSISTANT_COACH: ["assigned", "denied"],
     SUPPORT: ["denied", "denied"],
@@ -275,11 +278,14 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "denied"],
   },
-  // P-024 (decisions #86–#91): owner workspace read, no mark; coach
+  // P-024 (decisions #86–#91): owner workspace read; coach
   // assigned read+mark; assistant assigned read, no mark; rest denied.
+  // SOLO-COACH-I1 (decision 111): owner write is `assigned` — the owner
+  // marks onboarding submissions reviewed only for clients they hold an
+  // ACTIVE ClientAssignment to (amends #37/P-024 authorization).
   onboardingSubmissionReviews: {
     PLATFORM_ADMIN: ["denied", "denied"],
-    WORKSPACE_OWNER: ["workspace", "denied"],
+    WORKSPACE_OWNER: ["workspace", "assigned"],
     COACH: ["assigned", "assigned"],
     ASSISTANT_COACH: ["assigned", "denied"],
     SUPPORT: ["denied", "denied"],
