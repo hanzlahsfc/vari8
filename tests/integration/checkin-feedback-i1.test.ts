@@ -243,6 +243,45 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
     return { instanceId, submissionId };
   }
 
+  async function unreviewedSubmission(
+    s: Awaited<ReturnType<typeof setup>>,
+    dueAt = "2030-07-01T09:00:00.000Z",
+  ) {
+    const { instanceId } = await scheduleCheckInInstance(
+      session(s.owner.id),
+      {
+        workspaceId: s.w.id,
+        clientProfileId: s.cp.id,
+        formId: s.formId,
+        formVersionId: s.versionId,
+        dueAt,
+      },
+      deps(),
+    );
+    const def = await prisma.checkInFormVersion.findUniqueOrThrow({
+      where: { id: s.versionId },
+      select: { definition: true },
+    });
+    const fields = (
+      def.definition as {
+        fields: { fieldId: string }[];
+      }
+    ).fields;
+    const { submissionId } = await submitCheckInInstance(
+      session(s.clientUser.id),
+      {
+        workspaceId: s.w.id,
+        instanceId,
+        answersJson: JSON.stringify([
+          { fieldId: fields[0].fieldId, value: "Ok" },
+          { fieldId: fields[1].fieldId, value: "81" },
+        ]),
+      },
+      deps(),
+    );
+    return { instanceId, submissionId };
+  }
+
   const send = (
     s: Awaited<ReturnType<typeof setup>>,
     actorUserId: string,
@@ -352,7 +391,10 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
     const support = await user();
     await member(s.w.id, support.id, "SUPPORT");
     const pa = await user("PLATFORM_ADMIN");
-    await member(s.w.id, pa.id, "COACH"); // dual-role deny-set
+    // Dual-role PA WITH an ACTIVE assignment — only the deny-set can stop
+    // this actor; assignment scope alone would let them through.
+    const paMember = await member(s.w.id, pa.id, "COACH");
+    await assignment(s.w.id, s.cp.id, paMember.id, "COACH");
     for (const actor of [assistant.id, s.clientUser.id, support.id, pa.id]) {
       await expect(send(s, actor, submissionId)).rejects.toMatchObject({
         name: "AccessDeniedError",
@@ -586,6 +628,19 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
         deps(),
       ),
     ).rejects.toMatchObject({ code: "consent_missing" });
+    // The recovery resolver is consent-gated too — withdrawal closes it.
+    await expect(
+      resolveCheckInFeedbackSend(
+        session(s.coach.id),
+        {
+          workspaceId: s.w.id,
+          clientProfileId: s.cp.id,
+          submissionId,
+          clientRequestId: nonce,
+        },
+        deps(),
+      ),
+    ).rejects.toMatchObject({ code: "consent_missing" });
   });
 
   it("staff detail carries bounded feedback + canSend; assistant reads feedback but canSend=false", async () => {
@@ -618,6 +673,21 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
     );
     expect(adetail.feedback).toHaveLength(1);
     expect(adetail.canSend).toBe(false);
+
+    // An UNREVIEWED submission: read is allowed but canSend must be
+    // false — send capability requires the review ack to exist.
+    const { submissionId: unreviewed } = await unreviewedSubmission(s);
+    const udetail = await readCheckInSubmissionDetail(
+      session(s.coach.id),
+      {
+        workspaceId: s.w.id,
+        clientProfileId: s.cp.id,
+        submissionId: unreviewed,
+      },
+      deps(),
+    );
+    expect(udetail.canSend).toBe(false);
+    expect(udetail.canMark).toBe(true);
   });
 
   it("client own detail carries feedback inside the consent gate; foreign client sees nothing", async () => {
@@ -704,6 +774,54 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
         deps(),
       ),
     ).rejects.toMatchObject({ code: "invalid_input" });
+
+    // Same-timestamp ties: the id ASC tiebreaker must order them across
+    // a page boundary deterministically (insertion order ≠ id order).
+    const { submissionId: tieSub } = await reviewedSubmission(
+      s,
+      "2030-06-04T09:00:00.000Z",
+    );
+    const tieAt = new Date("2030-06-05T00:00:00.000Z");
+    // Insert the LARGER id first — without the id tiebreaker, physical
+    // order would leak and the page boundary would mis-split.
+    const tieIds = ["zztie0000000000000000000b", "aatie0000000000000000000a"];
+    for (const id of tieIds)
+      await prisma.checkInFeedback.create({
+        data: {
+          id,
+          workspaceId: s.w.id,
+          clientProfileId: s.cp.id,
+          submissionId: tieSub,
+          authoredByMemberId: s.coachMember.id,
+          body: `tie ${id.slice(0, 2)}`,
+          clientRequestId: `req-tie-${id}`,
+          sentAt: tieAt,
+        },
+      });
+    const tiePage1 = await listCheckInFeedback(
+      session(s.coach.id),
+      {
+        workspaceId: s.w.id,
+        clientProfileId: s.cp.id,
+        submissionId: tieSub,
+        limit: 1,
+      },
+      deps(),
+    );
+    const tiePage2 = await listCheckInFeedback(
+      session(s.coach.id),
+      {
+        workspaceId: s.w.id,
+        clientProfileId: s.cp.id,
+        submissionId: tieSub,
+        limit: 1,
+        cursor: tiePage1.nextCursor!,
+      },
+      deps(),
+    );
+    expect(tiePage1.items.map((i) => i.id)).toEqual([tieIds[1]]);
+    expect(tiePage2.items.map((i) => i.id)).toEqual([tieIds[0]]);
+    expect(tiePage2.hasMore).toBe(false);
   });
 
   it("recovery resolver: exact author+target nonce lookup; sent vs not_sent outcomes", async () => {
@@ -794,6 +912,53 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
     );
     expect(detail.feedback).toHaveLength(1);
     expect(detail.feedback[0].body).toBe("before departure");
+  });
+
+  it("assignment revoked while a send holds the lock → the send fails closed", async () => {
+    const s = await setup();
+    const { submissionId } = await reviewedSubmission(s);
+    const asg = await prisma.clientAssignment.findFirstOrThrow({
+      where: {
+        workspaceId: s.w.id,
+        clientProfileId: s.cp.id,
+        coachMemberId: s.coachMember.id,
+      },
+    });
+    let release!: () => void;
+    const barrier = new Promise<void>((r) => (release = r));
+    const revoker = prisma.$transaction(async (tx) => {
+      await tx.$queryRawUnsafe(
+        `SELECT id FROM "client_assignment" WHERE id = $1 FOR UPDATE`,
+        asg.id,
+      );
+      await barrier;
+      await tx.clientAssignment.update({
+        where: { id: asg.id },
+        data: { status: "REMOVED" },
+      });
+    });
+    // The revoker holds the assignment row; the send's lock attempt
+    // blocks until the REMOVED commit lands, then re-reads status.
+    await new Promise((r) => setTimeout(r, 300));
+    const attempt = send(s, s.coach.id, submissionId, "blocked");
+    await new Promise((r) => setTimeout(r, 300));
+    release();
+    await Promise.allSettled([revoker, attempt]);
+    await expect(attempt).rejects.toMatchObject({
+      name: "AccessDeniedError",
+      reason: "not_assigned",
+    });
+    expect(
+      await prisma.checkInFeedback.count({ where: { submissionId } }),
+    ).toBe(0);
+    expect(
+      await prisma.auditEvent.count({
+        where: {
+          resourceType: "checkin_feedback",
+          subjectClientProfileId: s.cp.id,
+        },
+      }),
+    ).toBe(0);
   });
 
   it("audit failure rolls the feedback row back — atomic insert+audit", async () => {
