@@ -84,11 +84,7 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
     workspaceId: string,
     userId: string,
     role:
-      | "WORKSPACE_OWNER"
-      | "COACH"
-      | "ASSISTANT_COACH"
-      | "SUPPORT"
-      | "CLIENT",
+      "WORKSPACE_OWNER" | "COACH" | "ASSISTANT_COACH" | "SUPPORT" | "CLIENT",
   ) {
     return prisma.workspaceMember.create({
       data: { workspaceId, userId, role, status: "ACTIVE" },
@@ -121,7 +117,13 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
     role: "PRIMARY" | "COACH" = "PRIMARY",
   ) {
     return prisma.clientAssignment.create({
-      data: { workspaceId, clientProfileId, coachMemberId: coachMemberId, role, status: "ACTIVE" },
+      data: {
+        workspaceId,
+        clientProfileId,
+        coachMemberId: coachMemberId,
+        role,
+        status: "ACTIVE",
+      },
     });
   }
 
@@ -179,11 +181,24 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
     await consent(cp.id);
     const form = await publishedForm(owner.id, w.id);
     const assign = await assignment(w.id, cp.id, coachMember.id);
-    return { w, owner, ownerMember, coach, coachMember, clientUser, cp, assign, ...form };
+    return {
+      w,
+      owner,
+      ownerMember,
+      coach,
+      coachMember,
+      clientUser,
+      cp,
+      assign,
+      ...form,
+    };
   }
 
   /** Schedule + submit + review; returns the submitted instance's ids. */
-  async function reviewedSubmission(s: Awaited<ReturnType<typeof setup>>) {
+  async function reviewedSubmission(
+    s: Awaited<ReturnType<typeof setup>>,
+    dueAt = "2030-06-01T09:00:00.000Z",
+  ) {
     const { instanceId } = await scheduleCheckInInstance(
       session(s.owner.id),
       {
@@ -191,7 +206,7 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
         clientProfileId: s.cp.id,
         formId: s.formId,
         formVersionId: s.versionId,
-        dueAt: "2030-06-01T09:00:00.000Z",
+        dueAt,
       },
       deps(),
     );
@@ -280,7 +295,9 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
       name: "AccessDeniedError",
       reason: "not_assigned",
     });
-    expect(await prisma.checkInFeedback.count()).toBe(0);
+    expect(
+      await prisma.checkInFeedback.count({ where: { submissionId } }),
+    ).toBe(0);
   });
 
   it("send before any review exists → review_required; zero rows/audits", async () => {
@@ -300,8 +317,7 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
       where: { id: s.versionId },
       select: { definition: true },
     });
-    const fields = (def.definition as { fields: { fieldId: string }[] })
-      .fields;
+    const fields = (def.definition as { fields: { fieldId: string }[] }).fields;
     const { submissionId } = await submitCheckInInstance(
       session(s.clientUser.id),
       {
@@ -318,28 +334,39 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
       name: "CheckInInstanceError",
       code: "review_required",
     });
-    expect(await prisma.checkInFeedback.count()).toBe(0);
+    expect(
+      await prisma.checkInFeedback.count({ where: { submissionId } }),
+    ).toBe(0);
   });
 
   it("assistant, client, SUPPORT, and dual-role PLATFORM_ADMIN are denied outright — zero rows/audits", async () => {
     const s = await setup();
     const { submissionId } = await reviewedSubmission(s);
     const assistant = await user();
-    const assistantMember = await member(s.w.id, assistant.id, "ASSISTANT_COACH");
+    const assistantMember = await member(
+      s.w.id,
+      assistant.id,
+      "ASSISTANT_COACH",
+    );
     await assignment(s.w.id, s.cp.id, assistantMember.id, "COACH");
     const support = await user();
     await member(s.w.id, support.id, "SUPPORT");
     const pa = await user("PLATFORM_ADMIN");
     await member(s.w.id, pa.id, "COACH"); // dual-role deny-set
     for (const actor of [assistant.id, s.clientUser.id, support.id, pa.id]) {
-      await expect(
-        send(s, actor, submissionId),
-      ).rejects.toMatchObject({ name: "AccessDeniedError" });
+      await expect(send(s, actor, submissionId)).rejects.toMatchObject({
+        name: "AccessDeniedError",
+      });
     }
-    expect(await prisma.checkInFeedback.count()).toBe(0);
+    expect(
+      await prisma.checkInFeedback.count({ where: { submissionId } }),
+    ).toBe(0);
     expect(
       await prisma.auditEvent.count({
-        where: { resourceType: "checkin_feedback" },
+        where: {
+          resourceType: "checkin_feedback",
+          subjectClientProfileId: s.cp.id,
+        },
       }),
     ).toBe(0);
   });
@@ -392,18 +419,24 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
       name: "CheckInInstanceError",
       code: "idempotency_conflict",
     });
-    expect(await prisma.checkInFeedback.count()).toBe(1);
+    expect(
+      await prisma.checkInFeedback.count({ where: { submissionId } }),
+    ).toBe(1);
     expect(
       await prisma.auditEvent.count({
-        where: { resourceType: "checkin_feedback" },
+        where: {
+          resourceType: "checkin_feedback",
+          resourceId: first.feedbackId,
+        },
       }),
     ).toBe(1);
   });
 
   it("the same nonce on a DIFFERENT submission is a separate key (per-submission scope)", async () => {
     const s = await setup();
-    const a = await reviewedSubmission(s);
-    const b = await reviewedSubmission(s);
+    const a = await reviewedSubmission(s, "2030-06-01T09:00:00.000Z");
+    const b = await reviewedSubmission(s, "2030-06-02T09:00:00.000Z");
+    expect(b.submissionId).not.toBe(a.submissionId);
     const nonce = `req-${uid()}`;
     const r1 = await send(s, s.coach.id, a.submissionId, "one", nonce);
     const r2 = await send(s, s.coach.id, b.submissionId, "two", nonce);
@@ -431,9 +464,13 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
         where: { submissionId, clientRequestId: nonce },
       }),
     ).toBe(1);
+    const row = await prisma.checkInFeedback.findFirstOrThrow({
+      where: { submissionId, clientRequestId: nonce },
+      select: { id: true },
+    });
     expect(
       await prisma.auditEvent.count({
-        where: { resourceType: "checkin_feedback" },
+        where: { resourceType: "checkin_feedback", resourceId: row.id },
       }),
     ).toBe(1);
   });
@@ -442,7 +479,13 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
     const s = await setup();
     const { instanceId, submissionId } = await reviewedSubmission(s);
     const nonce = `req-${uid()}`;
-    const res = await send(s, s.coach.id, submissionId, "pre-withdrawal", nonce);
+    const res = await send(
+      s,
+      s.coach.id,
+      submissionId,
+      "pre-withdrawal",
+      nonce,
+    );
     expect(res.status).toBe("sent");
     await revokeConsent(s.cp.id);
     await expect(
@@ -561,14 +604,10 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
     expect(page2.hasMore).toBe(false);
     expect(
       [...page1.items, ...page2.items].map((i: { body: string }) => i.body),
-    ).toEqual([
-      "msg 0",
-      "msg 1",
-      "msg 2",
-    ]);
+    ).toEqual(["msg 0", "msg 1", "msg 2"]);
     // Foreign-target cursor cannot leak: a cursor minted on another
     // submission yields an in-scope empty page.
-    const other = await reviewedSubmission(s);
+    const other = await reviewedSubmission(s, "2030-06-03T09:00:00.000Z");
     await send(s, s.coach.id, other.submissionId, "other thread");
     const foreignCursorPage = await listCheckInFeedback(
       session(s.coach.id),
@@ -580,9 +619,9 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
       },
       deps(),
     );
-    expect(
-      foreignCursorPage.items.every((i) => i.body.startsWith("msg")),
-    ).toBe(true);
+    expect(foreignCursorPage.items.every((i) => i.body.startsWith("msg"))).toBe(
+      true,
+    );
     // Malformed cursor → invalid_input, never silently ignored.
     await expect(
       listCheckInFeedback(
@@ -713,12 +752,7 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
     await expect(
       send(s, s.coach.id, submissionId, "x".repeat(2001)),
     ).rejects.toMatchObject({ code: "invalid_input" });
-    const okRes = await send(
-      s,
-      s.coach.id,
-      submissionId,
-      "  padded  ",
-    );
+    const okRes = await send(s, s.coach.id, submissionId, "  padded  ");
     const row = await prisma.checkInFeedback.findUniqueOrThrow({
       where: { id: okRes.feedbackId },
     });

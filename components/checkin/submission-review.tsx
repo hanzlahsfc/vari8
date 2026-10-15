@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 
 import type { StaffCheckInSubmissionItem } from "@/lib/checkin/instances";
+import { CheckInFeedbackThread } from "@/components/checkin/feedback-thread";
 import {
   markCheckInSubmissionReviewed,
   showCheckInReviewTrackerContext,
@@ -27,10 +28,14 @@ export function CheckInSubmissionReview({
   workspaceId,
   clientProfileId,
   items,
+  userId,
 }: {
   workspaceId: string;
   clientProfileId: string;
   items: StaffCheckInSubmissionItem[];
+  /** Authenticated user's ID — scopes the composer nonce marker so a
+   * stale draft can never bind to a different account. */
+  userId: string;
 }) {
   const [detailState, detailAction, detailPending] = useActionState<
     StaffCheckInDetailState,
@@ -203,6 +208,20 @@ export function CheckInSubmissionReview({
                 Reviewed.
               </p>
             ) : null}
+
+            {/* CHECK-IN-FEEDBACK-I1 — bounded staff feedback thread +
+                composer. Keyed by submission so a new selection remounts
+                (fresh nonce + marker reconciliation). */}
+            <CheckInFeedbackThread
+              key={detailState.submissionId}
+              workspaceId={workspaceId}
+              clientProfileId={clientProfileId}
+              submissionId={detailState.submissionId}
+              userId={userId}
+              canSend={detailState.canSend}
+              initialItems={detailState.feedback}
+              initialNextCursor={detailState.feedbackNextCursor}
+            />
 
             {/* P-025-D6 — explicit DailyEntry tracker context (#103).
                 The control reveals a manual declared-date form only;

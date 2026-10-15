@@ -70,6 +70,9 @@ export const RESOURCES = [
   "habits",
   // P-024 (product-decisions #86–#91): staff onboarding-submission review.
   "onboardingSubmissionReviews",
+  // CHECK-IN-FEEDBACK-I1: append-only staff text feedback on a reviewed
+  // Check-In submission.
+  "checkinFeedback",
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
 
@@ -389,6 +392,20 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
     CLIENT: D,
+  },
+  // CHECK-IN-FEEDBACK-I1 (#101 direction + owner answers): owner reads at
+  // workspace scope but writes ONLY where an ACTIVE ClientAssignment
+  // exists (assigned write — the #111 solo-coach shape); coach
+  // reads+writes at assigned scope; assistant reads assigned, never
+  // writes; client reads its own feedback only, never writes;
+  // SUPPORT/PLATFORM_ADMIN denied outright (deny-set enforces dual-role).
+  checkinFeedback: {
+    PLATFORM_ADMIN: D,
+    WORKSPACE_OWNER: c("workspace", "assigned"),
+    COACH: c("assigned", "assigned"),
+    ASSISTANT_COACH: c("assigned", "denied"),
+    SUPPORT: D,
+    CLIENT: c("own", "denied"),
   },
 };
 

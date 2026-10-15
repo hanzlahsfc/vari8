@@ -37,6 +37,17 @@ import {
   type StaffCheckInSubmissionDetail,
   type MarkCheckInSubmissionReviewedInput,
   type MarkCheckInSubmissionReviewedResult,
+  sendCheckInFeedback,
+  resolveCheckInFeedbackSend,
+  listCheckInFeedback,
+  listOwnCheckInFeedback,
+  type CheckInFeedbackPage,
+  type SendCheckInFeedbackInput,
+  type SendCheckInFeedbackResult,
+  type ResolveCheckInFeedbackSendInput,
+  type ResolveCheckInFeedbackSendResult,
+  type ListCheckInFeedbackInput,
+  type ListOwnCheckInFeedbackInput,
 } from "./instances";
 import {
   readCheckInReviewTrackerContext,
@@ -55,7 +66,9 @@ export type CheckInSafeResult<T> =
         | "already_submitted"
         | "consent_missing"
         | "policy_not_configured"
-        | "serialization_conflict";
+        | "serialization_conflict"
+        | "review_required"
+        | "idempotency_conflict";
       message: string;
     };
 
@@ -70,6 +83,10 @@ const CLOSED_MESSAGES: Record<
   consent_missing: "Check-In isn’t available right now.",
   policy_not_configured: "Check-In isn’t available right now.",
   serialization_conflict: "The Check-In changed — please try again.",
+  review_required:
+    "This submission needs a review before feedback can be sent.",
+  idempotency_conflict:
+    "A different response was already sent with this request — check the thread before resending.",
 };
 
 function fail<T>(code: keyof typeof CLOSED_MESSAGES): CheckInSafeResult<T> {
@@ -278,6 +295,59 @@ export async function markCheckInSubmissionReviewedFromAction(
 ): Promise<CheckInSafeResult<MarkCheckInSubmissionReviewedResult>> {
   return guard(process.env, () =>
     markCheckInSubmissionReviewed(session as never, input, deps),
+  );
+}
+
+/**
+ * CHECK-IN-FEEDBACK-I1 — staff feedback send. The boundary maps the
+ * service's closed vocabulary; `sent`/`already_sent` are success
+ * statuses, `review_required`/`idempotency_conflict`/`consent_missing`
+ * are honest failures.
+ */
+export async function sendCheckInFeedbackFromAction(
+  session: Session,
+  input: SendCheckInFeedbackInput,
+  deps: CheckInInstanceDeps = {},
+): Promise<CheckInSafeResult<SendCheckInFeedbackResult>> {
+  return guard(process.env, () =>
+    sendCheckInFeedback(session as never, input, deps),
+  );
+}
+
+/**
+ * Recovery reconciliation read for the composer remount/reload path —
+ * re-authorizes checkinFeedback/read + consent, scoped to the
+ * authenticated author and the exact target.
+ */
+export async function resolveCheckInFeedbackSendFromAction(
+  session: Session,
+  input: ResolveCheckInFeedbackSendInput,
+  deps: CheckInInstanceDeps = {},
+): Promise<CheckInSafeResult<ResolveCheckInFeedbackSendResult>> {
+  return guard(process.env, () =>
+    resolveCheckInFeedbackSend(session as never, input, deps),
+  );
+}
+
+/** Bounded staff thread page — same protocol as the detail read. */
+export async function listStaffCheckInFeedback(
+  session: Session,
+  input: ListCheckInFeedbackInput,
+  deps: CheckInInstanceDeps = {},
+): Promise<CheckInSafeResult<CheckInFeedbackPage>> {
+  return guard(process.env, () =>
+    listCheckInFeedback(session as never, input, deps),
+  );
+}
+
+/** Bounded own-scope client page — consent-gated like answers. */
+export async function listOwnCheckInFeedbackItems(
+  session: Session,
+  input: ListOwnCheckInFeedbackInput,
+  deps: CheckInInstanceDeps = {},
+): Promise<CheckInSafeResult<CheckInFeedbackPage>> {
+  return guard(process.env, () =>
+    listOwnCheckInFeedback(session as never, input, deps),
   );
 }
 

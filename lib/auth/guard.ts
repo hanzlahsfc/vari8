@@ -169,6 +169,10 @@ const PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> = new Set([
   // submission reviews deny PLATFORM_ADMIN including a dual-role
   // administrator with an ACTIVE membership of any role.
   "onboardingSubmissionReviews",
+  // CHECK-IN-FEEDBACK-I1: Check-In feedback records deny PLATFORM_ADMIN
+  // including a dual-role administrator holding an ACTIVE membership of
+  // any role — the matrix cell alone only covers the no-membership path.
+  "checkinFeedback",
 ]);
 
 /**

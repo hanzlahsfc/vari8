@@ -76,11 +76,7 @@ describe("CHECK-IN-FEEDBACK-I1 dual-role PLATFORM_ADMIN denial", () => {
     membership: {
       id: string;
       role:
-        | "WORKSPACE_OWNER"
-        | "COACH"
-        | "ASSISTANT_COACH"
-        | "SUPPORT"
-        | "CLIENT";
+        "WORKSPACE_OWNER" | "COACH" | "ASSISTANT_COACH" | "SUPPORT" | "CLIENT";
       status: "ACTIVE";
     } | null;
     client: null;
@@ -163,7 +159,10 @@ describe("CHECK-IN-FEEDBACK-I1 dual-role PLATFORM_ADMIN denial", () => {
   }
 
   it("control: ordinary USER + ACTIVE owner resolves workspace/assigned", async () => {
-    const { repo } = makeRepo();
+    const { repo } = makeRepo({
+      client: { id: "cp1", workspaceId: "w1", userId: "other" },
+      assignment: { id: "a1" },
+    });
     const ctx = await authorize(
       session(),
       { resource: "checkinFeedback", action: "read", workspaceId: "w1" },
@@ -172,7 +171,12 @@ describe("CHECK-IN-FEEDBACK-I1 dual-role PLATFORM_ADMIN denial", () => {
     expect(ctx.grantedScope).toBe("workspace");
     const w = await authorize(
       session(),
-      { resource: "checkinFeedback", action: "write", workspaceId: "w1" },
+      {
+        resource: "checkinFeedback",
+        action: "write",
+        workspaceId: "w1",
+        clientProfileId: "cp1",
+      },
       repo,
     );
     expect(w.grantedScope).toBe("assigned");

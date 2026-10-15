@@ -132,6 +132,11 @@ export const AUDIT_RESOURCE_TYPES = [
   // event.
   "habit",
   "habit_log",
+  // CHECK-IN-FEEDBACK-I1: committed staff text feedback sends (IDs +
+  // structural markers only — never feedback body text). Idempotent
+  // replays (already_sent), idempotency conflicts, denials, and
+  // rollbacks write no event.
+  "checkin_feedback",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 
