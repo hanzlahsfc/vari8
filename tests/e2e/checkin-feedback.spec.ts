@@ -298,9 +298,9 @@ test("assigned coach reviews → sends feedback → client sees 'Response sent'"
   await input.fill("Great consistency this week — keep it up.");
   await page.getByTestId("checkin-feedback-send").click();
   await expect(page.getByTestId("checkin-feedback-confirm")).toBeVisible();
-  await expect(
-    page.getByTestId("checkin-feedback-list"),
-  ).toContainText("Great consistency this week");
+  await expect(page.getByTestId("checkin-feedback-list")).toContainText(
+    "Great consistency this week",
+  );
 
   const row2 = await prisma.checkInFeedback.findFirst({
     where: { workspaceId: wsId },
@@ -317,13 +317,13 @@ test("assigned coach reviews → sends feedback → client sees 'Response sent'"
   await signIn(page, E2E.client);
   await page.goto(`${BASE}/workspace/${wsId}/check-ins/${instance.id}`);
   await expect(page.getByTestId("checkin-response-sent")).toBeVisible();
-  await expect(
-    page.getByTestId("checkin-client-feedback-list"),
-  ).toContainText("Great consistency this week");
+  await expect(page.getByTestId("checkin-client-feedback-list")).toContainText(
+    "Great consistency this week",
+  );
   // No read/seen tracking — the status copy is exactly "Response sent".
-  await expect(
-    page.getByTestId("checkin-client-feedback"),
-  ).not.toContainText(/read|seen by|opened/i);
+  await expect(page.getByTestId("checkin-client-feedback")).not.toContainText(
+    /read|seen by|opened/i,
+  );
 });
 
 test("unreviewed submission offers no composer (canSend false)", async ({
@@ -414,10 +414,11 @@ test("aborted send response → remount reconciliation → retry commits exactly
     }
     await route.continue();
   });
+  await page.getByTestId("checkin-feedback-input").fill("uncertain send body");
   await page
-    .getByTestId("checkin-feedback-input")
-    .fill("uncertain send body");
-  await page.getByTestId("checkin-feedback-send").click().catch(() => {});
+    .getByTestId("checkin-feedback-send")
+    .click()
+    .catch(() => {});
   await page.waitForTimeout(1000);
   await page.unroute("**/checkins");
 
@@ -472,10 +473,7 @@ test("follow-up appends a second dated row (immutable corrections)", async ({
     where: { submissionId: submission.id },
     orderBy: [{ sentAt: "asc" }, { id: "asc" }],
   });
-  expect(rows.map((r) => r.body)).toEqual([
-    "first message",
-    "follow-up note",
-  ]);
+  expect(rows.map((r) => r.body)).toEqual(["first message", "follow-up note"]);
 });
 
 test("consent withdrawal hides feedback from the client exactly like answers", async ({

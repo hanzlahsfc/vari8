@@ -11,7 +11,6 @@ import { execFileSync } from "node:child_process";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { AccessDeniedError } from "../../lib/auth/guard";
 import { createStaticConsentPolicy } from "../../lib/consent";
 import {
   createCheckInForm,
@@ -416,7 +415,7 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
   it("foreign/missing/cross-tenant tuple → not_available; nothing leaks", async () => {
     const s = await setup();
     const other = await setup();
-    const { submissionId } = await reviewedSubmission(s);
+    await reviewedSubmission(s);
     const foreign = await reviewedSubmission(other);
     await expect(
       sendCheckInFeedback(
@@ -525,47 +524,40 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
     // must rethrow it as a failure, never report already_sent.
     let fired = false;
     const wrappedDb = {
-      $transaction: (
-        cb: (tx: never) => Promise<unknown>,
-        opts: unknown,
-      ) =>
-        prisma.$transaction(
-          async (tx) => {
-            const proxied = new Proxy(tx as object, {
-              get(target, prop) {
-                if (prop !== "checkInFeedback")
-                  return Reflect.get(target, prop);
-                const delegate = Reflect.get(target, prop) as object;
-                return new Proxy(delegate, {
-                  get(t2, p2) {
-                    if (p2 !== "create") return Reflect.get(t2, p2);
-                    return async (...args: unknown[]) => {
-                      if (!fired) {
-                        fired = true;
-                        throw new Prisma.PrismaClientKnownRequestError(
-                          "injected pk collision",
-                          {
-                            code: "P2002",
-                            clientVersion: "test",
-                            meta: {
-                              modelName: "CheckInFeedback",
-                              target: ["id"],
-                            },
+      $transaction: (cb: (tx: never) => Promise<unknown>, opts: unknown) =>
+        prisma.$transaction(async (tx) => {
+          const proxied = new Proxy(tx as object, {
+            get(target, prop) {
+              if (prop !== "checkInFeedback") return Reflect.get(target, prop);
+              const delegate = Reflect.get(target, prop) as object;
+              return new Proxy(delegate, {
+                get(t2, p2) {
+                  if (p2 !== "create") return Reflect.get(t2, p2);
+                  return async (...args: unknown[]) => {
+                    if (!fired) {
+                      fired = true;
+                      throw new Prisma.PrismaClientKnownRequestError(
+                        "injected pk collision",
+                        {
+                          code: "P2002",
+                          clientVersion: "test",
+                          meta: {
+                            modelName: "CheckInFeedback",
+                            target: ["id"],
                           },
-                        );
-                      }
-                      return (
-                        Reflect.get(t2, p2) as (...a: unknown[]) => unknown
-                      )(...args);
-                    };
-                  },
-                });
-              },
-            });
-            return cb(proxied as never);
-          },
-          opts as never,
-        ),
+                        },
+                      );
+                    }
+                    return (
+                      Reflect.get(t2, p2) as (...a: unknown[]) => unknown
+                    )(...args);
+                  };
+                },
+              });
+            },
+          });
+          return cb(proxied as never);
+        }, opts as never),
     };
     await expect(
       sendCheckInFeedback(
