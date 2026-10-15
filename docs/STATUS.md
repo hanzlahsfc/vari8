@@ -1,3 +1,11 @@
+## 2026-10-15 — FRONTEND standalone UI snapshot — planned
+
+- User authorized branch creation and push to `FRONTEND`, based on current `main`.
+- User selected a separate `frontend/` project, preserving the full-stack app.
+- Plan: `docs/tasks/frontend-snapshot.md`. Source workspace remains unchanged.
+- Base: `c63ddfb01005d0e853906d2ad3e3445ee5e7e3d5`.
+- Verification/review/import commit/push are pending.
+
 # STATUS — App foundation & extraction build
 
 Append-only loop memory (newest first). "Done" = the exact gate re-run on the current
