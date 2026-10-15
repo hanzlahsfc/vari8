@@ -181,6 +181,18 @@ boundary}` — `parseTaskDueDate` (proposed 5-year UTC bound, leap-safe),
   removal) at unit (4 roles × read/write) + integration (all ops).
 - maxLength aligned to the 120-char contract; task-owned R2 DB used.
 
+## CLIENT-TASKS-R2 — serialization-conflict retry repair (candidate)
+
+- Confirmed latent gap from HABITS-I1 R2 review: raw FOR UPDATE
+  conflicts surface as P2010 + SQLSTATE `40001`/`40P01`, but
+  `withSerializedRetry` matched only P2034 and rethrew raw on
+  exhaustion — contention degraded to `not_available`.
+- `isSerializationConflict` extracted to shared `lib/db.ts`;
+  tasks retry + boundary backstop now cover both shapes; non-conflict
+  errors never retried; exhaustion returns `serialization_conflict`.
+- Real-PG RED reproduced on unmodified code; 5/5 mutations bite;
+  focused + full gates on the final tree below.
+
 ## DASHBOARD-I1-R6 — SSR-safe coordinator hardening (candidate)
 
 - `acquireDashboardSlot` returns a per-call ephemeral slot when
