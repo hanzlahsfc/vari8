@@ -118,3 +118,29 @@ audit-on-noop; missing date bound; removed post-lock recheck.
   P2010-branch removal; retry `continue` removal; exhaustion rethrow;
   all-P2010 broadening (no-over-retry guard); boundary backstop
   removal.
+
+## CLIENT-TASKS-R2-PR2 — dashboard E2E blocker repair (test-only)
+
+- PR #45 `verify` run 38728641982 failed on two unrelated
+  `tests/e2e/client-dashboard.spec.ts` assertions ("browser Back" poll
+  read "Recoverable draft"; client view lacked CU04). Root causes,
+  both reproduced deterministically:
+  1. Faulted-save tests called `unroute`/`unrouteAll` while the
+     autosave coordinator could still have a pending retry — the retry
+     then dispatched a REAL save POST and committed the draft name +
+     bumped the shared row's revision (proven: `unroute` mid-pending →
+     "DIAG-LEAK" committed to the DB). The late write both corrupted
+     the shared fixture and CAS-conflicted the next test's save.
+  2. `getByText("Saved")` substring-matches residual state and can pass
+     before a debounced save dispatches — a torn-down share toggle was
+     silently dropped (proven: CU04 stayed `staff`), which the shared
+     row then carried forward.
+- Repair (test file only; production untouched): fault routes now stay
+  registered until context teardown; every commit barrier uses
+  exact-text `save-state` "Saved"; the share write additionally polls
+  the DB for `visibility=client`; the client-view test seeds its own
+  precondition; the two document-exit tests fault the pending save so
+  no write can land post-teardown.
+- Evidence: focused spec 19/19 ×3 runs; diag spec proved both leak
+  vectors. Gates: tsc/eslint/format clean; unit 1194; integration 737;
+  build green.

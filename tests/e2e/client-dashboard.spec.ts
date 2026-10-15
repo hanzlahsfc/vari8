@@ -91,15 +91,45 @@ test.describe("DASHBOARD-I1", () => {
     await page.goto(staffUrl());
     await expect(page.getByTestId("dashboard-editor")).toBeVisible();
     // add CU04 (client-visible) + CU01 (stays staff-only by default)
+    // every commit barrier waits for the exact save-state "Saved" —
+    // getByText("Saved") substring-matches residual text and can pass
+    // before the debounced save dispatches, dropping the write at
+    // context teardown
     await page.getByTestId("add-widget").selectOption("CU04");
-    await expect(page.getByText("Saved")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("save-state")).toHaveText("Saved", {
+      timeout: 10_000,
+    });
     await page.getByTestId("add-widget").selectOption("CU01");
-    await expect(page.getByText("Saved")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("save-state")).toHaveText("Saved", {
+      timeout: 10_000,
+    });
     // share the CU04 widget with the client
     const canvas = page.getByTestId("dashboard-canvas");
     const widget = canvas.locator("article", { hasText: "Check-in" }).first();
     await widget.getByTestId(/visibility-/).click();
-    await expect(page.getByText("Saved")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("save-state")).toHaveText("Saved", {
+      timeout: 10_000,
+    });
+    // and the durable barrier: the committed row carries the share
+    await expect
+      .poll(
+        async () => {
+          const row = await prisma.clientDashboardLayout.findFirst({
+            where: { workspaceId: wsId, clientProfileId: profileId },
+          });
+          const widgets = (
+            (row?.config as {
+              widgets?: {
+                kind: string;
+                settings: { visibility?: string };
+              }[];
+            }) ?? { widgets: [] }
+          ).widgets;
+          return widgets?.find((w) => w.kind === "CU04")?.settings.visibility;
+        },
+        { timeout: 15_000 },
+      )
+      .toBe("client");
   });
 
   test("editor covers settings, breakpoints, preview and nav guard", async ({
@@ -118,13 +148,15 @@ test.describe("DASHBOARD-I1", () => {
     const settings = page.getByTestId("widget-settings").first();
     await expect(settings).toBeVisible();
     await settings.locator("input").first().fill("Custom title");
-    await expect(page.getByText("Saved")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("save-state")).toHaveText("Saved", {
+      timeout: 10_000,
+    });
     // breakpoint tabs + initialize
     await page.getByTestId("bp-mobile").click();
     const init = page.getByTestId("init-mobile");
     if ((await init.count()) > 0) {
       await init.click();
-      await expect(page.getByText("Saved")).toBeVisible({
+      await expect(page.getByTestId("save-state")).toHaveText("Saved", {
         timeout: 10_000,
       });
     }
@@ -138,7 +170,16 @@ test.describe("DASHBOARD-I1", () => {
     await page.getByTestId("client-preview").click();
     // navigation guard: edit inside the debounce window, then try to
     // leave via a document navigation — beforeunload must fire; the
-    // user accepts it (explicit leave) and the page exits
+    // user accepts it (explicit leave) and the page exits. Fault the
+    // save first so the teardown flush can never land a late write on
+    // the shared fixture.
+    await page.route(
+      `**/workspace/${wsId}/clients/${profileId}/dashboard`,
+      (route) =>
+        isLayoutSave(route.request())
+          ? route.fulfill({ status: 500 })
+          : route.continue(),
+    );
     let dialogType = "";
     page.once("dialog", async (dialog) => {
       dialogType = dialog.type();
@@ -174,7 +215,9 @@ test.describe("DASHBOARD-I1", () => {
     await page
       .getByTestId("dashboard-name")
       .fill("Dashboard Client’s dashboard");
-    await expect(page.getByText(/Saved/)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("save-state")).toHaveText("Saved", {
+      timeout: 10_000,
+    });
   });
 
   test("keyboard-activated link inside the debounce window is held", async ({
@@ -200,7 +243,9 @@ test.describe("DASHBOARD-I1", () => {
     await page
       .getByTestId("dashboard-name")
       .fill("Dashboard Client’s dashboard");
-    await expect(page.getByText(/Saved/)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("save-state")).toHaveText("Saved", {
+      timeout: 10_000,
+    });
   });
 
   test("failed save then in-app link → held with explicit prompt", async ({
@@ -245,7 +290,8 @@ test.describe("DASHBOARD-I1", () => {
     });
     await page.getByTestId("leave-anyway").click();
     await expect(page).toHaveURL(new RegExp(`/workspace/${wsId}/clients$`));
-    await page.unrouteAll();
+    // the fault route stays registered until context teardown — an
+    // unroute here could let a pending retry commit to the shared row
   });
 
   test("conflict save then link → explicit prompt, never silent", async ({
@@ -254,7 +300,9 @@ test.describe("DASHBOARD-I1", () => {
     await signIn(page, E2E.owner);
     await page.goto(staffUrl());
     await page.getByTestId("dashboard-name").fill("Base name");
-    await expect(page.getByText("Saved")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("save-state")).toHaveText("Saved", {
+      timeout: 10_000,
+    });
     // a second writer moves the revision server-side
     const row = await prisma.clientDashboardLayout.findFirstOrThrow({
       where: { workspaceId: wsId, clientProfileId: profileId },
@@ -342,7 +390,9 @@ test.describe("DASHBOARD-I1", () => {
     await page
       .getByTestId("dashboard-name")
       .fill("Dashboard Client’s dashboard");
-    await expect(page.getByText(/Saved/)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("save-state")).toHaveText("Saved", {
+      timeout: 10_000,
+    });
   });
 
   test("multiple destination clicks → the last intent wins once", async ({
@@ -380,6 +430,15 @@ test.describe("DASHBOARD-I1", () => {
   test("protocol-relative // links are never intercepted", async ({ page }) => {
     await signIn(page, E2E.owner);
     await page.goto(staffUrl());
+    // fault the pending save — the beforeunload accept exits the
+    // document and a flushed write must never commit after teardown
+    await page.route(
+      `**/workspace/${wsId}/clients/${profileId}/dashboard`,
+      (route) =>
+        isLayoutSave(route.request())
+          ? route.fulfill({ status: 500 })
+          : route.continue(),
+    );
     await page.getByTestId("dashboard-name").fill("Proto name");
     // a protocol-relative anchor is not an app route — the document-exit
     // guard (beforeunload), not the click interception, applies
@@ -432,7 +491,9 @@ test.describe("DASHBOARD-I1", () => {
     await page
       .getByTestId("dashboard-name")
       .fill("Dashboard Client’s dashboard");
-    await expect(page.getByText(/Saved/)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("save-state")).toHaveText("Saved", {
+      timeout: 10_000,
+    });
   });
 
   test("no Navigation API: same-document Back persists the pending edit", async ({
@@ -516,7 +577,9 @@ test.describe("DASHBOARD-I1", () => {
       /Failed|denied/,
       { timeout: 15_000 },
     );
-    await page.unroute(`**/workspace/${wsId}/clients/${profileId}/dashboard`);
+    // no unroute: the fault route must outlive the context so queued
+    // coordinator work (retries, popstate re-flushes) can never reach
+    // the real server and write this draft into the shared fixture
     // the draft is what the editor holds — whether a background retry
     // has already committed it or a terminal failure is still pending,
     // the user always sees their work + an honest state, never a false
@@ -583,7 +646,8 @@ test.describe("DASHBOARD-I1", () => {
         { timeout: 15_000 },
       );
     } finally {
-      await page.unroute(`**/workspace/${wsId}/clients/*/dashboard`);
+      // keep the fault route until teardown: an unrouted retry could
+      // commit client A's draft (or recreate the other client's row)
       await prisma.clientDashboardLayout.deleteMany({
         where: { clientProfileId: other.id },
       });
@@ -619,9 +683,11 @@ test.describe("DASHBOARD-I1", () => {
     });
     await page.getByTestId("leave-anyway").click();
     await expect(page).toHaveURL(new RegExp(`/workspace/${wsId}/clients$`));
+    // the fault route stays registered for the page's whole life —
+    // sign-out hits the roster URL (and non-save POSTs are continued
+    // anyway); unroute would let a pending retry commit the draft
     await page.getByTestId("sign-out").click();
     await expect(page).toHaveURL(/login/);
-    await page.unroute(`**/workspace/${wsId}/clients/${profileId}/dashboard`);
     await signIn(page, E2E.owner);
     await page.goto(staffUrl());
     // the retained draft is gone — the editor re-bases to whatever the
@@ -661,7 +727,9 @@ test.describe("DASHBOARD-I1", () => {
     await page
       .getByTestId("dashboard-name")
       .fill("Dashboard Client’s dashboard");
-    await expect(page.getByText(/Saved/)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("save-state")).toHaveText("Saved", {
+      timeout: 10_000,
+    });
   });
 
   test("no guard residue: unrelated routes navigate freely after unmount", async ({
@@ -683,6 +751,23 @@ test.describe("DASHBOARD-I1", () => {
   });
 
   test("client view shows only the shared subset", async ({ page }) => {
+    // own the precondition: this test requires CU04 shared + CU01
+    // staff-only, and must not inherit whatever an earlier editor
+    // session left behind
+    const row = await prisma.clientDashboardLayout.findFirstOrThrow({
+      where: { workspaceId: wsId, clientProfileId: profileId },
+    });
+    const cfg = row.config as {
+      widgets: { kind: string; settings: { visibility: string } }[];
+    };
+    const cu04 = cfg.widgets.find((w) => w.kind === "CU04");
+    if (cu04 && cu04.settings.visibility !== "client") {
+      cu04.settings.visibility = "client";
+      await prisma.clientDashboardLayout.update({
+        where: { id: row.id },
+        data: { config: cfg as never, revision: { increment: 1 } },
+      });
+    }
     await signIn(page, E2E.client);
     await page.goto(clientUrl());
     await expect(page.getByTestId("client-dashboard")).toBeVisible();
