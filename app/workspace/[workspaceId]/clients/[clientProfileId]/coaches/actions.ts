@@ -73,11 +73,7 @@ async function sessionUserId(): Promise<string | null> {
 
 function parseRouteIds(formData: FormData) {
   const workspaceId = singleString(formData, "workspaceId", MAX_ID_LEN);
-  const clientProfileId = singleString(
-    formData,
-    "clientProfileId",
-    MAX_ID_LEN,
-  );
+  const clientProfileId = singleString(formData, "clientProfileId", MAX_ID_LEN);
   const coachMemberId = singleString(formData, "coachMemberId", MAX_ID_LEN);
   if (!workspaceId || !clientProfileId || !coachMemberId) return null;
   return { workspaceId, clientProfileId, coachMemberId };

@@ -87,25 +87,34 @@ describe("SOLO-COACH-I1 coach-assignment actions", () => {
   });
 
   it.each([
-    ["missing coachMemberId", { workspaceId: "w_1", clientProfileId: "cp_1", role: "COACH" }],
+    [
+      "missing coachMemberId",
+      { workspaceId: "w_1", clientProfileId: "cp_1", role: "COACH" },
+    ],
     ["duplicate workspaceId", null],
-    ["oversized workspaceId", { ...VALID, role: "COACH", workspaceId: "x".repeat(500) }],
+    [
+      "oversized workspaceId",
+      { ...VALID, role: "COACH", workspaceId: "x".repeat(500) },
+    ],
     ["out-of-allowlist role", { ...VALID, role: "SUPERADMIN" }],
-  ])("assignCoachAction rejects %s without calling the service", async (_label, entries) => {
-    const f = new FormData();
-    if (entries === null) {
-      f.append("workspaceId", "w_1");
-      f.append("workspaceId", "w_2");
-      f.append("clientProfileId", "cp_1");
-      f.append("coachMemberId", "m_1");
-      f.append("role", "COACH");
-    } else {
-      for (const [k, v] of Object.entries(entries)) f.append(k, v);
-    }
-    const result = await assignCoachAction({ status: "idle" } as never, f);
-    expect(result).toMatchObject({ ok: false });
-    expect(mockedAssign).not.toHaveBeenCalled();
-  });
+  ])(
+    "assignCoachAction rejects %s without calling the service",
+    async (_label, entries) => {
+      const f = new FormData();
+      if (entries === null) {
+        f.append("workspaceId", "w_1");
+        f.append("workspaceId", "w_2");
+        f.append("clientProfileId", "cp_1");
+        f.append("coachMemberId", "m_1");
+        f.append("role", "COACH");
+      } else {
+        for (const [k, v] of Object.entries(entries)) f.append(k, v);
+      }
+      const result = await assignCoachAction({ status: "idle" } as never, f);
+      expect(result).toMatchObject({ ok: false });
+      expect(mockedAssign).not.toHaveBeenCalled();
+    },
+  );
 
   it("service denial maps to a safe denied message — never a success", async () => {
     const { AccessDeniedError } = await import("../../lib/auth/guard");
@@ -117,15 +126,14 @@ describe("SOLO-COACH-I1 coach-assignment actions", () => {
       fd({ ...VALID, role: "COACH" }),
     );
     expect(result).toMatchObject({ ok: false });
-    expect(
-      (result as { ok: false; message: string }).message,
-    ).not.toMatch(/role_denied|w_1|cp_1|m_1/);
+    expect((result as { ok: false; message: string }).message).not.toMatch(
+      /role_denied|w_1|cp_1|m_1/,
+    );
   });
 
   it("service WorkspaceServiceError codes map to safe strings", async () => {
-    const { WorkspaceServiceError } = await import(
-      "../../lib/workspace/clients"
-    );
+    const { WorkspaceServiceError } =
+      await import("../../lib/workspace/clients");
     mockedAssign.mockRejectedValueOnce(
       new WorkspaceServiceError("member_not_eligible"),
     );
@@ -134,13 +142,16 @@ describe("SOLO-COACH-I1 coach-assignment actions", () => {
       fd({ ...VALID, role: "PRIMARY" }),
     );
     expect(result).toMatchObject({ ok: false });
-    expect(
-      (result as { ok: false; message: string }).message,
-    ).not.toContain("member_not_eligible");
+    expect((result as { ok: false; message: string }).message).not.toContain(
+      "member_not_eligible",
+    );
   });
 
   it("setPrimaryCoachAction and removeCoachAssignmentAction bind the three route IDs", async () => {
-    const p = await setPrimaryCoachAction({ status: "idle" } as never, fd(VALID));
+    const p = await setPrimaryCoachAction(
+      { status: "idle" } as never,
+      fd(VALID),
+    );
     expect(p).toMatchObject({ ok: true });
     expect(mockedSetPrimary).toHaveBeenCalledWith(
       expect.anything(),

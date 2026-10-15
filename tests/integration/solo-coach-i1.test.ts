@@ -67,11 +67,7 @@ describe.skipIf(!enabled)("SOLO-COACH-I1 owner-as-coach (real PG)", () => {
     workspaceId: string,
     userId: string,
     role:
-      | "WORKSPACE_OWNER"
-      | "COACH"
-      | "ASSISTANT_COACH"
-      | "SUPPORT"
-      | "CLIENT",
+      "WORKSPACE_OWNER" | "COACH" | "ASSISTANT_COACH" | "SUPPORT" | "CLIENT",
     status: "ACTIVE" | "SUSPENDED" | "REMOVED" = "ACTIVE",
   ) {
     return prisma.workspaceMember.create({

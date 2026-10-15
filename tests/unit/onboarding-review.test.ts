@@ -20,9 +20,12 @@ describe("onboardingSubmissionReviews — resource and matrix (P-024)", () => {
   });
 
   it("resolves the settled per-role cells exactly", () => {
+    // SOLO-COACH-I1 (decision 111 — separate amendment to the #37/P-024
+    // onboarding authorization): owner write `denied → assigned`; read
+    // stays workspace-wide; an ACTIVE ClientAssignment gates the write.
     const expected: Record<PrincipalRole, [string, string]> = {
       PLATFORM_ADMIN: ["denied", "denied"],
-      WORKSPACE_OWNER: ["workspace", "denied"],
+      WORKSPACE_OWNER: ["workspace", "assigned"],
       COACH: ["assigned", "assigned"],
       ASSISTANT_COACH: ["assigned", "denied"],
       SUPPORT: ["denied", "denied"],

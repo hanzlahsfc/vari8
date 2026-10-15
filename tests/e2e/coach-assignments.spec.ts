@@ -114,12 +114,7 @@ async function removeFixtures() {
     .deleteMany({ where: { clientProfileId: PROFILE_ID } })
     .catch(() => {});
   await prisma.consentRecord
-    .deleteMany({
-      where: {
-        clientProfileId: PROFILE_ID,
-        version: { startsWith: "sci-" },
-      },
-    })
+    .deleteMany({ where: { clientProfileId: PROFILE_ID } })
     .catch(() => {});
   await prisma.clientProfile
     .deleteMany({ where: { id: PROFILE_ID } })
@@ -269,10 +264,13 @@ test.beforeAll(async () => {
     },
   });
 
-  // Consent for both surfaces.
+  // Consent for both surfaces — each review path pins its own dev-policy
+  // versions (check-in vs onboarding-submission registries).
   for (const [kind, version] of [
-    ["PRIVACY_NOTICE", "sci-privacy-v1"],
-    ["HEALTH_DATA", "sci-health-v1"],
+    ["PRIVACY_NOTICE", "check-in-dev-privacy-v1"],
+    ["HEALTH_DATA", "check-in-dev-health-v1"],
+    ["PRIVACY_NOTICE", "onboarding-submission-dev-privacy-v1"],
+    ["HEALTH_DATA", "onboarding-submission-dev-health-v1"],
   ] as const)
     await prisma.consentRecord.create({
       data: { clientProfileId: PROFILE_ID, kind, version },
@@ -365,9 +363,17 @@ test.describe("SOLO-COACH-I1 owner-as-coach", () => {
       page.getByTestId("staff-onboarding-mark-reviewed"),
     ).toBeVisible();
     await page.getByTestId("staff-onboarding-mark-reviewed").click();
-    await expect(
-      page.getByTestId("staff-onboarding-reviewed"),
-    ).toBeVisible();
+    // The detail region does not re-render its reviewed state in place —
+    // confirm the terminal row landed, then reload and re-read the list.
+    await expect
+      .poll(async () =>
+        prisma.onboardingSubmissionReview.count({
+          where: { submissionId: ONB_SUBMISSION_ID },
+        }),
+      )
+      .toBe(1);
+    await page.goto(onboardingUrl());
+    await expect(page.getByText(/Reviewed by/)).toBeVisible();
   });
 
   test("non-owner members are denied the Coaches screen", async ({ page }) => {
@@ -375,9 +381,7 @@ test.describe("SOLO-COACH-I1 owner-as-coach", () => {
     await page.goto(coachesUrl());
     // Repo-standard non-disclosing denial — 403, never a rendered manager.
     await expect(page.getByTestId("coach-assignments-page")).toHaveCount(0);
-    const status = await page.request
-      .get(coachesUrl())
-      .then((r) => r.status());
+    const status = await page.request.get(coachesUrl()).then((r) => r.status());
     expect(status).toBe(403);
   });
 });

@@ -46,9 +46,7 @@ export function AssignmentPanel({
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const [confirmingRemove, setConfirmingRemove] = useState<string | null>(
-    null,
-  );
+  const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
 
   const nameOf = (memberId: string) =>
     members.find((m) => m.memberId === memberId)?.displayName ??
@@ -116,8 +114,8 @@ export function AssignmentPanel({
         >
           <p>No coaches assigned.</p>
           <p>
-            This client has no coach assignments yet. Assign a member below
-            to grant them review access for this client.
+            This client has no coach assignments yet. Assign a member below to
+            grant them review access for this client.
           </p>
         </div>
       ) : (

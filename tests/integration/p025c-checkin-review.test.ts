@@ -1092,9 +1092,9 @@ describe.skipIf(!enabled)("P-025-C check-in staff review (real PG)", () => {
         deps(),
       ),
     ).rejects.toMatchObject({ reason: "not_assigned" });
-    expect(
-      await prisma.checkInReview.count({ where: { submissionId } }),
-    ).toBe(0);
+    expect(await prisma.checkInReview.count({ where: { submissionId } })).toBe(
+      0,
+    );
   });
 
   it("owner whose assignment was REMOVED is denied on mark (revocation fails closed)", async () => {
@@ -1127,9 +1127,9 @@ describe.skipIf(!enabled)("P-025-C check-in staff review (real PG)", () => {
         deps(),
       ),
     ).rejects.toMatchObject({ reason: "not_assigned" });
-    expect(
-      await prisma.checkInReview.count({ where: { submissionId } }),
-    ).toBe(0);
+    expect(await prisma.checkInReview.count({ where: { submissionId } })).toBe(
+      0,
+    );
   });
 
   // ── Mark requires a real submission (SCHEDULED instance → not_available)

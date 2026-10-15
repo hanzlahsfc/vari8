@@ -79,8 +79,8 @@ export default async function ClientCoachesPage({
         <h1 className="app-title">Coaches — {client.name}</h1>
         <p className="app-lede">
           Coach assignments for this client. Assignments grant a coach or an
-          assigned owner review access for this client only; removing one
-          ends that access without changing workspace membership.
+          assigned owner review access for this client only; removing one ends
+          that access without changing workspace membership.
         </p>
       </header>
       <AssignmentPanel
