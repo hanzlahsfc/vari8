@@ -929,4 +929,133 @@ describe.skipIf(!enabled)("P-024 staff onboarding review (real PG)", () => {
     );
     expect(ownerResult.ok).toBe(false);
   });
+
+  // ── SOLO-COACH-I1: assigned-owner review write (decision 111, amends #37
+  // general direction / P-024 instantiation). Separate amendment from the
+  // Check-In change; owner write scope is `assigned`, never workspace-wide.
+
+  it("owner with an ACTIVE assignment reads with canMark=true and marks reviewed", async () => {
+    const s = await seedSubmitted({ coach: false });
+    const ownerMember = await prisma.workspaceMember.findUniqueOrThrow({
+      where: {
+        workspaceId_userId: {
+          workspaceId: s.ws.id,
+          userId: s.ownerUser.id,
+        },
+      },
+    });
+    await prisma.clientAssignment.create({
+      data: {
+        workspaceId: s.ws.id,
+        clientProfileId: s.profile.id,
+        coachMemberId: ownerMember.id,
+        role: "PRIMARY",
+        status: "ACTIVE",
+      },
+    });
+
+    const detail = await readSubmissionReviewDetail(
+      { user: { id: s.ownerUser.id } },
+      {
+        workspaceId: s.ws.id,
+        clientProfileId: s.profile.id,
+        submissionId: s.submission.id,
+      },
+      DEP(prisma),
+    );
+    expect(detail.canMark).toBe(true);
+
+    const mark = await markSubmissionReviewed(
+      { user: { id: s.ownerUser.id } },
+      {
+        workspaceId: s.ws.id,
+        clientProfileId: s.profile.id,
+        submissionId: s.submission.id,
+      },
+      DEP(prisma),
+    );
+    expect(mark.status).toBe("reviewed");
+    const reviews = await prisma.onboardingSubmissionReview.findMany({
+      where: { submissionId: s.submission.id },
+    });
+    expect(reviews).toHaveLength(1);
+    expect(reviews[0].reviewedByMemberId).toBe(ownerMember.id);
+  });
+
+  it("owner WITHOUT an assignment reads detail (canMark=false); mark denied not_assigned", async () => {
+    const s = await seedSubmitted({ coach: false });
+    const detail = await readSubmissionReviewDetail(
+      { user: { id: s.ownerUser.id } },
+      {
+        workspaceId: s.ws.id,
+        clientProfileId: s.profile.id,
+        submissionId: s.submission.id,
+      },
+      DEP(prisma),
+    );
+    expect(detail.canMark).toBe(false);
+    await expect(
+      markSubmissionReviewed(
+        { user: { id: s.ownerUser.id } },
+        {
+          workspaceId: s.ws.id,
+          clientProfileId: s.profile.id,
+          submissionId: s.submission.id,
+        },
+        DEP(prisma),
+      ),
+    ).rejects.toMatchObject({ reason: "not_assigned" });
+    expect(
+      await prisma.onboardingSubmissionReview.count({
+        where: { submissionId: s.submission.id },
+      }),
+    ).toBe(0);
+  });
+
+  it("owner whose assignment was REMOVED is denied on mark (revocation fails closed)", async () => {
+    const s = await seedSubmitted({ coach: false });
+    const ownerMember = await prisma.workspaceMember.findUniqueOrThrow({
+      where: {
+        workspaceId_userId: {
+          workspaceId: s.ws.id,
+          userId: s.ownerUser.id,
+        },
+      },
+    });
+    const row = await prisma.clientAssignment.create({
+      data: {
+        workspaceId: s.ws.id,
+        clientProfileId: s.profile.id,
+        coachMemberId: ownerMember.id,
+        role: "PRIMARY",
+        status: "ACTIVE",
+      },
+    });
+    await prisma.clientAssignment.update({
+      where: { id: row.id },
+      data: { status: "REMOVED" },
+    });
+
+    const detail = await readSubmissionReviewDetail(
+      { user: { id: s.ownerUser.id } },
+      {
+        workspaceId: s.ws.id,
+        clientProfileId: s.profile.id,
+        submissionId: s.submission.id,
+      },
+      DEP(prisma),
+    );
+    expect(detail.canMark).toBe(false);
+    await expect(
+      markSubmissionReviewed(
+        { user: { id: s.ownerUser.id } },
+        {
+          workspaceId: s.ws.id,
+          clientProfileId: s.profile.id,
+          submissionId: s.submission.id,
+        },
+        DEP(prisma),
+      ),
+    ).rejects.toMatchObject({ reason: "not_assigned" });
+  });
 });

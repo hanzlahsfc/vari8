@@ -394,8 +394,10 @@ describe.skipIf(!enabled)("S1-C client ownership & assignments", () => {
       ),
     ).rejects.toMatchObject({ code: "member_not_eligible" });
 
-    // non-coach target roles rejected
-    for (const role of ["WORKSPACE_OWNER", "SUPPORT", "CLIENT"] as const) {
+    // non-coach target roles rejected — SOLO-COACH-I1 (decision 111)
+    // amends eligibility so WORKSPACE_OWNER is assignable (PRIMARY|COACH);
+    // SUPPORT and CLIENT remain ineligible.
+    for (const role of ["SUPPORT", "CLIENT"] as const) {
       const u = await user();
       const m = await member(ws.id, u.id, role);
       await expect(
