@@ -5,6 +5,134 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## HABITS-I1 — real habit tracking + TL21/TL22 (in progress)
+
+- Independently reviewed contract: HABITS-P4 (`59222875…`, 217 lines) +
+  P4-R1 PASS (`361a71ce…`, 107 lines); decision #110 recorded.
+- Base verified `6b24def` (`origin/main`); worktree
+  `the-great-tracker-habits` on `feature/habits-i1`; `appearance-r2`
+  untouched.
+- Review P3s resolved in `docs/tasks/habits-i1.md`: raw-SQL coherence FK
+  convention (not Prisma composite relation), caller `weekdays=0`
+  rejection on normal paths, `HabitLogStatus {DONE, SKIPPED}` shown,
+  `(id, workspace_id)` unique relabelled as identity target, real
+  constraint table documented.
+- Plan + decision + tracker recorded before code; RED committed.
+- GREEN: schema+migration `20261015000000_habits_i1` (Habit,
+  HabitSchedule, HabitLog + HabitLogStatus, coherence FK, CHECKs,
+  uniques); `lib/habits/{date,service,boundary}`; `habits` RBAC cell +
+  guard deny-set; audit resource types `habit`/`habit_log` + `date`/
+  `logStatus` meta keys; TL21/TL22 connected in config-schema; client
+  TL21 (Mark done/Undo only) + TL22 widgets wired on the client
+  dashboard; staff `ClientHabitsPanel` + editor habit picker.
+- Gates so far: `tsc --noEmit` clean; unit 1181/98 pass; integration
+  723/46 pass (incl. `habits` 27 + `habits-schema` 5 on
+  `habits_i1_integration`). E2E spec `tests/e2e/habits.spec.ts` written;
+  full E2E + mutation + build gates pending.
+- E2E round 2 (after killing a stale port-3000 server): fixed a real
+  contract bug — stored `fields: []` (no subset picked) filtered out the
+  whole cohort instead of meaning "all authorized"; `validateFields`
+  now maps empty arrays to `null` + regression coverage in
+  `habits.test.ts` (TL21 + TL22). `ClientHabitsWidget` now
+  `router.refresh()`es after a successful mark so server-rendered TL22
+  counts update. Spec fixes: locators scoped to `client-habits` (habit
+  names correctly appear in TL22 rows), theme drive via `localStorage`
+  after load (init scripts re-run on reload), and tests 2/3 made
+  self-sufficient — a failed test restarts the worker, re-running
+  `beforeAll`/`afterAll`, so cross-test row dependencies are unsafe.
+  `npx playwright test tests/e2e/habits.spec.ts` — 6/6 pass.
+- Mutation sweep (10 mutants, all restored byte-identically via
+  sha256-verified backups): fields-empty (2 bites), boundary
+  effectiveFrom `<` (11), weekday mask ignored (3), management scope
+  admitting `own` (1), log without schedule (3), create-audit skipped
+  (2), caller `weekdays=0` accepted (1), boundary at today not
+  tomorrow (4), boundary gate skipped (2), log write non-`own` scope
+  (1). No survivors, no masked assertions.
+- Gates: typecheck/lint/prisma-validate/build clean; fresh
+  `migrate deploy` from zero on `habits_i1_drift`; drift diff shows
+  only the documented raw-SQL FK/index conventions.
+- Full E2E round 1: 371 pass / 4 fail. `client-home` was
+  environmental (bare `new PrismaClient()` needs `DATABASE_URL` —
+  passes with it set). Three `client-dashboard` autosave/nav-guard
+  tests failed reproducibly while the identical run on the base tree
+  (`d279514` ≡ `6b24def`) passed 19/19 → real regression.
+- Regression mechanism: the initial implementation loaded habit data
+  via mount-time server-action POSTs (`readClientHabitChoices` in the
+  editor, `readClientHabits`/`readClientHabitConsistency` in the
+  panel). Those POSTs serialize on the same route ahead of the
+  nav-guard's flushed save, and the extra serialized boundary reads
+  delayed hydration enough that a fill inside the debounce window
+  could land before React attached `onChange` — no pending slot, the
+  navigation proceeded, the edit was lost. Fixed architecturally:
+  the staff page streams the habit cohort inside `<Suspense>` and
+  passes the picker choices as a deferred promise resolved by
+  `use()` only when a TL21/TL22 settings panel opens — zero
+  mount-time action POSTs, editor hydration back at base latency.
+  `client-dashboard` 19/19 + `habits` 6/6 green after the fix.
+- Independent read-only review (P4-R1 impl review): NEEDS-FIXES —
+  no P0/P1; one P2 + eight P3s. All repaired:
+  - P2 `editHabit` endDate validated against `tomorrow` but written
+    at a later future boundary → DB check violation. Now rejected
+    `invalid_input` once `boundaryDate` is known; regression test
+    added (future-start habit + endDate between tomorrow and the
+    boundary; control endDate ≥ boundary accepted).
+  - `withSerializedRetry` rethrew raw P2034 on the final attempt —
+    now maps to `HabitError("serialization_conflict")`.
+  - Migration gains `habits_revision_positive_chk` (`revision > 0`)
+    per the contract list.
+  - `setHabitLog` now `lockProfile` FOR UPDATE before the habit lock
+    (same order as management paths).
+  - TL21 echoes the server's `date` (returned by `listTodayHabits`)
+    instead of the browser clock; `hasMore` surfaced in TL21 and the
+    editor picker; TL22 + staff consistency render the contracted
+    "No scheduled days" empty-denominator state; multi-statement
+    reads run at `RepeatableRead`; `ClientHabitsWidget` re-syncs
+    from refreshed props.
+- Post-repair: unit 1181/98, integration suite re-run on a fresh
+  `habits_i1_integration` (migration checksum changed), targeted
+  E2E green. Full E2E re-run pending.
+- Pre-existing harness note (not HABITS-I1): E2E global teardown
+  deletes `clientProfile` before `clientDashboardLayout` —
+  FK-ordered sweep needed; left untouched as unrelated scope.
+- HABITS-I1-R2 (coverage/verification-hygiene repair on `4ed94fe`):
+  - **Real defect found and fixed:** genuine RepeatableRead
+    `FOR UPDATE` contention surfaces as `P2010` with
+    `meta.code = "40001"` (raw-query SQLSTATE), not `P2034` — the
+    `1ad6c11` retry/backstop matched only `error.code === "P2034"`,
+    so real member-lock conflicts never retried and degraded to
+    `not_available`. Added `isSerializationConflict` (P2034 +
+    P2010/40001/40P01) shared by `withSerializedRetry` and the
+    boundary backstop. Found by the new deterministic contention
+    test, not by review.
+  - New coverage (real PG): positive DONE `habit_log` audit
+    (exactly one, structural meta only, replay adds none);
+    audit-failure rollback on the log path; coordinator-held member
+    lock + post-snapshot commit → real 40001 → retry returns
+    coherent data; membership suspended mid-conflict → retry
+    re-authorizes → denied; bounded exhaustion (real-shape
+    injection inside live transactions) → `serialization_conflict`
+    with no partial log/audit rows; TL22 cohort excludes
+    zero-scheduled habits (plan §3 requires ≥1 scheduled pair —
+    P3-4 repaired rather than disclosed).
+  - Teardown repaired: the sweep omitted `clientDashboardLayout`
+    and all habit tables entirely (not merely ordering). Extracted
+    `tests/e2e/fixture-sweep.ts` — fixture-scoped, RESTRICT-ordered,
+    idempotent `deleteMany` sweep — used by `global-teardown.ts`;
+    `tests/integration/teardown-sweep.test.ts` populates
+    dashboard/habit/log/schedule rows and proves the sweep,
+    sentinel isolation, and a no-op second run.
+  - Unit backstop coverage: both raw shapes (P2034, P2010/40001)
+    map to `serialization_conflict`.
+  - Mutation sweep 7/7 bite, all restored byte-identical (sha256):
+    DONE-audit removal; retry `continue` removal (bites both
+    contention tests); P2010-branch removal (bites real
+    contention); exhaustion rethrow removal (bites both
+    exhaustion tests); habit sweep-lines removal (bites teardown
+    test); zero-scheduled filter removal (bites TL22 cohort);
+    boundary backstop neutralization (bites unit test).
+  - Focused green: `habits.test.ts` 35/35 +
+    `teardown-sweep.test.ts` 1/1 + `habits-boundary.test.ts` 6/6.
+
 ## CLIENT-TASKS-I1 — real client tasks + CU03 (candidate)
 
 - Independently reviewed contract: P2 (`7296937e…`) + P3 delta
@@ -4351,3 +4479,15 @@ FATS (g)/COOKED/RAW/DRY/CAT`; columns 12–21 and the row-label column empty →
 - Formula semantics (calories, averages, cycle estimation, T-minus, meal subtotals),
   water/salt average swap, sparkline config, SUPPLEMENTATION/PEAKING/SHOWDAY wiring.
 - Product name/branding, license terms, PED/HRT policy, i18n.
+
+- Full E2E round 2 (with `DATABASE_URL` exported): **381 passed /
+  0 failed / 12 skipped** (393 total) — including `client-dashboard`
+  19/19 and `habits` 6/6. Final build green on the committed tree.
+  Branch `feature/habits-i1` = verified base `6b24def` + 7 commits;
+  review candidate only — no PR/merge/deploy without authority.
+
+(Repair-round 2: independent re-review of `7f40106` verified all 9
+repairs; flagged one new failure mode — unretried P2034 from the
+RepeatableRead reads' member-row FOR UPDATE surfacing as
+`not_available`. Reads now use `withSerializedRetry`; `mapError` maps
+raw P2034 → `serialization_conflict`. Integration 28/28 re-green.)

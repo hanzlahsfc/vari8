@@ -78,3 +78,67 @@ export async function readClientTasks(input: {
   const { userId } = await requireSessionUser();
   return readStaffClientTasks({ user: { id: userId } }, input);
 }
+
+/* ---------------- HABITS-I1 staff habit actions (decision 110) -------- */
+
+import {
+  createHabitFromAction,
+  editHabitFromAction,
+  archiveHabitFromAction,
+  readStaffHabits,
+  readHabitConsistency,
+} from "@/lib/habits/boundary";
+
+export async function createClientHabit(input: {
+  workspaceId: string;
+  clientProfileId: string;
+  name: unknown;
+  target: unknown;
+  startDate: unknown;
+  weekdays: unknown;
+  endDate?: unknown;
+}) {
+  const { userId } = await requireSessionUser();
+  return createHabitFromAction({ user: { id: userId } }, input);
+}
+
+export async function editClientHabit(input: {
+  workspaceId: string;
+  clientProfileId: string;
+  habitId: string;
+  name?: unknown;
+  target?: unknown;
+  schedule?: { weekdays?: unknown; endDate?: unknown };
+  expectedRevision: number;
+}) {
+  const { userId } = await requireSessionUser();
+  return editHabitFromAction({ user: { id: userId } }, input);
+}
+
+export async function archiveClientHabit(input: {
+  workspaceId: string;
+  clientProfileId: string;
+  habitId: string;
+  expectedRevision: number;
+}) {
+  const { userId } = await requireSessionUser();
+  return archiveHabitFromAction({ user: { id: userId } }, input);
+}
+
+export async function readClientHabits(input: {
+  workspaceId: string;
+  clientProfileId: string;
+}) {
+  const { userId } = await requireSessionUser();
+  return readStaffHabits({ user: { id: userId } }, input);
+}
+
+export async function readClientHabitConsistency(input: {
+  workspaceId: string;
+  clientProfileId: string;
+  period: unknown;
+  fields?: unknown;
+}) {
+  const { userId } = await requireSessionUser();
+  return readHabitConsistency({ user: { id: userId } }, input);
+}

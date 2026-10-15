@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useRef, useState } from "react";
+import { Suspense, use, useEffect, useReducer, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -72,6 +72,7 @@ export function DashboardEditor({
   initialConfig,
   initialRevision,
   canEdit,
+  habitChoices,
 }: {
   userId: string;
   workspaceId: string;
@@ -79,6 +80,16 @@ export function DashboardEditor({
   initialConfig: DashboardConfig;
   initialRevision: number;
   canEdit: boolean;
+  // HABITS-I1 (decision 110): the TL21/TL22 field picker's authorized
+  // non-archived habit choices — streamed from the page as a deferred
+  // promise and resolved by the settings panel only when a habit
+  // widget's settings open, so the read never delays editor hydration
+  // (a mount-time action POST here serialized ahead of the autosave
+  // flush and could starve a pending layout save on navigation).
+  habitChoices: Promise<{
+    choices: { id: string; name: string }[];
+    hasMore: boolean;
+  }>;
 }) {
   const [bp, setBp] = useState<BreakpointName>("desktop");
   const [editing, setEditing] = useState<string | null>(null);
@@ -592,10 +603,13 @@ export function DashboardEditor({
                   </div>
                 ) : null}
                 {canEdit && !preview && editing === id ? (
-                  <SettingsPanel
-                    widget={widget}
-                    onChange={(patch) => setSetting(id, patch)}
-                  />
+                  <Suspense fallback={null}>
+                    <SettingsPanel
+                      widget={widget}
+                      onChange={(patch) => setSetting(id, patch)}
+                      habitChoices={habitChoices}
+                    />
+                  </Suspense>
                 ) : null}
               </article>
             );
@@ -611,12 +625,20 @@ export function DashboardEditor({
 function SettingsPanel({
   widget,
   onChange,
+  habitChoices,
 }: {
   widget: { id: string; kind: WidgetKind; settings: WidgetSettings };
   onChange: (patch: Partial<WidgetSettings>) => void;
+  habitChoices: Promise<{
+    choices: { id: string; name: string }[];
+    hasMore: boolean;
+  }>;
 }) {
   const s = widget.settings;
   const staticFields = widgetStaticFieldOptions(widget.kind);
+  const isHabitPicker = widget.kind === "TL21" || widget.kind === "TL22";
+  const { choices: habitChoiceList, hasMore: habitChoicesTruncated } =
+    use(habitChoices);
   const set = (patch: Partial<WidgetSettings>) => onChange(patch);
   return (
     <fieldset
@@ -731,7 +753,59 @@ function SettingsPanel({
           Show target
         </label>
       ) : null}
-      {staticFields ? (
+      {isHabitPicker ? (
+        <fieldset data-testid="habit-fields-picker">
+          <legend>Habits (≤8 — empty selects all authorized)</legend>
+          {habitChoiceList.length === 0 && s.fields.length === 0 ? (
+            <p className="cc-empty">No active habits to pick from.</p>
+          ) : null}
+          {habitChoiceList.map((c) => {
+            const checked = s.fields.includes(c.id);
+            return (
+              <label key={c.id}>
+                <input
+                  autoComplete="off"
+                  type="checkbox"
+                  checked={checked}
+                  disabled={!checked && s.fields.length >= 8}
+                  onChange={(e) =>
+                    set({
+                      fields: e.target.checked
+                        ? [...s.fields, c.id].slice(0, 8)
+                        : s.fields.filter((x) => x !== c.id),
+                    })
+                  }
+                />{" "}
+                {c.name}
+              </label>
+            );
+          })}
+          {/* Selected IDs that are no longer pickable (archived or
+              foreign): TL22 keeps their history — they stay selected
+              until removed here. */}
+          {s.fields
+            .filter((f) => !habitChoiceList.some((c) => c.id === f))
+            .map((f) => (
+              <label key={f}>
+                <input
+                  autoComplete="off"
+                  type="checkbox"
+                  checked
+                  onChange={() =>
+                    set({ fields: s.fields.filter((x) => x !== f) })
+                  }
+                />{" "}
+                {f} — archived or unavailable
+              </label>
+            ))}
+          {habitChoicesTruncated ? (
+            <p className="cc-hint" data-testid="habit-choices-more">
+              More habits exist beyond this list — they remain selectable only
+              if already chosen.
+            </p>
+          ) : null}
+        </fieldset>
+      ) : staticFields ? (
         <fieldset>
           <legend>Fields</legend>
           {staticFields.map((f) => (

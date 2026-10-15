@@ -234,6 +234,20 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "own"],
   },
+  // HABITS-I1 (decision 110): same reviewed shape as clientTasks — owner
+  // manages at workspace scope; assigned ACTIVE coaches manage at
+  // assigned scope; assistants read assigned only; the CLIENT's "own"
+  // write is restricted to the log desired-state op by the habit
+  // service. SUPPORT/PLATFORM_ADMIN denied outright (dual-role deny-set
+  // in guard.ts).
+  habits: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "workspace"],
+    COACH: ["assigned", "assigned"],
+    ASSISTANT_COACH: ["assigned", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "own"],
+  },
   // P-023 (decisions #82–#85): client-owned onboarding submissions —
   // ACTIVE CLIENT own read/write; every staff role, SUPPORT, and
   // PLATFORM_ADMIN denied outright.
@@ -284,7 +298,7 @@ const PRINCIPAL_ROLES: PrincipalRole[] = [
 
 describe("RBAC matrix", () => {
   it("covers every resource × principal role × action", () => {
-    expect(RESOURCES).toHaveLength(30);
+    expect(RESOURCES).toHaveLength(31);
     for (const resource of RESOURCES) {
       for (const role of PRINCIPAL_ROLES) {
         const cell = RBAC_MATRIX[resource]?.[role];

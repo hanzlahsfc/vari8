@@ -65,6 +65,9 @@ export const RESOURCES = [
   "clientDashboards",
   // CLIENT-TASKS-I1 (decision 109): staff-assigned client tasks.
   "clientTasks",
+  // HABITS-I1 (decision 110): staff-configured client habits + client
+  // own-profile log marks.
+  "habits",
   // P-024 (product-decisions #86–#91): staff onboarding-submission review.
   "onboardingSubmissionReviews",
 ] as const;
@@ -346,6 +349,21 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
   // the operation authority. SUPPORT/PLATFORM_ADMIN denied outright
   // (dual-role deny-set in guard.ts).
   clientTasks: {
+    PLATFORM_ADMIN: D,
+    WORKSPACE_OWNER: c("workspace", "workspace"),
+    COACH: c("assigned", "assigned"),
+    ASSISTANT_COACH: c("assigned", "denied"),
+    SUPPORT: D,
+    CLIENT: c("own", "own"),
+  },
+  // HABITS-I1 (decision 110): same reviewed shape as clientTasks —
+  // owner manages at workspace scope; assigned ACTIVE coaches manage at
+  // assigned scope; assistants read assigned only; the CLIENT's "own"
+  // write is restricted to the habit-log desired-state op by the habit
+  // service — a generic write grant here is never the operation
+  // authority. SUPPORT/PLATFORM_ADMIN denied outright (dual-role
+  // deny-set in guard.ts).
+  habits: {
     PLATFORM_ADMIN: D,
     WORKSPACE_OWNER: c("workspace", "workspace"),
     COACH: c("assigned", "assigned"),

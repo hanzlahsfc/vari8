@@ -57,6 +57,14 @@ enum ClientTaskStatus {
   CANCELLED
 }
 
+// HABITS-I1 (decision 110): one log state per habit per day. DONE is the
+// client-writable mark; SKIPPED is modelled only (writer deferred — no
+// UI ships a skip control this slice). Absence of a row = not logged.
+enum HabitLogStatus {
+  DONE
+  SKIPPED
+}
+
 enum ConsentKind {
   PRIVACY_NOTICE
   HEALTH_DATA
@@ -141,6 +149,10 @@ model User {
 
   completedClientTasks ClientTask[]       @relation("ClientTaskCompleter")
 
+  // HABITS-I1: best-effort provenance pointer for habit logs (SetNull —
+  // mirrors ConsentRecord.grantedBy / ClientTask.completedBy).
+  habitLogs HabitLog[] @relation("HabitLogLogger")
+
   @@map("users")
 
 }
@@ -177,6 +189,7 @@ model Workspace {
   onboardingSubmissionReviews   OnboardingSubmissionReview[]
   clientDashboardLayouts        ClientDashboardLayout[]
   clientTasks                   ClientTask[]
+  habits                        Habit[]
 
   @@map("workspace")
 }
@@ -279,6 +292,7 @@ model ClientProfile {
   onboardingSubmissionReviews OnboardingSubmissionReview[] @relation("OnboardingReviewClient")
   dashboardLayouts            ClientDashboardLayout[]      @relation("ClientDashboardLayoutClient")
   clientTasks                 ClientTask[]                 @relation("ClientTaskClient")
+  habits                      Habit[]                      @relation("HabitClient")
 
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
   @@unique([workspaceId, userId])
@@ -1422,4 +1436,69 @@ model ClientTask {
   @@index([workspaceId, clientProfileId, dueDate])
   @@index([workspaceId, clientProfileId, status])
   @@map("client_task")
+}
+
+// HABITS-I1 (decision #110): staff-configured client habits — bounded
+// name/target coaching metadata, CAS revision, archive timestamp. Many
+// habits per client (no pair-unique — P3-R1 P1). The (id, workspace_id)
+// unique is the generic same-workspace identity target (repo
+// convention); the composite coherence FK on
+// (client_profile_id, workspace_id) is added by raw SQL in the
+// migration — not a Prisma composite relation.
+model Habit {
+  id              String    @id @default(cuid())
+  workspaceId     String    @map("workspace_id")
+  clientProfileId String    @map("client_profile_id")
+  // Staff-authored coaching metadata; trimmed non-empty <= 120 (raw CHECK).
+  name            String    @db.VarChar(120)
+  target          String    @db.VarChar(120)
+  // CAS for every edit/archive.
+  revision        Int       @default(1)
+  archivedAt      DateTime? @map("archived_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile @relation("HabitClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  schedules     HabitSchedule[]
+  logs          HabitLog[]
+
+  // Generic same-workspace identity target (repo convention) — retained
+  // for composite coherence targets; no composite child FK currently
+  // consumes it.
+  @@unique([id, workspaceId])
+  @@index([workspaceId, clientProfileId])
+  @@map("habits")
+}
+
+// Effective-dated schedule boundaries. `effectiveFrom` is server-computed
+// only; rows at past boundaries are never mutated. `weekdays` is an ISO
+// bitmask (Mon=bit0 … Sun=bit6); 0 is written exclusively by the archive
+// path (raw CHECK permits 0..127).
+model HabitSchedule {
+  id            String    @id @default(cuid())
+  habitId       String    @map("habit_id")
+  effectiveFrom DateTime  @map("effective_from") @db.Date
+  weekdays      Int       @db.SmallInt
+  endDate       DateTime? @map("end_date") @db.Date
+  habit   Habit @relation(fields: [habitId], references: [id], onDelete: Restrict)
+  // One boundary per habit per day — same-day edits upsert at tomorrow.
+  @@unique([habitId, effectiveFrom])
+  @@map("habit_schedules")
+}
+
+// One log state per habit per day; clear = delete (Undo removes the row).
+// `loggedByUserId` is best-effort provenance (SetNull, mirrors the
+// ConsentRecord.grantedBy / ClientTask.completedBy precedent).
+model HabitLog {
+  id             String          @id @default(cuid())
+  habitId        String          @map("habit_id")
+  date           DateTime        @db.Date
+  status         HabitLogStatus
+  loggedByUserId String?         @map("logged_by_user_id")
+  loggedAt       DateTime        @default(now()) @map("logged_at") @db.Timestamptz(6)
+  habit    Habit @relation(fields: [habitId], references: [id], onDelete: Restrict)
+  loggedBy User? @relation("HabitLogLogger", fields: [loggedByUserId], references: [id], onDelete: SetNull)
+  @@unique([habitId, date])
+  @@map("habit_logs")
 }

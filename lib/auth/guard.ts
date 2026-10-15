@@ -155,6 +155,10 @@ const PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> = new Set([
   // membership of any role — the matrix cell alone only covers the
   // no-membership path.
   "clientTasks",
+  // HABITS-I1 (decision 110): habit records and log marks deny
+  // PLATFORM_ADMIN including a dual-role administrator with an ACTIVE
+  // membership of any role.
+  "habits",
   "checkinsCoachReviews",
   // P-024 (decisions #86–#91 — binding requirement): staff onboarding
   // submission reviews deny PLATFORM_ADMIN including a dual-role
