@@ -94,3 +94,53 @@ audit-on-noop; missing date bound; removed post-lock recheck.
 - **Corrected count:** the committed unit suite is **1149** (the R2
   report's 1148 was wrong — the deny-set block adds 5 role tests, of
   which 4 were RED and SUPPORT was already matrix-denied).
+
+## CLIENT-TASKS-R2 — serialization-conflict retry repair
+
+- Gap (from HABITS-I1 R2 review, P3-2): `withSerializedRetry` matched
+  only P2034 and rethrew raw on final attempt; real FOR UPDATE raw
+  conflicts surface as Prisma `P2010` + `meta.code` `40001`/`40P01`, so
+  genuine contention escaped unretried and degraded to `not_available`.
+- RED on unmodified main: real-PG member-lock contention produced raw
+  `P2010/40001` escapes (3 fails); boundary unit tests showed raw
+  P2034/P2010-40001/40P01 mapping to `not_available` (3 fails).
+- Fix: `isSerializationConflict` moved to shared `lib/db.ts` (habits
+  imports updated — no task→habit dependency); `withSerializedRetry`
+  retries both shapes in fresh transactions and throws
+  `TaskError("serialization_conflict")` on exhaustion; boundary
+  `mapError` gained the raw-shape backstop. Non-conflict raw errors
+  (23505, 42P01, P2002, plain errors) are never retried.
+- Coverage: real contention commits once after retry; suspended
+  membership is re-authorized on retry → AccessDeniedError; exhaustion
+  = 3 attempts + `serialization_conflict` + zero partial task/audit
+  rows; desired-state replay idempotency preserved.
+- Mutations (5/5 bite; sha256-verified byte-identical restores):
+  P2010-branch removal; retry `continue` removal; exhaustion rethrow;
+  all-P2010 broadening (no-over-retry guard); boundary backstop
+  removal.
+
+## CLIENT-TASKS-R2-PR2 — dashboard E2E blocker repair (test-only)
+
+- PR #45 `verify` run 38728641982 failed on two unrelated
+  `tests/e2e/client-dashboard.spec.ts` assertions ("browser Back" poll
+  read "Recoverable draft"; client view lacked CU04). Root causes,
+  both reproduced deterministically:
+  1. Faulted-save tests called `unroute`/`unrouteAll` while the
+     autosave coordinator could still have a pending retry — the retry
+     then dispatched a REAL save POST and committed the draft name +
+     bumped the shared row's revision (proven: `unroute` mid-pending →
+     "DIAG-LEAK" committed to the DB). The late write both corrupted
+     the shared fixture and CAS-conflicted the next test's save.
+  2. `getByText("Saved")` substring-matches residual state and can pass
+     before a debounced save dispatches — a torn-down share toggle was
+     silently dropped (proven: CU04 stayed `staff`), which the shared
+     row then carried forward.
+- Repair (test file only; production untouched): fault routes now stay
+  registered until context teardown; every commit barrier uses
+  exact-text `save-state` "Saved"; the share write additionally polls
+  the DB for `visibility=client`; the client-view test seeds its own
+  precondition; the two document-exit tests fault the pending save so
+  no write can land post-teardown.
+- Evidence: focused spec 19/19 ×3 runs; diag spec proved both leak
+  vectors. Gates: tsc/eslint/format clean; unit 1194; integration 737;
+  build green.

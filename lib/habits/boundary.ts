@@ -4,10 +4,10 @@
  * service-domain error maps to a closed, non-disclosing vocabulary.
  */
 import { AccessDeniedError } from "../auth/guard";
+import { isSerializationConflict } from "../db";
 import { isClientDashboardEnabled } from "../dashboard/gate";
 import {
   HabitError,
-  isSerializationConflict,
   archiveHabit as serviceArchive,
   createHabit as serviceCreate,
   editHabit as serviceEdit,

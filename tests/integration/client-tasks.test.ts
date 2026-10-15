@@ -5,7 +5,8 @@
  */
 import { execFileSync } from "node:child_process";
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
+import { AccessDeniedError } from "../../lib/auth/guard";
 import {
   assignClientTask,
   editClientTask,
@@ -535,5 +536,260 @@ describe.skipIf(!enabled)("CLIENT-TASKS-I1 (real PG)", () => {
       ),
     ).rejects.toThrow();
     expect(await prisma.auditEvent.count()).toBe(before);
+  });
+
+  /* ---- serialization-conflict retry protocol (real PG) ---- */
+
+  /** Poll pg_stat_activity until a session blocks on the member FOR UPDATE. */
+  async function waitForBlockedMemberLock() {
+    const deadline = Date.now() + 15_000;
+    for (;;) {
+      const rows = await prisma.$queryRawUnsafe<{ blocked: number }[]>(
+        `SELECT count(*)::int AS blocked
+           FROM pg_stat_activity
+          WHERE wait_event_type = 'Lock'
+            AND query LIKE '%workspace_member%FOR UPDATE%'`,
+      );
+      if (Number(rows[0]?.blocked ?? 0) > 0) return;
+      if (Date.now() > deadline)
+        throw new Error("writer never blocked on the member row lock");
+      await new Promise((r) => setTimeout(r, 25));
+    }
+  }
+
+  // The shape a real FOR UPDATE conflict actually takes: raw-statement
+  // failures surface as P2010 with the PostgreSQL SQLSTATE in meta.code.
+  const p2010Conflict = () =>
+    new Prisma.PrismaClientKnownRequestError(
+      "Raw query failed. Code: `40001`. Message: `could not serialize access due to concurrent update`",
+      {
+        code: "P2010",
+        clientVersion: Prisma.prismaVersion.client,
+        meta: { code: "40001", message: "could not serialize access" },
+      },
+    );
+
+  /**
+   * A db seam whose transactions replace every FOR UPDATE raw statement
+   * with an injected error inside a real (rolled-back) transaction.
+   */
+  function failingRawLockDb(inject: () => Error, attempts?: { count: number }) {
+    return {
+      ...prisma,
+      $transaction: (fn: (tx: unknown) => Promise<unknown>, opts?: unknown) =>
+        prisma.$transaction((tx) => {
+          const wrapped = new Proxy(tx as never, {
+            get(t, p) {
+              if (p === "$queryRawUnsafe") {
+                const raw = (t as never)[p] as (
+                  q: string,
+                  ...a: unknown[]
+                ) => Promise<unknown>;
+                return (query: string, ...args: unknown[]) => {
+                  if (
+                    typeof query === "string" &&
+                    query.includes("FOR UPDATE")
+                  ) {
+                    if (attempts) attempts.count += 1;
+                    return Promise.reject(inject());
+                  }
+                  return raw(query, ...args);
+                };
+              }
+              return (t as never)[p];
+            },
+          });
+          return fn(wrapped);
+        }, opts as never),
+    };
+  }
+
+  it("real member FOR UPDATE conflict retries on a fresh transaction and commits once", async () => {
+    const f = await fixture();
+    const created = await assignClientTask(
+      sess(f.ownerU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        title: "Contended",
+        dueDate: "2026-11-01",
+      },
+      deps(),
+    );
+    const auditsBefore = await prisma.auditEvent.count();
+    const clientMember = await prisma.workspaceMember.findFirstOrThrow({
+      where: { workspaceId: f.w.id, userId: f.clientU.id },
+    });
+    // Coordinator holds the caller's member row lock after a real UPDATE.
+    // The writer's Serializable member FOR UPDATE blocks, then aborts
+    // with the raw-statement conflict shape when the coordinator commits.
+    let release!: () => void;
+    let lockHeld!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const held = new Promise<void>((r) => (lockHeld = r));
+    const coordinator = prisma.$transaction(async (tc) => {
+      await tc.$executeRawUnsafe(
+        `UPDATE "workspace_member" SET role = role WHERE id = $1`,
+        clientMember.id,
+      );
+      lockHeld();
+      await gate;
+    });
+    await held;
+    const writer = setClientTaskCompletion(
+      sess(f.clientU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        taskId: created.id,
+        desired: "COMPLETED",
+        expectedRevision: 1,
+      },
+      deps(),
+    );
+    await waitForBlockedMemberLock();
+    release();
+    const result = await writer;
+    await coordinator;
+    // Retried once on a fresh transaction: coherent single commit.
+    expect(result).toMatchObject({ status: "COMPLETED", changed: true });
+    expect(await prisma.auditEvent.count()).toBe(auditsBefore + 1);
+    const row = await prisma.clientTask.findUniqueOrThrow({
+      where: { id: created.id },
+    });
+    expect(row.status).toBe("COMPLETED");
+    expect(row.revision).toBe(2);
+  });
+
+  it("revoked membership cannot survive a serialization retry", async () => {
+    const f = await fixture();
+    const created = await assignClientTask(
+      sess(f.ownerU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        title: "Revoked",
+        dueDate: "2026-11-01",
+      },
+      deps(),
+    );
+    const clientMember = await prisma.workspaceMember.findFirstOrThrow({
+      where: { workspaceId: f.w.id, userId: f.clientU.id },
+    });
+    let release!: () => void;
+    let lockHeld!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const held = new Promise<void>((r) => (lockHeld = r));
+    const coordinator = prisma.$transaction(async (tc) => {
+      await tc.$executeRawUnsafe(
+        `UPDATE "workspace_member" SET status = 'SUSPENDED'::"MemberStatus"
+          WHERE id = $1`,
+        clientMember.id,
+      );
+      lockHeld();
+      await gate;
+    });
+    await held;
+    const auditsBefore = await prisma.auditEvent.count();
+    const writer = setClientTaskCompletion(
+      sess(f.clientU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        taskId: created.id,
+        desired: "COMPLETED",
+        expectedRevision: 1,
+      },
+      deps(),
+    );
+    await waitForBlockedMemberLock();
+    release();
+    // Attempt 1 aborts; the fresh-transaction retry re-authorizes and
+    // observes the suspended membership — denial, not a stale write.
+    await expect(writer).rejects.toBeInstanceOf(AccessDeniedError);
+    await coordinator;
+    expect(await prisma.auditEvent.count()).toBe(auditsBefore);
+    const row = await prisma.clientTask.findUniqueOrThrow({
+      where: { id: created.id },
+    });
+    expect(row.status).toBe("OPEN");
+  });
+
+  it("bounded exhaustion on the raw-conflict shape returns serialization_conflict with no partial writes", async () => {
+    const f = await fixture();
+    const created = await assignClientTask(
+      sess(f.ownerU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        title: "Exhaust",
+        dueDate: "2026-11-01",
+      },
+      deps(),
+    );
+    const tasksBefore = await prisma.clientTask.count();
+    const auditsBefore = await prisma.auditEvent.count();
+    const attempts = { count: 0 };
+    // Every attempt reaches the member FOR UPDATE raw statement inside a
+    // real transaction and aborts with the genuine P2010/40001 shape;
+    // after the bound the service must surface serialization_conflict —
+    // never a misleading not_available — with zero committed writes.
+    await expect(
+      setClientTaskCompletion(
+        sess(f.clientU.id),
+        {
+          workspaceId: f.w.id,
+          clientProfileId: f.cp.id,
+          taskId: created.id,
+          desired: "COMPLETED",
+          expectedRevision: 1,
+        },
+        { db: failingRawLockDb(p2010Conflict, attempts) as never },
+      ),
+    ).rejects.toMatchObject({ code: "serialization_conflict" });
+    expect(attempts.count).toBe(3);
+    expect(await prisma.clientTask.count()).toBe(tasksBefore);
+    expect(await prisma.auditEvent.count()).toBe(auditsBefore);
+  });
+
+  it("non-conflict raw errors are never retried", async () => {
+    const f = await fixture();
+    const created = await assignClientTask(
+      sess(f.ownerU.id),
+      {
+        workspaceId: f.w.id,
+        clientProfileId: f.cp.id,
+        title: "NoRetry",
+        dueDate: "2026-11-01",
+      },
+      deps(),
+    );
+    const attempts = { count: 0 };
+    // A raw failure that is NOT a serialization shape (integrity
+    // violation SQLSTATE 23505) must propagate immediately — the retry
+    // protocol is confined to the justified conflict class.
+    const integrityFailure = () =>
+      new Prisma.PrismaClientKnownRequestError(
+        "Raw query failed. Code: `23505`. Message: `duplicate key value`",
+        {
+          code: "P2010",
+          clientVersion: Prisma.prismaVersion.client,
+          meta: { code: "23505", message: "duplicate key value" },
+        },
+      );
+    await expect(
+      setClientTaskCompletion(
+        sess(f.clientU.id),
+        {
+          workspaceId: f.w.id,
+          clientProfileId: f.cp.id,
+          taskId: created.id,
+          desired: "COMPLETED",
+          expectedRevision: 1,
+        },
+        { db: failingRawLockDb(integrityFailure, attempts) as never },
+      ),
+    ).rejects.toMatchObject({ code: "P2010" });
+    expect(attempts.count).toBe(1);
   });
 });

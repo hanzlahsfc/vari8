@@ -10,7 +10,7 @@
  * operation authority; caller-supplied role/mode fields are ignored.
  */
 import { Prisma, type PrismaClient } from "@prisma/client";
-import { prisma } from "../db";
+import { isSerializationConflict, prisma } from "../db";
 import { AccessDeniedError, authorize } from "../auth/guard";
 import { createPrismaAuthorizationRepo } from "../workspace/access";
 import { writeAuditEvent } from "../audit";
@@ -69,12 +69,10 @@ async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
     try {
       return await fn();
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2034" &&
-        attempt < MAX_ATTEMPTS
-      )
-        continue;
+      if (isSerializationConflict(error)) {
+        if (attempt < MAX_ATTEMPTS) continue;
+        throw new TaskError("serialization_conflict");
+      }
       throw error;
     }
   }

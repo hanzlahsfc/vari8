@@ -21,7 +21,7 @@
  * force on each date, never from current mutable fields.
  */
 import { Prisma, type PrismaClient } from "@prisma/client";
-import { prisma } from "../db";
+import { isSerializationConflict, prisma } from "../db";
 import { AccessDeniedError, authorize } from "../auth/guard";
 import { createPrismaAuthorizationRepo } from "../workspace/access";
 import { writeAuditEvent } from "../audit";
@@ -107,23 +107,6 @@ export type HabitConsistencyResult = {
   rows: HabitConsistencyRow[];
   totals: { scheduled: number; done: number; skipped: number; missing: number };
 };
-
-/**
- * Serialization conflicts arrive in two shapes: typed-query/transaction
- * failures surface as P2034, while raw-statement failures (the FOR UPDATE
- * member/profile/assignment locks) surface as P2010 "raw query failed"
- * with the PostgreSQL SQLSTATE in `meta.code` (40001 conflict, 40P01
- * deadlock). Both are the same retryable transient class.
- */
-export function isSerializationConflict(error: unknown): boolean {
-  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
-  if (error.code === "P2034") return true;
-  if (error.code === "P2010") {
-    const sqlstate = (error.meta as { code?: string } | undefined)?.code;
-    return sqlstate === "40001" || sqlstate === "40P01";
-  }
-  return false;
-}
 
 async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {

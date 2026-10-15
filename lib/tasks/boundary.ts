@@ -5,6 +5,7 @@
  * non-disclosing vocabulary.
  */
 import { AccessDeniedError } from "../auth/guard";
+import { isSerializationConflict } from "../db";
 import { isClientDashboardEnabled } from "../dashboard/gate";
 import {
   TaskError,
@@ -55,6 +56,11 @@ function mapError<T>(error: unknown): TaskSafeResult<T> {
     if (error.code === "invalid_input") return fail("invalid_input");
     return fail("not_available");
   }
+  // Raw serialization failures can still reach here from unwrapped
+  // paths (e.g. a FOR UPDATE conflict — P2034 for typed ops,
+  // P2010/40001|40P01 for raw statements) — map to the honest retry
+  // vocabulary, never a misleading not_available.
+  if (isSerializationConflict(error)) return fail("serialization_conflict");
   return fail("not_available");
 }
 
