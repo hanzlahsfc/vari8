@@ -53,10 +53,35 @@ lines). Decision: **#111**.
   6/6 fail (member_not_eligible on owner assign, deny fall-through,
   missing selector); p024/p025c owner-assigned cases fail with
   `role_denied` where `not_assigned`/success expected.
-- GREEN on implementation commit: unit 52/52 (rbac+guard+actions);
-  integration solo-coach-i1 6/6, s1-c 9/9, p024 23/23, p025c 19/19 on
-  disposable `app_integration_test`.
-- `npx tsc --noEmit` clean (exit 0).
+- GREEN on implementation commit `aae19f6`: focused unit 52/52
+  (rbac+guard+actions); integration solo-coach-i1 6/6, s1-c 9/9,
+  p024 23/23, p025c 19/19 on disposable `app_integration_test`.
+- Contract-amendment commit `e32f4ce`: four pre-existing unit tests that
+  encoded the old cells updated to the amended contract; Prettier on the
+  new surface; E2E consent fixtures carry each surface's pinned
+  dev-policy versions (check-in vs onboarding registries differ); the
+  onboarding mark assertion uses the established poll-then-reload
+  pattern.
+- Gates on the final tree: `git diff --check` clean; `prettier --check .`
+  clean; `npx eslint .` 0 errors (3 pre-existing warnings in unrelated
+  files); `npx tsc --noEmit` exit 0; `npx prisma validate` +
+  `prisma migrate status` → schema up to date, no migration needed;
+  full unit `vitest run` 1209/1209; full integration (real PG,
+  `app_integration_test`) 749/749; `next build` clean (new
+  `clients/[id]/coaches` route, 1.79 kB).
+- Mutation sweep (7 mutants, sha256-verified byte-identical restores):
+  deny-set entry removal → dual-role integration test fails;
+  WORKSPACE_OWNER eligibility removal → owner self-assign fails;
+  checkinsCoachReviews owner cell → denied → p025c owner mark fails;
+  onboardingSubmissionReviews owner cell → denied → p024 owner mark
+  fails; canMark assignment-existence check removed (check-in) →
+  unassigned-owner canMark=false fails; ASSIGN audit skipped → audit
+  assertion fails; onboarding canMark reverted to role-only →
+  owner-assigned canMark=true fails. No survivors.
+- Focused E2E `coach-assignments.spec.ts` 3/3 (unassigned owner read +
+  no mark control; real-UI self-assign PRIMARY → both review journeys;
+  non-owner 403). Adjacent specs `checkin-review` 7/7,
+  `staff-onboarding-review` 9/9, `client-roster` 23/23.
 
 ## Exclusions (unchanged)
 

@@ -20,10 +20,18 @@ are complete; product direction is now the configurable coaching system in
   owner-gated coaches page/actions/panel + roster link; the stale
   `assertAssignmentMutationsExternallyExposable` blocker removed with
   its protections replaced by the action contract + tests.
-- Gates so far: `tsc --noEmit` clean; focused unit 52/52; focused
-  integration 57/57 on disposable `app_integration_test` (solo-coach-i1
-  6, s1-c 9, p024 23, p025c 19). Full unit+integration+lint+format+
-  build+E2E and the mutation sweep pending.
+- GREEN on `aae19f6` + contract-assertion updates on `e32f4ce`.
+- Gates on the final tree: `git diff --check` clean; prettier clean;
+  eslint 0 errors (3 pre-existing warnings elsewhere); `tsc --noEmit`
+  exit 0; `prisma validate` + `migrate status` up to date (no migration
+  needed); full unit 1209/1209; full integration 749/749 on disposable
+  `app_integration_test`; `next build` clean.
+- Mutation sweep 7/7 bitten (deny-set entry, owner eligibility, each
+  owner write cell, canMark assignment check, ASSIGN audit skip,
+  onboarding role-only canMark) — all restored byte-identically.
+- E2E: `coach-assignments` 3/3 (real-UI self-assign → both review
+  journeys; non-owner 403); checkin-review 7/7; staff-onboarding-review
+  9/9; client-roster 23/23; **full E2E suite 384 passed / 0 failed / 12 skipped** (396 total) — new spec included.
 
 ## HABITS-I1 — real habit tracking + TL21/TL22 (in progress)
 
