@@ -1,0 +1,146 @@
+"use client";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  createContext,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  type CoachState,
+  isCoachState,
+  type Media,
+  type Route,
+  STORAGE_KEY,
+  seedState,
+} from "./model";
+import { normalizeTemplateSetups } from "./template-setup";
+
+type Store = {
+  state: CoachState;
+  setState: Dispatch<SetStateAction<CoachState>>;
+  hydrated: boolean;
+  storageOk: boolean;
+  route: Route;
+  navigate: (route: Route) => void;
+  guard: React.MutableRefObject<((route: Route) => boolean) | null>;
+  toast: (text: string, undo?: () => void) => void;
+  notice: { text: string; undo?: () => void } | null;
+  dismiss: () => void;
+  media: Record<string, string>;
+  attach: (media: Media, blob: Blob) => void;
+};
+const Context = createContext<Store | null>(null);
+export function useCoach() {
+  const value = useContext(Context);
+  if (!value) throw new Error("Coach provider required");
+  return value;
+}
+export function routeUrl(route: Route) {
+  const q = new URLSearchParams({ section: route.section });
+  for (const key of ["client", "editor", "review", "plan"] as const)
+    if (route[key]) q.set(key, route[key]);
+  return `/coach?${q.toString()}`;
+}
+export function CoachProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const params = useSearchParams();
+  const [state, setState] = useState<CoachState>(() =>
+    normalizeTemplateSetups(seedState()),
+  );
+  const [hydrated, setHydrated] = useState(false);
+  const [storageOk, setStorageOk] = useState(true);
+  const [notice, setNotice] = useState<Store["notice"]>(null);
+  const [media, setMedia] = useState<Record<string, string>>({});
+  const urls = useRef(new Set<string>());
+  const guard = useRef<((route: Route) => boolean) | null>(null);
+  const section = params.get("section");
+  const route: Route = {
+    section:
+      section === "clients" || section === "check-ins" || section === "messages"
+        ? section
+        : "templates",
+    client: params.get("client") ?? undefined,
+    editor: params.get("editor") ?? undefined,
+    review: params.get("review") ?? undefined,
+    plan: params.get("plan") ?? undefined,
+  };
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed: unknown = JSON.parse(raw);
+        if (isCoachState(parsed)) setState(normalizeTemplateSetups(parsed));
+        else
+          setNotice({
+            text: "Saved workspace could not be read. A fresh local workspace is ready.",
+          });
+      }
+    } catch {
+      setStorageOk(false);
+    }
+    setHydrated(true);
+  }, []);
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      setStorageOk(true);
+    } catch {
+      setStorageOk(false);
+    }
+  }, [state, hydrated]);
+  useEffect(() => {
+    const all = urls.current;
+    return () => {
+      for (const url of all) URL.revokeObjectURL(url);
+    };
+  }, []);
+  const navigate = useCallback(
+    (next: Route) => {
+      if (guard.current && !guard.current(next)) return;
+      router.push(routeUrl(next), { scroll: false });
+    },
+    [router],
+  );
+  const toast = useCallback(
+    (text: string, undo?: () => void) => setNotice({ text, undo }),
+    [],
+  );
+  const attach = useCallback((item: Media, blob: Blob) => {
+    const url = URL.createObjectURL(blob);
+    urls.current.add(url);
+    setMedia((old) => {
+      if (old[item.id]) {
+        URL.revokeObjectURL(old[item.id]);
+        urls.current.delete(old[item.id]);
+      }
+      return { ...old, [item.id]: url };
+    });
+  }, []);
+  return (
+    <Context.Provider
+      value={{
+        state,
+        setState,
+        hydrated,
+        storageOk,
+        route,
+        navigate,
+        guard,
+        toast,
+        notice,
+        dismiss: () => setNotice(null),
+        media,
+        attach,
+      }}
+    >
+      {children}
+    </Context.Provider>
+  );
+}

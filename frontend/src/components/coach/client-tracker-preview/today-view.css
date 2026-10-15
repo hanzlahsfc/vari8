@@ -1,0 +1,527 @@
+.coach-root .ct-tracking .ct-today {
+  --ct-day-border: color-mix(
+    in srgb,
+    var(--ct-edge, var(--ct-rule)) 78%,
+    transparent
+  );
+  --ct-day-secondary: var(--ct-text-secondary, var(--ct-quiet));
+  --ct-day-accent: var(--ct-accent, var(--accent));
+  min-width: 0;
+}
+
+.coach-root .ct-tracking .ct-day-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0 0 15px;
+}
+
+.coach-root .ct-tracking .ct-day-heading h2 {
+  margin: 0;
+  color: var(--ct-text, var(--text));
+  font-size: 19px;
+  font-weight: 580;
+  line-height: 1.25;
+  letter-spacing: -0.035em;
+}
+
+.coach-root .ct-tracking .ct-day-completion {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  color: var(--ct-day-secondary);
+  font-size: 11px;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-root .ct-tracking .ct-day-completion[data-complete="true"] {
+  color: var(--ct-day-accent);
+}
+
+.coach-root .ct-tracking .ct-day-completion-dot {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ct-day-accent);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--ct-day-accent) 13%, transparent);
+}
+
+.coach-root .ct-tracking .ct-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  gap: 0;
+  margin: 0 0 17px;
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--ct-day-border);
+}
+
+.coach-root .ct-tracking .ct-overview > div {
+  min-width: 0;
+  padding: 0 12px;
+  border-left: 1px solid var(--ct-day-border);
+}
+
+.coach-root .ct-tracking .ct-overview > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.coach-root .ct-tracking .ct-overview dt {
+  margin: 0 0 4px;
+  overflow: hidden;
+  color: var(--ct-day-secondary);
+  font-size: 12px;
+  font-weight: 520;
+  line-height: 1.35;
+  letter-spacing: 0.025em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coach-root .ct-tracking .ct-overview dd {
+  margin: 0;
+  color: var(--ct-text, var(--text));
+  font-size: 24px;
+  font-weight: 590;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-root .ct-tracking .ct-overview dd button {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.coach-root .ct-tracking .ct-overview dd[data-missing="true"] {
+  color: var(--ct-day-secondary);
+}
+
+.coach-root .ct-tracking .ct-overview button:disabled {
+  cursor: default;
+}
+
+/* The category rail and entry list share one plane; row rules do the grouping. */
+.coach-root .ct-tracking .ct-day-tray,
+.coach-root .ct-tracking .ct-day-core {
+  min-width: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.coach-root .ct-tracking .ct-day-core {
+  display: grid;
+  grid-template-columns: minmax(130px, 158px) minmax(0, 1fr);
+  border-top: 1px solid var(--ct-day-border);
+}
+
+.coach-root .ct-tracking .ct-category-index {
+  align-self: start;
+  padding: 13px 12px 10px 0;
+  border-right: 1px solid var(--ct-day-border);
+}
+
+.coach-root .ct-tracking .ct-category-heading {
+  margin: 0 8px 8px;
+  color: var(--ct-day-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.coach-root .ct-tracking .ct-category-list {
+  display: grid;
+  gap: 2px;
+}
+
+.coach-root .ct-tracking .ct-category-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ct-day-secondary);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color 160ms var(--ct-ease, cubic-bezier(0.2, 0.75, 0.25, 1)),
+    background-color 160ms var(--ct-ease, cubic-bezier(0.2, 0.75, 0.25, 1)),
+    transform 160ms var(--ct-ease, cubic-bezier(0.2, 0.75, 0.25, 1));
+}
+
+.coach-root .ct-tracking .ct-category-option > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.coach-root .ct-tracking .ct-category-option small {
+  flex: 0 0 auto;
+  color: var(--ct-day-secondary);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-root .ct-tracking .ct-category-option[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--ct-day-accent) 10%, transparent);
+  color: var(--ct-text, var(--text));
+}
+
+.coach-root .ct-tracking .ct-category-option[aria-pressed="true"] small {
+  color: var(--ct-day-accent);
+}
+
+.coach-root .ct-tracking .ct-category-option:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.coach-root .ct-tracking .ct-category-option:disabled {
+  cursor: default;
+  opacity: 0.58;
+}
+
+.coach-root .ct-tracking .ct-entry-content {
+  min-width: 0;
+  padding: 13px 0 18px clamp(16px, 2vw, 24px);
+}
+
+.coach-root .ct-tracking .ct-category-mobile-label,
+.coach-root .ct-tracking .ct-category-select {
+  display: none;
+}
+
+.coach-root .ct-tracking .ct-daily-groups,
+.coach-root .ct-tracking .ct-daily-group {
+  min-width: 0;
+}
+
+.coach-root .ct-tracking .ct-daily-groups {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.coach-root .ct-tracking .ct-section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+  padding: 0 0 8px;
+  border-bottom: 1px solid var(--ct-day-border);
+}
+
+.coach-root .ct-tracking .ct-section-heading h3 {
+  margin: 0;
+  color: var(--ct-text, var(--text));
+  font-size: 13px;
+  font-weight: 630;
+  letter-spacing: -0.01em;
+}
+
+.coach-root .ct-tracking .ct-section-heading > span {
+  color: var(--ct-day-secondary);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.coach-root .ct-tracking .ct-field-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.coach-root .ct-tracking .ct-daily-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 190px);
+  align-items: center;
+  gap: 5px 14px;
+  min-width: 0;
+  min-height: 56px;
+  padding: 7px 0;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--ct-day-border) 72%, transparent);
+}
+
+.coach-root .ct-tracking .ct-daily-field.ct-field-wide {
+  grid-column: 1 / -1;
+}
+
+.coach-root .ct-tracking .ct-field-label {
+  min-width: 0;
+  margin: 0;
+  color: color-mix(
+    in srgb,
+    var(--ct-text, var(--text)) 82%,
+    var(--ct-day-secondary)
+  );
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.coach-root .ct-tracking .ct-field-label > span {
+  overflow-wrap: anywhere;
+}
+
+.coach-root .ct-tracking .ct-field-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.coach-root .ct-tracking .ct-field-control .tc-cell {
+  flex: 1 1 0%;
+  width: 100%;
+  min-width: 0;
+  justify-content: stretch;
+}
+
+.coach-root .ct-tracking .ct-field-control .tc-value-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 40px;
+  padding: 7px 14px;
+  border: 1px solid color-mix(in srgb, var(--ct-day-border) 82%, transparent);
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--ct-field, var(--surface)) 86%,
+    transparent
+  );
+  color: var(--ct-text, var(--text));
+  font-size: 15px;
+  text-align: left;
+  transition:
+    border-color 160ms var(--ct-ease, cubic-bezier(0.2, 0.75, 0.25, 1)),
+    background-color 160ms var(--ct-ease, cubic-bezier(0.2, 0.75, 0.25, 1));
+}
+
+.coach-root
+  .ct-tracking
+  .ct-field-control
+  .tc-value-trigger:hover:not(:disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--ct-day-accent) 38%,
+    var(--ct-day-border)
+  );
+  background: color-mix(
+    in srgb,
+    var(--ct-day-accent) 5%,
+    var(--ct-field, var(--surface))
+  );
+}
+
+.coach-root .ct-tracking .ct-field-control .tc-value-trigger:focus-visible,
+.coach-root .ct-tracking .ct-category-option:focus-visible,
+.coach-root .ct-tracking .ct-overview button:focus-visible,
+.coach-root .ct-tracking .ct-category-select:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ct-day-accent) 76%, transparent);
+  outline-offset: 2px;
+}
+
+.coach-root .ct-tracking .ct-field-control .tc-value-trigger.tc-missing {
+  color: var(--ct-day-secondary);
+}
+
+.coach-root
+  .ct-tracking
+  .ct-field-control
+  :is(.tc-number-edit-wrap, .tc-number-input, .tc-rating-select) {
+  width: 100%;
+  max-width: 100%;
+}
+
+.coach-root
+  .ct-tracking
+  .ct-field-control
+  :is(.tc-number-input, .tc-rating-select) {
+  min-height: 40px;
+  padding: 7px 14px;
+  border: 1px solid
+    color-mix(in srgb, var(--ct-day-accent) 44%, var(--ct-day-border));
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--ct-day-accent) 5%,
+    var(--ct-field, var(--surface))
+  );
+  color: var(--ct-text, var(--text));
+  font: inherit;
+  font-size: 15px;
+  box-shadow: none;
+}
+
+.coach-root
+  .ct-tracking
+  .ct-field-control
+  :is(.tc-number-input, .tc-rating-select):focus-visible {
+  outline: none;
+}
+
+.coach-root .ct-tracking .ct-control-unit {
+  flex: 0 0 auto;
+  max-width: 68px;
+  color: var(--ct-day-secondary);
+  font-size: 12px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.coach-root .ct-tracking .ct-field-control .tc-rating-value {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+
+.coach-root .ct-tracking .ct-field-help,
+.coach-root .ct-tracking .ct-field-comment {
+  grid-column: 2;
+  margin: -1px 0 2px;
+  color: var(--ct-day-secondary);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.coach-root .ct-tracking .ct-field-comment {
+  overflow-wrap: anywhere;
+}
+
+.coach-root .ct-tracking .ct-daily-group + .ct-daily-group {
+  margin-top: 18px;
+}
+
+@media (max-width: 760px) {
+  .coach-root .ct-tracking .ct-day-heading {
+    margin-bottom: 13px;
+  }
+
+  .coach-root .ct-tracking .ct-day-heading h2 {
+    font-size: 17px;
+  }
+
+  .coach-root .ct-tracking .ct-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 11px;
+  }
+
+  .coach-root .ct-tracking .ct-overview > div:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .coach-root .ct-tracking .ct-day-core {
+    display: block;
+  }
+
+  .coach-root .ct-tracking .ct-category-index {
+    display: none;
+  }
+
+  .coach-root .ct-tracking .ct-entry-content {
+    padding: 12px 0 16px;
+  }
+
+  .coach-root .ct-tracking .ct-category-mobile-label {
+    display: block;
+    margin: 0 0 5px;
+    color: var(--ct-day-secondary);
+    font-size: 10px;
+    font-weight: 560;
+  }
+
+  .coach-root .ct-tracking .ct-category-select {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    margin: 0 0 15px;
+    padding: 6px 10px;
+    border: 1px solid var(--ct-day-border);
+    border-radius: 999px;
+    background: var(--ct-field, var(--surface));
+    color: var(--ct-text, var(--text));
+    font: inherit;
+    font-size: 16px;
+  }
+
+  .coach-root .ct-tracking .ct-category-select:disabled {
+    opacity: 0.62;
+  }
+
+  .coach-root .ct-tracking .ct-daily-field,
+  .coach-root .ct-tracking .ct-daily-field.ct-field-wide {
+    grid-column: auto;
+    grid-template-columns: minmax(0, 1fr) minmax(116px, 148px);
+    min-height: 58px;
+    gap: 5px 9px;
+  }
+
+  .coach-root .ct-tracking .ct-daily-field:has(.tc-number-input) {
+    grid-template-columns: minmax(0, 1fr) 180px;
+  }
+
+  .coach-root .ct-tracking .tc-number-done {
+    min-height: 44px;
+  }
+
+  .coach-root .ct-tracking .ct-field-control .tc-value-trigger,
+  .coach-root
+    .ct-tracking
+    .ct-field-control
+    :is(.tc-number-input, .tc-rating-select) {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .coach-root .ct-tracking .ct-field-help,
+  .coach-root .ct-tracking .ct-field-comment {
+    grid-column: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-root .ct-tracking .ct-category-option,
+  .coach-root .ct-tracking .ct-field-control .tc-value-trigger {
+    transition: none;
+  }
+}

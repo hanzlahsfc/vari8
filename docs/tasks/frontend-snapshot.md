@@ -41,4 +41,19 @@ source hashes will establish applicability of that build/browser evidence.
 
 ## State
 
-Planned. No files imported or branch pushed yet.
+Verified snapshot, authorized for publication to `FRONTEND`.
+
+- Imported 188 frontend files, including 186 byte-identical source/assets/config
+  files, the frontend README, and the project's UI instructions.
+- Exact imported snapshot: production `npm run build` exit 0; TypeScript and
+  static route generation passed. Frontend test command from its README: exit 0,
+  62 passed, zero failed.
+- Source-hash comparison: zero mismatches. Staged path audit: zero dependency,
+  build-output, environment, or archive paths. `git diff --cached --check`: exit 0.
+- Independent read-only Luna packaging review: PASS. Its sole cleanup finding,
+  an unstaged temporary dependency symlink, was removed after verification.
+- Existing root app/backend/database/workflows/tests remain unchanged. Only the
+  root README and three tooling exclusions change outside the new frontend/docs.
+- Plan committed first as `85c3305`; this record accompanies the snapshot commit.
+- Publish using a non-forced push of `FRONTEND` only, then verify the remote SHA
+  and unchanged `main`. No PR, merge, deployment, or backend integration is requested.

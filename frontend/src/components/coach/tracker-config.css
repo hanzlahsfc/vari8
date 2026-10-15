@@ -1,0 +1,458 @@
+.coach-root .cd-tracker-config {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-width: 0;
+}
+
+.coach-root .cd-tracker-intro {
+  max-width: 62ch;
+  margin: 0;
+}
+
+.coach-root .cd-tracker-section,
+.coach-root .cd-tracker-overview {
+  min-width: 0;
+  border-top: 1px solid var(--cd-line);
+  padding-top: 18px;
+}
+
+.coach-root .cd-tracker-section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.coach-root .cd-tracker-section-heading h3 {
+  margin: 4px 0 0;
+  font-size: 17px;
+  letter-spacing: -0.025em;
+}
+
+.coach-root .cd-tracker-eyebrow {
+  color: var(--cd-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+
+.coach-root .cd-tracker-count {
+  color: var(--cd-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-root .cd-tracker-selected-list {
+  border-top: 1px solid var(--cd-line);
+}
+
+.coach-root .cd-tracker-selected-row {
+  border-bottom: 1px solid var(--cd-line);
+}
+
+.coach-root .cd-tracker-row-main {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  gap: 12px;
+}
+
+.coach-root .cd-tracker-index {
+  flex: 0 0 24px;
+  color: var(--cd-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-root .cd-tracker-field-name {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.coach-root .cd-tracker-field-name strong {
+  overflow: hidden;
+  color: var(--cd-text);
+  font-size: 13px;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coach-root .cd-tracker-field-name > span,
+.coach-root .cd-tracker-help,
+.coach-root .cd-tracker-empty {
+  color: var(--cd-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.coach-root .cd-tracker-row-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.coach-root .cd-tracker-row-actions .cd-order-buttons .cd-icon-button,
+.coach-root .cd-tracker-highlight-actions .cd-order-buttons .cd-icon-button {
+  width: 32px;
+  height: 32px;
+}
+
+.coach-root .cd-tracker-text-button,
+.coach-root .cd-tracker-remove,
+.coach-root .cd-tracker-add-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--cd-muted);
+  cursor: pointer;
+}
+
+.coach-root .cd-tracker-text-button {
+  min-height: 32px;
+  padding: 0 7px;
+  font-size: 11px;
+}
+
+.coach-root .cd-tracker-text-button:hover,
+.coach-root .cd-tracker-add-button:hover {
+  color: var(--cd-text);
+}
+
+.coach-root .cd-tracker-remove {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+}
+
+.coach-root .cd-tracker-remove:hover {
+  border-color: color-mix(in srgb, var(--cd-accent) 45%, transparent);
+  color: var(--cd-accent-text);
+}
+
+.coach-root .cd-tracker-text-button:focus-visible,
+.coach-root .cd-tracker-remove:focus-visible,
+.coach-root .cd-tracker-add-button:focus-visible,
+.coach-root .cd-tracker-library-toggle:focus-visible,
+.coach-root .cd-tracker-group-toggle:focus-visible {
+  outline: 2px solid var(--cd-accent);
+  outline-offset: 3px;
+}
+
+.coach-root .cd-tracker-field-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 20px;
+  padding: 4px 0 16px 36px;
+}
+
+.coach-root .cd-tracker-field-settings > .cd-field {
+  flex: 1 1 240px;
+  max-width: 420px;
+  margin: 0;
+}
+
+.coach-root .cd-tracker-field-settings > .cd-field:not(.cd-tracker-options) {
+  flex: 0 1 190px;
+}
+
+.coach-root .cd-tracker-options textarea {
+  width: 100%;
+  min-height: 58px;
+  resize: vertical;
+}
+
+.coach-root .cd-tracker-cycle-note {
+  flex: 1 0 100%;
+  margin: 0;
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+
+.coach-root .cd-tracker-empty {
+  margin: 12px 0;
+}
+
+.coach-root .cd-tracker-library-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 62px;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  border: 1px solid var(--cd-line);
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: color-mix(in srgb, var(--cd-raised) 55%, transparent);
+  color: var(--cd-text);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 150ms var(--cd-ease-out),
+    background-color 150ms var(--cd-ease-out);
+}
+
+.coach-root .cd-tracker-library-toggle:hover,
+.coach-root .cd-tracker-library-toggle[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--cd-accent) 55%, var(--cd-line));
+  background: var(--cd-raised);
+}
+
+.coach-root .cd-tracker-add-mark {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--cd-accent) 55%, var(--cd-line));
+  border-radius: 7px;
+  color: var(--cd-accent-text);
+}
+
+.coach-root .cd-tracker-library-toggle > span:nth-child(2) {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.coach-root .cd-tracker-library-toggle strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.coach-root .cd-tracker-library-toggle small {
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+
+.coach-root .cd-tracker-library-toggle > svg,
+.coach-root .cd-tracker-group-chevron {
+  flex: 0 0 auto;
+  color: var(--cd-muted);
+  transition: transform 150ms var(--cd-ease-out);
+}
+
+.coach-root .cd-tracker-library-toggle[aria-expanded="true"] > svg,
+.coach-root
+  .cd-tracker-group-toggle[aria-expanded="true"]
+  .cd-tracker-group-chevron {
+  transform: rotate(180deg);
+}
+
+.coach-root .cd-tracker-text-button[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.coach-root .cd-tracker-library {
+  padding-top: 14px;
+}
+
+.coach-root .cd-tracker-search {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+
+.coach-root .cd-tracker-search .cd-search {
+  flex: 1;
+  min-width: 0;
+}
+
+.coach-root .cd-tracker-search > span {
+  color: var(--cd-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.coach-root .cd-tracker-library-group {
+  border-top: 1px solid var(--cd-line);
+}
+
+.coach-root .cd-tracker-group-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  padding: 5px 2px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.coach-root .cd-tracker-group-title {
+  color: var(--cd-text);
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.coach-root .cd-tracker-group-count {
+  margin-left: auto;
+  color: var(--cd-muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.coach-root
+  .cd-tracker-group-toggle[aria-expanded="true"]
+  .cd-tracker-group-chevron {
+  transform: rotate(180deg);
+}
+
+.coach-root .cd-tracker-library-item {
+  display: flex;
+  min-height: 45px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--cd-line) 70%, transparent);
+  padding: 6px 2px 6px 12px;
+}
+
+.coach-root .cd-tracker-library-item > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.coach-root .cd-tracker-library-item strong {
+  color: var(--cd-text);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.coach-root .cd-tracker-library-item small {
+  color: var(--cd-muted);
+  font-size: 10px;
+  text-transform: capitalize;
+}
+
+.coach-root .cd-tracker-add-button {
+  min-height: 30px;
+  flex: 0 0 auto;
+  border: 1px solid var(--cd-line);
+  border-radius: 999px;
+  padding: 0 10px;
+  color: var(--cd-text);
+  font-size: 11px;
+}
+
+.coach-root .cd-tracker-add-button:hover {
+  border-color: var(--cd-accent);
+  background: color-mix(in srgb, var(--cd-accent) 10%, transparent);
+}
+
+.coach-root .cd-tracker-library > .cd-toggle-row {
+  margin-top: 14px;
+  border-top: 1px solid var(--cd-line);
+  padding-top: 12px;
+}
+
+.coach-root .cd-tracker-help {
+  margin: -3px 0 12px;
+}
+
+.coach-root .cd-tracker-highlight-list {
+  border-top: 1px solid var(--cd-line);
+}
+
+.coach-root .cd-tracker-highlight-row {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--cd-line);
+  padding: 4px 1px;
+}
+
+.coach-root .cd-tracker-highlight-row > strong {
+  min-width: 0;
+  flex: 1;
+  color: var(--cd-text);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.coach-root .cd-tracker-highlight-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.coach-root .cd-tracker-overview-add {
+  width: min(360px, 100%);
+  margin-top: 14px;
+}
+
+.coach-root .cd-tracker-overview-add .cd-field {
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .coach-root .cd-tracker-row-main {
+    align-items: flex-start;
+    padding: 12px 0;
+  }
+
+  .coach-root .cd-tracker-row-actions {
+    gap: 3px;
+  }
+
+  .coach-root .cd-tracker-text-button {
+    min-height: 30px;
+    padding: 0 4px;
+    font-size: 10px;
+  }
+
+  .coach-root .cd-tracker-field-settings {
+    padding-left: 36px;
+  }
+
+  .coach-root .cd-tracker-search {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .coach-root .cd-tracker-search .cd-search {
+    width: 100%;
+  }
+}
+
+@media (max-width: 400px) {
+  .coach-root .cd-tracker-row-main {
+    flex-wrap: wrap;
+  }
+
+  .coach-root .cd-tracker-field-name {
+    flex-basis: calc(100% - 48px);
+  }
+
+  .coach-root .cd-tracker-row-actions {
+    width: calc(100% - 36px);
+    margin-left: 36px;
+    justify-content: flex-end;
+  }
+
+  .coach-root .cd-tracker-highlight-actions {
+    gap: 3px;
+  }
+}

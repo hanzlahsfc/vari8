@@ -1,3 +1,17 @@
+## 2026-10-15 — FRONTEND standalone UI snapshot — verified for publication
+
+- User-selected `frontend/` import on `FRONTEND`, based on main
+  `c63ddfb01005d0e853906d2ad3e3445ee5e7e3d5`; plan commit `85c3305`.
+- Exact import: production build exit 0 (including TypeScript), 62 frontend tests
+  passed / zero failed, source-hash audit zero mismatches, staged diff check exit 0.
+- Independent read-only Luna packaging review: PASS; temporary dependency symlink
+  removed after verification. Dependencies, build output, environments, and local
+  captures are excluded.
+- Existing root application/backend/database/workflows/tests are unchanged. Root
+  README links the preview; TypeScript, ESLint, and Prettier isolate `frontend/`.
+- Task record: `docs/tasks/frontend-snapshot.md`. This entry is included in the
+  snapshot commit. Authorized destination is `FRONTEND` only; no merge or deploy.
+
 ## 2026-10-15 — FRONTEND standalone UI snapshot — planned
 
 - User authorized branch creation and push to `FRONTEND`, based on current `main`.

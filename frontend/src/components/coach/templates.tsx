@@ -1,0 +1,1976 @@
+"use client";
+import { Popover } from "@base-ui/react/popover";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowUp,
+  Check,
+  ChevronDown,
+  Copy,
+  Eye,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Save,
+  SlidersHorizontal,
+  Trash2,
+  Users,
+} from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  bindDashboardUnits,
+  CoachDashboardEditor,
+} from "./builder/coach-dashboard";
+import { ClientPreview } from "./client-preview";
+import {
+  ALL_PARAMETERS,
+  assignTemplate,
+  CORE_VIEWS,
+  type CoachClient,
+  clone,
+  type FieldConfig,
+  formatDate,
+  newTemplate,
+  PARAMETERS,
+  type Question,
+  type Route,
+  type Template,
+  TODAY,
+  TRAINING_FIELDS,
+  uid,
+  type Variant,
+} from "./model";
+import { weeklyRoadmapRows } from "./roadmap-preview";
+import { useCoach } from "./store";
+import { trackerOverviewIds } from "./tracker-setup";
+import "./tracker-config.css";
+import {
+  DEFAULT_PHASE_OPTIONS,
+  templateSetup,
+  WEEKLY_VOLUME_BREAKDOWN,
+} from "./template-setup";
+import {
+  Avatar,
+  Button,
+  Dialog,
+  Empty,
+  IconButton,
+  PageTitle,
+  ParameterValue,
+  SearchBox,
+  Select,
+  Surface,
+  Toggle,
+} from "./ui";
+
+export function AssignDialog({
+  template,
+  onClose,
+  initialClient,
+}: {
+  template: Template;
+  onClose: () => void;
+  initialClient?: string;
+}) {
+  const { state, setState, toast } = useCoach();
+  const [search, setSearch] = useState("");
+  const [clientId, setClient] = useState(initialClient ?? "");
+  const configuration = templateSetup(template);
+  return (
+    <Dialog title="Assign template" onClose={onClose}>
+      <p className="cd-muted">
+        Apply {template.name} to one athlete. Their plans, entries and history
+        stay with them.
+      </p>
+      <SearchBox
+        value={search}
+        onChange={setSearch}
+        placeholder="Find an athlete"
+      />
+      <div className="cd-picker-list">
+        {state.clients
+          .filter(
+            (c) =>
+              !c.archived &&
+              c.name.toLowerCase().includes(search.toLowerCase()),
+          )
+          .map((c) => (
+            <label key={c.id} className="cd-picker-row">
+              <input
+                type="radio"
+                name="assignment-client"
+                checked={clientId === c.id}
+                onChange={() => setClient(c.id)}
+              />
+              <Avatar client={c} small />
+              <span>
+                <strong>{c.name}</strong>
+                <small>
+                  {c.assignment?.snapshot.name ?? "No template assigned"}
+                </small>
+              </span>
+            </label>
+          ))}
+      </div>
+      <div className="cd-dialog-actions">
+        <Button onClick={onClose}>Cancel</Button>
+        <Button
+          primary
+          disabled={!clientId}
+          onClick={() => {
+            setState((s) =>
+              assignTemplate(s, clientId, template, configuration.id),
+            );
+            toast(
+              `Assigned to ${state.clients.find((c) => c.id === clientId)?.name}`,
+            );
+            onClose();
+          }}
+        >
+          <Check size={16} />
+          Assign template
+        </Button>
+      </div>
+    </Dialog>
+  );
+}
+export function PreviewDialog({
+  template,
+  client,
+  onClose,
+}: {
+  template: Template;
+  client?: CoachClient;
+  onClose: () => void;
+}) {
+  return (
+    <Dialog full title="Client preview" onClose={onClose}>
+      <ClientPreview template={template} client={client} />
+    </Dialog>
+  );
+}
+export function TemplateLibrary() {
+  const { state, setState, navigate, toast } = useCoach();
+  const [search, setSearch] = useState("");
+  const [menu, setMenu] = useState<string | null>(null);
+  const [preview, setPreview] = useState<Template | null>(null);
+  const [assign, setAssign] = useState<Template | null>(null);
+  const [rename, setRename] = useState<Template | null>(null);
+  const [name, setName] = useState("");
+  const libraryRef = useRef<HTMLDivElement>(null);
+  const list = state.templates.filter((t) =>
+    `${t.name} ${t.description}`.toLowerCase().includes(search.toLowerCase()),
+  );
+  const add = () => {
+    const t = newTemplate(uid("template"));
+    setState((s) => ({ ...s, editorDrafts: { ...s.editorDrafts, [t.id]: t } }));
+    navigate({ section: "templates", editor: t.id });
+  };
+  const duplicate = (t: Template) => {
+    const copy = clone(t);
+    copy.id = uid("template");
+    copy.name = `${t.name} copy`;
+    copy.updated = TODAY;
+    setState((s) => ({ ...s, templates: [...s.templates, copy] }));
+    setMenu(null);
+    toast("Independent copy created");
+  };
+  const remove = (t: Template) => {
+    const index = state.templates.findIndex((x) => x.id === t.id);
+    setState((s) => ({
+      ...s,
+      templates: s.templates.filter((x) => x.id !== t.id),
+    }));
+    setMenu(null);
+    toast(`${t.name} deleted. Assigned client setups are retained.`, () =>
+      setState((s) => ({
+        ...s,
+        templates: [
+          ...s.templates.slice(0, index),
+          t,
+          ...s.templates.slice(index),
+        ].filter((x, i, a) => a.findIndex((t) => t.id === x.id) === i),
+      })),
+    );
+  };
+  return (
+    <>
+      <PageTitle
+        title="Templates"
+        description="A thoughtful starting point for every athlete."
+        actions={
+          <Button primary onClick={add}>
+            <Plus size={17} />
+            Add template
+          </Button>
+        }
+      />
+      <div className="cd-library-toolbar">
+        <SearchBox
+          value={search}
+          onChange={setSearch}
+          placeholder="Search templates"
+        />
+        <span className="cd-muted">
+          {list.length} saved template{list.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+      {Object.values(state.editorDrafts).length > 0 && (
+        <div className="cd-draft-resume">
+          {Object.values(state.editorDrafts).map((t) => (
+            <Button
+              key={t.id}
+              onClick={() => navigate({ section: "templates", editor: t.id })}
+            >
+              <Pencil size={13} />
+              Resume draft: {t.name}
+            </Button>
+          ))}
+        </div>
+      )}
+      {list.length === 0 ? (
+        <Surface>
+          <Empty
+            title={
+              search ? "No matching templates" : "Your library starts here"
+            }
+            action={
+              <Button primary onClick={search ? () => setSearch("") : add}>
+                {search ? "Clear search" : "Add template"}
+              </Button>
+            }
+          >
+            Build a reusable configuration for your athletes.
+          </Empty>
+        </Surface>
+      ) : (
+        <div className="cd-library-list" ref={libraryRef}>
+          {list.map((t) => {
+            const count = state.clients.filter(
+              (c) => c.assignment?.templateId === t.id,
+            ).length;
+            const v = templateSetup(t);
+            return (
+              <article className="cd-template-card" key={t.id}>
+                <header className="cd-template-card-head">
+                  <h2>{t.name}</h2>
+                  <Popover.Root
+                    modal={false}
+                    open={menu === t.id}
+                    onOpenChange={(open) =>
+                      setMenu((current) =>
+                        open ? t.id : current === t.id ? null : current,
+                      )
+                    }
+                  >
+                    <Popover.Trigger
+                      render={
+                        <button
+                          type="button"
+                          className="cd-icon-button"
+                          aria-label={`More actions for ${t.name}`}
+                        />
+                      }
+                    >
+                      <MoreHorizontal size={20} />
+                    </Popover.Trigger>
+                    <Popover.Portal container={libraryRef}>
+                      <Popover.Positioner
+                        className="cd-menu-positioner"
+                        side="bottom"
+                        align="end"
+                        sideOffset={6}
+                        collisionPadding={8}
+                        collisionAvoidance={{
+                          side: "flip",
+                          align: "shift",
+                          fallbackAxisSide: "start",
+                        }}
+                        positionMethod="absolute"
+                      >
+                        <Popover.Popup
+                          className="cd-menu"
+                          aria-label={`More actions for ${t.name}`}
+                          initialFocus
+                          finalFocus
+                        >
+                          <Button onClick={() => duplicate(t)}>
+                            <Copy size={15} />
+                            Duplicate
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setRename(t);
+                              setName(t.name);
+                              setMenu(null);
+                            }}
+                          >
+                            <Pencil size={15} />
+                            Rename
+                          </Button>
+                          <Button onClick={() => remove(t)}>
+                            <Trash2 size={15} />
+                            Delete
+                          </Button>
+                        </Popover.Popup>
+                      </Popover.Positioner>
+                    </Popover.Portal>
+                  </Popover.Root>
+                </header>
+                <p className="cd-template-desc">
+                  {t.description || "Your custom coaching configuration."}
+                </p>
+                <div className="cd-template-tags">
+                  {v.views.map((view) => (
+                    <span key={view}>{view}</span>
+                  ))}
+                  {v.habits && <span>Habits</span>}
+                  <span>{v.nutrition}</span>
+                </div>
+                <div className="cd-template-meta">
+                  <span>
+                    <Users size={13} />
+                    {count} assigned
+                  </span>
+                  <span>Edited {formatDate(t.updated)}</span>
+                </div>
+                <footer className="cd-template-actions">
+                  <Button primary onClick={() => setPreview(t)}>
+                    <Eye size={14} />
+                    Preview
+                  </Button>
+                  <Button onClick={() => setAssign(t)}>
+                    <Users size={14} />
+                    Assign
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      navigate({ section: "templates", editor: t.id })
+                    }
+                  >
+                    <Pencil size={14} />
+                    Edit
+                  </Button>
+                </footer>
+              </article>
+            );
+          })}
+        </div>
+      )}
+      {preview && (
+        <PreviewDialog template={preview} onClose={() => setPreview(null)} />
+      )}
+      {assign && (
+        <AssignDialog template={assign} onClose={() => setAssign(null)} />
+      )}
+      {rename && (
+        <Dialog title="Rename template" onClose={() => setRename(null)}>
+          <label className="cd-field">
+            Template name
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={80}
+            />
+          </label>
+          <div className="cd-dialog-actions">
+            <Button onClick={() => setRename(null)}>Cancel</Button>
+            <Button
+              primary
+              disabled={!name.trim()}
+              onClick={() => {
+                setState((s) => ({
+                  ...s,
+                  templates: s.templates.map((t) =>
+                    t.id === rename.id
+                      ? { ...t, name: name.trim(), updated: TODAY }
+                      : t,
+                  ),
+                }));
+                setRename(null);
+              }}
+            >
+              Save name
+            </Button>
+          </div>
+        </Dialog>
+      )}
+    </>
+  );
+}
+const EDITOR_SECTIONS = [
+  "Tabs",
+  "Dashboard",
+  "Tracker",
+  "Timeline / Roadmap",
+  "Nutrition",
+  "Training",
+  "Check-In",
+  "Habits",
+];
+export function TemplateEditor({ id }: { id: string }) {
+  const { state, setState, navigate, guard, toast } = useCoach();
+  const saved = state.templates.find((t) => t.id === id);
+  const fresh = useMemo(() => newTemplate(id), [id]);
+  const draft = state.editorDrafts[id] ?? saved ?? fresh;
+  const [section, setSection] = useState("Tabs");
+  const [preview, setPreview] = useState(false);
+  const [error, setError] = useState("");
+  const [leaving, setLeaving] = useState<Route | null>(null);
+  const [discarding, setDiscarding] = useState(false);
+  const variant = templateSetup(draft);
+  const dirty = !saved || JSON.stringify(draft) !== JSON.stringify(saved);
+  const update = (fn: (t: Template) => Template) =>
+    setState((s) => ({
+      ...s,
+      editorDrafts: { ...s.editorDrafts, [id]: fn(clone(draft)) },
+    }));
+  const updateVariant = (fn: (v: Variant) => Variant) =>
+    update((t) => ({
+      ...t,
+      variants: t.variants.map((v) =>
+        v.id === variant.id
+          ? (() => {
+              const next = fn(v);
+              return next.dashboard
+                ? {
+                    ...next,
+                    dashboard: bindDashboardUnits(next.dashboard, next),
+                  }
+                : next;
+            })()
+          : v,
+      ),
+    }));
+  const save = useCallback(() => {
+    const cfg = templateSetup(draft);
+    if (
+      !draft.name.trim() ||
+      cfg.questions.some(
+        (q) => !q.label.trim() || (q.type === "Choice" && !q.options.trim()),
+      ) ||
+      (cfg.roadmapPhases !== false &&
+        !(cfg.phaseOptions ?? []).some((option) => option.trim()))
+    ) {
+      setError(
+        "Add a template name, question labels, choice options and phase options before saving.",
+      );
+      return;
+    }
+    const next = clone({ ...draft, name: draft.name.trim(), updated: TODAY });
+    setState((s) => {
+      const drafts = { ...s.editorDrafts };
+      delete drafts[id];
+      return {
+        ...s,
+        templates: s.templates.some((t) => t.id === id)
+          ? s.templates.map((t) => (t.id === id ? next : t))
+          : [...s.templates, next],
+        editorDrafts: drafts,
+      };
+    });
+    setError("");
+    toast("Template saved to your library");
+  }, [draft, id, setState, toast]);
+  useEffect(() => {
+    guard.current = (next) => {
+      if (!dirty) return true;
+      setLeaving(next);
+      return false;
+    };
+    const before = (e: BeforeUnloadEvent) => {
+      if (dirty) e.preventDefault();
+    };
+    const key = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        save();
+      }
+    };
+    window.addEventListener("beforeunload", before);
+    window.addEventListener("keydown", key);
+    return () => {
+      guard.current = null;
+      window.removeEventListener("beforeunload", before);
+      window.removeEventListener("keydown", key);
+    };
+  }, [dirty, guard, save]);
+  const discard = () => {
+    guard.current = null;
+    setState((s) => {
+      const d = { ...s.editorDrafts };
+      delete d[id];
+      return { ...s, editorDrafts: d };
+    });
+    navigate({ section: "templates" });
+  };
+  return (
+    <div className="cd-editor">
+      <div className="cd-editor-header">
+        <div>
+          <Button
+            className="cd-back"
+            onClick={() => navigate({ section: "templates" })}
+          >
+            <ArrowLeft size={15} />
+            Templates
+          </Button>
+          <input
+            className="cd-name-input"
+            aria-label="Template name"
+            value={draft.name}
+            maxLength={80}
+            onChange={(e) => update((t) => ({ ...t, name: e.target.value }))}
+          />
+          <span className="cd-save-state">
+            {dirty
+              ? "Unsaved draft · kept on this device"
+              : "All changes saved"}
+          </span>
+        </div>
+        <div className="cd-actions">
+          <Button onClick={() => setPreview(true)}>
+            <Eye size={16} />
+            Preview
+          </Button>
+          <Button primary onClick={save}>
+            <Save size={16} />
+            Save template
+          </Button>
+        </div>
+      </div>
+      {error && (
+        <p role="alert" className="cd-error">
+          {error}
+        </p>
+      )}
+      <div
+        className="cd-editor-layout"
+        data-dashboard={section === "Dashboard"}
+      >
+        <aside className="cd-editor-nav">
+          <nav aria-label="Template configuration">
+            {EDITOR_SECTIONS.map((s, i) => (
+              <button
+                type="button"
+                className={section === s ? "active" : ""}
+                aria-current={section === s ? "page" : undefined}
+                onClick={() => setSection(s)}
+                key={s}
+              >
+                <span>{String(i + 1).padStart(2, "0")}</span>
+                {s}
+              </button>
+            ))}
+          </nav>
+          <div className="cd-editor-nav-bottom">
+            <Button
+              disabled={!dirty || !saved}
+              onClick={() => {
+                if (saved) {
+                  const previous = clone(draft);
+                  update(() => clone(saved));
+                  toast("Saved settings restored", () =>
+                    setState((s) => ({
+                      ...s,
+                      editorDrafts: { ...s.editorDrafts, [id]: previous },
+                    })),
+                  );
+                }
+              }}
+            >
+              <RotateCcw size={14} />
+              Restore saved
+            </Button>
+            <Button onClick={() => setDiscarding(true)}>
+              {saved ? "Discard & return" : "Cancel template"}
+            </Button>
+          </div>
+        </aside>
+        <Surface className="cd-config-surface">
+          <div className="cd-section-title">
+            <SlidersHorizontal size={19} />
+            <h2>{section}</h2>
+          </div>
+          {section === "Tabs" && (
+            <>
+              <label className="cd-field">
+                Description
+                <textarea
+                  value={draft.description}
+                  rows={2}
+                  onChange={(e) =>
+                    update((t) => ({ ...t, description: e.target.value }))
+                  }
+                  placeholder="Who is this template for?"
+                />
+              </label>
+              <h3>Client tabs</h3>
+              <div className="cd-view-settings">
+                {CORE_VIEWS.map((v) => (
+                  <Toggle
+                    key={v}
+                    label={v}
+                    checked={variant.views.includes(v)}
+                    onChange={(checked) =>
+                      updateVariant((vr) => ({
+                        ...vr,
+                        views: checked
+                          ? [...vr.views, v]
+                          : vr.views.filter((x) => x !== v),
+                      }))
+                    }
+                  />
+                ))}
+                <Toggle
+                  label="Habits"
+                  detail="A separate space for habit logging, independent of Tracker measurements."
+                  checked={variant.habits}
+                  onChange={(habits) =>
+                    updateVariant((v) => ({ ...v, habits }))
+                  }
+                />
+              </div>
+            </>
+          )}
+          {section === "Dashboard" && (
+            <DashboardConfig variant={variant} update={updateVariant} />
+          )}
+          {section === "Tracker" && (
+            <TrackerConfig variant={variant} update={updateVariant} />
+          )}
+          {section === "Timeline / Roadmap" && (
+            <RoadmapConfig variant={variant} update={updateVariant} />
+          )}
+          {section === "Nutrition" && (
+            <>
+              <p className="cd-muted">
+                Choose the nutrition experience. Meal count, labels, times,
+                foods, swaps, targets and training/rest-day schedules are
+                personalized in each athlete’s client setup.
+              </p>
+              <fieldset className="cd-segmented" aria-label="Nutrition mode">
+                {(["Meal plan", "IIFYM"] as const).map((option) => (
+                  <button
+                    type="button"
+                    key={option}
+                    className={variant.nutrition === option ? "active" : ""}
+                    aria-pressed={variant.nutrition === option}
+                    onClick={() =>
+                      updateVariant((x) => ({ ...x, nutrition: option }))
+                    }
+                  >
+                    {option === "Meal plan"
+                      ? "Meal plan"
+                      : "IIFYM · macro targets"}
+                  </button>
+                ))}
+              </fieldset>
+              <div className="cd-info-line">
+                Client setup owns the prescription. This template controls its
+                presentation.
+              </div>
+            </>
+          )}
+          {section === "Training" && (
+            <TrainingConfig variant={variant} update={updateVariant} />
+          )}
+          {section === "Check-In" && (
+            <QuestionnaireConfig variant={variant} update={updateVariant} />
+          )}
+          {section === "Habits" && (
+            <>
+              <Toggle
+                label="Include Habit Tracker"
+                detail="A separate space for habit logging, independent of Tracker measurements."
+                checked={variant.habits}
+                onChange={(habits) => updateVariant((v) => ({ ...v, habits }))}
+              />
+              <h3>Separate logging preview</h3>
+              {variant.habits ? (
+                <div className="cd-habit-preview">
+                  <span className="cd-check-circle">
+                    <Check size={16} />
+                  </span>
+                  <div>
+                    <strong>Evening walk</strong>
+                    <small>Daily · 20 minutes · 5 / 7 completed</small>
+                    <p>Create a calm transition into the evening.</p>
+                  </div>
+                </div>
+              ) : (
+                <Empty title="Habit Tracker is hidden">
+                  Enable it to include separate habit logging.
+                </Empty>
+              )}
+              <p className="cd-muted">
+                Define each athlete’s actual habits, frequency, goals and
+                reasons in client setup.
+              </p>
+              <Toggle
+                disabled={!variant.habits}
+                label="Include habit status in check-ins"
+                checked={variant.habits && variant.summaries.includes("habits")}
+                onChange={(checked) =>
+                  updateVariant((v) => ({
+                    ...v,
+                    summaries: checked
+                      ? [...new Set([...v.summaries, "habits"])]
+                      : v.summaries.filter((x) => x !== "habits"),
+                  }))
+                }
+              />
+            </>
+          )}
+        </Surface>
+      </div>
+      {preview && (
+        <PreviewDialog template={draft} onClose={() => setPreview(false)} />
+      )}
+      {(leaving || discarding) && (
+        <Dialog
+          title={discarding ? "Discard this draft?" : "Leave the editor?"}
+          onClose={() => {
+            setLeaving(null);
+            setDiscarding(false);
+          }}
+        >
+          <p className="cd-muted">
+            {discarding
+              ? "Return to your last saved template settings. Your athletes’ assignments stay as they are."
+              : "Your unsaved draft can stay on this device, ready for when you come back."}
+          </p>
+          <div className="cd-dialog-actions">
+            <Button
+              onClick={() => {
+                setLeaving(null);
+                setDiscarding(false);
+              }}
+            >
+              Keep editing
+            </Button>
+            <Button
+              primary
+              onClick={() => {
+                if (discarding) discard();
+                else if (leaving) {
+                  guard.current = null;
+                  navigate(leaving);
+                }
+              }}
+            >
+              {discarding ? "Discard & return" : "Leave & keep draft"}
+            </Button>
+          </div>
+        </Dialog>
+      )}
+    </div>
+  );
+}
+function reorder<T>(items: T[], from: number, to: number) {
+  const result = [...items];
+  const [item] = result.splice(from, 1);
+  result.splice(Math.max(0, Math.min(to, result.length)), 0, item);
+  return result;
+}
+function OrderButtons({
+  index,
+  length,
+  move,
+}: {
+  index: number;
+  length: number;
+  move: (to: number) => void;
+}) {
+  return (
+    <span className="cd-order-buttons">
+      <IconButton
+        label="Move up"
+        disabled={index === 0}
+        onClick={() => move(index - 1)}
+      >
+        <ArrowUp size={13} />
+      </IconButton>
+      <IconButton
+        label="Move down"
+        disabled={index === length - 1}
+        onClick={() => move(index + 1)}
+      >
+        <ArrowDown size={13} />
+      </IconButton>
+    </span>
+  );
+}
+function DashboardConfig({
+  variant,
+  update,
+}: {
+  variant: Variant;
+  update: (fn: (v: Variant) => Variant) => void;
+}) {
+  return (
+    <CoachDashboardEditor
+      variant={variant}
+      onChange={(dashboard) => update((v) => ({ ...v, dashboard }))}
+    />
+  );
+}
+function TrackerConfig({
+  variant,
+  update,
+}: {
+  variant: Variant;
+  update: (fn: (v: Variant) => Variant) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [optionDrafts, setOptionDrafts] = useState<Record<string, string>>({});
+  const [groupOpen, setGroupOpen] = useState<Record<string, boolean>>({});
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState<Record<string, boolean>>({});
+  const removedFieldConfigs = useRef<Record<string, FieldConfig>>({});
+  const id = useId();
+  const normalizedSearch = search.trim().toLowerCase();
+  const cycleTrackingEnabled =
+    variant.cycleTrackingEnabled ??
+    variant.fields.some(
+      (field) =>
+        PARAMETERS.find((parameter) => parameter.id === field.id)?.group ===
+        "Cycle tracking",
+    );
+  const selectableParameters = PARAMETERS.filter(
+    (parameter) =>
+      parameter.id !== "cycle-day" &&
+      parameter.group.toLowerCase() !== "training" &&
+      (cycleTrackingEnabled || parameter.group !== "Cycle tracking"),
+  );
+  const groups = [...new Set(selectableParameters.map((p) => p.group))];
+  const matchingParameters = selectableParameters.filter((parameter) =>
+    `${parameter.name} ${parameter.group}`
+      .toLowerCase()
+      .includes(normalizedSearch),
+  );
+  const visibleFields = variant.fields.filter((field) =>
+    selectableParameters.some((parameter) => parameter.id === field.id),
+  );
+  const visibleFieldIds = new Set(visibleFields.map((field) => field.id));
+  const numericFields = visibleFields.filter((field) => {
+    const parameter = selectableParameters.find((item) => item.id === field.id);
+    return parameter && !parameter.inputType;
+  });
+  const normalizedHighlights = trackerOverviewIds(variant);
+  const addHighlight = (fieldId: string) => {
+    update((v) => {
+      const current = trackerOverviewIds(v);
+      if (current.includes(fieldId) || current.length >= 4) return v;
+      return { ...v, trackerHighlights: [...current, fieldId] };
+    });
+  };
+  const removeHighlight = (fieldId: string) =>
+    update((v) => ({
+      ...v,
+      trackerHighlights: trackerOverviewIds(v).filter(
+        (item) => item !== fieldId,
+      ),
+    }));
+  const addParameter = (parameterId: string) => {
+    const parameter = selectableParameters.find(
+      (item) => item.id === parameterId,
+    );
+    if (!parameter || visibleFieldIds.has(parameterId)) return;
+    const retained = removedFieldConfigs.current[parameterId];
+    const field: FieldConfig = retained
+      ? {
+          ...retained,
+          ...(retained.options ? { options: [...retained.options] } : {}),
+        }
+      : {
+          id: parameter.id,
+          unit: parameter.units[0] ?? "",
+          ...(parameter.options ? { options: [...parameter.options] } : {}),
+        };
+    update((v) => ({
+      ...v,
+      fields: v.fields.some((item) => item.id === parameter.id)
+        ? v.fields
+        : [...v.fields, field],
+    }));
+    delete removedFieldConfigs.current[parameterId];
+  };
+  const removeParameter = (parameterId: string) => {
+    const removed = variant.fields.find((field) => field.id === parameterId);
+    if (removed) {
+      removedFieldConfigs.current[parameterId] = {
+        ...removed,
+        ...(removed.options ? { options: [...removed.options] } : {}),
+      };
+    }
+    update((v) => ({
+      ...v,
+      fields: v.fields.filter((field) => field.id !== parameterId),
+      roadmap: v.roadmap.filter((row) => row.source !== parameterId),
+      widgets: v.widgets.filter((widget) => widget.source !== parameterId),
+      trackerHighlights: trackerOverviewIds(v).filter(
+        (fieldId) => fieldId !== parameterId,
+      ),
+    }));
+    setOptionDrafts((drafts) => {
+      const next = { ...drafts };
+      delete next[parameterId];
+      return next;
+    });
+  };
+  return (
+    <div className="cd-tracker-config">
+      <p className="cd-muted cd-tracker-intro">
+        Set the daily log in the order athletes will use it. Their history stays
+        available when a field is removed.
+      </p>
+      <section
+        className="cd-tracker-section"
+        aria-labelledby="cd-tracker-fields-title"
+      >
+        <div className="cd-tracker-section-heading">
+          <div>
+            <span className="cd-tracker-eyebrow">01 / TRACKER CONTENT</span>
+            <h3 id="cd-tracker-fields-title">Daily fields</h3>
+          </div>
+          <span className="cd-tracker-count">
+            {visibleFields.length} active
+          </span>
+        </div>
+        {visibleFields.length ? (
+          <div className="cd-tracker-selected-list">
+            {visibleFields.map((field, index) => {
+              const parameter = selectableParameters.find(
+                (item) => item.id === field.id,
+              );
+              if (!parameter) return null;
+              const canConfigureUnit =
+                parameter.units.length > 0 &&
+                ![
+                  "text",
+                  "context",
+                  "choice",
+                  "multi-choice",
+                  "location-rating",
+                  "period-start",
+                  "cycle-day",
+                ].includes(parameter.inputType ?? "");
+              const canConfigureChoices =
+                parameter.inputType === "choice" ||
+                parameter.inputType === "multi-choice";
+              const hasSettings =
+                canConfigureUnit ||
+                canConfigureChoices ||
+                parameter.id === "period-start";
+              const isOpen = detailsOpen[field.id] ?? false;
+              return (
+                <article className="cd-tracker-selected-row" key={field.id}>
+                  <div className="cd-tracker-row-main">
+                    <span className="cd-tracker-index">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <div className="cd-tracker-field-name">
+                      <strong>{parameter.name}</strong>
+                      <span>{parameter.group}</span>
+                    </div>
+                    <div className="cd-tracker-row-actions">
+                      {hasSettings && (
+                        <button
+                          type="button"
+                          className="cd-tracker-text-button"
+                          aria-label={`Settings for ${parameter.name}`}
+                          aria-expanded={isOpen}
+                          onClick={() =>
+                            setDetailsOpen((open) => ({
+                              ...open,
+                              [field.id]: !isOpen,
+                            }))
+                          }
+                        >
+                          {isOpen ? "Close settings" : "Settings"}
+                          <ChevronDown size={13} aria-hidden="true" />
+                        </button>
+                      )}
+                      <OrderButtons
+                        index={index}
+                        length={visibleFields.length}
+                        move={(to) => {
+                          const reorderedVisible = reorder(
+                            visibleFields,
+                            index,
+                            to,
+                          );
+                          update((v) => {
+                            let visibleIndex = 0;
+                            return {
+                              ...v,
+                              fields: v.fields.map((item) =>
+                                visibleFieldIds.has(item.id)
+                                  ? reorderedVisible[visibleIndex++]
+                                  : item,
+                              ),
+                            };
+                          });
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="cd-tracker-remove"
+                        aria-label={`Remove ${parameter.name}`}
+                        onClick={() => removeParameter(field.id)}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                  {isOpen && (
+                    <div className="cd-tracker-field-settings">
+                      {parameter.id === "period-start" && (
+                        <p className="cd-tracker-cycle-note">
+                          Cycle day is calculated automatically from period
+                          starts.
+                        </p>
+                      )}
+                      {canConfigureUnit && (
+                        <Select
+                          label={`Unit for ${parameter.name}`}
+                          value={field.unit}
+                          options={parameter.units}
+                          onChange={(unit) =>
+                            update((v) => ({
+                              ...v,
+                              fields: v.fields.map((item) =>
+                                item.id === field.id ? { ...item, unit } : item,
+                              ),
+                              roadmap:
+                                unit === "Word labels"
+                                  ? v.roadmap.filter(
+                                      (row) => row.source !== field.id,
+                                    )
+                                  : v.roadmap,
+                            }))
+                          }
+                        />
+                      )}
+                      {canConfigureChoices && (
+                        <label className="cd-field cd-tracker-options">
+                          Choice labels
+                          <textarea
+                            value={
+                              optionDrafts[field.id] ??
+                              (field.options ?? parameter.options ?? []).join(
+                                ", ",
+                              )
+                            }
+                            rows={2}
+                            onChange={(event) => {
+                              const draft = event.target.value;
+                              const options = [
+                                ...new Set(
+                                  draft
+                                    .split(/[\n,]/)
+                                    .map((option) => option.trim())
+                                    .filter(Boolean),
+                                ),
+                              ];
+                              setOptionDrafts((drafts) => ({
+                                ...drafts,
+                                [field.id]: draft,
+                              }));
+                              update((v) => ({
+                                ...v,
+                                fields: v.fields.map((item) =>
+                                  item.id === field.id
+                                    ? { ...item, options }
+                                    : item,
+                                ),
+                              }));
+                            }}
+                            onBlur={() =>
+                              setOptionDrafts((drafts) => {
+                                const next = { ...drafts };
+                                delete next[field.id];
+                                return next;
+                              })
+                            }
+                            aria-label={`Choice labels for ${parameter.name}`}
+                            placeholder="Separate labels with commas"
+                          />
+                        </label>
+                      )}
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="cd-tracker-empty">
+            No daily fields yet. Add a parameter below to start the log.
+          </p>
+        )}
+        <button
+          type="button"
+          className="cd-tracker-library-toggle"
+          aria-expanded={libraryOpen}
+          onClick={() => setLibraryOpen((open) => !open)}
+        >
+          <span className="cd-tracker-add-mark">
+            <Plus size={15} />
+          </span>
+          <span>
+            <strong>Add parameter</strong>
+            <small>Browse the health input library</small>
+          </span>
+          <ChevronDown size={15} className="cd-tracker-group-chevron" />
+        </button>
+        {libraryOpen && (
+          <div className="cd-tracker-library">
+            <div className="cd-tracker-search">
+              <SearchBox
+                value={search}
+                onChange={setSearch}
+                placeholder="Search parameters or categories"
+              />
+              <span className="cd-muted" aria-live="polite">
+                {
+                  matchingParameters.filter(
+                    (parameter) => !visibleFieldIds.has(parameter.id),
+                  ).length
+                }{" "}
+                available
+              </span>
+            </div>
+            <div className="cd-tracker-catalog">
+              {groups.map((group, groupIndex) => {
+                const items = selectableParameters.filter(
+                  (parameter) =>
+                    parameter.group === group &&
+                    `${parameter.name} ${parameter.group}`
+                      .toLowerCase()
+                      .includes(normalizedSearch) &&
+                    !visibleFieldIds.has(parameter.id),
+                );
+                const expanded = normalizedSearch
+                  ? true
+                  : (groupOpen[group] ?? false);
+                const groupId = `${id}-group-${groupIndex}`;
+                return items.length ? (
+                  <section className="cd-tracker-library-group" key={group}>
+                    <button
+                      type="button"
+                      className="cd-tracker-group-toggle"
+                      aria-expanded={expanded}
+                      aria-controls={groupId}
+                      onClick={() =>
+                        setGroupOpen((current) => ({
+                          ...current,
+                          [group]: !expanded,
+                        }))
+                      }
+                    >
+                      <span className="cd-tracker-group-title">{group}</span>
+                      <span className="cd-tracker-group-count">
+                        {items.length} available
+                      </span>
+                      <ChevronDown
+                        size={15}
+                        className="cd-tracker-group-chevron"
+                      />
+                    </button>
+                    <div id={groupId} hidden={!expanded}>
+                      {items.map((parameter) => (
+                        <div
+                          className="cd-tracker-library-item"
+                          key={parameter.id}
+                        >
+                          <span>
+                            <strong>{parameter.name}</strong>
+                            <small>
+                              {parameter.inputType === "choice" ||
+                              parameter.inputType === "multi-choice"
+                                ? "Choice"
+                                : typeof parameter.sample === "number"
+                                  ? "Numeric"
+                                  : (parameter.inputType ?? "Daily entry")}
+                            </small>
+                          </span>
+                          <button
+                            type="button"
+                            className="cd-tracker-add-button"
+                            onClick={() => addParameter(parameter.id)}
+                          >
+                            Add <Plus size={13} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ) : null;
+              })}
+              {matchingParameters.filter(
+                (parameter) => !visibleFieldIds.has(parameter.id),
+              ).length === 0 && (
+                <p className="cd-tracker-empty">
+                  No matching available parameters.
+                </p>
+              )}
+            </div>
+            <Toggle
+              label="Include cycle tracking"
+              detail="Cycle day is calculated from period starts. Existing cycle settings stay saved while hidden."
+              checked={cycleTrackingEnabled}
+              onChange={(enabled) =>
+                update((v) => {
+                  const hasCycleFields = v.fields.some(
+                    (field) =>
+                      PARAMETERS.find((parameter) => parameter.id === field.id)
+                        ?.group === "Cycle tracking",
+                  );
+                  return {
+                    ...v,
+                    cycleTrackingEnabled: enabled,
+                    fields:
+                      enabled && !hasCycleFields
+                        ? [
+                            ...v.fields,
+                            {
+                              id: "bleeding-level",
+                              unit:
+                                PARAMETERS.find(
+                                  (parameter) =>
+                                    parameter.id === "bleeding-level",
+                                )?.units[0] ?? "",
+                              options: [
+                                ...(PARAMETERS.find(
+                                  (parameter) =>
+                                    parameter.id === "bleeding-level",
+                                )?.options ?? []),
+                              ],
+                            },
+                            { id: "period-start", unit: "date" },
+                          ]
+                        : v.fields,
+                  };
+                })
+              }
+            />
+          </div>
+        )}
+      </section>
+      <section
+        className="cd-tracker-overview"
+        aria-labelledby="cd-tracker-overview-title"
+      >
+        <div className="cd-tracker-section-heading">
+          <div>
+            <span className="cd-tracker-eyebrow">02 / AT A GLANCE</span>
+            <h3 id="cd-tracker-overview-title">Daily overview</h3>
+          </div>
+          <span className="cd-tracker-count">
+            {normalizedHighlights.length} / 4
+          </span>
+        </div>
+        <p className="cd-tracker-help">
+          Choose up to four numeric or rating fields to pin above the daily log.
+        </p>
+        {normalizedHighlights.length ? (
+          <div className="cd-tracker-highlight-list">
+            {normalizedHighlights.map((fieldId, index) => {
+              const parameter = ALL_PARAMETERS.find(
+                (item) => item.id === fieldId,
+              );
+              if (!parameter) return null;
+              return (
+                <div className="cd-tracker-highlight-row" key={fieldId}>
+                  <span className="cd-tracker-index">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <strong>{parameter.name}</strong>
+                  <div className="cd-tracker-highlight-actions">
+                    <OrderButtons
+                      index={index}
+                      length={normalizedHighlights.length}
+                      move={(to) =>
+                        update((v) => {
+                          const chosen = trackerOverviewIds(v);
+                          return {
+                            ...v,
+                            trackerHighlights: reorder(chosen, index, to),
+                          };
+                        })
+                      }
+                    />
+                    <button
+                      type="button"
+                      className="cd-tracker-remove"
+                      aria-label={`Remove ${parameter.name} from daily overview`}
+                      onClick={() => removeHighlight(fieldId)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="cd-tracker-empty">
+            No overview metrics selected. Add up to four below, or leave this
+            section empty.
+          </p>
+        )}
+        <div className="cd-tracker-overview-add">
+          <Select
+            label="Add overview metric"
+            value=""
+            disabled={
+              normalizedHighlights.length >= 4 ||
+              numericFields.every((field) =>
+                normalizedHighlights.includes(field.id),
+              )
+            }
+            options={[
+              { value: "", label: "Choose a numeric or rating field…" },
+              ...numericFields
+                .filter((field) => !normalizedHighlights.includes(field.id))
+                .map((field) => ({
+                  value: field.id,
+                  label:
+                    ALL_PARAMETERS.find(
+                      (parameter) => parameter.id === field.id,
+                    )?.name ?? field.id,
+                })),
+            ]}
+            onChange={addHighlight}
+          />
+        </div>
+      </section>
+    </div>
+  );
+}
+function RoadmapConfig({
+  variant,
+  update,
+}: {
+  variant: Variant;
+  update: (fn: (v: Variant) => Variant) => void;
+}) {
+  const compatible = variant.fields.filter(
+    (f) =>
+      ALL_PARAMETERS.find((p) => p.id === f.id)?.calculations.length &&
+      f.unit !== "Word labels",
+  );
+  const phases = variant.roadmapPhases !== false;
+  const phaseInputRef = useRef<HTMLInputElement>(null);
+  const [phaseText, setPhaseText] = useState(() =>
+    (variant.phaseOptions ?? DEFAULT_PHASE_OPTIONS).join(", "),
+  );
+  useEffect(() => {
+    if (document.activeElement !== phaseInputRef.current)
+      setPhaseText((variant.phaseOptions ?? DEFAULT_PHASE_OPTIONS).join(", "));
+  }, [variant.phaseOptions]);
+  const commitPhaseText = (raw: string) => {
+    setPhaseText(raw);
+    update((v) => ({
+      ...v,
+      phaseOptions: [
+        ...new Set(
+          raw
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+        ),
+      ],
+    }));
+  };
+  const normalizePhaseText = () =>
+    setPhaseText(
+      [
+        ...new Set(
+          phaseText
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+        ),
+      ].join(", "),
+    );
+  return (
+    <>
+      <p className="cd-muted">
+        Choose a tracked parameter, then a compatible weekly calculation. Actual
+        values come from the athlete’s recorded weeks.
+      </p>
+      {compatible.length === 0 && (
+        <Empty title="No compatible fields">
+          Select numeric tracker fields to unlock weekly roadmap metrics.
+        </Empty>
+      )}
+      {compatible.map((f) => {
+        const p = ALL_PARAMETERS.find((p) => p.id === f.id);
+        const r = variant.roadmap.find((r) => r.source === f.id);
+        if (!p) return null;
+        return (
+          <div className="cd-roadmap-setting" key={f.id}>
+            <Toggle
+              label={p.name}
+              checked={!!r}
+              onChange={(checked) =>
+                update((v) => ({
+                  ...v,
+                  roadmap: checked
+                    ? [
+                        ...v.roadmap,
+                        {
+                          source: f.id,
+                          calculation: p.calculations[0],
+                          comparison: false,
+                        },
+                      ]
+                    : v.roadmap.filter((r) => r.source !== f.id),
+                }))
+              }
+            />
+            {r && (
+              <>
+                <Select
+                  label={`Calculation for ${p.name}`}
+                  value={r.calculation}
+                  options={p.calculations.map((calculation) => ({
+                    value: calculation,
+                    label:
+                      (
+                        {
+                          Trend: "Change over week",
+                          Adherence: "Days on target (%)",
+                        } as Record<string, string>
+                      )[calculation] ?? calculation,
+                  }))}
+                  onChange={(calculation) =>
+                    update((v) => ({
+                      ...v,
+                      roadmap: v.roadmap.map((r) =>
+                        r.source === f.id
+                          ? {
+                              ...r,
+                              calculation,
+                              comparison: calculation === "Target vs actual",
+                            }
+                          : r,
+                      ),
+                    }))
+                  }
+                />
+                <p className="cd-caption">
+                  {
+                    (
+                      {
+                        "Weekly average":
+                          "Mean of recorded daily values for the Monday–Sunday week; missing days are excluded.",
+                        Trend:
+                          "Difference between the first and last recorded values of the week.",
+                        "Target vs actual":
+                          "Weekly average compared with the athlete’s configured target.",
+                        Adherence:
+                          "Percentage of recorded days meeting the athlete’s daily minimum target.",
+                      } as Record<string, string>
+                    )[r.calculation]
+                  }
+                </p>
+              </>
+            )}
+          </div>
+        );
+      })}
+      <Toggle
+        label="Include phase selection"
+        detail="Adds a phase selector and its available options to the roadmap."
+        checked={phases}
+        onChange={(roadmapPhases) => update((v) => ({ ...v, roadmapPhases }))}
+      />
+      {phases && (
+        <label className="cd-field">
+          Phase options · comma separated
+          <input
+            ref={phaseInputRef}
+            value={phaseText}
+            maxLength={500}
+            placeholder="Fat loss, Maintenance, Muscle gain, Recovery"
+            onChange={(e) => commitPhaseText(e.target.value)}
+            onBlur={normalizePhaseText}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                normalizePhaseText();
+              }
+            }}
+          />
+        </label>
+      )}
+      <p className="cd-caption">
+        Open Preview client to see the weekly table built from actual recorded
+        weeks.
+      </p>
+    </>
+  );
+}
+function TrainingConfig({
+  variant,
+  update,
+}: {
+  variant: Variant;
+  update: (fn: (v: Variant) => Variant) => void;
+}) {
+  const t = variant.training;
+  return (
+    <>
+      <p className="cd-muted">
+        Configure prescription fields. Exercises, program type and week count
+        belong to the athlete’s setup.
+      </p>
+      <div className="cd-check-grid">
+        {TRAINING_FIELDS.map((f) => (
+          <label key={f}>
+            <input
+              type="checkbox"
+              checked={t.fields.includes(f)}
+              onChange={(e) =>
+                update((v) => ({
+                  ...v,
+                  training: {
+                    ...v.training,
+                    fields: e.target.checked
+                      ? [...v.training.fields, f]
+                      : v.training.fields.filter((x) => x !== f),
+                  },
+                }))
+              }
+            />
+            {f}
+          </label>
+        ))}
+      </div>
+      <Toggle
+        label="Display training volume"
+        detail="Counts primary working sets per muscle group per week."
+        checked={t.volume}
+        onChange={(volume) =>
+          update((v) => ({ ...v, training: { ...v.training, volume } }))
+        }
+      />
+      {t.volume && (
+        <>
+          <div className="cd-setting-row">
+            <span>Volume breakdown</span>
+            <strong>{WEEKLY_VOLUME_BREAKDOWN}</strong>
+          </div>
+          <Select
+            label="Volume presentation"
+            value={t.presentation}
+            options={["Table", "Heatmap"]}
+            onChange={(presentation) =>
+              update((v) => ({
+                ...v,
+                training: { ...v.training, presentation },
+              }))
+            }
+          />
+          <p className="cd-caption">
+            Open Preview client for the full program, volume table and body
+            heatmap.
+          </p>
+        </>
+      )}
+    </>
+  );
+}
+function QuestionnaireConfig({
+  variant,
+  update,
+}: {
+  variant: Variant;
+  update: (fn: (v: Variant) => Variant) => void;
+}) {
+  const [mode, setMode] = useState("Full form");
+  const patch = (id: string, patch: Partial<Question>) =>
+    update((v) => ({
+      ...v,
+      questions: v.questions.map((q) => (q.id === id ? { ...q, ...patch } : q)),
+    }));
+  return (
+    <>
+      <div className="cd-subheading">
+        <p className="cd-muted">Build a clear weekly conversation.</p>
+        <Button
+          onClick={() =>
+            update((v) => ({
+              ...v,
+              questions: [
+                ...v.questions,
+                {
+                  id: uid("question"),
+                  label: "New question",
+                  type: "Long text",
+                  required: false,
+                  options: "",
+                },
+              ],
+            }))
+          }
+        >
+          <Plus size={14} />
+          Add question
+        </Button>
+      </div>
+      {variant.questions.map((q, i) => (
+        <div className="cd-question-edit" key={q.id}>
+          <div className="cd-subheading">
+            <span className="cd-muted">Question {i + 1}</span>
+            <div className="cd-actions">
+              <OrderButtons
+                index={i}
+                length={variant.questions.length}
+                move={(to) =>
+                  update((v) => ({
+                    ...v,
+                    questions: reorder(v.questions, i, to),
+                  }))
+                }
+              />
+              <IconButton
+                label="Duplicate question"
+                onClick={() =>
+                  update((v) => ({
+                    ...v,
+                    questions: [
+                      ...v.questions.slice(0, i + 1),
+                      { ...q, id: uid("question") },
+                      ...v.questions.slice(i + 1),
+                    ],
+                  }))
+                }
+              >
+                <Copy size={14} />
+              </IconButton>
+              <IconButton
+                label="Remove question"
+                onClick={() =>
+                  update((v) => ({
+                    ...v,
+                    questions: v.questions.filter((x) => x.id !== q.id),
+                  }))
+                }
+              >
+                <Trash2 size={14} />
+              </IconButton>
+            </div>
+          </div>
+          <label className="cd-field">
+            Question label
+            <input
+              value={q.label}
+              onChange={(e) => patch(q.id, { label: e.target.value })}
+            />
+          </label>
+          <Select
+            label={`Question ${i + 1} type`}
+            value={q.type}
+            options={[
+              "Short text",
+              "Long text",
+              "Numeric",
+              "Rating",
+              "Choice",
+              "Visual upload",
+            ]}
+            onChange={(type) =>
+              patch(q.id, {
+                type: type as Question["type"],
+                options: type === "Rating" ? "1–10" : "",
+              })
+            }
+          />
+          {q.type === "Choice" && (
+            <label className="cd-field">
+              Choices, separated by commas
+              <input
+                value={q.options}
+                onChange={(e) => patch(q.id, { options: e.target.value })}
+                placeholder="Good, Okay, Difficult"
+              />
+            </label>
+          )}
+          {q.type === "Rating" && (
+            <Select
+              label="Rating scale"
+              value={q.options || "1–10"}
+              options={["1–10", "1–5", "Word labels"]}
+              onChange={(options) => patch(q.id, { options })}
+            />
+          )}
+          <Toggle
+            label={`Required: ${q.label}`}
+            checked={q.required}
+            onChange={(required) => patch(q.id, { required })}
+          />
+        </div>
+      ))}
+      <h3>Included summaries</h3>
+      <div className="cd-check-grid">
+        {[
+          ...variant.fields
+            .filter((f) =>
+              ["weight", "calories", "sleep", "steps", "protein"].includes(
+                f.id,
+              ),
+            )
+            .map((f) => ({
+              id: f.id,
+              label: ALL_PARAMETERS.find((p) => p.id === f.id)?.name ?? f.id,
+            })),
+          ...(variant.habits ? [{ id: "habits", label: "Habit status" }] : []),
+        ].map((s) => (
+          <label key={s.id}>
+            <input
+              type="checkbox"
+              checked={variant.summaries.includes(s.id)}
+              onChange={(e) =>
+                update((v) => ({
+                  ...v,
+                  summaries: e.target.checked
+                    ? [...v.summaries, s.id]
+                    : v.summaries.filter((x) => x !== s.id),
+                }))
+              }
+            />
+            {s.label}
+          </label>
+        ))}
+      </div>
+      <div className="cd-subheading">
+        <h3>Questionnaire preview</h3>
+        <Select
+          label="Preview form"
+          value={mode}
+          options={["Full form", "Custom update"]}
+          onChange={setMode}
+        />
+      </div>
+      <FormPreview variant={variant} custom={mode === "Custom update"} />
+    </>
+  );
+}
+export function FormPreview({
+  variant,
+  custom,
+  client,
+}: {
+  variant: Variant;
+  custom: boolean;
+  client?: CoachClient;
+}) {
+  const [metrics, setMetrics] = useState<string[]>(["weight"]);
+  const [note, setNote] = useState(false);
+  const [visual, setVisual] = useState(false);
+  const summaryRow = client
+    ? weeklyRoadmapRows(
+        {
+          ...variant,
+          roadmap: variant.summaries
+            .filter(
+              (id) =>
+                id !== "habits" && variant.fields.some((f) => f.id === id),
+            )
+            .map((source) => ({
+              source,
+              calculation: "Weekly average",
+              comparison: false,
+            })),
+        },
+        client,
+      ).at(-1)
+    : null;
+  return (
+    <div className="cd-form-preview">
+      {custom ? (
+        <>
+          <ParameterValue
+            field={
+              variant.fields.find((f) => f.id === "weight") ?? {
+                id: "weight",
+                unit: "kg",
+              }
+            }
+          />
+          <div className="cd-check-grid">
+            {variant.fields
+              .filter((f) => f.id !== "weight")
+              .map((f) => (
+                <label key={f.id}>
+                  <input
+                    type="checkbox"
+                    checked={metrics.includes(f.id)}
+                    onChange={(e) =>
+                      setMetrics(
+                        e.target.checked
+                          ? [...metrics, f.id]
+                          : metrics.filter((x) => x !== f.id),
+                      )
+                    }
+                  />
+                  {ALL_PARAMETERS.find((p) => p.id === f.id)?.name}
+                </label>
+              ))}
+          </div>
+          {variant.fields
+            .filter((f) => f.id !== "weight" && metrics.includes(f.id))
+            .map((f) => (
+              <ParameterValue field={f} key={f.id} />
+            ))}
+          <div className="cd-actions">
+            <Button onClick={() => setVisual((v) => !v)}>
+              {visual ? "Remove visuals" : "Add visuals"}
+            </Button>
+            <Button onClick={() => setNote((v) => !v)}>
+              {note ? "Remove note" : "Add note"}
+            </Button>
+          </div>
+          {visual && (
+            <label className="cd-field">
+              Progress visuals
+              <input type="file" accept="image/*" multiple />
+            </label>
+          )}
+          {note && (
+            <label className="cd-field">
+              Your note
+              <textarea rows={3} placeholder="Share a quick update…" />
+            </label>
+          )}
+        </>
+      ) : (
+        <>
+          {client ? (
+            summaryRow && summaryRow.metrics.length > 0 ? (
+              <>
+                <h3>This week’s logged summaries</h3>
+                {summaryRow.metrics.map((metric) => (
+                  <div className="cd-stat-row" key={metric.source}>
+                    <span>
+                      {ALL_PARAMETERS.find((p) => p.id === metric.source)
+                        ?.name ?? metric.source}
+                    </span>
+                    <strong>
+                      {metric.value === null ? (
+                        "Not recorded"
+                      ) : (
+                        <>
+                          {Number(metric.value.toFixed(1))} {metric.unit}
+                          <small className="cd-muted">
+                            {" "}
+                            · {metric.count} reading
+                            {metric.count === 1 ? "" : "s"}
+                          </small>
+                        </>
+                      )}
+                    </strong>
+                  </div>
+                ))}
+              </>
+            ) : null
+          ) : (
+            variant.summaries
+              .filter((id) => id !== "habits")
+              .map((id) => (
+                <ParameterValue
+                  key={id}
+                  field={
+                    variant.fields.find((f) => f.id === id) ?? {
+                      id,
+                      unit:
+                        ALL_PARAMETERS.find((p) => p.id === id)?.units[0] ?? "",
+                    }
+                  }
+                />
+              ))
+          )}
+          {variant.habits &&
+            variant.summaries.includes("habits") &&
+            (client ? (
+              client.habits.map((habit) => (
+                <div className="cd-stat-row" key={habit.id}>
+                  <span>
+                    {habit.name} · {habit.frequency} · {habit.goal}
+                  </span>
+                  <strong>{habit.completed} completed</strong>
+                </div>
+              ))
+            ) : (
+              <div className="cd-stat-row">
+                <span>Habit consistency</span>
+                <strong>5 / 7</strong>
+              </div>
+            ))}
+          {variant.questions.map((q) => (
+            <label className="cd-field" key={q.id} htmlFor={`preview-${q.id}`}>
+              {q.label}
+              {q.required ? " *" : " · optional"}
+              {q.type === "Long text" ? (
+                <textarea
+                  id={`preview-${q.id}`}
+                  rows={3}
+                  placeholder="Your answer…"
+                  required={q.required}
+                />
+              ) : q.type === "Choice" || q.type === "Rating" ? (
+                <select
+                  id={`preview-${q.id}`}
+                  defaultValue=""
+                  required={q.required}
+                >
+                  <option value="">Choose an answer</option>
+                  {(q.type === "Choice"
+                    ? q.options
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean)
+                    : q.options === "Word labels"
+                      ? ["Low", "Okay", "Good", "Excellent"]
+                      : Array.from(
+                          { length: q.options === "1–5" ? 5 : 10 },
+                          (_, i) => String(i + 1),
+                        )
+                  ).map((o) => (
+                    <option key={o}>{o}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  id={`preview-${q.id}`}
+                  type={
+                    q.type === "Numeric"
+                      ? "number"
+                      : q.type === "Visual upload"
+                        ? "file"
+                        : "text"
+                  }
+                  accept={q.type === "Visual upload" ? "image/*" : undefined}
+                  required={q.required}
+                />
+              )}
+            </label>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
