@@ -79,8 +79,12 @@ describe("CHECK-IN-FEEDBACK-I1 dual-role PLATFORM_ADMIN denial", () => {
         "WORKSPACE_OWNER" | "COACH" | "ASSISTANT_COACH" | "SUPPORT" | "CLIENT";
       status: "ACTIVE";
     } | null;
-    client: null;
-    assignment: null;
+    client: {
+      id: string;
+      workspaceId: string;
+      userId: string | null;
+    } | null;
+    assignment: { id: string } | null;
   };
 
   function makeRepo(overrides: Partial<State> = {}) {
