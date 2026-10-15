@@ -8,7 +8,7 @@
 
 import { execFileSync } from "node:child_process";
 
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { AccessDeniedError } from "../../lib/auth/guard";
@@ -473,6 +473,75 @@ describe.skipIf(!enabled)("CHECK-IN-FEEDBACK-I1 (real PG)", () => {
         where: { resourceType: "checkin_feedback", resourceId: row.id },
       }),
     ).toBe(1);
+  });
+
+  it("a P2002 on an UNRELATED constraint never resolves as already_sent (scoped matcher)", async () => {
+    const s = await setup();
+    const { submissionId } = await reviewedSubmission(s);
+    // Inject a P2002 whose meta targets the PK only — NOT the
+    // (submission_id, client_request_id) idempotency key. The service
+    // must rethrow it as a failure, never report already_sent.
+    let fired = false;
+    const wrappedDb = {
+      $transaction: (
+        cb: (tx: never) => Promise<unknown>,
+        opts: unknown,
+      ) =>
+        prisma.$transaction(
+          async (tx) => {
+            const proxied = new Proxy(tx as object, {
+              get(target, prop) {
+                if (prop !== "checkInFeedback")
+                  return Reflect.get(target, prop);
+                const delegate = Reflect.get(target, prop) as object;
+                return new Proxy(delegate, {
+                  get(t2, p2) {
+                    if (p2 !== "create") return Reflect.get(t2, p2);
+                    return async (...args: unknown[]) => {
+                      if (!fired) {
+                        fired = true;
+                        throw new Prisma.PrismaClientKnownRequestError(
+                          "injected pk collision",
+                          {
+                            code: "P2002",
+                            clientVersion: "test",
+                            meta: {
+                              modelName: "CheckInFeedback",
+                              target: ["id"],
+                            },
+                          },
+                        );
+                      }
+                      return (
+                        Reflect.get(t2, p2) as (...a: unknown[]) => unknown
+                      )(...args);
+                    };
+                  },
+                });
+              },
+            });
+            return cb(proxied as never);
+          },
+          opts as never,
+        ),
+    };
+    await expect(
+      sendCheckInFeedback(
+        session(s.coach.id),
+        {
+          workspaceId: s.w.id,
+          clientProfileId: s.cp.id,
+          submissionId,
+          body: "collision probe",
+          clientRequestId: `req-${uid()}`,
+        },
+        { db: wrappedDb as never, registry: DEV_REGISTRY },
+      ),
+    ).rejects.toMatchObject({ code: "P2002" });
+    expect(fired).toBe(true);
+    expect(
+      await prisma.checkInFeedback.count({ where: { submissionId } }),
+    ).toBe(0);
   });
 
   it("consent withdrawn → send + staff read + client read + replay all fail closed (consent_missing)", async () => {

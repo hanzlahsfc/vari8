@@ -345,6 +345,10 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         // P-025-C: terminal staff review acknowledgement — immutable
         // provenance only (#86–#91 carried by #96).
         "checkin_review",
+        // CHECK-IN-FEEDBACK-I1 (decision 112): append-only staff text
+        // feedback on reviewed Check-In submissions — consent-gated like
+        // answers; synthetic/testing scope only.
+        "checkin_feedback",
         // P-014: staff parameter/template definitions + immutable versions
         // (no client data; reviewed in product-decisions #41–#48).
         "coaching_template",
