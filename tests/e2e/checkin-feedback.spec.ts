@@ -266,6 +266,23 @@ async function fixtureReviewed(dueAt: Date) {
 const staffUrl = () =>
   `${BASE}/workspace/${wsId}/clients/${profileId}/checkins`;
 
+// Rows render identical "Submitted <now>" labels across fixtures — the
+// only stable identity is the hidden submissionId input inside the row.
+const submissionRow = (page: Page, submissionId: string, reviewed = true) =>
+  page
+    .getByTestId(
+      reviewed ? "checkin-submission-reviewed" : "checkin-submission-pending",
+    )
+    .filter({
+      has: page.locator(`input[name="submissionId"][value="${submissionId}"]`),
+    });
+
+async function openDetail(page: Page, submissionId: string, reviewed = true) {
+  const row = submissionRow(page, submissionId, reviewed);
+  await row.getByTestId("checkin-view-detail").click();
+  await expect(page.getByTestId("checkin-detail")).toBeVisible();
+}
+
 // ── Flag-off contract ──────────────────────────────────────────────────
 
 test("flag-off server 404s the staff surface; zero feedback rows", async ({
@@ -284,14 +301,12 @@ test("flag-off server 404s the staff surface; zero feedback rows", async ({
 test("assigned coach reviews → sends feedback → client sees 'Response sent'", async ({
   page,
 }) => {
-  const { instance } = await fixtureReviewed(
+  const { instance, submission } = await fixtureReviewed(
     new Date("2032-08-01T09:00:00.000Z"),
   );
   await signIn(page, E2E.coach);
   await page.goto(staffUrl());
-  const row = page.getByTestId("checkin-submission-reviewed").last();
-  await row.getByTestId("checkin-view-detail").click();
-  await expect(page.getByTestId("checkin-detail")).toBeVisible();
+  await openDetail(page, submission.id);
 
   const input = page.getByTestId("checkin-feedback-input");
   await expect(input).toBeVisible();
@@ -354,11 +369,12 @@ test("unreviewed submission offers no composer (canSend false)", async ({
       ).id,
     },
   });
+  const pendSub = await prisma.checkInSubmission.findFirstOrThrow({
+    where: { instanceId: instance.id },
+  });
   await signIn(page, E2E.coach);
   await page.goto(staffUrl());
-  const row = page.getByTestId("checkin-submission-pending").last();
-  await row.getByTestId("checkin-view-detail").click();
-  await expect(page.getByTestId("checkin-detail")).toBeVisible();
+  await openDetail(page, pendSub.id, false);
   await expect(page.getByTestId("checkin-feedback-input")).toHaveCount(0);
   await expect(page.getByTestId("checkin-feedback-empty")).toBeVisible();
 });
@@ -381,9 +397,7 @@ test("assigned assistant reads the thread but cannot send", async ({
   });
   await signIn(page, E2E.assistant);
   await page.goto(staffUrl());
-  const row = page.getByTestId("checkin-submission-reviewed").last();
-  await row.getByTestId("checkin-view-detail").click();
-  await expect(page.getByTestId("checkin-detail")).toBeVisible();
+  await openDetail(page, submission.id);
   await expect(page.getByTestId("checkin-feedback-list")).toContainText(
     "thread entry",
   );
@@ -398,9 +412,7 @@ test("aborted send response → remount reconciliation → retry commits exactly
   );
   await signIn(page, E2E.coach);
   await page.goto(staffUrl());
-  const row = page.getByTestId("checkin-submission-reviewed").last();
-  await row.getByTestId("checkin-view-detail").click();
-  await expect(page.getByTestId("checkin-detail")).toBeVisible();
+  await openDetail(page, submission.id);
 
   // Abort the FIRST send response mid-flight — the row may or may not
   // commit; the nonce marker survives in sessionStorage either way.
@@ -425,9 +437,7 @@ test("aborted send response → remount reconciliation → retry commits exactly
   // Reload + re-view → the composer reconciles via sessionStorage
   // marker + the authorized recovery read.
   await page.reload();
-  const row2 = page.getByTestId("checkin-submission-reviewed").last();
-  await row2.getByTestId("checkin-view-detail").click();
-  await expect(page.getByTestId("checkin-detail")).toBeVisible();
+  await openDetail(page, submission.id);
 
   const alreadyLanded = await prisma.checkInFeedback.count({
     where: { submissionId: submission.id },
@@ -457,9 +467,7 @@ test("follow-up appends a second dated row (immutable corrections)", async ({
   );
   await signIn(page, E2E.coach);
   await page.goto(staffUrl());
-  const row = page.getByTestId("checkin-submission-reviewed").last();
-  await row.getByTestId("checkin-view-detail").click();
-  await expect(page.getByTestId("checkin-detail")).toBeVisible();
+  await openDetail(page, submission.id);
 
   await page.getByTestId("checkin-feedback-input").fill("first message");
   await page.getByTestId("checkin-feedback-send").click();
