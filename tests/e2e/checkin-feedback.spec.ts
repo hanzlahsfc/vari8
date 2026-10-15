@@ -65,6 +65,26 @@ async function removeFixtures() {
     where: { instanceId: { in: instances.map((s) => s.id) } },
     select: { id: true },
   });
+  const feedbacks = await prisma.checkInFeedback.findMany({
+    where: { submissionId: { in: submissions.map((s) => s.id) } },
+    select: { id: true },
+  });
+  // Detail views + sends leave structural audits — other specs assert a
+  // zero global count, so this fixture's audit rows are removed too.
+  await prisma.auditEvent.deleteMany({
+    where: {
+      OR: [
+        {
+          resourceType: "checkin_submission",
+          resourceId: { in: submissions.map((s) => s.id) },
+        },
+        {
+          resourceType: "checkin_feedback",
+          resourceId: { in: feedbacks.map((f) => f.id) },
+        },
+      ],
+    },
+  });
   await prisma.checkInFeedback.deleteMany({
     where: { submissionId: { in: submissions.map((s) => s.id) } },
   });

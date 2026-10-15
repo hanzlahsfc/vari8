@@ -5,6 +5,54 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## CHECK-IN-FEEDBACK-I1 — bounded staff text feedback (in progress, pre-review)
+
+- Independently reviewed contract: CHECK-IN-FEEDBACK-P3 (`0427fcb1…`,
+  137 lines) + P3-R1 PASS (`6eece636…`, 96 lines); decision #112
+  recorded (synthetic/testing boundaries only — production fail-closed).
+- Base verified `9ee84063` (`origin/main`); branch
+  `feature/checkin-feedback-i1`; `appearance-r2` untouched.
+- RED-A `87d2dcd` (unit: matrix cells, deny-set behavior, audit
+  resource, boundary exports — 11 intended failures).
+- Schema+migration `2424dbb`: `checkin_feedback` table, composite
+  coherence FK `(submission_id, workspace_id, client_profile_id)` →
+  `checkin_submission`, unique `(submission_id, client_request_id)`,
+  indexes `(submission_id, sent_at, id)` + `(workspace_id,
+  client_profile_id)`, all FKs RESTRICT, no `updatedAt`. Hand-curated
+  migration (auto-diff tried to drop unrelated custom FKs). Fresh +
+  upgrade deploys verified on disposable PG; `migrate status` clean,
+  29 migrations.
+- RED-B `8011f73` (integration, true RED vs schema-present-no-service).
+- GREEN `8c31047`: `checkinFeedback` resource + matrix row + deny-set
+  entry; `checkin_feedback` audit resource; `sendCheckInFeedback` /
+  `listCheckInFeedback` / `resolveCheckInFeedbackSend` in
+  `lib/checkin/instances.ts` (serializable, review-exists prerequisite,
+  assignment lock, consent before insert AND on replay, scoped-P2002
+  `meta.target` matcher, audit-last); staff detail `feedback`/`canSend`;
+  own-detail feedback inside the consent gate; boundary safe errors
+  `review_required`/`idempotency_conflict`; staff actions +
+  `CheckInFeedbackThread` composer (nonce in state + nonce-only
+  sessionStorage marker keyed userId+workspaceId+submissionId);
+  client "Response sent" from persisted rows.
+- Gates on the current tree: `git diff --check` clean; prettier clean;
+  eslint 0 errors (3 pre-existing warnings elsewhere); `tsc --noEmit`
+  exit 0; full unit 1220/1220; full integration 768/768 on disposable
+  `cfi1_int`; `next build` clean; focused E2E
+  `checkin-feedback.spec.ts` 7/7.
+- Mutation sweep: deny-set entry, assignment FOR UPDATE recheck,
+  review-required, audit write, consent-before-insert, replay consent,
+  resolver consent, resolver author scope, keyset tie predicate,
+  broad-P2002 catch, idempotency payload comparison, canSend review
+  term, assistant read cell, client own-scope cell — all bitten;
+  all restored byte-identically. Two fixtures strengthened so the
+  mutations became observable (dual-role PA now holds an ACTIVE
+  assignment; unreviewed-submission `canSend` asserted).
+- E2E fixes during gate runs: row selection now keys on the hidden
+  `submissionId` input (`.last()` was racy across fixtures); fixture
+  cleanup also removes the spec's `checkin_submission`/`checkin_feedback`
+  audit rows (a sibling spec asserts a zero global audit count).
+- Full E2E suite: pending at last update (running on this tree).
+
 ## SOLO-COACH-I1 — owner-as-coach assignments + assigned-owner review (in progress)
 
 - Independently reviewed contract: SOLO-COACH-P2 (`2b0d7eca…`, 125
