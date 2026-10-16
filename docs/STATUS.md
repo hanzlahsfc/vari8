@@ -5,6 +5,33 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## CHECK-IN-RECURRENCE-I1 — bounded weekly scheduling (in progress)
+
+- Independently reviewed contract: CHECK-IN-RECURRENCE-P3 (`b560cda2…`,
+  263 lines) + P3-R1 PASS (`c37cba13…`, 76 lines, 5 refinements applied);
+  decision #114 recorded (synthetic/testing boundaries only —
+  production fail-closed; bounded recurring scheduling, NOT automatic
+  replenishment).
+- Branch `feature/checkin-recurrence-i1` from verified main `18d9f6f`;
+  commits: `92ffcfe` RED-A units → `61a3280` schema+migration →
+  `c7a66a5` RED-B integration+E2E → `cd6df45` GREEN implementation →
+  `a772519` E2E locator fix → `9f97e12` mutation-coverage tests.
+- Implementation: `lib/checkin/timezone.ts` Intl-based wall→instant
+  (crossing-detection gap→first valid, fold→earlier, ≤181-min bound,
+  whole-day→unrepresentable, 2000–2100); `lib/checkin/schedules.ts`
+  rule lifecycle + explicit generation (two pre-queries, truthful
+  three-way classification, audits last, current-actor provenance,
+  Serializable + bounded P2002 re-enter); staff UI section
+  `schedule-rules.tsx` with conspicuous nonautomatic copy.
+- Verification so far: unit 1282/1282; integration 18/18 incl.
+  permission matrix + dual-role PA denial + end-vs-submit + rollback;
+  focused E2E 3/3; typecheck/lint/build green; migrations verified
+  fresh + base→candidate on disposable DBs (rec_i1_fresh/_upgrade/_it).
+- Mutation sweep: 13 of 16 bit immediately; 3 no-bites closed with new
+  coverage (assigned-assistant write, per-instance audit assertion,
+  past-instant via `now` dep); M16 alternate advisory namespace is a
+  recorded honest no-bite (unobservable via serialized outcomes).
+
 ## CHECK-IN-OVERVIEW-I1 — staff awaiting-review queue + deep link (in progress)
 
 - Independently reviewed contract: CHECK-IN-OVERVIEW-P2 (`4d619ccf…`,

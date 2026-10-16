@@ -208,9 +208,7 @@ test("owner creates a weekly rule, explicitly generates, sees truthful coverage,
   await section.getByLabel(/Local time/i).fill("09:30");
   await section.getByTestId("checkin-rule-tz").fill("UTC");
   await section.getByTestId("checkin-rule-tz").press("Tab");
-  await section
-    .getByRole("checkbox", { name: /confirm/i })
-    .check();
+  await section.getByRole("checkbox", { name: /confirm/i }).check();
   const today = new Date().toISOString().slice(0, 10);
   await section.getByLabel(/Start date/i).fill(today);
   await section.getByRole("button", { name: /create.*rule/i }).click();
