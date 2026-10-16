@@ -187,6 +187,7 @@ model Workspace {
   checkInSubmissionAnswers      CheckInSubmissionAnswer[]
   checkInReviews                CheckInReview[]
   checkInFeedback               CheckInFeedback[]
+  checkInScheduleRules          CheckInScheduleRule[]
   onboardingSubmissionReviews   OnboardingSubmissionReview[]
   clientDashboardLayouts        ClientDashboardLayout[]
   clientTasks                   ClientTask[]
@@ -234,6 +235,9 @@ model WorkspaceMember {
   checkInSubmissions                  CheckInSubmission[]          @relation("CheckInSubmissionSubmittedByMember")
   checkInReviews                      CheckInReview[]              @relation("CheckInReviewReviewer")
   checkInFeedbackAuthored             CheckInFeedback[]            @relation("CheckInFeedbackAuthor")
+  checkInScheduleRulesCreated         CheckInScheduleRule[]        @relation("CheckInScheduleRuleCreator")
+  checkInScheduleRulesPaused          CheckInScheduleRule[]        @relation("CheckInScheduleRulePauser")
+  checkInScheduleRulesEnded           CheckInScheduleRule[]        @relation("CheckInScheduleRuleEnder")
   onboardingSubmissionReviewsReviewed OnboardingSubmissionReview[] @relation("OnboardingReviewReviewer")
   dashboardLayoutsEdited              ClientDashboardLayout[]      @relation("DashboardLayoutEditor")
   assignedClientTasks                 ClientTask[]                 @relation("ClientTaskAssigner")
@@ -291,6 +295,7 @@ model ClientProfile {
   checkInSubmissions          CheckInSubmission[]          @relation("CheckInSubmissionClient")
   checkInReviews              CheckInReview[]              @relation("CheckInReviewClient")
   checkInFeedback             CheckInFeedback[]            @relation("CheckInFeedbackClient")
+  checkInScheduleRules        CheckInScheduleRule[]        @relation("CheckInScheduleRuleClient")
   checkInAnswers              CheckInSubmissionAnswer[]    @relation("CheckInAnswerClient")
   onboardingSubmissionReviews OnboardingSubmissionReview[] @relation("OnboardingReviewClient")
   dashboardLayouts            ClientDashboardLayout[]      @relation("ClientDashboardLayoutClient")
@@ -1209,6 +1214,7 @@ model CheckInForm {
   versions         CheckInFormVersion[]
   instances        CheckInInstance[]    @relation("CheckInInstanceForm")
   submissions      CheckInSubmission[]  @relation("CheckInSubmissionForm")
+  scheduleRules    CheckInScheduleRule[] @relation("CheckInScheduleRuleForm")
 
   // Composite target for the CheckInFormVersion form∈workspace foreign key (raw SQL).
   @@unique([id, workspaceId])
@@ -1264,6 +1270,15 @@ model CheckInInstance {
   dueTz               String?   @map("due_tz")
   scheduledByMemberId String    @map("scheduled_by_member_id")
   scheduledAt         DateTime  @default(now()) @map("scheduled_at") @db.Timestamptz(6)
+  // CHECK-IN-RECURRENCE-I1 (decision #114): generation provenance — the
+  // rule that produced this occurrence + the intended LOCAL calendar date
+  // (invariant under DST due-instant shifts). Both null or both non-null
+  // (raw CHECK); manual one-off rows carry neither. The raw composite FK
+  // (origin_rule_id, workspace_id, client_profile_id) →
+  // checkin_schedule_rule(id, workspace_id, client_profile_id) makes a
+  // generated row incoherent to any other client/workspace tuple.
+  originRuleId        String?   @map("origin_rule_id")
+  occurrenceDate      DateTime? @map("occurrence_date") @db.Date
   // Paired cancellation provenance — both null or both non-null (raw CHECK).
   // A cancellation is the only permitted mutation on this row.
   cancelledByMemberId String?   @map("cancelled_by_member_id")
@@ -1277,6 +1292,7 @@ model CheckInInstance {
   formVersion       CheckInFormVersion  @relation("CheckInInstanceFormVersion", fields: [formVersionId], references: [id], onDelete: Restrict)
   scheduledByMember WorkspaceMember     @relation("CheckInInstanceScheduler", fields: [scheduledByMemberId], references: [id], onDelete: Restrict)
   cancelledByMember WorkspaceMember?    @relation("CheckInInstanceCanceller", fields: [cancelledByMemberId], references: [id], onDelete: Restrict)
+  originRule        CheckInScheduleRule? @relation(fields: [originRuleId], references: [id], onDelete: Restrict)
   submissions       CheckInSubmission[]
 
   // Wide composite coherence target for the submission's full-tuple FK
@@ -1285,9 +1301,13 @@ model CheckInInstance {
   @@unique([id, workspaceId, clientProfileId, formId, formVersionId], map: "checkin_instance_wide_coherence_key")
   // Duplicate-scheduling authority: one instance per (client, form, dueAt).
   @@unique([workspaceId, clientProfileId, formId, dueAt], map: "checkin_instance_duplicate_schedule_key")
+  // Occurrence identity: at most one generated row per (rule, local date).
+  // Multi-NULL safe — manual rows (both null) never collide.
+  @@unique([originRuleId, occurrenceDate], map: "checkin_instance_occurrence_key")
   @@index([workspaceId, clientProfileId, dueAt])
   @@index([workspaceId, id])
   @@index([formVersionId])
+  @@index([originRuleId])
   @@map("checkin_instance")
 }
 
@@ -1410,6 +1430,77 @@ model CheckInFeedback {
   @@index([submissionId, sentAt, id])
   @@index([workspaceId, clientProfileId])
   @@map("checkin_feedback")
+}
+
+enum CheckInScheduleRuleStatus {
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+enum CheckInWeekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+// CHECK-IN-RECURRENCE-I1 (decision #114 — owner-approved bounded first
+// version): one weekday per week at a chosen local time in the
+// coach-CONFIRMED IANA timezone. NOT a scheduler — instances only exist
+// after an explicit authorized staff generation action (8-week horizon,
+// T+56 inclusive). Pause blocks generation; End is terminal and cancels
+// still-unsubmitted generated occurrences. No in-place edits — schedule
+// changes end this row and create a replacement (replacedByRuleId link).
+// Raw CHECKs (migration): local_time_minutes 0–1439; end_date >=
+// start_date; ended provenance paired non-null.
+model CheckInScheduleRule {
+  id                 String                    @id @default(cuid())
+  workspaceId        String                    @map("workspace_id")
+  clientProfileId    String                    @map("client_profile_id")
+  formId             String                    @map("form_id")
+  weekday            CheckInWeekday
+  // Minute-of-day 0–1439 in `timezone` (raw CHECK bounds it).
+  localTimeMinutes   Int                       @map("local_time_minutes")
+  // IANA zone, app-validated (Intl) at create — never a browser guess.
+  timezone           String
+  // Inclusive local-date bounds on generated occurrences.
+  startDate          DateTime                  @map("start_date") @db.Date
+  endDate            DateTime?                 @map("end_date") @db.Date
+  status             CheckInScheduleRuleStatus @default(ACTIVE)
+  createdByMemberId  String                    @map("created_by_member_id")
+  // Latest-pause provenance (pause is reversible; not a paired CHECK —
+  // a resumed rule keeps the record of its last pause).
+  pausedAt           DateTime?                 @map("paused_at") @db.Timestamptz(6)
+  pausedByMemberId   String?                   @map("paused_by_member_id")
+  // Paired end provenance — both null or both non-null (raw CHECK);
+  // ENDED is terminal.
+  endedAt            DateTime?                 @map("ended_at") @db.Timestamptz(6)
+  endedByMemberId    String?                   @map("ended_by_member_id")
+  // The rule that replaced this one (end-and-replace writes it once;
+  // unique — a rule has at most one replacement).
+  replacedByRuleId   String?                   @unique @map("replaced_by_rule_id")
+  createdAt          DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace       Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile   ClientProfile        @relation("CheckInScheduleRuleClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  form            CheckInForm          @relation("CheckInScheduleRuleForm", fields: [formId], references: [id], onDelete: Restrict)
+  createdByMember WorkspaceMember      @relation("CheckInScheduleRuleCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  pausedByMember  WorkspaceMember?     @relation("CheckInScheduleRulePauser", fields: [pausedByMemberId], references: [id], onDelete: Restrict)
+  endedByMember   WorkspaceMember?     @relation("CheckInScheduleRuleEnder", fields: [endedByMemberId], references: [id], onDelete: Restrict)
+  replacedByRule  CheckInScheduleRule? @relation("CheckInScheduleRuleReplacement", fields: [replacedByRuleId], references: [id], onDelete: Restrict)
+  replacesRule    CheckInScheduleRule? @relation("CheckInScheduleRuleReplacement")
+  instances       CheckInInstance[]
+
+  // Composite coherence target for the instance's raw origin FK
+  // (origin_rule_id, workspace_id, client_profile_id).
+  @@unique([id, workspaceId, clientProfileId], map: "checkin_schedule_rule_coherence_key")
+  @@index([workspaceId, clientProfileId, status])
+  @@map("checkin_schedule_rule")
 }
 
 model ClientDashboardLayout {

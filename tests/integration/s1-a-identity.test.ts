@@ -349,6 +349,9 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         // feedback on reviewed Check-In submissions — consent-gated like
         // answers; synthetic/testing scope only.
         "checkin_feedback",
+        // CHECK-IN-RECURRENCE-I1 (decision 114): bounded weekly schedule
+        // rules — no client data; synthetic/testing scope only.
+        "checkin_schedule_rule",
         // P-014: staff parameter/template definitions + immutable versions
         // (no client data; reviewed in product-decisions #41–#48).
         "coaching_template",

@@ -1597,3 +1597,35 @@ enumeration, or any write on this surface. Retention/privacy/production
 gates #102/#81/#38/#39/D-10/D-09 remain separate and unresolved; the
 full W09/W02 roadmap is NOT delivered by this slice; production
 enablement remains fail-closed.
+
+## CHECK-IN-RECURRENCE-I1 — owner approval (2026-10-16, implementation prompt)
+
+**Decision #114 (APPROVED — synthetic/testing boundaries only):** bounded
+weekly Check-In scheduling. One weekday per week at a chosen local time in
+a coach-explicitly-confirmed IANA timezone; local wall-clock time preserved
+across DST (gap → first valid minute via crossing detection, fold → earlier
+occurrence, whole-day skip → unrepresentable). Authorized staff explicitly
+generate occurrences through local T+56 inclusive (up to nine weekly
+dates); NO automatic replenishment, NO read-triggered writes — page, list,
+calendar, GET, RSC, prefetch all mutation- and audit-free. Pause prevents
+new generation and leaves existing dates; resume and inactivity never
+backfill; make-ups are manual. End cancels only still-unsubmitted
+generated instances; submitted/reviewed history is untouched. Schedule
+changes end the old rule and atomically create a replacement
+(end-and-replace). Each generation pins the latest ACTIVE published form
+version; existing instances keep their pinned versions. Generation
+reports truthfully: horizon examined, created, already-generated,
+skipped-conflicts, unrepresentable — a horizon with collisions is never
+labeled fully populated, and a missed generation is never disguised as a
+completed/cancelled/skipped submission. Authority: existing
+checkinInstances/write scopes (owner workspace, assigned coach assigned);
+scheduledByMemberId is the CURRENT authorized generating actor, never the
+stored rule creator. Assistants read-only; clients, SUPPORT, and
+platform-admin roles denied including the dual-role deny-set. This is
+bounded recurring scheduling — NOT an unattended scheduler, NOT automatic
+recurrence, and NOT a claim that every choice is an industry standard.
+Automatic replenishment and advanced cadences remain roadmap items with
+their own authorization/operational prerequisites. NOT approved:
+notifications, messaging, feedback changes, calendar redesign, retention
+policy, production/real-client use. Production/privacy gates
+#102/#81/#38/#39/D-10/D-09 remain separate and unresolved.
