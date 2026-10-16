@@ -438,11 +438,11 @@ describe.skipIf(!enabled)("CHECK-IN-OVERVIEW-I1 review queue (real PG)", () => {
         reviewedByMemberId: s.ownerMember.id,
       });
     const a = await seedSubmission(s, {
-      dueAt: new Date("2030-08-01T09:00:00.000Z"),
+      dueAt: new Date("2030-10-01T09:00:00.000Z"),
       submittedAt: new Date("2030-02-01T00:00:00.000Z"),
     });
     const b = await seedSubmission(s, {
-      dueAt: new Date("2030-08-02T09:00:00.000Z"),
+      dueAt: new Date("2030-10-02T09:00:00.000Z"),
       submittedAt: new Date("2030-02-02T00:00:00.000Z"),
     });
 
@@ -604,15 +604,33 @@ describe.skipIf(!enabled)("CHECK-IN-OVERVIEW-I1 review queue (real PG)", () => {
   it("the ordered workspace keyset scan uses the new index (no Sort node)", async () => {
     const s = await setup();
     await seedSubmission(s);
-    const plan = await prisma.$queryRawUnsafe<{ "QUERY PLAN": string }[]>(
-      `EXPLAIN SELECT "id" FROM "checkin_submission" s
-       WHERE s."workspace_id" = $1
-         AND NOT EXISTS (SELECT 1 FROM "checkin_review" r
-                         WHERE r."submission_id" = s."id")
-       ORDER BY s."submitted_at" ASC, s."id" ASC
-       LIMIT 51`,
-      s.w.id,
+    // The index must EXIST and must be capable of serving the ordered
+    // workspace keyset scan without a Sort node. The planner is
+    // cost-based: on a workspace with a handful of rows it legitimately
+    // prefers bitmap-scan+sort — so the plan check runs with bitmap
+    // scans disabled (SET LOCAL inside a rolled-back transaction), which
+    // is the honest capability assertion, not a claim the planner always
+    // picks this index.
+    const idx = await prisma.$queryRawUnsafe<{ indexname: string }[]>(
+      `SELECT indexname FROM pg_indexes
+       WHERE tablename = 'checkin_submission'
+         AND indexname = 'checkin_submission_workspace_id_submitted_at_id_idx'`,
     );
+    expect(idx).toHaveLength(1);
+    const plan = await prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(
+        `SET LOCAL enable_bitmapscan = off`,
+      );
+      return tx.$queryRawUnsafe<{ "QUERY PLAN": string }[]>(
+        `EXPLAIN SELECT "id" FROM "checkin_submission" s
+         WHERE s."workspace_id" = $1
+           AND NOT EXISTS (SELECT 1 FROM "checkin_review" r
+                           WHERE r."submission_id" = s."id")
+         ORDER BY s."submitted_at" ASC, s."id" ASC
+         LIMIT 51`,
+        s.w.id,
+      );
+    });
     const text = plan.map((p) => p["QUERY PLAN"]).join("\n");
     expect(text).toContain(
       "checkin_submission_workspace_id_submitted_at_id_idx",

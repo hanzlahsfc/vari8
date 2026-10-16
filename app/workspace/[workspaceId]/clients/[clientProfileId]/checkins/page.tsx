@@ -7,6 +7,7 @@ import {
   listSchedulableVersionsForClient,
   listStaffCheckInInstances,
   listStaffCheckInSubmissions,
+  parseCheckInSubmissionParam,
 } from "@/lib/checkin/instances-boundary";
 import { prisma } from "@/lib/db";
 
@@ -39,12 +40,15 @@ const STATE_LABEL: Record<string, string> = {
  */
 export default async function StaffClientCheckInsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ workspaceId: string; clientProfileId: string }>;
+  searchParams: Promise<{ submission?: string | string[] }>;
 }) {
   if (!isCheckInsEnabled()) notFound();
 
   const { workspaceId, clientProfileId } = await params;
+  const { submission: submissionParam } = await searchParams;
   const { userId } = await requireSessionUser();
   if (
     typeof workspaceId !== "string" ||
@@ -55,6 +59,12 @@ export default async function StaffClientCheckInsPage({
     clientProfileId.length > 128
   )
     notFound();
+
+  // CHECK-IN-OVERVIEW-I1 — bounded `?submission=<id>` deep link. Parsed
+  // server-side into a closed shape; the VALUE is never read here — the
+  // client panel dispatches the same consent-gated detail action a row
+  // click uses, so existence/tenancy/consent/audit stay unchanged.
+  const deepLink = parseCheckInSubmissionParam(submissionParam);
 
   const client = await prisma.clientProfile.findFirst({
     where: { id: clientProfileId, workspaceId },
@@ -189,6 +199,10 @@ export default async function StaffClientCheckInsPage({
               clientProfileId={clientProfileId}
               items={submissions.value.items}
               userId={userId}
+              initialSubmissionId={
+                deepLink.status === "ok" ? deepLink.submissionId : null
+              }
+              deepLinkInvalid={deepLink.status === "invalid"}
             />
           ) : null}
         </>

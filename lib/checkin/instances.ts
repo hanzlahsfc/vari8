@@ -31,7 +31,12 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { prisma as defaultPrisma } from "../db";
-import { AccessDeniedError, authorize, type SessionLike } from "../auth/guard";
+import {
+  AccessDeniedError,
+  authorize,
+  authorizeCollection,
+  type SessionLike,
+} from "../auth/guard";
 import { resolveScope, type PrincipalRole } from "../auth/rbac";
 import { createPrismaAuthorizationRepo } from "../workspace/access";
 import { writeAuditEvent } from "../audit";
@@ -3126,4 +3131,277 @@ export async function listOwnCheckInFeedback(
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
   );
+}
+
+// ── CHECK-IN-OVERVIEW-I1: staff "awaiting review" overview ─────────────
+// Bounded W09 subset (approved CHECK-IN-OVERVIEW-P2 contract): a
+// read-only workspace-level list of submissions that exist with NO
+// review — `where: { workspaceId, reviews: { none: {} } }` is the
+// complete predicate (one immutable submission per instance, one
+// terminal immutable review per submission, and a submitted instance
+// can never be cancelled — no cancellation or supersession term
+// exists). authorizeCollection — never roster enumeration — resolves
+// workspace (owner) / assigned (coach/assistant) scope; the deny-set
+// covers dual-role PLATFORM_ADMIN. Header-only projection: no answers,
+// no feedback, no consent-gated content, zero audits (sibling
+// listCheckInSubmissionsForClient precedent — consent/audit live at
+// the detail destination, which independently re-authorizes).
+
+export const CHECKIN_REVIEW_QUEUE_PAGE_SIZE = 50;
+
+export type StaffCheckInReviewQueueItem = {
+  submissionId: string;
+  instanceId: string;
+  clientProfileId: string;
+  clientName: string;
+  formName: string;
+  versionSeq: number;
+  dueAt: string;
+  submittedAt: string;
+  /** Reused derived display flag (submittedAt > dueAt) — not an
+   * attention rule or filter. */
+  late: boolean;
+  /** Snapshot hint only — derived per row from the caller's actual
+   * write cell AND an ACTIVE assignment to that row's client (never
+   * role-alone). The review action re-authorizes independently. */
+  canReview: boolean;
+};
+
+/** Keyset cursor — `"{submittedAtIso}|{id}"`, mirrors the feedback
+ * convention; malformed input is rejected, never sanitized. */
+export function parseCheckInReviewQueueCursor(raw: string): {
+  submittedAt: Date;
+  id: string;
+} {
+  if (raw.length > 160) throw new CheckInInstanceError("invalid_input");
+  const idx = raw.indexOf("|");
+  if (idx <= 0) throw new CheckInInstanceError("invalid_input");
+  const iso = raw.slice(0, idx);
+  const id = raw.slice(idx + 1);
+  const submittedAt = new Date(iso);
+  if (
+    Number.isNaN(submittedAt.getTime()) ||
+    id.length === 0 ||
+    id.length > CHECKIN_INSTANCE_LIMITS.idMax ||
+    id.includes("|") ||
+    !isWellFormedIso(iso)
+  )
+    throw new CheckInInstanceError("invalid_input");
+  return { submittedAt, id };
+}
+
+/**
+ * The complete WHERE — scope + awaiting predicate + keyset cursor are
+ * ALL SQL predicates applied before take (predicates-before-limit; a
+ * cap-then-filter implementation silently drops qualifying rows).
+ * The cursor only repositions inside the authorized filtered set — a
+ * foreign cursor can at worst skip rows, never leak them (workspaceId
+ * is always present).
+ */
+export function buildCheckInReviewQueueWhere(
+  scope: "workspace" | "assigned",
+  ctx: { workspaceId: string; workspaceMemberId: string },
+  cursor: { submittedAt: Date; id: string } | undefined,
+): Prisma.CheckInSubmissionWhereInput {
+  const where: Prisma.CheckInSubmissionWhereInput = {
+    workspaceId: ctx.workspaceId,
+    reviews: { none: {} },
+  };
+  if (scope === "assigned")
+    where.clientProfile = {
+      assignments: {
+        some: {
+          workspaceId: ctx.workspaceId,
+          coachMemberId: ctx.workspaceMemberId,
+          status: "ACTIVE",
+        },
+      },
+    };
+  if (cursor)
+    where.OR = [
+      { submittedAt: { gt: cursor.submittedAt } },
+      { submittedAt: cursor.submittedAt, id: { gt: cursor.id } },
+    ];
+  return where;
+}
+
+/**
+ * Derived canReview hint — the caller's actual WRITE cell on
+ * checkinsCoachReviews (assigned for owner/coach post-#111; denied for
+ * assistant) AND a per-row ACTIVE assignment existence. Snapshot
+ * advisory only — never authority for a write.
+ */
+export function deriveCheckInQueueCanReview(
+  role: string,
+  rowHasActiveAssignment: boolean,
+): boolean {
+  return (
+    resolveScope(
+      "checkinsCoachReviews",
+      "write",
+      role as PrincipalRole,
+    ) === "assigned" && rowHasActiveAssignment
+  );
+}
+
+/** Well-formed UTF-16 — lone surrogates break encoding downstream. */
+function isWellFormedParam(v: string): boolean {
+  try {
+    encodeURIComponent(v);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Bounded `?submission=<id>` deep-link parser for the per-client staff
+ * page. `undefined` → no auto-open; repeated (array) or malformed
+ * (empty / >128 / not well-formed UTF-16) → invalid, the caller
+ * renders an invalid-link note and fires NO detail action. Well-formed
+ * values are opaque — the detail action re-authorizes existence,
+ * tenancy, and permission itself.
+ */
+export function parseCheckInSubmissionParam(
+  value: string | string[] | undefined,
+):
+  | { status: "none" }
+  | { status: "invalid" }
+  | { status: "ok"; submissionId: string } {
+  if (value === undefined) return { status: "none" };
+  if (typeof value !== "string" || !validId(value) || !isWellFormedParam(value))
+    return { status: "invalid" };
+  return { status: "ok", submissionId: value };
+}
+
+/**
+ * Workspace-level awaiting-review list. Query accounting: ONE bounded
+ * list query (scope + awaiting + cursor predicates before take) plus an
+ * O(1) set of authorization/coherence reads — user/workspace/membership
+ * resolution inside authorizeCollection, the member FOR UPDATE lock,
+ * and (assigned scope) the member's ACTIVE assignment rows locked FOR
+ * UPDATE so a concurrent revocation serializes instead of over-showing.
+ * No per-client enumeration, no fan-out, no totals. ReadCommitted —
+ * proportional for a header-only read with no writes.
+ */
+export async function listCheckInReviewQueue(
+  session: SessionLike,
+  input: { workspaceId: string; cursor?: string },
+  deps: CheckInInstanceDeps = {},
+): Promise<{
+  items: StaffCheckInReviewQueueItem[];
+  nextCursor: string | null;
+}> {
+  const db = deps.db ?? defaultPrisma;
+  if (!validId(input.workspaceId))
+    throw new CheckInInstanceError("invalid_input");
+  const cursor =
+    input.cursor !== undefined
+      ? parseCheckInReviewQueueCursor(input.cursor)
+      : undefined;
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0)
+    throw new AccessDeniedError(
+      "unauthenticated",
+      "checkinsCoachReviews",
+      "read",
+    );
+
+  return db.$transaction(async (tx) => {
+    await advisoryLock(tx, `member:${input.workspaceId}:${userId}`);
+    const member = await lockMember(tx, input.workspaceId, userId);
+    if (!member || member.status !== "ACTIVE")
+      throw new AccessDeniedError(
+        "role_denied",
+        "checkinsCoachReviews",
+        "read",
+      );
+    const ctx = await authorizeCollection(
+      session,
+      {
+        resource: "checkinsCoachReviews",
+        action: "read",
+        workspaceId: input.workspaceId,
+      },
+      createPrismaAuthorizationRepo(tx),
+    );
+    if (ctx.workspaceMemberId !== member.id)
+      throw new AccessDeniedError(
+        "membership_missing_or_inactive",
+        "checkinsCoachReviews",
+        "read",
+      );
+    if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+      throw new AccessDeniedError(
+        "role_denied",
+        "checkinsCoachReviews",
+        "read",
+      );
+    if (ctx.grantedScope === "assigned")
+      await tx.$queryRawUnsafe(
+        `SELECT id FROM "client_assignment"
+         WHERE workspace_id = $1 AND coach_member_id = $2
+           AND status = 'ACTIVE' FOR UPDATE`,
+        input.workspaceId,
+        member.id,
+      );
+
+    const rows = await tx.checkInSubmission.findMany({
+      where: buildCheckInReviewQueueWhere(
+        ctx.grantedScope,
+        { workspaceId: input.workspaceId, workspaceMemberId: member.id },
+        cursor,
+      ),
+      select: {
+        id: true,
+        instanceId: true,
+        clientProfileId: true,
+        submittedAt: true,
+        clientProfile: {
+          select: {
+            name: true,
+            assignments: {
+              where: {
+                workspaceId: input.workspaceId,
+                coachMemberId: member.id,
+                status: "ACTIVE",
+              },
+              select: { id: true },
+              take: 1,
+            },
+          },
+        },
+        instance: { select: { dueAt: true } },
+        form: { select: { name: true } },
+        formVersion: { select: { versionSeq: true } },
+      },
+      orderBy: [{ submittedAt: "asc" }, { id: "asc" }],
+      take: CHECKIN_REVIEW_QUEUE_PAGE_SIZE + 1,
+    });
+    const page = rows.slice(0, CHECKIN_REVIEW_QUEUE_PAGE_SIZE);
+    const last = page[page.length - 1];
+    const nextCursor =
+      rows.length > CHECKIN_REVIEW_QUEUE_PAGE_SIZE && last
+        ? `${last.submittedAt.toISOString()}|${last.id}`
+        : null;
+    const items = page.map(
+      (row): StaffCheckInReviewQueueItem => ({
+        submissionId: row.id,
+        instanceId: row.instanceId,
+        clientProfileId: row.clientProfileId,
+        clientName: row.clientProfile.name,
+        formName: row.form.name,
+        versionSeq: row.formVersion.versionSeq,
+        dueAt: row.instance.dueAt.toISOString(),
+        submittedAt: row.submittedAt.toISOString(),
+        late:
+          row.submittedAt.getTime() > row.instance.dueAt.getTime(),
+        canReview: deriveCheckInQueueCanReview(
+          member.role,
+          row.clientProfile.assignments.length > 0,
+        ),
+      }),
+    );
+    return { items, nextCursor };
+  });
 }
