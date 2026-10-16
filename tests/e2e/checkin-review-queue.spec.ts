@@ -113,7 +113,10 @@ async function seedCheckIn(opts: {
 async function removeFixtures() {
   for (const w of [wsId, wsBId]) {
     const instances = await prisma.checkInInstance.findMany({
-      where: { workspaceId: w, formId: { in: [FORM_A_ID, FORM_B_ID] } },
+      where: {
+        workspaceId: w,
+        formId: { in: [FORM_A_ID, FORM_B_ID, `${FORM_A_ID}_b`] },
+      },
       select: { id: true },
     });
     const ids = instances.map((i) => i.id);
@@ -217,6 +220,9 @@ test.beforeAll(async () => {
     [FORM_A_ID, VERSION_A_ID, "CIO1 Queue Form A"],
     [FORM_B_ID, VERSION_B_ID, "CIO1 Queue Form B"],
   ] as const) {
+    // Rerun-safe: versions first — the form deleteMany would hit the
+    // child FK if a prior run left its version row behind.
+    await prisma.checkInFormVersion.deleteMany({ where: { id: versionId } });
     await prisma.checkInForm.deleteMany({ where: { id: formId } });
     await prisma.checkInForm.create({
       data: {
@@ -243,6 +249,7 @@ test.beforeAll(async () => {
   for (const [formId, versionId, name] of [
     [FORM_A_ID + "_b", VERSION_A_ID + "_b", "CIO1 WS-B Form"],
   ] as const) {
+    await prisma.checkInFormVersion.deleteMany({ where: { id: versionId } });
     await prisma.checkInForm.deleteMany({ where: { id: formId } });
     await prisma.checkInForm.create({
       data: {
@@ -589,8 +596,14 @@ test("assignment revoked between listing and opening fails closed", async ({
       data: { status: "REMOVED" },
     });
     await page.goto(clientCheckinsUrl(a.submission.id));
-    await expect(page.getByTestId("checkin-detail-error")).toBeVisible();
+    // The page's per-client reads re-authorize first: with the
+    // assignment gone the whole submissions surface denies — the
+    // deep-link panel never mounts, no detail action fires, and the
+    // closed `checkins-denied` banner is the honest outcome (stronger
+    // than an in-panel error: zero answer-path work happens at all).
+    await expect(page.getByTestId("checkins-denied")).toBeVisible();
     await expect(page.getByTestId("checkin-detail")).toHaveCount(0);
+    await expect(page.getByTestId("checkin-detail-region")).toHaveCount(0);
     // Refetched queue no longer lists the row.
     await page.goto(overviewUrl());
     await expect(
