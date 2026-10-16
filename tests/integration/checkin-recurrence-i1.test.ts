@@ -337,6 +337,40 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
       deps(),
     );
     expect(list.items.map((r) => r.ruleId)).toContain(created.ruleId);
+    // Assigned READ scope on the assistant's OWN client still cannot write:
+    // the checkinInstances/write cell denies assistants outright (a live
+    // assignment must not substitute for the write grant).
+    await expect(
+      createCheckInScheduleRule(
+        session(asstU.id),
+        {
+          workspaceId: w.id,
+          clientProfileId: cp2.id,
+          formId: form.formId,
+          ...ruleParams(),
+        },
+        deps(),
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+    await expect(
+      generateCheckInScheduleRuleInstances(
+        session(asstU.id),
+        { workspaceId: w.id, clientProfileId: cp2.id, ruleId: created.ruleId },
+        deps(),
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+    await expect(
+      setCheckInScheduleRuleStatus(
+        session(asstU.id),
+        {
+          workspaceId: w.id,
+          clientProfileId: cp2.id,
+          ruleId: created.ruleId,
+          action: "pause",
+        },
+        deps(),
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
   });
 
   it("unassigned coach and revoked-assignment coach are denied", async () => {
@@ -423,6 +457,16 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     expect(rows.every((r) => r.scheduledByMemberId === coachMember.id)).toBe(
       true,
     );
+    // Every created instance carries a structural CREATE audit (audits last,
+    // atomic with the batch).
+    const audits = await prisma.auditEvent.count({
+      where: {
+        action: "CREATE",
+        resourceType: "checkin_instance",
+        subjectClientProfileId: cp.id,
+      },
+    });
+    expect(audits).toBe(first.created);
     expect(rows.every((r) => r.formVersion.versionSeq === 1)).toBe(true);
     // No past instants; occurrenceDate matches the due date in UTC.
     const now = Date.now();
@@ -449,6 +493,60 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
       where: { originRuleId: created.ruleId },
     });
     expect(after).toBe(first.created);
+  });
+
+  it("a due instant already past today is excluded — never backfilled", async () => {
+    const { w, ownerU, cp, form } = await setup();
+    const today = new Date().toISOString().slice(0, 10);
+    const weekday = [
+      "SUNDAY",
+      "MONDAY",
+      "TUESDAY",
+      "WEDNESDAY",
+      "THURSDAY",
+      "FRIDAY",
+      "SATURDAY",
+    ][new Date(`${today}T00:00:00Z`).getUTCDay()] as "MONDAY";
+    // Rule says TODAY's weekday at 00:30 UTC; the clock dep sits at 12:00,
+    // so today's occurrence is already past and must be excluded.
+    const fixedNow = new Date(`${today}T12:00:00Z`);
+    const depsAt = () => ({
+      db: prisma as never,
+      registry: DEV_REGISTRY,
+      now: () => fixedNow,
+    });
+    const created = await createCheckInScheduleRule(
+      session(ownerU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        formId: form.formId,
+        weekday,
+        localTimeMinutes: 30,
+        timezone: ZONE,
+        startDate: today,
+        endDate: null,
+      },
+      depsAt(),
+    );
+    const gen = await generateCheckInScheduleRuleInstances(
+      session(ownerU.id),
+      { workspaceId: w.id, clientProfileId: cp.id, ruleId: created.ruleId },
+      depsAt(),
+    );
+    if (gen.status !== "generated") throw new Error("expected generated");
+    const rows = await prisma.checkInInstance.findMany({
+      where: { originRuleId: created.ruleId },
+      select: { dueAt: true },
+    });
+    expect(rows).toHaveLength(gen.created);
+    expect(rows.every((r) => r.dueAt.getTime() >= fixedNow.getTime())).toBe(
+      true,
+    );
+    // The past slot is not retro-created: today's date never appears.
+    expect(
+      rows.every((r) => r.dueAt.toISOString().slice(0, 10) !== today),
+    ).toBe(true);
   });
 
   it("manual-instance collision at a due instant is skipped-and-reported, never absorbed", async () => {
