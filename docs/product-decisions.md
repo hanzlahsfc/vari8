@@ -1513,3 +1513,51 @@ role alone). No automatic privilege elevation: an unassigned or revoked
 owner can still read at workspace scope but cannot write reviews. This
 decision authorizes no feedback slice, staff queue, retention default,
 or production enablement.
+
+## CHECK-IN-FEEDBACK-I1 — owner approval (2026-10-15, implementation prompt)
+
+**Decision #112 (APPROVED — synthetic/testing boundaries only):** bounded
+staff-authored plain-text feedback on Check-In submissions, under the
+independently reviewed CHECK-IN-FEEDBACK-P3 contract (`0427fcb1…`, 137
+lines; P3-R1 `6eece636…`, 96 lines) plus the reviewer's bounded
+refinements. Approved scope: feedback text attaches to an exact
+CheckInSubmission; a `CheckInReview` acknowledgement must exist first
+(#96 unchanged — feedback never alters the terminal ack); ANY currently
+assigned coach may send (need not be the reviewer); an explicitly
+assigned owner sends under the merged #111 assigned-write rules; owners
+read workspace-wide, authorized assistants read assigned, clients read
+only their own authorized feedback; sent text is immutable — corrections
+are dated follow-ups; the client surface says "Response sent" derived
+solely from persisted feedback rows — never a read/seen state; SUPPORT
+and PLATFORM_ADMIN are denied including the dual-role membership path
+(deny-set entry). Authorization: new `checkinFeedback` resource —
+owner `workspace`/`assigned`, coach `assigned`/`assigned`, assistant
+`assigned`/`denied`, client `own`/`denied`, SUPPORT/PLATFORM_ADMIN
+denied; audit resource `checkin_feedback` (IDs + structural markers
+only, never body text; one CREATE per committed send; replays/denials/
+rollbacks write none). Idempotency: `clientRequestId` client nonce —
+explicitly a NEW pattern (existing anchors are natural keys) — unique
+per `(submissionId, clientRequestId)`; identical replay →
+`already_sent` after a consent recheck; any author/body mismatch →
+`idempotency_conflict`; P2002 honored only on the idempotency
+constraint (`meta.target` scoped). Ordering `sentAt ASC, id ASC`
+everywhere; keyset cursor `sentAt > c OR (sentAt = c AND id > c)`;
+50-page, truthful `hasMore`. Owner answers recorded prospectively: (1)
+feedback follows the EXISTING Check-In consent requirements — if
+consent blocks answers it blocks feedback; no staff-authorship
+exemption; replay after withdrawal fails `consent_missing`, never
+`already_sent`; (2) author departure does NOT erase sent feedback —
+rows persist with provenance, readable only by currently authorized
+readers subject to consent and future retention/deletion policy;
+persistence ≠ deletion-immune and no former participant is promised
+retained access. Client-side retry identity: nonce in React state +
+nonce-only sessionStorage marker (never feedback text), bounded
+authorized reconciliation read on remount/reload; the document-exit/
+browser-restart duplicate-visible edge is honestly disclosed —
+exactly-once is per nonce, not across total client-state loss. NOT
+approved: video/attachments/messaging/plan-change links/read receipts/
+staff overview; retention duration, interim default, withdrawal,
+erasure, or legal-hold policy (#102 params remain open); production
+consent wording (#81); production/real-client enablement — this slice
+is synthetic-only and production remains fail-closed under #38/#39/
+D-10/D-09.

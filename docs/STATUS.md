@@ -5,6 +5,89 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## CHECK-IN-FEEDBACK-I1 — bounded staff text feedback (R1 PASS; R2 cleanup pushed)
+
+- **R2 cleanup** (PROMPT 176, closing the four P3 review findings —
+  narrow repair, no redesign):
+  - P3-1 formatting: `docs/STATUS.md` prettier continuation indent fixed;
+    `npm run format:check` clean. Correction to the R1 review's claim —
+    `.github/workflows/ci.yml` DOES run `format:check` (line 42), so a
+    PR would have failed CI; the `npm run verify` script does not
+    include it (verified against the actual workflow file).
+  - P3-2 explicit staff-detail authorization: `readCheckInSubmissionDetail`
+    now issues an explicit `checkinFeedback`/read `authorize` inside the
+    transaction before querying the thread. Denial withholds the thread
+    (`feedback: null` — never an empty array that would present as "no
+    responses yet") while the authorized base detail (fields, review
+    provenance, `canSend`) survives. Defense-in-depth resource
+    separation, not a repaired leak — the two read cells coincide today.
+    Isolation test: spy denies only `checkinFeedback` while
+    `checkinsCoachReviews` stays real → detail returns `feedback: null`.
+    Barrier mutation (remove the explicit authorize) BITES: the denied
+    read leaks the thread.
+  - P3-3 recovery copy: `not_sent` now states no sent response was
+    found, the text wasn't saved locally and must be re-entered, and the
+    resend keeps the same attempt identity (can't silently duplicate).
+    Nonce/idempotency protocol unchanged. Behavioral E2E asserts the
+    truthful note, an empty composer, and that the resend carries the
+    SAME nonce.
+  - P3-4 evidence corrections (recorded prospectively here): the R1
+    reviewer independently verified **769/769** integration tests; the
+    I1 builder report claimed 768/768 — the verified count stands. And
+    **14 of 16** independently reproduced mutations bit; the two
+    no-bites were redundant/index-masked (explicit own-scope authorize
+    redundant under the enclosing own-scope gate; `id ASC` ORDER-BY
+    removal masked by the backing `(submission_id, sent_at, id)` index —
+    the tie _predicate_ mutation did bite), not hidden failures.
+- Independently reviewed contract: CHECK-IN-FEEDBACK-P3 (`0427fcb1…`,
+  137 lines) + P3-R1 PASS (`6eece636…`, 96 lines); decision #112
+  recorded (synthetic/testing boundaries only — production fail-closed).
+  Implementation R1 review (`c5301172…`, 143 lines): technical PASS,
+  four P3s, all closed above.
+- Base verified `9ee84063` (`origin/main`); branch
+  `feature/checkin-feedback-i1`; `appearance-r2` untouched.
+- RED-A `87d2dcd` (unit: matrix cells, deny-set behavior, audit
+  resource, boundary exports — 11 intended failures).
+- Schema+migration `2424dbb`: `checkin_feedback` table, composite
+  coherence FK `(submission_id, workspace_id, client_profile_id)` →
+  `checkin_submission`, unique `(submission_id, client_request_id)`,
+  indexes `(submission_id, sent_at, id)` + `(workspace_id,
+client_profile_id)`, all FKs RESTRICT, no `updatedAt`. Hand-curated
+  migration (auto-diff tried to drop unrelated custom FKs). Fresh +
+  upgrade deploys verified on disposable PG; `migrate status` clean,
+  29 migrations.
+- RED-B `8011f73` (integration, true RED vs schema-present-no-service).
+- GREEN `8c31047`: `checkinFeedback` resource + matrix row + deny-set
+  entry; `checkin_feedback` audit resource; `sendCheckInFeedback` /
+  `listCheckInFeedback` / `resolveCheckInFeedbackSend` in
+  `lib/checkin/instances.ts` (serializable, review-exists prerequisite,
+  assignment lock, consent before insert AND on replay, scoped-P2002
+  `meta.target` matcher, audit-last); staff detail `feedback`/`canSend`;
+  own-detail feedback inside the consent gate; boundary safe errors
+  `review_required`/`idempotency_conflict`; staff actions +
+  `CheckInFeedbackThread` composer (nonce in state + nonce-only
+  sessionStorage marker keyed userId+workspaceId+submissionId);
+  client "Response sent" from persisted rows.
+- Gates on `dbcc9da` (R1 tree): `git diff --check` clean; eslint 0
+  errors (3 pre-existing warnings elsewhere); `tsc --noEmit` exit 0;
+  full unit 1220/1220; integration on disposable `cfi1_int` —
+  independently verified **769/769** (the prior builder report's
+  768/768 was an undercount, corrected in the R2 entry above);
+  `next build` clean; focused E2E `checkin-feedback.spec.ts` 7/7;
+  **full E2E suite 391 passed / 0 failed / 12 skipped**.
+- Mutation sweep (16 reproduced): 14 bit; two documented no-bites —
+  client-path own-scope authorize removal is redundant under the
+  enclosing own-scope gate (deliberate defense-in-depth per the
+  contract), and `id ASC` ORDER-BY removal is masked by the backing
+  index (the keyset tie _predicate_ mutation did bite). Two fixtures
+  strengthened so mutations became observable (dual-role PA now holds
+  an ACTIVE assignment; unreviewed-submission `canSend` asserted);
+  all restored byte-identically.
+- E2E fixes during gate runs: row selection now keys on the hidden
+  `submissionId` input (`.last()` was racy across fixtures); fixture
+  cleanup also removes the spec's `checkin_submission`/`checkin_feedback`
+  audit rows (a sibling spec asserts a zero global audit count).
+
 ## SOLO-COACH-I1 — owner-as-coach assignments + assigned-owner review (in progress)
 
 - Independently reviewed contract: SOLO-COACH-P2 (`2b0d7eca…`, 125

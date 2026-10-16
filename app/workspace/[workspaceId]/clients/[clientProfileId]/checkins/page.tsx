@@ -188,6 +188,7 @@ export default async function StaffClientCheckInsPage({
               workspaceId={workspaceId}
               clientProfileId={clientProfileId}
               items={submissions.value.items}
+              userId={userId}
             />
           ) : null}
         </>

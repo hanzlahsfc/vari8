@@ -291,6 +291,18 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
     SUPPORT: ["denied", "denied"],
     CLIENT: ["denied", "denied"],
   },
+  // CHECK-IN-FEEDBACK-I1 (#101 direction + owner answers): owner reads
+  // workspace-wide but writes only where an ACTIVE assignment exists;
+  // coach assigned read+send; assistant assigned read-only; client own
+  // read only; SUPPORT + PLATFORM_ADMIN denied (dual-role via deny-set).
+  checkinFeedback: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "assigned"],
+    COACH: ["assigned", "assigned"],
+    ASSISTANT_COACH: ["assigned", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "denied"],
+  },
 };
 
 const PRINCIPAL_ROLES: PrincipalRole[] = [
@@ -304,7 +316,7 @@ const PRINCIPAL_ROLES: PrincipalRole[] = [
 
 describe("RBAC matrix", () => {
   it("covers every resource × principal role × action", () => {
-    expect(RESOURCES).toHaveLength(31);
+    expect(RESOURCES).toHaveLength(32);
     for (const resource of RESOURCES) {
       for (const role of PRINCIPAL_ROLES) {
         const cell = RBAC_MATRIX[resource]?.[role];

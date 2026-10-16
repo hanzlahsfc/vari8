@@ -186,6 +186,7 @@ model Workspace {
   checkInSubmissions            CheckInSubmission[]
   checkInSubmissionAnswers      CheckInSubmissionAnswer[]
   checkInReviews                CheckInReview[]
+  checkInFeedback               CheckInFeedback[]
   onboardingSubmissionReviews   OnboardingSubmissionReview[]
   clientDashboardLayouts        ClientDashboardLayout[]
   clientTasks                   ClientTask[]
@@ -232,6 +233,7 @@ model WorkspaceMember {
   checkInInstancesCancelled           CheckInInstance[]            @relation("CheckInInstanceCanceller")
   checkInSubmissions                  CheckInSubmission[]          @relation("CheckInSubmissionSubmittedByMember")
   checkInReviews                      CheckInReview[]              @relation("CheckInReviewReviewer")
+  checkInFeedbackAuthored             CheckInFeedback[]            @relation("CheckInFeedbackAuthor")
   onboardingSubmissionReviewsReviewed OnboardingSubmissionReview[] @relation("OnboardingReviewReviewer")
   dashboardLayoutsEdited              ClientDashboardLayout[]      @relation("DashboardLayoutEditor")
   assignedClientTasks                 ClientTask[]                 @relation("ClientTaskAssigner")
@@ -288,6 +290,7 @@ model ClientProfile {
   checkInInstances            CheckInInstance[]            @relation("CheckInInstanceClient")
   checkInSubmissions          CheckInSubmission[]          @relation("CheckInSubmissionClient")
   checkInReviews              CheckInReview[]              @relation("CheckInReviewClient")
+  checkInFeedback             CheckInFeedback[]            @relation("CheckInFeedbackClient")
   checkInAnswers              CheckInSubmissionAnswer[]    @relation("CheckInAnswerClient")
   onboardingSubmissionReviews OnboardingSubmissionReview[] @relation("OnboardingReviewClient")
   dashboardLayouts            ClientDashboardLayout[]      @relation("ClientDashboardLayoutClient")
@@ -1310,6 +1313,7 @@ model CheckInSubmission {
   submittedByMember WorkspaceMember           @relation("CheckInSubmissionSubmittedByMember", fields: [submittedByMemberId], references: [id], onDelete: Restrict)
   answers           CheckInSubmissionAnswer[]
   reviews           CheckInReview[]
+  feedback          CheckInFeedback[]
 
   // At-most-one durable submission per instance — idempotency anchor and
   // final concurrency authority (P2002 → bounded full-protocol re-entry).
@@ -1369,6 +1373,39 @@ model CheckInReview {
   @@unique([submissionId])
   @@index([workspaceId, clientProfileId])
   @@map("checkin_review")
+}
+
+// CHECK-IN-FEEDBACK-I1 (decision pending — reviewed P3 contract; #101
+// direction, owner answers: same consent gate as answers; author
+// departure persists rows for currently authorized readers only).
+// Append-only staff-authored plain-text feedback anchored to an exact
+// submission; a CheckInReview must exist first (service-enforced).
+// Multiple rows per submission = dated follow-ups. No updatedAt —
+// immutable once committed; no read/seen tracking anywhere.
+model CheckInFeedback {
+  id                 String   @id @default(cuid())
+  workspaceId        String   @map("workspace_id")
+  clientProfileId    String   @map("client_profile_id")
+  submissionId       String   @map("submission_id")
+  authoredByMemberId String   @map("authored_by_member_id")
+  body               String
+  clientRequestId    String   @map("client_request_id")
+  sentAt             DateTime @default(now()) @map("sent_at") @db.Timestamptz(6)
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  workspace    Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile    @relation("CheckInFeedbackClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  submission   CheckInSubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  authoredBy   WorkspaceMember   @relation("CheckInFeedbackAuthor", fields: [authoredByMemberId], references: [id], onDelete: Restrict)
+
+  // Idempotency anchor — at most one durable row per (submission,
+  // client-generated nonce); per-submission scoping means the same
+  // nonce on another submission is a separate key by design.
+  @@unique([submissionId, clientRequestId])
+  // ASC keyset pagination: (sentAt, id) deterministic order.
+  @@index([submissionId, sentAt, id])
+  @@index([workspaceId, clientProfileId])
+  @@map("checkin_feedback")
 }
 
 model ClientDashboardLayout {
