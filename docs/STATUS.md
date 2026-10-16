@@ -27,10 +27,21 @@ are complete; product direction is now the configurable coaching system in
   permission matrix + dual-role PA denial + end-vs-submit + rollback;
   focused E2E 3/3; typecheck/lint/build green; migrations verified
   fresh + base→candidate on disposable DBs (rec_i1_fresh/_upgrade/_it).
-- Mutation sweep: 13 of 16 bit immediately; 3 no-bites closed with new
+- Mutation sweep: 12 of 16 bit immediately; 3 no-bites closed with new
   coverage (assigned-assistant write, per-instance audit assertion,
   past-instant via `now` dep); M16 alternate advisory namespace is a
   recorded honest no-bite (unobservable via serialized outcomes).
+- CHECK-IN-RECURRENCE-I1-R1 (DeepSeek V4.1 Flash, `5cfa2119…`,
+  149 lines): **PASS** on head `9898c0a` — all fresh gates green,
+  timezone converter independently probed correct (Troll 03:00 via
+  crossing detection), M16 verified genuine outcome-equivalence (End
+  vs submit preserved by the instance row lock, 15/15 decoupled
+  stress). P3s noted: compile-time (not behavioral) RED; mutation
+  count miscount (corrected above); past-due occurrences silently
+  excluded from outcome fields; generation writes create+audit
+  per-instance rather than all-creates-then-all-audits. Review grants
+  no merge/deploy authorization; technically ready for PR under the
+  normal process.
 
 ## CHECK-IN-OVERVIEW-I1 — staff awaiting-review queue + deep link (in progress)
 

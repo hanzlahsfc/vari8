@@ -70,3 +70,15 @@ truthful batch outcomes; horizon `T..T+56` inclusive (≤9 occurrences).
   unobservable through serialized-outcome tests (the advisory is a
   transaction-internal serialization mechanism; outcome-equivalent).
 - 2026-10-16: decision #114 appended to `docs/product-decisions.md`.
+- 2026-10-16: pushed `feature/checkin-recurrence-i1` @ `9898c0a`
+  (local == remote, clean). Schema-inventory allowlists updated for
+  `checkin_schedule_rule`; full integration suite re-run green 806/806;
+  full E2E 408/0/12-skipped. `prisma format` whitespace drift in
+  `db/schema.prisma` discarded (unrelated reflow).
+- 2026-10-16: CHECK-IN-RECURRENCE-I1-R1 independent review **PASS**
+  (`5cfa2119…`, 149 lines, DeepSeek V4.1 Flash) — gates re-run green
+  on the exact head; converter probed directly; M16 confirmed genuine
+  (row-lock invariant). P3s: compile-time RED, mutation miscount
+  (corrected: 12 immediate + 3 coverage-strengthened + 1 no-bite),
+  past-due exclusion unreported in outcome fields, per-instance
+  create+audit ordering. No merge/deploy authorization granted.
