@@ -27,16 +27,7 @@ describe("CHECK-IN-RECURRENCE-I1 — field validators", () => {
       "SUNDAY",
     ])
       expect(parseCheckInScheduleWeekday(w)).toBe(w);
-    for (const w of [
-      "monday",
-      "Friday",
-      "WEEKDAY",
-      "",
-      3,
-      null,
-      undefined,
-      {},
-    ])
+    for (const w of ["monday", "Friday", "WEEKDAY", "", 3, null, undefined, {}])
       expect(parseCheckInScheduleWeekday(w)).toBeNull();
   });
 
