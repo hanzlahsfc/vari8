@@ -3236,11 +3236,8 @@ export function deriveCheckInQueueCanReview(
   rowHasActiveAssignment: boolean,
 ): boolean {
   return (
-    resolveScope(
-      "checkinsCoachReviews",
-      "write",
-      role as PrincipalRole,
-    ) === "assigned" && rowHasActiveAssignment
+    resolveScope("checkinsCoachReviews", "write", role as PrincipalRole) ===
+      "assigned" && rowHasActiveAssignment
   );
 }
 
@@ -3384,24 +3381,21 @@ export async function listCheckInReviewQueue(
       rows.length > CHECKIN_REVIEW_QUEUE_PAGE_SIZE && last
         ? `${last.submittedAt.toISOString()}|${last.id}`
         : null;
-    const items = page.map(
-      (row): StaffCheckInReviewQueueItem => ({
-        submissionId: row.id,
-        instanceId: row.instanceId,
-        clientProfileId: row.clientProfileId,
-        clientName: row.clientProfile.name,
-        formName: row.form.name,
-        versionSeq: row.formVersion.versionSeq,
-        dueAt: row.instance.dueAt.toISOString(),
-        submittedAt: row.submittedAt.toISOString(),
-        late:
-          row.submittedAt.getTime() > row.instance.dueAt.getTime(),
-        canReview: deriveCheckInQueueCanReview(
-          member.role,
-          row.clientProfile.assignments.length > 0,
-        ),
-      }),
-    );
+    const items = page.map((row): StaffCheckInReviewQueueItem => ({
+      submissionId: row.id,
+      instanceId: row.instanceId,
+      clientProfileId: row.clientProfileId,
+      clientName: row.clientProfile.name,
+      formName: row.form.name,
+      versionSeq: row.formVersion.versionSeq,
+      dueAt: row.instance.dueAt.toISOString(),
+      submittedAt: row.submittedAt.toISOString(),
+      late: row.submittedAt.getTime() > row.instance.dueAt.getTime(),
+      canReview: deriveCheckInQueueCanReview(
+        member.role,
+        row.clientProfile.assignments.length > 0,
+      ),
+    }));
     return { items, nextCursor };
   });
 }

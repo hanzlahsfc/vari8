@@ -209,10 +209,7 @@ export function CheckInSubmissionReview({
         data-testid="checkin-detail-region"
       >
         {showingStaleDetail ? (
-          <p
-            className="tracker-list__sub"
-            data-testid="checkin-detail-loading"
-          >
+          <p className="tracker-list__sub" data-testid="checkin-detail-loading">
             Loading Check-In…
           </p>
         ) : null}

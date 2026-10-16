@@ -146,23 +146,29 @@ test.beforeAll(async () => {
   });
   wsBId = wsB.id;
 
-  const [ownerMember, wsBOwnerMember, coach, coachMember, assistantMember, clientUser] =
-    await Promise.all([
-      prisma.workspaceMember.findFirstOrThrow({
-        where: { workspaceId: wsId, user: { email: E2E.owner } },
-      }),
-      prisma.workspaceMember.findFirstOrThrow({
-        where: { workspaceId: wsBId, user: { email: E2E.owner } },
-      }),
-      prisma.user.findUniqueOrThrow({ where: { email: E2E.coach } }),
-      prisma.workspaceMember.findFirstOrThrow({
-        where: { workspaceId: wsId, user: { email: E2E.coach } },
-      }),
-      prisma.workspaceMember.findFirstOrThrow({
-        where: { workspaceId: wsId, user: { email: E2E.assistant } },
-      }),
-      prisma.user.findUniqueOrThrow({ where: { email: E2E.client } }),
-    ]);
+  const [
+    ownerMember,
+    wsBOwnerMember,
+    coach,
+    coachMember,
+    assistantMember,
+    clientUser,
+  ] = await Promise.all([
+    prisma.workspaceMember.findFirstOrThrow({
+      where: { workspaceId: wsId, user: { email: E2E.owner } },
+    }),
+    prisma.workspaceMember.findFirstOrThrow({
+      where: { workspaceId: wsBId, user: { email: E2E.owner } },
+    }),
+    prisma.user.findUniqueOrThrow({ where: { email: E2E.coach } }),
+    prisma.workspaceMember.findFirstOrThrow({
+      where: { workspaceId: wsId, user: { email: E2E.coach } },
+    }),
+    prisma.workspaceMember.findFirstOrThrow({
+      where: { workspaceId: wsId, user: { email: E2E.assistant } },
+    }),
+    prisma.user.findUniqueOrThrow({ where: { email: E2E.client } }),
+  ]);
   ownerMemberId = ownerMember.id;
   wsBOwnerMemberId = wsBOwnerMember.id;
   coachUserId = coach.id;
@@ -321,11 +327,7 @@ test.afterAll(async () => {
     .deleteMany({
       where: {
         id: {
-          in: [
-            VERSION_A_ID,
-            VERSION_B_ID,
-            `${VERSION_A_ID}_b`,
-          ],
+          in: [VERSION_A_ID, VERSION_B_ID, `${VERSION_A_ID}_b`],
         },
       },
     })
@@ -338,7 +340,8 @@ test.afterAll(async () => {
   await prisma?.$disconnect();
 });
 
-const overviewUrl = (w = wsId) => `${BASE}/workspace/${w}/checkins/review-queue`;
+const overviewUrl = (w = wsId) =>
+  `${BASE}/workspace/${w}/checkins/review-queue`;
 const clientCheckinsUrl = (submission?: string) =>
   `${BASE}/workspace/${wsId}/clients/${profileId}/checkins${
     submission !== undefined ? `?submission=${submission}` : ""
@@ -420,9 +423,7 @@ test("owner sees awaiting rows; clicking a row opens THAT exact submission among
 
     // Click the B row — opens exactly B (form title distinguishes).
     await list.getByText("CIO1 Queue Form B").click();
-    await expect(page).toHaveURL(
-      new RegExp(`submission=${b.submission.id}`),
-    );
+    await expect(page).toHaveURL(new RegExp(`submission=${b.submission.id}`));
     const detail = page.getByTestId("checkin-detail");
     await expect(detail).toBeVisible();
     await expect(detail.getByText("CIO1 Queue Form B")).toBeVisible();
@@ -527,9 +528,7 @@ test("repeated/malformed/foreign submission params fail closed without a detail 
     await expect(page.getByTestId("checkin-detail")).toHaveCount(0);
     // Zero READ audits produced by any of the rejected params.
     expect((await readAudits(wsId, a.submission.id)).length).toBe(0);
-    expect(
-      (await readAudits(wsBId, foreign.submission.id)).length,
-    ).toBe(0);
+    expect((await readAudits(wsBId, foreign.submission.id)).length).toBe(0);
   } finally {
     await removeFixtures();
   }
@@ -554,9 +553,7 @@ test("assistant sees the row read-only; deep link opens detail with no mark cont
     await expect(list.getByText("CIO1 Queue Form A")).toBeVisible();
     await page.goto(clientCheckinsUrl(a.submission.id));
     await expect(page.getByTestId("checkin-detail")).toBeVisible();
-    await expect(
-      page.getByTestId("checkin-mark-reviewed"),
-    ).toHaveCount(0);
+    await expect(page.getByTestId("checkin-mark-reviewed")).toHaveCount(0);
   } finally {
     await removeFixtures();
   }
@@ -702,9 +699,7 @@ test("same-page A→B param change resolves to B even while A is delayed", async
     // same mounted page via the native History API.
     await expect
       .poll(async () =>
-        page
-          .getByTestId("checkin-detail-region")
-          .getAttribute("aria-busy"),
+        page.getByTestId("checkin-detail-region").getAttribute("aria-busy"),
       )
       .toBe("true");
     await page.evaluate(
@@ -792,9 +787,7 @@ test("isolated workspace: empty state is truthful; 51 rows paginate via Load ear
     await expect(list.getByText("CIO1 WS-B Form")).toHaveCount(50);
     await page.getByTestId("review-queue-load-more").click();
     await expect(list.getByText("CIO1 WS-B Form")).toHaveCount(51);
-    await expect(
-      page.getByTestId("review-queue-load-more"),
-    ).toHaveCount(0);
+    await expect(page.getByTestId("review-queue-load-more")).toHaveCount(0);
   } finally {
     await removeFixtures();
   }

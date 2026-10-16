@@ -41,11 +41,7 @@ const DEV_REGISTRY = createStaticConsentPolicy({
 });
 
 type Role =
-  | "WORKSPACE_OWNER"
-  | "COACH"
-  | "ASSISTANT_COACH"
-  | "SUPPORT"
-  | "CLIENT";
+  "WORKSPACE_OWNER" | "COACH" | "ASSISTANT_COACH" | "SUPPORT" | "CLIENT";
 
 describe.skipIf(!enabled)("CHECK-IN-OVERVIEW-I1 review queue (real PG)", () => {
   let prisma: PrismaClient;
@@ -344,7 +340,11 @@ describe.skipIf(!enabled)("CHECK-IN-OVERVIEW-I1 review queue (real PG)", () => {
       dueAt: new Date("2030-06-02T09:00:00.000Z"),
     });
     const assistant = await user();
-    const assistantMember = await member(s.w.id, assistant.id, "ASSISTANT_COACH");
+    const assistantMember = await member(
+      s.w.id,
+      assistant.id,
+      "ASSISTANT_COACH",
+    );
     await assignment(s.w.id, s.cp.id, assistantMember.id, "COACH");
     // Owner assigned ONLY to cp (Solo-Coach #111 write path).
     await assignment(s.w.id, s.cp.id, s.ownerMember.id, "PRIMARY");
@@ -370,12 +370,18 @@ describe.skipIf(!enabled)("CHECK-IN-OVERVIEW-I1 review queue (real PG)", () => {
   // ── Denials fail closed — never an empty page ────────────────────────
 
   it.each([
-    ["CLIENT member", async (s: Awaited<ReturnType<typeof setup>>) => s.clientUser.id],
-    ["SUPPORT member", async (s: Awaited<ReturnType<typeof setup>>) => {
-      const u = await user();
-      await member(s.w.id, u.id, "SUPPORT");
-      return u.id;
-    }],
+    [
+      "CLIENT member",
+      async (s: Awaited<ReturnType<typeof setup>>) => s.clientUser.id,
+    ],
+    [
+      "SUPPORT member",
+      async (s: Awaited<ReturnType<typeof setup>>) => {
+        const u = await user();
+        await member(s.w.id, u.id, "SUPPORT");
+        return u.id;
+      },
+    ],
     ["non-member", async () => (await user()).id],
   ])("%s is denied, not shown an empty queue", async (_label, getUserId) => {
     const s = await setup();
