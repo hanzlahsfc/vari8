@@ -206,13 +206,14 @@ test("owner creates a weekly rule, explicitly generates, sees truthful coverage,
   await section.getByLabel(/Check-In form/i).selectOption({ index: 0 });
   await section.getByLabel(/Day of week/i).selectOption("MONDAY");
   await section.getByLabel(/Local time/i).fill("09:30");
-  await section.getByLabel(/timezone/i).fill("UTC");
-  await section.getByLabel(/confirm/i).check();
+  await section.getByTestId("checkin-rule-tz").fill("UTC");
+  await section.getByTestId("checkin-rule-tz").press("Tab");
+  await section
+    .getByRole("checkbox", { name: /confirm/i })
+    .check();
   const today = new Date().toISOString().slice(0, 10);
   await section.getByLabel(/Start date/i).fill(today);
-  await section
-    .getByRole("button", { name: /create.*rule/i })
-    .click();
+  await section.getByRole("button", { name: /create.*rule/i }).click();
   await expect(section.getByTestId("rule-created")).toBeVisible();
 
   // Explicit generation — a deliberate staff action.
@@ -231,9 +232,7 @@ test("owner creates a weekly rule, explicitly generates, sees truthful coverage,
   });
   expect(generated.length).toBeGreaterThan(0);
   expect(generated.length).toBeLessThanOrEqual(9);
-  await expect(
-    page.getByTestId("staff-checkins-list"),
-  ).toBeVisible();
+  await expect(page.getByTestId("staff-checkins-list")).toBeVisible();
 
   // Replay — truthful no-op, not a false "created".
   await section
@@ -254,10 +253,7 @@ test("owner creates a weekly rule, explicitly generates, sees truthful coverage,
     .getByRole("button", { name: /^resume$/i })
     .first()
     .click();
-  await section
-    .getByRole("button", { name: /^end$/i })
-    .first()
-    .click();
+  await section.getByRole("button", { name: /^end$/i }).first().click();
   await expect(page.getByTestId("rule-ended")).toBeVisible();
   const remaining = await prisma.checkInInstance.findMany({
     where: {
