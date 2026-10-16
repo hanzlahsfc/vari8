@@ -30,6 +30,7 @@ import {
   listCheckInReviewQueue,
   markCheckInSubmissionReviewed,
 } from "../../lib/checkin/instances";
+import { listStaffCheckInReviewQueue } from "../../lib/checkin/instances-boundary";
 
 const url = process.env.INTEGRATION_DATABASE_URL;
 const enabled = typeof url === "string" && url.length > 0;
@@ -606,11 +607,11 @@ describe.skipIf(!enabled)("CHECK-IN-OVERVIEW-I1 review queue (real PG)", () => {
     await seedSubmission(s);
     // The index must EXIST and must be capable of serving the ordered
     // workspace keyset scan without a Sort node. The planner is
-    // cost-based: on a workspace with a handful of rows it legitimately
-    // prefers bitmap-scan+sort — so the plan check runs with bitmap
-    // scans disabled (SET LOCAL inside a rolled-back transaction), which
-    // is the honest capability assertion, not a claim the planner always
-    // picks this index.
+    // cost-based: on a table this small it legitimately prefers seq/
+    // bitmap-scan + sort — so the plan check runs with seq and bitmap
+    // scans disabled (SET LOCAL inside a transaction), which is the
+    // honest capability assertion, not a claim the planner always picks
+    // this index.
     const idx = await prisma.$queryRawUnsafe<{ indexname: string }[]>(
       `SELECT indexname FROM pg_indexes
        WHERE tablename = 'checkin_submission'
@@ -618,9 +619,8 @@ describe.skipIf(!enabled)("CHECK-IN-OVERVIEW-I1 review queue (real PG)", () => {
     );
     expect(idx).toHaveLength(1);
     const plan = await prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(
-        `SET LOCAL enable_bitmapscan = off`,
-      );
+      await tx.$executeRawUnsafe(`SET LOCAL enable_bitmapscan = off`);
+      await tx.$executeRawUnsafe(`SET LOCAL enable_seqscan = off`);
       return tx.$queryRawUnsafe<{ "QUERY PLAN": string }[]>(
         `EXPLAIN SELECT "id" FROM "checkin_submission" s
          WHERE s."workspace_id" = $1
@@ -636,5 +636,45 @@ describe.skipIf(!enabled)("CHECK-IN-OVERVIEW-I1 review queue (real PG)", () => {
       "checkin_submission_workspace_id_submitted_at_id_idx",
     );
     expect(text).not.toContain("Sort");
+  });
+
+  // ── Boundary mapping — denied must never disguise as an empty queue ──
+
+  it("boundary: denied member gets ok:false code denied, never an empty result", async () => {
+    const s = await setup();
+    await seedSubmission(s);
+    const support = await user();
+    await member(s.w.id, support.id, "SUPPORT");
+    // The boundary runs the shared feature gate first — enable the flag
+    // for this process (NODE_ENV=test is already the trusted runtime).
+    process.env.ENABLE_CHECK_INS = "1";
+    try {
+      const denied = await listStaffCheckInReviewQueue(
+        session(support.id),
+        { workspaceId: s.w.id },
+        deps(),
+      );
+      expect(denied.ok).toBe(false);
+      if (!denied.ok) expect(denied.code).toBe("denied");
+      // CLIENT is read-scope own on this resource but the staff queue
+      // rejects own — still denied at the boundary, not empty.
+      const clientDenied = await listStaffCheckInReviewQueue(
+        session(s.clientUser.id),
+        { workspaceId: s.w.id },
+        deps(),
+      );
+      expect(clientDenied.ok).toBe(false);
+      if (!clientDenied.ok) expect(clientDenied.code).toBe("denied");
+      // Sanity: the authorized owner still reads the populated queue.
+      const ok = await listStaffCheckInReviewQueue(
+        session(s.owner.id),
+        { workspaceId: s.w.id },
+        deps(),
+      );
+      expect(ok.ok).toBe(true);
+      if (ok.ok) expect(ok.value.items).toHaveLength(1);
+    } finally {
+      delete process.env.ENABLE_CHECK_INS;
+    }
   });
 });
