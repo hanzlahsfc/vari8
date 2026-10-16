@@ -1323,6 +1323,10 @@ model CheckInSubmission {
   @@unique([id, workspaceId, clientProfileId], map: "checkin_submission_coherence_key")
   @@index([workspaceId, clientProfileId])
   @@index([workspaceId, id])
+  // CHECK-IN-OVERVIEW-I1: workspace-level awaiting-review queue ordered
+  // submittedAt ASC,id ASC — the reviewed-history tail grows unbounded
+  // without this keyset index.
+  @@index([workspaceId, submittedAt, id])
   @@map("checkin_submission")
 }
 

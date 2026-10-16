@@ -138,6 +138,19 @@ export function WorkspaceNav({
       roles: ["WORKSPACE_OWNER", "COACH"],
       enabled: isCheckInsEnabled(),
     },
+    // CHECK-IN-OVERVIEW-I1: staff "awaiting review" queue — same flag
+    // gate, pinned to the three read-scope roles (owner workspace-read;
+    // coach/assistant assigned-read; the deny-set covers CLIENT/SUPPORT
+    // and dual-role PLATFORM_ADMIN). Cosmetic only — the route
+    // re-authorizes server-side.
+    {
+      href: `/workspace/${workspaceId}/checkins/review-queue`,
+      label: "Check-In Reviews",
+      resource: "checkinsCoachReviews",
+      action: "read",
+      roles: ["WORKSPACE_OWNER", "COACH", "ASSISTANT_COACH"],
+      enabled: isCheckInsEnabled(),
+    },
     {
       href: `/workspace/${workspaceId}/admin`,
       label: "Admin",

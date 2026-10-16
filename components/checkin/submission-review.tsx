@@ -1,6 +1,12 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import {
+  startTransition,
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import type { StaffCheckInSubmissionItem } from "@/lib/checkin/instances";
 import { CheckInFeedbackThread } from "@/components/checkin/feedback-thread";
@@ -29,6 +35,8 @@ export function CheckInSubmissionReview({
   clientProfileId,
   items,
   userId,
+  initialSubmissionId = null,
+  deepLinkInvalid = false,
 }: {
   workspaceId: string;
   clientProfileId: string;
@@ -36,6 +44,13 @@ export function CheckInSubmissionReview({
   /** Authenticated user's ID — scopes the composer nonce marker so a
    * stale draft can never bind to a different account. */
   userId: string;
+  /** CHECK-IN-OVERVIEW-I1: validated `?submission=<id>` value. When set,
+   * the SAME useActionState detail action a row click uses is dispatched
+   * for this exact submission — one committed load, one READ audit. */
+  initialSubmissionId?: string | null;
+  /** Repeated/malformed `?submission` — render an invalid-link note and
+   * fire no detail action (zero POSTs, zero audits). */
+  deepLinkInvalid?: boolean;
 }) {
   const [detailState, detailAction, detailPending] = useActionState<
     StaffCheckInDetailState,
@@ -52,6 +67,41 @@ export function CheckInSubmissionReview({
   // P-025-D6 (#103, C1): the deliberate reveal exposes a manual date
   // form — never DailyEntry data. Passive render queries nothing.
   const [contextOpen, setContextOpen] = useState(false);
+
+  // CHECK-IN-OVERVIEW-I1 — param-keyed deep-link dispatch. The guard is
+  // keyed on the param VALUE (not "once ever"): an A→B param change
+  // dispatches B, and B→A works too. Manual row clicks and the deep
+  // link share ONE dispatch path — useActionState serializes them, so
+  // the last committed load wins and a delayed earlier response can
+  // never replace a later target. A real unmount resets the ref — a
+  // remount's re-dispatch is then an honest new committed load with its
+  // own READ audit (per-load accounting, not global exactly-once).
+  const deepLinkDispatchedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (
+      initialSubmissionId === null ||
+      deepLinkDispatchedRef.current === initialSubmissionId
+    )
+      return;
+    deepLinkDispatchedRef.current = initialSubmissionId;
+    const fd = new FormData();
+    fd.set("workspaceId", workspaceId);
+    fd.set("clientProfileId", clientProfileId);
+    fd.set("submissionId", initialSubmissionId);
+    startTransition(() => detailAction(fd));
+  }, [initialSubmissionId, workspaceId, clientProfileId, detailAction]);
+
+  // While a deep-link dispatch is in flight and the loaded detail still
+  // shows a DIFFERENT submission, the region shows a loading note instead
+  // of presenting the prior detail as if it were the new target
+  // (stale-A-as-B barrier). The pending gate keeps manual row clicks
+  // untouched: once the user picks another row, its resolved detail is
+  // legitimate regardless of the stale URL param.
+  const showingStaleDetail =
+    initialSubmissionId !== null &&
+    detailPending &&
+    detailState.status === "ok" &&
+    detailState.submissionId !== initialSubmissionId;
 
   return (
     <section
@@ -121,6 +171,15 @@ export function CheckInSubmissionReview({
         </ul>
       )}
 
+      {deepLinkInvalid && detailState.status !== "error" ? (
+        <p
+          className="daily-errors"
+          role="alert"
+          data-testid="checkin-detail-error"
+        >
+          That Check-In link isn’t valid.
+        </p>
+      ) : null}
       {detailState.status === "error" ? (
         <p
           className="daily-errors"
@@ -149,7 +208,12 @@ export function CheckInSubmissionReview({
         aria-label="Selected submission details"
         data-testid="checkin-detail-region"
       >
-        {detailState.status === "ok" ? (
+        {showingStaleDetail ? (
+          <p className="tracker-list__sub" data-testid="checkin-detail-loading">
+            Loading Check-In…
+          </p>
+        ) : null}
+        {detailState.status === "ok" && !showingStaleDetail ? (
           <div data-testid="checkin-detail">
             <h3 className="assignment-manager__subtitle">
               {detailState.formName} — v{detailState.versionSeq}

@@ -33,6 +33,9 @@ import {
   listCheckInSubmissionsForClient,
   readCheckInSubmissionDetail,
   markCheckInSubmissionReviewed,
+  listCheckInReviewQueue,
+  parseCheckInSubmissionParam,
+  type StaffCheckInReviewQueueItem,
   type StaffCheckInSubmissionItem,
   type StaffCheckInSubmissionDetail,
   type MarkCheckInSubmissionReviewedInput,
@@ -288,6 +291,27 @@ export async function readCheckInReviewTrackerContextFromAction(
   );
 }
 
+/**
+ * CHECK-IN-OVERVIEW-I1 — staff workspace-level awaiting-review queue.
+ * The feature gate applies FIRST (same as every boundary): a disabled
+ * flag maps to `not_available`, never an empty list. Denied scope maps
+ * to `denied`, never "nothing pending."
+ */
+export async function listStaffCheckInReviewQueue(
+  session: Session,
+  input: { workspaceId: string; cursor?: string },
+  deps: CheckInInstanceDeps = {},
+): Promise<
+  CheckInSafeResult<{
+    items: StaffCheckInReviewQueueItem[];
+    nextCursor: string | null;
+  }>
+> {
+  return guard(process.env, () =>
+    listCheckInReviewQueue(session as never, input, deps),
+  );
+}
+
 export async function markCheckInSubmissionReviewedFromAction(
   session: Session,
   input: MarkCheckInSubmissionReviewedInput,
@@ -361,5 +385,5 @@ export async function submitCheckInInstanceFromAction(
   );
 }
 
-export type { CheckInInstanceState };
-export { CheckInInstanceError };
+export type { CheckInInstanceState, StaffCheckInReviewQueueItem };
+export { CheckInInstanceError, parseCheckInSubmissionParam };
