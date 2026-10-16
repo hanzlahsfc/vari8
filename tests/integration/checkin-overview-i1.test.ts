@@ -28,7 +28,6 @@ import {
 import {
   CheckInInstanceError,
   listCheckInReviewQueue,
-  markCheckInSubmissionReviewed,
 } from "../../lib/checkin/instances";
 import { listStaffCheckInReviewQueue } from "../../lib/checkin/instances-boundary";
 
