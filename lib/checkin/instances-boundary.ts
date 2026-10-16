@@ -57,6 +57,20 @@ import {
   type CheckInTrackerContextDeps,
   type CheckInTrackerContextResult,
 } from "./tracker-context";
+import {
+  createCheckInScheduleRule,
+  setCheckInScheduleRuleStatus,
+  generateCheckInScheduleRuleInstances,
+  listCheckInScheduleRules,
+  type CheckInScheduleDeps,
+  type CreateCheckInScheduleRuleInput,
+  type CreateCheckInScheduleRuleResult,
+  type SetCheckInScheduleRuleStatusInput,
+  type SetCheckInScheduleRuleStatusResult,
+  type GenerateCheckInScheduleRuleInput,
+  type GenerateCheckInScheduleRuleResult,
+  type CheckInScheduleRuleItem,
+} from "./schedules";
 
 export type CheckInSafeResult<T> =
   | { ok: true; value: T }
@@ -382,6 +396,54 @@ export async function submitCheckInInstanceFromAction(
 ): Promise<CheckInSafeResult<SubmitCheckInInstanceResult>> {
   return guard(process.env, () =>
     submitCheckInInstance(session as never, input, deps),
+  );
+}
+
+/**
+ * CHECK-IN-RECURRENCE-I1 (decision #114) — bounded weekly schedule
+ * rules. Every wrapper is a staff ACTION (explicit writes only); the
+ * rules list is a mutation-free read under `checkinInstances/read`.
+ * Lifecycle results (`paused`/`ended`/`generated`) pass through
+ * truthfully; closed errors map to the same vocabulary as the rest of
+ * the boundary.
+ */
+export async function createCheckInScheduleRuleFromAction(
+  session: Session,
+  input: CreateCheckInScheduleRuleInput,
+  deps: CheckInScheduleDeps = {},
+): Promise<CheckInSafeResult<CreateCheckInScheduleRuleResult>> {
+  return guard(process.env, () =>
+    createCheckInScheduleRule(session as never, input, deps),
+  );
+}
+
+export async function setCheckInScheduleRuleStatusFromAction(
+  session: Session,
+  input: SetCheckInScheduleRuleStatusInput,
+  deps: CheckInScheduleDeps = {},
+): Promise<CheckInSafeResult<SetCheckInScheduleRuleStatusResult>> {
+  return guard(process.env, () =>
+    setCheckInScheduleRuleStatus(session as never, input, deps),
+  );
+}
+
+export async function generateCheckInScheduleRuleInstancesFromAction(
+  session: Session,
+  input: GenerateCheckInScheduleRuleInput,
+  deps: CheckInScheduleDeps = {},
+): Promise<CheckInSafeResult<GenerateCheckInScheduleRuleResult>> {
+  return guard(process.env, () =>
+    generateCheckInScheduleRuleInstances(session as never, input, deps),
+  );
+}
+
+export async function listCheckInScheduleRulesForClient(
+  session: Session,
+  input: { workspaceId: string; clientProfileId: string },
+  deps: CheckInScheduleDeps = {},
+): Promise<CheckInSafeResult<{ items: CheckInScheduleRuleItem[] }>> {
+  return guard(process.env, () =>
+    listCheckInScheduleRules(session as never, input, deps),
   );
 }
 

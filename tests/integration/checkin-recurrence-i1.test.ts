@@ -24,6 +24,7 @@ import { AccessDeniedError } from "../../lib/auth/guard";
 import { createStaticConsentPolicy } from "../../lib/consent";
 import {
   createCheckInForm,
+  openCheckInDraft,
   publishCheckInForm,
   saveCheckInFormDraft,
 } from "../../lib/checkin/forms";
@@ -50,26 +51,6 @@ const DEV_REGISTRY = createStaticConsentPolicy({
 
 /** UTC so local dates/times map 1:1 to instants in these tests. */
 const ZONE = "UTC";
-
-/** Next weekday (>= today, UTC) as YYYY-MM-DD for weekday name. */
-function nextDateForWeekday(weekday: string, from = new Date()): string {
-  const order = [
-    "SUNDAY",
-    "MONDAY",
-    "TUESDAY",
-    "WEDNESDAY",
-    "THURSDAY",
-    "FRIDAY",
-    "SATURDAY",
-  ];
-  const target = order.indexOf(weekday);
-  const d = new Date(
-    Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()),
-  );
-  while (order[d.getUTCDay()] !== weekday)
-    d.setUTCDate(d.getUTCDate() + 1);
-  return d.toISOString().slice(0, 10);
-}
 
 function addDays(date: string, n: number): string {
   const d = new Date(`${date}T00:00:00Z`);
@@ -119,11 +100,7 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     workspaceId: string,
     userId: string,
     role:
-      | "WORKSPACE_OWNER"
-      | "COACH"
-      | "ASSISTANT_COACH"
-      | "SUPPORT"
-      | "CLIENT",
+      "WORKSPACE_OWNER" | "COACH" | "ASSISTANT_COACH" | "SUPPORT" | "CLIENT",
   ) {
     return prisma.workspaceMember.create({
       data: { workspaceId, userId, role, status: "ACTIVE" },
@@ -249,7 +226,12 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
 
     const created = await createCheckInScheduleRule(
       session(ownerU.id),
-      { workspaceId: w.id, clientProfileId: cp.id, formId: form.formId, ...params },
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        formId: form.formId,
+        ...params,
+      },
       deps(),
     );
     expect(created.status).toBe("created");
@@ -300,7 +282,12 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     await expect(
       createCheckInScheduleRule(
         session(supportU.id),
-        { workspaceId: w.id, clientProfileId: cp.id, formId: form.formId, ...params },
+        {
+          workspaceId: w.id,
+          clientProfileId: cp.id,
+          formId: form.formId,
+          ...params,
+        },
         deps(),
       ),
     ).rejects.toBeInstanceOf(AccessDeniedError);
@@ -311,22 +298,42 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     await expect(
       createCheckInScheduleRule(
         session(pa.id),
-        { workspaceId: w.id, clientProfileId: cp.id, formId: form.formId, ...params },
+        {
+          workspaceId: w.id,
+          clientProfileId: cp.id,
+          formId: form.formId,
+          ...params,
+        },
         deps(),
       ),
     ).rejects.toBeInstanceOf(AccessDeniedError);
   });
 
   it("assistant may READ the rule list (assigned scope) but never write", async () => {
-    const { w, ownerU, asstU, cp, form } = await setup();
+    const { w, ownerU, asstU, form } = await setup();
+    // Assigned READ scope requires the assistant's OWN live assignment —
+    // client_assignment is one-per-client, so give them a second client.
+    const asstMember = await prisma.workspaceMember.findFirstOrThrow({
+      where: { workspaceId: w.id, userId: asstU.id },
+    });
+    const cu2 = await user();
+    await member(w.id, cu2.id, "CLIENT");
+    const cp2 = await profile(w.id, cu2.id);
+    await consent(cp2.id);
+    await assignment(w.id, cp2.id, asstMember.id);
     const created = await createCheckInScheduleRule(
       session(ownerU.id),
-      { workspaceId: w.id, clientProfileId: cp.id, formId: form.formId, ...ruleParams() },
+      {
+        workspaceId: w.id,
+        clientProfileId: cp2.id,
+        formId: form.formId,
+        ...ruleParams(),
+      },
       deps(),
     );
     const list = await listCheckInScheduleRules(
       session(asstU.id),
-      { workspaceId: w.id, clientProfileId: cp.id },
+      { workspaceId: w.id, clientProfileId: cp2.id },
       deps(),
     );
     expect(list.items.map((r) => r.ruleId)).toContain(created.ruleId);
@@ -338,7 +345,12 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     const otherMember = await member(w.id, other.id, "COACH");
     const created = await createCheckInScheduleRule(
       session(ownerU.id),
-      { workspaceId: w.id, clientProfileId: cp.id, formId: form.formId, ...ruleParams() },
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        formId: form.formId,
+        ...ruleParams(),
+      },
       deps(),
     );
     await expect(
@@ -354,7 +366,7 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     const w2 = w;
     await prisma.clientAssignment.updateMany({
       where: { workspaceId: w2.id, clientProfileId: cp.id },
-      data: { status: "ENDED" },
+      data: { status: "REMOVED" },
     });
     await expect(
       generateCheckInScheduleRuleInstances(
@@ -444,7 +456,12 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     const params = ruleParams();
     const created = await createCheckInScheduleRule(
       session(ownerU.id),
-      { workspaceId: w.id, clientProfileId: cp.id, formId: form.formId, ...params },
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        formId: form.formId,
+        ...params,
+      },
       deps(),
     );
     // Manual one-off at the first occurrence instant (UTC == local).
@@ -486,7 +503,12 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     const start = ruleParams();
     const r1 = await createCheckInScheduleRule(
       session(ownerU.id),
-      { workspaceId: w.id, clientProfileId: cp.id, formId: form.formId, ...start },
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        formId: form.formId,
+        ...start,
+      },
       deps(),
     );
     // Europe/London 10:00 == UTC 09:00 instant while London is GMT (Nov–Mar).
@@ -532,7 +554,12 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     const { w, ownerU, cp, form } = await setup();
     const created = await createCheckInScheduleRule(
       session(ownerU.id),
-      { workspaceId: w.id, clientProfileId: cp.id, formId: form.formId, ...ruleParams() },
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        formId: form.formId,
+        ...ruleParams(),
+      },
       deps(),
     );
     await generateCheckInScheduleRuleInstances(
@@ -574,7 +601,12 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     const { w, ownerU, cp, form } = await setup();
     const created = await createCheckInScheduleRule(
       session(ownerU.id),
-      { workspaceId: w.id, clientProfileId: cp.id, formId: form.formId, ...ruleParams() },
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        formId: form.formId,
+        ...ruleParams(),
+      },
       deps(),
     );
     const paused = await setCheckInScheduleRuleStatus(
@@ -648,14 +680,11 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     if (gen.status !== "generated") throw new Error("expected generated");
     const rows = await prisma.checkInInstance.findMany({
       where: { originRuleId: created.ruleId },
-      select: { occurrenceDate: true },
+      select: { occurrenceDate: true, dueAt: true },
     });
     expect(
-      rows.every(
-        (r) => r.occurrenceDate!.toISOString().slice(0, 10) >= today,
-      ),
+      rows.every((r) => r.occurrenceDate!.toISOString().slice(0, 10) >= today),
     ).toBe(true);
-    expect(rows.every((r) => r.dueAt === undefined)).toBe(false);
   });
 
   // ── End / replacement / expiry ───────────────────────────────────────
@@ -664,7 +693,12 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     const { w, ownerU, clientU, cp, form } = await setup();
     const created = await createCheckInScheduleRule(
       session(ownerU.id),
-      { workspaceId: w.id, clientProfileId: cp.id, formId: form.formId, ...ruleParams() },
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        formId: form.formId,
+        ...ruleParams(),
+      },
       deps(),
     );
     await generateCheckInScheduleRuleInstances(
@@ -678,13 +712,6 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
       select: { id: true },
     });
     // Client submits the first occurrence — end must NOT touch it.
-    const answers = JSON.stringify(
-      (await prisma.checkInFormVersion.findFirstOrThrow({
-        where: { formId: form.formId },
-        select: { definition: true },
-      })).definition as never,
-    );
-    void answers;
     const version = await prisma.checkInFormVersion.findFirstOrThrow({
       where: { formId: form.formId },
       select: { definition: true },
@@ -713,7 +740,8 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
       deps(),
     );
     expect(ended.status).toBe("ended");
-    expect(ended.cancelledCount).toBeGreaterThanOrEqual(0);
+    if (ended.status === "ended")
+      expect(ended.cancelledCount).toBeGreaterThanOrEqual(0);
 
     const all = await prisma.checkInInstance.findMany({
       where: { originRuleId: created.ruleId },
@@ -736,7 +764,12 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     const { w, ownerU, clientU, cp, form } = await setup();
     const created = await createCheckInScheduleRule(
       session(ownerU.id),
-      { workspaceId: w.id, clientProfileId: cp.id, formId: form.formId, ...ruleParams() },
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        formId: form.formId,
+        ...ruleParams(),
+      },
       deps(),
     );
     await generateCheckInScheduleRuleInstances(
@@ -795,7 +828,12 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     const params = ruleParams();
     const created = await createCheckInScheduleRule(
       session(ownerU.id),
-      { workspaceId: w.id, clientProfileId: cp.id, formId: form.formId, ...params },
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        formId: form.formId,
+        ...params,
+      },
       deps(),
     );
     await generateCheckInScheduleRuleInstances(
@@ -810,10 +848,7 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
         clientProfileId: cp.id,
         formId: form.formId,
         ...params,
-        weekday:
-          params.weekday === "MONDAY"
-            ? "TUESDAY"
-            : "MONDAY",
+        weekday: params.weekday === "MONDAY" ? "TUESDAY" : "MONDAY",
         replacesRuleId: created.ruleId,
       },
       deps(),
@@ -866,7 +901,12 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     const { w, ownerU, cp, form } = await setup();
     const created = await createCheckInScheduleRule(
       session(ownerU.id),
-      { workspaceId: w.id, clientProfileId: cp.id, formId: form.formId, ...ruleParams() },
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        formId: form.formId,
+        ...ruleParams(),
+      },
       deps(),
     );
     const first = await generateCheckInScheduleRuleInstances(
@@ -876,16 +916,19 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     );
     if (first.status !== "generated") throw new Error("expected generated");
 
-    // Publish v2, then end+replace nothing — generate again after
-    // deleting one generated row's... no: publish v2 then a SECOND rule
-    // whose occurrences don't overlap (different weekday+zone) to
-    // observe the new pin on NEW rows.
+    // Publish v2 — a publish seals the draft, so open the next one and
+    // save against ITS revision.
+    const opened = await openCheckInDraft(
+      session(ownerU.id),
+      { workspaceId: w.id, formId: form.formId },
+      prisma,
+    );
     const saved2 = await saveCheckInFormDraft(
       session(ownerU.id),
       {
         workspaceId: w.id,
         formId: form.formId,
-        expectedRevision: 1,
+        expectedRevision: opened.revision,
         draft: {
           title: "Weekly v2",
           fields: [
@@ -935,7 +978,12 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     const { w, ownerU, cp, form } = await setup();
     const created = await createCheckInScheduleRule(
       session(ownerU.id),
-      { workspaceId: w.id, clientProfileId: cp.id, formId: form.formId, ...ruleParams() },
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        formId: form.formId,
+        ...ruleParams(),
+      },
       deps(),
     );
     await generateCheckInScheduleRuleInstances(
@@ -967,7 +1015,12 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
     const { w, ownerU, cp, form } = await setup();
     const created = await createCheckInScheduleRule(
       session(ownerU.id),
-      { workspaceId: w.id, clientProfileId: cp.id, formId: form.formId, ...ruleParams() },
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        formId: form.formId,
+        ...ruleParams(),
+      },
       deps(),
     );
     await prisma.checkInForm.update({
@@ -993,11 +1046,37 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
   it("invalid inputs reject before any DB work", async () => {
     const { w, ownerU, cp, form } = await setup();
     for (const bad of [
-      { weekday: "FUNDAY", localTimeMinutes: 60, timezone: ZONE, startDate: "2026-01-01" },
-      { weekday: "MONDAY", localTimeMinutes: 1440, timezone: ZONE, startDate: "2026-01-01" },
-      { weekday: "MONDAY", localTimeMinutes: 60, timezone: "Not/AZone", startDate: "2026-01-01" },
-      { weekday: "MONDAY", localTimeMinutes: 60, timezone: ZONE, startDate: "2026-13-40" },
-      { weekday: "MONDAY", localTimeMinutes: 60, timezone: ZONE, startDate: "2026-10-10", endDate: "2026-10-01" },
+      {
+        weekday: "FUNDAY",
+        localTimeMinutes: 60,
+        timezone: ZONE,
+        startDate: "2026-01-01",
+      },
+      {
+        weekday: "MONDAY",
+        localTimeMinutes: 1440,
+        timezone: ZONE,
+        startDate: "2026-01-01",
+      },
+      {
+        weekday: "MONDAY",
+        localTimeMinutes: 60,
+        timezone: "Not/AZone",
+        startDate: "2026-01-01",
+      },
+      {
+        weekday: "MONDAY",
+        localTimeMinutes: 60,
+        timezone: ZONE,
+        startDate: "2026-13-40",
+      },
+      {
+        weekday: "MONDAY",
+        localTimeMinutes: 60,
+        timezone: ZONE,
+        startDate: "2026-10-10",
+        endDate: "2026-10-01",
+      },
     ])
       await expect(
         createCheckInScheduleRule(

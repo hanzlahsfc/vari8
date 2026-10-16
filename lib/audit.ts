@@ -108,6 +108,12 @@ export const AUDIT_RESOURCE_TYPES = [
   // structural markers only — never due-at beyond a coarse marker, never
   // answer content). Replay/cancel-idempotency writes no event.
   "checkin_instance",
+  // CHECK-IN-RECURRENCE-I1 (decision #114): schedule-rule lifecycle
+  // events (create / pause / resume / end / replacement). IDs +
+  // structural markers only — never timezone, dates, times, or
+  // weekday content. Generation writes `checkin_instance` CREATE
+  // events; rule events carry no occurrence detail.
+  "checkin_schedule_rule",
   // P-025-B: first committed Check-In client submission (IDs + structural
   // markers only — never answer content, labels, option text, dates, or
   // consent detail). Replay writes no event.

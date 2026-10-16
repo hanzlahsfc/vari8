@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { requireSessionUser } from "@/lib/auth/route-guard";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
 import {
+  listCheckInScheduleRulesForClient,
   listSchedulableVersionsForClient,
   listStaffCheckInInstances,
   listStaffCheckInSubmissions,
@@ -13,6 +14,7 @@ import { prisma } from "@/lib/db";
 
 import { CancelCheckInInstanceButton } from "@/components/checkin/cancel-instance-button";
 import { CheckInCalendar } from "@/components/checkin/checkin-calendar";
+import { CheckInScheduleRules } from "@/components/checkin/schedule-rules";
 import { CheckInSubmissionReview } from "@/components/checkin/submission-review";
 import { ScheduleCheckInInstanceForm } from "@/components/checkin/schedule-instance-form";
 
@@ -71,7 +73,7 @@ export default async function StaffClientCheckInsPage({
     select: { name: true },
   });
 
-  const [instances, versions, submissions] = await Promise.all([
+  const [instances, versions, submissions, rules] = await Promise.all([
     listStaffCheckInInstances(
       { user: { id: userId } },
       { workspaceId, clientProfileId },
@@ -82,6 +84,11 @@ export default async function StaffClientCheckInsPage({
     ),
     // P-025-C — submission headers (answer-free) for the review queue.
     listStaffCheckInSubmissions(
+      { user: { id: userId } },
+      { workspaceId, clientProfileId },
+    ),
+    // CHECK-IN-RECURRENCE-I1 — mutation-free rule list read.
+    listCheckInScheduleRulesForClient(
       { user: { id: userId } },
       { workspaceId, clientProfileId },
     ),
@@ -135,6 +142,26 @@ export default async function StaffClientCheckInsPage({
                 }
               />
             </section>
+          ) : null}
+
+          {rules.ok ? (
+            <CheckInScheduleRules
+              workspaceId={workspaceId}
+              clientProfileId={clientProfileId}
+              options={
+                versions.ok
+                  ? versions.value.options.map(
+                      ({ position, formName, versionSeq }) => ({
+                        position,
+                        formName,
+                        versionSeq,
+                      }),
+                    )
+                  : []
+              }
+              rules={rules.value.items}
+              canWrite={canWrite}
+            />
           ) : null}
 
           <CheckInCalendar
