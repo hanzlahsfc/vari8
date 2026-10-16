@@ -877,3 +877,71 @@ is technical only.
   failed** (focused 10/10 across both suites).
 - Awaiting final independent DeepSeek review on the reconciled head;
   no PR, no merge, flag default-off, nothing deployed.
+
+## CHECK-IN-OVERVIEW-I1 — staff awaiting-review queue + exact-submission deep link (candidate, 2026-10-16)
+
+- Branch `feature/checkin-overview-i1` from verified `origin/main`
+  `6e64a9285992ca0bf5941b4d3f27b602fe7d8b27`. Contract:
+  CHECK-IN-OVERVIEW-P2 plan `4d619ccf…` (224 lines) + planner report
+  `82996c9f…` (128 lines) + P2-R1 PASS `bd204a61…` (85 lines).
+  Decision **#113** (synthetic/testing only; production fail-closed;
+  bounded W09 subset — the full W09/W02 roadmap is NOT delivered).
+- Predicate: submission exists AND no `checkin_review` — the
+  `reviews: { none: {} }` anti-join is complete (one immutable
+  submission per instance, one terminal review per submission,
+  submitted instances cannot be cancelled). No invented status.
+- Authorization: `authorizeCollection("checkinsCoachReviews", "read")`
+  — owner `workspace`, coach/assistant `assigned` (SQL semi-join on
+  `client_assignment` inside the same bounded query), CLIENT `own`
+  explicitly rejected for this staff surface, SUPPORT/PA denied incl.
+  the dual-role deny-set path. Denied → `checkins-denied`, never an
+  empty queue. List emits zero audits; no consent gate at list level.
+- Query: one workspace-level keyset read — `submittedAt ASC, id ASC`,
+  `{iso}|{id}` cursor (bounded parse: date validated, opaque id ≤128,
+  lone surrogates rejected), N+1 `hasMore`, all predicates before LIMIT.
+  Index `(workspace_id, submitted_at, id)` verified on fresh deploy and
+  genuine base→candidate upgrade disposable DBs; EXPLAIN shows the
+  ordered index scan serving the keyset predicate (bitmap scans off —
+  planner-honest: on a tiny table PG otherwise chooses bitmap+sort).
+- Header-only projection (submission id, client display, form
+  name/version, due/submitted, late flag, `canReview`). `canReview` =
+  caller write cell AND per-row ACTIVE assignment — snapshot hint only;
+  writes still re-authorize. Rows labelled honestly, never "your task."
+- Route: `app/.../checkins/review-queue/{page,actions}.tsx(ts)` +
+  `components/checkin/review-queue-list.tsx`; nav item
+  `WorkspaceNav` flag+role gated (cosmetic; route re-authorizes).
+- Deep link: `?submission=<id>` on the existing per-client staff page —
+  single bounded value consumed client-side; dispatches the SAME
+  `useActionState` audited detail action (one committed POST = one READ
+  audit per load). Param-keyed dispatch guard (A→B→A re-fires);
+  stale-detail suppression while a param load is pending; repeated/
+  malformed params → invalid note, zero POST/audit; `prefetch={false}`
+  on row links (defense-in-depth — the detail POST is structurally
+  unreachable by prefetch).
+- RED: unit contract `tests/unit/checkin-review-queue.test.ts` +
+  `checkin-review-queue-nav.dom.test.tsx` (commit `147134f`); index
+  `308330a`; integration `tests/integration/checkin-overview-i1.test.ts`
+  - E2E `tests/e2e/checkin-review-queue.spec.ts` (`bbf39ab`).
+- GREEN `cbedd0a`: service + boundary + route/list + nav + deep link.
+  Fixture/lint/prettier commits `a51657c`, `8a71ee6` (boundary-denial
+  coverage closing the sweep's gap), `38fed7a`, `8d97b74`.
+- Gates on final tree: typecheck 0; eslint 0 errors (pre-existing
+  warnings only); prisma validate clean; drift = documented raw-FK
+  artifacts only; unit 1256/1256; integration 788/788 disposable DB
+  (`tracker-review-pg`, db `tracker_review`); build clean (route in
+  table); format:check clean; focused E2E 13/13; **full E2E 405 passed /
+  12 skipped / 0 failed** after a fixture-isolation repair (queue spec
+  left an auto-id `clientProfile` + wsB `workspaceMember` for the
+  shared client user — teardown now removes only task-owned rows).
+- Mutations 13/15 bite (anti-join, assigned semi-join, cap-then-filter,
+  cursor tie-breaker, own-scope acceptance, role-only canReview, N+1
+  omission, lenient cursor, boundary denied→empty, PA deny-set entry,
+  projection leak, link without id, once-ever guard, strict parser,
+  workspace predicate dropped). Honest no-bites: `prefetch={false}`
+  (structural — server-action POST unreachable by prefetch,
+  force-dynamic page) and stale-detail suppression (transient window
+  below the test's final-state granularity; retained as the barrier).
+- Exclusions unchanged: no late/onboarding/feedback queue sections,
+  client tasks, bulk review, totals, attention rules, dashboard widget,
+  per-client fan-out, retention policy, new flags, production
+  enablement, or real-client data. Awaiting independent review.

@@ -5,6 +5,52 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## CHECK-IN-OVERVIEW-I1 — staff awaiting-review queue + deep link (in progress)
+
+- Independently reviewed contract: CHECK-IN-OVERVIEW-P2 (`4d619ccf…`,
+  224 lines) + P2-R1 PASS (`bd204a61…`, 85 lines); decision #113
+  recorded (synthetic/testing boundaries only — production fail-closed;
+  bounded W09 subset, NOT the full W09/W02 roadmap).
+- Branch `feature/checkin-overview-i1` from verified main `6e64a928`;
+  9 commits forward-only (RED-A unit → schema/index → RED-B
+  integration+E2E → GREEN implementation → test fixes → boundary-denial
+  coverage → prettier).
+- Scope: read-only workspace-level queue of submissions with no review —
+  `authorizeCollection` scope (owner workspace / coach+assistant
+  assigned / CLIENT-own rejected / SUPPORT+PA denied incl. dual-role),
+  one keyset query (`submittedAt ASC, id ASC`, `{iso}|{id}` cursor,
+  N+1 `hasMore`, predicates before LIMIT), header-only projection, zero
+  audits, `canReview` = write cell AND per-row ACTIVE assignment.
+  New index `checkin_submission_workspace_id_submitted_at_id_idx`
+  verified on fresh and base→candidate disposable DBs.
+- Deep link: `?submission=<id>` on the per-client page dispatches the
+  existing audited detail action through one `useActionState` path —
+  param-keyed guard (A→B→A re-fires), stale-detail suppression while a
+  param load is pending, invalid params fire nothing (no POST, no
+  audit); `prefetch={false}` on row links.
+- Verification: unit 36/36 new-file tests + 1256 total; integration
+  18/18 new + 788/788 suite; focused E2E `checkin-review-queue.spec.ts`
+  13/13 including delayed-A→B stale-response, back/forward, refresh,
+  prefetch-safety, revoked assignment, reviewed-after-listing, and
+  flag-off 404; build clean; typecheck/lint/format green.
+- Mutations: 13 of 15 bit; two honest no-bites — `prefetch={false}`
+  removal (structural barrier: detail load is a server-action POST that
+  prefetch can never trigger, page is force-dynamic) and stale-detail
+  suppression (transient window below the test's final-state granularity;
+  retained as the correct barrier). One coverage gap found by the sweep:
+  boundary denied→empty was unobservable because the workspace layout
+  denies all queue-denied roles first — closed by a direct boundary
+  assertion test.
+- Full E2E: first run surfaced cross-spec fixture pollution — the queue
+  spec left an auto-id `clientProfile` and a wsB `workspaceMember` for
+  the shared client user, colliding with sibling specs' own fixed-id
+  seeds (9 failures). Repaired with owned-fixture tracking (profiles and
+  the wsB member are deleted at teardown only when this spec created
+  them); final full run: 405 passed, 12 skipped (delivery-gated
+  password-reset), 0 failed.
+- Review candidate — gates green; pushed for independent review.
+  No PR, merge, deployment, feature enablement, or real-client use.
+
 ## CHECK-IN-FEEDBACK-I1 — bounded staff text feedback (R1 PASS; R2 cleanup pushed)
 
 - **R2 cleanup** (PROMPT 176, closing the four P3 review findings —

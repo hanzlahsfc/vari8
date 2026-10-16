@@ -1561,3 +1561,39 @@ erasure, or legal-hold policy (#102 params remain open); production
 consent wording (#81); production/real-client enablement — this slice
 is synthetic-only and production remains fail-closed under #38/#39/
 D-10/D-09.
+
+## CHECK-IN-OVERVIEW-I1 — owner approval (2026-10-16, implementation prompt)
+
+**Decision #113 (APPROVED — synthetic/testing boundaries only):** a
+read-only staff "Check-In review overview" — the bounded W09 subset
+approved under the independently reviewed CHECK-IN-OVERVIEW-P2 contract
+(`4d619ccf…`, 224 lines; P2-R1 `bd204a61…`, 85 lines) plus the
+reviewer's A→B stale-response coverage requirement. Approved scope:
+the queue lists exactly the submissions that exist with NO review —
+the `reviews: { none: {} }` anti-join is the complete predicate (one
+immutable submission per instance, one terminal review per submission,
+submitted instances cannot be cancelled — no invented status). Scope:
+owner `workspace`-read; coach and assistant `assigned`-read on the
+existing `checkinsCoachReviews` resource; CLIENT `own` is explicitly
+rejected for this staff surface; SUPPORT and PLATFORM_ADMIN are denied
+including the dual-role membership path (existing deny-set). The list
+is header-only (form/version/client/due/submitted/late) — zero answer
+or feedback content, zero audits, no consent gate at list level (the
+destination detail independently re-authorizes, consent-gates, and
+audits). `canReview` is a derived snapshot hint only (caller write
+cell AND per-row ACTIVE assignment — never role alone); it grants no
+write. Rows are honest read-only labels, never "your tasks." Query:
+one bounded workspace-level keyset read (`submittedAt ASC, id ASC`,
+`{iso}|{id}` cursor, N+1 `hasMore`) with scope and predicate filters
+in SQL before LIMIT; the single justified index is
+`(workspace_id, submitted_at, id)` on `checkin_submission`. Deep link:
+bounded single-value `?submission=<id>` on the existing per-client
+staff page dispatches the SAME audited detail action a row click uses —
+one committed load, one structural READ audit (per-load accounting, no
+global exactly-once claim). NOT approved: late Check-In sections, client
+tasks, onboarding or feedback queues, bulk review, totals/"everything
+pending" claims, attention rules, dashboard widgets, per-client fan-out
+enumeration, or any write on this surface. Retention/privacy/production
+gates #102/#81/#38/#39/D-10/D-09 remain separate and unresolved; the
+full W09/W02 roadmap is NOT delivered by this slice; production
+enablement remains fail-closed.

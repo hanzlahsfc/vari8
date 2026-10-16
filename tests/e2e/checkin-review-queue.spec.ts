@@ -47,6 +47,13 @@ let assistantMemberId: string;
 let clientUserId: string;
 let clientMemberId: string;
 let coachUserId: string;
+// Profiles THIS spec created for the shared client user — removed at
+// teardown so sibling specs' own (workspace,user) seeds don't collide.
+let createdProfileIds: string[] = [];
+// Whether wsB already held a CLIENT member row for the shared client
+// before this spec upserted one — delete ours at teardown only when we
+// created it.
+let createdWsBMember = false;
 
 async function signIn(page: Page, email: string, base = "") {
   await page.goto(`${base}/login`);
@@ -184,17 +191,31 @@ test.beforeAll(async () => {
   await removeFixtures();
 
   // My own client profile in wsA — unique (workspace,userId) means reuse
-  // the shared client's profile if another spec already made one.
-  const profile =
+  // the shared client's profile if another spec already made one. If WE
+  // create it we must also remove it at teardown: sibling specs seed
+  // their own fixed-id profiles for the same (workspace, user) pair and
+  // an orphan would collide on the composite unique.
+  const existing =
     (await prisma.clientProfile.findFirst({
       where: { workspaceId: wsId, userId: clientUserId },
-    })) ??
+    })) ?? null;
+  const profile =
+    existing ??
     (await prisma.clientProfile.create({
       data: { workspaceId: wsId, userId: clientUserId, name: "CIO1 Client" },
     }));
   profileId = profile.id;
+  createdProfileIds = existing ? [] : [profile.id];
 
   // wsB fixtures — isolated workspace for empty/pagination assertions.
+  // The shared client has no wsB membership from global-setup; upsert is
+  // rerun-safe, and the flag marks whether teardown must remove the row.
+  createdWsBMember =
+    (await prisma.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: { workspaceId: wsBId, userId: clientUserId },
+      },
+    })) === null;
   wsBClientMemberId = (
     await prisma.workspaceMember.upsert({
       where: {
@@ -209,10 +230,12 @@ test.beforeAll(async () => {
       },
     })
   ).id;
-  const wsBProfile =
+  const existingB =
     (await prisma.clientProfile.findFirst({
       where: { workspaceId: wsBId, userId: clientUserId },
-    })) ??
+    })) ?? null;
+  const wsBProfile =
+    existingB ??
     (await prisma.clientProfile.create({
       data: {
         workspaceId: wsBId,
@@ -220,6 +243,7 @@ test.beforeAll(async () => {
         name: "CIO1 WS-B Client",
       },
     }));
+  if (!existingB) createdProfileIds.push(wsBProfile.id);
   wsBProfileId = wsBProfile.id;
 
   for (const [formId, versionId, name] of [
@@ -321,8 +345,27 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   await removeFixtures().catch(() => {});
   await prisma.clientAssignment
-    .deleteMany({ where: { clientProfileId: profileId } })
+    .deleteMany({
+      where: { clientProfileId: { in: [profileId, wsBProfileId] } },
+    })
     .catch(() => {});
+  // Remove ONLY the profiles this spec created — a pre-existing shared
+  // profile is reused untouched. Consents/assignments are children.
+  await prisma.consentRecord
+    .deleteMany({ where: { clientProfileId: { in: createdProfileIds } } })
+    .catch(() => {});
+  await prisma.clientAssignment
+    .deleteMany({ where: { clientProfileId: { in: createdProfileIds } } })
+    .catch(() => {});
+  await prisma.clientProfile
+    .deleteMany({ where: { id: { in: createdProfileIds } } })
+    .catch(() => {});
+  if (createdWsBMember)
+    await prisma.workspaceMember
+      .deleteMany({
+        where: { workspaceId: wsBId, userId: clientUserId },
+      })
+      .catch(() => {});
   await prisma.checkInFormVersion
     .deleteMany({
       where: {
