@@ -36,6 +36,7 @@ let profileId: string;
 let profileCreated = false;
 let ownerMemberId: string;
 let coachMemberId: string;
+let coachUserId: string;
 let assistantMemberId: string;
 let clientUserId: string;
 
@@ -122,6 +123,7 @@ test.beforeAll(async () => {
     ]);
   ownerMemberId = ownerMember.id;
   coachMemberId = coachMember.id;
+  coachUserId = coachMember.userId;
   assistantMemberId = assistantMember.id;
   clientUserId = clientUser.id;
 
@@ -502,6 +504,43 @@ test("follow-up appends a second dated row (immutable corrections)", async ({
     orderBy: [{ sentAt: "asc" }, { id: "asc" }],
   });
   expect(rows.map((r) => r.body)).toEqual(["first message", "follow-up note"]);
+});
+
+test("remount with a never-committed attempt: truthful note, empty composer, retained nonce", async ({
+  page,
+}) => {
+  const { submission } = await fixtureReviewed(
+    new Date("2033-02-01T09:00:00.000Z"),
+  );
+  await signIn(page, E2E.coach);
+  await page.goto(staffUrl());
+  // Seed a marker for an attempt that NEVER reached the server — the
+  // resolver will report not_sent and the composer must be truthful:
+  // nothing was sent, and the typed text was never stored locally.
+  const nonce = crypto.randomUUID();
+  await page.evaluate(
+    ([k, v]) => window.sessionStorage.setItem(k, v),
+    [
+      `checkinFeedbackDraft:${coachUserId}:${wsId}:${submission.id}`,
+      JSON.stringify({ nonce, attempted: true }),
+    ],
+  );
+  await openDetail(page, submission.id);
+  const note = page.getByTestId("checkin-feedback-recovered");
+  await expect(note).toBeVisible();
+  // Truthful copy: the response was not found AND the text was not
+  // saved — it must never imply a restorable draft exists.
+  await expect(note).toContainText(/wasn'?t saved|enter (it|the text) again/i);
+  await expect(page.getByTestId("checkin-feedback-input")).toHaveValue("");
+  // Retry identity is retained: the resend carries the SAME nonce, so
+  // the server can still match it against the original attempt.
+  await page.getByTestId("checkin-feedback-input").fill("re-entered text");
+  await page.getByTestId("checkin-feedback-send").click();
+  await expect(page.getByTestId("checkin-feedback-confirm")).toBeVisible();
+  const row = await prisma.checkInFeedback.findFirstOrThrow({
+    where: { submissionId: submission.id },
+  });
+  expect(row.clientRequestId).toBe(nonce);
 });
 
 test("consent withdrawal hides feedback from the client exactly like answers", async ({

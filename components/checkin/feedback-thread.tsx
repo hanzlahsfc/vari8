@@ -25,9 +25,10 @@ import {
  *
  * Remount/reload: the sessionStorage marker survives; on mount the
  * composer reconciles through the authorized `resolveCheckInFeedbackSend`
- * read — `sent` clears the marker; `not_sent` restores the nonce;
- * unavailable shows a truthful note (the server row is always the
- * source of truth).
+ * read — `sent` clears the marker; `not_sent` restores the nonce (the
+ * typed text is never stored — the composer is empty and the response
+ * must be entered again); unavailable shows a truthful note (the
+ * server row is always the source of truth).
  *
  * Disclosed edge: full document exit + cleared session storage loses the
  * marker → a fresh nonce is minted; if the uncertain send had actually
@@ -110,10 +111,14 @@ export function CheckInFeedbackThread({
   submissionId: string;
   userId: string;
   canSend: boolean;
-  initialItems: CheckInFeedbackItem[];
+  /** null = the caller's checkinFeedback read grant is absent — the
+   * thread is withheld, NOT an authorized empty thread. */
+  initialItems: CheckInFeedbackItem[] | null;
   initialNextCursor: string | null;
 }) {
-  const [items, setItems] = useState<CheckInFeedbackItem[]>(initialItems);
+  const [items, setItems] = useState<CheckInFeedbackItem[] | null>(
+    initialItems,
+  );
   const [nextCursor, setNextCursor] = useState<string | null>(
     initialNextCursor,
   );
@@ -154,7 +159,7 @@ export function CheckInFeedbackThread({
           setReconcile("idle");
           setNonce(crypto.randomUUID());
           setItems((prev) =>
-            prev.some((i) => i.id === res.feedbackId)
+            prev === null || prev.some((i) => i.id === res.feedbackId)
               ? prev
               : [
                   ...prev,
@@ -188,7 +193,7 @@ export function CheckInFeedbackThread({
     setReconcile("idle");
     setNonce(crypto.randomUUID());
     setItems((prev) =>
-      prev.some((i) => i.id === sendState.feedbackId)
+      prev === null || prev.some((i) => i.id === sendState.feedbackId)
         ? prev
         : [
             ...prev,
@@ -212,7 +217,11 @@ export function CheckInFeedbackThread({
       data-testid="checkin-feedback-thread"
     >
       <h3 className="assignment-manager__subtitle">Responses</h3>
-      {items.length === 0 ? (
+      {items === null ? (
+        <p className="app-lede" data-testid="checkin-feedback-withheld">
+          Responses aren’t included for your access.
+        </p>
+      ) : items.length === 0 ? (
         <p className="app-lede" data-testid="checkin-feedback-empty">
           No responses sent yet.
         </p>
@@ -253,6 +262,7 @@ export function CheckInFeedbackThread({
               .then((res) => {
                 if (res.status === "ok") {
                   setItems((prev) => {
+                    if (prev === null) return prev;
                     const seen = new Set(prev.map((i) => i.id));
                     return [
                       ...prev,
@@ -298,8 +308,10 @@ export function CheckInFeedbackThread({
           ) : null}
           {reconcile === "recovered" ? (
             <p className="app-lede" data-testid="checkin-feedback-recovered">
-              Your previous attempt may not have been sent — review the text and
-              resend it.
+              No sent response was found when we checked. Your text wasn’t saved
+              on this device — enter it again and resend. If the earlier request
+              is still completing, the resend keeps the same attempt identity
+              and can’t create a duplicate.
             </p>
           ) : null}
           {reconcile === "unavailable" ? (

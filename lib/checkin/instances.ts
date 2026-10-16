@@ -1950,8 +1950,12 @@ export type StaffCheckInSubmissionDetail = {
   /** CHECK-IN-FEEDBACK-I1: bounded first page of the feedback thread
    * (sentAt ASC, id ASC) queried inside the same consent gate as the
    * answers. Body text only ever travels inside this audited detail
-   * payload — never in the header list. */
-  feedback: CheckInFeedbackItem[];
+   * payload — never in the header list.
+   * R2: null when the caller's checkinFeedback/read grant is absent —
+   * the thread is withheld rather than presented as an authorized
+   * empty thread. The two read cells coincide today; the explicit
+   * barrier is defense-in-depth resource separation. */
+  feedback: CheckInFeedbackItem[] | null;
   /** Keyset cursor for the next (later) page, or null when complete. */
   feedbackNextCursor: string | null;
   /** Advisory send affordance — distinct from canMark: canMark requires
@@ -2217,12 +2221,43 @@ export async function readCheckInSubmissionDetail(
                 select: { id: true },
               })
             : null;
-        const feedbackPage1 = await feedbackPage(tx, {
-          workspaceId: input.workspaceId,
-          clientProfileId: input.clientProfileId,
-          submissionId: submission.id,
-          limit: CHECKIN_FEEDBACK_PAGE_SIZE,
-        });
+        // CHECK-IN-FEEDBACK-I1-R2: explicit resource separation — the
+        // thread is authorized on checkinFeedback/read, not silently
+        // inherited from the checkinsCoachReviews detail read. The two
+        // read cells currently coincide, so this is defense-in-depth,
+        // not a repaired leak: a denied checkinFeedback read withholds
+        // the thread (null — never an empty array that would present as
+        // "no responses yet") while the authorized base detail survives.
+        // Consent still gates the read exactly as before.
+        let feedbackItems: CheckInFeedbackItem[] | null = null;
+        let feedbackNextCursor: string | null = null;
+        try {
+          const feedbackCtx = await authorize(
+            session,
+            {
+              resource: "checkinFeedback",
+              action: "read",
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+            },
+            createPrismaAuthorizationRepo(tx),
+          );
+          if (
+            feedbackCtx.grantedScope === "workspace" ||
+            feedbackCtx.grantedScope === "assigned"
+          ) {
+            const feedbackPage1 = await feedbackPage(tx, {
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+              submissionId: submission.id,
+              limit: CHECKIN_FEEDBACK_PAGE_SIZE,
+            });
+            feedbackItems = feedbackPage1.items;
+            feedbackNextCursor = feedbackPage1.nextCursor;
+          }
+        } catch (e) {
+          if (!(e instanceof AccessDeniedError)) throw e;
+        }
 
         // 11. Structural READ audit — last; a failed write rolls the
         // detail read (and its values) back (#89-analog).
@@ -2256,8 +2291,8 @@ export async function readCheckInSubmissionDetail(
             markWriteScope === "assigned" &&
             markAssignment !== null &&
             review === null,
-          feedback: feedbackPage1.items,
-          feedbackNextCursor: feedbackPage1.nextCursor,
+          feedback: feedbackItems,
+          feedbackNextCursor,
           canSend:
             sendWriteScope === "assigned" &&
             sendAssignment !== null &&
