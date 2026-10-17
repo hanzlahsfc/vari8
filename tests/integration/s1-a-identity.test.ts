@@ -275,14 +275,16 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
       "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'",
     );
     const names = rows.map((r) => r.table_name);
-    for (const forbidden of ["audit_log", "food", "meal", "program"]) {
+    for (const forbidden of ["audit_log", "food", "program"]) {
       expect(names.some((n) => n.includes(forbidden))).toBe(false);
     }
     // Identity/tenancy (S1-A), versioned consent (S1-D), audit events (S1-E),
     // access tokens (S1-F1), and the Phase 2.1 Nutrition + Phase 2.2 Exercise
     // catalogs with their import provenance. The forbidden-table guard above
-    // still proves no premature meal/program tables exist; the
-    // exercise_catalog/exercise_import tables are the intentional catalog.
+    // still proves no premature food/program tables exist; meal plans are
+    // now an approved domain (decision 115) listed explicitly below, and
+    // the exercise_catalog/exercise_import tables are the intentional
+    // catalog.
     expect(names.sort()).toEqual(
       [
         "_prisma_migrations",
@@ -358,6 +360,11 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         "coaching_template_version",
         "coaching_template_version_parameter",
         "parameter_definition",
+        // MEAL-PLAN-I1 (decision 115): staff-authored shared draft
+        // container + immutable client-specific published versions —
+        // consent-gated; synthetic/testing scope only.
+        "meal_plan",
+        "meal_plan_version",
         "users",
         "workspace",
         "workspace_member",

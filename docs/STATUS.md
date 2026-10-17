@@ -5,6 +5,34 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## MEAL-PLAN-I1-R2 — schema-inventory repair (in progress)
+
+- R1 independent review (`e3f43cb7…`, 97 lines): CONDITIONAL PASS —
+  P1-1 full integration fails 1/825 on `s1-a-identity` schema
+  inventory (new `meal_plan`/`meal_plan_version` trip the historical
+  `"meal"` forbidden guard + exact sorted list); P3-1 unit count is
+  1308 measured, not the builder's reported 1310; P3-2 mutation
+  accounting verified accurate (10/10, harness artifacts separate).
+- Evidence corrections recorded prospectively: the builder validated
+  only the FOCUSED meal-plan integration (19/19), not the full suite
+  the task required — independent full integration exposed the
+  failure; the original coverage gap was revoked-consent publish
+  (closed in `7d58a25`); unit 1310 was stale.
+- Repair: `s1-a-identity` inventory updated — `"meal"` removed from
+  the forbidden list (meal plans approved under #115), `meal_plan` +
+  `meal_plan_version` added to the exact expected list; all other
+  exclusions/assertions preserved. Other `information_schema`
+  inventories are domain-scoped (submission/`checkin_` prefixes) —
+  unaffected, unchanged.
+- Reproduced: 1/825 failure on fresh disposable `tracker_mp_r2`
+  (exact-list + `"meal"` forbidden assertions). Sensitivity proven:
+  an injected `r2_unexpected_probe` table still fails the exact-list
+  check; probe dropped.
+- Repaired gates: full integration **825/825** on clean
+  `tracker_mp_r2`; full unit **1308/1308** measured; build + full E2E
+  carried forward from R1 identity-verified head — production is
+  byte-identical (repair touches tests/docs only).
+
 ## MEAL-PLAN-I1 — staff-authored meal plans (in progress)
 
 - Independently reviewed contract: MEAL-PLAN-P3 (`6b21a663…`, 259
