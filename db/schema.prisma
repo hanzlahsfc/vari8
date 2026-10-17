@@ -192,6 +192,8 @@ model Workspace {
   clientDashboardLayouts        ClientDashboardLayout[]
   clientTasks                   ClientTask[]
   habits                        Habit[]
+  mealPlans                     MealPlan[]
+  mealPlanVersions              MealPlanVersion[]
 
   @@map("workspace")
 }
@@ -250,6 +252,11 @@ model WorkspaceMember {
   coachingTemplatesArchived CoachingTemplate[]        @relation("CoachingTemplateArchiver")
   coachingTemplateVersions  CoachingTemplateVersion[] @relation("CoachingTemplateVersionPublisher")
 
+  mealPlansCreated          MealPlan[]        @relation("MealPlanCreator")
+  mealPlanDraftsSaved       MealPlan[]        @relation("MealPlanDraftSaver")
+  mealPlanTimezonesSet      MealPlan[]        @relation("MealPlanTimezoneSetter")
+  mealPlanVersionsPublished MealPlanVersion[] @relation("MealPlanVersionPublisher")
+
   @@unique([workspaceId, userId])
   // Composite target for the ClientAssignment same-workspace foreign key (raw SQL).
   @@unique([id, workspaceId])
@@ -301,6 +308,8 @@ model ClientProfile {
   dashboardLayouts            ClientDashboardLayout[]      @relation("ClientDashboardLayoutClient")
   clientTasks                 ClientTask[]                 @relation("ClientTaskClient")
   habits                      Habit[]                      @relation("HabitClient")
+  mealPlan                    MealPlan?                    @relation("MealPlanClient")
+  mealPlanVersions            MealPlanVersion[]            @relation("MealPlanVersionClient")
 
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
   @@unique([workspaceId, userId])
@@ -1633,4 +1642,82 @@ model HabitLog {
   loggedBy User? @relation("HabitLogLogger", fields: [loggedByUserId], references: [id], onDelete: SetNull)
   @@unique([habitId, date])
   @@map("habit_logs")
+}
+
+// ── MEAL-PLAN-I1 (decision #115 — PROMPT 211, synthetic-only) ────────────
+// Versioned per-client meal plan: assigned coaches AND explicitly assigned
+// owners author a shared draft (draftRevision CAS); publish mints an
+// immutable version stamped with a stored (effectiveDate, effectiveTimezone,
+// activationInstant) snapshot — client-local day start resolved ONCE at
+// publish via lib/checkin/timezone.ts and never recomputed. All-entered
+// nutrition values; nothing computed. The wide composite coherence FK on
+// (meal_plan_id, workspace_id, client_profile_id) and the timezone
+// provenance pairing CHECK are raw migration SQL (the established
+// convention — Prisma cannot express them). No archive/delete/withdrawal/
+// expiry semantics exist — none approved.
+model MealPlan {
+  id                    String    @id @default(cuid())
+  workspaceId           String    @map("workspace_id")
+  clientProfileId       String    @unique @map("client_profile_id")
+  title                 String
+  // Plan-scoped confirmed IANA timezone — NOT a global client setting.
+  // Provenance pairing (all-null or all-set) is a raw migration CHECK.
+  timezone              String?
+  timezoneSetByMemberId String?   @map("timezone_set_by_member_id")
+  timezoneSetAt         DateTime? @map("timezone_set_at") @db.Timestamptz(6)
+  // Mutable shared draft; optimistic concurrency via draftRevision.
+  // Publish snapshots it — the draft stays open (continuous editing).
+  draft                 Json?
+  draftRevision         Int       @default(1) @map("draft_revision")
+  draftSavedByMemberId  String?   @map("draft_saved_by_member_id")
+  draftUpdatedAt        DateTime? @map("draft_updated_at") @db.Timestamptz(6)
+  createdByMemberId     String    @map("created_by_member_id")
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace           Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile       ClientProfile    @relation("MealPlanClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  createdByMember     WorkspaceMember  @relation("MealPlanCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  draftSavedByMember  WorkspaceMember? @relation("MealPlanDraftSaver", fields: [draftSavedByMemberId], references: [id], onDelete: Restrict)
+  timezoneSetByMember WorkspaceMember? @relation("MealPlanTimezoneSetter", fields: [timezoneSetByMemberId], references: [id], onDelete: Restrict)
+  versions            MealPlanVersion[]
+
+  // Composite coherence targets for raw version FKs.
+  @@unique([id, workspaceId])
+  @@unique([id, workspaceId, clientProfileId])
+  @@index([workspaceId])
+  @@map("meal_plan")
+}
+
+model MealPlanVersion {
+  id                    String   @id @default(cuid())
+  // Denormalized tenant + client stamps — immutable at publish; part of
+  // the (id, workspaceId, mealPlanId) coherence target.
+  workspaceId           String   @map("workspace_id")
+  mealPlanId            String   @map("meal_plan_id")
+  clientProfileId       String   @map("client_profile_id")
+  versionSeq            Int      @map("version_seq")
+  // Declared calendar date + the IANA zone + resolved local-midnight
+  // instant — all immutable snapshots taken at publish.
+  effectiveDate         DateTime @map("effective_date") @db.Date
+  effectiveTimezone     String   @map("effective_timezone")
+  activationInstant     DateTime @map("activation_instant") @db.Timestamptz(6)
+  payload               Json
+  publishOriginRevision Int      @map("publish_origin_revision")
+  publishedAt           DateTime @default(now()) @map("published_at") @db.Timestamptz(6)
+  publishedByMemberId   String   @map("published_by_member_id")
+
+  workspace         Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  mealPlan          MealPlan        @relation(fields: [mealPlanId], references: [id], onDelete: Restrict)
+  clientProfile     ClientProfile   @relation("MealPlanVersionClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  publishedByMember WorkspaceMember @relation("MealPlanVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
+
+  @@unique([mealPlanId, versionSeq])
+  // Deterministic publish-replay authority: one version per origin draft
+  // revision (declared unique — matches the raw migration index name).
+  @@unique([mealPlanId, publishOriginRevision], map: "meal_plan_version_publish_origin_key")
+  @@unique([id, workspaceId, mealPlanId])
+  @@index([mealPlanId, effectiveDate, versionSeq])
+  @@index([mealPlanId, activationInstant])
+  @@map("meal_plan_version")
 }

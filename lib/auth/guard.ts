@@ -128,52 +128,58 @@ function deny(reason: DenialReason, resource: string, action: string): never {
  * whose role would otherwise be granted. Deliberately resource-specific —
  * every other resource keeps its existing membership-derived rules.
  */
-const PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> = new Set([
-  "onboardingFormTemplates",
-  "onboardingAssignments",
-  // P-014: workspace parameter/template definitions (product-decision #42).
-  "parameterDefinitions",
-  "coachingTemplates",
-  // P-016: client setup + template assignments (product-decision #54 —
-  // denied including dual-role platform administrators).
-  "clientSetups",
-  // P-023: client-owned onboarding submissions — denied including
-  // dual-role platform administrators.
-  "onboardingSubmissions",
-  // P-025 (decisions #92–#97 — binding security requirement, not an owner
-  // choice): Check-In resources deny PLATFORM_ADMIN including a dual-role
-  // administrator with an ACTIVE membership of any role. All three
-  // Check-In resources are members: definitions (P-025-A), instances
-  // (P-025-B), and the client submission/review resource (P-025-B).
-  "checkinFormDefinitions",
-  "checkinInstances",
-  // DASHBOARD-I1: layout records deny PLATFORM_ADMIN including the
-  // dual-role membership path (same posture as the other health surfaces).
-  "clientDashboards",
-  // CLIENT-TASKS-I1 (decision 109): client task records deny
-  // PLATFORM_ADMIN including a dual-role administrator with an ACTIVE
-  // membership of any role — the matrix cell alone only covers the
-  // no-membership path.
-  "clientTasks",
-  // HABITS-I1 (decision 110): habit records and log marks deny
-  // PLATFORM_ADMIN including a dual-role administrator with an ACTIVE
-  // membership of any role.
-  "habits",
-  // SOLO-COACH-I1 (decision 111): client coach assignments deny
-  // PLATFORM_ADMIN including a dual-role administrator holding an ACTIVE
-  // WORKSPACE_OWNER membership — without this entry the fall-through would
-  // resolve the membership role's owner scope on this slice's new surface.
-  "clientAssignments",
-  "checkinsCoachReviews",
-  // P-024 (decisions #86–#91 — binding requirement): staff onboarding
-  // submission reviews deny PLATFORM_ADMIN including a dual-role
-  // administrator with an ACTIVE membership of any role.
-  "onboardingSubmissionReviews",
-  // CHECK-IN-FEEDBACK-I1: Check-In feedback records deny PLATFORM_ADMIN
-  // including a dual-role administrator holding an ACTIVE membership of
-  // any role — the matrix cell alone only covers the no-membership path.
-  "checkinFeedback",
-]);
+const PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> =
+  new Set<Resource>([
+    "onboardingFormTemplates",
+    "onboardingAssignments",
+    // P-014: workspace parameter/template definitions (product-decision #42).
+    "parameterDefinitions",
+    "coachingTemplates",
+    // P-016: client setup + template assignments (product-decision #54 —
+    // denied including dual-role platform administrators).
+    "clientSetups",
+    // P-023: client-owned onboarding submissions — denied including
+    // dual-role platform administrators.
+    "onboardingSubmissions",
+    // P-025 (decisions #92–#97 — binding security requirement, not an owner
+    // choice): Check-In resources deny PLATFORM_ADMIN including a dual-role
+    // administrator with an ACTIVE membership of any role. All three
+    // Check-In resources are members: definitions (P-025-A), instances
+    // (P-025-B), and the client submission/review resource (P-025-B).
+    "checkinFormDefinitions",
+    "checkinInstances",
+    // DASHBOARD-I1: layout records deny PLATFORM_ADMIN including the
+    // dual-role membership path (same posture as the other health surfaces).
+    "clientDashboards",
+    // CLIENT-TASKS-I1 (decision 109): client task records deny
+    // PLATFORM_ADMIN including a dual-role administrator with an ACTIVE
+    // membership of any role — the matrix cell alone only covers the
+    // no-membership path.
+    "clientTasks",
+    // HABITS-I1 (decision 110): habit records and log marks deny
+    // PLATFORM_ADMIN including a dual-role administrator with an ACTIVE
+    // membership of any role.
+    "habits",
+    // SOLO-COACH-I1 (decision 111): client coach assignments deny
+    // PLATFORM_ADMIN including a dual-role administrator holding an ACTIVE
+    // WORKSPACE_OWNER membership — without this entry the fall-through would
+    // resolve the membership role's owner scope on this slice's new surface.
+    "clientAssignments",
+    "checkinsCoachReviews",
+    // P-024 (decisions #86–#91 — binding requirement): staff onboarding
+    // submission reviews deny PLATFORM_ADMIN including a dual-role
+    // administrator with an ACTIVE membership of any role.
+    "onboardingSubmissionReviews",
+    // CHECK-IN-FEEDBACK-I1: Check-In feedback records deny PLATFORM_ADMIN
+    // including a dual-role administrator holding an ACTIVE membership of
+    // any role — the matrix cell alone only covers the no-membership path.
+    "checkinFeedback",
+    // MEAL-PLAN-I1 (decision #115 — binding security requirement): meal
+    // plans and their published versions deny PLATFORM_ADMIN including a
+    // dual-role administrator with an ACTIVE membership of any role — the
+    // matrix cell alone only covers the no-membership path.
+    "mealPlans",
+  ]);
 
 /**
  * Authorize a workspace collection read. Re-reads DB state, resolves the matrix,

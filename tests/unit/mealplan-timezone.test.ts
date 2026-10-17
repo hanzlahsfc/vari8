@@ -22,13 +22,13 @@ describe("MEAL-PLAN-I1 — resolveMealPlanActivation (local midnight)", () => {
       instant: new Date("2026-06-01T00:00:00Z"),
     });
     // New York EDT (UTC-4): local midnight = 04:00Z.
-    expect(
-      resolveMealPlanActivation("America/New_York", "2026-06-01"),
-    ).toEqual({ status: "ok", instant: new Date("2026-06-01T04:00:00Z") });
+    expect(resolveMealPlanActivation("America/New_York", "2026-06-01")).toEqual(
+      { status: "ok", instant: new Date("2026-06-01T04:00:00Z") },
+    );
     // Auckland NZST (UTC+12): local midnight = previous UTC day 12:00Z.
-    expect(
-      resolveMealPlanActivation("Pacific/Auckland", "2026-06-01"),
-    ).toEqual({ status: "ok", instant: new Date("2026-05-31T12:00:00Z") });
+    expect(resolveMealPlanActivation("Pacific/Auckland", "2026-06-01")).toEqual(
+      { status: "ok", instant: new Date("2026-05-31T12:00:00Z") },
+    );
   });
 
   it("midnight-gap date resolves to the first valid minute on the SAME date", () => {
@@ -36,25 +36,26 @@ describe("MEAL-PLAN-I1 — resolveMealPlanActivation (local midnight)", () => {
     // jumps 23:59 → 01:00, so 00:00 does not exist. The honest activation
     // is the first representable minute on 2026-09-06 = 01:00 local
     // (04:00Z) — never shifted to another date, never 00:00 the next day.
-    expect(
-      resolveMealPlanActivation("America/Santiago", "2026-09-06"),
-    ).toEqual({ status: "ok", instant: new Date("2026-09-06T04:00:00Z") });
+    expect(resolveMealPlanActivation("America/Santiago", "2026-09-06")).toEqual(
+      { status: "ok", instant: new Date("2026-09-06T04:00:00Z") },
+    );
   });
 
   it("midnight-fold date resolves to the EARLIER instant", () => {
     // America/Havana falls back 2026-11-01: clocks 01:00 → 00:00, so
     // 00:00 occurs twice — 04:00Z (CDT) and 05:00Z (CST). The fold rule
     // picks the earlier occurrence.
-    expect(
-      resolveMealPlanActivation("America/Havana", "2026-11-01"),
-    ).toEqual({ status: "ok", instant: new Date("2026-11-01T04:00:00Z") });
+    expect(resolveMealPlanActivation("America/Havana", "2026-11-01")).toEqual({
+      status: "ok",
+      instant: new Date("2026-11-01T04:00:00Z"),
+    });
   });
 
   it("whole-day-skip dates are unrepresentable — never shifted", () => {
     // Pacific/Apia skipped 2011-12-30 entirely (dateline jump).
-    expect(
-      resolveMealPlanActivation("Pacific/Apia", "2011-12-30"),
-    ).toEqual({ status: "unrepresentable" });
+    expect(resolveMealPlanActivation("Pacific/Apia", "2011-12-30")).toEqual({
+      status: "unrepresentable",
+    });
   });
 
   it("invalid zones, malformed dates, and out-of-range years reject", () => {
@@ -96,9 +97,7 @@ describe("MEAL-PLAN-I1 — parseEffectiveDate bounds", () => {
       20261020,
       null,
     ])
-      expect(() =>
-        parseEffectiveDate(d as unknown, now),
-      ).toThrow();
+      expect(() => parseEffectiveDate(d as unknown, now)).toThrow();
   });
 
   it("rejects dates more than 366 days past the server UTC date", () => {

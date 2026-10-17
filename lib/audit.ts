@@ -143,6 +143,14 @@ export const AUDIT_RESOURCE_TYPES = [
   // replays (already_sent), idempotency conflicts, denials, and
   // rollbacks write no event.
   "checkin_feedback",
+  // MEAL-PLAN-I1 (decision #115): meal-plan container lifecycle
+  // (CREATE on first draft save, UPDATE on draft saves + timezone
+  // changes — `changed` marker only) and published-version events
+  // (CREATE + staff/client detail READ). IDs and structural markers
+  // only (version, effective date, status, variant count) — never
+  // meal text, labels, nutrition values, or timezone strings.
+  "meal_plan",
+  "meal_plan_version",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 

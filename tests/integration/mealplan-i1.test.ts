@@ -23,7 +23,6 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { AccessDeniedError } from "../../lib/auth/guard";
 import { createStaticConsentPolicy } from "../../lib/consent";
 import {
-  MealPlanError,
   publishMealPlanVersion,
   readOwnMealPlan,
   readStaffMealPlan,
@@ -88,11 +87,7 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
     workspaceId: string,
     userId: string,
     role:
-      | "WORKSPACE_OWNER"
-      | "COACH"
-      | "ASSISTANT_COACH"
-      | "SUPPORT"
-      | "CLIENT",
+      "WORKSPACE_OWNER" | "COACH" | "ASSISTANT_COACH" | "SUPPORT" | "CLIENT",
   ) {
     return prisma.workspaceMember.create({
       data: { workspaceId, userId, role, status: "ACTIVE" },
@@ -116,13 +111,18 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
     workspaceId: string,
     clientProfileId: string,
     coachMemberId: string,
+    role: "PRIMARY" | "COACH" = "PRIMARY",
   ) {
-    return prisma.clientAssignment.create({
-      data: {
+    return prisma.clientAssignment.upsert({
+      where: {
+        clientProfileId_coachMemberId: { clientProfileId, coachMemberId },
+      },
+      update: { role, status: "ACTIVE" },
+      create: {
         workspaceId,
         clientProfileId,
         coachMemberId,
-        role: "PRIMARY",
+        role,
         status: "ACTIVE",
       },
     });
@@ -172,7 +172,18 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
     const cp = await profile(w.id, clientU.id);
     await consent(cp.id);
     await assignment(w.id, cp.id, coachMember.id);
-    return { w, ownerU, ownerMember, coachU, coachMember, asstU, asstMember, supportU, clientU, cp };
+    return {
+      w,
+      ownerU,
+      ownerMember,
+      coachU,
+      coachMember,
+      asstU,
+      asstMember,
+      supportU,
+      clientU,
+      cp,
+    };
   }
 
   async function createdPlan(
@@ -261,12 +272,13 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
       deps(),
     );
     expect(read.canWrite).toBe(false);
-    await expect(
-      createdPlan(ownerU.id, w.id, cp.id),
-    ).rejects.toBeInstanceOf(AccessDeniedError);
+    await expect(createdPlan(ownerU.id, w.id, cp.id)).rejects.toBeInstanceOf(
+      AccessDeniedError,
+    );
 
-    // Explicitly assigned owner authors.
-    await assignment(w.id, cp.id, ownerMember.id);
+    // Explicitly assigned owner authors (coach holds PRIMARY; a second
+    // ACTIVE PRIMARY for the same client is a raw unique index).
+    await assignment(w.id, cp.id, ownerMember.id, "COACH");
     const created = await createdPlan(ownerU.id, w.id, cp.id);
     expect(created.revision).toBe(1);
     const read2 = await readStaffMealPlan(
@@ -280,7 +292,7 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
   it("assistant reads assigned client but can never write", async () => {
     const { w, coachU, asstU, asstMember, cp } = await setup();
     await createdPlan(coachU.id, w.id, cp.id);
-    await assignment(w.id, cp.id, asstMember.id);
+    await assignment(w.id, cp.id, asstMember.id, "COACH");
 
     const read = await readStaffMealPlan(
       session(asstU.id),
@@ -333,7 +345,11 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
       },
       deps(),
     );
-    const own = await readOwnMealPlan(session(clientU.id), { workspaceId: w.id }, deps());
+    const own = await readOwnMealPlan(
+      session(clientU.id),
+      { workspaceId: w.id },
+      deps(),
+    );
     expect(own.current?.versionSeq).toBe(1);
     expect(own.current?.payload.variants[0]?.meals[0]?.kcal).toBe(352);
     // Zero-vs-missing fidelity through the published snapshot.
@@ -381,7 +397,7 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
     await assignment(w.id, cp.id, coachMember.id);
     const paU = await user("PLATFORM_ADMIN");
     const paMember = await member(w.id, paU.id, "COACH");
-    await assignment(w.id, cp.id, paMember.id);
+    await assignment(w.id, cp.id, paMember.id, "COACH");
 
     for (const uidX of [supportU.id, paU.id]) {
       await expect(
@@ -391,9 +407,9 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
           deps(),
         ),
       ).rejects.toBeInstanceOf(AccessDeniedError);
-      await expect(
-        createdPlan(uidX, w.id, cp.id),
-      ).rejects.toBeInstanceOf(AccessDeniedError);
+      await expect(createdPlan(uidX, w.id, cp.id)).rejects.toBeInstanceOf(
+        AccessDeniedError,
+      );
       await expect(
         publishMealPlanVersion(
           session(uidX),
@@ -410,7 +426,7 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
   });
 
   it("cross-tenant and cross-client isolation holds", async () => {
-    const { w, coachU, coachMember, cp } = await setup();
+    const { w, coachU, cp } = await setup();
     await createdPlan(coachU.id, w.id, cp.id);
 
     // Foreign workspace + foreign client profile.
@@ -424,20 +440,21 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
     await assignment(w2.id, cp2.id, coachMember2.id);
 
     // ws1 coach cannot touch ws2's client (no membership there at all).
-    await expect(
-      createdPlan(coachU.id, w2.id, cp2.id),
-    ).rejects.toBeInstanceOf(AccessDeniedError);
+    await expect(createdPlan(coachU.id, w2.id, cp2.id)).rejects.toBeInstanceOf(
+      AccessDeniedError,
+    );
     // ws2 coach cannot address ws1's client through ws2's workspace id.
-    await expect(
-      createdPlan(coach2.id, w2.id, cp.id),
-    ).rejects.toBeInstanceOf(AccessDeniedError);
+    await expect(createdPlan(coach2.id, w2.id, cp.id)).rejects.toBeInstanceOf(
+      AccessDeniedError,
+    );
     // Cross-client: coach assigned to cp only, another client in ws.
-    const cpB = await profile(w.id, (await user()).id);
-    await member(w.id, (await prisma.clientProfile.findUniqueOrThrow({ where: { id: cpB.id }, select: { userId: true } })).userId, "CLIENT");
+    const cpBUser = await user();
+    const cpB = await profile(w.id, cpBUser.id);
+    await member(w.id, cpBUser.id, "CLIENT");
     await consent(cpB.id);
-    await expect(
-      createdPlan(coachU.id, w.id, cpB.id),
-    ).rejects.toBeInstanceOf(AccessDeniedError);
+    await expect(createdPlan(coachU.id, w.id, cpB.id)).rejects.toBeInstanceOf(
+      AccessDeniedError,
+    );
   });
 
   // ── Consent ─────────────────────────────────────────────────────────
@@ -524,7 +541,11 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
       deps(),
     );
     expect(replay.versionId).toBe(pub.versionId);
-    expect(await prisma.mealPlanVersion.count()).toBe(1);
+    expect(
+      await prisma.mealPlanVersion.count({
+        where: { mealPlanId: created.planId },
+      }),
+    ).toBe(1);
 
     // Draft advances; a stale retry of the committed revision still
     // replays the already-committed version rather than minting anew.
@@ -594,7 +615,11 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
       ),
     ]);
     expect(a.versionId).toBe(b.versionId);
-    expect(await prisma.mealPlanVersion.count()).toBe(1);
+    expect(
+      await prisma.mealPlanVersion.count({
+        where: { mealPlanId: created.planId },
+      }),
+    ).toBe(1);
   });
 
   it("requires confirmed timezone and a publishable draft", async () => {
@@ -674,7 +699,12 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
 
   it("client-local activation gates currency: UTC boundary honesty", async () => {
     const { w, coachU, clientU, cp } = await setup();
-    const created = await createdPlan(coachU.id, w.id, cp.id, "Pacific/Auckland");
+    const created = await createdPlan(
+      coachU.id,
+      w.id,
+      cp.id,
+      "Pacific/Auckland",
+    );
     // Auckland NZDT (UTC+13) Oct 2026: local midnight 2026-10-21 =
     // 2026-10-20T11:00:00Z.
     const pub = await publishMealPlanVersion(
@@ -716,7 +746,12 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
 
   it("same effectiveDate later publication wins precedence regardless of tz", async () => {
     const { w, coachU, cp } = await setup();
-    const created = await createdPlan(coachU.id, w.id, cp.id, "Pacific/Auckland");
+    const created = await createdPlan(
+      coachU.id,
+      w.id,
+      cp.id,
+      "Pacific/Auckland",
+    );
     await publishMealPlanVersion(
       session(coachU.id),
       {
@@ -741,7 +776,11 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
     );
     await setMealPlanTimezone(
       session(coachU.id),
-      { workspaceId: w.id, clientProfileId: cp.id, timezone: "America/New_York" },
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        timezone: "America/New_York",
+      },
       deps(),
     );
     const second = await publishMealPlanVersion(
@@ -832,12 +871,7 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
 
   it("Apia whole-day-skip publish is rejected, never shifted", async () => {
     const { w, coachU, cp } = await setup();
-    const created = await createdPlan(
-      coachU.id,
-      w.id,
-      cp.id,
-      "Pacific/Apia",
-    );
+    const created = await createdPlan(coachU.id, w.id, cp.id, "Pacific/Apia");
     await expect(
       publishMealPlanVersion(
         session(coachU.id),
@@ -850,7 +884,11 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
         deps(),
       ),
     ).rejects.toMatchObject({ code: "unrepresentable_date" });
-    expect(await prisma.mealPlanVersion.count()).toBe(0);
+    expect(
+      await prisma.mealPlanVersion.count({
+        where: { mealPlanId: created.planId },
+      }),
+    ).toBe(0);
   });
 
   it("invalid timezone and invalid effectiveDate reject", async () => {
@@ -923,7 +961,11 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
     await expect(
       readStaffMealPlanVersion(
         session(coach2.id),
-        { workspaceId: w2.id, clientProfileId: cp.id, versionId: pub.versionId },
+        {
+          workspaceId: w2.id,
+          clientProfileId: cp.id,
+          versionId: pub.versionId,
+        },
         deps(),
       ),
     ).rejects.toBeInstanceOf(AccessDeniedError);
@@ -1007,10 +1049,7 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
     });
     const types = events.map((e) => `${e.action}:${e.resourceType}`);
     expect(types).toEqual(
-      expect.arrayContaining([
-        "CREATE:meal_plan",
-        "CREATE:meal_plan_version",
-      ]),
+      expect.arrayContaining(["CREATE:meal_plan", "CREATE:meal_plan_version"]),
     );
     for (const e of events) {
       expect(JSON.stringify(e.meta ?? {})).not.toContain("Breakfast");

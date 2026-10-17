@@ -70,7 +70,10 @@ describe("MEAL-PLAN-I1 payload — happy path normalization", () => {
   it("mints ids for variants without one and keeps declared unique ids", () => {
     const out = normalizeMealPlanPayload(
       payload({
-        variants: [variant({ id: undefined }), variant({ id: "v_ntd" })],
+        variants: [
+          variant({ id: undefined }),
+          variant({ id: "v_ntd", label: "Rest day" }),
+        ],
       }),
       { forPublish: false },
     );
@@ -99,7 +102,9 @@ describe("MEAL-PLAN-I1 payload — happy path normalization", () => {
   it("keeps optional time/frequency when present and omits them when absent", () => {
     const out = normalizeMealPlanPayload(
       payload({
-        variants: [variant({ meals: [meal({ time: undefined, frequency: null })] })],
+        variants: [
+          variant({ meals: [meal({ time: undefined, frequency: null })] }),
+        ],
       }),
       { forPublish: false },
     );
@@ -118,9 +123,7 @@ describe("MEAL-PLAN-I1 payload — unknown-key rejection at every level", () => 
         variants: [variant({ targets: { kcal: { value: 1 }, bogus: null } })],
       }),
       payload({
-        variants: [
-          variant({ targets: { kcal: { value: 1, sneaky: 2 } } }),
-        ],
+        variants: [variant({ targets: { kcal: { value: 1, sneaky: 2 } } })],
       }),
       payload({ variants: [variant({ meals: [meal({ extra: 1 })] })] }),
       "string",
@@ -178,13 +181,14 @@ describe("MEAL-PLAN-I1 payload — per-variant target modes", () => {
         { forPublish: false },
       );
       expect(out.variants[0]?.targetMode).toBe(targetMode);
-      expect(out.variants[0]?.targets).toEqual({
+      const expected: Record<string, unknown> = {
         kcal: null,
         proteinG: null,
         carbsG: null,
         fatG: null,
-        ...targets,
-      });
+      };
+      for (const [k, v] of Object.entries(targets)) expected[k] = v;
+      expect(out.variants[0]?.targets).toEqual(expected);
     }
   });
 
@@ -265,7 +269,10 @@ describe("MEAL-PLAN-I1 payload — counts, strings, and byte limits", () => {
       payload({ variants: [variant({ label: "" })] }),
       payload({ variants: [variant({ label: "x".repeat(81) })] }),
       payload({
-        variants: [variant(), variant({ id: "v_other", label: "Training day" })],
+        variants: [
+          variant(),
+          variant({ id: "v_other", label: "Training day" }),
+        ],
       }),
       payload({
         variants: [
@@ -278,7 +285,13 @@ describe("MEAL-PLAN-I1 payload — counts, strings, and byte limits", () => {
       payload({
         variants: [variant({ meals: [meal({ foodText: "x".repeat(2001) })] })],
       }),
-      payload({ variants: [variant({ meals: [meal({ order: 1 }), meal({ order: 1, name: "Dup" })] })] }),
+      payload({
+        variants: [
+          variant({
+            meals: [meal({ order: 1 }), meal({ order: 1, name: "Dup" })],
+          }),
+        ],
+      }),
       payload({ variants: [variant({ meals: [meal({ order: 1.5 })] })] }),
     ])
       expect(() =>
