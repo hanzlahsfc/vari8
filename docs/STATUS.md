@@ -5,6 +5,48 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## MEAL-PLAN-I1 — staff-authored meal plans (in progress)
+
+- Independently reviewed contract: MEAL-PLAN-P3 (`6b21a663…`, 259
+  lines) + P3-R1 PASS (`3f79b84a…`, 91 lines); owner choice applied:
+  effective dates activate at client-local midnight in the plan's
+  explicitly confirmed IANA timezone. Decision #115 recorded
+  (synthetic/testing boundaries only; RBAC mealPlans owner-write
+  prospectively amended `denied → assigned`; `mealPlans` joins the
+  platform-admin deny-set).
+- Branch `feature/mealplan-i1` from verified main `16fa0ab`; commits:
+  `2c8068e` tests-only RED → `40d39b4` schema+migration+
+  `lib/mealplan/*`+RBAC/audit → `c0ea987` staff/client UI → `7d58a25`
+  mutation-coverage tests.
+- Implementation: `MealPlan`/`MealPlanVersion` models + raw migration
+  (coherence FKs, `(meal_plan_id,version_seq)` + `(meal_plan_id,
+publish_origin_revision)` uniques); `lib/mealplan/{limits,payload,
+gate,consent,service,boundary}` — strict closed-key payload
+  normalization, `ENABLE_MEAL_PLANS`+APP_ENV fail-closed gate, draft
+  CAS, idempotent publish with bounded P2002 retry on the two declared
+  uniques, immutable `effectiveDate`/`effectiveTimezone`/
+  `activationInstant` snapshots, server-side current-version selection
+  (`activationInstant ≤ now`, `effectiveDate DESC, versionSeq DESC`),
+  structural-only audits. Staff route/actions/editor/history + client
+  view-only page (current/upcoming/no-plan states), gated nav.
+- Verification: unit 10/10 timezone+gate; payload 11/11; integration
+  19/19 on disposable `tracker_mp_i1` (authz matrix incl. dual-role PA,
+  consent+revocation+publish, CAS, replay, concurrent sequential
+  versionSeq, tz snapshots preserved, Apia rejection, audit rollback);
+  E2E 3/3 real-browser (coach draft→publish→client view, unassigned
+  owner read-only, flag-off 404) at desktop + 390px; typecheck/lint/
+  build green; migrations fresh + base→candidate zero-drift; full unit
+  regression 1306/1306 after RBAC-snapshot + hex-comment fixes.
+- Mutation sweep: first pass reported 4 survivors — all were a HARNESS
+  false positive (post-prettier patterns missed + non-fatal python
+  assert → unmutated files tested green). Corrected sweep with
+  hard-abort apply checks: 10/10 KILLED (deny-set, owner-write,
+  consent, publish-consent, CAS, replay, ordering, unknown-key, audit,
+  tz snapshot, gate). Two real coverage gaps fixed: gate unit matrix +
+  revoked-consent publish denial (`7d58a25`).
+- Remaining: final gates re-run on completed tree, push, builder
+  report, tracker entry, independent review handoff. No PR.
+
 ## CHECK-IN-RECURRENCE-I1 — bounded weekly scheduling (in progress)
 
 - Independently reviewed contract: CHECK-IN-RECURRENCE-P3 (`b560cda2…`,
