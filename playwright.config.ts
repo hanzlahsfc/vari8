@@ -53,6 +53,9 @@ export default defineConfig({
         // DASHBOARD-I1 (decision 108): enabled on the primary test
         // server only — flag AND trusted APP_ENV below.
         ENABLE_CLIENT_DASHBOARD: "1",
+        // MEAL-PLAN-I1 (decision 115): enabled on the primary test
+        // server only — flag AND trusted APP_ENV below.
+        ENABLE_MEAL_PLANS: "1",
         // P-023-I1-R2: `next start` is NODE_ENV=production, so the
         // trusted dev/test consent boundary also requires an explicit
         // APP_ENV=test — the flag alone can never configure consent.
@@ -107,6 +110,9 @@ export default defineConfig({
         // DASHBOARD-I1 flag-off: explicitly empty so an inherited
         // ENABLE_CLIENT_DASHBOARD=1 cannot leak into the proof server.
         ENABLE_CLIENT_DASHBOARD: "",
+        // MEAL-PLAN-I1 flag-off: explicitly empty so an inherited
+        // ENABLE_MEAL_PLANS=1 cannot leak into the proof server.
+        ENABLE_MEAL_PLANS: "",
         AUTH_SECRET:
           process.env.AUTH_SECRET ?? "test-only-auth-secret-not-for-production",
         DATABASE_URL:
@@ -148,6 +154,9 @@ export default defineConfig({
         // other feature-on flows, but an inherited ENABLE_CHECK_INS=1
         // must never leak in.
         ENABLE_CHECK_INS: "",
+        // MEAL-PLAN-I1 flag-off: explicitly empty so an inherited
+        // ENABLE_MEAL_PLANS=1 cannot leak into the proof server.
+        ENABLE_MEAL_PLANS: "",
         AUTH_SECRET:
           process.env.AUTH_SECRET ?? "test-only-auth-secret-not-for-production",
         DATABASE_URL:

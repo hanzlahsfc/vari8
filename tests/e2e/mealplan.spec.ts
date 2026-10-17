@@ -69,8 +69,7 @@ test.beforeAll(async () => {
   }
   await prisma.clientAssignment.upsert({
     where: {
-      workspaceId_clientProfileId_coachMemberId: {
-        workspaceId: wsId,
+      clientProfileId_coachMemberId: {
         clientProfileId: profileId,
         coachMemberId,
       },
@@ -87,24 +86,27 @@ test.beforeAll(async () => {
   for (const [kind, version] of [
     ["PRIVACY_NOTICE", "meal-plan-dev-privacy-v1"],
     ["HEALTH_DATA", "meal-plan-dev-health-v1"],
-  ] as const)
-    await prisma.consentRecord.upsert({
-      where: {
-        clientProfileId_kind_version: {
+  ] as const) {
+    const existing = await prisma.consentRecord.findFirst({
+      where: { clientProfileId: profileId, kind, version },
+    });
+    if (existing) {
+      await prisma.consentRecord.update({
+        where: { id: existing.id },
+        data: { revokedAt: null },
+      });
+    } else {
+      await prisma.consentRecord.create({
+        data: {
           clientProfileId: profileId,
           kind,
           version,
+          grantedByUserId: clientUser.id,
+          source: "CLIENT_SELF",
         },
-      },
-      update: { revokedAt: null },
-      create: {
-        clientProfileId: profileId,
-        kind,
-        version,
-        grantedByUserId: clientUser.id,
-        source: "CLIENT_SELF",
-      },
-    });
+      });
+    }
+  }
 });
 
 test.afterAll(async () => {
@@ -140,7 +142,9 @@ test.afterAll(async () => {
     })
     .catch(() => {});
   await prisma.mealPlanVersion
-    .deleteMany({ where: { mealPlanId: { in: planIds.length ? planIds : ["-"] } } })
+    .deleteMany({
+      where: { mealPlanId: { in: planIds.length ? planIds : ["-"] } },
+    })
     .catch(() => {});
   await prisma.mealPlan
     .deleteMany({ where: { clientProfileId: profileId } })
@@ -190,9 +194,7 @@ test("assigned coach confirms tz → drafts → publishes; client views plan", a
   // Publish today's version.
   await page.getByTestId("mealplan-effective-date").fill(today());
   await page.getByTestId("mealplan-publish").click();
-  await expect(page.getByTestId("mealplan-status")).toContainText(
-    /published/i,
-  );
+  await expect(page.getByTestId("mealplan-status")).toContainText(/published/i);
   await checkNoOverflow(page);
 
   // Client views the published plan — verbatim values, all variants.
@@ -215,9 +217,7 @@ test("assigned coach confirms tz → drafts → publishes; client views plan", a
 
 test("unassigned owner sees a read-only view", async ({ page }) => {
   await signIn(page, E2E.owner);
-  await page.goto(
-    `${BASE}/workspace/${wsId}/clients/${profileId}/meal-plan`,
-  );
+  await page.goto(`${BASE}/workspace/${wsId}/clients/${profileId}/meal-plan`);
   await expect(page.getByTestId("staff-mealplan-page")).toBeVisible();
   await expect(page.getByTestId("mealplan-save-draft")).toHaveCount(0);
   await expect(page.getByTestId("mealplan-publish")).toHaveCount(0);
@@ -232,8 +232,6 @@ test("flag-off server: staff and client routes return 404", async ({
   );
   expect(staffResp?.status()).toBe(404);
   await signIn(page, E2E.client, FLAG_OFF);
-  const clientResp = await page.goto(
-    `${FLAG_OFF}/workspace/${wsId}/meal-plan`,
-  );
+  const clientResp = await page.goto(`${FLAG_OFF}/workspace/${wsId}/meal-plan`);
   expect(clientResp?.status()).toBe(404);
 });
