@@ -109,6 +109,8 @@ the source workspace as follows:
 - `scripts/agent-context.mjs` and its test → `frontend/scripts/`, with the
   context-check and test commands included in frontend verification only after
   the source checker’s final contract and test pass review.
+- Durable branch lifecycle → `frontend/docs/PR-WORKFLOW.md`, including the
+  exact remote/branch preflight, safe sync, local gate, push, and draft PR commands.
 
 Keep the published `frontend/README.md` as the canonical runnable-preview
 guide; update it with the source-context entrypoints rather than replacing it
@@ -127,7 +129,8 @@ behavior unchanged.
    ICM reference, and portable handoff output before copying those files. Keep
    project-specific requirements grounded in the target tree; distinguish this
    standalone preview from full-stack authorization and audit gates.
-3. Overlay only the mapped files listed above. Add the context checker’s
+3. Overlay only the mapped files listed above and add
+   `frontend/docs/PR-WORKFLOW.md`. Add the context checker’s
    deterministic test and local check commands to the frontend gate after its
    fixtures and path/link checks pass. Keep the frontend CI workflow path-filtered
    and leave the root CI workflow byte-identical.
@@ -139,7 +142,10 @@ behavior unchanged.
    Repair findings and rerun affected gates. Do not claim browser, accessibility,
    or security review evidence that was not actually collected.
 6. Commit the implementation and publish only `FRONTEND` to the explicit target
-   repository, then open a draft PR from `FRONTEND` to `main`. Do not merge the PR.
+   repository. Open a draft PR from `FRONTEND` to `main` with
+   `gh pr create --draft --repo hanzlahsfc/The-great-tracker- --base main --head FRONTEND`.
+   This workflow targets `main`; it does not use `FRONTEND` as a PR base. Do not
+   merge the PR.
 
 Acceptance requires all frontend and context gates to pass on the final tree,
 all intended source files to match the source snapshot, all 15 publication-only
