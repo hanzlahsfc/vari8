@@ -4,11 +4,13 @@ import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
 
 import type {
+  CheckInFeedbackItem,
   CheckInField,
   OwnCheckInInstanceDetail,
 } from "@/lib/checkin/instances";
 
 import {
+  listOwnCheckInFeedbackAction,
   submitCheckInInstanceAction,
   type SubmitCheckInState,
 } from "./actions";
@@ -201,7 +203,13 @@ export function CheckInSubmissionPanel({
       </div>
     );
   if (detail.state === "SUBMITTED" && detail.submittedAnswers !== null)
-    return <SubmittedView detail={detail} answers={detail.submittedAnswers} />;
+    return (
+      <SubmittedView
+        workspaceId={workspaceId}
+        detail={detail}
+        answers={detail.submittedAnswers}
+      />
+    );
   if (detail.state === "SUBMITTED")
     return (
       <div
@@ -228,9 +236,11 @@ function formatDateTime(iso: string): string {
 }
 
 function SubmittedView({
+  workspaceId,
   detail,
   answers,
 }: {
+  workspaceId: string;
   detail: OwnCheckInInstanceDetail;
   answers: NonNullable<OwnCheckInInstanceDetail["submittedAnswers"]>;
 }) {
@@ -239,6 +249,16 @@ function SubmittedView({
   );
   const optionLabel = (field: CheckInField, id: string) =>
     field.options?.find((o) => o.optionId === id)?.label ?? id;
+  // CHECK-IN-FEEDBACK-I1: "Response sent" derives ONLY from persisted
+  // feedback rows for THIS instance's submission — never a read/seen
+  // state, never the review acknowledgement.
+  const [feedback, setFeedback] = useState<CheckInFeedbackItem[]>(
+    detail.feedback ?? [],
+  );
+  const [feedbackCursor, setFeedbackCursor] = useState<string | null>(
+    detail.feedbackNextCursor,
+  );
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
   return (
     <div className="tracker-page" data-testid="checkin-submitted-state">
       <p className="app-lede">
@@ -246,6 +266,69 @@ function SubmittedView({
         {detail.submittedAt ? ` ${formatDateTime(detail.submittedAt)}` : ""}
         {detail.late ? " (late)" : ""}
       </p>
+      {feedback.length > 0 ? (
+        <section
+          className="tracker-section"
+          aria-label="Coach responses"
+          data-testid="checkin-client-feedback"
+        >
+          <p className="app-lede" data-testid="checkin-response-sent">
+            Response sent
+          </p>
+          <ul
+            className="tracker-list"
+            data-testid="checkin-client-feedback-list"
+          >
+            {feedback.map((item) => (
+              <li
+                key={item.id}
+                className="tracker-list__row"
+                data-testid="checkin-client-feedback-item"
+              >
+                <span className="tracker-list__sub">
+                  {item.byName} · {formatDateTime(item.sentAt)}
+                </span>
+                <span
+                  className="tracker-list__title"
+                  style={{ whiteSpace: "pre-wrap" }}
+                >
+                  {item.body}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {feedbackCursor ? (
+            <button
+              type="button"
+              className="catalog-search__submit"
+              disabled={feedbackLoading}
+              data-testid="checkin-client-feedback-more"
+              onClick={() => {
+                setFeedbackLoading(true);
+                void listOwnCheckInFeedbackAction(
+                  { workspaceId, instanceId: detail.instanceId },
+                  { cursor: feedbackCursor },
+                )
+                  .then((res) => {
+                    if (res.status === "ok") {
+                      setFeedback((prev) => {
+                        const seen = new Set(prev.map((i) => i.id));
+                        return [
+                          ...prev,
+                          ...res.items.filter((i) => !seen.has(i.id)),
+                        ];
+                      });
+                      setFeedbackCursor(res.nextCursor);
+                    }
+                  })
+                  .finally(() => setFeedbackLoading(false));
+              }}
+            >
+              {feedbackLoading ? "Loading…" : "Load more responses"}
+            </button>
+          ) : null}
+        </section>
+      ) : null}
       <ul className="tracker-list" data-testid="checkin-submitted-answers">
         {answers.map((a) => {
           const field = fieldById.get(a.fieldId);

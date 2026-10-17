@@ -89,12 +89,14 @@ describe("P-025-B — platform-admin deny-set completeness", () => {
     }
   });
 
-  it("client submission uses the checkinsCoachReviews own/own cell; owner has no write mark (#95)", () => {
+  it("client submission uses the checkinsCoachReviews own/own cell; owner write is assigned-scoped (#95 amended by #111)", () => {
     expect(resolveScope("checkinsCoachReviews", "write", "CLIENT")).toBe("own");
     expect(resolveScope("checkinsCoachReviews", "read", "CLIENT")).toBe("own");
+    // SOLO-COACH-I1 (decision 111): owner write resolves `assigned` — the
+    // owner may mark only where an ACTIVE ClientAssignment exists.
     expect(
       resolveScope("checkinsCoachReviews", "write", "WORKSPACE_OWNER"),
-    ).toBe("denied");
+    ).toBe("assigned");
     // Assigned coach may read+write (submit-on-behalf is not granted —
     // write is reserved for the P-025-C review mark cell per the matrix).
     expect(resolveScope("checkinsCoachReviews", "read", "COACH")).toBe(

@@ -27,6 +27,273 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## MEAL-PLAN-I1-R2 — schema-inventory repair (in progress)
+
+- R1 independent review (`e3f43cb7…`, 97 lines): CONDITIONAL PASS —
+  P1-1 full integration fails 1/825 on `s1-a-identity` schema
+  inventory (new `meal_plan`/`meal_plan_version` trip the historical
+  `"meal"` forbidden guard + exact sorted list); P3-1 unit count is
+  1308 measured, not the builder's reported 1310; P3-2 mutation
+  accounting verified accurate (10/10, harness artifacts separate).
+- Evidence corrections recorded prospectively: the builder validated
+  only the FOCUSED meal-plan integration (19/19), not the full suite
+  the task required — independent full integration exposed the
+  failure; the original coverage gap was revoked-consent publish
+  (closed in `7d58a25`); unit 1310 was stale.
+- Repair: `s1-a-identity` inventory updated — `"meal"` removed from
+  the forbidden list (meal plans approved under #115), `meal_plan` +
+  `meal_plan_version` added to the exact expected list; all other
+  exclusions/assertions preserved. Other `information_schema`
+  inventories are domain-scoped (submission/`checkin_` prefixes) —
+  unaffected, unchanged.
+- Reproduced: 1/825 failure on fresh disposable `tracker_mp_r2`
+  (exact-list + `"meal"` forbidden assertions). Sensitivity proven:
+  an injected `r2_unexpected_probe` table still fails the exact-list
+  check; probe dropped.
+- Repaired gates: full integration **825/825** on clean
+  `tracker_mp_r2`; full unit **1308/1308** measured; build + full E2E
+  carried forward from R1 identity-verified head — production is
+  byte-identical (repair touches tests/docs only).
+
+## MEAL-PLAN-I1 — staff-authored meal plans (in progress)
+
+- Independently reviewed contract: MEAL-PLAN-P3 (`6b21a663…`, 259
+  lines) + P3-R1 PASS (`3f79b84a…`, 91 lines); owner choice applied:
+  effective dates activate at client-local midnight in the plan's
+  explicitly confirmed IANA timezone. Decision #115 recorded
+  (synthetic/testing boundaries only; RBAC mealPlans owner-write
+  prospectively amended `denied → assigned`; `mealPlans` joins the
+  platform-admin deny-set).
+- Branch `feature/mealplan-i1` from verified main `16fa0ab`; commits:
+  `2c8068e` tests-only RED → `40d39b4` schema+migration+
+  `lib/mealplan/*`+RBAC/audit → `c0ea987` staff/client UI → `7d58a25`
+  mutation-coverage tests.
+- Implementation: `MealPlan`/`MealPlanVersion` models + raw migration
+  (coherence FKs, `(meal_plan_id,version_seq)` + `(meal_plan_id,
+publish_origin_revision)` uniques); `lib/mealplan/{limits,payload,
+gate,consent,service,boundary}` — strict closed-key payload
+  normalization, `ENABLE_MEAL_PLANS`+APP_ENV fail-closed gate, draft
+  CAS, idempotent publish with bounded P2002 retry on the two declared
+  uniques, immutable `effectiveDate`/`effectiveTimezone`/
+  `activationInstant` snapshots, server-side current-version selection
+  (`activationInstant ≤ now`, `effectiveDate DESC, versionSeq DESC`),
+  structural-only audits. Staff route/actions/editor/history + client
+  view-only page (current/upcoming/no-plan states), gated nav.
+- Verification: unit 10/10 timezone+gate; payload 11/11; integration
+  19/19 on disposable `tracker_mp_i1` (authz matrix incl. dual-role PA,
+  consent+revocation+publish, CAS, replay, concurrent sequential
+  versionSeq, tz snapshots preserved, Apia rejection, audit rollback);
+  E2E 3/3 real-browser (coach draft→publish→client view, unassigned
+  owner read-only, flag-off 404) at desktop + 390px; typecheck/lint/
+  build green; migrations fresh + base→candidate zero-drift; full unit
+  regression 1306/1306 after RBAC-snapshot + hex-comment fixes.
+- Mutation sweep: first pass reported 4 survivors — all were a HARNESS
+  false positive (post-prettier patterns missed + non-fatal python
+  assert → unmutated files tested green; also a wrong-file `-t`
+  filter). Corrected sweep with hard-abort apply checks: 10/10 KILLED
+  (deny-set, owner-write, consent, publish-consent, CAS, replay,
+  ordering, unknown-key, audit, tz snapshot, gate). One real coverage
+  gap fixed: revoked-consent publish denial (`7d58a25`); the gate
+  "survivor" was filter error — existing `mealplan-gate.test.ts`
+  already kills the mutant (verified by direct re-run).
+- Remaining: final gates re-run on completed tree, push, builder
+  report, tracker entry, independent review handoff. No PR.
+
+## CHECK-IN-RECURRENCE-I1 — bounded weekly scheduling (in progress)
+
+- Independently reviewed contract: CHECK-IN-RECURRENCE-P3 (`b560cda2…`,
+  263 lines) + P3-R1 PASS (`c37cba13…`, 76 lines, 5 refinements applied);
+  decision #114 recorded (synthetic/testing boundaries only —
+  production fail-closed; bounded recurring scheduling, NOT automatic
+  replenishment).
+- Branch `feature/checkin-recurrence-i1` from verified main `18d9f6f`;
+  commits: `92ffcfe` RED-A units → `61a3280` schema+migration →
+  `c7a66a5` RED-B integration+E2E → `cd6df45` GREEN implementation →
+  `a772519` E2E locator fix → `9f97e12` mutation-coverage tests.
+- Implementation: `lib/checkin/timezone.ts` Intl-based wall→instant
+  (crossing-detection gap→first valid, fold→earlier, ≤181-min bound,
+  whole-day→unrepresentable, 2000–2100); `lib/checkin/schedules.ts`
+  rule lifecycle + explicit generation (two pre-queries, truthful
+  three-way classification, audits last, current-actor provenance,
+  Serializable + bounded P2002 re-enter); staff UI section
+  `schedule-rules.tsx` with conspicuous nonautomatic copy.
+- Verification so far: unit 1282/1282; integration 18/18 incl.
+  permission matrix + dual-role PA denial + end-vs-submit + rollback;
+  focused E2E 3/3; typecheck/lint/build green; migrations verified
+  fresh + base→candidate on disposable DBs (rec_i1_fresh/_upgrade/_it).
+- Mutation sweep: 12 of 16 bit immediately; 3 no-bites closed with new
+  coverage (assigned-assistant write, per-instance audit assertion,
+  past-instant via `now` dep); M16 alternate advisory namespace is a
+  recorded honest no-bite (unobservable via serialized outcomes).
+- CHECK-IN-RECURRENCE-I1-R1 (DeepSeek V4.1 Flash, `5cfa2119…`,
+  149 lines): **PASS** on head `9898c0a` — all fresh gates green,
+  timezone converter independently probed correct (Troll 03:00 via
+  crossing detection), M16 verified genuine outcome-equivalence (End
+  vs submit preserved by the instance row lock, 15/15 decoupled
+  stress). P3s noted: compile-time (not behavioral) RED; mutation
+  count miscount (corrected above); past-due occurrences silently
+  excluded from outcome fields; generation writes create+audit
+  per-instance rather than all-creates-then-all-audits. Review grants
+  no merge/deploy authorization; technically ready for PR under the
+  normal process.
+
+## CHECK-IN-OVERVIEW-I1 — staff awaiting-review queue + deep link (in progress)
+
+- Independently reviewed contract: CHECK-IN-OVERVIEW-P2 (`4d619ccf…`,
+  224 lines) + P2-R1 PASS (`bd204a61…`, 85 lines); decision #113
+  recorded (synthetic/testing boundaries only — production fail-closed;
+  bounded W09 subset, NOT the full W09/W02 roadmap).
+- Branch `feature/checkin-overview-i1` from verified main `6e64a928`;
+  9 commits forward-only (RED-A unit → schema/index → RED-B
+  integration+E2E → GREEN implementation → test fixes → boundary-denial
+  coverage → prettier).
+- Scope: read-only workspace-level queue of submissions with no review —
+  `authorizeCollection` scope (owner workspace / coach+assistant
+  assigned / CLIENT-own rejected / SUPPORT+PA denied incl. dual-role),
+  one keyset query (`submittedAt ASC, id ASC`, `{iso}|{id}` cursor,
+  N+1 `hasMore`, predicates before LIMIT), header-only projection, zero
+  audits, `canReview` = write cell AND per-row ACTIVE assignment.
+  New index `checkin_submission_workspace_id_submitted_at_id_idx`
+  verified on fresh and base→candidate disposable DBs.
+- Deep link: `?submission=<id>` on the per-client page dispatches the
+  existing audited detail action through one `useActionState` path —
+  param-keyed guard (A→B→A re-fires), stale-detail suppression while a
+  param load is pending, invalid params fire nothing (no POST, no
+  audit); `prefetch={false}` on row links.
+- Verification: unit 36/36 new-file tests + 1256 total; integration
+  18/18 new + 788/788 suite; focused E2E `checkin-review-queue.spec.ts`
+  13/13 including delayed-A→B stale-response, back/forward, refresh,
+  prefetch-safety, revoked assignment, reviewed-after-listing, and
+  flag-off 404; build clean; typecheck/lint/format green.
+- Mutations: 13 of 15 bit; two honest no-bites — `prefetch={false}`
+  removal (structural barrier: detail load is a server-action POST that
+  prefetch can never trigger, page is force-dynamic) and stale-detail
+  suppression (transient window below the test's final-state granularity;
+  retained as the correct barrier). One coverage gap found by the sweep:
+  boundary denied→empty was unobservable because the workspace layout
+  denies all queue-denied roles first — closed by a direct boundary
+  assertion test.
+- Full E2E: first run surfaced cross-spec fixture pollution — the queue
+  spec left an auto-id `clientProfile` and a wsB `workspaceMember` for
+  the shared client user, colliding with sibling specs' own fixed-id
+  seeds (9 failures). Repaired with owned-fixture tracking (profiles and
+  the wsB member are deleted at teardown only when this spec created
+  them); final full run: 405 passed, 12 skipped (delivery-gated
+  password-reset), 0 failed.
+- Review candidate — gates green; pushed for independent review.
+  No PR, merge, deployment, feature enablement, or real-client use.
+
+## CHECK-IN-FEEDBACK-I1 — bounded staff text feedback (R1 PASS; R2 cleanup pushed)
+
+- **R2 cleanup** (PROMPT 176, closing the four P3 review findings —
+  narrow repair, no redesign):
+  - P3-1 formatting: `docs/STATUS.md` prettier continuation indent fixed;
+    `npm run format:check` clean. Correction to the R1 review's claim —
+    `.github/workflows/ci.yml` DOES run `format:check` (line 42), so a
+    PR would have failed CI; the `npm run verify` script does not
+    include it (verified against the actual workflow file).
+  - P3-2 explicit staff-detail authorization: `readCheckInSubmissionDetail`
+    now issues an explicit `checkinFeedback`/read `authorize` inside the
+    transaction before querying the thread. Denial withholds the thread
+    (`feedback: null` — never an empty array that would present as "no
+    responses yet") while the authorized base detail (fields, review
+    provenance, `canSend`) survives. Defense-in-depth resource
+    separation, not a repaired leak — the two read cells coincide today.
+    Isolation test: spy denies only `checkinFeedback` while
+    `checkinsCoachReviews` stays real → detail returns `feedback: null`.
+    Barrier mutation (remove the explicit authorize) BITES: the denied
+    read leaks the thread.
+  - P3-3 recovery copy: `not_sent` now states no sent response was
+    found, the text wasn't saved locally and must be re-entered, and the
+    resend keeps the same attempt identity (can't silently duplicate).
+    Nonce/idempotency protocol unchanged. Behavioral E2E asserts the
+    truthful note, an empty composer, and that the resend carries the
+    SAME nonce.
+  - P3-4 evidence corrections (recorded prospectively here): the R1
+    reviewer independently verified **769/769** integration tests; the
+    I1 builder report claimed 768/768 — the verified count stands. And
+    **14 of 16** independently reproduced mutations bit; the two
+    no-bites were redundant/index-masked (explicit own-scope authorize
+    redundant under the enclosing own-scope gate; `id ASC` ORDER-BY
+    removal masked by the backing `(submission_id, sent_at, id)` index —
+    the tie _predicate_ mutation did bite), not hidden failures.
+- Independently reviewed contract: CHECK-IN-FEEDBACK-P3 (`0427fcb1…`,
+  137 lines) + P3-R1 PASS (`6eece636…`, 96 lines); decision #112
+  recorded (synthetic/testing boundaries only — production fail-closed).
+  Implementation R1 review (`c5301172…`, 143 lines): technical PASS,
+  four P3s, all closed above.
+- Base verified `9ee84063` (`origin/main`); branch
+  `feature/checkin-feedback-i1`; `appearance-r2` untouched.
+- RED-A `87d2dcd` (unit: matrix cells, deny-set behavior, audit
+  resource, boundary exports — 11 intended failures).
+- Schema+migration `2424dbb`: `checkin_feedback` table, composite
+  coherence FK `(submission_id, workspace_id, client_profile_id)` →
+  `checkin_submission`, unique `(submission_id, client_request_id)`,
+  indexes `(submission_id, sent_at, id)` + `(workspace_id,
+client_profile_id)`, all FKs RESTRICT, no `updatedAt`. Hand-curated
+  migration (auto-diff tried to drop unrelated custom FKs). Fresh +
+  upgrade deploys verified on disposable PG; `migrate status` clean,
+  29 migrations.
+- RED-B `8011f73` (integration, true RED vs schema-present-no-service).
+- GREEN `8c31047`: `checkinFeedback` resource + matrix row + deny-set
+  entry; `checkin_feedback` audit resource; `sendCheckInFeedback` /
+  `listCheckInFeedback` / `resolveCheckInFeedbackSend` in
+  `lib/checkin/instances.ts` (serializable, review-exists prerequisite,
+  assignment lock, consent before insert AND on replay, scoped-P2002
+  `meta.target` matcher, audit-last); staff detail `feedback`/`canSend`;
+  own-detail feedback inside the consent gate; boundary safe errors
+  `review_required`/`idempotency_conflict`; staff actions +
+  `CheckInFeedbackThread` composer (nonce in state + nonce-only
+  sessionStorage marker keyed userId+workspaceId+submissionId);
+  client "Response sent" from persisted rows.
+- Gates on `dbcc9da` (R1 tree): `git diff --check` clean; eslint 0
+  errors (3 pre-existing warnings elsewhere); `tsc --noEmit` exit 0;
+  full unit 1220/1220; integration on disposable `cfi1_int` —
+  independently verified **769/769** (the prior builder report's
+  768/768 was an undercount, corrected in the R2 entry above);
+  `next build` clean; focused E2E `checkin-feedback.spec.ts` 7/7;
+  **full E2E suite 391 passed / 0 failed / 12 skipped**.
+- Mutation sweep (16 reproduced): 14 bit; two documented no-bites —
+  client-path own-scope authorize removal is redundant under the
+  enclosing own-scope gate (deliberate defense-in-depth per the
+  contract), and `id ASC` ORDER-BY removal is masked by the backing
+  index (the keyset tie _predicate_ mutation did bite). Two fixtures
+  strengthened so mutations became observable (dual-role PA now holds
+  an ACTIVE assignment; unreviewed-submission `canSend` asserted);
+  all restored byte-identically.
+- E2E fixes during gate runs: row selection now keys on the hidden
+  `submissionId` input (`.last()` was racy across fixtures); fixture
+  cleanup also removes the spec's `checkin_submission`/`checkin_feedback`
+  audit rows (a sibling spec asserts a zero global audit count).
+
+## SOLO-COACH-I1 — owner-as-coach assignments + assigned-owner review (in progress)
+
+- Independently reviewed contract: SOLO-COACH-P2 (`2b0d7eca…`, 125
+  lines) + P2-R1 PASS (`549a2916…`, 119 lines); decision #111 recorded.
+- Base verified `c63ddfb` (`origin/main`); branch `feature/solo-coach-i1`;
+  `appearance-r2` untouched.
+- RED committed `9e5b538` (behavioral: deny-set hole shown granted,
+  owner eligibility missing, canMark role-only, actions absent).
+- GREEN: 2 owner write cells → `assigned` (#95 + #37/P-024 amendments),
+  `clientAssignments` in the platform-admin deny-set, owner PRIMARY/
+  COACH eligibility, bounded `listAssignableCoachMembers`, assignment-
+  aware `canMark` ×2 (also tightens coach visibility — P3-c noted),
+  owner-gated coaches page/actions/panel + roster link; the stale
+  `assertAssignmentMutationsExternallyExposable` blocker removed with
+  its protections replaced by the action contract + tests.
+- GREEN on `aae19f6` + contract-assertion updates on `e32f4ce`.
+- Gates on the final tree: `git diff --check` clean; prettier clean;
+  eslint 0 errors (3 pre-existing warnings elsewhere); `tsc --noEmit`
+  exit 0; `prisma validate` + `migrate status` up to date (no migration
+  needed); full unit 1209/1209; full integration 749/749 on disposable
+  `app_integration_test`; `next build` clean.
+- Mutation sweep 7/7 bitten (deny-set entry, owner eligibility, each
+  owner write cell, canMark assignment check, ASSIGN audit skip,
+  onboarding role-only canMark) — all restored byte-identically.
+- E2E: `coach-assignments` 3/3 (real-UI self-assign → both review
+  journeys; non-owner 403); checkin-review 7/7; staff-onboarding-review
+  9/9; client-roster 23/23; **full E2E suite 384 passed / 0 failed / 12 skipped** (396 total) — new spec included.
+
 ## HABITS-I1 — real habit tracking + TL21/TL22 (in progress)
 
 - Independently reviewed contract: HABITS-P4 (`59222875…`, 217 lines) +

@@ -6,12 +6,18 @@ import { auth } from "@/auth";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
 import {
   cancelCheckInInstanceFromAction,
+  createCheckInScheduleRuleFromAction,
+  generateCheckInScheduleRuleInstancesFromAction,
   listSchedulableVersionsForClient,
+  listStaffCheckInFeedback,
   markCheckInSubmissionReviewedFromAction,
   readCheckInReviewTrackerContextFromAction,
   readStaffCheckInCalendar,
   readStaffCheckInSubmissionDetail,
+  resolveCheckInFeedbackSendFromAction,
   scheduleCheckInInstanceFromAction,
+  sendCheckInFeedbackFromAction,
+  setCheckInScheduleRuleStatusFromAction,
 } from "@/lib/checkin/instances-boundary";
 import type { StaffCheckInSubmissionDetail } from "@/lib/checkin/instances";
 
@@ -196,6 +202,11 @@ export type StaffCheckInDetailState =
       /** Server-decided: the calling staff member may mark (assigned
        * coach cell only). The mark action re-authorizes regardless. */
       canMark: boolean;
+      /** CHECK-IN-FEEDBACK-I1: bounded first feedback page + the
+       * advisory send affordance (review exists + assigned write). */
+      feedback: StaffCheckInSubmissionDetail["feedback"];
+      feedbackNextCursor: string | null;
+      canSend: boolean;
     };
 
 export async function viewCheckInSubmissionDetail(
@@ -233,6 +244,9 @@ export async function viewCheckInSubmissionDetail(
     reviewed: result.value.reviewed,
     fields: result.value.fields,
     canMark: result.value.canMark,
+    feedback: result.value.feedback,
+    feedbackNextCursor: result.value.feedbackNextCursor,
+    canSend: result.value.canSend,
   };
 }
 
@@ -398,4 +412,352 @@ export async function readStaffCheckInCalendarAction(
     items: result.value.items,
     truncated: result.value.truncated === true,
   };
+}
+
+/**
+ * CHECK-IN-FEEDBACK-I1 — staff written feedback (reviewed P3 contract).
+ * `sendCheckInFeedbackAction` is the only write path: same gate-first
+ * ordering (feature resolver → session → bounded FormData → boundary),
+ * one committed send = one `checkin_feedback` CREATE audit. The
+ * `clientRequestId` nonce is minted by the composer and carried
+ * UNCHANGED through every retry — the unique index, not the network,
+ * is the dedup authority. `resolveCheckInFeedbackSendAction` is the
+ * bounded reconciliation read for the remount/reload path.
+ */
+export type StaffCheckInFeedbackSendState =
+  | { status: "idle" }
+  | { status: "error"; message: string }
+  | {
+      status: "ok";
+      outcome: "sent" | "already_sent";
+      feedbackId: string;
+      sentAt: string;
+      byName: string;
+      body: string;
+    };
+
+export async function sendCheckInFeedbackAction(
+  _prev: StaffCheckInFeedbackSendState,
+  formData: FormData,
+): Promise<StaffCheckInFeedbackSendState> {
+  // 1. Feature resolver — before ANY session/FormData/DB work.
+  if (!isCheckInsEnabled()) return { status: "error", message: OFF };
+
+  // 2. Session gate.
+  const userId = await sessionUser();
+  if (userId === null) return { status: "error", message: DENIED };
+
+  // 3. Bounded inputs — opaque route IDs + nonce + the text body.
+  const workspaceId = singleString(formData, "workspaceId", 128);
+  const clientProfileId = singleString(formData, "clientProfileId", 128);
+  const submissionId = singleString(formData, "submissionId", 128);
+  const clientRequestId = singleString(formData, "clientRequestId", 64);
+  const body = singleString(formData, "body", 4096);
+  if (
+    workspaceId === null ||
+    clientProfileId === null ||
+    submissionId === null ||
+    clientRequestId === null ||
+    body === null
+  )
+    return { status: "error", message: INVALID };
+
+  const result = await sendCheckInFeedbackFromAction(
+    { user: { id: userId } },
+    { workspaceId, clientProfileId, submissionId, body, clientRequestId },
+  );
+  if (!result.ok) return { status: "error", message: result.message };
+  revalidatePath(
+    `/workspace/${workspaceId}/clients/${clientProfileId}/checkins`,
+  );
+  return {
+    status: "ok",
+    outcome: result.value.status,
+    feedbackId: result.value.feedbackId,
+    sentAt: result.value.sentAt,
+    byName: result.value.byName,
+    body: result.value.body,
+  };
+}
+
+export type ResolveCheckInFeedbackSendState =
+  | {
+      status: "sent";
+      feedbackId: string;
+      sentAt: string;
+      byName: string;
+      body: string;
+    }
+  | { status: "not_sent" }
+  | { status: "unavailable" }
+  | { status: "error"; message: string };
+
+/** Programmatic (non-form) call — same gate-first ordering. */
+export async function resolveCheckInFeedbackSendAction(input: {
+  workspaceId: string;
+  clientProfileId: string;
+  submissionId: string;
+  clientRequestId: string;
+}): Promise<ResolveCheckInFeedbackSendState> {
+  if (!isCheckInsEnabled()) return { status: "unavailable" };
+  const userId = await sessionUser();
+  if (userId === null) return { status: "error", message: DENIED };
+  if (
+    typeof input !== "object" ||
+    input === null ||
+    typeof input.workspaceId !== "string" ||
+    input.workspaceId.length === 0 ||
+    input.workspaceId.length > 128 ||
+    typeof input.clientProfileId !== "string" ||
+    input.clientProfileId.length === 0 ||
+    input.clientProfileId.length > 128 ||
+    typeof input.submissionId !== "string" ||
+    input.submissionId.length === 0 ||
+    input.submissionId.length > 128 ||
+    typeof input.clientRequestId !== "string" ||
+    input.clientRequestId.length === 0 ||
+    input.clientRequestId.length > 64
+  )
+    return { status: "error", message: INVALID };
+
+  const result = await resolveCheckInFeedbackSendFromAction(
+    { user: { id: userId } },
+    input,
+  );
+  if (!result.ok) {
+    // Denials and closed failures surface as truthful "unavailable" —
+    // never a false "not_sent" (which would invite a duplicate send).
+    return { status: "unavailable" };
+  }
+  return result.value;
+}
+
+export type ListStaffCheckInFeedbackState =
+  | {
+      status: "ok";
+      items: import("@/lib/checkin/instances").CheckInFeedbackItem[];
+      nextCursor: string | null;
+      hasMore: boolean;
+    }
+  | { status: "error"; message: string };
+
+/** Programmatic bounded page read for the staff thread's "load more". */
+export async function listStaffCheckInFeedbackAction(
+  ctx: { workspaceId: string; clientProfileId: string; submissionId: string },
+  input: { cursor: string },
+): Promise<ListStaffCheckInFeedbackState> {
+  if (!isCheckInsEnabled()) return { status: "error", message: OFF };
+  const userId = await sessionUser();
+  if (userId === null) return { status: "error", message: DENIED };
+  if (
+    typeof ctx !== "object" ||
+    ctx === null ||
+    typeof ctx.workspaceId !== "string" ||
+    ctx.workspaceId.length === 0 ||
+    ctx.workspaceId.length > 128 ||
+    typeof ctx.clientProfileId !== "string" ||
+    ctx.clientProfileId.length === 0 ||
+    ctx.clientProfileId.length > 128 ||
+    typeof ctx.submissionId !== "string" ||
+    ctx.submissionId.length === 0 ||
+    ctx.submissionId.length > 128 ||
+    typeof input !== "object" ||
+    input === null ||
+    typeof input.cursor !== "string" ||
+    input.cursor.length === 0 ||
+    input.cursor.length > 160
+  )
+    return { status: "error", message: INVALID };
+
+  const result = await listStaffCheckInFeedback(
+    { user: { id: userId } },
+    { ...ctx, cursor: input.cursor },
+  );
+  if (!result.ok) return { status: "error", message: result.message };
+  return {
+    status: "ok",
+    items: result.value.items,
+    nextCursor: result.value.nextCursor,
+    hasMore: result.value.hasMore,
+  };
+}
+
+/**
+ * CHECK-IN-RECURRENCE-I1 (decision 114) — bounded weekly schedule-rule
+ * actions (reviewed P3 contract + P3-R1 refinements). All writes are
+ * EXPLICIT staff POSTs — same gate-first ordering (feature resolver →
+ * session → bounded FormData → boundary). No read path ever schedules.
+ * The browser submits a POSITIONAL form selection (re-mapped
+ * server-side, never a raw formId), a weekday, HH:MM local time, a
+ * coach-CONFIRMED IANA timezone (explicit `timezoneConfirmed` flag
+ * required — the browser zone is a suggestion, never proof), and
+ * inclusive local start/end dates.
+ */
+export type StaffCheckInRuleState =
+  | { ok: "idle" }
+  | { ok: true; status: "created" | "replaced" }
+  | { ok: false; message: string };
+
+export async function createCheckInRuleAction(
+  _prev: StaffCheckInRuleState,
+  formData: FormData,
+): Promise<StaffCheckInRuleState> {
+  // 1. Feature resolver — before ANY session/FormData/DB work.
+  if (!isCheckInsEnabled()) return fail(OFF) as StaffCheckInRuleState;
+
+  // 2. Session gate.
+  const userId = await sessionUser();
+  if (userId === null) return fail(DENIED) as StaffCheckInRuleState;
+
+  // 3. Bounded input binding.
+  const workspaceId = singleString(formData, "workspaceId", 128);
+  const clientProfileId = singleString(formData, "clientProfileId", 128);
+  const positionRaw = singleString(formData, "formVersionPosition", 8);
+  const weekday = singleString(formData, "weekday", 16);
+  const localTime = singleString(formData, "localTime", 8);
+  const timezone = singleString(formData, "timezone", 64);
+  const timezoneConfirmed = singleString(formData, "timezoneConfirmed", 4);
+  const startDate = singleString(formData, "startDate", 16);
+  const endDateRaw = singleString(formData, "endDate", 16);
+  const replacesRuleId = singleString(formData, "replacesRuleId", 128);
+  if (
+    workspaceId === null ||
+    clientProfileId === null ||
+    positionRaw === null ||
+    weekday === null ||
+    localTime === null ||
+    timezone === null ||
+    startDate === null ||
+    !/^[0-9]+$/.test(positionRaw) ||
+    !/^\d{2}:\d{2}$/.test(localTime)
+  )
+    return fail(INVALID) as StaffCheckInRuleState;
+  // The timezone must be EXPLICITLY confirmed by the coach — a missing
+  // or false confirmation is an invalid request, never silently stored.
+  if (timezoneConfirmed !== "1") return fail(INVALID) as StaffCheckInRuleState;
+  const position = Number(positionRaw);
+  if (!Number.isSafeInteger(position))
+    return fail(INVALID) as StaffCheckInRuleState;
+  const [hh, mm] = localTime.split(":").map(Number);
+  const localTimeMinutes = hh * 60 + mm;
+  if (hh > 23 || mm > 59) return fail(INVALID) as StaffCheckInRuleState;
+
+  // 4. Positional form selection re-mapped through the authorized list.
+  const versions = await listSchedulableVersionsForClient(
+    { user: { id: userId } },
+    { workspaceId, clientProfileId },
+  );
+  if (!versions.ok) return versions as StaffCheckInRuleState;
+  const picked = versions.value.options[position];
+  if (!picked) return fail(INVALID) as StaffCheckInRuleState;
+
+  const result = await createCheckInScheduleRuleFromAction(
+    { user: { id: userId } },
+    {
+      workspaceId,
+      clientProfileId,
+      formId: picked.formId,
+      weekday,
+      localTimeMinutes,
+      timezone,
+      startDate,
+      endDate: endDateRaw,
+      ...(replacesRuleId !== null ? { replacesRuleId } : {}),
+    },
+  );
+  if (!result.ok) return result as StaffCheckInRuleState;
+  revalidatePath(
+    `/workspace/${workspaceId}/clients/${clientProfileId}/checkins`,
+  );
+  return { ok: true, status: result.value.status };
+}
+
+export type StaffCheckInRuleLifecycleState =
+  | { ok: "idle" }
+  | { ok: true; status: "paused" | "resumed" | "ended" }
+  | { ok: false; message: string };
+
+export async function setCheckInRuleStatusAction(
+  _prev: StaffCheckInRuleLifecycleState,
+  formData: FormData,
+): Promise<StaffCheckInRuleLifecycleState> {
+  if (!isCheckInsEnabled()) return fail(OFF) as StaffCheckInRuleLifecycleState;
+  const userId = await sessionUser();
+  if (userId === null) return fail(DENIED) as StaffCheckInRuleLifecycleState;
+
+  const workspaceId = singleString(formData, "workspaceId", 128);
+  const clientProfileId = singleString(formData, "clientProfileId", 128);
+  const ruleId = singleString(formData, "ruleId", 128);
+  const action = singleString(formData, "ruleAction", 8);
+  if (
+    workspaceId === null ||
+    clientProfileId === null ||
+    ruleId === null ||
+    (action !== "pause" && action !== "resume" && action !== "end")
+  )
+    return fail(INVALID) as StaffCheckInRuleLifecycleState;
+
+  const result = await setCheckInScheduleRuleStatusFromAction(
+    { user: { id: userId } },
+    { workspaceId, clientProfileId, ruleId, action },
+  );
+  if (!result.ok) return result as StaffCheckInRuleLifecycleState;
+  revalidatePath(
+    `/workspace/${workspaceId}/clients/${clientProfileId}/checkins`,
+  );
+  return { ok: true, status: result.value.status };
+}
+
+/**
+ * The ONLY generation path — an explicit authorized staff POST. The
+ * returned classification is rendered verbatim: examinedThrough /
+ * created / alreadyGenerated / skippedConflicts / unrepresentable.
+ */
+export type StaffCheckInGenerateState =
+  | { ok: "idle" }
+  | { ok: false; message: string }
+  | {
+      ok: true;
+      status: "generated" | "paused" | "ended";
+      examinedThrough: string | null;
+      created: number;
+      alreadyGenerated: number;
+      skippedConflicts: string[];
+      unrepresentable: string[];
+    };
+
+export async function generateCheckInRuleAction(
+  _prev: StaffCheckInGenerateState,
+  formData: FormData,
+): Promise<StaffCheckInGenerateState> {
+  if (!isCheckInsEnabled()) return fail(OFF) as StaffCheckInGenerateState;
+  const userId = await sessionUser();
+  if (userId === null) return fail(DENIED) as StaffCheckInGenerateState;
+
+  const workspaceId = singleString(formData, "workspaceId", 128);
+  const clientProfileId = singleString(formData, "clientProfileId", 128);
+  const ruleId = singleString(formData, "ruleId", 128);
+  if (workspaceId === null || clientProfileId === null || ruleId === null)
+    return fail(INVALID) as StaffCheckInGenerateState;
+
+  const result = await generateCheckInScheduleRuleInstancesFromAction(
+    { user: { id: userId } },
+    { workspaceId, clientProfileId, ruleId },
+  );
+  if (!result.ok) return result as StaffCheckInGenerateState;
+  revalidatePath(
+    `/workspace/${workspaceId}/clients/${clientProfileId}/checkins`,
+  );
+  const v = result.value;
+  return v.status === "generated"
+    ? { ok: true, ...v }
+    : {
+        ok: true,
+        status: v.status,
+        examinedThrough: null,
+        created: 0,
+        alreadyGenerated: 0,
+        skippedConflicts: [],
+        unrepresentable: [],
+      };
 }

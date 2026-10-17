@@ -126,17 +126,19 @@ export function coachTargetRoleIsEligible(
   requestedRole: "PRIMARY" | "COACH",
 ): boolean {
   if (targetRole === "COACH") return true;
+  // SOLO-COACH-I1 (decision 111): a WORKSPACE_OWNER may act as coach —
+  // eligible for PRIMARY or COACH through explicit assignment only.
+  if (targetRole === "WORKSPACE_OWNER") return true;
   if (targetRole === "ASSISTANT_COACH") return requestedRole === "COACH";
   return false;
 }
 
-export function assertAssignmentMutationsExternallyExposable(): never {
-  // S1-E now couples audit writing transactionally, but that alone does not
-  // authorize exposure: no route/action may expose these mutations until the
-  // routing slice and its independent review. This is not a no-op auditor; it
-  // fails closed.
-  throw new WorkspaceServiceError("audit_not_wired_for_external_use");
-}
+// SOLO-COACH-I1: `assertAssignmentMutationsExternallyExposable` was removed —
+// its fail-closed-by-non-exposure intent is discharged by the reviewed
+// routing slice (app/workspace/[workspaceId]/clients/[clientProfileId]/
+// coaches/), whose server actions re-authorize through these services on
+// every call. Assignment mutations are now legitimately externally
+// reachable under the action-layer contract.
 
 // --- internal helpers -------------------------------------------------------
 
@@ -373,6 +375,55 @@ export async function listClientAssignments(
   const nextCursor =
     rows.length > take ? (items[items.length - 1]?.id ?? null) : null;
   return { items, nextCursor };
+}
+
+/**
+ * SOLO-COACH-I1 (decision 111): bounded eligible-member listing for the
+ * owner-managed assignment selector. Owner-only — gated on the same
+ * `clientAssignments` read scope as `listClientAssignments` (which is
+ * workspace-scope-only), so SUPPORT/CLIENT/non-member/inactive/cross-
+ * workspace and dual-role PLATFORM_ADMIN callers all deny. Returns the
+ * minimum selector payload — member id, display name, membership role —
+ * for ACTIVE members whose role `coachTargetRoleIsEligible` admits for at
+ * least one assignment role (WORKSPACE_OWNER, COACH, ASSISTANT_COACH;
+ * SUPPORT and CLIENT are never assignable and never listed).
+ */
+export async function listAssignableCoachMembers(
+  session: SessionLike,
+  input: { workspaceId: string },
+  client: PrismaClient = prisma,
+): Promise<{ memberId: string; displayName: string; role: WorkspaceRole }[]> {
+  const ctx = await authorizeCollection(
+    session,
+    {
+      resource: "clientAssignments",
+      action: "read",
+      workspaceId: input.workspaceId,
+    },
+    createPrismaAuthorizationRepo(client),
+  );
+  if (ctx.grantedScope !== "workspace") {
+    throw new AccessDeniedError("role_denied", "clientAssignments", "read");
+  }
+  const rows = await client.workspaceMember.findMany({
+    where: {
+      workspaceId: input.workspaceId,
+      status: "ACTIVE",
+      role: { in: ["WORKSPACE_OWNER", "COACH", "ASSISTANT_COACH"] },
+      user: { status: "ACTIVE" },
+    },
+    orderBy: { id: "asc" },
+    select: {
+      id: true,
+      role: true,
+      user: { select: { name: true, email: true } },
+    },
+  });
+  return rows.map((row) => ({
+    memberId: row.id,
+    displayName: row.user.name ?? row.user.email,
+    role: row.role,
+  }));
 }
 
 export async function assignCoach(

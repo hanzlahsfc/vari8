@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
 import {
+  listOwnCheckInFeedbackItems,
   readOwnCheckInCalendar,
   submitCheckInInstanceFromAction,
 } from "@/lib/checkin/instances-boundary";
@@ -137,5 +138,60 @@ export async function readOwnCheckInCalendarAction(
     status: "ok",
     items: result.value.items,
     truncated: result.value.truncated === true,
+  };
+}
+
+/**
+ * CHECK-IN-FEEDBACK-I1 — client "load more" for the feedback thread on
+ * their own submitted Check-In. Same gate-first ordering; the boundary
+ * re-authorizes checkinFeedback own-scope + consent inside the
+ * transaction — the cursor only positions within the authorized target.
+ */
+export async function listOwnCheckInFeedbackAction(
+  ctx: { workspaceId: string; instanceId: string },
+  input: { cursor: string },
+): Promise<
+  | {
+      status: "ok";
+      items: import("@/lib/checkin/instances").CheckInFeedbackItem[];
+      nextCursor: string | null;
+      hasMore: boolean;
+    }
+  | { status: "error"; message: string }
+> {
+  if (!isCheckInsEnabled()) return { status: "error", message: OFF };
+  const session = await auth();
+  if (!session?.user?.id) return { status: "error", message: DENIED };
+  if (
+    typeof ctx !== "object" ||
+    ctx === null ||
+    typeof ctx.workspaceId !== "string" ||
+    ctx.workspaceId.length === 0 ||
+    ctx.workspaceId.length > 128 ||
+    typeof ctx.instanceId !== "string" ||
+    ctx.instanceId.length === 0 ||
+    ctx.instanceId.length > 128 ||
+    typeof input !== "object" ||
+    input === null ||
+    typeof input.cursor !== "string" ||
+    input.cursor.length === 0 ||
+    input.cursor.length > 160
+  )
+    return { status: "error", message: INVALID };
+
+  const result = await listOwnCheckInFeedbackItems(
+    { user: { id: session.user.id } },
+    {
+      workspaceId: ctx.workspaceId,
+      instanceId: ctx.instanceId,
+      cursor: input.cursor,
+    },
+  );
+  if (!result.ok) return { status: "error", message: result.message };
+  return {
+    status: "ok",
+    items: result.value.items,
+    nextCursor: result.value.nextCursor,
+    hasMore: result.value.hasMore,
   };
 }

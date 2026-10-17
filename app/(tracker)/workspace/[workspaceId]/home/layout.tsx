@@ -14,6 +14,7 @@ import {
   resolveWorkspaceAccess,
 } from "@/lib/auth/route-guard";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
+import { isMealPlansEnabled } from "@/lib/mealplan/gate";
 import { isOnboardingSubmissionEnabled } from "@/lib/onboarding/submission-gate";
 
 export const dynamic = "force-dynamic";
@@ -98,6 +99,14 @@ export default async function HomeLayout({
                 data-testid="client-checkins-link"
               >
                 Check-Ins
+              </Link>
+            ) : null}
+            {isMealPlansEnabled() ? (
+              <Link
+                href={`/workspace/${workspaceId}/meal-plan`}
+                data-testid="client-mealplan-link"
+              >
+                Meal Plan
               </Link>
             ) : null}
           </nav>

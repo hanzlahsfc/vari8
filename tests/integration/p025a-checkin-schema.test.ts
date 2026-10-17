@@ -191,6 +191,10 @@ describe.skipIf(!enabled)("P-025-A schema — tables/columns/constraints", () =>
       "checkin_submission",
       "checkin_submission_answer",
       "checkin_review",
+      // CHECK-IN-FEEDBACK-I1 (decision 112): append-only staff feedback.
+      "checkin_feedback",
+      // CHECK-IN-RECURRENCE-I1 (decision 114): bounded weekly rules.
+      "checkin_schedule_rule",
     ]);
     for (const n of names) {
       if (!n.startsWith("checkin_")) continue;

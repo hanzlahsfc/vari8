@@ -1476,3 +1476,201 @@ composite same-workspace coherence FKs in raw SQL per repo convention;
 changed-ALLOW audit only, metadata-free of habit text. Retention/
 deletion stays deferred under unresolved D-10. The
 `ENABLE_CLIENT_DASHBOARD` gate is reused for every habit surface.
+
+**Decision #111 (APPROVED):** the solo-coach workflow (SOLO-COACH-I1,
+under the independently reviewed SOLO-COACH-P2 contract `2b0d7eca…`,
+P2-R1 PASS `549a2916…`). An owner may act as coach inside their own
+workspace through **explicit** `ClientAssignment` rows only — never
+implicitly. Approved rules: (a) a `WORKSPACE_OWNER` is an eligible
+assignment target for **PRIMARY or COACH**; COACH behavior is unchanged
+and ASSISTANT_COACH remains assignable as COACH only (never PRIMARY);
+(b) owner-managed assignment management ships as an owner-gated screen
+with explicit assign / set-primary / remove actions — assignment removal
+ends only the `ClientAssignment` and never touches workspace membership,
+role, or status; there is no automatic self-assignment, no duplicate
+membership, and no combined role; (c) `clientAssignments` is added to
+`PLATFORM_ADMIN_DENIED_RESOURCES` — a platform admin is denied on the
+assignment read/mutation surface **including** a dual-role account
+holding an ACTIVE owner membership; (d) amending **#95**, owner write on
+`checkinsCoachReviews` moves `denied → assigned` — the owner may mark a
+Check-In submission reviewed only where an ACTIVE assignment exists;
+(e) separately approved, amending **#37** (the general submission-
+authorization direction; the P-024 matrix is its onboarding
+instantiation), owner write on `onboardingSubmissionReviews` moves
+`denied → assigned` under the same rule; (f) both `canMark` predicates
+derive from actual write scope + ACTIVE-assignment existence + lifecycle
+state — owner role alone never grants the mark affordance, authorized
+reads remain when write capability is absent, and the write transaction
+independently re-authorizes and FOR UPDATE-locks the assignment
+(read-time capability is advisory, never authorization). Corrections
+recorded prospectively: the SOLO-COACH-P1 plan's claim that
+`clientAssignments` was already in the platform-admin deny-set was
+false; the P1-R1 review citation is `36b00197…`/113 lines (`9c73ca68…`
+is the CHECK-IN-FEEDBACK-P1-R1 review, not the solo-coach one); the
+assignment-aware `canMark` intentionally tightens ordinary coach button
+visibility too (the predicate now requires an ACTIVE assignment row, not
+role alone). No automatic privilege elevation: an unassigned or revoked
+owner can still read at workspace scope but cannot write reviews. This
+decision authorizes no feedback slice, staff queue, retention default,
+or production enablement.
+
+## CHECK-IN-FEEDBACK-I1 — owner approval (2026-10-15, implementation prompt)
+
+**Decision #112 (APPROVED — synthetic/testing boundaries only):** bounded
+staff-authored plain-text feedback on Check-In submissions, under the
+independently reviewed CHECK-IN-FEEDBACK-P3 contract (`0427fcb1…`, 137
+lines; P3-R1 `6eece636…`, 96 lines) plus the reviewer's bounded
+refinements. Approved scope: feedback text attaches to an exact
+CheckInSubmission; a `CheckInReview` acknowledgement must exist first
+(#96 unchanged — feedback never alters the terminal ack); ANY currently
+assigned coach may send (need not be the reviewer); an explicitly
+assigned owner sends under the merged #111 assigned-write rules; owners
+read workspace-wide, authorized assistants read assigned, clients read
+only their own authorized feedback; sent text is immutable — corrections
+are dated follow-ups; the client surface says "Response sent" derived
+solely from persisted feedback rows — never a read/seen state; SUPPORT
+and PLATFORM_ADMIN are denied including the dual-role membership path
+(deny-set entry). Authorization: new `checkinFeedback` resource —
+owner `workspace`/`assigned`, coach `assigned`/`assigned`, assistant
+`assigned`/`denied`, client `own`/`denied`, SUPPORT/PLATFORM_ADMIN
+denied; audit resource `checkin_feedback` (IDs + structural markers
+only, never body text; one CREATE per committed send; replays/denials/
+rollbacks write none). Idempotency: `clientRequestId` client nonce —
+explicitly a NEW pattern (existing anchors are natural keys) — unique
+per `(submissionId, clientRequestId)`; identical replay →
+`already_sent` after a consent recheck; any author/body mismatch →
+`idempotency_conflict`; P2002 honored only on the idempotency
+constraint (`meta.target` scoped). Ordering `sentAt ASC, id ASC`
+everywhere; keyset cursor `sentAt > c OR (sentAt = c AND id > c)`;
+50-page, truthful `hasMore`. Owner answers recorded prospectively: (1)
+feedback follows the EXISTING Check-In consent requirements — if
+consent blocks answers it blocks feedback; no staff-authorship
+exemption; replay after withdrawal fails `consent_missing`, never
+`already_sent`; (2) author departure does NOT erase sent feedback —
+rows persist with provenance, readable only by currently authorized
+readers subject to consent and future retention/deletion policy;
+persistence ≠ deletion-immune and no former participant is promised
+retained access. Client-side retry identity: nonce in React state +
+nonce-only sessionStorage marker (never feedback text), bounded
+authorized reconciliation read on remount/reload; the document-exit/
+browser-restart duplicate-visible edge is honestly disclosed —
+exactly-once is per nonce, not across total client-state loss. NOT
+approved: video/attachments/messaging/plan-change links/read receipts/
+staff overview; retention duration, interim default, withdrawal,
+erasure, or legal-hold policy (#102 params remain open); production
+consent wording (#81); production/real-client enablement — this slice
+is synthetic-only and production remains fail-closed under #38/#39/
+D-10/D-09.
+
+## CHECK-IN-OVERVIEW-I1 — owner approval (2026-10-16, implementation prompt)
+
+**Decision #113 (APPROVED — synthetic/testing boundaries only):** a
+read-only staff "Check-In review overview" — the bounded W09 subset
+approved under the independently reviewed CHECK-IN-OVERVIEW-P2 contract
+(`4d619ccf…`, 224 lines; P2-R1 `bd204a61…`, 85 lines) plus the
+reviewer's A→B stale-response coverage requirement. Approved scope:
+the queue lists exactly the submissions that exist with NO review —
+the `reviews: { none: {} }` anti-join is the complete predicate (one
+immutable submission per instance, one terminal review per submission,
+submitted instances cannot be cancelled — no invented status). Scope:
+owner `workspace`-read; coach and assistant `assigned`-read on the
+existing `checkinsCoachReviews` resource; CLIENT `own` is explicitly
+rejected for this staff surface; SUPPORT and PLATFORM_ADMIN are denied
+including the dual-role membership path (existing deny-set). The list
+is header-only (form/version/client/due/submitted/late) — zero answer
+or feedback content, zero audits, no consent gate at list level (the
+destination detail independently re-authorizes, consent-gates, and
+audits). `canReview` is a derived snapshot hint only (caller write
+cell AND per-row ACTIVE assignment — never role alone); it grants no
+write. Rows are honest read-only labels, never "your tasks." Query:
+one bounded workspace-level keyset read (`submittedAt ASC, id ASC`,
+`{iso}|{id}` cursor, N+1 `hasMore`) with scope and predicate filters
+in SQL before LIMIT; the single justified index is
+`(workspace_id, submitted_at, id)` on `checkin_submission`. Deep link:
+bounded single-value `?submission=<id>` on the existing per-client
+staff page dispatches the SAME audited detail action a row click uses —
+one committed load, one structural READ audit (per-load accounting, no
+global exactly-once claim). NOT approved: late Check-In sections, client
+tasks, onboarding or feedback queues, bulk review, totals/"everything
+pending" claims, attention rules, dashboard widgets, per-client fan-out
+enumeration, or any write on this surface. Retention/privacy/production
+gates #102/#81/#38/#39/D-10/D-09 remain separate and unresolved; the
+full W09/W02 roadmap is NOT delivered by this slice; production
+enablement remains fail-closed.
+
+## CHECK-IN-RECURRENCE-I1 — owner approval (2026-10-16, implementation prompt)
+
+**Decision #114 (APPROVED — synthetic/testing boundaries only):** bounded
+weekly Check-In scheduling. One weekday per week at a chosen local time in
+a coach-explicitly-confirmed IANA timezone; local wall-clock time preserved
+across DST (gap → first valid minute via crossing detection, fold → earlier
+occurrence, whole-day skip → unrepresentable). Authorized staff explicitly
+generate occurrences through local T+56 inclusive (up to nine weekly
+dates); NO automatic replenishment, NO read-triggered writes — page, list,
+calendar, GET, RSC, prefetch all mutation- and audit-free. Pause prevents
+new generation and leaves existing dates; resume and inactivity never
+backfill; make-ups are manual. End cancels only still-unsubmitted
+generated instances; submitted/reviewed history is untouched. Schedule
+changes end the old rule and atomically create a replacement
+(end-and-replace). Each generation pins the latest ACTIVE published form
+version; existing instances keep their pinned versions. Generation
+reports truthfully: horizon examined, created, already-generated,
+skipped-conflicts, unrepresentable — a horizon with collisions is never
+labeled fully populated, and a missed generation is never disguised as a
+completed/cancelled/skipped submission. Authority: existing
+checkinInstances/write scopes (owner workspace, assigned coach assigned);
+scheduledByMemberId is the CURRENT authorized generating actor, never the
+stored rule creator. Assistants read-only; clients, SUPPORT, and
+platform-admin roles denied including the dual-role deny-set. This is
+bounded recurring scheduling — NOT an unattended scheduler, NOT automatic
+recurrence, and NOT a claim that every choice is an industry standard.
+Automatic replenishment and advanced cadences remain roadmap items with
+their own authorization/operational prerequisites. NOT approved:
+notifications, messaging, feedback changes, calendar redesign, retention
+policy, production/real-client use. Production/privacy gates
+#102/#81/#38/#39/D-10/D-09 remain separate and unresolved.
+
+---
+
+**Decision #115 (APPROVED — synthetic/testing boundaries only):** the
+staff-authored, client-viewed meal-plan workflow (MEAL-PLAN-I1, under the
+reviewed MEAL-PLAN-P3 contract). Assigned coaches and explicitly assigned
+owners author a shared draft and publish immutable, client-specific
+versions; unassigned owners keep workspace-wide read only; assistants are
+read-only within assigned scope; clients view their own published plan
+only (no client write path); SUPPORT and PLATFORM_ADMIN are denied —
+`mealPlans` joins the platform-admin deny-set so a dual-role membership
+cannot grant access, and the RBAC matrix's mealPlans owner-write cell is
+prospectively amended `denied → assigned`. All reads and writes are
+consent-gated (BASE_CONSENTS), authorization-gated, tenant-scoped, and
+audited with structural metadata only (never meal text, labels, or
+nutrition values). Draft saves use `draftRevision` compare-and-swap —
+a stale revision is `stale_revision` with zero writes. Publishing is
+idempotent by `publishOriginRevision` (a replayed call returns the
+committed version, never a second row); concurrent publishes serialize
+and allocate sequential `versionSeq` under transaction protection with
+a bounded retry on only the two declared publication uniques. Staff
+manually enter every meal and nutrition value — NO automatic totals,
+calorie conversions, percentages, attainment, recommendations, or range
+aggregation; fixed/range/minimum targets display exactly as entered
+(missing is never rendered as zero); all labeled variants stay visible
+with no automatic training/rest-day selection. Each plan requires an
+explicitly confirmed IANA timezone (coach/assigned-owner write scope);
+effective dates resolve to local midnight in that timezone via the
+reviewed `lib/checkin/timezone.ts` resolver — midnight-gap → first valid
+instant same date, midnight-fold → earlier occurrence, whole-day skip →
+publication rejected (`unrepresentable_date`, never a silent date
+shift). Every published version immutably stores `effectiveDate`,
+`effectiveTimezone`, and `activationInstant` snapshots; a later
+container-timezone change never retimes existing publications.
+Current-version selection is shared server-side — eligibility
+`activationInstant <= now`, precedence `effectiveDate DESC, versionSeq
+DESC`; upcoming = earliest future activation. The browser timezone is
+never consulted for applicability, and the UI distinguishes current,
+upcoming ("starts {date} ({tz})"), and no-plan states. Meal plans are
+dev/test-only behind the fail-closed `ENABLE_MEAL_PLANS` + trusted
+`APP_ENV` runtime gate — production builds cannot enable any surface.
+NOT approved: retention/deletion policy, clinical or licensing claims,
+notifications/messaging, recipe engines, barcode, provider integrations,
+production deployment, or real-client use. Production/privacy gates
+#102/#81/#38/#39/D-10/D-09 remain separate and unresolved.

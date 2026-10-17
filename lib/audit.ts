@@ -108,6 +108,12 @@ export const AUDIT_RESOURCE_TYPES = [
   // structural markers only — never due-at beyond a coarse marker, never
   // answer content). Replay/cancel-idempotency writes no event.
   "checkin_instance",
+  // CHECK-IN-RECURRENCE-I1 (decision #114): schedule-rule lifecycle
+  // events (create / pause / resume / end / replacement). IDs +
+  // structural markers only — never timezone, dates, times, or
+  // weekday content. Generation writes `checkin_instance` CREATE
+  // events; rule events carry no occurrence detail.
+  "checkin_schedule_rule",
   // P-025-B: first committed Check-In client submission (IDs + structural
   // markers only — never answer content, labels, option text, dates, or
   // consent detail). Replay writes no event.
@@ -132,6 +138,19 @@ export const AUDIT_RESOURCE_TYPES = [
   // event.
   "habit",
   "habit_log",
+  // CHECK-IN-FEEDBACK-I1: committed staff text feedback sends (IDs +
+  // structural markers only — never feedback body text). Idempotent
+  // replays (already_sent), idempotency conflicts, denials, and
+  // rollbacks write no event.
+  "checkin_feedback",
+  // MEAL-PLAN-I1 (decision #115): meal-plan container lifecycle
+  // (CREATE on first draft save, UPDATE on draft saves + timezone
+  // changes — `changed` marker only) and published-version events
+  // (CREATE + staff/client detail READ). IDs and structural markers
+  // only (version, effective date, status, variant count) — never
+  // meal text, labels, nutrition values, or timezone strings.
+  "meal_plan",
+  "meal_plan_version",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 

@@ -667,3 +667,75 @@ describe("HABITS-I1 (decision 110) — platform-admin deny-set", () => {
     });
   }
 });
+
+describe("SOLO-COACH-I1 (decision 111) — platform-admin deny-set: clientAssignments", () => {
+  const adminRoles: {
+    role:
+      "WORKSPACE_OWNER" | "COACH" | "ASSISTANT_COACH" | "SUPPORT" | "CLIENT";
+    label: string;
+  }[] = [
+    { role: "WORKSPACE_OWNER", label: "workspace-owner member" },
+    { role: "COACH", label: "assigned-coach member" },
+    { role: "ASSISTANT_COACH", label: "assistant member" },
+    { role: "SUPPORT", label: "support member" },
+    { role: "CLIENT", label: "client member" },
+  ];
+  for (const { role, label } of adminRoles) {
+    it(`denies a PLATFORM_ADMIN with an ACTIVE ${label} on clientAssignments (read + write + collection)`, async () => {
+      const { repo } = makeRepo({
+        user: {
+          id: "u1",
+          platformRole: "PLATFORM_ADMIN",
+          status: "ACTIVE",
+        },
+        membership: { id: "m1", role, status: "ACTIVE" },
+        client: { id: c, workspaceId: w, userId: "u1" },
+        assignment: { id: "a1" },
+      });
+      for (const action of ["read", "write"] as const)
+        expect(
+          await reason(() =>
+            authorize(
+              session(),
+              {
+                resource: "clientAssignments",
+                action,
+                workspaceId: w,
+                clientProfileId: c,
+              },
+              repo,
+            ),
+          ),
+        ).toBe("role_denied");
+      expect(
+        await reason(() =>
+          authorizeCollection(
+            session(),
+            {
+              resource: "clientAssignments",
+              action: "read",
+              workspaceId: w,
+            },
+            repo,
+          ),
+        ),
+      ).toBe("role_denied");
+    });
+  }
+
+  it("non-regression: an ordinary owner still resolves workspace scope on clientAssignments", async () => {
+    const { repo } = makeRepo({
+      membership: { id: "m1", role: "WORKSPACE_OWNER", status: "ACTIVE" },
+    });
+    const ctx = await authorize(
+      session(),
+      {
+        resource: "clientAssignments",
+        action: "write",
+        workspaceId: w,
+      },
+      repo,
+    );
+    expect(ctx.grantedScope).toBe("workspace");
+  });
+});

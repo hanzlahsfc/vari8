@@ -118,11 +118,13 @@ describe("P-025-C — checkinsCoachReviews capability split", () => {
     expect(
       resolveScope("checkinsCoachReviews", "read", "ASSISTANT_COACH"),
     ).toBe("assigned");
-    // Write (mark/submit): owner/assistant denied; only coach assigned +
-    // client own (client's own write is the submission path).
+    // Write (mark/submit): assistant denied; coach assigned; client own
+    // (client's own write is the submission path). SOLO-COACH-I1
+    // (decision 111, amends #95): owner write is `assigned` — requires an
+    // ACTIVE assignment, enforced again inside the write transaction.
     expect(
       resolveScope("checkinsCoachReviews", "write", "WORKSPACE_OWNER"),
-    ).toBe("denied");
+    ).toBe("assigned");
     expect(
       resolveScope("checkinsCoachReviews", "write", "ASSISTANT_COACH"),
     ).toBe("denied");

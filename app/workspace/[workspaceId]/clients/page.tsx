@@ -7,6 +7,7 @@ import { resolveScope } from "@/lib/auth/rbac";
 import { resolveDailyEntryMode } from "@/lib/daily-entry/gate";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
 import { isClientDashboardEnabled } from "@/lib/dashboard/gate";
+import { isMealPlansEnabled } from "@/lib/mealplan/gate";
 import { isOnboardingSubmissionEnabled } from "@/lib/onboarding/submission-gate";
 import { prisma } from "@/lib/db";
 import { listAccessibleClientProfiles } from "@/lib/workspace/clients";
@@ -118,6 +119,25 @@ export default async function ClientsPage({
   const showDashboardLinks =
     isClientDashboardEnabled() &&
     (dashboardLinkScope === "workspace" || dashboardLinkScope === "assigned");
+  // SOLO-COACH-I1 (decision 111): "Coaches" link renders only when the
+  // role resolves a `clientAssignments` write scope — owner only.
+  // Cosmetic convenience only; the destination re-authorizes (and the
+  // deny-set still catches a dual-role platform admin).
+  const coachesLinkScope =
+    member?.status === "ACTIVE" && member.role !== undefined
+      ? resolveScope("clientAssignments", "write", member.role)
+      : "denied";
+  const showCoachesLinks = coachesLinkScope !== "denied";
+  // MEAL-PLAN-I1 (decision 115): same cosmetic-gate shape — flag on AND
+  // the role can read meal plans (workspace/assigned); the destination
+  // re-authorizes `mealPlans` server-side.
+  const mealPlanLinkScope =
+    member?.status === "ACTIVE" && member.role !== undefined
+      ? resolveScope("mealPlans", "read", member.role)
+      : "denied";
+  const showMealPlanLinks =
+    isMealPlansEnabled() &&
+    (mealPlanLinkScope === "workspace" || mealPlanLinkScope === "assigned");
 
   return (
     <div className="catalog-page" data-testid="client-roster">
@@ -150,6 +170,8 @@ export default async function ClientsPage({
               {showCheckInLinks ? <th scope="col">Check-Ins</th> : null}
               {showOnboardingLinks ? <th scope="col">Onboarding</th> : null}
               {showDashboardLinks ? <th scope="col">Dashboard</th> : null}
+              {showMealPlanLinks ? <th scope="col">Meal plan</th> : null}
+              {showCoachesLinks ? <th scope="col">Coaches</th> : null}
             </tr>
           </thead>
           <tbody>
@@ -196,6 +218,27 @@ export default async function ClientsPage({
                       href={`${basePath}/${encodeURIComponent(client.id)}/onboarding`}
                     >
                       Onboarding
+                    </Link>
+                  </td>
+                ) : null}
+                {showMealPlanLinks ? (
+                  <td>
+                    <Link
+                      className="roster-pagination__link"
+                      href={`${basePath}/${encodeURIComponent(client.id)}/meal-plan`}
+                      data-testid={`mealplan-link-${client.id}`}
+                    >
+                      Meal plan
+                    </Link>
+                  </td>
+                ) : null}
+                {showCoachesLinks ? (
+                  <td>
+                    <Link
+                      className="roster-pagination__link"
+                      href={`${basePath}/${encodeURIComponent(client.id)}/coaches`}
+                    >
+                      Coaches
                     </Link>
                   </td>
                 ) : null}

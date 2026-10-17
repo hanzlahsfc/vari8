@@ -31,7 +31,13 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { prisma as defaultPrisma } from "../db";
-import { AccessDeniedError, authorize, type SessionLike } from "../auth/guard";
+import {
+  AccessDeniedError,
+  authorize,
+  authorizeCollection,
+  type SessionLike,
+} from "../auth/guard";
+import { resolveScope, type PrincipalRole } from "../auth/rbac";
 import { createPrismaAuthorizationRepo } from "../workspace/access";
 import { writeAuditEvent } from "../audit";
 import {
@@ -55,7 +61,9 @@ export type CheckInInstanceErrorCode =
   | "instance_not_accessible"
   | "consent_missing"
   | "policy_not_configured"
-  | "serialization_conflict";
+  | "serialization_conflict"
+  | "review_required"
+  | "idempotency_conflict";
 
 export class CheckInInstanceError extends Error {
   constructor(readonly code: CheckInInstanceErrorCode) {
@@ -390,6 +398,30 @@ function isUniqueViolation(error: unknown): boolean {
   );
 }
 
+/**
+ * CHECK-IN-FEEDBACK-I1: a P2002 may only be treated as an idempotent
+ * replay when it fired on the feedback idempotency constraint —
+ * `unique(submission_id, client_request_id)` on `CheckInFeedback`. ANY
+ * other unique violation (PK, foreign key) is a real failure and
+ * rethrows — it is never silently a successful replay.
+ */
+function isFeedbackNonceViolation(error: unknown): boolean {
+  if (!isUniqueViolation(error)) return false;
+  const meta = (error as Prisma.PrismaClientKnownRequestError).meta as
+    { modelName?: unknown; target?: unknown } | undefined;
+  if (meta?.modelName !== "CheckInFeedback") return false;
+  const target = meta?.target;
+  if (Array.isArray(target))
+    return (
+      target.includes("submission_id") && target.includes("client_request_id")
+    );
+  if (typeof target === "string")
+    return (
+      target.includes("submission_id") && target.includes("client_request_id")
+    );
+  return false;
+}
+
 async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
   let attempt = 0;
   for (;;) {
@@ -424,6 +456,8 @@ export type PrismaLike = Pick<
   | "checkInInstance"
   | "checkInSubmission"
   | "checkInSubmissionAnswer"
+  | "checkInReview"
+  | "checkInFeedback"
   | "checkInForm"
   | "checkInFormVersion"
   | "clientProfile"
@@ -461,7 +495,7 @@ async function lockedAuthorize(
   tx: Prisma.TransactionClient,
   session: SessionLike,
   request: {
-    resource: "checkinInstances" | "checkinsCoachReviews";
+    resource: "checkinInstances" | "checkinsCoachReviews" | "checkinFeedback";
     action: "read" | "write";
     workspaceId: string;
     clientProfileId: string;
@@ -511,7 +545,7 @@ async function lockAssignmentForScope(
   workspaceId: string,
   clientProfileId: string,
   memberId: string,
-  resource: "checkinInstances" | "checkinsCoachReviews",
+  resource: "checkinInstances" | "checkinsCoachReviews" | "checkinFeedback",
 ): Promise<void> {
   const resolved = await tx.clientAssignment.findFirst({
     where: {
@@ -1312,6 +1346,13 @@ export type OwnCheckInInstanceDetail = {
     valueDate: string | null;
     valueOptionIds: string[] | null;
   }> | null;
+  /** CHECK-IN-FEEDBACK-I1: bounded first page of staff feedback for this
+   * instance's own submission — queried inside the SAME consent gate as
+   * submittedAnswers; null whenever no submission exists. */
+  feedback: CheckInFeedbackItem[] | null;
+  /** Keyset cursor for the next (later) page, or null when the first
+   * page is complete. */
+  feedbackNextCursor: string | null;
 };
 
 export async function getOwnCheckInInstance(
@@ -1409,6 +1450,8 @@ export async function getOwnCheckInInstance(
       valueDate: Date | null;
       valueOptionIds: unknown;
     }> | null = null;
+    let ownFeedback: CheckInFeedbackItem[] | null = null;
+    let ownFeedbackNextCursor: string | null = null;
     if (submissionRow !== null) {
       const answerCtx = await authorize(
         session,
@@ -1443,6 +1486,31 @@ export async function getOwnCheckInInstance(
         },
         orderBy: { fieldId: "asc" },
       });
+
+      // CHECK-IN-FEEDBACK-I1 — own-scope feedback read INSIDE the same
+      // consent gate as answers (owner answer 1: no staff-authorship
+      // exemption). Explicit checkinFeedback authorization is required
+      // in addition to the existing Check-In authorization.
+      const feedbackCtx = await authorize(
+        session,
+        {
+          resource: "checkinFeedback",
+          action: "read",
+          workspaceId: input.workspaceId,
+          clientProfileId: profile.id,
+        },
+        createPrismaAuthorizationRepo(tx),
+      );
+      if (feedbackCtx.grantedScope !== "own")
+        throw new AccessDeniedError("role_denied", "checkinFeedback", "read");
+      const page = await feedbackPage(tx, {
+        workspaceId: input.workspaceId,
+        clientProfileId: profile.id,
+        submissionId: submissionRow.id,
+        limit: CHECKIN_FEEDBACK_PAGE_SIZE,
+      });
+      ownFeedback = page.items;
+      ownFeedbackNextCursor = page.nextCursor;
     }
 
     return {
@@ -1465,6 +1533,8 @@ export async function getOwnCheckInInstance(
             ? (a.valueOptionIds as string[])
             : null,
         })) ?? null,
+      feedback: ownFeedback,
+      feedbackNextCursor: ownFeedbackNextCursor,
     };
   });
 }
@@ -1882,6 +1952,22 @@ export type StaffCheckInSubmissionDetail = {
    * (COACH + granted assigned scope — owner/assistant are read-only).
    * The mark action re-authorizes independently; this is a UI hint. */
   canMark: boolean;
+  /** CHECK-IN-FEEDBACK-I1: bounded first page of the feedback thread
+   * (sentAt ASC, id ASC) queried inside the same consent gate as the
+   * answers. Body text only ever travels inside this audited detail
+   * payload — never in the header list.
+   * R2: null when the caller's checkinFeedback/read grant is absent —
+   * the thread is withheld rather than presented as an authorized
+   * empty thread. The two read cells coincide today; the explicit
+   * barrier is defense-in-depth resource separation. */
+  feedback: CheckInFeedbackItem[] | null;
+  /** Keyset cursor for the next (later) page, or null when complete. */
+  feedbackNextCursor: string | null;
+  /** Advisory send affordance — distinct from canMark: canMark requires
+   * review === null; canSend requires a review to EXIST plus the
+   * caller's assigned write cell + ACTIVE assignment. The send action
+   * re-authorizes independently. */
+  canSend: boolean;
   fields: StaffCheckInSubmissionFieldView[];
 };
 
@@ -2091,6 +2177,93 @@ export async function readCheckInSubmissionDetail(
           select: { name: true },
         });
 
+        // SOLO-COACH-I1 (decision 111): canMark reflects the caller's
+        // actual WRITE scope on checkinsCoachReviews (action-specific —
+        // an owner resolves `assigned` post-amendment), an ACTIVE
+        // ClientAssignment row, and lifecycle (already-reviewed → no
+        // affordance). Bounded indexed existence check — no answer rows.
+        // Advisory only: the write transaction independently
+        // re-authorizes and FOR UPDATE-locks the assignment.
+        const markWriteScope = resolveScope(
+          "checkinsCoachReviews",
+          "write",
+          member.role as PrincipalRole,
+        );
+        const markAssignment =
+          markWriteScope === "assigned"
+            ? await tx.clientAssignment.findFirst({
+                where: {
+                  workspaceId: input.workspaceId,
+                  clientProfileId: input.clientProfileId,
+                  coachMemberId: member.id,
+                  status: "ACTIVE",
+                },
+                select: { id: true },
+              })
+            : null;
+
+        // CHECK-IN-FEEDBACK-I1: the bounded feedback thread is queried
+        // INSIDE the existing whole-payload consent gate — after the
+        // FOR UPDATE consent check above, never before. canSend mirrors
+        // the canMark capability shape on checkinFeedback/write but
+        // requires the review to EXIST (it is the inverse edge: mark is
+        // offered pre-review, send post-review). Advisory only — the
+        // send transaction independently re-authorizes.
+        const sendWriteScope = resolveScope(
+          "checkinFeedback",
+          "write",
+          member.role as PrincipalRole,
+        );
+        const sendAssignment =
+          sendWriteScope === "assigned"
+            ? await tx.clientAssignment.findFirst({
+                where: {
+                  workspaceId: input.workspaceId,
+                  clientProfileId: input.clientProfileId,
+                  coachMemberId: member.id,
+                  status: "ACTIVE",
+                },
+                select: { id: true },
+              })
+            : null;
+        // CHECK-IN-FEEDBACK-I1-R2: explicit resource separation — the
+        // thread is authorized on checkinFeedback/read, not silently
+        // inherited from the checkinsCoachReviews detail read. The two
+        // read cells currently coincide, so this is defense-in-depth,
+        // not a repaired leak: a denied checkinFeedback read withholds
+        // the thread (null — never an empty array that would present as
+        // "no responses yet") while the authorized base detail survives.
+        // Consent still gates the read exactly as before.
+        let feedbackItems: CheckInFeedbackItem[] | null = null;
+        let feedbackNextCursor: string | null = null;
+        try {
+          const feedbackCtx = await authorize(
+            session,
+            {
+              resource: "checkinFeedback",
+              action: "read",
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+            },
+            createPrismaAuthorizationRepo(tx),
+          );
+          if (
+            feedbackCtx.grantedScope === "workspace" ||
+            feedbackCtx.grantedScope === "assigned"
+          ) {
+            const feedbackPage1 = await feedbackPage(tx, {
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+              submissionId: submission.id,
+              limit: CHECKIN_FEEDBACK_PAGE_SIZE,
+            });
+            feedbackItems = feedbackPage1.items;
+            feedbackNextCursor = feedbackPage1.nextCursor;
+          }
+        } catch (e) {
+          if (!(e instanceof AccessDeniedError)) throw e;
+        }
+
         // 11. Structural READ audit — last; a failed write rolls the
         // detail read (and its values) back (#89-analog).
         await writeAuditEvent(tx, ctx, {
@@ -2119,7 +2292,16 @@ export async function readCheckInSubmissionDetail(
                 at: review.reviewedAt.toISOString(),
               }
             : null,
-          canMark: ctx.grantedScope === "assigned" && member.role === "COACH",
+          canMark:
+            markWriteScope === "assigned" &&
+            markAssignment !== null &&
+            review === null,
+          feedback: feedbackItems,
+          feedbackNextCursor,
+          canSend:
+            sendWriteScope === "assigned" &&
+            sendAssignment !== null &&
+            review !== null,
           fields: definition.fields.map((f) => ({
             fieldId: f.fieldId,
             label: f.label,
@@ -2325,4 +2507,895 @@ export async function markCheckInSubmissionReviewed(
       throw second;
     }
   }
+}
+
+// ── CHECK-IN-FEEDBACK-I1: bounded staff text feedback ────────────────────
+
+/** Body bound — UTF-16 code units, matching textarea maxLength. */
+export const CHECKIN_FEEDBACK_BODY_MAX = 2000;
+/** Bounded page size for feedback thread reads. */
+export const CHECKIN_FEEDBACK_PAGE_SIZE = 50;
+/** Client nonce bound — opaque token, never parsed for meaning. */
+export const CHECKIN_FEEDBACK_NONCE_MAX = 64;
+
+export type CheckInFeedbackItem = {
+  id: string;
+  sentAt: string;
+  byName: string;
+  body: string;
+};
+
+export type CheckInFeedbackPage = {
+  items: CheckInFeedbackItem[];
+  /** Opaque "{sentAtIso}|{id}" cursor for the next (later) page. */
+  nextCursor: string | null;
+  hasMore: boolean;
+};
+
+/** Shared bounded ASC page query — used by the detail reads AND the
+ * paginated list functions. `WHERE` always carries the full coherence
+ * tuple; the cursor only positions within the authorized target. */
+async function feedbackPage(
+  tx: Prisma.TransactionClient,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    submissionId: string;
+    limit: number;
+    cursor?: { sentAt: Date; id: string };
+  },
+): Promise<CheckInFeedbackPage> {
+  const limit = Math.min(
+    Math.max(1, Math.floor(input.limit)),
+    CHECKIN_FEEDBACK_PAGE_SIZE,
+  );
+  const rows = await tx.checkInFeedback.findMany({
+    where: {
+      submissionId: input.submissionId,
+      workspaceId: input.workspaceId,
+      clientProfileId: input.clientProfileId,
+      ...(input.cursor
+        ? {
+            OR: [
+              { sentAt: { gt: input.cursor.sentAt } },
+              {
+                AND: [
+                  { sentAt: input.cursor.sentAt },
+                  { id: { gt: input.cursor.id } },
+                ],
+              },
+            ],
+          }
+        : {}),
+    },
+    select: {
+      id: true,
+      sentAt: true,
+      body: true,
+      authoredBy: {
+        select: { user: { select: { name: true, email: true } } },
+      },
+    },
+    orderBy: [{ sentAt: "asc" }, { id: "asc" }],
+    take: limit + 1,
+  });
+  const hasMore = rows.length > limit;
+  const page = rows.slice(0, limit);
+  const last = page[page.length - 1];
+  return {
+    items: page.map((r) => ({
+      id: r.id,
+      sentAt: r.sentAt.toISOString(),
+      byName: r.authoredBy.user.name ?? r.authoredBy.user.email,
+      body: r.body,
+    })),
+    hasMore,
+    nextCursor:
+      hasMore && last ? `${last.sentAt.toISOString()}|${last.id}` : null,
+  };
+}
+
+/** Parse the bounded opaque "{iso}|{id}" keyset cursor. */
+function parseFeedbackCursor(raw: string): { sentAt: Date; id: string } {
+  if (raw.length > 160) throw new CheckInInstanceError("invalid_input");
+  const idx = raw.indexOf("|");
+  if (idx <= 0) throw new CheckInInstanceError("invalid_input");
+  const iso = raw.slice(0, idx);
+  const id = raw.slice(idx + 1);
+  const sentAt = new Date(iso);
+  if (
+    Number.isNaN(sentAt.getTime()) ||
+    id.length === 0 ||
+    id.length > 64 ||
+    id.includes("|") ||
+    !isWellFormedIso(iso)
+  )
+    throw new CheckInInstanceError("invalid_input");
+  return { sentAt, id };
+}
+
+function isWellFormedIso(v: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(v);
+}
+
+/** Normalize + bound the feedback body. Returns null on rejection. */
+export function normalizeCheckInFeedbackBody(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const body = raw.trim();
+  if (body.length === 0 || body.length > CHECKIN_FEEDBACK_BODY_MAX) return null;
+  return body;
+}
+
+export type SendCheckInFeedbackInput = {
+  workspaceId: string;
+  clientProfileId: string;
+  submissionId: string;
+  body: string;
+  clientRequestId: string;
+};
+
+export type SendCheckInFeedbackResult = {
+  status: "sent" | "already_sent";
+  feedbackId: string;
+  sentAt: string;
+  byName: string;
+  /** The stored (normalized) body — echoed for optimistic append. */
+  body: string;
+};
+
+/**
+ * CHECK-IN-FEEDBACK-I1 send — serializable, mirrors
+ * `markCheckInSubmissionReviewed`. A CheckInReview MUST already exist
+ * (#96 ack is the prerequisite and is never altered). The idempotency
+ * anchor is `unique(submission_id, client_request_id)`: an identical
+ * replay returns `already_sent` (zero rows/audits) after a consent
+ * recheck; any author/body mismatch under the same nonce is a loud
+ * `idempotency_conflict`, never a silent coalesce. P2002 is honored
+ * ONLY for the idempotency constraint (`isFeedbackNonceViolation`).
+ */
+export async function sendCheckInFeedback(
+  session: SessionLike,
+  input: SendCheckInFeedbackInput,
+  deps: CheckInInstanceDeps = {},
+): Promise<SendCheckInFeedbackResult> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveCheckInConsentPolicy();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.clientProfileId) ||
+    !validId(input.submissionId) ||
+    !validId(input.clientRequestId) ||
+    input.clientRequestId.length > CHECKIN_FEEDBACK_NONCE_MAX
+  )
+    throw new CheckInInstanceError("invalid_input");
+  const body = normalizeCheckInFeedbackBody(input.body);
+  if (body === null) throw new CheckInInstanceError("invalid_input");
+
+  const attempt = (): Promise<SendCheckInFeedbackResult> =>
+    withSerializedRetry(() =>
+      db.$transaction(
+        async (tx) => {
+          // 1. Scoped answer-free pre-read — foreign/missing tuple fails
+          // BEFORE any foreign chkin advisory.
+          const pre = await tx.checkInSubmission.findFirst({
+            where: {
+              id: input.submissionId,
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+            },
+            select: { formId: true },
+          });
+          if (!pre) throw new CheckInInstanceError("not_available");
+
+          // 2–4. chkin → member advisories → member lock → authorize.
+          // checkinFeedback/write: only the assigned cell survives —
+          // owner write is assigned-only (#111), assistant/client/
+          // SUPPORT/PLATFORM_ADMIN are denied at the matrix + deny-set.
+          const { ctx, member } = await lockedAuthorize(
+            tx,
+            session,
+            {
+              resource: "checkinFeedback",
+              action: "write",
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+            },
+            pre.formId,
+          );
+          if (ctx.grantedScope !== "assigned")
+            throw new AccessDeniedError(
+              "role_denied",
+              "checkinFeedback",
+              "write",
+            );
+
+          // 5. Authoritative ACTIVE assignment re-resolve + lock.
+          await lockAssignmentForScope(
+            tx,
+            input.workspaceId,
+            input.clientProfileId,
+            member.id,
+            "checkinFeedback",
+          );
+
+          // 6. Locked profile → submission → instance.
+          const profile = await lockProfile(
+            tx,
+            input.workspaceId,
+            input.clientProfileId,
+          );
+          if (!profile) throw new CheckInInstanceError("not_available");
+          const submissionRows = await tx.$queryRawUnsafe<
+            { id: string; instanceId: string }[]
+          >(
+            `SELECT id, instance_id AS "instanceId"
+             FROM "checkin_submission"
+             WHERE id = $1 AND workspace_id = $2 AND client_profile_id = $3
+             FOR UPDATE`,
+            input.submissionId,
+            input.workspaceId,
+            input.clientProfileId,
+          );
+          const submission = submissionRows[0];
+          if (!submission) throw new CheckInInstanceError("not_available");
+          const instance = await lockInstance(
+            tx,
+            input.workspaceId,
+            submission.instanceId,
+          );
+          if (!instance || instance.clientProfileId !== input.clientProfileId)
+            throw new CheckInInstanceError("not_available");
+          // Defensive lifecycle: a cancelled instance can never hold a
+          // submission under the serialized protocol (#97); recheck.
+          if (instance.cancelledAt !== null)
+            throw new CheckInInstanceError("not_available");
+
+          // 7. Idempotent replay BEFORE the review prerequisite: a
+          // structurally identical retry returns the durable sent state
+          // — zero new rows, zero audits. Current consent is verified
+          // first (the `already_reviewed` precedent): a withdrawn caller
+          // gets consent_missing, never the confirmation. ANY
+          // author/body mismatch → loud idempotency_conflict.
+          const existing = await tx.checkInFeedback.findFirst({
+            where: {
+              submissionId: submission.id,
+              clientRequestId: input.clientRequestId,
+            },
+            select: {
+              id: true,
+              sentAt: true,
+              body: true,
+              authoredByMemberId: true,
+              authoredBy: {
+                select: {
+                  user: { select: { name: true, email: true } },
+                },
+              },
+            },
+          });
+          if (existing) {
+            if (
+              existing.authoredByMemberId !== member.id ||
+              existing.body !== body
+            )
+              throw new CheckInInstanceError("idempotency_conflict");
+            await checkRequiredConsent(
+              tx,
+              input.clientProfileId,
+              registry,
+              false,
+            );
+            return {
+              status: "already_sent",
+              feedbackId: existing.id,
+              sentAt: existing.sentAt.toISOString(),
+              byName:
+                existing.authoredBy.user.name ?? existing.authoredBy.user.email,
+              body: existing.body,
+            } satisfies SendCheckInFeedbackResult;
+          }
+
+          // 8. Review-exists prerequisite — feedback never precedes the
+          // terminal acknowledgement and never alters it.
+          const review = await tx.checkInReview.findFirst({
+            where: { submissionId: submission.id },
+            select: { id: true },
+          });
+          if (!review) throw new CheckInInstanceError("review_required");
+
+          // 9. Consent FOR UPDATE before the insert — the send fails
+          // closed after withdrawal (same posture as the review mark).
+          await checkRequiredConsent(tx, input.clientProfileId, registry, true);
+
+          // 10. Immutable row — no update pathway exists.
+          const author = await tx.workspaceMember.findUniqueOrThrow({
+            where: { id: member.id },
+            select: { user: { select: { name: true, email: true } } },
+          });
+          const feedback = await tx.checkInFeedback.create({
+            data: {
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+              submissionId: submission.id,
+              authoredByMemberId: member.id,
+              body,
+              clientRequestId: input.clientRequestId,
+            },
+            select: { id: true, sentAt: true },
+          });
+
+          // 11. Audit LAST — a failed audit rolls the row back. IDs +
+          // structural markers only — never the body text.
+          await writeAuditEvent(tx, ctx, {
+            action: "CREATE",
+            resourceType: "checkin_feedback",
+            resourceId: feedback.id,
+            subjectClientProfileId: input.clientProfileId,
+            meta: { changed: true },
+          });
+          return {
+            status: "sent",
+            feedbackId: feedback.id,
+            sentAt: feedback.sentAt.toISOString(),
+            byName: author.user.name ?? author.user.email,
+            body,
+          } satisfies SendCheckInFeedbackResult;
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      ),
+    );
+
+  try {
+    return await attempt();
+  } catch (error) {
+    // P2002 on the idempotency constraint ONLY — the concurrent send
+    // won. Re-enter the SAME fully authorized protocol exactly once
+    // (the replay lookup then resolves already_sent or
+    // idempotency_conflict); a second conflict → closed error. Any
+    // other unique violation rethrows immediately.
+    if (!isFeedbackNonceViolation(error)) throw error;
+    try {
+      return await attempt();
+    } catch (second) {
+      if (isFeedbackNonceViolation(second))
+        throw new CheckInInstanceError("serialization_conflict");
+      throw second;
+    }
+  }
+}
+
+export type ResolveCheckInFeedbackSendInput = {
+  workspaceId: string;
+  clientProfileId: string;
+  submissionId: string;
+  clientRequestId: string;
+};
+
+export type ResolveCheckInFeedbackSendResult =
+  | {
+      status: "sent";
+      feedbackId: string;
+      sentAt: string;
+      byName: string;
+      /** The stored body — the author is re-reading their own text. */
+      body: string;
+    }
+  | { status: "not_sent" };
+
+/**
+ * CHECK-IN-FEEDBACK-I1 recovery read — bounded reconciliation for the
+ * composer's remount/reload path. Re-authorizes checkinFeedback/read,
+ * verifies consent, and looks the nonce up scoped to the AUTHENTICATED
+ * AUTHOR + exact workspace/client/submission target. `not_sent` is NOT
+ * proof an in-flight send can never commit — callers keep the nonce.
+ * Denied actors get the denial, never a `not_sent` lie.
+ */
+export async function resolveCheckInFeedbackSend(
+  session: SessionLike,
+  input: ResolveCheckInFeedbackSendInput,
+  deps: CheckInInstanceDeps = {},
+): Promise<ResolveCheckInFeedbackSendResult> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveCheckInConsentPolicy();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.clientProfileId) ||
+    !validId(input.submissionId) ||
+    !validId(input.clientRequestId) ||
+    input.clientRequestId.length > CHECKIN_FEEDBACK_NONCE_MAX
+  )
+    throw new CheckInInstanceError("invalid_input");
+
+  return db.$transaction(
+    async (tx) => {
+      const pre = await tx.checkInSubmission.findFirst({
+        where: {
+          id: input.submissionId,
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+        },
+        select: { formId: true },
+      });
+      if (!pre) throw new CheckInInstanceError("not_available");
+
+      const { ctx, member } = await lockedAuthorize(
+        tx,
+        session,
+        {
+          resource: "checkinFeedback",
+          action: "read",
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+        },
+        pre.formId,
+      );
+      if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+        throw new AccessDeniedError("role_denied", "checkinFeedback", "read");
+      if (ctx.grantedScope === "assigned")
+        await lockAssignmentForScope(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+          member.id,
+          "checkinFeedback",
+        );
+
+      // Consent holds before ANY feedback read — a withdrawn caller gets
+      // the closed error, never a state reveal.
+      await checkRequiredConsent(tx, input.clientProfileId, registry, true);
+
+      const row = await tx.checkInFeedback.findFirst({
+        where: {
+          submissionId: input.submissionId,
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+          authoredByMemberId: member.id,
+          clientRequestId: input.clientRequestId,
+        },
+        select: {
+          id: true,
+          sentAt: true,
+          body: true,
+          authoredBy: {
+            select: { user: { select: { name: true, email: true } } },
+          },
+        },
+      });
+      if (!row) return { status: "not_sent" };
+      return {
+        status: "sent",
+        feedbackId: row.id,
+        sentAt: row.sentAt.toISOString(),
+        byName: row.authoredBy.user.name ?? row.authoredBy.user.email,
+        body: row.body,
+      };
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+}
+
+export type ListCheckInFeedbackInput = {
+  workspaceId: string;
+  clientProfileId: string;
+  submissionId: string;
+  cursor?: string;
+  limit?: number;
+};
+
+/**
+ * Staff feedback thread page — same authorization/consent protocol as
+ * the detail read; the thread itself is covered by the detail READ
+ * audit (this bounded page call writes no additional event). Ordering
+ * is `sentAt ASC, id ASC`; the keyset cursor only positions within the
+ * authorized target — a foreign cursor cannot leak rows.
+ */
+export async function listCheckInFeedback(
+  session: SessionLike,
+  input: ListCheckInFeedbackInput,
+  deps: CheckInInstanceDeps = {},
+): Promise<CheckInFeedbackPage> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveCheckInConsentPolicy();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.clientProfileId) ||
+    !validId(input.submissionId)
+  )
+    throw new CheckInInstanceError("invalid_input");
+  const cursor =
+    input.cursor !== undefined ? parseFeedbackCursor(input.cursor) : undefined;
+
+  return db.$transaction(
+    async (tx) => {
+      const pre = await tx.checkInSubmission.findFirst({
+        where: {
+          id: input.submissionId,
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+        },
+        select: { formId: true },
+      });
+      if (!pre) throw new CheckInInstanceError("not_available");
+
+      const { ctx, member } = await lockedAuthorize(
+        tx,
+        session,
+        {
+          resource: "checkinFeedback",
+          action: "read",
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+        },
+        pre.formId,
+      );
+      if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+        throw new AccessDeniedError("role_denied", "checkinFeedback", "read");
+      if (ctx.grantedScope === "assigned")
+        await lockAssignmentForScope(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+          member.id,
+          "checkinFeedback",
+        );
+
+      // Consent holds before ANY feedback body read.
+      await checkRequiredConsent(tx, input.clientProfileId, registry, true);
+
+      return feedbackPage(tx, {
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+        submissionId: input.submissionId,
+        limit: input.limit ?? CHECKIN_FEEDBACK_PAGE_SIZE,
+        cursor,
+      });
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+}
+
+export type ListOwnCheckInFeedbackInput = {
+  workspaceId: string;
+  instanceId: string;
+  cursor?: string;
+};
+
+/**
+ * Client feedback page for the caller's OWN instance submission —
+ * own-scope rebinding + explicit checkinFeedback own authorization +
+ * the same consent gate as answers. No submission → truthful empty
+ * page; denied/foreign → closed errors. Unaudited (own-scope read
+ * posture, matching the rest of the client surfaces).
+ */
+export async function listOwnCheckInFeedback(
+  session: SessionLike,
+  input: ListOwnCheckInFeedbackInput,
+  deps: CheckInInstanceDeps = {},
+): Promise<CheckInFeedbackPage> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveCheckInConsentPolicy();
+  if (!validId(input.workspaceId) || !validId(input.instanceId))
+    throw new CheckInInstanceError("invalid_input");
+  const cursor =
+    input.cursor !== undefined ? parseFeedbackCursor(input.cursor) : undefined;
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0)
+    throw new AccessDeniedError("unauthenticated", "checkinFeedback", "read");
+
+  return db.$transaction(
+    async (tx) => {
+      const profile = await tx.clientProfile.findFirst({
+        where: { workspaceId: input.workspaceId, userId },
+        select: { id: true },
+      });
+      if (!profile)
+        throw new AccessDeniedError("not_owner", "checkinFeedback", "read");
+      const instance = await tx.checkInInstance.findFirst({
+        where: {
+          id: input.instanceId,
+          workspaceId: input.workspaceId,
+          clientProfileId: profile.id,
+        },
+        select: { id: true },
+      });
+      if (!instance) throw new CheckInInstanceError("not_available");
+      const submission = await tx.checkInSubmission.findFirst({
+        where: { instanceId: instance.id, workspaceId: input.workspaceId },
+        select: { id: true },
+      });
+      if (!submission) return { items: [], nextCursor: null, hasMore: false };
+
+      const feedbackCtx = await authorize(
+        session,
+        {
+          resource: "checkinFeedback",
+          action: "read",
+          workspaceId: input.workspaceId,
+          clientProfileId: profile.id,
+        },
+        createPrismaAuthorizationRepo(tx),
+      );
+      if (feedbackCtx.grantedScope !== "own")
+        throw new AccessDeniedError("role_denied", "checkinFeedback", "read");
+
+      // Same consent gate as answers — before any feedback body read.
+      await checkRequiredConsent(tx, profile.id, registry, true);
+
+      return feedbackPage(tx, {
+        workspaceId: input.workspaceId,
+        clientProfileId: profile.id,
+        submissionId: submission.id,
+        limit: CHECKIN_FEEDBACK_PAGE_SIZE,
+        cursor,
+      });
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+}
+
+// ── CHECK-IN-OVERVIEW-I1: staff "awaiting review" overview ─────────────
+// Bounded W09 subset (approved CHECK-IN-OVERVIEW-P2 contract): a
+// read-only workspace-level list of submissions that exist with NO
+// review — `where: { workspaceId, reviews: { none: {} } }` is the
+// complete predicate (one immutable submission per instance, one
+// terminal immutable review per submission, and a submitted instance
+// can never be cancelled — no cancellation or supersession term
+// exists). authorizeCollection — never roster enumeration — resolves
+// workspace (owner) / assigned (coach/assistant) scope; the deny-set
+// covers dual-role PLATFORM_ADMIN. Header-only projection: no answers,
+// no feedback, no consent-gated content, zero audits (sibling
+// listCheckInSubmissionsForClient precedent — consent/audit live at
+// the detail destination, which independently re-authorizes).
+
+export const CHECKIN_REVIEW_QUEUE_PAGE_SIZE = 50;
+
+export type StaffCheckInReviewQueueItem = {
+  submissionId: string;
+  instanceId: string;
+  clientProfileId: string;
+  clientName: string;
+  formName: string;
+  versionSeq: number;
+  dueAt: string;
+  submittedAt: string;
+  /** Reused derived display flag (submittedAt > dueAt) — not an
+   * attention rule or filter. */
+  late: boolean;
+  /** Snapshot hint only — derived per row from the caller's actual
+   * write cell AND an ACTIVE assignment to that row's client (never
+   * role-alone). The review action re-authorizes independently. */
+  canReview: boolean;
+};
+
+/** Keyset cursor — `"{submittedAtIso}|{id}"`, mirrors the feedback
+ * convention; malformed input is rejected, never sanitized. */
+export function parseCheckInReviewQueueCursor(raw: string): {
+  submittedAt: Date;
+  id: string;
+} {
+  if (raw.length > 160) throw new CheckInInstanceError("invalid_input");
+  const idx = raw.indexOf("|");
+  if (idx <= 0) throw new CheckInInstanceError("invalid_input");
+  const iso = raw.slice(0, idx);
+  const id = raw.slice(idx + 1);
+  const submittedAt = new Date(iso);
+  if (
+    Number.isNaN(submittedAt.getTime()) ||
+    id.length === 0 ||
+    id.length > CHECKIN_INSTANCE_LIMITS.idMax ||
+    id.includes("|") ||
+    !isWellFormedIso(iso)
+  )
+    throw new CheckInInstanceError("invalid_input");
+  return { submittedAt, id };
+}
+
+/**
+ * The complete WHERE — scope + awaiting predicate + keyset cursor are
+ * ALL SQL predicates applied before take (predicates-before-limit; a
+ * cap-then-filter implementation silently drops qualifying rows).
+ * The cursor only repositions inside the authorized filtered set — a
+ * foreign cursor can at worst skip rows, never leak them (workspaceId
+ * is always present).
+ */
+export function buildCheckInReviewQueueWhere(
+  scope: "workspace" | "assigned",
+  ctx: { workspaceId: string; workspaceMemberId: string },
+  cursor: { submittedAt: Date; id: string } | undefined,
+): Prisma.CheckInSubmissionWhereInput {
+  const where: Prisma.CheckInSubmissionWhereInput = {
+    workspaceId: ctx.workspaceId,
+    reviews: { none: {} },
+  };
+  if (scope === "assigned")
+    where.clientProfile = {
+      assignments: {
+        some: {
+          workspaceId: ctx.workspaceId,
+          coachMemberId: ctx.workspaceMemberId,
+          status: "ACTIVE",
+        },
+      },
+    };
+  if (cursor)
+    where.OR = [
+      { submittedAt: { gt: cursor.submittedAt } },
+      { submittedAt: cursor.submittedAt, id: { gt: cursor.id } },
+    ];
+  return where;
+}
+
+/**
+ * Derived canReview hint — the caller's actual WRITE cell on
+ * checkinsCoachReviews (assigned for owner/coach post-#111; denied for
+ * assistant) AND a per-row ACTIVE assignment existence. Snapshot
+ * advisory only — never authority for a write.
+ */
+export function deriveCheckInQueueCanReview(
+  role: string,
+  rowHasActiveAssignment: boolean,
+): boolean {
+  return (
+    resolveScope("checkinsCoachReviews", "write", role as PrincipalRole) ===
+      "assigned" && rowHasActiveAssignment
+  );
+}
+
+/** Well-formed UTF-16 — lone surrogates break encoding downstream. */
+function isWellFormedParam(v: string): boolean {
+  try {
+    encodeURIComponent(v);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Bounded `?submission=<id>` deep-link parser for the per-client staff
+ * page. `undefined` → no auto-open; repeated (array) or malformed
+ * (empty / >128 / not well-formed UTF-16) → invalid, the caller
+ * renders an invalid-link note and fires NO detail action. Well-formed
+ * values are opaque — the detail action re-authorizes existence,
+ * tenancy, and permission itself.
+ */
+export function parseCheckInSubmissionParam(
+  value: string | string[] | undefined,
+):
+  | { status: "none" }
+  | { status: "invalid" }
+  | { status: "ok"; submissionId: string } {
+  if (value === undefined) return { status: "none" };
+  if (typeof value !== "string" || !validId(value) || !isWellFormedParam(value))
+    return { status: "invalid" };
+  return { status: "ok", submissionId: value };
+}
+
+/**
+ * Workspace-level awaiting-review list. Query accounting: ONE bounded
+ * list query (scope + awaiting + cursor predicates before take) plus an
+ * O(1) set of authorization/coherence reads — user/workspace/membership
+ * resolution inside authorizeCollection, the member FOR UPDATE lock,
+ * and (assigned scope) the member's ACTIVE assignment rows locked FOR
+ * UPDATE so a concurrent revocation serializes instead of over-showing.
+ * No per-client enumeration, no fan-out, no totals. ReadCommitted —
+ * proportional for a header-only read with no writes.
+ */
+export async function listCheckInReviewQueue(
+  session: SessionLike,
+  input: { workspaceId: string; cursor?: string },
+  deps: CheckInInstanceDeps = {},
+): Promise<{
+  items: StaffCheckInReviewQueueItem[];
+  nextCursor: string | null;
+}> {
+  const db = deps.db ?? defaultPrisma;
+  if (!validId(input.workspaceId))
+    throw new CheckInInstanceError("invalid_input");
+  const cursor =
+    input.cursor !== undefined
+      ? parseCheckInReviewQueueCursor(input.cursor)
+      : undefined;
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0)
+    throw new AccessDeniedError(
+      "unauthenticated",
+      "checkinsCoachReviews",
+      "read",
+    );
+
+  return db.$transaction(async (tx) => {
+    await advisoryLock(tx, `member:${input.workspaceId}:${userId}`);
+    const member = await lockMember(tx, input.workspaceId, userId);
+    if (!member || member.status !== "ACTIVE")
+      throw new AccessDeniedError(
+        "role_denied",
+        "checkinsCoachReviews",
+        "read",
+      );
+    const ctx = await authorizeCollection(
+      session,
+      {
+        resource: "checkinsCoachReviews",
+        action: "read",
+        workspaceId: input.workspaceId,
+      },
+      createPrismaAuthorizationRepo(tx),
+    );
+    if (ctx.workspaceMemberId !== member.id)
+      throw new AccessDeniedError(
+        "membership_missing_or_inactive",
+        "checkinsCoachReviews",
+        "read",
+      );
+    if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+      throw new AccessDeniedError(
+        "role_denied",
+        "checkinsCoachReviews",
+        "read",
+      );
+    if (ctx.grantedScope === "assigned")
+      await tx.$queryRawUnsafe(
+        `SELECT id FROM "client_assignment"
+         WHERE workspace_id = $1 AND coach_member_id = $2
+           AND status = 'ACTIVE' FOR UPDATE`,
+        input.workspaceId,
+        member.id,
+      );
+
+    const rows = await tx.checkInSubmission.findMany({
+      where: buildCheckInReviewQueueWhere(
+        ctx.grantedScope,
+        { workspaceId: input.workspaceId, workspaceMemberId: member.id },
+        cursor,
+      ),
+      select: {
+        id: true,
+        instanceId: true,
+        clientProfileId: true,
+        submittedAt: true,
+        clientProfile: {
+          select: {
+            name: true,
+            assignments: {
+              where: {
+                workspaceId: input.workspaceId,
+                coachMemberId: member.id,
+                status: "ACTIVE",
+              },
+              select: { id: true },
+              take: 1,
+            },
+          },
+        },
+        instance: { select: { dueAt: true } },
+        form: { select: { name: true } },
+        formVersion: { select: { versionSeq: true } },
+      },
+      orderBy: [{ submittedAt: "asc" }, { id: "asc" }],
+      take: CHECKIN_REVIEW_QUEUE_PAGE_SIZE + 1,
+    });
+    const page = rows.slice(0, CHECKIN_REVIEW_QUEUE_PAGE_SIZE);
+    const last = page[page.length - 1];
+    const nextCursor =
+      rows.length > CHECKIN_REVIEW_QUEUE_PAGE_SIZE && last
+        ? `${last.submittedAt.toISOString()}|${last.id}`
+        : null;
+    const items = page.map((row): StaffCheckInReviewQueueItem => ({
+      submissionId: row.id,
+      instanceId: row.instanceId,
+      clientProfileId: row.clientProfileId,
+      clientName: row.clientProfile.name,
+      formName: row.form.name,
+      versionSeq: row.formVersion.versionSeq,
+      dueAt: row.instance.dueAt.toISOString(),
+      submittedAt: row.submittedAt.toISOString(),
+      late: row.submittedAt.getTime() > row.instance.dueAt.getTime(),
+      canReview: deriveCheckInQueueCanReview(
+        member.role,
+        row.clientProfile.assignments.length > 0,
+      ),
+    }));
+    return { items, nextCursor };
+  });
 }

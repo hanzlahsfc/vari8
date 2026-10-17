@@ -64,9 +64,13 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "own"],
   },
+  // MEAL-PLAN-I1 (decision 115): owner write is `assigned` — an owner
+  // authors meal plans only for clients they hold an ACTIVE
+  // ClientAssignment to; owner read stays workspace-wide. Same
+  // reviewed amendment shape as checkinsCoachReviews/checkinFeedback.
   mealPlans: {
     PLATFORM_ADMIN: ["denied", "denied"],
-    WORKSPACE_OWNER: ["workspace", "denied"],
+    WORKSPACE_OWNER: ["workspace", "assigned"],
     COACH: ["assigned", "assigned"],
     ASSISTANT_COACH: ["assigned", "denied"],
     SUPPORT: ["denied", "denied"],
@@ -80,9 +84,12 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "own"],
   },
+  // SOLO-COACH-I1 (decision 111): owner write is `assigned` — an owner
+  // marks Check-In submissions reviewed only for clients they hold an
+  // ACTIVE ClientAssignment to (amends #95). Read stays workspace-wide.
   checkinsCoachReviews: {
     PLATFORM_ADMIN: ["denied", "denied"],
-    WORKSPACE_OWNER: ["workspace", "denied"],
+    WORKSPACE_OWNER: ["workspace", "assigned"],
     COACH: ["assigned", "assigned"],
     ASSISTANT_COACH: ["assigned", "denied"],
     SUPPORT: ["denied", "denied"],
@@ -275,15 +282,30 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "denied"],
   },
-  // P-024 (decisions #86–#91): owner workspace read, no mark; coach
+  // P-024 (decisions #86–#91): owner workspace read; coach
   // assigned read+mark; assistant assigned read, no mark; rest denied.
+  // SOLO-COACH-I1 (decision 111): owner write is `assigned` — the owner
+  // marks onboarding submissions reviewed only for clients they hold an
+  // ACTIVE ClientAssignment to (amends #37/P-024 authorization).
   onboardingSubmissionReviews: {
     PLATFORM_ADMIN: ["denied", "denied"],
-    WORKSPACE_OWNER: ["workspace", "denied"],
+    WORKSPACE_OWNER: ["workspace", "assigned"],
     COACH: ["assigned", "assigned"],
     ASSISTANT_COACH: ["assigned", "denied"],
     SUPPORT: ["denied", "denied"],
     CLIENT: ["denied", "denied"],
+  },
+  // CHECK-IN-FEEDBACK-I1 (#101 direction + owner answers): owner reads
+  // workspace-wide but writes only where an ACTIVE assignment exists;
+  // coach assigned read+send; assistant assigned read-only; client own
+  // read only; SUPPORT + PLATFORM_ADMIN denied (dual-role via deny-set).
+  checkinFeedback: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "assigned"],
+    COACH: ["assigned", "assigned"],
+    ASSISTANT_COACH: ["assigned", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "denied"],
   },
 };
 
@@ -298,7 +320,7 @@ const PRINCIPAL_ROLES: PrincipalRole[] = [
 
 describe("RBAC matrix", () => {
   it("covers every resource × principal role × action", () => {
-    expect(RESOURCES).toHaveLength(31);
+    expect(RESOURCES).toHaveLength(32);
     for (const resource of RESOURCES) {
       for (const role of PRINCIPAL_ROLES) {
         const cell = RBAC_MATRIX[resource]?.[role];

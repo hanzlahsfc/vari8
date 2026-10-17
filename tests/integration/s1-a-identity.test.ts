@@ -275,14 +275,16 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
       "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'",
     );
     const names = rows.map((r) => r.table_name);
-    for (const forbidden of ["audit_log", "food", "meal", "program"]) {
+    for (const forbidden of ["audit_log", "food", "program"]) {
       expect(names.some((n) => n.includes(forbidden))).toBe(false);
     }
     // Identity/tenancy (S1-A), versioned consent (S1-D), audit events (S1-E),
     // access tokens (S1-F1), and the Phase 2.1 Nutrition + Phase 2.2 Exercise
     // catalogs with their import provenance. The forbidden-table guard above
-    // still proves no premature meal/program tables exist; the
-    // exercise_catalog/exercise_import tables are the intentional catalog.
+    // still proves no premature food/program tables exist; meal plans are
+    // now an approved domain (decision 115) listed explicitly below, and
+    // the exercise_catalog/exercise_import tables are the intentional
+    // catalog.
     expect(names.sort()).toEqual(
       [
         "_prisma_migrations",
@@ -345,12 +347,24 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         // P-025-C: terminal staff review acknowledgement — immutable
         // provenance only (#86–#91 carried by #96).
         "checkin_review",
+        // CHECK-IN-FEEDBACK-I1 (decision 112): append-only staff text
+        // feedback on reviewed Check-In submissions — consent-gated like
+        // answers; synthetic/testing scope only.
+        "checkin_feedback",
+        // CHECK-IN-RECURRENCE-I1 (decision 114): bounded weekly schedule
+        // rules — no client data; synthetic/testing scope only.
+        "checkin_schedule_rule",
         // P-014: staff parameter/template definitions + immutable versions
         // (no client data; reviewed in product-decisions #41–#48).
         "coaching_template",
         "coaching_template_version",
         "coaching_template_version_parameter",
         "parameter_definition",
+        // MEAL-PLAN-I1 (decision 115): staff-authored shared draft
+        // container + immutable client-specific published versions —
+        // consent-gated; synthetic/testing scope only.
+        "meal_plan",
+        "meal_plan_version",
         "users",
         "workspace",
         "workspace_member",

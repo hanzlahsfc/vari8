@@ -70,6 +70,9 @@ export const RESOURCES = [
   "habits",
   // P-024 (product-decisions #86–#91): staff onboarding-submission review.
   "onboardingSubmissionReviews",
+  // CHECK-IN-FEEDBACK-I1: append-only staff text feedback on a reviewed
+  // Check-In submission.
+  "checkinFeedback",
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
 
@@ -133,9 +136,16 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
     SUPPORT: D,
     CLIENT: c("own", "own"),
   },
+  // MEAL-PLAN-I1 (decision #115 — owner-approved amendment): an owner may
+  // author meal plans ONLY for clients they hold an ACTIVE
+  // ClientAssignment to — assigned write scope, never workspace-wide.
+  // Owner read stays workspace-wide; coach assigned read+write; assistant
+  // assigned read-only; SUPPORT denied; CLIENT own-view only, never
+  // writes; PLATFORM_ADMIN denied outright (deny-set enforced in
+  // guard.ts, dual-role inclusive).
   mealPlans: {
     PLATFORM_ADMIN: D,
-    WORKSPACE_OWNER: c("workspace", "denied"),
+    WORKSPACE_OWNER: c("workspace", "assigned"),
     COACH: c("assigned", "assigned"),
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
@@ -157,9 +167,12 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
     SUPPORT: D,
     CLIENT: c("own", "denied"),
   },
+  // SOLO-COACH-I1 (decision 111 — amends #95): an owner may mark Check-In
+  // submissions reviewed ONLY for clients they hold an ACTIVE
+  // ClientAssignment to — assigned write scope, never workspace-wide.
   checkinsCoachReviews: {
     PLATFORM_ADMIN: D,
-    WORKSPACE_OWNER: c("workspace", "denied"),
+    WORKSPACE_OWNER: c("workspace", "assigned"),
     COACH: c("assigned", "assigned"),
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
@@ -372,16 +385,34 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
     CLIENT: c("own", "own"),
   },
   // P-024 (decision #37 direction, approved #86–#91): owner reads at
-  // workspace scope but may NOT mark; coach reads+marks at assigned scope;
+  // workspace scope; coach reads+marks at assigned scope;
   // assistant reads assigned, no mark; SUPPORT/CLIENT/PLATFORM_ADMIN denied
   // (the deny-set enforces the dual-role platform-admin case in guard.ts).
   onboardingSubmissionReviews: {
     PLATFORM_ADMIN: D,
-    WORKSPACE_OWNER: c("workspace", "denied"),
+    // SOLO-COACH-I1 (decision 111 — separately approved amendment to the
+    // #37 general submission-authorization direction; this matrix is its
+    // P-024 onboarding instantiation): an owner may mark onboarding
+    // submissions reviewed ONLY where an ACTIVE ClientAssignment exists.
+    WORKSPACE_OWNER: c("workspace", "assigned"),
     COACH: c("assigned", "assigned"),
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
     CLIENT: D,
+  },
+  // CHECK-IN-FEEDBACK-I1 (#101 direction + owner answers): owner reads at
+  // workspace scope but writes ONLY where an ACTIVE ClientAssignment
+  // exists (assigned write — the #111 solo-coach shape); coach
+  // reads+writes at assigned scope; assistant reads assigned, never
+  // writes; client reads its own feedback only, never writes;
+  // SUPPORT/PLATFORM_ADMIN denied outright (deny-set enforces dual-role).
+  checkinFeedback: {
+    PLATFORM_ADMIN: D,
+    WORKSPACE_OWNER: c("workspace", "assigned"),
+    COACH: c("assigned", "assigned"),
+    ASSISTANT_COACH: c("assigned", "denied"),
+    SUPPORT: D,
+    CLIENT: c("own", "denied"),
   },
 };
 
