@@ -39,11 +39,13 @@ gate,consent,service,boundary}` — strict closed-key payload
   regression 1306/1306 after RBAC-snapshot + hex-comment fixes.
 - Mutation sweep: first pass reported 4 survivors — all were a HARNESS
   false positive (post-prettier patterns missed + non-fatal python
-  assert → unmutated files tested green). Corrected sweep with
-  hard-abort apply checks: 10/10 KILLED (deny-set, owner-write,
-  consent, publish-consent, CAS, replay, ordering, unknown-key, audit,
-  tz snapshot, gate). Two real coverage gaps fixed: gate unit matrix +
-  revoked-consent publish denial (`7d58a25`).
+  assert → unmutated files tested green; also a wrong-file `-t`
+  filter). Corrected sweep with hard-abort apply checks: 10/10 KILLED
+  (deny-set, owner-write, consent, publish-consent, CAS, replay,
+  ordering, unknown-key, audit, tz snapshot, gate). One real coverage
+  gap fixed: revoked-consent publish denial (`7d58a25`); the gate
+  "survivor" was filter error — existing `mealplan-gate.test.ts`
+  already kills the mutant (verified by direct re-run).
 - Remaining: final gates re-run on completed tree, push, builder
   report, tracker entry, independent review handoff. No PR.
 
