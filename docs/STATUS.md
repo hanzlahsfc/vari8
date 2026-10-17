@@ -32,10 +32,10 @@ are complete; product direction is now the configurable coaching system in
   failed the full-suite run. Now matches the shared pattern; no
   assertion or behavior change.
 - Gates on repair tree: `diff --check`/`format:check` clean; typecheck
-  + lint clean (pre-existing warnings only); unit 1329/1329;
-  integration 845/845; build clean; focused training E2E 4/4; full E2E
-  415 passed / 12 skipped / 0 failed (5.2m, single worker, no
-  concurrent DB work).
+  - lint clean (pre-existing warnings only); unit 1329/1329;
+    integration 845/845; build clean; focused training E2E 4/4; full E2E
+    415 passed / 12 skipped / 0 failed (5.2m, single worker, no
+    concurrent DB work).
 - Non-blocking follow-up recorded: optional baseline-query optimization
   left out of this repair per PROMPT 248.
 - Correction (per §5): R1 evidence/chronology wording updated — the
