@@ -8,12 +8,16 @@
     "start": "next start --hostname 127.0.0.1",
     "lint": "biome check . --error-on-warnings",
     "lint:fix": "biome check . --write",
+    "agent-context:check": "node scripts/agent-context.mjs --check",
+    "agent-context:test": "node --test scripts/agent-context.test.mjs",
     "format": "biome format . --write",
+    "test": "node scripts/test-frontend.mjs",
+    "check": "npm run test && npm run agent-context:check && npm run typecheck && npm run lint && npm run build",
     "typecheck": "next typegen && tsc --noEmit",
     "ui:add": "shadcn add"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.0.0"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",

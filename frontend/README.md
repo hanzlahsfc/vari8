@@ -28,10 +28,31 @@ npm run start -- --port 3001
 ## Check the frontend
 
 ```sh
+npm test
 npm run typecheck
+npm run lint
 npm run build
-node --test src/components/coach/*.test.mjs src/components/coach/*.checks.mjs src/components/coach/client-tracker-preview/*.test.mjs src/components/coach/client-tracker-preview/*.checks.mjs src/components/ethereal/client-tracker/model.test.mjs
+npm run check
 ```
+
+`npm test` discovers `*.test.*` and `*.checks.*` files under `src/` and
+`scripts/`, including the TypeScript meal-plan model tests. `npm run check`
+runs the same test, project-context, type, lint, and production-build gates used
+by frontend CI. `npm run agent-context:test` runs the focused handoff/reference
+checker tests; `npm run agent-context:check` verifies the context contract.
+
+## Project context
+
+Read [AGENTS.md](AGENTS.md) and [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) before
+changing product behavior. Use [the workflow router](docs/agent-workflow/CONTEXT.md)
+to select only the relevant stage and role context. The ICM structure is a
+file-based context and handoff adaptation; it does not add a runtime framework
+or substitute for application authorization. See [the ICM reference](docs/references/icm.md)
+for the paper, local mapping, and adaptation limits.
+
+For branch sync, frontend checks, and draft PR commands, follow the
+[FRONTEND pull request workflow](docs/PR-WORKFLOW.md). It targets the explicit
+`great-tracker` remote and opens PRs from `FRONTEND` to `main`.
 
 The frontend uses Next.js 16, React 19, Tailwind CSS, shadcn/ui, Motion for React,
 and Biome. It owns its dependency lockfile, TypeScript configuration, and local

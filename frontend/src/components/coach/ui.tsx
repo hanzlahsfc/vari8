@@ -15,8 +15,10 @@ import {
   type FieldConfig,
   sampleValue,
   type Template,
+  TODAY,
   type Variant,
 } from "./model";
+import { planTargets } from "./plans/domain";
 export function Button({
   children,
   className = "",
@@ -379,12 +381,27 @@ export function TemplatePreview({
       {variant.nutrition === "IIFYM" ? (
         <div className="cd-macro-line">
           <span>
-            <strong>{client?.plan.calories ?? 2200}</strong> kcal
+            <strong>
+              {client
+                ? (planTargets(client, TODAY)?.calories ?? "Not set")
+                : 2200}
+            </strong>{" "}
+            kcal
           </span>
           <span>
-            <strong>{client?.plan.protein ?? 140}</strong> g protein
+            <strong>
+              {client
+                ? (planTargets(client, TODAY)?.protein ?? "Not set")
+                : 140}
+            </strong>{" "}
+            g protein
           </span>
         </div>
+      ) : client ? (
+        <p className="cd-muted">
+          Open Nutrition in the assigned preview to view the active
+          prescription.
+        </p>
       ) : (
         <div className="cd-meal-preview">
           {["Breakfast · 07:30", "Lunch · 12:30", "Dinner · 19:00"].map(
@@ -407,7 +424,7 @@ export function TemplatePreview({
       )}
       <small className="cd-caption">
         {client
-          ? `${client.entries.length} retained entries · ${client.plan.nutritionVariant} nutrition option`
+          ? `${client.entries.length} retained entries · assigned client nutrition`
           : "Sample athlete · Training day nutrition option"}
       </small>
     </div>

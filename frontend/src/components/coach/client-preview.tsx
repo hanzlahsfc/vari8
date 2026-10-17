@@ -9,6 +9,7 @@ import {
 import foodSource from "@/data/food-database.json";
 import { bindDashboardUnits, recordsForCoach } from "./builder/coach-dashboard";
 import { DashboardBuilder } from "./builder/dashboard-builder";
+import type { SourceRecords } from "./builder/model";
 import { createDashboardDraft } from "./builder/schema";
 import { ClientPlanPreview } from "./client-plan-preview";
 import { createExampleClient } from "./client-tracker-preview/example-client";
@@ -26,6 +27,7 @@ import {
   type Variant,
 } from "./model";
 import { weeklyMuscleVolume } from "./muscle-volume";
+import { ActiveClientNutrition, ActiveClientTraining } from "./plans/workspace";
 import { weeklyRoadmapRows } from "./roadmap-preview";
 import { useCoach } from "./store";
 import { templateSetup } from "./template-setup";
@@ -353,40 +355,203 @@ function RoadmapTab({
   );
 }
 
-function NutritionTab({
+function NutritionTab(props: {
+  configuration: Variant;
+  client: CoachClient;
+  illustrative?: boolean;
+}) {
+  return props.illustrative ? (
+    <IllustrativeNutritionTab {...props} />
+  ) : (
+    <ActiveClientNutrition client={props.client} />
+  );
+}
+function IllustrativeNutritionTab({
   configuration,
   client,
+  illustrative = false,
 }: {
   configuration: Variant;
   client: CoachClient;
+  illustrative?: boolean;
 }) {
+  const { state } = useCoach();
   const samplePlan = useMemo(() => {
     const plan = createInitialMealPlan(client.id, [...foodMap.values()]);
     return plan.variants[0];
   }, [client.id]);
   if (configuration.nutrition === "IIFYM") {
-    const calories = configuration.fields.find((f) => f.id === "calories");
+    const records = recordsForCoach(configuration, client, state);
+    const sampleRecords = recordsForCoach(configuration);
+    const targetFor = (
+      source: SourceRecords,
+      nutrient: "calories" | "protein" | "carbs" | "fat",
+      option: "TD" | "NTD",
+    ) => {
+      const matchesDate = (target: {
+        effectiveFrom: string;
+        effectiveTo?: string;
+      }) =>
+        target.effectiveFrom <= TODAY &&
+        (!target.effectiveTo || target.effectiveTo >= TODAY);
+      return nutrient === "calories"
+        ? source.calorieTargets?.find(
+            (target) => target.option === option && matchesDate(target),
+          )
+        : source.macroTargets.find(
+            (target) =>
+              target.macro === nutrient &&
+              target.option === option &&
+              matchesDate(target),
+          );
+    };
+    const targetValue = (target: ReturnType<typeof targetFor>) =>
+      target?.kind === "range"
+        ? (target.low + (target.high ?? target.low)) / 2
+        : target?.low;
+    const macroLabel = (target: ReturnType<typeof targetFor>) => {
+      if (!target) return "Not set";
+      if (target.kind === "range")
+        return `${Math.round(target.low)}–${Math.round(target.high ?? target.low)} g`;
+      if (target.kind === "minimum") return `≥${Math.round(target.low)} g`;
+      return `${Math.round(target.low)} g`;
+    };
+    const targetDays = (["TD", "NTD"] as const).map((option) => {
+      const resolve = (nutrient: "calories" | "protein" | "carbs" | "fat") =>
+        targetFor(records, nutrient, option) ??
+        (illustrative ? targetFor(sampleRecords, nutrient, option) : undefined);
+      return {
+        option,
+        calories: resolve("calories"),
+        macros: [
+          { id: "protein", label: "Protein", target: resolve("protein") },
+          { id: "carbs", label: "Carbs", target: resolve("carbs") },
+          { id: "fat", label: "Fat", target: resolve("fat") },
+        ],
+      };
+    });
     return (
       <section className="cd-preview-section" aria-label="Nutrition targets">
         <h2>Nutrition · daily macro targets</h2>
-        <div className="cd-macro-cards">
-          <div>
-            <span>Energy · {client.plan.nutritionVariant}</span>
-            <strong>
-              {calories?.unit === "kJ"
-                ? Math.round(client.plan.calories * 4.184)
-                : client.plan.calories}{" "}
-              {calories?.unit === "kJ" ? "kJ" : "kcal"}
-            </strong>
-          </div>
-          <div>
-            <span>Protein</span>
-            <strong>{client.plan.protein} g</strong>
-          </div>
+        <div className="cd-iifym-days">
+          {targetDays.map((day) => {
+            const macros = day.macros.map((macro) => ({
+              ...macro,
+              grams: targetValue(macro.target),
+            }));
+            const energyValues = macros.map(
+              (macro) => (macro.grams ?? 0) * (macro.id === "fat" ? 9 : 4),
+            );
+            const totalEnergy = energyValues.reduce(
+              (sum, value) => sum + value,
+              0,
+            );
+            let offset = 0;
+            const ringSegments = macros.map((macro, index) => {
+              const circumference = 2 * Math.PI * 47;
+              const share =
+                totalEnergy > 0 ? energyValues[index] / totalEnergy : 0;
+              const length = circumference * share;
+              const segment = (
+                <circle
+                  key={macro.id}
+                  className={`cd-iifym-ring-segment is-${macro.id}`}
+                  cx="60"
+                  cy="60"
+                  r="47"
+                  strokeDasharray={`${length} ${circumference - length}`}
+                  strokeDashoffset={-offset}
+                />
+              );
+              offset += length;
+              return segment;
+            });
+            return (
+              <article className="cd-iifym-day" key={day.option}>
+                <header>
+                  <h3>
+                    {day.option === "TD" ? "Training day" : "Non-training day"}
+                  </h3>
+                  <span>{day.option}</span>
+                </header>
+                <div className="cd-iifym-day-content">
+                  <div className="cd-iifym-values">
+                    <div className="cd-iifym-energy">
+                      <span>Energy</span>
+                      <strong>
+                        {targetValue(day.calories) == null
+                          ? "Not set"
+                          : `${Math.round(targetValue(day.calories) ?? 0)} kcal`}
+                      </strong>
+                    </div>
+                    <dl>
+                      {day.macros.map((macro) => (
+                        <div key={macro.id}>
+                          <dt>{macro.label}</dt>
+                          <dd>{macroLabel(macro.target)}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                  <div className="cd-iifym-distribution">
+                    <svg
+                      className="cd-iifym-ring"
+                      viewBox="0 0 120 120"
+                      role="img"
+                      aria-label={`${day.option} macro distribution by target energy: ${macros.map((macro, index) => `${macro.label} ${Math.round((totalEnergy > 0 ? energyValues[index] / totalEnergy : 0) * 100)}%`).join(", ")}`}
+                    >
+                      <circle
+                        className="cd-iifym-ring-track"
+                        cx="60"
+                        cy="60"
+                        r="47"
+                      />
+                      {ringSegments}
+                      <text
+                        x="60"
+                        y="56"
+                        textAnchor="middle"
+                        className="cd-iifym-ring-total"
+                      >
+                        {totalEnergy > 0
+                          ? `${Math.round(totalEnergy)} kcal`
+                          : "No targets"}
+                      </text>
+                      <text
+                        x="60"
+                        y="72"
+                        textAnchor="middle"
+                        className="cd-iifym-ring-caption"
+                      >
+                        from macros
+                      </text>
+                    </svg>
+                    <ul>
+                      {macros.map((macro, index) => (
+                        <li key={macro.id}>
+                          <span className={`cd-iifym-key is-${macro.id}`} />
+                          <span>{macro.label}</span>
+                          <strong>
+                            {Math.round(
+                              (totalEnergy > 0
+                                ? energyValues[index] / totalEnergy
+                                : 0) * 100,
+                            )}
+                            %
+                          </strong>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
         <p className="cd-caption">
-          Macro targets come from {client.name}’s assigned plan and are set in
-          client setup.
+          Macro distribution uses 4 kcal per gram of protein or carbohydrate and
+          9 kcal per gram of fat. Ranges use their midpoint; minimums use the
+          stated minimum.
         </p>
       </section>
     );
@@ -533,7 +698,18 @@ function BodyMap({
   );
 }
 
-function TrainingTab({
+function TrainingTab(props: {
+  configuration: Variant;
+  client: CoachClient;
+  illustrative?: boolean;
+}) {
+  return props.illustrative ? (
+    <IllustrativeTrainingTab {...props} />
+  ) : (
+    <ActiveClientTraining client={props.client} />
+  );
+}
+function IllustrativeTrainingTab({
   configuration,
   client,
 }: {
@@ -681,9 +857,11 @@ function CheckInTab({
 export function ClientPreview({
   template,
   client,
+  initialTab,
 }: {
   template: import("./model").Template;
   client?: CoachClient;
+  initialTab?: string;
 }) {
   const { state } = useCoach();
   const configuration = client?.assignment
@@ -707,7 +885,7 @@ export function ClientPreview({
     ].includes(v),
   );
   const allTabs = configuration.habits ? [...tabs, "Habits"] : tabs;
-  const [tab, setTab] = useState(allTabs[0] ?? "");
+  const [tab, setTab] = useState(initialTab ?? allTabs[0] ?? "");
   const [habitDone, setHabitDone] = useState<Record<string, boolean>>({});
   const active = allTabs.includes(tab) ? tab : allTabs[0];
   if (!athlete) return <Empty title="No athlete available for preview" />;
@@ -764,10 +942,18 @@ export function ClientPreview({
               <RoadmapTab configuration={configuration} client={athlete} />
             )}
             {active === "Nutrition" && (
-              <NutritionTab configuration={configuration} client={athlete} />
+              <NutritionTab
+                configuration={configuration}
+                client={athlete}
+                illustrative={!client}
+              />
             )}
             {active === "Training Program" && (
-              <TrainingTab configuration={configuration} client={athlete} />
+              <TrainingTab
+                configuration={configuration}
+                client={athlete}
+                illustrative={!client}
+              />
             )}
             {active === "Check-In" && (
               <CheckInTab configuration={configuration} client={athlete} />

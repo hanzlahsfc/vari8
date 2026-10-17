@@ -1,6 +1,7 @@
 /* biome-ignore-all lint/style/noDescendingSpecificity: Week ledger selectors share the scoped table base. */
 .coach-root .ct-tracking .ct-week-view {
   min-width: 0;
+  max-width: 1040px;
   color: var(--ct-text, var(--text));
 }
 
@@ -359,35 +360,160 @@
     max-width: 154px;
     padding-top: 2px;
   }
-  .coach-root .ct-tracking .ct-week-table {
-    min-width: 790px;
-  }
-  .coach-root .ct-tracking .ct-week-label-column {
-    width: 130px;
-  }
-  .coach-root .ct-tracking .ct-week-group-row th {
-    width: 130px;
-  }
   .coach-root .ct-tracking .ct-week-group-toggle small {
     display: none;
   }
-  .coach-root .ct-tracking .ct-week-group-toggle,
-  .coach-root .ct-tracking .ct-week-value {
-    min-height: 44px;
+
+  /* On phones, keep the same metric-first order but show each day's label
+     alongside its value instead of forcing a clipped nine-column ledger. */
+  .coach-root .ct-tracking .ct-week-scroll {
+    overflow: visible;
+  }
+  .coach-root .ct-tracking .ct-week-table {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    table-layout: auto;
+  }
+  .coach-root .ct-tracking .ct-week-table colgroup,
+  .coach-root .ct-tracking .ct-week-table thead {
+    display: none;
+  }
+  .coach-root .ct-tracking .ct-week-table tbody {
+    display: block;
+  }
+  .coach-root .ct-tracking .ct-week-table tbody + tbody {
+    border-top: 1px solid
+      color-mix(in srgb, var(--ct-edge, var(--ct-rule)) 55%, transparent);
+  }
+  .coach-root .ct-tracking .ct-week-group-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    background: color-mix(
+      in srgb,
+      var(--ct-panel-raised, var(--surface)) 55%,
+      var(--ct-panel, var(--surface)) 45%
+    );
+  }
+  .coach-root .ct-tracking .ct-week-group-row th {
+    position: static;
+    width: auto;
+    height: 40px;
+    padding: 0 12px;
+    background: transparent;
+  }
+  .coach-root .ct-tracking .ct-week-group-row td {
+    display: none;
+  }
+  .coach-root .ct-tracking .ct-week-group-toggle {
+    min-height: 40px;
+  }
+  .coach-root .ct-tracking .ct-week-metric-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
+    padding: 10px 10px 12px;
+    background: color-mix(
+      in srgb,
+      var(--ct-edge, var(--ct-rule)) 34%,
+      var(--ct-panel, var(--surface)) 66%
+    );
   }
   .coach-root .ct-tracking .ct-week-metric-row th,
   .coach-root .ct-tracking .ct-week-metric-row td {
-    height: 44px;
+    height: auto;
+    min-width: 0;
+    border: 0;
   }
-  .coach-root .ct-tracking .ct-week-group-row th,
-  .coach-root .ct-tracking .ct-week-group-row td {
-    height: 44px;
+  .coach-root .ct-tracking .ct-week-table .ct-week-metric-label {
+    position: static;
+    grid-column: 1 / -1;
+    padding: 1px 2px 8px;
+    background: transparent;
   }
-  .coach-root .ct-tracking .ct-week-date {
-    min-height: 57px;
+  .coach-root .ct-tracking .ct-week-metric-label > span {
+    font-size: 13px;
   }
-  .coach-root .ct-tracking .ct-week-day-column {
-    width: 82px;
+  .coach-root .ct-tracking .ct-week-metric-label > small {
+    display: inline;
+    margin: 0 0 0 6px;
+  }
+  .coach-root .ct-tracking .ct-week-metric-row td:not(.ct-week-summary-cell) {
+    display: flex;
+    min-height: 58px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    padding: 4px 2px;
+    background: var(--ct-panel, var(--surface));
+    text-align: center;
+  }
+  .coach-root
+    .ct-tracking
+    .ct-week-metric-row
+    td:not(.ct-week-summary-cell)::before {
+    content: attr(data-day);
+    display: block;
+    margin-bottom: 2px;
+    color: var(--ct-text-secondary, var(--ct-quiet));
+    font-size: 9px;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  .coach-root .ct-tracking .ct-week-metric-row td.is-today {
+    box-shadow: inset 0 2px 0
+      color-mix(in srgb, var(--ct-accent) 55%, transparent);
+  }
+  .coach-root .ct-tracking .ct-week-metric-row td.is-selected-day {
+    background: color-mix(
+      in srgb,
+      var(--ct-accent) 7%,
+      var(--ct-panel, var(--surface))
+    );
+  }
+  .coach-root .ct-tracking .ct-week-value {
+    min-height: 28px;
+    padding: 2px 1px;
+    font-size: 11px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+  .coach-root .ct-tracking .ct-week-metric-row td.ct-week-summary-cell {
+    display: flex;
+    grid-column: 1 / -1;
+    min-height: 38px;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5px;
+    margin-top: 4px;
+    padding: 5px 8px;
+    background: color-mix(
+      in srgb,
+      var(--ct-panel-raised, var(--surface)) 64%,
+      var(--ct-panel, var(--surface)) 36%
+    );
+    text-align: right;
+  }
+  .coach-root .ct-tracking .ct-week-summary-cell::before {
+    content: "This week";
+    margin-right: auto;
+    color: var(--ct-text-secondary, var(--ct-quiet));
+    font-size: 10px;
+  }
+  .coach-root .ct-tracking .ct-week-summary-cell > span,
+  .coach-root .ct-tracking .ct-week-summary-cell > small {
+    display: inline;
+    margin: 0;
+  }
+  .coach-root .ct-tracking .ct-week-summary-cell > span {
+    font-size: 11px;
+  }
+  .coach-root .ct-tracking .ct-week-summary-cell > small {
+    font-size: 10px;
+  }
+  .coach-root .ct-tracking .ct-week-metric-row:hover td,
+  .coach-root .ct-tracking .ct-week-metric-row:hover .ct-week-metric-label {
+    background-color: inherit;
   }
 }
 

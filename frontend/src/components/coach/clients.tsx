@@ -13,18 +13,20 @@ import {
 import { useCallback, useMemo, useState } from "react";
 import {
   addDays,
+  assignTemplate,
   type CoachClient,
   DAYS,
   eventsBetween,
   formatDate,
-  type Plan,
   TODAY,
   uid,
   unreadCount,
 } from "./model";
+import { ClientPlansSummary } from "./plans/setup-ui";
 import { useCoach } from "./store";
 import { templateSetup } from "./template-setup";
 import { PreviewDialog } from "./templates";
+import "./workspace-polish.css";
 import {
   Avatar,
   Button,
@@ -255,7 +257,7 @@ export function ClientsWorkspace() {
       ) : (
         <div className="cd-roster-cards">
           {list.map((c) => (
-            <Surface key={c.id}>
+            <Surface key={c.id} className="cd-roster-card-surface">
               <button
                 type="button"
                 className="cd-roster-card"
@@ -290,7 +292,7 @@ export function ClientsWorkspace() {
 }
 function ClientProfile({ client: c }: { client: CoachClient }) {
   const { state, setState, navigate, route, toast } = useCoach();
-  const [tab, setTab] = useState("Overview");
+  const tab = route.tab ?? "Overview";
   const [preview, setPreview] = useState(false);
   const [assign, setAssign] = useState(false);
   const [templateId, setTemplate] = useState(state.templates[0]?.id ?? "");
@@ -309,6 +311,20 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
     .filter((s) => s.clientId === c.id)
     .sort((a, b) => b.date.localeCompare(a.date));
   const next = nextEvent(state, c.id);
+  const assignedSetup = c.assignment
+    ? templateSetup(c.assignment.snapshot, c.assignment.variantId)
+    : undefined;
+  const hasEditablePlan =
+    Boolean(
+      c.plans &&
+        (c.plans.nutrition.mealPlan.draft ||
+          c.plans.nutrition.mealPlan.active ||
+          c.plans.nutrition.iifym.draft ||
+          c.plans.nutrition.iifym.active ||
+          c.plans.training.draft ||
+          c.plans.training.active ||
+          c.plans.goals.length > 0),
+    ) || c.habits.length > 0;
   return (
     <>
       <PageTitle
@@ -324,7 +340,6 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
               Check-in calendar
             </Button>
             <Button
-              primary
               onClick={() => navigate({ section: "messages", client: c.id })}
             >
               <MessageCircle size={16} />
@@ -355,11 +370,24 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
         </div>
       </div>
       <div className="cd-tabs cd-profile-tabs">
-        {["Overview", "Check-ins", "Notes & tasks", "Onboarding"].map((t) => (
-          <Button key={t} aria-pressed={tab === t} onClick={() => setTab(t)}>
-            {t}
-          </Button>
-        ))}
+        {["Overview", "Plans", "Check-ins", "Notes & tasks", "Onboarding"].map(
+          (t) => (
+            <Button
+              key={t}
+              aria-pressed={tab === t}
+              onClick={() =>
+                navigate({
+                  ...route,
+                  section: "clients",
+                  client: c.id,
+                  tab: t === "Overview" ? undefined : t,
+                })
+              }
+            >
+              {t}
+            </Button>
+          ),
+        )}
       </div>
       {tab === "Overview" && (
         <div className="cd-profile-grid">
@@ -371,159 +399,50 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
             </div>
             <div className="cd-stat-row">
               <span>Assigned template</span>
-              <strong>{c.assignment?.snapshot.name ?? "Not assigned"}</strong>
+              <span>
+                <strong>{c.assignment?.snapshot.name ?? "Not assigned"}</strong>
+                {assignedSetup && (
+                  <small>
+                    {assignedSetup.views.join(" · ")} · Nutrition:{" "}
+                    {assignedSetup.views.some(
+                      (view) => view === "Nutrition" || view === "Mealplan",
+                    )
+                      ? assignedSetup.nutrition
+                      : "not included"}{" "}
+                    · Habits: {assignedSetup.habits ? "enabled" : "off"}
+                  </small>
+                )}
+              </span>
             </div>
 
-            <div className="cd-actions cd-wrap">
+            <div className="cd-actions cd-wrap cd-profile-actions">
               <Button disabled={!c.assignment} onClick={() => setPreview(true)}>
                 <EyeIcon />
                 Preview assigned tool
               </Button>
-              <Button
-                disabled={!state.templates.length}
-                onClick={() => setAssign(true)}
-              >
+              <Button primary={!c.assignment} onClick={() => setAssign(true)}>
                 <Users size={14} />
-                Change assignment
+                {c.assignment ? "Change assignment" : "Assign template"}
               </Button>
-            </div>
-            <h3>Plans & targets</h3>
-            <div className="cd-stat-row">
-              <span>{c.plan.nutritionVariant}</span>
-              <strong>
-                {c.plan.calories} kcal · {c.plan.protein} g protein
-              </strong>
-            </div>
-            <div className="cd-stat-row">
-              <span>{c.plan.program} program</span>
-              <strong>
-                {c.plan.program === "Week-based"
-                  ? `${c.plan.weeks} weeks`
-                  : "Ongoing"}
-              </strong>
-            </div>
-            <div className="cd-actions cd-wrap">
-              <Button
-                onClick={() =>
-                  navigate({
-                    section: "clients",
-                    client: c.id,
-                    plan: "nutrition",
-                  })
-                }
-              >
-                Open nutrition setup
-                <ArrowUpRight size={14} />
-              </Button>
-              <Button
-                onClick={() =>
-                  navigate({
-                    section: "clients",
-                    client: c.id,
-                    plan: "training",
-                  })
-                }
-              >
-                Open training setup
-                <ArrowUpRight size={14} />
-              </Button>
-            </div>
-            <h3>Habit setup · independent tracker</h3>
-            {c.habits.map((h, i) => (
-              <div className="cd-habit-setup" key={h.id}>
-                <label className="cd-field">
-                  Habit
-                  <input
-                    value={h.name}
-                    onChange={(e) =>
-                      update((c) => ({
-                        ...c,
-                        habits: c.habits.map((x, n) =>
-                          n === i ? { ...x, name: e.target.value } : x,
-                        ),
-                      }))
-                    }
-                  />
-                </label>
-                <div className="cd-two-fields">
-                  <label className="cd-field">
-                    Frequency
-                    <input
-                      value={h.frequency}
-                      onChange={(e) =>
-                        update((c) => ({
-                          ...c,
-                          habits: c.habits.map((x, n) =>
-                            n === i ? { ...x, frequency: e.target.value } : x,
-                          ),
-                        }))
-                      }
-                    />
-                  </label>
-                  <label className="cd-field">
-                    Goal
-                    <input
-                      value={h.goal}
-                      onChange={(e) =>
-                        update((c) => ({
-                          ...c,
-                          habits: c.habits.map((x, n) =>
-                            n === i ? { ...x, goal: e.target.value } : x,
-                          ),
-                        }))
-                      }
-                    />
-                  </label>
-                </div>
-                <label className="cd-field">
-                  Purpose
-                  <input
-                    value={h.reason}
-                    onChange={(e) =>
-                      update((c) => ({
-                        ...c,
-                        habits: c.habits.map((x, n) =>
-                          n === i ? { ...x, reason: e.target.value } : x,
-                        ),
-                      }))
-                    }
-                  />
-                </label>
-                <small>{h.completed} / 7 logged this week</small>
-                <IconButton
-                  label="Remove habit"
+              {c.assignment && (
+                <Button
+                  primary
                   onClick={() =>
-                    update((c) => ({
-                      ...c,
-                      habits: c.habits.filter((_, n) => n !== i),
-                    }))
+                    navigate({
+                      ...route,
+                      section: "clients",
+                      client: c.id,
+                      plan: "setup",
+                      tab: "Plans",
+                    })
                   }
                 >
-                  <Trash2 size={14} />
-                </IconButton>
-              </div>
-            ))}
-            <Button
-              onClick={() =>
-                update((c) => ({
-                  ...c,
-                  habits: [
-                    ...c.habits,
-                    {
-                      id: uid("habit"),
-                      name: "New habit",
-                      frequency: "Daily",
-                      goal: "",
-                      reason: "",
-                      completed: 0,
-                    },
-                  ],
-                }))
-              }
-            >
-              <Plus size={14} />
-              Add habit
-            </Button>
+                  {hasEditablePlan ? "Edit plans" : "Continue setup"}
+                  <ArrowUpRight size={14} />
+                </Button>
+              )}
+            </div>
+            <ClientPlansSummary client={c} />
           </Surface>
           <div className="cd-profile-side">
             <Surface>
@@ -591,7 +510,10 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
               {!state.extras.some((e) => e.clientId === c.id) && (
                 <p className="cd-muted">No additional dates.</p>
               )}
-              <Button onClick={() => setExtra(true)}>
+              <Button
+                className="cd-profile-add-date"
+                onClick={() => setExtra(true)}
+              >
                 <Plus size={14} />
                 Add date
               </Button>
@@ -607,19 +529,15 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
                 }
               />
             </Surface>
-            <Surface>
-              <h2>Recent entries</h2>
-              {c.entries.slice(-3).map((e) => (
-                <div className="cd-stat-row" key={e.date}>
-                  <span>{formatDate(e.date)}</span>
-                  <strong>
-                    {e.weight} kg · {e.sleep}h sleep
-                  </strong>
-                </div>
-              ))}
-            </Surface>
           </div>
         </div>
+      )}
+      {tab === "Plans" && (
+        <ClientPlansSummary
+          client={c}
+          expanded
+          onAssign={() => setAssign(true)}
+        />
       )}
       {tab === "Check-ins" && (
         <Surface>
@@ -836,42 +754,57 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
       )}
       {assign && (
         <Dialog
-          title="Choose a saved template"
+          title={`Assign a setup to ${c.name}`}
           onClose={() => setAssign(false)}
         >
-          <Select
-            label="Template"
-            value={templateId}
-            options={state.templates.map((t) => ({
-              value: t.id,
-              label: t.name,
-            }))}
-            onChange={setTemplate}
-          />
+          {state.templates.length === 0 ? (
+            <div className="cd-assignment-empty">
+              <p>No saved templates yet.</p>
+              <Button
+                primary
+                onClick={() => {
+                  setAssign(false);
+                  navigate({
+                    ...route,
+                    section: "templates",
+                    editor: uid("template"),
+                    client: c.id,
+                  });
+                }}
+              >
+                Create a template
+              </Button>
+              <Button onClick={() => setAssign(false)}>Cancel</Button>
+            </div>
+          ) : (
+            <>
+              <p className="cd-muted">
+                Choose a saved setup. The client’s plans and history stay with
+                their profile.
+              </p>
+              <Select
+                label="Template"
+                value={templateId}
+                options={state.templates.map((t) => ({
+                  value: t.id,
+                  label: t.name,
+                }))}
+                onChange={setTemplate}
+              />
 
-          {state.templates.find((t) => t.id === templateId) && (
-            <AssignmentInline
-              client={c}
-              templateId={templateId}
-              onClose={() => setAssign(false)}
-            />
+              {state.templates.find((t) => t.id === templateId) && (
+                <AssignmentInline
+                  client={c}
+                  templateId={templateId}
+                  onClose={() => setAssign(false)}
+                />
+              )}
+            </>
           )}
         </Dialog>
       )}
       {extra && (
         <ExtraDateDialog clientId={c.id} onClose={() => setExtra(false)} />
-      )}
-      {route.plan && (
-        <PlanDialog
-          client={c}
-          kind={route.plan}
-          onClose={() => navigate({ section: "clients", client: c.id })}
-          onApply={(plan) => {
-            update((c) => ({ ...c, plan }));
-            toast("Client plan updated");
-            navigate({ section: "clients", client: c.id });
-          }}
-        />
       )}
     </>
   );
@@ -888,35 +821,63 @@ function AssignmentInline({
   templateId: string;
   onClose: () => void;
 }) {
-  const { state, setState, toast } = useCoach();
+  const { state, setState, toast, navigate, route } = useCoach();
   const t = state.templates.find((t) => t.id === templateId);
   if (!t) return null;
+  const configuration = templateSetup(t, t.defaultVariant);
   return (
-    <Button
-      primary
-      onClick={() => {
-        const snapshot = structuredClone(t);
-        setState((s) => ({
-          ...s,
-          clients: s.clients.map((c) =>
-            c.id === client.id
-              ? {
-                  ...c,
-                  assignment: {
-                    templateId,
-                    variantId: templateSetup(t).id,
-                    snapshot,
-                  },
-                }
-              : c,
-          ),
-        }));
-        toast("Template assigned; athlete history retained");
-        onClose();
-      }}
-    >
-      Assign to {client.name.split(" ")[0]}
-    </Button>
+    <div className="cd-assignment-review">
+      <h3>{t.name}</h3>
+      <p className="cd-assignment-description">
+        {t.description || "No description"}
+      </p>
+      <div className="cd-assignment-views">
+        <strong>Included views</strong>
+        <span>{configuration.views.join(" · ") || "No views configured"}</span>
+      </div>
+      <div className="cd-assignment-views">
+        <strong>Nutrition</strong>
+        <span>
+          {configuration.views.some(
+            (view) => view === "Nutrition" || view === "Mealplan",
+          )
+            ? configuration.nutrition
+            : "Not configured"}
+        </span>
+      </div>
+      <div className="cd-assignment-views">
+        <strong>Training</strong>
+        <span>
+          {configuration.views.includes("Training Program")
+            ? "Training program included"
+            : "Not configured"}
+        </span>
+      </div>
+      <div className="cd-assignment-views">
+        <strong>Habits</strong>
+        <span>{configuration.habits ? "Enabled" : "Not enabled"}</span>
+      </div>
+      <div className="cd-dialog-actions">
+        <Button onClick={onClose}>Cancel</Button>
+        <Button
+          primary
+          onClick={() => {
+            setState((s) => assignTemplate(s, client.id, t, t.defaultVariant));
+            toast("Template assigned; client plans and history retained");
+            onClose();
+            navigate({
+              ...route,
+              section: "clients",
+              client: client.id,
+              plan: "setup",
+              tab: "Plans",
+            });
+          }}
+        >
+          Assign & personalize
+        </Button>
+      </div>
+    </div>
   );
 }
 export function ExtraDateDialog({
@@ -1014,144 +975,6 @@ export function ExtraDateDialog({
           }}
         >
           Save date
-        </Button>
-      </div>
-    </Dialog>
-  );
-}
-export function PlanDialog({
-  client,
-  kind,
-  onClose,
-  onApply,
-}: {
-  client: CoachClient;
-  kind: string;
-  onClose: () => void;
-  onApply: (plan: Plan) => void;
-}) {
-  const [plan, setPlan] = useState({ ...client.plan });
-  const nutrition = kind === "nutrition";
-  const valid =
-    Number.isFinite(plan.calories) &&
-    plan.calories > 0 &&
-    Number.isFinite(plan.protein) &&
-    plan.protein > 0 &&
-    Number.isInteger(plan.sets) &&
-    plan.sets > 0 &&
-    plan.sets <= 20 &&
-    plan.weeks > 0 &&
-    plan.weeks <= 52;
-  return (
-    <Dialog
-      title={`${nutrition ? "Nutrition" : "Training"} setup · ${client.name.split(" ")[0]}`}
-      onClose={onClose}
-    >
-      {nutrition ? (
-        <>
-          <Select
-            label="Nutrition option"
-            value={plan.nutritionVariant}
-            options={["Training day", "Rest day"]}
-            onChange={(v) =>
-              setPlan((p) => ({
-                ...p,
-                nutritionVariant: v as Plan["nutritionVariant"],
-              }))
-            }
-          />
-          <div className="cd-two-fields">
-            <label className="cd-field">
-              Daily energy target · kcal
-              <input
-                type="number"
-                min={1}
-                value={plan.calories}
-                onChange={(e) =>
-                  setPlan((p) => ({
-                    ...p,
-                    calories: e.target.valueAsNumber || 0,
-                  }))
-                }
-              />
-            </label>
-            <label className="cd-field">
-              Protein target · g
-              <input
-                type="number"
-                min={1}
-                value={plan.protein}
-                onChange={(e) =>
-                  setPlan((p) => ({
-                    ...p,
-                    protein: e.target.valueAsNumber || 0,
-                  }))
-                }
-              />
-            </label>
-          </div>
-          <h3>Current meals</h3>
-          <p className="cd-muted">
-            07:30 Breakfast · 12:30 Lunch · 19:00 Dinner
-          </p>
-        </>
-      ) : (
-        <>
-          <Select
-            label="Program type"
-            value={plan.program}
-            options={["Evergreen", "Week-based"]}
-            onChange={(v) =>
-              setPlan((p) => ({ ...p, program: v as Plan["program"] }))
-            }
-          />
-          {plan.program === "Week-based" && (
-            <label className="cd-field">
-              Number of weeks
-              <input
-                type="number"
-                min={1}
-                max={52}
-                value={plan.weeks}
-                onChange={(e) =>
-                  setPlan((p) => ({ ...p, weeks: e.target.valueAsNumber || 0 }))
-                }
-              />
-            </label>
-          )}
-          <label className="cd-field">
-            Split squat · working sets
-            <input
-              type="number"
-              min={1}
-              max={20}
-              value={plan.sets}
-              onChange={(e) =>
-                setPlan((p) => ({ ...p, sets: e.target.valueAsNumber || 0 }))
-              }
-            />
-          </label>
-          <label className="cd-field">
-            Exercise instructions
-            <textarea
-              value={plan.instructions}
-              onChange={(e) =>
-                setPlan((p) => ({ ...p, instructions: e.target.value }))
-              }
-              rows={3}
-            />
-          </label>
-        </>
-      )}
-      {!valid && (
-        <p className="cd-error" role="alert">
-          Use positive targets, 1–20 sets and 1–52 weeks.
-        </p>
-      )}
-      <div className="cd-dialog-actions">
-        <Button onClick={onClose}>Cancel</Button>
-        <Button primary disabled={!valid} onClick={() => onApply(plan)}>
-          Apply adjustment
         </Button>
       </div>
     </Dialog>

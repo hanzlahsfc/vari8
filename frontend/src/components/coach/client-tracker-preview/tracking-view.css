@@ -23,6 +23,8 @@
   --surface-subtle: var(--cd-raised);
   min-width: 0;
   width: 100%;
+  max-width: 1040px;
+  margin-inline: auto;
   padding-bottom: 12px;
   color: var(--text);
   font-family: "Tracker Geist", system-ui, sans-serif;

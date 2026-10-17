@@ -5,6 +5,7 @@ import {
   Layers3,
   MessageCircle,
   Moon,
+  NotebookPen,
   PanelLeftClose,
   PanelLeftOpen,
   Settings2,
@@ -21,6 +22,8 @@ import { CheckInsWorkspace } from "./check-ins";
 import { ClientsWorkspace } from "./clients";
 import { MessagesWorkspace } from "./messages";
 import { type Section, seedState, unreadCount } from "./model";
+import { NotesWorkspace } from "./notes";
+import { IndividualPlanWorkspace } from "./plans/workspace";
 import { CoachProvider, useCoach } from "./store";
 import { TemplateEditor, TemplateLibrary } from "./templates";
 import { Button, Dialog, IconButton, Toggle, Transition } from "./ui";
@@ -31,6 +34,7 @@ const NAV = [
   { id: "templates", label: "Templates", Icon: Layers3 },
   { id: "check-ins", label: "Check-ins", Icon: CalendarDays },
   { id: "messages", label: "Messages", Icon: MessageCircle },
+  { id: "notes", label: "Notes & to-dos", Icon: NotebookPen },
 ] as const;
 export function CoachApp() {
   return (
@@ -51,6 +55,7 @@ function Workspace() {
     dismiss,
   } = useCoach();
   const [settings, setSettings] = useState(false);
+  const selectedClient = state.clients.find((c) => c.id === route.client);
   const pending = state.submissions.filter((s) => !s.response).length;
   const unread = state.preferences.notifications ? unreadCount(state) : 0;
   const theme = themeVariables({
@@ -246,9 +251,15 @@ function Workspace() {
                   <TemplateLibrary />
                 )
               ) : route.section === "clients" ? (
-                <ClientsWorkspace />
+                route.plan && route.client && selectedClient ? (
+                  <IndividualPlanWorkspace client={selectedClient} />
+                ) : (
+                  <ClientsWorkspace />
+                )
               ) : route.section === "check-ins" ? (
                 <CheckInsWorkspace />
+              ) : route.section === "notes" ? (
+                <NotesWorkspace />
               ) : (
                 <MessagesWorkspace />
               )}

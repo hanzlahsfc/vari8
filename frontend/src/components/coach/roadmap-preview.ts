@@ -1,4 +1,5 @@
 import type { CoachClient, FieldConfig, Variant } from "./model";
+import { planTargets } from "./plans/domain";
 
 const DAY = 86_400_000;
 const RECORDED_FIELDS = new Set(["weight", "sleep", "steps", "calories"]);
@@ -48,17 +49,27 @@ export function weeklyRoadmapRows(configuration: Variant, client: CoachClient) {
               )
               .filter((value) => Number.isFinite(value))
           : [];
+        const applicable = recorded.flatMap((entry) => {
+          const t = planTargets(client, entry.date);
+          return t ? [t] : [];
+        });
+        const nutrient =
+          field.id === "calories" || field.id === "protein"
+            ? field.id
+            : undefined;
         const target =
-          field.id === "calories"
-            ? client.plan.calories
-            : field.id === "protein"
-              ? client.plan.protein
-              : null;
+          nutrient && applicable.length
+            ? applicable.reduce((sum, t) => sum + t[nutrient], 0) /
+              applicable.length
+            : (client.plans?.goals.find(
+                (g) => g.fieldId === field.id && g.date <= end,
+              )?.value ?? null);
         let value: number | null = values.length
           ? values.reduce((sum, reading) => sum + reading, 0) / values.length
           : null;
         if (metric.calculation === "Trend")
-          value = values.length > 1 ? values[values.length - 1] - values[0] : null;
+          value =
+            values.length > 1 ? values[values.length - 1] - values[0] : null;
         if (metric.calculation === "Adherence")
           value =
             values.length && target !== null

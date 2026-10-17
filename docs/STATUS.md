@@ -1,3 +1,22 @@
+## 2026-10-18 — FRONTEND refresh, ICM context, and PR workflow — checks passed; draft pending
+
+- Publication branch `FRONTEND` retains its published history and merged target
+  `main`; source UI was overlaid into `frontend/` without source-workspace history.
+- Source mapping audit checked 207 source files against their publication paths:
+  zero missing and zero mismatches. Existing 15 publication-only tests remain.
+- `npm run check` in `frontend/` passed: 157 tests, context guard, typecheck,
+  Biome (199 files), and production build for `/`, `/coach`, and `/ethereal`.
+- The focused source context suite passed 16/16; source context check and lint
+  passed. Mobile visual check passed page overflow at 360px and 1440px; the
+  360px tab strip scrolls to reveal Onboarding. Screenshot API evidence was
+  inline only; no exported proof file or full accessibility/performance audit.
+- Added a frontend-only CI workflow and repeatable `FRONTEND` → `main` guide.
+  Root `.github/workflows/ci.yml` is unchanged. No required-check policy changed.
+- Independent read-only SWE-2 review found no blocking findings. Conditional
+  guard scope and mobile visual-proof limits are documented in the draft PR;
+  no full accessibility/performance/cross-browser audit is claimed.
+- Implementation commit, explicit push, and draft PR creation remain pending.
+
 ## 2026-10-15 — FRONTEND standalone UI snapshot — verified for publication
 
 - User-selected `frontend/` import on `FRONTEND`, based on main

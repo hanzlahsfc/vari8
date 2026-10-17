@@ -256,11 +256,12 @@
 .coach-root .ct-tracking .ct-field-list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  max-width: 520px;
 }
 
 .coach-root .ct-tracking .ct-daily-field {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(150px, 190px);
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 220px);
   align-items: center;
   gap: 5px 14px;
   min-width: 0;
@@ -492,6 +493,7 @@
   .coach-root .ct-tracking .ct-daily-field.ct-field-wide {
     grid-column: auto;
     grid-template-columns: minmax(0, 1fr) minmax(116px, 148px);
+    max-width: none;
     min-height: 58px;
     gap: 5px 9px;
   }

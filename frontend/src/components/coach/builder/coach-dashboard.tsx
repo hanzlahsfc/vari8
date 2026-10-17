@@ -8,6 +8,8 @@ import {
   TODAY,
   type Variant,
 } from "../model";
+import { applicablePlan, planTargets, trainingWeek } from "../plans/domain";
+import { resolveTrainingWeek } from "../plans/types";
 import { useCoach } from "../store";
 import { DashboardBuilder } from "./dashboard-builder";
 import { initialRecords, type SourceRecords } from "./model";
@@ -59,20 +61,61 @@ export function recordsForCoach(
       unit: "kcal",
       option: "TD",
     }));
-    r.calorieTargets = [
-      {
-        option: "TD",
-        kind: "fixed",
-        low: client.plan.calories,
-        unit: "kcal",
-        effectiveFrom: "2026-01-01",
-      },
-    ];
-    r.macroTargets = r.macroTargets.map((t) =>
-      t.macro === "protein" ? { ...t, low: client.plan.protein } : t,
-    );
-    r.activeNutritionOption =
-      client.plan.nutritionVariant === "Rest day" ? "NTD" : "TD";
+    const dates = [
+      ...new Set([...client.entries.map((e) => e.date), TODAY]),
+    ].sort();
+    r.calorieTargets = dates.flatMap((date) => {
+      const t = planTargets(client, date);
+      return t
+        ? [
+            {
+              option: "TD" as const,
+              kind: "fixed" as const,
+              low: t.calories,
+              unit: "kcal" as const,
+              effectiveFrom: date,
+              effectiveTo: date,
+            },
+          ]
+        : [];
+    });
+    r.macroTargets = dates.flatMap((date) => {
+      const t = planTargets(client, date);
+      return t
+        ? (["protein", "carbs", "fat"] as const).map((macro) => ({
+            option: "TD" as const,
+            macro,
+            kind: "fixed" as const,
+            low: t[macro],
+            unit: "g" as const,
+            effectiveFrom: date,
+            effectiveTo: date,
+          }))
+        : [];
+    });
+    r.activeNutritionOption = "TD";
+    r.macroIntake = [];
+    r.waist = [];
+    r.recovery = [];
+    r.prescriptions = [];
+    r.workoutSchedule = [];
+    const program = client.plans
+      ? applicablePlan(client.plans.training, TODAY)
+      : undefined;
+    if (program && variant.views.includes("Training Program")) {
+      const week = trainingWeek(program, TODAY);
+      r.workoutSchedule = resolveTrainingWeek(program, week).map((session) => ({
+        date: TODAY,
+        week,
+        name: session.name,
+        exercises: session.exercises.map((exercise) => ({
+          id: exercise.id,
+          name: exercise.name,
+          sets: exercise.sets.length,
+          reps: String(exercise.sets[0]?.reps ?? "—"),
+        })),
+      }));
+    }
     if (state) {
       r.checkInSchedule = eventsBetween(state, TODAY, addDays(TODAY, 28))
         .filter((e) => e.clientId === client.id && !e.submission)

@@ -134,40 +134,108 @@ test("latest summaries select the most recent date regardless of input order", (
   assert.equal(model.summarize(waist, week, model.defaultConfig), "78.5 cm");
 });
 
-
 test("week ledger means override latest, total, and distribution preferences", () => {
   const week = [
     entry("2026-10-05", { waist: 80, "active-minutes": 0, "sleep-quality": 1 }),
-    entry("2026-10-06", { waist: 78, "active-minutes": 30, "sleep-quality": 10 }),
-    entry("2026-10-07", { waist: null, "active-minutes": null, "sleep-quality": null }),
+    entry("2026-10-06", {
+      waist: 78,
+      "active-minutes": 30,
+      "sleep-quality": 10,
+    }),
+    entry("2026-10-07", {
+      waist: null,
+      "active-minutes": null,
+      "sleep-quality": null,
+    }),
   ];
-  assert.equal(model.weeklyAverage(parameter("waist"), week, model.defaultConfig), 79);
-  assert.equal(model.weeklyAverage(parameter("active-minutes"), week, model.defaultConfig), 15);
-  assert.equal(model.weeklyAverage(parameter("sleep-quality"), week, model.defaultConfig), 5.5);
-  assert.equal(model.weeklyAverage(parameter("sleep-quality"), week, { ...model.defaultConfig, ratingScale: "1-5" }), 3);
-  assert.equal(model.weeklyAverage(parameter("protein"), week, model.defaultConfig), null);
+  assert.equal(
+    model.weeklyAverage(parameter("waist"), week, model.defaultConfig),
+    79,
+  );
+  assert.equal(
+    model.weeklyAverage(parameter("active-minutes"), week, model.defaultConfig),
+    15,
+  );
+  assert.equal(
+    model.weeklyAverage(parameter("sleep-quality"), week, model.defaultConfig),
+    5.5,
+  );
+  assert.equal(
+    model.weeklyAverage(parameter("sleep-quality"), week, {
+      ...model.defaultConfig,
+      ratingScale: "1-5",
+    }),
+    3,
+  );
+  assert.equal(
+    model.weeklyAverage(parameter("protein"), week, model.defaultConfig),
+    null,
+  );
 });
 
 test("week ledger means convert units and exclude invalid readings", () => {
   const week = [
     entry("2026-10-05", { weight: 60, protein: 0 }),
     entry("2026-10-06", { weight: 80, protein: 20 }),
-    entry("2026-10-07", { weight: Number.NaN, protein: Number.POSITIVE_INFINITY }),
+    entry("2026-10-07", {
+      weight: Number.NaN,
+      protein: Number.POSITIVE_INFINITY,
+    }),
   ];
-  const result = model.weeklyAverage(parameter("weight"), week, { ...model.defaultConfig, weightUnit: "lb" });
+  const result = model.weeklyAverage(parameter("weight"), week, {
+    ...model.defaultConfig,
+    weightUnit: "lb",
+  });
   assert.ok(Math.abs(result - 70 * 2.20462) < 1e-9);
-  assert.equal(model.weeklyAverage(parameter("protein"), week, model.defaultConfig), 10);
+  assert.equal(
+    model.weeklyAverage(parameter("protein"), week, model.defaultConfig),
+    10,
+  );
 });
 
-
 test("weekly deltas compare observed means in displayed units and omit unavailable comparisons", () => {
-  const current = [entry("2026-10-05", { weight: 69, protein: 0 }), entry("2026-10-06", { weight: 71, protein: null })];
-  const previous = [entry("2026-09-28", { weight: 71, protein: 20 }), entry("2026-09-29", { weight: 73, protein: null })];
-  assert.equal(model.weeklyDifference(parameter("weight"), current, previous, model.defaultConfig), -2);
-  assert.equal(model.weeklyDifference(parameter("protein"), current, previous, model.defaultConfig), -20);
-  assert.equal(model.weeklyDifference(parameter("weight"), current, [], model.defaultConfig), null);
+  const current = [
+    entry("2026-10-05", { weight: 69, protein: 0 }),
+    entry("2026-10-06", { weight: 71, protein: null }),
+  ];
+  const previous = [
+    entry("2026-09-28", { weight: 71, protein: 20 }),
+    entry("2026-09-29", { weight: 73, protein: null }),
+  ];
+  assert.equal(
+    model.weeklyDifference(
+      parameter("weight"),
+      current,
+      previous,
+      model.defaultConfig,
+    ),
+    -2,
+  );
+  assert.equal(
+    model.weeklyDifference(
+      parameter("protein"),
+      current,
+      previous,
+      model.defaultConfig,
+    ),
+    -20,
+  );
+  assert.equal(
+    model.weeklyDifference(
+      parameter("weight"),
+      current,
+      [],
+      model.defaultConfig,
+    ),
+    null,
+  );
   const lb = { ...model.defaultConfig, weightUnit: "lb" };
-  assert.ok(Math.abs(model.weeklyDifference(parameter("weight"), current, previous, lb) - (-2 * 2.20462)) < 1e-9);
+  assert.ok(
+    Math.abs(
+      model.weeklyDifference(parameter("weight"), current, previous, lb) -
+        -2 * 2.20462,
+    ) < 1e-9,
+  );
 });
 
 test("weight deltas use the closest earlier recorded reading across missing days and week boundaries", () => {
@@ -178,8 +246,29 @@ test("weight deltas use the closest earlier recorded reading across missing days
     entry("2026-10-05", { weight: 69.8 }),
     entry("2026-10-03", { weight: Number.NaN }),
   ];
-  const difference = model.previousReadingDifference(parameter("weight"), "2026-10-05", history, model.defaultConfig);
-  assert.ok(Math.abs(difference - (-0.2)) < 1e-9);
-  assert.equal(model.previousReadingDifference(parameter("weight"), "2026-10-01", history, model.defaultConfig), null);
-  assert.equal(model.previousReadingDifference(parameter("weight"), "2026-10-04", history, model.defaultConfig), null);
+  const difference = model.previousReadingDifference(
+    parameter("weight"),
+    "2026-10-05",
+    history,
+    model.defaultConfig,
+  );
+  assert.ok(Math.abs(difference - -0.2) < 1e-9);
+  assert.equal(
+    model.previousReadingDifference(
+      parameter("weight"),
+      "2026-10-01",
+      history,
+      model.defaultConfig,
+    ),
+    null,
+  );
+  assert.equal(
+    model.previousReadingDifference(
+      parameter("weight"),
+      "2026-10-04",
+      history,
+      model.defaultConfig,
+    ),
+    null,
+  );
 });

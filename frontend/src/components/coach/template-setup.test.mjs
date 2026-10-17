@@ -3,21 +3,43 @@ import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
 
-const source = await readFile(new URL("./template-setup.ts", import.meta.url), "utf8");
-const code = stripTypeScriptTypes(source, { mode: "strip" });
-const { templateSetup, singleTemplateSetup, normalizeTemplateSetups } = await import(
-  `data:text/javascript;base64,${Buffer.from(code).toString("base64")}`
+const source = await readFile(
+  new URL("./template-setup.ts", import.meta.url),
+  "utf8",
 );
+const code = stripTypeScriptTypes(source, { mode: "strip" });
+const { templateSetup, singleTemplateSetup, normalizeTemplateSetups } =
+  await import(
+    `data:text/javascript;base64,${Buffer.from(code).toString("base64")}`
+  );
 const configuration = (id, nutrition) => ({
-  id, name: id, nutrition, views: ["Dashboard", "Mealplan"], habits: true,
-  widgets: [], fields: [{ id: "weight", unit: "kg" }], roadmap: [],
-  training: { fields: ["Sets"], volume: true, breakdown: "Per exercise", presentation: "Table" },
-  questions: [], summaries: ["weight"],
+  id,
+  name: id,
+  nutrition,
+  views: ["Dashboard", "Mealplan"],
+  habits: true,
+  widgets: [],
+  fields: [{ id: "weight", unit: "kg" }],
+  roadmap: [],
+  training: {
+    fields: ["Sets"],
+    volume: true,
+    breakdown: "Per exercise",
+    presentation: "Table",
+  },
+  questions: [],
+  summaries: ["weight"],
 });
 const template = () => ({
-  id: "strength", name: "Strength", description: "A saved setup",
-  updated: "2026-10-13", defaultVariant: "meal-plan",
-  variants: [configuration("meal-plan", "Meal plan"), configuration("iifym", "IIFYM")],
+  id: "strength",
+  name: "Strength",
+  description: "A saved setup",
+  updated: "2026-10-13",
+  defaultVariant: "meal-plan",
+  variants: [
+    configuration("meal-plan", "Meal plan"),
+    configuration("iifym", "IIFYM"),
+  ],
 });
 
 test("one active configuration retains legacy configurations without mutating the source", () => {
@@ -42,7 +64,10 @@ test("a client keeps the configuration actually assigned, including archived leg
   assert.equal(result.legacyConfigurations[0].id, "meal-plan");
   const normalized = singleTemplateSetup(original);
   assert.equal(templateSetup(normalized, "iifym").nutrition, "IIFYM");
-  assert.equal(singleTemplateSetup(normalized, "iifym").variants[0].nutrition, "IIFYM");
+  assert.equal(
+    singleTemplateSetup(normalized, "iifym").variants[0].nutrition,
+    "IIFYM",
+  );
 });
 
 test("workspace normalization preserves history, plans, messages, preferences and independent drafts", () => {
@@ -50,24 +75,46 @@ test("workspace normalization preserves history, plans, messages, preferences an
   const state = {
     version: 1,
     templates: [saved],
-    editorDrafts: { strength: { ...structuredClone(saved), name: "Unsaved name" } },
-    clients: [{
-      id: "athlete", entries: [{ date: "2026-10-12", weight: 70 }],
-      plan: { calories: 2200 }, internalNotes: ["Private"],
-      assignment: { templateId: saved.id, variantId: "iifym", snapshot: structuredClone(saved) },
-    }],
-    messages: [{ text: "Existing conversation" }], submissions: [{ id: "submission" }],
+    editorDrafts: {
+      strength: { ...structuredClone(saved), name: "Unsaved name" },
+    },
+    clients: [
+      {
+        id: "athlete",
+        entries: [{ date: "2026-10-12", weight: 70 }],
+        plan: { calories: 2200 },
+        internalNotes: ["Private"],
+        assignment: {
+          templateId: saved.id,
+          variantId: "iifym",
+          snapshot: structuredClone(saved),
+        },
+      },
+    ],
+    messages: [{ text: "Existing conversation" }],
+    submissions: [{ id: "submission" }],
     reviewDrafts: { submission: { text: "Feedback draft" } },
     drafts: { athlete: { text: "Message draft" } },
-    extras: [{ date: "2026-10-15" }], preferences: { accent: "#D93A7F" },
+    extras: [{ date: "2026-10-15" }],
+    preferences: { accent: "#D93A7F" },
   };
   const before = structuredClone(state);
   const normalized = normalizeTemplateSetups(state);
   assert.deepEqual(state, before);
   assert.equal(normalized.templates[0].variants.length, 1);
   assert.equal(normalized.editorDrafts.strength.name, "Unsaved name");
-  assert.equal(normalized.clients[0].assignment.snapshot.variants[0].nutrition, "IIFYM");
-  for (const key of ["messages", "submissions", "reviewDrafts", "drafts", "extras", "preferences"])
+  assert.equal(
+    normalized.clients[0].assignment.snapshot.variants[0].nutrition,
+    "IIFYM",
+  );
+  for (const key of [
+    "messages",
+    "submissions",
+    "reviewDrafts",
+    "drafts",
+    "extras",
+    "preferences",
+  ])
     assert.deepEqual(normalized[key], before[key]);
   for (const key of ["entries", "plan", "internalNotes"])
     assert.deepEqual(normalized.clients[0][key], before.clients[0][key]);

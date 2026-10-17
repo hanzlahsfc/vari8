@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { ExtraDateDialog, PlanDialog } from "./clients";
+import { ExtraDateDialog } from "./clients";
 import { DemoRecorder, MediaCard } from "./media";
 import {
   ALL_PARAMETERS,
@@ -25,7 +25,6 @@ import {
   eventsBetween,
   formatDate,
   monday,
-  type Plan,
   type ReviewDraft,
   type Submission,
   submitFeedback,
@@ -442,7 +441,6 @@ export function CheckInsWorkspace() {
 }
 function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
   const { state, setState, navigate, toast } = useCoach();
-  const [planKind, setPlanKind] = useState<string | null>(null);
   const [visual, setVisual] = useState<string | null>(null);
   const c = state.clients.find((c) => c.id === sub.clientId);
   const draft: ReviewDraft = state.reviewDrafts[sub.id] ?? {
@@ -469,33 +467,6 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
       id,
       unit: ALL_PARAMETERS.find((p) => p.id === id)?.units[0] ?? "",
     };
-  const applyPlan = (plan: Plan) => {
-    setState((s) => {
-      const client = s.clients.find((x) => x.id === c.id);
-      if (!client) return s;
-      const current = s.reviewDrafts[sub.id] ?? { text: "", changes: [] };
-      let changes = [...current.changes];
-      for (const key of Object.keys(plan) as (keyof Plan)[])
-        if (plan[key] !== client.plan[key]) {
-          const old = changes.find((x) => x.field === key);
-          changes = [
-            ...changes.filter((x) => x.field !== key),
-            {
-              field: key,
-              before: old?.before ?? client.plan[key],
-              after: plan[key],
-            },
-          ];
-        }
-      return {
-        ...s,
-        clients: s.clients.map((x) => (x.id === c.id ? { ...x, plan } : x)),
-        reviewDrafts: { ...s.reviewDrafts, [sub.id]: { ...current, changes } },
-      };
-    });
-    setPlanKind(null);
-    toast("Plan adjusted. The actual changes are included with your feedback.");
-  };
   return (
     <>
       <PageTitle
@@ -615,7 +586,17 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
                   </strong>
                   <small>{formatDate(f.date)} · Athlete training note</small>
                   <p>{f.text}</p>
-                  <Button onClick={() => setPlanKind("training")}>
+                  <Button
+                    onClick={() =>
+                      navigate({
+                        section: "clients",
+                        client: c.id,
+                        plan: "training",
+                        review: sub.id,
+                        tab: "Plans",
+                      })
+                    }
+                  >
                     Open training setup
                     <ArrowUpRight size={14} />
                   </Button>
@@ -682,15 +663,58 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
               )}
               <h3>Adjust this athlete’s plan</h3>
               <div className="cd-actions cd-wrap">
-                <Button onClick={() => setPlanKind("nutrition")}>
+                <Button
+                  onClick={() =>
+                    navigate({
+                      section: "clients",
+                      client: c.id,
+                      plan: "nutrition",
+                      review: sub.id,
+                      tab: "Plans",
+                    })
+                  }
+                >
                   Nutrition
                   <ArrowUpRight size={14} />
                 </Button>
-                <Button onClick={() => setPlanKind("training")}>
+                <Button
+                  onClick={() =>
+                    navigate({
+                      section: "clients",
+                      client: c.id,
+                      plan: "training",
+                      review: sub.id,
+                      tab: "Plans",
+                    })
+                  }
+                >
                   Training
                   <ArrowUpRight size={14} />
                 </Button>
               </div>
+              {(draft.activations ?? []).map((a) => (
+                <div className="cd-plan-changes" key={a.versionId}>
+                  <h3>
+                    {a.kind === "nutrition" ? "Nutrition" : "Training"}{" "}
+                    activated
+                  </h3>
+                  <p>
+                    {a.name} · Starts {a.startDate}
+                  </p>
+                  <Button
+                    onClick={() =>
+                      navigate({
+                        section: "clients",
+                        client: c.id,
+                        plan: a.kind,
+                        review: sub.id,
+                      })
+                    }
+                  >
+                    View activated plan
+                  </Button>
+                </div>
+              ))}
               {draft.changes.filter((x) => x.before !== x.after).length > 0 && (
                 <div className="cd-plan-changes">
                   <h3>Changes included with feedback</h3>
@@ -738,14 +762,6 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
           )}
         </Surface>
       </div>
-      {planKind && (
-        <PlanDialog
-          client={c}
-          kind={planKind}
-          onClose={() => setPlanKind(null)}
-          onApply={applyPlan}
-        />
-      )}
       {visual && (
         <Dialog title={visual} onClose={() => setVisual(null)}>
           <ProgressVisual />

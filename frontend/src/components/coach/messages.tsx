@@ -30,6 +30,7 @@ import {
 import { useCoach } from "./store";
 import { templateSetup } from "./template-setup";
 import { Avatar, Button, Dialog, Empty, IconButton, SearchBox } from "./ui";
+import "./workspace-polish.css";
 
 const SNIPPETS = [
   "Thanks for the update! I’ll review this alongside your check-in.",
@@ -390,18 +391,22 @@ export function MessagesWorkspace() {
                           {m.attachments.map((a) => (
                             <MediaCard key={a.id} item={a} />
                           ))}
-                          {m.link && (
+                          {(m.links?.length
+                            ? m.links
+                            : m.link
+                              ? [m.link]
+                              : []
+                          ).map((link) => (
                             <button
+                              key={link.label}
                               type="button"
                               className="cd-context-link"
-                              onClick={() => {
-                                if (m.link) navigate(m.link.route);
-                              }}
+                              onClick={() => navigate(link.route)}
                             >
-                              {m.link.label}
+                              {link.label}
                               <ArrowUpRight size={14} />
                             </button>
-                          )}
+                          ))}
                           <div className="cd-bubble-meta">
                             <span>
                               {formatDate(m.date, {
@@ -418,8 +423,17 @@ export function MessagesWorkspace() {
                               </span>
                             )}
                             {m.from === "client" && (
-                              <IconButton
-                                label={
+                              <button
+                                type="button"
+                                className="cd-icon-button cd-message-flag"
+                                aria-label={
+                                  m.priority
+                                    ? "Remove priority flag"
+                                    : client.priorityMessages
+                                      ? "Flag message as priority"
+                                      : "Priority flags disabled for this athlete"
+                                }
+                                title={
                                   m.priority
                                     ? "Remove priority flag"
                                     : client.priorityMessages
@@ -433,7 +447,7 @@ export function MessagesWorkspace() {
                                 onClick={() => flag(m)}
                               >
                                 <Flag size={12} />
-                              </IconButton>
+                              </button>
                             )}
                           </div>
                         </div>

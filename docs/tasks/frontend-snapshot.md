@@ -152,3 +152,28 @@ all intended source files to match the source snapshot, all 15 publication-only
 tests to remain present and pass, no generated/runtime/secret paths in the diff,
 the root CI workflow to remain unchanged, independent review and browser evidence
 to be recorded, and the draft PR to reference the verified target branch heads.
+
+## 2026-10-18 — final refresh verification record
+
+- Source workspace remained the authoritative current UI. An exact-path audit
+  compared 207 mapped source files with `frontend/`: zero missing and zero
+  mismatches. The 15 publication-only tests remain in the target.
+- `npm run check` passed on the publication tree: 157/157 tests, ICM context
+  guard, typecheck, Biome on 199 files, and production build of `/`, `/coach`,
+  and `/ethereal`.
+- Source context checks passed: `agent-context:test` 16/16,
+  `agent-context:check`, and lint on 183 files. Node version metadata is aligned
+  at 24 in `.nvmrc`, `package.json`, and `package-lock.json`.
+- The frontend workflow is path-scoped to `frontend/**` and its workflow file;
+  root `.github/workflows/ci.yml` remains unchanged. The guide documents the
+  explicit `great-tracker` remote, safe main sync, check, explicit push, and
+  draft PR to `main`; repository branch protection was not changed.
+- Mobile visual verification after the tab-strip fix found no page-level
+  horizontal overflow at 360px or 1440px; the 360px strip scrolls to expose
+  Onboarding. The screenshot API returned inline evidence only, with no saved
+  image artifact. Full accessibility, performance, and cross-browser audits
+  were not performed.
+- Final read-only SWE-2 review reported no blocking findings. Conditional
+  context-guard scope and visual-proof limitations are recorded in the draft PR.
+- Implementation commit, explicit push, and draft PR creation remain pending at
+  the time of this record. No PR is claimed here.

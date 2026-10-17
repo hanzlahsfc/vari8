@@ -48,10 +48,17 @@ import {
   uid,
   type Variant,
 } from "./model";
+import {
+  DEFAULT_TRAINING_DEFAULTS,
+  DEFAULT_TRAINING_OPTIONS,
+  type TrainingOptionKey,
+  type TrainingOptions,
+} from "./plans/training-options";
 import { weeklyRoadmapRows } from "./roadmap-preview";
 import { useCoach } from "./store";
 import { trackerOverviewIds } from "./tracker-setup";
 import "./tracker-config.css";
+import "./plans/training-options.css";
 import {
   DEFAULT_PHASE_OPTIONS,
   templateSetup,
@@ -80,7 +87,7 @@ export function AssignDialog({
   onClose: () => void;
   initialClient?: string;
 }) {
-  const { state, setState, toast } = useCoach();
+  const { state, setState, toast, navigate } = useCoach();
   const [search, setSearch] = useState("");
   const [clientId, setClient] = useState(initialClient ?? "");
   const configuration = templateSetup(template);
@@ -89,6 +96,12 @@ export function AssignDialog({
       <p className="cd-muted">
         Apply {template.name} to one athlete. Their plans, entries and history
         stay with them.
+      </p>
+      <p className="cd-muted">
+        {configuration.nutrition} · {configuration.views.join(" · ")}
+        {configuration.habits ? " · Habit Tracker" : ""}. Reassignment retains
+        all client plans and history; configured modules are shown and other
+        modules are hidden.
       </p>
       <SearchBox
         value={search}
@@ -124,7 +137,9 @@ export function AssignDialog({
         <Button onClick={onClose}>Cancel</Button>
         <Button
           primary
-          disabled={!clientId}
+          disabled={
+            !state.clients.some((c) => c.id === clientId && !c.archived)
+          }
           onClick={() => {
             setState((s) =>
               assignTemplate(s, clientId, template, configuration.id),
@@ -133,10 +148,16 @@ export function AssignDialog({
               `Assigned to ${state.clients.find((c) => c.id === clientId)?.name}`,
             );
             onClose();
+            navigate({
+              section: "clients",
+              client: clientId,
+              plan: "setup",
+              tab: "Plans",
+            });
           }}
         >
           <Check size={16} />
-          Assign template
+          Assign & personalize
         </Button>
       </div>
     </Dialog>
@@ -145,15 +166,21 @@ export function AssignDialog({
 export function PreviewDialog({
   template,
   client,
+  initialTab,
   onClose,
 }: {
   template: Template;
   client?: CoachClient;
+  initialTab?: string;
   onClose: () => void;
 }) {
   return (
     <Dialog full title="Client preview" onClose={onClose}>
-      <ClientPreview template={template} client={client} />
+      <ClientPreview
+        template={template}
+        client={client}
+        initialTab={initialTab}
+      />
     </Dialog>
   );
 }
@@ -416,8 +443,17 @@ const EDITOR_SECTIONS = [
   "Check-In",
   "Habits",
 ];
+const PREVIEW_TAB_BY_SECTION: Record<string, string> = {
+  Dashboard: "Dashboard",
+  Tracker: "Tracker",
+  "Timeline / Roadmap": "Timeline / Roadmap",
+  Nutrition: "Nutrition",
+  Training: "Training Program",
+  "Check-In": "Check-In",
+  Habits: "Habits",
+};
 export function TemplateEditor({ id }: { id: string }) {
-  const { state, setState, navigate, guard, toast } = useCoach();
+  const { state, setState, navigate, guard, toast, route } = useCoach();
   const saved = state.templates.find((t) => t.id === id);
   const fresh = useMemo(() => newTemplate(id), [id]);
   const draft = state.editorDrafts[id] ?? saved ?? fresh;
@@ -479,7 +515,11 @@ export function TemplateEditor({ id }: { id: string }) {
     });
     setError("");
     toast("Template saved to your library");
-  }, [draft, id, setState, toast]);
+    if (route.client) {
+      guard.current = null;
+      navigate({ section: "clients", client: route.client, tab: "Plans" });
+    }
+  }, [draft, id, setState, toast, route.client, guard, navigate]);
   useEffect(() => {
     guard.current = (next) => {
       if (!dirty) return true;
@@ -510,7 +550,11 @@ export function TemplateEditor({ id }: { id: string }) {
       delete d[id];
       return { ...s, editorDrafts: d };
     });
-    navigate({ section: "templates" });
+    navigate(
+      route.client
+        ? { section: "clients", client: route.client, tab: "Plans" }
+        : { section: "templates" },
+    );
   };
   return (
     <div className="cd-editor">
@@ -518,7 +562,13 @@ export function TemplateEditor({ id }: { id: string }) {
         <div>
           <Button
             className="cd-back"
-            onClick={() => navigate({ section: "templates" })}
+            onClick={() =>
+              navigate(
+                route.client
+                  ? { section: "clients", client: route.client, tab: "Plans" }
+                  : { section: "templates" },
+              )
+            }
           >
             <ArrowLeft size={15} />
             Templates
@@ -632,7 +682,6 @@ export function TemplateEditor({ id }: { id: string }) {
                 ))}
                 <Toggle
                   label="Habits"
-                  detail="A separate space for habit logging, independent of Tracker measurements."
                   checked={variant.habits}
                   onChange={(habits) =>
                     updateVariant((v) => ({ ...v, habits }))
@@ -690,7 +739,6 @@ export function TemplateEditor({ id }: { id: string }) {
             <>
               <Toggle
                 label="Include Habit Tracker"
-                detail="A separate space for habit logging, independent of Tracker measurements."
                 checked={variant.habits}
                 onChange={(habits) => updateVariant((v) => ({ ...v, habits }))}
               />
@@ -733,7 +781,11 @@ export function TemplateEditor({ id }: { id: string }) {
         </Surface>
       </div>
       {preview && (
-        <PreviewDialog template={draft} onClose={() => setPreview(false)} />
+        <PreviewDialog
+          template={draft}
+          initialTab={PREVIEW_TAB_BY_SECTION[section]}
+          onClose={() => setPreview(false)}
+        />
       )}
       {(leaving || discarding) && (
         <Dialog
@@ -1559,6 +1611,7 @@ function TrainingConfig({
           </label>
         ))}
       </div>
+      <TrainingOptionsConfig variant={variant} update={update} />
       <Toggle
         label="Display training volume"
         detail="Counts primary working sets per muscle group per week."
@@ -1591,6 +1644,248 @@ function TrainingConfig({
         </>
       )}
     </>
+  );
+}
+
+const TRAINING_OPTION_FIELDS: {
+  key: TrainingOptionKey;
+  label: string;
+  description: string;
+}[] = [
+  {
+    key: "setType",
+    label: "Set type",
+    description: "Labels coaches can choose for each set.",
+  },
+  {
+    key: "progression",
+    label: "Progression",
+    description: "Reusable guidance attached to an exercise.",
+  },
+  {
+    key: "tempo",
+    label: "Tempo",
+    description: "Common tempo prescriptions for the program.",
+  },
+  {
+    key: "rest",
+    label: "Rest",
+    description: "Rest intervals available in the set editor.",
+  },
+];
+
+function cleanTrainingOptions(values: string[]) {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function TrainingOptionsConfig({
+  variant,
+  update,
+}: {
+  variant: Variant;
+  update: (fn: (v: Variant) => Variant) => void;
+}) {
+  const [draftValues, setDraftValues] = useState<
+    Partial<Record<TrainingOptionKey, Record<number, string>>>
+  >({});
+  const options: TrainingOptions = {
+    ...DEFAULT_TRAINING_OPTIONS,
+    ...variant.training.options,
+  };
+  const defaults = {
+    ...DEFAULT_TRAINING_DEFAULTS,
+    ...variant.training.defaults,
+  };
+  const writeOptions = (
+    key: TrainingOptionKey,
+    nextOptions: string[],
+    preferredDefault?: string,
+  ) => {
+    const normalized = cleanTrainingOptions(nextOptions);
+    update((v) => {
+      const current = {
+        ...DEFAULT_TRAINING_DEFAULTS,
+        ...v.training.defaults,
+      };
+      const nextDefault = normalized.includes(current[key])
+        ? current[key]
+        : (normalized[0] ?? "");
+      return {
+        ...v,
+        training: {
+          ...v.training,
+          options: {
+            ...DEFAULT_TRAINING_OPTIONS,
+            ...v.training.options,
+            [key]: normalized,
+          },
+          defaults: {
+            ...current,
+            [key]: preferredDefault ?? nextDefault,
+          },
+        },
+      };
+    });
+  };
+
+  return (
+    <section
+      className="cd-training-options"
+      aria-labelledby="training-options-title"
+    >
+      <div className="cd-training-options-heading">
+        <div>
+          <span className="cd-training-options-eyebrow">Coach defaults</span>
+          <h3 id="training-options-title">Reusable set choices</h3>
+          <p>
+            These choices speed up exercise setup. Coaches can still tailor each
+            exercise to the client.
+          </p>
+        </div>
+      </div>
+      <div className="cd-training-options-list">
+        {TRAINING_OPTION_FIELDS.map(({ key, label, description }) => {
+          const values = options[key];
+          const currentValues = cleanTrainingOptions(
+            values.map((value, index) => draftValues[key]?.[index] ?? value),
+          );
+          const selectedDefault = values.includes(defaults[key])
+            ? defaults[key]
+            : (values[0] ?? "");
+          return (
+            <section className="cd-training-option-group" key={key}>
+              <header>
+                <div>
+                  <h4>{label}</h4>
+                  <p>{description}</p>
+                </div>
+                {values.length > 0 && (
+                  <label className="cd-training-default">
+                    Default
+                    <select
+                      aria-label={`${label} default`}
+                      value={selectedDefault}
+                      onChange={(event) =>
+                        update((v) => ({
+                          ...v,
+                          training: {
+                            ...v.training,
+                            options: {
+                              ...DEFAULT_TRAINING_OPTIONS,
+                              ...v.training.options,
+                            },
+                            defaults: {
+                              ...DEFAULT_TRAINING_DEFAULTS,
+                              ...v.training.defaults,
+                              [key]: event.target.value,
+                            },
+                          },
+                        }))
+                      }
+                    >
+                      {values.map((value) => (
+                        <option value={value} key={value}>
+                          {value}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </header>
+              <div className="cd-training-option-rows">
+                {values.map((value, index) => (
+                  <div
+                    className="cd-training-option-row"
+                    key={`${key}-${value}`}
+                  >
+                    <input
+                      aria-label={`${label} option ${index + 1}`}
+                      value={draftValues[key]?.[index] ?? value}
+                      maxLength={100}
+                      onChange={(event) =>
+                        setDraftValues((current) => ({
+                          ...current,
+                          [key]: {
+                            ...current[key],
+                            [index]: event.target.value,
+                          },
+                        }))
+                      }
+                      onBlur={(event) => {
+                        const next = [...values];
+                        const typed = event.currentTarget.value.trim();
+                        if (!typed && values.length > 1) next.splice(index, 1);
+                        else next[index] = typed || value;
+                        const normalized = cleanTrainingOptions(next);
+                        writeOptions(key, normalized);
+                        setDraftValues((current) => {
+                          return { ...current, [key]: {} };
+                        });
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          event.currentTarget.blur();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="cd-training-option-remove"
+                      aria-label={`Remove ${label.toLowerCase()} option ${value}`}
+                      disabled={values.length === 1}
+                      onClick={() => {
+                        writeOptions(
+                          key,
+                          currentValues.filter((option) => option !== value),
+                        );
+                        setDraftValues((current) => ({
+                          ...current,
+                          [key]: {},
+                        }));
+                      }}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                ))}
+                {values.length === 0 && (
+                  <p className="cd-training-option-empty">
+                    Add a choice to make this field available in the set editor.
+                  </p>
+                )}
+                <Button
+                  className="cd-training-option-add"
+                  onClick={() => {
+                    const base = "New option";
+                    let label = base;
+                    let index = 2;
+                    while (currentValues.includes(label))
+                      label = `${base} ${index++}`;
+                    writeOptions(
+                      key,
+                      [...currentValues, label],
+                      selectedDefault || label,
+                    );
+                    setDraftValues((current) => ({
+                      ...current,
+                      [key]: {},
+                    }));
+                  }}
+                >
+                  <Plus size={14} />
+                  Add choice
+                </Button>
+              </div>
+            </section>
+          );
+        })}
+      </div>
+      <p className="cd-caption">
+        Saved with this template. Existing client assignments keep their own
+        configuration until you assign an updated template.
+      </p>
+    </section>
   );
 }
 function QuestionnaireConfig({

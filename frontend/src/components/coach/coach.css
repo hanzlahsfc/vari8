@@ -3249,6 +3249,9 @@
   }
   .coach-root .cd-profile-tabs {
     gap: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
   }
   .coach-root .cd-profile-tabs .cd-button {
     padding: 6px 10px;

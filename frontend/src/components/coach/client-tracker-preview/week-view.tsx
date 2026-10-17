@@ -200,6 +200,10 @@ export function WeekView(props: TrackerViewProps) {
                               return (
                                 <td
                                   key={date}
+                                  data-day={dateLabel(date, {
+                                    weekday: "short",
+                                    day: "numeric",
+                                  })}
                                   className={`${date === props.asOf ? "is-today " : ""}${date === props.selectedDate ? "is-selected-day " : ""}${recorded ? "has-value" : "is-empty"}`}
                                   data-today={
                                     date === props.asOf ? "true" : undefined

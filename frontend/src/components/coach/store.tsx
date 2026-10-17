@@ -19,6 +19,7 @@ import {
   STORAGE_KEY,
   seedState,
 } from "./model";
+import { migrateCoachState } from "./plans/domain";
 import { normalizeTemplateSetups } from "./template-setup";
 
 type Store = {
@@ -43,7 +44,7 @@ export function useCoach() {
 }
 export function routeUrl(route: Route) {
   const q = new URLSearchParams({ section: route.section });
-  for (const key of ["client", "editor", "review", "plan"] as const)
+  for (const key of ["client", "editor", "review", "plan", "tab"] as const)
     if (route[key]) q.set(key, route[key]);
   return `/coach?${q.toString()}`;
 }
@@ -51,43 +52,55 @@ export function CoachProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const params = useSearchParams();
   const [state, setState] = useState<CoachState>(() =>
-    normalizeTemplateSetups(seedState()),
+    normalizeTemplateSetups(migrateCoachState(seedState()) as CoachState),
   );
   const [hydrated, setHydrated] = useState(false);
   const [storageOk, setStorageOk] = useState(true);
   const [notice, setNotice] = useState<Store["notice"]>(null);
   const [media, setMedia] = useState<Record<string, string>>({});
+  const preserveRaw = useRef(false);
   const urls = useRef(new Set<string>());
   const guard = useRef<((route: Route) => boolean) | null>(null);
   const section = params.get("section");
   const route: Route = {
     section:
-      section === "clients" || section === "check-ins" || section === "messages"
+      section === "clients" ||
+      section === "check-ins" ||
+      section === "messages" ||
+      section === "notes"
         ? section
         : "templates",
     client: params.get("client") ?? undefined,
     editor: params.get("editor") ?? undefined,
     review: params.get("review") ?? undefined,
     plan: params.get("plan") ?? undefined,
+    tab: params.get("tab") ?? undefined,
   };
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const parsed: unknown = JSON.parse(raw);
+        const parsed: unknown = migrateCoachState(JSON.parse(raw));
         if (isCoachState(parsed)) setState(normalizeTemplateSetups(parsed));
-        else
+        else {
+          preserveRaw.current = true;
+          setStorageOk(false);
           setNotice({
-            text: "Saved workspace could not be read. A fresh local workspace is ready.",
+            text: "Saved workspace could not be read. Its original data is preserved. You can continue in this session.",
           });
+        }
       }
     } catch {
+      preserveRaw.current = true;
       setStorageOk(false);
+      setNotice({
+        text: "Saved workspace is unavailable. Original data is preserved; edits are session-only.",
+      });
     }
     setHydrated(true);
   }, []);
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || preserveRaw.current) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       setStorageOk(true);

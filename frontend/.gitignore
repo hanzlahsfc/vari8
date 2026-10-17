@@ -14,6 +14,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .vercel/
+/.agent-runs/
+/artifacts/
 
 # Keep this repository focused on the runnable frontend.
 /.impeccable/
@@ -21,13 +23,9 @@ yarn-error.log*
 /snapshots/
 /tracker-review/
 /widget-review/
-/AGENTS.md
-/CLAUDE.md
 /CLIENT-TRACKER.md
 /DASHBOARD-BUILDER.md
 /DESIGN.md
 /MOCKUP-CHECKS.md
 /PRODUCT.md
 /WIDGET-REVIEW.md
-/src/**/*.test.*
-/src/**/*.spec.*

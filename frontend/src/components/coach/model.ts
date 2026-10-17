@@ -7,6 +7,12 @@ import {
   type DashboardDraft,
   isValidDashboardDraft,
 } from "./builder/schema";
+import { isClientPlans, plansOwnedBy, planTargets } from "./plans/domain";
+import type {
+  TrainingOptionKey,
+  TrainingOptions,
+} from "./plans/training-options";
+import type { ClientPlans, ExerciseDefinition } from "./plans/types";
 
 export const STORAGE_KEY = "coach-desktop-mockup-v1";
 export const TODAY = "2026-10-13";
@@ -27,13 +33,19 @@ export const CORE_VIEWS = [
   "Training Program",
   "Check-In",
 ];
-export type Section = "clients" | "templates" | "check-ins" | "messages";
+export type Section =
+  | "clients"
+  | "templates"
+  | "check-ins"
+  | "messages"
+  | "notes";
 export type Route = {
   section: Section;
   client?: string;
   editor?: string;
   review?: string;
   plan?: string;
+  tab?: string;
 };
 export type Parameter = {
   id: string;
@@ -588,6 +600,8 @@ export type Variant = {
   roadmapPhases?: boolean;
   phaseOptions?: string[];
   training: {
+    options?: TrainingOptions;
+    defaults?: Record<TrainingOptionKey, string>;
     fields: string[];
     volume: boolean;
     breakdown: string;
@@ -631,6 +645,8 @@ export type CoachClient = WorkspaceClient & {
   assignment?: Assignment;
   schedules: Schedule[];
   plan: Plan;
+  plans?: ClientPlans;
+  retiredHabits?: CoachClient["habits"];
   entries: {
     date: string;
     weight: number;
@@ -664,6 +680,7 @@ export type Message = {
   priority: boolean;
   attachments: Media[];
   link?: { label: string; route: Route };
+  links?: { label: string; route: Route }[];
   local?: boolean;
 };
 export type Submission = {
@@ -682,6 +699,12 @@ export type Submission = {
 export type ReviewDraft = {
   text: string;
   video?: Media;
+  activations?: {
+    kind: "nutrition" | "training";
+    versionId: string;
+    name: string;
+    startDate: string;
+  }[];
   changes: {
     field: keyof Plan;
     before: string | number;
@@ -690,6 +713,9 @@ export type ReviewDraft = {
 };
 export type CoachState = {
   version: 1;
+  exerciseLibrary?: ExerciseDefinition[];
+  coachNotes?: { id: string; text: string }[];
+  coachTodos?: { id: string; title: string; complete: boolean }[];
   templates: Template[];
   clients: CoachClient[];
   extras: Extra[];
@@ -780,28 +806,36 @@ export function summaryPreview(
   const values =
     client && ["weight", "sleep", "steps", "calories"].includes(field.id)
       ? client.entries.map((e) => e[clientKey])
-      : Array.from(
-          { length: 7 },
-          (_, i) =>
-            base +
-            (field.id === "weight"
-              ? (6 - i) * 0.08
-              : field.id === "steps"
-                ? (i - 3) * 170
-                : field.id === "calories"
-                  ? (i - 3) * 12
-                  : 0),
-        );
+      : client
+        ? []
+        : Array.from(
+            { length: 7 },
+            (_, i) =>
+              base +
+              (field.id === "weight"
+                ? (6 - i) * 0.08
+                : field.id === "steps"
+                  ? (i - 3) * 170
+                  : field.id === "calories"
+                    ? (i - 3) * 12
+                    : 0),
+          );
   const mean = values.reduce((a, b) => a + b, 0) / (values.length || 1);
-  const target = (
-    {
-      weight: 64,
-      steps: 8000,
-      calories: client?.plan.calories ?? 2200,
-      protein: client?.plan.protein ?? 140,
-      sleep: 8,
-    } as Record<string, number>
-  )[field.id];
+  const nutrition = client ? planTargets(client, TODAY) : undefined;
+  const target = client
+    ? field.id === "calories" || field.id === "protein"
+      ? nutrition?.[field.id]
+      : client.plans?.goals.filter((goal) => goal.fieldId === field.id).at(-1)
+          ?.value
+    : (
+        {
+          weight: 64,
+          steps: 8000,
+          calories: 2200,
+          protein: 140,
+          sleep: 8,
+        } as Record<string, number>
+      )[field.id];
   const convert = (value: number) =>
     field.unit === "lb"
       ? value * 2.20462
@@ -816,9 +850,10 @@ export function summaryPreview(
               : value;
   const format = (value: number) =>
     `${Number(convert(value).toFixed(["steps", "calories", "protein"].includes(field.id) ? 0 : 1))} ${field.unit}`;
-  const value =
-    calculation === "Adherence"
-      ? `${Math.round((values.filter((v) => v >= target).length / (values.length || 1)) * 100)}%`
+  const value = !values.length
+    ? "Not recorded"
+    : calculation === "Adherence"
+      ? `${Math.round((values.filter((v) => target !== undefined && v >= target).length / (values.length || 1)) * 100)}%`
       : calculation === "Trend"
         ? format((values.at(-1) ?? 0) - (values[0] ?? 0))
         : format(mean);
@@ -938,7 +973,12 @@ export function assignTemplate(
   template: Template,
   variantId: string,
 ): CoachState {
-  if (!template.variants.some((v) => v.id === variantId)) return state;
+  variantId = template.defaultVariant;
+  if (
+    !template.variants.some((v) => v.id === variantId) ||
+    !state.clients.some((c) => c.id === clientId && !c.archived)
+  )
+    return state;
   return {
     ...state,
     clients: state.clients.map((c) =>
@@ -1066,12 +1106,19 @@ export function submitFeedback(
   const draft = state.reviewDrafts[id];
   if (!sub || sub.response || !draft || (!draft.text.trim() && !draft.video))
     return state;
-  const changes = draft.changes
+  const legacyChanges = draft.changes
     .filter((c) => c.before !== c.after)
     .map(
       (c) =>
         `${c.field === "calories" ? "Daily energy target" : c.field === "sets" ? "Training sets" : c.field === "protein" ? "Protein target" : c.field}: ${c.before} → ${c.after}`,
     );
+  const changes = [
+    ...legacyChanges,
+    ...(draft.activations ?? []).map(
+      (a) =>
+        `${a.kind === "nutrition" ? "Nutrition" : "Training"} plan activated: ${a.name} · starts ${a.startDate}`,
+    ),
+  ];
   const message: Message = {
     id: `feedback:${id}`,
     clientId: sub.clientId,
@@ -1082,6 +1129,10 @@ export function submitFeedback(
     priority: false,
     attachments: draft.video ? [draft.video] : [],
     local: true,
+    links: draft.activations?.map((a) => ({
+      label: `View ${a.kind} plan`,
+      route: { section: "clients", client: sub.clientId, plan: a.kind },
+    })),
     link: {
       label: changes.length
         ? "View updated client plan"
@@ -1090,11 +1141,13 @@ export function submitFeedback(
         ? {
             section: "clients",
             client: sub.clientId,
-            plan: draft.changes.some((c) =>
-              ["calories", "protein", "nutritionVariant"].includes(c.field),
-            )
-              ? "nutrition"
-              : "training",
+            plan:
+              draft.activations?.at(-1)?.kind ??
+              (draft.changes.some((c) =>
+                ["calories", "protein", "nutritionVariant"].includes(c.field),
+              )
+                ? "nutrition"
+                : "training"),
           }
         : { section: "check-ins", review: id },
     },
@@ -1420,6 +1473,17 @@ const variantGuard = obj({
   roadmapPhases: opt(bool),
   phaseOptions: opt(arr(str)),
   training: obj({
+    options: opt(
+      obj({
+        setType: arr(str),
+        progression: arr(str),
+        tempo: arr(str),
+        rest: arr(str),
+      }),
+    ),
+    defaults: opt(
+      obj({ setType: str, progression: str, tempo: str, rest: str }),
+    ),
     fields: arr(one(TRAINING_FIELDS)),
     volume: bool,
     breakdown: str,
@@ -1457,11 +1521,12 @@ const templateGuard: Guard = (v) =>
   (v as Template).variants.length > 0 &&
   (v as Template).variants.some((x) => x.id === (v as Template).defaultVariant);
 const routeGuard = obj({
-  section: one(["clients", "templates", "check-ins", "messages"]),
+  section: one(["clients", "templates", "check-ins", "messages", "notes"]),
   client: opt(str),
   editor: opt(str),
   review: opt(str),
   plan: opt(str),
+  tab: opt(str),
 });
 const changeGuard = obj({
   field: one([
@@ -1477,6 +1542,16 @@ const changeGuard = obj({
   after: (v) => str(v) || num(v),
 });
 const reviewGuard = obj({
+  activations: opt(
+    arr(
+      obj({
+        kind: one(["nutrition", "training"]),
+        versionId: str,
+        name: str,
+        startDate: date,
+      }),
+    ),
+  ),
   text: str,
   video: opt(mediaGuard),
   changes: arr(changeGuard),
@@ -1504,6 +1579,19 @@ const clientGuard = obj({
     }),
   ),
   onboarding: arr(obj({ question: str, answer: str })),
+  retiredHabits: opt(
+    arr(
+      obj({
+        id: str,
+        name: str,
+        frequency: str,
+        goal: str,
+        reason: str,
+        completed: num,
+      }),
+    ),
+  ),
+  plans: opt(isClientPlans),
   schedules: arr(
     obj({ effective: date, weekdays: arr(one([0, 1, 2, 3, 4, 5, 6])) }),
   ),
@@ -1527,72 +1615,91 @@ const clientGuard = obj({
   ),
 });
 export function isCoachState(v: unknown): v is CoachState {
-  return obj({
-    version: one([1]),
-    templates: arr(templateGuard),
-    clients: arr(clientGuard),
-    extras: arr(
-      obj({
-        id: str,
-        clientId: str,
-        date,
-        type: one(["Full", "Custom"]),
-        note: str,
-      }),
-    ),
-    submissions: arr(
-      obj({
-        id: str,
-        clientId: str,
-        date,
-        eventId: str,
-        type: one(["Full", "Custom"]),
-        answers: arr(obj({ question: str, answer: str })),
-        metrics: arr(str),
-        visuals: arr(str),
-        note: str,
-        flags: arr(obj({ exercise: str, set: num, date, text: str })),
-        response: opt(
+  return (
+    obj({
+      version: one([1]),
+      exerciseLibrary: opt(
+        arr(
           obj({
-            text: str,
-            video: opt(mediaGuard),
-            changes: arr(str),
-            date: str,
+            id: str,
+            name: str,
+            muscle: str,
+            secondaryMuscles: arr(str),
+            notes: str,
           }),
         ),
+      ),
+      coachNotes: opt(arr(obj({ id: str, text: str }))),
+      coachTodos: opt(arr(obj({ id: str, title: str, complete: bool }))),
+      templates: arr(templateGuard),
+      clients: arr(clientGuard),
+      extras: arr(
+        obj({
+          id: str,
+          clientId: str,
+          date,
+          type: one(["Full", "Custom"]),
+          note: str,
+        }),
+      ),
+      submissions: arr(
+        obj({
+          id: str,
+          clientId: str,
+          date,
+          eventId: str,
+          type: one(["Full", "Custom"]),
+          answers: arr(obj({ question: str, answer: str })),
+          metrics: arr(str),
+          visuals: arr(str),
+          note: str,
+          flags: arr(obj({ exercise: str, set: num, date, text: str })),
+          response: opt(
+            obj({
+              text: str,
+              video: opt(mediaGuard),
+              changes: arr(str),
+              date: str,
+            }),
+          ),
+        }),
+      ),
+      messages: arr(
+        obj({
+          id: str,
+          clientId: str,
+          text: str,
+          from: one(["client", "coach"]),
+          date: str,
+          read: bool,
+          priority: bool,
+          attachments: arr(mediaGuard),
+          link: opt(obj({ label: str, route: routeGuard })),
+          links: opt(arr(obj({ label: str, route: routeGuard }))),
+          local: opt(bool),
+        }),
+      ),
+      drafts: dict(
+        obj({
+          text: str,
+          attachments: arr(mediaGuard),
+          link: opt(obj({ label: str, route: routeGuard })),
+        }),
+      ),
+      reviewDrafts: dict(reviewGuard),
+      editorDrafts: dict(templateGuard),
+      preferences: obj({
+        mode: one(["dark", "light"]),
+        accent: (v) => typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v),
+        availability: str,
+        notifications: bool,
+        priorityNotifications: bool,
+        logo: opt(logoGuard),
+        sidebarCollapsed: opt(bool),
       }),
-    ),
-    messages: arr(
-      obj({
-        id: str,
-        clientId: str,
-        text: str,
-        from: one(["client", "coach"]),
-        date: str,
-        read: bool,
-        priority: bool,
-        attachments: arr(mediaGuard),
-        link: opt(obj({ label: str, route: routeGuard })),
-        local: opt(bool),
-      }),
-    ),
-    drafts: dict(
-      obj({
-        text: str,
-        attachments: arr(mediaGuard),
-        link: opt(obj({ label: str, route: routeGuard })),
-      }),
-    ),
-    reviewDrafts: dict(reviewGuard),
-    editorDrafts: dict(templateGuard),
-    preferences: obj({
-      mode: one(["dark", "light"]),
-      accent: (v) => typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v),
-      availability: str,
-      notifications: bool,
-      priorityNotifications: bool,
-      logo: opt(logoGuard),
-      sidebarCollapsed: opt(bool),
-    }),
-  })(v);
+    })(v) &&
+    (v as CoachState).clients.every((client) =>
+      plansOwnedBy(client.plans, client.id),
+    )
+  );
 }
