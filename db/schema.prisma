@@ -194,6 +194,8 @@ model Workspace {
   habits                        Habit[]
   mealPlans                     MealPlan[]
   mealPlanVersions              MealPlanVersion[]
+  trainingPrograms              TrainingProgram[]
+  trainingProgramVersions       TrainingProgramVersion[]
 
   @@map("workspace")
 }
@@ -257,6 +259,12 @@ model WorkspaceMember {
   mealPlanTimezonesSet      MealPlan[]        @relation("MealPlanTimezoneSetter")
   mealPlanVersionsPublished MealPlanVersion[] @relation("MealPlanVersionPublisher")
 
+  trainingProgramsCreated          TrainingProgram[]        @relation("TrainingProgramCreator")
+  trainingProgramsDraftsSaved      TrainingProgram[]        @relation("TrainingProgramDraftSaver")
+  trainingProgramsTimezonesSet     TrainingProgram[]        @relation("TrainingProgramTimezoneSetter")
+  trainingProgramsCancelled        TrainingProgram[]        @relation("TrainingProgramCanceller")
+  trainingProgramVersionsPublished TrainingProgramVersion[] @relation("TrainingProgramVersionPublisher")
+
   @@unique([workspaceId, userId])
   // Composite target for the ClientAssignment same-workspace foreign key (raw SQL).
   @@unique([id, workspaceId])
@@ -310,6 +318,8 @@ model ClientProfile {
   habits                      Habit[]                      @relation("HabitClient")
   mealPlan                    MealPlan?                    @relation("MealPlanClient")
   mealPlanVersions            MealPlanVersion[]            @relation("MealPlanVersionClient")
+  trainingPrograms            TrainingProgram[]            @relation("TrainingProgramClient")
+  trainingProgramVersions     TrainingProgramVersion[]     @relation("TrainingProgramVersionClient")
 
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
   @@unique([workspaceId, userId])
@@ -1720,4 +1730,102 @@ model MealPlanVersion {
   @@index([mealPlanId, effectiveDate, versionSeq])
   @@index([mealPlanId, activationInstant])
   @@map("meal_plan_version")
+}
+
+// ── TRAINING-I1A (synthetic-only — PROMPT 244, reviewed P9+A1+A2+A3
+// contract with S/G corrections) ────────────────────────────────────────
+// Week-based per-client training program chain: assigned staff author a
+// shared override-boundary draft under `draftRevision` CAS; first publish
+// atomically claims a root slot or the live-successor slot of a published
+// predecessor (single_root / live_successor partial uniques — raw SQL).
+// Published activation instants are immutable; program weeks are anchored
+// to the seq-1 version's effectiveTimezone forever; the mutable
+// confirmedTimezone resolves only NEW publication instants. Pending
+// (not-yet-in-force) leaf cancellation is the only cancellation. No
+// archive/delete semantics exist — none approved.
+model TrainingProgram {
+  id                    String    @id @default(cuid())
+  workspaceId           String    @map("workspace_id")
+  clientProfileId       String    @map("client_profile_id")
+  title                 String
+  // Declared program start (YYYY-MM-DD in the client calendar). Locked
+  // once firstPublishedAt is set — a different start = replacement.
+  startDate             DateTime  @map("start_date") @db.Date
+  weekCount             Int       @map("week_count")
+  // Program-level interim field authority (owner-approved): subset of the
+  // eight prescription fields. Snapshotted into each version at publish.
+  fieldConfig           Json      @map("field_config")
+  // Program-scoped confirmed IANA timezone — mutable; affects only new
+  // publication instants, never published snapshots or the week anchor.
+  confirmedTimezone     String?   @map("confirmed_timezone")
+  timezoneSetByMemberId String?   @map("timezone_set_by_member_id")
+  timezoneSetAt         DateTime? @map("timezone_set_at") @db.Timestamptz(6)
+  // Mutable shared draft: override-boundary sets (sparse week→value
+  // boundaries per addressable node); optimistic CAS via draftRevision.
+  draft                 Json?
+  draftRevision         Int       @default(1) @map("draft_revision")
+  draftSavedByMemberId  String?   @map("draft_saved_by_member_id")
+  draftUpdatedAt        DateTime? @map("draft_updated_at") @db.Timestamptz(6)
+  // Committed atomically at first publish (null while draft/pending save).
+  replacesProgramId     String?   @map("replaces_program_id")
+  // DB clock_timestamp() read after locks — lock-ordered per client.
+  firstPublishedAt      DateTime? @map("first_published_at") @db.Timestamptz(6)
+  // Pending-leaf cancellation only (pre-takeover); immutable once set.
+  cancelledAt           DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  cancelledByMemberId   String?   @map("cancelled_by_member_id")
+  // Defensive floor only (P9 §3.4): whollyPast under the immutable anchor
+  // is already monotone; retained for schema stability, never load-bearing.
+  lockedWeekHighWater   Int       @default(0) @map("locked_week_high_water")
+  createdByMemberId     String    @map("created_by_member_id")
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace           Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile       ClientProfile    @relation("TrainingProgramClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  createdByMember     WorkspaceMember  @relation("TrainingProgramCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  draftSavedByMember  WorkspaceMember? @relation("TrainingProgramDraftSaver", fields: [draftSavedByMemberId], references: [id], onDelete: Restrict)
+  timezoneSetByMember WorkspaceMember? @relation("TrainingProgramTimezoneSetter", fields: [timezoneSetByMemberId], references: [id], onDelete: Restrict)
+  cancelledByMember   WorkspaceMember? @relation("TrainingProgramCanceller", fields: [cancelledByMemberId], references: [id], onDelete: Restrict)
+  versions            TrainingProgramVersion[]
+
+  // Composite coherence targets for raw version/replacement FKs.
+  @@unique([id, workspaceId])
+  @@unique([id, workspaceId, clientProfileId])
+  @@index([workspaceId])
+  @@index([replacesProgramId])
+  @@map("training_program")
+}
+
+model TrainingProgramVersion {
+  id                    String   @id @default(cuid())
+  // Denormalized tenant + client stamps — immutable at publish; part of
+  // the (id, workspaceId, programId) coherence target.
+  workspaceId           String   @map("workspace_id")
+  programId             String   @map("program_id")
+  clientProfileId       String   @map("client_profile_id")
+  versionSeq            Int      @map("version_seq")
+  // Declared calendar date + the IANA zone + resolved local-midnight
+  // instant — all immutable snapshots taken at publish.
+  effectiveDate         DateTime @map("effective_date") @db.Date
+  effectiveTimezone     String   @map("effective_timezone")
+  activationInstant     DateTime @map("activation_instant") @db.Timestamptz(6)
+  // Materialized weeks 1..weekCount — self-contained, no provenance.
+  payload               Json
+  // Snapshot of the program's fieldConfig at publish.
+  fieldConfig           Json     @map("field_config")
+  // Deterministic publish-replay authority — NOT NULL, unique per program.
+  publishOriginRevision Int      @map("publish_origin_revision")
+  publishedAt           DateTime @default(now()) @map("published_at") @db.Timestamptz(6)
+  publishedByMemberId   String   @map("published_by_member_id")
+
+  workspace         Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  program           TrainingProgram @relation(fields: [programId], references: [id], onDelete: Restrict)
+  clientProfile     ClientProfile   @relation("TrainingProgramVersionClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  publishedByMember WorkspaceMember @relation("TrainingProgramVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
+
+  @@unique([programId, versionSeq])
+  @@unique([programId, publishOriginRevision], map: "training_program_version_publish_origin_key")
+  @@unique([id, workspaceId, programId])
+  @@index([programId, activationInstant])
+  @@map("training_program_version")
 }

@@ -15,6 +15,7 @@ import {
 } from "@/lib/auth/route-guard";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
 import { isMealPlansEnabled } from "@/lib/mealplan/gate";
+import { isTrainingPlansEnabled } from "@/lib/trainingprogram/gate";
 
 export const dynamic = "force-dynamic";
 
@@ -99,6 +100,14 @@ export default async function DailyTrackerLayout({
                 data-testid="client-mealplan-link"
               >
                 Meal Plan
+              </Link>
+            ) : null}
+            {isTrainingPlansEnabled() ? (
+              <Link
+                href={`/workspace/${workspaceId}/training-program`}
+                data-testid="client-training-link"
+              >
+                Training
               </Link>
             ) : null}
           </nav>

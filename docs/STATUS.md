@@ -5,6 +5,58 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## TRAINING-I1A — week-based training programs (implementation complete; candidate pushed)
+
+- Branch `feature/training-i1a` from `origin/main` `5f9cb41c…`; contract
+  record `docs/tasks/training-i1a.md`; precedence: PROMPT 244 S/G → A3
+  (`45fe661d…`) → A2 (`7737934b…`) → A1 (`579fd897…`) → P9 (`8cf99c34…`).
+- Schema: `training_program` + `training_program_version` models; curated
+  migration `db/migrations/20261017195754_training_i1a/` (partial uniques
+  `single_root`/`live_successor`, `tail` index, composite coherence
+  uniques/FKs, CHECKs) — verified on fresh disposable DB; no raw-SQL drift.
+- Implementation: `lib/trainingprogram/{limits,gate,consent,payload,weeks,
+service,boundary}.ts` — P9+A1+A2+A3 contract incl. S (lifecycle-
+  unfiltered labelled staff history) and G (`UPDATE`+`{changed:true}`
+  cancel audit, no unsupported meta keys); RBAC owner-write
+  `denied→assigned` + PLATFORM_ADMIN deny-set; `training_program`/
+  `training_program_version` audit resources; `ENABLE_TRAINING_PLANS`
+  - trusted `APP_ENV` fail-closed gate; staff + client routes/components;
+    Training nav links on all five client layouts + roster link.
+- Iteration found real service defects, fixed: JSONB key-reorder breaking
+  canonical draft comparison (→ stable deep-sorted `canonicalJson`);
+  cancel takeover check using DB clock vs injected op clock; v1 bounds
+  rejecting backdated starts (v1 = startDate exactly); high-water never
+  persisted on publish; one-root fixture conflicting with single-PRIMARY
+  partial unique.
+- Decision #116 recorded (synthetic/testing boundaries only).
+- Gates: unit 1328/1328; integration 843/843 (incl. training-i1a 18/18
+  real PG; `s1-a-identity` inventory updated for the two approved
+  training tables — same repair pattern as MEAL-PLAN-I1-R2); typecheck,
+  lint, format:check, `prisma validate`, `next build` clean.
+- Real-PG evidence (`~/Downloads/training-i1a-evidence.log`): P2002 meta
+  `target=[workspace_id,client_profile_id]`; FOR UPDATE contender blocks
+  426ms → 57014; pg_sleep under 50ms statement_timeout → P2010/57014;
+  forced mid-tx failure atomic (versions before=after=49); pool healthy;
+  version keyset uses `Index Scan Backward` on
+  `program_id_version_seq_key` (seq-scan on near-empty tables is planner-
+  correct; index path proven with seqscan off).
+- Mutations: 3/4 bite (locked-week skip, activation-floor `<=`,
+  forced `changed:true`); M2 (client-own write allowed) NO BITE —
+  defense-in-depth: `lockAssignmentForScope` still rejects client
+  members lacking ACTIVE staff assignment; recorded honestly.
+- E2E: focused `training-program.spec.ts` 4/4 (author→publish→client
+  view, replacement label + cancel, read-only owner, flag-off 404s,
+  1440/390 no-overflow). Full 427-test run #1 had 9 cross-spec fixture
+  failures caused by builder's own concurrent integration/mutation/
+  evidence runs sharing the disposable DB — all 8 affected spec files
+  pass clean in isolation (130/142, 12 expected skips); clean
+  uninterrupted full re-run: **415 passed, 12 skipped, 0 failed**
+  (427 tests, 5.2m).
+- NOT done (named follow-ons): Evergreen, dated sessions, logging,
+  volume/progression, template-variant field-config wiring, dashboard
+  widgets, production enablement. Stopped at pushed candidate for
+  independent implementation review; no PR.
+
 ## MEAL-PLAN-I1-R2 — schema-inventory repair (in progress)
 
 - R1 independent review (`e3f43cb7…`, 97 lines): CONDITIONAL PASS —
