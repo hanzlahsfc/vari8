@@ -21,7 +21,7 @@ const FIELD_ROWS: readonly {
   { key: "tempo", label: "Tempo" },
   { key: "setType", label: "Set type" },
   { key: "rest", label: "Rest / pause" },
-  { key: "instructions", label: "Instructions" },
+  { key: "instructions", label: "Detailed instructions" },
   { key: "progressionNotes", label: "Progression notes" },
   { key: "note", label: "Note" },
 ];

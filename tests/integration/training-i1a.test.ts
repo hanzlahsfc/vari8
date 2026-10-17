@@ -408,6 +408,55 @@ describe.skipIf(!enabled)("TRAINING-I1A (real PG)", () => {
     ).rejects.toBeInstanceOf(AccessDeniedError);
   });
 
+  // P2-1 (I1A-R2): the PLATFORM_ADMIN deny-set is the ONLY thing that
+  // can deny these calls — valid membership, valid consent, and (for
+  // the write) a valid ACTIVE assignment all exist. Removing
+  // `trainingPlansLogs` from PLATFORM_ADMIN_DENIED_RESOURCES must make
+  // both fail through forbidden admission.
+  it("PLATFORM_ADMIN deny-set: dual-role PA denied a read; PA assigned-coach denied a write", async () => {
+    const { w, coachU, cp } = await setup();
+    await createAndPublish(coachU.id, w.id, cp.id);
+
+    // (a) PA + ACTIVE WORKSPACE_OWNER membership → without the deny-set,
+    // readPrelude grants `workspace` read scope and returns the program.
+    const paRead = await user("PLATFORM_ADMIN");
+    await member(w.id, paRead.id, "WORKSPACE_OWNER");
+    await expect(
+      readStaffTrainingPrograms(
+        session(paRead.id),
+        { workspaceId: w.id, clientProfileId: cp.id },
+        deps(),
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+    await expect(
+      readStaffTrainingProgram(
+        session(paRead.id),
+        { workspaceId: w.id, clientProfileId: cp.id, programId: "any" },
+        deps(),
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+
+    // (b) PA + ACTIVE COACH membership + ACTIVE ClientAssignment →
+    // without the deny-set, writePrelude grants `assigned` write scope
+    // and the save commits.
+    const paWrite = await user("PLATFORM_ADMIN");
+    const paCoach = await member(w.id, paWrite.id, "COACH");
+    await assignment(w.id, cp.id, paCoach.id, "COACH");
+    await expect(
+      saveTrainingProgramDraft(
+        session(paWrite.id),
+        {
+          workspaceId: w.id,
+          clientProfileId: cp.id,
+          expectedRevision: 0,
+          ...CREATE_INPUT,
+          draft: draftPayload(),
+        },
+        deps(),
+      ),
+    ).rejects.toBeInstanceOf(AccessDeniedError);
+  });
+
   it("consent gates every read and write", async () => {
     const { w, coachU, cp } = await setup();
     await prisma.consentRecord.deleteMany({
@@ -1037,6 +1086,74 @@ describe.skipIf(!enabled)("TRAINING-I1A (real PG)", () => {
       deps(),
     );
     expect(v2.versionSeq).toBe(2);
+  });
+
+  // P2-2 (I1A-R2): a draft legitimately saved while week 2 was open must
+  // still fail the PUBLISH-time wholly-past invariant once week 2 has
+  // closed — the save-time gate cannot see the future. Week anchors are
+  // UTC: w1 Oct 5–11, w2 Oct 12–18, w3 Oct 19–25, w4 Oct 26–Nov 1.
+  it("history invariant: stale draft saved before week close is rejected at publish", async () => {
+    const { w, coachU, cp } = await setup();
+    const OPEN = new Date("2026-10-14T12:00:00Z"); // week 2 in progress
+    const LATER = new Date("2026-10-20T12:00:00Z"); // week 2 wholly past
+
+    // Baseline v1 with content in weeks 1–2 (sets=3, reps=8 at both).
+    const base = draftPayload();
+    base.sessionPresence = { s1: { "1": true, "2": true } };
+    base.exercisePresence = { "s1/e1": { "1": true, "2": true } };
+    base.fieldCells = {
+      "s1/e1/sets": { "1": 3, "2": 3 },
+      "s1/e1/reps": { "1": "8", "2": "8" },
+    };
+    const p = await createAndPublish(coachU.id, w.id, cp.id, {
+      startDate: "2026-10-05",
+      effectiveDate: "2026-10-05",
+      draft: base,
+      now: OPEN,
+    });
+
+    // Legitimate save while week 2 is still open — the save-time
+    // locked-week gate correctly accepts (week 2 not yet locked).
+    const stale = { ...base, fieldCells: { ...base.fieldCells } };
+    stale.fieldCells["s1/e1/sets"] = { "1": 3, "2": 5 };
+    const saved = await saveTrainingProgramDraft(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        programId: p.programId,
+        expectedRevision: 1,
+        draft: stale,
+      },
+      deps(OPEN),
+    );
+    expect(saved.revision).toBe(2);
+
+    // Clock advances past week 2's close; publication must now hit the
+    // publish-time history invariant — not save-time, not effective_bounds.
+    const auditsBefore = await prisma.auditEvent.count();
+    const versionsBefore = await prisma.trainingProgramVersion.count({
+      where: { programId: p.programId },
+    });
+    await expect(
+      publishTrainingProgramVersion(
+        session(coachU.id),
+        {
+          workspaceId: w.id,
+          clientProfileId: cp.id,
+          programId: p.programId,
+          expectedRevision: 2,
+          effectiveDate: "2026-10-20",
+        },
+        deps(LATER),
+      ),
+    ).rejects.toMatchObject({ code: "history_conflict" });
+    expect(
+      await prisma.trainingProgramVersion.count({
+        where: { programId: p.programId },
+      }),
+    ).toBe(versionsBefore);
+    expect(await prisma.auditEvent.count()).toBe(auditsBefore);
   });
 
   // ── Reads: staff vs client visibility ───────────────────────────────

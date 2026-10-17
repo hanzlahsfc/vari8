@@ -384,6 +384,28 @@ describe("gvAt / governed spans (P8 §5)", () => {
     ).toBe(1);
     expect(gvAt(vs, new Date("2026-01-01T00:00:00Z"), null)).toBeNull();
   });
+  it("activation exactly at t is eligible (inclusive boundary)", () => {
+    const vs = [
+      V(1, "2026-01-05T00:00:00Z"),
+      V(2, "2026-01-12T00:00:00Z"),
+      V(3, "2026-01-19T00:00:00Z"),
+    ];
+    // t == activationInstant exactly → eligible; greatest seq wins.
+    expect(gvAt(vs, new Date("2026-01-12T00:00:00Z"), null)?.versionSeq).toBe(
+      2,
+    );
+    expect(gvAt(vs, new Date("2026-01-19T00:00:00Z"), null)?.versionSeq).toBe(
+      3,
+    );
+    // The cutoff stays exclusive at the same instant.
+    expect(
+      gvAt(
+        vs,
+        new Date("2026-01-19T00:00:00Z"),
+        new Date("2026-01-19T00:00:00Z"),
+      )?.versionSeq,
+    ).toBe(2);
+  });
   it("shadowed versions have null spans; cutoff trims", () => {
     const vs = [
       V(1, "2026-01-05T00:00:00Z"),

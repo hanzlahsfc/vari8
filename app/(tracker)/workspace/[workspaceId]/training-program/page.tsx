@@ -71,7 +71,8 @@ export default async function ClientTrainingProgramPage({
             <p className="app-lede">No sessions prescribed this week.</p>
           )}
         </div>
-      ) : result.value.state === "upcoming" && result.value.upcoming !== null ? (
+      ) : result.value.state === "upcoming" &&
+        result.value.upcoming !== null ? (
         <p className="app-lede" data-testid="training-upcoming">
           Your training program “{result.value.upcoming.title}” starts{" "}
           {result.value.upcoming.startDate}.

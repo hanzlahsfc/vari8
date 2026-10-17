@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { E2E } from "./global-setup";
+import { E2E, e2eDatabaseUrl } from "./global-setup";
 
 /**
  * FRONTEND-INTEGRATION-I2 — client Home navigation surface.
@@ -32,7 +32,9 @@ let wsId: string;
 test.beforeAll(async () => {
   wsId = E2E.workspaceSlug;
   const { PrismaClient } = await import("@prisma/client");
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({
+    datasources: { db: { url: e2eDatabaseUrl() } },
+  });
   try {
     const ws = await prisma.workspace.findUniqueOrThrow({
       where: { slug: E2E.workspaceSlug },
@@ -139,7 +141,9 @@ test("inactive membership and foreign-workspace access deny with 403", async ({
   // workspace B exercises BOTH the inactive-membership guard and the
   // foreign-workspace denial (deleted after the test).
   const { PrismaClient } = await import("@prisma/client");
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({
+    datasources: { db: { url: e2eDatabaseUrl() } },
+  });
   let wsBId = "";
   try {
     const wsB = await prisma.workspace.findUniqueOrThrow({
@@ -167,7 +171,9 @@ test("inactive membership and foreign-workspace access deny with 403", async ({
   await expect(page.locator(".home-card")).toHaveCount(0);
 
   // Task-owned cleanup.
-  const prisma2 = new PrismaClient();
+  const prisma2 = new PrismaClient({
+    datasources: { db: { url: e2eDatabaseUrl() } },
+  });
   try {
     const client = await prisma2.user.findUniqueOrThrow({
       where: { email: E2E.client },
