@@ -5,6 +5,44 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## TRAINING-I1A-R2 — coverage/formatting repair (pushed `4dbe363b…`)
+
+- Bounded repair on `feature/training-i1a` for the R1 independent review
+  (DeepSeek V4.1 Flash; report `~/Downloads/TRAINING-I1A-R1-independent-review.md`,
+  SHA-256 `96e1cc6a…a3d58`, verified through EOF). No production logic,
+  schema, RBAC, gate, selection or history-algorithm changes.
+- P2-1: new real-PG test proves the PLATFORM_ADMIN deny-set alone denies
+  a dual-role PA (ACTIVE WORKSPACE_OWNER) read and a PA assigned-coach
+  write — all downstream prerequisites valid. Mutation (deny-set entry
+  removed) fails both legs through forbidden admission; restored
+  byte-identical.
+- P2-2: new test — draft legitimately saved while week 2 open is rejected
+  at publish by the wholly-past invariant after the week closes;
+  `history_conflict`, no new version, no audit. Mutation (invariant
+  disabled) lets publish wrongly commit; restored byte-identical.
+- P3-2: new unit test — `gvAt` eligibility is inclusive at
+  `activationInstant == t`; cutoff stays exclusive. Comparator flip
+  (`>`→`>=`) fails the test; restored byte-identical.
+- P3-1/P3-3: Prettier line-wrap on the client training-program page
+  (prior format:check claim was inaccurate — corrected); renderer label
+  "Instructions" → "Detailed instructions" per FRONTEND.
+- Also fixed (disclosed, test-only): `tests/e2e/client-home.spec.ts`
+  used bare `new PrismaClient()` relying on ambient `DATABASE_URL` —
+  the only spec without the shared `e2eDatabaseUrl()` fallback; it
+  failed the full-suite run. Now matches the shared pattern; no
+  assertion or behavior change.
+- Gates on repair tree: `diff --check`/`format:check` clean; typecheck
+  + lint clean (pre-existing warnings only); unit 1329/1329;
+  integration 845/845; build clean; focused training E2E 4/4; full E2E
+  415 passed / 12 skipped / 0 failed (5.2m, single worker, no
+  concurrent DB work).
+- Non-blocking follow-up recorded: optional baseline-query optimization
+  left out of this repair per PROMPT 248.
+- Correction (per §5): R1 evidence/chronology wording updated — the
+  original format:check claim and the non-isolating deny-set/history
+  tests were inaccurate; R2 mutation results are distinct evidence;
+  tests-after-code/single-commit chronology unchanged.
+
 ## TRAINING-I1A — week-based training programs (implementation complete; candidate pushed)
 
 - Branch `feature/training-i1a` from `origin/main` `5f9cb41c…`; contract

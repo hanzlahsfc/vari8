@@ -110,3 +110,22 @@ management rejects CLIENT at the operation level.
   MEAL-PLAN-I1-R2.
 - Decision #116 recorded. Stopped at pushed candidate; no PR; no
   production enablement.
+
+## Outcome — R2 repair (2026-10-18, commit `4dbe363b…`)
+
+- Independent R1 review (CONDITIONAL PASS) repair: P2-1 deny-set
+  isolation test, P2-2 publish-time wholly-past stale-draft test,
+  P3-2 gvAt inclusive-boundary unit test, P3-1 Prettier fix, P3-3
+  "Instructions"→"Detailed instructions" label; `client-home.spec.ts`
+  `e2eDatabaseUrl()` env-hardening (test-only, disclosed).
+- Targeted mutations: deny-set removal, wholly-past invariant disable,
+  gvAt `>`→`>=` — all bite the new tests; restored byte-identical.
+- Gates on repair tree: unit 1329/1329; integration 845/845;
+  typecheck/lint/format/build clean; focused E2E 4/4; full E2E
+  415/427 (12 skipped), 0 failures.
+- Corrections: original format:check claim was inaccurate; original
+  deny-set/history tests did not isolate the controls; report scope
+  was 37 paths (15 modified + 22 new); non-blocking baseline-query
+  optimization deferred as follow-up.
+- Builder report `~/Downloads/TRAINING-I1A-R2-builder-report.md`.
+  Stopped at pushed repair; no PR; no production enablement.
