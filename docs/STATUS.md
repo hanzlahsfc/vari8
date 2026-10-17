@@ -15,7 +15,9 @@
 - Independent read-only SWE-2 review found no blocking findings. Conditional
   guard scope and mobile visual-proof limits are documented in the draft PR;
   no full accessibility/performance/cross-browser audit is claimed.
-- Implementation commit, explicit push, and draft PR creation remain pending.
+- Draft PR [#51](https://github.com/hanzlahsfc/The-great-tracker-/pull/51) is
+  open from `FRONTEND` to `main`. The pushed head is verified as `60389bc` and
+  target `main` remained `5f9cb41`; GitHub checks were pending when last read.
 
 ## 2026-10-15 — FRONTEND standalone UI snapshot — verified for publication
 
