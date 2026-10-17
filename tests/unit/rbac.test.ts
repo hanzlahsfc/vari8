@@ -64,9 +64,13 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "own"],
   },
+  // MEAL-PLAN-I1 (decision 115): owner write is `assigned` — an owner
+  // authors meal plans only for clients they hold an ACTIVE
+  // ClientAssignment to; owner read stays workspace-wide. Same
+  // reviewed amendment shape as checkinsCoachReviews/checkinFeedback.
   mealPlans: {
     PLATFORM_ADMIN: ["denied", "denied"],
-    WORKSPACE_OWNER: ["workspace", "denied"],
+    WORKSPACE_OWNER: ["workspace", "assigned"],
     COACH: ["assigned", "assigned"],
     ASSISTANT_COACH: ["assigned", "denied"],
     SUPPORT: ["denied", "denied"],

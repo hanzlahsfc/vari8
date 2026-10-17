@@ -14,6 +14,7 @@ import {
   resolveWorkspaceAccess,
 } from "@/lib/auth/route-guard";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
+import { isMealPlansEnabled } from "@/lib/mealplan/gate";
 import { isOnboardingSubmissionEnabled } from "@/lib/onboarding/submission-gate";
 
 export const dynamic = "force-dynamic";
@@ -75,6 +76,9 @@ export default async function CheckInsLayout({
   }
 
   const checkInsOn = isCheckInsEnabled();
+  // MEAL-PLAN-I1 (decision 115): cosmetic client nav link — the
+  // destination re-authorizes `mealPlans/read` (own scope) server-side.
+  const mealPlansOn = isMealPlansEnabled();
   const onboardingOn = isOnboardingSubmissionEnabled(
     process.env.ENABLE_ONBOARDING_SUBMISSION,
   );
@@ -103,6 +107,14 @@ export default async function CheckInsLayout({
                 data-testid="client-checkins-link"
               >
                 Check-Ins
+              </Link>
+            ) : null}
+            {mealPlansOn ? (
+              <Link
+                href={`/workspace/${workspaceId}/meal-plan`}
+                data-testid="client-mealplan-link"
+              >
+                Meal Plan
               </Link>
             ) : null}
           </nav>

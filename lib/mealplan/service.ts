@@ -1,0 +1,1172 @@
+/**
+ * MEAL-PLAN-I1 (decision #115 — reviewed MEAL-PLAN-P3 contract +
+ * P3-R1 refinements) — guarded meal-plan persistence service.
+ *
+ * Workflow: assigned staff (coach OR explicitly assigned owner) confirms
+ * the client's plan-scoped IANA timezone → edits a shared draft under
+ * `draftRevision` CAS → publishes an immutable effective-dated version.
+ * Publish = assign; the draft STAYS open for continuous editing.
+ *
+ * Lock protocol (client-scoped — reviewed order):
+ *   advisory `mplan:{workspaceId}:{clientProfileId}`
+ *   → advisory `member:{workspaceId}:{userId}`
+ *   → workspace_member FOR UPDATE (authoritative actor state)
+ *   → in-transaction authorize(mealPlans/*)
+ *   → ACTIVE ClientAssignment FOR UPDATE (assigned scope only)
+ *   → client_profile FOR UPDATE
+ *   → consent rows FOR UPDATE in deterministic kind order (before ANY
+ *     content access on detail reads and before ANY sensitive write)
+ *   → meal_plan FOR UPDATE → mutation → structural audit LAST.
+ *
+ * Serializable + bounded retry on genuine serialization failures
+ * (P2034, P2010 carrying 40001/40P01); every retry re-resolves all state.
+ *
+ * Timezone semantics (owner-settled): `activationInstant` is resolved ONCE
+ * at publish via `resolveLocalInstant(plan.timezone, effectiveDate, 0)`
+ * and stored immutably with `effectiveTimezone`. Current selection is
+ * `activationInstant <= now` eligible, `(effectiveDate, versionSeq)`
+ * precedence — identical for coach and client, browser-tz-free. A
+ * timezone change touches the container only; published snapshots never
+ * retime.
+ */
+
+import { Prisma, type PrismaClient } from "@prisma/client";
+
+import { prisma as defaultPrisma } from "../db";
+import { AccessDeniedError, authorize, type SessionLike } from "../auth/guard";
+import { createPrismaAuthorizationRepo } from "../workspace/access";
+import { writeAuditEvent } from "../audit";
+import {
+  hasExactActiveConsent,
+  requiredConsentsFor,
+  type ConsentPolicyRegistry,
+} from "../consent";
+import { resolveLocalInstant } from "../checkin/timezone";
+import { resolveMealPlanConsentPolicy } from "./consent";
+import { MEALPLAN_LIMITS } from "./limits";
+import {
+  MealPlanError,
+  normalizeMealPlanPayload,
+  type MealPlanDraft,
+} from "./payload";
+
+export { MealPlanError } from "./payload";
+export type {
+  MealPlanDraft,
+  MealPlanVariant,
+  MealPlanMeal,
+  MealPlanTarget,
+  MealPlanTargetMode,
+  MealPlanMacroTargets,
+} from "./payload";
+
+export type MealPlanDeps = {
+  db?: PrismaClient;
+  registry?: ConsentPolicyRegistry;
+  now?: Date;
+};
+
+// ── Effective-date parsing + activation resolution ───────────────────────
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Declared effective date: strict YYYY-MM-DD, real calendar date, year in
+ * the shared timezone utility's supported range (2000–2100), and at most
+ * `effectiveDateAheadDays` past the server UTC date. Backdating within
+ * range is allowed — precedence resolves which version is current.
+ */
+export function parseEffectiveDate(
+  raw: unknown,
+  now: Date = new Date(),
+): string {
+  if (typeof raw !== "string" || !DATE_RE.test(raw))
+    throw new MealPlanError("invalid_input");
+  const [y, m, d] = raw.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (
+    dt.getUTCFullYear() !== y ||
+    dt.getUTCMonth() !== m - 1 ||
+    dt.getUTCDate() !== d
+  )
+    throw new MealPlanError("invalid_input");
+  if (y < 2000 || y > 2100) throw new MealPlanError("invalid_input");
+  // Window is [todayUtc, todayUtc + N days): the bound is computed from
+  // the server's UTC *date*, so "N days ahead" never depends on the
+  // time-of-day the request lands.
+  const todayUtc = now.toISOString().slice(0, 10);
+  const [ty, tm, td] = todayUtc.split("-").map(Number);
+  const limit = new Date(
+    Date.UTC(ty, tm - 1, td + MEALPLAN_LIMITS.effectiveDateAheadDays),
+  )
+    .toISOString()
+    .slice(0, 10);
+  if (raw >= limit) throw new MealPlanError("invalid_input");
+  return raw;
+}
+
+export type MealPlanActivation =
+  | { status: "ok"; instant: Date }
+  | { status: "unrepresentable" }
+  | { status: "invalid" };
+
+/**
+ * Start-of-client-local-day for the declared effective date — the
+ * reviewed wall→instant resolver at minute 0 (strict-subset reuse: fold →
+ * earlier instant, midnight gap → first valid minute on the SAME date,
+ * whole-day skip → unrepresentable, invalid zone/date → invalid).
+ */
+export function resolveMealPlanActivation(
+  zone: string,
+  effectiveDate: string,
+): MealPlanActivation {
+  return resolveLocalInstant(zone, effectiveDate, 0);
+}
+
+// ── Concurrency protocol (reviewed convention) ───────────────────────────
+
+const RAW_SERIALIZATION_SQLSTATES = new Set(["40001", "40P01"]);
+const MAX_ATTEMPTS = 8;
+const BACKOFF_BASE_MS = 10;
+const BACKOFF_CAP_MS = 50;
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+function isRetryableSerialization(error: unknown): boolean {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
+  if (error.code === "P2034") return true;
+  if (error.code === "P2010") {
+    const meta = error.meta as { code?: unknown } | undefined;
+    return (
+      typeof meta?.code === "string" &&
+      RAW_SERIALIZATION_SQLSTATES.has(meta.code)
+    );
+  }
+  return false;
+}
+
+/**
+ * Unique-violation targets that are safe to retry inside `publish`: under
+ * SERIALIZABLE a concurrent publish can pass the plan-row lock yet insert
+ * with a stale-snapshot sequence/origin. Restarting the transaction is
+ * exactly correct — the retry re-runs the replay check (idempotent
+ * return) or recomputes `versionSeq` under the serialized lock.
+ */
+const PUBLISH_RETRYABLE_UNIQUE_TARGETS: readonly (readonly string[])[] = [
+  ["meal_plan_id", "version_seq"],
+  ["meal_plan_id", "publish_origin_revision"],
+] as const;
+
+function isRetryableUniqueConflict(
+  error: unknown,
+  targets: readonly (readonly string[])[],
+): boolean {
+  if (
+    !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+    error.code !== "P2002"
+  )
+    return false;
+  // P2002 meta carries the unique FIELD list (or index name) — only the
+  // explicitly declared publication uniques qualify; anything else is a
+  // genuine conflict, never coalesced.
+  const meta = error.meta as
+    { target?: unknown; constraint?: unknown } | undefined;
+  const fields = [meta?.target, meta?.constraint]
+    .flat()
+    .filter((v): v is string => typeof v === "string");
+  return targets.some((cols) =>
+    cols.every((c) => fields.some((f) => f === c || f.includes(c))),
+  );
+}
+
+async function withSerializedRetry<T>(
+  fn: () => Promise<T>,
+  retryUniqueTargets?: readonly (readonly string[])[],
+): Promise<T> {
+  let attempt = 0;
+  for (;;) {
+    try {
+      return await fn();
+    } catch (error) {
+      const retryable =
+        isRetryableSerialization(error) ||
+        (retryUniqueTargets !== undefined &&
+          isRetryableUniqueConflict(error, retryUniqueTargets));
+      if (retryable && ++attempt < MAX_ATTEMPTS) {
+        await sleep(Math.min(BACKOFF_BASE_MS * attempt, BACKOFF_CAP_MS));
+        continue;
+      }
+      if (retryable) throw new MealPlanError("serialization_conflict");
+      throw error;
+    }
+  }
+}
+
+async function advisoryLock(
+  tx: Prisma.TransactionClient,
+  key: string,
+): Promise<void> {
+  // $executeRawUnsafe: pg_advisory_xact_lock returns void, which $queryRaw
+  // cannot deserialize. hashtextextended matches the reviewed convention.
+  await tx.$executeRawUnsafe(
+    `SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`,
+    key,
+  );
+}
+
+type LockedMember = { id: string; role: string; status: string };
+
+async function lockMember(
+  tx: Prisma.TransactionClient,
+  workspaceId: string,
+  userId: string,
+): Promise<LockedMember | null> {
+  const rows = await tx.$queryRawUnsafe<LockedMember[]>(
+    `SELECT id, role, status FROM "workspace_member"
+     WHERE workspace_id = $1 AND user_id = $2 FOR UPDATE`,
+    workspaceId,
+    userId,
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * mplan + member advisories → member FOR UPDATE → in-transaction
+ * authorize. Returns the authorization context + the locked member row.
+ */
+async function lockedAuthorize(
+  tx: Prisma.TransactionClient,
+  session: SessionLike,
+  request: {
+    action: "read" | "write";
+    workspaceId: string;
+    clientProfileId: string;
+  },
+) {
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0)
+    throw new AccessDeniedError("unauthenticated", "mealPlans", request.action);
+  await advisoryLock(
+    tx,
+    `mplan:${request.workspaceId}:${request.clientProfileId}`,
+  );
+  await advisoryLock(tx, `member:${request.workspaceId}:${userId}`);
+  const member = await lockMember(tx, request.workspaceId, userId);
+  if (!member || member.status !== "ACTIVE")
+    throw new AccessDeniedError("role_denied", "mealPlans", request.action);
+  const ctx = await authorize(
+    session,
+    {
+      resource: "mealPlans",
+      action: request.action,
+      workspaceId: request.workspaceId,
+      clientProfileId: request.clientProfileId,
+    },
+    createPrismaAuthorizationRepo(tx),
+  );
+  if (ctx.workspaceMemberId !== member.id)
+    throw new AccessDeniedError(
+      "membership_missing_or_inactive",
+      "mealPlans",
+      request.action,
+    );
+  return { ctx, member, userId };
+}
+
+/**
+ * Assigned-scope branch: re-resolve the ACTIVE ClientAssignment for the
+ * locked member + locked target client and take that row FOR UPDATE.
+ * Workspace-scope readers (owners) never touch the assignment table.
+ */
+async function lockAssignmentForScope(
+  tx: Prisma.TransactionClient,
+  workspaceId: string,
+  clientProfileId: string,
+  memberId: string,
+  action: "read" | "write",
+): Promise<void> {
+  const resolved = await tx.clientAssignment.findFirst({
+    where: {
+      workspaceId,
+      clientProfileId,
+      coachMemberId: memberId,
+      status: "ACTIVE",
+    },
+    select: { id: true },
+  });
+  if (!resolved)
+    throw new AccessDeniedError("not_assigned", "mealPlans", action);
+  const rows = await tx.$queryRawUnsafe<{ status: string }[]>(
+    `SELECT status FROM "client_assignment"
+     WHERE id = $1 AND workspace_id = $2 AND client_profile_id = $3
+       AND coach_member_id = $4 FOR UPDATE`,
+    resolved.id,
+    workspaceId,
+    clientProfileId,
+    memberId,
+  );
+  if (!rows[0] || rows[0].status !== "ACTIVE")
+    throw new AccessDeniedError("not_assigned", "mealPlans", action);
+}
+
+async function lockProfile(
+  tx: Prisma.TransactionClient,
+  workspaceId: string,
+  clientProfileId: string,
+): Promise<{ id: string; userId: string | null } | null> {
+  const rows = await tx.$queryRawUnsafe<
+    { id: string; userId: string | null }[]
+  >(
+    `SELECT id, user_id AS "userId" FROM "client_profile"
+     WHERE id = $1 AND workspace_id = $2 FOR UPDATE`,
+    clientProfileId,
+    workspaceId,
+  );
+  return rows[0] ?? null;
+}
+
+type LockedPlanRow = {
+  id: string;
+  workspace_id: string;
+  client_profile_id: string;
+  title: string;
+  timezone: string | null;
+  draft: unknown;
+  draft_revision: number;
+};
+
+/** Row lock scoped to BOTH clientProfileId and workspaceId — never a
+ * foreign row. */
+async function lockPlan(
+  tx: Prisma.TransactionClient,
+  workspaceId: string,
+  clientProfileId: string,
+): Promise<LockedPlanRow | null> {
+  const rows = await tx.$queryRawUnsafe<LockedPlanRow[]>(
+    `SELECT id, workspace_id, client_profile_id, title, timezone, draft,
+            draft_revision
+     FROM "meal_plan"
+     WHERE client_profile_id = $1 AND workspace_id = $2 FOR UPDATE`,
+    clientProfileId,
+    workspaceId,
+  );
+  return rows[0] ?? null;
+}
+
+/** Consent — deterministic kind order, rows FOR UPDATE when `forUpdate`. */
+async function checkRequiredConsent(
+  tx: Prisma.TransactionClient,
+  clientProfileId: string,
+  registry: ConsentPolicyRegistry,
+  forUpdate: boolean,
+): Promise<void> {
+  const required = requiredConsentsFor("mealPlans") ?? [];
+  for (const kind of required) {
+    const version = registry.currentVersion(kind);
+    if (version === null) throw new MealPlanError("policy_not_configured");
+    const rows = forUpdate
+      ? (
+          await tx.$queryRawUnsafe<
+            { kind: string; version: string; revoked_at: Date | null }[]
+          >(
+            `SELECT kind, version, revoked_at
+             FROM "consent_record"
+             WHERE client_profile_id = $1
+               AND kind = CAST($2 AS "public"."ConsentKind")
+             FOR UPDATE`,
+            clientProfileId,
+            kind,
+          )
+        ).map((r) => ({
+          kind: r.kind,
+          version: r.version,
+          revokedAt: r.revoked_at,
+        }))
+      : await tx.consentRecord.findMany({
+          where: { clientProfileId, kind },
+          select: { kind: true, version: true, revokedAt: true },
+        });
+    if (!hasExactActiveConsent(rows, kind, version))
+      throw new MealPlanError("consent_missing");
+  }
+}
+
+// ── Validation helpers ───────────────────────────────────────────────────
+
+function validId(v: unknown): v is string {
+  return typeof v === "string" && v.length > 0 && v.length <= 128;
+}
+
+function cleanTitle(v: unknown): string {
+  if (typeof v !== "string") throw new MealPlanError("invalid_input");
+  const trimmed = v.trim();
+  if (trimmed.length < 1 || trimmed.length > MEALPLAN_LIMITS.titleMax)
+    throw new MealPlanError("invalid_input");
+  return trimmed;
+}
+
+// ── Selection (the ONE rule, identical for coach and client) ────────────
+// eligible  = activationInstant <= now
+// current   = eligible ORDER BY effectiveDate DESC, versionSeq DESC LIMIT 1
+// upcoming  = activationInstant >  now ORDER BY activationInstant ASC,
+//             versionSeq ASC LIMIT 1
+
+type VersionSelectRow = {
+  id: string;
+  mealPlanId: string;
+  versionSeq: number;
+  effectiveDate: Date;
+  effectiveTimezone: string;
+  activationInstant: Date;
+  publishedAt: Date;
+};
+
+const VERSION_SELECT = {
+  id: true,
+  mealPlanId: true,
+  versionSeq: true,
+  effectiveDate: true,
+  effectiveTimezone: true,
+  activationInstant: true,
+  publishedAt: true,
+} as const;
+
+async function currentVersion(
+  tx: Prisma.TransactionClient,
+  mealPlanId: string,
+  now: Date,
+): Promise<VersionSelectRow | null> {
+  return tx.mealPlanVersion.findFirst({
+    where: { mealPlanId, activationInstant: { lte: now } },
+    orderBy: [{ effectiveDate: "desc" }, { versionSeq: "desc" }],
+    select: VERSION_SELECT,
+  });
+}
+
+async function upcomingVersion(
+  tx: Prisma.TransactionClient,
+  mealPlanId: string,
+  now: Date,
+): Promise<VersionSelectRow | null> {
+  return tx.mealPlanVersion.findFirst({
+    where: { mealPlanId, activationInstant: { gt: now } },
+    orderBy: [{ activationInstant: "asc" }, { versionSeq: "asc" }],
+    select: VERSION_SELECT,
+  });
+}
+
+const isoDate = (d: Date) => d.toISOString().slice(0, 10);
+
+// ── Write operations ─────────────────────────────────────────────────────
+
+/**
+ * Save the shared draft. `expectedRevision === 0` CREATES the container
+ * (title required); otherwise the row's `draft_revision` must match
+ * exactly (CAS — stale editor → `stale_revision`, zero writes). An
+ * optional `timezone` (explicit confirm) stamps provenance when it
+ * changes; it never touches published version snapshots.
+ */
+export async function saveMealPlanDraft(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    expectedRevision: number;
+    title?: string;
+    draft: unknown;
+    timezone?: string;
+  },
+  deps: MealPlanDeps = {},
+): Promise<{ planId: string; revision: number }> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveMealPlanConsentPolicy();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.clientProfileId) ||
+    typeof input.expectedRevision !== "number" ||
+    !Number.isInteger(input.expectedRevision) ||
+    input.expectedRevision < 0
+  )
+    throw new MealPlanError("invalid_input");
+  const title = input.title === undefined ? undefined : cleanTitle(input.title);
+  const timezone = input.timezone;
+  if (timezone !== undefined) {
+    const check = resolveMealPlanActivation(timezone, "2000-01-01");
+    if (check.status === "invalid") throw new MealPlanError("invalid_input");
+  }
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const { ctx, member } = await lockedAuthorize(tx, session, {
+          action: "write",
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+        });
+        // Write cells are `assigned` for coach AND owner — anything else
+        // never reaches here (authorize throws first); asserted anyway.
+        if (ctx.grantedScope !== "assigned")
+          throw new AccessDeniedError("role_denied", "mealPlans", "write");
+        await lockAssignmentForScope(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+          member.id,
+          "write",
+        );
+        const profile = await lockProfile(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+        );
+        if (!profile) throw new MealPlanError("plan_not_accessible");
+        await checkRequiredConsent(tx, profile.id, registry, true);
+
+        const normalized = normalizeMealPlanPayload(input.draft, {
+          forPublish: false,
+        });
+        const now = deps.now ?? new Date();
+        const memberId = ctx.workspaceMemberId as string;
+
+        const plan = await lockPlan(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+        );
+        if (!plan) {
+          if (input.expectedRevision !== 0 || title === undefined)
+            throw new MealPlanError("plan_not_accessible");
+          const created = await tx.mealPlan.create({
+            data: {
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+              title,
+              ...(timezone === undefined
+                ? {}
+                : {
+                    timezone,
+                    timezoneSetByMemberId: memberId,
+                    timezoneSetAt: now,
+                  }),
+              draft: normalized as unknown as Prisma.InputJsonValue,
+              draftRevision: 1,
+              draftSavedByMemberId: memberId,
+              draftUpdatedAt: now,
+              createdByMemberId: memberId,
+            },
+            select: { id: true },
+          });
+          await writeAuditEvent(tx, ctx, {
+            action: "CREATE",
+            resourceType: "meal_plan",
+            resourceId: created.id,
+            subjectClientProfileId: input.clientProfileId,
+          });
+          return { planId: created.id, revision: 1 };
+        }
+
+        if (plan.draft_revision !== input.expectedRevision)
+          throw new MealPlanError("stale_revision");
+        const nextRevision = plan.draft_revision + 1;
+        const timezoneChanged =
+          timezone !== undefined && timezone !== plan.timezone;
+        await tx.mealPlan.update({
+          where: { id: plan.id },
+          data: {
+            draft: normalized as unknown as Prisma.InputJsonValue,
+            draftRevision: nextRevision,
+            draftSavedByMemberId: memberId,
+            draftUpdatedAt: now,
+            ...(title === undefined ? {} : { title }),
+            ...(timezone === undefined
+              ? {}
+              : timezoneChanged
+                ? {
+                    timezone,
+                    timezoneSetByMemberId: memberId,
+                    timezoneSetAt: now,
+                  }
+                : {}),
+          },
+        });
+        await writeAuditEvent(tx, ctx, {
+          action: "UPDATE",
+          resourceType: "meal_plan",
+          resourceId: plan.id,
+          subjectClientProfileId: input.clientProfileId,
+          ...(timezoneChanged ? { meta: { changed: true } } : {}),
+        });
+        return { planId: plan.id, revision: nextRevision };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}
+
+/**
+ * Explicitly confirm/change the plan-scoped timezone on an existing
+ * container. Never touches the draft, the revision, or any published
+ * version's stored snapshot. Same write authorization + consent protocol
+ * as every meal-plan mutation.
+ */
+export async function setMealPlanTimezone(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string; timezone: string },
+  deps: MealPlanDeps = {},
+): Promise<{ planId: string }> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveMealPlanConsentPolicy();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.clientProfileId) ||
+    resolveMealPlanActivation(input.timezone, "2000-01-01").status === "invalid"
+  )
+    throw new MealPlanError("invalid_input");
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const { ctx, member } = await lockedAuthorize(tx, session, {
+          action: "write",
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+        });
+        if (ctx.grantedScope !== "assigned")
+          throw new AccessDeniedError("role_denied", "mealPlans", "write");
+        await lockAssignmentForScope(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+          member.id,
+          "write",
+        );
+        const profile = await lockProfile(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+        );
+        if (!profile) throw new MealPlanError("plan_not_accessible");
+        await checkRequiredConsent(tx, profile.id, registry, true);
+        const plan = await lockPlan(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+        );
+        if (!plan) throw new MealPlanError("plan_not_accessible");
+        // Idempotent: same zone → no write, no audit event.
+        if (plan.timezone === input.timezone) return { planId: plan.id };
+        await tx.mealPlan.update({
+          where: { id: plan.id },
+          data: {
+            timezone: input.timezone,
+            timezoneSetByMemberId: ctx.workspaceMemberId as string,
+            timezoneSetAt: deps.now ?? new Date(),
+          },
+        });
+        await writeAuditEvent(tx, ctx, {
+          action: "UPDATE",
+          resourceType: "meal_plan",
+          resourceId: plan.id,
+          subjectClientProfileId: input.clientProfileId,
+          meta: { changed: true },
+        });
+        return { planId: plan.id };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}
+
+/**
+ * Publish the CURRENT shared draft as an immutable client-assigned
+ * version. `publishOriginRevision` is the replay authority: a retried
+ * publish of a committed revision returns the existing version (checked
+ * BEFORE the CAS, so a lost-response retry after a newer draft save
+ * still resolves), and `stale_revision` rejects revisions that were
+ * never published. The `(effectiveTimezone, activationInstant)` pair is
+ * resolved inside the mplan lock — a concurrent timezone change can
+ * never tear the snapshot.
+ */
+export async function publishMealPlanVersion(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    expectedRevision: number;
+    effectiveDate: string;
+  },
+  deps: MealPlanDeps = {},
+): Promise<{ versionId: string; versionSeq: number }> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveMealPlanConsentPolicy();
+  const now = deps.now ?? new Date();
+  const effectiveDate = parseEffectiveDate(input.effectiveDate, now);
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.clientProfileId) ||
+    typeof input.expectedRevision !== "number" ||
+    !Number.isInteger(input.expectedRevision) ||
+    input.expectedRevision < 1
+  )
+    throw new MealPlanError("invalid_input");
+  return withSerializedRetry(
+    () =>
+      db.$transaction(
+        async (tx) => {
+          const { ctx, member } = await lockedAuthorize(tx, session, {
+            action: "write",
+            workspaceId: input.workspaceId,
+            clientProfileId: input.clientProfileId,
+          });
+          if (ctx.grantedScope !== "assigned")
+            throw new AccessDeniedError("role_denied", "mealPlans", "write");
+          await lockAssignmentForScope(
+            tx,
+            input.workspaceId,
+            input.clientProfileId,
+            member.id,
+            "write",
+          );
+          const profile = await lockProfile(
+            tx,
+            input.workspaceId,
+            input.clientProfileId,
+          );
+          if (!profile) throw new MealPlanError("plan_not_accessible");
+          await checkRequiredConsent(tx, profile.id, registry, true);
+          const plan = await lockPlan(
+            tx,
+            input.workspaceId,
+            input.clientProfileId,
+          );
+          if (!plan) throw new MealPlanError("plan_not_accessible");
+
+          // Replay authority FIRST: a version minted from this revision
+          // already exists → return it. Reauthorization already ran, so a
+          // denied actor's retry never reaches here.
+          const existing = await tx.mealPlanVersion.findFirst({
+            where: {
+              mealPlanId: plan.id,
+              publishOriginRevision: input.expectedRevision,
+            },
+            select: { id: true, versionSeq: true },
+          });
+          if (existing)
+            return { versionId: existing.id, versionSeq: existing.versionSeq };
+
+          if (plan.draft === null || plan.draft === undefined)
+            throw new MealPlanError("publish_incomplete");
+          if (plan.draft_revision !== input.expectedRevision)
+            throw new MealPlanError("stale_revision");
+
+          // Confirmed plan-scoped timezone — required before first publish.
+          if (plan.timezone === null)
+            throw new MealPlanError("timezone_required");
+          const activation = resolveMealPlanActivation(
+            plan.timezone,
+            effectiveDate,
+          );
+          if (activation.status === "invalid")
+            throw new MealPlanError("invalid_input");
+          if (activation.status === "unrepresentable")
+            throw new MealPlanError("unrepresentable_date");
+
+          // Publish completeness validation on the STORED draft — the
+          // frozen payload is exactly the normalized snapshot.
+          const payload = normalizeMealPlanPayload(plan.draft, {
+            forPublish: true,
+          });
+
+          const max = await tx.mealPlanVersion.aggregate({
+            where: { mealPlanId: plan.id },
+            _max: { versionSeq: true },
+          });
+          // versionSeq assigned ONLY under the serialized plan lock —
+          // concurrent publishes can never mint conflicting sequences.
+          const versionSeq = (max._max.versionSeq ?? 0) + 1;
+          const created = await tx.mealPlanVersion.create({
+            data: {
+              workspaceId: plan.workspace_id,
+              mealPlanId: plan.id,
+              clientProfileId: plan.client_profile_id,
+              versionSeq,
+              effectiveDate: new Date(`${effectiveDate}T00:00:00Z`),
+              effectiveTimezone: plan.timezone,
+              activationInstant: activation.instant,
+              payload: payload as unknown as Prisma.InputJsonValue,
+              publishOriginRevision: plan.draft_revision,
+              publishedByMemberId: ctx.workspaceMemberId as string,
+            },
+            select: { id: true },
+          });
+          await writeAuditEvent(tx, ctx, {
+            action: "CREATE",
+            resourceType: "meal_plan_version",
+            resourceId: created.id,
+            subjectClientProfileId: plan.client_profile_id,
+            meta: {
+              version: String(versionSeq),
+              date: effectiveDate,
+              status: "PUBLISHED",
+              count: payload.variants.length,
+            },
+          });
+          return { versionId: created.id, versionSeq };
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      ),
+    PUBLISH_RETRYABLE_UNIQUE_TARGETS,
+  );
+}
+
+// ── Read operations ──────────────────────────────────────────────────────
+
+export type MealPlanVersionHeader = {
+  id: string;
+  versionSeq: number;
+  effectiveDate: string;
+  effectiveTimezone: string;
+  publishedAt: string;
+};
+
+export type StaffMealPlanView = {
+  plan: {
+    id: string;
+    title: string;
+    timezone: string | null;
+    draftRevision: number;
+    draft: MealPlanDraft;
+  } | null;
+  versions: MealPlanVersionHeader[];
+  nextCursor: number | null;
+  currentVersionId: string | null;
+  upcoming: {
+    versionSeq: number;
+    effectiveDate: string;
+    effectiveTimezone: string;
+  } | null;
+  /** Advisory write capability — the write path independently
+   * re-authorizes under locks; this only shapes the UI. */
+  canWrite: boolean;
+};
+
+/** Staff detail read: draft + bounded version headers + server-resolved
+ * current/upcoming. Consent rows are locked BEFORE any content access;
+ * the READ audit is written last. */
+export async function readStaffMealPlan(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string; cursor?: number },
+  deps: MealPlanDeps = {},
+): Promise<StaffMealPlanView> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveMealPlanConsentPolicy();
+  const now = deps.now ?? new Date();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.clientProfileId) ||
+    (input.cursor !== undefined &&
+      (!Number.isInteger(input.cursor) || input.cursor < 1))
+  )
+    throw new MealPlanError("invalid_input");
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const { ctx, member } = await lockedAuthorize(tx, session, {
+          action: "read",
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+        });
+        if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+          throw new AccessDeniedError("role_denied", "mealPlans", "read");
+        if (ctx.grantedScope === "assigned")
+          await lockAssignmentForScope(
+            tx,
+            input.workspaceId,
+            input.clientProfileId,
+            member.id,
+            "read",
+          );
+        const profile = await lockProfile(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+        );
+        if (!profile) throw new MealPlanError("plan_not_accessible");
+        // Consent rows locked BEFORE any plan content is read.
+        await checkRequiredConsent(tx, profile.id, registry, true);
+
+        const plan = await lockPlan(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+        );
+
+        let versions: VersionSelectRow[] = [];
+        let nextCursor: number | null = null;
+        let currentId: string | null = null;
+        let upcoming: VersionSelectRow | null = null;
+        if (plan) {
+          const rows = await tx.mealPlanVersion.findMany({
+            where: {
+              mealPlanId: plan.id,
+              ...(input.cursor !== undefined
+                ? { versionSeq: { lt: input.cursor } }
+                : {}),
+            },
+            orderBy: { versionSeq: "desc" },
+            take: MEALPLAN_LIMITS.versionPageSize + 1,
+            select: VERSION_SELECT,
+          });
+          versions = rows.slice(0, MEALPLAN_LIMITS.versionPageSize);
+          nextCursor =
+            rows.length > MEALPLAN_LIMITS.versionPageSize
+              ? (versions[versions.length - 1]?.versionSeq ?? null)
+              : null;
+          const current = await currentVersion(tx, plan.id, now);
+          currentId = current?.id ?? null;
+          upcoming = await upcomingVersion(tx, plan.id, now);
+          await writeAuditEvent(tx, ctx, {
+            action: "READ",
+            resourceType: "meal_plan",
+            resourceId: plan.id,
+            subjectClientProfileId: input.clientProfileId,
+          });
+        }
+
+        // Write capability mirrors the reviewed capability pattern: the
+        // role's write scope on mealPlans is `assigned`, so capability =
+        // an ACTIVE assignment for THIS client. Advisory only — the
+        // write transaction independently re-authorizes under locks.
+        const writeAssignment =
+          member.role === "COACH" || member.role === "WORKSPACE_OWNER"
+            ? await tx.clientAssignment.findFirst({
+                where: {
+                  workspaceId: input.workspaceId,
+                  clientProfileId: input.clientProfileId,
+                  coachMemberId: member.id,
+                  status: "ACTIVE",
+                },
+                select: { id: true },
+              })
+            : null;
+
+        return {
+          plan: plan
+            ? {
+                id: plan.id,
+                title: plan.title,
+                timezone: plan.timezone,
+                draftRevision: plan.draft_revision,
+                draft: (plan.draft as MealPlanDraft | null) ?? {
+                  variants: [],
+                },
+              }
+            : null,
+          versions: versions.map((v) => ({
+            id: v.id,
+            versionSeq: v.versionSeq,
+            effectiveDate: isoDate(v.effectiveDate),
+            effectiveTimezone: v.effectiveTimezone,
+            publishedAt: v.publishedAt.toISOString(),
+          })),
+          nextCursor,
+          currentVersionId: currentId,
+          upcoming: upcoming
+            ? {
+                versionSeq: upcoming.versionSeq,
+                effectiveDate: isoDate(upcoming.effectiveDate),
+                effectiveTimezone: upcoming.effectiveTimezone,
+              }
+            : null,
+          canWrite: writeAssignment !== null,
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}
+
+export type MealPlanVersionDetail = {
+  id: string;
+  versionSeq: number;
+  effectiveDate: string;
+  effectiveTimezone: string;
+  activationInstant: string;
+  payload: MealPlanDraft;
+  publishedAt: string;
+};
+
+/** Staff version detail read — exact-id, tenant- and client-coherent. */
+export async function readStaffMealPlanVersion(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string; versionId: string },
+  deps: MealPlanDeps = {},
+): Promise<MealPlanVersionDetail> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveMealPlanConsentPolicy();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.clientProfileId) ||
+    !validId(input.versionId)
+  )
+    throw new MealPlanError("invalid_input");
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const { ctx, member } = await lockedAuthorize(tx, session, {
+          action: "read",
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+        });
+        if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+          throw new AccessDeniedError("role_denied", "mealPlans", "read");
+        if (ctx.grantedScope === "assigned")
+          await lockAssignmentForScope(
+            tx,
+            input.workspaceId,
+            input.clientProfileId,
+            member.id,
+            "read",
+          );
+        const profile = await lockProfile(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+        );
+        if (!profile) throw new MealPlanError("plan_not_accessible");
+        await checkRequiredConsent(tx, profile.id, registry, true);
+        const rows = await tx.$queryRawUnsafe<
+          {
+            id: string;
+            version_seq: number;
+            effective_date: Date;
+            effective_timezone: string;
+            activation_instant: Date;
+            payload: unknown;
+            published_at: Date;
+          }[]
+        >(
+          `SELECT id, version_seq, effective_date, effective_timezone,
+                  activation_instant, payload, published_at
+           FROM "meal_plan_version"
+           WHERE id = $1 AND workspace_id = $2 AND client_profile_id = $3
+           FOR UPDATE`,
+          input.versionId,
+          input.workspaceId,
+          input.clientProfileId,
+        );
+        const version = rows[0];
+        if (!version) throw new MealPlanError("plan_not_accessible");
+        await writeAuditEvent(tx, ctx, {
+          action: "READ",
+          resourceType: "meal_plan_version",
+          resourceId: version.id,
+          subjectClientProfileId: input.clientProfileId,
+        });
+        return {
+          id: version.id,
+          versionSeq: version.version_seq,
+          effectiveDate: isoDate(version.effective_date),
+          effectiveTimezone: version.effective_timezone,
+          activationInstant: version.activation_instant.toISOString(),
+          payload: version.payload as MealPlanDraft,
+          publishedAt: version.published_at.toISOString(),
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}
+
+export type OwnMealPlanView = {
+  current: {
+    versionSeq: number;
+    effectiveDate: string;
+    effectiveTimezone: string;
+    payload: MealPlanDraft;
+  } | null;
+  upcoming: {
+    versionSeq: number;
+    effectiveDate: string;
+    effectiveTimezone: string;
+  } | null;
+};
+
+/**
+ * Client own-scope read — the published CURRENT version plus the
+ * earliest upcoming header. The draft is never selected, never returned.
+ */
+export async function readOwnMealPlan(
+  session: SessionLike,
+  input: { workspaceId: string },
+  deps: MealPlanDeps = {},
+): Promise<OwnMealPlanView> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveMealPlanConsentPolicy();
+  const now = deps.now ?? new Date();
+  if (!validId(input.workspaceId)) throw new MealPlanError("invalid_input");
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const userId = session?.user?.id;
+        if (typeof userId !== "string" || userId.length === 0)
+          throw new AccessDeniedError("unauthenticated", "mealPlans", "read");
+        // Own-profile rebinding — needed before the client-scoped
+        // advisory key can be derived.
+        const profile = await tx.clientProfile.findFirst({
+          where: { workspaceId: input.workspaceId, userId },
+          select: { id: true },
+        });
+        if (!profile)
+          throw new AccessDeniedError("not_owner", "mealPlans", "read");
+        const { ctx } = await lockedAuthorize(tx, session, {
+          action: "read",
+          workspaceId: input.workspaceId,
+          clientProfileId: profile.id,
+        });
+        if (ctx.grantedScope !== "own")
+          throw new AccessDeniedError("role_denied", "mealPlans", "read");
+        await lockProfile(tx, input.workspaceId, profile.id);
+        await checkRequiredConsent(tx, profile.id, registry, true);
+
+        const plan = await lockPlan(tx, input.workspaceId, profile.id);
+        if (!plan) return { current: null, upcoming: null };
+
+        const current = await currentVersion(tx, plan.id, now);
+        const upcoming = await upcomingVersion(tx, plan.id, now);
+
+        // Detail-READ audit — written last, inside the tx.
+        if (current !== null || upcoming !== null) {
+          await writeAuditEvent(tx, ctx, {
+            action: "READ",
+            resourceType: "meal_plan_version",
+            resourceId: (current ?? upcoming)!.id,
+            subjectClientProfileId: profile.id,
+          });
+        }
+
+        return {
+          current: current
+            ? {
+                versionSeq: current.versionSeq,
+                effectiveDate: isoDate(current.effectiveDate),
+                effectiveTimezone: current.effectiveTimezone,
+                payload: (
+                  await tx.mealPlanVersion.findUniqueOrThrow({
+                    where: { id: current.id },
+                    select: { payload: true },
+                  })
+                ).payload as MealPlanDraft,
+              }
+            : null,
+          upcoming: upcoming
+            ? {
+                versionSeq: upcoming.versionSeq,
+                effectiveDate: isoDate(upcoming.effectiveDate),
+                effectiveTimezone: upcoming.effectiveTimezone,
+              }
+            : null,
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}

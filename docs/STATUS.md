@@ -5,6 +5,78 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## MEAL-PLAN-I1-R2 — schema-inventory repair (in progress)
+
+- R1 independent review (`e3f43cb7…`, 97 lines): CONDITIONAL PASS —
+  P1-1 full integration fails 1/825 on `s1-a-identity` schema
+  inventory (new `meal_plan`/`meal_plan_version` trip the historical
+  `"meal"` forbidden guard + exact sorted list); P3-1 unit count is
+  1308 measured, not the builder's reported 1310; P3-2 mutation
+  accounting verified accurate (10/10, harness artifacts separate).
+- Evidence corrections recorded prospectively: the builder validated
+  only the FOCUSED meal-plan integration (19/19), not the full suite
+  the task required — independent full integration exposed the
+  failure; the original coverage gap was revoked-consent publish
+  (closed in `7d58a25`); unit 1310 was stale.
+- Repair: `s1-a-identity` inventory updated — `"meal"` removed from
+  the forbidden list (meal plans approved under #115), `meal_plan` +
+  `meal_plan_version` added to the exact expected list; all other
+  exclusions/assertions preserved. Other `information_schema`
+  inventories are domain-scoped (submission/`checkin_` prefixes) —
+  unaffected, unchanged.
+- Reproduced: 1/825 failure on fresh disposable `tracker_mp_r2`
+  (exact-list + `"meal"` forbidden assertions). Sensitivity proven:
+  an injected `r2_unexpected_probe` table still fails the exact-list
+  check; probe dropped.
+- Repaired gates: full integration **825/825** on clean
+  `tracker_mp_r2`; full unit **1308/1308** measured; build + full E2E
+  carried forward from R1 identity-verified head — production is
+  byte-identical (repair touches tests/docs only).
+
+## MEAL-PLAN-I1 — staff-authored meal plans (in progress)
+
+- Independently reviewed contract: MEAL-PLAN-P3 (`6b21a663…`, 259
+  lines) + P3-R1 PASS (`3f79b84a…`, 91 lines); owner choice applied:
+  effective dates activate at client-local midnight in the plan's
+  explicitly confirmed IANA timezone. Decision #115 recorded
+  (synthetic/testing boundaries only; RBAC mealPlans owner-write
+  prospectively amended `denied → assigned`; `mealPlans` joins the
+  platform-admin deny-set).
+- Branch `feature/mealplan-i1` from verified main `16fa0ab`; commits:
+  `2c8068e` tests-only RED → `40d39b4` schema+migration+
+  `lib/mealplan/*`+RBAC/audit → `c0ea987` staff/client UI → `7d58a25`
+  mutation-coverage tests.
+- Implementation: `MealPlan`/`MealPlanVersion` models + raw migration
+  (coherence FKs, `(meal_plan_id,version_seq)` + `(meal_plan_id,
+publish_origin_revision)` uniques); `lib/mealplan/{limits,payload,
+gate,consent,service,boundary}` — strict closed-key payload
+  normalization, `ENABLE_MEAL_PLANS`+APP_ENV fail-closed gate, draft
+  CAS, idempotent publish with bounded P2002 retry on the two declared
+  uniques, immutable `effectiveDate`/`effectiveTimezone`/
+  `activationInstant` snapshots, server-side current-version selection
+  (`activationInstant ≤ now`, `effectiveDate DESC, versionSeq DESC`),
+  structural-only audits. Staff route/actions/editor/history + client
+  view-only page (current/upcoming/no-plan states), gated nav.
+- Verification: unit 10/10 timezone+gate; payload 11/11; integration
+  19/19 on disposable `tracker_mp_i1` (authz matrix incl. dual-role PA,
+  consent+revocation+publish, CAS, replay, concurrent sequential
+  versionSeq, tz snapshots preserved, Apia rejection, audit rollback);
+  E2E 3/3 real-browser (coach draft→publish→client view, unassigned
+  owner read-only, flag-off 404) at desktop + 390px; typecheck/lint/
+  build green; migrations fresh + base→candidate zero-drift; full unit
+  regression 1306/1306 after RBAC-snapshot + hex-comment fixes.
+- Mutation sweep: first pass reported 4 survivors — all were a HARNESS
+  false positive (post-prettier patterns missed + non-fatal python
+  assert → unmutated files tested green; also a wrong-file `-t`
+  filter). Corrected sweep with hard-abort apply checks: 10/10 KILLED
+  (deny-set, owner-write, consent, publish-consent, CAS, replay,
+  ordering, unknown-key, audit, tz snapshot, gate). One real coverage
+  gap fixed: revoked-consent publish denial (`7d58a25`); the gate
+  "survivor" was filter error — existing `mealplan-gate.test.ts`
+  already kills the mutant (verified by direct re-run).
+- Remaining: final gates re-run on completed tree, push, builder
+  report, tracker entry, independent review handoff. No PR.
+
 ## CHECK-IN-RECURRENCE-I1 — bounded weekly scheduling (in progress)
 
 - Independently reviewed contract: CHECK-IN-RECURRENCE-P3 (`b560cda2…`,

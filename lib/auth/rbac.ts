@@ -136,9 +136,16 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
     SUPPORT: D,
     CLIENT: c("own", "own"),
   },
+  // MEAL-PLAN-I1 (decision #115 — owner-approved amendment): an owner may
+  // author meal plans ONLY for clients they hold an ACTIVE
+  // ClientAssignment to — assigned write scope, never workspace-wide.
+  // Owner read stays workspace-wide; coach assigned read+write; assistant
+  // assigned read-only; SUPPORT denied; CLIENT own-view only, never
+  // writes; PLATFORM_ADMIN denied outright (deny-set enforced in
+  // guard.ts, dual-role inclusive).
   mealPlans: {
     PLATFORM_ADMIN: D,
-    WORKSPACE_OWNER: c("workspace", "denied"),
+    WORKSPACE_OWNER: c("workspace", "assigned"),
     COACH: c("assigned", "assigned"),
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,

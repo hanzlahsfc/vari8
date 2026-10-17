@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireSessionUser } from "@/lib/auth/route-guard";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
 import { readOwnNextCheckInInstance } from "@/lib/checkin/instances-boundary";
+import { isMealPlansEnabled } from "@/lib/mealplan/gate";
 import { isOnboardingSubmissionEnabled } from "@/lib/onboarding/submission-gate";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +35,9 @@ export default async function HomePage({
     process.env.ENABLE_ONBOARDING_SUBMISSION,
   );
   const checkInsOn = isCheckInsEnabled();
+  // MEAL-PLAN-I1 (decision 115): cosmetic card only — the destination
+  // re-authorizes `mealPlans/read` (own scope) server-side.
+  const mealPlansOn = isMealPlansEnabled();
 
   // FI-I4 (decision 107): earliest unfinished Check-In header for the
   // due card. Own-scope service read; a non-ok result hides the card —
@@ -89,6 +93,18 @@ export default async function HomePage({
               <span className="home-card__title">Check-Ins</span>
               <span className="home-card__meta">
                 Your scheduled Check-Ins and calendar.
+              </span>
+            </Link>
+          ) : null}
+          {mealPlansOn ? (
+            <Link
+              className="home-card"
+              href={`/workspace/${workspaceId}/meal-plan`}
+              data-testid="home-mealplan-card"
+            >
+              <span className="home-card__title">Meal plan</span>
+              <span className="home-card__meta">
+                Your current meal plan from your coach.
               </span>
             </Link>
           ) : null}

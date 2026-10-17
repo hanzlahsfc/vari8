@@ -1629,3 +1629,48 @@ their own authorization/operational prerequisites. NOT approved:
 notifications, messaging, feedback changes, calendar redesign, retention
 policy, production/real-client use. Production/privacy gates
 #102/#81/#38/#39/D-10/D-09 remain separate and unresolved.
+
+---
+
+**Decision #115 (APPROVED — synthetic/testing boundaries only):** the
+staff-authored, client-viewed meal-plan workflow (MEAL-PLAN-I1, under the
+reviewed MEAL-PLAN-P3 contract). Assigned coaches and explicitly assigned
+owners author a shared draft and publish immutable, client-specific
+versions; unassigned owners keep workspace-wide read only; assistants are
+read-only within assigned scope; clients view their own published plan
+only (no client write path); SUPPORT and PLATFORM_ADMIN are denied —
+`mealPlans` joins the platform-admin deny-set so a dual-role membership
+cannot grant access, and the RBAC matrix's mealPlans owner-write cell is
+prospectively amended `denied → assigned`. All reads and writes are
+consent-gated (BASE_CONSENTS), authorization-gated, tenant-scoped, and
+audited with structural metadata only (never meal text, labels, or
+nutrition values). Draft saves use `draftRevision` compare-and-swap —
+a stale revision is `stale_revision` with zero writes. Publishing is
+idempotent by `publishOriginRevision` (a replayed call returns the
+committed version, never a second row); concurrent publishes serialize
+and allocate sequential `versionSeq` under transaction protection with
+a bounded retry on only the two declared publication uniques. Staff
+manually enter every meal and nutrition value — NO automatic totals,
+calorie conversions, percentages, attainment, recommendations, or range
+aggregation; fixed/range/minimum targets display exactly as entered
+(missing is never rendered as zero); all labeled variants stay visible
+with no automatic training/rest-day selection. Each plan requires an
+explicitly confirmed IANA timezone (coach/assigned-owner write scope);
+effective dates resolve to local midnight in that timezone via the
+reviewed `lib/checkin/timezone.ts` resolver — midnight-gap → first valid
+instant same date, midnight-fold → earlier occurrence, whole-day skip →
+publication rejected (`unrepresentable_date`, never a silent date
+shift). Every published version immutably stores `effectiveDate`,
+`effectiveTimezone`, and `activationInstant` snapshots; a later
+container-timezone change never retimes existing publications.
+Current-version selection is shared server-side — eligibility
+`activationInstant <= now`, precedence `effectiveDate DESC, versionSeq
+DESC`; upcoming = earliest future activation. The browser timezone is
+never consulted for applicability, and the UI distinguishes current,
+upcoming ("starts {date} ({tz})"), and no-plan states. Meal plans are
+dev/test-only behind the fail-closed `ENABLE_MEAL_PLANS` + trusted
+`APP_ENV` runtime gate — production builds cannot enable any surface.
+NOT approved: retention/deletion policy, clinical or licensing claims,
+notifications/messaging, recipe engines, barcode, provider integrations,
+production deployment, or real-client use. Production/privacy gates
+#102/#81/#38/#39/D-10/D-09 remain separate and unresolved.
