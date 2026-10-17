@@ -10,9 +10,70 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  classifyMealPlanRuntime,
+  isMealPlansEnabled,
+} from "../../lib/mealplan/gate";
+import {
   parseEffectiveDate,
   resolveMealPlanActivation,
 } from "../../lib/mealplan/service";
+
+describe("MEAL-PLAN-I1 — isMealPlansEnabled fail-closed gate", () => {
+  it("requires flag AND trusted runtime; everything else is closed", () => {
+    // Flag + trusted dev/test runtime → enabled.
+    expect(
+      isMealPlansEnabled({ ENABLE_MEAL_PLANS: "1", APP_ENV: "test" }),
+    ).toBe(true);
+    expect(
+      isMealPlansEnabled({ ENABLE_MEAL_PLANS: "1", NODE_ENV: "development" }),
+    ).toBe(true);
+    // An explicit test classification survives a production build —
+    // disposable `next start` E2E servers rely on this.
+    expect(
+      isMealPlansEnabled({
+        ENABLE_MEAL_PLANS: "1",
+        APP_ENV: "test",
+        NODE_ENV: "production",
+      }),
+    ).toBe(true);
+
+    // Every other combination fails closed.
+    for (const env of [
+      {}, // flag unset
+      { ENABLE_MEAL_PLANS: "0" },
+      { ENABLE_MEAL_PLANS: "true" }, // only the literal "1" enables
+      { ENABLE_MEAL_PLANS: "1" }, // no trusted runtime signal
+      { ENABLE_MEAL_PLANS: "1", APP_ENV: "production" },
+      { ENABLE_MEAL_PLANS: "1", APP_ENV: "staging" }, // unknown → production
+      { ENABLE_MEAL_PLANS: "1", APP_ENV: "" }, // malformed → production
+      { ENABLE_MEAL_PLANS: "1", NODE_ENV: "production" },
+      // Explicit APP_ENV wins over a baked NODE_ENV — a production
+      // build cannot be re-trusted by flag alone.
+      {
+        ENABLE_MEAL_PLANS: "1",
+        APP_ENV: "production",
+        NODE_ENV: "development",
+      },
+    ])
+      expect(isMealPlansEnabled(env)).toBe(false);
+  });
+
+  it("runtime classification allowlists exactly development/test", () => {
+    expect(classifyMealPlanRuntime({ APP_ENV: "test" })).toBe("test");
+    expect(classifyMealPlanRuntime({ APP_ENV: "development" })).toBe(
+      "development",
+    );
+    expect(classifyMealPlanRuntime({ APP_ENV: "production" })).toBe(
+      "production",
+    );
+    expect(classifyMealPlanRuntime({ APP_ENV: "banana" })).toBe("production");
+    expect(classifyMealPlanRuntime({})).toBe("production");
+    expect(classifyMealPlanRuntime({ NODE_ENV: "test" })).toBe("test");
+    expect(classifyMealPlanRuntime({ NODE_ENV: "production" })).toBe(
+      "production",
+    );
+  });
+});
 
 describe("MEAL-PLAN-I1 — resolveMealPlanActivation (local midnight)", () => {
   it("ordinary midnight maps to the correct instant", () => {

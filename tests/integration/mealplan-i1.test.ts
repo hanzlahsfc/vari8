@@ -509,6 +509,20 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
         deps(),
       ),
     ).rejects.toMatchObject({ code: "consent_missing" });
+    // Publish is consent-gated too — a revoked-consent publish never
+    // reaches the draft CAS or version minting path.
+    await expect(
+      publishMealPlanVersion(
+        session(coachU.id),
+        {
+          workspaceId: w.id,
+          clientProfileId: cp.id,
+          expectedRevision: 1,
+          effectiveDate: "2026-10-20",
+        },
+        deps(),
+      ),
+    ).rejects.toMatchObject({ code: "consent_missing" });
     await expect(
       readOwnMealPlan(session(clientU.id), { workspaceId: w.id }, deps()),
     ).rejects.toMatchObject({ code: "consent_missing" });
