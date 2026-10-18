@@ -10,6 +10,7 @@ import {
   cancelTrainingSessionBookingFromAction,
   moveTrainingSessionBookingFromAction,
   publishTrainingProgramVersionFromAction,
+  readStaffTrainingBookingsFromAction,
   readStaffTrainingProgramFromAction,
   readStaffTrainingProgramsFromAction,
   readStaffTrainingProgramVersionFromAction,
@@ -17,6 +18,7 @@ import {
   setTrainingProgramTimezoneFromAction,
 } from "@/lib/trainingprogram/boundary";
 import type {
+  StaffBookingsPage,
   StaffProgramDetail,
   StaffProgramList,
   StaffVersionDetail,
@@ -419,5 +421,48 @@ export async function cancelTrainingBookingAction(input: {
     message: result.value.alreadyCancelled
       ? "Booking was already cancelled."
       : "Booking cancelled.",
+  };
+}
+
+export type TrainingBookingsPageState =
+  | { status: "error"; message: string }
+  | {
+      status: "ok";
+      history: StaffBookingsPage["history"];
+      nextCursor: StaffBookingsPage["nextCursor"];
+    };
+
+/**
+ * Bounded keyset page read for booking history "Load more" (I1B-2 F2).
+ * The cursor is target-scoped (scheduledDate, id) exactly as returned by
+ * the previous page; the service re-authorizes and returns a truthful
+ * hasMore — no unbounded fetch.
+ */
+export async function listTrainingBookingsAction(input: {
+  workspaceId: string;
+  clientProfileId: string;
+  programId: string;
+  cursor: { scheduledDate: string; id: string };
+}): Promise<TrainingBookingsPageState> {
+  if (!isTrainingPlansEnabled()) return { status: "error", message: OFF };
+  const userId = await sessionUser();
+  if (userId === null) return { status: "error", message: DENIED };
+  if (
+    !validId(input?.workspaceId) ||
+    !validId(input?.clientProfileId) ||
+    !validId(input?.programId) ||
+    !validDate(input?.cursor?.scheduledDate) ||
+    !validId(input?.cursor?.id)
+  )
+    return { status: "error", message: INVALID };
+  const result = await readStaffTrainingBookingsFromAction(
+    { user: { id: userId } },
+    input,
+  );
+  if (!result.ok) return { status: "error", message: result.message };
+  return {
+    status: "ok",
+    history: result.value.history,
+    nextCursor: result.value.nextCursor,
   };
 }

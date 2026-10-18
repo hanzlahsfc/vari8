@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 import type { StaffBookingsPage } from "@/lib/trainingprogram/service";
 import {
   bookTrainingSessionAction,
   cancelTrainingBookingAction,
+  listTrainingBookingsAction,
   moveTrainingBookingAction,
 } from "@/app/workspace/[workspaceId]/clients/[clientProfileId]/training-program/actions";
 
@@ -104,6 +105,18 @@ export function TrainingBookings({
   const [sessionId, setSessionId] = useState("");
   const [date, setDate] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [history, setHistory] = useState(initial.history);
+  const [historyCursor, setHistoryCursor] = useState(initial.nextCursor);
+  const [historyError, setHistoryError] = useState("");
+
+  // Re-sync from the server page whenever it re-renders (revalidation or
+  // a different program/client target — also keyed upstream), so appended
+  // pages never go stale or leak across targets.
+  useEffect(() => {
+    setHistory(initial.history);
+    setHistoryCursor(initial.nextCursor);
+    setHistoryError("");
+  }, [initial]);
 
   const run = (fn: () => Promise<{ status: string; message?: string }>) =>
     startTransition(async () => {
@@ -111,6 +124,27 @@ export function TrainingBookings({
       setMessage(
         r.status === "ok" ? (r.message ?? null) : (r.message ?? "Error"),
       );
+    });
+
+  const loadMoreHistory = () =>
+    startTransition(async () => {
+      if (historyCursor === null) return;
+      const r = await listTrainingBookingsAction({
+        workspaceId,
+        clientProfileId,
+        programId,
+        cursor: historyCursor,
+      });
+      if (r.status !== "ok") {
+        setHistoryError(r.status === "error" ? r.message : "Load failed.");
+        return;
+      }
+      setHistoryError("");
+      setHistory((hs) => {
+        const seen = new Set(hs.map((b) => b.bookingId));
+        return [...hs, ...r.history.filter((b) => !seen.has(b.bookingId))];
+      });
+      setHistoryCursor(r.nextCursor);
     });
 
   return (
@@ -206,11 +240,11 @@ export function TrainingBookings({
         </ol>
       )}
 
-      {initial.history.length > 0 ? (
+      {history.length > 0 ? (
         <>
           <h3 className="tracker-section__title">Booking history</h3>
           <ol className="tracker-list" data-testid="bookings-history">
-            {initial.history.map((b) => (
+            {history.map((b) => (
               <BookingRow
                 key={b.bookingId}
                 booking={b}
@@ -241,8 +275,25 @@ export function TrainingBookings({
               />
             ))}
           </ol>
-          {initial.hasMore ? (
-            <p className="app-lede">More bookings in history.</p>
+          {historyError !== "" ? (
+            <p
+              className="daily-errors"
+              role="alert"
+              data-testid="bookings-history-error"
+            >
+              {historyError}
+            </p>
+          ) : null}
+          {historyCursor !== null ? (
+            <button
+              type="button"
+              className="tracker-button"
+              disabled={pending}
+              onClick={loadMoreHistory}
+              data-testid="bookings-history-more"
+            >
+              Load more
+            </button>
           ) : null}
         </>
       ) : null}

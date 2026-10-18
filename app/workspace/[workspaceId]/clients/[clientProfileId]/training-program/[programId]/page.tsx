@@ -107,6 +107,7 @@ export default async function StaffTrainingProgramPage({
             canWrite={result.value.canWrite}
           />
           <TrainingBookings
+            key={`${workspaceId}/${clientProfileId}/${programId}`}
             workspaceId={workspaceId}
             clientProfileId={clientProfileId}
             programId={programId}
