@@ -129,3 +129,29 @@ management rejects CLIENT at the operation level.
   optimization deferred as follow-up.
 - Builder report `~/Downloads/TRAINING-I1A-R2-builder-report.md`.
   Stopped at pushed repair; no PR; no production enablement.
+
+## Outcome — JOURNEY-A1 acceptance + R3 repair (2026-10-18)
+
+- Real-browser acceptance (`TRAINING-JOURNEY-A1-report.md`) verified the
+  full staff→client workflow but found two genuine defects the earlier
+  gates did not cover:
+  - D1: client read labelled the final week `completed` — clamped index
+    compared against `weekCount`. Every 1-week program showed "ended"
+    from day one.
+  - D2: replacement programs could not publish v2 through the UI — the
+    stale `replacesProgramId`-seeded predecessor claim was resubmitted
+    and rejected as `invalid_input`.
+- R3 repair on `feature/training-i1a-r3`: state now derives from the
+  real `weekEndInstant` boundary; the editor submits the predecessor
+  claim only for the first publication. New integration + UI-path E2E
+  coverage; both mutations re-bit; gates all green (unit 1329,
+  integration 849, E2E 416/428). Pushed for independent review.
+- R3-R1 independent review: CONDITIONAL PASS — D1/D2 closed; F1 (LOW):
+  a remounted retry at v1's origin revision dropped the claim and hit
+  `revision_already_published` rather than replaying.
+- R4 repair (same branch): `firstPublishOriginRevision` exposed to
+  authorized staff; the editor reproduces the original claim only at
+  v1's committed origin revision — genuine new publishes still send
+  none; server validation untouched. New integration + E2E replay
+  coverage; mutation re-bit; gates green (unit 1329, integration 850,
+  E2E 416/428). Pushed for independent confirmation.

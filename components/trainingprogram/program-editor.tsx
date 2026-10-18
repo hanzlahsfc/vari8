@@ -249,7 +249,19 @@ export function TrainingProgramEditor({
         programId: program.id,
         expectedRevision: revision,
         effectiveDate,
-        expectedPredecessor: predecessor === "" ? null : predecessor,
+        // The predecessor claim belongs to the FIRST publication — and to
+        // a retry at v1's committed origin revision, where it reproduces
+        // the ORIGINAL request (the stored replacesProgramId provenance)
+        // so a lost-response/remount retry replays idempotently. A draft
+        // save advances the revision, so any other post-publish call is a
+        // genuinely new later version and must carry no claim (the
+        // service rejects later-version claims).
+        expectedPredecessor:
+          published && revision !== program.firstPublishOriginRevision
+            ? null
+            : predecessor === ""
+              ? null
+              : predecessor,
         acknowledgeImmediateTakeover: ackTakeover,
       });
       setStatus(

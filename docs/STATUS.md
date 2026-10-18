@@ -5,6 +5,71 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## TRAINING-I1A-R4 — replay-after-remount repair (PROMPT 255)
+
+- Bounded repair on `feature/training-i1a-r3` for F1 (LOW) from the
+  independent R3 review (DeepSeek V4.1 Flash,
+  `~/Downloads/TRAINING-I1A-R3-R1-independent-review.md`, SHA-256
+  `a8efa2d6…81f3`, 305 lines, read through EOF). D1/D2 stay closed.
+- F1: after a lost v1-publish response + remount, retrying at the same
+  revision sent `expectedPredecessor: null` → `revision_already_published`
+  instead of idempotent replay. The R3 `published ? null` fix could not
+  distinguish a committed-revision retry from a genuinely new publish.
+- Repair: `readStaffTrainingProgram` now exposes committed
+  `firstPublishOriginRevision` (v1's `publishOriginRevision`) to authorized
+  staff; the editor resubmits the stored `replacesProgramId` claim only
+  when `revision === firstPublishOriginRevision` — an exact reproduction
+  of the original request. Any revision advanced by a real save sends no
+  claim (genuinely new later version; server rejection unchanged).
+- RED→GREEN: new integration test (origin exposure, null when
+  unpublished, denied actor cannot recover state, reconstructed replay
+  → `replayed:true`, claimless retry → `revision_already_published`,
+  version/audit counts unchanged) + E2E UI steps (remount → retry →
+  "Published version 1.", count invariant, changed-date → "already
+  published", root identical-replay regression). Mutation M-R4-1
+  (blanket `published ? null`) re-produced the exact
+  "already published" failure through the UI; restored byte-identical.
+- Gates: format/typecheck/lint clean (4 pre-existing warnings); unit
+  1329/1329; integration 850/850 (disposable `train_r4_int`); build
+  clean; full E2E 416/428 (12 skipped, 0 failed; disposable
+  `train_r4_e2e_full`). No schema/migration/permission/gate changes.
+- Builder report `~/Downloads/TRAINING-I1A-R4-builder-report.md`.
+  Stopped at pushed repair for independent confirmation; no PR.
+
+## TRAINING-I1A-R3 — acceptance-defect repair (PROMPT 253)
+
+- Bounded repair on `feature/training-i1a-r3` for two defects found by the
+  JOURNEY-A1 real-browser acceptance (`~/Downloads/TRAINING-JOURNEY-A1-report.md`,
+  SHA-256 `2e5eaa9a…59fa7`). NOTE: the R1/R2 reviews and earlier full suites
+  passed but did NOT cover final-week client state or replacement v2
+  republishing — those gates did not prove these paths.
+- D1 (client final week rendered "has ended"): `readOwnTrainingProgram`
+  clamped the week index to `weekCount` then tested `idx >= weekCount` —
+  1-based index means every final week (and every 1-week program from day
+  one) reported `completed`. Fixed by deriving state from the real end
+  boundary instant (`weekEndInstant` under the immutable anchor) — final
+  week stays current through its last valid instant.
+- D2 (replacement frozen at v1): the editor seeded `predecessor` from
+  `replacesProgramId`, hid the control after publish, but still submitted
+  `expectedPredecessor` — the service's later-version claim rejection
+  (`invalid_input`) fired on every v2. Fixed: claim submitted only while
+  `!published`; a lost first-publish response keeps the original claim
+  (component has not remounted); the server check stays intact.
+- RED first: 4 integration tests (1-week first/last day, boundary ±1ms,
+  multi-week final week, NY-anchor across 2026-11-01 DST fall-back,
+  not-started → upcoming) + 1 E2E through the real UI (root v2 regression,
+  replacement v1 takeover + ack, final-week client view, v2 publish with
+  persisted-version/audit proof). RED reproduced both user-visible
+  failures; mutations (clamped-index check; always-submitted claim)
+  re-bit the same tests; restored byte-identical.
+- Gates on repair tree: format/typecheck/lint clean (4 pre-existing
+  warnings); unit 1329/1329; integration 849/849 (real PG, disposable
+  `train_r3_int`); build clean; full E2E 416 passed / 12 skipped /
+  0 failed (disposable `train_r3_e2e_full`).
+- Builder report `~/Downloads/TRAINING-I1A-R3-builder-report.md`.
+  Stopped at pushed repair for independent review; no PR; no production
+  enablement.
+
 ## TRAINING-I1A-R2 — coverage/formatting repair (pushed `4dbe363b…`)
 
 - Bounded repair on `feature/training-i1a` for the R1 independent review

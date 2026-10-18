@@ -77,6 +77,7 @@ import {
   isShadowed,
   localDateOf,
   parseLocalDate,
+  weekEndInstant,
   weekIndex,
   weekMarker,
   weekStartInstant,
@@ -497,6 +498,7 @@ type VersionRow = {
   effectiveTimezone: string;
   activationInstant: Date;
   publishedAt: Date;
+  publishOriginRevision: number;
   payload: unknown;
   fieldConfig: unknown;
 };
@@ -515,6 +517,7 @@ async function programVersions(
       effectiveTimezone: true,
       activationInstant: true,
       publishedAt: true,
+      publishOriginRevision: true,
       payload: true,
       fieldConfig: true,
     },
@@ -1713,6 +1716,11 @@ export type StaffProgramDetail = {
     draft: TrainingDraft;
     replacesProgramId: string | null;
     firstPublishedAt: string | null;
+    /** Committed draft revision consumed by version 1 — lets an
+     * authorized editor reproduce the original first-publication
+     * request (including its predecessor claim) when retrying at the
+     * same revision after a lost response or remount (F1). */
+    firstPublishOriginRevision: number | null;
     cancelledAt: string | null;
     ceiling: number;
     currentWeekIndex: number | null;
@@ -1860,6 +1868,7 @@ export async function readStaffTrainingProgram(
             (program.draft as TrainingDraft | null) ?? emptyTrainingDraft(),
           replacesProgramId: program.replaces_program_id,
           firstPublishedAt: program.first_published_at?.toISOString() ?? null,
+          firstPublishOriginRevision: seq1?.publishOriginRevision ?? null,
           cancelledAt: program.cancelled_at?.toISOString() ?? null,
           ceiling: lockCeiling,
           currentWeekIndex: currentWeek,
@@ -2119,6 +2128,15 @@ export async function readOwnTrainingProgram(
         programRow.weekCount,
         Math.max(1, weekIndex(startDate, localDateOf(now, anchorTz))),
       );
+      // Lifecycle state derives from the real end boundary (exclusive
+      // start of the week AFTER the last one under the immutable anchor
+      // calendar) — never from the clamped display index: the final week
+      // stays current through its final valid instant.
+      const endInstant = weekEndInstant(
+        anchorTz,
+        startDate,
+        programRow.weekCount,
+      );
       const governing = gvAt(vinstants, now, cutoff);
       const govRow = governing
         ? versions.find((v) => v.vi.id === governing.id)
@@ -2139,7 +2157,7 @@ export async function readOwnTrainingProgram(
         subjectClientProfileId: profile.id,
       });
       return {
-        state: idx >= programRow.weekCount ? "completed" : "active",
+        state: now.getTime() >= endInstant.getTime() ? "completed" : "active",
         current: {
           programId: sel.current.id,
           title: programRow.title,

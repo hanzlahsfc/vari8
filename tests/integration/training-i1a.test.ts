@@ -1438,4 +1438,204 @@ describe.skipIf(!enabled)("TRAINING-I1A (real PG)", () => {
     expect(page2.versions.length).toBe(5); // v1 + 24 = 25 total
     expect(page2.nextCursor).toBeNull();
   });
+
+  // ── R3 (PROMPT 253): client state at the program end boundary ─────
+  // Acceptance defect D1: the final week was rendered "completed" — a
+  // one-week program reported ended on day one. The final week remains
+  // current through its final valid instant under the immutable anchor.
+
+  it("one-week program stays current through its final valid instant", async () => {
+    const { w, coachU, cp, clientU } = await setup();
+    await createAndPublish(coachU.id, w.id, cp.id, {
+      startDate: "2026-10-12",
+      weekCount: 1,
+    });
+    const read = (t: string) =>
+      readOwnTrainingProgram(
+        session(clientU.id),
+        { workspaceId: w.id },
+        deps(new Date(t)),
+      );
+    // First and last day of the single week (UTC week: Oct 12–18).
+    expect((await read("2026-10-12T12:00:00Z")).state).toBe("active");
+    const lastDay = await read("2026-10-18T23:30:00Z");
+    expect(lastDay.state).toBe("active");
+    expect(lastDay.current?.weekIndex).toBe(1);
+    expect(lastDay.current?.week?.sessions.length).toBeGreaterThan(0);
+    // One millisecond before the end boundary.
+    expect((await read("2026-10-18T23:59:59.999Z")).state).toBe("active");
+    // At the boundary and beyond.
+    const ended = await read("2026-10-19T00:00:00Z");
+    expect(ended.state).toBe("completed");
+    expect((await read("2026-10-25T12:00:00Z")).state).toBe("completed");
+  });
+
+  it("multi-week program stays current during its final week", async () => {
+    const { w, coachU, cp, clientU } = await setup();
+    // 4-week UTC program: weeks Oct 5–11 … Oct 26–Nov 1; end Nov 2 00:00Z.
+    await createAndPublish(coachU.id, w.id, cp.id, {
+      startDate: "2026-10-05",
+      weekCount: 4,
+    });
+    const read = (t: string) =>
+      readOwnTrainingProgram(
+        session(clientU.id),
+        { workspaceId: w.id },
+        deps(new Date(t)),
+      );
+    const w4 = await read("2026-10-30T12:00:00Z");
+    expect(w4.state).toBe("active");
+    expect(w4.current?.weekIndex).toBe(4);
+    expect((await read("2026-11-01T23:59:59Z")).state).toBe("active");
+    expect((await read("2026-11-02T00:00:00Z")).state).toBe("completed");
+  });
+
+  it("anchor-timezone end boundary holds across a DST transition", async () => {
+    const { w, coachU, cp, clientU } = await setup();
+    // America/New_York 1-week program spanning the 2026-11-01 fall-back:
+    // the week covers Oct 26–Nov 1 local; end boundary Nov 2 00:00 EST
+    // = 05:00Z.
+    await createAndPublish(coachU.id, w.id, cp.id, {
+      startDate: "2026-10-26",
+      weekCount: 1,
+      timezone: "America/New_York",
+    });
+    const read = (t: string) =>
+      readOwnTrainingProgram(
+        session(clientU.id),
+        { workspaceId: w.id },
+        deps(new Date(t)),
+      );
+    // Nov 1 23:30 EST (post fall-back) = Nov 2 04:30Z — still week 1.
+    const inWeek = await read("2026-11-02T04:30:00Z");
+    expect(inWeek.state).toBe("active");
+    expect(inWeek.current?.weekIndex).toBe(1);
+    expect((await read("2026-11-02T04:59:59Z")).state).toBe("active");
+    expect((await read("2026-11-02T05:00:00Z")).state).toBe("completed");
+  });
+
+  it("not-yet-started program still reports upcoming", async () => {
+    const { w, coachU, cp, clientU } = await setup();
+    await createAndPublish(coachU.id, w.id, cp.id, {
+      startDate: "2026-11-09",
+      weekCount: 4,
+    });
+    const view = await readOwnTrainingProgram(
+      session(clientU.id),
+      { workspaceId: w.id },
+      deps(new Date("2026-10-20T12:00:00Z")),
+    );
+    expect(view.state).toBe("upcoming");
+    expect(view.current).toBeNull();
+  });
+
+  // ── R4 (PROMPT 255): v1-replay request reconstruction across remount ──
+  // F1: after a remount the editor must reproduce the ORIGINAL request for
+  // a retry at the committed origin revision — including the predecessor
+  // claim — rather than erroring with revision_already_published.
+
+  it("v1 replay reconstructs the original claim; origin revision exposed to authorized staff", async () => {
+    const { w, coachU, cp } = await setup();
+    const p1 = await createAndPublish(coachU.id, w.id, cp.id);
+    // Replacement v1 (future start — no immediate-takeover gate).
+    const p2 = await createAndPublish(coachU.id, w.id, cp.id, {
+      startDate: "2026-11-02",
+      effectiveDate: "2026-11-02",
+      expectedPredecessor: p1.programId,
+    });
+    // Unpublished programs expose no origin revision.
+    const draftOnly = await saveTrainingProgramDraft(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        expectedRevision: 0,
+        ...CREATE_INPUT,
+        draft: draftPayload(),
+      },
+      deps(),
+    );
+    const d0 = await readStaffTrainingProgram(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        programId: draftOnly.programId,
+      },
+      deps(),
+    );
+    expect(d0.program.firstPublishOriginRevision).toBeNull();
+    // Published replacement: authorized staff can reconstruct the
+    // original request from committed state.
+    const detail = await readStaffTrainingProgram(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        programId: p2.programId,
+      },
+      deps(),
+    );
+    expect(detail.program.firstPublishOriginRevision).toBe(1);
+    expect(detail.program.replacesProgramId).toBe(p1.programId);
+    // A denied actor cannot recover the reconstruction state.
+    const outsider = await user();
+    await expect(
+      readStaffTrainingProgram(
+        session(outsider.id),
+        {
+          workspaceId: w.id,
+          clientProfileId: cp.id,
+          programId: p2.programId,
+        },
+        deps(),
+      ),
+    ).rejects.toMatchObject({ reason: expect.any(String) });
+    // Reconstructed retry at v1's origin revision — same revision, same
+    // date, stored claim → idempotent replay of the committed version.
+    const retry = await publishTrainingProgramVersion(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        programId: p2.programId,
+        expectedRevision: detail.program.draftRevision,
+        effectiveDate: "2026-11-02",
+        expectedPredecessor: detail.program.replacesProgramId,
+      },
+      deps(),
+    );
+    expect(retry.replayed).toBe(true);
+    expect(retry.versionSeq).toBe(1);
+    // Claimless retry at the same origin is a DIFFERENT request — still
+    // a parameter mismatch, not a silent success.
+    await expect(
+      publishTrainingProgramVersion(
+        session(coachU.id),
+        {
+          workspaceId: w.id,
+          clientProfileId: cp.id,
+          programId: p2.programId,
+          expectedRevision: detail.program.draftRevision,
+          effectiveDate: "2026-11-02",
+        },
+        deps(),
+      ),
+    ).rejects.toMatchObject({ code: "revision_already_published" });
+    // No new versions or publication audits from replay/mismatch.
+    expect(
+      await prisma.trainingProgramVersion.count({
+        where: { programId: p2.programId },
+      }),
+    ).toBe(1);
+    expect(
+      await prisma.auditEvent.count({
+        where: {
+          action: "CREATE",
+          resourceType: "training_program_version",
+          resourceId: p2.versionId,
+        },
+      }),
+    ).toBe(1);
+  });
 });
