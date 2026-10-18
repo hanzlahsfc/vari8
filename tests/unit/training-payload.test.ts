@@ -64,12 +64,12 @@ describe("normalizeTrainingDraft — strictness", () => {
   it("accepts a minimal valid draft", () => {
     expect(normalizeTrainingDraft(baseDraft())).toEqual(baseDraft());
   });
-  it("rejects unknown top-level keys, non-WEEK_BASED, and dangling nodes", () => {
+  it("rejects unknown top-level keys, unknown modes, and dangling nodes", () => {
     expect(() => normalizeTrainingDraft({ ...baseDraft(), bogus: 1 })).toThrow(
       TrainingError,
     );
     expect(() =>
-      normalizeTrainingDraft({ ...baseDraft(), programMode: "EVERGREEN" }),
+      normalizeTrainingDraft({ ...baseDraft(), programMode: "DAILY" }),
     ).toThrow(TrainingError);
     expect(() =>
       normalizeTrainingDraft({
@@ -495,5 +495,29 @@ describe("versionForWeek + marker (P8 §5.2/§5.4)", () => {
     });
     // Week 1: no prior prescription → no marker.
     expect(weekMarker(vs, "UTC", start, 1, t)).toBeNull();
+  });
+});
+
+describe("TRAINING-I1B-1 — Evergreen mode", () => {
+  it("normalizeTrainingDraft accepts EVERGREEN; unknown modes still reject", () => {
+    const d = normalizeTrainingDraft({
+      ...baseDraft(),
+      programMode: "EVERGREEN",
+    });
+    expect(d.programMode).toBe("EVERGREEN");
+  });
+  it("materializeWeeks stamps programMode; evergreen materializes one week", () => {
+    const eg: TrainingDraft = { ...baseDraft(), programMode: "EVERGREEN" };
+    const m = materializeWeeks(eg, "2026-10-05", 1);
+    expect(m.programMode).toBe("EVERGREEN");
+    expect(m.weeks).toHaveLength(1);
+    expect(m.weeks[0].week).toBe(1);
+    // Retained out-of-range boundary keys stay inert for week 1.
+    const carried: TrainingDraft = {
+      ...eg,
+      fieldCells: { "s1/e1/sets": { "1": 3, "5": 9 } },
+    };
+    const m2 = materializeWeeks(carried, "2026-10-05", 1);
+    expect(m2.weeks[0].sessions[0].exercises[0].sets).toBe(3);
   });
 });

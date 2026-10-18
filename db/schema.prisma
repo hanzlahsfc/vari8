@@ -1752,6 +1752,10 @@ model TrainingProgram {
   // once firstPublishedAt is set — a different start = replacement.
   startDate             DateTime  @map("start_date") @db.Date
   weekCount             Int       @map("week_count")
+  // WEEK_BASED | EVERGREEN. Locked at first publish — a different mode is
+  // a replacement program, never an in-place conversion. Evergreen uses
+  // weekCount=1 as its single prescription week (internal representation).
+  programMode           String    @default("WEEK_BASED") @map("program_mode")
   // Program-level interim field authority (owner-approved): subset of the
   // eight prescription fields. Snapshotted into each version at publish.
   fieldConfig           Json      @map("field_config")

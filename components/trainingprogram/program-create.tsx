@@ -21,6 +21,7 @@ export function TrainingProgramCreate({
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [startDate, setStartDate] = useState("");
+  const [mode, setMode] = useState<"WEEK_BASED" | "EVERGREEN">("WEEK_BASED");
   const [weekCount, setWeekCount] = useState("8");
   const [timezone, setTimezone] = useState("");
   const [error, setError] = useState("");
@@ -47,7 +48,7 @@ export function TrainingProgramCreate({
           progressionNotes: false,
         },
         ...(timezone.trim() !== "" ? { timezone: timezone.trim() } : {}),
-        draft: emptyTrainingDraft(),
+        draft: emptyTrainingDraft(mode),
       });
       if (r.status !== "ok" || typeof r.programId !== "string") {
         setError(r.status === "error" ? r.message : "Create failed.");
@@ -84,15 +85,37 @@ export function TrainingProgramCreate({
         placeholder="YYYY-MM-DD"
         disabled={pending}
       />
-      <label htmlFor="tp-create-weeks">Weeks</label>
-      <input
-        id="tp-create-weeks"
-        data-testid="tp-create-weeks"
-        inputMode="numeric"
-        value={weekCount}
-        onChange={(e) => setWeekCount(e.target.value)}
+      <label htmlFor="tp-create-mode">Structure</label>
+      <select
+        id="tp-create-mode"
+        data-testid="tp-create-mode"
+        value={mode}
+        onChange={(e) =>
+          setMode(e.target.value === "EVERGREEN" ? "EVERGREEN" : "WEEK_BASED")
+        }
         disabled={pending}
-      />
+      >
+        <option value="WEEK_BASED">Week-based</option>
+        <option value="EVERGREEN">Ongoing (evergreen)</option>
+      </select>
+      {mode === "EVERGREEN" ? (
+        <p className="app-lede">
+          Ongoing program — the prescription carries forward with no fixed final
+          week; published updates apply prospectively.
+        </p>
+      ) : (
+        <>
+          <label htmlFor="tp-create-weeks">Weeks</label>
+          <input
+            id="tp-create-weeks"
+            data-testid="tp-create-weeks"
+            inputMode="numeric"
+            value={weekCount}
+            onChange={(e) => setWeekCount(e.target.value)}
+            disabled={pending}
+          />
+        </>
+      )}
       <label htmlFor="tp-create-tz">Client timezone (IANA)</label>
       <input
         id="tp-create-tz"
