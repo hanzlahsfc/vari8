@@ -10,6 +10,7 @@ import {
 import { prisma } from "@/lib/db";
 
 import { TrainingProgramEditor } from "@/components/trainingprogram/program-editor";
+import { TrainingBookings } from "@/components/trainingprogram/program-bookings";
 import { TrainingVersionHistory } from "@/components/trainingprogram/version-history";
 
 export const dynamic = "force-dynamic";
@@ -103,6 +104,14 @@ export default async function StaffTrainingProgramPage({
             clientProfileId={clientProfileId}
             program={result.value.program}
             publishedPrograms={publishedPrograms}
+            canWrite={result.value.canWrite}
+          />
+          <TrainingBookings
+            workspaceId={workspaceId}
+            clientProfileId={clientProfileId}
+            programId={programId}
+            initial={result.value.bookings}
+            bookableSessions={result.value.bookableSessions}
             canWrite={result.value.canWrite}
           />
           <TrainingVersionHistory

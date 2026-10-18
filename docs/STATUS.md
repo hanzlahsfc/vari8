@@ -5,6 +5,38 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## TRAINING-I1B-2 — dated-session bookings (PROMPT 266)
+
+- Owner-authorized implementation of the independently confirmed I1b-2
+  bookings contract on `feature/training-i1b2` (base `f71198b`, merged
+  Evergreen). Contract: P2 + P2-A1 + bookings finalization (A1-1
+  closed) — confirmed READY by P1-R1 review `929a89da…ef50a`.
+- `training_session_booking`: immutable pin (pinnedVersionId,
+  sessionId, bookedWeek) + mutable declared `scheduledDate`; partial
+  unique natural key over active rows; composite coherence FKs + CHECKs
+  (raw-SQL convention). Move = date-only; cancelled tuples reusable.
+- Service: staff create/move/cancel + bounded staff bookings read +
+  client agenda + client booking history; staff detail gains
+  bookings/bookableSessions; pending-leaf cancel cascades to non-past
+  bookings. Authorization/consent/locks precede replay lookup; pin
+  resolves at the booked instant under the anchor timezone; client
+  projection uses the PINNED version's snapshotted fieldConfig.
+- Boundary codes: booking_conflict, booking_date_bounds,
+  past_handover, no_governing_version. UI: staff bookings panel +
+  client agenda ("Booked for {date}" vs "Week {n} prescription").
+- Gates (final tree): format/typecheck/lint clean; unit 1331/1331;
+  full integration 872/872 (fresh tgt_i1b2_full; s1-a inventory updated
+  for the new table); build clean; focused E2E 7/7; full E2E on
+  dedicated app_i1b2_e2e. Migration: fresh deploy + genuine
+  base->candidate upgrade; drift = established composite-FK/raw-SQL
+  extras only. Mutations M1-M5 (pin timing, pinned fieldConfig,
+  move-pin drift, tombstone reuse, cutoff) all bite; restored
+  byte-identical.
+- Records: decision #118 + `docs/tasks/training-i1b2.md`. Stopped at
+  the pushed candidate for independent review — no PR, no merge.
+  Excluded: recurrence, logging/notes/flags/review, volume, formulas,
+  template integration. `ENABLE_TRAINING_PLANS` unchanged, fail-closed.
+
 ## TRAINING-I1B-1 — Evergreen program mode (PROMPT 262)
 
 - Owner-authorized implementation of the independently confirmed I1b-1

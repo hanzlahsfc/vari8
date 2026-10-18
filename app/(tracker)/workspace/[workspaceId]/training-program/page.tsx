@@ -4,7 +4,10 @@ import { requireSessionUser } from "@/lib/auth/route-guard";
 import { isTrainingPlansEnabled } from "@/lib/trainingprogram/gate";
 import { readOwnTrainingProgramFromAction } from "@/lib/trainingprogram/boundary";
 
-import { ProgramWeekView } from "@/components/trainingprogram/program-week-view";
+import {
+  ProgramWeekView,
+  SessionBlock,
+} from "@/components/trainingprogram/program-week-view";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +75,35 @@ export default async function ClientTrainingProgramPage({
           ) : (
             <p className="app-lede">No sessions prescribed this week.</p>
           )}
+          {/* I1b-2 agenda: booked sessions render their PINNED week and
+              pinned projection — the appointment date is shown separately
+              and never relabels the prescription week. */}
+          {result.value.agenda.length > 0 ? (
+            <section className="tracker-section" data-testid="training-agenda">
+              <h2 className="tracker-section__title">Booked sessions</h2>
+              <ol className="tracker-list">
+                {result.value.agenda.map((b) => (
+                  <li
+                    key={b.bookingId}
+                    className="tracker-list__row"
+                    data-testid="agenda-booking"
+                    data-booking-id={b.bookingId}
+                  >
+                    <span className="tracker-list__title">
+                      Booked for {b.scheduledDate} — {b.session.name}
+                    </span>
+                    <span className="tracker-list__sub">
+                      Week {b.bookedWeek} prescription
+                    </span>
+                    <SessionBlock
+                      session={b.session}
+                      testidPrefix={`agenda-${b.bookingId}`}
+                    />
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ) : null}
         </div>
       ) : result.value.state === "upcoming" &&
         result.value.upcoming !== null ? (

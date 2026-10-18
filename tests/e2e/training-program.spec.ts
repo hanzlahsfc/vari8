@@ -143,8 +143,17 @@ test.afterAll(async () => {
             resourceType: "training_program_version",
             subjectClientProfileId: profileId,
           },
+          {
+            resourceType: "training_session_booking",
+            subjectClientProfileId: profileId,
+          },
         ],
       },
+    })
+    .catch(() => {});
+  await prisma.trainingSessionBooking
+    .deleteMany({
+      where: { programId: { in: programIds.length ? programIds : ["-"] } },
     })
     .catch(() => {});
   await prisma.trainingProgramVersion
@@ -540,6 +549,85 @@ test("evergreen program: ongoing authoring, post-week-1 update, client view", as
   await page.goto(`${BASE}/workspace/${wsId}/training-program`);
   await expect(page.getByTestId("training-current")).toContainText("Reps: 8");
   await expect(page.getByTestId("training-marker")).toContainText("Updated");
+  await checkNoOverflow(page);
+});
+
+test("coach books, moves and cancels a session; client agenda pins the week", async ({
+  page,
+}) => {
+  // Seeded prerequisite (disclosed): reuse the client's current published
+  // program authored by earlier tests in this spec — the spec's programs
+  // form a single replacement chain, so the latest published non-cancelled
+  // program is the current one.
+  const prog = await prisma.trainingProgram.findFirstOrThrow({
+    where: {
+      clientProfileId: profileId,
+      cancelledAt: null,
+      firstPublishedAt: { not: null },
+    },
+    orderBy: { firstPublishedAt: "desc" },
+  });
+  const detailUrl = `${BASE}/workspace/${wsId}/clients/${profileId}/training-program/${prog.id}`;
+
+  await signIn(page, E2E.coach);
+  await page.goto(detailUrl);
+  await expect(page.getByTestId("staff-training-detail")).toBeVisible();
+  await expect(page.getByTestId("training-bookings")).toBeVisible();
+
+  // Book the first bookable session two days out.
+  const date1 = inDays(2);
+  const date2 = inDays(3);
+  const sessionSelect = page.getByTestId("booking-session");
+  const firstOption = await sessionSelect
+    .locator("option")
+    .nth(1)
+    .getAttribute("value");
+  expect(firstOption).toBeTruthy();
+  await sessionSelect.selectOption(firstOption as string);
+  await page.getByTestId("booking-date").fill(date1);
+  await page.getByTestId("booking-submit").click();
+  await expect(page.getByTestId("booking-message")).toContainText(/booked/i);
+
+  // Upcoming row: appointment date + pinned week label are distinct.
+  const row = page
+    .getByTestId("bookings-upcoming")
+    .getByTestId(/-booking$/)
+    .first();
+  await expect(row).toContainText(`Booked for ${date1}`);
+  await expect(row).toContainText(/Week \d+ prescription/);
+
+  // Move — the appointment date changes; the pinned week label does not.
+  await row.getByTestId(/-move-date$/).fill(date2);
+  await row.getByTestId(/-move$/).click();
+  await expect(page.getByTestId("booking-message")).toContainText(/moved/i);
+  await expect(
+    page
+      .getByTestId("bookings-upcoming")
+      .getByTestId(/-booking$/)
+      .first(),
+  ).toContainText(`Booked for ${date2}`);
+
+  // Client agenda shows the same date + pinned week + pinned content.
+  await signIn(page, E2E.client);
+  await page.goto(`${BASE}/workspace/${wsId}/training-program`);
+  const agendaRow = page.getByTestId("agenda-booking").first();
+  await expect(agendaRow).toContainText(`Booked for ${date2}`);
+  await expect(agendaRow).toContainText(/Week \d+ prescription/);
+
+  // Coach cancels; the row leaves upcoming and the agenda entry disappears.
+  await signIn(page, E2E.coach);
+  await page.goto(detailUrl);
+  await page
+    .getByTestId("bookings-upcoming")
+    .getByTestId(/-cancel$/)
+    .first()
+    .click();
+  await expect(page.getByTestId("booking-message")).toContainText(/cancelled/i);
+  await signIn(page, E2E.client);
+  await page.goto(`${BASE}/workspace/${wsId}/training-program`);
+  await expect(page.getByTestId("agenda-booking")).toHaveCount(0);
+  await checkNoOverflow(page);
+  await page.setViewportSize({ width: 390, height: 844 });
   await checkNoOverflow(page);
 });
 

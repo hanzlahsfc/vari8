@@ -65,6 +65,7 @@ import {
   validatePublishCompleteness,
   TrainingError,
   type MaterializedProgram,
+  type MaterializedSession,
   type TrainingDraft,
   type TrainingFieldConfig,
 } from "./payload";
@@ -1469,6 +1470,29 @@ export async function cancelTrainingProgram(
             cancelledByMemberId: ctx.workspaceMemberId as string,
           },
         });
+        // I1b-2: cancelling a pending leaf atomically cancels its
+        // non-past bookings (P2 §3.4) under the program's anchor "today";
+        // past bookings remain as history.
+        const seq1tz = await tx.trainingProgramVersion.findUnique({
+          where: {
+            programId_versionSeq: {
+              programId: program.id,
+              versionSeq: 1,
+            },
+          },
+          select: { effectiveTimezone: true },
+        });
+        const today = localDateOf(now, seq1tz?.effectiveTimezone ?? "UTC");
+        await tx.$executeRawUnsafe(
+          `UPDATE "training_session_booking"
+           SET cancelled_at = $1, cancelled_by_member_id = $2
+           WHERE program_id = $3 AND cancelled_at IS NULL
+             AND scheduled_date >= $4::date`,
+          t,
+          ctx.workspaceMemberId as string,
+          program.id,
+          today,
+        );
         await writeAuditEvent(tx, ctx, {
           action: "UPDATE",
           resourceType: "training_program",
@@ -1779,6 +1803,11 @@ export type StaffProgramDetail = {
   /** Advisory write capability — the write path independently
    * re-authorizes under locks; this only shapes the UI. */
   canWrite: boolean;
+  /** I1b-2: upcoming (≤ limit) + first keyset history page of bookings. */
+  bookings: StaffBookingsPage;
+  /** Sessions in the latest published payload — the create form's
+   * options; the service revalidates against the pinned week. */
+  bookableSessions: { id: string; name: string }[];
 };
 
 /**
@@ -1810,7 +1839,7 @@ export async function readStaffTrainingProgram(
     throw new TrainingError("invalid_input");
   return withSerializedRetry(() =>
     db.$transaction(async (tx) => {
-      await beginRead(tx);
+      const deadline = await beginRead(tx);
       const { ctx, member } = await readPrelude(tx, session, input, registry);
       if (ctx.grantedScope === "own")
         throw new AccessDeniedError("role_denied", "trainingPlansLogs", "read");
@@ -1888,6 +1917,29 @@ export async function readStaffTrainingProgram(
               select: { id: true },
             })
           : null;
+      checkDeadline(deadline);
+      const bookings = await staffBookingsPage(
+        tx,
+        program,
+        versions,
+        member,
+        member.id,
+        input,
+        undefined,
+        now,
+      );
+      const latestPayload = versions.reduce<VersionRow | undefined>(
+        (m, v) => (m === undefined || v.versionSeq > m.versionSeq ? v : m),
+        undefined,
+      )?.payload as MaterializedProgram | undefined;
+      const seenSessions = new Set<string>();
+      const bookableSessions = (latestPayload?.weeks ?? []).flatMap((w) =>
+        w.sessions.filter((s) => {
+          if (seenSessions.has(s.id)) return false;
+          seenSessions.add(s.id);
+          return true;
+        }),
+      );
       await writeAuditEvent(tx, ctx, {
         action: "READ",
         resourceType: "training_program",
@@ -1939,6 +1991,8 @@ export async function readStaffTrainingProgram(
             ? (page[page.length - 1]?.versionSeq ?? null)
             : null,
         canWrite: writeAssignment !== null,
+        bookings,
+        bookableSessions,
       };
     }, TX_OPTS),
   );
@@ -2053,8 +2107,19 @@ export async function readStaffTrainingProgramVersion(
 
 // ── Client reads ─────────────────────────────────────────────────────────
 
+export type ClientAgendaItem = {
+  bookingId: string;
+  /** Appointment date — the mutable field. */
+  scheduledDate: string;
+  /** Immutable prescription-week label — never derived from the date. */
+  bookedWeek: number;
+  session: MaterializedSession;
+};
+
 export type OwnTrainingView = {
   state: "none" | "upcoming" | "active" | "completed";
+  /** Upcoming booked sessions on the current program (I1b-2). */
+  agenda: ClientAgendaItem[];
   current: {
     programId: string;
     title: string;
@@ -2141,6 +2206,7 @@ export async function readOwnTrainingProgram(
           : null;
         return {
           state: up ? "upcoming" : "none",
+          agenda: [],
           current: null,
           upcoming:
             up && upRow
@@ -2231,6 +2297,35 @@ export async function readOwnTrainingProgram(
             return null;
           })()
         : weekMarker(vinstants, anchorTz, startDate, idx, now);
+      checkDeadline(deadline);
+      // Agenda (I1b-2): upcoming non-cancelled bookings on the CURRENT
+      // program only — pending-replacement bookings stay staff-only until
+      // takeover; each renders its pinned tuple through the pinned
+      // version's own fieldConfig (A1-1).
+      const byVersion = new Map(versions.map((v) => [v.id, v]));
+      const agendaRows = await tx.$queryRawUnsafe<BookingRow[]>(
+        `SELECT ${BOOKING_SELECT} FROM "training_session_booking"
+         WHERE program_id = $1 AND cancelled_at IS NULL
+           AND scheduled_date >= $2::date
+         ORDER BY scheduled_date ASC, id ASC
+         LIMIT ${TRAINING_LIMITS.bookingAgendaClient}`,
+        sel.current.id,
+        localDateOf(now, anchorTz),
+      );
+      const agenda = agendaRows.map((b) => {
+        const v = byVersion.get(b.pinned_version_id);
+        const pinned = v ? pinnedSession(v, b.booked_week, b.session_id) : null;
+        return {
+          bookingId: b.id,
+          scheduledDate: isoDate(b.scheduled_date),
+          bookedWeek: b.booked_week,
+          session: pinned?.projected ?? {
+            id: b.session_id,
+            name: "Session",
+            exercises: [],
+          },
+        };
+      });
       await writeAuditEvent(tx, ctx, {
         action: "READ",
         resourceType: "training_program_version",
@@ -2242,6 +2337,7 @@ export async function readOwnTrainingProgram(
           endInstant !== null && now.getTime() >= endInstant.getTime()
             ? "completed"
             : "active",
+        agenda,
         current: {
           programId: sel.current.id,
           title: programRow.title,
@@ -2643,6 +2739,756 @@ export async function readOwnTrainingVersion(
           version.payload as MaterializedProgram,
           normalizeFieldConfig(version.fieldConfig),
         ),
+      };
+    }, TX_OPTS),
+  );
+}
+
+// ── Dated-session bookings (I1b-2 — P2 §3 + A1 F1–F5 + finalization) ────
+//
+// An explicit staff booking pins an immutable prescription tuple
+// (pinnedVersionId, sessionId, bookedWeek) resolved ONCE at create under
+// the program's immutable anchor timezone. `scheduledDate` is a declared
+// local calendar date, never an instant; it is the ONLY mutable field
+// (move). Client renders project the pinned version's payload through
+// that version's own snapshotted fieldConfig — later versions, changed
+// fieldConfig and removed sessions cannot silently alter a booking.
+
+type BookingRow = {
+  id: string;
+  workspace_id: string;
+  client_profile_id: string;
+  program_id: string;
+  pinned_version_id: string;
+  session_id: string;
+  booked_week: number;
+  scheduled_date: Date;
+  scheduled_by_member_id: string;
+  cancelled_at: Date | null;
+  cancelled_by_member_id: string | null;
+};
+
+const BOOKING_SELECT = `id, workspace_id, client_profile_id, program_id,
+  pinned_version_id, session_id, booked_week, scheduled_date,
+  scheduled_by_member_id, cancelled_at, cancelled_by_member_id`;
+
+async function lockBooking(
+  tx: Prisma.TransactionClient,
+  workspaceId: string,
+  clientProfileId: string,
+  programId: string,
+  bookingId: string,
+): Promise<BookingRow | null> {
+  const rows = await tx.$queryRawUnsafe<BookingRow[]>(
+    `SELECT ${BOOKING_SELECT} FROM "training_session_booking"
+     WHERE id = $1 AND workspace_id = $2 AND client_profile_id = $3
+       AND program_id = $4 FOR UPDATE`,
+    bookingId,
+    workspaceId,
+    clientProfileId,
+    programId,
+  );
+  return rows[0] ?? null;
+}
+
+/** Active (non-cancelled) booking occupying the natural key, if any. */
+async function activeBookingAt(
+  tx: Prisma.TransactionClient,
+  programId: string,
+  sessionId: string,
+  scheduledDate: string,
+): Promise<BookingRow | null> {
+  const rows = await tx.$queryRawUnsafe<BookingRow[]>(
+    `SELECT ${BOOKING_SELECT} FROM "training_session_booking"
+     WHERE program_id = $1 AND session_id = $2 AND scheduled_date = $3::date
+       AND cancelled_at IS NULL LIMIT 1`,
+    programId,
+    sessionId,
+    scheduledDate,
+  );
+  return rows[0] ?? null;
+}
+
+function bookingP2002(error: unknown): boolean {
+  // The only reachable unique constraint on booking writes is the
+  // (program, session, date, active-only) partial index — the PK is a
+  // generated cuid — so any P2002 on this path is a natural-key hit.
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  );
+}
+
+/** Shared booking-date validation (P2 §3.3 + A1 F2): declared local
+ * calendar date under the program anchor — never folded to another
+ * date; gap/fold within the same date is fine. Returns the local-
+ * midnight instant used once for `gvAt`/cutoff checks. */
+function resolveBookingInstant(anchorTz: string, scheduledDate: string): Date {
+  const r = resolveTrainingActivation(anchorTz, scheduledDate);
+  if (r.status === "unrepresentable")
+    throw new TrainingError("unrepresentable_date");
+  if (r.status !== "ok") throw new TrainingError("invalid_input");
+  return r.instant;
+}
+
+/** Date bounds (P2 §3.3): not before today (anchor), not beyond the
+ * +366 forward horizon. Compared as declared local dates. */
+function assertBookingDateBounds(
+  anchorTz: string,
+  scheduledDate: string,
+  now: Date,
+): void {
+  const today = localDateOf(now, anchorTz);
+  const horizonDate = new Date(
+    parseLocalDate(today) + TRAINING_LIMITS.effectiveDateAheadDays * 86_400_000,
+  )
+    .toISOString()
+    .slice(0, 10);
+  if (scheduledDate < today || scheduledDate > horizonDate)
+    throw new TrainingError("booking_date_bounds");
+}
+
+/** F4: a booking on this program dated at/after its live successor's
+ * takeover instant is refused — the pin would govern nothing. */
+function assertBeforeHandover(
+  selectionInstant: Date,
+  succTakeover: Date | null,
+): void {
+  if (
+    succTakeover !== null &&
+    selectionInstant.getTime() >= succTakeover.getTime()
+  )
+    throw new TrainingError("past_handover");
+}
+
+/** Pinned render: locate the immutable week by `wk.week === bookedWeek`
+ * (field match — never positional) and the session inside it. */
+function pinnedSession(
+  version: { payload: unknown; fieldConfig: unknown },
+  bookedWeek: number,
+  sessionId: string,
+): { session: MaterializedSession; projected: MaterializedSession } | null {
+  const payload = version.payload as MaterializedProgram;
+  const wk = payload.weeks.find((w) => w.week === bookedWeek);
+  const session = wk?.sessions.find((s) => s.id === sessionId);
+  if (!session) return null;
+  const projected = projectForClient(
+    {
+      programMode: payload.programMode,
+      startDate: payload.startDate,
+      weekCount: payload.weekCount,
+      weeks: [wk!],
+    },
+    normalizeFieldConfig(version.fieldConfig),
+  );
+  const ps = projected.weeks[0]?.sessions.find((s) => s.id === sessionId);
+  return {
+    session,
+    projected: ps ?? { id: session.id, name: session.name, exercises: [] },
+  };
+}
+
+export type StaffBooking = {
+  bookingId: string;
+  scheduledDate: string;
+  bookedWeek: number;
+  pinnedVersionSeq: number;
+  /** Unprojected pinned session — staff sees all authored fields. */
+  session: MaterializedSession;
+  cancelledAt: string | null;
+  /** Advisory hint: a later version was published after this pin. */
+  programUpdatedSinceBooked: boolean;
+};
+
+export type StaffBookingsPage = {
+  upcoming: StaffBooking[];
+  history: StaffBooking[];
+  nextCursor: { scheduledDate: string; id: string } | null;
+  hasMore: boolean;
+  canWrite: boolean;
+};
+
+async function staffBookingsPage(
+  tx: Prisma.TransactionClient,
+  program: LockedProgramRow,
+  versions: VersionRow[],
+  member: { role: string },
+  memberId: string,
+  input: { workspaceId: string; clientProfileId: string },
+  cursor: { scheduledDate: string; id: string } | undefined,
+  now: Date,
+): Promise<StaffBookingsPage> {
+  const seq1 = versions.find((v) => v.versionSeq === 1);
+  const anchorTz = seq1?.effectiveTimezone ?? "UTC";
+  const today = localDateOf(now, anchorTz);
+  const latestSeq = versions.reduce((m, v) => Math.max(m, v.versionSeq), 0);
+  const byId = new Map(versions.map((v) => [v.id, v]));
+
+  const upcoming = await tx.$queryRawUnsafe<BookingRow[]>(
+    `SELECT ${BOOKING_SELECT} FROM "training_session_booking"
+     WHERE program_id = $1 AND cancelled_at IS NULL
+       AND scheduled_date >= $2::date
+     ORDER BY scheduled_date ASC, id ASC
+     LIMIT ${TRAINING_LIMITS.bookingUpcomingStaff}`,
+    program.id,
+    today,
+  );
+  const historyRows = await tx.$queryRawUnsafe<BookingRow[]>(
+    `SELECT ${BOOKING_SELECT} FROM "training_session_booking"
+     WHERE program_id = $1
+       ${cursor !== undefined ? "AND (scheduled_date, id) < ($2::date, $3)" : ""}
+     ORDER BY scheduled_date DESC, id DESC
+     LIMIT ${TRAINING_LIMITS.bookingPageSize + 1}`,
+    ...(cursor !== undefined
+      ? [program.id, cursor.scheduledDate, cursor.id]
+      : [program.id]),
+  );
+  const page = historyRows.slice(0, TRAINING_LIMITS.bookingPageSize);
+  const render = (b: BookingRow): StaffBooking => {
+    const v = byId.get(b.pinned_version_id);
+    const pinned = v ? pinnedSession(v, b.booked_week, b.session_id) : null;
+    return {
+      bookingId: b.id,
+      scheduledDate: isoDate(b.scheduled_date),
+      bookedWeek: b.booked_week,
+      pinnedVersionSeq: v?.versionSeq ?? 0,
+      session: pinned?.session ?? {
+        id: b.session_id,
+        name: "Session",
+        exercises: [],
+      },
+      cancelledAt: b.cancelled_at?.toISOString() ?? null,
+      programUpdatedSinceBooked: (v?.versionSeq ?? 0) < latestSeq,
+    };
+  };
+  const writeAssignment =
+    member.role === "COACH" || member.role === "WORKSPACE_OWNER"
+      ? await tx.clientAssignment.findFirst({
+          where: {
+            workspaceId: input.workspaceId,
+            clientProfileId: input.clientProfileId,
+            coachMemberId: memberId,
+            status: "ACTIVE",
+          },
+          select: { id: true },
+        })
+      : null;
+  return {
+    upcoming: upcoming.map(render),
+    history: page.map(render),
+    nextCursor:
+      historyRows.length > TRAINING_LIMITS.bookingPageSize
+        ? {
+            scheduledDate: isoDate(page[page.length - 1].scheduled_date),
+            id: page[page.length - 1].id,
+          }
+        : null,
+    hasMore: historyRows.length > TRAINING_LIMITS.bookingPageSize,
+    canWrite: writeAssignment !== null,
+  };
+}
+
+/**
+ * Book a session onto a declared local date (P2 §3.2 + A1 F1/F2/F4/F5).
+ * Authorization/consent/locks (writePrelude) run BEFORE the natural-key
+ * replay lookup — a denied actor gets `denied` with no existence oracle
+ * (F3). Identical retry returns the existing row without a second audit;
+ * a tuple mismatch is a real `booking_conflict`.
+ */
+export async function bookTrainingSession(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    programId: string;
+    sessionId: string;
+    scheduledDate: string;
+  },
+  deps: TrainingDeps = {},
+): Promise<{ bookingId: string; replayed: boolean }> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveTrainingConsentPolicy();
+  const now = deps.now ?? new Date();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.clientProfileId) ||
+    !validId(input.programId) ||
+    !validId(input.sessionId) ||
+    typeof input.scheduledDate !== "string" ||
+    !DATE_RE.test(input.scheduledDate)
+  )
+    throw new TrainingError("invalid_input");
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const { ctx } = await writePrelude(tx, session, input, registry);
+        const program = await lockProgram(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+          input.programId,
+        );
+        if (!program) throw new TrainingError("not_found");
+        if (program.cancelled_at !== null)
+          throw new TrainingError("program_cancelled");
+        const versions = await programVersions(tx, program.id);
+        const seq1 = versions.find((v) => v.versionSeq === 1);
+        if (!seq1) throw new TrainingError("no_governing_version");
+        const anchorTz = seq1.effectiveTimezone;
+        const selectionInstant = resolveBookingInstant(
+          anchorTz,
+          input.scheduledDate,
+        );
+        assertBookingDateBounds(anchorTz, input.scheduledDate, now);
+        const succ = await liveSuccessor(tx, program.id);
+        assertBeforeHandover(selectionInstant, succ?.takeover ?? null);
+        const vinstants = versions.map(toVersionInstant);
+        const pinned = gvAt(
+          vinstants,
+          selectionInstant,
+          succ?.takeover ?? null,
+        );
+        if (!pinned) throw new TrainingError("no_governing_version");
+        const pinnedRow = versions.find((v) => v.id === pinned.id)!;
+        const payload = pinnedRow.payload as MaterializedProgram;
+        const bookedWeek =
+          program.program_mode === "EVERGREEN"
+            ? 1
+            : weekIndex(isoDate(program.start_date), input.scheduledDate);
+        if (bookedWeek < 1 || bookedWeek > payload.weekCount)
+          throw new TrainingError("booking_date_bounds");
+        const pinnedOk = pinnedSession(pinnedRow, bookedWeek, input.sessionId);
+        if (!pinnedOk) throw new TrainingError("invalid_input");
+        // Natural-key idempotent create: a pre-check hit or a P2002 on
+        // the partial unique returns the existing active row — one row,
+        // one CREATE audit total.
+        const existing = await activeBookingAt(
+          tx,
+          program.id,
+          input.sessionId,
+          input.scheduledDate,
+        );
+        if (existing !== null) {
+          if (existing.pinned_version_id !== pinned.id)
+            throw new TrainingError("booking_conflict");
+          return { bookingId: existing.id, replayed: true };
+        }
+        let bookingId: string;
+        try {
+          const created = await tx.trainingSessionBooking.create({
+            data: {
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+              programId: program.id,
+              pinnedVersionId: pinned.id,
+              sessionId: input.sessionId,
+              bookedWeek,
+              scheduledDate: new Date(parseLocalDate(input.scheduledDate)),
+              scheduledByMemberId: ctx.workspaceMemberId as string,
+            },
+            select: { id: true },
+          });
+          bookingId = created.id;
+        } catch (error) {
+          if (!bookingP2002(error)) throw error;
+          const raced = await activeBookingAt(
+            tx,
+            program.id,
+            input.sessionId,
+            input.scheduledDate,
+          );
+          if (raced === null || raced.pinned_version_id !== pinned.id)
+            throw new TrainingError("booking_conflict");
+          return { bookingId: raced.id, replayed: true };
+        }
+        await writeAuditEvent(tx, ctx, {
+          action: "CREATE",
+          resourceType: "training_session_booking",
+          resourceId: bookingId,
+          subjectClientProfileId: input.clientProfileId,
+          meta: {
+            scheduledDate: input.scheduledDate,
+            versionSeq: pinned.versionSeq,
+            bookedWeek,
+          },
+        });
+        return { bookingId, replayed: false };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}
+
+/**
+ * Move = appointment date only (P2 §3.4 + A1 F1): `scheduledDate`
+ * updates; `pinnedVersionId`/`sessionId`/`bookedWeek` are invariant.
+ * Collision on the target tuple → `booking_conflict`, original intact.
+ */
+export async function moveTrainingSessionBooking(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    programId: string;
+    bookingId: string;
+    scheduledDate: string;
+  },
+  deps: TrainingDeps = {},
+): Promise<{ bookingId: string }> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveTrainingConsentPolicy();
+  const now = deps.now ?? new Date();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.clientProfileId) ||
+    !validId(input.programId) ||
+    !validId(input.bookingId) ||
+    typeof input.scheduledDate !== "string" ||
+    !DATE_RE.test(input.scheduledDate)
+  )
+    throw new TrainingError("invalid_input");
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const { ctx } = await writePrelude(tx, session, input, registry);
+        const program = await lockProgram(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+          input.programId,
+        );
+        if (!program) throw new TrainingError("not_found");
+        if (program.cancelled_at !== null)
+          throw new TrainingError("program_cancelled");
+        const booking = await lockBooking(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+          input.programId,
+          input.bookingId,
+        );
+        if (!booking) throw new TrainingError("not_found");
+        if (booking.cancelled_at !== null)
+          throw new TrainingError("booking_conflict");
+        if (isoDate(booking.scheduled_date) === input.scheduledDate)
+          return { bookingId: booking.id };
+        const seq1 = await tx.trainingProgramVersion.findUnique({
+          where: {
+            programId_versionSeq: {
+              programId: program.id,
+              versionSeq: 1,
+            },
+          },
+          select: { effectiveTimezone: true },
+        });
+        if (!seq1) throw new TrainingError("no_governing_version");
+        const anchorTz = seq1.effectiveTimezone;
+        const selectionInstant = resolveBookingInstant(
+          anchorTz,
+          input.scheduledDate,
+        );
+        assertBookingDateBounds(anchorTz, input.scheduledDate, now);
+        const succ = await liveSuccessor(tx, program.id);
+        assertBeforeHandover(selectionInstant, succ?.takeover ?? null);
+        try {
+          await tx.trainingSessionBooking.update({
+            where: { id: booking.id },
+            data: {
+              scheduledDate: new Date(parseLocalDate(input.scheduledDate)),
+            },
+          });
+        } catch (error) {
+          if (bookingP2002(error)) throw new TrainingError("booking_conflict");
+          throw error;
+        }
+        await writeAuditEvent(tx, ctx, {
+          action: "UPDATE",
+          resourceType: "training_session_booking",
+          resourceId: booking.id,
+          subjectClientProfileId: input.clientProfileId,
+          meta: { changed: true },
+        });
+        return { bookingId: booking.id };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}
+
+/** Irreversible cancel — tombstone frees the natural key; replay writes
+ * no audit (P2 §3.4). */
+export async function cancelTrainingSessionBooking(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    programId: string;
+    bookingId: string;
+  },
+  deps: TrainingDeps = {},
+): Promise<{ bookingId: string; alreadyCancelled: boolean }> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveTrainingConsentPolicy();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.clientProfileId) ||
+    !validId(input.programId) ||
+    !validId(input.bookingId)
+  )
+    throw new TrainingError("invalid_input");
+  const now = deps.now ?? new Date();
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const { ctx } = await writePrelude(tx, session, input, registry);
+        const program = await lockProgram(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+          input.programId,
+        );
+        if (!program) throw new TrainingError("not_found");
+        const booking = await lockBooking(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+          input.programId,
+          input.bookingId,
+        );
+        if (!booking) throw new TrainingError("not_found");
+        if (booking.cancelled_at !== null)
+          return { bookingId: booking.id, alreadyCancelled: true };
+        const clockRows = await tx.$queryRawUnsafe<{ t: Date }[]>(
+          `SELECT clock_timestamp() AS t`,
+        );
+        const t = clockRows[0]?.t ?? now;
+        await tx.trainingSessionBooking.update({
+          where: { id: booking.id },
+          data: {
+            cancelledAt: t,
+            cancelledByMemberId: ctx.workspaceMemberId as string,
+          },
+        });
+        await writeAuditEvent(tx, ctx, {
+          action: "UPDATE",
+          resourceType: "training_session_booking",
+          resourceId: booking.id,
+          subjectClientProfileId: input.clientProfileId,
+          meta: { changed: true },
+        });
+        return { bookingId: booking.id, alreadyCancelled: false };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}
+
+/** Staff bookings read — upcoming ≤ limit + keyset history (A1 §5).
+ * Lifecycle-unfiltered for staff (cancelled rows labelled); pinned
+ * content rendered from the immutable version row in-memory — the
+ * version set is loaded once, never per-booking. */
+export async function readStaffTrainingBookings(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    programId: string;
+    cursor?: { scheduledDate: string; id: string };
+  },
+  deps: TrainingDeps = {},
+): Promise<StaffBookingsPage> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveTrainingConsentPolicy();
+  const now = deps.now ?? new Date();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.clientProfileId) ||
+    !validId(input.programId) ||
+    (input.cursor !== undefined &&
+      (!DATE_RE.test(input.cursor.scheduledDate) || !validId(input.cursor.id)))
+  )
+    throw new TrainingError("invalid_input");
+  return withSerializedRetry(() =>
+    db.$transaction(async (tx) => {
+      await beginRead(tx);
+      const { ctx, member } = await readPrelude(tx, session, input, registry);
+      if (ctx.grantedScope === "own")
+        throw new AccessDeniedError("role_denied", "trainingPlansLogs", "read");
+      const program = await lockProgram(
+        tx,
+        input.workspaceId,
+        input.clientProfileId,
+        input.programId,
+      );
+      if (!program) throw new TrainingError("not_found");
+      const versions = await programVersions(tx, program.id);
+      const page = await staffBookingsPage(
+        tx,
+        program,
+        versions,
+        member,
+        member.id,
+        input,
+        input.cursor,
+        now,
+      );
+      await writeAuditEvent(tx, ctx, {
+        action: "READ",
+        resourceType: "training_program",
+        resourceId: program.id,
+        subjectClientProfileId: input.clientProfileId,
+      });
+      return page;
+    }, TX_OPTS),
+  );
+}
+
+export type ClientBooking = {
+  bookingId: string;
+  scheduledDate: string;
+  bookedWeek: number;
+  session: MaterializedSession;
+};
+
+export type ClientBookingHistoryRow = {
+  bookingId: string;
+  scheduledDate: string;
+  bookedWeek: number;
+  sessionName: string;
+  session: MaterializedSession;
+  /** Truthful provenance for bookings on a replaced program. */
+  replacedProgramLabel: string | null;
+};
+
+export type ClientBookingHistoryPage = {
+  bookings: ClientBookingHistoryRow[];
+  nextCursor: { scheduledDate: string; id: string } | null;
+  hasMore: boolean;
+};
+
+/**
+ * Client booking history — governed rows only (no cancelled rows, no
+ * pending-successor leakage): current-program past bookings plus
+ * bookings on non-current published programs, the latter labelled
+ * "Booked under {title} — program replaced" (A1 F4). Keyset by
+ * (scheduledDate, id) DESC; truthful hasMore.
+ */
+export async function readOwnTrainingBookingHistory(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    cursor?: { scheduledDate: string; id: string };
+  },
+  deps: TrainingDeps = {},
+): Promise<ClientBookingHistoryPage> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveTrainingConsentPolicy();
+  const now = deps.now ?? new Date();
+  if (
+    !validId(input.workspaceId) ||
+    (input.cursor !== undefined &&
+      (!DATE_RE.test(input.cursor.scheduledDate) || !validId(input.cursor.id)))
+  )
+    throw new TrainingError("invalid_input");
+  return withSerializedRetry(() =>
+    db.$transaction(async (tx) => {
+      const deadline = await beginRead(tx);
+      const userId = session?.user?.id;
+      if (typeof userId !== "string" || userId.length === 0)
+        throw new AccessDeniedError(
+          "unauthenticated",
+          "trainingPlansLogs",
+          "read",
+        );
+      const profile = await tx.clientProfile.findFirst({
+        where: { workspaceId: input.workspaceId, userId },
+        select: { id: true },
+      });
+      if (!profile)
+        throw new AccessDeniedError("not_owner", "trainingPlansLogs", "read");
+      const { ctx } = await readPrelude(
+        tx,
+        session,
+        { workspaceId: input.workspaceId, clientProfileId: profile.id },
+        registry,
+      );
+      if (ctx.grantedScope !== "own")
+        throw new AccessDeniedError("role_denied", "trainingPlansLogs", "read");
+      const sel = await selectCurrent(
+        tx,
+        input.workspaceId,
+        profile.id,
+        now,
+        deadline,
+      );
+      const currentId = sel.current?.id ?? null;
+      const cursor = input.cursor;
+      const rows = await tx.$queryRawUnsafe<
+        (BookingRow & { title: string; cancelled_program: Date | null })[]
+      >(
+        `SELECT b.id, b.workspace_id, b.client_profile_id, b.program_id,
+                b.pinned_version_id, b.session_id, b.booked_week,
+                b.scheduled_date, b.scheduled_by_member_id,
+                b.cancelled_at, b.cancelled_by_member_id,
+                p.title, p.cancelled_at AS cancelled_program
+         FROM "training_session_booking" b
+         JOIN "training_program" p ON p.id = b.program_id
+         WHERE b.workspace_id = $1 AND b.client_profile_id = $2
+           AND b.cancelled_at IS NULL
+           AND p.cancelled_at IS NULL
+           ${cursor !== undefined ? "AND (b.scheduled_date, b.id) < ($3::date, $4)" : ""}
+         ORDER BY b.scheduled_date DESC, b.id DESC
+         LIMIT ${TRAINING_LIMITS.bookingPageSize + 1}`,
+        ...(cursor !== undefined
+          ? [input.workspaceId, profile.id, cursor.scheduledDate, cursor.id]
+          : [input.workspaceId, profile.id]),
+      );
+      const page = rows.slice(0, TRAINING_LIMITS.bookingPageSize);
+      // Pinned versions for the page's bookings — one bounded fetch, no
+      // per-booking payload load.
+      const pinIds = [...new Set(page.map((r) => r.pinned_version_id))];
+      const pinnedVersions = pinIds.length
+        ? await tx.trainingProgramVersion.findMany({
+            where: { id: { in: pinIds } },
+            select: { id: true, payload: true, fieldConfig: true },
+          })
+        : [];
+      const byId = new Map(pinnedVersions.map((v) => [v.id, v]));
+      const bookings = page.map((b) => {
+        const v = byId.get(b.pinned_version_id);
+        const pinned = v ? pinnedSession(v, b.booked_week, b.session_id) : null;
+        return {
+          bookingId: b.id,
+          scheduledDate: isoDate(b.scheduled_date),
+          bookedWeek: b.booked_week,
+          sessionName: pinned?.session.name ?? "Session",
+          session: pinned?.projected ?? {
+            id: b.session_id,
+            name: "Session",
+            exercises: [],
+          },
+          replacedProgramLabel:
+            b.program_id !== currentId
+              ? `Booked under ${b.title} — program replaced`
+              : null,
+        };
+      });
+      await writeAuditEvent(tx, ctx, {
+        action: "READ",
+        resourceType: "training_session_booking",
+        resourceId: profile.id,
+        subjectClientProfileId: profile.id,
+      });
+      return {
+        bookings,
+        nextCursor:
+          rows.length > TRAINING_LIMITS.bookingPageSize
+            ? {
+                scheduledDate: isoDate(page[page.length - 1].scheduled_date),
+                id: page[page.length - 1].id,
+              }
+            : null,
+        hasMore: rows.length > TRAINING_LIMITS.bookingPageSize,
       };
     }, TX_OPTS),
   );

@@ -382,6 +382,10 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         // synthetic/testing scope only.
         "training_program",
         "training_program_version",
+        // TRAINING-I1B-2: explicit staff bookings pinning immutable
+        // (version, session, booked week) tuples — consent-gated;
+        // synthetic/testing scope only.
+        "training_session_booking",
         "users",
         "workspace",
         "workspace_member",
