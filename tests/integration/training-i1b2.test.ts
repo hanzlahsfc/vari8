@@ -786,6 +786,16 @@ describe.skipIf(!enabled)("TRAINING-I1B-2 bookings (real PG)", () => {
     );
     const preAgenda = preView.state === "active" ? preView.agenda : [];
     expect(preAgenda.find((x) => x.bookingId === sb.bookingId)).toBeUndefined();
+    // I1-R1 F1: the pending successor's booking is likewise absent from
+    // the client booking HISTORY before takeover.
+    const preHist = await readOwnTrainingBookingHistory(
+      session(clientU.id),
+      { workspaceId: w.id },
+      deps(inDays(10)), // before takeover
+    );
+    expect(
+      preHist.bookings.find((x) => x.bookingId === sb.bookingId),
+    ).toBeUndefined();
     // After takeover the successor's booking is on the client agenda.
     const postView = await readOwnTrainingProgram(
       session(clientU.id),
@@ -795,6 +805,145 @@ describe.skipIf(!enabled)("TRAINING-I1B-2 bookings (real PG)", () => {
     const postAgenda = postView.state === "active" ? postView.agenda : [];
     const shown = postAgenda.find((x) => x.bookingId === sb.bookingId);
     expect(shown?.session.name).toBe("Day A");
+  });
+
+  it("client history gates pending successors at the exact takeover instant", async () => {
+    const { w, coachU, clientU, cp } = await setup();
+    const p = await createWeekProgram(coachU.id, w.id, cp.id);
+    await publishV1(coachU.id, w.id, cp.id, p.programId, p.revision);
+    // Booking on the program that will be superseded — honest history.
+    const oldB = await bookTrainingSession(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        programId: p.programId,
+        sessionId: "s1",
+        scheduledDate: "2026-10-19",
+      },
+      deps(NOW),
+    );
+    // Published-pending replacement; takeover 2026-10-26 (UTC anchor →
+    // activation_instant 2026-10-26T00:00:00Z).
+    const repl = await saveTrainingProgramDraft(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        expectedRevision: 0,
+        title: "Block B",
+        startDate: "2026-10-26",
+        weekCount: 4,
+        fieldConfig: CFG,
+        timezone: "UTC",
+        draft: weekDraft(),
+      },
+      deps(NOW),
+    );
+    await publishTrainingProgramVersion(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        programId: repl.programId,
+        expectedRevision: repl.revision,
+        effectiveDate: "2026-10-26",
+        expectedPredecessor: p.programId,
+      },
+      deps(NOW),
+    );
+    const TAKEOVER = new Date("2026-10-26T00:00:00Z");
+    // Two bookings on the pending successor; the second is cancelled.
+    const live = await bookTrainingSession(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        programId: repl.programId,
+        sessionId: "s1",
+        scheduledDate: "2026-10-27",
+      },
+      deps(NOW),
+    );
+    const dead = await bookTrainingSession(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        programId: repl.programId,
+        sessionId: "s2",
+        scheduledDate: "2026-10-28",
+      },
+      deps(NOW),
+    );
+    await cancelTrainingSessionBooking(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        programId: repl.programId,
+        bookingId: dead.bookingId,
+      },
+      deps(NOW),
+    );
+    const histAt = (t: Date) =>
+      readOwnTrainingBookingHistory(
+        session(clientU.id),
+        { workspaceId: w.id },
+        deps(t),
+      );
+    const ids = (page: Awaited<ReturnType<typeof histAt>>) =>
+      page.bookings.map((x) => x.bookingId);
+
+    // One millisecond before takeover: pending rows hidden; the still-
+    // current predecessor's booking is already honest history.
+    const before = await histAt(new Date(TAKEOVER.getTime() - 1));
+    expect(ids(before)).toContain(oldB.bookingId);
+    expect(ids(before)).not.toContain(live.bookingId);
+    expect(ids(before)).not.toContain(dead.bookingId);
+
+    // Exactly at the takeover instant the successor's booking is in force.
+    const at = await histAt(TAKEOVER);
+    expect(ids(at)).toContain(live.bookingId);
+    expect(ids(at)).not.toContain(dead.bookingId);
+
+    // After takeover: the successor booking is current-program history
+    // (no replaced label); the governed superseded program's booking keeps
+    // its truthful label; the cancelled row stays hidden.
+    const after = await histAt(inDays(30));
+    const liveRow = after.bookings.find((x) => x.bookingId === live.bookingId);
+    expect(liveRow).toBeTruthy();
+    expect(liveRow?.replacedProgramLabel).toBeNull();
+    const oldRow = after.bookings.find((x) => x.bookingId === oldB.bookingId);
+    expect(oldRow?.replacedProgramLabel).toContain("program replaced");
+    expect(ids(after)).not.toContain(dead.bookingId);
+
+    // A foreign workspace's bookings never enter this client's history.
+    const other = await setup();
+    const op = await createWeekProgram(
+      other.coachU.id,
+      other.w.id,
+      other.cp.id,
+    );
+    await publishV1(
+      other.coachU.id,
+      other.w.id,
+      other.cp.id,
+      op.programId,
+      op.revision,
+    );
+    const fb = await bookTrainingSession(
+      session(other.coachU.id),
+      {
+        workspaceId: other.w.id,
+        clientProfileId: other.cp.id,
+        programId: op.programId,
+        sessionId: "s1",
+        scheduledDate: "2026-10-19",
+      },
+      deps(NOW),
+    );
+    expect(ids(after)).not.toContain(fb.bookingId);
   });
 
   it("replaced-program future bookings render as labelled history, never current", async () => {
