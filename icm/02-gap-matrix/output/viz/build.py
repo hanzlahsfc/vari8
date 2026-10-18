@@ -2,7 +2,9 @@
 """Build viz/gap-matrix.html from viz/matrix.json and viz/template.html.
 
 Stdlib only. Sections are rendered here, at build time, so the page reads
-without JavaScript. The same JSON is inlined for the filter layer.
+without JavaScript. Every number in a headline, caption, cell and label is
+computed from the data; nothing numeric is typed into the template. The same
+JSON is inlined for the filter layer.
 
 Usage:
   python3 build.py                    # matrix.json -> gap-matrix.html
@@ -14,17 +16,18 @@ import json
 import math
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 STATUS_ORDER = ["UNWIRED", "UNCONFIGURED", "PARTIAL", "MISSING", "CONFLICT", "ROLES"]
 CODE = {"UNWIRED": "UNW", "UNCONFIGURED": "UNC", "PARTIAL": "PAR",
         "MISSING": "MIS", "CONFLICT": "CON", "ROLES": "ROL"}
+# Status hue lives in headers, keys and bar segments only.
 FILL = {"UNWIRED": "#2f64c8", "UNCONFIGURED": "#4c8dff", "PARTIAL": "#00c8f0",
         "MISSING": "#9df2ff", "CONFLICT": "#8299b5", "ROLES": "#536680"}
-HEAT = ["#2a6aa3", "#2f89bf", "#38aad8", "#5fd0f0", "#9df2ff"]
 INK, VOID = "#eef6fd", "#0a1120"
-BAR_TRACK = 912  # px, matches .bars grid: 1040 - 52 - 52 - 24
+BAR_TRACK = 868   # px of the widest track at 1440 (1040 - 104 - 44 - 24)
 
 esc = lambda s: html.escape(str(s or ""), quote=True)
 
@@ -51,24 +54,31 @@ def fg_for(bg):
     return pick, ratio
 
 
+def ramp(a, b, n=5):
+    """Steps between two hexes, so the count scale is computed, not hand picked."""
+    A = [int(a[i:i + 2], 16) for i in (1, 3, 5)]
+    B = [int(b[i:i + 2], 16) for i in (1, 3, 5)]
+    out = []
+    for i in range(n):
+        t = i / (n - 1)
+        out.append("#%02x%02x%02x" % tuple(int(round(A[j] + (B[j] - A[j]) * t)) for j in range(3)))
+    return out
+
+
+# Cells carry magnitude only, in a neutral slate ramp that matches no status hue.
+HEAT = ramp("#1a2740", "#dbe9f7")
+for _c in HEAT:
+    fg_for(_c)
+
+
 def clean(s):
-    """House rule: no em or en dashes on the page."""
-    return re.sub(r"\s*\u2014\s*", ", ", str(s).replace("`", "")).replace("\u2013", "-")
+    """House rule: no em or en dashes. A quoted UI string keeps its words; an
+    em dash becomes a colon, which reads as the label separator the source used."""
+    return re.sub(r"\s*\u2014\s*", ": ", str(s).replace("`", "")).replace("\u2013", "-")
 
 
 def words(s):
     return len(re.sub(r"<[^>]+>", " ", s).split())
-
-
-def short(s, limit=105):
-    s = re.sub(r"\s+", " ", str(s or "")).strip()
-    m = re.match(r"^(.+?[.!?])(\s|$)", s)
-    if m and len(m.group(1)) <= limit:
-        return m.group(1)
-    if len(s) <= limit:
-        return s
-    cut = s[:limit]
-    return (cut.rsplit(" ", 1)[0].rstrip(",;:") + "…") if " " in cut else cut
 
 
 SHORT = {"S01": "Coach shell", "S02": "Messages", "S03": "Check-ins", "S04": "Habits",
@@ -92,16 +102,25 @@ def disp_id(s):
     return "D10" if sid.upper().startswith("ROLE") else sid
 
 
-def decision_key(decision):
+def cited(decision):
+    return re.findall(r"#(\d+)", str(decision or ""))
+
+
+def lead_label(decision):
+    """The decision a row files under: the first number it cites, else its source."""
+    nums = cited(decision)
+    if nums:
+        return "#" + nums[0]
     d = str(decision or "")
-    m = re.search(r"#(\d+)", d)
-    if m:
-        return "#" + m.group(1)
-    if "runtime" in d.lower():
-        return "trusted runtime"
     if "CALORIES" in d:
-        return "CALORIES"
-    return short(d, 22) or "decision"
+        return "CALORIES exclusion"
+    if "runtime" in d.lower():
+        return "runtime-gate policy"
+    return "decision"
+
+
+def plural(n):
+    return "row" if int(n) == 1 else "rows"
 
 
 def main():
@@ -120,6 +139,9 @@ def main():
     rows = d.get("rows") or []
     total = int(totals.get("total") or sum(summary.get(k, {}).get("total", 0) for k in summary))
     wired = int(totals.get("WIRED") or 0)
+    conflicts = d.get("conflicts") or []
+    roles = d.get("roles") or []
+    blocked = len(conflicts) + len(roles)  # rows that wait on an owner decision
 
     # surfaces in contract order, plus any summary key the surfaces list forgot
     surfaces, seen = [], set()
@@ -143,16 +165,16 @@ def main():
 
     cell_sum = sum(s["total"] for s in surfaces)
     if cell_sum != total:
-        print(f"build: WARNING cells sum to {cell_sum}, totals say {total}")
+        raise SystemExit(f"build: cells sum to {cell_sum}, totals say {total}")
     if len(rows) != total:
         print(f"build: WARNING {len(rows)} rows in data, totals say {total} (fixture build?)")
 
     # ---------- 01 KPI ----------
-    if wired == 0:
-        h1 = f"{total} canvas elements need backend work; none is wired"
-    else:
-        h1 = f"{total} elements; {wired} wired, {total - wired} still open"
-    c1 = "A WIRED row means the backend serves the element as drawn. Every other status names what is absent, unconnected or blocked."
+    h1 = (f"None of {total} elements is wired; {blocked} {plural(blocked)} wait on a decision"
+          if wired == 0 else
+          f"{total} elements; {wired} wired, {total - wired} still open")
+    c1 = ("A WIRED row means the backend serves the canvas element as drawn. "
+          "Every other status names what is missing, unconnected or blocked.")
     readout = "".join(
         f'<div class="ro"><i class="sq" style="background:{FILL[s]}" aria-hidden="true"></i>'
         f'<span class="rn">{esc(s)}</span>'
@@ -165,7 +187,7 @@ def main():
   <div class="hero">
     <div class="hcell"><b class="hnum">{total}<small>rows</small></b>
       <span class="hlab">Canvas elements</span></div>
-    <div class="hcell"><b class="hnum warn">0<small>wired</small></b>
+    <div class="hcell"><b class="hnum warn">{wired}<small>wired</small></b>
       <span class="hlab">Served as drawn</span></div>
   </div>
   <div class="readout">{readout}</div>
@@ -185,25 +207,28 @@ def main():
             if c == 0:
                 cells.append('<td><span class="cellz" aria-hidden="true">0</span></td>')
             else:
-                bg = HEAT[max(0, math.ceil(c / maxc * 5) - 1)]
+                bg = HEAT[max(0, min(4, math.ceil(c / maxc * 5) - 1))]
                 fg = fg_for(bg)[0]
                 cells.append(
                     f'<td><button type="button" class="cellb" data-surface="{esc(s["id"])}" '
                     f'data-status="{k}" aria-pressed="false" style="background:{bg};color:{fg}" '
-                    f'aria-label="{esc(s["id"])} {esc(k.lower())}, {c} rows. Filter the row list.">{c}</button></td>')
+                    f'aria-label="{esc(s["id"])} {esc(k.lower())}, {c} {plural(c)}. Filter the row list.">{c}</button></td>')
         body.append(
             f'<tr><th scope="row"><button type="button" class="sbtn" data-surface="{esc(s["id"])}" '
             f'title="{esc(s["name"])}" aria-label="Filter the rows to {esc(s["id"])}, {esc(s["name"])}">'
             f'<span class="sid">{esc(disp_id(s))}</span><span class="snm">{esc(short_name(s["id"], s["name"]))}</span></button></th>'
             f'{"".join(cells)}<td class="tot">{s["total"]}</td></tr>')
-    key = "".join(f'<span><i style="background:{FILL[s]}" aria-hidden="true"></i>{esc(s.title())}</span>'
+    key = "".join(f'<span><i style="background:{FILL[s]}" aria-hidden="true"></i>{esc(s)}</span>'
                   for s in statuses)
-    c2 = "One row per surface, one column per status. Shade and number both carry the count."
+    two_largest = sum(sorted((s["open"] for s in surfaces), reverse=True)[:2])
+    c2 = ("One row per surface, one column per status. Cell shade carries the count only; "
+          "status colour stays in the column header.")
     sec2 = f'''<section class="sec" id="matrix">
   <p class="eyebrow">02 / The matrix</p>
-  <h2>{esc(f"The two largest surfaces hold {sum(sorted((s['open'] for s in surfaces), reverse=True)[:2])} of {total} rows")}</h2>
+  <h2>{esc(f"The two largest surfaces hold {two_largest} of the {total} rows")}</h2>
   <p class="cap">{esc(c2)}</p>
-  <div class="scroll"><table class="mx">
+  <div class="scroll" tabindex="0" role="region" aria-label="Gap matrix table, {len(surfaces)} surfaces by {len(statuses)} statuses">
+  <table class="mx">
     <caption>Rows by surface and status. Each cell filters the row list below.</caption>
     <colgroup>{cols}</colgroup>
     <thead><tr><th scope="col" class="ab">Surface</th>{heads}<th scope="col" class="tc">Total</th></tr></thead>
@@ -213,12 +238,14 @@ def main():
   <p class="note">Click a cell or a surface name to filter the rows below.</p>
 </section>'''
 
-    # ---------- 03 ranked stacked bars ----------
-    ranked = sorted(surfaces, key=lambda s: (-s["open"], s["id"]))
+    # ---------- 03 status mix ----------
+    ranked = sorted(surfaces, key=lambda s: (-s["total"], s["id"]))
     max_open = max([s["open"] for s in ranked] + [1])
+    mix = totals.get("PARTIAL", 0) + totals.get("MISSING", 0)
+    mix_pct = round(mix / total * 100) if total else 0
     bar_rows = []
     for s in ranked:
-        segs = []
+        segs, chips = [], []
         for k in statuses:
             c = s["counts"][k]
             if not c:
@@ -226,67 +253,99 @@ def main():
             bg = FILL[k]
             fg = fg_for(bg)[0]
             px = c * BAR_TRACK / max(1, max_open)
-            if px >= 16:
-                segs.append(f'<span class="seg" style="flex:{c} 1 0;background:{bg};color:{fg}" '
-                            f'title="{esc(k.title())}: {c} of {s["open"]} open rows">{c}</span>')
-            else:
-                segs.append(f'<span class="seg" style="flex:{c} 1 0;background:{bg}" '
-                            f'aria-label="{esc(k.title())}, {c} rows"></span>')
+            label = (f"{k} {c}" if px >= 108 else str(c) if px >= 18 else "")
+            seg = (f'<span class="seg" role="img" aria-label="{esc(k.title())}, {c} {plural(c)}" '
+                   f'style="flex:{c} 1 0;background:{bg};color:{fg}">')
+            seg += f'<span aria-hidden="true">{esc(label)}</span>' if label else ""
+            segs.append(seg + "</span>")
+            chips.append(f'<span><b>{esc(k)}</b> {c}</span>')
         bar_rows.append(
-            f'<div class="brow"><span class="blab"><span class="sid">{esc(disp_id(s))}</span></span>'
-            f'<span class="track"><span class="stack" style="width:{s["open"] / max_open * 100:.2f}%">'
+            f'<div class="brow"><span class="blab"><span class="sid">{esc(disp_id(s))}</span>'
+            f'<span class="bnm">{esc(short_name(s["id"], s["name"]))}</span></span>'
+            f'<span class="track"><span class="stack" style="width:{s["total"] / max_open * 100:.2f}%">'
             f'{"".join(segs)}</span></span>'
-            f'<span class="btot">{s["open"]}</span></div>')
-    top = ranked[0]
-    c3 = "No row is wired, so bar length is surface size."
+            f'<span class="btot">{s["total"]}</span>'
+            f'<span class="bchips">{"".join(chips)}</span></div>')
+    c3 = ("Every row is open, so each bar runs to its surface's full size and the split "
+          "shows which statuses make up that size.")
     sec3 = f'''<section class="sec" id="rank">
-  <p class="eyebrow">03 / Where the work is</p>
-  <h2>{esc(f"{top['id']} carries the most open rows at {top['open']}")}</h2>
+  <p class="eyebrow">03 / Status mix</p>
+  <h2>{esc(f"Partial and missing rows make up {mix_pct}% of the {total} rows")}</h2>
   <p class="cap">{esc(c3)}</p>
-  <div class="scroll"><div class="bars" role="img"
-    aria-label="Stacked bars, surfaces ranked by open rows, largest is {esc(top['id'])} at {top['open']}">{''.join(bar_rows)}</div></div>
+  <div class="bkey">{key}</div>
+  <div class="bars">{"".join(bar_rows)}</div>
 </section>'''
 
     # ---------- 04 blockers ----------
-    conflicts = d.get("conflicts") or []
-    groups = {}
+    buckets = {}
     for c in conflicts:
-        groups.setdefault(decision_key(c.get("decision")), []).append(c)
-    roles = d.get("roles") or []
+        buckets.setdefault(lead_label(c.get("decision")), []).append(c)
+    ordered = sorted(buckets.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+    cites = Counter()
+    for c in conflicts:
+        for n in set(cited(c.get("decision"))):
+            cites["#" + n] += 1
+    top_key = max(cites, key=lambda k: (cites[k], k)) if cites else ""
+    top_cites = cites.get(top_key, 0)
+    top_leads = len(buckets.get(top_key, []))
+
+    multi = [(k, v) for k, v in ordered if len(v) > 1]
+    singles = [(k, v) for k, v in ordered if len(v) == 1]
+    max_bar = max([len(v) for _, v in multi] + [len(roles)] + [1])
     nodes = []
-    for i, (key_, items) in enumerate(sorted(groups.items(), key=lambda kv: (-len(kv[1]), kv[0]))):
-        ids = " · ".join(esc(i2.get("id")) for i2 in items[:8])
+    for i, (key_, items) in enumerate(multi):
+        ids = " · ".join(esc(x.get("id")) for x in items[:8])
         if len(items) > 8:
             ids += f" · +{len(items) - 8} more"
+        gloss = ""
+        if i < 3:
+            first = items[0]
+            gloss = (f'<p class="twhy">Example row {esc(first.get("id"))}: '
+                     f'{esc(clean(first.get("note")))}</p>')
         nodes.append(
-            f'<div class="tnode{" hi" if i == 0 else ""}"><span class="tdec">{esc(key_)}</span>'
-            f'<b class="tcnt">{len(items)}</b>'
-            f'<p class="twhy">{esc(short(items[0].get("note"), 78))}</p>'
-            f'<p class="tids">{ids}</p></div>')
+            f'<div class="tnode{" hi" if i == 0 else ""}"><div class="thd">'
+            f'<span class="tdec">{esc(key_)}</span>'
+            f'<b class="tcnt">{len(items)}<small>{plural(len(items))}</small></b></div>'
+            f'<div class="tbar"><i style="width:{len(items) / max_bar * 100:.1f}%"></i></div>'
+            f'{gloss}<p class="tids">{ids}</p></div>')
     if roles:
         ids = " · ".join(esc(r.get("id")) for r in roles)
         nodes.append(
-            f'<div class="tnode"><span class="tdec">D10</span>'
-            f'<b class="tcnt">{len(roles)}</b>'
-            f'<p class="twhy">Owner fills these role and scope cells.</p>'
+            f'<div class="tnode"><div class="thd"><span class="tdec">D10</span>'
+            f'<b class="tcnt">{len(roles)}<small>{plural(len(roles))}</small></b></div>'
+            f'<div class="tbar"><i style="width:{len(roles) / max_bar * 100:.1f}%"></i></div>'
+            f'<p class="twhy">Owner fills the role and scope cells.</p>'
             f'<p class="tids">{ids}</p></div>')
+    rest = ""
+    if singles:
+        lis = "".join(f'<li><span class="tdec">{esc(k)}</span>'
+                      f'<span class="tid">{esc(v[0].get("id"))}</span></li>' for k, v in singles)
+        rest = (f'<details class="trest"><summary>{len(singles)} decisions hold one conflict row each'
+                f'</summary><ul>{lis}</ul></details>')
+
     parked = d.get("parked") or []
-    active_parked = [p for p in parked if not str(p.get("old_status", "")).upper().startswith("PARKED-D12")]
-    if active_parked:
-        parked = active_parked
+    judged = [p for p in parked if str(p.get("old_status", "")).upper().startswith("PARKED-D12")]
+    active = [p for p in parked if p not in judged]
     park = ""
-    if parked:
-        pids = " · ".join(esc(p.get("id")) for p in parked)
-        park = (f'<div class="park"><span class="pt">Parked (D12)</span>'
-                f'<span class="pids">{pids}</span>'
-                f'<span class="pnote">Consent and health data, parked and not blocking.</span></div>')
-    first_key, first_items = sorted(groups.items(), key=lambda kv: (-len(kv[1]), kv[0]))[0] if groups else ("", [])
-    c4 = "A conflict row collides with a binding decision, so its wiring waits. Roles rows wait on D10."
+    if active or judged:
+        block = ['<div class="park"><span class="pt">Parked (D12)</span>']
+        if active:
+            block.append(f'<span class="pids">{" · ".join(esc(p.get("id")) for p in active)}</span>')
+            block.append('<span class="pnote">Consent and cycle tracking rows. Not counted in '
+                         f'the {total}.</span>')
+        if judged:
+            block.append(f'<span class="pids">Also parked by the judge, not counted: '
+                         f'{" · ".join(esc(p.get("id")) for p in judged)}</span>')
+        block.append("</div>")
+        park = "".join(block)
+    c4 = ("A conflict row files under the first decision it cites, so a row that cites two "
+          "counts once. Role cells wait on D10.")
     sec4 = f'''<section class="sec" id="block">
   <p class="eyebrow">04 / What blocks what</p>
-  <h2>{esc(f"Decision {first_key} holds up {len(first_items)} of {len(conflicts)} conflict rows")}</h2>
+  <h2>{esc(f"{top_cites} rows cite decision {top_key}; {top_leads} lead with it")}</h2>
   <p class="cap">{esc(c4)}</p>
   <div class="tree">{"".join(nodes)}</div>
+  {rest}
   {park}
 </section>'''
 
@@ -318,12 +377,12 @@ def main():
             f'<span class="gcount">{len(items)}</span></summary>'
             f'<ol class="rw">{"".join(lis)}</ol></details>')
     opts = "".join(f'<option value="{esc(s["id"])}">{esc(s["id"])}, {esc(s["name"])}</option>' for s in surfaces)
-    c5 = "Each row is one canvas element with its status. Round-3 rows carry R3."
+    c5 = "Each row is one canvas element with its status. Round 3 rows carry R3."
     sec5 = f'''<section class="sec" id="rows">
   <p class="eyebrow">05 / Every row</p>
   <h2>{esc(f"All {len(rows)} rows, grouped by surface")}</h2>
   <p class="cap">{esc(c5)}</p>
-  <div class="filters needs-js">
+  <div class="filters needs-js" id="filters" tabindex="-1">
     <div class="f"><label for="f-surf">Surface</label>
       <select id="f-surf" name="surface"><option value="">All surfaces</option>{opts}</select></div>
     <div class="f"><label for="f-stat">Status</label>
@@ -331,7 +390,7 @@ def main():
       {"".join(f'<option value="{s}">{s.title()}</option>' for s in statuses)}</select></div>
     <div class="f"><label for="f-q">Find</label>
       <input id="f-q" name="q" type="search" autocomplete="off" spellcheck="false"
-        placeholder="element text or row id"></div>
+        placeholder="Search text or id, e.g. S06-07 or nutrition…"></div>
     <div class="f"><button id="f-clear" type="button">Clear</button></div>
   </div>
   <p id="f-count" role="status" aria-live="polite">{len(rows)} of {len(rows)} rows</p>
@@ -342,40 +401,39 @@ def main():
     delta = d.get("delta") or {}
     before = int(delta.get("before") or 0)
     added = int(delta.get("round3_added") or 0)
-    parked_n = int(delta.get("parked") or len(parked) or 0)
+    parked_n = int(delta.get("parked") or len(active) or 0)
     after = int(delta.get("after") or total)
-    peak = max(after, before + added)
-    k = 154 / max(1, peak)
-    y = lambda v: 200 - v * k
-    svg_bars, svg_txt = [], []
-    svg_bars.append(f'<rect x="56" y="{y(before):.1f}" width="64" height="{200 - y(before):.1f}" fill="#00c8f0"/>')
-    svg_bars.append(f'<rect x="176" y="{y(before + added):.1f}" width="64" height="{max(2.0, added * k):.1f}" fill="#9df2ff"/>')
-    svg_bars.append(f'<rect x="296" y="{y(after + parked_n):.1f}" width="64" height="{max(2.0, parked_n * k):.1f}" fill="#8299b5"/>')
-    svg_bars.append(f'<rect x="416" y="{y(after):.1f}" width="64" height="{200 - y(after):.1f}" fill="#00c8f0"/>')
-    svg_txt.append(f'<text x="88" y="{y(before) - 11:.1f}" class="nv" text-anchor="middle">{before}</text>')
-    svg_txt.append(f'<text x="448" y="{y(after) - 11:.1f}" class="nv" text-anchor="middle">{after}</text>')
-    svg_txt.append(f'<text x="208" y="{y(before + added) - 11:.1f}" class="nv" text-anchor="middle">+{added}</text>')
-    svg_txt.append(f'<text x="328" y="{y(after) + 26:.1f}" class="nv" text-anchor="middle">-{parked_n}</text>')
-    conn = (f'<g style="stroke:rgba(130,153,181,.55);stroke-width:1;stroke-dasharray:3 3">'
-            f'<line x1="120" y1="{y(before):.1f}" x2="176" y2="{y(before):.1f}"/>'
-            f'<line x1="240" y1="{y(before + added):.1f}" x2="296" y2="{y(before + added):.1f}"/>'
-            f'<line x1="360" y1="{y(after):.1f}" x2="416" y2="{y(after):.1f}"/></g>')
-    cats = "".join(f'<text x="{x}" y="220" class="nm" text-anchor="middle">{t}</text>'
-                   for x, t in ((88, "before"), (208, "round 3"), (328, "parked"), (448, "after")))
-    svg = (f'<svg viewBox="0 0 600 236" role="img" '
-           f'aria-label="Row count from {before} before round 3, plus {added} round-3 rows, minus {parked_n} parked, to {after}">'
-           f'<line x1="36" y1="200" x2="556" y2="200" style="stroke:rgba(130,153,181,.30);stroke-width:1"/>'
-           f'<text x="30" y="203" class="nm" text-anchor="end">0</text>'
-           f'{conn}{"".join(svg_bars)}{"".join(svg_txt)}{cats}</svg>')
+    peak = max(after, before + added, 1)
+    # 0.85 leaves headroom inside the track for the value label above each bar
+    pc = lambda v: f"{v / peak * 85:.2f}%"
+
+    def bar(left, height, cls, label):
+        return (f'<div class="wfbar {cls}" style="bottom:{left};height:{height}"></div>'
+                f'<span class="wfval" style="bottom:calc({left} + {height} + 6px)">{label}</span>')
+
+    def link(level):
+        return f'<i class="wflink" style="bottom:{pc(level)}" aria-hidden="true"></i>'
+
+    cols = [
+        ("before", bar("0", pc(before), "a", str(before)) + link(before)),
+        ("round 3", bar(pc(before), pc(added), "b", f"+{added}") + link(before + added)),
+        ("parked", bar(pc(after), pc(parked_n), "c", f"-{parked_n}") + link(after)),
+        ("after", bar("0", pc(after), "a", str(after))),
+    ]
+    wf = "".join(f'<div class="wfcol"><div class="wftrack">{body}</div>'
+                 f'<span class="wfcat">{cat}</span></div>' for cat, body in cols)
     orphans = d.get("orphans") or {}
     orph_n = int(orphans.get("count") or 0)
-    c6 = "The judge confirmed the round-3 rows. Four consent rows moved to the parked appendix."
+    c6 = (f"{parked_n} {plural(parked_n)} parked under D12, consent and cycle tracking. "
+          f"{len(judged)} more were judged parked and sit outside the count."
+          if judged else
+          f"{parked_n} {plural(parked_n)} parked under D12, consent and cycle tracking.")
     sec6 = f'''<section class="sec" id="delta">
   <p class="eyebrow">06 / Round 3</p>
   <h2>{esc(f"Round 3 added {added} rows and parked {parked_n}")}</h2>
   <p class="cap">{esc(c6)}</p>
   <div class="dgrid">
-    <div class="scroll">{svg}</div>
+    <div class="wf">{wf}</div>
     <div class="orph"><b>{orph_n}</b><span>backend capabilities with no canvas row</span></div>
   </div>
 </section>'''
@@ -384,7 +442,7 @@ def main():
     tpl = (HERE / "template.html").read_text()
     footer = f"Source: {d.get('source') or 'icm/02-gap-matrix/output/GAP-MATRIX.md'}. Built {d.get('generated') or ''} from {len(rows)} rows."
     js = json.dumps(d, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
-    out = tpl
+    out = tpl.replace("{{TOTAL}}", str(total))
     for i, block in enumerate([sec1, sec2, sec3, sec4, sec5, sec6], 1):
         out = out.replace(f"<!--SEC{i}-->", block)
     out = out.replace("{{FOOTER}}", esc(footer)).replace("{{JSON}}", js)
@@ -393,8 +451,7 @@ def main():
     Path(args.out).write_text(out)
 
     # ---------- console report ----------
-    text = out
-    prose = re.sub(r"<(script|style|svg)\b[\s\S]*?</\1>", " ", text)
+    prose = re.sub(r"<(script|style|svg)\b[\s\S]*?</\1>", " ", out)
     prose = re.sub(r'<section class="sec" id="rows"[\s\S]*?</section>', " ", prose)
     toks = re.sub(r"<[^>]+>", " ", prose).split()
     raw = len(toks)
@@ -402,10 +459,12 @@ def main():
     em = out.count("\u2014") + out.count("\u2013")
     print(f"build: {args.out}")
     print(f"build: rows={len(rows)} cells={cell_sum} total={total} statuses={len(statuses)} surfaces={len(surfaces)}")
+    print(f"build: blocked={blocked} conflicts={len(conflicts)} groups={len(buckets)} multi={len(multi)} "
+          f"singles={len(singles)} roles={len(roles)} parked={len(active)} judged={len(judged)} orphans={orph_n}")
+    print(f"build: top={top_key} cites={top_cites} leads={top_leads} mix={mix} ({mix_pct}%)")
     print(f"build: words outside svg and explorer: raw={raw} prose={prose_words}  em/en dashes={em}")
-    print(f"build: conflicts={len(conflicts)} groups={len(groups)} roles={len(roles)} parked={len(parked)} orphans={orph_n}")
-    if parked and len(parked) != parked_n:
-        print(f"build: WARNING parked block {len(parked)} != delta.parked {parked_n}")
+    if len(active) != parked_n:
+        print(f"build: WARNING parked block {len(active)} != delta.parked {parked_n}")
     return 0
 
 

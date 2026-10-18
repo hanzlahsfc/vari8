@@ -75,3 +75,89 @@ Word count, stated precisely because the two measures differ:
 - The role block is labelled `D10` in the matrix and the bar chart, because its rows are the owner's role cells, not a surface; the full name appears in the explorer.
 - The bar chart needs a 1040 px track to keep numbers inside every segment, so it scrolls sideways below about 1080 px. The count is also in the matrix cell for each segment.
 - Element strings are source text; em and en dashes inside them are normalised to commas and hyphens at render time, so the visible page carries none.
+
+## Fix pass
+
+Findings 1 to 7 from `VZ-REVIEW.md`, fixed in `template.html` and `build.py` only. `gap-matrix.html` rebuilt with `python3 build.py` (`sha256 5711fb216e92f2ec…`, byte-identical on a second run). `matrix.json` and `GAP-MATRIX.md` untouched. Probe PNGs and scripts stayed in `~/.hermes/cache/scratch/vz-review/` and `/tmp`.
+
+### 1. Matrix colour meant two things
+
+Cells now carry magnitude only. `build.py` computes a five step neutral slate ramp, `ramp("#1a2740","#dbe9f7")`, and calls `fg_for()` on every step, so the build fails rather than ship a fill that cannot hold 4.5:1 text. Status hue survives in three places only: the column header swatches, the two keys, and the bar segments.
+
+| Cell fill | Text | Contrast |
+|---|---|---|
+| `#1a2740` | `#eef6fd` | 13.66:1 |
+| `#4a586e` | `#eef6fd` | 6.61:1 |
+| `#7a889c` | `#0a1120` | 5.23:1 |
+| `#abb8c9` | `#0a1120` | 9.36:1 |
+| `#dbe9f7` | `#0a1120` | 15.27:1 |
+
+No cell fill equals any of the six status hexes, so `#9df2ff` no longer reads as MISSING. Segment text on the status fills measures 5.09, 5.89, 9.44, 14.88, 6.44 and 5.37:1.
+
+### 2. Sideways scroll at 390 px
+
+- Section 3 drops the 1040 px track. Under 640 px each surface is one full width row: name and total on line one, the stacked bar on line two, the numbers on line three as `UNWIRED 1 UNCONFIGURED 3 PARTIAL 21 MISSING 20`.
+- Section 6 drops the 600 px SVG for a CSS waterfall of four columns at 100% width. Bar heights are percentages of the 342 peak, values sit above the marks, dashed connectors at 323, 342 and 338.
+- The matrix keeps its `overflow-x:auto` wrapper, now a labelled region (`tabindex="0"`, `aria-label="Gap matrix table, 12 surfaces by 6 statuses"`), with `min-width:44px` cells and 44 px surface buttons.
+- Both skip links and every filter control are 44 px tall.
+
+Measured at 390 px: `.bars` overflow 0, `.wf` overflow 0, page overflow 0, matrix wrapper overflow 0. Targets under 44 px: 0 (was 58). Cells are 44 by 44.
+
+At 390 px the matrix fits by hiding the surface name inside the row header (the id, `title` and `aria-label` carry it, and the explorer lists the full name). Names are visible from 601 px up. Below 375 px the table scrolls inside the labelled region rather than shrinking the targets.
+
+### 3. Four claims that did not match the data
+
+| Section | Was | Now | Source |
+|---|---|---|---|
+| 1 | "338 canvas elements need backend work" | "None of 338 elements is wired; 37 rows wait on a decision" | `wired` = 0, `blocked` = 30 CONFLICT + 7 ROLES |
+| 3 | "S01 carries the most open rows at 45" (repeated section 2) | "Partial and missing rows make up 70% of the 338 rows" | (120 + 118) / 338 |
+| 4 | "Decision #115 holds up 10 of 30 conflict rows" | "11 rows cite decision #115; 10 lead with it" | 11 rows mention #115, 10 name it first |
+| 6 | "Four consent rows moved to the parked appendix" | "4 rows parked under D12, consent and cycle tracking. 2 more were judged parked and sit outside the count." | `parked` = 4 active + 2 `PARKED-D12` |
+
+The two `R3-JUDGED` entries (G6-102, G6-504) now appear in the parked block, labelled as not counted.
+
+Every headline is computed. A build from a mutated copy of the data (`/tmp/vz-mut.json`: delta 300 / +42 / -4, orphans 99) prints "Round 3 added 42 rows and parked 4", draws 300, +42, -4, 338 and shows 99 in the orphan tile. The string `323` does not survive in the output.
+
+### 4. Section 4 read as a list
+
+Six multi row decision groups are plotted as bars on the spine, width proportional to rows (#115 10/10, #96 4, #101, #112, #114, #116 at 2, D10 at 7). The top three carry an "Example row S06-07: …" gloss, wrapped in full instead of truncated at 78 characters. The eight single row decisions collapsed into one disclosure, "8 decisions hold one conflict row each", listing id and source. Every group is labelled by its source decision number, and D10 names the role rows.
+
+### 5. Section 3 depended on colour
+
+A six item key sits directly above the bars. Segments label themselves "PARTIAL 21" where the width allows and with the count alone where it does not; every one of the 53 segments carries an `aria-label` ("Partial, 21 rows"). No `title` tooltips remain in the bar chart (0 of 53).
+
+### 6. Filters were late in the keyboard order
+
+A second skip link, "Skip to filters", targets `#filters` (`tabindex="-1"`). Tab order now runs `A.skip` → `A.skip` → `DIV.scroll` (the labelled matrix region) → surface button → cells. Both links are 44 px tall and both rise to 8 px on focus. The `noscript` block hides the filters link with the filters.
+
+### 7. Copy and small details
+
+- Plural: `plural()` in the build. 0 of 65 aria labels match `1 rows`; 53 cells and 12 surface buttons pass through it.
+- Placeholder: "Search text or id, e.g. S06-07 or nutrition…".
+- Dash rule, settled once: page copy carries no em dash. Inside a quoted canvas string an em dash becomes a colon, which keeps the label shape of the source ("Training week: Completed sessions", "Client create: not drawn in canvas"); an en dash becomes a hyphen because the five affected strings use it for ranges ("09:00-18:00", "1-28d"). 0 em or en dashes remain outside the inlined JSON.
+- Quotes stay straight. `unslop` rule 19 asks for straight quotes, and no visible copy wraps a quote in typographic marks, so the review's curly preference loses to the writing standard.
+- Filter state lives in the hash: `#rows&s=S01&t=UNWIRED`, `#rows&s=S06&t=CONFLICT&q=nutrition`. Loading that URL restores both selects and the row count (11 of 338 for S06 + CONFLICT).
+
+### Checks, re-run after the fixes
+
+| Check | Result | Evidence |
+|---|---|---|
+| `measure-page.mjs` 1440 | PASS | min font 12 px, below 12 = 0, overlaps 0, text on lines 0, min contrast 4.59:1, below 4.5 = 0, docH 6734 |
+| `measure-page.mjs` 390 | PASS | min font 12 px, below 12 = 0, overlaps 0, text on lines 0, min contrast 4.59:1, below 4.5 = 0, docH 10262 |
+| Explorer rows | PASS | `li.r = 338` |
+| Matrix cells | PASS | rendered `td` sum = 338 |
+| Charts need no sideways scroll at 390 | PASS | `.bars` 0, `.wf` 0, page 0, matrix wrapper 0 |
+| 44 px targets at 390 | PASS | 0 under 44; cell 44x44 |
+| Cell and surface filters | PASS | S01/UNWIRED: 1 visible, `aria-pressed` 1, live "1 of 338 rows" |
+| Clear restores | PASS | 338 visible |
+| Deep link | PASS | `#rows&s=S06&t=CONFLICT` → 11 visible |
+| Round 3 badges | PASS | 19 |
+| Segments labelled and not clipped | PASS | 53 segments, 53 aria labels, 0 clipped |
+| No JavaScript | PASS | 338 rows, 12 groups, filter bar `display:none` |
+| External requests | PASS | 0 |
+| Structure | PASS | 1 h1, 6 h2, 1 labelled region, 1 table caption, 20 `scope` headers |
+| Word budget | PASS | 214 words of running prose (eyebrows, six headlines, six captions, the interaction note) |
+| Colour blind | PASS | `contrast-cvd.py` on the six status hexes exits 0, min pair ΔE 14.5 (tritanopia) |
+| Rebuild | PASS | two runs, same sha256 |
+
+Not re-run: real screen reader pass, 200% zoom, a vision pass on the full page PNG (the 10262 px tall shot exceeds the vision API limit; sections were checked as element shots instead).
