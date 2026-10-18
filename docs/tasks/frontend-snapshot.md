@@ -175,9 +175,9 @@ to be recorded, and the draft PR to reference the verified target branch heads.
   were not performed.
 - Final read-only SWE-2 review reported no blocking findings. Conditional
   context-guard scope and visual-proof limitations are recorded in the draft PR.
-- Draft PR [#51](https://github.com/hanzlahsfc/The-great-tracker-/pull/51) is
-  open from `FRONTEND` to `main`. The remote head was verified at `60389bc` and
-  target `main` remained `5f9cb41`; hosted checks were pending at last read.
+- The first draft PR #51 incorrectly targeted `main`; it was closed without
+  merging. The shared `FRONTEND` branch remains intact at `d458003`, and target
+  `main` remained `5f9cb41`.
 
 ## 2026-10-18 — contributor PR target correction plan
 
@@ -204,3 +204,18 @@ that exact target ref.
 - Validate the workflow YAML and the changed docs/source context guard, then
   open a draft PR with base `FRONTEND`. Mark ready and merge that PR only after
   its checks pass; never merge to `main` or delete the shared branch.
+
+## 2026-10-18 — contributor PR target correction implementation
+
+- Added `FRONTEND` to the frontend workflow's `pull_request.branches` filter
+  while retaining `main` compatibility and the existing push triggers. Root
+  backend CI is unchanged.
+- Rewrote the publication guide for feature branches created from the explicit
+  `great-tracker/FRONTEND` ref, PRs into `FRONTEND`, and owner-controlled
+  promotion from `FRONTEND` to `main`. Updated the standalone README and project
+  context accordingly; mirrored the routing-only guidance into both source
+  workspace copies.
+- The implementation branch is `codex/frontend-pr-target`, based on the
+  verified `FRONTEND` ref. After the targeted checks pass, open a draft PR with
+  `FRONTEND` as base, then mark it ready and merge only into `FRONTEND`; do not
+  modify `main` or delete the shared `FRONTEND` branch.

@@ -1,4 +1,4 @@
-## 2026-10-18 — FRONTEND refresh, ICM context, and PR workflow — checks passed; draft pending
+## 2026-10-18 — FRONTEND refresh and contributor PR route correction — in progress
 
 - Publication branch `FRONTEND` retains its published history and merged target
   `main`; source UI was overlaid into `frontend/` without source-workspace history.
@@ -15,9 +15,14 @@
 - Independent read-only SWE-2 review found no blocking findings. Conditional
   guard scope and mobile visual-proof limits are documented in the draft PR;
   no full accessibility/performance/cross-browser audit is claimed.
-- Draft PR [#51](https://github.com/hanzlahsfc/The-great-tracker-/pull/51) is
-  open from `FRONTEND` to `main`. The pushed head is verified as `60389bc` and
-  target `main` remained `5f9cb41`; GitHub checks were pending when last read.
+- The initial draft PR #51 incorrectly targeted `main`; it was closed without
+  merging. The requested UI remains on shared `FRONTEND` at `d458003` and
+  `main` remains `5f9cb41`.
+- Correction branch `codex/frontend-pr-target` starts from `FRONTEND`; it updates
+  the contributor flow and frontend CI so feature PRs target `FRONTEND`. Hanzlah
+  retains the later `FRONTEND` to `main` promotion.
+- Root backend CI, UI behavior, and shared branch history are unchanged. The
+  corrected draft PR and its checks are pending.
 
 ## 2026-10-15 — FRONTEND standalone UI snapshot — verified for publication
 

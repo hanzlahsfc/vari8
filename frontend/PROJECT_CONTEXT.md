@@ -15,7 +15,7 @@ The target full-stack repository has separate database, RBAC, consent, and audit
 - Dependency and runtime versions: `package.json`, `package-lock.json`, and `.nvmrc`.
 - Framework-specific guidance before frontend code changes: the relevant Next.js guide under `node_modules/next/dist/docs/`.
 - Current local usage: `README.md`.
-- Target publication process: [docs/PR-WORKFLOW.md](docs/PR-WORKFLOW.md). The source workspace has unrelated Git history; publish only through the explicitly scoped target clone and remote described there.
+- Target publication process: [docs/PR-WORKFLOW.md](docs/PR-WORKFLOW.md). The source workspace has unrelated Git history; publish only through the explicitly scoped target clone and remote described there. Open feature-branch PRs into `FRONTEND`; Hanzlah owns the later promotion to `main`.
 - Workflow for substantial engineering work: `docs/conductor-generic/SKILL.md`, pinned with provenance in `docs/conductor-generic/PROVENANCE.md`.
 - ICM research basis and local adaptation: `docs/references/icm.md`.
 - Task routing and stage/role contracts: `docs/agent-workflow/CONTEXT.md` and the selected stage contract. Per-run notes belong under ignored `.agent-runs/<run-id>/`; stable rules stay in tracked reference files.

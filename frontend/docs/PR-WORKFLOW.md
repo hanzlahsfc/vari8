@@ -4,40 +4,41 @@ This guide updates the standalone UI in the GitHub publication clone of
 `hanzlahsfc/The-great-tracker-`. The local `ui sys` source workspace is a
 separate checkout with unrelated Git history. Copy only the mapped product and
 context files into the publication clone; never sync, branch, or push the target
-repository from the source workspace's Git history or `origin` remote. The
-published feature branch is `FRONTEND`, and pull requests from it target `main`.
-The `origin` remote may point at a different repository; use the explicitly
-configured `great-tracker` remote for all target operations.
+repository from the source workspace's Git history or `origin` remote.
 
-## Start from a clean publication checkout
+`FRONTEND` is the shared UI integration branch. Contributors create a feature
+branch from `great-tracker/FRONTEND` and open a pull request from that feature
+branch into `FRONTEND`. Hanzlah owns the later promotion from `FRONTEND` to
+`main`. Do not push directly to `FRONTEND` or merge `main` into a feature branch.
+Use the explicitly configured `great-tracker` remote for all target operations;
+`origin` may point at another repository.
 
-Run these commands from the repository root. Stop if the worktree is dirty,
-the current branch is not `FRONTEND`, or the remote URL differs from the target.
-Commit or resolve existing work before continuing; do not stash or discard it.
+## Start a feature branch
+
+Run these commands from a clean publication checkout. Stop if the worktree is
+dirty or the remote URL differs from the target. Commit or resolve existing
+work before continuing; do not stash or discard it.
 
 ```sh
 git status --short --branch
-git branch --show-current
 git remote get-url great-tracker
 ```
 
 The remote URL must be `https://github.com/hanzlahsfc/The-great-tracker-.git`.
-Fetch the two target refs explicitly, then merge the latest `main` into
-`FRONTEND`. This preserves the published branch history; do not rebase the
-shared branch or merge unrelated source-workspace history.
+Fetch only the shared integration branch, then create a task-specific feature
+branch from it:
 
 ```sh
 git fetch great-tracker \
-  refs/heads/main:refs/remotes/great-tracker/main \
   refs/heads/FRONTEND:refs/remotes/great-tracker/FRONTEND
-git merge --ff-only great-tracker/FRONTEND
-git merge --no-edit great-tracker/main
+git switch --detach great-tracker/FRONTEND
+git switch -c codex/my-frontend-change
 ```
 
-If the remote branch advanced concurrently and the merge or later push is
-rejected, fetch the explicit refs again, inspect the new history, and merge
-`great-tracker/main` again. Resolve conflicts by reviewing both sides; never
-force-push or reset the published branch.
+If `FRONTEND` advances while the feature is in progress, fetch its explicit ref
+again and merge `great-tracker/FRONTEND` into the feature branch. Do not merge
+`main`, rebase or rewrite shared history, or push the shared `FRONTEND` branch.
+Resolve conflicts by reviewing both sides.
 
 ## Refresh and verify the frontend
 
@@ -76,27 +77,29 @@ paths; never use `git add -A` for this repository.
 
 ## Push and open a draft PR
 
-Push only `FRONTEND` to the explicit target remote. A non-forced push will stop
-if the target branch changed unexpectedly.
+Push only the task-specific feature branch to the explicit target remote. A
+non-forced push stops if the remote branch changed unexpectedly.
 
 ```sh
-git push great-tracker FRONTEND
+git push -u great-tracker codex/my-frontend-change
 gh pr create --draft \
   --repo hanzlahsfc/The-great-tracker- \
-  --base main \
-  --head FRONTEND \
-  --title "feat(frontend): refresh coaching workspace" \
+  --base FRONTEND \
+  --head codex/my-frontend-change \
+  --title "feat(frontend): describe the change" \
   --body-file /path/to/reviewed-pr-body.md
 ```
 
 Check for an existing PR before opening another:
 
 ```sh
-gh pr list --repo hanzlahsfc/The-great-tracker- --head FRONTEND --base main
+gh pr list --repo hanzlahsfc/The-great-tracker- \
+  --head codex/my-frontend-change --base FRONTEND
 ```
 
-The `Frontend / verify` workflow runs for frontend changes on PRs to `main` and
-pushes to `main` or `FRONTEND`. The existing root `CI` workflow retains its full
-trigger and jobs. This guide does not change repository branch protection or
-mark a status as required. Do not merge the PR; wait for review and CI, then let
-the repository owner decide how to complete it.
+The `Frontend / verify` workflow runs for frontend changes on PRs to
+`FRONTEND` or `main`, and pushes to `main` or `FRONTEND`. The existing root `CI`
+workflow retains its full trigger and jobs. After review and passing checks,
+merge the feature PR into `FRONTEND` using the repository's allowed method.
+Hanzlah owns any later promotion from `FRONTEND` to `main`; contributors must not
+open a PR from `FRONTEND` to `main` or push to `main`.
