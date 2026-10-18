@@ -1,5 +1,8 @@
 # AGENTS.md — read this first
 
+This repo is an ICM workspace. After this file, open `CONTEXT.md` and route to one stage under `icm/`.
+Branch `TRACKER` is the integration branch and becomes `main`.
+
 This is the new PRGRSS-derived product. Read these files completely before any work:
 
 1. `docs/conductor-generic/SKILL.md` — the required orchestration loop.
@@ -11,6 +14,10 @@ policy, workflows, or layouts.
 
 ## Source authority (highest first)
 
+0. The canvas. Lilly's frontend (`frontend/`, from branch `FRONTEND`) dictates which screens,
+   elements and data exist and how they look. The backend is built to serve it. Security,
+   consent, audit and health-data decisions below stay binding; a canvas element that collides
+   with one is raised as a CONFLICT, never silently built (owner decision, Marcel, 2026-10-18).
 1. Hanzlah's direct instructions and confirmed stakeholder decisions.
 2. Decisions recorded in `docs/product-decisions.md` and the relevant security/design docs.
 3. The approved requirements document.
