@@ -1757,3 +1757,43 @@ remains open), recurrence/generation, logging/completion tracking,
 computed volume, template integration, active-program end/cancel,
 production deployment, or real-client use. Production/privacy gates
 #102/#81/#38/#39/D-10/D-09 remain separate and unresolved.
+
+**Decision #118 (APPROVED — synthetic/testing boundaries only):**
+dated-session bookings (TRAINING-I1B-2, the second substep of the
+reviewed TRAINING-I1B plan `97bb2767…684dba` + addendum
+`58bf0e70…0a870c` + bookings finalization `df88e01f…65e0`, confirmed
+by the P1-R1 independent review `929a89da…ef50a`). Explicit authorized
+staff (assigned coach or explicitly assigned owner) may create, move
+and cancel dated session bookings; clients have no scheduling write
+path. Each booking pins an immutable prescription tuple
+`(pinnedVersionId, sessionId, bookedWeek)` resolved once at create:
+the governing version at the booked date under the program's immutable
+anchor timezone, the week's ordinal (`wk.week === bookedWeek`,
+Evergreen always 1), and the session inside that pinned week. Client
+presentation renders the pinned version's materialized payload through
+THAT version's snapshotted `fieldConfig` — later versions, changed
+fieldConfig and removed sessions cannot silently alter a booking.
+`scheduledDate` is a declared local calendar date (never an instant)
+and is the only mutable field — a move changes the appointment date
+only, never the pinned content or week label. Wholly skipped local
+dates reject without folding; same-date gap/fold resolution follows the
+existing reviewed resolver. No backdating (anchor-today floor) and a
++366-day forward bound; create/move refuse at/after a live successor's
+takeover (`past_handover`); unpublished drafts are unbookable;
+published-pending replacements are staff-bookable but client-invisible
+until takeover; replaced-program bookings render as labelled history,
+never current. Natural-key `(programId, sessionId, scheduledDate)`
+idempotency via a partial unique on non-cancelled rows — identical
+replay returns the row with one CREATE audit; a tuple mismatch is
+`booking_conflict`; cancelled rows are tombstones that free the key.
+Pending-leaf cancellation cancels non-past bookings atomically. Audit
+metadata is structural only (scheduled date, pinned version seq, booked
+week) — never prescription text or timezone strings. All I1a/I1b-1
+guarantees (immutable versions, CAS/replay, authorization, ACTIVE
+assignment, consent, bounded keyset reads, fail-closed
+`ENABLE_TRAINING_PLANS` gate) are unchanged. NOT approved:
+recurrence/generation, workout logging/notes/flags/review, completion
+tracking, computed volume, formulas/recommendations, template
+integration, active-program end/cancel, production deployment, or
+real-client use. Production/privacy gates #102/#81/#38/#39/D-10/D-09
+remain separate and unresolved.

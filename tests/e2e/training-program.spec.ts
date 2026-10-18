@@ -143,8 +143,17 @@ test.afterAll(async () => {
             resourceType: "training_program_version",
             subjectClientProfileId: profileId,
           },
+          {
+            resourceType: "training_session_booking",
+            subjectClientProfileId: profileId,
+          },
         ],
       },
+    })
+    .catch(() => {});
+  await prisma.trainingSessionBooking
+    .deleteMany({
+      where: { programId: { in: programIds.length ? programIds : ["-"] } },
     })
     .catch(() => {});
   await prisma.trainingProgramVersion
@@ -541,6 +550,198 @@ test("evergreen program: ongoing authoring, post-week-1 update, client view", as
   await expect(page.getByTestId("training-current")).toContainText("Reps: 8");
   await expect(page.getByTestId("training-marker")).toContainText("Updated");
   await checkNoOverflow(page);
+});
+
+test("coach books, moves and cancels a session; client agenda pins the week", async ({
+  page,
+}) => {
+  // Seeded prerequisite (disclosed): reuse the client's current published
+  // program authored by earlier tests in this spec — the spec's programs
+  // form a single replacement chain, so the latest published non-cancelled
+  // program is the current one.
+  const prog = await prisma.trainingProgram.findFirstOrThrow({
+    where: {
+      clientProfileId: profileId,
+      cancelledAt: null,
+      firstPublishedAt: { not: null },
+    },
+    orderBy: { firstPublishedAt: "desc" },
+  });
+  const detailUrl = `${BASE}/workspace/${wsId}/clients/${profileId}/training-program/${prog.id}`;
+
+  await signIn(page, E2E.coach);
+  await page.goto(detailUrl);
+  await expect(page.getByTestId("staff-training-detail")).toBeVisible();
+  await expect(page.getByTestId("training-bookings")).toBeVisible();
+
+  // Book the first bookable session two days out.
+  const date1 = inDays(2);
+  const date2 = inDays(3);
+  const sessionSelect = page.getByTestId("booking-session");
+  const firstOption = await sessionSelect
+    .locator("option")
+    .nth(1)
+    .getAttribute("value");
+  expect(firstOption).toBeTruthy();
+  await sessionSelect.selectOption(firstOption as string);
+  await page.getByTestId("booking-date").fill(date1);
+  await page.getByTestId("booking-submit").click();
+  await expect(page.getByTestId("booking-message")).toContainText(/booked/i);
+
+  // Upcoming row: appointment date + pinned week label are distinct.
+  const row = page
+    .getByTestId("bookings-upcoming")
+    .getByTestId(/-booking$/)
+    .first();
+  await expect(row).toContainText(`Booked for ${date1}`);
+  await expect(row).toContainText(/Week \d+ prescription/);
+
+  // Move — the appointment date changes; the pinned week label does not.
+  await row.getByTestId(/-move-date$/).fill(date2);
+  await row.getByTestId(/-move$/).click();
+  await expect(page.getByTestId("booking-message")).toContainText(/moved/i);
+  await expect(
+    page
+      .getByTestId("bookings-upcoming")
+      .getByTestId(/-booking$/)
+      .first(),
+  ).toContainText(`Booked for ${date2}`);
+
+  // Client agenda shows the same date + pinned week + pinned content.
+  await signIn(page, E2E.client);
+  await page.goto(`${BASE}/workspace/${wsId}/training-program`);
+  const agendaRow = page.getByTestId("agenda-booking").first();
+  await expect(agendaRow).toContainText(`Booked for ${date2}`);
+  await expect(agendaRow).toContainText(/Week \d+ prescription/);
+
+  // Coach cancels; the row leaves upcoming and the agenda entry disappears.
+  await signIn(page, E2E.coach);
+  await page.goto(detailUrl);
+  await page
+    .getByTestId("bookings-upcoming")
+    .getByTestId(/-cancel$/)
+    .first()
+    .click();
+  await expect(page.getByTestId("booking-message")).toContainText(/cancelled/i);
+  await signIn(page, E2E.client);
+  await page.goto(`${BASE}/workspace/${wsId}/training-program`);
+  await expect(page.getByTestId("agenda-booking")).toHaveCount(0);
+  await checkNoOverflow(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await checkNoOverflow(page);
+});
+
+test("staff booking history reaches later pages via keyset load-more", async ({
+  page,
+}) => {
+  // Seeded prerequisite (disclosed): reuse the client's current published
+  // program authored by earlier tests in this spec — the latest published
+  // non-cancelled node of the replacement chain.
+  const prog = await prisma.trainingProgram.findFirstOrThrow({
+    where: {
+      clientProfileId: profileId,
+      cancelledAt: null,
+      firstPublishedAt: { not: null },
+    },
+    orderBy: { firstPublishedAt: "desc" },
+  });
+  const v1 = await prisma.trainingProgramVersion.findFirstOrThrow({
+    where: { programId: prog.id, versionSeq: 1 },
+  });
+  // Seed > 2 history pages (page size 12) with deterministic
+  // (scheduled_date, id) ordering ties; past dates keep rows history-only.
+  // Session ids vary within a date so the natural-key unique is respected.
+  const seeds: { id: string; date: string; session: string }[] = [];
+  for (let i = 0; i < 3; i += 1)
+    seeds.push({
+      id: `e2ehist_t${i + 1}`,
+      date: "2026-02-10",
+      session: `s${i + 1}`,
+    });
+  for (let i = 0; i < 23; i += 1)
+    seeds.push({
+      id: `e2ehist_d${String(i + 1).padStart(2, "0")}`,
+      date: `2026-01-${String(i + 1).padStart(2, "0")}`,
+      session: "s1",
+    });
+  await prisma.trainingSessionBooking.createMany({
+    data: seeds.map((s) => ({
+      id: s.id,
+      workspaceId: wsId,
+      clientProfileId: profileId,
+      programId: prog.id,
+      pinnedVersionId: v1.id,
+      sessionId: s.session,
+      bookedWeek: 1,
+      scheduledDate: new Date(`${s.date}T00:00:00Z`),
+      scheduledByMemberId: coachMemberId,
+    })),
+  });
+  // Expected order = the service keyset exactly (scheduled_date, id) DESC.
+  const expectedIds = (
+    await prisma.trainingSessionBooking.findMany({
+      where: { programId: prog.id },
+      orderBy: [{ scheduledDate: "desc" }, { id: "desc" }],
+      select: { id: true },
+    })
+  ).map((b) => b.id);
+  expect(expectedIds.length).toBeGreaterThan(24);
+
+  const detailUrl = `${BASE}/workspace/${wsId}/clients/${profileId}/training-program/${prog.id}`;
+  await signIn(page, E2E.coach);
+  await page.goto(detailUrl);
+  await expect(page.getByTestId("training-bookings")).toBeVisible();
+  const history = page.getByTestId("bookings-history");
+  const rows = () => history.getByTestId(/-booking$/);
+  await expect(rows()).toHaveCount(12);
+  const more = page.getByTestId("bookings-history-more");
+  await expect(more).toBeVisible();
+
+  // Pending state: the control disables while the page read is in flight.
+  await page.route(`**/training-program/${prog.id}`, async (route) => {
+    if (route.request().method() === "POST")
+      await new Promise((r) => setTimeout(r, 700));
+    await route.continue();
+  });
+  await more.click();
+  await expect(more).toBeDisabled();
+  await expect(rows()).toHaveCount(24);
+  await page.unroute(`**/training-program/${prog.id}`);
+
+  // Error recovery: an unauthenticated dispatch reports the failure and
+  // the control stays retryable; it recovers after signing back in.
+  await page.context().clearCookies();
+  await more.click();
+  await expect(page.getByTestId("bookings-history-error")).toBeVisible();
+  await expect(more).toBeEnabled();
+  await signIn(page, E2E.coach);
+  await page.goto(detailUrl);
+  await expect(rows()).toHaveCount(12);
+  await page.getByTestId("bookings-history-more").click();
+  await expect(rows()).toHaveCount(24);
+  await page.getByTestId("bookings-history-more").click();
+  await expect(rows()).toHaveCount(expectedIds.length);
+  // Exact keyset order incl. ties — no duplicates, no skipped rows.
+  const rendered = await history
+    .locator("[data-booking-id]")
+    .evaluateAll((els) => els.map((e) => e.getAttribute("data-booking-id")));
+  expect(rendered).toEqual(expectedIds);
+  expect(new Set(rendered).size).toBe(rendered.length);
+  // The last page offers no further load-more action.
+  await expect(page.getByTestId("bookings-history-more")).toHaveCount(0);
+
+  // Pagination state does not leak across program targets.
+  const other = await prisma.trainingProgram.findFirstOrThrow({
+    where: {
+      clientProfileId: profileId,
+      id: { not: prog.id },
+      firstPublishedAt: { not: null },
+    },
+  });
+  await page.goto(
+    `${BASE}/workspace/${wsId}/clients/${profileId}/training-program/${other.id}`,
+  );
+  await expect(page.locator('[data-booking-id^="e2ehist"]')).toHaveCount(0);
 });
 
 test("unassigned owner sees a read-only list", async ({ page }) => {

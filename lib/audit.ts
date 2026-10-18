@@ -160,6 +160,12 @@ export const AUDIT_RESOURCE_TYPES = [
   // timezone strings.
   "training_program",
   "training_program_version",
+  // TRAINING-I1B-2 (PROMPT 266): dated-session booking lifecycle
+  // (CREATE on explicit staff booking, UPDATE on date-move and cancel —
+  // `changed` marker only). IDs and structural markers only (declared
+  // date, pinned version seq, booked week) — never prescription text,
+  // session content, or timezone strings.
+  "training_session_booking",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 
@@ -184,6 +190,13 @@ export type AuditMeta = {
   date?: string;
   /** HABITS-I1: the desired-state outcome written on habit_log events. */
   logStatus?: "DONE" | "SKIPPED" | "CLEARED";
+  /** TRAINING-I1B-2: declared booking date on training_session_booking
+   * events (YYYY-MM-DD only — the local calendar date, not an instant). */
+  scheduledDate?: string;
+  /** TRAINING-I1B-2: pinned published-version sequence on booking create. */
+  versionSeq?: number;
+  /** TRAINING-I1B-2: pinned prescription week on booking create. */
+  bookedWeek?: number;
 };
 
 /** S1-F2D: metadata allowed on ACCOUNT-scoped audit events only. Deliberately
@@ -253,6 +266,21 @@ const META_VALIDATORS = new Map<keyof AuditMeta, (v: unknown) => boolean>([
   // HABITS-I1: declared calendar date — grammar-locked, no prose.
   ["date", (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v)],
   ["logStatus", (v) => v === "DONE" || v === "SKIPPED" || v === "CLEARED"],
+  // TRAINING-I1B-2: declared booking date + pinned structural markers —
+  // grammar-locked date, bounded integers; no prose.
+  [
+    "scheduledDate",
+    (v) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v),
+  ],
+  [
+    "versionSeq",
+    (v) =>
+      typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= 10_000,
+  ],
+  [
+    "bookedWeek",
+    (v) => typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= 1_000,
+  ],
 ]);
 
 /** Account-scope metadata allowlist — a separate closed set. */

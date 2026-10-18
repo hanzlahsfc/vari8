@@ -5,6 +5,84 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## TRAINING-I1B-2-R2 — review-findings repair (PROMPT R2)
+
+- Bounded repair on `feature/training-i1b2` for the I1-R1 independent
+  review (`~/Downloads/TRAINING-I1B-2-I1-R1-independent-review.md`,
+  SHA-256 `bf608abc…dea006e`, 256 lines, read through EOF). Reviewed
+  head `dfac206`; base `f71198b`; no PR, no merge.
+- **F1 (HIGH, closed):** `readOwnTrainingBookingHistory` returned
+  published-pending successor bookings pre-takeover (title + pinned
+  prescription leak, mislabelled "replaced"). Repair: join the program's
+  `version_seq=1` row and require `v1.activation_instant <= now` (the
+  injected op clock — the same in-force predicate `selectCurrent` uses,
+  inclusive at the exact takeover instant). Tenant/client scope,
+  authorization, consent, cancellation filters, pin projection, cutoff
+  and keyset semantics unchanged.
+- **F2 (LOW/MED, closed):** staff history `hasMore` was unreachable.
+  `listTrainingBookingsAction` exposes the existing bounded keyset read
+  (target-scoped `(scheduledDate,id)` cursor, truthful hasMore); the
+  bookings panel appends deduped rows with pending/error/disabled
+  states, re-syncs on server re-render, and remounts per
+  workspace/client/program target via a route key.
+- **RED→GREEN:** tests committed first (`32ea7d5`): pending-successor
+  history assertions (incl. takeover −1ms / exact / +after) → 2 focused
+  failures on `dfac206`; browser keyset load-more regression →
+  `bookings-history-more` absent on reviewed head. GREEN after
+  `21d5d98` (F1) + `8df3d65` (F2): focused 15/15 + spec 8/8.
+- **Mutations:** removing the `activation_instant <= now` predicate →
+  both F1 assertions fail again (2/15); stubbing the pagination dispatch
+  → later-page assertion stuck at 12 rows. Both restored byte-identical
+  (sha256-verified).
+- **Advisories:** A1 evidence corrected prospectively — the I1 report's
+  M5 wording ("fell through to `no_governing_version`") was imprecise;
+  the reviewer observed it resolved (booking created); original hashed
+  report preserved. A2 inspected — the pending-leaf cascade writes one
+  program-level `UPDATE {changed:true}` audit and no per-booking rows;
+  contract-authorized (decision #118 mandates the atomic cancel, not
+  per-booking audit) — no change. A3 noted — `readOwnTrainingBookingHistory`
+  remains unwired to any UI/action; no end-to-end client-history claim.
+- Gates on the repair tree (task-owned `i1b2_r2_*` DBs on
+  tracker-review-pg): `git diff --check`, format:check, typecheck clean;
+  lint 0 errors / 4 pre-existing warnings; unit 1331/1331; full
+  integration 873/873; build clean; focused E2E 8/8; full E2E on fresh
+  dedicated `i1b2_r2_e2e_full`. Schema/migration/RBAC/gate/pin paths
+  byte-identical to `dfac206` (whole-diff verified).
+- Builder report `~/Downloads/TRAINING-I1B-2-R2-builder-report.md`.
+  Stopped at the pushed repair for independent confirmation; no PR.
+
+## TRAINING-I1B-2 — dated-session bookings (PROMPT 266)
+
+- Owner-authorized implementation of the independently confirmed I1b-2
+  bookings contract on `feature/training-i1b2` (base `f71198b`, merged
+  Evergreen). Contract: P2 + P2-A1 + bookings finalization (A1-1
+  closed) — confirmed READY by P1-R1 review `929a89da…ef50a`.
+- `training_session_booking`: immutable pin (pinnedVersionId,
+  sessionId, bookedWeek) + mutable declared `scheduledDate`; partial
+  unique natural key over active rows; composite coherence FKs + CHECKs
+  (raw-SQL convention). Move = date-only; cancelled tuples reusable.
+- Service: staff create/move/cancel + bounded staff bookings read +
+  client agenda + client booking history; staff detail gains
+  bookings/bookableSessions; pending-leaf cancel cascades to non-past
+  bookings. Authorization/consent/locks precede replay lookup; pin
+  resolves at the booked instant under the anchor timezone; client
+  projection uses the PINNED version's snapshotted fieldConfig.
+- Boundary codes: booking_conflict, booking_date_bounds,
+  past_handover, no_governing_version. UI: staff bookings panel +
+  client agenda ("Booked for {date}" vs "Week {n} prescription").
+- Gates (final tree): format/typecheck/lint clean; unit 1331/1331;
+  full integration 872/872 (fresh tgt_i1b2_full; s1-a inventory updated
+  for the new table); build clean; focused E2E 7/7; full E2E on
+  dedicated app_i1b2_e2e. Migration: fresh deploy + genuine
+  base->candidate upgrade; drift = established composite-FK/raw-SQL
+  extras only. Mutations M1-M5 (pin timing, pinned fieldConfig,
+  move-pin drift, tombstone reuse, cutoff) all bite; restored
+  byte-identical.
+- Records: decision #118 + `docs/tasks/training-i1b2.md`. Stopped at
+  the pushed candidate for independent review — no PR, no merge.
+  Excluded: recurrence, logging/notes/flags/review, volume, formulas,
+  template integration. `ENABLE_TRAINING_PLANS` unchanged, fail-closed.
+
 ## TRAINING-I1B-1 — Evergreen program mode (PROMPT 262)
 
 - Owner-authorized implementation of the independently confirmed I1b-1
