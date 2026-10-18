@@ -4,7 +4,7 @@ Every PR in `PLAN.md` follows these. One home: other files point here.
 
 ## D1. The canvas drives the database
 
-The canvas data model (`frontend/src/components/coach/model.ts`, `plans/domain.ts`, `plans/types.ts`, `builder/schema.ts`) is the source for the Prisma schema. Canvas entities with no table get one. Canvas fields with no column get one. Security, consent, audit and health-data decisions stay binding (see `AGENTS.md`, source authority 0).
+The canvas data model (`frontend/src/components/coach/model.ts`, `plans/domain.ts`, `plans/types.ts`, `builder/schema.ts`) is the source for the Prisma schema. Canvas entities with no table get one. Canvas fields with no column get one. Permissions follow the owner's ROLES decision (D10); consent and health-data rules are parked (D12).
 
 ## D2. Next.js 16 lands on TRACKER
 
@@ -12,7 +12,7 @@ TRACKER upgrades the app from Next 15.5 and React 19.1 to the canvas versions (N
 
 ## D3. Port the canvas into the app (architecture B)
 
-The canvas screens move into the one Next app at the repo root, which keeps the database, Auth.js, RBAC, consent, audit and CI. `frontend/` stays as the visual reference until every screen is ported. Source: `icm/01-recon/output/L2-stack-merge.md`.
+The canvas screens move into the one Next app at the repo root, which keeps the database, Auth.js, RBAC, audit and CI. `frontend/` stays as the visual reference until every screen is ported. Source: `icm/01-recon/output/L2-stack-merge.md`.
 
 ## D4. Biome for code, Prettier for Markdown and YAML only
 
@@ -31,7 +31,7 @@ Biome 2 lints and formats TypeScript, TSX, JSON and CSS in one tool, with the `n
 
 ## D6. One HTTP API under every screen (mobile-ready)
 
-Every canvas surface reads and writes through one boundary per operation: a Zod-validated service function. Versioned JSON route handlers (`app/api/v1/**`) expose it; a web form may call the same function through a thin server-action wrapper, so web and the later iOS and Android apps share one contract. The static mobile bundle uses only the HTTP routes. Mobile auth gets its own reviewed design before PR-05 builds it (access and refresh token separation, key separation from the Auth.js cookie secret, audience binding, secure device storage, rotation, replay detection, revocation); the R1 recipe is not that design. Offline caching of health data needs rules for consent withdrawal, queued writes, erasure and device loss before it ships. Mobile shell is Capacitor 8 wrapping the same UI, with a PWA as the interim mobile experience; App Store review (guideline 4.2) stays a risk, not a promise. Sources: `output/R1-mobile.md`, judged in `icm/05-verify/output/RV-B2.md`.
+Every canvas surface reads and writes through one boundary per operation: a Zod-validated service function. Versioned JSON route handlers (`app/api/v1/**`) expose it; a web form may call the same function through a thin server-action wrapper, so web and the later iOS and Android apps share one contract. The static mobile bundle uses only the HTTP routes. Mobile auth gets its own reviewed design before PR-05 builds it (access and refresh token separation, key separation from the Auth.js cookie secret, audience binding, secure device storage, rotation, replay detection, revocation); the R1 recipe is not that design. Mobile shell is Capacitor 8 wrapping the same UI, with a PWA as the interim mobile experience; App Store review (guideline 4.2) stays a risk, not a promise. Sources: `output/R1-mobile.md`, judged in `icm/05-verify/output/RV-B2.md`.
 
 ## D7. Toolchain
 
@@ -45,15 +45,15 @@ Add `zod` 4 now, at every API boundary (R3 recommends it now; the judge confirme
 
 The P2 prototype is behavior-preserving (all 98 reformatted files AST-compared, gates green) but its root config diverged from the canvas config. PR-03 uses one policy for root and `frontend/`: the canvas `recommended` preset, `organizeImports` on, no silent warning overrides (any downgrade is listed with a reason in the PR). It enables `noNextAsyncClientComponent` (exists, off by default) and `nursery/useReactCompiler` as a warning (catches 9 of the 10 React hook findings P1 surfaced). The 10 findings are fixed in PR-03, not suppressed. Pages Router only rules (`no-typos`, `_document` rules) are not needed.
 
-## D11. No unit tests; proof is live behavior
+## D11. Cut tests that only prove compilation; keep tests that prove behavior
 
-Today the repo carries 85,847 lines of tests against 62,308 lines of app code: `tests/unit` 109 files / 21,757 lines, `tests/integration` 55 / 39,260, `tests/e2e` 47 / 19,397, canvas `*.test.mjs` and `*.checks.mjs` 23 / 5,433. Unit tests prove the code compiles and agrees with itself, not that the app works, and they cost CI time and agent usage. Rule for the program:
+Today the repo carries 85,847 lines of tests against 62,308 lines of app code: `tests/unit` 109 files / 21,757 lines, `tests/integration` 55 / 39,260, `tests/e2e` 47 / 19,397, canvas `*.test.mjs` and `*.checks.mjs` 23 / 5,433. The owner estimates about 75 percent prove only that code compiles or agrees with itself. That estimate is checked file by file before anything is deleted (`icm/03-plan/output/TEST-AUDIT.md`). Rules:
 
-- Builders write no unit tests. Every builder card says so explicitly (Devin, Codex and OpenCode lanes tend to add them).
-- A PR is proven by its live lanes: the real app running against a real database, driven in a browser at desktop and mobile widths, compared to the canvas. Typecheck, lint and build stay as mechanical gates only.
-- Permissions are proven by one live role matrix: a script that signs in as each role and attempts each action against the running app and `/api/v1`, asserting allowed or denied per the ROLES decision (D10). It replaces the integration suite's authorization coverage.
-- Deletion order: PR-03 deletes `tests/unit` and the canvas test and check files and drops `npm run test` from CI. The integration suite is deleted in the PR that lands the live role matrix, not before, so server-side permission checks are never unproven. Old e2e specs are deleted surface by surface as each canvas screen replaces the old UI; the Playwright harness stays for the live lanes.
-- `AGENTS.md` TDD rule is replaced by this rule. The plan template's "Verify, unit" box is dropped from every PR section.
+- A test is kept only if it calls the code the way users do, asserts a literal expected result, and fails when the code under it is broken (bite check: break the code in a scratch copy, the test must fail). Everything else is cut: mock-only tests, type and shape assertions, constant snapshots, framework re-tests, and tests duplicated by a live check.
+- Kept tests cluster where behavior is hard to see in a browser: formulas, date and timezone rules, validation at trust boundaries, token crypto, and server-side permission enforcement. Consent and health-data tests are not a reason to keep a file (D12).
+- The primary proof of every PR stays live: the real app against a real database, driven in a browser at desktop and mobile widths, compared to the canvas, plus the live role matrix for permissions (D10).
+- Builders add a test only when it meets the keep rule above; no compile-proof suites. Every builder card says so (Devin, Codex and OpenCode lanes add them by default).
+- PR-03 deletes the files the audit marks CUT. Integration tests that are the only proof of a permission rule stay until the live role matrix covers that rule.
 
 ## D9. Issues first, then one PR per issue
 
@@ -61,4 +61,8 @@ The approved plan becomes GitHub issues in `hanzlahsfc/The-great-tracker-`, visi
 
 ## D10. The owner decides roles and permissions
 
-Who can see, edit and do what (owner, coach, assistant coach, support, client) is an owner decision, not something inherited from `docs/security/authorization-model.md`. That doc contradicts the code (it says the owner cannot edit meal plans, daily entries or training; `lib/auth/rbac.ts:148` grants it for assigned clients; found by round 3 lane G6). Both are inputs only. The plan carries one `ROLES` decision: a role by capability matrix built from the canvas surfaces, with the doc's rule and the code's rule shown side by side per cell, for the owner to fill in. It blocks PR-05 and every wiring PR. Once decided, the matrix becomes the single source: `rbac.ts` is changed to match it and the security doc is rewritten from it. What stays mandatory regardless: server-side enforcement of the decided matrix, consent for health data, and audit. Rows that were CONFLICT only because of the permission doc become ROLES decision rows; CONFLICT stays for legal requirements (health-data consent, data protection).
+Who can see, edit and do what (owner, coach, assistant coach, support, client) is an owner decision, not something inherited from `docs/security/authorization-model.md`. That doc contradicts the code (it says the owner cannot edit meal plans, daily entries or training; `lib/auth/rbac.ts:148` grants it for assigned clients; found by round 3 lane G6). Both are inputs only. The plan carries one `ROLES` decision: a role by capability matrix built from the canvas surfaces, with the doc's rule and the code's rule shown side by side per cell, for the owner to fill in. It blocks PR-05 and every wiring PR. Once decided, the matrix becomes the single source: `rbac.ts` is changed to match it and the security doc is rewritten from it. What stays mandatory regardless: server-side enforcement of the decided matrix. Rows that were CONFLICT because of the permission doc become ROLES decision rows; consent and health-data CONFLICT rows are parked (D12).
+
+## D12. Consent, health-data storage and data-protection rules are parked
+
+The owner parks these for now. They do not block, shape or gate any canvas element, plan PR or test decision. Existing consent code in the backend (consent records, consent-version gates, health-data checks such as `lib/*/consent.ts`) is not extended; where it blocks a canvas flow, the plan routes around it or disables the gate behind a flag, and lists the spot in a `## Parked: consent and health data` appendix so it can be picked up later. Matrix rows that are CONFLICT only because of consent or health-data rules move to that appendix.

@@ -19,9 +19,9 @@ policy, workflows, or layouts.
    edit and do what (roles and permissions) is decided by the owner, not by
    `docs/security/authorization-model.md`; that doc and `lib/auth/rbac.ts` are inputs to that
    decision (`icm/03-plan/DECISIONS.md` D10). Server-side enforcement of whatever the owner
-   decides, consent for health data, and audit stay mandatory; a canvas element that collides
-   with a legal requirement is raised as a CONFLICT, never silently built (owner decision,
-   Marcel, 2026-10-18).
+   decides stays mandatory. Consent, health-data storage and data-protection rules are parked
+   for now (D12): do not let them block or shape canvas work (owner decision, Marcel,
+   2026-10-18).
 1. Hanzlah's direct instructions and confirmed stakeholder decisions.
 2. Decisions recorded in `docs/product-decisions.md` and the relevant security/design docs.
 3. The approved requirements document.
@@ -39,9 +39,9 @@ policy, workflows, or layouts.
 - Never use `git reset --hard`, `git clean`, `git checkout -- <path>`, or blind `git add -A`.
 - One non-trivial task gets a written plan (exact paths, commands, observable acceptance)
   before code.
-- **No unit tests** (`icm/03-plan/DECISIONS.md` D11). Do not write them. Prove behavior live:
-  the running app against a real database, driven in a browser at desktop and mobile widths,
-  plus the live role matrix for permissions. Typecheck, lint and build are mechanical gates only.
+- **Tests must prove behavior** (`icm/03-plan/DECISIONS.md` D11). Add a test only when it calls the
+  code the way users do, asserts a literal result, and fails when the code is broken. No
+  compile-proof suites. The primary proof is live: the running app, the browser, the role matrix.
 - **Real-browser requirement:** mechanism gates (build/typecheck/lint) are not enough;
   exercise the actual running flow in a browser at desktop and mobile widths.
 - **Independent review:** the builder never approves its own work. A different agent/model does
@@ -54,8 +54,8 @@ policy, workflows, or layouts.
 
 - Raw and unredacted health data stays outside version control; fixtures are synthetic.
 - Raw sheet/debug viewers are development-only (flag-gated) and must fail closed in product builds.
-- Health-data access must be server-enforced, workspace/role-scoped, consent-aware, and audited;
-  UI hiding is not authorization.
+- Data access must be server-enforced and workspace/role-scoped per the owner's ROLES decision
+  (D10); UI hiding is not authorization. Consent and health-data rules are parked (D12).
 - Do not implement client-visible PED/HRT/E2 underivable behavior; do not produce diagnoses or
   automatic program changes.
 - No push, PR, merge, deploy, or external-service changes without current authority.
