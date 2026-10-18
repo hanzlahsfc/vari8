@@ -1,0 +1,36 @@
+# TA-U00-w4 test audit
+
+Commit audited: 58eb6ed in worktree /home/nexuslink/.hermes/cache/scratch/vari8-ta/TA-U00-w4.
+Baseline: all 7 files pass under `npx vitest run tests/unit/<file>` (96 tests total).
+
+Summary: 7 files, 1371 lines. KEEP 7 (1371 lines), MERGE 0, CUT 0. CUT share 0%.
+
+| file | lines | under test | asserts | verdict | rule | bite check (command, result) |
+|---|---|---|---|---|---|---|
+| checkin-calendar.test.ts | 125 | lib/checkin/instances.ts parseCheckInCalendarRange; lib/checkin/calendar.ts checkInCalendarDayKey, checkInCalendarMonthCells | literal ISO day keys across UTC/New_York/Kiritimati, DST transition, 42-cell Monday-start grid with literal first-cell key "2026-09-28", range bound at exactly and plus-one CALENDAR_RANGE_MAX_DAYS | KEEP | literal date/timezone formula output | getUTCDay()+6 -> +5 in lib/checkin/calendar.ts -> vitest run tests/unit/checkin-calendar.test.ts -> FAIL (1 test) |
+| checkin-review-queue.test.ts | 183 | lib/checkin/instances.ts parseCheckInReviewQueueCursor, buildCheckInReviewQueueWhere, deriveCheckInQueueCanReview, parseCheckInSubmissionParam | cursor round-trip literal + 8 malformed rejections, literal toEqual WHERE objects (workspaceId always present, reviews anti-join, ACTIVE assignment semi-join, keyset OR), role x assignment canReview matrix, deep-link parser literal union results | KEEP | literal scope-to-WHERE mapping and cursor codec at trust boundary; weak tail: final "exports" describe is typeof checks plus a constant pin (PAGE_SIZE=50) | && -> || in deriveCheckInQueueCanReview, lib/checkin/instances.ts -> vitest run tests/unit/checkin-review-queue.test.ts -> FAIL (5 tests) |
+| clients-service.test.ts | 361 | lib/workspace/clients.ts buildClientProfileWhere, normalizeLimit, validateName, coachTargetRoleIsEligible, listAccessibleClientProfiles, createClientProfile, updateClientProfileName, assignCoach; lib/auth/guard.ts authorizeCollection via lib/workspace/access.ts repo | literal WHERE objects per scope, literal limit clamps (25/1/100), name trim + throws, coach-eligibility role matrix literal booleans, AccessDeniedError on write/unknown resource, findMany called with literal scoped args plus literal nextCursor "c4", updateMany literal where/data, unauthorized performs zero mutations, error codes carry no personal data | KEEP | server-side permission enforcement + literal validation output; prisma is a stubbed dependency, the logic under test is real | return false -> true at clients.ts:133 (coachTargetRoleIsEligible) -> vitest run tests/unit/clients-service.test.ts -> FAIL (1 test) |
+| client-setup-actions.test.ts | 189 | app/workspace/[workspaceId]/client-setups/actions.ts assignTemplate, cancelSetupAssignment (real exports; auth, boundary, revalidatePath mocked as dependencies) | flag-off returns literal "This feature is not available." before auth/FormData/boundary are touched (ordering proven via not-called + FormData spy), flag-on rejects malformed/missing/duplicate index fields before delegating, delegates with literal parsed positional args {clientIndex:0,templateIndex:1,listFingerprint:"fp_abc"} | KEEP | fail-closed flag ordering at trust boundary, not browser-observable | invert flag gate !isClientSetupEnabled -> isClientSetupEnabled at actions.ts:132 -> vitest run tests/unit/client-setup-actions.test.ts -> FAIL (3 tests) |
+| client-setup-nav.dom.test.tsx | 66 | components/workspace-nav.tsx WorkspaceNav (real render, next/link stubbed) | role x flag matrix over the Client Setup entry: literal href presence + "Client Setup" label for 3 staff roles with flag on, absent for flag off and for CLIENT/SUPPORT | KEEP | role x flag conditional-render matrix on the real component; flag-off state needs env restart so not cheaply browser-visible | drop "ASSISTANT_COACH" from client-setups roles pin, workspace-nav.tsx:113 -> vitest run tests/unit/client-setup-nav.dom.test.tsx -> FAIL (1 test) |
+| coaching-classification.test.ts | 377 | lib/coaching/parameter-classification-gate.ts, lib/coaching/parameters-boundary.ts classifyParameterFromAction flag-off ordering, lib/coaching/selection-fingerprint.ts computeSelectionFingerprint, lib/coaching/daily-entry-eligibility.ts evaluateDailyEntryVersionEligibility | exact-"1" gate matrix, flag-off refusal before db touch, fingerprint determinism + 64-hex format + sensitivity to order/membership, literal reason codes (missing/malformed/specialist classification, unsupported_kind, unsupported_rating_scheme, duplicate_parameter, metadata_incoherent) and deterministic rank ordering | KEEP | literal classification/eligibility reason-code contract | cls !== "GENERAL_HEALTH" -> === at daily-entry-eligibility.ts:115 -> vitest run tests/unit/coaching-classification.test.ts -> FAIL (5 tests) |
+| coaching-nav.dom.test.tsx | 70 | components/workspace-nav.tsx WorkspaceNav (real render, next/link stubbed) | role x flag matrix over Parameters + Templates entries: literal href presence + labels for WORKSPACE_OWNER/COACH with flag on, absent flag off and for ASSISTANT_COACH/SUPPORT/CLIENT | KEEP | role x flag conditional-render matrix, same reasoning as client-setup-nav | drop "COACH" from parameters roles pin, workspace-nav.tsx:89 -> vitest run tests/unit/coaching-nav.dom.test.tsx -> FAIL (1 test) |
+
+## Could not check
+
+None. All 7 ran green at baseline and all bite checks were executed and restored.
+
+## Self-check
+
+(a) All 7 files have a row: PASS (7 rows, one per assigned file).
+
+(b) Every KEEP/MERGE has a bite check that FAILED the test: PASS. 7 KEEPs, 7 bite checks, each `npx vitest run tests/unit/<file>` exited 1 with failing tests: checkin-calendar 1/9, checkin-review-queue 5/28, clients-service 1/14, client-setup-actions 3/12, client-setup-nav.dom 1/8, coaching-classification 5/18, coaching-nav.dom 1/7. Each mutation was restored via `cp` from /tmp backup and verified with `git diff --exit-code -- <file>` (exit 0 each time); final `git status --short` in the worktree is empty.
+
+(c) Worktree removed and database dropped if created: database app_ta_u00_w4 was never needed (no test touched Postgres; no 127.0.0.1:5433 errors), so nothing to drop. Worktree removal performed after writing this report (see reply).
+
+(d) Nothing written outside the worktree except this report: PASS. All edits were inside /home/nexuslink/.hermes/cache/scratch/vari8-ta/TA-U00-w4 and were reverted; /tmp backups are outside version control; the only file created outside the worktree is this report.
+
+## Notes for the reviewer lane
+
+- checkin-review-queue.test.ts KEEP stands on the first four describes; the last describe ("exports") asserts typeof plus the page-size constant and would alone be CUT-worthy, but it is 2 of 9 cases inside a strong file.
+- The two *.dom.test.tsx files assert cosmetic nav visibility only (the components and the tests themselves say routes re-authorize server-side). They were kept because they render the real component and assert literal DOM across a role x flag matrix that a single browser session cannot cover; if the owner judges cosmetic-layer tests out of scope for "behavior", these two are the marginal KEEPs.
+- No Postgres database was created, no commits made, no tracked files left modified.

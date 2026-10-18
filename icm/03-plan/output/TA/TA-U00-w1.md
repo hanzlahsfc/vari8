@@ -1,0 +1,33 @@
+# TA-U00-w1 test audit
+
+Summary: 11 files, 1809 lines. KEEP 4 files (1223 lines), MERGE 4 files (409 lines), CUT 3 files (177 lines). CUT share: 27%.
+
+Baseline: `npx vitest run tests/unit/<file>` on all 11 files passed together (180 tests, 11 files, exit 0).
+
+| file | lines | under test | asserts | verdict | rule | bite check (command, result) |
+|---|---|---|---|---|---|---|
+| audit.test.ts | 696 | lib/audit.ts: sanitizeAuditMeta, buildAuditEvent, writeAuditEvent, listAuditEvents, buildAccountAuditEvent, writeAccountAuditEvent, listAccountAuditEvents | closed-meta allowlist, prototype/getter hardening, smuggled-field rejection, scope-locked bounded queries, fail-closed writes | KEEP | validation at trust boundary, literal outputs | lib/audit.ts: `validator === undefined ||` to `validator !== undefined &&` in sanitizeAuditMeta -> vitest run tests/unit/audit.test.ts -> FAIL (24 tests) |
+| catalog.test.ts | 229 | lib/catalog.ts: searchFoods, foodCategories, searchExercises, exerciseFacets, toSparseGrid, sheetDisplayName | literal filtered lists, ordering, sorted facets, redaction and span extent | KEEP | literal formula/filter output | lib/catalog.ts: removed `includes(record.state, q)` -> vitest run tests/unit/catalog.test.ts -> FAIL (1 test) |
+| checkin-feedback.test.ts | 195 | lib/auth/rbac.ts resolveScope + lib/auth/guard.ts authorize/authorizeCollection | RBAC matrix cells, dual-role PLATFORM_ADMIN denial through the real guard | MERGE | kept cases prove guard deny-path behavior; rest is constant pins and typeof exports. Keep: the 4 `dual-role PLATFORM_ADMIN + ACTIVE <role> is role_denied` cases and `control: ordinary USER + ACTIVE owner resolves workspace/assigned` | lib/auth/guard.ts: removed `"checkinFeedback"` from PLATFORM_ADMIN_DENIED_RESOURCES -> vitest run tests/unit/checkin-feedback.test.ts -> FAIL (4 tests, exactly the kept dual-role cases) |
+| checkin-review.test.ts | 135 | lib/checkin/instances.ts projectCheckInInstanceState / projectCheckInInstancePresentation | lifecycle precedence and late-marker literal outputs; other describes pin constants and exports | MERGE | kept cases prove derivation order; rest is constant/export pins. Keep: `derives CANCELLED > REVIEWED > SUBMITTED > SCHEDULED` and `presentation keeps the late marker for a late-reviewed submission` | lib/checkin/instances.ts: `hasReview === true` to `hasReview !== true` -> vitest run tests/unit/checkin-review.test.ts -> FAIL (2 tests, exactly the kept cases) |
+| checkin-review-queue-nav.dom.test.tsx | 66 | components/workspace-nav.tsx | nav link presence per role and ENABLE_CHECK_INS flag | CUT | cosmetic visibility, browser-checkable; file itself notes route re-authorizes server-side | n/a (CUT) |
+| client-roster-nav.dom.test.tsx | 64 | components/workspace-nav.tsx | Clients link presence per role | CUT | cosmetic visibility, browser-checkable | n/a (CUT) |
+| client-setup.test.ts | 41 | lib/coaching/client-setup-gate.ts: isClientSetupEnabled, CLIENT_SETUP_LIMITS, ClientSetupError | exact-"1" flag truth table; limits and error shape pinned | MERGE | kept cases prove fail-closed flag parsing; rest is constant/shape pins. Keep: both its in `P-016 client-setup dev gate`. Cut: `P-016 client-setup contract constants` describe | lib/coaching/client-setup-gate.ts: `env === "1"` to `env === "true"` -> vitest run tests/unit/client-setup.test.ts -> FAIL (2 tests, the kept truth-table cases) |
+| client-setup-rbac.test.ts | 47 | lib/auth/rbac.ts: isResource, resolveScope | clientSetups matrix cells re-declared | CUT | constant pin, re-declares RBAC table | n/a (CUT) |
+| client-setup-transition-actions.test.ts | 126 | app/.../client-setups/transition-actions.ts: loadTransitionTargets, reviewSetupTransition, executeSetupTransition | flag-off refusal returns literal {ok:false, message} before auth, FormData reads, or boundary work; flag-on proceeds | KEEP | gate ordering at trust boundary, literal result, mocks sit below the code under test | app/.../transition-actions.ts: gate() forced `return true` -> vitest run tests/unit/client-setup-transition-actions.test.ts -> FAIL (21 tests) |
+| coach-assignments-actions.test.ts | 172 | app/.../clients/[clientProfileId]/coaches/actions.ts: assignCoachAction, setPrimaryCoachAction, removeCoachAssignmentAction | session-first ordering, malformed FormData rejected before service call, error codes/ids never leak into messages | KEEP | action-layer validation and safe error mapping at trust boundary | coaches/actions.ts: dropped `|| !ASSIGNMENT_ROLES.has(role)` -> vitest run tests/unit/coach-assignments-actions.test.ts -> FAIL (1 test) |
+| coaching-gate.test.ts | 38 | lib/coaching/gate.ts: isCoachingTemplatesEnabled, COACHING_LIMITS | exact-"1" flag truth table; limits pinned | MERGE | kept cases prove fail-closed flag parsing; limits describe is a constant pin. Keep: `P-014 coaching feature gate` describe. Cut: `P-014 engineering safety limits` describe | lib/coaching/gate.ts: `env === "1"` to `env === "true"` -> vitest run tests/unit/coaching-gate.test.ts -> FAIL (2 tests, the kept truth-table cases) |
+
+## Could not check
+
+None. All 11 files ran at baseline and all KEEP/MERGE verdicts were confirmed with a bite check that failed the test.
+
+## Self-check
+
+(a) All 11 files have a row: PASS (11 rows, files counted in wc -l output match the assigned list).
+
+(b) Every KEEP and MERGE has a bite check that FAILED the test: PASS. 8 of 8 mutants produced test failures (audit 24, catalog 1, checkin-feedback 4, checkin-review 2, client-setup 2, transition-actions 21, coach-assignments-actions 1, coaching-gate 2). Each mutation was restored with cp and `git diff --exit-code -- <file>` exited 0; final `git status --short` in the worktree printed nothing.
+
+(c) Worktree removed and database dropped: PASS. No database was needed (no Postgres-backed tests in this set; nothing was created). Worktree removal command run after this report was written: `git -C /home/nexuslink/NEXUS_AI_CENTER/04_PROJECTS/Vari8 worktree remove --force /home/nexuslink/.hermes/cache/scratch/vari8-ta/TA-U00-w1` (exit 0).
+
+(d) Wrote nothing outside the worktree except this report: PASS. All edits were inside the worktree and reverted; the only file created outside it is icm/03-plan/output/TA/TA-U00-w1.md; scratch backups live in /tmp.

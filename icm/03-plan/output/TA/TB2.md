@@ -1,0 +1,231 @@
+# TB2 describe-level test audit (lane merge)
+
+Lane TB2, file list icm/03-plan/output/TA/TB2.txt (37 files). Fan-out: 4 builder
+workers, each with its own scratch worktree at 58eb6ed under
+/home/nexuslink/.hermes/cache/scratch/vari8-tb/TB2-w<n>; integration workers w1
+and w2 used databases app_tb_tb2_w1 and app_tb_tb2_w2. Worker reports: TB2-w1.md,
+TB2-w2.md, TB2-w3.md, TB2-w4.md. Every block not cut on sight got one mutation
+through the shared lever tb-mutate.sh (asserts the target string occurs exactly
+once, restores via git checkout; schema-targeting blocks used index drops or
+migration-file edits, restored after the run).
+
+## Summary
+
+99 top-level describe blocks, 637 tests, about 13061 block lines.
+KEEP: 89 blocks, 621 tests, 12951 lines.
+CUT: 10 blocks, 16 tests, 170 lines.
+CUT share: 10.1 percent of blocks, 2.5 percent of tests, 1.3 percent of block lines.
+
+Per worker: w1 11 blocks (118 tests, all KEEP), w2 14 blocks (97 tests, all
+KEEP), w3 46 blocks (295 tests, 40 KEEP / 6 CUT), w4 28 blocks (127 tests,
+24 KEEP / 4 CUT). All 37 files ran green at baseline (unit:
+`npx vitest run tests/unit/<file>`; integration:
+`vitest.integration.config.ts` with INTEGRATION_DATABASE_URL).
+
+| file | block | lines | tests | target | verdict | reason or mutation | failed tests |
+|---|---|---|---|---|---|---|---|
+| solo-coach-i1.test.ts | SOLO-COACH-I1 owner-as-coach (real PG) | 28-299 (272) | 6 | lib/workspace/clients.ts: assignCoach, setPrimaryCoach, removeClientAssignment, listClientAssignments, listAssignableCoachMembers | KEEP | clients.ts: `if (targetRole === "WORKSPACE_OWNER") return true;` -> `return false;` | owner self-assigns as PRIMARY through the service; owner member is eligible as COACH + set-primary promotes the owner row; removing an assignment leaves the workspace membership untouched (3 of 6) |
+| p010-client-roster.test.ts | P-010 client roster (real PG) | 33-359 (327) | 9 | lib/workspace/clients.ts: listAccessibleClientProfiles + buildClientProfileWhere; lib/workspace/roster-query.ts: parse/next/prev | KEEP | clients.ts buildClientProfileWhere assigned-scope clause `status: "ACTIVE"` -> `status: "REMOVED"` | coach and assistant see only ACTIVE assigned clients; removed/unassigned invisible (1 of 9) |
+| s1-a-identity.test.ts | S1-A identity & tenancy (real PostgreSQL) | 38-391 (354) | 11 | deployed schema from db/migrations/20260929120000_stage1_identity_tenancy: member unique pair, composite same-workspace FKs, active-primary partial index | KEEP | DB mutation: DROP INDEX client_assignment_one_active_primary_key (target is the deployed constraint, only reachable in the DB; index recreated with identical indexdef after run) | has the composite same-workspace FKs and the active-primary partial index; allows only one ACTIVE PRIMARY assignment per client (2 of 11) |
+| s1-a-identity.test.ts | S1-A migration preserves existing User and authentication | 393-493 (101) | 2 | db/migrations/20260929120000_stage1_identity_tenancy/migration.sql (applied via prisma db execute to a scratch DB) + lib/credentials.ts: authorizeCredentials | KEEP | migration.sql `ADD COLUMN "status" "UserStatus" NOT NULL DEFAULT 'ACTIVE'` -> `DEFAULT 'DEACTIVATED'`; run with `-t preserves` to isolate the block | keeps the existing User row and password hash, with safe defaults; still authorizes the existing credentials (2 of 2) |
+| s1-d-consent.test.ts | S1-D versioned consent | 38-680 (643) | 13 | lib/consent.ts: grantOwnConsent, revokeOwnConsent, readOwnConsentStatus, authorizeHealthOperation; lib/auth/rbac.ts consent cell | KEEP | rbac.ts consent row `WORKSPACE_OWNER: D` -> `WORKSPACE_OWNER: c("workspace", "workspace")` | owner/coach/assistant/support/platform cannot grant or revoke (1 of 13). Only the enforcement wiring is the keep reason per D12; see trim notes below |
+| p025d6-checkin-tracker-context.test.ts | P-025-D6 tracker context (real PG) | 55-1106 (1052) | 35 | lib/checkin/tracker-context.ts: readCheckInReviewTrackerContext, reconcileTrackerContextScopes, checkConsentIntersection | KEEP | tracker-context.ts `if (!member || member.status !== "ACTIVE")` -> `member.status === "ACTIVE"` | 12 of 35: owner reveals latest revision with one audit; assigned coach succeeds at scope assigned; assigned assistant succeeds; owner without assignment succeeds; returns only latest committed revision for exact date; one committed reveal writes exactly one structural READ audit; concurrent reveal vs revision write; D6 reveal vs concurrent Check-In mark; acquires csetup advisory BEFORE member; P-022 leads coherently; D6 leads coherently; crossed barrier completes |
+| p016-client-setup.test.ts | schema constraints | 172-351 (180) | 3 | deployed schema from db/migrations/20261007170000_p016_client_setup_assignments: unique setup per (workspace,client), composite FKs, provenance CHECK, (setup,seq) unique, one-ACTIVE-pin partial index | KEEP | DB mutation: DROP INDEX client_setup_pin_one_active_key (index recreated with identical indexdef; duplicate ACTIVE pin row left by the run deleted first) | permits one setup per (workspace, client) and one ACTIVE pin per setup (1 of 3). Note the Serializable+advisory protocol still held: the concurrent-create lifecycle test passed without the index |
+| p016-client-setup.test.ts | authorization | 353-543 (191) | 7 | lib/coaching/client-setup.ts services through lib/auth/rbac.ts clientSetups cell | KEEP | rbac.ts clientSetups `COACH: c("assigned", "assigned")` -> `COACH: D` | 3 of 7 own tests: owner sees all pins/coach sees only assigned; coach revocation fails closed mid-flight; a second ACTIVE assigned coach may cancel. Also failed 4 cross-block tests that drive coach actors (eligibility listEligibleClients; lifecycle coach-denied; R2 revoked-scope-stale, tampered cancel index) |
+| p016-client-setup.test.ts | eligibility | 545-592 (48) | 2 | lib/coaching/client-setup.ts: listAssignableTemplates, listAssignableSetupClients | KEEP | client-setup.ts listAssignableTemplates `status: "ACTIVE"` -> `status: "ARCHIVED"` | lists only ACTIVE templates with a published version (1 of 2 own). Also failed 2 R2 tests that resolve against the template list (resolveAssignSelection maps valid index+fingerprint; full boundary contract) |
+| p016-client-setup.test.ts | create / cancel lifecycle | 594-1106 (513) | 17 | lib/coaching/client-setup.ts: createClientSetupAssignment, cancelClientSetupAssignment, lockOrCreateSetup, authorizePinTarget | KEEP | client-setup.ts `if (existing) throw new ClientSetupError("assignment_conflict")` -> `if (!existing) ...` | 12 of 17 own: creates stable setup + seq-1 pin; rejects second current assignment; cancel transitions exactly once; reassignment after cancellation; cancel needs no eligibility; later published version never moves pin; cancel on foreign/missing/cross-workspace pins; concurrent creates one ACTIVE pin; concurrent cancels one transition; no C1 path writes SUPERSEDED; owner cancellation after client user deactivated; forced audit failure rolls back. Plus 3 authorization-block and 5 R2-block tests that call create/cancel |
+| p016-client-setup.test.ts | P-016-R2 positional selection + fingerprint resolution | 1108-1609 (502) | 13 | lib/coaching/client-setup.ts: resolveAssignSelection, resolveCancelSelection, listClientSetupPinIds, fingerprintMismatch; lib/coaching/selection-fingerprint.ts; lib/coaching/client-setup-boundary.ts | KEEP | client-setup.ts fingerprintMismatch `return fingerprint !== expected;` -> `return false;` | 7 of 13 own: client-list change fails stale; template archived fails stale; client ineligible fails stale; coach revoked scope stale; fingerprint from another workspace cannot resolve; resolveCancelSelection changed row list fails stale; boundary surfaces safe message for stale form |
+| tests/integration/training-i1a.test.ts | TRAINING-I1A (real PG) | 1348 | 20 | lib/trainingprogram/service.ts saveTrainingProgramDraft / publishTrainingProgramVersion + guard | KEEP | service.ts:796 `if (program.draft_revision !== input.expectedRevision)` -> `if (false)` (save-path stale_revision CAS dropped) -> FAIL (1) | "assigned coach + assigned owner author; CAS save bumps and audits {changed}" (stale-retry rejects.toMatchObject stale_revision) |
+| tests/integration/p013-onboarding-assignments.test.ts | schema constraints | 104 | 3 | db/migrations/20261006180000_p013_onboarding_assignments/migration.sql (partial unique + composite FKs + provenance CHECK) | KEEP | migration.sql:94-96 dropped `CREATE UNIQUE INDEX onboarding_assignment_one_active_key`, applied via `prisma migrate reset`, then file restored and DB re-reset -> FAIL (1) | "permits one ACTIVE row per (workspace, client, form) only" |
+| tests/integration/p013-onboarding-assignments.test.ts | authorization | 194 | 7 | lib/onboarding/assignments.ts assignmentWhere + authorize/authorizeCollection | KEEP | assignments.ts:135 `ctx.grantedScope === "workspace"` -> `=== "assigned"` -> FAIL (4) | own block: "owner sees all assignments; coach sees only assigned clients'", "paginates with the opaque id cursor and never repeats rows", "assignment revocation takes effect immediately"; also P3-assistant block test |
+| tests/integration/p013-onboarding-assignments.test.ts | eligibility | 50 | 2 | lib/onboarding/assignments.ts listAssignableForms + ELIGIBLE_CLIENT_PREDICATE | KEEP | assignments.ts:326 `versions: { some: {} }` -> `{ none: {} }` -> FAIL (2) | own block: "lists only ACTIVE forms with a published version"; also P2-3 block test (ownerForms empty) |
+| tests/integration/p013-onboarding-assignments.test.ts | create / replace / cancel lifecycle | 372 | 12 | lib/onboarding/assignments.ts createOnboardingAssignment / replace / cancel + requireAssignableForm | KEEP | assignments.ts:228 requireAssignableForm `versionSeq: "desc"` -> `"asc"` (pins earliest published version) -> FAIL (2) | "creates an ACTIVE row pinned to the latest published version + ASSIGN audit", "replace supersedes atomically and pins the latest version" |
+| tests/integration/p013-onboarding-assignments.test.ts | authorization order and non-disclosure (P2-1) | 185 | 2 | lib/onboarding/assignments.ts authorizeAssignmentTarget | KEEP | assignments.ts:489-493 removed the AccessDeniedError -> assignment_not_accessible remap (rethrow raw) -> FAIL (2) | own block: "denied callers get identical not_accessible for missing/active/terminal/foreign"; also authorization block's "assignment revocation takes effect immediately" |
+| tests/integration/p013-onboarding-assignments.test.ts | form-picker authorization (P2-3) | 51 | 1 | lib/onboarding/assignments.ts listAssignableForms authorizeCollection | KEEP | assignments.ts:316 `resource: "onboardingFormTemplates"` -> `"onboardingAssignments"` (assistant then authorized) -> FAIL (1) | "listAssignableForms requires form-template read - assistant is denied" |
+| tests/integration/p013-onboarding-assignments.test.ts | platform-admin dual role (P3) | 20 | 1 | lib/auth/guard.ts PLATFORM_ADMIN_DENIED_RESOURCES | KEEP | guard.ts:134 removed `"onboardingAssignments"` from the deny-set -> FAIL (1) | "a PLATFORM_ADMIN with an ACTIVE workspace membership stays denied" |
+| tests/integration/p013-onboarding-assignments.test.ts | assistant assigned read scope (P3) | 39 | 1 | lib/onboarding/assignments.ts assignmentWhere assigned-scope filter | KEEP | assignments.ts:143 assigned-scope `status: "ACTIVE"` -> `"REMOVED"` (ACTIVE ClientAssignment no longer counts) -> FAIL (3) | own block: "assistant sees rows only for clients under its ACTIVE ClientAssignment"; also authorization block's owner/coach-scope and revocation tests |
+| tests/integration/p013-onboarding-assignments.test.ts | feature gate | 26 | 1 | lib/onboarding/assignments-boundary.ts gated() -> isOnboardingAssignmentsEnabled | KEEP | assignments-boundary.ts gated() body -> `return true` (flag-off calls proceed) -> FAIL (1) | "flag-off boundary call produces zero mutations and zero audits" |
+| tests/integration/checkin-feedback-i1.test.ts | CHECK-IN-FEEDBACK-I1 (real PG) | 1011 | 21 | lib/checkin/instances.ts sendCheckInFeedback / resolveCheckInFeedbackSend / listCheckInFeedback / listOwnCheckInFeedback / readCheckInSubmissionDetail | KEEP | instances.ts:2705 send-path `ctx.grantedScope !== "assigned"` -> `!== "workspace"` (all writes denied) -> FAIL (18) | 18 of 21: send idempotency, replay, nonce scope, concurrency, consent-withdrawal, detail canSend gating, keyset pagination, recovery resolver, revocation, audit atomicity, 2000-char bound, own-list |
+| tests/integration/p025d2-checkin-calendar.test.ts | P-025-D2 calendar list (real PG) | 498 | 10 | lib/checkin/instances.ts listCheckInInstancesForClient range filter + presentation/late + deny | KEEP | instances.ts:1080 dropped the `dueAt: { gte: range.from, lt: range.to }` range predicate -> FAIL (5) | own block: "owner workspace scope returns the bounded range in dueAt order - out-of-range absent", "assigned coach and assistant both read the same bounded range", "an empty range window returns zero items"; also 2 truncation-block tests (unfiltered rows overflow 200) |
+| tests/integration/p025d2-checkin-calendar.test.ts | P-025-D2 R2 truncation signal (real PG) | 221 | 4 | lib/checkin/instances.ts take: listMax + extra-row overflow detection | KEEP | instances.ts:1105 `take: CHECKIN_INSTANCE_LIMITS.listMax + (range !== null ? 1 : 0)` -> `take: CHECKIN_INSTANCE_LIMITS.listMax` -> FAIL (1) | "201 eligible -> first 200 items, truncated true; range and scope rows do not count" |
+| tests/integration/p008-onboarding-actions.test.ts | P-008 onboarding actions (real PG) | 311 | 12 | app/workspace/[workspaceId]/onboarding/actions.ts -> forms-boundary.ts -> lib/onboarding/forms.ts | KEEP | forms.ts:585 publish `versionSeq = (max._max.versionSeq ?? 0) + 1` -> `+ 2` -> FAIL (2) | "owner runs the full action lifecycle", "active COACH runs the full action lifecycle" (both assert literal versionSeq: 1) |
+| audit.test.ts | sanitizeAuditMeta | 182 | 43 | lib/audit.ts:sanitizeAuditMeta | KEEP | lib/audit.ts: `validator === undefined \|\| validator(value) !== true` -> `validator === undefined` | 14 of the block's it.each rows (rejects nested/array/email/oversized/jwt/hex/non-integer/negative/non-boolean/unknown role/unknown status x2/lowercase + non-structural version) |
+| audit.test.ts | buildAuditEvent | 58 | 5 | lib/audit.ts:buildAuditEvent | KEEP | lib/audit.ts: `reason: null` -> `reason: "smuggled"` | builds a structural ALLOW event; never trusts caller-supplied actor or workspace fields |
+| audit.test.ts | writeAuditEvent | 35 | 2 | lib/audit.ts:writeAuditEvent | KEEP | lib/audit.ts: `await tx.auditEvent.create({ data })` -> `void data` (in writeAuditEvent) | writes via the transaction client delegate |
+| audit.test.ts | listAuditEvents | 67 | 2 | lib/audit.ts:listAuditEvents | KEEP | lib/audit.ts: `take: take + 1` -> `take: take` (workspace findMany) | lets the workspace owner read own-workspace events, bounded |
+| audit.test.ts | listAccountAuditEvents (S1-F2B internal primitive) | 41 | 1 | lib/audit.ts:listAccountAuditEvents | KEEP | lib/audit.ts: `scope: "ACCOUNT"` -> `scope: "WORKSPACE"` (account where) | is subject-scoped, ACCOUNT-locked, bounded, and minimal |
+| audit.test.ts | buildAccountAuditEvent (S1-F2B) | 279 | 21 | lib/audit.ts:buildAccountAuditEvent + writeAccountAuditEvent | KEEP | lib/audit.ts: meta pair rule `resourceType === "access_token"` -> `=== "user"` | captures each input field once — getter mutation cannot bypass the pair rule; rejects non-account actions/resources and missing subject |
+| catalog.test.ts | searchFoods | 20 | 3 | lib/catalog.ts:searchFoods | KEEP | lib/catalog.ts: `record.category !== category` -> `===` | filters by category |
+| catalog.test.ts | foodCategories | 9 | 1 | lib/catalog.ts:foodCategories | KEEP | lib/catalog.ts: dropped `.sort()` | returns unique, sorted, non-empty categories |
+| catalog.test.ts | searchExercises | 18 | 2 | lib/catalog.ts:searchExercises | KEEP | lib/catalog.ts: `record.muscleGroup !== filters.muscleGroup` -> `===` | filters by muscle group and equipment |
+| catalog.test.ts | exerciseFacets | 8 | 1 | lib/catalog.ts:exerciseFacets | KEEP | lib/catalog.ts: dropped `.sort()` in unique() | returns unique sorted facets |
+| catalog.test.ts | toSparseGrid | 49 | 4 | lib/catalog.ts:toSparseGrid | KEEP | lib/catalog.ts: `isEmpty && !hasCheckbox` -> `isEmpty` | omits empty cells but keeps the full grid extent; preserves checkboxes, coordinates, and merged spans |
+| catalog.test.ts | sheetDisplayName | 8 | 1 | lib/catalog.ts:sheetDisplayName | KEEP | lib/catalog.ts: `/\.html?$/i` -> `/\.xhtml$/i` | strips the html extension |
+| checkin-forms-boundary.test.ts | P-025-A boundary — raw payload bound before parse | 77 | 3 | lib/checkin/forms-boundary.ts:parseDraftJson/saveCheckInDraftFromAction | KEEP | lib/checkin/forms-boundary.ts: `byteLength(draftJson) > MAX_DRAFT_JSON_BYTES` -> `draftJson.length > ...` | bounds BYTES, not characters — multibyte overflow rejects pre-parse |
+| checkin-forms-boundary.test.ts | P-025-A boundary — closed error vocabulary maps to safe copy | 51 | 1 | lib/checkin/forms-boundary.ts:mapError/ERROR_MESSAGES | KEEP | lib/checkin/forms-boundary.ts: `fail(ERROR_MESSAGES[error.code] ?? GENERIC_ERROR)` -> `fail(GENERIC_ERROR)` | maps each typed code to its pinned message; unknown -> GENERIC |
+| checkin-instances.test.ts | P-025-B — checkinInstances RBAC matrix | 23 | 2 | lib/auth/rbac.ts:checkinInstances cells | KEEP | lib/auth/rbac.ts: `CLIENT: c("own", "denied")` -> `c("own", "own")` | client own read only; SUPPORT and PLATFORM_ADMIN denied outright |
+| checkin-instances.test.ts | P-025-B — platform-admin deny-set completeness | 67 | 2 | lib/auth/guard.ts:PLATFORM_ADMIN_DENIED_RESOURCES + authorize | KEEP | lib/auth/guard.ts: removed `"checkinInstances"` from the deny set | all three Check-In resources deny a dual-role platform admin |
+| checkin-instances.test.ts | P-025-B — derived lifecycle projector | 107 | 2 | lib/checkin/instances.ts:projectCheckInInstanceState/Presentation | KEEP | lib/checkin/instances.ts: cancelled pair `&&` -> `\|\|` | derives CANCELLED > SUBMITTED > SCHEDULED from child rows only |
+| checkin-instances.test.ts | P-025-B — dueAt and payload bounds | 24 | 2 | lib/checkin/instances.ts:parseCheckInDueAt/parseCheckInAnswersJson | KEEP | lib/checkin/instances.ts: year-range `\|\|` -> `&&` | accepts a sane ISO timestamp; rejects malformed/unbounded |
+| checkin-instances.test.ts | P-025-B — answer canonicalization (typed, definition-bound) | 156 | 14 | lib/checkin/instances.ts:canonicalizeCheckInAnswers | KEEP | lib/checkin/instances.ts: dropped `.sort()` on multiChoice option ids | valid input produces one typed row per field, definition order |
+| checkin-instances.test.ts | P-025-B — consent policy resolver | 34 | 1 | lib/checkin/instances-consent.ts:resolveCheckInConsentPolicy | KEEP | lib/checkin/instances-consent.ts: `=== "production"` -> `!== "production"` | synthetic registry requires flag AND trusted runtime. (Consent-version literals are D12-parked, but this block pins the fail-closed dev-registry gate — flag + trusted-runtime — a generic dev-exposure boundary, not consent mechanics.) |
+| checkin-instances.test.ts | P-025-B — closed error vocabulary | 11 | 1 | lib/checkin/instances.ts:CheckInInstanceError | KEEP | lib/checkin/instances.ts: `super(code)` -> `super("internal detail")` | CheckInInstanceError carries only structural codes. (Thin — code/message round-trip — but the code->message pass-through is the contract callers consume and it bites.) |
+| checkin-instances.test.ts | P-025-B — boundary seam exists for app-facing calls | 10 | 1 | lib/checkin/instances-boundary.ts:exports | CUT | typeof x === "function" checks only — export surface, no behavior | — |
+| checkin-review-queue.test.ts | CHECK-IN-OVERVIEW-I1 — review-queue cursor codec | 29 | 9 | lib/checkin/instances.ts:parseCheckInReviewQueueCursor | KEEP | lib/checkin/instances.ts: dropped `id.includes("\|")` check | rejects malformed cursor "{ISO}\|a\|b" |
+| checkin-review-queue.test.ts | CHECK-IN-OVERVIEW-I1 — queue WHERE builder | 56 | 3 | lib/checkin/instances.ts:buildCheckInReviewQueueWhere | KEEP | lib/checkin/instances.ts: `scope === "assigned"` -> `=== "workspace"` | all 3 tests (workspace anti-join, assigned semi-join, cursor OR branch) |
+| checkin-review-queue.test.ts | CHECK-IN-OVERVIEW-I1 — derived canReview | 19 | 8 | lib/checkin/instances.ts:deriveCheckInQueueCanReview | KEEP | lib/checkin/instances.ts: dropped `&& rowHasActiveAssignment` | role=WORKSPACE_OWNER rowAssignment=false; role=COACH rowAssignment=false |
+| checkin-review-queue.test.ts | CHECK-IN-OVERVIEW-I1 — deep-link param parser | 38 | 6 | lib/checkin/instances.ts:parseCheckInSubmissionParam | KEEP | lib/checkin/instances.ts: dropped `!validId(value)` | malformed param "" and 129-char rows -> invalid |
+| checkin-review-queue.test.ts | CHECK-IN-OVERVIEW-I1 — exports | 13 | 2 | lib/checkin/instances.ts + instances-boundary exports | CUT | typeof checks plus a `PAGE_SIZE === 50` constant pin — re-states a constant | — |
+| checkin-review.test.ts | P-025-C — REVIEWED in the derived projector | 56 | 2 | lib/checkin/instances.ts:projectCheckInInstanceState/Presentation | KEEP | lib/checkin/instances.ts: `return "REVIEWED"` -> `return "SUBMITTED"` | derives CANCELLED > REVIEWED > SUBMITTED > SCHEDULED; presentation keeps the late marker |
+| checkin-review.test.ts | P-025-C — audit resource union | 11 | 1 | lib/audit.ts:AUDIT_RESOURCE_TYPES | CUT | Pins a constant array's contents/position ("checkin_review" once, after "checkin_submission") — re-states the constant, no mechanism exercised | — |
+| checkin-review.test.ts | P-025-C — service exports | 8 | 1 | lib/checkin/instances.ts:exports | CUT | typeof checks only | — |
+| checkin-review.test.ts | P-025-C — boundary exports | 8 | 1 | lib/checkin/instances-boundary.ts:exports | CUT | typeof checks only | — |
+| checkin-review.test.ts | P-025-C — checkinsCoachReviews capability split | 28 | 1 | lib/auth/rbac.ts:checkinsCoachReviews cells | KEEP | lib/auth/rbac.ts: `WORKSPACE_OWNER: c("workspace", "assigned")` -> `c("assigned", "assigned")` | staff detail read = ws/assigned; mark = assigned only. (Write cells overlap checkin-instances.test.ts, but this block uniquely pins the READ column split.) |
+| client-setup-actions.test.ts | P-016 server actions — flag-off ordering | 54 | 3 | app/.../client-setups/actions.ts + lib/coaching/client-setup-gate.ts | KEEP | lib/coaching/client-setup-gate.ts: `return env === "1"` -> `return true` | all 3 tests (assignTemplate + cancelSetupAssignment flag-off rows, FormData never read) |
+| client-setup-actions.test.ts | P-016 server actions — flag-on validation | 86 | 9 | app/.../client-setups/actions.ts:indexField/singleString | KEEP | app/.../actions.ts: dropped `!/^\d+$/.test(raw)` in indexField | rejects a negative index before delegating |
+| client-setup-transition-actions.test.ts | P-020B transition actions — flag ordering | 56 | 24 | app/.../client-setups/transition-actions.ts + lib/coaching/client-setup-transition-gate.ts | KEEP | lib/coaching/client-setup-transition-gate.ts: `transitionsEnv === "1" && isClientSetupEnabled(...)` -> `return true` | 21 of 24 tests (all flag-off and parent-off rows across the three actions) |
+| client-tasks-boundary.test.ts | client-tasks boundary — gate first | 10 | 1 | lib/tasks/boundary.ts:guard | KEEP | lib/tasks/boundary.ts: flag-off `fail("not_available")` -> `fail("denied")` | flag-off returns not_available and never reaches the service |
+| client-tasks-boundary.test.ts | client-tasks boundary — error vocabulary | 74 | 11 | lib/tasks/boundary.ts:mapError | KEEP | lib/tasks/boundary.ts: `isSerializationConflict(error)` -> `fail("not_available")` | maps raw P2034 / P2010-40001 / P2010-40P01 to serialization_conflict (3 rows) |
+| coach-assignments-actions.test.ts | SOLO-COACH-I1 coach-assignment actions | 113 | 9 | app/.../coaches/actions.ts (assign/setPrimary/remove) | KEEP | app/.../coaches/actions.ts: dropped `!ASSIGNMENT_ROLES.has(role)` | assignCoachAction rejects out-of-allowlist role without calling the service |
+| coaching-classification-actions.test.ts | P-020A classifyParameter action — flag-off ordering | 55 | 6 | app/.../parameters/actions.ts:classifyParameter + lib/coaching/parameter-classification-gate.ts | KEEP | lib/coaching/parameter-classification-gate.ts: `env === "1"` -> `env !== "1"` | flag=1 -> proceeds to auth and the boundary. (Flag-off rows still refused via the ENABLE_COACHING_TEMPLATES gate — the block's own proceed-path test catches the inversion.) |
+| coaching-classification.test.ts | parameter-classification gate | 19 | 1 | lib/coaching/parameter-classification-gate.ts:isParameterClassificationEnabled | KEEP | lib/coaching/parameter-classification-gate.ts: `env === "1"` -> `env !== "1"` | enables only on the exact string "1" |
+| coaching-classification.test.ts | classification boundary gate ordering | 26 | 1 | lib/coaching/parameters-boundary.ts:classifyParameterFromAction | CUT | Mutation applied: deleted the whole `!isParameterClassificationEnabled(...) return fail(OFF_ERROR)` check -> all 18 tests still passed. The flagOff() second gate (ENABLE_COACHING_TEMPLATES, unset in tests) produces the identical `{ok:false,"...not available."}` result, so the block cannot attribute the refusal to the classification gate it claims to pin. Only assertion is `r.ok false` + message contains "not available". | none — masked by the second gate |
+| coaching-classification.test.ts | computeSelectionFingerprint | 15 | 2 | lib/coaching/selection-fingerprint.ts:computeSelectionFingerprint | KEEP | lib/coaching/selection-fingerprint.ts: hash `[...group].sort()` instead of `group` | changes when membership or ordering changes |
+| coaching-classification.test.ts | evaluateDailyEntryVersionEligibility | 244 | 14 | lib/coaching/daily-entry-eligibility.ts | KEEP | lib/coaching/daily-entry-eligibility.ts: `cls !== "GENERAL_HEALTH"` -> `cls !== "CYCLE"` | accepts GENERAL_HEALTH MEASUREMENT; accepts RATING/OPTION/TEXT; rejects specialist classification CYCLE |
+| daily-entry-canonical.test.ts | canonicalizeDecimal — grammar and normalization | 60 | 49 | lib/daily-entry/canonical.ts:canonicalizeDecimal | KEEP | lib/daily-entry/canonical.ts: `> MAX_FRACTION_DIGITS` -> `>=` | accepts "1.50000000", "-12,50000000", both 22-digit-boundary rows |
+| daily-entry-canonical.test.ts | computeRevisionCanonicalHash | 112 | 5 | lib/daily-entry/canonical.ts:computeRevisionCanonicalHash | KEEP | lib/daily-entry/canonical.ts: `lp(p.dataClassification ?? "")` -> `lp("")` | produces the fixed compatibility vector; binds provenance, classification, pin, and version |
+| daily-entry-canonical.test.ts | computeDailyEntryFormToken — actor-bound stale token | 68 | 11 | lib/daily-entry/canonical.ts:computeDailyEntryFormToken | KEEP | lib/daily-entry/canonical.ts: `lp(input.sessionUserId)` -> `lp("u")` | fails to replay across changed user |
+| daily-entry-impact.test.ts | P-021 ordering | 89 | 2 | lib/coaching/daily-entry-impact.ts:createDailyEntryImpactProvider sort | KEEP | daily-entry-impact.ts: `(a < b ? -1 : a > b ? 1 : 0)` -> `a.localeCompare(b)` | 1 of 2: "sorts affectedParameters by code unit, not localeCompare" |
+| daily-prototype.test.ts | Phase B0 field schema | 47 | 4 | lib/daily-prototype.ts DAILY_FIELDS/EXCLUDED_FIELD_KEYS/BIOFEEDBACK_KEYS/COMPUTED_COLUMNS | CUT | re-states constants: pins field keys, labels, units, key count, marker column; never calls a function | n/a |
+| daily-prototype.test.ts | validateDailyEntry | 38 | 4 | lib/daily-prototype.ts:validateDailyEntry | KEEP | daily-prototype.ts: `!field.options.includes(value)` -> `field.options.includes(value)` | 1 of 4: "enforces the day-label enum" |
+| daily-prototype.test.ts | isDailyPrototypeEnabled | 9 | 1 | lib/daily-prototype.ts:isDailyPrototypeEnabled | KEEP | daily-prototype.ts: `env === "1"` -> `env === "true"` | 1 of 1: "is enabled only by the explicit dev flag" |
+| daily-week-groups.test.ts | groupDailyHistoryByWeek | 44 | 4 | lib/daily-entry/week-groups.ts:mondayOf | KEEP | week-groups.ts: `(d.getUTCDay() + 6) % 7` -> `+ 5` (Tuesday-start) | 3 of 4: Monday-start grouping, year/month boundary, human label |
+| dashboard-config.test.ts | dashboard config validation | 123 | 6 | lib/dashboard/config-schema.ts:validateDashboardConfig | KEEP | config-schema.ts: `!WIDGET_KINDS.includes(kind)` -> `WIDGET_KINDS.includes(kind)` | 3 of 6: accepts well-formed, rejects unknown kinds, visibility enum/CU16 |
+| dashboard-config.test.ts | client subset projection | 28 | 1 | lib/dashboard/config-schema.ts:projectClientDashboardConfig | KEEP | config-schema.ts: `visibility === "client"` -> `=== "staff"` | 1 of 1: drops staff widgets + rects |
+| dashboard-config.test.ts | canonical form | 9 | 1 | lib/dashboard/config-schema.ts:canonicalizeDashboardConfig | CUT | self-referential: `canonicalize(c)` compared to `canonicalize(c)` on the same value; passes if the function returned undefined | n/a |
+| dashboard-config.test.ts | hardened bounds (I1-R2) | 67 | 4 | lib/dashboard/config-schema.ts:validateDashboardConfig depth/labels/caps + projectClientDashboardConfig re-pack | KEEP | config-schema.ts: `depthOf(value, 0) > 6` -> `> 60` | 1 of 4: "rejects input nested deeper than depth 6" (re-pack and 24-cap tests also failed under the earlier mutations) |
+| extraction-contract.test.ts | sheet slug mapping | 35 | 3 | lib/extraction/contracts.ts:slugifySheetFileName | KEEP | contracts.ts: `/[^a-z0-9]+/g, "-"` -> `"_"` | 2 of 3: documented slug map, normalization cases (the EXPECTED_SHEETS length pin inside this block stays dead weight) |
+| extraction-contract.test.ts | redaction placeholder | 8 | 1 | lib/extraction/contracts.ts:redactedPlaceholder | KEEP | contracts.ts: dropped trailing `]` from placeholder | 1 of 1: builds the documented placeholder form |
+| mealplan-timezone.test.ts | resolveMealPlanActivation | 60 | 5 | lib/mealplan/service.ts:resolveMealPlanActivation | KEEP | service.ts: `resolveLocalInstant(zone, effectiveDate, 0)` -> `60` (minute 60, not midnight) | 2 of 5: ordinary midnight, midnight-fold earlier instant |
+| mealplan-timezone.test.ts | parseEffectiveDate bounds | 30 | 3 | lib/mealplan/service.ts:parseEffectiveDate | KEEP | service.ts: `raw >= limit` -> `raw > limit` (boundary day now accepted) | 1 of 3: rejects dates more than 366 days ahead |
+| normalize.test.ts | normalizeNumeric | 38 | 6 | lib/extraction/normalize.ts:normalizeNumeric | KEEP | normalize.ts: dot-decimal `\d{1,2}$` -> `\d{1,3}$` ("1.234" becomes a decimal) | 2 of 6: grouped thousands, refuses ambiguous single-group |
+| onboarding-assignments.test.ts | assignments dev gate | 12 | 11 | lib/onboarding/assignments-gate.ts:isOnboardingAssignmentsEnabled | KEEP | assignments-gate.ts: `env === "1"` -> `env !== "1"` | 11 of 11: enabled-only-by-1 plus all 10 disabled cases |
+| onboarding-assignments.test.ts | contract constants | 14 | 2 | lib/onboarding/assignments-gate.ts:OnboardingAssignmentError + ASSIGNMENT_LIMITS | KEEP | assignments-gate.ts: `this.name = "OnboardingAssignmentError"` -> `"Error"` | 1 of 2: "error codes stay structural" (the ASSIGNMENT_LIMITS pin stays dead weight) |
+| password-reset.test.ts | S1-F2D unit surface | 450 | 12 | lib/auth/password-reset.ts + lib/audit | KEEP | password-reset.ts: `MAX_ATTEMPTS = 8` -> `3` | 1 of 12: bounded retry count (attempts 8 expected) |
+| password-reset.test.ts | route boundary | 24 | 1 | app/** import surface vs lib/auth/password-reset, lib/tokens/store | KEEP | app/page.tsx: added `import { claimAccessToken } from "@/lib/tokens/store"` | 1 of 1: no app/route file imports the service or store |
+| summaries.test.ts | buildSheetSummary | 50 | 5 | lib/extraction/summaries.ts:buildSheetSummary | KEEP | summaries.ts: rowCount `Math.max` -> `Math.min` | 1 of 5: reports counts from the cells |
+| token-crypto.test.ts | generateAccessToken | 53 | 5 | lib/tokens/crypto.ts:generateAccessToken | KEEP | crypto.ts: `TOKEN_BYTE_LENGTH = 32` -> `16` | 5 of 5: all generation tests |
+| token-crypto.test.ts | hashAccessToken | 136 | 16 | lib/tokens/crypto.ts:hashAccessToken | KEEP | crypto.ts: `createHash("sha256")` -> `createHash("sha1")` | 3 of 16: canonical 64-hex digest, known SHA-256 answer, canonical final char |
+| token-crypto.test.ts | module boundary | 21 | 3 | lib/tokens/crypto.ts export surface | CUT | typeof/exports and arity pins; the one behavioral test (earlier hash stays valid) duplicates determinism already proven in the hashAccessToken block | n/a |
+| token-store.test.ts | S1-F2A token store | 185 | 10 | lib/tokens/store.ts:issueWorkspaceInviteToken etc. | KEEP | store.ts: `!INVITABLE_ROLES.includes(input.intendedRole)` -> drop `!` | 2 of 10: issues invites normalized+hash-only, rejects non-invocable roles (the TTL constant pin inside stays dead weight) |
+| transition-impact.test.ts | canonical count + date validation | 60 | 3 | lib/coaching/transition-impact.ts:isCanonicalCount/isCanonicalCalendarDate/isValidImpactBounds | KEEP | transition-impact.ts: `/^(0|[1-9][0-9]*)$/` -> `/^(0|[0-9]+)$/` (leading zeros accepted) | 1 of 3: accepts only unsigned ASCII canonical counts |
+| transition-impact.test.ts | provider declaration/set equality | 61 | 5 | lib/coaching/transition-impact.ts:validateProviderSet + impact-consumers.ts:validateProviderFactories | KEEP | transition-impact.ts: provider-key loop `!keys.has(key)` -> `keys.has(key)` | 2 of 5: provider-without-declaration, accepts consistent set |
+| transition-impact.test.ts | provider-set identity vectors | 19 | 2 | lib/coaching/transition-impact.ts:providerSetIdentity | KEEP | transition-impact.ts: `"C2-PROVIDER-SET-v1"` -> `"-v2"` domain tag | 2 of 2: empty-set pin, synthetic non-empty pin |
+| transition-impact.test.ts | provider execution + output validation | 129 | 6 | lib/coaching/transition-impact.ts:collectProviderImpacts | KEEP | transition-impact.ts: swapped PROVIDER_VERSION_MISMATCH and PROVIDER_OUTPUT_INVALID in the blocked-code mapping | 2 of 6: version mismatch mapping, malformed output mapping |
+| transition-impact.test.ts | closed vocabularies | 17 | 1 | lib/coaching/transition-impact.ts BLOCKED_REASON_RANK/IMPACT_ROLE_RANK keys | CUT | re-states constants: asserts rank-table key lists equal literal lists; no function called | n/a |
+
+## Per-file verdicts
+
+KEEP-ALL (29): checkin-feedback-i1, p008-onboarding-actions, p010-client-roster,
+p013-onboarding-assignments, p016-client-setup, p025d2-checkin-calendar,
+p025d6-checkin-tracker-context, s1-a-identity, s1-d-consent, solo-coach-i1,
+training-i1a, audit, catalog, checkin-forms-boundary, client-setup-actions,
+client-setup-transition-actions, client-tasks-boundary, coach-assignments-actions,
+coaching-classification-actions, daily-entry-canonical, daily-entry-impact,
+daily-week-groups, extraction-contract, mealplan-timezone, normalize,
+onboarding-assignments, password-reset, summaries, token-store.
+
+TRIM (8):
+- checkin-instances.test.ts: keep all except "P-025-B - boundary seam exists for app-facing calls"
+- checkin-review-queue.test.ts: keep all except "CHECK-IN-OVERVIEW-I1 - exports"
+- checkin-review.test.ts: keep "P-025-C - REVIEWED in the derived projector" and "P-025-C - checkinsCoachReviews capability split"
+- coaching-classification.test.ts: keep all except "classification boundary gate ordering"
+- daily-prototype.test.ts: keep validateDailyEntry, isDailyPrototypeEnabled
+- dashboard-config.test.ts: keep dashboard config validation, client subset projection, hardened bounds (I1-R2)
+- token-crypto.test.ts: keep generateAccessToken, hashAccessToken
+- transition-impact.test.ts: keep canonical count + date validation, provider declaration/set equality, provider-set identity vectors, provider execution + output validation
+
+CUT-FILE: none.
+
+## Lead verification
+
+Re-ran 3 KEEP block mutations per worker in the worker worktrees before
+teardown; all reproduced the reported own-block failures:
+
+- w1: solo-coach owner-eligibility flip FAIL 3/6; p010 assigned-scope
+  ACTIVE to REMOVED FAIL 1/9; p025d6 member-status inversion FAIL 12/35.
+- w2: checkinFeedback write scope assigned to workspace FAIL 18/21; p013
+  workspace to assigned base scope FAIL 4/30; p025d2 dueAt range drop FAIL 5/14.
+- w3: catalog category filter inversion FAIL 1/12; checkin-review
+  REVIEWED to SUBMITTED FAIL 2/6; coaching-classification masked gate:
+  deleting the classification-gate check left all 18 green, reproducing
+  the CUT call.
+- w4: normalize dot-decimal bound FAIL 2/6; mealplan resolveLocalInstant
+  minute 0 to 60 FAIL 2/8; onboarding gate env ==="1" inversion FAIL 11/13.
+
+CUT-on-sight calls re-verified by reading the blocks (w1 and w2 made none):
+
+- w3: checkin-instances "boundary seam" (typeof only), checkin-review-queue
+  "exports" (typeof plus PAGE_SIZE pin), checkin-review "audit resource
+  union" plus both export blocks (constant array pin and typeof), all
+  confirmed.
+- w4: daily-prototype "Phase B0 field schema" (constant pins, no function
+  call), dashboard-config "canonical form" (self-referential f(x) === f(x)),
+  transition-impact "closed vocabularies" (key-list pins), token-crypto
+  "module boundary" (typeof/arity plus duplicate determinism), all confirmed.
+
+No worker sent back; all rows held.
+
+## Worker flags (test-level, for the judge)
+
+- w1: inside kept blocks, s1-a holds constant pins (migration-name strings,
+  index names at l.161, full table-name list at l.273); s1-d's pure
+  consent-mechanics tests are parked per D12 and are not the keep reason
+  (keep reasons: role-deny, workspace isolation, fail-closed, unassigned
+  coach). Partial-index drops showed the serializable + advisory-lock
+  protocol holds without the index in both p013 and p016.
+- w2: same index-backstop observation for p013 (concurrent creates still
+  serialized one ACTIVE row without the partial unique index).
+- w3: coaching-classification "classification boundary gate ordering" is
+  mutation-verified dead: the second flagOff() gate
+  (ENABLE_COACHING_TEMPLATES, unset in tests) produces the identical OFF
+  refusal, so the block cannot attribute the refusal to the gate it pins.
+  Decide whether to strengthen (spy on flagOff/service) or drop.
+  checkin-instances "closed error vocabulary" kept on a thin bite
+  (code-to-message round-trip is the contract callers consume).
+  checkin-instances "consent policy resolver" kept as the fail-closed
+  dev-registry gate (generic dev-exposure boundary), not consent mechanics.
+- w4: dead weight inside kept blocks: ASSIGNMENT_LIMITS pin
+  (onboarding-assignments contract constants), EXPECTED_SHEETS length pin
+  (extraction slug block), TTL pin (token-store). password-reset "route
+  boundary" is a filesystem import scan that did bite under a real
+  forbidden-import mutation; kept as boundary validation.
+
+## Could not check
+
+Nothing. All 37 files ran at baseline and every block got a verdict.
+
+## Self-check
+
+PASS.
+
+(a) File and block coverage: 37/37 assigned files have their blocks listed;
+99 rows in the table (w1 11, w2 14, w3 46, w4 28), matching per-file counts
+each worker verified against grep of top-level describe( and baseline totals
+(118 + 97 + 295 + 127 = 637 tests).
+
+(b) Every KEEP block (89) has a recorded mutation that failed at least one
+of its own tests: worker evidence per row plus the lead re-runs above (9 KEEP
+re-runs reproduced reported failure counts; the one zero-failure mutation is
+the w3 masked-gate CUT, also reproduced).
+
+(c) Teardown: `git worktree list` shows 0 TB2 worktrees (removed with
+--force after confirming clean worktrees); dropdb removed app_tb_tb2_w1 and
+app_tb_tb2_w2 (`psql -l` shows no app_tb_tb2* rows). Process census: no TB2
+processes remain; the vitest/prisma processes still on the box belong to
+concurrent lanes TB0, TB1 and TB3 (their own worktrees and databases).
+Nothing lane-owned left running.
+
+(d) Writes: only icm/03-plan/output/TA/TB2-w1.md, TB2-w2.md, TB2-w3.md,
+TB2-w4.md and this file inside the repo; mutation scratch lived in the
+removed worktrees and /tmp. No commits, no tracked-file edits.

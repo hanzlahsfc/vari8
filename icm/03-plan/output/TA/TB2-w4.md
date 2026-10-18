@@ -1,0 +1,64 @@
+# TB2-w4 describe-level test audit (worker 4 of 4)
+
+Worktree /home/nexuslink/.hermes/cache/scratch/vari8-tb/TB2-w4 at 58eb6ed. Each file run alone as baseline first; all 127 tests green. Every non-CUT-on-sight block got one mutation via tb-mutate.sh; verdicts below.
+
+Summary: 28 top-level blocks, 127 tests, 1856 block lines. KEEP: 24 blocks, 118 tests, 1762 lines. CUT: 4 blocks, 9 tests, 94 lines. CUT share: 7.1% of tests, 5.1% of block lines.
+
+| file | block | lines | tests | target | verdict | reason or mutation | failed tests |
+|---|---|---|---|---|---|---|---|
+| daily-entry-impact.test.ts | P-021 ordering | 89 | 2 | lib/coaching/daily-entry-impact.ts:createDailyEntryImpactProvider sort | KEEP | daily-entry-impact.ts: `(a < b ? -1 : a > b ? 1 : 0)` -> `a.localeCompare(b)` | 1 of 2: "sorts affectedParameters by code unit, not localeCompare" |
+| daily-prototype.test.ts | Phase B0 field schema | 47 | 4 | lib/daily-prototype.ts DAILY_FIELDS/EXCLUDED_FIELD_KEYS/BIOFEEDBACK_KEYS/COMPUTED_COLUMNS | CUT | re-states constants: pins field keys, labels, units, key count, marker column; never calls a function | n/a |
+| daily-prototype.test.ts | validateDailyEntry | 38 | 4 | lib/daily-prototype.ts:validateDailyEntry | KEEP | daily-prototype.ts: `!field.options.includes(value)` -> `field.options.includes(value)` | 1 of 4: "enforces the day-label enum" |
+| daily-prototype.test.ts | isDailyPrototypeEnabled | 9 | 1 | lib/daily-prototype.ts:isDailyPrototypeEnabled | KEEP | daily-prototype.ts: `env === "1"` -> `env === "true"` | 1 of 1: "is enabled only by the explicit dev flag" |
+| daily-week-groups.test.ts | groupDailyHistoryByWeek | 44 | 4 | lib/daily-entry/week-groups.ts:mondayOf | KEEP | week-groups.ts: `(d.getUTCDay() + 6) % 7` -> `+ 5` (Tuesday-start) | 3 of 4: Monday-start grouping, year/month boundary, human label |
+| dashboard-config.test.ts | dashboard config validation | 123 | 6 | lib/dashboard/config-schema.ts:validateDashboardConfig | KEEP | config-schema.ts: `!WIDGET_KINDS.includes(kind)` -> `WIDGET_KINDS.includes(kind)` | 3 of 6: accepts well-formed, rejects unknown kinds, visibility enum/CU16 |
+| dashboard-config.test.ts | client subset projection | 28 | 1 | lib/dashboard/config-schema.ts:projectClientDashboardConfig | KEEP | config-schema.ts: `visibility === "client"` -> `=== "staff"` | 1 of 1: drops staff widgets + rects |
+| dashboard-config.test.ts | canonical form | 9 | 1 | lib/dashboard/config-schema.ts:canonicalizeDashboardConfig | CUT | self-referential: `canonicalize(c)` compared to `canonicalize(c)` on the same value; passes if the function returned undefined | n/a |
+| dashboard-config.test.ts | hardened bounds (I1-R2) | 67 | 4 | lib/dashboard/config-schema.ts:validateDashboardConfig depth/labels/caps + projectClientDashboardConfig re-pack | KEEP | config-schema.ts: `depthOf(value, 0) > 6` -> `> 60` | 1 of 4: "rejects input nested deeper than depth 6" (re-pack and 24-cap tests also failed under the earlier mutations) |
+| extraction-contract.test.ts | sheet slug mapping | 35 | 3 | lib/extraction/contracts.ts:slugifySheetFileName | KEEP | contracts.ts: `/[^a-z0-9]+/g, "-"` -> `"_"` | 2 of 3: documented slug map, normalization cases (the EXPECTED_SHEETS length pin inside this block stays dead weight) |
+| extraction-contract.test.ts | redaction placeholder | 8 | 1 | lib/extraction/contracts.ts:redactedPlaceholder | KEEP | contracts.ts: dropped trailing `]` from placeholder | 1 of 1: builds the documented placeholder form |
+| mealplan-timezone.test.ts | resolveMealPlanActivation | 60 | 5 | lib/mealplan/service.ts:resolveMealPlanActivation | KEEP | service.ts: `resolveLocalInstant(zone, effectiveDate, 0)` -> `60` (minute 60, not midnight) | 2 of 5: ordinary midnight, midnight-fold earlier instant |
+| mealplan-timezone.test.ts | parseEffectiveDate bounds | 30 | 3 | lib/mealplan/service.ts:parseEffectiveDate | KEEP | service.ts: `raw >= limit` -> `raw > limit` (boundary day now accepted) | 1 of 3: rejects dates more than 366 days ahead |
+| normalize.test.ts | normalizeNumeric | 38 | 6 | lib/extraction/normalize.ts:normalizeNumeric | KEEP | normalize.ts: dot-decimal `\d{1,2}$` -> `\d{1,3}$` ("1.234" becomes a decimal) | 2 of 6: grouped thousands, refuses ambiguous single-group |
+| onboarding-assignments.test.ts | assignments dev gate | 12 | 11 | lib/onboarding/assignments-gate.ts:isOnboardingAssignmentsEnabled | KEEP | assignments-gate.ts: `env === "1"` -> `env !== "1"` | 11 of 11: enabled-only-by-1 plus all 10 disabled cases |
+| onboarding-assignments.test.ts | contract constants | 14 | 2 | lib/onboarding/assignments-gate.ts:OnboardingAssignmentError + ASSIGNMENT_LIMITS | KEEP | assignments-gate.ts: `this.name = "OnboardingAssignmentError"` -> `"Error"` | 1 of 2: "error codes stay structural" (the ASSIGNMENT_LIMITS pin stays dead weight) |
+| password-reset.test.ts | S1-F2D unit surface | 450 | 12 | lib/auth/password-reset.ts + lib/audit | KEEP | password-reset.ts: `MAX_ATTEMPTS = 8` -> `3` | 1 of 12: bounded retry count (attempts 8 expected) |
+| password-reset.test.ts | route boundary | 24 | 1 | app/** import surface vs lib/auth/password-reset, lib/tokens/store | KEEP | app/page.tsx: added `import { claimAccessToken } from "@/lib/tokens/store"` | 1 of 1: no app/route file imports the service or store |
+| summaries.test.ts | buildSheetSummary | 50 | 5 | lib/extraction/summaries.ts:buildSheetSummary | KEEP | summaries.ts: rowCount `Math.max` -> `Math.min` | 1 of 5: reports counts from the cells |
+| token-crypto.test.ts | generateAccessToken | 53 | 5 | lib/tokens/crypto.ts:generateAccessToken | KEEP | crypto.ts: `TOKEN_BYTE_LENGTH = 32` -> `16` | 5 of 5: all generation tests |
+| token-crypto.test.ts | hashAccessToken | 136 | 16 | lib/tokens/crypto.ts:hashAccessToken | KEEP | crypto.ts: `createHash("sha256")` -> `createHash("sha1")` | 3 of 16: canonical 64-hex digest, known SHA-256 answer, canonical final char |
+| token-crypto.test.ts | module boundary | 21 | 3 | lib/tokens/crypto.ts export surface | CUT | typeof/exports and arity pins; the one behavioral test (earlier hash stays valid) duplicates determinism already proven in the hashAccessToken block | n/a |
+| token-store.test.ts | S1-F2A token store | 185 | 10 | lib/tokens/store.ts:issueWorkspaceInviteToken etc. | KEEP | store.ts: `!INVITABLE_ROLES.includes(input.intendedRole)` -> drop `!` | 2 of 10: issues invites normalized+hash-only, rejects non-invocable roles (the TTL constant pin inside stays dead weight) |
+| transition-impact.test.ts | canonical count + date validation | 60 | 3 | lib/coaching/transition-impact.ts:isCanonicalCount/isCanonicalCalendarDate/isValidImpactBounds | KEEP | transition-impact.ts: `/^(0|[1-9][0-9]*)$/` -> `/^(0|[0-9]+)$/` (leading zeros accepted) | 1 of 3: accepts only unsigned ASCII canonical counts |
+| transition-impact.test.ts | provider declaration/set equality | 61 | 5 | lib/coaching/transition-impact.ts:validateProviderSet + impact-consumers.ts:validateProviderFactories | KEEP | transition-impact.ts: provider-key loop `!keys.has(key)` -> `keys.has(key)` | 2 of 5: provider-without-declaration, accepts consistent set |
+| transition-impact.test.ts | provider-set identity vectors | 19 | 2 | lib/coaching/transition-impact.ts:providerSetIdentity | KEEP | transition-impact.ts: `"C2-PROVIDER-SET-v1"` -> `"-v2"` domain tag | 2 of 2: empty-set pin, synthetic non-empty pin |
+| transition-impact.test.ts | provider execution + output validation | 129 | 6 | lib/coaching/transition-impact.ts:collectProviderImpacts | KEEP | transition-impact.ts: swapped PROVIDER_VERSION_MISMATCH and PROVIDER_OUTPUT_INVALID in the blocked-code mapping | 2 of 6: version mismatch mapping, malformed output mapping |
+| transition-impact.test.ts | closed vocabularies | 17 | 1 | lib/coaching/transition-impact.ts BLOCKED_REASON_RANK/IMPACT_ROLE_RANK keys | CUT | re-states constants: asserts rank-table key lists equal literal lists; no function called | n/a |
+
+- daily-entry-impact.test.ts: KEEP-ALL
+- daily-prototype.test.ts: TRIM (keep blocks validateDailyEntry, isDailyPrototypeEnabled)
+- daily-week-groups.test.ts: KEEP-ALL
+- dashboard-config.test.ts: TRIM (keep blocks dashboard config validation, client subset projection, hardened bounds (I1-R2))
+- extraction-contract.test.ts: KEEP-ALL
+- mealplan-timezone.test.ts: KEEP-ALL
+- normalize.test.ts: KEEP-ALL
+- onboarding-assignments.test.ts: KEEP-ALL
+- password-reset.test.ts: KEEP-ALL
+- summaries.test.ts: KEEP-ALL
+- token-crypto.test.ts: TRIM (keep blocks generateAccessToken, hashAccessToken)
+- token-store.test.ts: KEEP-ALL
+- transition-impact.test.ts: TRIM (keep blocks canonical count + date validation, provider declaration/set equality, provider-set identity vectors, provider execution + output validation)
+
+## Could not check
+
+Nothing. All 13 files ran green at baseline and all 24 bite checks executed; the lever restored each file (git status clean except the untracked tb-mutate.sh lever).
+
+## Self-check
+
+PASS.
+
+(a) All 13 assigned files have all their top-level describe blocks listed: 28 rows for 28 blocks, verified against grep of `^describe` in each file (daily-entry-impact 1, daily-prototype 3, daily-week-groups 1, dashboard-config 4, extraction-contract 2, mealplan-timezone 2, normalize 1, onboarding-assignments 2, password-reset 2, summaries 1, token-crypto 3, token-store 1, transition-impact 5). Per-block test counts sum to each file's baseline total.
+
+(b) Every KEEP block has a recorded mutation that failed at least one of its own tests (verbose output captured per run; failed tests attributed to their describe path). CUT blocks needed no mutation: Phase B0 field schema and closed vocabularies are pure constant pins, canonical form is self-referential, module boundary is typeof/arity pins plus a duplicate determinism check.
+
+(d) Nothing written outside this report file: the only repo write is this file; mutations were applied and restored inside the scratch worktree by the lever; `git status --short` in the worktree shows only the pre-existing untracked `tb-mutate.sh`. No commits made.

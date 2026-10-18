@@ -1,0 +1,100 @@
+# TB0-w4 — test audit pass 2, per-describe-block bite check
+
+Worktree: /home/nexuslink/.hermes/cache/scratch/vari8-tb/TB0-w4 @ 58eb6ed
+DB: app_tb_tb0_w4 on 127.0.0.1:5433
+
+## Summary
+
+9 files, 25 top-level describe blocks, 107 tests, 1859 block lines.
+
+- KEEP: 25 blocks, 107 tests, 1859 lines.
+- CUT: 0 blocks, 0 tests, 0 lines.
+- CUT share: 0% by tests, 0% by lines.
+
+Every block asserted literal observable results or fail-closed boundaries, so
+no block was cut on sight. Every block was bite-checked with one lever-script
+mutation in the code it targets; every mutation failed at least one of the
+block's own tests. Per-file verdict: KEEP-ALL on all 9 files.
+
+## Baselines (each file run alone, real exits)
+
+| file | exit | result |
+|---|---|---|
+| tests/unit/password-reset-token-failure.test.ts | 0 | 1 passed |
+| tests/unit/redact.test.ts | 0 | 12 passed |
+| tests/unit/sheet-viewer-gate.test.ts | 0 | 3 passed |
+| tests/unit/source-config.test.ts | 0 | 10 passed, 1 skipped (it.skipIf: real source folder absent) |
+| tests/unit/storage.test.ts | 0 | 30 passed (includes 24 it.each cases) |
+| tests/unit/training-payload.test.ts | 0 | 21 passed |
+| tests/integration/s1-f2b-token-cleanup.test.ts | 0 | 5 passed (9.5s) |
+| tests/integration/s1-h-route-guard.test.ts | 0 | 6 passed (6.6s) |
+| tests/integration/s1-f2d-password-reset.test.ts | 0 | 18 passed (11.4s) |
+
+No baseline failures. The one skip is conditional on a data folder that does
+not exist on this machine; the block still ran its other 4 tests, so it was
+bite-checked normally.
+
+## Block table
+
+| file | block | lines | tests | target | verdict | reason or mutation | failed tests |
+|---|---|---|---|---|---|---|---|
+| tests/integration/s1-f2b-token-cleanup.test.ts | S1-F2B token cleanup (real PostgreSQL) | 210 (31-240) | 5 | lib/tokens/store.ts cleanupTerminalAccessTokens + CLEANUP_VICTIMS_SQL | KEEP | `}) < $1` -> `}) > $1` in lib/tokens/store.ts:332 (victim predicate inverted) | deletes only terminal rows older than 30 days — all four shapes; batch bound: removes exactly 1000 per call and drains on repeat; concurrent calls are safe (no row deleted twice, no crash) |
+| tests/integration/s1-f2d-password-reset.test.ts | S1-F2D password-reset orchestration (real PG) | 650 (33-682) | 18 | lib/auth/password-reset.ts requestPasswordReset / resetPasswordWithToken, real Auth.js | KEEP | `if (!current \|\| current.status !== "ACTIVE") return null;` -> `if (!current) return null;` in lib/auth/password-reset.ts:223 (in-transaction ACTIVE re-check dropped) | INVITED and DEACTIVATED accounts → ACCOUNT_EXISTS, no token/audit; user deactivated mid-request fails closed — no token issued |
+| tests/integration/s1-h-route-guard.test.ts | S1-H route guard (real PG) | 190 (27-216) | 6 | lib/auth/route-guard.ts resolveWorkspaceAccess, requireWorkspaceAccess, listSessionWorkspaces, getAuthorizedWorkspaceSummary | KEEP | `ctx === null` -> `ctx !== null` in lib/auth/route-guard.ts:76 (deny/allow mapping inverted) | requireWorkspaceAccess throws (forbidden) on denial, returns context on allow; getAuthorizedWorkspaceSummary reads the authorized workspace name |
+| tests/unit/password-reset-token-failure.test.ts | safeTokenHash classification | 40 (21-60) | 1 | lib/auth/password-reset.ts safeTokenHash | KEEP | `if (error instanceof TokenError)` -> `if (error instanceof PasswordResetError)` in lib/auth/password-reset.ts:416 | TokenError → invalid_token; unexpected failure → reset_failed |
+| tests/unit/redact.test.ts | redactSheet | 69 (35-103) | 6 | lib/extraction/redact.ts redactSheet | KEEP | `const next: ExtractionCell = { ...cell, text: placeholder };` -> `{ ...cell };` in lib/extraction/redact.ts:182 (placeholder replacement dropped) | redacts person-specific values and replaces text with the placeholder |
+| tests/unit/redact.test.ts | MENSES cycle-phase guide (source-aware region) | 28 (105-132) | 2 | lib/extraction/redact.ts mensesGuideRegion usage in redactSheet | KEEP | `const guideRegion = slug === "menses" ? mensesGuideRegion(cells) : null;` -> `const guideRegion = null;` in lib/extraction/redact.ts:150 | keeps the full guide block (labels, day ranges, phase names, descriptions) |
+| tests/unit/redact.test.ts | isSafeCellText | 27 (134-160) | 3 | lib/extraction/redact.ts isSafeCellText | KEEP | `if (SAFE_SHEETS.has(slug)) return true;` -> `return false;` in lib/extraction/redact.ts:126 | treats reference databases as safe but still blocks contacts |
+| tests/unit/redact.test.ts | sortRedactions | 34 (162-195) | 1 | lib/extraction/redact.ts sortRedactions | KEEP | `(a.cell?.row ?? 0) - (b.cell?.row ?? 0)` -> `(b.cell?.row ?? 0) - (a.cell?.row ?? 0)` in lib/extraction/redact.ts:206 | orders deterministically by artifact, row, col, category |
+| tests/unit/sheet-viewer-gate.test.ts | isSheetViewerEnabled | 9 (8-16) | 1 | lib/sheet-viewer.ts isSheetViewerEnabled | KEEP | `return env === "1";` -> `return env !== "1";` in lib/sheet-viewer.ts:9 | is disabled unless the flag is exactly 1 |
+| tests/unit/sheet-viewer-gate.test.ts | requireSheetViewer (fail-closed gate used by the pages) | 10 (18-27) | 2 | lib/sheet-viewer.ts requireSheetViewer | KEEP | `if (!isSheetViewerEnabled(env)) notFound();` -> `if (isSheetViewerEnabled(env)) notFound();` in lib/sheet-viewer.ts:14 | throws (notFound) when disabled; does not throw when explicitly enabled |
+| tests/unit/source-config.test.ts | resolveSheetsSourceDir | 11 (20-30) | 2 | lib/extraction/source.ts resolveSheetsSourceDir | KEEP | `return value.length > 0 ? value : DEFAULT_SHEETS_SOURCE_DIR;` -> `? DEFAULT_SHEETS_SOURCE_DIR : value;` in lib/extraction/source.ts:32 | defaults to the supplied exports folder; honors an explicit override |
+| tests/unit/source-config.test.ts | isInsideRepo | 7 (32-38) | 1 | lib/extraction/source.ts isInsideRepo | KEEP | `return rel === "" \|\| (!rel.startsWith("..") && !isAbsolute(rel));` -> `return rel === "";` in lib/extraction/source.ts:38 | detects paths inside, equal to, and outside the repo root |
+| tests/unit/source-config.test.ts | isPathGitIgnored | 6 (40-45) | 1 | lib/extraction/source.ts isPathGitIgnored | KEEP | `    return true;` -> `    return false;` in lib/extraction/source.ts:112 | recognizes ignored raw paths and rejects committed spec output |
+| tests/unit/source-config.test.ts | assertRawDirIsIgnored | 11 (47-57) | 2 | lib/extraction/source.ts assertRawDirIsIgnored | KEEP | `if (!ignored) {` -> `if (ignored) {` in lib/extraction/source.ts:131 | accepts an ignored raw destination; fails closed for a non-ignored destination |
+| tests/unit/source-config.test.ts | validateSheetsSourceDir | 61 (59-119) | 5 (1 skipped) | lib/extraction/source.ts validateSheetsSourceDir | KEEP | `if (isInsideRepo(resolved, repoRoot)) {` -> `if (!isInsideRepo(resolved, repoRoot)) {` in lib/extraction/source.ts:61 | rejects a source directory inside the repository; reports all expected sheets missing in an empty directory; reports a differently-named file that slugs to a known sheet as unexpected |
+| tests/unit/storage.test.ts | S1-G storage port | 90 (17-106) | 30 | lib/storage.ts clientObjectPrefix, assertClientObjectKey, assertPresignGetTtl, nullObjectStorage, assertObjectStorageExternallyExposable | KEEP | `ttlSeconds > maxTtlSeconds` -> `ttlSeconds >= maxTtlSeconds` in lib/storage.ts:107 | assertPresignGetTtl accepts an in-bound positive integer |
+| tests/unit/training-payload.test.ts | normalizeTrainingDraft — strictness | 60 (63-122) | 2 | lib/trainingprogram/payload.ts normalizeTrainingDraft | KEEP | `if (obj.programMode !== "WEEK_BASED")` -> `!== "WEEK_BASEDD"` in lib/trainingprogram/payload.ts:259 | accepts a minimal valid draft |
+| tests/unit/training-payload.test.ts | normalizeFieldConfig | 21 (124-144) | 1 | lib/trainingprogram/payload.ts normalizeFieldConfig | KEEP | `out[k] = v === true;` -> `out[k] = v === false;` in lib/trainingprogram/payload.ts:81 | accepts subsets, rejects unknown keys and non-booleans |
+| tests/unit/training-payload.test.ts | materializeWeeks — override-boundary resolution (P4 §3) | 71 (146-216) | 7 | lib/trainingprogram/payload.ts materializeWeeks via resolveBoundary | KEEP | `if (w <= week && w > best) best = w;` -> `if (w < week && w > best)` in lib/trainingprogram/payload.ts:437 | required counterexample 3,3,3,6,6,5,5; equal-valued explicit override protects the week; absence boundaries remove/re-add; session/exercise order boundaries; session name boundaries; weekCount shrink truncates (6 of 7 own tests) |
+| tests/unit/training-payload.test.ts | validatePublishCompleteness | 61 (218-278) | 1 | lib/trainingprogram/payload.ts validatePublishCompleteness | KEEP | `if (cfg.sets && ex.sets === undefined)` -> `ex.sets !== undefined` in lib/trainingprogram/payload.ts:562 | requires ≥1 exercise; sets/reps required only when toggled |
+| tests/unit/training-payload.test.ts | projectForClient — hidden fields never serialize (P4 §6) | 24 (280-303) | 1 | lib/trainingprogram/payload.ts projectForClient | KEEP | `if (k === "catalogItemId" \|\| enabled.has(k))` -> `\|\| !enabled.has(k)` in lib/trainingprogram/payload.ts:592 | disabled-field values are omitted; retained values stay in storage |
+| tests/unit/training-payload.test.ts | canonicalDraftContent — `changed` marker identity (G) | 22 (305-326) | 1 | lib/trainingprogram/payload.ts canonicalDraftContent | KEEP | `confirmedTimezone: input.confirmedTimezone,` -> `confirmedTimezone: null,` in lib/trainingprogram/payload.ts:642 | covers the complete draft including confirmedTimezone |
+| tests/unit/training-payload.test.ts | week math under the immutable anchor | 24 (343-366) | 3 | lib/trainingprogram/weeks.ts weekStartInstant/addDays, weekIndex, boundaryInstant, ceiling | KEEP | `addDays(startDate, 7 * (week - 1))` -> `addDays(startDate, 7 * week)` in lib/trainingprogram/weeks.ts:92 | weekIndex and boundary instants are pure local-date arithmetic |
+| tests/unit/training-payload.test.ts | gvAt / governed spans (P8 §5) | 65 (368-432) | 3 | lib/trainingprogram/weeks.ts gvAt | KEEP | `if (v.activationInstant.getTime() > t.getTime()) continue;` -> `>= t.getTime()` in lib/trainingprogram/weeks.ts:156 | activation exactly at t is eligible (inclusive boundary) |
+| tests/unit/training-payload.test.ts | versionForWeek + marker (P8 §5.2/§5.4) | 66 (434-499) | 2 | lib/trainingprogram/weeks.ts weekMarker | KEEP | `if (base === null \|\| candidates.length === 0) return null;` -> `if (base === null) return null;` in lib/trainingprogram/weeks.ts:285 | marker: mid-week revision labelled updated/updates; first publish never |
+
+## Per-file verdicts
+
+- tests/integration/s1-f2b-token-cleanup.test.ts: KEEP-ALL (1 block)
+- tests/integration/s1-f2d-password-reset.test.ts: KEEP-ALL (1 block)
+- tests/integration/s1-h-route-guard.test.ts: KEEP-ALL (1 block)
+- tests/unit/password-reset-token-failure.test.ts: KEEP-ALL (1 block)
+- tests/unit/redact.test.ts: KEEP-ALL (4 blocks)
+- tests/unit/sheet-viewer-gate.test.ts: KEEP-ALL (2 blocks)
+- tests/unit/source-config.test.ts: KEEP-ALL (5 blocks)
+- tests/unit/storage.test.ts: KEEP-ALL (1 block)
+- tests/unit/training-payload.test.ts: KEEP-ALL (9 blocks)
+
+## Could not check
+
+None. All 9 files ran and every block was judged.
+
+## Self-check
+
+PASS.
+
+a. All 9 assigned files have their blocks listed: 25 rows in the table, one
+   per top-level describe block (1+1+1+1+4+2+5+1+9 = 25).
+b. Every KEEP block has a lever-script mutation that failed at least one of
+   that block's own tests; failed test names are in the table. Some mutations
+   also broke sibling blocks as fallout (isSheetViewerEnabled -> both
+   requireSheetViewer tests; isPathGitIgnored -> one assertRawDirIsIgnored
+   test; resolveBoundary -> one projectForClient test; weekStartInstant ->
+   both versionForWeek+marker tests). Each block's KEEP is backed by its own
+   dedicated mutation as well, so no block relies on cross-block fallout.
+c. `git status --porcelain` in the worktree shows only `?? npm-ci.log`
+   (pre-existing untracked deps log, present before I started). Every lever
+   run printed `LEVER: restored` with no aborts; all tracked files clean.
+d. The only main-repo write is this output file. No tests written, no tracked
+   file edited, nothing committed, worktree and database left in place.

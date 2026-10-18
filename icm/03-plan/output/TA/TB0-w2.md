@@ -1,0 +1,100 @@
+# TB0-w2 — test audit pass 2, per-describe-block bite check
+
+Worktree `/home/nexuslink/.hermes/cache/scratch/vari8-tb/TB0-w2` at 58eb6ed.
+Integration DB `app_tb_tb0_w2` on 127.0.0.1:5433.
+Integration files use one `describe.skipIf(!enabled)` wrapper; the nested
+describes target different code, so each nested describe is audited as its own
+block (per the brief's split rule). `lines` counts the describe block span.
+
+Baselines (all green, exit 0):
+
+- tests/integration/p014-coaching-templates.test.ts — 28 tests
+- tests/integration/p022-staff-daily-review.test.ts — 32 tests
+- tests/integration/p023-onboarding-submission.test.ts — 31 tests
+- tests/unit/client-setup.test.ts — 13 tests
+- tests/unit/coaching-nav.dom.test.tsx — 7 tests
+- tests/unit/coaching-parameters.test.ts — 14 tests
+- tests/unit/credentials.test.ts — 7 tests
+- tests/unit/crosssheet.test.ts — 4 tests
+- tests/unit/dashboard-autosave.test.ts — 17 tests
+
+## Summary
+
+- Blocks: 35 total — 30 KEEP, 5 CUT, 0 could-not-check.
+- Tests: 153 total — 141 KEEP, 12 CUT. CUT share by tests: 7.8%.
+- Block lines: 3176 total — 2941 KEEP, 235 CUT. CUT share by lines: 7.4%.
+
+## Table
+
+| file | block | lines | tests | target | verdict | reason or mutation | failed tests |
+|------|-------|-------|-------|--------|---------|--------------------|--------------|
+| tests/unit/client-setup.test.ts | P-016 client-setup dev gate | 12 | 11 | lib/coaching/client-setup-gate.ts isClientSetupEnabled | KEEP | `return env === "1"` -> `return env === "true"` at client-setup-gate.ts:16 | is enabled only by the exact value '1'; is disabled for "true" |
+| tests/unit/client-setup.test.ts | P-016 client-setup contract constants | 14 | 2 | lib/coaching/client-setup-gate.ts CLIENT_SETUP_LIMITS, ClientSetupError | CUT | constant pin: restates CLIENT_SETUP_LIMITS values and the error name/message shape | n/a |
+| tests/unit/coaching-nav.dom.test.tsx | P-014 workspace nav - Parameters and Templates entries | 40 | 7 | components/workspace-nav.tsx WorkspaceNav | KEEP | drop `"COACH"` from the parameters roles pin at workspace-nav.tsx:89 | shows both entries for COACH when the flag is enabled |
+| tests/unit/coaching-parameters.test.ts | validateParameterCreate | 151 | 9 | lib/coaching/parameters.ts validateParameterCreate | KEEP | `out.min > out.max` -> `out.min < out.max` at parameters.ts:176 | accepts declarative min/max only on MEASUREMENT and bounds-checks it |
+| tests/unit/coaching-parameters.test.ts | applyParameterEdits (revision + semantic lock) | 70 | 5 | lib/coaching/parameters.ts applyParameterEdits | KEEP | `next.revision = state.revision + 1` -> `next.revision = state.revision` at parameters.ts:415 | applies display edits and bumps revision; semantic edits rejected after first published reference |
+| tests/unit/credentials.test.ts | authorizeCredentials | 86 | 6 | lib/credentials.ts authorizeCredentials | KEEP | `user.status !== "ACTIVE"` -> `=== "ACTIVE"` at credentials.ts:57 | returns the safe user shape for valid credentials; normalizes the email before lookup; denies inactive accounts with the same generic result |
+| tests/unit/credentials.test.ts | normalizeEmail | 7 | 1 | lib/credentials.ts normalizeEmail | KEEP | `value.trim().toLowerCase()` -> `value.trim()` at credentials.ts:30 | trims and lowercases strings and rejects non-strings |
+| tests/unit/crosssheet.test.ts | buildCrossSheetData | 33 | 4 | lib/extraction/crosssheet.ts buildCrossSheetData, renderCrossSheetMarkdown | KEEP | `if (!names.has(value)) continue` -> `if (value === "") continue` at crosssheet.ts:48 | finds reference-data text matches with locations; omits values that are not reference data or safe labels (privacy); renders markdown without leaking non-safe values |
+| tests/unit/dashboard-autosave.test.ts | autosave coordinator (I1-R5) | 190 | 13 | lib/dashboard/autosave-coordinator.ts commitDashboardConfig, flushDashboardSlot | KEEP | `slot.dirty = true` -> `slot.dirty = false` at autosave-coordinator.ts:280 | terminal failure keeps the draft and an honest failed state; conflict with divergent server state keeps the draft as conflict |
+| tests/unit/dashboard-autosave.test.ts | purge while in-flight (I1-R6 P3-3) | 67 | 2 | lib/dashboard/autosave-coordinator.ts clearAllDashboardSlots | KEEP | drop the `cancelSlotTimer(slot)` loop at autosave-coordinator.ts:422 | a cleared slot cannot resurrect its draft or schedule queued work |
+| tests/unit/dashboard-autosave.test.ts | bounded clean-slot retention (I1-R6 P3-4) | 24 | 2 | lib/dashboard/autosave-coordinator.ts acquireDashboardSlot eviction | KEEP | `MAX_CLEAN_SLOTS = 8` -> `= 100` at autosave-coordinator.ts:84 | clean slots are evicted oldest-first beyond the cap; dirty slots are never evicted |
+| tests/integration/p014-coaching-templates.test.ts | schema constraints | 133 | 4 | db/migrations 20261007090000_p014_coaching_foundation (composite FKs, archive CHECK, RESTRICT) | KEEP | dropped live constraint `ctp_parameter_workspace_fkey` via psql inside the lever command (the file slot carried an inert comment tweak since editing an applied migration would only trip the deploy checksum); offending row deleted and constraint re-added afterwards | rejects a version-parameter reference across workspaces |
+| tests/integration/p014-coaching-templates.test.ts | authorization | 88 | 6 | lib/coaching/parameters.ts + templates.ts via lib/auth/rbac.ts parameterDefinitions cell | KEEP | parameterDefinitions `ASSISTANT_COACH: D` -> `c("workspace", "workspace")` at rbac.ts:314 | denies ASSISTANT_COACH all parameter/template access |
+| tests/integration/p014-coaching-templates.test.ts | parameter lifecycle | 56 | 3 | lib/coaching/parameters.ts updateParameter, archiveParameter | KEEP | `row.revision !== input.expectedRevision` -> `===` at parameters.ts:725 | rejects stale expectedRevision with zero mutation and zero audit |
+| tests/integration/p014-coaching-templates.test.ts | template lifecycle and publish protocol | 327 | 8 | lib/coaching/templates.ts publishTemplate ack/snapshot, saveTemplateDraft, openTemplateDraft | KEEP | `param.revision !== item.acknowledgedParameterRevision` -> `===` at templates.ts:830 | creates/saves/publishes v1 immutably; idempotent publish replay returns the same version; post-publish display edit never mutates the snapshot; parameter_changed conflict; edit-after-publish; stale draft revision is a stable conflict; archive is terminal |
+| tests/integration/p014-coaching-templates.test.ts | concurrency | 142 | 3 | lib/coaching/templates.ts publishTemplate replay path + lock order | KEEP | `if (row.draft === null)` -> `if (true)` at templates.ts:779 (publish always takes the replay branch and dies on no_open_draft) | concurrent publish replay produces one version; overlapping-parameter publishes on two templates both commit without deadlock |
+| tests/integration/p014-coaching-templates.test.ts | audit integrity | 44 | 1 | none (test hand-builds its own prisma.$transaction) | CUT | re-tests the framework: proves Postgres rolls a hand-made transaction back on a forced bad audit insert; no application code runs inside the tx, so no source mutation can fail it | n/a |
+| tests/integration/p014-coaching-templates.test.ts | parameter list pagination | 53 | 2 | lib/coaching/parameters.ts listParameters cursor | KEEP | `if (!anchor)` -> `if (anchor)` at parameters.ts:566 (cursor anchor check inverted) | pages deterministically beyond 25; a foreign or unknown cursor fails closed, never leaks |
+| tests/integration/p014-coaching-templates.test.ts | option tombstones | 46 | 1 | lib/coaching/parameters.ts applyParameterEdits tombstone rule | KEEP | `!liveIds.has(id) || tombstones.has(id)` -> `!liveIds.has(id) && !tombstones.has(id)` at parameters.ts:398 (first attempt `||` -> `&&` was a no-op: tombstoned ids are also absent from liveIds, so the first clause still rejected) | removed option IDs stay tombstoned across later transactions and can never be reused |
+| tests/integration/p022-staff-daily-review.test.ts | list authorization | 128 | 11 | lib/daily-entry/service.ts listStaffDailyEntries scope gate | KEEP | drop `&& ctx.grantedScope !== "assigned"` at service.ts:772 | assigned coach and assistant see the list |
+| tests/integration/p022-staff-daily-review.test.ts | list consent and paging | 102 | 4 | lib/daily-entry/service.ts listStaffDailyEntries consent gate + keyset paging | KEEP | `orderBy: { entryDate: "desc" }` -> `"asc"` at service.ts:801. Block earns keep on paging/cursor/zero-audit coverage; the consent-missing test alone would not justify keeping (D12 parked) | newest-first bounded keyset pagination |
+| tests/integration/p022-staff-daily-review.test.ts | detail authorization and minimization | 189 | 8 | lib/daily-entry/service.ts readStaffDailyEntryDetail scope gate + snapshot render | KEEP | drop `&& ctx.grantedScope !== "assigned"` at service.ts:914 | assigned coach + assistant read the detail |
+| tests/integration/p022-staff-daily-review.test.ts | detail audit atomicity | 73 | 3 | lib/daily-entry/service.ts readStaffDailyEntryDetailTx audit write | KEEP | `meta: { changed: false }` -> `{ changed: true }` at service.ts:1078 | one committed detail read writes exactly one structural READ audit |
+| tests/integration/p022-staff-daily-review.test.ts | serialization races | 184 | 5 | lib/daily-entry/service.ts readStaffDailyEntryDetail locked member/assignment/consent protocol | KEEP | `member.status !== "ACTIVE"` -> `!== "SUSPENDED"` at service.ts:896 (every read now denies) | a committed read serializes before a later removal (no torn state) |
+| tests/integration/p022-staff-daily-review.test.ts | query bounds | 32 | 1 | lib/daily-entry/service.ts readStaffDailyEntryDetailTx query count | KEEP | inserted a per-value `dailyEntryRevisionValue.findMany` loop before service.ts:1049 (simulated N+1) | detail read stays bounded (no per-value N+1) |
+| tests/integration/p023-onboarding-submission.test.ts | migration contract | 113 | 3 | db/migrations 20261010000000_p023_onboarding_submissions (composite FKs, kind/column CHECK, uniques) | KEEP | dropped live constraint `onboarding_submission_answer_kind_value_ck` via psql inside the lever command; offending `f_x` rows deleted and CHECK re-added afterwards | rejects answers violating the kind<->column CHECK |
+| tests/integration/p023-onboarding-submission.test.ts | submit transaction | 192 | 5 | lib/onboarding/submissions.ts submitOnboardingAssignment | KEEP | `if (f.required)` -> `if (!f.required)` at submissions.ts:293 | first submit; structurally valid replay; malformed/oversized replay; concurrent double-submit; audit failure rolls back (all 5 block tests) |
+| tests/integration/p023-onboarding-submission.test.ts | authorization + non-disclosure | 97 | 3 | lib/onboarding/submissions.ts member role check + authorize | KEEP | `member.role !== "CLIENT"` -> `!== "COACH"` at submissions.ts:515 (write-path member check) | cancelled/superseded terminal assignments refuse |
+| tests/integration/p023-onboarding-submission.test.ts | consent boundary | 54 | 3 | lib/onboarding/submissions.ts checkRequiredConsent, submissions-boundary | CUT | block's only distinguishing coverage is the consent gate; consent/health-data rules are parked (D12) so they are not a keep reason; the bounded-metadata piece duplicates own reads | n/a |
+| tests/integration/p023-onboarding-submission.test.ts | pinned-version integrity | 44 | 1 | lib/onboarding/submissions.ts pinned formVersion lookup | KEEP | `findUnique({ where: { id: assignment.formVersionId } })` -> `findFirst({ where: { formId: assignment.formId }, orderBy: { versionSeq: "desc" } })` at submissions.ts:610 | submits against the pinned version even after a later publication |
+| tests/integration/p023-onboarding-submission.test.ts | own reads | 61 | 2 | lib/onboarding/submissions.ts listOwnOnboardingAssignments, renderSubmittedAnswers | KEEP | `.join(", ")` -> `.join(",")` at submissions.ts:~818 (multi-choice display joiner) | fillable -> submitted -> submitted detail round-trips own answers |
+| tests/integration/p023-onboarding-submission.test.ts | boundary gate | 33 | 1 | lib/onboarding/submissions-boundary.ts gated() flag check | KEEP | `return isOnboardingSubmissionEnabled(...)` -> `return true` at submissions-boundary.ts:74 | flag-off returns feature-off before any DB work |
+| tests/integration/p023-onboarding-submission.test.ts | repair A - trusted dev/test consent boundary (real path) | 73 | 4 | lib/onboarding/submission-consent.ts env-classified dev consent registry | CUT | the block exists to prove the dev/test-only consent registry fails closed in production - consent-policy enforcement, parked under D12 | n/a |
+| tests/integration/p023-onboarding-submission.test.ts | repair B - consent precedes answer materialization | 50 | 2 | lib/onboarding/submissions.ts loadOwnOnboardingDetail consent ordering | CUT | only asserts consent ordering before answer materialization - parked consent rules (D12) | n/a |
+| tests/integration/p023-onboarding-submission.test.ts | repair C - P2002 fully-authorized replay | 168 | 7 | lib/onboarding/submissions.ts unique-violation re-entry | KEEP | `if (!isUniqueViolation(error)) throw error` -> `if (isUniqueViolation(error)) throw error` at submissions.ts:692 | forced conflict -> bounded re-entry returns already_submitted; membership suspended at the conflict; membership removed at the conflict; consent withdrawn at the conflict; a conflict whose source vanished re-enters and submits normally; a persistent conflict exhausts the bounded re-entry safely |
+
+## Per-file verdicts
+
+- tests/integration/p014-coaching-templates.test.ts — TRIM (keep all blocks except `audit integrity`)
+- tests/integration/p022-staff-daily-review.test.ts — KEEP-ALL
+- tests/integration/p023-onboarding-submission.test.ts — TRIM (keep all blocks except `consent boundary`, `repair A`, `repair B`)
+- tests/unit/client-setup.test.ts — TRIM (keep `P-016 client-setup dev gate`)
+- tests/unit/coaching-nav.dom.test.tsx — KEEP-ALL
+- tests/unit/coaching-parameters.test.ts — KEEP-ALL
+- tests/unit/credentials.test.ts — KEEP-ALL
+- tests/unit/crosssheet.test.ts — KEEP-ALL
+- tests/unit/dashboard-autosave.test.ts — KEEP-ALL
+
+## Could not check
+
+None. Every assigned file ran a green baseline and every block was judged.
+
+## Self-check
+
+- (a) Blocks listed: PASS — all 9 assigned files, 35 top-level/nested-split
+  blocks appear in the table (p014: 8, p022: 6, p023: 10, units: 11).
+- (b) KEEP bite: PASS — all 30 KEEP blocks have a recorded mutation whose run
+  failed at least one of the block's own tests (failure names in the last
+  column). One mutation was a no-op on first attempt (p014 tombstones, `||`
+  -> `&&` still rejected tombstoned ids via liveIds); retried with `&&
+  !tombstones` and the block's own test failed.
+- (c) Worktree clean: PASS — `git status --porcelain` shows only the
+  pre-existing untracked `npm-ci.log`; every lever run printed `LEVER:
+  restored`. Live-DB mutations were also restored and verified:
+  `ctp_parameter_workspace_fkey` and
+  `onboarding_submission_answer_kind_value_ck` both present in pg_constraint
+  afterwards, offending fixture rows deleted.
+- (d) Writes outside the worktree: PASS — only this output file plus transient
+  run logs under /tmp (capture for backgrounded vitest runs). No tracked file
+  edited, nothing committed.

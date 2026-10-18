@@ -1,0 +1,94 @@
+# TB4 worker w3 — canvas test block audit (group C)
+
+Source commit 58eb6ed. Worktree: `vari8-tb/TB4-w3` (frontend deps reused). Five frontend canvas
+test files, no `describe()`: each top-level `test()` is one block. Baseline green for all five
+(13 + 10 + 12 + 6 + 5 = 46 tests, 0 fail). A block is KEEP only when a targeted mutation in the
+code it exercises made one of its own tests fail; CUT is either a no-mutation snapshot pin or a
+block whose own tests never failed.
+
+## Summary
+
+- Files: 5, all checked (5/5).
+- Blocks: 46 (KEEP 44, CUT 2).
+- Tests: 46 total — KEEP 44, CUT 2 (CUT share 4.35%).
+- Block lines: 1271 total — KEEP 1249, CUT 22 (CUT share 1.73%).
+- No file could not be checked; no syntax/module crash was accepted as a failure.
+
+## Blocks
+
+| file | block | lines | tests | target | verdict | reason or mutation | failed tests |
+|---|---|---|---|---|---|---|---|
+| mealplan-model.test.ts | scales mixed 100 g, one-item, and 100 mL bases without replacing database calories | 25 | 1 | `src/components/ethereal/mealplan/model.ts` | KEEP | scaled the portion factor (x2) in calculatePortionNutrients | scales mixed 100 g, one-item, and 100 mL bases without replacing database calories |
+| mealplan-model.test.ts | food swaps are alternatives and do not contribute to meal totals | 18 | 1 | `src/components/ethereal/mealplan/model.ts` | KEEP | double-counted portions in calculateMealNutrients | food swaps are alternatives and do not contribute to meal totals |
+| mealplan-model.test.ts | variant clones have fresh nested ids and independent mutable data | 23 | 1 | `src/components/ethereal/mealplan/model.ts` | KEEP | cloneVariant shared dailyTarget instead of structuredClone | variant clones have fresh nested ids and independent mutable data |
+| mealplan-model.test.ts | archived plan snapshots retain schedule and stay independent from later edits | 30 | 1 | `src/components/ethereal/mealplan/model.ts` | KEEP | archiveCurrentPlan shared the plan schedule instead of structuredClone | archived plan snapshots retain schedule and stay independent from later edits |
+| mealplan-model.test.ts | manual and weekly selection honor the plan start date and ISO weekdays | 19 | 1 | `src/components/ethereal/mealplan/model.ts` | KEEP | shifted the ISO weekday index (+2) in getActiveVariant | manual and weekly selection honor the plan start date and ISO weekdays |
+| mealplan-model.test.ts | repeating rhythms honor anchors, block boundaries, month/year rollover, and browsing assignment | 21 | 1 | `src/components/ethereal/mealplan/model.ts` | KEEP | moved the cycle step boundary (cycleDay <= step.days) | repeating rhythms honor anchors, block boundaries, month/year rollover, and browsing assignment |
+| mealplan-model.test.ts | repeating rhythm day arithmetic stays aligned across daylight-saving changes | 16 | 1 | `src/components/ethereal/mealplan/model.ts` | KEEP | replaced calendar-day arithmetic with timestamp Math.floor (reintroduced DST drift) | repeating rhythm day arithmetic stays aligned across daylight-saving changes |
+| mealplan-model.test.ts | cycle schedules are archived, structurally guarded, and domain-validated | 43 | 1 | `src/components/ethereal/mealplan/model.ts` | KEEP | changed MAX_CYCLE_DAYS 365 -> 400 | cycle schedules are archived, structurally guarded, and domain-validated |
+| mealplan-model.test.ts | initial plans use the selected local calendar date | 8 | 1 | `src/components/ethereal/mealplan/model.ts` | KEEP | localDateString used UTC calendar fields instead of local | initial plans use the selected local calendar date |
+| mealplan-model.test.ts | target validation rejects negative values and reversed ranges | 30 | 1 | `src/components/ethereal/mealplan/model.ts` | KEEP | moved the reversed-range boundary (min > max + 20) | target validation rejects negative values and reversed ranges |
+| mealplan-model.test.ts | plan validation rejects invalid dates/times, incomplete weekly schedules, and unknown foods | 20 | 1 | `src/components/ethereal/mealplan/model.ts` | KEEP | widened isValidTime bounds (<100) | plan validation rejects invalid dates/times, incomplete weekly schedules, and unknown foods |
+| mealplan-model.test.ts | storage shape guard allows structurally sound drafts with invalid domain values | 14 | 1 | `src/components/ethereal/mealplan/model.ts` | KEEP | made isMeal require a valid time (domain leak into the shape guard) | storage shape guard allows structurally sound drafts with invalid domain values |
+| mealplan-model.test.ts | storage shape guard rejects malformed nested portions, targets, schedules, archives, and reusable meals | 43 | 1 | `src/components/ethereal/mealplan/model.ts` | KEEP | widened weekly day-key regex from [1-7] to [1-8] | storage shape guard rejects malformed nested portions, targets, schedules, archives, and reusable meals |
+| view-model.test.mjs | UTC week navigation remains Monday-first across year, leap day, and DST boundaries | 22 | 1 | `src/components/coach/client-tracker-preview/view-model.ts` | KEEP | mondayOf used day%7 instead of (day+6)%7 | UTC week navigation remains Monday-first across year, leap day, and DST boundaries |
+| view-model.test.mjs | configured custom definitions retain their metadata and group order without fixed IDs | 45 | 1 | `src/components/coach/client-tracker-preview/view-model.ts` | KEEP | swapped label vs categoryId precedence in metricGroups | configured custom definitions retain their metadata and group order without fixed IDs |
+| view-model.test.mjs | disabled cycle fields are removed while ordinary and custom health fields remain | 29 | 1 | `src/components/coach/client-tracker-preview/view-model.ts` | KEEP | flipped the cycleTrackingEnabled guard (=== true) | disabled cycle fields are removed while ordinary and custom health fields remain |
+| view-model.test.mjs | pinned daily summaries preserve configured order and ignore removed and duplicate IDs | 23 | 1 | `src/components/coach/client-tracker-preview/view-model.ts` | KEEP | dropped Set dedupe of summaryParameterIds | pinned daily summaries preserve configured order and ignore removed and duplicate IDs |
+| view-model.test.mjs | zero is recorded, missing values are not, and numeric weekly summaries average observed values | 29 | 1 | `src/components/coach/client-tracker-preview/view-model.ts` | KEEP | hasValue returned Boolean(value) so a recorded 0 was treated as missing | zero is recorded, missing values are not, and numeric weekly summaries average observed values |
+| view-model.test.mjs | weekly numeric aggregation follows each parameter's configured summary metadata | 103 | 1 | `src/components/coach/client-tracker-preview/view-model.ts` | KEEP | flipped the distribution sort so the least frequent value wins | weekly numeric aggregation follows each parameter's configured summary metadata |
+| view-model.test.mjs | binary choices summarize recorded yes/no answers and other structured text stays unsummarized | 38 | 1 | `src/components/coach/client-tracker-preview/view-model.ts` | KEEP | narrowed binary option detection to ["yes"] | binary choices summarize recorded yes/no answers and other structured text stays unsummarized |
+| view-model.test.mjs | cycle day derives from the latest period start on or before the selected date | 19 | 1 | `src/components/coach/client-tracker-preview/view-model.ts` | KEEP | used the earliest period start (.at(0)) instead of the latest | cycle day derives from the latest period start on or before the selected date |
+| view-model.test.mjs | structured text summaries format configured time, choices, context, and malformed values safely | 35 | 1 | `src/components/coach/client-tracker-preview/view-model.ts` | KEEP | swapped the 12-hour AM/PM suffix | structured text summaries format configured time, choices, context, and malformed values safely |
+| view-model.test.mjs | custom field units affect labels while generic custom values remain unconverted | 31 | 1 | `src/components/coach/client-tracker-preview/preview-model.ts` | KEEP | configuredUnit ignored fieldUnits and fell back to parameter.unit | custom field units affect labels while generic custom values remain unconverted |
+| coaching-refinement.test.mjs | phase progress remains readable at all five widget sizes | 17 | 1 | `src/components/ethereal/builder/coaching-content.tsx` | KEEP | totalWeeks used floor instead of ceil of phaseDays/7 | phase progress remains readable at all five widget sizes |
+| coaching-refinement.test.mjs | expanded phase details use published facts and cap milestones | 21 | 1 | `src/components/ethereal/builder/coaching-content.tsx` | KEEP | raised the milestone cap from 3 to 4 | expanded phase details use published facts and cap milestones |
+| coaching-refinement.test.mjs | week glance uses all selected metrics and adds published context when it fits | 20 | 1 | `src/components/ethereal/builder/coaching-content.tsx` | KEEP | looked up previous week - 2 instead of - 1 | week glance uses all selected metrics and adds published context when it fits |
+| coaching-refinement.test.mjs | check-in status focuses on scheduled dates and client submissions | 9 | 1 | `src/components/ethereal/builder/coaching-content.tsx` | KEEP | changed the submitted status label | check-in status focuses on scheduled dates and client submissions |
+| coaching-refinement.test.mjs | habit summaries keep short cards useful without a single-row tease | 11 | 1 | `src/components/ethereal/builder/coaching-content.tsx` | KEEP | reduced TodayHabits rowMaximum from 2 to 1 | habit summaries keep short cards useful without a single-row tease |
+| coaching-refinement.test.mjs | phase milestone card includes focus and the published milestone at four rows | 5 | 1 | `src/components/ethereal/builder/coaching-content.tsx` | KEEP | raised the showMilestones height gate from 230 to 240 | phase milestone card includes focus and the published milestone at four rows |
+| coaching-refinement.test.mjs | habit consistency keeps a centered compact summary and uses a Monday-aligned weekly graph when wide | 98 | 1 | `src/components/ethereal/builder/coaching-content.tsx` | KEEP | weeksAtReadableSize divisor 8 -> 10 | habit consistency keeps a centered compact summary and uses a Monday-aligned weekly graph when wide |
+| coaching-refinement.test.mjs | compact canvas span keeps summary; four columns show an unlabeled weekly graph | 30 | 1 | `src/components/ethereal/builder/coaching-content.tsx` | KEEP | stripGraph columnSpan threshold 4 -> 5 | compact canvas span keeps summary; four columns show an unlabeled weekly graph |
+| coaching-refinement.test.mjs | Today's habits contribution presentation keeps its six-week calendar | 9 | 1 | `src/components/ethereal/builder/coaching-content.tsx` | KEEP | narrowed calendarEnabled days range to <=35 so the 42-day TL21 calendar is disabled | Today's habits contribution presentation keeps its six-week calendar |
+| coaching-refinement.test.mjs | Today's habits contribution graph uses its selected history window | 13 | 1 | `src/components/ethereal/builder/coaching-content.tsx` | KEEP | raised autoCellSize clamp 12 -> 16, changing the auto history window | Today's habits contribution graph uses its selected history window |
+| coaching-refinement.test.mjs | check-in date emblem has no rounded rectangle | 12 | 1 | `src/components/ethereal/builder/coaching-content.css` | CUT | snapshot pin: regex-restates hand-maintained CSS (.cc-calendar-emblem border/border-radius/background) | — |
+| coaching-refinement.test.mjs | habit and task completion marks match the Foundation checkbox | 10 | 1 | `src/components/ethereal/builder/coaching-content.css` | CUT | snapshot pin: regex-restates hand-maintained CSS (.cc-habit-toggle/.cc-task-read-state 17px/4px) | — |
+| expansion.test.mjs | weekly source averages include zero, count unique logged days and stay coherent | 23 | 1 | `src/components/ethereal/builder/model.ts` | KEEP | removed the asOf upper bound in the steps branch of getRoadmapWeeks | weekly source averages include zero, count unique logged days and stay coherent |
+| expansion.test.mjs | upgrading saved records preserves intentional empty sources and completions | 14 | 1 | `src/components/ethereal/builder/model.ts` | KEEP | made upgradeAdditionalFixture replace an intentionally empty sleep array | upgrading saved records preserves intentional empty sources and completions |
+| expansion.test.mjs | sleep settings change the instance summary, period and display unit | 21 | 1 | `src/components/ethereal/builder/progress-content.tsx` | KEEP | inverted the TL11 h/min unit conversion | sleep settings change the instance summary, period and display unit |
+| expansion.test.mjs | single-nutrient comparison follows the active option and keeps missing distinct | 49 | 1 | `src/components/ethereal/builder/nutrition-content.tsx` | KEEP | read the opposite nutrition option in SingleNutrientWidget | single-nutrient comparison follows the active option and keeps missing distinct |
+| expansion.test.mjs | habit consistency changes when the shared schedule completion changes | 12 | 1 | `src/components/ethereal/builder/coaching-content.tsx` | KEEP | made the completion() helper always return undefined | habit consistency changes when the shared schedule completion changes |
+| expansion.test.mjs | phase progress presents phase, week and published context without a percentage headline | 14 | 1 | `src/components/ethereal/builder/coaching-content.tsx` | KEEP | raised the showMilestones gate out of reach (>=999) | phase progress presents phase, week and published context without a percentage headline |
+| fixture-history.test.mjs | the fictional fixture has a full year of scheduled habit and macro history | 45 | 1 | `src/components/ethereal/builder/model.ts` | KEEP | shortened the generated history span from -364 to -300 days | the fictional fixture has a full year of scheduled habit and macro history |
+| fixture-history.test.mjs | version two saved samples gain history without losing edits or intentional empty sources | 74 | 1 | `src/components/ethereal/builder/model.ts` | KEEP | dropped the seeded-partial fat backfill in mergeMacroHistory | version two saved samples gain history without losing edits or intentional empty sources |
+| fixture-history.test.mjs | edited historical plans survive sample upgrades unchanged | 17 | 1 | `src/components/ethereal/builder/model.ts` | KEEP | forced legacyMacroTargets true so edited targets were re-prepended | edited historical plans survive sample upgrades unchanged |
+| fixture-history.test.mjs | version three records missing the selected option's current-day nutrition are repaired | 23 | 1 | `src/components/ethereal/builder/model.ts` | KEEP | changed the active-day generated protein 125 -> 124 | version three records missing the selected option's current-day nutrition are repaired |
+| fixture-history.test.mjs | unmarked edited nutrition sources gain older and current keys while existing gaps and values stay intact | 40 | 1 | `src/components/ethereal/builder/model.ts` | KEEP | removed the first-date/asOf gap-fill guard so gaps were filled | unmarked edited nutrition sources gain older and current keys while existing gaps and values stay intact |
+
+## Per file
+
+- `mealplan-model.test.ts` — KEEP-ALL (blocks 1-13).
+- `view-model.test.mjs` — KEEP-ALL (blocks 1-10).
+- `coaching-refinement.test.mjs` — TRIM (keep blocks 1-10; cut blocks 11-12, both CSS snapshot pins).
+- `expansion.test.mjs` — KEEP-ALL (blocks 1-6).
+- `fixture-history.test.mjs` — KEEP-ALL (blocks 1-5).
+
+## Cut detail
+
+- `check-in date emblem has no rounded rectangle` (12 lines): asserts `.cc-calendar-emblem { border:0;
+  border-radius:0; background:transparent }` by regex — a hand-maintained CSS constant, no runtime behavior.
+- `habit and task completion marks match the Foundation checkbox` (10 lines): asserts `.cc-habit-toggle::before,
+  .cc-task-read-state::before { width:17px; height:17px; border-radius:4px }` by regex — same shape.
+- The CSS reads inside the big `habit consistency ... when wide` block ride along with a real rendering
+  test, so that block is kept, not cut.
+
+## Could not check
+
+None. All five files baselined green and every block was classified.
+
+## Self-check
+
+- (a) files/blocks listed — PASS: 5 files, 46 blocks; parse_blocks returned exactly these names/line ranges.
+- (b) every KEEP proven — PASS: 44/44 KEEP blocks have a mutation whose TAP `fails` includes that block's own test.
+- (c) environment — PASS: frontend-only lane, no database used and nothing started; worktree left intact (see git status below).
+- (d) writes — PASS: only `icm/03-plan/output/TA/TB4-w3.jsonl` and `TB4-w3.md` written; no tracked file edited (mutation lever auto-restores with `git checkout --`).
