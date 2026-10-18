@@ -39,9 +39,10 @@ policy, workflows, or layouts.
 - Never use `git reset --hard`, `git clean`, `git checkout -- <path>`, or blind `git add -A`.
 - One non-trivial task gets a written plan (exact paths, commands, observable acceptance)
   before code.
-- **TDD:** for production behavior, write a failing test first, watch it fail, then implement
-  the minimum to pass. Every bug fix leaves a regression test.
-- **Real-browser requirement:** mechanism gates (build/typecheck/lint/unit) are not enough;
+- **No unit tests** (`icm/03-plan/DECISIONS.md` D11). Do not write them. Prove behavior live:
+  the running app against a real database, driven in a browser at desktop and mobile widths,
+  plus the live role matrix for permissions. Typecheck, lint and build are mechanical gates only.
+- **Real-browser requirement:** mechanism gates (build/typecheck/lint) are not enough;
   exercise the actual running flow in a browser at desktop and mobile widths.
 - **Independent review:** the builder never approves its own work. A different agent/model does
   read-only review; the builder repairs findings and re-runs affected gates.

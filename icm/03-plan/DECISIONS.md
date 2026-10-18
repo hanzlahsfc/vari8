@@ -45,6 +45,16 @@ Add `zod` 4 now, at every API boundary (R3 recommends it now; the judge confirme
 
 The P2 prototype is behavior-preserving (all 98 reformatted files AST-compared, gates green) but its root config diverged from the canvas config. PR-03 uses one policy for root and `frontend/`: the canvas `recommended` preset, `organizeImports` on, no silent warning overrides (any downgrade is listed with a reason in the PR). It enables `noNextAsyncClientComponent` (exists, off by default) and `nursery/useReactCompiler` as a warning (catches 9 of the 10 React hook findings P1 surfaced). The 10 findings are fixed in PR-03, not suppressed. Pages Router only rules (`no-typos`, `_document` rules) are not needed.
 
+## D11. No unit tests; proof is live behavior
+
+Today the repo carries 85,847 lines of tests against 62,308 lines of app code: `tests/unit` 109 files / 21,757 lines, `tests/integration` 55 / 39,260, `tests/e2e` 47 / 19,397, canvas `*.test.mjs` and `*.checks.mjs` 23 / 5,433. Unit tests prove the code compiles and agrees with itself, not that the app works, and they cost CI time and agent usage. Rule for the program:
+
+- Builders write no unit tests. Every builder card says so explicitly (Devin, Codex and OpenCode lanes tend to add them).
+- A PR is proven by its live lanes: the real app running against a real database, driven in a browser at desktop and mobile widths, compared to the canvas. Typecheck, lint and build stay as mechanical gates only.
+- Permissions are proven by one live role matrix: a script that signs in as each role and attempts each action against the running app and `/api/v1`, asserting allowed or denied per the ROLES decision (D10). It replaces the integration suite's authorization coverage.
+- Deletion order: PR-03 deletes `tests/unit` and the canvas test and check files and drops `npm run test` from CI. The integration suite is deleted in the PR that lands the live role matrix, not before, so server-side permission checks are never unproven. Old e2e specs are deleted surface by surface as each canvas screen replaces the old UI; the Playwright harness stays for the live lanes.
+- `AGENTS.md` TDD rule is replaced by this rule. The plan template's "Verify, unit" box is dropped from every PR section.
+
 ## D9. Issues first, then one PR per issue
 
 The approved plan becomes GitHub issues in `hanzlahsfc/The-great-tracker-`, visible to the whole team. One issue per plan PR section (the section is the issue body and acceptance contract) and one `decision` issue per owner question; build issues name their blockers as "Blocked by #n". Labels per phase (`foundation`, `model`, `service`, `wiring`, `mobile`, `decision`), one milestone per phase. Each issue becomes one branch `<type>/<issue#>-<slug>` off `TRACKER` in its own worktree, Devin builds, a different model verifies, the PR targets `TRACKER` with `Closes #n`. TRACKER is not the default branch, so the issue is closed by hand at merge. Issues are generated from `PLAN.md` by `icm/03-plan/tools/plan-to-issues.mjs` (idempotent, keyed by the plan id), only after owner approval and after TRACKER is pushed. Making TRACKER `main` is the owner's call to Hanzlah when the program completes.
