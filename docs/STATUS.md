@@ -5,6 +5,41 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## TRAINING-I1B-1 — Evergreen program mode (PROMPT 262)
+
+- Owner-authorized implementation of the independently confirmed I1b-1
+  scope on `feature/training-i1b1` (base `36eae79`, the merged I1a
+  repair). Contract: P2 plan + P2-A1 addendum (DeepSeek R1 confirmations
+  — I1b-1 READY; booking-only advisory A1-1 remains for I1b-2 and is
+  NOT implemented).
+- `training_program.program_mode` (TEXT, default `WEEK_BASED`, CHECK
+  `WEEK_BASED|EVERGREEN`) — set at create from the draft literal,
+  editable pre-publish only, immutable after first publish (a different
+  mode is a replacement, never in-place conversion). Evergreen stores
+  `weekCount=1` as its single prescription week.
+- Mode-aware week-derived sites (complete inventory): save-path
+  `ceiling`+locked-week assertion, `setTrainingProgramTimezone`
+  high-water advance, publish lock ceiling + history-invariant loop +
+  `newHighWater`, publish `upperBound`/`program_ended`, staff-detail
+  `ceiling`, client `completed`/`weekEndInstant`. Evergreen: ceiling 0,
+  no high-water advance, no upper bound, never completed by date.
+- Client: `ongoing` flag + "ongoing program" label, single prescription
+  week, marker = scheduled-later → "updates" / republished-governing →
+  "updated". Staff: mode select pre-publish, week nav/week-count hidden,
+  "Ongoing" list label. Existing immutable versions, CAS, replay,
+  authz/consent/audit and `ENABLE_TRAINING_PLANS` fail-closed gate
+  unchanged.
+- Gates (final tree): format/typecheck/lint clean (4 pre-existing
+  warnings); unit 1331/1331; integration 858/858 (disposable
+  `train_i1b1_intfull`); build clean; focused E2E 6/6; full E2E
+  417/429 (12 skipped, 0 failed; disposable `train_i1b1_e2e_full`).
+  Migration: fresh deploy + genuine base→candidate upgrade (backfill
+  `WEEK_BASED`, CHECK enforced, no new drift). Mutations: M1 save-ceiling,
+  M2 publish-bound, M3 completed-state, M4 timezone high-water — all
+  bite on targeted assertions; restored byte-identical.
+- Records: decision #117 + `docs/tasks/training-i1b1.md`. Stopped at the
+  pushed candidate for independent review — no PR, no merge.
+
 ## TRAINING-I1A-R4 — replay-after-remount repair (PROMPT 255)
 
 - Bounded repair on `feature/training-i1a-r3` for F1 (LOW) from the

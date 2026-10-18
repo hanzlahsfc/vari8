@@ -49,15 +49,17 @@ export default async function ClientTrainingProgramPage({
         </p>
       ) : result.value.state === "active" && result.value.current !== null ? (
         <div data-testid="training-current">
-          <p className="app-lede">
-            {result.value.current.title} — week {result.value.current.weekIndex}{" "}
-            of {result.value.current.weekCount} (
-            {result.value.current.anchorTimezone})
+          <p className="app-lede" data-testid="training-mode">
+            {result.value.current.ongoing
+              ? `${result.value.current.title} — ongoing program (${result.value.current.anchorTimezone})`
+              : `${result.value.current.title} — week ${result.value.current.weekIndex} of ${result.value.current.weekCount} (${result.value.current.anchorTimezone})`}
           </p>
           {result.value.current.marker !== null ? (
             <p className="app-lede" data-testid="training-marker">
-              Updated {result.value.current.marker.effectiveDate} — some
-              sessions may already be complete.
+              Updated {result.value.current.marker.effectiveDate}
+              {result.value.current.ongoing
+                ? "."
+                : " — some sessions may already be complete."}
             </p>
           ) : null}
           {result.value.current.week !== null ? (

@@ -387,6 +387,7 @@ type LockedProgramRow = {
   title: string;
   start_date: Date;
   week_count: number;
+  program_mode: "WEEK_BASED" | "EVERGREEN";
   field_config: unknown;
   confirmed_timezone: string | null;
   draft: unknown;
@@ -407,7 +408,7 @@ async function lockProgram(
 ): Promise<LockedProgramRow | null> {
   const rows = await tx.$queryRawUnsafe<LockedProgramRow[]>(
     `SELECT id, workspace_id, client_profile_id, title, start_date,
-            week_count, field_config, confirmed_timezone, draft,
+            week_count, program_mode, field_config, confirmed_timezone, draft,
             draft_revision, replaces_program_id, first_published_at,
             cancelled_at, locked_week_high_water
      FROM "training_program"
@@ -746,10 +747,15 @@ export async function saveTrainingProgramDraft(
         const memberId = ctx.workspaceMemberId as string;
 
         if (input.expectedRevision === 0) {
-          // CREATE — container + first boundary draft.
+          // CREATE — container + first boundary draft. EVERGREEN stores
+          // weekCount=1 as its single prescription week (internal
+          // representation — the UI hides the week-count input).
           const title = cleanTitle(input.title);
           const startDate = cleanStartDate(input.startDate);
-          const weekCount = cleanWeekCount(input.weekCount);
+          const weekCount =
+            draft.programMode === "EVERGREEN"
+              ? 1
+              : cleanWeekCount(input.weekCount);
           const fieldConfig = normalizeFieldConfig(input.fieldConfig);
           const created = await tx.trainingProgram.create({
             data: {
@@ -758,6 +764,7 @@ export async function saveTrainingProgramDraft(
               title,
               startDate: new Date(`${startDate}T00:00:00Z`),
               weekCount,
+              programMode: draft.programMode,
               fieldConfig: fieldConfig as unknown as Prisma.InputJsonValue,
               ...(input.timezone === undefined
                 ? {}
@@ -815,8 +822,20 @@ export async function saveTrainingProgramDraft(
                 })
               ).effectiveTimezone
             : null;
+        // Mode is locked at first publish (same class as startDate — a
+        // different mode after publication is a replacement, never an
+        // in-place conversion). Pre-publish the column follows the draft.
+        if (
+          program.first_published_at !== null &&
+          draft.programMode !== program.program_mode
+        )
+          throw new TrainingError("invalid_input");
+        const programMode = draft.programMode;
+        // Week-based programs lock wholly-past weeks under the immutable
+        // anchor; EVERGREEN is ongoing and has no historical-week ceiling
+        // (P2-A1 F6 inventory — every week-derived site branches).
         const lockedWeeks =
-          anchorTz !== null
+          anchorTz !== null && program.program_mode === "WEEK_BASED"
             ? ceiling(
                 anchorTz,
                 isoDate(program.start_date),
@@ -839,9 +858,11 @@ export async function saveTrainingProgramDraft(
         )
           throw new TrainingError("start_anchor_locked");
         const weekCount =
-          input.weekCount === undefined
-            ? program.week_count
-            : cleanWeekCount(input.weekCount);
+          programMode === "EVERGREEN"
+            ? 1
+            : input.weekCount === undefined
+              ? program.week_count
+              : cleanWeekCount(input.weekCount);
         const fieldConfig =
           input.fieldConfig === undefined
             ? normalizeFieldConfig(program.field_config)
@@ -879,6 +900,7 @@ export async function saveTrainingProgramDraft(
             title,
             startDate: new Date(`${startDate}T00:00:00Z`),
             weekCount,
+            programMode,
             fieldConfig: fieldConfig as unknown as Prisma.InputJsonValue,
             ...(timezoneChanged
               ? {
@@ -965,7 +987,7 @@ export async function setTrainingProgramTimezone(
               })
             : null;
         const highWater =
-          v1 !== null
+          v1 !== null && program.program_mode === "WEEK_BASED"
             ? ceiling(
                 v1.effectiveTimezone,
                 isoDate(program.start_date),
@@ -1131,8 +1153,9 @@ export async function publishTrainingProgramVersion(
 
           const anchorTz = seq1?.effectiveTimezone ?? null;
           const startDate = isoDate(program.start_date);
+          const isEvergreen = program.program_mode === "EVERGREEN";
           const lockCeiling =
-            anchorTz !== null
+            anchorTz !== null && !isEvergreen
               ? ceiling(
                   anchorTz,
                   startDate,
@@ -1196,9 +1219,16 @@ export async function publishTrainingProgramVersion(
             : todayConfirmed > firstOpen
               ? todayConfirmed
               : firstOpen;
-          const upperBound = addDays(startDate, 7 * program.week_count - 1);
-          if (lowerBound > upperBound) throw new TrainingError("program_ended");
-          if (effectiveDate < lowerBound || effectiveDate > upperBound)
+          // Week-based programs end at their final week; EVERGREEN is
+          // ongoing — no upper bound and no `program_ended` (P2 §2.2).
+          if (!isEvergreen) {
+            const upperBound = addDays(startDate, 7 * program.week_count - 1);
+            if (lowerBound > upperBound)
+              throw new TrainingError("program_ended");
+            if (effectiveDate > upperBound)
+              throw new TrainingError("effective_bounds");
+          }
+          if (effectiveDate < lowerBound)
             throw new TrainingError("effective_bounds");
           if (isFirst && effectiveDate !== startDate)
             throw new TrainingError("effective_bounds");
@@ -1229,6 +1259,10 @@ export async function publishTrainingProgramVersion(
 
           // ── Materialize + publish completeness + history invariant ──
           const draft = normalizeTrainingDraft(program.draft);
+          // The stored draft's mode always equals the column (save-time
+          // enforcement); assert anyway before stamping the payload.
+          if (draft.programMode !== program.program_mode)
+            throw new TrainingError("invalid_input");
           const materialized = materializeWeeks(
             draft,
             startDate,
@@ -1324,13 +1358,15 @@ export async function publishTrainingProgramVersion(
           // never unlock, regardless of future clock/zone changes. The
           // stored high-water is advanced under the immutable anchor at
           // every publication.
-          const newHighWater = ceiling(
-            anchorTz ?? program.confirmed_timezone,
-            startDate,
-            program.week_count,
-            program.locked_week_high_water,
-            now,
-          );
+          const newHighWater = isEvergreen
+            ? program.locked_week_high_water
+            : ceiling(
+                anchorTz ?? program.confirmed_timezone,
+                startDate,
+                program.week_count,
+                program.locked_week_high_water,
+                now,
+              );
           if (newHighWater > program.locked_week_high_water) {
             await tx.trainingProgram.update({
               where: { id: program.id },
@@ -1565,6 +1601,7 @@ export type TrainingProgramListItem = {
   title: string;
   startDate: string;
   weekCount: number;
+  programMode: "WEEK_BASED" | "EVERGREEN";
   firstPublishedAt: string | null;
   cancelledAt: string | null;
   /** Truthful lifecycle label for staff (S correction). */
@@ -1613,6 +1650,7 @@ export async function readStaffTrainingPrograms(
           title: string;
           start_date: Date;
           week_count: number;
+          program_mode: "WEEK_BASED" | "EVERGREEN";
           first_published_at: Date | null;
           cancelled_at: Date | null;
           created_at: Date;
@@ -1620,7 +1658,7 @@ export async function readStaffTrainingPrograms(
           succ_takeover: Date | null;
         }[]
       >(
-        `SELECT p.id, p.title, p.start_date, p.week_count,
+        `SELECT p.id, p.title, p.start_date, p.week_count, p.program_mode,
                   p.first_published_at, p.cancelled_at, p.created_at,
                   v1.activation_instant AS takeover,
                   (SELECT sv.activation_instant
@@ -1688,6 +1726,7 @@ export async function readStaffTrainingPrograms(
             title: p.title,
             startDate: isoDate(p.start_date),
             weekCount: p.week_count,
+            programMode: p.program_mode,
             firstPublishedAt: p.first_published_at?.toISOString() ?? null,
             cancelledAt: p.cancelled_at?.toISOString() ?? null,
             state,
@@ -1709,6 +1748,7 @@ export type StaffProgramDetail = {
     title: string;
     startDate: string;
     weekCount: number;
+    programMode: "WEEK_BASED" | "EVERGREEN";
     fieldConfig: TrainingFieldConfig;
     confirmedTimezone: string | null;
     anchorTimezone: string | null;
@@ -1820,7 +1860,7 @@ export async function readStaffTrainingProgram(
       });
 
       const lockCeiling =
-        anchorTz !== null
+        anchorTz !== null && program.program_mode === "WEEK_BASED"
           ? ceiling(
               anchorTz,
               startDate,
@@ -1860,6 +1900,7 @@ export async function readStaffTrainingProgram(
           title: program.title,
           startDate,
           weekCount: program.week_count,
+          programMode: program.program_mode,
           fieldConfig: normalizeFieldConfig(program.field_config),
           confirmedTimezone: program.confirmed_timezone,
           anchorTimezone: anchorTz,
@@ -2020,6 +2061,9 @@ export type OwnTrainingView = {
     versionSeq: number;
     weekIndex: number;
     weekCount: number;
+    /** True for EVERGREEN programs — ongoing, no week navigation and no
+     * date-based completion. */
+    ongoing: boolean;
     startDate: string;
     anchorTimezone: string;
     marker: { label: "updated" | "updates"; effectiveDate: string } | null;
@@ -2112,7 +2156,12 @@ export async function readOwnTrainingProgram(
       checkDeadline(deadline);
       const programRow = await tx.trainingProgram.findUniqueOrThrow({
         where: { id: sel.current.id },
-        select: { title: true, startDate: true, weekCount: true },
+        select: {
+          title: true,
+          startDate: true,
+          weekCount: true,
+          programMode: true,
+        },
       });
       const versions = (await programVersions(tx, sel.current.id)).map((v) => ({
         ...v,
@@ -2124,19 +2173,22 @@ export async function readOwnTrainingProgram(
       const anchorTz =
         vinstants.find((v) => v.versionSeq === 1)?.effectiveTimezone ?? "UTC";
       const startDate = isoDate(programRow.startDate);
-      const idx = Math.min(
-        programRow.weekCount,
-        Math.max(1, weekIndex(startDate, localDateOf(now, anchorTz))),
-      );
+      const isEvergreen = programRow.programMode === "EVERGREEN";
+      // Evergreen shows its single prescription week — no week index math.
+      const idx = isEvergreen
+        ? 1
+        : Math.min(
+            programRow.weekCount,
+            Math.max(1, weekIndex(startDate, localDateOf(now, anchorTz))),
+          );
       // Lifecycle state derives from the real end boundary (exclusive
       // start of the week AFTER the last one under the immutable anchor
       // calendar) — never from the clamped display index: the final week
-      // stays current through its final valid instant.
-      const endInstant = weekEndInstant(
-        anchorTz,
-        startDate,
-        programRow.weekCount,
-      );
+      // stays current through its final valid instant. EVERGREEN has no
+      // date-based completion (P2 §2.2 — it ends by replacement only).
+      const endInstant = isEvergreen
+        ? null
+        : weekEndInstant(anchorTz, startDate, programRow.weekCount);
       const governing = gvAt(vinstants, now, cutoff);
       const govRow = governing
         ? versions.find((v) => v.vi.id === governing.id)
@@ -2149,7 +2201,36 @@ export async function readOwnTrainingProgram(
             )
           : null;
       const week = projected?.weeks.find((w) => w.week === idx) ?? null;
-      const marker = weekMarker(vinstants, anchorTz, startDate, idx, now);
+      // Evergreen marker (P2 §2.2): a scheduled later version →
+      // "updates"; a republished governing version → "updated". The
+      // week-boundary marker only exists for week-based programs.
+      const marker = isEvergreen
+        ? (() => {
+            const scheduled = vinstants
+              .filter(
+                (v) =>
+                  v.activationInstant.getTime() > now.getTime() &&
+                  (cutoff === null ||
+                    v.activationInstant.getTime() < cutoff.getTime()) &&
+                  !isShadowed(vinstants, v),
+              )
+              .sort(
+                (a, b) =>
+                  a.activationInstant.getTime() - b.activationInstant.getTime(),
+              )[0];
+            if (scheduled)
+              return {
+                label: "updates" as const,
+                effectiveDate: scheduled.effectiveDate,
+              };
+            if (governing && governing.versionSeq > 1)
+              return {
+                label: "updated" as const,
+                effectiveDate: governing.effectiveDate,
+              };
+            return null;
+          })()
+        : weekMarker(vinstants, anchorTz, startDate, idx, now);
       await writeAuditEvent(tx, ctx, {
         action: "READ",
         resourceType: "training_program_version",
@@ -2157,13 +2238,17 @@ export async function readOwnTrainingProgram(
         subjectClientProfileId: profile.id,
       });
       return {
-        state: now.getTime() >= endInstant.getTime() ? "completed" : "active",
+        state:
+          endInstant !== null && now.getTime() >= endInstant.getTime()
+            ? "completed"
+            : "active",
         current: {
           programId: sel.current.id,
           title: programRow.title,
           versionSeq: governing?.versionSeq ?? 0,
           weekIndex: idx,
           weekCount: programRow.weekCount,
+          ongoing: isEvergreen,
           startDate,
           anchorTimezone: anchorTz,
           marker,

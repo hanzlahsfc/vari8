@@ -1732,3 +1732,28 @@ licensing claims, notifications/messaging, automatic nutrition or
 training calculations/recommendations, production deployment, or
 real-client use. Production/privacy gates #102/#81/#38/#39/D-10/D-09
 remain separate and unresolved.
+
+**Decision #117 (APPROVED — synthetic/testing boundaries only):** the
+Evergreen training-program mode (TRAINING-I1B-1, the first substep of
+the reviewed TRAINING-I1B plan `97bb2767…684dba` + addendum
+`58bf0e70…0a870c`, confirmed by the P2-A1-R1 independent review
+`8ffb22be…a4d5`). `TrainingProgram.programMode` is
+`WEEK_BASED | EVERGREEN`, set at create, editable only before first
+publish, and immutable thereafter — a different mode is a replacement
+program, never an in-place conversion. Evergreen is ongoing: the single
+prescription week (`weekCount=1` internally) carries forward
+indefinitely; it never reports a date-based completed state, inherits no
+seven-day publication bound and no wholly-past-week lock, and never
+advances `lockedWeekHighWater` (including on confirmed-timezone
+change). Published versions remain immutable and apply prospectively;
+the client view marks scheduled-later versions "updates" and
+republished-governing versions "updated". Active programs still end by
+replacement only and pending-leaf cancellation is unchanged — no
+active-program end operation exists. All I1a guarantees (immutable
+anchor/versions, CAS, replay, authorization/consent/audit discipline,
+bounded reads, fail-closed `ENABLE_TRAINING_PLANS` gate) are unchanged.
+NOT approved: dated-session bookings (I1b-2, the A1-1 projection clause
+remains open), recurrence/generation, logging/completion tracking,
+computed volume, template integration, active-program end/cancel,
+production deployment, or real-client use. Production/privacy gates
+#102/#81/#38/#39/D-10/D-09 remain separate and unresolved.

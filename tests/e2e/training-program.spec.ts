@@ -439,6 +439,110 @@ test("replacement takeover then v2 publishes through the UI", async ({
   expect(createAudits).toBe(2);
 });
 
+test("evergreen program: ongoing authoring, post-week-1 update, client view", async ({
+  page,
+}) => {
+  const listUrl = `${BASE}/workspace/${wsId}/clients/${profileId}/training-program`;
+  await signIn(page, E2E.coach);
+  await page.goto(listUrl);
+  await expect(page.getByTestId("staff-training-page")).toBeVisible();
+
+  // Create an ongoing program via the mode select — no week count shown.
+  await page.getByTestId("tp-create-title").fill("E2E Ongoing Block");
+  await page.getByTestId("tp-create-start").fill(today());
+  await page.getByTestId("tp-create-mode").selectOption("EVERGREEN");
+  await expect(page.getByTestId("tp-create-weeks")).toHaveCount(0);
+  await page.getByTestId("tp-create-tz").fill("UTC");
+  await page.getByTestId("tp-create-submit").click();
+  await expect(page.getByTestId("staff-training-detail")).toBeVisible();
+
+  // Evergreen editor: no week navigation, single ongoing prescription.
+  await expect(page.getByTestId("tp-week")).toHaveCount(0);
+  await expect(page.getByTestId("tp-weeks")).toHaveCount(0);
+  await page.getByTestId("tp-session-add").click();
+  const fieldset = page.locator("fieldset[data-testid^='tp-session-']");
+  await fieldset
+    .first()
+    .getByTestId(/tp-exercise-add-/)
+    .click();
+  const exercise = fieldset
+    .first()
+    .locator("fieldset[data-testid^='tp-exercise-']")
+    .first();
+  await exercise.getByTestId(/tp-ex-name-/).fill("Deadlift");
+  await exercise.getByTestId(/tp-cell-.*-sets/).fill("3");
+  await exercise.getByTestId(/tp-cell-.*-reps/).fill("5");
+  await page.getByTestId("tp-save-draft").click();
+  await expect(page.getByTestId("training-status")).toContainText(/saved/i);
+  // Evergreen is a replacement of the current week-based program —
+  // the single-root rule forbids a second root. Immediate takeover.
+  await page
+    .getByTestId("tp-predecessor")
+    .selectOption({ label: "E2E Chain R3" });
+  await page.getByTestId("tp-ack-takeover").check();
+  await page.getByTestId("tp-effective").fill(today());
+  await page.getByTestId("tp-publish").click();
+  await expect(page.getByTestId("training-status")).toContainText(
+    "Published version 1.",
+  );
+
+  // Client: ongoing label, prescription verbatim, no "has ended".
+  await signIn(page, E2E.client);
+  await page.goto(`${BASE}/workspace/${wsId}/training-program`);
+  await expect(page.getByTestId("training-mode")).toContainText(
+    "ongoing program",
+  );
+  await expect(page.getByTestId("training-current")).toContainText("Deadlift");
+  await expect(page.getByTestId("training-completed")).toHaveCount(0);
+
+  // Seeded prerequisite (disclosed): age the program 30 days so the next
+  // save/publish crosses the old seven-day lock + `program_ended` bounds.
+  const prog = await prisma.trainingProgram.findFirstOrThrow({
+    where: { clientProfileId: profileId, title: "E2E Ongoing Block" },
+    include: { versions: true },
+  });
+  const agedStart = new Date(Date.now() - 30 * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+  await prisma.trainingProgram.update({
+    where: { id: prog.id },
+    data: { startDate: new Date(`${agedStart}T00:00:00Z`) },
+  });
+  for (const v of prog.versions)
+    await prisma.trainingProgramVersion.update({
+      where: { id: v.id },
+      data: {
+        effectiveDate: new Date(`${agedStart}T00:00:00Z`),
+        activationInstant: new Date(`${agedStart}T00:00:00Z`),
+      },
+    });
+
+  // UI: draft edit + save at "day 30" — no locked-week rejection.
+  await signIn(page, E2E.coach);
+  await page.goto(
+    `${BASE}/workspace/${wsId}/clients/${profileId}/training-program/${prog.id}`,
+  );
+  await expect(page.getByTestId("staff-training-detail")).toBeVisible();
+  await expect(page.getByTestId("tp-mode-locked")).toContainText("Ongoing");
+  const ex2 = page.locator("fieldset[data-testid^='tp-exercise-']").first();
+  await ex2.getByTestId(/tp-cell-.*-reps/).fill("8");
+  await page.getByTestId("tp-save-draft").click();
+  await expect(page.getByTestId("training-status")).toContainText(/saved/i);
+  // Publish v2 today — no `program_ended`.
+  await page.getByTestId("tp-effective").fill(today());
+  await page.getByTestId("tp-publish").click();
+  await expect(page.getByTestId("training-status")).toContainText(
+    "Published version 2.",
+  );
+
+  // Client sees the prospective update + the updated marker.
+  await signIn(page, E2E.client);
+  await page.goto(`${BASE}/workspace/${wsId}/training-program`);
+  await expect(page.getByTestId("training-current")).toContainText("Reps: 8");
+  await expect(page.getByTestId("training-marker")).toContainText("Updated");
+  await checkNoOverflow(page);
+});
+
 test("unassigned owner sees a read-only list", async ({ page }) => {
   await signIn(page, E2E.owner);
   await page.goto(
