@@ -3433,15 +3433,24 @@ export async function readOwnTrainingBookingHistory(
                 p.title, p.cancelled_at AS cancelled_program
          FROM "training_session_booking" b
          JOIN "training_program" p ON p.id = b.program_id
+         JOIN "training_program_version" v1
+           ON v1.program_id = b.program_id AND v1.version_seq = 1
          WHERE b.workspace_id = $1 AND b.client_profile_id = $2
            AND b.cancelled_at IS NULL
            AND p.cancelled_at IS NULL
-           ${cursor !== undefined ? "AND (b.scheduled_date, b.id) < ($3::date, $4)" : ""}
+           AND v1.activation_instant <= $3
+           ${cursor !== undefined ? "AND (b.scheduled_date, b.id) < ($4::date, $5)" : ""}
          ORDER BY b.scheduled_date DESC, b.id DESC
          LIMIT ${TRAINING_LIMITS.bookingPageSize + 1}`,
         ...(cursor !== undefined
-          ? [input.workspaceId, profile.id, cursor.scheduledDate, cursor.id]
-          : [input.workspaceId, profile.id]),
+          ? [
+              input.workspaceId,
+              profile.id,
+              now,
+              cursor.scheduledDate,
+              cursor.id,
+            ]
+          : [input.workspaceId, profile.id, now]),
       );
       const page = rows.slice(0, TRAINING_LIMITS.bookingPageSize);
       // Pinned versions for the page's bookings — one bounded fetch, no
