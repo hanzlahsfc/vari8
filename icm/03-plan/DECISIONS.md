@@ -40,3 +40,7 @@ Biome 2.5 (D4), TypeScript 7 native compiler as the only `typescript` dependency
 ## D8. Libraries (smallest set)
 
 Add `zod` 4 for every API boundary. Media goes to S3-compatible object storage behind the existing `lib/storage.ts` port (vendor still open). Charts reuse the canvas's own SVG component (`smooth-trend.tsx`), no chart library. Forms stay `useActionState` plus Base UI Form. Dates stay `Intl`. Offline sync (Electric or PowerSync) and TanStack Query are chosen at mobile time, not now. Source: `output/R3-libraries.md`.
+
+## D9. Issues first, then one PR per issue
+
+The approved plan becomes GitHub issues in `hanzlahsfc/The-great-tracker-`, visible to the whole team. One issue per plan PR section (the section is the issue body and acceptance contract) and one `decision` issue per owner question; build issues name their blockers as "Blocked by #n". Labels per phase (`foundation`, `model`, `service`, `wiring`, `mobile`, `decision`), one milestone per phase. Each issue becomes one branch `<type>/<issue#>-<slug>` off `TRACKER` in its own worktree, Devin builds, a different model verifies, the PR targets `TRACKER` with `Closes #n`. TRACKER is not the default branch, so the issue is closed by hand at merge. Issues are generated from `PLAN.md` by `icm/03-plan/tools/plan-to-issues.mjs` (idempotent, keyed by the plan id), only after owner approval and after TRACKER is pushed. Making TRACKER `main` is the owner's call to Hanzlah when the program completes.
