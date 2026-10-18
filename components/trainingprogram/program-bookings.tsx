@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
 import type { StaffBookingsPage } from "@/lib/trainingprogram/service";
@@ -101,6 +102,7 @@ export function TrainingBookings({
   bookableSessions: { id: string; name: string }[];
   canWrite: boolean;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [sessionId, setSessionId] = useState("");
   const [date, setDate] = useState("");
@@ -120,31 +122,50 @@ export function TrainingBookings({
 
   const run = (fn: () => Promise<{ status: string; message?: string }>) =>
     startTransition(async () => {
-      const r = await fn();
-      setMessage(
-        r.status === "ok" ? (r.message ?? null) : (r.message ?? "Error"),
-      );
+      try {
+        const r = await fn();
+        setMessage(
+          r.status === "ok" ? (r.message ?? null) : (r.message ?? "Error"),
+        );
+      } catch {
+        // Transport failure: the response was lost — that does not prove
+        // the server rejected the change (book is create-or-return, cancel
+        // replays alreadyCancelled, same-date move is a no-op). Report
+        // uncertainty and reconcile from the server; never claim either
+        // outcome. Inputs and rows stay untouched.
+        setMessage(
+          "Connection problem — could not confirm the change. Refresh to check, then retry if needed.",
+        );
+        router.refresh();
+      }
     });
 
   const loadMoreHistory = () =>
     startTransition(async () => {
       if (historyCursor === null) return;
-      const r = await listTrainingBookingsAction({
-        workspaceId,
-        clientProfileId,
-        programId,
-        cursor: historyCursor,
-      });
-      if (r.status !== "ok") {
-        setHistoryError(r.status === "error" ? r.message : "Load failed.");
-        return;
+      try {
+        const r = await listTrainingBookingsAction({
+          workspaceId,
+          clientProfileId,
+          programId,
+          cursor: historyCursor,
+        });
+        if (r.status !== "ok") {
+          setHistoryError(r.status === "error" ? r.message : "Load failed.");
+          return;
+        }
+        setHistoryError("");
+        setHistory((hs) => {
+          const seen = new Set(hs.map((b) => b.bookingId));
+          return [...hs, ...r.history.filter((b) => !seen.has(b.bookingId))];
+        });
+        setHistoryCursor(r.nextCursor);
+      } catch {
+        // Read-only page: transport failure keeps the loaded rows and the
+        // same cursor, so a manual retry fetches the same page; the dedupe
+        // guard above prevents duplicates if the server already answered.
+        setHistoryError("Connection problem — couldn't load more. Try again.");
       }
-      setHistoryError("");
-      setHistory((hs) => {
-        const seen = new Set(hs.map((b) => b.bookingId));
-        return [...hs, ...r.history.filter((b) => !seen.has(b.bookingId))];
-      });
-      setHistoryCursor(r.nextCursor);
     });
 
   return (

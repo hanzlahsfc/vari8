@@ -118,8 +118,8 @@ describe("TRAINING-I1B-R3 transport failures (A1-D1)", () => {
     ).toBe("2026-11-05");
     await vi.waitFor(() =>
       expect(
-        screen.getByTestId("booking-submit") as HTMLButtonElement,
-      ).not.toBeDisabled(),
+        (screen.getByTestId("booking-submit") as HTMLButtonElement).disabled,
+      ).toBe(false),
     );
   });
 
@@ -164,8 +164,9 @@ describe("TRAINING-I1B-R3 transport failures (A1-D1)", () => {
     expect(screen.getByTestId("bookings-history-more")).toBeTruthy();
     await vi.waitFor(() =>
       expect(
-        screen.getByTestId("bookings-history-more") as HTMLButtonElement,
-      ).not.toBeDisabled(),
+        (screen.getByTestId("bookings-history-more") as HTMLButtonElement)
+          .disabled,
+      ).toBe(false),
     );
 
     // Retry — must send the ORIGINAL cursor, not an advanced one.
