@@ -151,9 +151,16 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
     SUPPORT: D,
     CLIENT: c("own", "denied"),
   },
+  // TRAINING-I1A (PROMPT 244 — owner-approved amendment): owner write
+  // amended denied→assigned — an owner may author training programs ONLY
+  // for clients they hold an ACTIVE ClientAssignment to (same #111 shape
+  // as mealPlans). The CLIENT "own" write cell is retained for the
+  // FUTURE logging surface (I1b+); program-management operations reject
+  // client writes in the service layer regardless of this cell —
+  // a generic write grant here is never the operation authority.
   trainingPlansLogs: {
     PLATFORM_ADMIN: D,
-    WORKSPACE_OWNER: c("workspace", "denied"),
+    WORKSPACE_OWNER: c("workspace", "assigned"),
     COACH: c("assigned", "assigned"),
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,

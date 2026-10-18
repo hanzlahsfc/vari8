@@ -56,6 +56,9 @@ export default defineConfig({
         // MEAL-PLAN-I1 (decision 115): enabled on the primary test
         // server only — flag AND trusted APP_ENV below.
         ENABLE_MEAL_PLANS: "1",
+        // TRAINING-I1A (PROMPT 244): enabled on the primary test server
+        // only — flag AND trusted APP_ENV below; fail-closed elsewhere.
+        ENABLE_TRAINING_PLANS: "1",
         // P-023-I1-R2: `next start` is NODE_ENV=production, so the
         // trusted dev/test consent boundary also requires an explicit
         // APP_ENV=test — the flag alone can never configure consent.
@@ -113,6 +116,9 @@ export default defineConfig({
         // MEAL-PLAN-I1 flag-off: explicitly empty so an inherited
         // ENABLE_MEAL_PLANS=1 cannot leak into the proof server.
         ENABLE_MEAL_PLANS: "",
+        // TRAINING-I1A flag-off: explicitly empty so an inherited
+        // ENABLE_TRAINING_PLANS=1 cannot leak into the proof server.
+        ENABLE_TRAINING_PLANS: "",
         AUTH_SECRET:
           process.env.AUTH_SECRET ?? "test-only-auth-secret-not-for-production",
         DATABASE_URL:
@@ -157,6 +163,9 @@ export default defineConfig({
         // MEAL-PLAN-I1 flag-off: explicitly empty so an inherited
         // ENABLE_MEAL_PLANS=1 cannot leak into the proof server.
         ENABLE_MEAL_PLANS: "",
+        // TRAINING-I1A flag-off: explicitly empty so an inherited
+        // ENABLE_TRAINING_PLANS=1 cannot leak into the proof server.
+        ENABLE_TRAINING_PLANS: "",
         AUTH_SECRET:
           process.env.AUTH_SECRET ?? "test-only-auth-secret-not-for-production",
         DATABASE_URL:

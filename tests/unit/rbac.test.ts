@@ -76,9 +76,13 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "denied"],
   },
+  // TRAINING-I1A: owner write prospectively amended denied→assigned (owners
+  // author programs for clients they hold an ACTIVE assignment to). CLIENT
+  // write stays `own` for the future logging surface; program-management
+  // writes are rejected in the service layer.
   trainingPlansLogs: {
     PLATFORM_ADMIN: ["denied", "denied"],
-    WORKSPACE_OWNER: ["workspace", "denied"],
+    WORKSPACE_OWNER: ["workspace", "assigned"],
     COACH: ["assigned", "assigned"],
     ASSISTANT_COACH: ["assigned", "denied"],
     SUPPORT: ["denied", "denied"],

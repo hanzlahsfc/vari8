@@ -179,6 +179,10 @@ const PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> =
     // dual-role administrator with an ACTIVE membership of any role — the
     // matrix cell alone only covers the no-membership path.
     "mealPlans",
+    // TRAINING-I1A (PROMPT 244 — same binding posture): training
+    // programs and their published versions deny PLATFORM_ADMIN
+    // including the dual-role membership path.
+    "trainingPlansLogs",
   ]);
 
 /**

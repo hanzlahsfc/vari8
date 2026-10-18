@@ -151,6 +151,15 @@ export const AUDIT_RESOURCE_TYPES = [
   // meal text, labels, nutrition values, or timezone strings.
   "meal_plan",
   "meal_plan_version",
+  // TRAINING-I1A (PROMPT 244): training-program container lifecycle
+  // (CREATE on first draft save, UPDATE on draft saves + timezone
+  // changes — `changed` marker only — and pending-leaf cancellation)
+  // and published-version events (CREATE + staff/client detail READ).
+  // IDs and structural markers only (version, effective date, status,
+  // changed) — never prescription text, week/session content, or
+  // timezone strings.
+  "training_program",
+  "training_program_version",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 

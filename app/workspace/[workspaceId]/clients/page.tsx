@@ -8,6 +8,7 @@ import { resolveDailyEntryMode } from "@/lib/daily-entry/gate";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
 import { isClientDashboardEnabled } from "@/lib/dashboard/gate";
 import { isMealPlansEnabled } from "@/lib/mealplan/gate";
+import { isTrainingPlansEnabled } from "@/lib/trainingprogram/gate";
 import { isOnboardingSubmissionEnabled } from "@/lib/onboarding/submission-gate";
 import { prisma } from "@/lib/db";
 import { listAccessibleClientProfiles } from "@/lib/workspace/clients";
@@ -138,6 +139,17 @@ export default async function ClientsPage({
   const showMealPlanLinks =
     isMealPlansEnabled() &&
     (mealPlanLinkScope === "workspace" || mealPlanLinkScope === "assigned");
+  // TRAINING-I1A (PROMPT 244): same cosmetic-gate shape — flag on AND
+  // the role can read training programs (workspace/assigned); the
+  // destination re-authorizes `trainingPlansLogs` server-side.
+  const trainingPlanLinkScope =
+    member?.status === "ACTIVE" && member.role !== undefined
+      ? resolveScope("trainingPlansLogs", "read", member.role)
+      : "denied";
+  const showTrainingPlanLinks =
+    isTrainingPlansEnabled() &&
+    (trainingPlanLinkScope === "workspace" ||
+      trainingPlanLinkScope === "assigned");
 
   return (
     <div className="catalog-page" data-testid="client-roster">
@@ -171,6 +183,7 @@ export default async function ClientsPage({
               {showOnboardingLinks ? <th scope="col">Onboarding</th> : null}
               {showDashboardLinks ? <th scope="col">Dashboard</th> : null}
               {showMealPlanLinks ? <th scope="col">Meal plan</th> : null}
+              {showTrainingPlanLinks ? <th scope="col">Training</th> : null}
               {showCoachesLinks ? <th scope="col">Coaches</th> : null}
             </tr>
           </thead>
@@ -229,6 +242,17 @@ export default async function ClientsPage({
                       data-testid={`mealplan-link-${client.id}`}
                     >
                       Meal plan
+                    </Link>
+                  </td>
+                ) : null}
+                {showTrainingPlanLinks ? (
+                  <td>
+                    <Link
+                      className="roster-pagination__link"
+                      href={`${basePath}/${encodeURIComponent(client.id)}/training-program`}
+                      data-testid={`training-link-${client.id}`}
+                    >
+                      Training
                     </Link>
                   </td>
                 ) : null}

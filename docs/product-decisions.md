@@ -1674,3 +1674,61 @@ NOT approved: retention/deletion policy, clinical or licensing claims,
 notifications/messaging, recipe engines, barcode, provider integrations,
 production deployment, or real-client use. Production/privacy gates
 #102/#81/#38/#39/D-10/D-09 remain separate and unresolved.
+
+**Decision #116 (APPROVED — synthetic/testing boundaries only):** the
+staff-authored, client-viewed week-based training-program workflow
+(TRAINING-I1A, under the reviewed TRAINING-P9 + A1 + A2 + A3 contract
+with the final S/G corrections). A `TrainingProgram` is a mutable
+shared-draft container; each `TrainingProgramVersion` is immutable and
+effective-dated. Only `WEEK_BASED` programs are implemented — Evergreen,
+dated-session scheduling, workout logging, set review, volume
+calculations, progression formulas, recommendations, and dashboard
+widgets are deferred to named follow-ons and fail closed. Assigned
+coaches and explicitly assigned owners author and publish; unassigned
+owners keep read-only access; assistants are read-only within assigned
+scope; clients view their own current/visible versions only (no client
+program-management write path — the `own` write cell is reserved for a
+future logging surface and is rejected at the operation level); SUPPORT
+and PLATFORM_ADMIN are denied — `trainingPlansLogs` joins the
+platform-admin deny-set (dual-role memberships cannot grant access) and
+its owner-write cell is prospectively amended `denied → assigned`. All
+reads and writes are consent-gated (BASE_CONSENTS via the shared
+resolver), authorization-gated, tenant-scoped, and audited with
+structural metadata only (version/date/status/`changed` — never
+prescription text, week/session content, or timezone strings);
+cancellation audits one `UPDATE` with `{changed:true}` and its replay
+writes no new event. Draft saves use `draftRevision` compare-and-swap
+with no-op detection over the canonical whole draft (including
+`confirmedTimezone`); publishing is idempotent by
+`publishOriginRevision`, replays identically, and rejects same-revision
+parameter mismatches. The eight prescription fields (sets, fixed reps,
+rep ranges, tempo, set type, rest/pause, detailed instructions,
+progression notes) are program-level field-configured as interim
+authority — template-variant field-config wiring is a named follow-on —
+and client projections exclude disabled fields from every serialization
+path. Sparse explicit override boundaries carry forward (later overrides
+preserved); published start dates lock; the immutable week anchor is the
+first published version's stored timezone; completed past weeks are
+protected server-side at save and publish; confirmed-timezone changes
+affect new publication decisions only; `unrepresentable_date` rejects
+whole-day-skip dates (never a silent shift). Replacement programs claim
+only the published tail under atomic single-root/live-successor
+constraints; takeover is automatic at the exact instant (no manual
+activation, no timezone-induced reversion); non-first publications may
+not activate before the program's own immutable takeover instant
+(instants, not dates — equality permitted); pending leaves may be
+cancelled pre-takeover (irreversible, frees the successor slot). Staff
+history is lifecycle-unfiltered and labelled; clients see governed
+history only; shadowed targets are `not_found` on client paths. Program
+and version reads are bounded two-level keyset pagination with audited
+read transactions (no READ ONLY where FOR UPDATE + read audits are
+required), transaction-local statement timeouts, explicit budgets,
+cooperative deadlines, and safe timeout/pool error mapping. Training
+programs are dev/test-only behind the fail-closed
+`ENABLE_TRAINING_PLANS` + trusted `APP_ENV` runtime gate — production
+builds cannot enable any surface, and the flag alone never enables
+synthetic consent. NOT approved: retention/deletion policy, clinical or
+licensing claims, notifications/messaging, automatic nutrition or
+training calculations/recommendations, production deployment, or
+real-client use. Production/privacy gates #102/#81/#38/#39/D-10/D-09
+remain separate and unresolved.
