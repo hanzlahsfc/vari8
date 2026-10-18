@@ -57,6 +57,30 @@ shared/production migration.
   M3 move recomputes bookedWeek → 1; M4 cancelled rows occupy the key →
   1; M5 no cutoff check → `past_handover` assertion fails.
 
+## I1B-2-R2 — independent-review repair
+
+R1 independent review (`bf608abc…dea006e`, 256 lines) CONDITIONAL PASS
+with one must-fix (F1) plus F2; repaired forward-only on this branch.
+
+- F1: client booking history leaked pending-successor bookings
+  pre-takeover. `readOwnTrainingBookingHistory` now joins the program's
+  `version_seq=1` version and requires `activation_instant <= now`
+  (injected op clock; inclusive at the exact takeover instant — same
+  in-force rule as `selectCurrent`/`deriveProgramState`). Pending leafs
+  stay staff-only until takeover; governed superseded programs keep
+  their labelled history; cancelled/unpublished/foreign stay hidden.
+- F2: staff history `hasMore` unreachable. `listTrainingBookingsAction`
+  - a "Load more" control on the bookings panel — same bounded keyset,
+    target-scoped cursor, dedupe on append, pending/error/disabled
+    handling, remount-per-target via route key.
+- Tests committed first (`32ea7d5`, RED on `dfac206`), implementation
+  `21d5d98` + `8df3d65` (GREEN). Mutations: predicate removal fails
+  both history assertions; dispatch stub stalls pagination at 12 rows —
+  restored byte-identical.
+- Advisories recorded in STATUS + R2 report: M5 wording correction
+  (prospective only), pending-leaf cascade single program-level audit
+  is contract-authorized (no change), client history still unwired.
+
 ## Excluded (unchanged)
 
 Recurrence, automatic generation, logging/completion tracking, notes/
