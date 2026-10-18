@@ -1,0 +1,20 @@
+# RESUME after Hermes crash (2026-10-18 ~12:08)
+
+Hermes crashed at about 12:08. Every delegate_task child died mid-step. The Devin F1 lead survived (separate process) and is still running.
+
+## What landed (do not redo)
+
+- `icm/01-recon/output/`: D1, L1, L2 complete with self-checks. H1 and H2 complete with self-checks.
+- `icm/02-gap-matrix/output/F1/`: 12 surface files, GAP-MATRIX.md, WIRING-SPEC.md (Devin, still finishing OPEN-QUESTIONS.md).
+
+## What died mid-step
+
+| Lane                | State on disk                                                                                                                                                           | Resume rule                                                                                                                                                                                                                                                                                                    |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| H3 canvas-views     | `H3-canvas-views.md` 72 KB, ends mid-table, no self-check                                                                                                               | Read the file, finish any missing in-scope files, append `## Entities`, `## Interactions` if missing, then the self-check                                                                                                                                                                                      |
+| H4 unwired-config   | `H4-unwired-config.md` 33 KB, no `## Fix list`, no self-check                                                                                                           | Read the file, finish missing sections, add `## Fix list`, then the self-check                                                                                                                                                                                                                                 |
+| P1 next16           | report has baseline only (green: build 0, 1306 tests pass). Worktree dirty: `package.json`, `package-lock.json`, `tsconfig.json` modified (upgrade started, unverified) | Inspect `git diff` first. Keep the edits if they match card step 2, else redo step 2. Continue from step 2                                                                                                                                                                                                     |
+| P2 biome            | report has baseline only. Worktree dirty: 101 files, +811 / -4847 lines (write pass interrupted, unverified)                                                            | Inspect `git diff --stat` first. A formatter must not delete thousands of lines net: find where the deletions are (lockfile, removed deps, or a bad rewrite). If any source file lost logic, restore that file with `git restore <path>` (allowed here: throwaway proto branch) and redo. Continue from step 2 |
+| R1, R2, R3 research | no report files                                                                                                                                                         | Start fresh from `icm/03-plan/R-brief.md`                                                                                                                                                                                                                                                                      |
+
+Everything else in the original cards and briefs still holds.

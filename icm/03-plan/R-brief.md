@@ -1,0 +1,17 @@
+# Stack research brief R1 to R3 (Vari8)
+
+Read `/home/nexuslink/NEXUS_AI_CENTER/04_PROJECTS/Vari8/icm/03-plan/DECISIONS.md` first. Vari8 is a coaching tracker (coach workspace plus client daily tracker, plans, check-ins, messages, media). Today it is a Next.js 16 web app with Postgres, Prisma, Auth.js and server actions. It must later ship as an iOS and Android app plus the web app. The owner wants more speed, less clutter and better code. Today's date is 2026-10-18; report the state of each tool as of now, with release dates and versions.
+
+Rules: research only, no installs into any repo, no GUI. Cite every claim with a URL (official docs, release notes, GitHub releases, benchmarks with method). Mark anything unverified `(unverified)`. Prefer primary sources. Write your report incrementally to the path below. Plain English, short sentences, no long dashes. End with the mandatory self-check: list each question as PASS or FAIL with the URLs that answer it.
+
+## R1 mobile path. Report `icm/03-plan/output/R1-mobile.md`
+
+Compare, for this exact app: (a) PWA only; (b) Capacitor wrapping the web app; (c) Tauri 2 mobile; (d) Expo / React Native with Expo Router and web; (e) React Strict DOM or similar one-codebase web-plus-native layers; (f) any newer option that matters in 2026. For each: maturity on iOS and Android, how much of a Next.js App Router + Tailwind + Base UI codebase is reused, whether server actions and Auth.js cookie sessions work inside it, offline storage and sync options, push notifications, camera and photo upload, App Store and Play Store review risk for web-wrapper apps (Apple guideline 4.2), build and release tooling. Then answer: what must the backend look like NOW so a native client can use it later (HTTP API vs server actions, token auth, API contract and validation). Recommend one path with the reason.
+
+## R2 tooling speed. Report `icm/03-plan/output/R2-tooling.md`
+
+Compare for lint, format, typecheck, bundle, package management and runtime: Biome 2, Oxc (oxlint, oxfmt, type-aware linting), ESLint, TypeScript 7 native compiler (tsgo), Turbopack, Rspack, Rolldown and Vite, Bun, pnpm, npm. Give measured speed numbers with their source and method, Next.js 16 compatibility, maturity, and what each removes from the repo (configs, dependencies). Also identify what the owner may mean by "rust2" and "bend2": check Bend / Bend2 (HigherOrderCO) and any Rust-based web tool with a "2" release (for example Tauri 2, Rspack 2, Biome 2), say what each is and whether it applies to a web plus mobile CRUD app. Recommend the fastest low-clutter toolchain that is production-safe today.
+
+## R3 libraries. Report `icm/03-plan/output/R3-libraries.md`
+
+First list what the canvas already uses: read `/home/nexuslink/vari8-worktrees/FRONTEND/frontend/package.json` and grep `frontend/src` imports. Then evaluate, for this app only: Tailwind 4 (already used), Three.js and React Three Fiber (is there any canvas screen that needs 3D, for example `muscle-volume.ts`? cite), charts (what the canvas draws charts with today), schema validation at trust boundaries (Zod 4, Valibot, ArkType; what the backend uses today in `lib/**/boundary.ts`), client data and offline sync (TanStack Query, Replicache, Zero, ElectricSQL, PowerSync), file and media storage (S3-compatible, UploadThing, local), forms, i18n, date handling. For each: needed now, needed for mobile later, or not needed (with the reason). Recommend the smallest set.

@@ -28,3 +28,15 @@ Biome 2 lints and formats TypeScript, TSX, JSON and CSS in one tool, with the `n
 | Data      | PostgreSQL 16, Prisma 6 (a Prisma major upgrade is a separate later PR)                             |
 | Auth      | Auth.js v5 (`next-auth@5.0.0-beta.32`, peer range includes Next 16)                                 |
 | Checks    | Biome, `tsc`, Vitest, Playwright, live browser verification                                         |
+
+## D6. One HTTP API under every screen (mobile-ready)
+
+Every canvas surface is wired through versioned JSON route handlers (`app/api/v1/**`) with Zod schemas at the boundary, not through server actions. The web app and the later iOS and Android apps share that one contract. Auth gains bearer tokens next to the cookie session (Auth.js is documented as not for native apps). Mobile shell is Capacitor 8 wrapping the same UI, with a PWA as the interim mobile experience. Source: `output/R1-mobile.md`.
+
+## D7. Toolchain
+
+Biome 2.5 (D4), TypeScript 7 native compiler as the only `typescript` dependency (measured 2.00 s to 0.80 s typecheck on this tree, 0 errors), Turbopack for every build including the canvas (drop `--webpack`), npm kept. No oxlint, oxfmt, Rspack, Vite, Bun runtime, Bend or Three.js. Sources: `output/R2-tooling.md`, `output/P1-next16.md`, `output/P2-biome.md`.
+
+## D8. Libraries (smallest set)
+
+Add `zod` 4 for every API boundary. Media goes to S3-compatible object storage behind the existing `lib/storage.ts` port (vendor still open). Charts reuse the canvas's own SVG component (`smooth-trend.tsx`), no chart library. Forms stay `useActionState` plus Base UI Form. Dates stay `Intl`. Offline sync (Electric or PowerSync) and TanStack Query are chosen at mobile time, not now. Source: `output/R3-libraries.md`.
