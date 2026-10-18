@@ -66,3 +66,11 @@ Who can see, edit and do what (owner, coach, assistant coach, support, client) i
 ## D12. Consent, health-data storage and data-protection rules are parked
 
 The owner parks these for now. They do not block, shape or gate any canvas element, plan PR or test decision. Existing consent code in the backend (consent records, consent-version gates, health-data checks such as `lib/*/consent.ts`) is not extended; where it blocks a canvas flow, the plan routes around it or disables the gate behind a flag, and lists the spot in a `## Parked: consent and health data` appendix so it can be picked up later. Matrix rows that are CONFLICT only because of consent or health-data rules move to that appendix.
+
+## D13. No GitHub CI; checks run locally
+
+Owner decision (Marcel, 2026-10-18). GitHub Actions minutes are not spent on this program. Measured before the decision: 35 CI runs in 6 days at about 14 minutes each (browser tests 8.1, integration 3.3, build 1.4, unit 0.6), about 2,400 minutes a month on a private repo. PR-03 switches `ci.yml` and `frontend.yml` to `workflow_dispatch` only (manual, never automatic). Until PR-03 lands, Actions can be disabled in the repo settings. Every PR is gated locally instead: one script runs format, typecheck, lint, unit tests, integration tests (only when `db/`, `lib/` or `app/api/` changed), build, and the live lane. The verifier runs it and pastes the output into the PR.
+
+## D14. Tests are kept by value, not only by bite
+
+Amends D11 (owner, 2026-10-18). A test that fails when its code breaks is not automatically worth keeping. Keep a test only if it bites AND guards something a browser check cannot easily see: permission and workspace isolation, validation at trust boundaries, token and password rules, date and timezone rules, calculations whose numbers a person would not check by eye, and data integrity (transactions, concurrent writes, uniqueness). Tests of things visible on screen (layout limits, labels, what a component shows, navigation) are cut: the live lane covers them. Builders write new tests only in the keep categories.
