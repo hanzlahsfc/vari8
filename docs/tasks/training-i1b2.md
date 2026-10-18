@@ -81,6 +81,17 @@ with one must-fix (F1) plus F2; repaired forward-only on this branch.
   (prospective only), pending-leaf cascade single program-level audit
   is contract-authorized (no change), client history still unwired.
 
+## R3 — A1-D1 transport-failure repair (feature/training-i1b2-r3)
+
+Merged at `688b5e6`. Synthetic browser acceptance found A1-D1:
+rejected server-action promises in `program-bookings.tsx` escaped
+`startTransition` to the app error boundary. Repaired (tests-first
+`9427c7c` RED → `2f7bbf2` fix): transport failures surface truthful
+uncertainty via `booking-message` + `router.refresh()` reconcile for
+mutations, `bookings-history-error` with same-cursor retry for
+pagination; structured errors unchanged; no automatic mutation
+retries. Mutation-verified, restored byte-identical.
+
 ## Excluded (unchanged)
 
 Recurrence, automatic generation, logging/completion tracking, notes/
