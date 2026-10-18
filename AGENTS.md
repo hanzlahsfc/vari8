@@ -15,9 +15,13 @@ policy, workflows, or layouts.
 ## Source authority (highest first)
 
 0. The canvas. Lilly's frontend (`frontend/`, from branch `FRONTEND`) dictates which screens,
-   elements and data exist and how they look. The backend is built to serve it. Security,
-   consent, audit and health-data decisions below stay binding; a canvas element that collides
-   with one is raised as a CONFLICT, never silently built (owner decision, Marcel, 2026-10-18).
+   elements and data exist and how they look. The backend is built to serve it. Who can see,
+   edit and do what (roles and permissions) is decided by the owner, not by
+   `docs/security/authorization-model.md`; that doc and `lib/auth/rbac.ts` are inputs to that
+   decision (`icm/03-plan/DECISIONS.md` D10). Server-side enforcement of whatever the owner
+   decides, consent for health data, and audit stay mandatory; a canvas element that collides
+   with a legal requirement is raised as a CONFLICT, never silently built (owner decision,
+   Marcel, 2026-10-18).
 1. Hanzlah's direct instructions and confirmed stakeholder decisions.
 2. Decisions recorded in `docs/product-decisions.md` and the relevant security/design docs.
 3. The approved requirements document.

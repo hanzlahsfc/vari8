@@ -31,3 +31,7 @@ Required:
 1. Every claim that a decision in D5 to D8 rests on (list them first, at least 15), checked against the primary URL or the npm registry. Must include: Auth.js "not intended for native applications"; Next static export drops server actions and `cookies()`; Better Auth bearer plugin exists; Capacitor 8 current version; TypeScript 7.0.2 published and `tsgo` timing on this tree (re-measure: 3 runs each of `npx tsc --noEmit` and the TS7 compiler in a scratch copy of `/home/nexuslink/vari8-worktrees/merge-proto`); Biome vs ESLint timing; Bend 2 description; `muscle-volume.ts` has no 3D need (open the file); canvas chart is hand-rolled SVG (open `smooth-trend.tsx`); backend has no validation library (grep `package.json` and `lib/**/boundary.ts`); `lib/storage.ts` port exists with null backend.
 2. 10 further claims sampled at random across the three reports.
 3. Any recommendation that does not follow from its evidence.
+
+## RV-B2. Judge the first-pass RV-B report
+
+A non-judging lane (gpt-6-luna) already wrote `icm/05-verify/output/RV-B.md` (VERDICT: PASS WITH FINDINGS, 31 claims). You are the judge. Re-check every row it marked WRONG or UNVERIFIABLE and at least 8 rows it marked CONFIRMED, against the primary source yourself. Check that every RV-B required item above is covered; do any that are missing. Write `icm/05-verify/output/RV-B2.md` in the same format, with a final verdict on R1, R2 and R3 (not on the RV-B report).
