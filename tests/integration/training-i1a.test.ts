@@ -1438,4 +1438,94 @@ describe.skipIf(!enabled)("TRAINING-I1A (real PG)", () => {
     expect(page2.versions.length).toBe(5); // v1 + 24 = 25 total
     expect(page2.nextCursor).toBeNull();
   });
+
+  // ── R3 (PROMPT 253): client state at the program end boundary ─────
+  // Acceptance defect D1: the final week was rendered "completed" — a
+  // one-week program reported ended on day one. The final week remains
+  // current through its final valid instant under the immutable anchor.
+
+  it("one-week program stays current through its final valid instant", async () => {
+    const { w, coachU, cp, clientU } = await setup();
+    await createAndPublish(coachU.id, w.id, cp.id, {
+      startDate: "2026-10-12",
+      weekCount: 1,
+    });
+    const read = (t: string) =>
+      readOwnTrainingProgram(
+        session(clientU.id),
+        { workspaceId: w.id },
+        deps(new Date(t)),
+      );
+    // First and last day of the single week (UTC week: Oct 12–18).
+    expect((await read("2026-10-12T12:00:00Z")).state).toBe("active");
+    const lastDay = await read("2026-10-18T23:30:00Z");
+    expect(lastDay.state).toBe("active");
+    expect(lastDay.current?.weekIndex).toBe(1);
+    expect(lastDay.current?.week?.sessions.length).toBeGreaterThan(0);
+    // One millisecond before the end boundary.
+    expect((await read("2026-10-18T23:59:59.999Z")).state).toBe("active");
+    // At the boundary and beyond.
+    const ended = await read("2026-10-19T00:00:00Z");
+    expect(ended.state).toBe("completed");
+    expect((await read("2026-10-25T12:00:00Z")).state).toBe("completed");
+  });
+
+  it("multi-week program stays current during its final week", async () => {
+    const { w, coachU, cp, clientU } = await setup();
+    // 4-week UTC program: weeks Oct 5–11 … Oct 26–Nov 1; end Nov 2 00:00Z.
+    await createAndPublish(coachU.id, w.id, cp.id, {
+      startDate: "2026-10-05",
+      weekCount: 4,
+    });
+    const read = (t: string) =>
+      readOwnTrainingProgram(
+        session(clientU.id),
+        { workspaceId: w.id },
+        deps(new Date(t)),
+      );
+    const w4 = await read("2026-10-30T12:00:00Z");
+    expect(w4.state).toBe("active");
+    expect(w4.current?.weekIndex).toBe(4);
+    expect((await read("2026-11-01T23:59:59Z")).state).toBe("active");
+    expect((await read("2026-11-02T00:00:00Z")).state).toBe("completed");
+  });
+
+  it("anchor-timezone end boundary holds across a DST transition", async () => {
+    const { w, coachU, cp, clientU } = await setup();
+    // America/New_York 1-week program spanning the 2026-11-01 fall-back:
+    // the week covers Oct 26–Nov 1 local; end boundary Nov 2 00:00 EST
+    // = 05:00Z.
+    await createAndPublish(coachU.id, w.id, cp.id, {
+      startDate: "2026-10-26",
+      weekCount: 1,
+      timezone: "America/New_York",
+    });
+    const read = (t: string) =>
+      readOwnTrainingProgram(
+        session(clientU.id),
+        { workspaceId: w.id },
+        deps(new Date(t)),
+      );
+    // Nov 1 23:30 EST (post fall-back) = Nov 2 04:30Z — still week 1.
+    const inWeek = await read("2026-11-02T04:30:00Z");
+    expect(inWeek.state).toBe("active");
+    expect(inWeek.current?.weekIndex).toBe(1);
+    expect((await read("2026-11-02T04:59:59Z")).state).toBe("active");
+    expect((await read("2026-11-02T05:00:00Z")).state).toBe("completed");
+  });
+
+  it("not-yet-started program still reports upcoming", async () => {
+    const { w, coachU, cp, clientU } = await setup();
+    await createAndPublish(coachU.id, w.id, cp.id, {
+      startDate: "2026-11-09",
+      weekCount: 4,
+    });
+    const view = await readOwnTrainingProgram(
+      session(clientU.id),
+      { workspaceId: w.id },
+      deps(new Date("2026-10-20T12:00:00Z")),
+    );
+    expect(view.state).toBe("upcoming");
+    expect(view.current).toBeNull();
+  });
 });

@@ -77,6 +77,7 @@ import {
   isShadowed,
   localDateOf,
   parseLocalDate,
+  weekEndInstant,
   weekIndex,
   weekMarker,
   weekStartInstant,
@@ -2119,6 +2120,15 @@ export async function readOwnTrainingProgram(
         programRow.weekCount,
         Math.max(1, weekIndex(startDate, localDateOf(now, anchorTz))),
       );
+      // Lifecycle state derives from the real end boundary (exclusive
+      // start of the week AFTER the last one under the immutable anchor
+      // calendar) — never from the clamped display index: the final week
+      // stays current through its final valid instant.
+      const endInstant = weekEndInstant(
+        anchorTz,
+        startDate,
+        programRow.weekCount,
+      );
       const governing = gvAt(vinstants, now, cutoff);
       const govRow = governing
         ? versions.find((v) => v.vi.id === governing.id)
@@ -2139,7 +2149,7 @@ export async function readOwnTrainingProgram(
         subjectClientProfileId: profile.id,
       });
       return {
-        state: idx >= programRow.weekCount ? "completed" : "active",
+        state: now.getTime() >= endInstant.getTime() ? "completed" : "active",
         current: {
           programId: sel.current.id,
           title: programRow.title,

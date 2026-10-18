@@ -249,7 +249,16 @@ export function TrainingProgramEditor({
         programId: program.id,
         expectedRevision: revision,
         effectiveDate,
-        expectedPredecessor: predecessor === "" ? null : predecessor,
+        // The predecessor claim belongs to the FIRST publication only —
+        // later versions must carry none (service rejects them). After a
+        // lost first-publish response the component has not remounted, so
+        // `published` is still false and the retry keeps the original
+        // claim; after a remount this is a genuinely new publication.
+        expectedPredecessor: published
+          ? null
+          : predecessor === ""
+            ? null
+            : predecessor,
         acknowledgeImmediateTakeover: ackTakeover,
       });
       setStatus(

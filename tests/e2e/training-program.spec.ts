@@ -282,6 +282,129 @@ test("scheduled replacement is labelled and cancellable", async ({ page }) => {
   );
 });
 
+test("replacement takeover then v2 publishes through the UI", async ({
+  page,
+}) => {
+  const listUrl = `${BASE}/workspace/${wsId}/clients/${profileId}/training-program`;
+  await signIn(page, E2E.coach);
+  await page.goto(listUrl);
+  await expect(page.getByTestId("staff-training-page")).toBeVisible();
+
+  // ── Root regression: a later version on the non-replacement root ──
+  await page
+    .locator("a[data-testid^='tp-program-link-']", {
+      hasText: "E2E Base Block",
+    })
+    .click();
+  await expect(page.getByTestId("staff-training-detail")).toBeVisible();
+  const rootEx = page.locator("fieldset[data-testid^='tp-exercise-']").first();
+  await rootEx.getByTestId(/tp-cell-.*-reps/).fill("8");
+  await page.getByTestId("tp-save-draft").click();
+  await expect(page.getByTestId("training-status")).toContainText(/saved/i);
+  await page.getByTestId("tp-effective").fill(today());
+  await page.getByTestId("tp-publish").click();
+  await expect(page.getByTestId("training-status")).toContainText(
+    "Published version 2.",
+  );
+
+  // ── Replacement v1 through the UI (immediate takeover + ack) ──
+  await page.goto(listUrl);
+  // One-week replacement: after takeover the client is in the final
+  // week — the page must render the prescription, not "has ended".
+  await page.getByTestId("tp-create-title").fill("E2E Chain R3");
+  await page.getByTestId("tp-create-start").fill(today());
+  await page.getByTestId("tp-create-weeks").fill("1");
+  await page.getByTestId("tp-create-tz").fill("UTC");
+  await page.getByTestId("tp-create-submit").click();
+  await expect(page.getByTestId("staff-training-detail")).toBeVisible();
+  await page.getByTestId("tp-session-add").click();
+  const fieldset = page.locator("fieldset[data-testid^='tp-session-']");
+  await fieldset
+    .first()
+    .getByTestId(/tp-exercise-add-/)
+    .click();
+  const exercise = fieldset
+    .first()
+    .locator("fieldset[data-testid^='tp-exercise-']")
+    .first();
+  await exercise.getByTestId(/tp-ex-name-/).fill("Hack squat");
+  await exercise.getByTestId(/tp-cell-.*-sets/).fill("3");
+  await exercise.getByTestId(/tp-cell-.*-reps/).fill("10");
+  await page.getByTestId("tp-save-draft").click();
+  await expect(page.getByTestId("training-status")).toContainText(/saved/i);
+  await page
+    .getByTestId("tp-predecessor")
+    .selectOption({ label: "E2E Base Block" });
+  await page.getByTestId("tp-ack-takeover").check();
+  await page.getByTestId("tp-effective").fill(today());
+  await page.getByTestId("tp-publish").click();
+  await expect(page.getByTestId("training-status")).toContainText(
+    "Published version 1.",
+  );
+
+  // ── Final-week client view (acceptance defect D1) ──
+  await signIn(page, E2E.client);
+  await page.goto(`${BASE}/workspace/${wsId}/training-program`);
+  await expect(page.getByTestId("training-current")).toBeVisible();
+  await expect(page.getByTestId("training-current")).toContainText(
+    "E2E Chain R3",
+  );
+  await expect(page.getByTestId("training-current")).toContainText(
+    "Hack squat",
+  );
+  await expect(page.getByTestId("training-current")).toContainText("Sets: 3");
+  await expect(page.getByTestId("training-completed")).toHaveCount(0);
+
+  // ── The defect: a second version on the replacement through the UI ──
+  await signIn(page, E2E.coach);
+  await page.goto(listUrl);
+  const r3Link = page.locator("a[data-testid^='tp-program-link-']", {
+    hasText: "E2E Chain R3",
+  });
+  const r3Href = await r3Link.getAttribute("href");
+  // Fresh mount via real navigation: after publish the Replaces control
+  // is hidden; the publish must not resubmit the predecessor claim
+  // (service rejects later-version claims).
+  await page.goto(`${BASE}${r3Href}`);
+  await expect(page.getByTestId("staff-training-detail")).toBeVisible();
+  await expect(page.getByTestId("tp-predecessor")).toHaveCount(0);
+  const ex2 = page.locator("fieldset[data-testid^='tp-exercise-']").first();
+  await ex2.getByTestId(/tp-cell-.*-reps/).fill("12");
+  await page.getByTestId("tp-save-draft").click();
+  await expect(page.getByTestId("training-status")).toContainText(/saved/i);
+  await page.getByTestId("tp-effective").fill(inDays(1));
+  await page.getByTestId("tp-publish").click();
+  await expect(page.getByTestId("training-status")).toContainText(
+    "Published version 2.",
+  );
+
+  // Persisted proof: two committed versions carrying the v2 content.
+  const prog = await prisma.trainingProgram.findFirstOrThrow({
+    where: { clientProfileId: profileId, title: "E2E Chain R3" },
+  });
+  const versions = await prisma.trainingProgramVersion.findMany({
+    where: { programId: prog.id },
+    orderBy: { versionSeq: "asc" },
+    select: { id: true, versionSeq: true, payload: true },
+  });
+  expect(versions.map((v) => v.versionSeq)).toEqual([1, 2]);
+  const v2 = versions[1].payload as {
+    weeks: {
+      week: number;
+      sessions: { exercises: { reps?: string }[] }[];
+    }[];
+  };
+  expect(v2.weeks[0]?.sessions[0]?.exercises[0]?.reps).toBe("12");
+  const createAudits = await prisma.auditEvent.count({
+    where: {
+      action: "CREATE",
+      resourceType: "training_program_version",
+      resourceId: { in: versions.map((v) => v.id) },
+    },
+  });
+  expect(createAudits).toBe(2);
+});
+
 test("unassigned owner sees a read-only list", async ({ page }) => {
   await signIn(page, E2E.owner);
   await page.goto(
