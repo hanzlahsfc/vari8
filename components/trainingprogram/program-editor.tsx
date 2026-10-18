@@ -249,16 +249,19 @@ export function TrainingProgramEditor({
         programId: program.id,
         expectedRevision: revision,
         effectiveDate,
-        // The predecessor claim belongs to the FIRST publication only —
-        // later versions must carry none (service rejects them). After a
-        // lost first-publish response the component has not remounted, so
-        // `published` is still false and the retry keeps the original
-        // claim; after a remount this is a genuinely new publication.
-        expectedPredecessor: published
-          ? null
-          : predecessor === ""
+        // The predecessor claim belongs to the FIRST publication — and to
+        // a retry at v1's committed origin revision, where it reproduces
+        // the ORIGINAL request (the stored replacesProgramId provenance)
+        // so a lost-response/remount retry replays idempotently. A draft
+        // save advances the revision, so any other post-publish call is a
+        // genuinely new later version and must carry no claim (the
+        // service rejects later-version claims).
+        expectedPredecessor:
+          published && revision !== program.firstPublishOriginRevision
             ? null
-            : predecessor,
+            : predecessor === ""
+              ? null
+              : predecessor,
         acknowledgeImmediateTakeover: ackTakeover,
       });
       setStatus(

@@ -306,6 +306,12 @@ test("replacement takeover then v2 publishes through the UI", async ({
   await expect(page.getByTestId("training-status")).toContainText(
     "Published version 2.",
   );
+  // Identical retry at the same revision (root, no claim involved):
+  // idempotent replay — no new version, same success message.
+  await page.getByTestId("tp-publish").click();
+  await expect(page.getByTestId("training-status")).toContainText(
+    "Published version 2.",
+  );
 
   // ── Replacement v1 through the UI (immediate takeover + ack) ──
   await page.goto(listUrl);
@@ -368,6 +374,34 @@ test("replacement takeover then v2 publishes through the UI", async ({
   await page.goto(`${BASE}${r3Href}`);
   await expect(page.getByTestId("staff-training-detail")).toBeVisible();
   await expect(page.getByTestId("tp-predecessor")).toHaveCount(0);
+
+  // ── F1: identical retry of the committed v1 across a remount ──
+  // Simulates a lost v1 publish response: same revision, no draft edit.
+  // The replay must reproduce the original request (incl. its
+  // predecessor claim) and return the committed version — not error.
+  const versionsBefore = await prisma.trainingProgramVersion.count({
+    where: {
+      program: { clientProfileId: profileId, title: "E2E Chain R3" },
+    },
+  });
+  await page.getByTestId("tp-publish").click();
+  await expect(page.getByTestId("training-status")).toContainText(
+    "Published version 1.",
+  );
+  const versionsAfterReplay = await prisma.trainingProgramVersion.count({
+    where: {
+      program: { clientProfileId: profileId, title: "E2E Chain R3" },
+    },
+  });
+  expect(versionsAfterReplay).toBe(versionsBefore);
+
+  // A changed effective date is a different request — still rejected.
+  await page.getByTestId("tp-effective").fill(inDays(2));
+  await page.getByTestId("tp-publish").click();
+  await expect(page.getByTestId("training-status")).toContainText(
+    /already published/i,
+  );
+
   const ex2 = page.locator("fieldset[data-testid^='tp-exercise-']").first();
   await ex2.getByTestId(/tp-cell-.*-reps/).fill("12");
   await page.getByTestId("tp-save-draft").click();

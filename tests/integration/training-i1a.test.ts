@@ -1528,4 +1528,114 @@ describe.skipIf(!enabled)("TRAINING-I1A (real PG)", () => {
     expect(view.state).toBe("upcoming");
     expect(view.current).toBeNull();
   });
+
+  // ── R4 (PROMPT 255): v1-replay request reconstruction across remount ──
+  // F1: after a remount the editor must reproduce the ORIGINAL request for
+  // a retry at the committed origin revision — including the predecessor
+  // claim — rather than erroring with revision_already_published.
+
+  it("v1 replay reconstructs the original claim; origin revision exposed to authorized staff", async () => {
+    const { w, coachU, cp } = await setup();
+    const p1 = await createAndPublish(coachU.id, w.id, cp.id);
+    // Replacement v1 (future start — no immediate-takeover gate).
+    const p2 = await createAndPublish(coachU.id, w.id, cp.id, {
+      startDate: "2026-11-02",
+      effectiveDate: "2026-11-02",
+      expectedPredecessor: p1.programId,
+    });
+    // Unpublished programs expose no origin revision.
+    const draftOnly = await saveTrainingProgramDraft(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        expectedRevision: 0,
+        ...CREATE_INPUT,
+        draft: draftPayload(),
+      },
+      deps(),
+    );
+    const d0 = await readStaffTrainingProgram(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        programId: draftOnly.programId,
+      },
+      deps(),
+    );
+    expect(d0.program.firstPublishOriginRevision).toBeNull();
+    // Published replacement: authorized staff can reconstruct the
+    // original request from committed state.
+    const detail = await readStaffTrainingProgram(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        programId: p2.programId,
+      },
+      deps(),
+    );
+    expect(detail.program.firstPublishOriginRevision).toBe(1);
+    expect(detail.program.replacesProgramId).toBe(p1.programId);
+    // A denied actor cannot recover the reconstruction state.
+    const outsider = await user();
+    await expect(
+      readStaffTrainingProgram(
+        session(outsider.id),
+        {
+          workspaceId: w.id,
+          clientProfileId: cp.id,
+          programId: p2.programId,
+        },
+        deps(),
+      ),
+    ).rejects.toMatchObject({ reason: expect.any(String) });
+    // Reconstructed retry at v1's origin revision — same revision, same
+    // date, stored claim → idempotent replay of the committed version.
+    const retry = await publishTrainingProgramVersion(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        programId: p2.programId,
+        expectedRevision: detail.program.draftRevision,
+        effectiveDate: "2026-11-02",
+        expectedPredecessor: detail.program.replacesProgramId,
+      },
+      deps(),
+    );
+    expect(retry.replayed).toBe(true);
+    expect(retry.versionSeq).toBe(1);
+    // Claimless retry at the same origin is a DIFFERENT request — still
+    // a parameter mismatch, not a silent success.
+    await expect(
+      publishTrainingProgramVersion(
+        session(coachU.id),
+        {
+          workspaceId: w.id,
+          clientProfileId: cp.id,
+          programId: p2.programId,
+          expectedRevision: detail.program.draftRevision,
+          effectiveDate: "2026-11-02",
+        },
+        deps(),
+      ),
+    ).rejects.toMatchObject({ code: "revision_already_published" });
+    // No new versions or publication audits from replay/mismatch.
+    expect(
+      await prisma.trainingProgramVersion.count({
+        where: { programId: p2.programId },
+      }),
+    ).toBe(1);
+    expect(
+      await prisma.auditEvent.count({
+        where: {
+          action: "CREATE",
+          resourceType: "training_program_version",
+          resourceId: p2.versionId,
+        },
+      }),
+    ).toBe(1);
+  });
 });

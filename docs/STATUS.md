@@ -5,6 +5,37 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## TRAINING-I1A-R4 — replay-after-remount repair (PROMPT 255)
+
+- Bounded repair on `feature/training-i1a-r3` for F1 (LOW) from the
+  independent R3 review (DeepSeek V4.1 Flash,
+  `~/Downloads/TRAINING-I1A-R3-R1-independent-review.md`, SHA-256
+  `a8efa2d6…81f3`, 305 lines, read through EOF). D1/D2 stay closed.
+- F1: after a lost v1-publish response + remount, retrying at the same
+  revision sent `expectedPredecessor: null` → `revision_already_published`
+  instead of idempotent replay. The R3 `published ? null` fix could not
+  distinguish a committed-revision retry from a genuinely new publish.
+- Repair: `readStaffTrainingProgram` now exposes committed
+  `firstPublishOriginRevision` (v1's `publishOriginRevision`) to authorized
+  staff; the editor resubmits the stored `replacesProgramId` claim only
+  when `revision === firstPublishOriginRevision` — an exact reproduction
+  of the original request. Any revision advanced by a real save sends no
+  claim (genuinely new later version; server rejection unchanged).
+- RED→GREEN: new integration test (origin exposure, null when
+  unpublished, denied actor cannot recover state, reconstructed replay
+  → `replayed:true`, claimless retry → `revision_already_published`,
+  version/audit counts unchanged) + E2E UI steps (remount → retry →
+  "Published version 1.", count invariant, changed-date → "already
+  published", root identical-replay regression). Mutation M-R4-1
+  (blanket `published ? null`) re-produced the exact
+  "already published" failure through the UI; restored byte-identical.
+- Gates: format/typecheck/lint clean (4 pre-existing warnings); unit
+  1329/1329; integration 850/850 (disposable `train_r4_int`); build
+  clean; full E2E 416/428 (12 skipped, 0 failed; disposable
+  `train_r4_e2e_full`). No schema/migration/permission/gate changes.
+- Builder report `~/Downloads/TRAINING-I1A-R4-builder-report.md`.
+  Stopped at pushed repair for independent confirmation; no PR.
+
 ## TRAINING-I1A-R3 — acceptance-defect repair (PROMPT 253)
 
 - Bounded repair on `feature/training-i1a-r3` for two defects found by the

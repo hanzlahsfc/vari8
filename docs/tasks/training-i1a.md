@@ -146,3 +146,12 @@ management rejects CLIENT at the operation level.
   claim only for the first publication. New integration + UI-path E2E
   coverage; both mutations re-bit; gates all green (unit 1329,
   integration 849, E2E 416/428). Pushed for independent review.
+- R3-R1 independent review: CONDITIONAL PASS — D1/D2 closed; F1 (LOW):
+  a remounted retry at v1's origin revision dropped the claim and hit
+  `revision_already_published` rather than replaying.
+- R4 repair (same branch): `firstPublishOriginRevision` exposed to
+  authorized staff; the editor reproduces the original claim only at
+  v1's committed origin revision — genuine new publishes still send
+  none; server validation untouched. New integration + E2E replay
+  coverage; mutation re-bit; gates green (unit 1329, integration 850,
+  E2E 416/428). Pushed for independent confirmation.
