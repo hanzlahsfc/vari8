@@ -175,6 +175,47 @@ to be recorded, and the draft PR to reference the verified target branch heads.
   were not performed.
 - Final read-only SWE-2 review reported no blocking findings. Conditional
   context-guard scope and visual-proof limitations are recorded in the draft PR.
-- Draft PR [#51](https://github.com/hanzlahsfc/The-great-tracker-/pull/51) is
-  open from `FRONTEND` to `main`. The remote head was verified at `60389bc` and
-  target `main` remained `5f9cb41`; hosted checks were pending at last read.
+- The first draft PR #51 incorrectly targeted `main`; it was closed without
+  merging. The shared `FRONTEND` branch remains intact at `d458003`, and target
+  `main` remained `5f9cb41`.
+
+## 2026-10-18 — contributor PR target correction plan
+
+### Current state
+
+The user clarified that `FRONTEND` is the shared UI integration branch. Feature
+work must enter `FRONTEND` through a PR; Hanzlah owns the later `FRONTEND` to
+`main` handoff. The earlier draft PR #51 incorrectly used `main` as its base and
+was closed without merging. The published UI remains intact on `FRONTEND` at
+`d458003c709f68a01882951a08795a8bf1e3c7cb`. This correction branch starts from
+that exact target ref.
+
+### Scope and acceptance
+
+- Change only the frontend workflow PR base filter so it runs for PRs to
+  `FRONTEND`, retaining `main` compatibility and existing push triggers.
+- Rewrite the frontend PR guide and its source-workspace mirrors to create a
+  feature branch from explicit `great-tracker/FRONTEND`, open a draft PR from
+  that feature branch into `FRONTEND`, and leave the subsequent `FRONTEND` to
+  `main` promotion to Hanzlah.
+- Update the standalone frontend README and project context so the documented
+  contributor route agrees with the guide. Leave root backend CI, product code,
+  shared `FRONTEND`, and `main` unchanged.
+- Validate the workflow YAML and the changed docs/source context guard, then
+  open a draft PR with base `FRONTEND`. Mark ready and merge that PR only after
+  its checks pass; never merge to `main` or delete the shared branch.
+
+## 2026-10-18 — contributor PR target correction implementation
+
+- Added `FRONTEND` to the frontend workflow's `pull_request.branches` filter
+  while retaining `main` compatibility and the existing push triggers. Root
+  backend CI is unchanged.
+- Rewrote the publication guide for feature branches created from the explicit
+  `great-tracker/FRONTEND` ref, PRs into `FRONTEND`, and owner-controlled
+  promotion from `FRONTEND` to `main`. Updated the standalone README and project
+  context accordingly; mirrored the routing-only guidance into both source
+  workspace copies.
+- The implementation branch is `codex/frontend-pr-target`, based on the
+  verified `FRONTEND` ref. After the targeted checks pass, open a draft PR with
+  `FRONTEND` as base, then mark it ready and merge only into `FRONTEND`; do not
+  modify `main` or delete the shared `FRONTEND` branch.

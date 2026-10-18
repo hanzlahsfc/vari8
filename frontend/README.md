@@ -52,7 +52,8 @@ for the paper, local mapping, and adaptation limits.
 
 For branch sync, frontend checks, and draft PR commands, follow the
 [FRONTEND pull request workflow](docs/PR-WORKFLOW.md). It targets the explicit
-`great-tracker` remote and opens PRs from `FRONTEND` to `main`.
+`great-tracker` remote and opens feature-branch PRs into `FRONTEND`. Hanzlah
+owns the later `FRONTEND` to `main` promotion.
 
 The frontend uses Next.js 16, React 19, Tailwind CSS, shadcn/ui, Motion for React,
 and Biome. It owns its dependency lockfile, TypeScript configuration, and local
