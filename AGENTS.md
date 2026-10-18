@@ -49,6 +49,10 @@ policy, workflows, or layouts.
 - **Update `docs/STATUS.md` and the task-specific record** after every meaningful change,
   verification, review, commit, or blocker, newest entry first, with real commands/exit codes
   and commit state. Keep private/local handoff files outside version control.
+- **ICM lanes are the exception** (audit, mapping, judging, planning under `icm/`): they write
+  only the output files their brief names, never `docs/STATUS.md`, and never run formatters,
+  linters with `--write`, or installs in this root checkout. Builds and test runs happen in a
+  scratch worktree.
 
 ## Boundaries
 

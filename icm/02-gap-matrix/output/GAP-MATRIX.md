@@ -1,23 +1,26 @@
 # Consolidated gap matrix
 
-Source rows are from Team F S01–S12. V1–V3 verdicts are applied below. Each line points to the surface file row for the full evidence and wiring notes.
+Round 3 folded in from R3-JUDGED.md (judge gpt-6.1-sol), 2026-10-18.
+
+Source rows are from Team F S01–S12. V1–V3 verdicts are applied below. Round-3 rows carry an `R3-<n>` id and name the judge's lane id in the evidence column. Each line points to the surface file row for the full evidence and wiring notes.
 
 ## Summary by surface
 
-| Surface | WIRED | UNWIRED | UNCONFIGURED | PARTIAL | MISSING | CONFLICT | Total |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| S01 | 0 | 1 | 3 | 21 | 19 | 0 | 44 |
-| S02 | 0 | 1 | 0 | 3 | 21 | 6 | 31 |
-| S03 | 0 | 0 | 5 | 14 | 4 | 4 | 27 |
-| S04 | 0 | 0 | 7 | 5 | 1 | 0 | 13 |
-| S05 | 0 | 0 | 1 | 13 | 13 | 3 | 30 |
-| S06 | 0 | 1 | 1 | 8 | 6 | 6 | 22 |
-| S07 | 0 | 1 | 3 | 14 | 8 | 4 | 30 |
-| S08 | 0 | 11 | 4 | 5 | 18 | 0 | 38 |
-| S09 | 0 | 1 | 5 | 16 | 9 | 4 | 35 |
-| S10 | 0 | 3 | 3 | 5 | 10 | 0 | 21 |
-| S11 | 0 | 6 | 6 | 9 | 8 | 3 | 32 |
-| **Total** | 0 | 25 | 38 | 113 | 117 | 30 | 323 |
+| Surface | WIRED | UNWIRED | UNCONFIGURED | PARTIAL | MISSING | CONFLICT | ROLES | Total |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| S01 | 0 | 1 | 3 | 21 | 20 | 0 | 0 | 45 |
+| S02 | 0 | 1 | 0 | 3 | 21 | 6 | 0 | 31 |
+| S03 | 0 | 1 | 5 | 14 | 4 | 4 | 0 | 28 |
+| S04 | 0 | 0 | 7 | 5 | 1 | 0 | 0 | 13 |
+| S05 | 0 | 0 | 1 | 13 | 13 | 2 | 0 | 29 |
+| S06 | 0 | 1 | 1 | 10 | 6 | 11 | 0 | 29 |
+| S07 | 0 | 1 | 3 | 15 | 8 | 2 | 2 | 31 |
+| S08 | 0 | 11 | 4 | 9 | 18 | 1 | 0 | 43 |
+| S09 | 0 | 1 | 5 | 16 | 9 | 3 | 1 | 35 |
+| S10 | 0 | 3 | 3 | 5 | 10 | 0 | 0 | 21 |
+| S11 | 0 | 6 | 5 | 9 | 8 | 1 | 1 | 30 |
+| ROLES decision (round 3) | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 3 |
+| **Total** | 0 | 26 | 37 | 120 | 118 | 30 | 7 | 338 |
 
 ## Arithmetic and Team F delta
 
@@ -27,9 +30,19 @@ Verification additions: 55 H-ONLY elements. Status-bearing additions: CONFLICT 1
 
 Consolidated delta from Team F: +55 H-ONLY canvas elements, including 42 status-bearing elements and 13 N/A findings. The status-bearing total rises from 281 to 323.
 
+### Round 3 fold-in delta
+
+Round 3 adds 25 surviving rows from `R3-JUDGED.md` (19 CONFIRMED, 6 CORRECTED). 19 of them are status-bearing rows on the S surfaces: S01 1, S03 1, S06 7, S07 1, S08 5, S09 1. 3 of those 19 are `ROLES` rows taken from the judge's own ROLES survivors (G6-501 to G6-503, listed under A ROLES decision, round 3). 6 are backend ORPHAN rows listed with S12 at the end of the ORPHAN list and not counted in the surface totals. By status the round-3 status-bearing additions are CONFLICT 7, PARTIAL 7, MISSING 1, UNWIRED 1, ROLES 3.
+
+Relabels per D10 (column moves only, totals unchanged): 4 existing CONFLICT rows whose only basis is `docs/security/authorization-model.md` or an RBAC grant become `ROLES` rows. V2-H5 and V2-H12 on S07, V3-CO01 on S09, V3-CO05 on S11.
+
+Parked per D12: 4 existing rows leave the active lists for the parked appendix. V2-H4 on S05 (CONFLICT), S09-17 on S09 (CONFLICT), V3-H4-03 on S11 (CONFLICT), S11-23 on S11 (UNCONFIGURED).
+
+Arithmetic: previous status-bearing total 323 + 19 round-3 status-bearing rows - 4 parked = 338. Per status: WIRED 0 + 0 = 0; UNWIRED 25 + 1 = 26; UNCONFIGURED 38 - 1 = 37; PARTIAL 113 + 7 = 120; MISSING 117 + 1 = 118; CONFLICT 30 - 4 relabels - 3 parked + 7 = 30; ROLES 0 + 4 relabels + 3 = 7. Column sum 0 + 26 + 37 + 120 + 118 + 30 + 7 = 338 = 45 + 31 + 28 + 13 + 29 + 29 + 31 + 43 + 35 + 21 + 30 + 3.
+
 ## Non-WIRED elements by surface
 
-Every Team F row remains, except S06-03 is corrected to UNCONFIGURED by V2. Row detail and evidence stay in the cited S-file row.
+Every Team F row remains, except S06-03 is corrected to UNCONFIGURED by V2. Round-3 rows are appended to their S surface, carry an `R3-<n>` id and name the judge's lane id in the evidence column; orphan rows are numbered `R3-16` to `R3-22` and live in the ORPHAN list.
 
 ### S01 surface
 
@@ -82,6 +95,7 @@ Every Team F row remains, except S06-03 is corrected to UNCONFIGURED by V2. Row 
 | V3-CP17 | N/A | Client preview empty states | S01 shell, client-preview.tsx:891,909 |
 | V3-H4-08 | N/A | CI runs duplicate build, single workflow | S12 orphans, ci.yml:48; playwright.config.ts:18 |
 | V3-L1-CoachState | MISSING | CoachState aggregate has no backend equivalent | S01 shell, coach/model.ts:714-739 |
+| R3-1 | MISSING | Global user reduced-motion policy (MotionConfig at the root) | R3-JUDGED G1-01, CONFIRMED. Canvas `frontend/src/components/motion-provider.tsx:6-8`, `frontend/src/app/layout.tsx:20`; backend none for MotionConfig (searched root `app/`, `components/`, `lib/`), `app/layout.tsx:10-29` has no provider, `app/globals.css:1439-1443,1512-1515` covers only selected CSS transitions |
 
 ### S02 surface
 
@@ -150,6 +164,7 @@ Every Team F row remains, except S06-03 is corrected to UNCONFIGURED by V2. Row 
 | S03-24 | UNCONFIGURED | Submission history list on client profile "Check-ins" tab (cross-surface, drawn in clients.tsx) | `S03-*.md` |
 | S03-25 | PARTIAL | Check-in question set per template variant: label, type, required, options | `S03-*.md` |
 | V3-CP15 | UNCONFIGURED | Check-in form preview in client preview | S03 check-ins, client-preview.tsx:842,852 |
+| R3-15 | UNWIRED | Map ordinary server rejection and stale/conflict states to canvas messages (check-in and onboarding writes) | R3-JUDGED G6-201, CONFIRMED. Canvas `frontend/src/components/coach/templates.tsx:499-502,600-602`, `frontend/src/components/coach/check-ins.tsx:753`; backend `lib/checkin/forms.ts:33-41`, `lib/checkin/instances.ts:57-66`, `lib/onboarding/forms.ts:21-29`. The consent-only `consent_missing` / `policy_not_configured` subclaim is parked (see parked appendix) |
 
 ### S04 surface
 
@@ -199,7 +214,6 @@ Every Team F row remains, except S06-03 is corrected to UNCONFIGURED by V2. Row 
 | S05-24 | CONFLICT | Variant machinery: variants[], defaultVariant, legacyConfigurations, Assignment.variantId, switchVariant, templateSetup/normalizeTemplateSetups collapse | `S05-*.md` |
 | S05-25 | MISSING | Whole-state persistence: localStorage STORAGE_KEY, isCoachState validation, migrate + normalize on hydrate, "kept on this device" copy | `S05-*.md` |
 | V1-L7 | N/A | Dead switchVariant helper, no screen caller | S05 templates, model.ts:998-1012 |
-| V2-H4 | CONFLICT | Goal picker offers cycle-tracking parameters | S05 templates, setup-ui.tsx:342-346; decisions #73/#38 |
 | V2-H9 | N/A | “Cycle” naming collision between meal schedule and menstrual-cycle data | S06 nutrition, nutrition/editor.tsx:27; authorization-model.md:53 |
 | V3-L1-Plan | MISSING | Flat Plan entity has no backend model | S05 templates, coach/model.ts:635-643 |
 | V3-L1-PlanVersion | PARTIAL | PlanVersion type differs from backend plan versioning | S05 templates, plans/types.ts:6-11 |
@@ -232,6 +246,13 @@ Every Team F row remains, except S06-03 is corrected to UNCONFIGURED by V2. Row 
 | V3-CP10 | CONFLICT | IIFYM macro distribution ring | S06 nutrition, client-preview.tsx:496,498; decision #115 |
 | V3-CP11 | UNWIRED | ClientPlanPreview meal plan panel | S06 nutrition, client-preview.tsx:560,562 |
 | V3-L1-IIFYM | MISSING | IifymOption and IifymPlan have no backend equivalent | S06 nutrition, plans/types.ts:17-25 |
+| R3-3 | PARTIAL | Nutrition rolling window and declared as-of date | R3-JUDGED G4-07, CORRECTED. Canvas `frontend/src/components/coach/builder/nutrition-content.tsx:80-97`, `frontend/src/components/coach/builder/nutrition-history.tsx:23-31`; backend `lib/habits/date.ts:136-147`, `lib/habits/service.ts:1059-1063`, no nutrition feed (searched `lib/mealplan/`, `lib/nutrition/`, `db/schema.prisma` for macroIntake/calorieIntake) |
+| R3-4 | CONFLICT | Computed attainment and below/above/minimum status | R3-JUDGED G4-08, CONFIRMED. Canvas `frontend/src/components/coach/builder/nutrition-content.tsx:109-129`, `frontend/src/components/ethereal/builder/nutrition-content.tsx:109`; backend `lib/mealplan/payload.ts:16-17,40-51`, `docs/product-decisions.md:1653-1657` (decision #115) |
+| R3-5 | CONFLICT | Fixed-target percent and ring fill | R3-JUDGED G4-09, CONFIRMED. Canvas `frontend/src/components/coach/builder/nutrition-content.tsx:202-222,643`, `frontend/src/components/ethereal/builder/nutrition-content.tsx:217-222`; backend `lib/mealplan/payload.ts:16-17`, `docs/product-decisions.md:1653-1657` (decision #115) |
+| R3-6 | PARTIAL | Configured TD/NTD/active source mapping | R3-JUDGED G4-10, CORRECTED. Canvas `frontend/src/components/coach/builder/nutrition-content.tsx:30-32`, `frontend/src/components/ethereal/builder/nutrition-content.tsx:30-32`; backend `lib/dashboard/config-schema.ts:104-105`, `lib/mealplan/payload.ts:40-73` |
+| R3-9 | CONFLICT | Weekly/monthly means of intake and target bounds | R3-JUDGED G4-14, CONFIRMED. Canvas `frontend/src/components/coach/builder/nutrition-history.tsx:126-164`, `frontend/src/components/ethereal/builder/nutrition-history.tsx:126-164`; backend `lib/mealplan/payload.ts:16-17,148-172`, `docs/product-decisions.md:1653-1656` (decision #115) |
+| R3-11 | CONFLICT | Collapsing a range target to one midpoint | R3-JUDGED G4-18, CONFIRMED. Canvas `frontend/src/components/coach/client-preview.tsx:408-411`, `frontend/src/components/coach/plans/domain.ts:195-200`; backend `lib/mealplan/payload.ts:43-44,148-172`, `docs/product-decisions.md:1653-1656` (decision #115) |
+| R3-14 | CONFLICT | Automatic starter meals, food picks and quantities | R3-JUDGED G4-53, CONFIRMED. Canvas `frontend/src/components/ethereal/mealplan/model.ts:353-420,431-438`, `frontend/src/components/ethereal/mealplan/mealplan-workspace.tsx:176`; backend `lib/mealplan/payload.ts:53-78`, `docs/product-decisions.md:1653-1657` (decision #115), none for scaffold/recommendation (searched `lib/mealplan/`, `lib/nutrition/`, `db/schema.prisma`) |
 
 ### S07 surface
 
@@ -260,14 +281,15 @@ Every Team F row remains, except S06-03 is corrected to UNCONFIGURED by V2. Row 
 | S07-21 | MISSING | Dashboard widget "Training week — Completed sessions" (source "sessions") | `S07-*.md` |
 | S07-22 | MISSING | Activation records into check-in review draft (kind, versionId, name, startDate appended on activate when route.review) | `S07-*.md` |
 | V1-L8 | N/A | Dead trainingSets helper, no screen caller | S07 training, model.ts:1173-1175 |
-| V2-H5 | CONFLICT | Coach library notes render in client training view | S07 training, training/editor.tsx:307,907; authorization-model.md:59 |
-| V2-H12 | CONFLICT | Authorization docs conflict on client training-plan write path | S07 training, authorization-model.md:34; product-decisions.md:1640 |
+| V2-H5 | ROLES | Coach library notes render in client training view | S07 training, training/editor.tsx:307,907; authorization-model.md:59. Relabelled per D10: role visibility cell, doc rule vs code grant |
+| V2-H12 | ROLES | Authorization docs conflict on client training-plan write path | S07 training, authorization-model.md:34; product-decisions.md:1640. Relabelled per D10: the doc deny versus the assigned write at `lib/auth/rbac.ts:148` |
 | V3-CP13 | CONFLICT | Muscle volume table | S07 training, client-preview.tsx:739,747; decision #116 |
 | V3-CP14 | MISSING | Training session logbook | S07 training, client-preview.tsx:795,808 |
 | V3-L1-TrainingSet | PARTIAL | TrainingSet, TrainingExercise and TrainingSession shapes differ | S07 training, plans/types.ts:26-57 |
 | V3-L1-Exercise | PARTIAL | ExerciseDefinition is read-only in backend catalog | S07 training, plans/types.ts:35-41 |
 | V3-L1-TrainingPlan | PARTIAL | TrainingPlan shape differs from backend | S07 training, plans/types.ts:58-66 |
 | V3-L1-ClientGoal | MISSING | ClientGoal has no backend equivalent | S07 training, plans/types.ts:67-73 |
+| R3-19 | PARTIAL | Render server, CAS, timezone and publish errors, not only local validation | R3-JUDGED G6-401, CONFIRMED. Canvas `frontend/src/components/coach/plans/workspace.tsx:325-336,498-507`; backend `lib/mealplan/boundary.ts:28-55`, `lib/trainingprogram/boundary.ts:39-67`. Consent-only `consent_missing` / `policy_not_configured` subclaim parked (see parked appendix) |
 
 ### S08 surface
 
@@ -314,6 +336,11 @@ Every Team F row remains, except S06-03 is corrected to UNCONFIGURED by V2. Row 
 | V3-BWA14 | N/A | Empty-state component for all widget kinds | S08 dashboard, progress-content.tsx:77-93 |
 | V3-EB15 | N/A | Builder footnote and aria-live toast | S08 dashboard, dashboard-builder.tsx:1523-1538 |
 | V3-H4-07 | N/A | Thirteen never-referenced exports | S12 orphans, daily-entry/gate.ts:39; config-schema.ts:913-914 |
+| R3-2 | PARTIAL | Coaching/detail widget period and history-week vocabulary | R3-JUDGED G4-03, CONFIRMED. Canvas `frontend/src/components/coach/builder/coaching-content.tsx:29-32`, `frontend/src/components/coach/builder/additional-widget-content.tsx:109-124`, `frontend/src/components/ethereal/builder/coaching-content.tsx:393`; backend `lib/habits/date.ts:136-147`, `lib/dashboard/config-schema.ts:174-182` |
+| R3-7 | PARTIAL | Non-empty title and required visible-field validation | R3-JUDGED G4-11, CONFIRMED. Canvas `frontend/src/components/coach/builder/gallery.tsx:235-257`; backend `lib/dashboard/config-schema.ts:331-355,369-376` |
+| R3-8 | PARTIAL | Per-kind and per-source unit allowlist | R3-JUDGED G4-12, CONFIRMED. Canvas `frontend/src/components/coach/builder/gallery.tsx:1169-1179`; backend `lib/dashboard/config-schema.ts:354-355,616-641` |
+| R3-10 | PARTIAL | Progress inclusive period-window selection | R3-JUDGED G4-15, CORRECTED. Canvas `frontend/src/components/coach/builder/progress-content.tsx:22-40`, `frontend/src/components/ethereal/builder/progress-content.tsx:22-40`; backend `lib/habits/date.ts:136-147`, `lib/daily-entry/week-groups.ts:43-58`, `lib/dashboard/config-schema.ts:177-182` |
+| R3-12 | CONFLICT | Percent fill derived from done/scheduled counts | R3-JUDGED G4-27, CONFIRMED. Canvas `frontend/src/components/ethereal/builder/coaching-content.tsx:517-524,572`; backend `lib/habits/service.ts:93-108,1073`, `docs/product-decisions.md:1450-1454` (decision #110, count-based consistency only) |
 
 ### S09 surface
 
@@ -335,7 +362,6 @@ Every Team F row remains, except S06-03 is corrected to UNCONFIGURED by V2. Row 
 | S09-14 | PARTIAL | Multi-choice field with optional note ({choices[], note} JSON) | `S09-*.md` |
 | S09-15 | PARTIAL | Location-rating composite ({location, rating 1-10}) | `S09-*.md` |
 | S09-16 | PARTIAL | Context field (answer Yes/No + context note) | `S09-*.md` |
-| S09-17 | CONFLICT | Cycle tracking group: period-start checkbox, derived cycle day, bleeding level, cramps, PMS symptoms, basal body temperature | `S09-*.md` |
 | S09-18 | PARTIAL | Week view: transposed 7-day metric x date table, sticky labels, collapsible groups, per-metric summary cell (Average / Latest / Total / Most frequent / Done) | `S09-*.md` |
 | S09-19 | MISSING | Trends view: searchable metric picker (max 3), ranges 7/30/56/90/180 days, numeric line/bar charts, completion grids, dated text lists, latest/average/change footer, chart-to-day navigation | `S09-*.md` |
 | S09-20 | MISSING | "Coach notes" mode: coach-only comment popover per value, dot marker, "Coach note:" display under the field | `S09-*.md` |
@@ -352,8 +378,9 @@ Every Team F row remains, except S06-03 is corrected to UNCONFIGURED by V2. Row 
 | V3-CP07 | MISSING | Roadmap weekly table | S09 tracker, client-preview.tsx:274,325 |
 | V3-CP08 | MISSING | Roadmap phase select per week | S09 tracker, client-preview.tsx:302 |
 | V3-CP12 | MISSING | Body map heatmap | S09 tracker, client-preview.tsx:629,680 |
-| V3-CO01 | CONFLICT | Coach note shown in client-facing tracker field | S09 tracker, today-view.tsx:308-312; authorization-model.md:40 |
+| V3-CO01 | ROLES | Coach note shown in client-facing tracker field | S09 tracker, today-view.tsx:308-312; authorization-model.md:40. Relabelled per D10: role visibility cell, doc rule vs code grant |
 | V3-CO03 | CONFLICT | Tracker edits overwrite values without revision history | S09 tracker, preview-model.ts:28-31; decision #79 |
+| R3-13 | CONFLICT | Calories as an ordinary entered parameter | R3-JUDGED G4-45, CONFIRMED. Canvas `frontend/src/components/ethereal/client-tracker/model.ts:83-91`; backend `lib/daily-tracker.ts:192-195`, `db/schema.prisma:781-790`, `docs/product-decisions.md:299-300,655-659` (CALORIES stays excluded, source-fidelity boundary) |
 
 ### S10 surface
 
@@ -410,15 +437,13 @@ Every Team F row remains, except S06-03 is corrected to UNCONFIGURED by V2. Row 
 | S11-20 | UNCONFIGURED | Client check-in submission + coach's returned feedback (awaiting feedback / feedback sent) | `S11-*.md` |
 | S11-21 | PARTIAL | Archived clients hidden from the roster | `S11-*.md` |
 | S11-22 | PARTIAL | Workspace preferences dialog: logo upload, availability string, notification toggles, theme | `S11-*.md` |
-| S11-23 | UNCONFIGURED | Implied consent: canvas collects health/tracking data and onboarding answers with no consent step anywhere | `S11-*.md` |
 | S11-24 | MISSING | Implied first coach/workspace bootstrap (canvas opens into a fully populated coaching workspace) | `S11-*.md` |
 | S11-25 | UNCONFIGURED | Implied account recovery ("forgot password" on a real login) | `S11-*.md` |
 | S11-26 | PARTIAL | Single implied coach role; canvas draws no owner/assistant/support distinction | `S11-*.md` |
 | S11-27 | PARTIAL | Coach assigns the tool/template to a client directly ("Assign template") | `S11-*.md` |
-| V3-CO05 | CONFLICT | Standalone tracker binds data to one named client without clientId | S11 identity, client-tracker.tsx:16,19-23; authorization-model.md:32-33 |
+| V3-CO05 | ROLES | Standalone tracker binds data to one named client without clientId | S11 identity, client-tracker.tsx:16,19-23; authorization-model.md:32-33. Relabelled per D10: scope cell (own vs assigned vs workspace) |
 | V3-H4-04 | MISSING | No workspace or owner bootstrap | S11 identity, package.json:5-7; invitations.ts:185 |
 | V3-H4-05 | MISSING | No mail library; password reset pages return 404 | S11 identity, password-reset-delivery.ts:43-45,72-77 |
-| V3-H4-03 | CONFLICT | No route may grant consent; assertion fails closed | S11 identity, consent.ts:145-151 |
 | V3-H4-02 | CONFLICT | Runtime-gate gap on exact-1 flags | S11 identity, daily-entry/gate.ts:22-24; sheet-viewer.ts:8-10 |
 | V3-H4-02b | N/A | AUTH_TRUST_HOST is not read by app code | S11 identity, auth.config.ts:17 |
 
@@ -443,19 +468,52 @@ Every Team F row remains, except S06-03 is corrected to UNCONFIGURED by V2. Row 
 | S06-15 | S06 | #115 | No computed IIFYM kcal or macro ring. |
 | S07-15 | S07 | #116 | No weekly muscle-volume calculation. |
 | S09-10 | S09 | #75 | Hide time fields pending a binding format decision. |
-| S09-17 | S09 | #73, #38 | Cycle data stays excluded pending legal/privacy approval. |
 | V2-H2 | S06 | #36, #115 | Blank numeric inputs must remain missing, not be written as zero. |
-| V2-H4 | S05 | #73, #38 | Goal picker must exclude cycle parameters. |
-| V2-H5 | S07 | authorization-model.md:59 | Coach-private notes must not render in client views. |
-| V2-H12 | S07 | product-decisions.md:1640; authorization-model.md:34 | Resolve the written policy conflict before client-write implementation. |
 | V3-CP10 | S06 | #115 | No computed macro ring. |
 | V3-CP13 | S07 | #116 | No muscle-volume panel. |
-| V3-CO01 | S09 | authorization-model.md:40 | Remove coach-only note from client-facing field. |
 | V3-CO02 | S06 | #115 | No automatic nutrition totals. |
 | V3-CO03 | S09 | #79 | Keep revision history; never overwrite history. |
-| V3-CO05 | S11 | authorization-model.md:32-33 | Use authenticated client/workspace scope, not fixed client identity. |
 | V3-H4-02 | S11 | # runtime-gate policy | Add trusted-runtime checks to exact-1 gates before enabling them. |
-| V3-H4-03 | S11 | consent.ts:145-151 | Consent grant remains blocked until approved route and review. |
+| R3-4 | S06 | #115 (docs/product-decisions.md:1653-1657) | No computed attainment: staff enter every nutrition value, no automatic totals, conversions, percentages or recommendations. |
+| R3-5 | S06 | #115 (docs/product-decisions.md:1653-1657) | No percent fill or ring against a fixed target. |
+| R3-9 | S06 | #115 (docs/product-decisions.md:1653-1656) | No weekly or monthly means of intake or derived target bounds; range targets display exactly as entered. |
+| R3-11 | S06 | #115 (docs/product-decisions.md:1653-1656) | Do not collapse a range target to one midpoint. |
+| R3-14 | S06 | #115 (docs/product-decisions.md:1653-1657) | No automatic starter meals, food picks, quantities or recommendations. |
+| R3-12 | S08 | #110 (docs/product-decisions.md:1450-1454) | Habit consistency stays count-based; never percentages, streaks or rewards. |
+| R3-13 | S09 | docs/product-decisions.md:299-300, 655-659 (CALORIES exclusion) | CALORIES must not become an ordinary user-entered parameter without new evidence and approval. |
+
+## ROLES decision rows (D10)
+
+D10 makes role grants and scope the owner's decision, not a rule inherited from `docs/security/authorization-model.md` or `lib/auth/rbac.ts`. Both are inputs and are shown side by side per cell here. These rows block PR-05 and every wiring PR; the live role matrix is the acceptance proof, and server-side enforcement of the decided matrix is mandatory whatever the outcome.
+
+| Row | Surface | Old status | Basis | Cell for the owner |
+|---|---|---|---|---|
+| V2-H5 | S07 | CONFLICT | `docs/security/authorization-model.md:59` (coach notes to client denied) against the code's coach-note scope | May a coach-private note reach the client? The canvas renders coach library notes in the client training view, `S07 training, training/editor.tsx:307,907`. |
+| V2-H12 | S07 | CONFLICT | `docs/security/authorization-model.md:34` (owner write denied) against the assigned write at `lib/auth/rbac.ts:148` | Does an assigned owner write a client training plan? This is the same doc-versus-code conflict D10 records for meal plans and daily entries. |
+| V3-CO01 | S09 | CONFLICT | `docs/security/authorization-model.md:40` (coach notes not client-visible) | May a coach note render inside a client-facing tracker field? `S09 tracker, today-view.tsx:308-312`. |
+| V3-CO05 | S11 | CONFLICT | `docs/security/authorization-model.md:32-33` (daily tracking: owner write denied, coach assigned, client own) | Which scope binds a standalone tracker, own, assigned or workspace? `S11 identity, client-tracker.tsx:16,19-23`. |
+| R3-23 | ROLES decision (round 3) | new (R3-JUDGED G6-501, CORRECTED to ROLES) | `docs/security/authorization-model.md:27-28,43,45` against `lib/auth/rbac.ts:87,95,237,253` | Platform-admin administrative, catalog and audit capability cells. No canvas console exists, so the owner decides the cells, not a new console. |
+| R3-24 | ROLES decision (round 3) | new (R3-JUDGED G6-502, CORRECTED to ROLES) | `docs/security/authorization-model.md:27,31-46` against `lib/auth/rbac.ts:90,127,135,150,240` | Assistant read-only and assigned-scope capability cells. The canvas draws no assistant persona. |
+| R3-25 | ROLES decision (round 3) | new (R3-JUDGED G6-503, CORRECTED to ROLES) | `frontend/src/components/coach/clients.tsx:65-91` against `lib/auth/rbac.ts:126-135`, `lib/workspace/clients.ts:103-120` and `docs/security/authorization-model.md:31-36` | Does the workspace-wide canvas roster stand, or does an actor see assigned scope only? |
+
+## Parked: consent and health data
+
+D12 parks consent, health-data storage and data-protection rules. These rows leave the active lists: they do not block, shape or gate any canvas element, plan PR or test decision. Where a consent gate blocks a canvas flow the plan routes around it or disables the gate behind a flag, and the spot is named here so it can be picked up later.
+
+| Id | Old status | What it is |
+|---|---|---|
+| V3-H4-03 | CONFLICT (S11) | No route may grant consent, and the assertion fails closed. `S11 identity, consent.ts:145-151`. Parked: no consent route is commissioned. |
+| S09-17 | CONFLICT (S09) | Cycle tracking group: period-start checkbox, derived cycle day, bleeding level, cramps, PMS symptoms, basal body temperature. Health data behind the reserved CYCLE consent kind (`lib/consent.ts:33,106`) and decision #73. |
+| V2-H4 | CONFLICT (S05) | Goal picker offers cycle-tracking parameters, `S05 templates, setup-ui.tsx:342-346`. The same health-data rule (#73/#38); parked with S09-17. |
+| S11-23 | UNCONFIGURED (S11) | Implied consent: the canvas collects health and tracking data and onboarding answers with no consent step anywhere. Parked: no consent step is required of the canvas. |
+| R3-JUDGED G6-102 | PARKED-D12 (judge; duplicate of S12-22/S12-41) | Sensitive consent kinds and grant sources: ConsentKind.PHOTOS/BLOODWORK/PED_HRT, ConsentSource.CLIENT_SELF/COACH_ATTESTED. `db/schema.prisma:69-80`, `lib/consent.ts:322-326`; the canvas has no consent or privacy UI, so no new grant screen follows. |
+| R3-JUDGED G6-504 | PARKED-D12 (judge; duplicate of S12-54..56, S12-33, S12-35) | Export, erasure and audit-log cells with no canvas surface of any kind. `lib/auth/rbac.ts:244-258`. Audit role cells, if they are ever needed, belong to D10 instead. |
+
+Parked aspects inside surviving round-3 rows, with no separate element:
+
+- R3-15 (G6-201) and R3-19 (G6-401): `consent_missing` and `policy_not_configured`, raised only by the unconfigured consent registry, are excluded from the active wiring requirement. Generic denial, stale selection or CAS conflict, timezone, validation and service-unavailable handling still need truthful canvas states (`lib/checkin/instances.ts:57-66`, `lib/mealplan/boundary.ts:28-55`, `lib/trainingprogram/boundary.ts:39-67`).
+- R3-17 (G6-302): the health-classification-only controls inside the parameter manager are parked. Parameter create, edit and archive stays an active ORPHAN.
+- Backend consent and health-data capabilities S12-22, S12-41, S12-54, S12-55 and S12-56 stay in the ORPHAN inventory unchanged and are not extended (D12).
 
 ## ORPHANS
 
@@ -538,6 +596,15 @@ Backend-only rows remain from S12. See `S12-backend-orphans.md` for cited row de
 - S12-75 ENABLE_SHEET_VIEWER flag. Evidence: `lib/sheet-viewer.ts:7, app/sheets/page.tsx:13`.
 - S12-76 ENABLE_ONBOARDING_ASSIGNMENTS flag. Evidence: `lib/onboarding/assignments-boundary.ts:80, app/workspace/[workspaceId]/onboarding/assignments/page.tsx`.
 
+Round 3 adds 6 backend orphan rows from `R3-JUDGED.md` (all judge CONFIRMED), so the ORPHAN list is 76 + 6 = 82 rows. They keep the round-3 numbering and cite the judge's lane id.
+
+- R3-16 (G6-301) Template-version upgrade, rollback, discovery, review and execute. Evidence: `lib/coaching/client-setup-transition.ts:484,534,591`, `app/workspace/[workspaceId]/client-setups/transition-panel.tsx:14-30`; canvas none (searched `frontend/src` for upgrade, rollback and versionSeq).
+- R3-17 (G6-302) Parameter-definition create, edit and archive manager. Evidence: `app/workspace/[workspaceId]/parameters/parameter-manager.tsx:53-62`, `lib/coaching/parameters.ts:650,904`; the canvas `frontend/src/components/coach/templates.tsx:1173-1186` is a picker only (searched createParameter/archiveParameter).
+- R3-18 (G6-303) Client-task title and date editing, and cancellation. Evidence: `lib/tasks/service.ts:311,391`, `app/workspace/[workspaceId]/clients/[clientProfileId]/dashboard/actions.ts:52-84`; the canvas `frontend/src/components/coach/clients.tsx:673-727` draws add and toggle only.
+- R3-20 (G6-402) Dead duplicate sheetDisplayName helper. Evidence: `lib/catalog.ts:172-174`, live duplicate `lib/spec-artifacts.ts:32-34`, no production caller (searched `app/`, `lib/`, `components/`, `scripts/`).
+- R3-21 (G6-403) Public synthetic fixture library pages, not canvas catalog editors. Evidence: `app/library/foods/page.tsx:1-26`, `app/library/exercises/page.tsx:1-27`; the coach-editable canvas library is `frontend/src/components/coach/plans/training/editor.tsx:974-977`.
+- R3-22 (G6-404) Uncalled versionForWeek helper. Evidence: `lib/trainingprogram/weeks.ts:185-211`, no production caller (searched `lib/`, `app/`, `components/`, `scripts/`).
+
 ## Action mapping and self-check
 
 Every status-bearing non-WIRED row maps by surface to the PR set below. CONFLICT rows map to their named owner decision in the conflict table and remain blocked until that decision changes. The optional PR-MSG and PR-MEDIA rows cover only their approved subsets.
@@ -559,9 +626,9 @@ Every status-bearing non-WIRED row maps by surface to the PR set below. CONFLICT
 
 **Self-check.**
 
-1. Summary counts reconcile. PASS. Team F arithmetic is 0 + 23 + 37 + 106 + 97 + 18 = 281 after the one V2 relabel. V adds 42 status-bearing rows and 13 N/A findings. Consolidated totals are 0 WIRED + 25 UNWIRED + 38 UNCONFIGURED + 113 PARTIAL + 117 MISSING + 30 CONFLICT = 323 status-bearing rows. Total element findings are 323 + 13 N/A = 336.
+1. Summary counts reconcile. PASS. Team F arithmetic is 0 + 23 + 37 + 106 + 97 + 18 = 281 after the one V2 relabel. V adds 42 status-bearing rows and 13 N/A findings. Consolidated totals are 0 WIRED + 25 UNWIRED + 38 UNCONFIGURED + 113 PARTIAL + 117 MISSING + 30 CONFLICT = 323 status-bearing rows. Total element findings are 323 + 13 N/A = 336. These are the pre-fold-in totals; the round-3 fold-in supersedes them (see Round 3 fold-in delta and the fold-in self-check).
 2. Every non-WIRED row has a PR or decision mapping. PASS by surface table and conflict table. No unmapped status-bearing rows are identified.
-3. ORPHAN list. PASS. All 76 S12 IDs remain listed, grouped by backend capability kind in the source and counted 1 + 7 + 6 + 2 + 16 + 42 + 2 = 76.
+3. ORPHAN list. PASS. All 76 S12 IDs remain listed, grouped by backend capability kind in the source and counted 1 + 7 + 6 + 2 + 16 + 42 + 2 = 76. Round 3 appends 6 more, giving 82.
 4. V verdicts. PASS. V1 S04-04 stays PARTIAL. V2 relabels S06-03 as UNCONFIGURED and S07-07 stays MISSING. V3 corrects S08-04's catalogue count to 20 and adds its 44 H-only findings.
 
 ## Cross-check resolutions
@@ -570,3 +637,40 @@ Every status-bearing non-WIRED row maps by surface to the PR set below. CONFLICT
 - V2: S06-03 changes from UNWIRED to UNCONFIGURED because an action exists behind `ENABLE_MEAL_PLANS`. S07-07 remains MISSING because evergreen mode is reserved and unsupported, not a CONFLICT.
 - V3: S08-04 remains PARTIAL, and its catalogue count is corrected from 19 to 20. The canvas and backend both have 20 kinds in nine categories.
 - H-ONLY records above preserve the V evidence. N/A rows describe studio chrome, helper code, or tooling, not backend capability statuses.
+
+## Fold-in self-check
+
+Round 3 folded in from `output/R3/R3-JUDGED.md`. Checks recomputed from the written file with Python, not by eye.
+
+(a) Every surviving R3-JUDGED row appears exactly once. PASS. The judge's surviving table has 25 rows (7 CONFLICT + 1 MISSING + 6 ORPHAN + 7 PARTIAL + 3 ROLES + 1 UNWIRED = 25). The file carries exactly the ids R3-1 to R3-25, one row each, and every judge lane id G1-01, G4-03, G4-07, G4-08, G4-09, G4-10, G4-11, G4-12, G4-14, G4-15, G4-18, G4-27, G4-45, G4-53, G6-201, G6-301, G6-302, G6-303, G6-401, G6-402, G6-403, G6-404, G6-501, G6-502, G6-503 appears once as a row. Placement by surface follows the surface file that owns the cited canvas path: S01 R3-1; S03 R3-15; S06 R3-3, R3-4, R3-5, R3-6, R3-9, R3-11, R3-14; S07 R3-19; S08 R3-2, R3-7, R3-8, R3-10, R3-12; S09 R3-13; ORPHAN list R3-16, R3-17, R3-18, R3-20, R3-21, R3-22; ROLES section R3-23, R3-24, R3-25. R3-19 sits on S07 because `frontend/src/components/coach/plans/workspace.tsx:498-507` is the S07-04 validation-error element, and the judge's own surface label there is "Plan errors".
+
+(b) No rejected or DUP-EXISTING row was added. PASS. The only non-surviving judge ids anywhere in the file are G6-102 and G6-504, and both appear only in the parked appendix, where the judge placed them as PARKED-D12 duplicates of existing S12 capabilities. G4-37, G4-57 and G5-02 (REJECTED) and the 61 DUP-EXISTING groups are absent from every row and bullet. No `R3-<n>` row is sourced from a rejected or duplicate group.
+
+(c) Summary arithmetic reconciles. PASS. Previous status-bearing total 323 + 19 round-3 status-bearing rows (S01 1, S03 1, S06 7, S07 1, S08 5, S09 1, plus the 3 round-3 ROLES rows) - 4 parked = 338. Status columns: WIRED 0, UNWIRED 26 = 25 + 1, UNCONFIGURED 37 = 38 - 1, PARTIAL 120 = 113 + 7, MISSING 118 = 117 + 1, CONFLICT 30 = 30 - 4 relabels - 3 parked + 7, ROLES 7 = 4 relabels + 3. Sum 0 + 26 + 37 + 120 + 118 + 30 + 7 = 338. The per-surface tables were recounted from the file and match the summary table cell by cell on every surface: S01 45, S02 31, S03 28, S04 13, S05 29, S06 29, S07 31, S08 43, S09 35, S10 21, S11 30, ROLES decision 3; total 338. The CONFLICT table has exactly the 30 rows that carry CONFLICT status in the surface tables, with no row on either side unmatched. The ORPHAN list is 76 + 6 = 82.
+
+(d) Every ROLES relabel and every parked row, with its old status. PASS.
+
+ROLES relabels (all were CONFLICT; basis is the authorization doc or an RBAC grant, so D10 applies):
+- V2-H5, S07, CONFLICT, basis `docs/security/authorization-model.md:59`.
+- V2-H12, S07, CONFLICT, basis `docs/security/authorization-model.md:34` against `lib/auth/rbac.ts:148`. Its second citation, `docs/product-decisions.md:1640`, is inside decision #115's own authorization paragraph, so the row is still a doc-against-grant conflict, the D10 case.
+- V3-CO01, S09, CONFLICT, basis `docs/security/authorization-model.md:40`.
+- V3-CO05, S11, CONFLICT, basis `docs/security/authorization-model.md:32-33`.
+
+Parked rows, all moved out of the active lists (see the appendix):
+- V3-H4-03, S11, old status CONFLICT, consent route.
+- S09-17, S09, old status CONFLICT, cycle health data.
+- V2-H4, S05, old status CONFLICT, cycle health data.
+- S11-23, S11, old status UNCONFIGURED, implied consent.
+- G6-102 and G6-504, judge PARKED-D12, no old matrix status, they were never added as active rows.
+
+Rows left as CONFLICT because consent is not their only basis: the media, messaging and read-state rows (S02-05, S02-08, S02-09, S02-12, S02-24, S02-25; S03-18, S03-20) are blocked by product decisions #96/#101/#112 on top of storage, consent and retention, so they stay active. V3-H4-02 is a runtime-gate requirement, not an authorization-doc or RBAC-grant row, so it stays CONFLICT.
+
+(e) Only `GAP-MATRIX.md` was written. PASS. `git status --porcelain` was captured before the first edit and after the last one; the diff of the two snapshots adds exactly one entry for this lane:
+
+```
+>  M icm/02-gap-matrix/output/GAP-MATRIX.md
+```
+
+The same diff also lists concurrent writes by other lanes in this shared tree (` M docs/STATUS.md`, `?? icm/03-plan/output/TA/TB0.md`, `TB3.md`, `TB4-w1.md`, `TB4-w1.jsonl`, `TB4-w2.md`, `TB4-w2.jsonl`, `TB4-w3.md`, `TB4-w3.jsonl`, mtimes 14:35 to 14:42, several still moving after my last write); this lane did not touch them. No scratch file was written inside the repo; the two git snapshots live in `~/.hermes/cache/scratch/`.
+
+Plain English check: no new long dashes were introduced; the only en dashes in the file are the pre-existing Team F line. No `R3-<n>` id was reused, and no existing id changed.
