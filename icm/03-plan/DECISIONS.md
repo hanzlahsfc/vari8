@@ -31,15 +31,19 @@ Biome 2 lints and formats TypeScript, TSX, JSON and CSS in one tool, with the `n
 
 ## D6. One HTTP API under every screen (mobile-ready)
 
-Every canvas surface is wired through versioned JSON route handlers (`app/api/v1/**`) with Zod schemas at the boundary, not through server actions. The web app and the later iOS and Android apps share that one contract. Auth gains bearer tokens next to the cookie session (Auth.js is documented as not for native apps). Mobile shell is Capacitor 8 wrapping the same UI, with a PWA as the interim mobile experience. Source: `output/R1-mobile.md`.
+Every canvas surface reads and writes through one boundary per operation: a Zod-validated service function. Versioned JSON route handlers (`app/api/v1/**`) expose it; a web form may call the same function through a thin server-action wrapper, so web and the later iOS and Android apps share one contract. The static mobile bundle uses only the HTTP routes. Mobile auth gets its own reviewed design before PR-05 builds it (access and refresh token separation, key separation from the Auth.js cookie secret, audience binding, secure device storage, rotation, replay detection, revocation); the R1 recipe is not that design. Offline caching of health data needs rules for consent withdrawal, queued writes, erasure and device loss before it ships. Mobile shell is Capacitor 8 wrapping the same UI, with a PWA as the interim mobile experience; App Store review (guideline 4.2) stays a risk, not a promise. Sources: `output/R1-mobile.md`, judged in `icm/05-verify/output/RV-B2.md`.
 
 ## D7. Toolchain
 
-Biome 2.5 (D4), TypeScript 7 native compiler as the only `typescript` dependency (measured 2.00 s to 0.80 s typecheck on this tree, 0 errors), Turbopack for every build including the canvas (drop `--webpack`), npm kept. No oxlint, oxfmt, Rspack, Vite, Bun runtime, Bend or Three.js. Sources: `output/R2-tooling.md`, `output/P1-next16.md`, `output/P2-biome.md`.
+Biome 2.5 (D4), TypeScript 7 native compiler as the only `typescript` dependency (judge's re-measure on this tree: 2.41 s to 0.26 s warm median, 0 errors; exact speedups are not promised, the plan benchmarks on the target runtime), Turbopack for every build including the canvas (drop `--webpack`), npm kept. No oxlint, oxfmt, Rspack, Vite, Bun runtime, Bend or Three.js. Sources: `output/R2-tooling.md`, `output/P1-next16.md`, `output/P2-biome.md`, judged in `icm/05-verify/output/RV-A.md` and `RV-B2.md`.
 
 ## D8. Libraries (smallest set)
 
-Add `zod` 4 for every API boundary. Media goes to S3-compatible object storage behind the existing `lib/storage.ts` port (vendor still open). Charts reuse the canvas's own SVG component (`smooth-trend.tsx`), no chart library. Forms stay `useActionState` plus Base UI Form. Dates stay `Intl`. Offline sync (Electric or PowerSync) and TanStack Query are chosen at mobile time, not now. Source: `output/R3-libraries.md`.
+Add `zod` 4 now, at every API boundary (R3 recommends it now; the judge confirmed). Media goes to S3-compatible object storage behind the existing `lib/storage.ts` port (vendor still open, chosen on vendor, security and workload evidence). Charts reuse the canvas's own SVG component (`smooth-trend.tsx`), no chart library. Forms stay `useActionState` plus Base UI Form. Dates stay `Intl`. Offline sync (Electric or PowerSync) and TanStack Query are chosen at mobile time, not now. Source: `output/R3-libraries.md`, judged in `icm/05-verify/output/RV-B2.md`.
+
+## D4a. One Biome policy for the whole repo (from the RV-A judgment)
+
+The P2 prototype is behavior-preserving (all 98 reformatted files AST-compared, gates green) but its root config diverged from the canvas config. PR-03 uses one policy for root and `frontend/`: the canvas `recommended` preset, `organizeImports` on, no silent warning overrides (any downgrade is listed with a reason in the PR). It enables `noNextAsyncClientComponent` (exists, off by default) and `nursery/useReactCompiler` as a warning (catches 9 of the 10 React hook findings P1 surfaced). The 10 findings are fixed in PR-03, not suppressed. Pages Router only rules (`no-typos`, `_document` rules) are not needed.
 
 ## D9. Issues first, then one PR per issue
 

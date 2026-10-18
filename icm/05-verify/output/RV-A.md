@@ -1,0 +1,215 @@
+VERDICT: FAIL
+
+Claims checked: 47, with 34 CONFIRMED, 12 WRONG and 1 UNVERIFIABLE. This verdict applies to using the two reports as decision evidence, not to an unexplained application regression. P1's upgrade mechanics reproduce, with its disclosed lint failure. P2's reformat passes the semantic audit and all its reported gates, but its rule-coverage conclusions contain material errors. Correct those conclusions before relying on them for D4, D5 or D7.
+
+All report citations below are relative to `icm/03-plan/output/`. All evidence files named `judge-*` are under `/home/nexuslink/.hermes/cache/scratch/vari8-review/RV-A/`, abbreviated `E/`. Earlier unprefixed logs were not accepted as evidence.
+
+| claim (report path:line) | how checked (command or URL) | result CONFIRMED / WRONG / UNVERIFIABLE | evidence |
+| --- | --- | --- | --- |
+| P1-next16.md:3-5, branch base and commit | `git rev-parse`; `git merge-base 58eb6ed b603c35`; scratch HEAD | CONFIRMED | Reviewed `b603c35110808776673a6db84b611312a447696c`, based on `58eb6ed`. |
+| P1-next16.md:161-171, complete four-file change list, no application or frontend source changed | `git diff 58eb6ed b603c35 --stat`; full diff saved as `E/judge-p1.patch` | CONFIRMED | Only `eslint.config.mjs`, `package-lock.json`, `package.json`, `tsconfig.json`. 704 insertions, 178 deletions. |
+| P1-next16.md:165, package targets and type overrides | Full package diff and installed package metadata after `npm ci` | CONFIRMED | Next/config-next 16.3.8; React/DOM 19.3.0; React types 19.3.0; ESLint 9.39.5. `E/judge-install-metadata.json`. |
+| P1-next16.md:166, lockfile has 814 changed lines | Full lockfile diff and parsed lock entries | CONFIRMED | 814 lines; 36 package entries added, 1 removed, 30 common entries changed. No application files hidden in this change. |
+| P1-next16.md:94-112, direct flat-config imports and preserved ignore list | Read installed config-next exports; compare complete `eslint.config.mjs` diff | CONFIRMED | Imports flat arrays directly; ignore list unchanged; direct `@eslint/eslintrc` dependency removed. The final lint command runs rather than crashing. Historical intermediate failure not reproduced. |
+| P1-next16.md:139-142, committed tsconfig changes | Full `tsconfig.json` diff | CONFIRMED | `preserve` becomes `react-jsx`; `.next/dev/types/**/*.ts` added; remaining changes reformat arrays. The historical writer of the file is not established by this diff. |
+| P1-next16.md:30-35, baseline gates and test counts | Fresh base worktree at `58eb6ed`, `npm ci`, Prisma generation, typecheck, build, test, lint | CONFIRMED | All exit 0; 105 passed / 4 skipped files; 1306 passed / 23 skipped tests; 0 lint errors / 4 warnings. `E/judge-base-results.json` and logs. |
+| P1-next16.md:81, upgraded typecheck passes | Fresh `npm ci`; `npx --no-install prisma generate`; `npm run typecheck` | CONFIRMED | Exit 0. `E/judge-next16-2-typecheck.log`. |
+| P1-next16.md:82, upgraded production build passes | Delete scratch build cache, then `npm run build` | CONFIRMED | Exit 0; Next 16.3.8, Turbopack, compiled in 4.4 s and emitted routes. `E/judge-next16-3-build.log`. The producer's cached 183 ms timing was not reproduced. |
+| P1-next16.md:83, unchanged upgraded test counts | `npm run test` on freshly installed scratch tree | CONFIRMED | Exit 0; 105 passed / 4 skipped files; 1306 passed / 23 skipped tests. `E/judge-next16-4-test.log`. |
+| P1-next16.md:119-120, final lint has 10 errors and 4 warnings | `npm run lint`; independent ESLint API run | CONFIRMED | Exit 1; exact counts and sites reproduced. `E/judge-next16-5-lint.log`, `E/judge-eslint-next16.json`. |
+| P1-next16.md:117-121, errors attributed to react-hooks v6 | Read committed lockfile and freshly installed plugin package | WRONG | Installed and locked plugin is 7.1.1; config-next requires `^7.0.0`. Finding F1. |
+| P1-next16.md:126, submission panel effect at line 387 | ESLint output plus exact source line | CONFIRMED | `app/(tracker)/workspace/[workspaceId]/check-ins/checkin-submission-panel.tsx:387:7`, `setDirty(false)`, `set-state-in-effect`. |
+| P1-next16.md:126, habits widget effect at line 52 | ESLint output plus exact source line | CONFIRMED | `app/(tracker)/workspace/[workspaceId]/dashboard/client-habits-widget.tsx:52:5`, `setHabits(initial)`, `set-state-in-effect`. |
+| P1-next16.md:126, calendar effect at line 82 | ESLint output plus exact source line | CONFIRMED | `components/checkin/checkin-calendar.tsx:82:5`, `setResult(null)`, `set-state-in-effect`. |
+| P1-next16.md:126, check-in draft effect at line 88 | ESLint output plus exact source line | CONFIRMED | `components/checkin/draft-editor.tsx:88:5`, `setState`, `set-state-in-effect`. |
+| P1-next16.md:126, feedback effect at line 148 | ESLint output plus exact source line | CONFIRMED | `components/checkin/feedback-thread.tsx:148:5`, `setNonce`, `set-state-in-effect`. |
+| P1-next16.md:126, onboarding draft effect at line 107 | ESLint output plus exact source line | CONFIRMED | `components/onboarding/draft-editor.tsx:107:5`, `setState`, `set-state-in-effect`. |
+| P1-next16.md:127, dashboard ref at line 99 | ESLint output plus exact source line | CONFIRMED | `app/workspace/[workspaceId]/clients/[clientProfileId]/dashboard/dashboard-editor.tsx:99:3`, `routerRef.current = router`, `refs`. |
+| P1-next16.md:127, dashboard ref at line 129 | ESLint output plus exact source line | CONFIRMED | Same file, `129:3`, `latestConfig.current = config`, `refs`. |
+| P1-next16.md:128, dashboard purity at line 234 | ESLint output plus exact source line | CONFIRMED | Same file, `234:43`, `Date.now()`, `purity`. This confirms a diagnostic, not a proven runtime defect. |
+| P1-next16.md:129, feedback immutability at line 208 | ESLint output plus exact source line | CONFIRMED | `components/checkin/feedback-thread.tsx:208:5`, `setBody`, declared at line 212, `immutability`. |
+| P1-next16.md:134-135, Biome has no equivalent for these hook-safety classes | Installed `biome explain useReactCompiler`; opt-in lint on all seven cited source files | WRONG | Biome 2.5.15 has nursery `useReactCompiler`, available since 2.5.8. It reports nine of the ten cited locations, plus another diagnostic at the habits location, but misses the calendar site. It is disabled in the landed P2 config and defaults to informational severity. `E/judge-probe-results.json`. Finding F2.[7] |
+| P1-next16.md:156-158, engine and Auth.js Next peer compatibility | Read fresh `next/package.json`, `next-auth/package.json` | CONFIRMED | Node minimum `>=20.9.0`; Auth.js peer includes `^16.0.0`. Runtime behavior remains untested. `E/judge-install-metadata.json`. |
+| P1-next16.md:41-70, exact historical codemod run, files touched then reverted | Landed diff and available raw historical logs | UNVERIFIABLE | Final absence of application changes is confirmed, but it does not prove the claimed intermediate command sequence. No new codemod run was substituted for historical evidence. |
+| P2-biome.md:323-324, separate config and reformat commits | `git log 58eb6ed..ce2efed`; full diff of each commit | CONFIRMED | `d1b1668` changes five configuration/dependency files; `ce2efed` changes exactly 98 TS/TSX files. |
+| P2-biome.md:60, dependency removal explains lockfile deletion | Parsed base and final lockfiles; full P2 diff | CONFIRMED | 294 package entries removed; lockfile has 4651 changed lines. `E/judge-install-metadata.json`, `E/judge-p2.patch`. |
+| P2-biome.md:110-114, 98-file reformat and line counts | `git diff d1b1668 ce2efed --shortstat` | CONFIRMED | 98 files, 628 insertions, 368 deletions. These figures are a net increase, despite the report's phrase "net-negative". |
+| P2-biome.md:62, changed source contains only formatting and listed safe-fix categories | TypeScript AST comparison for every changed TS/TSX; canonical printer diff with comments; manual inspection of every residual hunk | CONFIRMED | 98 parsed before/after pairs; 82 identical ASTs; 16 different ASTs fully explained below. `E/judge-ast-results.json`, `E/judge-all-canonical-hunks.patch`. No unlisted production behavior change found. |
+| P2-biome.md:117, type-import fixes affect 14 files | AST differences and full import hunks | WRONG | 14 changed import declarations in 13 files, not 14 files. Finding F3. |
+| P2-biome.md:118, three regex fixes are all the MEAL pattern | Inspect all three regex AST and source hunks | WRONG | Actual patterns are `^MEAL\s+(\d+)$`, `^Day\s+(\d+)$`, and `^DAY\s+(\d+)$`. Each conversion preserves its source and flags. Finding F3. |
+| P2-biome.md:119, two own-property calls become Object.hasOwn | Inspect parser's full validation path and exact hunks | CONFIRMED | Both calls in `lib/onboarding/submissions.ts` change as reported. Entries come from `JSON.parse`, and exact-two-key validation precedes these checks. No accepted-input behavior change found. |
+| P2-biome.md:120, consent mock assertion/optional-chain change | Inspect test's source and AST residual; fresh unit test run | CONFIRMED | Removes the `undefined` assertion arm and optional indexing. Successful mock behavior is unchanged; missing calls throw earlier, so the test still fails closed. |
+| P2-biome.md:121, two fs imports become node:fs | Full diff, AST import literals, base ESLint config | WRONG | No such import changed. The base ESLint config's unprefixed builtins were `path` and `url`; that file was deleted in the config commit, not rewritten as fs imports. Finding F3. |
+| P2-biome.md:122-127, lint suppression changes | Canonical printer including comments, plus raw comment hunks | CONFIRMED | Three any suppressions replaced; three hook suppressions removed; one new static-HTML suppression added. No application expression changes in these comment hunks. `E/judge-hunk-summary.json`. |
+| P2-biome.md:162-170, root linter rules copied from frontend and both lint identically | Compare both committed `biome.json` files at `ce2efed` | WRONG | Frontend has only global recommended preset; root adds twelve severity overrides. Root also disables import organization while frontend enables it. Finding F4. |
+| P2-biome.md:172-175, twelve warning overrides and final advisory lint gate | Parse root config; fresh `npm run lint` | CONFIRMED | Twelve explicit warning levels; no explicit disabled lint rule. Exit 0 with 289 warnings / 42 infos across 683 files. `E/judge-biome-5-lint.log`. |
+| P2-biome.md:313-317, final lint/format/typecheck/build/test gates pass | Fresh `npm ci`, Prisma generation, then all five commands | CONFIRMED | All exit 0. Test files 105 passed / 4 skipped; tests 1306 passed / 23 skipped. `E/judge-biome-results.json`. |
+| P2-biome.md:19-26, baseline has 71 active of 98 configured ESLint rules | Fresh base install; `ESLint.calculateConfigForFile('app/page.tsx')` | CONFIRMED | Exactly 71 active / 98 configured. `E/judge-eslint-base-audit.json`. P1's upgraded config has 86 / 113, so this baseline is not the merged Next 16 rule inventory. |
+| P2-biome.md:198,294, no Biome async-client-component rule | Installed schema, `biome explain noNextAsyncClientComponent`, default and opt-in violating probes | WRONG | Rule exists since 2.2.0; not recommended, therefore off in this config. Default probe exits 0; explicitly enabled probe exits 1 with the expected diagnostic. Finding F5.[6] |
+| P2-biome.md:197,295, no dedicated Biome no-assign-module-variable equivalent | Enumerate installed rule schema; inspect Next rule implementation; matching source probes | CONFIRMED | No dedicated equivalent found in 2.5.15. ESLint flags `const module = {}`; default Biome does not. This is specifically the variable named `module`, not arbitrary server module state. |
+| P2-biome.md:212,296, no-typos is an App Router route-export safeguard | Installed Next 15 and 16 rule source; same typo probe in app/ and pages/ | WRONG | It checks `getStaticProps`, `getStaticPaths`, `getServerSideProps` inside `pages/`; neither version flags the app/ probe. It is not lost App Router export validation. Finding F6.[1] |
+| P2-biome.md:200,297, no dedicated Biome no-css-tags equivalent | Installed rule catalogue; matching local-stylesheet probes in both linters | CONFIRMED | ESLint flags a local manual stylesheet link in app/; landed Biome does not. This check is about stylesheet links, not requiring `next/font`. Finding F7 corrects the report's combined explanation.[3] |
+| P2-biome.md:207,297, no-page-custom-font gap means App Router requires next/font | Installed Next implementation, primary docs, app/ font-link probe | WRONG | No dedicated counterpart found, and ESLint does flag the test link in app/. But this rule's policy is page-only Google Fonts links versus `pages/_document`; it does not enforce mandatory `next/font` usage. Finding F7.[2] |
+| P2-biome.md:208,298, no-script-component-in-head checks literal head in a layout | Installed Next implementation; separate literal head and next/head probes | WRONG | ESLint's rule requires imported `next/head` and `<Head>`. It does not flag the report's literal `<head><Script /></head>` shape. Finding F8.[4] |
+| P2-biome.md:199,210, rules off because they are not in the Next domain / not recommended | Installed `biome explain` for both names, plus default synchronous-script probe | WRONG | Both `noBeforeInteractiveScriptOutsideDocument` and `noSyncScripts` belong to the Next domain. Both are non-recommended and remain off under `next: recommended`. The off-state conclusion holds, but the domain explanation is false. Finding F9.[5] |
+| P2-biome.md:193,337-338, GoogleFontDisplay checks next/font/google but failed to recognize that probe | Installed `biome explain useGoogleFontDisplay` and primary rule docs | WRONG | Its examples and check concern `<link href="https://fonts.googleapis.com/...">` URL display parameters, not `next/font/google` calls. The probe used the wrong API shape. Finding F10.[8] |
+
+## Findings
+
+### F1. P1 names the wrong hooks-plugin major
+
+`P1-next16.md:117-121` says v6. The pinned dependency and fresh install use 7.1.1. The ten reported diagnostics themselves reproduce exactly. This changes the rule-version provenance used for D5 and D7, not the source-location findings.
+
+### F2. Hook-safety coverage exists in Biome, but is opt-in and incomplete here
+
+The absolute statement at `P1-next16.md:134-135` is false. Installed Biome 2.5.15 includes `lint/nursery/useReactCompiler`, available since 2.5.8. It is a nursery rule, not a drop-in parity guarantee, and P2 does not enable it.[7]
+
+I ran it against exact P1 source copies for all seven cited files. It reports the two ref locations, purity location, feedback immutability location, and five of the six set-state-in-effect locations. It misses `checkin-calendar.tsx:82`. It also emits a second diagnostic at habits line 52. Thus there are ten diagnostic messages across nine of the ten original locations. All these opt-in runs exit 0 because the rule defaults to informational severity. `E/judge-probe-results.json` preserves messages and exact spans.
+
+D4 and D7 should distinguish "not enabled", "available in nursery" and "not covered by this version". Do not either discard the entire safety class as impossible in Biome or claim exact parity from this probe. No rule or application code was changed by this review.
+
+### F3. P2's safe-fix manifest is inaccurate, although the actual changes are bounded
+
+`P2-biome.md:117-121` reports 14 files rather than 14 import declarations in 13 files; describes three different regexes as one repeated MEAL regex; and invents two fs-to-node:fs changes. There are no such fs import edits. The deleted ESLint config had unprefixed `path` and `url` imports.
+
+This affects D4's audit trail and D7's confidence in the mechanical-reformat description. It does not establish an application regression. The exhaustive comparison below confirms the actual edits.
+
+### F4. The root Biome configuration does not match the frontend configuration
+
+At `ce2efed`, frontend uses only `rules.preset: recommended`. Root adds twelve warning overrides. Frontend's `assist.actions.source.organizeImports` is `on`; root's is `off`. `P2-biome.md:162-170` therefore cannot justify the overrides as copied frontend policy. Some of the report's claimed nearest ESLint equivalents also do not exist in the baseline rule set.
+
+D4 and D5 need an explicit severity/import-organization policy, rather than an assertion that both sides already lint identically. The actual final lint counts still reproduce.
+
+### F5. Async-client checking is available without retaining ESLint
+
+`P2-biome.md:198,294` mistakes an existing disabled rule for an absent rule. `noNextAsyncClientComponent` exists in the installed version, has error default severity, belongs to the Next domain, and is not recommended.[6]
+
+The same invalid async client component produces no diagnostic under the landed P2 rules and fails when explicitly selected with `--only=correctness/noNextAsyncClientComponent`. This materially changes the "six unavailable App Router rules" conclusion used for D4 and D7. There is a configuration gap, not a tool-capability gap, for this rule.
+
+### F6. no-typos is not App Router export validation
+
+The installed Next 15.5.25 and 16.3.8 implementations inspect Pages Router data-fetching names. A `getServersideProps` typo is diagnosed in `pages/rv-probe.tsx`, but not `app/rv-probe.tsx`, in both versions. The primary docs say the same.[1]
+
+`P2-biome.md:212,296` overstates an App Router regression. This affects D4 and D7's gap prioritization. An independent App Router export-validation requirement would need its own evidence and acceptance test.
+
+### F7. CSS links and font-loading policy were conflated
+
+The stylesheet rule checks manual stylesheet links. The font rule checks page-only Google Font links and the legacy custom Document placement policy. Neither establishes that every App Router font must use `next/font`.[2][3]
+
+I confirmed the legacy font rule still diagnoses the chosen font-link probe under app/, so I do not dismiss it as incapable of running there. What is wrong at `P2-biome.md:297` is the shared explanation and implied mandatory API. D4 and D7 should evaluate the actual patterns, not that explanation.
+
+### F8. The script/head example does not describe the lost rule
+
+`no-script-component-in-head` checks `<Head>` associated with a `next/head` import. Both installed ESLint versions flag that probe and ignore a literal `<head>` containing `<Script>`. The primary docs explicitly name `next/head`.[4]
+
+`P2-biome.md:298` therefore overstates an App Router layout safeguard. The literal layout pattern is not protected by this ESLint rule either. This affects D4 and D7's relevance assessment, not the fact that no dedicated Biome counterpart was found.
+
+### F9. Two disabled script rules do belong to the Next domain
+
+`P2-biome.md:199` incorrectly says `noBeforeInteractiveScriptOutsideDocument` is outside the Next domain. Installed explanations list Next membership for both this rule and `noSyncScripts`. The reason `recommended` does not enable them is that they are non-recommended, not lack of domain membership.[5]
+
+The proposed one-entry opt-in remains possible. D4 and D7 should not infer coverage from domain membership alone.
+
+### F10. The font-display probe tested the wrong API
+
+`P2-biome.md:193,337-338` describes a `next/font/google` call as the target of `useGoogleFontDisplay`. The installed rule explanation and docs show Google Fonts stylesheet-link URL parameters instead.[8]
+
+Failure to flag that call is not evidence that the rule malfunctions. D4 and D7's coverage notes should use the actual supported syntax.
+
+## Exhaustive P2 reformat audit
+
+The review compared `d1b1668` with `ce2efed`; the preceding commit changes configuration, not application source. `compare_ast.cjs` enumerates the changed paths using git rather than a hand-maintained list. It parses both sides with installed TypeScript 5.9.3 and compares recursive node kinds, ordered children, semantic scalar properties, decoded literal/identifier text, JSX text and raw template text. Positions, formatting flags and comments are excluded. Parse diagnostics are empty on all 98 before/after pairs. Its runnable self-check proves that whitespace/quote changes compare equal and value, type-import and JSX-text mutations compare unequal.
+
+Results are in `E/judge-ast-results.json`. Exactly 82 ASTs match and 16 differ. Every changed AST is accounted for below.
+
+| Changed AST category | Exact files or sites | Behavioral assessment |
+| --- | --- | --- |
+| Type imports, 14 declarations in 13 files | `app/(tracker)/workspace/[workspaceId]/daily/daily-entry-panel.tsx`; `lib/audit.ts`; `lib/auth/password-reset.ts`; `lib/auth/route-guard.ts`; `lib/consent.ts` with two imports; `lib/gdpr/export.ts`; `lib/workspace/access.ts`; `lib/workspace/clients.ts`; `lib/workspace/invitations.ts`; `tests/integration/p020a-parameter-classification.test.ts`; `tests/integration/p020b-template-transitions.test.ts`; `tests/integration/p023-onboarding-submission.test.ts`; `tests/integration/s1-e-audit.test.ts` | Type-only references marked explicitly. Root does not enable verbatimModuleSyntax. No runtime value reference removed; full typecheck and builds pass. |
+| Three regex conversions | `lib/extraction/summaries.ts`, MEAL, Day and DAY block rules | Constructor plus String.raw becomes an equivalent literal. Same regex source, no flags on either side, no dynamic expression or escaping change. |
+| Two own-property calls | `lib/onboarding/submissions.ts:159-160` in the final tree | Safe modernization. Parser accepts only a string, uses JSON.parse, checks record shape and exactly two keys before these calls. Inputs cannot supply a callable custom hasOwnProperty while passing that key check. No accepted-input behavior change found. |
+| Mock indexing/assertion | `tests/unit/consent.test.ts:669-670` in the final tree | On a missing mock call, direct indexing throws before the former optional-access-then-where path. Both paths fail the test. No production behavior changes. |
+
+To cover comments and changes that AST comparison intentionally ignores, `canonical_hunks.cjs` also prints every before/after file with comments retained and diffs the results. It leaves residual hunks in 24 files. I read all 353 lines of `E/judge-all-canonical-hunks.patch`, not a sample. Beyond the sixteen AST-changing files, the differences are the documented suppression comments and printer line-wrapping for dynamic imports and test timeout objects. The raw suppression inventory is `E/judge-hunk-summary.json`.
+
+No additional behavior-changing application hunk was found. The only diagnostic-behavior edits are the documented suppression replacements/removals, and the only test failure-path change is the consent mock access noted above. The report's extra fs claim is not an undiscovered source edit.
+
+## Fresh gate results
+
+Scratch worktrees `next16` and `biome` were inherited only after confirming exact HEAD and empty tracked/untracked status. Their earlier logs were ignored. I reran `npm ci`, generated Prisma Client, removed build caches, and ran the complete commands. A new `base-audit` worktree provided an independently installed baseline. Node was v26.7.0 and npm 11.19.0. This is not Node 24 LTS verification.
+
+| Gate | Base 58eb6ed | P1 b603c35 | P2 ce2efed |
+| --- | --- | --- | --- |
+| `npm ci` | 0 | 0 | 0 |
+| `npx --no-install prisma generate` | 0 | 0 | 0 |
+| `npm run typecheck` | 0 | 0 | 0 |
+| `npm run build` | 0 | 0 | 0 |
+| `npm run test` | 0 | 0 | 0 |
+| `npm run lint` | 0, four warnings | 1, ten errors and four warnings | 0, 289 warnings and 42 infos |
+| `npm run format:check` | 0 | Not required or run for P1 | 0 |
+| Test files | 105 passed, 4 skipped, 109 total | 105 passed, 4 skipped, 109 total | 105 passed, 4 skipped, 109 total |
+| Tests | 1306 passed, 23 skipped, 1329 total | 1306 passed, 23 skipped, 1329 total | 1306 passed, 23 skipped, 1329 total |
+
+The scripts are not a combined P1+P2 verification. P2 remains on Next 15.5.25 and React 19.1.0; P1 is on Next 16.3.8 and React 19.3.0. Baseline ESLint has 71 active rules; upgraded P1 has 86. P2's 71-rule matrix cannot establish coverage parity for the combined target stack.
+
+Fresh installs also reported npm audit findings. P1 reported nine high advisories; P2 reported six advisories, one moderate and five high. These are installation output, not an independently triaged security assessment. The historical report's one-moderate audit count is not a current security clearance.
+
+## Could not check
+
+- Historical codemod execution and the exact intermediate states before the producer committed were not independently replayed. The final diff is verified.
+- No GUI, development server, authenticated flow, DB-backed integration suite or Playwright run was started. The task explicitly forbids GUI. Builds and unit tests do not establish Auth.js, Server Action, RSC, caching, accessibility or responsive runtime correctness.
+- D5's Node 24 target was not tested. The provided runner is Node 26.7.0.
+- The complete semantic equivalence of every one of the 71 ESLint rule mappings was not proven. This review directly tests the required six Next-rule claims, reproduces the active-rule inventory, and finds counterexamples to the report's totals/conclusions. Do not treat the remaining mapping rows as independently approved.
+- No combined Next 16 plus Biome branch was built or reviewed. Acceptance for that combined stack remains separate.
+- A lint diagnostic's existence is not a proof that it is a real user-visible defect. In particular, the ten hooks findings were checked as diagnostics at the cited source sites, not repaired or independently classified for runtime impact.
+
+## Method and evidence
+
+Using Poteto Investigation, grounded-citations and Prove It Works. Prove It Works changed the acceptance method from trusting producer logs to fresh pinned-tree gates, complete AST comparison and executable rule counterexamples. Throughput checkpoint: n/a, read-only investigation.
+
+Key replay commands, from the project repository unless a scratch cwd is specified:
+
+```sh
+git diff 58eb6ed b603c35 --stat
+git diff 58eb6ed b603c35
+git diff 58eb6ed d1b1668
+git diff d1b1668 ce2efed
+node /home/nexuslink/.hermes/cache/scratch/vari8-review/RV-A/compare_ast.cjs
+node /home/nexuslink/.hermes/cache/scratch/vari8-review/RV-A/canonical_hunks.cjs
+python /home/nexuslink/.hermes/cache/scratch/vari8-review/RV-A/rule_probes.py
+node /home/nexuslink/.hermes/cache/scratch/vari8-review/RV-A/inspect_lint.cjs base-audit
+node /home/nexuslink/.hermes/cache/scratch/vari8-review/RV-A/inspect_lint.cjs next16
+```
+
+`E/judge-next16-results.json`, `E/judge-biome-results.json` and `E/judge-base-results.json` contain exact commands, exits, durations and raw log paths. The baseline worktree can be recreated with `git worktree add --detach E/base-audit 58eb6ed` and `npm ci`; substitute the absolute scratch path for `E`. Installed Biome explanations and the complete configuration-schema rule catalogue are saved under `E/judge-explain-*.txt` and `E/judge-biome-rule-catalogue.json`. Online docs are supplementary; installed 2.5.15 behavior controls the version-specific conclusions.
+
+## Self-check
+
+| Required item | Result | Evidence |
+| --- | --- | --- |
+| 1. Full P1 stat/diff; complete change list; application-source scope | PASS | Four-file diff read; `E/judge-p1.patch`; no app/frontend changes. |
+| 2. Every changed P2 TS/TSX file; every semantic/comment residual; behavior changes listed | PASS | 98 pairs enumerated, 82 matching / 16 differing ASTs; every residual hunk in 24 canonical-print files inspected; categories above. |
+| 3. Fresh npm ci, typecheck, build, unit tests and lint on each exact branch | PASS | Fresh exit-code records and exact test counts above; P1 lint failure disclosed rather than waived. |
+| 4. All ten react-hooks findings at the cited lines | PASS | Fresh command and API output, ten exact file/line/rule entries in the claim table. |
+| 5. Claimed six App Router rule gaps checked against actual rule behavior/docs | PASS | Installed schema/explain, ESLint 15 and 16 probes, Biome default/opt-in probes; false capability and relevance claims identified. |
+| Reviewer did not edit a reviewed tree or report; no commit/push | PASS | Within Vari8, only this requested report was authored; review scripts and evidence stay in scratch. All three verification trees were clean before cleanup. |
+| Stale worktrees removed; processes stopped | PASS | Earlier unused biome-format-base and the completed base-audit worktree removed with git worktree remove. The two used, clean pinned prototype copies remain for replay. No process has a cwd under E/. |
+| Claim count, result totals, mandatory sections, sources and artifact consistency | PASS | 47 machine-counted claim rows, 34 confirmed / 12 wrong / 1 unverifiable. Mandatory sections and fresh gate/AST/probe artifacts validated by E/final_selfcheck.py; citation ledger verification exits 0. |
+
+## Sources
+
+[1] https://nextjs.org/docs/messages/no-typos
+    > "This rule checks for typos in these exports inside the `pages/` directory:"
+[2] https://nextjs.org/docs/messages/no-page-custom-font
+    > "this only adds the font to the specific page and not the entire application."
+[3] https://nextjs.org/docs/messages/no-css-tags
+    > "A `link` element was used to link to an external stylesheet."
+[4] https://nextjs.org/docs/messages/no-script-component-in-head
+    > "The `next/script` component should not be used in a `next/head` component."
+[5] https://biomejs.dev/linter/domains
+    > "Use this domain inside Next.js projects."
+[6] https://biomejs.dev/linter/rules/no-next-async-client-component
+    > "This rule isn’t recommended, so you need to enable it."
+[7] https://biomejs.dev/linter/rules/use-react-compiler
+    > "This rule runs React Compiler in lint mode and reports the actionable diagnostics it emits."
+[8] https://biomejs.dev/linter/rules/use-google-font-display
+    > "This rule flags the absence of the `display` parameter, or the usage of less optimal values such as `auto`, `block`, or `fallback`."
