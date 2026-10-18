@@ -1,0 +1,3785 @@
+{
+  "source": "icm/02-gap-matrix/output/GAP-MATRIX.md",
+  "generated": "2026-10-18",
+  "statuses": [
+    "UNWIRED",
+    "UNCONFIGURED",
+    "PARTIAL",
+    "MISSING",
+    "CONFLICT",
+    "ROLES"
+  ],
+  "surfaces": [
+    {
+      "id": "S01",
+      "name": "Coach shell, navigation, client roster, client profile"
+    },
+    {
+      "id": "S02",
+      "name": "Messages, notes, media"
+    },
+    {
+      "id": "S03",
+      "name": "Check-ins"
+    },
+    {
+      "id": "S04",
+      "name": "Habits"
+    },
+    {
+      "id": "S05",
+      "name": "Templates, template setup, tracker setup and config"
+    },
+    {
+      "id": "S06",
+      "name": "Nutrition plan, food database, client plan preview"
+    },
+    {
+      "id": "S07",
+      "name": "Training plan, exercise library, muscle volume, roadmap"
+    },
+    {
+      "id": "S08",
+      "name": "Coach dashboard builder and widgets"
+    },
+    {
+      "id": "S09",
+      "name": "Client tracker (today, tracking, trends, week) and client preview"
+    },
+    {
+      "id": "S10",
+      "name": "Appearance, theme, accent, the Ethereal studio"
+    },
+    {
+      "id": "S11",
+      "name": "Identity and access: the canvas has no auth; map its implied users and views (coach vs client, which client is \"me\") to backend auth, roles, invites, onboarding, consent"
+    },
+    {
+      "id": "ROLES",
+      "name": "ROLES decision (round 3)"
+    }
+  ],
+  "summary": {
+    "S01": {
+      "UNWIRED": 1,
+      "UNCONFIGURED": 3,
+      "PARTIAL": 21,
+      "MISSING": 20,
+      "CONFLICT": 0,
+      "ROLES": 0,
+      "total": 45
+    },
+    "S02": {
+      "UNWIRED": 1,
+      "UNCONFIGURED": 0,
+      "PARTIAL": 3,
+      "MISSING": 21,
+      "CONFLICT": 6,
+      "ROLES": 0,
+      "total": 31
+    },
+    "S03": {
+      "UNWIRED": 1,
+      "UNCONFIGURED": 5,
+      "PARTIAL": 14,
+      "MISSING": 4,
+      "CONFLICT": 4,
+      "ROLES": 0,
+      "total": 28
+    },
+    "S04": {
+      "UNWIRED": 0,
+      "UNCONFIGURED": 7,
+      "PARTIAL": 5,
+      "MISSING": 1,
+      "CONFLICT": 0,
+      "ROLES": 0,
+      "total": 13
+    },
+    "S05": {
+      "UNWIRED": 0,
+      "UNCONFIGURED": 1,
+      "PARTIAL": 13,
+      "MISSING": 13,
+      "CONFLICT": 2,
+      "ROLES": 0,
+      "total": 29
+    },
+    "S06": {
+      "UNWIRED": 1,
+      "UNCONFIGURED": 1,
+      "PARTIAL": 10,
+      "MISSING": 6,
+      "CONFLICT": 11,
+      "ROLES": 0,
+      "total": 29
+    },
+    "S07": {
+      "UNWIRED": 1,
+      "UNCONFIGURED": 3,
+      "PARTIAL": 15,
+      "MISSING": 8,
+      "CONFLICT": 2,
+      "ROLES": 2,
+      "total": 31
+    },
+    "S08": {
+      "UNWIRED": 11,
+      "UNCONFIGURED": 4,
+      "PARTIAL": 9,
+      "MISSING": 18,
+      "CONFLICT": 1,
+      "ROLES": 0,
+      "total": 43
+    },
+    "S09": {
+      "UNWIRED": 1,
+      "UNCONFIGURED": 5,
+      "PARTIAL": 16,
+      "MISSING": 9,
+      "CONFLICT": 3,
+      "ROLES": 1,
+      "total": 35
+    },
+    "S10": {
+      "UNWIRED": 3,
+      "UNCONFIGURED": 3,
+      "PARTIAL": 5,
+      "MISSING": 10,
+      "CONFLICT": 0,
+      "ROLES": 0,
+      "total": 21
+    },
+    "S11": {
+      "UNWIRED": 6,
+      "UNCONFIGURED": 5,
+      "PARTIAL": 9,
+      "MISSING": 8,
+      "CONFLICT": 1,
+      "ROLES": 1,
+      "total": 30
+    },
+    "ROLES": {
+      "UNWIRED": 0,
+      "UNCONFIGURED": 0,
+      "PARTIAL": 0,
+      "MISSING": 0,
+      "CONFLICT": 0,
+      "ROLES": 3,
+      "total": 3
+    }
+  },
+  "totals": {
+    "UNWIRED": 26,
+    "UNCONFIGURED": 37,
+    "PARTIAL": 120,
+    "MISSING": 118,
+    "CONFLICT": 30,
+    "ROLES": 7,
+    "total": 338
+  },
+  "rows": [
+    {
+      "id": "S01-01",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "/coach page mounts the whole workspace client-side inside Suspense",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-02",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Sidebar brand: uploaded logo image or \"infinity.\" wordmark plus \"COACH WORKSPACE\" label",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-03",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Section nav: Clients, Templates, Check-ins, Messages, Notes & to-dos",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-04",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Nav count badges: pending check-ins and unread messages",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-05",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Account block: initials avatar, coach name, \"Coach\" role, opens preferences dialog",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-06",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Sidebar collapse toggle with persisted state",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-07",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Utility header breadcrumb: Workspace / Section / Editor",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-08",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Dark/light mode toggle in header",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-09",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "\"Local demo\" / \"Session only\" storage indicator",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-10",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Workspace preferences dialog: accent picker, logo upload, availability text, in-app notification toggles, reset-mockup",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-11",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Toast notice with Undo action",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-12",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Client-side route model ?section&client&editor&review&plan&tab + navigation guard ref",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-13",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Whole-state persistence: localStorage key coach-desktop-mockup-v1, isCoachState validation, migrate+normalize on hydrate",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-14",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Client roster list: all non-archived clients with avatar, name, label, phase/week, assignment, next check-in, attention signals",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-15",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Roster search box (matches name, label, phase, assigned template name)",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-16",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Roster filter select: All athletes / Needs attention / Unread messages",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-17",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Roster sort select: Name / Attention / Next check-in",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-18",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Table vs card view toggle",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-19",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Roster columns \"Assigned template\" and \"Next check-in\", card \"Coaching since\"",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-20",
+      "surface": "S01",
+      "status": "UNWIRED",
+      "element": "Client create — not drawn in canvas (roster has no Add/New control; seed clients only)",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-21",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Client edit/archive: canvas stores archived (consumed by roster/messages/notes filters) and name; no edit UI drawn",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-22",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Client profile header: avatar, name, label, phase, week, email, coaching since, height cm, next check-in summary",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-23",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Profile header actions: \"Check-in calendar\" and \"Open chat\" with unread count",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-24",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Profile tab bar: Overview / Plans / Check-ins / Notes & tasks / Onboarding (via ?tab=)",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-25",
+      "surface": "S01",
+      "status": "UNCONFIGURED",
+      "element": "Overview \"Client setup\" card: current bodyweight stat",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-26",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Overview \"Client setup\" card: assigned template summary (name, views, nutrition mode, habits on/off) + \"Preview assigned tool\"",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-27",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "\"Assign template\" / \"Change assignment\" dialog with setup review and Assign & personalize",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-28",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "\"Coaching rhythm\" weekday toggles: multi-day recurring schedule effective tomorrow, history retained",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-29",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Additional dates list + Add/Reschedule dialog (athlete, date, type Full/Custom, note to athlete, duplicate guard)",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-30",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Per-client \"Allow priority flags\" toggle (priority messages)",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-31",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Notes & tasks tab: private coach notes (visible only in workspace) + general coaching notes",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-32",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Coach to-dos per client (checkbox list, add)",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-33",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Client-assigned tasks: add (dueDate = today+7 fixed), list with checkbox, overdue/completed counts",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-34",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Check-ins tab: submission history rows (date, type, note/answer preview, status, open review)",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-35",
+      "surface": "S01",
+      "status": "UNCONFIGURED",
+      "element": "Onboarding tab: submitted onboarding Q&A retained with the profile",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-36",
+      "surface": "S01",
+      "status": "UNCONFIGURED",
+      "element": "Store slice: templates + editorDrafts (owned by templates surface)",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-37",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Store slices: submissions + reviewDrafts + extras + schedules (owned by check-ins surface)",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-38",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Store slices: messages + drafts + media attachments (owned by messages surface)",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-39",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Store slices: client.plans, habits, retiredHabits, entries, exerciseLibrary, coach-level plan (owned by plans/habits/daily surfaces)",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-40",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Store slices: coachNotes + coachTodos top-level (owned by notes surface)",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S01-41",
+      "surface": "S01",
+      "status": "PARTIAL",
+      "element": "Shared canvas UI primitives + polish styles (Button, IconButton, Avatar, SearchBox, Select, Toggle, Empty, Dialog, PageTitle, Surface, Transition, Status, previews)",
+      "detail": "S01-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V1-C6",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Empty roster state, “No athletes match” with Clear filters",
+      "detail": "S01 shell roster, clients.tsx:149-164",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V1-C7",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Athlete not found state with Back to athletes",
+      "detail": "S01 shell roster, clients.tsx:93-107",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-L1-CoachState",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "CoachState aggregate has no backend equivalent",
+      "detail": "S01 shell, coach/model.ts:714-739",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "R3-1",
+      "surface": "S01",
+      "status": "MISSING",
+      "element": "Global user reduced-motion policy (MotionConfig at the root)",
+      "detail": "R3-JUDGED G1-01, CONFIRMED. Canvas `frontend/src/components/motion-provider.tsx:6-8`, `frontend/src/app/layout.tsx:20`; backend none for MotionConfig (searched root `app/`, `components/`, `lib/`), `app/layout.tsx:10-29` has no provider, `app/globals.css:1439-1443,1512-1515` covers only selected CSS transitions",
+      "round3": true,
+      "decision": null
+    },
+    {
+      "id": "S02-01",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Conversations panel: search, All/Unread/Flagged tabs, per-client rows (avatar, name, last-message time, excerpt or \"Draft:\" prefix, unread badge, priority flag icon)",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-02",
+      "surface": "S02",
+      "status": "PARTIAL",
+      "element": "Chat header: back button, avatar, athlete name + \"label · phase\" link to profile, thread-search toggle, context-panel toggle",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-03",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Thread search bar + match count inside a conversation",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-04",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Message thread: date dividers, text bubbles by sender, attachments via MediaCard, context links, per-message time, empty state",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-05",
+      "surface": "S02",
+      "status": "CONFLICT",
+      "element": "Read state: unread badges, auto mark-read on open, per-message \"read\" indicator with check icon on coach messages",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": "#112"
+    },
+    {
+      "id": "S02-06",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Priority flag: flag toggle on client messages, priority bubble label, per-athlete priorityMessages permission + context-panel display; managed on the client profile",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-07",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Composer: textarea, Enter to send / Shift+Enter newline, Send button, per-client draft persistence (text + attachments + link survive navigation via localStorage)",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-08",
+      "surface": "S02",
+      "status": "CONFLICT",
+      "element": "Attachment affordance: \"Choose photo, video or file\" picker, 20 MB client-side cap, preview strip with remove, file input",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": "#96, #101, #112"
+    },
+    {
+      "id": "S02-09",
+      "surface": "S02",
+      "status": "CONFLICT",
+      "element": "Context links in composer and bubbles: \"Link nutrition plan\", \"Link training program\", \"Link latest check-in\", rendered as in-bubble nav buttons",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": "#112"
+    },
+    {
+      "id": "S02-10",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Emoji picker (fixed 8-emoji grid inserting into draft)",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-11",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Reusable replies menu (3 hardcoded SNIPPETS appended to draft)",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-12",
+      "surface": "S02",
+      "status": "CONFLICT",
+      "element": "Voice note button + dialog using DemoRecorder kind=\"voice\" (synthesized demo wav, attach to draft)",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": "#96, #112"
+    },
+    {
+      "id": "S02-13",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "\"New message\" scroll pill + per-thread scroll-position memory",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-14",
+      "surface": "S02",
+      "status": "PARTIAL",
+      "element": "AthleteContext side panel: avatar, name, \"phase · Week n\", next check-in + Open calendar, assigned template + tab count, priority permission display, awaiting-check-in/profile/plan link buttons",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-15",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Coach availability caption under the Messages title (\"Weekdays · 09:00–18:00\")",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-16",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Welcome/empty states: \"A conversation, with the whole picture\" panel and \"Say hello to {name}\" empty thread",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-17",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Notes toolbar: search box + scope select (\"Everyone & workspace\" / \"Workspace only\" / per athlete)",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-18",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Private notes column, workspace scope: list, count, edit/delete",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-19",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Client-linked private notes: same list rows with athlete owner chip; stored on client.internalNotes",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-20",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Workspace to-dos: Open/Completed/All status tabs, checkbox toggle, edit/delete",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-21",
+      "surface": "S02",
+      "status": "PARTIAL",
+      "element": "Client-linked to-dos (client.coachTasks {id,title,complete}) in the same column with athlete owner chip",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-22",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Add/Edit dialog for notes and to-dos: \"Keep in\" destination select (workspace vs athlete), textarea, Save; delete with undo toast",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-23",
+      "surface": "S02",
+      "status": "UNWIRED",
+      "element": "Owner chip on note/todo rows linking to the athlete profile",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S02-24",
+      "surface": "S02",
+      "status": "CONFLICT",
+      "element": "MediaCard: type icon, name, size/\"Local demo media\" label, remove; image preview link, audio/video players, download link; \"Media kept as metadata after reload. Reattach to preview.\" fallback",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": "#101, #112"
+    },
+    {
+      "id": "S02-25",
+      "surface": "S02",
+      "status": "CONFLICT",
+      "element": "DemoRecorder: record → preview → discard/attach for \"voice\" (synthesized wav) and \"video\" (canvas-capture webm); used for voice notes here and video feedback in check-ins",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": "#96, #112"
+    },
+    {
+      "id": "S02-26",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Persisted workspace shape: messages, drafts, notes, todos, media metadata under localStorage key \"coach-desktop-mockup-v1\"; blobs are session-only object URLs revoked on unload",
+      "detail": "S02-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V1-X2",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Load demo audio preview button",
+      "detail": "S02 messages media, media.tsx:107-111",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-L1-Media",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Media type has no backend model",
+      "detail": "S02 messages media, coach/model.ts:666-672",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-L1-Message",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "Message type has no backend model",
+      "detail": "S02 messages, coach/model.ts:673-685",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-L1-CoachTask",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "CoachTask and coachTodos have no backend model",
+      "detail": "S02 notes, clients/model.ts:14",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-L1-ClientNote",
+      "surface": "S02",
+      "status": "MISSING",
+      "element": "ClientNote, internalNotes and generalNotes have no backend model",
+      "detail": "S02 notes, clients/model.ts:22,31-32",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V2-WS04",
+      "surface": "S03",
+      "status": "PARTIAL",
+      "element": "Check-in schedule card in setup page",
+      "detail": "S03 check-ins, workspace.tsx:199",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-01",
+      "surface": "S03",
+      "status": "MISSING",
+      "element": "Coach \"Check-ins\" page shell, one workspace-wide board for all athletes",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-02",
+      "surface": "S03",
+      "status": "PARTIAL",
+      "element": "Calendar board: Week 7-column, Month grid, Agenda list, prev/next/Today, per-day add buttons; events for every athlete in range",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-03",
+      "surface": "S03",
+      "status": "PARTIAL",
+      "element": "Filters: Athlete select, Status select, \"Europe/Vienna · Monday first\" caption",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-04",
+      "surface": "S03",
+      "status": "UNCONFIGURED",
+      "element": "\"N awaiting feedback\" pending count",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-05",
+      "surface": "S03",
+      "status": "PARTIAL",
+      "element": "Event status values: Scheduled / Overdue / Awaiting feedback / Feedback sent",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-06",
+      "surface": "S03",
+      "status": "PARTIAL",
+      "element": "Event chip: athlete avatar + name, \"origin · type\" label",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-07",
+      "surface": "S03",
+      "status": "PARTIAL",
+      "element": "Event detail popover: \"Check-in details\", date, status, Origin, Update rows, extra note, Open review/feedback, Open conversation, View athlete profile",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-08",
+      "surface": "S03",
+      "status": "PARTIAL",
+      "element": "\"Add extra date\" dialog: athlete, date (min today), \"Requested update\" Custom/Full, note to athlete, duplicate guard",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-09",
+      "surface": "S03",
+      "status": "PARTIAL",
+      "element": "Reschedule additional date / Remove additional date with undo toast",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-10",
+      "surface": "S03",
+      "status": "PARTIAL",
+      "element": "Recurring weekly check-in schedule: weekday toggles, effective from tomorrow, history retained",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-11",
+      "surface": "S03",
+      "status": "CONFLICT",
+      "element": "Recurring occurrences auto-appear on the calendar derived from the schedule, unbounded horizon",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": "#114"
+    },
+    {
+      "id": "S03-12",
+      "surface": "S03",
+      "status": "UNCONFIGURED",
+      "element": "Review workspace mount via route.review deep link",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-13",
+      "surface": "S03",
+      "status": "PARTIAL",
+      "element": "\"In X's words\" answer list + athlete note",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-14",
+      "surface": "S03",
+      "status": "MISSING",
+      "element": "Submitted visuals grid + lightbox dialog",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-15",
+      "surface": "S03",
+      "status": "PARTIAL",
+      "element": "\"Tracker & progress\" panel inside review: parameter values, habit consistency, 7-day entries table",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-16",
+      "surface": "S03",
+      "status": "MISSING",
+      "element": "Flagged training notes panel (exercise, set, date, note, open training setup)",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-17",
+      "surface": "S03",
+      "status": "PARTIAL",
+      "element": "Sent-feedback view: text, sent date, \"Sent locally\" caption",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-18",
+      "surface": "S03",
+      "status": "CONFLICT",
+      "element": "Video feedback: DemoRecorder attach + MediaCard in draft and sent feedback",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": "#101, #112"
+    },
+    {
+      "id": "S03-19",
+      "surface": "S03",
+      "status": "CONFLICT",
+      "element": "Plan adjustments bundled with feedback: Nutrition/Training activated cards, \"Changes included with feedback\" list, \"View updated client plan\" links",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": "#114"
+    },
+    {
+      "id": "S03-20",
+      "surface": "S03",
+      "status": "CONFLICT",
+      "element": "Feedback lands in the client conversation as a message with links; \"View in conversation\"",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": "#96, #112"
+    },
+    {
+      "id": "S03-21",
+      "surface": "S03",
+      "status": "MISSING",
+      "element": "Composer draft auto-kept per submission (\"Draft kept automatically. Opening a review does not mark it answered.\")",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-22",
+      "surface": "S03",
+      "status": "PARTIAL",
+      "element": "\"Submit feedback\" single click marks the submission answered and sends",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-23",
+      "surface": "S03",
+      "status": "UNCONFIGURED",
+      "element": "Client fills and submits the check-in questionnaire (implied data source; canvas draws no client UI)",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-24",
+      "surface": "S03",
+      "status": "UNCONFIGURED",
+      "element": "Submission history list on client profile \"Check-ins\" tab (cross-surface, drawn in clients.tsx)",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S03-25",
+      "surface": "S03",
+      "status": "PARTIAL",
+      "element": "Check-in question set per template variant: label, type, required, options",
+      "detail": "S03-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-CP15",
+      "surface": "S03",
+      "status": "UNCONFIGURED",
+      "element": "Check-in form preview in client preview",
+      "detail": "S03 check-ins, client-preview.tsx:842,852",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "R3-15",
+      "surface": "S03",
+      "status": "UNWIRED",
+      "element": "Map ordinary server rejection and stale/conflict states to canvas messages (check-in and onboarding writes)",
+      "detail": "R3-JUDGED G6-201, CONFIRMED. Canvas `frontend/src/components/coach/templates.tsx:499-502,600-602`, `frontend/src/components/coach/check-ins.tsx:753`; backend `lib/checkin/forms.ts:33-41`, `lib/checkin/instances.ts:57-66`, `lib/onboarding/forms.ts:21-29`. The consent-only `consent_missing` / `policy_not_configured` subclaim is parked (see parked appendix)",
+      "round3": true,
+      "decision": null
+    },
+    {
+      "id": "S04-01",
+      "surface": "S04",
+      "status": "UNCONFIGURED",
+      "element": "Habits tab header: title, today's date line, \"N of M checked today\"",
+      "detail": "S04-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S04-02",
+      "surface": "S04",
+      "status": "UNCONFIGURED",
+      "element": "Week strip, Mon-Sun, today highlighted",
+      "detail": "S04-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S04-03",
+      "surface": "S04",
+      "status": "UNCONFIGURED",
+      "element": "Filter buttons All / To do / Done + filtered-empty block",
+      "detail": "S04-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S04-04",
+      "surface": "S04",
+      "status": "PARTIAL",
+      "element": "Habit row: name, \"frequency · goal\" line, reason paragraph, state pill",
+      "detail": "S04-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S04-05",
+      "surface": "S04",
+      "status": "UNCONFIGURED",
+      "element": "Done toggle button with animated check (Mark done / Undo)",
+      "detail": "S04-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S04-06",
+      "surface": "S04",
+      "status": "UNCONFIGURED",
+      "element": "Empty states: \"No habits set up / defined in client setup\" and filtered-empty \"Show all habits\"",
+      "detail": "S04-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S04-07",
+      "surface": "S04",
+      "status": "PARTIAL",
+      "element": "\"Recorded completions\" aside: per-habit cumulative completed count + frequency/goal + \"dated habit history is not available\" note",
+      "detail": "S04-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S04-08",
+      "surface": "S04",
+      "status": "PARTIAL",
+      "element": "Coach habit manager: list with \"{n} completions\", add/edit form (name, frequency, goal, reason), archive to retiredHabits",
+      "detail": "S04-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S04-09",
+      "surface": "S04",
+      "status": "PARTIAL",
+      "element": "Template-level \"Include Habit Tracker\" toggle + preview + gating of the client Habits tab on variant.habits; \"Habits: enabled/off\" shown in assign dialog and profile summary",
+      "detail": "S04-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S04-10",
+      "surface": "S04",
+      "status": "MISSING",
+      "element": "\"Include habit status in check-ins\" toggle + check-in review row \"Habit consistency X / 7 days\"",
+      "detail": "S04-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S04-11",
+      "surface": "S04",
+      "status": "UNCONFIGURED",
+      "element": "Plans-summary \"Habits\" module row (count, \"Edit/Configure habits\" nav) gated on setup.habits; disabled-state empty \"Habit Tracker is not enabled\"",
+      "detail": "S04-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S04-12",
+      "surface": "S04",
+      "status": "PARTIAL",
+      "element": "Persisted canvas shape: CoachClient.habits[] + retiredHabits[] inside coach-desktop-mockup-v1 localStorage state",
+      "detail": "S04-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S04-13",
+      "surface": "S04",
+      "status": "UNCONFIGURED",
+      "element": "Builder widgets \"Today's habits\" (TL21) and \"Habit consistency\" (TL22) over HabitRecord{scheduledDates,completions[date,status done/skipped]}",
+      "detail": "S04-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-01",
+      "surface": "S05",
+      "status": "PARTIAL",
+      "element": "Template library screen: search box, count, template cards showing name, description, view/habit/nutrition tags, assigned-client count, edited date",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-02",
+      "surface": "S05",
+      "status": "PARTIAL",
+      "element": "Add template + \"Resume draft\" chips across drafts",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-03",
+      "surface": "S05",
+      "status": "MISSING",
+      "element": "Duplicate template (\"Independent copy created\")",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-04",
+      "surface": "S05",
+      "status": "UNCONFIGURED",
+      "element": "Rename template dialog",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-05",
+      "surface": "S05",
+      "status": "CONFLICT",
+      "element": "Delete template with undo toast; assigned clients keep their snapshot",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": "#44"
+    },
+    {
+      "id": "S05-06",
+      "surface": "S05",
+      "status": "PARTIAL",
+      "element": "Preview template dialog (full multi-tab client preview)",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-07",
+      "surface": "S05",
+      "status": "PARTIAL",
+      "element": "Assign dialog: client picker (search, non-archived), config summary, \"Assign & personalize\"; also inline assign in client profile",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-08",
+      "surface": "S05",
+      "status": "PARTIAL",
+      "element": "Editor shell: name input, unsaved-draft state, save (Cmd+S), restore saved, discard, leave/exit guard, section nav",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-09",
+      "surface": "S05",
+      "status": "MISSING",
+      "element": "Tabs section: description textarea + per-tab toggles (Dashboard, Tracker, Timeline/Roadmap, Nutrition, Training Program, Check-In) + Habits toggle",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-10",
+      "surface": "S05",
+      "status": "MISSING",
+      "element": "Dashboard config section (CoachDashboardEditor, bindDashboardUnits)",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-11",
+      "surface": "S05",
+      "status": "PARTIAL",
+      "element": "Tracker \"Daily fields\": ordered list, add/remove/reorder rows",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-12",
+      "surface": "S05",
+      "status": "PARTIAL",
+      "element": "Per-field settings: unit Select from parameter.units, choice-labels textarea (field.options override), period-start note",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-13",
+      "surface": "S05",
+      "status": "PARTIAL",
+      "element": "\"Add parameter\" library browser: grouped by category, search, availability counts, per-item Add",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-14",
+      "surface": "S05",
+      "status": "PARTIAL",
+      "element": "\"Include cycle tracking\" toggle, auto-adds bleeding-level + period-start, hides cycle params when off",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-15",
+      "surface": "S05",
+      "status": "MISSING",
+      "element": "\"Daily overview\" metric pins: up to 4 numeric fields, reorder/remove, add via select",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-16",
+      "surface": "S05",
+      "status": "MISSING",
+      "element": "Roadmap config: per-compatible-field toggle, calculation select (Weekly average/Trend/Target vs actual/Adherence), comparison flag",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-17",
+      "surface": "S05",
+      "status": "MISSING",
+      "element": "Phase selection toggle + comma-separated phase options",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-18",
+      "surface": "S05",
+      "status": "MISSING",
+      "element": "Nutrition mode segmented control (Meal plan / IIFYM macro targets)",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-19",
+      "surface": "S05",
+      "status": "PARTIAL",
+      "element": "Training section: eight prescription-field checkboxes",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-20",
+      "surface": "S05",
+      "status": "MISSING",
+      "element": "Reusable set choices: editable option lists + default per setType/progression/tempo/rest",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-21",
+      "surface": "S05",
+      "status": "MISSING",
+      "element": "Volume display toggle, breakdown label (\"Muscle groups / week\"), presentation Table/Heatmap",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-22",
+      "surface": "S05",
+      "status": "PARTIAL",
+      "element": "Check-In section: question CRUD (label, type, options, required, reorder, duplicate), included-summaries checkboxes, form preview (Full form/Custom update)",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-23",
+      "surface": "S05",
+      "status": "MISSING",
+      "element": "Habits section: Include Habit Tracker toggle, preview, \"Include habit status in check-ins\"",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S05-24",
+      "surface": "S05",
+      "status": "CONFLICT",
+      "element": "Variant machinery: variants[], defaultVariant, legacyConfigurations, Assignment.variantId, switchVariant, templateSetup/normalizeTemplateSetups collapse",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": "#63"
+    },
+    {
+      "id": "S05-25",
+      "surface": "S05",
+      "status": "MISSING",
+      "element": "Whole-state persistence: localStorage STORAGE_KEY, isCoachState validation, migrate + normalize on hydrate, \"kept on this device\" copy",
+      "detail": "S05-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-L1-Plan",
+      "surface": "S05",
+      "status": "MISSING",
+      "element": "Flat Plan entity has no backend model",
+      "detail": "S05 templates, coach/model.ts:635-643",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-L1-PlanVersion",
+      "surface": "S05",
+      "status": "PARTIAL",
+      "element": "PlanVersion type differs from backend plan versioning",
+      "detail": "S05 templates, plans/types.ts:6-11",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-L1-PlanLifecycle",
+      "surface": "S05",
+      "status": "PARTIAL",
+      "element": "PlanLifecycle type differs from backend lifecycle",
+      "detail": "S05 templates, plans/types.ts:12-16",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-L1-ClientPlans",
+      "surface": "S05",
+      "status": "MISSING",
+      "element": "ClientPlans aggregate has no backend equivalent",
+      "detail": "S05 templates, plans/types.ts:74-81",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-CO02",
+      "surface": "S06",
+      "status": "CONFLICT",
+      "element": "Nutrition totals computed automatically",
+      "detail": "S06 nutrition, mealplan-workspace.tsx:850-857; decision #115",
+      "round3": false,
+      "decision": "#115"
+    },
+    {
+      "id": "S06-01",
+      "surface": "S06",
+      "status": "PARTIAL",
+      "element": "Plan lifecycle: draft + single active + history + archive, status labels, date-applicable selection",
+      "detail": "S06-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S06-02",
+      "surface": "S06",
+      "status": "PARTIAL",
+      "element": "Plan name + startDate fields",
+      "detail": "S06-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S06-03",
+      "surface": "S06",
+      "status": "UNCONFIGURED",
+      "element": "Variant (\"option\") tabs: add, rename, duplicate, delete options",
+      "detail": "S06-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S06-04",
+      "surface": "S06",
+      "status": "PARTIAL",
+      "element": "Meal rows: name, time, frequency; add/remove/duplicate/reorder meals",
+      "detail": "S06-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S06-05",
+      "surface": "S06",
+      "status": "MISSING",
+      "element": "Food portions inside a meal: food row = catalog food + quantity in food's own unit",
+      "detail": "S06-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S06-06",
+      "surface": "S06",
+      "status": "MISSING",
+      "element": "Approved alternatives (\"Swap\" per portion: alt food + equivalent quantity + optional note)",
+      "detail": "S06-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S06-07",
+      "surface": "S06",
+      "status": "CONFLICT",
+      "element": "Per-portion, per-meal and per-variant computed kcal/P/C/F display",
+      "detail": "S06-*.md",
+      "round3": false,
+      "decision": "#115"
+    },
+    {
+      "id": "S06-08",
+      "surface": "S06",
+      "status": "CONFLICT",
+      "element": "Macro-energy distribution ring (P/C/F % at 4/4/9) in overview + IIFYM preview",
+      "detail": "S06-*.md",
+      "round3": false,
+      "decision": "#115"
+    },
+    {
+      "id": "S06-09",
+      "surface": "S06",
+      "status": "MISSING",
+      "element": "Variant schedule: Every day / Weekly (training+rest roles, weekday strip, custom weekdays) / Repeating cycle (anchor date + steps 1–28d, ≤365d)",
+      "detail": "S06-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S06-10",
+      "surface": "S06",
+      "status": "MISSING",
+      "element": "Saved meals library: save meal, search by meal/food, rename, duplicate, delete with undo, load into meal",
+      "detail": "S06-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S06-11",
+      "surface": "S06",
+      "status": "PARTIAL",
+      "element": "Food database: 584 foods {id,name,amount,unit,protein,carbs,fat,calories} powering pickers + nutrient math",
+      "detail": "S06-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S06-12",
+      "surface": "S06",
+      "status": "PARTIAL",
+      "element": "DatePicker + TimePicker themed popovers (calendar grid, Apply-commit time edit, Today/Clear)",
+      "detail": "S06-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S06-13",
+      "surface": "S06",
+      "status": "PARTIAL",
+      "element": "Client plan preview: \"Prepared for {client}\", variant label, schedule instruction text, per-meal food/portion/swap table, meal totals",
+      "detail": "S06-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S06-14",
+      "surface": "S06",
+      "status": "PARTIAL",
+      "element": "IIFYM editor: named target options; style Calories\\|Macros; per-field Fixed\\|Range\\|Minimum values",
+      "detail": "S06-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S06-15",
+      "surface": "S06",
+      "status": "CONFLICT",
+      "element": "IIFYM preview: target text, derived ~kcal from macro targets at 4/4/9, macro ring, schedule text",
+      "detail": "S06-*.md",
+      "round3": false,
+      "decision": "#115"
+    },
+    {
+      "id": "S06-16",
+      "surface": "S06",
+      "status": "PARTIAL",
+      "element": "Plan validation on save/activate (name, valid start date, ≥1 option w/ positive portions, label/time validity, food refs exist, schedule completeness)",
+      "detail": "S06-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V2-H2",
+      "surface": "S06",
+      "status": "CONFLICT",
+      "element": "Blank numeric inputs saved as zero, violates missing-is-not-zero",
+      "detail": "S06 nutrition, editor.tsx:1009; decision #115/#36 per V2",
+      "round3": false,
+      "decision": "#36, #115"
+    },
+    {
+      "id": "V3-CP09",
+      "surface": "S06",
+      "status": "MISSING",
+      "element": "IIFYM day cards for training and rest days",
+      "detail": "S06 nutrition, client-preview.tsx:470,478",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-CP10",
+      "surface": "S06",
+      "status": "CONFLICT",
+      "element": "IIFYM macro distribution ring",
+      "detail": "S06 nutrition, client-preview.tsx:496,498; decision #115",
+      "round3": false,
+      "decision": "#115"
+    },
+    {
+      "id": "V3-CP11",
+      "surface": "S06",
+      "status": "UNWIRED",
+      "element": "ClientPlanPreview meal plan panel",
+      "detail": "S06 nutrition, client-preview.tsx:560,562",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-L1-IIFYM",
+      "surface": "S06",
+      "status": "MISSING",
+      "element": "IifymOption and IifymPlan have no backend equivalent",
+      "detail": "S06 nutrition, plans/types.ts:17-25",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "R3-3",
+      "surface": "S06",
+      "status": "PARTIAL",
+      "element": "Nutrition rolling window and declared as-of date",
+      "detail": "R3-JUDGED G4-07, CORRECTED. Canvas `frontend/src/components/coach/builder/nutrition-content.tsx:80-97`, `frontend/src/components/coach/builder/nutrition-history.tsx:23-31`; backend `lib/habits/date.ts:136-147`, `lib/habits/service.ts:1059-1063`, no nutrition feed (searched `lib/mealplan/`, `lib/nutrition/`, `db/schema.prisma` for macroIntake/calorieIntake)",
+      "round3": true,
+      "decision": null
+    },
+    {
+      "id": "R3-4",
+      "surface": "S06",
+      "status": "CONFLICT",
+      "element": "Computed attainment and below/above/minimum status",
+      "detail": "R3-JUDGED G4-08, CONFIRMED. Canvas `frontend/src/components/coach/builder/nutrition-content.tsx:109-129`, `frontend/src/components/ethereal/builder/nutrition-content.tsx:109`; backend `lib/mealplan/payload.ts:16-17,40-51`, `docs/product-decisions.md:1653-1657` (decision #115)",
+      "round3": true,
+      "decision": "#115 (docs/product-decisions.md:1653-1657)"
+    },
+    {
+      "id": "R3-5",
+      "surface": "S06",
+      "status": "CONFLICT",
+      "element": "Fixed-target percent and ring fill",
+      "detail": "R3-JUDGED G4-09, CONFIRMED. Canvas `frontend/src/components/coach/builder/nutrition-content.tsx:202-222,643`, `frontend/src/components/ethereal/builder/nutrition-content.tsx:217-222`; backend `lib/mealplan/payload.ts:16-17`, `docs/product-decisions.md:1653-1657` (decision #115)",
+      "round3": true,
+      "decision": "#115 (docs/product-decisions.md:1653-1657)"
+    },
+    {
+      "id": "R3-6",
+      "surface": "S06",
+      "status": "PARTIAL",
+      "element": "Configured TD/NTD/active source mapping",
+      "detail": "R3-JUDGED G4-10, CORRECTED. Canvas `frontend/src/components/coach/builder/nutrition-content.tsx:30-32`, `frontend/src/components/ethereal/builder/nutrition-content.tsx:30-32`; backend `lib/dashboard/config-schema.ts:104-105`, `lib/mealplan/payload.ts:40-73",
+      "round3": true,
+      "decision": null
+    },
+    {
+      "id": "R3-9",
+      "surface": "S06",
+      "status": "CONFLICT",
+      "element": "Weekly/monthly means of intake and target bounds",
+      "detail": "R3-JUDGED G4-14, CONFIRMED. Canvas `frontend/src/components/coach/builder/nutrition-history.tsx:126-164`, `frontend/src/components/ethereal/builder/nutrition-history.tsx:126-164`; backend `lib/mealplan/payload.ts:16-17,148-172`, `docs/product-decisions.md:1653-1656` (decision #115)",
+      "round3": true,
+      "decision": "#115 (docs/product-decisions.md:1653-1656)"
+    },
+    {
+      "id": "R3-11",
+      "surface": "S06",
+      "status": "CONFLICT",
+      "element": "Collapsing a range target to one midpoint",
+      "detail": "R3-JUDGED G4-18, CONFIRMED. Canvas `frontend/src/components/coach/client-preview.tsx:408-411`, `frontend/src/components/coach/plans/domain.ts:195-200`; backend `lib/mealplan/payload.ts:43-44,148-172`, `docs/product-decisions.md:1653-1656` (decision #115)",
+      "round3": true,
+      "decision": "#115 (docs/product-decisions.md:1653-1656)"
+    },
+    {
+      "id": "R3-14",
+      "surface": "S06",
+      "status": "CONFLICT",
+      "element": "Automatic starter meals, food picks and quantities",
+      "detail": "R3-JUDGED G4-53, CONFIRMED. Canvas `frontend/src/components/ethereal/mealplan/model.ts:353-420,431-438`, `frontend/src/components/ethereal/mealplan/mealplan-workspace.tsx:176`; backend `lib/mealplan/payload.ts:53-78`, `docs/product-decisions.md:1653-1657` (decision #115), none for scaffold/recommendation (searched `lib/mealplan/`, `lib/nutrition/`, `db/schema.prisma`)",
+      "round3": true,
+      "decision": "#115 (docs/product-decisions.md:1653-1657)"
+    },
+    {
+      "id": "S07-01",
+      "surface": "S07",
+      "status": "PARTIAL",
+      "element": "Plans & targets \"Training\" module row: lifecycle status, plan name, start date, \"N sessions · N weeks / Ongoing\" detail",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-02",
+      "surface": "S07",
+      "status": "PARTIAL",
+      "element": "Plan meta: name input, \"Starts\" date picker, active-plan line; toolbar History/Preview draft/Save draft/Review & activate",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-03",
+      "surface": "S07",
+      "status": "UNCONFIGURED",
+      "element": "Draft persistence + unsaved-changes guard + \"Saved draft and active client content are separate\"",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-04",
+      "surface": "S07",
+      "status": "PARTIAL",
+      "element": "Activation-time validation error list + Review preview dialog",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-05",
+      "surface": "S07",
+      "status": "PARTIAL",
+      "element": "Activated plan history dialog: versions, retained prescription view, Discard draft, Archive active plan, Create replacement",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-06",
+      "surface": "S07",
+      "status": "UNCONFIGURED",
+      "element": "Week-based program structure + program length 1-52 + \"overrides retained\" note",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-07",
+      "surface": "S07",
+      "status": "MISSING",
+      "element": "Evergreen program mode (\"Ongoing program\", edits apply across program)",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-08",
+      "surface": "S07",
+      "status": "UNCONFIGURED",
+      "element": "Week nav strip W1..W52 + carry-forward override semantics (\"edits apply until next override\")",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-09",
+      "surface": "S07",
+      "status": "PARTIAL",
+      "element": "Session cards: add/rename/reorder/duplicate/remove",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-10",
+      "surface": "S07",
+      "status": "PARTIAL",
+      "element": "Exercise rows: name, muscle allocation select, library cue + snapshot banner, reorder/duplicate/remove",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-11",
+      "surface": "S07",
+      "status": "PARTIAL",
+      "element": "Per-set rows: index, reps, rep-range \"Up to\", tempo, type, rest selects, per-set instructions, add/remove set",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-12",
+      "surface": "S07",
+      "status": "PARTIAL",
+      "element": "Template-driven prescription field config (8 toggles + volume + breakdown + presentation)",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-13",
+      "surface": "S07",
+      "status": "MISSING",
+      "element": "Template option vocabularies + starting defaults for setType/progression/tempo/rest dropdowns",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-14",
+      "surface": "S07",
+      "status": "PARTIAL",
+      "element": "Exercise library: manage form (name, primary muscle enum, secondary groups multi-select, coaching notes), searchable picker, 10-item starter set, snapshot-on-pick",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-15",
+      "surface": "S07",
+      "status": "CONFLICT",
+      "element": "Weekly muscle volume panel: per-group working-set counts, unassigned row, Table or Heatmap presentation, total prescribed sets",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": "#116"
+    },
+    {
+      "id": "S07-16",
+      "surface": "S07",
+      "status": "PARTIAL",
+      "element": "Prescription read view: coach preview column, preview/history dialogs, client \"Prescription for <date>\" picker",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-17",
+      "surface": "S07",
+      "status": "PARTIAL",
+      "element": "Roadmap / Timeline tab: weekly rows (Mon-Sun), phase column + badge, per-metric cells (Weekly average / Trend / Adherence / Target vs actual), target from plans/goals, unit conversion",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-18",
+      "surface": "S07",
+      "status": "MISSING",
+      "element": "Goals editor (shared file): numeric field goals {fieldId, value, unit, date} feeding roadmap targets",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-19",
+      "surface": "S07",
+      "status": "UNWIRED",
+      "element": "Habits editor card (shared file, habits surface overlap): name/frequency/goal/reason, retire to retiredHabits",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-20",
+      "surface": "S07",
+      "status": "MISSING",
+      "element": "\"Training Program\" module visibility gate on the assigned setup (hidden module shows Empty, data retained)",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-21",
+      "surface": "S07",
+      "status": "MISSING",
+      "element": "Dashboard widget \"Training week — Completed sessions\" (source \"sessions\")",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S07-22",
+      "surface": "S07",
+      "status": "MISSING",
+      "element": "Activation records into check-in review draft (kind, versionId, name, startDate appended on activate when route.review)",
+      "detail": "S07-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V2-H5",
+      "surface": "S07",
+      "status": "ROLES",
+      "element": "Coach library notes render in client training view",
+      "detail": "S07 training, training/editor.tsx:307,907; authorization-model.md:59. Relabelled per D10: role visibility cell, doc rule vs code grant",
+      "round3": false,
+      "decision": "D10"
+    },
+    {
+      "id": "V2-H12",
+      "surface": "S07",
+      "status": "ROLES",
+      "element": "Authorization docs conflict on client training-plan write path",
+      "detail": "S07 training, authorization-model.md:34; product-decisions.md:1640. Relabelled per D10: the doc deny versus the assigned write at `lib/auth/rbac.ts:148",
+      "round3": false,
+      "decision": "D10"
+    },
+    {
+      "id": "V3-CP13",
+      "surface": "S07",
+      "status": "CONFLICT",
+      "element": "Muscle volume table",
+      "detail": "S07 training, client-preview.tsx:739,747; decision #116",
+      "round3": false,
+      "decision": "#116"
+    },
+    {
+      "id": "V3-CP14",
+      "surface": "S07",
+      "status": "MISSING",
+      "element": "Training session logbook",
+      "detail": "S07 training, client-preview.tsx:795,808",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-L1-TrainingSet",
+      "surface": "S07",
+      "status": "PARTIAL",
+      "element": "TrainingSet, TrainingExercise and TrainingSession shapes differ",
+      "detail": "S07 training, plans/types.ts:26-57",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-L1-Exercise",
+      "surface": "S07",
+      "status": "PARTIAL",
+      "element": "ExerciseDefinition is read-only in backend catalog",
+      "detail": "S07 training, plans/types.ts:35-41",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-L1-TrainingPlan",
+      "surface": "S07",
+      "status": "PARTIAL",
+      "element": "TrainingPlan shape differs from backend",
+      "detail": "S07 training, plans/types.ts:58-66",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-L1-ClientGoal",
+      "surface": "S07",
+      "status": "MISSING",
+      "element": "ClientGoal has no backend equivalent",
+      "detail": "S07 training, plans/types.ts:67-73",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "R3-19",
+      "surface": "S07",
+      "status": "PARTIAL",
+      "element": "Render server, CAS, timezone and publish errors, not only local validation",
+      "detail": "R3-JUDGED G6-401, CONFIRMED. Canvas `frontend/src/components/coach/plans/workspace.tsx:325-336,498-507`; backend `lib/mealplan/boundary.ts:28-55`, `lib/trainingprogram/boundary.ts:39-67`. Consent-only `consent_missing` / `policy_not_configured` subclaim parked (see parked appendix)",
+      "round3": true,
+      "decision": null
+    },
+    {
+      "id": "S08-01",
+      "surface": "S08",
+      "status": "PARTIAL",
+      "element": "Persisted dashboard draft document",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-02",
+      "surface": "S08",
+      "status": "UNCONFIGURED",
+      "element": "Coach dashboard editor screen (name input, canvas, card tools)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-03",
+      "surface": "S08",
+      "status": "UNWIRED",
+      "element": "Dashboard name input (<=80, blur commit, rename)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-04",
+      "surface": "S08",
+      "status": "PARTIAL",
+      "element": "Widget gallery: 19-kind library, category groups, search, staging, live preview, configure/replace forms",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-05",
+      "surface": "S08",
+      "status": "PARTIAL",
+      "element": "Widget settings form fields (title, source, summary, period, historyPeriod, target, size, fields, labels, option, unit)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-06",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "Per-widget audience visibility (staff vs client)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-07",
+      "surface": "S08",
+      "status": "PARTIAL",
+      "element": "Per-breakpoint layout rects and widths (desktop/tablet/mobile; x/y/w/h/size; mobile w=columns)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-08",
+      "surface": "S08",
+      "status": "UNWIRED",
+      "element": "Drag/resize/keyboard gestures, size presets, move-step, reorder, auto arrange, duplicate",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-09",
+      "surface": "S08",
+      "status": "UNWIRED",
+      "element": "Undo/redo history",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-10",
+      "surface": "S08",
+      "status": "UNCONFIGURED",
+      "element": "Autosave state line (\"Template draft\") and implicit saves",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-11",
+      "surface": "S08",
+      "status": "UNWIRED",
+      "element": "Reset dashboard dialog; Load example layout",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-12",
+      "surface": "S08",
+      "status": "UNCONFIGURED",
+      "element": "\"Client preview\" toggle / previewOnly render",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-13",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "Source detail dialog per widget (widgetDetailKey routes: metric/exercise/nutrition/workouts/recovery/habits/tasks/checkins/feedback/destination/chat)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-14",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "BN21 custom metric card (bodyweight/waist/steps; latest/average/total; kg/lb, cm/in)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-15",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "BN01 bodyweight trend + weekly-average + WoW delta",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-16",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "BN08 weekly bodyweight change (absolute/percentage)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-17",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "BN15 macro target summary (protein/carbs/fat, TD/NTD, circles/lines, dated targets)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-18",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "BN19 nutrition intake trend (line/stacked/single, nutrient, week..year, target bands)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-19",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "TL26 current/next workout (prescriptions, workoutSchedule, exercise/sets/reps/coach instructions)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-20",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "TL28 exercise performance trend (load/reps/sets per exercise)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-21",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "TL06 step count (latest/average/total, bars, stepsTarget)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-22",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "TL11 sleep duration (h/min, average/latest/history)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-23",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "TL14 recovery ratings (energy/stress/readiness scales, latest/distribution/history)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-24",
+      "surface": "S08",
+      "status": "UNWIRED",
+      "element": "TL21 today's habits (scheduled list, done/skipped/not-logged, client toggles, per-habit labels, contributions mode)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-25",
+      "surface": "S08",
+      "status": "UNWIRED",
+      "element": "TL22 habit consistency (counts, calendar, contribution strip, historyPeriod)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-26",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "CU01 weekly focus (phase strip, emphasis, successCue, published date)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-27",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "CU02 this week at a glance (roadmap week metrics, WoW delta, targets, focus strip)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-28",
+      "surface": "S08",
+      "status": "UNWIRED",
+      "element": "CU03 client tasks (due window, open/completed/both, toggle)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-29",
+      "surface": "S08",
+      "status": "UNWIRED",
+      "element": "CU04 check-in status (next scheduled, latest submission, draft marker, recurring/additional filter)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-30",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "CU06 coach feedback (excerpt, read flag, video flag, plan-change links)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-31",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "CU09 selected roadmap metrics (weekly trends, per-metric target)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-32",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "CU10 current phase progress (elapsed bar, week N of M, phase dates, published milestones, days remaining)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-33",
+      "surface": "S08",
+      "status": "UNWIRED",
+      "element": "CU16 quick links launcher (destination list + labels + live captions)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-34",
+      "surface": "S08",
+      "status": "MISSING",
+      "element": "recordsForCoach mapping variant+client to SourceRecords (fixture-driven preview data)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-35",
+      "surface": "S08",
+      "status": "UNWIRED",
+      "element": "Dirty-guard on navigation while editing",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-36",
+      "surface": "S08",
+      "status": "UNWIRED",
+      "element": "Interactive writes inside preview (habit done/skipped, task complete, TD/NTD switch)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S08-37",
+      "surface": "S08",
+      "status": "UNCONFIGURED",
+      "element": "ENABLE_CLIENT_DASHBOARD flag runtime; gates the whole surface (builder entry + client render)",
+      "detail": "S08-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-BWA01",
+      "surface": "S08",
+      "status": "PARTIAL",
+      "element": "Content dispatcher shell with layout measure and data-kind",
+      "detail": "S08 dashboard, widget-content.tsx:223,274-285",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "R3-2",
+      "surface": "S08",
+      "status": "PARTIAL",
+      "element": "Coaching/detail widget period and history-week vocabulary",
+      "detail": "R3-JUDGED G4-03, CONFIRMED. Canvas `frontend/src/components/coach/builder/coaching-content.tsx:29-32`, `frontend/src/components/coach/builder/additional-widget-content.tsx:109-124`, `frontend/src/components/ethereal/builder/coaching-content.tsx:393`; backend `lib/habits/date.ts:136-147`, `lib/dashboard/config-schema.ts:174-182",
+      "round3": true,
+      "decision": null
+    },
+    {
+      "id": "R3-7",
+      "surface": "S08",
+      "status": "PARTIAL",
+      "element": "Non-empty title and required visible-field validation",
+      "detail": "R3-JUDGED G4-11, CONFIRMED. Canvas `frontend/src/components/coach/builder/gallery.tsx:235-257`; backend `lib/dashboard/config-schema.ts:331-355,369-376",
+      "round3": true,
+      "decision": null
+    },
+    {
+      "id": "R3-8",
+      "surface": "S08",
+      "status": "PARTIAL",
+      "element": "Per-kind and per-source unit allowlist",
+      "detail": "R3-JUDGED G4-12, CONFIRMED. Canvas `frontend/src/components/coach/builder/gallery.tsx:1169-1179`; backend `lib/dashboard/config-schema.ts:354-355,616-641",
+      "round3": true,
+      "decision": null
+    },
+    {
+      "id": "R3-10",
+      "surface": "S08",
+      "status": "PARTIAL",
+      "element": "Progress inclusive period-window selection",
+      "detail": "R3-JUDGED G4-15, CORRECTED. Canvas `frontend/src/components/coach/builder/progress-content.tsx:22-40`, `frontend/src/components/ethereal/builder/progress-content.tsx:22-40`; backend `lib/habits/date.ts:136-147`, `lib/daily-entry/week-groups.ts:43-58`, `lib/dashboard/config-schema.ts:177-182",
+      "round3": true,
+      "decision": null
+    },
+    {
+      "id": "R3-12",
+      "surface": "S08",
+      "status": "CONFLICT",
+      "element": "Percent fill derived from done/scheduled counts",
+      "detail": "R3-JUDGED G4-27, CONFIRMED. Canvas `frontend/src/components/ethereal/builder/coaching-content.tsx:517-524,572`; backend `lib/habits/service.ts:93-108,1073`, `docs/product-decisions.md:1450-1454` (decision #110, count-based consistency only)",
+      "round3": true,
+      "decision": "#110 (docs/product-decisions.md:1450-1454)"
+    },
+    {
+      "id": "S09-01",
+      "surface": "S09",
+      "status": "PARTIAL",
+      "element": "Tracker shell: title, client name, \"Log data\"/\"Coach notes\" entry-mode switch, Configure button, Today/Week/Trends view switch, status line",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-02",
+      "surface": "S09",
+      "status": "PARTIAL",
+      "element": "Monday-first 7-day strip with per-day recorded dots, prev/next week, return-Today, \"future date logging unavailable\"",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-03",
+      "surface": "S09",
+      "status": "PARTIAL",
+      "element": "Edit-in-progress guard blocking date/view switches",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-04",
+      "surface": "S09",
+      "status": "PARTIAL",
+      "element": "Today heading: weekday/date + \"N of M recorded\" completion dot",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-05",
+      "surface": "S09",
+      "status": "MISSING",
+      "element": "Daily overview strip: up to 4 pinned metrics in configured order (summaryParameterIds / Variant.trackerHighlights)",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-06",
+      "surface": "S09",
+      "status": "PARTIAL",
+      "element": "Category grouping of fields (Weight basics, Nutrition, Sleep, ...) in template order, with per-group recorded counts",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-07",
+      "surface": "S09",
+      "status": "UNCONFIGURED",
+      "element": "Numeric measurement cell: read value, inline edit, min/max + decimals validation, canonical-unit storage",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-08",
+      "surface": "S09",
+      "status": "PARTIAL",
+      "element": "Rating cell: 1-10 / 1-5 select, word-labels display (\"Low/Moderate/High\", sleep \"Poor/Okay/Good\")",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-09",
+      "surface": "S09",
+      "status": "UNCONFIGURED",
+      "element": "Clearing a recorded value back to empty",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-10",
+      "surface": "S09",
+      "status": "CONFLICT",
+      "element": "Time fields (weigh-in time, bedtime, wake-time) with 12/24-hour editor",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": "#75"
+    },
+    {
+      "id": "S09-11",
+      "surface": "S09",
+      "status": "UNCONFIGURED",
+      "element": "Blood-pressure \"118/76\" single formatted field",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-12",
+      "surface": "S09",
+      "status": "UNCONFIGURED",
+      "element": "Free-text daily note / context note fields",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-13",
+      "surface": "S09",
+      "status": "UNCONFIGURED",
+      "element": "Single-choice field (select from configured options)",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-14",
+      "surface": "S09",
+      "status": "PARTIAL",
+      "element": "Multi-choice field with optional note ({choices[], note} JSON)",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-15",
+      "surface": "S09",
+      "status": "PARTIAL",
+      "element": "Location-rating composite ({location, rating 1-10})",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-16",
+      "surface": "S09",
+      "status": "PARTIAL",
+      "element": "Context field (answer Yes/No + context note)",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-18",
+      "surface": "S09",
+      "status": "PARTIAL",
+      "element": "Week view: transposed 7-day metric x date table, sticky labels, collapsible groups, per-metric summary cell (Average / Latest / Total / Most frequent / Done)",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-19",
+      "surface": "S09",
+      "status": "MISSING",
+      "element": "Trends view: searchable metric picker (max 3), ranges 7/30/56/90/180 days, numeric line/bar charts, completion grids, dated text lists, latest/average/change footer, chart-to-day navigation",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-20",
+      "surface": "S09",
+      "status": "MISSING",
+      "element": "\"Coach notes\" mode: coach-only comment popover per value, dot marker, \"Coach note:\" display under the field",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-21",
+      "surface": "S09",
+      "status": "PARTIAL",
+      "element": "Coach viewing a client's recorded tracker data (values, ratings, text)",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-22",
+      "surface": "S09",
+      "status": "PARTIAL",
+      "element": "Configured display units + conversions (kg/lb, cm/in, L/fl oz, kcal/kJ, degC/degF, mg/dL<->mmol/L, mg<->g, 12/24h)",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-23",
+      "surface": "S09",
+      "status": "PARTIAL",
+      "element": "TrackerConfig projected from assigned template (parameterIds order, cycleTrackingEnabled, fieldUnits, fieldOptions, ratingScales, energyUnit, weightUnit/lengthUnit/waterUnit)",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-24",
+      "surface": "S09",
+      "status": "PARTIAL",
+      "element": "Client preview shell: banner (avatar, name, \"Assigned/Sample athlete . template\", preview note), tab strip (Dashboard, Tracker, Timeline/Roadmap, Nutrition, Training Program, Check-In, Habits), tracker state kept alive across tabs",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-25",
+      "surface": "S09",
+      "status": "MISSING",
+      "element": "Sample athlete + deterministic 56-day synthetic history for unassigned template preview",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-26",
+      "surface": "S09",
+      "status": "PARTIAL",
+      "element": "Persisted shapes: TrackerEntry[] {date, values{paramId:number}}, textValues Record<\"date:paramId\",string>, comments Record<\"date:paramId\",string>; standalone localStorage coaching-client-tracker-maya-v1",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-27",
+      "surface": "S09",
+      "status": "MISSING",
+      "element": "Weight trend arrow on the cell (\"Up/Down X kg compared with the previous recorded weight\")",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S09-28",
+      "surface": "S09",
+      "status": "PARTIAL",
+      "element": "State messaging: \"No tracking fields configured\", \"Future date . logging unavailable\", \"Finish editing to change dates or views\", \"Updated\"/persistence hint",
+      "detail": "S09-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-BWB15",
+      "surface": "S09",
+      "status": "UNWIRED",
+      "element": "SmoothTrend primitive exists without a product data path",
+      "detail": "S09 tracker, smooth-trend.tsx:62",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-CP06",
+      "surface": "S09",
+      "status": "MISSING",
+      "element": "Roadmap header and phase badge",
+      "detail": "S09 tracker, client-preview.tsx:258,263",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-CP07",
+      "surface": "S09",
+      "status": "MISSING",
+      "element": "Roadmap weekly table",
+      "detail": "S09 tracker, client-preview.tsx:274,325",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-CP08",
+      "surface": "S09",
+      "status": "MISSING",
+      "element": "Roadmap phase select per week",
+      "detail": "S09 tracker, client-preview.tsx:302",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-CP12",
+      "surface": "S09",
+      "status": "MISSING",
+      "element": "Body map heatmap",
+      "detail": "S09 tracker, client-preview.tsx:629,680",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-CO01",
+      "surface": "S09",
+      "status": "ROLES",
+      "element": "Coach note shown in client-facing tracker field",
+      "detail": "S09 tracker, today-view.tsx:308-312; authorization-model.md:40. Relabelled per D10: role visibility cell, doc rule vs code grant",
+      "round3": false,
+      "decision": "D10"
+    },
+    {
+      "id": "V3-CO03",
+      "surface": "S09",
+      "status": "CONFLICT",
+      "element": "Tracker edits overwrite values without revision history",
+      "detail": "S09 tracker, preview-model.ts:28-31; decision #79",
+      "round3": false,
+      "decision": "#79"
+    },
+    {
+      "id": "R3-13",
+      "surface": "S09",
+      "status": "CONFLICT",
+      "element": "Calories as an ordinary entered parameter",
+      "detail": "R3-JUDGED G4-45, CONFIRMED. Canvas `frontend/src/components/ethereal/client-tracker/model.ts:83-91`; backend `lib/daily-tracker.ts:192-195`, `db/schema.prisma:781-790`, `docs/product-decisions.md:299-300,655-659` (CALORIES stays excluded, source-fidelity boundary)",
+      "round3": true,
+      "decision": "docs/product-decisions.md:299-300, 655-659 (CALORIES exclusion)"
+    },
+    {
+      "id": "S10-01",
+      "surface": "S10",
+      "status": "PARTIAL",
+      "element": "/coach Appearance > Color mode switch (light/dark, role=switch)",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-02",
+      "surface": "S10",
+      "status": "MISSING",
+      "element": "/coach Accent color (native picker, hex input, 4 suggestion swatches, Reset accent)",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-03",
+      "surface": "S10",
+      "status": "MISSING",
+      "element": "Workspace logo upload (PNG/JPG/WebP <=2MB, canvas-resize to <=512px data URL, preview, remove)",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-04",
+      "surface": "S10",
+      "status": "MISSING",
+      "element": "Ethereal studio shell: routes / (re-export) and /ethereal, sticky island header, 5-page segmented nav, hash routing #appearance|#dashboard|#tracker|#clients|#mealplan, skip link, footer",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-05",
+      "surface": "S10",
+      "status": "PARTIAL",
+      "element": "Ethereal appearance provider: {mode,accent,font} state, localStorage coaching-ethereal-appearance-v1, themeVariables() contrast-safe derivation of --accent-ink/--accent-border/--accent-ring/--chart-line, font family vars",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-06",
+      "surface": "S10",
+      "status": "PARTIAL",
+      "element": "AppearanceScreen \"01 Light\" segmented mode control",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-07",
+      "surface": "S10",
+      "status": "MISSING",
+      "element": "AppearanceScreen \"02 Accent\": color well picker, hex field, 6 named swatches, validity feedback",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-08",
+      "surface": "S10",
+      "status": "MISSING",
+      "element": "AppearanceScreen \"03 Typography\": 5-option font radio list (sans/serif/condensed/mono/rounded) with live specimens",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-09",
+      "surface": "S10",
+      "status": "MISSING",
+      "element": "Appearance reset + \"Saved automatically on this device\" note",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-10",
+      "surface": "S10",
+      "status": "MISSING",
+      "element": "Appearance preview panel: Roomy/Compact density toggle, live BodyweightTrend + NutritionTargets specimens, summary chips, sample profile card (\"Emma Anders\")",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-11",
+      "surface": "S10",
+      "status": "MISSING",
+      "element": "Foundations specimen gallery (type/numbers, actions/states, text+validation, choices+tabs, compact health fields incl. BP mask, confirm/empty feedback)",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-12",
+      "surface": "S10",
+      "status": "MISSING",
+      "element": "Ethereal primitive library (Avatar, StatusLabel, LabelTag, Segmented, SelectControl, TextInput, CheckboxControl, SwitchControl, Tabs, Widget)",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-13",
+      "surface": "S10",
+      "status": "UNWIRED",
+      "element": "BodyweightTrend + NutritionTargets specimen components (SVG monotone chart, period select 7/14/30, metrics strip, macro target bars, add-sample-snack demo)",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-14",
+      "surface": "S10",
+      "status": "UNCONFIGURED",
+      "element": "Dashboard builder editor: name field, Add widget, undo/redo, Client preview switch, auto-arrange, reset dialog, drag/keyboard move+resize, per-breakpoint layouts, card menus",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-15",
+      "surface": "S10",
+      "status": "UNCONFIGURED",
+      "element": "Dashboard draft persistence: localStorage ethereal-dashboard-draft-v1 + validation isValidDraft",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-16",
+      "surface": "S10",
+      "status": "MISSING",
+      "element": "Sample records the widgets read: localStorage ethereal-dashboard-records-v1 + SourceRecords (bodyweight, waist, steps, macroTargets, macroIntake, calorieTargets/Intake, sleep, coachingPlan, weeklyFocus, roadmapWeeks, milestones, prescriptions, workoutSchedule, exerciseSessions, recovery, habits, tasks, checkInSchedule, checkIns, feedback, messages)",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-17",
+      "surface": "S10",
+      "status": "UNCONFIGURED",
+      "element": "Widget gallery: 20-kind catalogue in 9 categories, search+category filter, staged multi-add, configure/replace side form (title, source, graph format, nutrient, fields, labels, unit, period, history, size, target toggle), live preview",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-18",
+      "surface": "S10",
+      "status": "PARTIAL",
+      "element": "Client tracker studio page: configurator (categories body/nutrition/recovery/movement, parameter pick, unit config, summary pick, rating scale), tracking grid (dated cells, rating/number entry, coach comments), persistence key coaching-client-tracker-maya-v1",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-19",
+      "surface": "S10",
+      "status": "UNWIRED",
+      "element": "Clients studio page: roster (search, signals, attention), client profile editor, per-client tracker preview, onboarding invitation drafts, reset-demo; key coaching-clients-workspace-v1",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-20",
+      "surface": "S10",
+      "status": "UNWIRED",
+      "element": "Meal plans studio page: plan/variant editing, nutrition targets, cycle schedule, saved-meal library, food swap picker, archive, client plan preview; key coaching-mealplans-v1",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S10-21",
+      "surface": "S10",
+      "status": "PARTIAL",
+      "element": "Ethereal theme token layer: eg-root data-mode vars (--canvas/--surface/--text/--muted/--border/--success/--warning/--danger/--accent-*) + atmosphere/grain effects; app/appearance.css legacy .ap-* block",
+      "detail": "S10-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-01",
+      "surface": "S11",
+      "status": "UNWIRED",
+      "element": "Signed-in coach identity chip: avatar initials, \"Liliana Mansfeld\", \"Coach\" role label in sidebar",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-02",
+      "surface": "S11",
+      "status": "UNWIRED",
+      "element": "Implied authenticated coach session (whole /coach app assumes a signed-in coach; canvas has zero auth UI)",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-03",
+      "surface": "S11",
+      "status": "UNWIRED",
+      "element": "No sign-out affordance in canvas",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-04",
+      "surface": "S11",
+      "status": "PARTIAL",
+      "element": "Single fixed \"COACH WORKSPACE\" container",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-05",
+      "surface": "S11",
+      "status": "PARTIAL",
+      "element": "Client roster of \"your athletes\" (card/table list with phase, week, unread, overdue tasks, check-in state)",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-06",
+      "surface": "S11",
+      "status": "PARTIAL",
+      "element": "Client identity fields on profile header (email, coaching since, height)",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-07",
+      "surface": "S11",
+      "status": "PARTIAL",
+      "element": "\"Preview assigned tool\" → coach renders the client's own tool (dashboard/tracker/roadmap/nutrition/training/check-in/habits)",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-08",
+      "surface": "S11",
+      "status": "PARTIAL",
+      "element": "Preview write isolation (\"changes stay inside preview\") + dormant role switch \"Log data\" vs \"Coach notes\"",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-09",
+      "surface": "S11",
+      "status": "MISSING",
+      "element": "Coach-only internal notes (\"Internal note · Coach-only\"; privateCoachNotes.visibility=coach_only)",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-10",
+      "surface": "S11",
+      "status": "MISSING",
+      "element": "General/shared notes \"Visible to you and your coach\"",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-11",
+      "surface": "S11",
+      "status": "UNCONFIGURED",
+      "element": "Client tasks assigned by coach, completed by client (due dates, open/overdue/complete)",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-12",
+      "surface": "S11",
+      "status": "MISSING",
+      "element": "Coach personal to-dos linked to a client (\"Coach to-do\" / coachTasks)",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-13",
+      "surface": "S11",
+      "status": "MISSING",
+      "element": "Two-party chat: messages from \"client\"|\"coach\", unread counts, attachments",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-14",
+      "surface": "S11",
+      "status": "MISSING",
+      "element": "Per-client permission toggle \"Allow this client to flag a message for coach attention\"",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-15",
+      "surface": "S11",
+      "status": "UNCONFIGURED",
+      "element": "\"Submitted onboarding\" tab — client-submitted Q&A retained on the profile, coach reads them",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-16",
+      "surface": "S11",
+      "status": "UNWIRED",
+      "element": "\"Onboarding invitation drafts (name · email · Not sent)\" list",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-17",
+      "surface": "S11",
+      "status": "UNWIRED",
+      "element": "Invite acceptance → new client account + profile (canvas implies email-invited clients; draws no accept screen)",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-18",
+      "surface": "S11",
+      "status": "UNWIRED",
+      "element": "The implied \"me\" client view: standalone tracker pinned to one client (\"Maya Chen\", STORAGE_KEY coaching-client-tracker-maya-v1)",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-19",
+      "surface": "S11",
+      "status": "UNCONFIGURED",
+      "element": "Client logs own daily tracker entries and cell comments",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-20",
+      "surface": "S11",
+      "status": "UNCONFIGURED",
+      "element": "Client check-in submission + coach's returned feedback (awaiting feedback / feedback sent)",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-21",
+      "surface": "S11",
+      "status": "PARTIAL",
+      "element": "Archived clients hidden from the roster",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-22",
+      "surface": "S11",
+      "status": "PARTIAL",
+      "element": "Workspace preferences dialog: logo upload, availability string, notification toggles, theme",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-24",
+      "surface": "S11",
+      "status": "MISSING",
+      "element": "Implied first coach/workspace bootstrap (canvas opens into a fully populated coaching workspace)",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-25",
+      "surface": "S11",
+      "status": "UNCONFIGURED",
+      "element": "Implied account recovery (\"forgot password\" on a real login)",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-26",
+      "surface": "S11",
+      "status": "PARTIAL",
+      "element": "Single implied coach role; canvas draws no owner/assistant/support distinction",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "S11-27",
+      "surface": "S11",
+      "status": "PARTIAL",
+      "element": "Coach assigns the tool/template to a client directly (\"Assign template\")",
+      "detail": "S11-*.md",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-CO05",
+      "surface": "S11",
+      "status": "ROLES",
+      "element": "Standalone tracker binds data to one named client without clientId",
+      "detail": "S11 identity, client-tracker.tsx:16,19-23; authorization-model.md:32-33. Relabelled per D10: scope cell (own vs assigned vs workspace)",
+      "round3": false,
+      "decision": "D10"
+    },
+    {
+      "id": "V3-H4-04",
+      "surface": "S11",
+      "status": "MISSING",
+      "element": "No workspace or owner bootstrap",
+      "detail": "S11 identity, package.json:5-7; invitations.ts:185",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-H4-05",
+      "surface": "S11",
+      "status": "MISSING",
+      "element": "No mail library; password reset pages return 404",
+      "detail": "S11 identity, password-reset-delivery.ts:43-45,72-77",
+      "round3": false,
+      "decision": null
+    },
+    {
+      "id": "V3-H4-02",
+      "surface": "S11",
+      "status": "CONFLICT",
+      "element": "Runtime-gate gap on exact-1 flags",
+      "detail": "S11 identity, daily-entry/gate.ts:22-24; sheet-viewer.ts:8-10",
+      "round3": false,
+      "decision": "# runtime-gate policy"
+    },
+    {
+      "id": "R3-23",
+      "surface": "ROLES",
+      "status": "ROLES",
+      "element": "Platform-admin administrative, catalog and audit capability cells. No canvas console exists, so the owner decides the cells, not a new console.",
+      "detail": "new (R3-JUDGED G6-501, CORRECTED to ROLES)",
+      "round3": true,
+      "decision": "D10"
+    },
+    {
+      "id": "R3-24",
+      "surface": "ROLES",
+      "status": "ROLES",
+      "element": "Assistant read-only and assigned-scope capability cells. The canvas draws no assistant persona.",
+      "detail": "new (R3-JUDGED G6-502, CORRECTED to ROLES)",
+      "round3": true,
+      "decision": "D10"
+    },
+    {
+      "id": "R3-25",
+      "surface": "ROLES",
+      "status": "ROLES",
+      "element": "Does the workspace-wide canvas roster stand, or does an actor see assigned scope only?",
+      "detail": "new (R3-JUDGED G6-503, CORRECTED to ROLES)",
+      "round3": true,
+      "decision": "D10"
+    }
+  ],
+  "conflicts": [
+    {
+      "id": "S02-05",
+      "decision": "#112",
+      "note": "No read receipts or read/seen state. Use only allowed response status."
+    },
+    {
+      "id": "S02-09",
+      "decision": "#112",
+      "note": "Hide plan-change context links pending approval."
+    },
+    {
+      "id": "S02-12",
+      "decision": "#96, #112",
+      "note": "Voice and media wait for approval and storage controls."
+    },
+    {
+      "id": "S02-25",
+      "decision": "#96, #112",
+      "note": "Do not ship demo recording as real voice or video capture."
+    },
+    {
+      "id": "S02-08",
+      "decision": "#96, #101, #112",
+      "note": "Blocked pending Q2. No attachment or media behavior until approval."
+    },
+    {
+      "id": "S02-24",
+      "decision": "#101, #112",
+      "note": "Blocked pending storage, consent and retention decisions."
+    },
+    {
+      "id": "S03-11",
+      "decision": "#114",
+      "note": "Use explicit generation only. No automatic replenishment."
+    },
+    {
+      "id": "S03-18",
+      "decision": "#101, #112",
+      "note": "Video feedback blocked pending Q2 and media decision."
+    },
+    {
+      "id": "S03-19",
+      "decision": "#114",
+      "note": "No automatic program changes bundled with feedback."
+    },
+    {
+      "id": "S03-20",
+      "decision": "#96, #112",
+      "note": "Plan-change links and messaging remain blocked."
+    },
+    {
+      "id": "S05-05",
+      "decision": "#44",
+      "note": "Terminal archive only. Replace Undo with confirmation."
+    },
+    {
+      "id": "S05-24",
+      "decision": "#63",
+      "note": "Do not implement template variants."
+    },
+    {
+      "id": "S06-07",
+      "decision": "#115",
+      "note": "No automatic totals or derived nutrition calculations."
+    },
+    {
+      "id": "S06-08",
+      "decision": "#115",
+      "note": "No 4/4/9 ring or derived percentages."
+    },
+    {
+      "id": "S06-15",
+      "decision": "#115",
+      "note": "No computed IIFYM kcal or macro ring."
+    },
+    {
+      "id": "S07-15",
+      "decision": "#116",
+      "note": "No weekly muscle-volume calculation."
+    },
+    {
+      "id": "S09-10",
+      "decision": "#75",
+      "note": "Hide time fields pending a binding format decision."
+    },
+    {
+      "id": "V2-H2",
+      "decision": "#36, #115",
+      "note": "Blank numeric inputs must remain missing, not be written as zero."
+    },
+    {
+      "id": "V3-CP10",
+      "decision": "#115",
+      "note": "No computed macro ring."
+    },
+    {
+      "id": "V3-CP13",
+      "decision": "#116",
+      "note": "No muscle-volume panel."
+    },
+    {
+      "id": "V3-CO02",
+      "decision": "#115",
+      "note": "No automatic nutrition totals."
+    },
+    {
+      "id": "V3-CO03",
+      "decision": "#79",
+      "note": "Keep revision history; never overwrite history."
+    },
+    {
+      "id": "V3-H4-02",
+      "decision": "# runtime-gate policy",
+      "note": "Add trusted-runtime checks to exact-1 gates before enabling them."
+    },
+    {
+      "id": "R3-4",
+      "decision": "#115 (docs/product-decisions.md:1653-1657)",
+      "note": "No computed attainment: staff enter every nutrition value, no automatic totals, conversions, percentages or recommendations."
+    },
+    {
+      "id": "R3-5",
+      "decision": "#115 (docs/product-decisions.md:1653-1657)",
+      "note": "No percent fill or ring against a fixed target."
+    },
+    {
+      "id": "R3-9",
+      "decision": "#115 (docs/product-decisions.md:1653-1656)",
+      "note": "No weekly or monthly means of intake or derived target bounds; range targets display exactly as entered."
+    },
+    {
+      "id": "R3-11",
+      "decision": "#115 (docs/product-decisions.md:1653-1656)",
+      "note": "Do not collapse a range target to one midpoint."
+    },
+    {
+      "id": "R3-14",
+      "decision": "#115 (docs/product-decisions.md:1653-1657)",
+      "note": "No automatic starter meals, food picks, quantities or recommendations."
+    },
+    {
+      "id": "R3-12",
+      "decision": "#110 (docs/product-decisions.md:1450-1454)",
+      "note": "Habit consistency stays count-based; never percentages, streaks or rewards."
+    },
+    {
+      "id": "R3-13",
+      "decision": "docs/product-decisions.md:299-300, 655-659 (CALORIES exclusion)",
+      "note": "CALORIES must not become an ordinary user-entered parameter without new evidence and approval."
+    }
+  ],
+  "roles": [
+    {
+      "id": "V2-H5",
+      "doc_rule": "docs/security/authorization-model.md:59 (coach notes to client denied)",
+      "code_rule": "S07 training, training/editor.tsx:307,907"
+    },
+    {
+      "id": "V2-H12",
+      "doc_rule": "docs/security/authorization-model.md:34 (owner write denied)",
+      "code_rule": "lib/auth/rbac.ts:148"
+    },
+    {
+      "id": "V3-CO01",
+      "doc_rule": "docs/security/authorization-model.md:40 (coach notes not client-visible)",
+      "code_rule": "S09 tracker, today-view.tsx:308-312"
+    },
+    {
+      "id": "V3-CO05",
+      "doc_rule": "docs/security/authorization-model.md:32-33 (daily tracking: owner write denied, coach assigned, client own)",
+      "code_rule": "S11 identity, client-tracker.tsx:16,19-23"
+    },
+    {
+      "id": "R3-23",
+      "doc_rule": "docs/security/authorization-model.md:27-28,43,45",
+      "code_rule": "lib/auth/rbac.ts:87,95,237,253"
+    },
+    {
+      "id": "R3-24",
+      "doc_rule": "docs/security/authorization-model.md:27,31-46",
+      "code_rule": "lib/auth/rbac.ts:90,127,135,150,240"
+    },
+    {
+      "id": "R3-25",
+      "doc_rule": "docs/security/authorization-model.md:31-36",
+      "code_rule": "frontend/src/components/coach/clients.tsx:65-91; lib/auth/rbac.ts:126-135; lib/workspace/clients.ts:103-120"
+    }
+  ],
+  "parked": [
+    {
+      "id": "V3-H4-03",
+      "old_status": "CONFLICT (S11)",
+      "note": "No route may grant consent, and the assertion fails closed. `S11 identity, consent.ts:145-151`. Parked: no consent route is commissioned."
+    },
+    {
+      "id": "S09-17",
+      "old_status": "CONFLICT (S09)",
+      "note": "Cycle tracking group: period-start checkbox, derived cycle day, bleeding level, cramps, PMS symptoms, basal body temperature. Health data behind the reserved CYCLE consent kind (`lib/consent.ts:33,106`) and decision #73."
+    },
+    {
+      "id": "V2-H4",
+      "old_status": "CONFLICT (S05)",
+      "note": "Goal picker offers cycle-tracking parameters, `S05 templates, setup-ui.tsx:342-346`. The same health-data rule (#73/#38); parked with S09-17."
+    },
+    {
+      "id": "S11-23",
+      "old_status": "UNCONFIGURED (S11)",
+      "note": "Implied consent: the canvas collects health and tracking data and onboarding answers with no consent step anywhere. Parked: no consent step is required of the canvas."
+    },
+    {
+      "id": "R3-JUDGED G6-102",
+      "old_status": "PARKED-D12 (judge; duplicate of S12-22/S12-41)",
+      "note": "Sensitive consent kinds and grant sources: ConsentKind.PHOTOS/BLOODWORK/PED_HRT, ConsentSource.CLIENT_SELF/COACH_ATTESTED. `db/schema.prisma:69-80`, `lib/consent.ts:322-326`; the canvas has no consent or privacy UI, so no new grant screen follows."
+    },
+    {
+      "id": "R3-JUDGED G6-504",
+      "old_status": "PARKED-D12 (judge; duplicate of S12-54..56, S12-33, S12-35)",
+      "note": "Export, erasure and audit-log cells with no canvas surface of any kind. `lib/auth/rbac.ts:244-258`. Audit role cells, if they are ever needed, belong to D10 instead."
+    }
+  ],
+  "orphans": {
+    "count": 82,
+    "items": [
+      {
+        "id": "S12-01",
+        "note": "Auth.js v5 route handler. Evidence: `app/api/auth/[...nextauth]/route.ts:1`."
+      },
+      {
+        "id": "S12-02",
+        "note": "Login page + credentials action. Evidence: `app/login/page.tsx:7, app/login/actions.ts:1`."
+      },
+      {
+        "id": "S12-03",
+        "note": "Logout action. Evidence: `app/logout/actions.ts:1`."
+      },
+      {
+        "id": "S12-04",
+        "note": "Invitation acceptance page + action. Evidence: `app/invite/page.tsx:18, app/invite/actions.ts:1, app/invite/invite-form.tsx:1`."
+      },
+      {
+        "id": "S12-05",
+        "note": "Password reset request page + action. Evidence: `app/reset-request/page.tsx:18, app/reset-request/actions.ts:1`."
+      },
+      {
+        "id": "S12-06",
+        "note": "Password reset page + action. Evidence: `app/reset/page.tsx:21, app/reset/actions.ts:1`."
+      },
+      {
+        "id": "S12-07",
+        "note": "Forbidden (403) boundary. Evidence: `app/forbidden.tsx:1`."
+      },
+      {
+        "id": "S12-08",
+        "note": "Raw workbook sheet index (dev tool). Evidence: `app/sheets/page.tsx:12`."
+      },
+      {
+        "id": "S12-09",
+        "note": "Raw workbook sheet detail (dev tool). Evidence: `app/sheets/[slug]/page.tsx:20`."
+      },
+      {
+        "id": "S12-10",
+        "note": "Workspace list (workspace picker). Evidence: `app/workspace/page.tsx:15`."
+      },
+      {
+        "id": "S12-11",
+        "note": "Owner-only workspace admin area. Evidence: `app/workspace/[workspaceId]/admin/page.tsx:12`."
+      },
+      {
+        "id": "S12-12",
+        "note": "Client coach-assignment panel + actions. Evidence: `app/workspace/[workspaceId]/clients/[clientProfileId]/coaches/page.tsx:33, .../coaches/actions.ts:1, assignment-panel.tsx:1`."
+      },
+      {
+        "id": "S12-13",
+        "note": "Onboarding form library + create/edit/preview. Evidence: `app/workspace/[workspaceId]/onboarding/forms/page.tsx:31, forms/new/page.tsx:1, forms/[formId]/page.tsx:1, forms/[formId]/preview/page.tsx:1`."
+      },
+      {
+        "id": "S12-14",
+        "note": "Onboarding form CRUD server actions. Evidence: `app/workspace/[workspaceId]/onboarding/actions.ts:158`."
+      },
+      {
+        "id": "S12-15",
+        "note": "Onboarding form assignments + actions. Evidence: `app/workspace/[workspaceId]/onboarding/assignments/page.tsx:44, assignments/actions.ts:1`."
+      },
+      {
+        "id": "S12-16",
+        "note": "Staff onboarding-submission review. Evidence: `app/workspace/[workspaceId]/clients/[clientProfileId]/onboarding/page.tsx:32, actions.ts:106 (markOnboardingSubmissionReviewed), review-panel.tsx:1`."
+      },
+      {
+        "id": "S12-17",
+        "note": "User model (platform identity). Evidence: `db/schema.prisma:124`."
+      },
+      {
+        "id": "S12-18",
+        "note": "Workspace model (tenant boundary). Evidence: `db/schema.prisma:160`."
+      },
+      {
+        "id": "S12-19",
+        "note": "WorkspaceMember model. Evidence: `db/schema.prisma:203`."
+      },
+      {
+        "id": "S12-20",
+        "note": "CoachProfile model. Evidence: `db/schema.prisma:278`."
+      },
+      {
+        "id": "S12-21",
+        "note": "ClientAssignment model (coach-client link). Evidence: `db/schema.prisma:332`."
+      },
+      {
+        "id": "S12-22",
+        "note": "ConsentRecord model. Evidence: `db/schema.prisma:355`."
+      },
+      {
+        "id": "S12-23",
+        "note": "AuditEvent model. Evidence: `db/schema.prisma:375`."
+      },
+      {
+        "id": "S12-24",
+        "note": "AccessToken model (invite/reset tokens). Evidence: `db/schema.prisma:420`."
+      },
+      {
+        "id": "S12-25",
+        "note": "NutritionImportRun model. Evidence: `db/schema.prisma:501`."
+      },
+      {
+        "id": "S12-26",
+        "note": "NutritionImportRowOutcome model. Evidence: `db/schema.prisma:527`."
+      },
+      {
+        "id": "S12-27",
+        "note": "ExerciseImportRun model. Evidence: `db/schema.prisma:581`."
+      },
+      {
+        "id": "S12-28",
+        "note": "ExerciseImportRowOutcome model. Evidence: `db/schema.prisma:607`."
+      },
+      {
+        "id": "S12-29",
+        "note": "OnboardingForm model. Evidence: `db/schema.prisma:632`."
+      },
+      {
+        "id": "S12-30",
+        "note": "OnboardingFormVersion model. Evidence: `db/schema.prisma:660`."
+      },
+      {
+        "id": "S12-31",
+        "note": "OnboardingFormAssignment model. Evidence: `db/schema.prisma:695`."
+      },
+      {
+        "id": "S12-32",
+        "note": "OnboardingSubmissionReview model. Evidence: `db/schema.prisma:1165`."
+      },
+      {
+        "id": "S12-33",
+        "note": "Metadata-only audit logger. Evidence: `lib/audit.ts:1`."
+      },
+      {
+        "id": "S12-34",
+        "note": "Authorization guard (authorize/AccessDeniedError). Evidence: `lib/auth/guard.ts:1`."
+      },
+      {
+        "id": "S12-35",
+        "note": "RBAC role/resource matrix. Evidence: `lib/auth/rbac.ts:1`."
+      },
+      {
+        "id": "S12-36",
+        "note": "Route guard (requireSessionUser/requireWorkspaceAccess). Evidence: `lib/auth/route-guard.ts:1`."
+      },
+      {
+        "id": "S12-37",
+        "note": "Session helpers. Evidence: `lib/auth/session.ts:1`."
+      },
+      {
+        "id": "S12-38",
+        "note": "Password-reset service. Evidence: `lib/auth/password-reset.ts:1`."
+      },
+      {
+        "id": "S12-39",
+        "note": "Password-reset route boundary. Evidence: `lib/auth/password-reset-boundary.ts:1`."
+      },
+      {
+        "id": "S12-40",
+        "note": "Password-reset delivery port. Evidence: `lib/auth/password-reset-delivery.ts:1`."
+      },
+      {
+        "id": "S12-41",
+        "note": "Versioned consent service + gates. Evidence: `lib/consent.ts:14`."
+      },
+      {
+        "id": "S12-42",
+        "note": "Credentials verification. Evidence: `lib/credentials.ts:3`."
+      },
+      {
+        "id": "S12-43",
+        "note": "Prisma client singleton. Evidence: `lib/db.ts:1`."
+      },
+      {
+        "id": "S12-44",
+        "note": "Extraction contracts (sheet artifact types). Evidence: `lib/extraction/contracts.ts:1`."
+      },
+      {
+        "id": "S12-45",
+        "note": "Extraction cross-sheet pass. Evidence: `lib/extraction/crosssheet.ts:1`."
+      },
+      {
+        "id": "S12-46",
+        "note": "Extraction CSS parsing. Evidence: `lib/extraction/css.ts:1`."
+      },
+      {
+        "id": "S12-47",
+        "note": "Extraction database parsing. Evidence: `lib/extraction/databases.ts:1`."
+      },
+      {
+        "id": "S12-48",
+        "note": "Extraction normalize. Evidence: `lib/extraction/normalize.ts:1`."
+      },
+      {
+        "id": "S12-49",
+        "note": "Extraction parse. Evidence: `lib/extraction/parse.ts:1`."
+      },
+      {
+        "id": "S12-50",
+        "note": "Extraction redaction. Evidence: `lib/extraction/redact.ts:1`."
+      },
+      {
+        "id": "S12-51",
+        "note": "Extraction source loader. Evidence: `lib/extraction/source.ts:1`."
+      },
+      {
+        "id": "S12-52",
+        "note": "Extraction summaries. Evidence: `lib/extraction/summaries.ts:1`."
+      },
+      {
+        "id": "S12-53",
+        "note": "Extraction theme. Evidence: `lib/extraction/theme.ts:1`."
+      },
+      {
+        "id": "S12-54",
+        "note": "GDPR boundary (fails closed). Evidence: `lib/gdpr.ts:1`."
+      },
+      {
+        "id": "S12-55",
+        "note": "GDPR allowlist export. Evidence: `lib/gdpr/export.ts:1`."
+      },
+      {
+        "id": "S12-56",
+        "note": "GDPR retention policy-as-data. Evidence: `lib/gdpr/retention.ts:1`."
+      },
+      {
+        "id": "S12-57",
+        "note": "Nutrition catalog importer. Evidence: `lib/nutrition/import.ts:1`."
+      },
+      {
+        "id": "S12-58",
+        "note": "Exercise catalog importer. Evidence: `lib/exercise/import.ts:1`."
+      },
+      {
+        "id": "S12-59",
+        "note": "Onboarding form service. Evidence: `lib/onboarding/forms.ts:126`."
+      },
+      {
+        "id": "S12-60",
+        "note": "Onboarding form boundary. Evidence: `lib/onboarding/forms-boundary.ts:1`."
+      },
+      {
+        "id": "S12-61",
+        "note": "Onboarding assignment service. Evidence: `lib/onboarding/assignments.ts:237`."
+      },
+      {
+        "id": "S12-62",
+        "note": "Onboarding assignment boundary. Evidence: `lib/onboarding/assignments-boundary.ts:80`."
+      },
+      {
+        "id": "S12-63",
+        "note": "Onboarding assignment gate. Evidence: `lib/onboarding/assignments-gate.ts:1`."
+      },
+      {
+        "id": "S12-64",
+        "note": "Onboarding submission review service. Evidence: `lib/onboarding/review.ts:379`."
+      },
+      {
+        "id": "S12-65",
+        "note": "Onboarding review boundary. Evidence: `lib/onboarding/review-boundary.ts:83`."
+      },
+      {
+        "id": "S12-66",
+        "note": "Password policy (15-char setup rules). Evidence: `lib/password-policy.ts:1`."
+      },
+      {
+        "id": "S12-67",
+        "note": "Password hashing. Evidence: `lib/password.ts:1`."
+      },
+      {
+        "id": "S12-68",
+        "note": "Sheet-viewer flag gate. Evidence: `lib/sheet-viewer.ts:7`."
+      },
+      {
+        "id": "S12-69",
+        "note": "Access-token helpers. Evidence: `lib/tokens.ts:1`."
+      },
+      {
+        "id": "S12-70",
+        "note": "Token hashing/crypto. Evidence: `lib/tokens/crypto.ts:1`."
+      },
+      {
+        "id": "S12-71",
+        "note": "Token store (claim/inspect). Evidence: `lib/tokens/store.ts:1`."
+      },
+      {
+        "id": "S12-72",
+        "note": "Prisma authorization repo. Evidence: `lib/workspace/access.ts:9`."
+      },
+      {
+        "id": "S12-73",
+        "note": "Workspace invitations service. Evidence: `lib/workspace/invitations.ts:1`."
+      },
+      {
+        "id": "S12-74",
+        "note": "Invite-acceptance route boundary. Evidence: `lib/workspace/invite-acceptance.ts:12`."
+      },
+      {
+        "id": "S12-75",
+        "note": "ENABLE_SHEET_VIEWER flag. Evidence: `lib/sheet-viewer.ts:7, app/sheets/page.tsx:13`."
+      },
+      {
+        "id": "S12-76",
+        "note": "ENABLE_ONBOARDING_ASSIGNMENTS flag. Evidence: `lib/onboarding/assignments-boundary.ts:80, app/workspace/[workspaceId]/onboarding/assignments/page.tsx`."
+      },
+      {
+        "id": "R3-16",
+        "note": "(G6-301) Template-version upgrade, rollback, discovery, review and execute. Evidence: `lib/coaching/client-setup-transition.ts:484,534,591`, `app/workspace/[workspaceId]/client-setups/transition-panel.tsx:14-30`; canvas none (searched `frontend/src` for upgrade, rollback and versionSeq)."
+      },
+      {
+        "id": "R3-17",
+        "note": "(G6-302) Parameter-definition create, edit and archive manager. Evidence: `app/workspace/[workspaceId]/parameters/parameter-manager.tsx:53-62`, `lib/coaching/parameters.ts:650,904`; the canvas `frontend/src/components/coach/templates.tsx:1173-1186` is a picker only (searched createParameter/archiveParameter)."
+      },
+      {
+        "id": "R3-18",
+        "note": "(G6-303) Client-task title and date editing, and cancellation. Evidence: `lib/tasks/service.ts:311,391`, `app/workspace/[workspaceId]/clients/[clientProfileId]/dashboard/actions.ts:52-84`; the canvas `frontend/src/components/coach/clients.tsx:673-727` draws add and toggle only."
+      },
+      {
+        "id": "R3-20",
+        "note": "(G6-402) Dead duplicate sheetDisplayName helper. Evidence: `lib/catalog.ts:172-174`, live duplicate `lib/spec-artifacts.ts:32-34`, no production caller (searched `app/`, `lib/`, `components/`, `scripts/`)."
+      },
+      {
+        "id": "R3-21",
+        "note": "(G6-403) Public synthetic fixture library pages, not canvas catalog editors. Evidence: `app/library/foods/page.tsx:1-26`, `app/library/exercises/page.tsx:1-27`; the coach-editable canvas library is `frontend/src/components/coach/plans/training/editor.tsx:974-977`."
+      },
+      {
+        "id": "R3-22",
+        "note": "(G6-404) Uncalled versionForWeek helper. Evidence: `lib/trainingprogram/weeks.ts:185-211`, no production caller (searched `lib/`, `app/`, `components/`, `scripts/`)."
+      }
+    ]
+  },
+  "delta": {
+    "before": 323,
+    "round3_added": 19,
+    "parked": 4,
+    "after": 338
+  }
+}
