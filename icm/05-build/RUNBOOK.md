@@ -105,6 +105,7 @@ python3 icm/05-build/tools/board.py --release --watch   # orchestrator go step: 
 ```
 
 Every card was created blocked so nothing dispatches before the graph check. `--release` unblocks only blocked cards whose every parent is done and reads each status back; cards with open parents stay blocked, and `--watch` repeats the release every 60 seconds. In-flight external builds have no assignee and are never released; the orchestrator completes them with `hermes kanban --board vari8 complete <id> --result "<PR url> <head sha>"` when their builders exit. Measured on a throwaway board: `hermes kanban unblock` sends a card with an open parent to todo, not ready; the script does not depend on that.
+`--release` creates each released card's worktree (branch `beta/<slug>` from `origin/Vari8-Beta`) before it unblocks the card, and a card whose worktree cannot be created stays blocked while the run exits 1. A verify parent releases its children only when its result starts with `SHIP`, and a decision parent unless its result starts with `FIX`; `--dry-run` lists the worktrees it would create and the parents it rejects.
 
 ## Regenerating the plan
 
