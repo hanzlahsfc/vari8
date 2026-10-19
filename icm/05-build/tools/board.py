@@ -230,10 +230,17 @@ def verdict_problem(tid, key, cache):
 def ensure_worktree(path, branch):
     """Create the linked worktree at `path` on `branch` from BASE, reusing an existing branch.
 
-    Skips when path/.git already exists. Raises RuntimeError when git refuses.
+    Reuses path only when its worktree is checked out on `branch`; a worktree on any other branch,
+    a detached HEAD or an unreadable .git raises RuntimeError. A failed `worktree add -b` deletes
+    the branch ref it created (never a pre-existing one). Raises RuntimeError when git refuses.
     """
     if os.path.exists(os.path.join(path, ".git")):
-        return
+        r = subprocess.run(["git", "-C", path, "symbolic-ref", "--short", "-q", "HEAD"],
+                           capture_output=True, text=True)
+        actual = r.stdout.strip() if r.returncode == 0 else ""
+        if actual == branch:
+            return
+        raise RuntimeError(f"{path}: existing worktree is on {actual or 'no branch'}, not {branch}")
     try:
         os.makedirs(os.path.dirname(path), exist_ok=True)
     except OSError as e:
@@ -242,6 +249,8 @@ def ensure_worktree(path, branch):
     args = ["worktree", "add", "-q", path, branch] if has_branch else ["worktree", "add", "-q", "-b", branch, path, BASE]
     r = subprocess.run(["git", "-C", REPO, *args], capture_output=True, text=True)
     if r.returncode:
+        if not has_branch:
+            subprocess.run(["git", "-C", REPO, "branch", "-D", branch], capture_output=True)
         raise RuntimeError(f"git worktree add failed: {(r.stderr or r.stdout).strip()}")
 
 
