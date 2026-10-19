@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import type { TodayHabitView } from "@/lib/habits/service";
@@ -48,9 +48,11 @@ export function ClientHabitsWidget({
   // The server is the source of truth — after a refresh (own toggle or
   // a staff schedule change) adopt the new cohort rather than keeping
   // the first-render snapshot.
-  useEffect(() => {
+  const [prevInitial, setPrevInitial] = useState(initial);
+  if (prevInitial !== initial) {
+    setPrevInitial(initial);
     setHabits(initial);
-  }, [initial]);
+  }
 
   const toggle = (habit: TodayHabitView) => {
     const desired = habit.status === "DONE" ? "CLEARED" : "DONE";

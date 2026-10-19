@@ -68,25 +68,37 @@ export function CheckInCalendar({
     return { y, m };
   });
   const [view, setView] = useState<"grid" | "agenda">("grid");
-  const [result, setResult] = useState<CheckInCalendarLoadResult | null>(null);
+  const [loaded, setLoaded] = useState<{
+    range: { from: string; to: string };
+    value: CheckInCalendarLoadResult;
+  } | null>(null);
 
   const cells = useMemo(() => checkInCalendarMonthCells(ym.y, ym.m - 1), [ym]);
 
-  useEffect(() => {
-    let live = true;
+  const range = useMemo(() => {
     const [fy, fm, fd] = cells[0].key.split("-").map(Number);
     const [ly, lm, ld] = cells[41].key.split("-").map(Number);
     const from = localDayInstant(fy, fm, fd);
     // End-exclusive: start of the day AFTER the last visible cell.
     const to = new Date(localDayInstant(ly, lm, ld).getTime() + 86400_000);
-    setResult(null);
-    void load({ from: from.toISOString(), to: to.toISOString() }).then((r) => {
-      if (live) setResult(r);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }, [cells]);
+
+  useEffect(() => {
+    let live = true;
+    void load(range).then((r) => {
+      if (live) setLoaded({ range, value: r });
     });
     return () => {
       live = false;
     };
-  }, [cells, load]);
+  }, [range, load]);
+
+  // A response only serves the range it was requested for — stepping the
+  // month makes the old result stale and the calendar renders its
+  // loading branch until the new load lands (same surface the prior
+  // effect-local clear produced).
+  const result = loaded !== null && loaded.range === range ? loaded.value : null;
 
   const byDay = useMemo(() => {
     const map = new Map<string, CheckInCalendarItem[]>();
