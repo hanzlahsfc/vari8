@@ -197,7 +197,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export type CheckInRuntimeClass = RuntimeClass`
 - `export type CheckInsEnv = RuntimeEnv & { ENABLE_CHECK_INS?: string }`
-- `export const classifyCheckInRuntime: ( env?: RuntimeEnv, ) => CheckInRuntimeClass`
+- `export const classifyCheckInRuntime: (env?: RuntimeEnv) => CheckInRuntimeClass`
 - `export function isCheckInsEnabled(env: CheckInsEnv = process.env): boolean`
 
 ## `lib/checkin/forms.ts`
@@ -615,8 +615,8 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function isConsentKind(value: unknown): value is ConsentKind`
 - `export async function readOwnConsentStatus(session: SessionLike, input: { workspaceId: string; clientProfileId: string; limit?: number; cursor?: string; }, deps: ConsentServiceDeps = {}): Promise<C...`
 - `export function requiredConsentsFor(resource: Resource): readonly ConsentKind[] | undefined`
-- `export function resolveCheckInConsentPolicy(env: { ENABLE_CHECK_INS?: string; APP_ENV?: string; NODE_ENV?: string } = process.env): ConsentPolicyRegistry`
-- `export function resolveMealPlanConsentPolicy(env: { ENABLE_MEAL_PLANS?: string; APP_ENV?: string; NODE_ENV?: string } = process.env): ConsentPolicyRegistry`
+- `export function resolveCheckInConsentPolicy(env: { ENABLE_CHECK_INS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
+- `export function resolveMealPlanConsentPolicy(env: { ENABLE_MEAL_PLANS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
 - `export function resolveOnboardingSubmissionConsentPolicy(env: OnboardingSubmissionConsentEnv = process.env): ConsentPolicyRegistry`
 - `export function resolveTrainingConsentPolicy(env: { ENABLE_TRAINING_PLANS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
 - `export async function revokeOwnConsent(session: SessionLike, input: { workspaceId: string; clientProfileId: string; kind: ConsentKind }, deps: ConsentServiceDeps = {}): Promise<ConsentMutationResult>`
