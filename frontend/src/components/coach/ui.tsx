@@ -1,6 +1,6 @@
 "use client";
 import { ArrowLeft, Check, ChevronDown, Search, X } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import {
   type ButtonHTMLAttributes,
   type ReactNode,
@@ -8,6 +8,7 @@ import {
   useId,
   useRef,
 } from "react";
+import { useReducedMotion } from "@/lib/reduced-motion";
 import { CoachDashboardPreview } from "./builder/coach-dashboard";
 import {
   ALL_PARAMETERS,

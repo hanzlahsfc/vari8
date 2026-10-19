@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   type FormEvent,
   useEffect,
@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useReducedMotion } from "@/lib/reduced-motion";
 import { supportedSizes } from "./grid";
 import {
   catalogue,
