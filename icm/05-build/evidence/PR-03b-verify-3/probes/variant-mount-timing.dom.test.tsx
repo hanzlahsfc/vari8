@@ -19,7 +19,7 @@ vi.mock(
   }),
 );
 
-import { CheckInFeedbackThread } from "./v3-deferred-thread";
+import { CheckInFeedbackThread } from "./variant-deferred-thread";
 
 const props = {
   workspaceId: "w1",
