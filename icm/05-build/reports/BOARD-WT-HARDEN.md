@@ -59,3 +59,85 @@ Issue #81, branch `beta/board-worktree-hardening`, PR #82 against `Vari8-Beta`.
   `lib/`, `app/api/` was touched, so canvas and integration gates do not apply.
 - GitHub Actions untouched (manual-only, D13). No servers or databases were started; no
   database was created, so nothing to drop.
+
+## Fix 1: selftest covers pre-existing ref + failed worktree add
+
+Card `icm/05-build/cards/BOARD-WT-HARDEN-fix-1.md`. Closes the non-blocking coverage gap in
+`/home/nexuslink/vari8-worktrees/_verify/pr82-verify.md` item 2c: no case exercised "branch
+`beta/<slug>` already exists AND `git worktree add` fails", so a cleanup that also deleted a
+pre-existing ref stayed green. No change to `board.py` (sha256 unchanged, below).
+
+`icm/05-build/tools/board_selftest.py`:
+
+- New pre `branchblock`: creates `beta/c` at `origin/Vari8-Beta` and blocks the worktree path
+  with a non-empty dir, so the `has_branch` arm runs `worktree add <path> beta/c` and fails.
+- New case `wt-kept-ref`: asserts exit 1, the card stays blocked (no unblock call), no `.git`
+  at the path, and `refs/heads/beta/c` still exists at the sha recorded before the run
+  (`ref_kept`, via `git rev-parse --verify --quiet`). 21 cases total.
+
+Green run, board.py unchanged:
+
+```
+$ python3 icm/05-build/tools/board_selftest.py
+PASS ok: exit 0, unblock True
+PASS missing: exit 3, unblock False
+PASS null: exit 3, unblock False
+PASS malformed: exit 3, unblock False
+PASS drift: exit 3, unblock False
+PASS open-parent: exit 0, unblock False
+PASS wt-create: exit 0, unblock True
+PASS wt-fail: exit 1, unblock False
+PASS wt-branch: exit 0, unblock True
+PASS wt-dotgit: exit 0, unblock True
+PASS wt-orphan-ref: exit 1, unblock False
+PASS wt-kept-ref: exit 1, unblock False
+PASS wt-wrong-branch: exit 1, unblock False
+PASS open-parent-wt: exit 0, unblock False
+PASS verify-fix: exit 0, unblock False
+PASS verify-ship: exit 0, unblock True
+PASS verify-none: exit 0, unblock False
+PASS decision-fix: exit 0, unblock False
+PASS decision-ok: exit 0, unblock True
+PASS dry-wt: exit 0, unblock False
+PASS dry-fix: exit 0, unblock False
+board_selftest: 21/21 cases pass (stub board vari8-test-6dccae, hermes stubbed)
+(exit 0)
+```
+
+Discrimination proof. Mutation under test: drop the `if not has_branch:` guard in
+`ensure_worktree` so `git branch -D beta/c` runs unconditionally on a failed add
+(board.py sha256 before: `0099432f580fac04ab9a61ca84fc5d5490c9b35364b4a705230b32c73bc7c33c`).
+
+```
+$ python3 icm/05-build/tools/board_selftest.py
+PASS ok: exit 0, unblock True
+PASS missing: exit 3, unblock False
+PASS null: exit 3, unblock False
+PASS malformed: exit 3, unblock False
+PASS drift: exit 3, unblock False
+PASS open-parent: exit 0, unblock False
+PASS wt-create: exit 0, unblock True
+PASS wt-fail: exit 1, unblock False
+PASS wt-branch: exit 0, unblock True
+PASS wt-dotgit: exit 0, unblock True
+PASS wt-orphan-ref: exit 1, unblock False
+FAIL wt-kept-ref: exit 1, unblock False | pre-existing ref refs/heads/beta/c was deleted
+  stdout: released 0 cards with every parent done; 0 stay blocked on open parents; 0 held on a rejected parent verdict
+  stderr: release: worktree creation failed, these stay blocked:
+  C:build t_c: worktree /home/nexuslink/.hermes/cache/scratch/board-selftest-9thvkcto/wt-kept-ref/wt/c: git worktree add failed: fatal: '/home/nexuslink/.hermes/cache/scratch/board-selftest-9thvkcto/wt-kept-ref/wt/c' already exists
+PASS wt-wrong-branch: exit 1, unblock False
+PASS open-parent-wt: exit 0, unblock False
+PASS verify-fix: exit 0, unblock False
+PASS verify-ship: exit 0, unblock True
+PASS verify-none: exit 0, unblock False
+PASS decision-fix: exit 0, unblock False
+PASS decision-ok: exit 0, unblock True
+PASS dry-wt: exit 0, unblock False
+PASS dry-fix: exit 0, unblock False
+board_selftest: 20/21 cases pass (stub board vari8-test-a49f1b, hermes stubbed)
+(exit 1; only wt-kept-ref went red, all 20 other cases still pass)
+```
+
+board.py restored byte-identical: sha256 after =
+`0099432f580fac04ab9a61ca84fc5d5490c9b35364b4a705230b32c73bc7c33c` (matches before; `git diff`
+on board.py empty). Re-run after restore: 21/21, exit 0 (stub board vari8-test-b360df).
