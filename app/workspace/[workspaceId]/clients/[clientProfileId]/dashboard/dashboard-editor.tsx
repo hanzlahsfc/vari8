@@ -57,6 +57,10 @@ const COLUMNS: Record<BreakpointName, number> = {
 const BREAKPOINTS: BreakpointName[] = ["desktop", "tablet", "mobile"];
 const ROW_PX = 72;
 
+function mintWidgetId(kind: WidgetKind): string {
+  return `w-${kind.toLowerCase()}-${Date.now().toString(36)}`;
+}
+
 /**
  * Lily-aligned autosaving builder (I1-R2): breakpoint canvas with
  * drag/resize commits (pointer end only — never per-move), per-widget
@@ -96,7 +100,9 @@ export function DashboardEditor({
   const [preview, setPreview] = useState(false);
   const router = useRouter();
   const routerRef = useRef(router);
-  routerRef.current = router;
+  useEffect(() => {
+    routerRef.current = router;
+  });
 
   // I1-R5/R6: the autosave slot is owned by the module-level coordinator
   // — drafts, debounce timers, queued saves and the confirmed revision
@@ -126,7 +132,9 @@ export function DashboardEditor({
   const saveState = slot.saveState;
   const leavePrompt = slot.leavePrompt;
   const latestConfig = useRef(config);
-  latestConfig.current = config;
+  useEffect(() => {
+    latestConfig.current = config;
+  });
 
   // Navigation guard: singleton module-level listeners bound once to
   // coordinator-backed callbacks — pending work stays observable and
@@ -231,7 +239,7 @@ export function DashboardEditor({
   };
 
   const addWidget = (kind: WidgetKind) => {
-    const id = `w-${kind.toLowerCase()}-${Date.now().toString(36)}`;
+    const id = mintWidgetId(kind);
     mutate((c) => {
       const nextLayouts = { ...c.layouts };
       // a rect in every *present* breakpoint (coherence rule) + desktop
