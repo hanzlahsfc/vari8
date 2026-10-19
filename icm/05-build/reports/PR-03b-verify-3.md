@@ -11,13 +11,13 @@ All five checks pass on HEAD. Three declared notes for the orchestrator (§2, §
 
 ## Per-item verdicts
 
-| Item | Verdict | Basis |
-|---|---|---|
-| (1) no effect-level setState, no IIFE, no dodge in feedback-thread | PASS | §1 |
-| (2) "Checking..." visible at mount, not deferred by a tick | PASS, with wording caveat | §2 |
-| (3) round-2 probes pass on HEAD (dashboard and calendar discriminators) | PASS | §3 |
-| (4) gates on HEAD | PASS | §4 |
-| (5) `origin/Vari8-Beta...HEAD` touches no `frontend/` file, not `docs/STATUS.md` | PASS | §5 |
+| Item                                                                             | Verdict                   | Basis |
+| -------------------------------------------------------------------------------- | ------------------------- | ----- |
+| (1) no effect-level setState, no IIFE, no dodge in feedback-thread               | PASS                      | §1    |
+| (2) "Checking..." visible at mount, not deferred by a tick                       | PASS, with wording caveat | §2    |
+| (3) round-2 probes pass on HEAD (dashboard and calendar discriminators)          | PASS                      | §3    |
+| (4) gates on HEAD                                                                | PASS                      | §4    |
+| (5) `origin/Vari8-Beta...HEAD` touches no `frontend/` file, not `docs/STATUS.md` | PASS                      | §5    |
 
 ## 1. Item (1): setState in effects, IIFE, dodges
 
@@ -32,11 +32,11 @@ Code read, `components/checkin/feedback-thread.tsx` at HEAD:
 
 Lint proof:
 
-| Command | Exit | Result |
-|---|---|---|
-| `npx eslint --no-inline-config --rule '{"react-hooks/set-state-in-effect":"error", ...}' components/checkin/feedback-thread.tsx` (all disables ignored) | 0 | 0 set-state-in-effect, 0 refs, 0 purity, 0 immutability. One `exhaustive-deps` warning on the line-218 disable (pre-existing). |
-| Same command on base `55a0f08` | 1 | `148:5 error set-state-in-effect` (the synchronous setState that the first verifier flagged). |
-| Positive control `components/checkin/v3-control.tsx` (temporary, removed): A = sync `setN` in effect body; B = same setState in an effect-launched `async` IIFE | 1 | A flagged (`7:5 error set-state-in-effect`). B not flagged. |
+| Command                                                                                                                                                         | Exit | Result                                                                                                                         |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `npx eslint --no-inline-config --rule '{"react-hooks/set-state-in-effect":"error", ...}' components/checkin/feedback-thread.tsx` (all disables ignored)         | 0    | 0 set-state-in-effect, 0 refs, 0 purity, 0 immutability. One `exhaustive-deps` warning on the line-218 disable (pre-existing). |
+| Same command on base `55a0f08`                                                                                                                                  | 1    | `148:5 error set-state-in-effect` (the synchronous setState that the first verifier flagged).                                  |
+| Positive control `components/checkin/v3-control.tsx` (temporary, removed): A = sync `setN` in effect body; B = same setState in an effect-launched `async` IIFE | 1    | A flagged (`7:5 error set-state-in-effect`). B not flagged.                                                                    |
 
 The control proves two things. The rule is live in this config, so 0 findings on HEAD is not vacuous. And the IIFE really does hide the setState from the rule, which is why the code-level grep matters. HEAD has neither the IIFE nor a sync setState.
 
@@ -47,12 +47,12 @@ Probe: `icm/05-build/evidence/PR-03b-verify-3/probes/mount-timing.dom.test.tsx` 
 - T1: after `render()` returns, with no `await`, the `checkin-feedback-checking` note is in the DOM, and textarea and send button are disabled.
 - T2 (diagnostic): a `useLayoutEffect` sibling reads the DOM at the first commit, before any passive effect.
 
-| Tree | T1 (sync after mount) | T2 first-commit value | Exit |
-|---|---|---|---|
-| base `55a0f08` | PASS | `false` (note appears in the commit caused by the passive-effect setState) | 0 |
-| HEAD `0105160` | PASS | `true` (note is in the first commit) | 0 |
-| HEAD, deferred variant (`checking` set in `setTimeout(0)`) | **FAIL** (`Unable to find checkin-feedback-checking`) | `false` | 1 |
-| base, same deferred variant | FAIL | `false` | 1 |
+| Tree                                                       | T1 (sync after mount)                                 | T2 first-commit value                                                      | Exit |
+| ---------------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------- | ---- |
+| base `55a0f08`                                             | PASS                                                  | `false` (note appears in the commit caused by the passive-effect setState) | 0    |
+| HEAD `0105160`                                             | PASS                                                  | `true` (note is in the first commit)                                       | 0    |
+| HEAD, deferred variant (`checking` set in `setTimeout(0)`) | **FAIL** (`Unable to find checkin-feedback-checking`) | `false`                                                                    | 1    |
+| base, same deferred variant                                | FAIL                                                  | `false`                                                                    | 1    |
 
 Variant: `probes/variant-deferred-thread.tsx` is HEAD's component with the `checking` state moved into a one-tick timer. The probe fails it. So the probe discriminates a deferral. The variant fails on base too only because it is a deliberately deferred copy; that is the control, not a base defect.
 
@@ -62,26 +62,26 @@ Wording caveat: the card and the orchestrator brief say "visible on the first co
 
 Probes from `icm/05-build/evidence/PR-03b-verify-2/probes/`, copied to `tests/unit/`, run with `npx vitest run <file> --reporter=verbose`, then removed.
 
-| Probe | Tests | Exit | Covers |
-|---|---|---|---|
-| `reverify2-probe.dom.test.tsx` | 6/6 | 0 | hunk 1 PARITY and GAP; hunk 2 PARITY and **LOAD-REBIND** (calendar discriminator); hunk 3 PARITY ok and error |
-| `reverify2-window.dom.test.tsx` | 2/2 | 0 | hunk 1 CONTROL and **WINDOW** (dashboard discriminator) |
-| `reverify2-mount.dom.test.tsx` | 3/3 | 0 | hunk 3 mount checking, sent, not_sent |
-| `reverify2-feedback-char.dom.test.tsx` | 2/2 | 0 | hunk 3 characterisation |
+| Probe                                  | Tests | Exit | Covers                                                                                                        |
+| -------------------------------------- | ----- | ---- | ------------------------------------------------------------------------------------------------------------- |
+| `reverify2-probe.dom.test.tsx`         | 6/6   | 0    | hunk 1 PARITY and GAP; hunk 2 PARITY and **LOAD-REBIND** (calendar discriminator); hunk 3 PARITY ok and error |
+| `reverify2-window.dom.test.tsx`        | 2/2   | 0    | hunk 1 CONTROL and **WINDOW** (dashboard discriminator)                                                       |
+| `reverify2-mount.dom.test.tsx`         | 3/3   | 0    | hunk 3 mount checking, sent, not_sent                                                                         |
+| `reverify2-feedback-char.dom.test.tsx` | 2/2   | 0    | hunk 3 characterisation                                                                                       |
 
 Logs: `evidence/PR-03b-verify-3/logs/v2-reverify2-*-HEAD.log`.
 
 ## 4. Item (4): gates on HEAD
 
-| Command | Exit | Result |
-|---|---|---|
-| `npm run typecheck` | 0 | `tsc --noEmit` clean |
-| `npm run lint` | 0 | 0 errors, 3 warnings (pre-existing `no-unused-vars` in files with no diff vs base) |
+| Command                                                       | Exit        | Result                                                                               |
+| ------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------ |
+| `npm run typecheck`                                           | 0           | `tsc --noEmit` clean                                                                 |
+| `npm run lint`                                                | 0           | 0 errors, 3 warnings (pre-existing `no-unused-vars` in files with no diff vs base)   |
 | `npx eslint . \| grep -cE "(warning\|error)  .*react-hooks/"` | 0 (count 0) | 0 react-hooks findings; the four rules at `error` in `eslint.config.mjs` lines 13-16 |
-| `npm run test` | 0 | 97 files passed, 1155 tests passed |
-| `npm run build` | 0 | `next build --turbopack`, compiled |
-| `cd frontend && npm run build` | 0 | static export |
-| `npm run index:check` | 0 | "index:check OK: 6 index docs and all AGENTS.md routers match" |
+| `npm run test`                                                | 0           | 97 files passed, 1155 tests passed                                                   |
+| `npm run build`                                               | 0           | `next build --turbopack`, compiled                                                   |
+| `cd frontend && npm run build`                                | 0           | static export                                                                        |
+| `npm run index:check`                                         | 0           | "index:check OK: 6 index docs and all AGENTS.md routers match"                       |
 
 Logs: `evidence/PR-03b-verify-3/gates/`.
 

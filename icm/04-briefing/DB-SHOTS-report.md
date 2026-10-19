@@ -24,13 +24,13 @@ surface of the gap matrix.
 
 ### Legend
 
-| Colour | Matrix status | Label wording |
-|---|---|---|
-| amber | UNCONFIGURED | `switch on` |
-| blue | UNWIRED | `connect` |
-| violet | PARTIAL | `reshape` |
-| red | MISSING | `build` |
-| pink | CONFLICT / ROLES | `your call` |
+| Colour | Matrix status    | Label wording |
+| ------ | ---------------- | ------------- |
+| amber  | UNCONFIGURED     | `switch on`   |
+| blue   | UNWIRED          | `connect`     |
+| violet | PARTIAL          | `reshape`     |
+| red    | MISSING          | `build`       |
+| pink   | CONFLICT / ROLES | `your call`   |
 
 ## Output
 
@@ -39,23 +39,23 @@ image per screen. `index.json` maps each shot to surface, screen name, route, cl
 path, and the matrix rows matched (id, status word, element count). 249 row
 matches across all screens; 0 page errors.
 
-| Surface | Shots | Files (clean stem) |
-|---|---|---|
-| S01 coach shell · roster · profile | 6 | `s01-roster`, `s01-profile-overview`, `s01-profile-plans`, `s01-profile-checkins`, `s01-profile-notes`, `s01-profile-onboarding` |
-| S02 messages · notes · media | 4 | `s02-messages`, `s02-thread`, `s02-thread-attachments`, `s02-notes-todos` |
-| S03 check-ins | 3 | `s03-checkins-board`, `s03-add-extra`, `s03-checkin-review` |
-| S04 habits | 2 | `s04-habit-editor`, `s04-template-habits` |
-| S05 templates · setup | 4 | `s05-templates`, `s05-template-editor`, `s05-tracker-setup`, `s05-client-setup` |
-| S06 nutrition | 2 | `s06-mealplan-editor`, `s06-template-nutrition` |
-| S07 training | 2 | `s07-training-editor`, `s07-exercise-library` |
-| S08 dashboard builder | 3 | `s08-builder`, `s08-widget-gallery`, `s08-template-dashboard` |
-| S09 client tracker | 4 | `s09-tracker-today`, `s09-tracker-week`, `s09-tracker-trends`, `s09-tracker-config` |
-| S10 appearance · Ethereal studio | 3 | `s10-appearance`, `s10-clients-studio`, `s10-mealplan-studio` |
-| S11 identity · access | 2 | `s11-preferences`, `s11-client-preview` |
+| Surface                            | Shots | Files (clean stem)                                                                                                               |
+| ---------------------------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------- |
+| S01 coach shell · roster · profile | 6     | `s01-roster`, `s01-profile-overview`, `s01-profile-plans`, `s01-profile-checkins`, `s01-profile-notes`, `s01-profile-onboarding` |
+| S02 messages · notes · media       | 4     | `s02-messages`, `s02-thread`, `s02-thread-attachments`, `s02-notes-todos`                                                        |
+| S03 check-ins                      | 3     | `s03-checkins-board`, `s03-add-extra`, `s03-checkin-review`                                                                      |
+| S04 habits                         | 2     | `s04-habit-editor`, `s04-template-habits`                                                                                        |
+| S05 templates · setup              | 4     | `s05-templates`, `s05-template-editor`, `s05-tracker-setup`, `s05-client-setup`                                                  |
+| S06 nutrition                      | 2     | `s06-mealplan-editor`, `s06-template-nutrition`                                                                                  |
+| S07 training                       | 2     | `s07-training-editor`, `s07-exercise-library`                                                                                    |
+| S08 dashboard builder              | 3     | `s08-builder`, `s08-widget-gallery`, `s08-template-dashboard`                                                                    |
+| S09 client tracker                 | 4     | `s09-tracker-today`, `s09-tracker-week`, `s09-tracker-trends`, `s09-tracker-config`                                              |
+| S10 appearance · Ethereal studio   | 3     | `s10-appearance`, `s10-clients-studio`, `s10-mealplan-studio`                                                                    |
+| S11 identity · access              | 2     | `s11-preferences`, `s11-client-preview`                                                                                          |
 
 ## Notes for the assembly lane
 
-- Match counts are *visible-text* matches: a row counts only if its element text is
+- Match counts are _visible-text_ matches: a row counts only if its element text is
   actually rendered on that screen. Low counts (e.g. `s06-template-nutrition` 0/29,
   `s08-builder` 2/43) mean the surface's rows live on other screens or are not
   text-visible in the canvas — not a capture failure.

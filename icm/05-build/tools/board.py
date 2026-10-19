@@ -19,9 +19,14 @@ Usage:
   board.py --release           unblock blocked cards whose parents are all done (orchestrator only)
   board.py --release --dry-run list what --release would unblock, change nothing
   board.py --release --watch   repeat --release every 60 s until no releasable card is left
+Release creates each released card's linked worktree (path from graph.json, branch beta/<slug>, from
+origin/Vari8-Beta) before unblocking it; a card whose worktree cannot be created stays blocked and the run
+exits 1. A verify parent releases its children only with a result starting SHIP; a decision parent
+releases them unless its result starts FIX; a parent with a rejected verdict is listed and holds its children.
 Release fails closed (exit 3, nothing unblocked) when any candidate's `parents` field is missing,
 malformed or different from graph.json. Self-test: `python3 icm/05-build/tools/board_selftest.py`.
-Environment: BOARD_SLUG overrides the board (default vari8), BOARD_IDS the id map file.
+Environment: BOARD_SLUG overrides the board (default vari8), BOARD_IDS the id map file, BOARD_REPO the repo
+that holds the worktrees (default this checkout), BOARD_BASE the base ref (default origin/Vari8-Beta).
 """
 import json
 import os
@@ -33,6 +38,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.dirname(HERE)
 BETA = os.path.dirname(os.path.dirname(OUT))
 BOARD = os.environ.get("BOARD_SLUG", "vari8")
+REPO = os.environ.get("BOARD_REPO", BETA)  # repo that owns the card worktrees
+BASE = os.environ.get("BOARD_BASE", "origin/Vari8-Beta")  # base for new card branches
 GRAPH = json.load(open(os.environ.get("BOARD_GRAPH", f"{OUT}/graph.json")))
 IDS = os.environ.get("BOARD_IDS", f"{OUT}/cards/board-ids.tsv")
 DRY = "--dry-run" in sys.argv
@@ -201,10 +208,58 @@ def board_parents(tid, key, ids):
     return parents, None
 
 
+def verdict_problem(tid, key, cache):
+    """None when this done parent lets its children go; otherwise the reason it does not.
+
+    verify: the result must start with SHIP. decision: the result must be recorded and must not start
+    with FIX (decisions record free text, no SHIP token). Other kinds: done is enough.
+    """
+    kind = BY_KEY[key]["kind"]
+    if kind not in ("verify", "decision"):
+        return None
+    if tid not in cache:
+        cache[tid] = str(((show(tid).get("task") or {}).get("result")) or "").strip()
+    result = cache[tid]
+    if kind == "verify" and result.startswith("SHIP"):
+        return None
+    if kind == "decision" and result and not result.startswith("FIX"):
+        return None
+    return f"{key} {tid} ({kind}) result {result[:60]!r} does not release its children"
+
+
+def ensure_worktree(path, branch):
+    """Create the linked worktree at `path` on `branch` from BASE, reusing an existing branch.
+
+    Reuses path only when its worktree is checked out on `branch`; a worktree on any other branch,
+    a detached HEAD or an unreadable .git raises RuntimeError. A failed `worktree add -b` deletes
+    the branch ref it created (never a pre-existing one). Raises RuntimeError when git refuses.
+    """
+    if os.path.exists(os.path.join(path, ".git")):
+        r = subprocess.run(["git", "-C", path, "symbolic-ref", "--short", "-q", "HEAD"],
+                           capture_output=True, text=True)
+        actual = r.stdout.strip() if r.returncode == 0 else ""
+        if actual == branch:
+            return
+        raise RuntimeError(f"{path}: existing worktree is on {actual or 'no branch'}, not {branch}")
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+    except OSError as e:
+        raise RuntimeError(str(e))
+    has_branch = subprocess.run(["git", "-C", REPO, "show-ref", "--verify", "--quiet", f"refs/heads/{branch}"]).returncode == 0
+    args = ["worktree", "add", "-q", path, branch] if has_branch else ["worktree", "add", "-q", "-b", branch, path, BASE]
+    r = subprocess.run(["git", "-C", REPO, *args], capture_output=True, text=True)
+    if r.returncode:
+        if not has_branch:
+            subprocess.run(["git", "-C", REPO, "branch", "-D", branch], capture_output=True)
+        raise RuntimeError(f"git worktree add failed: {(r.stderr or r.stdout).strip()}")
+
+
 def release_once():
     ids = load_ids()
+    key_of = {tid: key for key, tid in ids.items()}
     st = statuses()
-    eligible, waiting, errors = [], 0, []
+    cache = {}
+    eligible, held, waiting, errors = [], [], 0, []
     for c in GRAPH["cards"]:
         tid = ids.get(c["key"])
         if not tid or st.get(tid) != "blocked" or c.get("external") in ("running", "done") or not c["assignee"]:
@@ -213,27 +268,61 @@ def release_once():
         if err or parents is None:
             errors.append(err or f"{c['key']} {tid}: no parents list")
             continue
-        if all(st.get(p) == "done" for p in parents):
-            eligible.append((c["key"], tid))
-        else:
+        if not all(st.get(p) == "done" for p in parents):
             waiting += 1
+            continue
+        why = next((w for w in (verdict_problem(p, key_of[p], cache) for p in parents) if w), None)
+        if why:
+            held.append(why)
+        else:
+            eligible.append((c["key"], tid))
     if errors:
         sys.stderr.write("release refused, nothing unblocked:\n" + "\n".join(f"  {e}" for e in errors) + "\n")
         sys.exit(3)
+    todo = [(k, tid) for k, tid in eligible if needs_workspace(BY_KEY[k]) and BY_KEY[k].get("worktree")]
     if DRY:
         for k, tid in eligible:
             print(f"would release {k} {tid}")
-        print(f"dry run: {len(eligible)} releasable, {waiting} blocked on open parents")
+        for k, _ in todo:
+            c = BY_KEY[k]
+            if os.path.exists(os.path.join(c["worktree"], ".git")):
+                print(f"worktree exists, reused: {c['worktree']}")
+            else:
+                print(f"would create worktree {c['worktree']} on {c['branch'] or 'beta/' + c['slug']} from {BASE}")
+        for h in held:
+            print(f"rejected parent: {h}")
+        print(f"dry run: {len(eligible)} releasable, {waiting} blocked on open parents, {len(held)} rejected parent verdicts")
         return len(eligible)
-    if eligible:
-        run(kb("unblock", *[tid for _, tid in eligible], "--reason", "board.py --release: every parent done"))
+    if any(not os.path.exists(os.path.join(BY_KEY[k]["worktree"], ".git")) for k, _ in todo):
+        fetched = subprocess.run(["git", "-C", REPO, "fetch", "-q", "origin"], capture_output=True, text=True)
+        if fetched.returncode:
+            sys.stderr.write(f"release refused, nothing unblocked: git fetch origin failed: {fetched.stderr.strip()}\n")
+            sys.exit(1)
+    failed, ready = [], []
+    needs_wt = {k for k, _ in todo}
+    for k, tid in eligible:
+        c = BY_KEY[k]
+        if k in needs_wt:
+            try:
+                ensure_worktree(c["worktree"], c["branch"] or f"beta/{c['slug']}")
+            except RuntimeError as e:
+                failed.append(f"{k} {tid}: worktree {c['worktree']}: {e}")
+                continue
+        ready.append((k, tid))
+    if ready:
+        run(kb("unblock", *[tid for _, tid in ready], "--reason", "board.py --release: every parent done"))
         st = statuses()
-        bad = [(k, tid, st.get(tid)) for k, tid in eligible if st.get(tid) not in ("ready", "todo", "running")]
+        bad = [(k, tid, st.get(tid)) for k, tid in ready if st.get(tid) not in ("ready", "todo", "running")]
         if bad:
             sys.stderr.write(f"release: unexpected status after unblock: {bad}\n")
             sys.exit(1)
-    print(f"released {len(eligible)} cards with every parent done; {waiting} stay blocked on open parents")
-    return len(eligible)
+    print(f"released {len(ready)} cards with every parent done; {waiting} stay blocked on open parents; {len(held)} held on a rejected parent verdict")
+    for h in held:
+        print(f"  held: {h}")
+    if failed:
+        sys.stderr.write("release: worktree creation failed, these stay blocked:\n" + "\n".join(f"  {f}" for f in failed) + "\n")
+        sys.exit(1)
+    return len(ready)
 
 
 def release():
