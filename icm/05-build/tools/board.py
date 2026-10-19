@@ -19,6 +19,8 @@ Usage:
   board.py --release           unblock blocked cards whose parents are all done (orchestrator only)
   board.py --release --dry-run list what --release would unblock, change nothing
   board.py --release --watch   repeat --release every 60 s until no releasable card is left
+Release fails closed (exit 3, nothing unblocked) when any candidate's `parents` field is missing,
+malformed or different from graph.json. Self-test: `python3 icm/05-build/tools/board_selftest.py`.
 Environment: BOARD_SLUG overrides the board (default vari8), BOARD_IDS the id map file.
 """
 import json
@@ -183,19 +185,41 @@ def sync():
     print(f"sync {BOARD}: {changed}")
 
 
+def board_parents(tid, key, ids):
+    """Parent ids from `hermes kanban show --json`, failing closed.
+
+    A missing, null or malformed `parents` field, or parents that differ from graph.json, is an
+    error: the caller must not treat it as "no parents" and release the card.
+    """
+    d = show(tid)
+    parents = d.get("parents") if isinstance(d, dict) else None
+    if not isinstance(parents, list) or not all(isinstance(p, str) and p for p in parents):
+        return None, f"{key} {tid}: `parents` missing or malformed in `hermes kanban show --json` ({type(parents).__name__})"
+    want = sorted(ids[p] for p in BY_KEY[key]["parents"] if p in ids)
+    if sorted(parents) != want or len(want) != len(BY_KEY[key]["parents"]):
+        return None, f"{key} {tid}: board parents {sorted(parents)} differ from graph.json {want}; run --sync first"
+    return parents, None
+
+
 def release_once():
     ids = load_ids()
     st = statuses()
-    eligible, waiting = [], 0
+    eligible, waiting, errors = [], 0, []
     for c in GRAPH["cards"]:
         tid = ids.get(c["key"])
         if not tid or st.get(tid) != "blocked" or c.get("external") in ("running", "done") or not c["assignee"]:
             continue
-        parents = show(tid).get("parents") or []
+        parents, err = board_parents(tid, c["key"], ids)
+        if err or parents is None:
+            errors.append(err or f"{c['key']} {tid}: no parents list")
+            continue
         if all(st.get(p) == "done" for p in parents):
             eligible.append((c["key"], tid))
         else:
             waiting += 1
+    if errors:
+        sys.stderr.write("release refused, nothing unblocked:\n" + "\n".join(f"  {e}" for e in errors) + "\n")
+        sys.exit(3)
     if DRY:
         for k, tid in eligible:
             print(f"would release {k} {tid}")
