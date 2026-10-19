@@ -110,6 +110,17 @@ Settles the `AUTH` decision (answer 4). The evaluation lane writes `icm/05-build
 - The outcome is recorded as D16a when the lane lands, and PR-05 implements it. Session revocation, inactive-account rejection, malformed-claim rejection and fail-closed lookup survive either way (TEST-AUDIT conditional cases `TB0.093`, `TB1.020`, `TB1.021`, `TB3.070`).
 - Mobile token issuance (D6) stays a reviewed design inside PR-31; PR-05 builds the cookie session, the `app/api/v1` boundary and the identity seam `getViewer()` that every screen calls.
 
+## D16a. AUTH outcome: Better Auth
+
+Recorded from `icm/05-build/AUTH-DECISION.md` (verdict) and the orchestrator ruling of 02:12 on 2026-10-19, which accepted it.
+
+- Better Auth replaces Auth.js v5 (`next-auth@5.0.0-beta.32`) for sessions, passwords, two-factor, login rate limits and bearer tokens, with the Prisma adapter. PR-05 (#58) implements it.
+- Hanzlah's invite token store (`lib/tokens/*`, `lib/workspace/invitations.ts`) stays the single-use invite authority. The organization plugin is not used.
+- Password reset links expire after 60 minutes and work once. This supersedes the 12 hour value in `lib/tokens/store.ts:36`; the owner can reverse it.
+- Mobile clients use the bearer plugin. Refresh-token rotation and Capacitor secure storage are deferred to the Capacitor milestone (PR-31 and a follow-up issue).
+- Criteria the evaluation could not show as covered, accepted by the ruling: refresh rotation (deferred), an audit log for impersonation (no canvas console uses impersonation, R3-23), Capacitor storage (chosen at mobile time). Prisma stays on 6 unless the adapter needs 7, proven inside PR-05.
+- The four guarantees named in D16 survive the swap; the PR-05 verifier checks each one.
+
 ## D17. Coach self-signup
 
 Settles Q1 (answer 5) and amends product decision #13. A public sign-up page creates a `User`, a new `Workspace` and an `owner` membership in one transaction. Clients still join only by a staff invite (D15). Sign-up is rate limited. Mail goes through one delivery port with a development adapter that writes to a local mailbox file; the production provider stays an open owner choice. PR-04 adds a development seed so every lane can sign in without the public page; PR-05 builds the page.
