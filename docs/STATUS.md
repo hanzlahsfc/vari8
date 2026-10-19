@@ -1,3 +1,35 @@
+## 2026-10-19 — PR-03b fix pass 1: verifier findings repaired, merged with Vari8-Beta
+
+- Independent verifier (Haiku, shinobu) returned FIX on `26b8690`
+  (`icm/05-build/reports/PR-03b-verify.md`); four repairs on
+  `beta/pr-03-react-hooks`:
+  `288f83f` dashboard-editor commits read `slot.latestConfig` at point of
+  use — the ref + passive-effect sync are gone, so a slot write landing
+  mid-gesture can no longer be reverted by a stale base;
+  `efecd1c` checkin-calendar keys the loaded result on `(range, load)` —
+  a rebound `load` restores the loading surface during refetch, matching
+  base;
+  `adac7e4` feedback-thread success consequences moved into the
+  `useActionState` action — the no-await IIFE, `lastHandledRef` and
+  disable comment are removed;
+  `118e26f` checkin-instances e2e spec calls
+  `unrouteAll({ behavior: "wait" })` so the gate-held handler finishes
+  `route.continue()` before the route is removed — fixes
+  "Route is already handled!".
+- Merged `origin/Vari8-Beta` `ea8f514` (PR-03a test audit) at `d4880ef`;
+  one modify/delete conflict on `checkin-instances.spec.ts` resolved by
+  accepting the upstream deletion — fix and passing run remain in
+  history. Merged product code (`app/`, `components/`, `lib/`) is
+  byte-identical to the e2e-tested tree.
+- Gates post-merge: typecheck 0; lint 0 (0 errors / 3 pre-existing
+  warnings, 0 react-hooks findings, four rules at error); test 0
+  (96 files / 1137 tests — audit-pruned); build 0;
+  `frontend && npm run build` 0.
+- e2e: the verifier's 7 specs ran pre-merge at `118e26f` on `app_pr03b`
+  (vari8-db-1 @ 127.0.0.1:5433): **131/131 passed**, including the
+  previously-racy beforeunload test. PR-03a deleted the suite upstream.
+  Record: `icm/05-build/reports/PR-03b.md` §7.
+
 ## 2026-10-19 — PR-02: root app on Next.js 16.3.8 + React 19.3.0 — verified locally
 
 - Branch `beta/pr-02-next16` (worktree `vari8-worktrees/pr-02-next16`), base

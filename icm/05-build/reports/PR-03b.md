@@ -21,7 +21,7 @@ changed anywhere.
 | 2 | `app/(tracker)/workspace/[workspaceId]/dashboard/client-habits-widget.tsx` | set-state-in-effect | Prop adoption via the documented render-time prev-compare: when `initial` identity changes, `setHabits(initial)` runs in the adjust pass instead of an effect. |
 | 3 | `app/workspace/[workspaceId]/clients/[clientProfileId]/dashboard/dashboard-editor.tsx` | refs (2) | `routerRef.current` and `latestConfig.current` now sync inside a `useEffect` instead of during render. |
 | 4 | same | purity | `Date.now()` id minting moved to module-scope `mintWidgetId(kind)`; `addWidget` calls it. Same id format and uniqueness. |
-| 5 | `components/checkin/checkin-calendar.tsx` | set-state-in-effect | Result is keyed to its request range (`{range, value}`); the render derives `result` as null while a new range is in flight, the same loading surface the removed `setResult(null)` produced. Async callback setState stays. |
+| 5 | `components/checkin/checkin-calendar.tsx` | set-state-in-effect | Result is keyed to its `(range, load)` request pair; the render derives `result` as null while either changed and the refetch is in flight — the loading surface the removed `setResult(null)` produced on every trigger. Async callback setState stays. (Corrected in §7: the original claim "same loading surface" held only for range changes; a rebound `load` kept the stale result visible until fix pass 1.) |
 | 6 | `components/checkin/draft-editor.tsx` | set-state-in-effect | Prop reseed via render-time prev-compare on `[initialName, initialRevision, initialDraft]`; `reseedDraftState` runs through the updater with the same monotonic semantics. |
 | 7 | `components/checkin/feedback-thread.tsx` | set-state-in-effect | Mount reconciliation's synchronous `setNonce`/`setReconcile` moved inside the async flow that performs the resolve call; ordering (nonce restore then "checking") unchanged. |
 | 8 | same | immutability | `const [body, setBody] = useState("")` moved above the effects that reference `setBody`. The success-effect's setter batch moved inside the async boundary for symmetry with finding 7; dedup via `lastHandledRef` preserved. |
@@ -104,3 +104,66 @@ requires a fully normalized draft.
 - Screenshots are dev-server output (same render path as prod for these
   components); the production build also passes.
 - Fixtures are synthetic; seeded ids carry the `pr03b` namespace.
+
+## 7. Fix pass 1 — independent verification findings
+
+Independent verifier (Haiku, shinobu gear) returned **FIX** on `26b8690`
+(`icm/05-build/reports/PR-03b-verify.md`): three hunks changed behavior or
+dodged the lint rule, and the one runtime check of the submission-panel
+hunk raced in the harness. All four repaired; merged with
+`origin/Vari8-Beta` `ea8f514` (PR-03a test audit) at `d4880ef`.
+
+| # | Finding | Commit | Fix |
+|---|---------|--------|-----|
+| 1 | `dashboard-editor`: `latestConfig` ref synced in an effect — `mutate`/`setRect` could commit from a stale base before the effect flushed, reverting an async reload | `288f83f` | Ref and sync effect deleted; `mutate`/`setRect` read `slot.latestConfig` at commit time. `commitDashboardConfig` writes the slot synchronously, so a `reloadDashboardSlot` write landing between pointerdown and pointerup is the base the commit builds on — the reload is never reverted. The ref version's stale window ran until the passive-effect flush; reading the slot at point of use removes it entirely. |
+| 2 | `checkin-calendar`: `[range, load]` deps re-fetch on a rebound `load`, but `loaded.range === range` kept the old result visible — the base `setResult(null)` loading surface did not hold on that path | `efecd1c` | `loaded` now stores `{range, load, value}`; `result` serves only the exact `(load, range)` pair in flight, so a fresh `load` identity (re-bound server action after an RSC refresh) resets to "Loading…" during the refetch — the base surface on every trigger. |
+| 3 | `feedback-thread`: success effect wrapped its synchronous setState batch in a no-`await` async IIFE — dodged `set-state-in-effect` without fixing it | `adac7e4` | Success consequences moved into the `useActionState` action after the server call resolves — same pattern as the submission panel. The effect, `lastHandledRef` dedup and the `eslint-disable` comment are gone; `sendState` render consumers unchanged. |
+| 4 | `checkin-instances.spec.ts:644` harness race: `route.continue: Route is already handled!` | `118e26f` | `page.unrouteAll({ behavior: "wait" })` — waits for the gate-held handler's `route.continue()` before updating interception patterns. With the default behavior the pattern update let the server auto-continue the in-flight route, and the handler's own continue then threw. Assertions unchanged. |
+
+### Gates after fixes — pre-merge tree `118e26f`
+
+| Command | Exit | Result |
+|---|---|---|
+| `npm run typecheck` | 0 | `tsc --noEmit` clean |
+| `npm run lint` | 0 | 0 errors, 5 pre-existing `no-unused-vars` warnings, **0 react-hooks findings**; the four rules stay `error` |
+| `npm run test` | 0 | 105 files / 1308 tests passed |
+| `npm run build` | 0 | `next build --turbopack` |
+| e2e — the verifier's 7 specs on `app_pr03b` @ 127.0.0.1:5433 | 0 | **131 passed / 0 failed**, including the previously racing `checkin-instances.spec.ts:644` (~0.6s) |
+
+(`frontend` was untouched by the fixes; its build gate was re-run
+post-merge below.)
+
+### Merge `origin/Vari8-Beta` `ea8f514` → `d4880ef`
+
+One conflict: `tests/e2e/checkin-instances.spec.ts` modify/delete —
+resolved by accepting the owner-approved TEST-AUDIT deletion (PR-03a).
+The race fix and its passing run remain in branch history (`118e26f`).
+
+`git diff --name-only 118e26f..HEAD -- app components lib eslint.config.mjs prisma db`
+is empty — the merged product code is byte-identical to the e2e-tested
+tree.
+
+### Gates after merge — `d4880ef`
+
+| Command | Exit | Result |
+|---|---|---|
+| `npm run typecheck` | 0 | clean |
+| `npm run lint` | 0 | 0 errors, 3 pre-existing warnings (two warning sites were deleted specs), 0 react-hooks findings |
+| `npm run test` | 0 | 96 files / 1137 tests — audit-pruned counts |
+| `npm run build` | 0 | `next build --turbopack` |
+| `cd frontend && npm run build` | 0 | static export |
+
+The 7 e2e specs no longer exist post-merge — PR-03a deleted the suite
+upstream (only `invite-acceptance` + `password-reset` remain, on a single
+`:3000` server with feature flags unset). The 131/131 run on `app_pr03b`
+is the runtime evidence; the merge changed nothing it covered.
+
+### Notes
+
+- First e2e attempt was poisoned by a concurrent `next build` racing the
+  Playwright webServer's own build on the same `.next` (server died
+  mid-run: `ERR_CONNECTION_REFUSED`). `.next` was wiped, the build re-run
+  alone (exit 0), and the suite re-run clean — the failure was harness,
+  not product.
+- `app_pr03b` on `vari8-db-1` was created for this pass; `prisma migrate
+  deploy` exit 0.
