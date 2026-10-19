@@ -75,13 +75,53 @@ const MOBILE_LABEL = {
 export const mobileFallback = (label) =>
   MOBILE_LABEL[label] ?? label.replace(/^\d{2}\s+/, "");
 
-// Exact matches win over substring matches. Throws when nothing matches, so a broken recipe fails loudly.
-export async function clickByText(page, label, { fallback = false } = {}) {
+// Recipe steps that match more than one element at a viewport. Keyed by shot stem, then recipe label.
+//   within:     selector of the container(s) to search (all matches count)
+//   containing: keep only containers whose text includes this (picks one card or plan module)
+//   target:     selector for the candidate elements inside the container (default: any element)
+// A step must resolve to exactly one element after its scope, or the capture throws. Keep this
+// table next to the recipes: a new ambiguous step fails the run until it gets a scope here.
+const TEMPLATE_NAV = { within: 'nav[aria-label="Template configuration"]' };
+const TEMPLATE_CARD = {
+  within: "article.cd-template-card",
+  containing: "Strength & balance",
+};
+const VIEW_TOGGLE = { within: ".cd-view-settings", target: "[role=switch]" };
+export const STEP_SCOPES = {
+  "s01-profile-checkins": { "Check-ins": { within: ".cd-profile-tabs" } },
+  "s04-template-habits": Object.fromEntries(
+    [
+      "Dashboard",
+      "Tracker",
+      "Timeline / Roadmap",
+      "Nutrition",
+      "Training Program",
+      "Check-In",
+      "Habits",
+    ].map((label) => [label, VIEW_TOGGLE]),
+  ),
+  "s05-tracker-setup": { "02 Dashboard": TEMPLATE_NAV },
+  "s06-mealplan-editor": {
+    Create: { within: ".cd-plan-module", containing: "Nutrition" },
+  },
+  "s06-template-nutrition": { "02 Dashboard": TEMPLATE_NAV },
+  "s08-template-dashboard": { "02 Dashboard": TEMPLATE_NAV },
+  "s09-tracker-today": { Preview: TEMPLATE_CARD },
+  "s09-tracker-week": { Preview: TEMPLATE_CARD },
+  "s09-tracker-trends": { Preview: TEMPLATE_CARD },
+};
+
+// Exact matches win over substring matches. Throws when nothing matches, or when more than one element matches.
+export async function clickByText(
+  page,
+  label,
+  { fallback = false, scope = null } = {},
+) {
   const tried = [label];
   if (fallback && mobileFallback(label) !== label)
     tried.push(mobileFallback(label));
   for (const target of tried) {
-    const hit = await findAndCenter(page, target);
+    const hit = await findAndCenter(page, target, scope);
     if (hit) {
       await page.mouse.click(hit.x, hit.y);
       await settle(page);
@@ -89,6 +129,8 @@ export async function clickByText(page, label, { fallback = false } = {}) {
         label: target,
         matches: hit.matches,
         tag: hit.tag,
+        seen: hit.seen,
+        scoped: Boolean(scope),
         recipe: label,
       };
     }
@@ -98,43 +140,61 @@ export async function clickByText(page, label, { fallback = false } = {}) {
   );
 }
 
-async function findAndCenter(page, target) {
-  return page.evaluate((target) => {
-    const norm = (s) => (s || "").replace(/\s+/g, " ").trim().toLowerCase();
-    const want = norm(target);
-    // innerText, not textContent: roster rows concatenate "CP" and "Chloe Park" without a space in textContent
-    const txt = (el) => norm(el.innerText ?? el.textContent);
-    const visible = (el) => {
+async function findAndCenter(page, target, scope) {
+  return page.evaluate(
+    ({ target, scope }) => {
+      const norm = (s) => (s || "").replace(/\s+/g, " ").trim().toLowerCase();
+      const want = norm(target);
+      // innerText, not textContent: roster rows concatenate "CP" and "Chloe Park" without a space in textContent
+      const txt = (el) => norm(el.innerText ?? el.textContent);
+      const visible = (el) => {
+        const r = el.getBoundingClientRect();
+        if (r.width < 1 || r.height < 1) return false;
+        const cs = getComputedStyle(el);
+        return cs.visibility !== "hidden" && cs.display !== "none";
+      };
+      let roots;
+      if (scope) {
+        roots = [...document.querySelectorAll(scope.within)];
+        if (scope.containing)
+          roots = roots.filter((r) =>
+            norm(r.innerText).includes(norm(scope.containing)),
+          );
+      } else {
+        const dialogs = [...document.querySelectorAll("dialog[open]")];
+        roots = [dialogs.length ? dialogs[dialogs.length - 1] : document.body];
+      }
+      const els = roots
+        .flatMap((r) => [...r.querySelectorAll(scope?.target ?? "*")])
+        .filter(visible);
+      const labelled = (el) =>
+        norm(el.getAttribute("aria-label")) === want ||
+        norm(el.getAttribute("title")) === want;
+      const innermost = (list) =>
+        list.filter((el) => !list.some((o) => o !== el && el.contains(o)));
+      let pool = innermost(
+        els.filter((el) => txt(el) === want || labelled(el)),
+      );
+      if (!pool.length)
+        pool = innermost(els.filter((el) => txt(el).includes(want)));
+      if (!pool.length) return null;
+      if (pool.length > 1)
+        throw new Error(
+          `ambiguous click "${target}": ${pool.length} matches${scope ? " inside its scope" : ""}`,
+        );
+      const el = pool[0];
+      el.scrollIntoView({ block: "center", inline: "center" });
       const r = el.getBoundingClientRect();
-      if (r.width < 1 || r.height < 1) return false;
-      const cs = getComputedStyle(el);
-      return cs.visibility !== "hidden" && cs.display !== "none";
-    };
-    const dialogs = [...document.querySelectorAll("dialog[open]")];
-    const scope = dialogs.length ? dialogs[dialogs.length - 1] : document.body;
-    const els = [...scope.querySelectorAll("*")].filter(visible);
-    const labelled = (el) =>
-      norm(el.getAttribute("aria-label")) === want ||
-      norm(el.getAttribute("title")) === want;
-    const innermost = (list) =>
-      list.filter((el) => !list.some((o) => o !== el && el.contains(o)));
-    let pool = innermost(els.filter((el) => txt(el) === want || labelled(el)));
-    if (!pool.length)
-      pool = innermost(els.filter((el) => txt(el).includes(want)));
-    if (!pool.length) return null;
-    const interactive =
-      "button,a,[role=button],[role=tab],[role=menuitem],[role=option],[role=link],summary,label,[tabindex]";
-    // ponytail: first interactive match wins when a label repeats (clickLog.matches shows the count). Upgrade: explicit selectors per recipe step.
-    const first = pool.find((el) => el.closest(interactive)) || pool[0];
-    first.scrollIntoView({ block: "center", inline: "center" });
-    const r = first.getBoundingClientRect();
-    return {
-      x: r.x + r.width / 2,
-      y: r.y + r.height / 2,
-      matches: pool.length,
-      tag: first.tagName.toLowerCase(),
-    };
-  }, target);
+      return {
+        x: r.x + r.width / 2,
+        y: r.y + r.height / 2,
+        matches: pool.length,
+        tag: el.tagName.toLowerCase(),
+        seen: txt(el).slice(0, 60),
+      };
+    },
+    { target, scope },
+  );
 }
 
 // Every visible element as [documentPath, tag, x, y, w, h], coordinates in document space, 0.5 px grid.
@@ -166,6 +226,14 @@ export const geometry = () => {
     )
       continue;
     if (el.closest("[hidden],[inert]")) continue;
+    // Own text nodes, so text inside clipped scroll regions (the 390 px roster) is compared too.
+    const own = [...el.childNodes]
+      .filter((n) => n.nodeType === 3)
+      .map((n) => n.textContent)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 120);
     out.push([
       key(el),
       el.tagName.toLowerCase(),
@@ -173,6 +241,7 @@ export const geometry = () => {
       q(r.y + scrollY),
       q(r.width),
       q(r.height),
+      own,
     ]);
   }
   return out;
@@ -217,7 +286,10 @@ export async function captureAll({ baseUrl, outDir, log = console.log }) {
           const clickLog = [];
           for (const label of shot.clicks)
             clickLog.push(
-              await clickByText(page, label, { fallback: vp === "390" }),
+              await clickByText(page, label, {
+                fallback: vp === "390",
+                scope: STEP_SCOPES[stem]?.[label] ?? null,
+              }),
             );
           await page.evaluate(() => window.scrollTo(0, 0));
           await settle(page);

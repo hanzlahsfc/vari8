@@ -14,6 +14,8 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         }
       ],
@@ -37,12 +39,16 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "cp chloe park lifestyle",
+          "scoped": false,
           "recipe": "CP Chloe Park Lifestyle"
         }
       ],
@@ -66,18 +72,24 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "cp chloe park lifestyle",
+          "scoped": false,
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
           "label": "Plans",
           "matches": 1,
           "tag": "button",
+          "seen": "plans",
+          "scoped": false,
           "recipe": "Plans"
         }
       ],
@@ -101,28 +113,34 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "cp chloe park lifestyle",
+          "scoped": false,
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
           "label": "Check-ins",
-          "matches": 2,
-          "tag": "span",
+          "matches": 1,
+          "tag": "button",
+          "seen": "check-ins",
+          "scoped": true,
           "recipe": "Check-ins"
         }
       ],
       "png": "390/s01-profile-checkins.png",
-      "sha256": "8c8a50c98f9379c59d247580e0a118a7529b0e6aa385a6d0278e3cbfc953bc6a",
+      "sha256": "1285eb43a25227dd34571669115d5a306ac2226642cb4cd88e877fcde9875b30",
       "size": {
         "width": 390,
-        "height": 2446
+        "height": 982
       },
-      "elements": 229,
+      "elements": 89,
       "pageErrors": []
     },
     {
@@ -136,23 +154,29 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "cp chloe park lifestyle",
+          "scoped": false,
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
           "label": "Notes & tasks",
           "matches": 1,
           "tag": "button",
+          "seen": "notes & tasks",
+          "scoped": false,
           "recipe": "Notes & tasks"
         }
       ],
       "png": "390/s01-profile-notes.png",
-      "sha256": "8d1e87b62e3d3eeabc126eb8d6becc0733666e8c7a230c7a61d3f7cc63cef009",
+      "sha256": "e8caff61acdf4576149e393d332968257401d0e4b36d4867788f39c20f00c3a7",
       "size": {
         "width": 390,
         "height": 1515
@@ -171,23 +195,29 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "cp chloe park lifestyle",
+          "scoped": false,
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
           "label": "Onboarding",
           "matches": 1,
           "tag": "button",
+          "seen": "onboarding",
+          "scoped": false,
           "recipe": "Onboarding"
         }
       ],
       "png": "390/s01-profile-onboarding.png",
-      "sha256": "461fa233837a7de154ca7fdc73b7170515255e5d282f8f6ac03d9f158ad12ed3",
+      "sha256": "f0ff22269f4b85a603a51e92b890f8eba54aa6fc5851368fec8c8aad89eb18a7",
       "size": {
         "width": 390,
         "height": 896
@@ -206,6 +236,8 @@
           "label": "Messages",
           "matches": 1,
           "tag": "span",
+          "seen": "messages",
+          "scoped": false,
           "recipe": "Messages"
         }
       ],
@@ -229,18 +261,24 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "cp chloe park lifestyle",
+          "scoped": false,
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
           "label": "Open chat",
           "matches": 1,
           "tag": "button",
+          "seen": "open chat",
+          "scoped": false,
           "recipe": "Open chat"
         }
       ],
@@ -264,24 +302,32 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "cp chloe park lifestyle",
+          "scoped": false,
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
           "label": "Open chat",
           "matches": 1,
           "tag": "button",
+          "seen": "open chat",
+          "scoped": false,
           "recipe": "Open chat"
         },
         {
           "label": "Add attachment or context link",
           "matches": 1,
           "tag": "button",
+          "seen": "",
+          "scoped": false,
           "recipe": "Add attachment or context link"
         }
       ],
@@ -305,6 +351,8 @@
           "label": "Notes & to-dos",
           "matches": 1,
           "tag": "span",
+          "seen": "notes & to-dos",
+          "scoped": false,
           "recipe": "Notes & to-dos"
         }
       ],
@@ -328,6 +376,8 @@
           "label": "Check-ins",
           "matches": 1,
           "tag": "span",
+          "seen": "check-ins",
+          "scoped": false,
           "recipe": "Check-ins"
         }
       ],
@@ -351,12 +401,16 @@
           "label": "Check-ins",
           "matches": 1,
           "tag": "span",
+          "seen": "check-ins",
+          "scoped": false,
           "recipe": "Check-ins"
         },
         {
           "label": "Add extra date",
           "matches": 1,
           "tag": "button",
+          "seen": "add extra date",
+          "scoped": false,
           "recipe": "Add extra date"
         }
       ],
@@ -380,18 +434,24 @@
           "label": "Check-ins",
           "matches": 1,
           "tag": "span",
+          "seen": "check-ins",
+          "scoped": false,
           "recipe": "Check-ins"
         },
         {
           "label": "EA Emma Anders Recurring · Full Awaiting feedback",
           "matches": 1,
           "tag": "button",
+          "seen": "ea emma anders recurring · full awaiting feedback",
+          "scoped": false,
           "recipe": "EA Emma Anders Recurring · Full Awaiting feedback"
         },
         {
           "label": "Open review",
           "matches": 1,
           "tag": "button",
+          "seen": "open review",
+          "scoped": false,
           "recipe": "Open review"
         }
       ],
@@ -415,24 +475,32 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "EC Ethan Cole Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "ec ethan cole lifestyle",
+          "scoped": false,
           "recipe": "EC Ethan Cole Lifestyle"
         },
         {
           "label": "Edit plans",
           "matches": 1,
           "tag": "button",
+          "seen": "edit plans",
+          "scoped": false,
           "recipe": "Edit plans"
         },
         {
           "label": "Edit habits",
           "matches": 1,
           "tag": "button",
+          "seen": "edit habits",
+          "scoped": false,
           "recipe": "Edit habits"
         }
       ],
@@ -456,58 +524,74 @@
           "label": "Add template",
           "matches": 1,
           "tag": "button",
+          "seen": "add template",
+          "scoped": false,
           "recipe": "Add template"
         },
         {
           "label": "Dashboard",
-          "matches": 3,
-          "tag": "button",
+          "matches": 1,
+          "tag": "input",
+          "seen": "",
+          "scoped": true,
           "recipe": "Dashboard"
         },
         {
           "label": "Tracker",
           "matches": 1,
-          "tag": "button",
+          "tag": "input",
+          "seen": "",
+          "scoped": true,
           "recipe": "Tracker"
         },
         {
           "label": "Timeline / Roadmap",
           "matches": 1,
-          "tag": "button",
+          "tag": "input",
+          "seen": "",
+          "scoped": true,
           "recipe": "Timeline / Roadmap"
         },
         {
           "label": "Nutrition",
           "matches": 1,
-          "tag": "button",
+          "tag": "input",
+          "seen": "",
+          "scoped": true,
           "recipe": "Nutrition"
         },
         {
-          "label": "Training",
+          "label": "Training Program",
           "matches": 1,
-          "tag": "button",
+          "tag": "input",
+          "seen": "",
+          "scoped": true,
           "recipe": "Training Program"
         },
         {
           "label": "Check-In",
           "matches": 1,
-          "tag": "button",
+          "tag": "input",
+          "seen": "",
+          "scoped": true,
           "recipe": "Check-In"
         },
         {
           "label": "Habits",
           "matches": 1,
-          "tag": "button",
+          "tag": "input",
+          "seen": "",
+          "scoped": true,
           "recipe": "Habits"
         }
       ],
       "png": "390/s04-template-habits.png",
-      "sha256": "b9f4fd101f74986353122133ad176b07f868ece7e54b9f8d143b9393e885a0be",
+      "sha256": "c01d88ac99632b2a2300fb0a00e0898242de0aeecf0ab9eef08d7794ee9b8d78",
       "size": {
         "width": 390,
-        "height": 952
+        "height": 1121
       },
-      "elements": 109,
+      "elements": 123,
       "pageErrors": []
     },
     {
@@ -537,6 +621,8 @@
           "label": "Add template",
           "matches": 1,
           "tag": "button",
+          "seen": "add template",
+          "scoped": false,
           "recipe": "Add template"
         }
       ],
@@ -560,24 +646,32 @@
           "label": "Add template",
           "matches": 1,
           "tag": "button",
+          "seen": "add template",
+          "scoped": false,
           "recipe": "Add template"
         },
         {
           "label": "Dashboard",
-          "matches": 3,
+          "matches": 1,
           "tag": "button",
+          "seen": "dashboard",
+          "scoped": true,
           "recipe": "02 Dashboard"
         },
         {
           "label": "Move Bodyweight trend",
           "matches": 1,
           "tag": "button",
+          "seen": "",
+          "scoped": false,
           "recipe": "Move Bodyweight trend"
         },
         {
           "label": "Tracker",
           "matches": 1,
           "tag": "button",
+          "seen": "tracker",
+          "scoped": false,
           "recipe": "03 Tracker"
         }
       ],
@@ -601,18 +695,24 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "EF Eva Fischer Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "ef eva fischer lifestyle",
+          "scoped": false,
           "recipe": "EF Eva Fischer Lifestyle"
         },
         {
           "label": "Assign template",
           "matches": 1,
           "tag": "button",
+          "seen": "assign template",
+          "scoped": false,
           "recipe": "Assign template"
         }
       ],
@@ -636,24 +736,32 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "cp chloe park lifestyle",
+          "scoped": false,
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
           "label": "Plans",
           "matches": 1,
           "tag": "button",
+          "seen": "plans",
+          "scoped": false,
           "recipe": "Plans"
         },
         {
           "label": "Create",
-          "matches": 2,
+          "matches": 1,
           "tag": "button",
+          "seen": "create",
+          "scoped": true,
           "recipe": "Create"
         }
       ],
@@ -677,42 +785,56 @@
           "label": "Add template",
           "matches": 1,
           "tag": "button",
+          "seen": "add template",
+          "scoped": false,
           "recipe": "Add template"
         },
         {
           "label": "Dashboard",
-          "matches": 3,
+          "matches": 1,
           "tag": "button",
+          "seen": "dashboard",
+          "scoped": true,
           "recipe": "02 Dashboard"
         },
         {
           "label": "Move Bodyweight trend",
           "matches": 1,
           "tag": "button",
+          "seen": "",
+          "scoped": false,
           "recipe": "Move Bodyweight trend"
         },
         {
           "label": "Tracker",
           "matches": 1,
           "tag": "button",
+          "seen": "tracker",
+          "scoped": false,
           "recipe": "03 Tracker"
         },
         {
           "label": "Settings for Bodyweight",
           "matches": 1,
           "tag": "button",
+          "seen": "settings",
+          "scoped": false,
           "recipe": "Settings for Bodyweight"
         },
         {
           "label": "Timeline / Roadmap",
           "matches": 1,
           "tag": "button",
+          "seen": "timeline / roadmap",
+          "scoped": false,
           "recipe": "04 Timeline / Roadmap"
         },
         {
           "label": "Nutrition",
           "matches": 1,
           "tag": "button",
+          "seen": "nutrition",
+          "scoped": false,
           "recipe": "05 Nutrition"
         }
       ],
@@ -736,24 +858,32 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "EA Emma Anders Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "ea emma anders lifestyle",
+          "scoped": false,
           "recipe": "EA Emma Anders Lifestyle"
         },
         {
           "label": "Open chat 1",
           "matches": 1,
           "tag": "button",
+          "seen": "open chat 1",
+          "scoped": false,
           "recipe": "Open chat 1"
         },
         {
           "label": "Training program",
           "matches": 1,
           "tag": "button",
+          "seen": "training program",
+          "scoped": false,
           "recipe": "Training program"
         }
       ],
@@ -777,30 +907,40 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "EA Emma Anders Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "ea emma anders lifestyle",
+          "scoped": false,
           "recipe": "EA Emma Anders Lifestyle"
         },
         {
           "label": "Open chat 1",
           "matches": 1,
           "tag": "button",
+          "seen": "open chat 1",
+          "scoped": false,
           "recipe": "Open chat 1"
         },
         {
           "label": "Training program",
           "matches": 1,
           "tag": "button",
+          "seen": "training program",
+          "scoped": false,
           "recipe": "Training program"
         },
         {
           "label": "Manage library",
           "matches": 1,
           "tag": "button",
+          "seen": "manage library",
+          "scoped": false,
           "recipe": "Manage library"
         }
       ],
@@ -840,6 +980,8 @@
           "label": "Add widget",
           "matches": 1,
           "tag": "button",
+          "seen": "add widget",
+          "scoped": false,
           "recipe": "Add widget"
         }
       ],
@@ -863,12 +1005,16 @@
           "label": "Add template",
           "matches": 1,
           "tag": "button",
+          "seen": "add template",
+          "scoped": false,
           "recipe": "Add template"
         },
         {
           "label": "Dashboard",
-          "matches": 3,
+          "matches": 1,
           "tag": "button",
+          "seen": "dashboard",
+          "scoped": true,
           "recipe": "02 Dashboard"
         }
       ],
@@ -892,18 +1038,24 @@
           "label": "More actions for Strength & balance",
           "matches": 1,
           "tag": "button",
+          "seen": "",
+          "scoped": false,
           "recipe": "More actions for Strength & balance"
         },
         {
           "label": "Preview",
-          "matches": 3,
+          "matches": 1,
           "tag": "button",
+          "seen": "preview",
+          "scoped": true,
           "recipe": "Preview"
         },
         {
           "label": "Tracker",
           "matches": 1,
           "tag": "button",
+          "seen": "tracker",
+          "scoped": false,
           "recipe": "Tracker"
         }
       ],
@@ -927,24 +1079,32 @@
           "label": "More actions for Strength & balance",
           "matches": 1,
           "tag": "button",
+          "seen": "",
+          "scoped": false,
           "recipe": "More actions for Strength & balance"
         },
         {
           "label": "Preview",
-          "matches": 3,
+          "matches": 1,
           "tag": "button",
+          "seen": "preview",
+          "scoped": true,
           "recipe": "Preview"
         },
         {
           "label": "Tracker",
           "matches": 1,
           "tag": "button",
+          "seen": "tracker",
+          "scoped": false,
           "recipe": "Tracker"
         },
         {
           "label": "Week",
           "matches": 1,
           "tag": "span",
+          "seen": "week",
+          "scoped": false,
           "recipe": "Week"
         }
       ],
@@ -968,24 +1128,32 @@
           "label": "More actions for Strength & balance",
           "matches": 1,
           "tag": "button",
+          "seen": "",
+          "scoped": false,
           "recipe": "More actions for Strength & balance"
         },
         {
           "label": "Preview",
-          "matches": 3,
+          "matches": 1,
           "tag": "button",
+          "seen": "preview",
+          "scoped": true,
           "recipe": "Preview"
         },
         {
           "label": "Tracker",
           "matches": 1,
           "tag": "button",
+          "seen": "tracker",
+          "scoped": false,
           "recipe": "Tracker"
         },
         {
           "label": "Trends",
           "matches": 1,
           "tag": "span",
+          "seen": "trends",
+          "scoped": false,
           "recipe": "Trends"
         }
       ],
@@ -1009,6 +1177,8 @@
           "label": "Tracker",
           "matches": 1,
           "tag": "button",
+          "seen": "tracker",
+          "scoped": false,
           "recipe": "Tracker"
         }
       ],
@@ -1032,11 +1202,13 @@
           "label": "Coaching UI",
           "matches": 1,
           "tag": "span",
+          "seen": "coaching ui",
+          "scoped": false,
           "recipe": "Coaching UI"
         }
       ],
       "png": "390/s10-appearance.png",
-      "sha256": "af9ec79290e59b55fbbfe5101ca6295eda004697c900d1532a67cac72aa0d553",
+      "sha256": "d750bbd05d989eacb1a9fd6741940207d99191b0b82c1d19d00df9e90a318172",
       "size": {
         "width": 390,
         "height": 4440
@@ -1068,7 +1240,7 @@
       "screen": "Meal plans studio",
       "clicks": [],
       "png": "390/s10-mealplan-studio.png",
-      "sha256": "7d9621c697f209b2fbb8e388054865c0d5236c32867ba199e791f73678895939",
+      "sha256": "7c5df9918fd83f8b2a4622e9563d3e9df0b3864a261e2f8d40399a46d705ef6a",
       "size": {
         "width": 390,
         "height": 2861
@@ -1087,6 +1259,8 @@
           "label": "Workspace preferences",
           "matches": 1,
           "tag": "button",
+          "seen": "",
+          "scoped": false,
           "recipe": "Workspace preferences for Liliana Mansfeld"
         }
       ],
@@ -1110,18 +1284,24 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "EA Emma Anders Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "ea emma anders lifestyle",
+          "scoped": false,
           "recipe": "EA Emma Anders Lifestyle"
         },
         {
           "label": "Preview assigned tool",
           "matches": 1,
           "tag": "button",
+          "seen": "preview assigned tool",
+          "scoped": false,
           "recipe": "Preview assigned tool"
         }
       ],
@@ -1145,6 +1325,8 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         }
       ],
@@ -1168,12 +1350,16 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "cp chloe park lifestyle",
+          "scoped": false,
           "recipe": "CP Chloe Park Lifestyle"
         }
       ],
@@ -1197,18 +1383,24 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "cp chloe park lifestyle",
+          "scoped": false,
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
           "label": "Plans",
           "matches": 1,
           "tag": "button",
+          "seen": "plans",
+          "scoped": false,
           "recipe": "Plans"
         }
       ],
@@ -1232,28 +1424,34 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "cp chloe park lifestyle",
+          "scoped": false,
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
           "label": "Check-ins",
-          "matches": 2,
-          "tag": "span",
+          "matches": 1,
+          "tag": "button",
+          "seen": "check-ins",
+          "scoped": true,
           "recipe": "Check-ins"
         }
       ],
       "png": "1440/s01-profile-checkins.png",
-      "sha256": "8ab38cdfaffd7b9c4247097549b5b44070106cefd5d32e5f13c10a95ea232aa3",
+      "sha256": "197f11e5954701aeb6cf1fcf1a85860d64b577d6abe7c2819cf8d7eb9b8c4b7d",
       "size": {
         "width": 1440,
-        "height": 967
+        "height": 900
       },
-      "elements": 266,
+      "elements": 112,
       "pageErrors": []
     },
     {
@@ -1267,18 +1465,24 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "cp chloe park lifestyle",
+          "scoped": false,
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
           "label": "Notes & tasks",
           "matches": 1,
           "tag": "button",
+          "seen": "notes & tasks",
+          "scoped": false,
           "recipe": "Notes & tasks"
         }
       ],
@@ -1302,18 +1506,24 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "cp chloe park lifestyle",
+          "scoped": false,
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
           "label": "Onboarding",
           "matches": 1,
           "tag": "button",
+          "seen": "onboarding",
+          "scoped": false,
           "recipe": "Onboarding"
         }
       ],
@@ -1337,6 +1547,8 @@
           "label": "Messages",
           "matches": 1,
           "tag": "span",
+          "seen": "messages",
+          "scoped": false,
           "recipe": "Messages"
         }
       ],
@@ -1360,18 +1572,24 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "cp chloe park lifestyle",
+          "scoped": false,
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
           "label": "Open chat",
           "matches": 1,
           "tag": "button",
+          "seen": "open chat",
+          "scoped": false,
           "recipe": "Open chat"
         }
       ],
@@ -1395,24 +1613,32 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "cp chloe park lifestyle",
+          "scoped": false,
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
           "label": "Open chat",
           "matches": 1,
           "tag": "button",
+          "seen": "open chat",
+          "scoped": false,
           "recipe": "Open chat"
         },
         {
           "label": "Add attachment or context link",
           "matches": 1,
           "tag": "button",
+          "seen": "",
+          "scoped": false,
           "recipe": "Add attachment or context link"
         }
       ],
@@ -1436,6 +1662,8 @@
           "label": "Notes & to-dos",
           "matches": 1,
           "tag": "span",
+          "seen": "notes & to-dos",
+          "scoped": false,
           "recipe": "Notes & to-dos"
         }
       ],
@@ -1459,6 +1687,8 @@
           "label": "Check-ins",
           "matches": 1,
           "tag": "span",
+          "seen": "check-ins",
+          "scoped": false,
           "recipe": "Check-ins"
         }
       ],
@@ -1482,12 +1712,16 @@
           "label": "Check-ins",
           "matches": 1,
           "tag": "span",
+          "seen": "check-ins",
+          "scoped": false,
           "recipe": "Check-ins"
         },
         {
           "label": "Add extra date",
           "matches": 1,
           "tag": "button",
+          "seen": "add extra date",
+          "scoped": false,
           "recipe": "Add extra date"
         }
       ],
@@ -1511,18 +1745,24 @@
           "label": "Check-ins",
           "matches": 1,
           "tag": "span",
+          "seen": "check-ins",
+          "scoped": false,
           "recipe": "Check-ins"
         },
         {
           "label": "EA Emma Anders Recurring · Full Awaiting feedback",
           "matches": 1,
           "tag": "button",
+          "seen": "ea emma anders recurring · full awaiting feedback",
+          "scoped": false,
           "recipe": "EA Emma Anders Recurring · Full Awaiting feedback"
         },
         {
           "label": "Open review",
           "matches": 1,
           "tag": "button",
+          "seen": "open review",
+          "scoped": false,
           "recipe": "Open review"
         }
       ],
@@ -1546,24 +1786,32 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "EC Ethan Cole Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "ec ethan cole lifestyle",
+          "scoped": false,
           "recipe": "EC Ethan Cole Lifestyle"
         },
         {
           "label": "Edit plans",
           "matches": 1,
           "tag": "button",
+          "seen": "edit plans",
+          "scoped": false,
           "recipe": "Edit plans"
         },
         {
           "label": "Edit habits",
           "matches": 1,
           "tag": "button",
+          "seen": "edit habits",
+          "scoped": false,
           "recipe": "Edit habits"
         }
       ],
@@ -1587,48 +1835,64 @@
           "label": "Add template",
           "matches": 1,
           "tag": "button",
+          "seen": "add template",
+          "scoped": false,
           "recipe": "Add template"
         },
         {
           "label": "Dashboard",
-          "matches": 2,
-          "tag": "strong",
+          "matches": 1,
+          "tag": "input",
+          "seen": "",
+          "scoped": true,
           "recipe": "Dashboard"
         },
         {
           "label": "Tracker",
-          "matches": 2,
-          "tag": "strong",
+          "matches": 1,
+          "tag": "input",
+          "seen": "",
+          "scoped": true,
           "recipe": "Tracker"
         },
         {
           "label": "Timeline / Roadmap",
-          "matches": 2,
-          "tag": "strong",
+          "matches": 1,
+          "tag": "input",
+          "seen": "",
+          "scoped": true,
           "recipe": "Timeline / Roadmap"
         },
         {
           "label": "Nutrition",
-          "matches": 2,
-          "tag": "strong",
+          "matches": 1,
+          "tag": "input",
+          "seen": "",
+          "scoped": true,
           "recipe": "Nutrition"
         },
         {
           "label": "Training Program",
-          "matches": 2,
-          "tag": "strong",
+          "matches": 1,
+          "tag": "input",
+          "seen": "",
+          "scoped": true,
           "recipe": "Training Program"
         },
         {
           "label": "Check-In",
-          "matches": 2,
-          "tag": "strong",
+          "matches": 1,
+          "tag": "input",
+          "seen": "",
+          "scoped": true,
           "recipe": "Check-In"
         },
         {
           "label": "Habits",
-          "matches": 2,
-          "tag": "strong",
+          "matches": 1,
+          "tag": "input",
+          "seen": "",
+          "scoped": true,
           "recipe": "Habits"
         }
       ],
@@ -1668,6 +1932,8 @@
           "label": "Add template",
           "matches": 1,
           "tag": "button",
+          "seen": "add template",
+          "scoped": false,
           "recipe": "Add template"
         }
       ],
@@ -1691,24 +1957,32 @@
           "label": "Add template",
           "matches": 1,
           "tag": "button",
+          "seen": "add template",
+          "scoped": false,
           "recipe": "Add template"
         },
         {
           "label": "02 Dashboard",
           "matches": 1,
           "tag": "button",
+          "seen": "02 dashboard",
+          "scoped": true,
           "recipe": "02 Dashboard"
         },
         {
           "label": "Move Bodyweight trend",
           "matches": 1,
           "tag": "button",
+          "seen": "",
+          "scoped": false,
           "recipe": "Move Bodyweight trend"
         },
         {
           "label": "03 Tracker",
           "matches": 1,
           "tag": "button",
+          "seen": "03 tracker",
+          "scoped": false,
           "recipe": "03 Tracker"
         }
       ],
@@ -1732,18 +2006,24 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "EF Eva Fischer Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "ef eva fischer lifestyle",
+          "scoped": false,
           "recipe": "EF Eva Fischer Lifestyle"
         },
         {
           "label": "Assign template",
           "matches": 1,
           "tag": "button",
+          "seen": "assign template",
+          "scoped": false,
           "recipe": "Assign template"
         }
       ],
@@ -1767,24 +2047,32 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "cp chloe park lifestyle",
+          "scoped": false,
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
           "label": "Plans",
           "matches": 1,
           "tag": "button",
+          "seen": "plans",
+          "scoped": false,
           "recipe": "Plans"
         },
         {
           "label": "Create",
-          "matches": 2,
+          "matches": 1,
           "tag": "button",
+          "seen": "create",
+          "scoped": true,
           "recipe": "Create"
         }
       ],
@@ -1808,42 +2096,56 @@
           "label": "Add template",
           "matches": 1,
           "tag": "button",
+          "seen": "add template",
+          "scoped": false,
           "recipe": "Add template"
         },
         {
           "label": "02 Dashboard",
           "matches": 1,
           "tag": "button",
+          "seen": "02 dashboard",
+          "scoped": true,
           "recipe": "02 Dashboard"
         },
         {
           "label": "Move Bodyweight trend",
           "matches": 1,
           "tag": "button",
+          "seen": "",
+          "scoped": false,
           "recipe": "Move Bodyweight trend"
         },
         {
           "label": "03 Tracker",
           "matches": 1,
           "tag": "button",
+          "seen": "03 tracker",
+          "scoped": false,
           "recipe": "03 Tracker"
         },
         {
           "label": "Settings for Bodyweight",
           "matches": 1,
           "tag": "button",
+          "seen": "settings",
+          "scoped": false,
           "recipe": "Settings for Bodyweight"
         },
         {
           "label": "04 Timeline / Roadmap",
           "matches": 1,
           "tag": "button",
+          "seen": "04 timeline / roadmap",
+          "scoped": false,
           "recipe": "04 Timeline / Roadmap"
         },
         {
           "label": "05 Nutrition",
           "matches": 1,
           "tag": "button",
+          "seen": "05 nutrition",
+          "scoped": false,
           "recipe": "05 Nutrition"
         }
       ],
@@ -1867,24 +2169,32 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "EA Emma Anders Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "ea emma anders lifestyle",
+          "scoped": false,
           "recipe": "EA Emma Anders Lifestyle"
         },
         {
           "label": "Open chat 1",
           "matches": 1,
           "tag": "button",
+          "seen": "open chat 1",
+          "scoped": false,
           "recipe": "Open chat 1"
         },
         {
           "label": "Training program",
           "matches": 1,
           "tag": "button",
+          "seen": "training program",
+          "scoped": false,
           "recipe": "Training program"
         }
       ],
@@ -1908,30 +2218,40 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "EA Emma Anders Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "ea emma anders lifestyle",
+          "scoped": false,
           "recipe": "EA Emma Anders Lifestyle"
         },
         {
           "label": "Open chat 1",
           "matches": 1,
           "tag": "button",
+          "seen": "open chat 1",
+          "scoped": false,
           "recipe": "Open chat 1"
         },
         {
           "label": "Training program",
           "matches": 1,
           "tag": "button",
+          "seen": "training program",
+          "scoped": false,
           "recipe": "Training program"
         },
         {
           "label": "Manage library",
           "matches": 1,
           "tag": "button",
+          "seen": "manage library",
+          "scoped": false,
           "recipe": "Manage library"
         }
       ],
@@ -1971,6 +2291,8 @@
           "label": "Add widget",
           "matches": 1,
           "tag": "button",
+          "seen": "add widget",
+          "scoped": false,
           "recipe": "Add widget"
         }
       ],
@@ -1994,12 +2316,16 @@
           "label": "Add template",
           "matches": 1,
           "tag": "button",
+          "seen": "add template",
+          "scoped": false,
           "recipe": "Add template"
         },
         {
           "label": "02 Dashboard",
           "matches": 1,
           "tag": "button",
+          "seen": "02 dashboard",
+          "scoped": true,
           "recipe": "02 Dashboard"
         }
       ],
@@ -2023,18 +2349,24 @@
           "label": "More actions for Strength & balance",
           "matches": 1,
           "tag": "button",
+          "seen": "",
+          "scoped": false,
           "recipe": "More actions for Strength & balance"
         },
         {
           "label": "Preview",
-          "matches": 3,
+          "matches": 1,
           "tag": "button",
+          "seen": "preview",
+          "scoped": true,
           "recipe": "Preview"
         },
         {
           "label": "Tracker",
           "matches": 1,
           "tag": "button",
+          "seen": "tracker",
+          "scoped": false,
           "recipe": "Tracker"
         }
       ],
@@ -2058,24 +2390,32 @@
           "label": "More actions for Strength & balance",
           "matches": 1,
           "tag": "button",
+          "seen": "",
+          "scoped": false,
           "recipe": "More actions for Strength & balance"
         },
         {
           "label": "Preview",
-          "matches": 3,
+          "matches": 1,
           "tag": "button",
+          "seen": "preview",
+          "scoped": true,
           "recipe": "Preview"
         },
         {
           "label": "Tracker",
           "matches": 1,
           "tag": "button",
+          "seen": "tracker",
+          "scoped": false,
           "recipe": "Tracker"
         },
         {
           "label": "Week",
           "matches": 1,
           "tag": "span",
+          "seen": "week",
+          "scoped": false,
           "recipe": "Week"
         }
       ],
@@ -2099,24 +2439,32 @@
           "label": "More actions for Strength & balance",
           "matches": 1,
           "tag": "button",
+          "seen": "",
+          "scoped": false,
           "recipe": "More actions for Strength & balance"
         },
         {
           "label": "Preview",
-          "matches": 3,
+          "matches": 1,
           "tag": "button",
+          "seen": "preview",
+          "scoped": true,
           "recipe": "Preview"
         },
         {
           "label": "Tracker",
           "matches": 1,
           "tag": "button",
+          "seen": "tracker",
+          "scoped": false,
           "recipe": "Tracker"
         },
         {
           "label": "Trends",
           "matches": 1,
           "tag": "span",
+          "seen": "trends",
+          "scoped": false,
           "recipe": "Trends"
         }
       ],
@@ -2140,6 +2488,8 @@
           "label": "Tracker",
           "matches": 1,
           "tag": "button",
+          "seen": "tracker",
+          "scoped": false,
           "recipe": "Tracker"
         }
       ],
@@ -2163,11 +2513,13 @@
           "label": "Coaching UI",
           "matches": 1,
           "tag": "span",
+          "seen": "coaching ui",
+          "scoped": false,
           "recipe": "Coaching UI"
         }
       ],
       "png": "1440/s10-appearance.png",
-      "sha256": "f3208092b8332c94ed9ea609ffc7b02817088f279d889333ae28423c7e34f34a",
+      "sha256": "ce14e7a2e8d7894c38122a4bcb4307eee586cdfb5c476dfdc8605b199589c2d7",
       "size": {
         "width": 1440,
         "height": 2442
@@ -2199,7 +2551,7 @@
       "screen": "Meal plans studio",
       "clicks": [],
       "png": "1440/s10-mealplan-studio.png",
-      "sha256": "acf485a09cde912b31dc182072a83c9f84162f5216aa0844f8bf42d031d82c13",
+      "sha256": "c8c8798032ee319c9d2a7535d8b9919a5a38bf0f63ea10b01abb49d855222451",
       "size": {
         "width": 1440,
         "height": 2213
@@ -2218,6 +2570,8 @@
           "label": "Workspace preferences for Liliana Mansfeld",
           "matches": 1,
           "tag": "button",
+          "seen": "lm liliana mansfeld coach",
+          "scoped": false,
           "recipe": "Workspace preferences for Liliana Mansfeld"
         }
       ],
@@ -2241,18 +2595,24 @@
           "label": "Clients",
           "matches": 1,
           "tag": "span",
+          "seen": "clients",
+          "scoped": false,
           "recipe": "Clients"
         },
         {
           "label": "EA Emma Anders Lifestyle",
           "matches": 1,
           "tag": "button",
+          "seen": "ea emma anders lifestyle",
+          "scoped": false,
           "recipe": "EA Emma Anders Lifestyle"
         },
         {
           "label": "Preview assigned tool",
           "matches": 1,
           "tag": "button",
+          "seen": "preview assigned tool",
+          "scoped": false,
           "recipe": "Preview assigned tool"
         }
       ],

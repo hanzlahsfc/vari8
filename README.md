@@ -107,25 +107,33 @@ The canvas in `frontend/` must look exactly as it does on `Vari8-Beta`. The gate
 baseline in `tools/parity/baseline/`, and exits 1 on any real change.
 
 ```bash
-npm run parity                        # starts the canvas dev server on :3630, captures, compares, stops it
-npm run parity -- --update-baseline   # recaptures the baseline; run only for an intended visual change
+npm run parity                        # next build (production) of the canvas, next start on :3630, captures, compares, stops it
+npm run parity -- --update-baseline   # recaptures into a temp dir; swaps the baseline only if all 70 captures succeed
+PARITY_DEV=1 npm run parity           # debugging only: next dev instead of a production build
 ```
 
-- Exit 0: every screen matches. Exit 1: a pixel or geometry change, a missing screen, or a click path that did not resolve.
+- Exit 0: every screen matches. Exit 1: a pixel, geometry or text change, a missing screen, or a click path that did
+  not resolve or matched more than one element.
 - Report: `tools/parity/out/report.html` (gitignored; failing screens show baseline, current, and a red diff).
-- `PARITY_URL=http://127.0.0.1:3630` reuses a running server instead of starting one.
+- `PARITY_URL=http://127.0.0.1:3630` reuses a running server instead of building one.
 
 What is pinned, so an unchanged tree reruns green:
 
 - `capture.mjs`: fresh browser context per screen; `Europe/Vienna`; clock frozen at 2026-10-19T10:00+02:00; seeded
   `Math.random` and `crypto.randomUUID`; empty localStorage seed; CSS animations, transitions, and caret off; fonts
-  awaited; DOM quiet for 400 ms before the screenshot; Next dev overlay hidden.
-- `compare.mjs`: a pixel whose channels differ by at most 16/255 is anti-aliasing noise. Any other changed pixel fails
-  (`PARITY_MAX_DIFF_PIXELS` allows a count, default 0). Geometry: visible elements added, removed, or moved by more than 0.5 px.
+  awaited; DOM quiet for 400 ms before the screenshot.
+- Ambiguous recipe steps: every step must resolve to exactly one element. `STEP_SCOPES` in `capture.mjs` scopes the
+  steps that match more than one element (a container, optionally filtered by text or a target selector). A step that
+  still matches more than one element fails the capture.
+- `compare.mjs`: pixel tolerance is 0 by default (the reference host is bit-exact). `PARITY_AA_TOLERANCE` overrides it
+  for other hosts. `PARITY_MAX_DIFF_PIXELS` allows a count (default 0). Geometry: visible elements added, removed, or
+  moved by more than 0.5 px. Text: each element's own text is compared, so text inside scroll-clipped content (the 390
+  px roster Attention column) is covered even where no pixel shows it.
 - Mobile labels: the 390 px layout shows shorter tab names (`02 Dashboard` is `Dashboard`, `Training Program` is
   `Training`). `mobileFallback` in `capture.mjs` covers those labels and is used only at 390; the manifest records
   the label that was clicked.
-- Next dev appends to `frontend/AGENTS.md` on start; `run.mjs` restores it, so the canvas tree stays clean.
+- Production build of `frontend/` is served by `next start`; `run.mjs` restores `frontend/AGENTS.md`, which Next
+  rewrites on start, so the canvas tree stays clean.
 
 Self-test (as run for issue #61):
 

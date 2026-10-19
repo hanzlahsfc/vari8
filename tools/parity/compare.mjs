@@ -1,7 +1,9 @@
 // Compares a capture run with the baseline, screen by screen:
-//   1. pixel diff: a pixel counts as changed when any channel moves more than AA_TOLERANCE (anti-aliasing noise);
+//   1. pixel diff: a pixel counts as changed when any channel moves more than AA_TOLERANCE
+//      (default 0, bit-exact on the reference host; env PARITY_AA_TOLERANCE for other hosts);
 //      a screen fails above MAX_DIFF_PIXELS changed pixels (env PARITY_MAX_DIFF_PIXELS) or on any size change.
-//   2. DOM-geometry diff: visible elements added, removed, or moved by more than 0.5 px.
+//   2. DOM-geometry diff: visible elements added, removed, or moved by more than 0.5 px, or whose own text changed
+//      (text covers scroll-clipped content that pixels cannot show).
 // Pixel work runs in Chromium (canvas getImageData), so there is no PNG dependency.
 // Usage: node tools/parity/compare.mjs [--baseline tools/parity/baseline] [--current tools/parity/out/current]
 //        [--report tools/parity/out/report.html]
@@ -12,7 +14,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "@playwright/test";
 
-export const AA_TOLERANCE = 16;
+export const AA_TOLERANCE = Number(process.env.PARITY_AA_TOLERANCE ?? 0);
 export const MAX_DIFF_PIXELS = Number(process.env.PARITY_MAX_DIFF_PIXELS ?? 0);
 const MOVE_PX = 0.5;
 
@@ -101,18 +103,27 @@ export function geomDiff(baseRows, curRows) {
   const added = [];
   const removed = [];
   const moved = [];
+  const texts = [];
   for (const [k, c] of C) {
     const b = B.get(k);
-    if (!b) added.push(c);
-    else if (
+    if (!b) {
+      added.push(c);
+      continue;
+    }
+    if (
       b[1] !== c[1] ||
       [2, 3, 4, 5].some((i) => Math.abs(b[i] - c[i]) > MOVE_PX)
-    ) {
-      moved.push({ key: k, tag: c[1], base: b.slice(2), now: c.slice(2) });
-    }
+    )
+      moved.push({
+        key: k,
+        tag: c[1],
+        base: b.slice(2, 6),
+        now: c.slice(2, 6),
+      });
+    if (b[6] !== c[6]) texts.push({ key: k, tag: c[1], base: b[6], now: c[6] });
   }
   for (const [k, b] of B) if (!C.has(k)) removed.push(b);
-  return { added, removed, moved };
+  return { added, removed, moved, texts };
 }
 
 const esc = (s) =>
@@ -141,6 +152,13 @@ function renderReport(results, extra, meta) {
             `<li><code>${esc(m.tag)}</code> base ${esc(m.base)} now ${esc(m.now)}</li>`,
         )
         .join("");
+      const texts = (r.geom?.texts ?? [])
+        .slice(0, 30)
+        .map(
+          (t) =>
+            `<li><code>${esc(t.tag)}</code> text "${esc(t.base)}" now "${esc(t.now)}"</li>`,
+        )
+        .join("");
       const img = (src, label) =>
         src
           ? `<figure><figcaption>${label}</figcaption><img src="${src}"></figure>`
@@ -148,7 +166,7 @@ function renderReport(results, extra, meta) {
       return `<section><h2>${esc(r.id)} <small>${esc(r.screen ?? "")}</small></h2>
 <div class="imgs">${img(r.images?.base, "baseline")}${img(r.images?.now, "current")}${img(r.images?.diff, "diff (red = changed)")}</div>
 ${r.pixels?.bbox ? `<p>changed bbox x ${r.pixels.bbox[0]}-${r.pixels.bbox[2]}, y ${r.pixels.bbox[1]}-${r.pixels.bbox[3]}</p>` : ""}
-${moved ? `<p>First moved elements (up to 30):</p><ul>${moved}</ul>` : ""}</section>`;
+${moved ? `<p>First moved elements (up to 30):</p><ul>${moved}</ul>` : ""}${texts ? `<p>Changed text (up to 30, includes scroll-clipped content):</p><ul>${texts}</ul>` : ""}</section>`;
     })
     .join("\n");
   return `<!doctype html><meta charset="utf-8"><title>Vari8 canvas parity report</title>
@@ -226,6 +244,7 @@ export async function compareRuns({
           `geometry: ${g.added.length} added, ${g.removed.length} removed, ${g.moved.length} moved`,
         );
       }
+      if (g.texts.length) r.problems.push(`text: ${g.texts.length} changed`);
       if (r.problems.length) {
         r.images = {
           base: `data:image/png;base64,${aBuf.toString("base64")}`,
@@ -234,7 +253,7 @@ export async function compareRuns({
         };
       }
       log(
-        `${r.problems.length ? "FAIL" : "ok  "} ${b.id} px=${px.diff} geom=${g.added.length}/${g.removed.length}/${g.moved.length}`,
+        `${r.problems.length ? "FAIL" : "ok  "} ${b.id} px=${px.diff} geom=${g.added.length}/${g.removed.length}/${g.moved.length} text=${g.texts.length}`,
       );
     }
   } finally {
