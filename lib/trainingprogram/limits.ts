@@ -30,6 +30,11 @@ export const TRAINING_LIMITS = {
   /** Two-level history: programs page and per-program versions page. */
   programPageSize: 20,
   versionPageSize: 20,
+  /** Dated-session bookings: staff upcoming cap + shared history page. */
+  bookingUpcomingStaff: 12,
+  bookingPageSize: 12,
+  /** Client agenda cap (upcoming bookings on the current program). */
+  bookingAgendaClient: 8,
   /** Declared effective dates: forward horizon = server-UTC today + N. */
   effectiveDateAheadDays: 366,
   /** boundaryInstant fold-forward search window (A1 §3.4). */

@@ -196,6 +196,7 @@ model Workspace {
   mealPlanVersions              MealPlanVersion[]
   trainingPrograms              TrainingProgram[]
   trainingProgramVersions       TrainingProgramVersion[]
+  trainingSessionBookings       TrainingSessionBooking[]
 
   @@map("workspace")
 }
@@ -264,6 +265,8 @@ model WorkspaceMember {
   trainingProgramsTimezonesSet     TrainingProgram[]        @relation("TrainingProgramTimezoneSetter")
   trainingProgramsCancelled        TrainingProgram[]        @relation("TrainingProgramCanceller")
   trainingProgramVersionsPublished TrainingProgramVersion[] @relation("TrainingProgramVersionPublisher")
+  trainingBookingsScheduled        TrainingSessionBooking[] @relation("TrainingBookingScheduler")
+  trainingBookingsCancelled        TrainingSessionBooking[] @relation("TrainingBookingCanceller")
 
   @@unique([workspaceId, userId])
   // Composite target for the ClientAssignment same-workspace foreign key (raw SQL).
@@ -320,6 +323,7 @@ model ClientProfile {
   mealPlanVersions            MealPlanVersion[]            @relation("MealPlanVersionClient")
   trainingPrograms            TrainingProgram[]            @relation("TrainingProgramClient")
   trainingProgramVersions     TrainingProgramVersion[]     @relation("TrainingProgramVersionClient")
+  trainingBookings            TrainingSessionBooking[]     @relation("TrainingBookingClient")
 
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
   @@unique([workspaceId, userId])
@@ -1752,6 +1756,10 @@ model TrainingProgram {
   // once firstPublishedAt is set — a different start = replacement.
   startDate             DateTime  @map("start_date") @db.Date
   weekCount             Int       @map("week_count")
+  // WEEK_BASED | EVERGREEN. Locked at first publish — a different mode is
+  // a replacement program, never an in-place conversion. Evergreen uses
+  // weekCount=1 as its single prescription week (internal representation).
+  programMode           String    @default("WEEK_BASED") @map("program_mode")
   // Program-level interim field authority (owner-approved): subset of the
   // eight prescription fields. Snapshotted into each version at publish.
   fieldConfig           Json      @map("field_config")
@@ -1787,6 +1795,7 @@ model TrainingProgram {
   timezoneSetByMember WorkspaceMember? @relation("TrainingProgramTimezoneSetter", fields: [timezoneSetByMemberId], references: [id], onDelete: Restrict)
   cancelledByMember   WorkspaceMember? @relation("TrainingProgramCanceller", fields: [cancelledByMemberId], references: [id], onDelete: Restrict)
   versions            TrainingProgramVersion[]
+  bookings            TrainingSessionBooking[]
 
   // Composite coherence targets for raw version/replacement FKs.
   @@unique([id, workspaceId])
@@ -1822,10 +1831,44 @@ model TrainingProgramVersion {
   program           TrainingProgram @relation(fields: [programId], references: [id], onDelete: Restrict)
   clientProfile     ClientProfile   @relation("TrainingProgramVersionClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
   publishedByMember WorkspaceMember @relation("TrainingProgramVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
+  bookings          TrainingSessionBooking[]
 
   @@unique([programId, versionSeq])
   @@unique([programId, publishOriginRevision], map: "training_program_version_publish_origin_key")
   @@unique([id, workspaceId, programId])
   @@index([programId, activationInstant])
   @@map("training_program_version")
+}
+
+model TrainingSessionBooking {
+  id                String  @id @default(cuid())
+  // Denormalized tenant/client stamps — part of the composite coherence
+  // targets (raw-SQL FKs, established convention).
+  workspaceId       String  @map("workspace_id")
+  clientProfileId   String  @map("client_profile_id")
+  programId         String  @map("program_id")
+  // Immutable prescription pin: version + session + booked week, all
+  // resolved ONCE at create. A move changes scheduledDate only.
+  pinnedVersionId   String  @map("pinned_version_id")
+  sessionId         String  @map("session_id")
+  bookedWeek        Int     @map("booked_week")
+  // Declared local calendar date in the program's immutable anchor
+  // timezone — a date, never an instant.
+  scheduledDate     DateTime @map("scheduled_date") @db.Date
+  scheduledByMemberId String @map("scheduled_by_member_id")
+  cancelledAt         DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  cancelledByMemberId String?   @map("cancelled_by_member_id")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace         Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile     ClientProfile          @relation("TrainingBookingClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  program           TrainingProgram        @relation(fields: [programId], references: [id], onDelete: Restrict)
+  pinnedVersion     TrainingProgramVersion @relation(fields: [pinnedVersionId], references: [id], onDelete: Restrict)
+  scheduledByMember WorkspaceMember        @relation("TrainingBookingScheduler", fields: [scheduledByMemberId], references: [id], onDelete: Restrict)
+  cancelledByMember WorkspaceMember?       @relation("TrainingBookingCanceller", fields: [cancelledByMemberId], references: [id], onDelete: Restrict)
+
+  @@index([programId, scheduledDate])
+  @@index([workspaceId, clientProfileId, scheduledDate], map: "training_session_booking_client_scope_date_idx")
+  @@map("training_session_booking")
 }

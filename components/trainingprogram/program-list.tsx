@@ -81,8 +81,10 @@ export function TrainingProgramList({
                 <span className="tracker-list__title">{p.title}</span>
               </Link>
               <span className="tracker-list__sub">
-                {STATE_TEXT[p.state]} — starts {p.startDate} — {p.weekCount}{" "}
-                weeks
+                {STATE_TEXT[p.state]} — starts {p.startDate} —{" "}
+                {p.programMode === "EVERGREEN"
+                  ? "Ongoing"
+                  : `${p.weekCount} weeks`}
               </span>
             </li>
           ))}

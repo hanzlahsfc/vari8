@@ -10,22 +10,29 @@ import { AccessDeniedError } from "../auth/guard";
 import { ConsentError } from "../consent";
 import { isTrainingPlansEnabled, type TrainingPlansEnv } from "./gate";
 import {
+  bookTrainingSession,
   cancelTrainingProgram,
+  cancelTrainingSessionBooking,
+  moveTrainingSessionBooking,
   publishTrainingProgramVersion,
+  readOwnTrainingBookingHistory,
   readOwnTrainingHistory,
   readOwnTrainingProgram,
   readOwnTrainingProgramVersions,
   readOwnTrainingVersion,
+  readStaffTrainingBookings,
   readStaffTrainingProgram,
   readStaffTrainingProgramVersion,
   readStaffTrainingPrograms,
   saveTrainingProgramDraft,
   setTrainingProgramTimezone,
   TrainingError,
+  type ClientBookingHistoryPage,
   type ClientHistoryPage,
   type ClientVersionsPage,
   type OwnTrainingView,
   type OwnVersionDetail,
+  type StaffBookingsPage,
   type StaffProgramDetail,
   type StaffProgramList,
   type StaffVersionDetail,
@@ -64,6 +71,10 @@ export type TrainingSafeResult<T> =
         | "already_taken_over"
         | "confirmation_required"
         | "revision_already_published"
+        | "booking_conflict"
+        | "booking_date_bounds"
+        | "past_handover"
+        | "no_governing_version"
         | "internal_error";
       message: string;
       detail?: Record<string, unknown>;
@@ -107,6 +118,12 @@ const CLOSED_MESSAGES: Record<
     "This replacement takes over immediately and cannot be cancelled afterward.",
   revision_already_published:
     "That draft revision was already published — refresh to see it.",
+  booking_conflict: "That session is already booked on this date.",
+  booking_date_bounds:
+    "That booking date is outside the program’s bookable range.",
+  past_handover:
+    "That date is after the replacement takes over — book on the new program.",
+  no_governing_version: "No published program covers that booking date.",
   internal_error: "The training program couldn’t be loaded — please try again.",
 };
 
@@ -265,4 +282,54 @@ export async function readOwnTrainingVersionFromAction(
   deps: TrainingDeps = {},
 ): Promise<TrainingSafeResult<OwnVersionDetail>> {
   return guard(process.env, () => readOwnTrainingVersion(session, input, deps));
+}
+
+export async function bookTrainingSessionFromAction(
+  session: Session,
+  input: Parameters<typeof bookTrainingSession>[1],
+  deps: TrainingDeps = {},
+): Promise<TrainingSafeResult<{ bookingId: string; replayed: boolean }>> {
+  return guard(process.env, () => bookTrainingSession(session, input, deps));
+}
+
+export async function moveTrainingSessionBookingFromAction(
+  session: Session,
+  input: Parameters<typeof moveTrainingSessionBooking>[1],
+  deps: TrainingDeps = {},
+): Promise<TrainingSafeResult<{ bookingId: string }>> {
+  return guard(process.env, () =>
+    moveTrainingSessionBooking(session, input, deps),
+  );
+}
+
+export async function cancelTrainingSessionBookingFromAction(
+  session: Session,
+  input: Parameters<typeof cancelTrainingSessionBooking>[1],
+  deps: TrainingDeps = {},
+): Promise<
+  TrainingSafeResult<{ bookingId: string; alreadyCancelled: boolean }>
+> {
+  return guard(process.env, () =>
+    cancelTrainingSessionBooking(session, input, deps),
+  );
+}
+
+export async function readStaffTrainingBookingsFromAction(
+  session: Session,
+  input: Parameters<typeof readStaffTrainingBookings>[1],
+  deps: TrainingDeps = {},
+): Promise<TrainingSafeResult<StaffBookingsPage>> {
+  return guard(process.env, () =>
+    readStaffTrainingBookings(session, input, deps),
+  );
+}
+
+export async function readOwnTrainingBookingHistoryFromAction(
+  session: Session,
+  input: Parameters<typeof readOwnTrainingBookingHistory>[1],
+  deps: TrainingDeps = {},
+): Promise<TrainingSafeResult<ClientBookingHistoryPage>> {
+  return guard(process.env, () =>
+    readOwnTrainingBookingHistory(session, input, deps),
+  );
 }

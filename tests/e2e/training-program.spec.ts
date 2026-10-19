@@ -143,8 +143,17 @@ test.afterAll(async () => {
             resourceType: "training_program_version",
             subjectClientProfileId: profileId,
           },
+          {
+            resourceType: "training_session_booking",
+            subjectClientProfileId: profileId,
+          },
         ],
       },
+    })
+    .catch(() => {});
+  await prisma.trainingSessionBooking
+    .deleteMany({
+      where: { programId: { in: programIds.length ? programIds : ["-"] } },
     })
     .catch(() => {});
   await prisma.trainingProgramVersion
@@ -280,6 +289,459 @@ test("scheduled replacement is labelled and cancellable", async ({ page }) => {
   await expect(page.getByTestId("training-current")).not.toContainText(
     "E2E Next Block",
   );
+});
+
+test("replacement takeover then v2 publishes through the UI", async ({
+  page,
+}) => {
+  const listUrl = `${BASE}/workspace/${wsId}/clients/${profileId}/training-program`;
+  await signIn(page, E2E.coach);
+  await page.goto(listUrl);
+  await expect(page.getByTestId("staff-training-page")).toBeVisible();
+
+  // ── Root regression: a later version on the non-replacement root ──
+  await page
+    .locator("a[data-testid^='tp-program-link-']", {
+      hasText: "E2E Base Block",
+    })
+    .click();
+  await expect(page.getByTestId("staff-training-detail")).toBeVisible();
+  const rootEx = page.locator("fieldset[data-testid^='tp-exercise-']").first();
+  await rootEx.getByTestId(/tp-cell-.*-reps/).fill("8");
+  await page.getByTestId("tp-save-draft").click();
+  await expect(page.getByTestId("training-status")).toContainText(/saved/i);
+  await page.getByTestId("tp-effective").fill(today());
+  await page.getByTestId("tp-publish").click();
+  await expect(page.getByTestId("training-status")).toContainText(
+    "Published version 2.",
+  );
+  // Identical retry at the same revision (root, no claim involved):
+  // idempotent replay — no new version, same success message.
+  await page.getByTestId("tp-publish").click();
+  await expect(page.getByTestId("training-status")).toContainText(
+    "Published version 2.",
+  );
+
+  // ── Replacement v1 through the UI (immediate takeover + ack) ──
+  await page.goto(listUrl);
+  // One-week replacement: after takeover the client is in the final
+  // week — the page must render the prescription, not "has ended".
+  await page.getByTestId("tp-create-title").fill("E2E Chain R3");
+  await page.getByTestId("tp-create-start").fill(today());
+  await page.getByTestId("tp-create-weeks").fill("1");
+  await page.getByTestId("tp-create-tz").fill("UTC");
+  await page.getByTestId("tp-create-submit").click();
+  await expect(page.getByTestId("staff-training-detail")).toBeVisible();
+  await page.getByTestId("tp-session-add").click();
+  const fieldset = page.locator("fieldset[data-testid^='tp-session-']");
+  await fieldset
+    .first()
+    .getByTestId(/tp-exercise-add-/)
+    .click();
+  const exercise = fieldset
+    .first()
+    .locator("fieldset[data-testid^='tp-exercise-']")
+    .first();
+  await exercise.getByTestId(/tp-ex-name-/).fill("Hack squat");
+  await exercise.getByTestId(/tp-cell-.*-sets/).fill("3");
+  await exercise.getByTestId(/tp-cell-.*-reps/).fill("10");
+  await page.getByTestId("tp-save-draft").click();
+  await expect(page.getByTestId("training-status")).toContainText(/saved/i);
+  await page
+    .getByTestId("tp-predecessor")
+    .selectOption({ label: "E2E Base Block" });
+  await page.getByTestId("tp-ack-takeover").check();
+  await page.getByTestId("tp-effective").fill(today());
+  await page.getByTestId("tp-publish").click();
+  await expect(page.getByTestId("training-status")).toContainText(
+    "Published version 1.",
+  );
+
+  // ── Final-week client view (acceptance defect D1) ──
+  await signIn(page, E2E.client);
+  await page.goto(`${BASE}/workspace/${wsId}/training-program`);
+  await expect(page.getByTestId("training-current")).toBeVisible();
+  await expect(page.getByTestId("training-current")).toContainText(
+    "E2E Chain R3",
+  );
+  await expect(page.getByTestId("training-current")).toContainText(
+    "Hack squat",
+  );
+  await expect(page.getByTestId("training-current")).toContainText("Sets: 3");
+  await expect(page.getByTestId("training-completed")).toHaveCount(0);
+
+  // ── The defect: a second version on the replacement through the UI ──
+  await signIn(page, E2E.coach);
+  await page.goto(listUrl);
+  const r3Link = page.locator("a[data-testid^='tp-program-link-']", {
+    hasText: "E2E Chain R3",
+  });
+  const r3Href = await r3Link.getAttribute("href");
+  // Fresh mount via real navigation: after publish the Replaces control
+  // is hidden; the publish must not resubmit the predecessor claim
+  // (service rejects later-version claims).
+  await page.goto(`${BASE}${r3Href}`);
+  await expect(page.getByTestId("staff-training-detail")).toBeVisible();
+  await expect(page.getByTestId("tp-predecessor")).toHaveCount(0);
+
+  // ── F1: identical retry of the committed v1 across a remount ──
+  // Simulates a lost v1 publish response: same revision, no draft edit.
+  // The replay must reproduce the original request (incl. its
+  // predecessor claim) and return the committed version — not error.
+  const versionsBefore = await prisma.trainingProgramVersion.count({
+    where: {
+      program: { clientProfileId: profileId, title: "E2E Chain R3" },
+    },
+  });
+  await page.getByTestId("tp-publish").click();
+  await expect(page.getByTestId("training-status")).toContainText(
+    "Published version 1.",
+  );
+  const versionsAfterReplay = await prisma.trainingProgramVersion.count({
+    where: {
+      program: { clientProfileId: profileId, title: "E2E Chain R3" },
+    },
+  });
+  expect(versionsAfterReplay).toBe(versionsBefore);
+
+  // A changed effective date is a different request — still rejected.
+  await page.getByTestId("tp-effective").fill(inDays(2));
+  await page.getByTestId("tp-publish").click();
+  await expect(page.getByTestId("training-status")).toContainText(
+    /already published/i,
+  );
+
+  const ex2 = page.locator("fieldset[data-testid^='tp-exercise-']").first();
+  await ex2.getByTestId(/tp-cell-.*-reps/).fill("12");
+  await page.getByTestId("tp-save-draft").click();
+  await expect(page.getByTestId("training-status")).toContainText(/saved/i);
+  await page.getByTestId("tp-effective").fill(inDays(1));
+  await page.getByTestId("tp-publish").click();
+  await expect(page.getByTestId("training-status")).toContainText(
+    "Published version 2.",
+  );
+
+  // Persisted proof: two committed versions carrying the v2 content.
+  const prog = await prisma.trainingProgram.findFirstOrThrow({
+    where: { clientProfileId: profileId, title: "E2E Chain R3" },
+  });
+  const versions = await prisma.trainingProgramVersion.findMany({
+    where: { programId: prog.id },
+    orderBy: { versionSeq: "asc" },
+    select: { id: true, versionSeq: true, payload: true },
+  });
+  expect(versions.map((v) => v.versionSeq)).toEqual([1, 2]);
+  const v2 = versions[1].payload as {
+    weeks: {
+      week: number;
+      sessions: { exercises: { reps?: string }[] }[];
+    }[];
+  };
+  expect(v2.weeks[0]?.sessions[0]?.exercises[0]?.reps).toBe("12");
+  const createAudits = await prisma.auditEvent.count({
+    where: {
+      action: "CREATE",
+      resourceType: "training_program_version",
+      resourceId: { in: versions.map((v) => v.id) },
+    },
+  });
+  expect(createAudits).toBe(2);
+});
+
+test("evergreen program: ongoing authoring, post-week-1 update, client view", async ({
+  page,
+}) => {
+  const listUrl = `${BASE}/workspace/${wsId}/clients/${profileId}/training-program`;
+  await signIn(page, E2E.coach);
+  await page.goto(listUrl);
+  await expect(page.getByTestId("staff-training-page")).toBeVisible();
+
+  // Create an ongoing program via the mode select — no week count shown.
+  await page.getByTestId("tp-create-title").fill("E2E Ongoing Block");
+  await page.getByTestId("tp-create-start").fill(today());
+  await page.getByTestId("tp-create-mode").selectOption("EVERGREEN");
+  await expect(page.getByTestId("tp-create-weeks")).toHaveCount(0);
+  await page.getByTestId("tp-create-tz").fill("UTC");
+  await page.getByTestId("tp-create-submit").click();
+  await expect(page.getByTestId("staff-training-detail")).toBeVisible();
+
+  // Evergreen editor: no week navigation, single ongoing prescription.
+  await expect(page.getByTestId("tp-week")).toHaveCount(0);
+  await expect(page.getByTestId("tp-weeks")).toHaveCount(0);
+  await page.getByTestId("tp-session-add").click();
+  const fieldset = page.locator("fieldset[data-testid^='tp-session-']");
+  await fieldset
+    .first()
+    .getByTestId(/tp-exercise-add-/)
+    .click();
+  const exercise = fieldset
+    .first()
+    .locator("fieldset[data-testid^='tp-exercise-']")
+    .first();
+  await exercise.getByTestId(/tp-ex-name-/).fill("Deadlift");
+  await exercise.getByTestId(/tp-cell-.*-sets/).fill("3");
+  await exercise.getByTestId(/tp-cell-.*-reps/).fill("5");
+  await page.getByTestId("tp-save-draft").click();
+  await expect(page.getByTestId("training-status")).toContainText(/saved/i);
+  // Evergreen is a replacement of the current week-based program —
+  // the single-root rule forbids a second root. Immediate takeover.
+  await page
+    .getByTestId("tp-predecessor")
+    .selectOption({ label: "E2E Chain R3" });
+  await page.getByTestId("tp-ack-takeover").check();
+  await page.getByTestId("tp-effective").fill(today());
+  await page.getByTestId("tp-publish").click();
+  await expect(page.getByTestId("training-status")).toContainText(
+    "Published version 1.",
+  );
+
+  // Client: ongoing label, prescription verbatim, no "has ended".
+  await signIn(page, E2E.client);
+  await page.goto(`${BASE}/workspace/${wsId}/training-program`);
+  await expect(page.getByTestId("training-mode")).toContainText(
+    "ongoing program",
+  );
+  await expect(page.getByTestId("training-current")).toContainText("Deadlift");
+  await expect(page.getByTestId("training-completed")).toHaveCount(0);
+
+  // Seeded prerequisite (disclosed): age the program 30 days so the next
+  // save/publish crosses the old seven-day lock + `program_ended` bounds.
+  const prog = await prisma.trainingProgram.findFirstOrThrow({
+    where: { clientProfileId: profileId, title: "E2E Ongoing Block" },
+    include: { versions: true },
+  });
+  const agedStart = new Date(Date.now() - 30 * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+  await prisma.trainingProgram.update({
+    where: { id: prog.id },
+    data: { startDate: new Date(`${agedStart}T00:00:00Z`) },
+  });
+  for (const v of prog.versions)
+    await prisma.trainingProgramVersion.update({
+      where: { id: v.id },
+      data: {
+        effectiveDate: new Date(`${agedStart}T00:00:00Z`),
+        activationInstant: new Date(`${agedStart}T00:00:00Z`),
+      },
+    });
+
+  // UI: draft edit + save at "day 30" — no locked-week rejection.
+  await signIn(page, E2E.coach);
+  await page.goto(
+    `${BASE}/workspace/${wsId}/clients/${profileId}/training-program/${prog.id}`,
+  );
+  await expect(page.getByTestId("staff-training-detail")).toBeVisible();
+  await expect(page.getByTestId("tp-mode-locked")).toContainText("Ongoing");
+  const ex2 = page.locator("fieldset[data-testid^='tp-exercise-']").first();
+  await ex2.getByTestId(/tp-cell-.*-reps/).fill("8");
+  await page.getByTestId("tp-save-draft").click();
+  await expect(page.getByTestId("training-status")).toContainText(/saved/i);
+  // Publish v2 today — no `program_ended`.
+  await page.getByTestId("tp-effective").fill(today());
+  await page.getByTestId("tp-publish").click();
+  await expect(page.getByTestId("training-status")).toContainText(
+    "Published version 2.",
+  );
+
+  // Client sees the prospective update + the updated marker.
+  await signIn(page, E2E.client);
+  await page.goto(`${BASE}/workspace/${wsId}/training-program`);
+  await expect(page.getByTestId("training-current")).toContainText("Reps: 8");
+  await expect(page.getByTestId("training-marker")).toContainText("Updated");
+  await checkNoOverflow(page);
+});
+
+test("coach books, moves and cancels a session; client agenda pins the week", async ({
+  page,
+}) => {
+  // Seeded prerequisite (disclosed): reuse the client's current published
+  // program authored by earlier tests in this spec — the spec's programs
+  // form a single replacement chain, so the latest published non-cancelled
+  // program is the current one.
+  const prog = await prisma.trainingProgram.findFirstOrThrow({
+    where: {
+      clientProfileId: profileId,
+      cancelledAt: null,
+      firstPublishedAt: { not: null },
+    },
+    orderBy: { firstPublishedAt: "desc" },
+  });
+  const detailUrl = `${BASE}/workspace/${wsId}/clients/${profileId}/training-program/${prog.id}`;
+
+  await signIn(page, E2E.coach);
+  await page.goto(detailUrl);
+  await expect(page.getByTestId("staff-training-detail")).toBeVisible();
+  await expect(page.getByTestId("training-bookings")).toBeVisible();
+
+  // Book the first bookable session two days out.
+  const date1 = inDays(2);
+  const date2 = inDays(3);
+  const sessionSelect = page.getByTestId("booking-session");
+  const firstOption = await sessionSelect
+    .locator("option")
+    .nth(1)
+    .getAttribute("value");
+  expect(firstOption).toBeTruthy();
+  await sessionSelect.selectOption(firstOption as string);
+  await page.getByTestId("booking-date").fill(date1);
+  await page.getByTestId("booking-submit").click();
+  await expect(page.getByTestId("booking-message")).toContainText(/booked/i);
+
+  // Upcoming row: appointment date + pinned week label are distinct.
+  const row = page
+    .getByTestId("bookings-upcoming")
+    .getByTestId(/-booking$/)
+    .first();
+  await expect(row).toContainText(`Booked for ${date1}`);
+  await expect(row).toContainText(/Week \d+ prescription/);
+
+  // Move — the appointment date changes; the pinned week label does not.
+  await row.getByTestId(/-move-date$/).fill(date2);
+  await row.getByTestId(/-move$/).click();
+  await expect(page.getByTestId("booking-message")).toContainText(/moved/i);
+  await expect(
+    page
+      .getByTestId("bookings-upcoming")
+      .getByTestId(/-booking$/)
+      .first(),
+  ).toContainText(`Booked for ${date2}`);
+
+  // Client agenda shows the same date + pinned week + pinned content.
+  await signIn(page, E2E.client);
+  await page.goto(`${BASE}/workspace/${wsId}/training-program`);
+  const agendaRow = page.getByTestId("agenda-booking").first();
+  await expect(agendaRow).toContainText(`Booked for ${date2}`);
+  await expect(agendaRow).toContainText(/Week \d+ prescription/);
+
+  // Coach cancels; the row leaves upcoming and the agenda entry disappears.
+  await signIn(page, E2E.coach);
+  await page.goto(detailUrl);
+  await page
+    .getByTestId("bookings-upcoming")
+    .getByTestId(/-cancel$/)
+    .first()
+    .click();
+  await expect(page.getByTestId("booking-message")).toContainText(/cancelled/i);
+  await signIn(page, E2E.client);
+  await page.goto(`${BASE}/workspace/${wsId}/training-program`);
+  await expect(page.getByTestId("agenda-booking")).toHaveCount(0);
+  await checkNoOverflow(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await checkNoOverflow(page);
+});
+
+test("staff booking history reaches later pages via keyset load-more", async ({
+  page,
+}) => {
+  // Seeded prerequisite (disclosed): reuse the client's current published
+  // program authored by earlier tests in this spec — the latest published
+  // non-cancelled node of the replacement chain.
+  const prog = await prisma.trainingProgram.findFirstOrThrow({
+    where: {
+      clientProfileId: profileId,
+      cancelledAt: null,
+      firstPublishedAt: { not: null },
+    },
+    orderBy: { firstPublishedAt: "desc" },
+  });
+  const v1 = await prisma.trainingProgramVersion.findFirstOrThrow({
+    where: { programId: prog.id, versionSeq: 1 },
+  });
+  // Seed > 2 history pages (page size 12) with deterministic
+  // (scheduled_date, id) ordering ties; past dates keep rows history-only.
+  // Session ids vary within a date so the natural-key unique is respected.
+  const seeds: { id: string; date: string; session: string }[] = [];
+  for (let i = 0; i < 3; i += 1)
+    seeds.push({
+      id: `e2ehist_t${i + 1}`,
+      date: "2026-02-10",
+      session: `s${i + 1}`,
+    });
+  for (let i = 0; i < 23; i += 1)
+    seeds.push({
+      id: `e2ehist_d${String(i + 1).padStart(2, "0")}`,
+      date: `2026-01-${String(i + 1).padStart(2, "0")}`,
+      session: "s1",
+    });
+  await prisma.trainingSessionBooking.createMany({
+    data: seeds.map((s) => ({
+      id: s.id,
+      workspaceId: wsId,
+      clientProfileId: profileId,
+      programId: prog.id,
+      pinnedVersionId: v1.id,
+      sessionId: s.session,
+      bookedWeek: 1,
+      scheduledDate: new Date(`${s.date}T00:00:00Z`),
+      scheduledByMemberId: coachMemberId,
+    })),
+  });
+  // Expected order = the service keyset exactly (scheduled_date, id) DESC.
+  const expectedIds = (
+    await prisma.trainingSessionBooking.findMany({
+      where: { programId: prog.id },
+      orderBy: [{ scheduledDate: "desc" }, { id: "desc" }],
+      select: { id: true },
+    })
+  ).map((b) => b.id);
+  expect(expectedIds.length).toBeGreaterThan(24);
+
+  const detailUrl = `${BASE}/workspace/${wsId}/clients/${profileId}/training-program/${prog.id}`;
+  await signIn(page, E2E.coach);
+  await page.goto(detailUrl);
+  await expect(page.getByTestId("training-bookings")).toBeVisible();
+  const history = page.getByTestId("bookings-history");
+  const rows = () => history.getByTestId(/-booking$/);
+  await expect(rows()).toHaveCount(12);
+  const more = page.getByTestId("bookings-history-more");
+  await expect(more).toBeVisible();
+
+  // Pending state: the control disables while the page read is in flight.
+  await page.route(`**/training-program/${prog.id}`, async (route) => {
+    if (route.request().method() === "POST")
+      await new Promise((r) => setTimeout(r, 700));
+    await route.continue();
+  });
+  await more.click();
+  await expect(more).toBeDisabled();
+  await expect(rows()).toHaveCount(24);
+  await page.unroute(`**/training-program/${prog.id}`);
+
+  // Error recovery: an unauthenticated dispatch reports the failure and
+  // the control stays retryable; it recovers after signing back in.
+  await page.context().clearCookies();
+  await more.click();
+  await expect(page.getByTestId("bookings-history-error")).toBeVisible();
+  await expect(more).toBeEnabled();
+  await signIn(page, E2E.coach);
+  await page.goto(detailUrl);
+  await expect(rows()).toHaveCount(12);
+  await page.getByTestId("bookings-history-more").click();
+  await expect(rows()).toHaveCount(24);
+  await page.getByTestId("bookings-history-more").click();
+  await expect(rows()).toHaveCount(expectedIds.length);
+  // Exact keyset order incl. ties — no duplicates, no skipped rows.
+  const rendered = await history
+    .locator("[data-booking-id]")
+    .evaluateAll((els) => els.map((e) => e.getAttribute("data-booking-id")));
+  expect(rendered).toEqual(expectedIds);
+  expect(new Set(rendered).size).toBe(rendered.length);
+  // The last page offers no further load-more action.
+  await expect(page.getByTestId("bookings-history-more")).toHaveCount(0);
+
+  // Pagination state does not leak across program targets.
+  const other = await prisma.trainingProgram.findFirstOrThrow({
+    where: {
+      clientProfileId: profileId,
+      id: { not: prog.id },
+      firstPublishedAt: { not: null },
+    },
+  });
+  await page.goto(
+    `${BASE}/workspace/${wsId}/clients/${profileId}/training-program/${other.id}`,
+  );
+  await expect(page.locator('[data-booking-id^="e2ehist"]')).toHaveCount(0);
 });
 
 test("unassigned owner sees a read-only list", async ({ page }) => {

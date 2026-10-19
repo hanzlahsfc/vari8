@@ -143,7 +143,7 @@ function byteLen(v: unknown): number {
 export type BoundaryMap<V> = Record<string, V>;
 
 export type TrainingDraft = {
-  programMode: "WEEK_BASED";
+  programMode: "WEEK_BASED" | "EVERGREEN";
   /** Declared sessions — stable ids; declaration order = fallback order. */
   sessions: { id: string; name: string }[];
   /** Declared exercises with their home session. */
@@ -167,9 +167,11 @@ export type TrainingDraft = {
   fieldCells: Record<string, BoundaryMap<string | number>>;
 };
 
-export function emptyTrainingDraft(): TrainingDraft {
+export function emptyTrainingDraft(
+  programMode: TrainingDraft["programMode"] = "WEEK_BASED",
+): TrainingDraft {
   return {
-    programMode: "WEEK_BASED",
+    programMode,
     sessions: [],
     exercises: [],
     sessionOrder: {},
@@ -256,8 +258,8 @@ export function normalizeTrainingDraft(raw: unknown): TrainingDraft {
   ]);
   if (Object.keys(obj).some((k) => !allowed.has(k)))
     throw new TrainingError("invalid_input");
-  if (obj.programMode !== "WEEK_BASED")
-    // EVERGREEN is reserved for I1b — fail closed, never coerced.
+  if (obj.programMode !== "WEEK_BASED" && obj.programMode !== "EVERGREEN")
+    // Any other mode fails closed — never coerced.
     throw new TrainingError("invalid_input");
 
   const sessionsRaw = obj.sessions ?? [];
@@ -312,7 +314,7 @@ export function normalizeTrainingDraft(raw: unknown): TrainingDraft {
     throw new TrainingError("invalid_input");
 
   const draft: TrainingDraft = {
-    programMode: "WEEK_BASED",
+    programMode: obj.programMode as TrainingDraft["programMode"],
     sessions,
     exercises,
     sessionOrder: normalizeOrderBoundaryMap(obj.sessionOrder ?? {}),
@@ -473,7 +475,7 @@ export type MaterializedWeek = {
 };
 
 export type MaterializedProgram = {
-  programMode: "WEEK_BASED";
+  programMode: "WEEK_BASED" | "EVERGREEN";
   startDate: string;
   weekCount: number;
   weeks: MaterializedWeek[];
@@ -542,7 +544,7 @@ export function materializeWeeks(
     }
     weeks.push({ week: w, sessions });
   }
-  return { programMode: "WEEK_BASED", startDate, weekCount, weeks };
+  return { programMode: draft.programMode, startDate, weekCount, weeks };
 }
 
 /**

@@ -53,6 +53,184 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## TRAINING-I1B-2-R2 — review-findings repair (PROMPT R2)
+
+- Bounded repair on `feature/training-i1b2` for the I1-R1 independent
+  review (`~/Downloads/TRAINING-I1B-2-I1-R1-independent-review.md`,
+  SHA-256 `bf608abc…dea006e`, 256 lines, read through EOF). Reviewed
+  head `dfac206`; base `f71198b`; no PR, no merge.
+- **F1 (HIGH, closed):** `readOwnTrainingBookingHistory` returned
+  published-pending successor bookings pre-takeover (title + pinned
+  prescription leak, mislabelled "replaced"). Repair: join the program's
+  `version_seq=1` row and require `v1.activation_instant <= now` (the
+  injected op clock — the same in-force predicate `selectCurrent` uses,
+  inclusive at the exact takeover instant). Tenant/client scope,
+  authorization, consent, cancellation filters, pin projection, cutoff
+  and keyset semantics unchanged.
+- **F2 (LOW/MED, closed):** staff history `hasMore` was unreachable.
+  `listTrainingBookingsAction` exposes the existing bounded keyset read
+  (target-scoped `(scheduledDate,id)` cursor, truthful hasMore); the
+  bookings panel appends deduped rows with pending/error/disabled
+  states, re-syncs on server re-render, and remounts per
+  workspace/client/program target via a route key.
+- **RED→GREEN:** tests committed first (`32ea7d5`): pending-successor
+  history assertions (incl. takeover −1ms / exact / +after) → 2 focused
+  failures on `dfac206`; browser keyset load-more regression →
+  `bookings-history-more` absent on reviewed head. GREEN after
+  `21d5d98` (F1) + `8df3d65` (F2): focused 15/15 + spec 8/8.
+- **Mutations:** removing the `activation_instant <= now` predicate →
+  both F1 assertions fail again (2/15); stubbing the pagination dispatch
+  → later-page assertion stuck at 12 rows. Both restored byte-identical
+  (sha256-verified).
+- **Advisories:** A1 evidence corrected prospectively — the I1 report's
+  M5 wording ("fell through to `no_governing_version`") was imprecise;
+  the reviewer observed it resolved (booking created); original hashed
+  report preserved. A2 inspected — the pending-leaf cascade writes one
+  program-level `UPDATE {changed:true}` audit and no per-booking rows;
+  contract-authorized (decision #118 mandates the atomic cancel, not
+  per-booking audit) — no change. A3 noted — `readOwnTrainingBookingHistory`
+  remains unwired to any UI/action; no end-to-end client-history claim.
+- Gates on the repair tree (task-owned `i1b2_r2_*` DBs on
+  tracker-review-pg): `git diff --check`, format:check, typecheck clean;
+  lint 0 errors / 4 pre-existing warnings; unit 1331/1331; full
+  integration 873/873; build clean; focused E2E 8/8; full E2E on fresh
+  dedicated `i1b2_r2_e2e_full`. Schema/migration/RBAC/gate/pin paths
+  byte-identical to `dfac206` (whole-diff verified).
+- Builder report `~/Downloads/TRAINING-I1B-2-R2-builder-report.md`.
+  Stopped at the pushed repair for independent confirmation; no PR.
+
+## TRAINING-I1B-2 — dated-session bookings (PROMPT 266)
+
+- Owner-authorized implementation of the independently confirmed I1b-2
+  bookings contract on `feature/training-i1b2` (base `f71198b`, merged
+  Evergreen). Contract: P2 + P2-A1 + bookings finalization (A1-1
+  closed) — confirmed READY by P1-R1 review `929a89da…ef50a`.
+- `training_session_booking`: immutable pin (pinnedVersionId,
+  sessionId, bookedWeek) + mutable declared `scheduledDate`; partial
+  unique natural key over active rows; composite coherence FKs + CHECKs
+  (raw-SQL convention). Move = date-only; cancelled tuples reusable.
+- Service: staff create/move/cancel + bounded staff bookings read +
+  client agenda + client booking history; staff detail gains
+  bookings/bookableSessions; pending-leaf cancel cascades to non-past
+  bookings. Authorization/consent/locks precede replay lookup; pin
+  resolves at the booked instant under the anchor timezone; client
+  projection uses the PINNED version's snapshotted fieldConfig.
+- Boundary codes: booking_conflict, booking_date_bounds,
+  past_handover, no_governing_version. UI: staff bookings panel +
+  client agenda ("Booked for {date}" vs "Week {n} prescription").
+- Gates (final tree): format/typecheck/lint clean; unit 1331/1331;
+  full integration 872/872 (fresh tgt_i1b2_full; s1-a inventory updated
+  for the new table); build clean; focused E2E 7/7; full E2E on
+  dedicated app_i1b2_e2e. Migration: fresh deploy + genuine
+  base->candidate upgrade; drift = established composite-FK/raw-SQL
+  extras only. Mutations M1-M5 (pin timing, pinned fieldConfig,
+  move-pin drift, tombstone reuse, cutoff) all bite; restored
+  byte-identical.
+- Records: decision #118 + `docs/tasks/training-i1b2.md`. Stopped at
+  the pushed candidate for independent review — no PR, no merge.
+  Excluded: recurrence, logging/notes/flags/review, volume, formulas,
+  template integration. `ENABLE_TRAINING_PLANS` unchanged, fail-closed.
+
+## TRAINING-I1B-1 — Evergreen program mode (PROMPT 262)
+
+- Owner-authorized implementation of the independently confirmed I1b-1
+  scope on `feature/training-i1b1` (base `36eae79`, the merged I1a
+  repair). Contract: P2 plan + P2-A1 addendum (DeepSeek R1 confirmations
+  — I1b-1 READY; booking-only advisory A1-1 remains for I1b-2 and is
+  NOT implemented).
+- `training_program.program_mode` (TEXT, default `WEEK_BASED`, CHECK
+  `WEEK_BASED|EVERGREEN`) — set at create from the draft literal,
+  editable pre-publish only, immutable after first publish (a different
+  mode is a replacement, never in-place conversion). Evergreen stores
+  `weekCount=1` as its single prescription week.
+- Mode-aware week-derived sites (complete inventory): save-path
+  `ceiling`+locked-week assertion, `setTrainingProgramTimezone`
+  high-water advance, publish lock ceiling + history-invariant loop +
+  `newHighWater`, publish `upperBound`/`program_ended`, staff-detail
+  `ceiling`, client `completed`/`weekEndInstant`. Evergreen: ceiling 0,
+  no high-water advance, no upper bound, never completed by date.
+- Client: `ongoing` flag + "ongoing program" label, single prescription
+  week, marker = scheduled-later → "updates" / republished-governing →
+  "updated". Staff: mode select pre-publish, week nav/week-count hidden,
+  "Ongoing" list label. Existing immutable versions, CAS, replay,
+  authz/consent/audit and `ENABLE_TRAINING_PLANS` fail-closed gate
+  unchanged.
+- Gates (final tree): format/typecheck/lint clean (4 pre-existing
+  warnings); unit 1331/1331; integration 858/858 (disposable
+  `train_i1b1_intfull`); build clean; focused E2E 6/6; full E2E
+  417/429 (12 skipped, 0 failed; disposable `train_i1b1_e2e_full`).
+  Migration: fresh deploy + genuine base→candidate upgrade (backfill
+  `WEEK_BASED`, CHECK enforced, no new drift). Mutations: M1 save-ceiling,
+  M2 publish-bound, M3 completed-state, M4 timezone high-water — all
+  bite on targeted assertions; restored byte-identical.
+- Records: decision #117 + `docs/tasks/training-i1b1.md`. Stopped at the
+  pushed candidate for independent review — no PR, no merge.
+
+## TRAINING-I1A-R4 — replay-after-remount repair (PROMPT 255)
+
+- Bounded repair on `feature/training-i1a-r3` for F1 (LOW) from the
+  independent R3 review (DeepSeek V4.1 Flash,
+  `~/Downloads/TRAINING-I1A-R3-R1-independent-review.md`, SHA-256
+  `a8efa2d6…81f3`, 305 lines, read through EOF). D1/D2 stay closed.
+- F1: after a lost v1-publish response + remount, retrying at the same
+  revision sent `expectedPredecessor: null` → `revision_already_published`
+  instead of idempotent replay. The R3 `published ? null` fix could not
+  distinguish a committed-revision retry from a genuinely new publish.
+- Repair: `readStaffTrainingProgram` now exposes committed
+  `firstPublishOriginRevision` (v1's `publishOriginRevision`) to authorized
+  staff; the editor resubmits the stored `replacesProgramId` claim only
+  when `revision === firstPublishOriginRevision` — an exact reproduction
+  of the original request. Any revision advanced by a real save sends no
+  claim (genuinely new later version; server rejection unchanged).
+- RED→GREEN: new integration test (origin exposure, null when
+  unpublished, denied actor cannot recover state, reconstructed replay
+  → `replayed:true`, claimless retry → `revision_already_published`,
+  version/audit counts unchanged) + E2E UI steps (remount → retry →
+  "Published version 1.", count invariant, changed-date → "already
+  published", root identical-replay regression). Mutation M-R4-1
+  (blanket `published ? null`) re-produced the exact
+  "already published" failure through the UI; restored byte-identical.
+- Gates: format/typecheck/lint clean (4 pre-existing warnings); unit
+  1329/1329; integration 850/850 (disposable `train_r4_int`); build
+  clean; full E2E 416/428 (12 skipped, 0 failed; disposable
+  `train_r4_e2e_full`). No schema/migration/permission/gate changes.
+- Builder report `~/Downloads/TRAINING-I1A-R4-builder-report.md`.
+  Stopped at pushed repair for independent confirmation; no PR.
+
+## TRAINING-I1A-R3 — acceptance-defect repair (PROMPT 253)
+
+- Bounded repair on `feature/training-i1a-r3` for two defects found by the
+  JOURNEY-A1 real-browser acceptance (`~/Downloads/TRAINING-JOURNEY-A1-report.md`,
+  SHA-256 `2e5eaa9a…59fa7`). NOTE: the R1/R2 reviews and earlier full suites
+  passed but did NOT cover final-week client state or replacement v2
+  republishing — those gates did not prove these paths.
+- D1 (client final week rendered "has ended"): `readOwnTrainingProgram`
+  clamped the week index to `weekCount` then tested `idx >= weekCount` —
+  1-based index means every final week (and every 1-week program from day
+  one) reported `completed`. Fixed by deriving state from the real end
+  boundary instant (`weekEndInstant` under the immutable anchor) — final
+  week stays current through its last valid instant.
+- D2 (replacement frozen at v1): the editor seeded `predecessor` from
+  `replacesProgramId`, hid the control after publish, but still submitted
+  `expectedPredecessor` — the service's later-version claim rejection
+  (`invalid_input`) fired on every v2. Fixed: claim submitted only while
+  `!published`; a lost first-publish response keeps the original claim
+  (component has not remounted); the server check stays intact.
+- RED first: 4 integration tests (1-week first/last day, boundary ±1ms,
+  multi-week final week, NY-anchor across 2026-11-01 DST fall-back,
+  not-started → upcoming) + 1 E2E through the real UI (root v2 regression,
+  replacement v1 takeover + ack, final-week client view, v2 publish with
+  persisted-version/audit proof). RED reproduced both user-visible
+  failures; mutations (clamped-index check; always-submitted claim)
+  re-bit the same tests; restored byte-identical.
+- Gates on repair tree: format/typecheck/lint clean (4 pre-existing
+  warnings); unit 1329/1329; integration 849/849 (real PG, disposable
+  `train_r3_int`); build clean; full E2E 416 passed / 12 skipped /
+  0 failed (disposable `train_r3_e2e_full`).
+- Builder report `~/Downloads/TRAINING-I1A-R3-builder-report.md`.
+  Stopped at pushed repair for independent review; no PR; no production
+  enablement.
+
 ## TRAINING-I1A-R2 — coverage/formatting repair (pushed `4dbe363b…`)
 
 - Bounded repair on `feature/training-i1a` for the R1 independent review

@@ -103,6 +103,10 @@ export function TrainingProgramEditor({
   const [week, setWeek] = useState(
     Math.min(Math.max(program.currentWeekIndex ?? 1, 1), program.weekCount),
   );
+  const evergreen = draft.programMode === "EVERGREEN";
+  // Evergreen has a single prescription week — every edit writes at
+  // boundary "1" and no week navigation exists (P2 §2.2).
+  const effWeek = evergreen ? 1 : week;
   const [title, setTitle] = useState(program.title);
   const [startDate, setStartDate] = useState(program.startDate);
   const [weekCount, setWeekCount] = useState(program.weekCount);
@@ -121,7 +125,7 @@ export function TrainingProgramEditor({
   }>({ tone: "idle", message: "" });
   const [pending, startTransition] = useTransition();
 
-  const locked = week <= program.ceiling;
+  const locked = evergreen ? false : week <= program.ceiling;
   const published = program.firstPublishedAt !== null;
   const cancellable =
     program.state === "pending" && program.replacesProgramId !== null;
@@ -135,7 +139,7 @@ export function TrainingProgramEditor({
       ...d,
       fieldCells: {
         ...d.fieldCells,
-        [key]: setBoundary(d.fieldCells[key] ?? {}, week, value),
+        [key]: setBoundary(d.fieldCells[key] ?? {}, effWeek, value),
       },
     }));
   };
@@ -146,7 +150,7 @@ export function TrainingProgramEditor({
       ...d,
       sessionPresence: {
         ...d.sessionPresence,
-        [sid]: setBoundary(d.sessionPresence[sid] ?? {}, week, present),
+        [sid]: setBoundary(d.sessionPresence[sid] ?? {}, effWeek, present),
       },
     }));
   };
@@ -157,7 +161,7 @@ export function TrainingProgramEditor({
       ...d,
       exercisePresence: {
         ...d.exercisePresence,
-        [key]: setBoundary(d.exercisePresence[key] ?? {}, week, present),
+        [key]: setBoundary(d.exercisePresence[key] ?? {}, effWeek, present),
       },
     }));
   };
@@ -170,7 +174,7 @@ export function TrainingProgramEditor({
         sessions: [...d.sessions, { id, name: "New session" }],
         sessionPresence: {
           ...d.sessionPresence,
-          [id]: setBoundary({}, week, true),
+          [id]: setBoundary({}, effWeek, true),
         },
       };
     });
@@ -186,7 +190,7 @@ export function TrainingProgramEditor({
         ],
         exercisePresence: {
           ...d.exercisePresence,
-          [`${sid}/${id}`]: setBoundary({}, week, true),
+          [`${sid}/${id}`]: setBoundary({}, effWeek, true),
         },
       };
     });
@@ -249,7 +253,19 @@ export function TrainingProgramEditor({
         programId: program.id,
         expectedRevision: revision,
         effectiveDate,
-        expectedPredecessor: predecessor === "" ? null : predecessor,
+        // The predecessor claim belongs to the FIRST publication — and to
+        // a retry at v1's committed origin revision, where it reproduces
+        // the ORIGINAL request (the stored replacesProgramId provenance)
+        // so a lost-response/remount retry replays idempotently. A draft
+        // save advances the revision, so any other post-publish call is a
+        // genuinely new later version and must carry no claim (the
+        // service rejects later-version claims).
+        expectedPredecessor:
+          published && revision !== program.firstPublishOriginRevision
+            ? null
+            : predecessor === ""
+              ? null
+              : predecessor,
         acknowledgeImmediateTakeover: ackTakeover,
       });
       setStatus(
@@ -291,7 +307,7 @@ export function TrainingProgramEditor({
     );
 
   const visibleSessions = draft.sessions.filter(
-    (s) => resolveBoundary(draft.sessionPresence[s.id], week) === true,
+    (s) => resolveBoundary(draft.sessionPresence[s.id], effWeek) === true,
   );
 
   if (!canWrite) {
@@ -299,11 +315,15 @@ export function TrainingProgramEditor({
       <div data-testid="training-readonly">
         {statusNode}
         {visibleSessions.length === 0 ? (
-          <p className="app-lede">No sessions prescribed in week {week}.</p>
+          <p className="app-lede">
+            {evergreen
+              ? "No sessions prescribed."
+              : `No sessions prescribed in week ${effWeek}.`}
+          </p>
         ) : (
           <p className="app-lede">
-            {program.title} — {visibleSessions.length} session(s) in week {week}
-            .
+            {program.title} — {visibleSessions.length} session(s)
+            {evergreen ? "" : ` in week ${effWeek}`}.
           </p>
         )}
       </div>
@@ -340,18 +360,53 @@ export function TrainingProgramEditor({
         ) : (
           <p className="app-lede">Start date: {program.startDate} (locked)</p>
         )}
-        <label htmlFor="tp-weeks">Weeks</label>
-        <input
-          id="tp-weeks"
-          data-testid="tp-weeks"
-          inputMode="numeric"
-          value={String(weekCount)}
-          onChange={(e) => {
-            const n = Number(e.target.value);
-            if (Number.isInteger(n) && n >= 1 && n <= 104) setWeekCount(n);
-          }}
-          disabled={pending}
-        />
+        {!published ? (
+          <>
+            <label htmlFor="tp-mode">Structure</label>
+            <select
+              id="tp-mode"
+              data-testid="tp-mode"
+              value={draft.programMode}
+              onChange={(e) =>
+                updateDraft((d) => ({
+                  ...d,
+                  programMode:
+                    e.target.value === "EVERGREEN" ? "EVERGREEN" : "WEEK_BASED",
+                }))
+              }
+              disabled={pending}
+            >
+              <option value="WEEK_BASED">Week-based</option>
+              <option value="EVERGREEN">Ongoing (evergreen)</option>
+            </select>
+          </>
+        ) : (
+          <p className="app-lede" data-testid="tp-mode-locked">
+            {program.programMode === "EVERGREEN" ? "Ongoing" : "Week-based"}{" "}
+            (locked)
+          </p>
+        )}
+        {evergreen ? (
+          <p className="app-lede" data-testid="tp-ongoing">
+            Ongoing program — the prescription carries forward with no fixed
+            final week; published updates apply prospectively.
+          </p>
+        ) : (
+          <>
+            <label htmlFor="tp-weeks">Weeks</label>
+            <input
+              id="tp-weeks"
+              data-testid="tp-weeks"
+              inputMode="numeric"
+              value={String(weekCount)}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (Number.isInteger(n) && n >= 1 && n <= 104) setWeekCount(n);
+              }}
+              disabled={pending}
+            />
+          </>
+        )}
         <p className="app-lede">
           State: {program.state} — draft revision {revision}
           {program.anchorTimezone !== null
@@ -407,21 +462,29 @@ export function TrainingProgramEditor({
 
       <section className="tracker-section">
         <h2 className="tracker-section__title">Draft</h2>
-        <label htmlFor="tp-week">Week</label>
-        <select
-          id="tp-week"
-          data-testid="tp-week"
-          value={week}
-          onChange={(e) => setWeek(Number(e.target.value))}
-          disabled={pending}
-        >
-          {Array.from({ length: weekCount }, (_, i) => i + 1).map((w) => (
-            <option key={w} value={w}>
-              Week {w}
-              {w <= program.ceiling ? " (locked)" : ""}
-            </option>
-          ))}
-        </select>
+        {!evergreen ? (
+          <>
+            <label htmlFor="tp-week">Week</label>
+            <select
+              id="tp-week"
+              data-testid="tp-week"
+              value={week}
+              onChange={(e) => setWeek(Number(e.target.value))}
+              disabled={pending}
+            >
+              {Array.from({ length: weekCount }, (_, i) => i + 1).map((w) => (
+                <option key={w} value={w}>
+                  Week {w}
+                  {w <= program.ceiling ? " (locked)" : ""}
+                </option>
+              ))}
+            </select>
+          </>
+        ) : (
+          <p className="app-lede" data-testid="tp-week-ongoing">
+            Editing the ongoing prescription (no weeks).
+          </p>
+        )}
         {locked ? (
           <p className="app-lede" data-testid="tp-week-locked">
             Week {week} is locked — published weeks can’t be changed.
@@ -430,7 +493,7 @@ export function TrainingProgramEditor({
 
         {draft.sessions.map((s) => {
           const present =
-            resolveBoundary(draft.sessionPresence[s.id], week) === true;
+            resolveBoundary(draft.sessionPresence[s.id], effWeek) === true;
           return (
             <fieldset key={s.id} data-testid={`tp-session-${s.id}`}>
               <legend>
@@ -439,16 +502,20 @@ export function TrainingProgramEditor({
                   checked={present}
                   onChange={(e) => setSessionPresent(s.id, e.target.checked)}
                   disabled={pending || locked}
-                  aria-label={`Include ${s.name} in week ${week}`}
+                  aria-label={
+                    evergreen
+                      ? `Include ${s.name}`
+                      : `Include ${s.name} in week ${effWeek}`
+                  }
                 />{" "}
-                {resolveBoundary(draft.sessionNames[s.id], week) ?? s.name}
+                {resolveBoundary(draft.sessionNames[s.id], effWeek) ?? s.name}
               </legend>
               <label htmlFor={`tp-session-name-${s.id}`}>Session name</label>
               <input
                 id={`tp-session-name-${s.id}`}
                 data-testid={`tp-session-name-${s.id}`}
                 value={
-                  resolveBoundary(draft.sessionNames[s.id], week) ?? s.name
+                  resolveBoundary(draft.sessionNames[s.id], effWeek) ?? s.name
                 }
                 onChange={(e) =>
                   updateDraft((d) => ({
@@ -457,7 +524,7 @@ export function TrainingProgramEditor({
                       ...d.sessionNames,
                       [s.id]: setBoundary(
                         d.sessionNames[s.id] ?? {},
-                        week,
+                        effWeek,
                         e.target.value,
                       ),
                     },
@@ -472,8 +539,10 @@ export function TrainingProgramEditor({
                     .map((e) => {
                       const ekey = `${s.id}/${e.id}`;
                       const epresent =
-                        resolveBoundary(draft.exercisePresence[ekey], week) ===
-                        true;
+                        resolveBoundary(
+                          draft.exercisePresence[ekey],
+                          effWeek,
+                        ) === true;
                       return (
                         <fieldset
                           key={e.id}
@@ -487,7 +556,11 @@ export function TrainingProgramEditor({
                                 setExercisePresent(ekey, ev.target.checked)
                               }
                               disabled={pending || locked}
-                              aria-label={`Include ${e.name} in week ${week}`}
+                              aria-label={
+                                evergreen
+                                  ? `Include ${e.name}`
+                                  : `Include ${e.name} in week ${effWeek}`
+                              }
                             />{" "}
                             {e.name}
                           </legend>
@@ -524,7 +597,7 @@ export function TrainingProgramEditor({
                                 const cellKey = `${ekey}/${f.cell}`;
                                 const v = resolveBoundary(
                                   draft.fieldCells[cellKey],
-                                  week,
+                                  effWeek,
                                 );
                                 return (
                                   <span key={f.cell}>
@@ -571,7 +644,7 @@ export function TrainingProgramEditor({
                                 value={
                                   resolveBoundary(
                                     draft.fieldCells[`${ekey}/note`],
-                                    week,
+                                    effWeek,
                                   )?.toString() ?? ""
                                 }
                                 onChange={(ev) =>
