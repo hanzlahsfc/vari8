@@ -1307,14 +1307,12 @@ if (process.argv[1] && /generate\.ts$/.test(process.argv[1])) {
   process.exit(main(process.argv));
 }
 
+// Test surface only: what tests/unit/system-index.test.ts drives.
 export {
-  buildAll,
   buildDataModel,
   buildGlossary,
   buildRoutes,
   buildSymbols,
-  check,
-  generatedRegion,
   renderRouter,
   routePath,
   splitRegion,
