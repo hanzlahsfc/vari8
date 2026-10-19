@@ -1,22 +1,24 @@
 # system-index — generated system index for agentic navigation
 
 Card `system-index`, issue #62. Worktree `/home/nexuslink/vari8-worktrees/system-index`,
-branch `beta/system-index`, base `55a0f08` (origin/Vari8-Beta), PR #65. Node v26.7.0,
+branch `beta/system-index`, base `ea8f514` (origin/Vari8-Beta), PR #65. Node v26.7.0,
 npm 11.19.1. Not merged: an independent verifier decides SHIP or FIX.
+Head after fix pass 1: `8cda794` (this report and the verify report are the next commit).
 
 ## 1. What it does
 
-One generator, `scripts/index/generate.ts`, writes four index documents and the missing
+One generator, `scripts/index/generate.ts`, writes five index documents and the missing
 top-level `AGENTS.md` routers, deterministically. `npm run index` writes them;
 `npm run index:check` generates into a temp directory and exits 1 on any drift.
 
-| Deliverable | Output | Source of truth |
-|---|---|---|
-| Routes | `docs/index/ROUTES.md` | `app/**` and `frontend/src/app/**` page/layout/route files |
-| Symbols | `docs/index/SYMBOLS.md` | TypeScript compiler API over `lib/**` and `frontend/src/lib/**` |
-| Data model | `docs/index/DATA-MODEL.md` | `db/schema.prisma` (48 models, 31 enums) |
-| Routers | `AGENTS.md` in `app/`, `components/`, `db/`, `docs/`, `icm/`, `lib/`, `scripts/`, `spec/`, `tests/`, `themes/` | directory walk, 12 to 15 lines each, max 25 enforced |
-| Glossary | `docs/index/GLOSSARY.md` | curated terms + F1 slice ids + live `ENABLE_*` reads |
+| Deliverable | Output                                                                                                         | Source of truth                                                                       |
+| ----------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Routes      | `docs/index/ROUTES.md`                                                                                         | `app/**` and `frontend/src/app/**` page/layout/route files                            |
+| Symbols     | `docs/index/SYMBOLS.md`                                                                                        | TypeScript compiler API over `lib/**` and `frontend/src/lib/**`                       |
+| Components  | `docs/index/COMPONENTS.md`                                                                                     | exported React components in `frontend/src/**` and the route entries that import them |
+| Data model  | `docs/index/DATA-MODEL.md`                                                                                     | `db/schema.prisma` (48 models, 31 enums)                                              |
+| Routers     | `AGENTS.md` in `app/`, `components/`, `db/`, `docs/`, `icm/`, `lib/`, `scripts/`, `spec/`, `tests/`, `themes/` | directory walk, 12 to 17 lines each, max 25 enforced                                  |
+| Glossary    | `docs/index/GLOSSARY.md`                                                                                       | curated terms + F1 slice ids + live `ENABLE_*` reads                                  |
 
 Usage is documented in `docs/index/README.md`; the repo-root `AGENTS.md` gained one
 navigation line pointing at it. Detection notes that matter:
@@ -38,21 +40,24 @@ run and fails `index:check` until the index is regenerated and committed.
 
 ## 2. Commits
 
-| SHA | Paths | What |
-|---|---|---|
-| `51f7520` | `scripts/index/generate.ts`, `scripts/index/glossary-seed.json`, `package.json`, `.prettierignore` | generator, seed, `index` and `index:check` scripts |
-| `1207139` | `docs/index/*`, ten `AGENTS.md` routers, `AGENTS.md` | generated index and routers |
-| `6cf181b` | `tests/unit/system-index.test.ts` | 7 behaviour tests on the real repo |
-| `d50dd0e` | `scripts/index/generate.ts` | stable-sort assertion made independent of the comparator (found by proof E) |
-| `2162774` | `icm/05-build/reports/system-index.md` | this report |
-| `161bbc4` | `scripts/index/generate.ts`, `docs/index/ROUTES.md`, report | canvas section lists pages only and names the canvas root layout |
-| `dee5d4a` | `icm/AGENTS.md` | regenerate the icm router after adding a file under `icm/` |
-| `dff5fc5` | `scripts/index/generate.ts`, `docs/index/SYMBOLS.md` | tidy wrapped parameter lists in signatures |
-| `cec1ffe` | `scripts/index/generate.ts`, report | fail loud when a router loses its generated markers (found by proof G) |
-| `566ebb6` | `scripts/index/generate.ts` | export only the test surface |
+| SHA           | Paths                                                                                                                                                                                           | What                                                                        |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `51f7520`     | `scripts/index/generate.ts`, `scripts/index/glossary-seed.json`, `package.json`, `.prettierignore`                                                                                              | generator, seed, `index` and `index:check` scripts                          |
+| `1207139`     | `docs/index/*`, ten `AGENTS.md` routers, `AGENTS.md`                                                                                                                                            | generated index and routers                                                 |
+| `6cf181b`     | `tests/unit/system-index.test.ts`                                                                                                                                                               | 7 behaviour tests on the real repo                                          |
+| `d50dd0e`     | `scripts/index/generate.ts`                                                                                                                                                                     | stable-sort assertion made independent of the comparator (found by proof E) |
+| `2162774`     | `icm/05-build/reports/system-index.md`                                                                                                                                                          | this report                                                                 |
+| `161bbc4`     | `scripts/index/generate.ts`, `docs/index/ROUTES.md`, report                                                                                                                                     | canvas section lists pages only and names the canvas root layout            |
+| `dee5d4a`     | `icm/AGENTS.md`                                                                                                                                                                                 | regenerate the icm router after adding a file under `icm/`                  |
+| `dff5fc5`     | `scripts/index/generate.ts`, `docs/index/SYMBOLS.md`                                                                                                                                            | tidy wrapped parameter lists in signatures                                  |
+| `cec1ffe`     | `scripts/index/generate.ts`, report                                                                                                                                                             | fail loud when a router loses its generated markers (found by proof G)      |
+| `566ebb6`     | `scripts/index/generate.ts`                                                                                                                                                                     | export only the test surface                                                |
+| `8cda794`     | `scripts/index/generate.ts`, `docs/index/*`, `app/AGENTS.md`, `docs/AGENTS.md`, `icm/AGENTS.md`, `spec/AGENTS.md`, `tests/unit/system-index.test.ts`, `docs/index/README.md`, `.prettierignore` | fix pass 1 (F1 to F9) and seven regression tests                            |
+| (this commit) | `icm/05-build/reports/system-index.md`, `icm/05-build/reports/system-index-verify.md`                                                                                                           | fix pass 1 section and the verifier's report                                |
 
 Head at the time of writing: `566ebb6`. No dependency was added: `tsx` and `typescript` were
-already dev dependencies, and the generator uses only Node stdlib otherwise.
+already dev dependencies, and the generator uses only Node stdlib otherwise. The branch head
+after fix pass 1 is the report commit above.
 
 ## 3. Proofs
 
@@ -134,17 +139,17 @@ Measured on the merged HEAD (base `55a0f08` plus merge of `origin/Vari8-Beta` at
 warnings; PR-03a removed tests and two warning sites, which is where the lower numbers below
 come from. This card's own delta is its seven unit tests.
 
-| Command | Exit | Result |
-|---|---|---|
-| `npm run typecheck` | 0 | clean |
-| `npm run lint` | 0 | 0 errors, 14 warnings, all pre-existing in files this card does not touch |
-| `npm run test` | 0 | 97 files passed (97); 1144 tests passed (1144), including this card's 7 |
-| `npx vitest run tests/unit/system-index.test.ts` | 0 | 7 passed |
-| `npm run build` | 0 | `Next.js 16.3.8 (Turbopack)`, full route table printed |
-| `cd frontend && npm run build` | 0 | `○ /`, `○ /_not-found`, `○ /coach`, `○ /ethereal` prerendered |
-| `npm run index` | 0 | wrote 4 docs and 10 routers |
-| `npm run index:check` | 0 | 5 index docs and all routers match |
-| `npm run test:integration` | 0 | 53 files, 850 tests passed on a disposable `app_sysindex` database on 127.0.0.1:5433 (created, `npx prisma migrate deploy`, run, then dropped; the only other databases on that server are `app_dev` and `app_pr05`, neither mine) |
+| Command                                          | Exit | Result                                                                                                                                                                                                                             |
+| ------------------------------------------------ | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck`                              | 0    | clean                                                                                                                                                                                                                              |
+| `npm run lint`                                   | 0    | 0 errors, 14 warnings, all pre-existing in files this card does not touch                                                                                                                                                          |
+| `npm run test`                                   | 0    | 97 files passed (97); 1144 tests passed (1144), including this card's 7                                                                                                                                                            |
+| `npx vitest run tests/unit/system-index.test.ts` | 0    | 7 passed                                                                                                                                                                                                                           |
+| `npm run build`                                  | 0    | `Next.js 16.3.8 (Turbopack)`, full route table printed                                                                                                                                                                             |
+| `cd frontend && npm run build`                   | 0    | `○ /`, `○ /_not-found`, `○ /coach`, `○ /ethereal` prerendered                                                                                                                                                                      |
+| `npm run index`                                  | 0    | wrote 4 docs and 10 routers                                                                                                                                                                                                        |
+| `npm run index:check`                            | 0    | 5 index docs and all routers match                                                                                                                                                                                                 |
+| `npm run test:integration`                       | 0    | 53 files, 850 tests passed on a disposable `app_sysindex` database on 127.0.0.1:5433 (created, `npx prisma migrate deploy`, run, then dropped; the only other databases on that server are `app_dev` and `app_pr05`, neither mine) |
 
 The merge drifted two routers and no index document: `icm/AGENTS.md` (185 to 188 files) and
 `tests/AGENTS.md` (214 to 157 files after PR-03a deleted tests). `npm run index:check` reported
@@ -164,16 +169,71 @@ generated routers out of Prettier.
    `e4341bc1d169a5a2745360102cceee63d22df97f01d86caccd8e9331bf7a8d92`, and the extraction is
    rerunnable with `--refresh-glossary --spec <file> --ref <path>`. If the spec is committed
    later, that flag keeps the seed current.
-2. **Frontend symbols resolve `@/` against the repo root**, because one compiler program
-   serves both trees with the root `tsconfig` paths. Signatures from `frontend/src/lib` are
-   still correct; a type imported through `@/components/...` may show its bare name.
+2. **Frontend symbols resolve `@/` against `frontend/src`.** Since fix pass 1 the canvas tree is
+   compiled by its own program built from `frontend/tsconfig.json`, so `@/data/mock-data.json`
+   resolves to `frontend/src/data/mock-data.json`. The 23 canvas symbols had no `@/`-dependent
+   signature before, so the file's content did not change; the resolution is now correct.
 3. **`index:check` needs the normal dev install** (`npm ci` and `npx prisma generate`), the
    same prerequisite as `npm run typecheck`, so the compiler can state inferred types.
 4. **New top-level directories need one `.prettierignore` line** to stay out of `prettier
-   --check`; the generator creates the router itself without any edit.
+--check`; the generator creates the router itself without any edit.
 5. **`DIR_PURPOSE`** in the generator holds the one-line purpose per directory. A directory
    whose role changes needs that line updated; the inventory around it is generated.
 6. **No `docs/STATUS.md` change**, per the pipeline rule, and no change to any file under
    `db/`, `lib/` or `app/api/`. The two probe edits in proofs B and D were reverted with
    `git restore --source=HEAD`; the final diff touches none of them.
 7. **Not merged.** PR #65 is open against `Vari8-Beta` for independent verification.
+
+## 6. Fix pass 1
+
+Addresses `icm/05-build/reports/system-index-verify.md` (verifier verdict: FIX). Base `ea8f514`;
+head moved from `4d151e8` to `8cda794` for the code commit, this report follows. Every defect now
+has a regression test in `tests/unit/system-index.test.ts` that was mutation-checked (reintroduce
+the defect, observe red, revert, observe green).
+
+| ID  | Fix                                                                                                                                                                                                                                                                                                                                            | Where                                                   | Regression test                                                    |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------ |
+| F1  | `SKIP_DIRS` split into `ALWAYS_SKIP` (build output, skipped at any depth) and `TOP_LEVEL_SKIP` (data dirs, skipped only directly under the repository root) behind `shouldSkip`. `app/sheets/` and `spec/sheets/` are inventoried again. ROUTES went 46 to 48 backend pages; `app/AGENTS.md` 109 to 111 files; `spec/AGENTS.md` 5 to 27 files. | `scripts/index/generate.ts`                             | `F1: indexes a route-segment directory such as app/sheets`         |
+| F2  | `symbolsOf` emits one line per name from `checker.getExportsOfModule`, with `reexportSyms` covering `export { X } from`, `export type { X } from`, `export { X }` and `export * from` and naming the source module. SYMBOLS went 118 to 119 modules and 1114 to 1161 symbols; `frontend/src/lib/utils.ts` (`cn`) is listed.                    | `scripts/index/generate.ts`                             | `F2: indexes re-exports and matches an independent compiler count` |
+| F3  | Canvas symbols are built by a second program whose options come from `frontend/tsconfig.json`, so `@/*` resolves to `frontend/src` (`@/data/mock-data.json` resolves to `frontend/src/data/mock-data.json`).                                                                                                                                   | `scripts/index/generate.ts`                             | `F3: resolves @/ in the canvas tree against frontend/src`          |
+| F4  | `DIR_PURPOSE.icm` reads "Read the repo-root `CONTEXT.md` first". The root `CONTEXT.md` exists; `icm/CONTEXT.md` never did.                                                                                                                                                                                                                     | `scripts/index/generate.ts`, `icm/AGENTS.md`            | `F4: points the icm router at a file that exists`                  |
+| F5  | `countFiles` and `generatedRegion` exclude the files the generator writes into `docs/index`, so `docs/AGENTS.md` counts 83 files and `index/ (1)` whether or not the index has been generated.                                                                                                                                                 | `scripts/index/generate.ts`                             | `F5: keeps generated docs out of the docs/ router count`           |
+| F7  | `GUARD_RE` also matches `auth(`, `getSession(` and `getServerSession(`; the `/invite` row reads `auth` instead of `none detected`.                                                                                                                                                                                                             | `scripts/index/generate.ts`                             | `F7: treats auth() and getSession() as a session read`             |
+| F8  | Header base and head refreshed; this section added.                                                                                                                                                                                                                                                                                            | this report                                             | n/a                                                                |
+| F9  | New `docs/index/COMPONENTS.md` lists every exported React component in `frontend/src` (112 components in 67 files) with the canvas route entries that import each. `ClientRoster` resolves to `frontend/src/components/ethereal/clients/client-roster.tsx` (`/`, `/ethereal`).                                                                 | `scripts/index/generate.ts`, `docs/index/COMPONENTS.md` | `F9: names the canvas component behind a screen element`           |
+
+F6 (the out-of-scope `tests/unit/system-index.test.ts`): kept in this PR by parent decision; that
+file is now the regression suite for every item above.
+
+Code commit: `8cda794`. This report and the verify report are the next commit.
+
+### Gates (fix pass 1)
+
+| Command                                                | Exit    | Result                                                                                                                     |
+| ------------------------------------------------------ | ------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `npm run index`                                        | 0       | wrote 5 docs and 10 AGENTS.md routers                                                                                      |
+| `npm run index` twice                                  | 0       | tree hash `4dd52f1a8e22c5e9c0ff5c901532b734e1048f030c9d0eecbe99573fb68c5919` identical after run 1 and run 2, so zero diff |
+| `npm run index` after deleting all five generated docs | 0       | same tree hash; the deleted-docs state converges in one pass (F5)                                                          |
+| `npm run index:check`                                  | 0       | 6 index docs and all AGENTS.md routers match                                                                               |
+| `npx vitest run tests/unit/system-index.test.ts`       | 0       | 14 passed (7 pre-existing + 7 new)                                                                                         |
+| `npm run typecheck`                                    | 0       | clean                                                                                                                      |
+| `npm run lint`                                         | 0       | 0 errors, 14 warnings; none in the changed files                                                                           |
+| `npm run test`                                         | 0       | 97 files passed (97), 1151 tests passed (1151)                                                                             |
+| `npm run build`                                        | 0       | Next build, full route table printed                                                                                       |
+| `cd frontend && npm run build`                         | 0       | `/`, `/_not-found`, `/coach`, `/ethereal` prerendered                                                                      |
+| `npm run test:integration`                             | not run | needs the disposable DB on 127.0.0.1:5433; unchanged by this pass                                                          |
+
+### Mutation checks (fix pass 1)
+
+Each regression test was proved to bite: the defect was reintroduced, the test went red, the
+defect reverted, the test went green.
+
+| Defect reintroduced                              | Result          |
+| ------------------------------------------------ | --------------- |
+| `sheets` back in the always-skip set             | F1 red (exit 1) |
+| `symbolsOf` back to statement-only export names  | F2 red (exit 1) |
+| frontend program back to the root `@/*` paths    | F3 red (exit 1) |
+| `icm/AGENTS.md` purpose back to `icm/CONTEXT.md` | F4 red (exit 1) |
+| `countFiles` counting the generated docs again   | F5 red (exit 1) |
+| `auth` dropped from `GUARD_RE`                   | F7 red (exit 1) |
+| canvas root narrowed to `frontend/src/app`       | F9 red (exit 1) |
