@@ -157,8 +157,9 @@ Self-test (as run for issue #61, see `icm/05-build/reports/parity-harness.md`):
   `#a0a0a0`), a 1 px shift at 390, text inside a clipped header, and a colour on an off-screen row inside a clipped
   scroller. Every one exits 1. Revert with `git checkout -- <file>`; the runner that applies them reverts in a trap.
 
-Baseline: 70 screen PNGs plus 101 inner-scroller PNGs (15 MB) plus gzipped geometry and `manifest.json`, captured from
-this branch's tree (canvas identical to `Vari8-Beta` at `f02a6d6`) with `npm run parity -- --update-baseline`.
+Baseline: 70 screen PNGs plus 101 inner-scroller PNGs (13.9 MB, 14.2 MB with geometry and `manifest.json`;
+limit 15 MB) captured from this branch's tree (canvas identical to `Vari8-Beta` at `f02a6d6`) with
+`npm run parity -- --update-baseline`.
 
 ## Privacy
 

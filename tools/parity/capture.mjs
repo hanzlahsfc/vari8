@@ -360,7 +360,12 @@ async function waitForServer(baseUrl, ms = 60000) {
   }
 }
 
-export async function captureAll({ baseUrl, outDir, log = console.log }) {
+export async function captureAll({
+  baseUrl,
+  outDir,
+  log = console.log,
+  serverMine = null,
+}) {
   const index = JSON.parse(await readFile(INDEX_PATH, "utf8"));
   // --disable-partial-raster: partial raster re-rasters only the invalidated part of a tile, so the anti-aliased
   // border of a sub-pixel-positioned swatch rasterizes differently under CPU load (verify-2 section 5). Full raster
@@ -385,6 +390,15 @@ export async function captureAll({ baseUrl, outDir, log = console.log }) {
         for (let attempt = 0; attempt < 2 && !entry; attempt++) {
           if (attempt > 0) {
             manifest.retried++;
+            // The same port-ownership check run.mjs applies at startup: a URL that answers is
+            // not enough when the server this run started could have died and been replaced by
+            // a different build on the same port. serverMine is null for PARITY_URL runs.
+            if (serverMine && !serverMine()) {
+              lastErr = new Error(
+                `server died or was replaced on ${baseUrl}; retry not attempted`,
+              );
+              break;
+            }
             await browser.close().catch(() => {});
             browser = await launch();
             if (!(await waitForServer(baseUrl))) {

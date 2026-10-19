@@ -287,3 +287,55 @@ on :3630 untouched, the run picks a free port, validates the listener's process 
 `npm run typecheck` and the root `npm run build` still fail on `icm/05-build/evidence/PR-03b-verify-3/...`
 `TS2307 Cannot find module './v3-deferred-thread'`. That is inherited from the base branch and fixed by PR #75; it is
 not caused by this pass, and no file under `frontend/` is in this diff.
+
+## Fix pass 3
+
+Closes F1 (blocking) and F2 (minor) from the independent verify round 3
+(`/home/nexuslink/vari8-worktrees/_verify/pr68-verify.md`), plus the baseline-size ruling. Base `origin/Vari8-Beta`
+moved to `b5751ac` (PR #73); merged as `75a1aea` with one conflict in `package.json` scripts (kept `seed:dev`,
+`db:fresh`, `verify` from the base and `parity` from this branch). `npm ci` run at root and in `frontend/` first.
+
+### What changed
+
+- **F1, Prettier red on three owned files.** `.prettierignore`: added `tools/AGENTS.md` to the generated-routers list
+  (one line, same pattern as the other `*/AGENTS.md` entries; the file is written by `npm run index` and must not be
+  hand-formatted) and added `tools/parity/baseline/manifest.json` with a comment noting the harness writes it.
+  `icm/05-build/reports/parity-harness-verify-2.md` was reformatted with `npx prettier --write` (table realignment
+  only; no literal was turned into emphasis). `npx prettier --check .` now exits 0 on the whole repo.
+- **F2, retry accepted a replacement server.** `capture.mjs` `captureAll` takes an optional `serverMine` predicate.
+  The retry path calls it before relaunching the browser; if it fails, the screen records `server died or was
+replaced on <url>; retry not attempted` and the run exits 1. `run.mjs` builds the predicate from the same
+  `ownsPort(port, server.pid)` check used at startup and passes it to both `captureAll` calls. For `PARITY_URL` runs
+  and standalone `capture.mjs` there is no spawned server, so `serverMine` is null and the old readiness-only
+  behaviour is kept.
+- **Baseline size ruling.** Measured on the merged tree: 171 PNGs = 13,900,889 bytes (13.9 MB); the whole
+  `tools/parity/baseline/` directory = 14,241,064 bytes (14.2 MB). That exceeds the 12 MB the first card named.
+  Per the ruling, no new dependency was added to shrink it; `README.md` now records the measured size and sets the
+  documented limit to 15 MB.
+
+### F2 proofs
+
+| scenario                                                                                                      | exit | result                                                                                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| replacement server (kill the run's listener mid-run, fresh `next start` on the same port, `PARITY_PORT=3739`) | 1    | `capture: 23 failure(s), retried=23`; every failed screen records `server died or was replaced on http://127.0.0.1:3739; retry not attempted` in `out/current/manifest.json` |
+| one injected capture failure (`s01-roster@1440`, first attempt only, `PARITY_PORT=3740`)                      | 0    | `parity PASS: 0 problem(s), retried=1`; manifest `retried=1, screens=70, failures=0`                                                                                         |
+| idle run (`PARITY_PORT=3741`)                                                                                 | 0    | `parity PASS: 0 problem(s), retried=0`, 70 of 70 screens                                                                                                                     |
+
+The first row is the verifier's `restart.sh` scenario re-run on the fixed code. Before the fix the same scenario
+passed with `retried=1` and no death reported anywhere; now the death is recorded per screen and the run fails.
+
+### Gates (merged tree, after fix pass 3)
+
+| command                        | exit | result                                          |
+| ------------------------------ | ---- | ----------------------------------------------- |
+| `npx prettier --check .`       | 0    | whole repo clean                                |
+| `npm run lint`                 | 0    | 0 errors, 3 warnings (pre-existing)             |
+| `npm run typecheck`            | 0    | `tsc --noEmit` clean                            |
+| `npm run test`                 | 0    | 98 files, 1161 tests passed                     |
+| `npm run build`                | 0    | root build                                      |
+| `cd frontend && npm run build` | 0    | canvas builds unchanged                         |
+| `npm run index`                | 0    | no diff written                                 |
+| `npm run index:check`          | 0    | 6 index docs and all AGENTS.md routers match    |
+| `npm run parity` (idle)        | 0    | PASS, 0 problems, `retried=0`, 70 of 70 screens |
+
+Logs under `/home/nexuslink/.hermes/cache/scratch/pr68fix3/`. No load runs this pass.

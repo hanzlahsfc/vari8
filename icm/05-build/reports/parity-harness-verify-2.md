@@ -19,35 +19,35 @@ Separately, `typecheck` and the root `build` fail on HEAD. The cause is inherite
 
 ## Summary
 
-| # | Item | Result |
-|---|---|---|
-| 1 | Tolerance 0 (F1) | PASS. Plus F3 (fail-open on invalid env) |
-| 2 | Ambiguous clicks (F2) | PASS |
-| 3 | Atomic baseline update (O2) | PASS |
-| 4 | Inner scrollers (O3) | Text PASS. Paint FAIL (F4) |
-| 5 | Determinism | FAIL (B1): 10 of 10 idle and fresh build pass; the run under load fails. Root cause and fix proven |
-| 6 | Gate integrity | Prod default PASS, `PARITY_DEV=1` switch PASS, port handling FAIL (B2) |
-| 7 | Gates on HEAD | lint, test, frontend build, index:check PASS. typecheck and root build FAIL (inherited from base) |
-| 8 | Scope | PASS: no `frontend/` file in the diff |
+| #   | Item                        | Result                                                                                             |
+| --- | --------------------------- | -------------------------------------------------------------------------------------------------- |
+| 1   | Tolerance 0 (F1)            | PASS. Plus F3 (fail-open on invalid env)                                                           |
+| 2   | Ambiguous clicks (F2)       | PASS                                                                                               |
+| 3   | Atomic baseline update (O2) | PASS                                                                                               |
+| 4   | Inner scrollers (O3)        | Text PASS. Paint FAIL (F4)                                                                         |
+| 5   | Determinism                 | FAIL (B1): 10 of 10 idle and fresh build pass; the run under load fails. Root cause and fix proven |
+| 6   | Gate integrity              | Prod default PASS, `PARITY_DEV=1` switch PASS, port handling FAIL (B2)                             |
+| 7   | Gates on HEAD               | lint, test, frontend build, index:check PASS. typecheck and root build FAIL (inherited from base)  |
+| 8   | Scope                       | PASS: no `frontend/` file in the diff                                                              |
 
 ## 1. Tolerance 0 (F1): PASS, with F3
 
 Mutation driver `$E/mut.sh` applies one edit, runs `npm run parity`, and reverts in an `EXIT` trap (`git checkout -- <file>`). Summary in `$E/summary.txt`; per-run logs `$E/<ID>.log`.
 
-| ID | Mutation | Exit | Result |
-|---|---|---|---|
-| M2 | `--cd-muted: #ababab` to `#a0a0a0`, `frontend/src/components/coach/coach.css:15` | 1 | 58 of 70 FAIL (for example `s11-preferences@1440` px 48129) |
-| M2b | `--cd-muted: #ababab` to `#ababac` (blue channel +1, one token) | 1 | 58 of 70 FAIL (for example `s01-roster@390` px 7037, `s11-preferences@1440` px 5929). Caught |
+| ID  | Mutation                                                                         | Exit | Result                                                                                       |
+| --- | -------------------------------------------------------------------------------- | ---- | -------------------------------------------------------------------------------------------- |
+| M2  | `--cd-muted: #ababab` to `#a0a0a0`, `frontend/src/components/coach/coach.css:15` | 1    | 58 of 70 FAIL (for example `s11-preferences@1440` px 48129)                                  |
+| M2b | `--cd-muted: #ababab` to `#ababac` (blue channel +1, one token)                  | 1    | 58 of 70 FAIL (for example `s01-roster@390` px 7037, `s11-preferences@1440` px 5929). Caught |
 
 - Default: `tools/parity/compare.mjs:17` `AA_TOLERANCE = Number(process.env.PARITY_AA_TOLERANCE ?? 0)`, applied at `:62` (`d > tol`). The variable exists and defaults to 0. PASS.
 - **F3 (FIX), fail-open on invalid env.** `Number("abc")` is NaN, and `d > NaN` and `px.diff > NaN` are always false. Proof: I copied the baseline to `$E/swap1` and replaced `1440/s11-preferences.png` with `1440/s09-tracker-today.png` (same size, a different screen). Then I ran `node tools/parity/compare.mjs --current $E/swap1`:
 
-  | Env | Exit | `s11-preferences@1440` |
-  |---|---|---|
-  | unset | 1 | FAIL px=1197007 |
-  | `PARITY_AA_TOLERANCE=0` | 1 | FAIL px=1197007 |
-  | `PARITY_AA_TOLERANCE=abc` | **0** | ok px=0 |
-  | `PARITY_MAX_DIFF_PIXELS=abc` | **0** | ok px=1197007 |
+  | Env                          | Exit  | `s11-preferences@1440` |
+  | ---------------------------- | ----- | ---------------------- |
+  | unset                        | 1     | FAIL px=1197007        |
+  | `PARITY_AA_TOLERANCE=0`      | 1     | FAIL px=1197007        |
+  | `PARITY_AA_TOLERANCE=abc`    | **0** | ok px=0                |
+  | `PARITY_MAX_DIFF_PIXELS=abc` | **0** | ok px=1197007          |
 
   Logs: `$E/swap-*.log`. Close it: `compare.mjs:17-18` should throw unless the value is a finite integer of 0 or more. Acceptance: both `abc` runs exit 1 with a clear error.
 
@@ -58,11 +58,11 @@ Mutation driver `$E/mut.sh` applies one edit, runs `npm run parity`, and reverts
 - Probe F2 (`$E/F2.driver.txt`): `frontend/src/components/coach/clients.tsx:373` tab list given a second `"Check-ins"`. Exit 1. `capture: 2 failure(s)`: `s01-profile-checkins@390` and `@1440`, both `ambiguous click "Check-ins": 2 matches inside its scope`. Reverted, status clean.
 - PNGs viewed against `icm/04-briefing/shots/`:
 
-  | Capture | Expected | Seen | Verdict |
-  |---|---|---|---|
-  | `baseline/1440/s01-profile-checkins.png` | Chloe Park, Check-ins tab, "Submission history" | same: tab active, "No submissions yet", "Open calendar" | PASS |
-  | `baseline/390/s01-profile-checkins.png` | same, mobile | same, Check-ins tab active in the scrolled tab strip | PASS |
-  | `baseline/390/s04-template-habits.png` | Untitled template, Tabs panel, 7 client-tab toggles off | same. The Nutrition row sits under the fixed bottom nav in the full-page shot | PASS (state matches the reference; see note) |
+  | Capture                                  | Expected                                                | Seen                                                                          | Verdict                                      |
+  | ---------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------- |
+  | `baseline/1440/s01-profile-checkins.png` | Chloe Park, Check-ins tab, "Submission history"         | same: tab active, "No submissions yet", "Open calendar"                       | PASS                                         |
+  | `baseline/390/s01-profile-checkins.png`  | same, mobile                                            | same, Check-ins tab active in the scrolled tab strip                          | PASS                                         |
+  | `baseline/390/s04-template-habits.png`   | Untitled template, Tabs panel, 7 client-tab toggles off | same. The Nutrition row sits under the fixed bottom nav in the full-page shot | PASS (state matches the reference; see note) |
 
   Note: the seven toggle clicks change nothing visible, at both viewports and in the reference (O4 from round 1, a briefing question, unchanged).
 
@@ -70,22 +70,22 @@ Mutation driver `$E/mut.sh` applies one edit, runs `npm run parity`, and reverts
 
 `$E/o2.sh`: hashes every baseline file, starts `npm run parity -- --update-baseline`, waits for 3 `OK` captures, then sends SIGTERM to `node tools/parity/run.mjs`.
 
-| Check | Before | After |
-|---|---|---|
-| sha256 over all baseline files | `f3f9a4c85edade3c` | `f3f9a4c85edade3c` |
-| file count | 141 | 141 |
-| `git status --short tools/parity/baseline` | empty | empty |
-| `tools/parity/out/baseline.tmp` | n/a | partial (`390/` only) |
-| listeners on :3630 after kill | n/a | 0, no `next` process left |
+| Check                                      | Before             | After                     |
+| ------------------------------------------ | ------------------ | ------------------------- |
+| sha256 over all baseline files             | `f3f9a4c85edade3c` | `f3f9a4c85edade3c`        |
+| file count                                 | 141                | 141                       |
+| `git status --short tools/parity/baseline` | empty              | empty                     |
+| `tools/parity/out/baseline.tmp`            | n/a                | partial (`390/` only)     |
+| listeners on :3630 after kill              | n/a                | 0, no `next` process left |
 
 ## 4. Inner scrollers (O3): text PASS, paint FAIL (F4)
 
 The builder used the roster table scroller. I used a different one: the client-preview dialog's vertical scroller (`s09-tracker-week@390`, rows below about y 825 are clipped inside the dialog).
 
-| ID | Mutation | Exit | Result |
-|---|---|---|---|
-| O3t | `"Energy outside gym"` to `"Energy outside gyn"`, `frontend/src/components/coach/model.ts:232` | 1 | 6 FAIL. `s09-tracker-week@390` **px 0, text 1** (caught by text alone); `s09-tracker-today@390` px 0, text 1; `s05-tracker-setup@390` px 40; three 1440 screens px 33 to 58 |
-| O3c | Append to `week-view.css`: `@media (max-width: 500px) { .coach-root .ct-week-table tbody:last-of-type .ct-week-metric-label { color: #ff0000 } }` | **0** | PASS, 70 of 70 px 0. **Not caught** |
+| ID  | Mutation                                                                                                                                          | Exit  | Result                                                                                                                                                                      |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| O3t | `"Energy outside gym"` to `"Energy outside gyn"`, `frontend/src/components/coach/model.ts:232`                                                    | 1     | 6 FAIL. `s09-tracker-week@390` **px 0, text 1** (caught by text alone); `s09-tracker-today@390` px 0, text 1; `s05-tracker-setup@390` px 40; three 1440 screens px 33 to 58 |
+| O3c | Append to `week-view.css`: `@media (max-width: 500px) { .coach-root .ct-week-table tbody:last-of-type .ct-week-metric-label { color: #ff0000 } }` | **0** | PASS, 70 of 70 px 0. **Not caught**                                                                                                                                         |
 
 Positive control for O3c (`$E/o3c-control.sh`, `$E/o3c-probe.mjs`): I built and served the mutated canvas on :3631 and replayed the recipe. The last metric group ("Energy intake", "Protein intake") computes to `rgb(255, 0, 0)`, versus `rgb(244, 244, 244)` for the first label, with its top at y 1817 inside the 844 px viewport's dialog. After one scroll inside the dialog both labels are bright red (`$E/o3c-scrolled.png`). The change is visible to a user, and the gate passes it.
 
@@ -97,20 +97,20 @@ Disclosure: my control script's revert ran from `frontend/` with a repo-relative
 
 Runs: `$E/det.sh`, logs `$E/det/run*.log`, table `$E/det/table.txt`. Production default, unchanged tree, full 70 captures each. Status was clean and :3630 free after every run.
 
-| Run | Exit | Seconds | ok | Screens with any change | Result |
-|---|---|---|---|---|---|
-| 1 | 0 | 192 | 70 | 0 | PASS |
-| 2 | 0 | 191 | 70 | 0 | PASS |
-| 3 | 0 | 190 | 70 | 0 | PASS |
-| 4 | 0 | 191 | 70 | 0 | PASS |
-| 5 | 0 | 191 | 70 | 0 | PASS |
-| 6 | 0 | 190 | 70 | 0 | PASS |
-| 7 | 0 | 190 | 70 | 0 | PASS |
-| 8 | 0 | 190 | 70 | 0 | PASS |
-| 9 | 0 | 191 | 70 | 0 | PASS |
-| 10 | 0 | 191 | 70 | 0 | PASS |
-| fresh (`frontend/.next` moved to `$E/det/next-before-fresh`, not deleted) | 0 | 199 | 70 | 0 | PASS |
-| load (16 busy-loop processes plus a looping `tsc --noEmit`; load1 2.15 at start, 19.70 at end) | **1** | 210 | 69 | 1 | **FAIL** `s10-appearance@1440 px=2 geom=0/0/0 text=0` |
+| Run                                                                                            | Exit  | Seconds | ok  | Screens with any change | Result                                                |
+| ---------------------------------------------------------------------------------------------- | ----- | ------- | --- | ----------------------- | ----------------------------------------------------- |
+| 1                                                                                              | 0     | 192     | 70  | 0                       | PASS                                                  |
+| 2                                                                                              | 0     | 191     | 70  | 0                       | PASS                                                  |
+| 3                                                                                              | 0     | 190     | 70  | 0                       | PASS                                                  |
+| 4                                                                                              | 0     | 191     | 70  | 0                       | PASS                                                  |
+| 5                                                                                              | 0     | 191     | 70  | 0                       | PASS                                                  |
+| 6                                                                                              | 0     | 190     | 70  | 0                       | PASS                                                  |
+| 7                                                                                              | 0     | 190     | 70  | 0                       | PASS                                                  |
+| 8                                                                                              | 0     | 190     | 70  | 0                       | PASS                                                  |
+| 9                                                                                              | 0     | 191     | 70  | 0                       | PASS                                                  |
+| 10                                                                                             | 0     | 191     | 70  | 0                       | PASS                                                  |
+| fresh (`frontend/.next` moved to `$E/det/next-before-fresh`, not deleted)                      | 0     | 199     | 70  | 0                       | PASS                                                  |
+| load (16 busy-loop processes plus a looping `tsc --noEmit`; load1 2.15 at start, 19.70 at end) | **1** | 210     | 69  | 1                       | **FAIL** `s10-appearance@1440 px=2 geom=0/0/0 text=0` |
 
 Diagnosis (`$E/locate.mjs`, `$E/at.mjs`, `$E/repro.mjs`, `$E/repro.sh`, output `$E/repro2.txt`):
 
@@ -118,23 +118,24 @@ Diagnosis (`$E/locate.mjs`, `$E/at.mjs`, `$E/repro.mjs`, `$E/repro.sh`, output `
 - The element sits at a fractional position: `x 138.234375, y 784.90625`, size 31 by 31, scroll 0.
 - Single-screen repro with the gate's exact context settings, 40 captures per condition, first and second screenshot of the same page:
 
-  | Condition | First shot = baseline | Second shot differs from first |
-  |---|---|---|
-  | idle | 40 of 40 | 6 of 40 |
-  | load | 37 of 40 | 17 of 40 (two bad hashes; a bad frame can repeat twice) |
-  | load, `--disable-gpu` | 35 of 40 | 17 of 40 |
-  | load, `--num-raster-threads=1` | 39 of 40 | 20 of 40 |
-  | load, **`--disable-partial-raster`** | **40 of 40** | **0 of 40** |
+  | Condition                            | First shot = baseline | Second shot differs from first                          |
+  | ------------------------------------ | --------------------- | ------------------------------------------------------- |
+  | idle                                 | 40 of 40              | 6 of 40                                                 |
+  | load                                 | 37 of 40              | 17 of 40 (two bad hashes; a bad frame can repeat twice) |
+  | load, `--disable-gpu`                | 35 of 40              | 17 of 40                                                |
+  | load, `--num-raster-threads=1`       | 39 of 40              | 20 of 40                                                |
+  | load, **`--disable-partial-raster`** | **40 of 40**          | **0 of 40**                                             |
 
 - **Cause:** Chromium's partial raster re-rasterizes only the invalidated part of a tile. A sub-pixel-positioned anti-aliased border then rasterizes slightly differently depending on which rect was re-rastered. Idle, the gate's single first shot happens to land on the stable frame; load shifts the timing. "Retake until two shots match" would not fix this, because a bad frame can repeat.
 - **Fix (proven):** `tools/parity/capture.mjs:252` `chromium.launch()` to `chromium.launch({ args: ["--disable-partial-raster"] })`. I applied it temporarily (`$E/fixload.sh`, reverted by trap, status clean after) and ran the full gate twice under the same 16-process load:
 
-  | Run | Exit | ok | load1 | Result |
-  |---|---|---|---|---|
-  | fixload1 | 0 | 70 | 16.95 | PASS |
-  | fixload2 | 0 | 70 | 17.01 | PASS |
+  | Run      | Exit | ok  | load1 | Result |
+  | -------- | ---- | --- | ----- | ------ |
+  | fixload1 | 0    | 70  | 16.95 | PASS   |
+  | fixload2 | 0    | 70  | 17.01 | PASS   |
 
   The flag does not change any baseline pixel (70 of 70 equal to the committed baseline), so no recapture is needed.
+
 - Acceptance for the builder: apply the flag, then 10 idle runs and 3 loaded runs all exit 0, and the repro under load gives 40 of 40.
 - Not reproduced: the builder's dev-server `s02-thread-attachments@390` 903 px flake. I saw no failure on that screen in 13 production runs. It is plausibly the same mechanism; the flag also covers it.
 
@@ -148,20 +149,21 @@ Diagnosis (`$E/locate.mjs`, `$E/at.mjs`, `$E/repro.mjs`, `$E/repro.sh`, output `
   - The exit code was 1 only because `run.mjs:112` `process.kill(-server.pid)` threw `ESRCH` on the dead child and crashed. That skipped the `frontend/AGENTS.md` restore in the same `finally`. The report HTML says PASS.
 
   Close it: before spawning, fail if the port is already bound. After `waitForHttp`, confirm the child is alive and owns the port (or serve a per-run nonce and check it). Wrap the kill in try/catch so cleanup always runs. Acceptance: rerun `$E/o1.sh`; the gate exits 1 with a clear "port 3630 in use" message before any capture.
+
 - Stale-server trigger: SIGTERM to `run.mjs` did not orphan the server (section 3). Any other stale `next start`, dev server or unrelated app on :3630 triggers it.
 
 ## 7. Gates on HEAD
 
 Script `$E/gates.sh`, logs `$E/gates/<name>.log`, table `$E/gates/gates.txt`.
 
-| Command | Exit | Result |
-|---|---|---|
-| `npm run lint` | 0 | 0 errors, 3 warnings |
-| `npm run typecheck` | **1** | 1 error: `icm/05-build/evidence/PR-03b-verify-3/probes/variant-mount-timing.dom.test.tsx(22,39) TS2307 Cannot find module './v3-deferred-thread'`. No error in `tools/parity` |
-| `npm run test` | 0 | vitest run |
-| `npm run build` | **1** | same TS2307 during type check |
-| `cd frontend && npm run build` | 0 | static pages prerendered |
-| `npm run index:check` | 0 | `6 index docs and all AGENTS.md routers match` |
+| Command                        | Exit  | Result                                                                                                                                                                        |
+| ------------------------------ | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run lint`                 | 0     | 0 errors, 3 warnings                                                                                                                                                          |
+| `npm run typecheck`            | **1** | 1 error: `icm/05-build/evidence/PR-03b-verify-3/probes/variant-mount-timing.dom.test.tsx(22,39) TS2307 Cannot find module './v3-deferred-thread'`. No error in `tools/parity` |
+| `npm run test`                 | 0     | vitest run                                                                                                                                                                    |
+| `npm run build`                | **1** | same TS2307 during type check                                                                                                                                                 |
+| `cd frontend && npm run build` | 0     | static pages prerendered                                                                                                                                                      |
+| `npm run index:check`          | 0     | `6 index docs and all AGENTS.md routers match`                                                                                                                                |
 
 Provenance of the red gate: the file came in with commit `8a21ad0` (PR-03b verify round 3) through the merge of `8d82b57`. It is present at `8d82b57` and at the current `origin/Vari8-Beta` (`f02a6d6`). The imported module `v3-deferred-thread` exists in neither tree (`git ls-tree -r origin/Vari8-Beta | grep -c v3-deferred-thread` gives 0). It is not in `20f53ae`, which is why the builder's report shows typecheck 0. **This is inherited from the base and not caused by PR #68**, but HEAD cannot merge green until the base is fixed. Route it to the PR-03b owner. The root `tsconfig.json` includes `**/*.tsx` and does not exclude `icm/`.
 

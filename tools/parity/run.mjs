@@ -97,6 +97,7 @@ try {
 await mkdir(OUT, { recursive: true });
 let baseUrl = process.env.PARITY_URL;
 let server = null;
+let port = null;
 // Next dev and build append to frontend/AGENTS.md. Snapshot and restore so the canvas tree stays untouched.
 const agentsPath = path.join(FE, "AGENTS.md");
 const agentsBefore = await readFile(agentsPath, "utf8");
@@ -113,7 +114,7 @@ try {
       throw new Refuse(
         `port ${pinned} is in use; PARITY_PORT must name a free port. Nothing was compared.`,
       );
-    const port = pinned ?? (await bind(0));
+    port = pinned ?? (await bind(0));
     baseUrl = `http://127.0.0.1:${port}`;
     // Production build by default: dev mode (HMR, overlay, on-demand compile) adds timing noise.
     // PARITY_DEV=1 falls back to next dev for debugging only.
@@ -154,11 +155,15 @@ try {
         `port ${port} answers from a process this run did not start. Refusing to compare it.`,
       );
   }
+  // Re-checked by captureAll before every capture retry: a port that answers again means nothing
+  // if this run's server died and another process took the port. null for PARITY_URL runs, where
+  // no spawned server exists to own the port.
+  const serverMine = server ? () => ownsPort(port, server.pid) : null;
   if (update) {
     // Capture into a temp dir; the committed baseline is replaced only when every shot captured.
     const tmp = path.join(OUT, "baseline.tmp");
     await rm(tmp, { recursive: true, force: true });
-    const m = await captureAll({ baseUrl, outDir: tmp });
+    const m = await captureAll({ baseUrl, outDir: tmp, serverMine });
     const expected =
       JSON.parse(await readFile(INDEX_PATH, "utf8")).shots.length * 2;
     if (m.failures.length || m.screens.length !== expected) {
@@ -174,7 +179,7 @@ try {
     }
   } else {
     await rm(CUR, { recursive: true, force: true });
-    const m = await captureAll({ baseUrl, outDir: CUR });
+    const m = await captureAll({ baseUrl, outDir: CUR, serverMine });
     if (m.failures.length) {
       console.log(
         `capture: ${m.failures.length} failure(s), retried=${m.retried ?? 0}; see ${path.join(CUR, "manifest.json")}`,
