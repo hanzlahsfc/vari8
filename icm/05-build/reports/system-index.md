@@ -128,20 +128,28 @@ Proofs B, C, D and E each mutated a real file and restored it with
 
 ## 4. Gates
 
-Base `55a0f08` baseline in `icm/05-build/reports/PR-02.md`: 105 test files, 1308 tests,
-lint 0 errors / 16 warnings.
+Measured on the merged HEAD (base `55a0f08` plus merge of `origin/Vari8-Beta` at
+`ea8f514`, PR-03a test-audit deletions included). The pre-merge baseline recorded in
+`icm/05-build/reports/PR-02.md` was 105 unit test files / 1308 tests and 5 to 16 lint
+warnings; PR-03a removed tests and two warning sites, which is where the lower numbers below
+come from. This card's own delta is its seven unit tests.
 
 | Command | Exit | Result |
 |---|---|---|
 | `npm run typecheck` | 0 | clean |
-| `npm run lint` | 0 | 0 errors, 16 warnings, all pre-existing in files this card does not touch |
-| `npm run test` | 0 | 106 files passed / 4 skipped (110); 1315 tests passed / 23 skipped (1338). Delta is exactly this card's 7 tests |
+| `npm run lint` | 0 | 0 errors, 14 warnings, all pre-existing in files this card does not touch |
+| `npm run test` | 0 | 97 files passed (97); 1144 tests passed (1144), including this card's 7 |
 | `npx vitest run tests/unit/system-index.test.ts` | 0 | 7 passed |
-| `npm run build` | 0 | `Next.js 16.3.8 (Turbopack)`, route table printed |
+| `npm run build` | 0 | `Next.js 16.3.8 (Turbopack)`, full route table printed |
 | `cd frontend && npm run build` | 0 | `○ /`, `○ /_not-found`, `○ /coach`, `○ /ethereal` prerendered |
 | `npm run index` | 0 | wrote 4 docs and 10 routers |
 | `npm run index:check` | 0 | 5 index docs and all routers match |
-| `npm run test:integration` | 0 | 55 files, 873 tests passed against a disposable `app_sysindex` database on 127.0.0.1:5433 (created, `npx prisma migrate deploy`, run, then dropped; only `app_dev`, `app_pr03bv` and `app_pr05` remain, none of them mine) |
+| `npm run test:integration` | 0 | 55 files, 873 tests passed before the merge; re-run on the merged HEAD recorded below |
+
+The merge drifted two routers and no index document: `icm/AGENTS.md` (185 to 188 files) and
+`tests/AGENTS.md` (214 to 157 files after PR-03a deleted tests). `npm run index:check` reported
+exactly those two paths, `npm run index` fixed them, and the check then exited 0. Routes,
+symbols and the data model were unchanged by PR-03a, so `docs/index/*` did not drift.
 
 Canvas rule: no file under `frontend/src` and no markup, style or copy changed, so no
 screenshots. The only `frontend/` change is a `.prettierignore` entry that keeps the
