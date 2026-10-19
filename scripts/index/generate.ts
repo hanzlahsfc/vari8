@@ -97,8 +97,10 @@ const cut = (s: string, max: number): string =>
   s.length > max ? `${s.slice(0, max - 3)}...` : s;
 
 function assertSorted(where: string, keys: string[]): void {
+  // Deliberately independent of `cmp`: asserting order with the same
+  // comparator that produced it would be tautological.
   for (let i = 1; i < keys.length; i += 1) {
-    if (cmp(keys[i - 1], keys[i]) > 0) {
+    if (keys[i - 1] > keys[i]) {
       throw new Error(
         `${where}: output is not stable-sorted at index ${i}: ${keys[i - 1]} > ${keys[i]}`,
       );
