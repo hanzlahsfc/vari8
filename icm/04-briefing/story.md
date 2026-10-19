@@ -17,6 +17,7 @@ Sources are cited as `path:line`, relative to `04_PROJECTS/Vari8/`. Status as of
 Two separate apps in two folders, with no link between them.
 
 Boxes:
+
 - **Canvas (`frontend/`)**: Lilly's screens, Next 16.3.8, React 19.3.0. All state lives in browser localStorage. No login. (`icm/01-recon/output/L2-stack-merge.md:11,23`)
 - **Backend app (repo root)**: Next.js 15.5.25, React 19.1.0, Prisma, PostgreSQL, Auth.js v5 login, role checks (RBAC), consent records, feature flags. (`L2-stack-merge.md:11,23`)
 
@@ -29,6 +30,7 @@ Mechanism: the canvas keeps everything in the browser and the backend keeps the 
 One repository tree at `58eb6ed` (branch `proto/merge-frontend`). Both apps are in it and both build, and they still share nothing at runtime.
 
 Boxes:
+
 - **Root app (backend)**: still on Next.js 15.5 until PR-02. Its build compiles no canvas routes. (`D1-merge-prototype.md:41`)
 - **`frontend/` canvas**: Next 16.3.8, still reads and writes only browser localStorage. (`L2-stack-merge.md:23`)
 - **Repo checks**: the root CI (Node 22) and a path-gated canvas workflow sit side by side. (`D1-merge-prototype.md:73-74`)
@@ -44,6 +46,7 @@ Verified at this commit: root typecheck, lint, build and 1,306 unit tests; 845 i
 The canvas screens run inside the one backend app and read and write through the server, behind one login with the new roles.
 
 Boxes:
+
 - **Browser**: the canvas screens, served by the root app, one login.
 - **Web forms**: a thin server-action wrapper that calls the same service function. (`DECISIONS.md:34`)
 - **Mobile apps (later)**: Capacitor 8 wrapping the same UI, with the PWA as the interim. They call only the HTTP routes. (`DECISIONS.md:34`, PR-31)
@@ -62,39 +65,39 @@ Mechanism: every screen calls one validated service function per operation, the 
 
 Lanes: Foundation (PR-01 to PR-05), Data model (PR-M1 to PR-M9), Services (PR-SV1 to PR-SV4), Wire screens (PR-W1 to PR-W10), Messaging and media (PR-MSG, PR-MEDIA), Mobile (PR-31).
 
-| PR | Name | Lane | Depends on | Blocked by decision |
-|---|---|---|---|---|
-| PR-01 | Merge FRONTEND into TRACKER | Foundation | none | Q9, Q15 |
-| PR-02 | Root to Next 16.3.8 and React 19.3.0 | Foundation | PR-01 | none |
-| PR-03 | One Biome policy, TypeScript 7, Turbopack, test cuts | Foundation | PR-02 | test audit approval |
-| PR-04 | Flagged features reachable in dev | Foundation | PR-03 | Q1, consent-gate amendment (D12) |
-| PR-05 | Versioned API and token auth | Foundation | PR-03 | ROLES, AUTH, mobile token design (D6) |
-| PR-M1 | Client profile and lifecycle | Data model | PR-04 | Q3, Q10 |
-| PR-M2 | Workspace and coach preferences | Data model | PR-04 | Q6 |
-| PR-M3 | Notes and coach task model | Data model | PR-04 | Q4 |
-| PR-M4 | Template definitions | Data model | PR-04, PR-M1 | Q5, Q12 |
-| PR-M5 | Meal-plan payload | Data model | PR-04 | Q7 |
-| PR-M6 | Training payload | Data model | PR-04 | Q11 |
-| PR-M7 | Habit fields | Data model | PR-04 | none |
-| PR-M8 | Check-in fields | Data model | PR-04 | Q13 |
-| PR-M9 | Dashboard configuration | Data model | PR-04 | Q8 |
-| PR-SV1 | Scoped roster read model | Services | PR-M1, PR-M4, PR-M8 | Q14 |
-| PR-SV2 | Daily-entry numeric series | Services | PR-M1 | none |
-| PR-SV3 | Dashboard widget feeds | Services | PR-SV2, PR-M5, PR-M6, PR-M7 | none |
-| PR-SV4 | Client invitations | Services | PR-04 | none |
-| PR-W1 | Identity and client home | Wire screens | PR-01, PR-05 | ROLES (D10) |
-| PR-W2 | Roster and profile | Wire screens | PR-M1, PR-SV1, PR-SV4, PR-W1 | Q3, Q14, Q15, ROLES |
-| PR-W3 | Templates and setup | Wire screens | PR-M4, PR-SV1 | Q5, Q12, ROLES |
-| PR-W4 | Client tracker | Wire screens | PR-SV2, PR-W3, PR-W1 | Q10, ROLES |
-| PR-W5 | Habits | Wire screens | PR-M7, PR-W1 | ROLES |
-| PR-W6 | Check-ins | Wire screens | PR-M8, PR-W3, PR-W1 | Q13, Q14, ROLES |
-| PR-W7 | Nutrition | Wire screens | PR-M5, PR-W1 | Q7, ROLES |
-| PR-W8 | Training | Wire screens | PR-M6, PR-W1 | Q11, ROLES |
-| PR-W9 | Dashboard builder | Wire screens | PR-M9, PR-SV3, PR-W1 | Q8, ROLES |
-| PR-W10 | Notes and appearance | Wire screens | PR-M2, PR-M3, PR-W1 | Q4, Q6, ROLES |
-| PR-MSG | Approved messaging (text only, if approved) | Messaging and media | PR-05, PR-M3 | Q2 |
-| PR-MEDIA | Approved media storage | Messaging and media | PR-05, PR-M2 | Q2, storage vendor (D8), photo consent and retention (Appendix C) |
-| PR-31 | PWA-first mobile and Capacitor 8 scope | Mobile | PR-05, PR-W1 to PR-W10 | ROLES, AUTH, mobile token design (via PR-05) |
+| PR       | Name                                                 | Lane                | Depends on                   | Blocked by decision                                               |
+| -------- | ---------------------------------------------------- | ------------------- | ---------------------------- | ----------------------------------------------------------------- |
+| PR-01    | Merge FRONTEND into TRACKER                          | Foundation          | none                         | Q9, Q15                                                           |
+| PR-02    | Root to Next 16.3.8 and React 19.3.0                 | Foundation          | PR-01                        | none                                                              |
+| PR-03    | One Biome policy, TypeScript 7, Turbopack, test cuts | Foundation          | PR-02                        | test audit approval                                               |
+| PR-04    | Flagged features reachable in dev                    | Foundation          | PR-03                        | Q1, consent-gate amendment (D12)                                  |
+| PR-05    | Versioned API and token auth                         | Foundation          | PR-03                        | ROLES, AUTH, mobile token design (D6)                             |
+| PR-M1    | Client profile and lifecycle                         | Data model          | PR-04                        | Q3, Q10                                                           |
+| PR-M2    | Workspace and coach preferences                      | Data model          | PR-04                        | Q6                                                                |
+| PR-M3    | Notes and coach task model                           | Data model          | PR-04                        | Q4                                                                |
+| PR-M4    | Template definitions                                 | Data model          | PR-04, PR-M1                 | Q5, Q12                                                           |
+| PR-M5    | Meal-plan payload                                    | Data model          | PR-04                        | Q7                                                                |
+| PR-M6    | Training payload                                     | Data model          | PR-04                        | Q11                                                               |
+| PR-M7    | Habit fields                                         | Data model          | PR-04                        | none                                                              |
+| PR-M8    | Check-in fields                                      | Data model          | PR-04                        | Q13                                                               |
+| PR-M9    | Dashboard configuration                              | Data model          | PR-04                        | Q8                                                                |
+| PR-SV1   | Scoped roster read model                             | Services            | PR-M1, PR-M4, PR-M8          | Q14                                                               |
+| PR-SV2   | Daily-entry numeric series                           | Services            | PR-M1                        | none                                                              |
+| PR-SV3   | Dashboard widget feeds                               | Services            | PR-SV2, PR-M5, PR-M6, PR-M7  | none                                                              |
+| PR-SV4   | Client invitations                                   | Services            | PR-04                        | none                                                              |
+| PR-W1    | Identity and client home                             | Wire screens        | PR-01, PR-05                 | ROLES (D10)                                                       |
+| PR-W2    | Roster and profile                                   | Wire screens        | PR-M1, PR-SV1, PR-SV4, PR-W1 | Q3, Q14, Q15, ROLES                                               |
+| PR-W3    | Templates and setup                                  | Wire screens        | PR-M4, PR-SV1                | Q5, Q12, ROLES                                                    |
+| PR-W4    | Client tracker                                       | Wire screens        | PR-SV2, PR-W3, PR-W1         | Q10, ROLES                                                        |
+| PR-W5    | Habits                                               | Wire screens        | PR-M7, PR-W1                 | ROLES                                                             |
+| PR-W6    | Check-ins                                            | Wire screens        | PR-M8, PR-W3, PR-W1          | Q13, Q14, ROLES                                                   |
+| PR-W7    | Nutrition                                            | Wire screens        | PR-M5, PR-W1                 | Q7, ROLES                                                         |
+| PR-W8    | Training                                             | Wire screens        | PR-M6, PR-W1                 | Q11, ROLES                                                        |
+| PR-W9    | Dashboard builder                                    | Wire screens        | PR-M9, PR-SV3, PR-W1         | Q8, ROLES                                                         |
+| PR-W10   | Notes and appearance                                 | Wire screens        | PR-M2, PR-M3, PR-W1          | Q4, Q6, ROLES                                                     |
+| PR-MSG   | Approved messaging (text only, if approved)          | Messaging and media | PR-05, PR-M3                 | Q2                                                                |
+| PR-MEDIA | Approved media storage                               | Messaging and media | PR-05, PR-M2                 | Q2, storage vendor (D8), photo consent and retention (Appendix C) |
+| PR-31    | PWA-first mobile and Capacitor 8 scope               | Mobile              | PR-05, PR-W1 to PR-W10       | ROLES, AUTH, mobile token design (via PR-05)                      |
 
 Critical path to the first wired screen: PR-01, PR-02, PR-03, PR-05, PR-W1. The roster (PR-W2) waits on the most decisions: Q3, Q14, Q15, ROLES, plus PR-04 (Q1) through PR-M1, and PR-M4 and PR-M8 through PR-SV1.
 
@@ -146,14 +149,14 @@ Of 232 test files, 67 keep as they are, 67 are trimmed, 61 are cut in PR-03 (abo
 
 ## Self-check
 
-| Check | Result | Evidence |
-|---|---|---|
-| Every PR id in this file exists in PLAN.md | PASS | 31 of 31 PR ids used; the 31 PLAN.md PR sections all appear in the roadmap table. |
-| Every decision exists in DECISIONS.md or PLAN.md | PASS | D1, D6, D8, D9, D10, D12, D13 are DECISIONS.md headings; Q1 to Q15 are the PLAN.md owner list (lines 8 to 12); ROLES and AUTH are in DECISIONS.md (D10, D14); PHOTOS consent and storage vendor are in PLAN.md Appendix C and line 1551. |
-| Every number traces to a source | PASS | 31 PRs, 338-row matrix (not quoted here), 232 test files, 67 / 67 / 61 / 37 file split, 24,330 and 32,251 lines, 1,306 / 845 / 157 test runs all checked against the cited files. |
-| Line citations point at the cited text | PASS | Spot-checked each citation against its file. Wrong line refs found in the pass were fixed. |
-| No invented facts | PASS with two labelled suggestions | Two items are my suggestions, not plan text, and are labelled as such: the ROLES fallback (deny where doc and code disagree) and "an empty library is the lower-risk choice" (Q5). |
-| Plan state | Stated as found | PLAN.md has not had the FOLD-IN-NOTES.md changes applied: no AUTH or ROLES entry in its decision list, no parked appendix. Stated in decision 1. |
-| Contradiction surfaced, not resolved | Flagged | PHOTOS consent blocks PR-MSG and PR-MEDIA in PLAN.md Appendix C, but D12 says parked consent gates no PR. Raised in decision 7. |
-| Internal ids | PASS | PR ids appear only where the brief asks for them (next moves, roadmap, decision blocks). No matrix status codes or row ids are used. |
-| Long dashes | PASS | 0 em or en dashes in the file. |
+| Check                                            | Result                             | Evidence                                                                                                                                                                                                                                 |
+| ------------------------------------------------ | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Every PR id in this file exists in PLAN.md       | PASS                               | 31 of 31 PR ids used; the 31 PLAN.md PR sections all appear in the roadmap table.                                                                                                                                                        |
+| Every decision exists in DECISIONS.md or PLAN.md | PASS                               | D1, D6, D8, D9, D10, D12, D13 are DECISIONS.md headings; Q1 to Q15 are the PLAN.md owner list (lines 8 to 12); ROLES and AUTH are in DECISIONS.md (D10, D14); PHOTOS consent and storage vendor are in PLAN.md Appendix C and line 1551. |
+| Every number traces to a source                  | PASS                               | 31 PRs, 338-row matrix (not quoted here), 232 test files, 67 / 67 / 61 / 37 file split, 24,330 and 32,251 lines, 1,306 / 845 / 157 test runs all checked against the cited files.                                                        |
+| Line citations point at the cited text           | PASS                               | Spot-checked each citation against its file. Wrong line refs found in the pass were fixed.                                                                                                                                               |
+| No invented facts                                | PASS with two labelled suggestions | Two items are my suggestions, not plan text, and are labelled as such: the ROLES fallback (deny where doc and code disagree) and "an empty library is the lower-risk choice" (Q5).                                                       |
+| Plan state                                       | Stated as found                    | PLAN.md has not had the FOLD-IN-NOTES.md changes applied: no AUTH or ROLES entry in its decision list, no parked appendix. Stated in decision 1.                                                                                         |
+| Contradiction surfaced, not resolved             | Flagged                            | PHOTOS consent blocks PR-MSG and PR-MEDIA in PLAN.md Appendix C, but D12 says parked consent gates no PR. Raised in decision 7.                                                                                                          |
+| Internal ids                                     | PASS                               | PR ids appear only where the brief asks for them (next moves, roadmap, decision blocks). No matrix status codes or row ids are used.                                                                                                     |
+| Long dashes                                      | PASS                               | 0 em or en dashes in the file.                                                                                                                                                                                                           |

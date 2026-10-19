@@ -1,1848 +1,1788 @@
 {
- "generated": "2026-10-18T14:29:40.390Z",
- "viewport": {
-  "width": 1440,
-  "height": 900
- },
- "server": "http://127.0.0.1:3420",
- "tree": "/home/nexuslink/vari8-worktrees/merge-proto @ 58eb6ed",
- "readinessWords": {
-  "UNCONFIGURED": "switch on",
-  "UNWIRED": "connect",
-  "PARTIAL": "reshape",
-  "MISSING": "build",
-  "CONFLICT": "your call",
-  "ROLES": "your call"
- },
- "readinessColors": {
-  "UNCONFIGURED": "#D97706",
-  "UNWIRED": "#2563EB",
-  "PARTIAL": "#7C3AED",
-  "MISSING": "#DC2626",
-  "CONFLICT": "#DB2777",
-  "ROLES": "#DB2777"
- },
- "shots": [
-  {
-   "file": "s01-roster.png",
-   "annotated": "s01-roster-annotated.png",
-   "surface": "S01",
-   "surfaceName": "Coach shell, navigation, client roster, client profile",
-   "screen": "Clients roster",
-   "route": "/coach",
-   "clicks": [
-    "Clients"
-   ],
-   "rowsTotal": 45,
-   "rowsMatched": 16,
-   "matchedRows": [
-    {
-     "id": "S01-02",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S01-03",
-     "word": "reshape",
-     "elements": 5
-    },
-    {
-     "id": "S01-05",
-     "word": "reshape",
-     "elements": 3
-    },
-    {
-     "id": "S01-06",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-07",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-08",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-09",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-10",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-14",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-17",
-     "word": "build",
-     "elements": 2
-    },
-    {
-     "id": "S01-19",
-     "word": "reshape",
-     "elements": 4
-    },
-    {
-     "id": "S01-20",
-     "word": "connect",
-     "elements": 1
-    },
-    {
-     "id": "S01-22",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-24",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-26",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-34",
-     "word": "reshape",
-     "elements": 1
-    }
-   ]
+  "generated": "2026-10-18T14:29:40.390Z",
+  "viewport": {
+    "width": 1440,
+    "height": 900
   },
-  {
-   "file": "s01-profile-overview.png",
-   "annotated": "s01-profile-overview-annotated.png",
-   "surface": "S01",
-   "surfaceName": "Coach shell, navigation, client roster, client profile",
-   "screen": "Client profile, Overview tab",
-   "route": "/coach",
-   "clicks": [
-    "Clients",
-    "CP Chloe Park Lifestyle"
-   ],
-   "rowsTotal": 45,
-   "rowsMatched": 23,
-   "matchedRows": [
-    {
-     "id": "S01-02",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S01-03",
-     "word": "reshape",
-     "elements": 5
-    },
-    {
-     "id": "S01-05",
-     "word": "reshape",
-     "elements": 3
-    },
-    {
-     "id": "S01-06",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-07",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-08",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-09",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-10",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-17",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-19",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S01-20",
-     "word": "connect",
-     "elements": 1
-    },
-    {
-     "id": "S01-22",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-23",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S01-24",
-     "word": "reshape",
-     "elements": 5
-    },
-    {
-     "id": "S01-25",
-     "word": "switch on",
-     "elements": 2
-    },
-    {
-     "id": "S01-26",
-     "word": "reshape",
-     "elements": 4
-    },
-    {
-     "id": "S01-27",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-28",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-29",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S01-30",
-     "word": "build",
-     "elements": 2
-    },
-    {
-     "id": "S01-31",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-34",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-35",
-     "word": "switch on",
-     "elements": 1
-    }
-   ]
+  "server": "http://127.0.0.1:3420",
+  "tree": "/home/nexuslink/vari8-worktrees/merge-proto @ 58eb6ed",
+  "readinessWords": {
+    "UNCONFIGURED": "switch on",
+    "UNWIRED": "connect",
+    "PARTIAL": "reshape",
+    "MISSING": "build",
+    "CONFLICT": "your call",
+    "ROLES": "your call"
   },
-  {
-   "file": "s01-profile-plans.png",
-   "annotated": "s01-profile-plans-annotated.png",
-   "surface": "S01",
-   "surfaceName": "Coach shell, navigation, client roster, client profile",
-   "screen": "Client profile, Plans tab",
-   "route": "/coach",
-   "clicks": [
-    "Clients",
-    "CP Chloe Park Lifestyle",
-    "Plans"
-   ],
-   "rowsTotal": 45,
-   "rowsMatched": 18,
-   "matchedRows": [
-    {
-     "id": "S01-02",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S01-03",
-     "word": "reshape",
-     "elements": 5
-    },
-    {
-     "id": "S01-05",
-     "word": "reshape",
-     "elements": 3
-    },
-    {
-     "id": "S01-06",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-07",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-08",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-09",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-10",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-17",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-19",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-20",
-     "word": "connect",
-     "elements": 1
-    },
-    {
-     "id": "S01-22",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-23",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S01-24",
-     "word": "reshape",
-     "elements": 5
-    },
-    {
-     "id": "S01-26",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-31",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-34",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-35",
-     "word": "switch on",
-     "elements": 1
-    }
-   ]
+  "readinessColors": {
+    "UNCONFIGURED": "#D97706",
+    "UNWIRED": "#2563EB",
+    "PARTIAL": "#7C3AED",
+    "MISSING": "#DC2626",
+    "CONFLICT": "#DB2777",
+    "ROLES": "#DB2777"
   },
-  {
-   "file": "s01-profile-checkins.png",
-   "annotated": "s01-profile-checkins-annotated.png",
-   "surface": "S01",
-   "surfaceName": "Coach shell, navigation, client roster, client profile",
-   "screen": "Client profile, Check-ins tab",
-   "route": "/coach",
-   "clicks": [
-    "Clients",
-    "CP Chloe Park Lifestyle",
-    "Check-ins"
-   ],
-   "rowsTotal": 45,
-   "rowsMatched": 17,
-   "matchedRows": [
+  "shots": [
     {
-     "id": "S01-02",
-     "word": "reshape",
-     "elements": 2
+      "file": "s01-roster.png",
+      "annotated": "s01-roster-annotated.png",
+      "surface": "S01",
+      "surfaceName": "Coach shell, navigation, client roster, client profile",
+      "screen": "Clients roster",
+      "route": "/coach",
+      "clicks": ["Clients"],
+      "rowsTotal": 45,
+      "rowsMatched": 16,
+      "matchedRows": [
+        {
+          "id": "S01-02",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S01-03",
+          "word": "reshape",
+          "elements": 5
+        },
+        {
+          "id": "S01-05",
+          "word": "reshape",
+          "elements": 3
+        },
+        {
+          "id": "S01-06",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-07",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-08",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-09",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-10",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-14",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-17",
+          "word": "build",
+          "elements": 2
+        },
+        {
+          "id": "S01-19",
+          "word": "reshape",
+          "elements": 4
+        },
+        {
+          "id": "S01-20",
+          "word": "connect",
+          "elements": 1
+        },
+        {
+          "id": "S01-22",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-24",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-26",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-34",
+          "word": "reshape",
+          "elements": 1
+        }
+      ]
     },
     {
-     "id": "S01-03",
-     "word": "reshape",
-     "elements": 5
+      "file": "s01-profile-overview.png",
+      "annotated": "s01-profile-overview-annotated.png",
+      "surface": "S01",
+      "surfaceName": "Coach shell, navigation, client roster, client profile",
+      "screen": "Client profile, Overview tab",
+      "route": "/coach",
+      "clicks": ["Clients", "CP Chloe Park Lifestyle"],
+      "rowsTotal": 45,
+      "rowsMatched": 23,
+      "matchedRows": [
+        {
+          "id": "S01-02",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S01-03",
+          "word": "reshape",
+          "elements": 5
+        },
+        {
+          "id": "S01-05",
+          "word": "reshape",
+          "elements": 3
+        },
+        {
+          "id": "S01-06",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-07",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-08",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-09",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-10",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-17",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-19",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S01-20",
+          "word": "connect",
+          "elements": 1
+        },
+        {
+          "id": "S01-22",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-23",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S01-24",
+          "word": "reshape",
+          "elements": 5
+        },
+        {
+          "id": "S01-25",
+          "word": "switch on",
+          "elements": 2
+        },
+        {
+          "id": "S01-26",
+          "word": "reshape",
+          "elements": 4
+        },
+        {
+          "id": "S01-27",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-28",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-29",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S01-30",
+          "word": "build",
+          "elements": 2
+        },
+        {
+          "id": "S01-31",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-34",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-35",
+          "word": "switch on",
+          "elements": 1
+        }
+      ]
     },
     {
-     "id": "S01-05",
-     "word": "reshape",
-     "elements": 3
+      "file": "s01-profile-plans.png",
+      "annotated": "s01-profile-plans-annotated.png",
+      "surface": "S01",
+      "surfaceName": "Coach shell, navigation, client roster, client profile",
+      "screen": "Client profile, Plans tab",
+      "route": "/coach",
+      "clicks": ["Clients", "CP Chloe Park Lifestyle", "Plans"],
+      "rowsTotal": 45,
+      "rowsMatched": 18,
+      "matchedRows": [
+        {
+          "id": "S01-02",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S01-03",
+          "word": "reshape",
+          "elements": 5
+        },
+        {
+          "id": "S01-05",
+          "word": "reshape",
+          "elements": 3
+        },
+        {
+          "id": "S01-06",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-07",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-08",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-09",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-10",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-17",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-19",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-20",
+          "word": "connect",
+          "elements": 1
+        },
+        {
+          "id": "S01-22",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-23",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S01-24",
+          "word": "reshape",
+          "elements": 5
+        },
+        {
+          "id": "S01-26",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-31",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-34",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-35",
+          "word": "switch on",
+          "elements": 1
+        }
+      ]
     },
     {
-     "id": "S01-06",
-     "word": "build",
-     "elements": 1
+      "file": "s01-profile-checkins.png",
+      "annotated": "s01-profile-checkins-annotated.png",
+      "surface": "S01",
+      "surfaceName": "Coach shell, navigation, client roster, client profile",
+      "screen": "Client profile, Check-ins tab",
+      "route": "/coach",
+      "clicks": ["Clients", "CP Chloe Park Lifestyle", "Check-ins"],
+      "rowsTotal": 45,
+      "rowsMatched": 17,
+      "matchedRows": [
+        {
+          "id": "S01-02",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S01-03",
+          "word": "reshape",
+          "elements": 5
+        },
+        {
+          "id": "S01-05",
+          "word": "reshape",
+          "elements": 3
+        },
+        {
+          "id": "S01-06",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-07",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-08",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-09",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-10",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-17",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-19",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-20",
+          "word": "connect",
+          "elements": 1
+        },
+        {
+          "id": "S01-22",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-23",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S01-24",
+          "word": "reshape",
+          "elements": 5
+        },
+        {
+          "id": "S01-31",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-34",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S01-35",
+          "word": "switch on",
+          "elements": 1
+        }
+      ]
     },
     {
-     "id": "S01-07",
-     "word": "reshape",
-     "elements": 1
+      "file": "s01-profile-notes.png",
+      "annotated": "s01-profile-notes-annotated.png",
+      "surface": "S01",
+      "surfaceName": "Coach shell, navigation, client roster, client profile",
+      "screen": "Client profile, Notes & tasks tab",
+      "route": "/coach",
+      "clicks": ["Clients", "CP Chloe Park Lifestyle", "Notes & tasks"],
+      "rowsTotal": 45,
+      "rowsMatched": 19,
+      "matchedRows": [
+        {
+          "id": "S01-02",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S01-03",
+          "word": "reshape",
+          "elements": 5
+        },
+        {
+          "id": "S01-05",
+          "word": "reshape",
+          "elements": 3
+        },
+        {
+          "id": "S01-06",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-07",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-08",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-09",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-10",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-17",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-19",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-20",
+          "word": "connect",
+          "elements": 1
+        },
+        {
+          "id": "S01-22",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-23",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S01-24",
+          "word": "reshape",
+          "elements": 5
+        },
+        {
+          "id": "S01-31",
+          "word": "build",
+          "elements": 5
+        },
+        {
+          "id": "S01-32",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-33",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-34",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-35",
+          "word": "switch on",
+          "elements": 1
+        }
+      ]
     },
     {
-     "id": "S01-08",
-     "word": "reshape",
-     "elements": 1
+      "file": "s01-profile-onboarding.png",
+      "annotated": "s01-profile-onboarding-annotated.png",
+      "surface": "S01",
+      "surfaceName": "Coach shell, navigation, client roster, client profile",
+      "screen": "Client profile, Onboarding tab",
+      "route": "/coach",
+      "clicks": ["Clients", "CP Chloe Park Lifestyle", "Onboarding"],
+      "rowsTotal": 45,
+      "rowsMatched": 17,
+      "matchedRows": [
+        {
+          "id": "S01-02",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S01-03",
+          "word": "reshape",
+          "elements": 5
+        },
+        {
+          "id": "S01-05",
+          "word": "reshape",
+          "elements": 3
+        },
+        {
+          "id": "S01-06",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-07",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-08",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-09",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-10",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-17",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-19",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-20",
+          "word": "connect",
+          "elements": 1
+        },
+        {
+          "id": "S01-22",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-23",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S01-24",
+          "word": "reshape",
+          "elements": 5
+        },
+        {
+          "id": "S01-31",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S01-34",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S01-35",
+          "word": "switch on",
+          "elements": 2
+        }
+      ]
     },
     {
-     "id": "S01-09",
-     "word": "build",
-     "elements": 1
+      "file": "s02-messages.png",
+      "annotated": "s02-messages-annotated.png",
+      "surface": "S02",
+      "surfaceName": "Messages, notes, media",
+      "screen": "Messages section, conversations",
+      "route": "/coach",
+      "clicks": ["Messages"],
+      "rowsTotal": 31,
+      "rowsMatched": 5,
+      "matchedRows": [
+        {
+          "id": "S02-01",
+          "word": "build",
+          "elements": 4
+        },
+        {
+          "id": "S02-15",
+          "word": "build",
+          "elements": 2
+        },
+        {
+          "id": "S02-18",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S02-20",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S02-23",
+          "word": "connect",
+          "elements": 1
+        }
+      ]
     },
     {
-     "id": "S01-10",
-     "word": "build",
-     "elements": 1
+      "file": "s02-thread.png",
+      "annotated": "s02-thread-annotated.png",
+      "surface": "S02",
+      "surfaceName": "Messages, notes, media",
+      "screen": "Message thread open",
+      "route": "/coach",
+      "clicks": ["Clients", "CP Chloe Park Lifestyle", "Open chat"],
+      "rowsTotal": 31,
+      "rowsMatched": 8,
+      "matchedRows": [
+        {
+          "id": "S02-01",
+          "word": "build",
+          "elements": 4
+        },
+        {
+          "id": "S02-02",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S02-10",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S02-12",
+          "word": "your call",
+          "elements": 1
+        },
+        {
+          "id": "S02-15",
+          "word": "build",
+          "elements": 2
+        },
+        {
+          "id": "S02-18",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S02-20",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S02-23",
+          "word": "connect",
+          "elements": 1
+        }
+      ]
     },
     {
-     "id": "S01-17",
-     "word": "build",
-     "elements": 1
+      "file": "s02-thread-attachments.png",
+      "annotated": "s02-thread-attachments-annotated.png",
+      "surface": "S02",
+      "surfaceName": "Messages, notes, media",
+      "screen": "Thread attachment and context-link picker",
+      "route": "/coach",
+      "clicks": [
+        "Clients",
+        "CP Chloe Park Lifestyle",
+        "Open chat",
+        "Add attachment or context link"
+      ],
+      "rowsTotal": 31,
+      "rowsMatched": 10,
+      "matchedRows": [
+        {
+          "id": "S02-01",
+          "word": "build",
+          "elements": 4
+        },
+        {
+          "id": "S02-02",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S02-08",
+          "word": "your call",
+          "elements": 1
+        },
+        {
+          "id": "S02-09",
+          "word": "your call",
+          "elements": 2
+        },
+        {
+          "id": "S02-10",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S02-12",
+          "word": "your call",
+          "elements": 1
+        },
+        {
+          "id": "S02-15",
+          "word": "build",
+          "elements": 2
+        },
+        {
+          "id": "S02-18",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S02-20",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S02-23",
+          "word": "connect",
+          "elements": 1
+        }
+      ]
     },
     {
-     "id": "S01-19",
-     "word": "reshape",
-     "elements": 1
+      "file": "s02-notes-todos.png",
+      "annotated": "s02-notes-todos-annotated.png",
+      "surface": "S02",
+      "surfaceName": "Messages, notes, media",
+      "screen": "Notes & to-dos section",
+      "route": "/coach",
+      "clicks": ["Notes & to-dos"],
+      "rowsTotal": 31,
+      "rowsMatched": 6,
+      "matchedRows": [
+        {
+          "id": "S02-01",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S02-15",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S02-17",
+          "word": "build",
+          "elements": 2
+        },
+        {
+          "id": "S02-18",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S02-20",
+          "word": "build",
+          "elements": 3
+        },
+        {
+          "id": "S02-23",
+          "word": "connect",
+          "elements": 1
+        }
+      ]
     },
     {
-     "id": "S01-20",
-     "word": "connect",
-     "elements": 1
+      "file": "s03-checkins-board.png",
+      "annotated": "s03-checkins-board-annotated.png",
+      "surface": "S03",
+      "surfaceName": "Check-ins",
+      "screen": "Check-ins board, week view",
+      "route": "/coach",
+      "clicks": ["Check-ins"],
+      "rowsTotal": 28,
+      "rowsMatched": 6,
+      "matchedRows": [
+        {
+          "id": "S03-01",
+          "word": "build",
+          "elements": 2
+        },
+        {
+          "id": "S03-02",
+          "word": "reshape",
+          "elements": 3
+        },
+        {
+          "id": "S03-03",
+          "word": "reshape",
+          "elements": 6
+        },
+        {
+          "id": "S03-05",
+          "word": "reshape",
+          "elements": 3
+        },
+        {
+          "id": "S03-08",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S03-24",
+          "word": "switch on",
+          "elements": 1
+        }
+      ]
     },
     {
-     "id": "S01-22",
-     "word": "reshape",
-     "elements": 1
+      "file": "s03-add-extra.png",
+      "annotated": "s03-add-extra-annotated.png",
+      "surface": "S03",
+      "surfaceName": "Check-ins",
+      "screen": "Add extra check-in date dialog",
+      "route": "/coach",
+      "clicks": ["Check-ins", "Add extra date"],
+      "rowsTotal": 28,
+      "rowsMatched": 3,
+      "matchedRows": [
+        {
+          "id": "S03-03",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S03-08",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S03-09",
+          "word": "reshape",
+          "elements": 1
+        }
+      ]
     },
     {
-     "id": "S01-23",
-     "word": "reshape",
-     "elements": 2
+      "file": "s03-checkin-review.png",
+      "annotated": "s03-checkin-review-annotated.png",
+      "surface": "S03",
+      "surfaceName": "Check-ins",
+      "screen": "Check-in review workspace",
+      "route": "/coach",
+      "clicks": [
+        "Check-ins",
+        "EA Emma Anders Recurring · Full Awaiting feedback",
+        "Open review"
+      ],
+      "rowsTotal": 28,
+      "rowsMatched": 10,
+      "matchedRows": [
+        {
+          "id": "S03-01",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S03-03",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S03-05",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S03-13",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S03-14",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S03-17",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S03-18",
+          "word": "your call",
+          "elements": 1
+        },
+        {
+          "id": "S03-19",
+          "word": "your call",
+          "elements": 2
+        },
+        {
+          "id": "S03-22",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S03-24",
+          "word": "switch on",
+          "elements": 1
+        }
+      ]
     },
     {
-     "id": "S01-24",
-     "word": "reshape",
-     "elements": 5
+      "file": "s04-habit-editor.png",
+      "annotated": "s04-habit-editor-annotated.png",
+      "surface": "S04",
+      "surfaceName": "Habits",
+      "screen": "Coach habit editor",
+      "route": "/coach",
+      "clicks": [
+        "Clients",
+        "EC Ethan Cole Lifestyle",
+        "Edit plans",
+        "Edit habits"
+      ],
+      "rowsTotal": 13,
+      "rowsMatched": 4,
+      "matchedRows": [
+        {
+          "id": "S04-08",
+          "word": "reshape",
+          "elements": 4
+        },
+        {
+          "id": "S04-09",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S04-11",
+          "word": "switch on",
+          "elements": 1
+        },
+        {
+          "id": "S04-13",
+          "word": "switch on",
+          "elements": 1
+        }
+      ]
     },
     {
-     "id": "S01-31",
-     "word": "build",
-     "elements": 1
+      "file": "s04-template-habits.png",
+      "annotated": "s04-template-habits-annotated.png",
+      "surface": "S04",
+      "surfaceName": "Habits",
+      "screen": "Template Habits tab",
+      "route": "/coach",
+      "clicks": [
+        "Add template",
+        "Dashboard",
+        "Tracker",
+        "Timeline / Roadmap",
+        "Nutrition",
+        "Training Program",
+        "Check-In",
+        "Habits"
+      ],
+      "rowsTotal": 13,
+      "rowsMatched": 4,
+      "matchedRows": [
+        {
+          "id": "S04-08",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S04-09",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S04-11",
+          "word": "switch on",
+          "elements": 1
+        },
+        {
+          "id": "S04-13",
+          "word": "switch on",
+          "elements": 1
+        }
+      ]
     },
     {
-     "id": "S01-34",
-     "word": "reshape",
-     "elements": 2
+      "file": "s05-templates.png",
+      "annotated": "s05-templates-annotated.png",
+      "surface": "S05",
+      "surfaceName": "Templates, template setup, tracker setup and config",
+      "screen": "Template library",
+      "route": "/coach",
+      "clicks": [],
+      "rowsTotal": 29,
+      "rowsMatched": 5,
+      "matchedRows": [
+        {
+          "id": "S05-09",
+          "word": "build",
+          "elements": 4
+        },
+        {
+          "id": "S05-10",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S05-18",
+          "word": "build",
+          "elements": 2
+        },
+        {
+          "id": "S05-23",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S05-24",
+          "word": "your call",
+          "elements": 1
+        }
+      ]
     },
     {
-     "id": "S01-35",
-     "word": "switch on",
-     "elements": 1
+      "file": "s05-template-editor.png",
+      "annotated": "s05-template-editor-annotated.png",
+      "surface": "S05",
+      "surfaceName": "Templates, template setup, tracker setup and config",
+      "screen": "Template setup editor",
+      "route": "/coach",
+      "clicks": ["Add template"],
+      "rowsTotal": 29,
+      "rowsMatched": 4,
+      "matchedRows": [
+        {
+          "id": "S05-09",
+          "word": "build",
+          "elements": 7
+        },
+        {
+          "id": "S05-10",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S05-18",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S05-23",
+          "word": "build",
+          "elements": 1
+        }
+      ]
+    },
+    {
+      "file": "s05-tracker-setup.png",
+      "annotated": "s05-tracker-setup-annotated.png",
+      "surface": "S05",
+      "surfaceName": "Templates, template setup, tracker setup and config",
+      "screen": "Template tracker setup (parameter library)",
+      "route": "/coach",
+      "clicks": [
+        "Add template",
+        "02 Dashboard",
+        "Move Bodyweight trend",
+        "03 Tracker"
+      ],
+      "rowsTotal": 29,
+      "rowsMatched": 3,
+      "matchedRows": [
+        {
+          "id": "S05-09",
+          "word": "build",
+          "elements": 2
+        },
+        {
+          "id": "S05-11",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S05-18",
+          "word": "build",
+          "elements": 1
+        }
+      ]
+    },
+    {
+      "file": "s05-client-setup.png",
+      "annotated": "s05-client-setup-annotated.png",
+      "surface": "S05",
+      "surfaceName": "Templates, template setup, tracker setup and config",
+      "screen": "Client setup, assign template",
+      "route": "/coach",
+      "clicks": ["Clients", "EF Eva Fischer Lifestyle", "Assign template"],
+      "rowsTotal": 29,
+      "rowsMatched": 6,
+      "matchedRows": [
+        {
+          "id": "S05-04",
+          "word": "switch on",
+          "elements": 1
+        },
+        {
+          "id": "S05-07",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S05-09",
+          "word": "build",
+          "elements": 2
+        },
+        {
+          "id": "S05-18",
+          "word": "build",
+          "elements": 2
+        },
+        {
+          "id": "S05-23",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S05-24",
+          "word": "your call",
+          "elements": 1
+        }
+      ]
+    },
+    {
+      "file": "s06-mealplan-editor.png",
+      "annotated": "s06-mealplan-editor-annotated.png",
+      "surface": "S06",
+      "surfaceName": "Nutrition plan, food database, client plan preview",
+      "screen": "Meal plan editor",
+      "route": "/coach",
+      "clicks": ["Clients", "CP Chloe Park Lifestyle", "Plans", "Create"],
+      "rowsTotal": 29,
+      "rowsMatched": 3,
+      "matchedRows": [
+        {
+          "id": "S06-09",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S06-14",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S06-15",
+          "word": "your call",
+          "elements": 1
+        }
+      ]
+    },
+    {
+      "file": "s06-template-nutrition.png",
+      "annotated": "s06-template-nutrition-annotated.png",
+      "surface": "S06",
+      "surfaceName": "Nutrition plan, food database, client plan preview",
+      "screen": "Template Nutrition tab",
+      "route": "/coach",
+      "clicks": [
+        "Add template",
+        "02 Dashboard",
+        "Move Bodyweight trend",
+        "03 Tracker",
+        "Settings for Bodyweight",
+        "04 Timeline / Roadmap",
+        "05 Nutrition"
+      ],
+      "rowsTotal": 29,
+      "rowsMatched": 0,
+      "matchedRows": []
+    },
+    {
+      "file": "s07-training-editor.png",
+      "annotated": "s07-training-editor-annotated.png",
+      "surface": "S07",
+      "surfaceName": "Training plan, exercise library, muscle volume, roadmap",
+      "screen": "Training program editor",
+      "route": "/coach",
+      "clicks": [
+        "Clients",
+        "EA Emma Anders Lifestyle",
+        "Open chat 1",
+        "Training program"
+      ],
+      "rowsTotal": 31,
+      "rowsMatched": 3,
+      "matchedRows": [
+        {
+          "id": "S07-02",
+          "word": "reshape",
+          "elements": 3
+        },
+        {
+          "id": "S07-06",
+          "word": "switch on",
+          "elements": 1
+        },
+        {
+          "id": "S07-14",
+          "word": "reshape",
+          "elements": 1
+        }
+      ]
+    },
+    {
+      "file": "s07-exercise-library.png",
+      "annotated": "s07-exercise-library-annotated.png",
+      "surface": "S07",
+      "surfaceName": "Training plan, exercise library, muscle volume, roadmap",
+      "screen": "Exercise library manager",
+      "route": "/coach",
+      "clicks": [
+        "Clients",
+        "EA Emma Anders Lifestyle",
+        "Open chat 1",
+        "Training program",
+        "Manage library"
+      ],
+      "rowsTotal": 31,
+      "rowsMatched": 3,
+      "matchedRows": [
+        {
+          "id": "S07-02",
+          "word": "reshape",
+          "elements": 3
+        },
+        {
+          "id": "S07-06",
+          "word": "switch on",
+          "elements": 1
+        },
+        {
+          "id": "S07-14",
+          "word": "reshape",
+          "elements": 10
+        }
+      ]
+    },
+    {
+      "file": "s08-builder.webp",
+      "annotated": "s08-builder-annotated.webp",
+      "surface": "S08",
+      "surfaceName": "Coach dashboard builder and widgets",
+      "screen": "Dashboard builder (Ethereal studio)",
+      "route": "/ethereal",
+      "clicks": [],
+      "rowsTotal": 43,
+      "rowsMatched": 2,
+      "matchedRows": [
+        {
+          "id": "S08-02",
+          "word": "switch on",
+          "elements": 1
+        },
+        {
+          "id": "S08-12",
+          "word": "switch on",
+          "elements": 1
+        }
+      ]
+    },
+    {
+      "file": "s08-widget-gallery.png",
+      "annotated": "s08-widget-gallery-annotated.png",
+      "surface": "S08",
+      "surfaceName": "Coach dashboard builder and widgets",
+      "screen": "Widget gallery",
+      "route": "/ethereal",
+      "clicks": ["Add widget"],
+      "rowsTotal": 43,
+      "rowsMatched": 1,
+      "matchedRows": [
+        {
+          "id": "S08-04",
+          "word": "reshape",
+          "elements": 1
+        }
+      ]
+    },
+    {
+      "file": "s08-template-dashboard.png",
+      "annotated": "s08-template-dashboard-annotated.png",
+      "surface": "S08",
+      "surfaceName": "Coach dashboard builder and widgets",
+      "screen": "Template dashboard editor",
+      "route": "/coach",
+      "clicks": ["Add template", "02 Dashboard"],
+      "rowsTotal": 43,
+      "rowsMatched": 4,
+      "matchedRows": [
+        {
+          "id": "S08-02",
+          "word": "switch on",
+          "elements": 1
+        },
+        {
+          "id": "S08-10",
+          "word": "switch on",
+          "elements": 1
+        },
+        {
+          "id": "S08-12",
+          "word": "switch on",
+          "elements": 1
+        },
+        {
+          "id": "S08-22",
+          "word": "build",
+          "elements": 1
+        }
+      ]
+    },
+    {
+      "file": "s09-tracker-today.png",
+      "annotated": "s09-tracker-today-annotated.png",
+      "surface": "S09",
+      "surfaceName": "Client tracker (today, tracking, trends, week) and client preview",
+      "screen": "Client tracker, Today view",
+      "route": "/coach",
+      "clicks": ["More actions for Strength & balance", "Preview", "Tracker"],
+      "rowsTotal": 35,
+      "rowsMatched": 9,
+      "matchedRows": [
+        {
+          "id": "S09-01",
+          "word": "reshape",
+          "elements": 4
+        },
+        {
+          "id": "S09-02",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S09-03",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S09-05",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S09-06",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S09-19",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S09-24",
+          "word": "reshape",
+          "elements": 6
+        },
+        {
+          "id": "S09-26",
+          "word": "reshape",
+          "elements": 3
+        },
+        {
+          "id": "S09-28",
+          "word": "reshape",
+          "elements": 2
+        }
+      ]
+    },
+    {
+      "file": "s09-tracker-week.png",
+      "annotated": "s09-tracker-week-annotated.png",
+      "surface": "S09",
+      "surfaceName": "Client tracker (today, tracking, trends, week) and client preview",
+      "screen": "Client tracker, Week view",
+      "route": "/coach",
+      "clicks": [
+        "More actions for Strength & balance",
+        "Preview",
+        "Tracker",
+        "Week"
+      ],
+      "rowsTotal": 35,
+      "rowsMatched": 10,
+      "matchedRows": [
+        {
+          "id": "S09-01",
+          "word": "reshape",
+          "elements": 4
+        },
+        {
+          "id": "S09-02",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S09-03",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S09-06",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S09-18",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S09-19",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S09-24",
+          "word": "reshape",
+          "elements": 6
+        },
+        {
+          "id": "S09-25",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S09-26",
+          "word": "reshape",
+          "elements": 3
+        },
+        {
+          "id": "S09-28",
+          "word": "reshape",
+          "elements": 2
+        }
+      ]
+    },
+    {
+      "file": "s09-tracker-trends.png",
+      "annotated": "s09-tracker-trends-annotated.png",
+      "surface": "S09",
+      "surfaceName": "Client tracker (today, tracking, trends, week) and client preview",
+      "screen": "Client tracker, Trends view",
+      "route": "/coach",
+      "clicks": [
+        "More actions for Strength & balance",
+        "Preview",
+        "Tracker",
+        "Trends"
+      ],
+      "rowsTotal": 35,
+      "rowsMatched": 7,
+      "matchedRows": [
+        {
+          "id": "S09-01",
+          "word": "reshape",
+          "elements": 4
+        },
+        {
+          "id": "S09-02",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S09-03",
+          "word": "reshape",
+          "elements": 2
+        },
+        {
+          "id": "S09-19",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S09-24",
+          "word": "reshape",
+          "elements": 6
+        },
+        {
+          "id": "S09-26",
+          "word": "reshape",
+          "elements": 3
+        },
+        {
+          "id": "S09-28",
+          "word": "reshape",
+          "elements": 2
+        }
+      ]
+    },
+    {
+      "file": "s09-tracker-config.png",
+      "annotated": "s09-tracker-config-annotated.png",
+      "surface": "S09",
+      "surfaceName": "Client tracker (today, tracking, trends, week) and client preview",
+      "screen": "Tracker configurator (Ethereal studio)",
+      "route": "/ethereal",
+      "clicks": ["Tracker"],
+      "rowsTotal": 35,
+      "rowsMatched": 6,
+      "matchedRows": [
+        {
+          "id": "S09-01",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S09-05",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S09-18",
+          "word": "reshape",
+          "elements": 1
+        },
+        {
+          "id": "S09-24",
+          "word": "reshape",
+          "elements": 3
+        },
+        {
+          "id": "S09-25",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S09-26",
+          "word": "reshape",
+          "elements": 2
+        }
+      ]
+    },
+    {
+      "file": "s10-appearance.png",
+      "annotated": "s10-appearance-annotated.png",
+      "surface": "S10",
+      "surfaceName": "Appearance, theme, accent, the Ethereal studio",
+      "screen": "Appearance studio (Make it yours)",
+      "route": "/ethereal",
+      "clicks": ["Coaching UI"],
+      "rowsTotal": 21,
+      "rowsMatched": 8,
+      "matchedRows": [
+        {
+          "id": "S10-04",
+          "word": "build",
+          "elements": 4
+        },
+        {
+          "id": "S10-06",
+          "word": "reshape",
+          "elements": 4
+        },
+        {
+          "id": "S10-07",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S10-08",
+          "word": "build",
+          "elements": 2
+        },
+        {
+          "id": "S10-09",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S10-10",
+          "word": "build",
+          "elements": 1
+        },
+        {
+          "id": "S10-19",
+          "word": "connect",
+          "elements": 1
+        },
+        {
+          "id": "S10-20",
+          "word": "connect",
+          "elements": 2
+        }
+      ]
+    },
+    {
+      "file": "s10-clients-studio.png",
+      "annotated": "s10-clients-studio-annotated.png",
+      "surface": "S10",
+      "surfaceName": "Appearance, theme, accent, the Ethereal studio",
+      "screen": "Clients studio",
+      "route": "/ethereal#clients",
+      "clicks": [],
+      "rowsTotal": 21,
+      "rowsMatched": 3,
+      "matchedRows": [
+        {
+          "id": "S10-04",
+          "word": "build",
+          "elements": 4
+        },
+        {
+          "id": "S10-19",
+          "word": "connect",
+          "elements": 1
+        },
+        {
+          "id": "S10-20",
+          "word": "connect",
+          "elements": 1
+        }
+      ]
+    },
+    {
+      "file": "s10-mealplan-studio.png",
+      "annotated": "s10-mealplan-studio-annotated.webp",
+      "surface": "S10",
+      "surfaceName": "Appearance, theme, accent, the Ethereal studio",
+      "screen": "Meal plans studio",
+      "route": "/ethereal#mealplan",
+      "clicks": [],
+      "rowsTotal": 21,
+      "rowsMatched": 3,
+      "matchedRows": [
+        {
+          "id": "S10-04",
+          "word": "build",
+          "elements": 4
+        },
+        {
+          "id": "S10-19",
+          "word": "connect",
+          "elements": 1
+        },
+        {
+          "id": "S10-20",
+          "word": "connect",
+          "elements": 3
+        }
+      ]
+    },
+    {
+      "file": "s11-preferences.png",
+      "annotated": "s11-preferences-annotated.png",
+      "surface": "S11",
+      "surfaceName": "Identity and access: the canvas has no auth; map its implied users and views (coach vs client, which client is \"me\") to backend auth, roles, invites, onboarding, consent",
+      "screen": "Workspace preferences (coach identity)",
+      "route": "/coach",
+      "clicks": ["Workspace preferences for Liliana Mansfeld"],
+      "rowsTotal": 30,
+      "rowsMatched": 1,
+      "matchedRows": [
+        {
+          "id": "S11-22",
+          "word": "reshape",
+          "elements": 2
+        }
+      ]
+    },
+    {
+      "file": "s11-client-preview.png",
+      "annotated": "s11-client-preview-annotated.png",
+      "surface": "S11",
+      "surfaceName": "Identity and access: the canvas has no auth; map its implied users and views (coach vs client, which client is \"me\") to backend auth, roles, invites, onboarding, consent",
+      "screen": "Preview assigned tool",
+      "route": "/coach",
+      "clicks": [
+        "Clients",
+        "EA Emma Anders Lifestyle",
+        "Preview assigned tool"
+      ],
+      "rowsTotal": 30,
+      "rowsMatched": 2,
+      "matchedRows": [
+        {
+          "id": "S11-07",
+          "word": "reshape",
+          "elements": 5
+        },
+        {
+          "id": "S11-20",
+          "word": "switch on",
+          "elements": 1
+        }
+      ]
     }
-   ]
-  },
-  {
-   "file": "s01-profile-notes.png",
-   "annotated": "s01-profile-notes-annotated.png",
-   "surface": "S01",
-   "surfaceName": "Coach shell, navigation, client roster, client profile",
-   "screen": "Client profile, Notes & tasks tab",
-   "route": "/coach",
-   "clicks": [
-    "Clients",
-    "CP Chloe Park Lifestyle",
-    "Notes & tasks"
-   ],
-   "rowsTotal": 45,
-   "rowsMatched": 19,
-   "matchedRows": [
-    {
-     "id": "S01-02",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S01-03",
-     "word": "reshape",
-     "elements": 5
-    },
-    {
-     "id": "S01-05",
-     "word": "reshape",
-     "elements": 3
-    },
-    {
-     "id": "S01-06",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-07",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-08",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-09",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-10",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-17",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-19",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-20",
-     "word": "connect",
-     "elements": 1
-    },
-    {
-     "id": "S01-22",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-23",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S01-24",
-     "word": "reshape",
-     "elements": 5
-    },
-    {
-     "id": "S01-31",
-     "word": "build",
-     "elements": 5
-    },
-    {
-     "id": "S01-32",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-33",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-34",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-35",
-     "word": "switch on",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s01-profile-onboarding.png",
-   "annotated": "s01-profile-onboarding-annotated.png",
-   "surface": "S01",
-   "surfaceName": "Coach shell, navigation, client roster, client profile",
-   "screen": "Client profile, Onboarding tab",
-   "route": "/coach",
-   "clicks": [
-    "Clients",
-    "CP Chloe Park Lifestyle",
-    "Onboarding"
-   ],
-   "rowsTotal": 45,
-   "rowsMatched": 17,
-   "matchedRows": [
-    {
-     "id": "S01-02",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S01-03",
-     "word": "reshape",
-     "elements": 5
-    },
-    {
-     "id": "S01-05",
-     "word": "reshape",
-     "elements": 3
-    },
-    {
-     "id": "S01-06",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-07",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-08",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-09",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-10",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-17",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-19",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-20",
-     "word": "connect",
-     "elements": 1
-    },
-    {
-     "id": "S01-22",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-23",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S01-24",
-     "word": "reshape",
-     "elements": 5
-    },
-    {
-     "id": "S01-31",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S01-34",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S01-35",
-     "word": "switch on",
-     "elements": 2
-    }
-   ]
-  },
-  {
-   "file": "s02-messages.png",
-   "annotated": "s02-messages-annotated.png",
-   "surface": "S02",
-   "surfaceName": "Messages, notes, media",
-   "screen": "Messages section, conversations",
-   "route": "/coach",
-   "clicks": [
-    "Messages"
-   ],
-   "rowsTotal": 31,
-   "rowsMatched": 5,
-   "matchedRows": [
-    {
-     "id": "S02-01",
-     "word": "build",
-     "elements": 4
-    },
-    {
-     "id": "S02-15",
-     "word": "build",
-     "elements": 2
-    },
-    {
-     "id": "S02-18",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S02-20",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S02-23",
-     "word": "connect",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s02-thread.png",
-   "annotated": "s02-thread-annotated.png",
-   "surface": "S02",
-   "surfaceName": "Messages, notes, media",
-   "screen": "Message thread open",
-   "route": "/coach",
-   "clicks": [
-    "Clients",
-    "CP Chloe Park Lifestyle",
-    "Open chat"
-   ],
-   "rowsTotal": 31,
-   "rowsMatched": 8,
-   "matchedRows": [
-    {
-     "id": "S02-01",
-     "word": "build",
-     "elements": 4
-    },
-    {
-     "id": "S02-02",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S02-10",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S02-12",
-     "word": "your call",
-     "elements": 1
-    },
-    {
-     "id": "S02-15",
-     "word": "build",
-     "elements": 2
-    },
-    {
-     "id": "S02-18",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S02-20",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S02-23",
-     "word": "connect",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s02-thread-attachments.png",
-   "annotated": "s02-thread-attachments-annotated.png",
-   "surface": "S02",
-   "surfaceName": "Messages, notes, media",
-   "screen": "Thread attachment and context-link picker",
-   "route": "/coach",
-   "clicks": [
-    "Clients",
-    "CP Chloe Park Lifestyle",
-    "Open chat",
-    "Add attachment or context link"
-   ],
-   "rowsTotal": 31,
-   "rowsMatched": 10,
-   "matchedRows": [
-    {
-     "id": "S02-01",
-     "word": "build",
-     "elements": 4
-    },
-    {
-     "id": "S02-02",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S02-08",
-     "word": "your call",
-     "elements": 1
-    },
-    {
-     "id": "S02-09",
-     "word": "your call",
-     "elements": 2
-    },
-    {
-     "id": "S02-10",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S02-12",
-     "word": "your call",
-     "elements": 1
-    },
-    {
-     "id": "S02-15",
-     "word": "build",
-     "elements": 2
-    },
-    {
-     "id": "S02-18",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S02-20",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S02-23",
-     "word": "connect",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s02-notes-todos.png",
-   "annotated": "s02-notes-todos-annotated.png",
-   "surface": "S02",
-   "surfaceName": "Messages, notes, media",
-   "screen": "Notes & to-dos section",
-   "route": "/coach",
-   "clicks": [
-    "Notes & to-dos"
-   ],
-   "rowsTotal": 31,
-   "rowsMatched": 6,
-   "matchedRows": [
-    {
-     "id": "S02-01",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S02-15",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S02-17",
-     "word": "build",
-     "elements": 2
-    },
-    {
-     "id": "S02-18",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S02-20",
-     "word": "build",
-     "elements": 3
-    },
-    {
-     "id": "S02-23",
-     "word": "connect",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s03-checkins-board.png",
-   "annotated": "s03-checkins-board-annotated.png",
-   "surface": "S03",
-   "surfaceName": "Check-ins",
-   "screen": "Check-ins board, week view",
-   "route": "/coach",
-   "clicks": [
-    "Check-ins"
-   ],
-   "rowsTotal": 28,
-   "rowsMatched": 6,
-   "matchedRows": [
-    {
-     "id": "S03-01",
-     "word": "build",
-     "elements": 2
-    },
-    {
-     "id": "S03-02",
-     "word": "reshape",
-     "elements": 3
-    },
-    {
-     "id": "S03-03",
-     "word": "reshape",
-     "elements": 6
-    },
-    {
-     "id": "S03-05",
-     "word": "reshape",
-     "elements": 3
-    },
-    {
-     "id": "S03-08",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S03-24",
-     "word": "switch on",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s03-add-extra.png",
-   "annotated": "s03-add-extra-annotated.png",
-   "surface": "S03",
-   "surfaceName": "Check-ins",
-   "screen": "Add extra check-in date dialog",
-   "route": "/coach",
-   "clicks": [
-    "Check-ins",
-    "Add extra date"
-   ],
-   "rowsTotal": 28,
-   "rowsMatched": 3,
-   "matchedRows": [
-    {
-     "id": "S03-03",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S03-08",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S03-09",
-     "word": "reshape",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s03-checkin-review.png",
-   "annotated": "s03-checkin-review-annotated.png",
-   "surface": "S03",
-   "surfaceName": "Check-ins",
-   "screen": "Check-in review workspace",
-   "route": "/coach",
-   "clicks": [
-    "Check-ins",
-    "EA Emma Anders Recurring · Full Awaiting feedback",
-    "Open review"
-   ],
-   "rowsTotal": 28,
-   "rowsMatched": 10,
-   "matchedRows": [
-    {
-     "id": "S03-01",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S03-03",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S03-05",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S03-13",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S03-14",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S03-17",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S03-18",
-     "word": "your call",
-     "elements": 1
-    },
-    {
-     "id": "S03-19",
-     "word": "your call",
-     "elements": 2
-    },
-    {
-     "id": "S03-22",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S03-24",
-     "word": "switch on",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s04-habit-editor.png",
-   "annotated": "s04-habit-editor-annotated.png",
-   "surface": "S04",
-   "surfaceName": "Habits",
-   "screen": "Coach habit editor",
-   "route": "/coach",
-   "clicks": [
-    "Clients",
-    "EC Ethan Cole Lifestyle",
-    "Edit plans",
-    "Edit habits"
-   ],
-   "rowsTotal": 13,
-   "rowsMatched": 4,
-   "matchedRows": [
-    {
-     "id": "S04-08",
-     "word": "reshape",
-     "elements": 4
-    },
-    {
-     "id": "S04-09",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S04-11",
-     "word": "switch on",
-     "elements": 1
-    },
-    {
-     "id": "S04-13",
-     "word": "switch on",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s04-template-habits.png",
-   "annotated": "s04-template-habits-annotated.png",
-   "surface": "S04",
-   "surfaceName": "Habits",
-   "screen": "Template Habits tab",
-   "route": "/coach",
-   "clicks": [
-    "Add template",
-    "Dashboard",
-    "Tracker",
-    "Timeline / Roadmap",
-    "Nutrition",
-    "Training Program",
-    "Check-In",
-    "Habits"
-   ],
-   "rowsTotal": 13,
-   "rowsMatched": 4,
-   "matchedRows": [
-    {
-     "id": "S04-08",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S04-09",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S04-11",
-     "word": "switch on",
-     "elements": 1
-    },
-    {
-     "id": "S04-13",
-     "word": "switch on",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s05-templates.png",
-   "annotated": "s05-templates-annotated.png",
-   "surface": "S05",
-   "surfaceName": "Templates, template setup, tracker setup and config",
-   "screen": "Template library",
-   "route": "/coach",
-   "clicks": [],
-   "rowsTotal": 29,
-   "rowsMatched": 5,
-   "matchedRows": [
-    {
-     "id": "S05-09",
-     "word": "build",
-     "elements": 4
-    },
-    {
-     "id": "S05-10",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S05-18",
-     "word": "build",
-     "elements": 2
-    },
-    {
-     "id": "S05-23",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S05-24",
-     "word": "your call",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s05-template-editor.png",
-   "annotated": "s05-template-editor-annotated.png",
-   "surface": "S05",
-   "surfaceName": "Templates, template setup, tracker setup and config",
-   "screen": "Template setup editor",
-   "route": "/coach",
-   "clicks": [
-    "Add template"
-   ],
-   "rowsTotal": 29,
-   "rowsMatched": 4,
-   "matchedRows": [
-    {
-     "id": "S05-09",
-     "word": "build",
-     "elements": 7
-    },
-    {
-     "id": "S05-10",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S05-18",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S05-23",
-     "word": "build",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s05-tracker-setup.png",
-   "annotated": "s05-tracker-setup-annotated.png",
-   "surface": "S05",
-   "surfaceName": "Templates, template setup, tracker setup and config",
-   "screen": "Template tracker setup (parameter library)",
-   "route": "/coach",
-   "clicks": [
-    "Add template",
-    "02 Dashboard",
-    "Move Bodyweight trend",
-    "03 Tracker"
-   ],
-   "rowsTotal": 29,
-   "rowsMatched": 3,
-   "matchedRows": [
-    {
-     "id": "S05-09",
-     "word": "build",
-     "elements": 2
-    },
-    {
-     "id": "S05-11",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S05-18",
-     "word": "build",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s05-client-setup.png",
-   "annotated": "s05-client-setup-annotated.png",
-   "surface": "S05",
-   "surfaceName": "Templates, template setup, tracker setup and config",
-   "screen": "Client setup, assign template",
-   "route": "/coach",
-   "clicks": [
-    "Clients",
-    "EF Eva Fischer Lifestyle",
-    "Assign template"
-   ],
-   "rowsTotal": 29,
-   "rowsMatched": 6,
-   "matchedRows": [
-    {
-     "id": "S05-04",
-     "word": "switch on",
-     "elements": 1
-    },
-    {
-     "id": "S05-07",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S05-09",
-     "word": "build",
-     "elements": 2
-    },
-    {
-     "id": "S05-18",
-     "word": "build",
-     "elements": 2
-    },
-    {
-     "id": "S05-23",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S05-24",
-     "word": "your call",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s06-mealplan-editor.png",
-   "annotated": "s06-mealplan-editor-annotated.png",
-   "surface": "S06",
-   "surfaceName": "Nutrition plan, food database, client plan preview",
-   "screen": "Meal plan editor",
-   "route": "/coach",
-   "clicks": [
-    "Clients",
-    "CP Chloe Park Lifestyle",
-    "Plans",
-    "Create"
-   ],
-   "rowsTotal": 29,
-   "rowsMatched": 3,
-   "matchedRows": [
-    {
-     "id": "S06-09",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S06-14",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S06-15",
-     "word": "your call",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s06-template-nutrition.png",
-   "annotated": "s06-template-nutrition-annotated.png",
-   "surface": "S06",
-   "surfaceName": "Nutrition plan, food database, client plan preview",
-   "screen": "Template Nutrition tab",
-   "route": "/coach",
-   "clicks": [
-    "Add template",
-    "02 Dashboard",
-    "Move Bodyweight trend",
-    "03 Tracker",
-    "Settings for Bodyweight",
-    "04 Timeline / Roadmap",
-    "05 Nutrition"
-   ],
-   "rowsTotal": 29,
-   "rowsMatched": 0,
-   "matchedRows": []
-  },
-  {
-   "file": "s07-training-editor.png",
-   "annotated": "s07-training-editor-annotated.png",
-   "surface": "S07",
-   "surfaceName": "Training plan, exercise library, muscle volume, roadmap",
-   "screen": "Training program editor",
-   "route": "/coach",
-   "clicks": [
-    "Clients",
-    "EA Emma Anders Lifestyle",
-    "Open chat 1",
-    "Training program"
-   ],
-   "rowsTotal": 31,
-   "rowsMatched": 3,
-   "matchedRows": [
-    {
-     "id": "S07-02",
-     "word": "reshape",
-     "elements": 3
-    },
-    {
-     "id": "S07-06",
-     "word": "switch on",
-     "elements": 1
-    },
-    {
-     "id": "S07-14",
-     "word": "reshape",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s07-exercise-library.png",
-   "annotated": "s07-exercise-library-annotated.png",
-   "surface": "S07",
-   "surfaceName": "Training plan, exercise library, muscle volume, roadmap",
-   "screen": "Exercise library manager",
-   "route": "/coach",
-   "clicks": [
-    "Clients",
-    "EA Emma Anders Lifestyle",
-    "Open chat 1",
-    "Training program",
-    "Manage library"
-   ],
-   "rowsTotal": 31,
-   "rowsMatched": 3,
-   "matchedRows": [
-    {
-     "id": "S07-02",
-     "word": "reshape",
-     "elements": 3
-    },
-    {
-     "id": "S07-06",
-     "word": "switch on",
-     "elements": 1
-    },
-    {
-     "id": "S07-14",
-     "word": "reshape",
-     "elements": 10
-    }
-   ]
-  },
-  {
-   "file": "s08-builder.webp",
-   "annotated": "s08-builder-annotated.webp",
-   "surface": "S08",
-   "surfaceName": "Coach dashboard builder and widgets",
-   "screen": "Dashboard builder (Ethereal studio)",
-   "route": "/ethereal",
-   "clicks": [],
-   "rowsTotal": 43,
-   "rowsMatched": 2,
-   "matchedRows": [
-    {
-     "id": "S08-02",
-     "word": "switch on",
-     "elements": 1
-    },
-    {
-     "id": "S08-12",
-     "word": "switch on",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s08-widget-gallery.png",
-   "annotated": "s08-widget-gallery-annotated.png",
-   "surface": "S08",
-   "surfaceName": "Coach dashboard builder and widgets",
-   "screen": "Widget gallery",
-   "route": "/ethereal",
-   "clicks": [
-    "Add widget"
-   ],
-   "rowsTotal": 43,
-   "rowsMatched": 1,
-   "matchedRows": [
-    {
-     "id": "S08-04",
-     "word": "reshape",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s08-template-dashboard.png",
-   "annotated": "s08-template-dashboard-annotated.png",
-   "surface": "S08",
-   "surfaceName": "Coach dashboard builder and widgets",
-   "screen": "Template dashboard editor",
-   "route": "/coach",
-   "clicks": [
-    "Add template",
-    "02 Dashboard"
-   ],
-   "rowsTotal": 43,
-   "rowsMatched": 4,
-   "matchedRows": [
-    {
-     "id": "S08-02",
-     "word": "switch on",
-     "elements": 1
-    },
-    {
-     "id": "S08-10",
-     "word": "switch on",
-     "elements": 1
-    },
-    {
-     "id": "S08-12",
-     "word": "switch on",
-     "elements": 1
-    },
-    {
-     "id": "S08-22",
-     "word": "build",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s09-tracker-today.png",
-   "annotated": "s09-tracker-today-annotated.png",
-   "surface": "S09",
-   "surfaceName": "Client tracker (today, tracking, trends, week) and client preview",
-   "screen": "Client tracker, Today view",
-   "route": "/coach",
-   "clicks": [
-    "More actions for Strength & balance",
-    "Preview",
-    "Tracker"
-   ],
-   "rowsTotal": 35,
-   "rowsMatched": 9,
-   "matchedRows": [
-    {
-     "id": "S09-01",
-     "word": "reshape",
-     "elements": 4
-    },
-    {
-     "id": "S09-02",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S09-03",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S09-05",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S09-06",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S09-19",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S09-24",
-     "word": "reshape",
-     "elements": 6
-    },
-    {
-     "id": "S09-26",
-     "word": "reshape",
-     "elements": 3
-    },
-    {
-     "id": "S09-28",
-     "word": "reshape",
-     "elements": 2
-    }
-   ]
-  },
-  {
-   "file": "s09-tracker-week.png",
-   "annotated": "s09-tracker-week-annotated.png",
-   "surface": "S09",
-   "surfaceName": "Client tracker (today, tracking, trends, week) and client preview",
-   "screen": "Client tracker, Week view",
-   "route": "/coach",
-   "clicks": [
-    "More actions for Strength & balance",
-    "Preview",
-    "Tracker",
-    "Week"
-   ],
-   "rowsTotal": 35,
-   "rowsMatched": 10,
-   "matchedRows": [
-    {
-     "id": "S09-01",
-     "word": "reshape",
-     "elements": 4
-    },
-    {
-     "id": "S09-02",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S09-03",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S09-06",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S09-18",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S09-19",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S09-24",
-     "word": "reshape",
-     "elements": 6
-    },
-    {
-     "id": "S09-25",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S09-26",
-     "word": "reshape",
-     "elements": 3
-    },
-    {
-     "id": "S09-28",
-     "word": "reshape",
-     "elements": 2
-    }
-   ]
-  },
-  {
-   "file": "s09-tracker-trends.png",
-   "annotated": "s09-tracker-trends-annotated.png",
-   "surface": "S09",
-   "surfaceName": "Client tracker (today, tracking, trends, week) and client preview",
-   "screen": "Client tracker, Trends view",
-   "route": "/coach",
-   "clicks": [
-    "More actions for Strength & balance",
-    "Preview",
-    "Tracker",
-    "Trends"
-   ],
-   "rowsTotal": 35,
-   "rowsMatched": 7,
-   "matchedRows": [
-    {
-     "id": "S09-01",
-     "word": "reshape",
-     "elements": 4
-    },
-    {
-     "id": "S09-02",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S09-03",
-     "word": "reshape",
-     "elements": 2
-    },
-    {
-     "id": "S09-19",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S09-24",
-     "word": "reshape",
-     "elements": 6
-    },
-    {
-     "id": "S09-26",
-     "word": "reshape",
-     "elements": 3
-    },
-    {
-     "id": "S09-28",
-     "word": "reshape",
-     "elements": 2
-    }
-   ]
-  },
-  {
-   "file": "s09-tracker-config.png",
-   "annotated": "s09-tracker-config-annotated.png",
-   "surface": "S09",
-   "surfaceName": "Client tracker (today, tracking, trends, week) and client preview",
-   "screen": "Tracker configurator (Ethereal studio)",
-   "route": "/ethereal",
-   "clicks": [
-    "Tracker"
-   ],
-   "rowsTotal": 35,
-   "rowsMatched": 6,
-   "matchedRows": [
-    {
-     "id": "S09-01",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S09-05",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S09-18",
-     "word": "reshape",
-     "elements": 1
-    },
-    {
-     "id": "S09-24",
-     "word": "reshape",
-     "elements": 3
-    },
-    {
-     "id": "S09-25",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S09-26",
-     "word": "reshape",
-     "elements": 2
-    }
-   ]
-  },
-  {
-   "file": "s10-appearance.png",
-   "annotated": "s10-appearance-annotated.png",
-   "surface": "S10",
-   "surfaceName": "Appearance, theme, accent, the Ethereal studio",
-   "screen": "Appearance studio (Make it yours)",
-   "route": "/ethereal",
-   "clicks": [
-    "Coaching UI"
-   ],
-   "rowsTotal": 21,
-   "rowsMatched": 8,
-   "matchedRows": [
-    {
-     "id": "S10-04",
-     "word": "build",
-     "elements": 4
-    },
-    {
-     "id": "S10-06",
-     "word": "reshape",
-     "elements": 4
-    },
-    {
-     "id": "S10-07",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S10-08",
-     "word": "build",
-     "elements": 2
-    },
-    {
-     "id": "S10-09",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S10-10",
-     "word": "build",
-     "elements": 1
-    },
-    {
-     "id": "S10-19",
-     "word": "connect",
-     "elements": 1
-    },
-    {
-     "id": "S10-20",
-     "word": "connect",
-     "elements": 2
-    }
-   ]
-  },
-  {
-   "file": "s10-clients-studio.png",
-   "annotated": "s10-clients-studio-annotated.png",
-   "surface": "S10",
-   "surfaceName": "Appearance, theme, accent, the Ethereal studio",
-   "screen": "Clients studio",
-   "route": "/ethereal#clients",
-   "clicks": [],
-   "rowsTotal": 21,
-   "rowsMatched": 3,
-   "matchedRows": [
-    {
-     "id": "S10-04",
-     "word": "build",
-     "elements": 4
-    },
-    {
-     "id": "S10-19",
-     "word": "connect",
-     "elements": 1
-    },
-    {
-     "id": "S10-20",
-     "word": "connect",
-     "elements": 1
-    }
-   ]
-  },
-  {
-   "file": "s10-mealplan-studio.png",
-   "annotated": "s10-mealplan-studio-annotated.webp",
-   "surface": "S10",
-   "surfaceName": "Appearance, theme, accent, the Ethereal studio",
-   "screen": "Meal plans studio",
-   "route": "/ethereal#mealplan",
-   "clicks": [],
-   "rowsTotal": 21,
-   "rowsMatched": 3,
-   "matchedRows": [
-    {
-     "id": "S10-04",
-     "word": "build",
-     "elements": 4
-    },
-    {
-     "id": "S10-19",
-     "word": "connect",
-     "elements": 1
-    },
-    {
-     "id": "S10-20",
-     "word": "connect",
-     "elements": 3
-    }
-   ]
-  },
-  {
-   "file": "s11-preferences.png",
-   "annotated": "s11-preferences-annotated.png",
-   "surface": "S11",
-   "surfaceName": "Identity and access: the canvas has no auth; map its implied users and views (coach vs client, which client is \"me\") to backend auth, roles, invites, onboarding, consent",
-   "screen": "Workspace preferences (coach identity)",
-   "route": "/coach",
-   "clicks": [
-    "Workspace preferences for Liliana Mansfeld"
-   ],
-   "rowsTotal": 30,
-   "rowsMatched": 1,
-   "matchedRows": [
-    {
-     "id": "S11-22",
-     "word": "reshape",
-     "elements": 2
-    }
-   ]
-  },
-  {
-   "file": "s11-client-preview.png",
-   "annotated": "s11-client-preview-annotated.png",
-   "surface": "S11",
-   "surfaceName": "Identity and access: the canvas has no auth; map its implied users and views (coach vs client, which client is \"me\") to backend auth, roles, invites, onboarding, consent",
-   "screen": "Preview assigned tool",
-   "route": "/coach",
-   "clicks": [
-    "Clients",
-    "EA Emma Anders Lifestyle",
-    "Preview assigned tool"
-   ],
-   "rowsTotal": 30,
-   "rowsMatched": 2,
-   "matchedRows": [
-    {
-     "id": "S11-07",
-     "word": "reshape",
-     "elements": 5
-    },
-    {
-     "id": "S11-20",
-     "word": "switch on",
-     "elements": 1
-    }
-   ]
-  }
- ],
- "pageErrors": []
+  ],
+  "pageErrors": []
 }

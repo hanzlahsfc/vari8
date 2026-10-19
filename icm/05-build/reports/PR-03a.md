@@ -13,7 +13,7 @@ Single Node script, no dependencies. Modes:
 
 - `--dry --json <path>`: parses the audit (per-file action list, five pass-2
   block tables, within-block cut table, e2e flow table), resolves every block by
-  name (audit ` , ` artifacts are em dashes; matching is normalized) with audit
+  name (audit `,` artifacts are em dashes; matching is normalized) with audit
   line spans as a cross-check, and prints the plan: files, cut spans, problems.
 - `--apply`: executes the plan. CUT-FILE removes the file. TRIM removes the
   resolved spans of every VISIBLE / CUT pass 1+2 row plus the named within-block
@@ -78,12 +78,12 @@ files, so the suites and linters stay clean):
 
 Audit expectation (GUARD + CUT-AT-REPLACE, tests = expanded runtime cases):
 
-| Metric | Audit expected | Actual | Delta |
-|---|---:|---:|---:|
-| Retained audited files | 171 | 171 present | 0 |
-| Physical lines in retained audited files | 61,490 | 61,287 | −203 |
-| Declared leaf test statements (audited) | — | 1,710 | — |
-| Collected cases, all suites | 2,049 | 2,079 | +30 |
+| Metric                                   | Audit expected |      Actual | Delta |
+| ---------------------------------------- | -------------: | ----------: | ----: |
+| Retained audited files                   |            171 | 171 present |     0 |
+| Physical lines in retained audited files |         61,490 |      61,287 |  −203 |
+| Declared leaf test statements (audited)  |              — |       1,710 |     — |
+| Collected cases, all suites              |          2,049 |       2,079 |   +30 |
 
 Delta explanations:
 
@@ -99,25 +99,25 @@ Delta explanations:
 
 ## 5. Gates — commands and exit codes
 
-| Command | Exit | Result |
-|---|---|---|
-| `node icm/05-build/tools/apply-test-audit.mjs --dry --json /tmp/dry2.json` | 0 | 61 CUT-FILE + 67 TRIM, 0 problems |
-| `node icm/05-build/tools/apply-test-audit.mjs --apply --json /tmp/apply4.json` | 0 | all applied, 0 FAIL |
-| `node icm/05-build/tools/apply-test-audit.mjs --sweep <56 trimmed files>` | 0 | all no-op (fixed point reached) |
-| `npm ci` / `npm --prefix frontend ci` | 0 | fresh installs in this worktree |
-| `npm run test` | 0 | 96 files, **1,137 tests passed** |
-| `npm --prefix frontend run test` | 0 | **76 tests passed**, 0 fail |
-| `npm run typecheck` | 0 | clean |
-| `npm run lint` | 0 | 0 errors, 14 warnings (baseline had 16; 0 introduced) |
-| `npm run format:check` | 1 | 67 baseline-dirty files; **0 of my files** (all verified clean at HEAD vs after) |
-| `npm --prefix frontend run lint` | 0 | biome clean after unused-binding + format fixes |
-| `npm --prefix frontend run typecheck` | 0 | clean |
-| `createdb -U app app_pr03a` (vari8-db-1 :5433) | 0 | disposable db |
-| `INTEGRATION_DATABASE_URL=...app_pr03a DATABASE_URL=...app_pr03a npm run test:integration` | 0 | 53 files, **850 tests passed** (286 s) |
-| `npm run build` | 0 | Next 16.3.8 Turbopack, all routes |
-| `npm --prefix frontend run build` | 0 | webpack build, `/`, `/coach`, `/ethereal` |
-| `CI=1 npm run test:e2e -- tests/e2e/invite-acceptance.spec.ts tests/e2e/password-reset.spec.ts --workers=1` | 0 | 16 collected: **10 passed, 6 skipped** |
-| `dropdb -U app app_pr03a` | 0 | database removed (count back to 0) |
+| Command                                                                                                     | Exit | Result                                                                           |
+| ----------------------------------------------------------------------------------------------------------- | ---- | -------------------------------------------------------------------------------- |
+| `node icm/05-build/tools/apply-test-audit.mjs --dry --json /tmp/dry2.json`                                  | 0    | 61 CUT-FILE + 67 TRIM, 0 problems                                                |
+| `node icm/05-build/tools/apply-test-audit.mjs --apply --json /tmp/apply4.json`                              | 0    | all applied, 0 FAIL                                                              |
+| `node icm/05-build/tools/apply-test-audit.mjs --sweep <56 trimmed files>`                                   | 0    | all no-op (fixed point reached)                                                  |
+| `npm ci` / `npm --prefix frontend ci`                                                                       | 0    | fresh installs in this worktree                                                  |
+| `npm run test`                                                                                              | 0    | 96 files, **1,137 tests passed**                                                 |
+| `npm --prefix frontend run test`                                                                            | 0    | **76 tests passed**, 0 fail                                                      |
+| `npm run typecheck`                                                                                         | 0    | clean                                                                            |
+| `npm run lint`                                                                                              | 0    | 0 errors, 14 warnings (baseline had 16; 0 introduced)                            |
+| `npm run format:check`                                                                                      | 1    | 67 baseline-dirty files; **0 of my files** (all verified clean at HEAD vs after) |
+| `npm --prefix frontend run lint`                                                                            | 0    | biome clean after unused-binding + format fixes                                  |
+| `npm --prefix frontend run typecheck`                                                                       | 0    | clean                                                                            |
+| `createdb -U app app_pr03a` (vari8-db-1 :5433)                                                              | 0    | disposable db                                                                    |
+| `INTEGRATION_DATABASE_URL=...app_pr03a DATABASE_URL=...app_pr03a npm run test:integration`                  | 0    | 53 files, **850 tests passed** (286 s)                                           |
+| `npm run build`                                                                                             | 0    | Next 16.3.8 Turbopack, all routes                                                |
+| `npm --prefix frontend run build`                                                                           | 0    | webpack build, `/`, `/coach`, `/ethereal`                                        |
+| `CI=1 npm run test:e2e -- tests/e2e/invite-acceptance.spec.ts tests/e2e/password-reset.spec.ts --workers=1` | 0    | 16 collected: **10 passed, 6 skipped**                                           |
+| `dropdb -U app app_pr03a`                                                                                   | 0    | database removed (count back to 0)                                               |
 
 E2E skips are the six delivery-gated reset cases — `test.skip(GATED)` because no
 `PASSWORD_RESET_DELIVERY_ADAPTER` exists; the audit itself marks them UNPROVEN

@@ -9,6 +9,7 @@ Graph counts: 145 nodes (44 build, 50 verify, 44 merge, 4 decision, 3 gate). Mod
 ## 1. Graph order: PARTIAL PASS, 2 FIX
 
 PASS
+
 - Topological sort succeeds, so no cycles. Every parent key exists (0 missing). Keys are unique.
 - Every build has exactly one verify child whose model differs from the build model (0 same-model pairs, 0 builds without verify). Every verify has a merge child; every merge depends on a verify.
 - Schema chain: db/ writers per card bodies are exactly PR-05, PR-M0, PR-R2. PR-M0 build waits on PR-05:merge (graph.json, PR-M0:build). PR-R2 waits on PR-M0:merge. All M1 to M9 builds wait on PR-M0:merge.
@@ -16,6 +17,7 @@ PASS
 - PR-R0 (lib-only helper merge) waits on PR-05:merge and is an ancestor of every PR-M1 to M9 build.
 
 FIX
+
 - Screen wiring gate (PLAN wiring cards must wait on PR-05 and PR-P1):
   - `pr-w0-data-seam.md` / graph `PR-W0:build` parents = [PR-01:merge, PR-03:merge]. No PR-05 ancestor, no PR-P1 ancestor.
   - `pr-media-storage.md` / graph `PR-MEDIA:build` parents = [PR-M0:merge, PR-05:merge]. No PR-P1 ancestor. PR-MEDIA wires the message screens (PLAN, PR-MEDIA section). Only its verify waits on PR-P1.
@@ -24,12 +26,14 @@ FIX
 ## 2. Model routing: FIX (violations listed by card)
 
 Pass
+
 - Verify models are only claude-haiku-5-5 or claude-opus-5-5 (no FAIL on the role rule).
 - gpt-6.1-sol appears only on GATE-FINAL:gate (minato).
 - glm: 0 hits in cards, graph, PLAN, tools.
 - Provider matches model for every card; exact ids used in graph.json.
 
 Violations
+
 - Sonnet, 45 cards (graph.json, claude-sonnet-5-5, kakashi):
   - All 44 `:merge` cards: PR-02, PR-P1, PR-03A, PR-03B, PR-04, PR-01, PR-W1, PR-03, PR-T2, PR-05, PR-M0, PR-R0, PR-M1 to PR-M9, PR-SV1 to PR-SV4, PR-MEDIA, PR-MSG, PR-W0, PR-W2 to PR-W10, PR-R1, PR-R2, PR-R3, PR-X1, PR-X2, PR-D1, PR-31. Graph key `<PR>:merge`.
   - GATE-CLEAN:gate (`gate-clean.md`, graph.json).
@@ -47,9 +51,11 @@ Violations
 ## 3. Coverage ledger: FIX
 
 Pass
+
 - 44 of 44 PLAN v2 PR sections have a graph build card. 44 `plan-pr` ledger rows, all distinct, each build_card equals the graph slug. 0 empty build_card cells on non-parked rows; 0 build/verify slugs unknown to the graph.
 
 FIX (P0 rows)
+
 - PRODREADY-BASELINE.md has 38 rows with P0 in the priority column, not 31. The 31 are the gaps (16 PARTIAL, 13 MISSING, 2 UNVERIFIED). The other 7 are 2 PRESENT (PR-043, PR-121), 1 PARKED (PR-145, line 233), 4 N/A.
 - 0 of the 38 P0 ids are cited anywhere in coverage-ledger.csv.
 - Owner column for the 31 gaps:
@@ -107,6 +113,6 @@ FIX (P0 rows)
 
 ## Limits
 
-- Worktree has untracked files not in the PR (ORCHESTRATOR-STATE.md, audits/PRODREADY-TICKETS.md, cards/PR-02.md, cards/issue-ids.txt, tools/__pycache__). Not reviewed as part of the diff; ORCHESTRATOR-STATE.md:30 still says "no Sonnet".
+- Worktree has untracked files not in the PR (ORCHESTRATOR-STATE.md, audits/PRODREADY-TICKETS.md, cards/PR-02.md, cards/issue-ids.txt, tools/**pycache**). Not reviewed as part of the diff; ORCHESTRATOR-STATE.md:30 still says "no Sonnet".
 - Did not run the local gate, verify-local.sh or any Devin/Hermes CLI against the real board.
 - The `--release` and `--dry-run` runs used a stub `hermes` binary, so no kanban state was touched.
