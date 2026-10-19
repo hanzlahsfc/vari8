@@ -191,6 +191,20 @@ imported `./v3-deferred-thread`, but the file on disk is
 `variant-deferred-thread.tsx` (broken on the base branch since commit 8a21ad0).
 The import specifier was corrected; no behavior change.
 
+## Independent review
+
+Read-only verification by a separate model/context on the pushed diff
+(`origin/Vari8-Beta..HEAD`): verdict FIXED. All six page orderings re-derived
+from source, the coaches service path (`authorizeCollection` in
+`lib/workspace/clients.ts:349-361,396-407`) confirmed to authorize before
+returning, the `select: { name: true }` spy discriminator confirmed distinct
+from the auth repo's `select: { id, workspaceId, userId }`, and a mental
+mutation test confirms the new regression test fails if any page's gate is
+reverted. The full `app/` denominator was enumerated: outside the six fixed
+pages, the only direct prisma reads are caller-own `workspaceMember` rows
+(auth inputs) and the client-side `(tracker)` self-scoped reads keyed by the
+session `userId` (no URL-param client id) - none are in the leak class.
+
 ## Could not do / remaining uncertainty
 
 - The `AGENTS.md` "nextjs-agent-rules" block in the diff was written by
