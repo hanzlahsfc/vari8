@@ -18,9 +18,13 @@
 
 export { isDailyPrototypeEnabled } from "../daily-prototype";
 import { isDailyPrototypeEnabled } from "../daily-prototype";
+import { devFlagEnabled, type RuntimeEnv } from "../runtime";
 
-export function isDailyEntryEnabled(env: string | undefined): boolean {
-  return env === "1";
+export function isDailyEntryEnabled(
+  flag: string | undefined,
+  env: RuntimeEnv = process.env,
+): boolean {
+  return devFlagEnabled(flag, env);
 }
 
 export type DailyEntryMode = "off" | "persistent" | "conflict";
@@ -28,9 +32,10 @@ export type DailyEntryMode = "off" | "persistent" | "conflict";
 export function resolveDailyEntryMode(
   entryEnv: string | undefined,
   prototypeEnv: string | undefined,
+  env: RuntimeEnv = process.env,
 ): DailyEntryMode {
-  if (!isDailyEntryEnabled(entryEnv)) return "off";
-  if (isDailyPrototypeEnabled(prototypeEnv)) return "conflict";
+  if (!isDailyEntryEnabled(entryEnv, env)) return "off";
+  if (isDailyPrototypeEnabled(prototypeEnv, env)) return "conflict";
   return "persistent";
 }
 
@@ -39,8 +44,9 @@ export function resolveDailyEntryMode(
 export function isDailyEntryPersistenceUsable(
   entryEnv: string | undefined,
   prototypeEnv: string | undefined,
+  env: RuntimeEnv = process.env,
 ): boolean {
-  return resolveDailyEntryMode(entryEnv, prototypeEnv) === "persistent";
+  return resolveDailyEntryMode(entryEnv, prototypeEnv, env) === "persistent";
 }
 
 export type DailyEntryErrorCode =

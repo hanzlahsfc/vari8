@@ -5,11 +5,19 @@ import { notFound } from "next/navigation";
  * product page. It is enabled ONLY by an explicit development flag so it fails
  * closed (404) in normal product builds.
  */
-export function isSheetViewerEnabled(env: string | undefined): boolean {
-  return env === "1";
+import { devFlagEnabled, type RuntimeEnv } from "./runtime";
+
+export function isSheetViewerEnabled(
+  flag: string | undefined,
+  env: RuntimeEnv = process.env,
+): boolean {
+  return devFlagEnabled(flag, env);
 }
 
 /** Fail closed: pages call this before rendering; throws `notFound()` when off. */
-export function requireSheetViewer(env: string | undefined): void {
-  if (!isSheetViewerEnabled(env)) notFound();
+export function requireSheetViewer(
+  flag: string | undefined,
+  env: RuntimeEnv = process.env,
+): void {
+  if (!isSheetViewerEnabled(flag, env)) notFound();
 }

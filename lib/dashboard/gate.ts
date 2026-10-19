@@ -5,11 +5,9 @@
  * Check-In resolver applies — production/unknown/missing fail closed.
  */
 
-import { classifyCheckInRuntime } from "../checkin/forms-gate";
+import { devFlagEnabled, type RuntimeEnv } from "../runtime";
 
-export type DashboardEnv = {
-  APP_ENV?: string;
-  NODE_ENV?: string;
+export type DashboardEnv = RuntimeEnv & {
   ENABLE_CLIENT_DASHBOARD?: string;
 };
 
@@ -17,6 +15,5 @@ export type DashboardEnv = {
 export function isClientDashboardEnabled(
   env: DashboardEnv = process.env,
 ): boolean {
-  if (env.ENABLE_CLIENT_DASHBOARD !== "1") return false;
-  return classifyCheckInRuntime(env) !== "production";
+  return devFlagEnabled(env.ENABLE_CLIENT_DASHBOARD, env);
 }

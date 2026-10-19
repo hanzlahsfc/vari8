@@ -283,7 +283,13 @@ export function validateDailyEntry(
   return errors;
 }
 
-/** The prototype is development-only: enabled ONLY by an explicit flag. */
-export function isDailyPrototypeEnabled(env: string | undefined): boolean {
-  return env === "1";
+import { devFlagEnabled, type RuntimeEnv } from "./runtime";
+
+/** The prototype is development-only: enabled ONLY by an explicit flag in a
+ * trusted development/test runtime (V3-H4-02). */
+export function isDailyPrototypeEnabled(
+  flag: string | undefined,
+  env: RuntimeEnv = process.env,
+): boolean {
+  return devFlagEnabled(flag, env);
 }

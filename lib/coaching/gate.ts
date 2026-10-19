@@ -11,8 +11,13 @@
  * Limits below are engineering safety bounds (reviewed in
  * docs/tasks/p014-parameter-template-foundation.md) — not product semantics.
  */
-export function isCoachingTemplatesEnabled(env: string | undefined): boolean {
-  return env === "1";
+import { devFlagEnabled, type RuntimeEnv } from "../runtime";
+
+export function isCoachingTemplatesEnabled(
+  flag: string | undefined,
+  env: RuntimeEnv = process.env,
+): boolean {
+  return devFlagEnabled(flag, env);
 }
 
 export const COACHING_LIMITS = {
