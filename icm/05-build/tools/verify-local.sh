@@ -19,6 +19,10 @@ if [[ ! "$LANE_DB" =~ ^app_[a-z0-9_]+$ ]] || [[ "$LANE_DB" == "app_dev" ]]; then
   echo "FAIL setup: LANE_DB must match ^app_[a-z0-9_]+$ and must not be app_dev" >&2
   exit 2
 fi
+if [[ -z "${POSTGRES_PASSWORD:-}" ]]; then
+  echo "FAIL setup: POSTGRES_PASSWORD is not set. Export it from the root .env (never print it), then re-run." >&2
+  exit 2
+fi
 TOP="$(git rev-parse --show-toplevel)"
 if [[ "$(realpath "$TOP")" == "$(realpath "$ROOT_CHECKOUT")" ]]; then
   echo "FAIL setup: never run installs or builds in the root checkout ($ROOT_CHECKOUT)" >&2
@@ -88,7 +92,7 @@ if [[ "$HAS_FRONTEND" == 1 ]]; then step "frontend lint" npm --prefix frontend r
 step "unit tests" npm run test
 if [[ "$HAS_FRONTEND" == 1 ]]; then step "frontend tests" npm --prefix frontend run test; fi
 
-PGPASS="${POSTGRES_PASSWORD:-app_dev_password}"
+PGPASS="$POSTGRES_PASSWORD"
 docker exec vari8-db-1 dropdb -U app --if-exists "$LANE_DB" >/dev/null
 docker exec vari8-db-1 createdb -U app "$LANE_DB"
 cleanup() { [[ "${KEEP_DB:-0}" == 1 ]] || docker exec vari8-db-1 dropdb -U app --if-exists "$LANE_DB" >/dev/null 2>&1 || true; }

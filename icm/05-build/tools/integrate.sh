@@ -7,6 +7,10 @@
 # will produce. Then it cleans up (ship-all rule). INTEGRATE_DRY_RUN=1 stops before the merge.
 # Exit codes: 0 merged, 2 usage or state, 3 conflict with trunk, 4 no SHIP verdict for this head, 5 fast gate red.
 set -euo pipefail
+if [[ -z "${POSTGRES_PASSWORD:-}" ]]; then
+  echo "integrate.sh: POSTGRES_PASSWORD is not set. Export it from the root .env (never print it), then re-run." >&2
+  exit 2
+fi
 PR_ID="${1:?plan id, e.g. PR-01}"
 HEAD_BRANCH="${2:?head branch, e.g. beta/pr-01-canvas-takeover}"
 REPO="${INTEGRATE_REPO:-hanzlahsfc/The-great-tracker-}"
@@ -50,7 +54,7 @@ fi
 
 NORM="$(echo "$PR_ID" | tr 'A-Z' 'a-z' | tr -cd 'a-z0-9')"
 DB="app_merge_${NORM}"
-PGPASS="${POSTGRES_PASSWORD:-app_dev_password}"
+PGPASS="$POSTGRES_PASSWORD"
 export DATABASE_URL="postgresql://app:${PGPASS}@127.0.0.1:5433/${DB}?schema=public"
 export AUTH_SECRET="${AUTH_SECRET:-$(openssl rand -base64 32)}"
 docker exec vari8-db-1 dropdb -U app --if-exists "$DB" >/dev/null
