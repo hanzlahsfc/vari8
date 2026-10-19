@@ -259,6 +259,15 @@ test.describe("signed-in acceptance", () => {
         status: "ACTIVE",
       },
     });
+    // PR-05: credential sign-in reads the `accounts` row.
+    await prisma.account.create({
+      data: {
+        userId: u.id,
+        accountId: u.id,
+        providerId: "credential",
+        password: await hashPassword(E2E.password),
+      },
+    });
     myUserIds.push(u.id);
     const link = await invite(email, "COACH", workspaceBId);
 

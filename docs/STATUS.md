@@ -1,3 +1,28 @@
+## 2026-10-19 — PR-05: integrated with Vari8-Beta @ ea8f514 — PR open
+
+- Merged `origin/Vari8-Beta` `ea8f514` (PR-03a #64 test-audit deletions) into
+  `beta/pr-05-auth-api` — merge commit `ad3c57a`. All conflicts resolved per
+  `icm/03-plan/output/TEST-AUDIT.md`: 5 modify/deletes kept deleted, 7 content
+  conflicts resolved hunk-by-hunk (GUARD kept, CUT/CUT-AT-REPLACE removed),
+  `tests/unit/checkin-review.test.ts` removed as a husk (all blocks cut).
+- Session export added for canvas gating (PR-01 contract):
+  `GET /api/v1/workspaces/:id/session` returns `{user, workspace{id,memberId},
+  role, capabilities}` — 401/403 posture via `defineApiV1Route`; covered by
+  `tests/integration/api-v1-session.test.ts` (literal coach JSON, client
+  `plan.write: deny`, cross-workspace 403, anonymous 401).
+- E2e rewired to Better Auth: fixtures create credential `accounts` rows;
+  `password-reset.spec.ts` gates on the served posture
+  (`MAIL_DELIVERY_ADAPTER=dev-file`) — mutually exclusive flow vs 404-pair.
+- Fresh gates on `app_pr05` @ 127.0.0.1:5433: typecheck 0; lint 0 errors
+  (13 warnings); unit 1021/1021; integration 265/265; `next build` 0;
+  frontend build 0 (after `npm ci` for `motion`); live proof 14/14;
+  e2e default 10 pass/6 skip (invite 8/8, reset 404-pair 2/2), e2e with
+  `MAIL_DELIVERY_ADAPTER=dev-file` 6 pass/2 skip (all reset-flow cases in a
+  real browser).
+- `AGENTS.md` kept reverted — no `nextjs-agent-rules` block committed.
+- Report: `icm/05-build/reports/PR-05.md` (Integration section). Branch pushed
+  and PR opened against `Vari8-Beta`; closes #58. Not merged.
+
 ## 2026-10-19 — PR-05: Better Auth + /api/v1 foundation — verified locally
 
 - Branch `beta/pr-05-auth-api` (worktree `vari8-worktrees/pr-05-auth-api`),

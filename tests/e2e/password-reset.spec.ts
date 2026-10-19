@@ -2,7 +2,6 @@ import { expect, test, type Page } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
 
 import { hashPassword } from "../../lib/password";
-import { passwordResetDeliveryConfigured } from "../../lib/auth/password-reset-boundary";
 import { generateAccessToken } from "../../lib/tokens/crypto";
 import { createWorkspaceInvitation } from "../../lib/workspace/invitations";
 import { E2E, e2eDatabaseUrl } from "./global-setup";
@@ -22,7 +21,11 @@ import { E2E, e2eDatabaseUrl } from "./global-setup";
  * at the bottom always run.
  */
 
-const DELIVERY_UP = passwordResetDeliveryConfigured();
+// PR-05: the e2e webServer is always `next start` (NODE_ENV=production), so
+// the implicit dev-file default never applies there — delivery exists only
+// when MAIL_DELIVERY_ADAPTER names a registered adapter. Gate on the server's
+// condition, not this (non-production) test process's default.
+const DELIVERY_UP = process.env.MAIL_DELIVERY_ADAPTER === "dev-file";
 const GATED = !DELIVERY_UP;
 const GATE_REASON = "mail delivery adapter not configured";
 
@@ -43,7 +46,7 @@ function resetEmail(tag: string) {
 
 async function mkResettableUser(tag: string) {
   const email = resetEmail(tag);
-  return prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       email,
       passwordHash: await hashPassword(E2E.password),
@@ -51,6 +54,16 @@ async function mkResettableUser(tag: string) {
       status: "ACTIVE",
     },
   });
+  // PR-05: credential sign-in reads the `accounts` row.
+  await prisma.account.create({
+    data: {
+      userId: user.id,
+      accountId: user.id,
+      providerId: "credential",
+      password: await hashPassword(E2E.password),
+    },
+  });
+  return user;
 }
 
 const resetIdentifier = (rawToken: string) => `reset-password:${rawToken}`;
@@ -170,7 +183,7 @@ test.describe("reset completion (/reset)", () => {
     await page.getByLabel("New password").fill("abcdefghij");
     await page.getByRole("button", { name: "Set new password" }).click();
     await expect(page.locator(".auth-error")).toContainText(
-      "at least one digit (0–9)",
+      "at least one digit",
     );
     const stillLive = await prisma.verification.findUnique({
       where: { identifier: resetIdentifier(rawToken) },
@@ -281,6 +294,9 @@ test.describe("responsive + a11y", () => {
 });
 
 test.describe("delivery gated off (current default)", () => {
+  // Mutually exclusive with the flow cases: when MAIL_DELIVERY_ADAPTER is
+  // set for the suite these routes render instead of 404ing.
+  test.skip(DELIVERY_UP, "mail delivery adapter configured");
   test("/reset-request returns 404", async ({ page }) => {
     const resp = await page.goto("/reset-request");
     expect(resp?.status()).toBe(404);
