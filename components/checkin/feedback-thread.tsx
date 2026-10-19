@@ -134,10 +134,39 @@ export function CheckInFeedbackThread({
   const key = markerKey(userId, workspaceId, submissionId);
   const reconciledRef = useRef(false);
 
+  // Confirmed success → clear marker, append the persisted row, fresh
+  // nonce, empty composer — inside the action path so the consequences
+  // commit with the state transition (same pattern as the submission
+  // panel), not in an effect.
   const [sendState, sendAction, sendPending] = useActionState<
     StaffCheckInFeedbackSendState,
     FormData
-  >(sendCheckInFeedbackAction, { status: "idle" });
+  >(
+    async (prev, formData) => {
+      const res = await sendCheckInFeedbackAction(prev, formData);
+      if (res.status === "ok") {
+        clearMarker(key);
+        setReconcile("idle");
+        setNonce(crypto.randomUUID());
+        setItems((current) =>
+          current === null || current.some((i) => i.id === res.feedbackId)
+            ? current
+            : [
+                ...current,
+                {
+                  id: res.feedbackId,
+                  sentAt: res.sentAt,
+                  byName: res.byName,
+                  body: res.body,
+                },
+              ],
+        );
+        setBody("");
+      }
+      return res;
+    },
+    { status: "idle" },
+  );
 
   // Mount reconciliation — a stored marker means a prior dispatch's
   // outcome is unknown; ask the server before offering a compose.
@@ -186,34 +215,6 @@ export function CheckInFeedbackThread({
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Confirmed success → clear marker, append the row, fresh nonce.
-  const lastHandledRef = useRef<StaffCheckInFeedbackSendState | null>(null);
-  useEffect(() => {
-    if (sendState.status !== "ok" || lastHandledRef.current === sendState)
-      return;
-    lastHandledRef.current = sendState;
-    void (async () => {
-      clearMarker(key);
-      setReconcile("idle");
-      setNonce(crypto.randomUUID());
-      setItems((prev) =>
-        prev === null || prev.some((i) => i.id === sendState.feedbackId)
-          ? prev
-          : [
-              ...prev,
-              {
-                id: sendState.feedbackId,
-                sentAt: sendState.sentAt,
-                byName: sendState.byName,
-                body: sendState.body,
-              },
-            ],
-      );
-      setBody("");
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sendState]);
 
   return (
     <section
