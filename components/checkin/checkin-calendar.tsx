@@ -70,6 +70,7 @@ export function CheckInCalendar({
   const [view, setView] = useState<"grid" | "agenda">("grid");
   const [loaded, setLoaded] = useState<{
     range: { from: string; to: string };
+    load: CheckInCalendarProps["load"];
     value: CheckInCalendarLoadResult;
   } | null>(null);
 
@@ -87,18 +88,23 @@ export function CheckInCalendar({
   useEffect(() => {
     let live = true;
     void load(range).then((r) => {
-      if (live) setLoaded({ range, value: r });
+      if (live) setLoaded({ range, load, value: r });
     });
     return () => {
       live = false;
     };
   }, [range, load]);
 
-  // A response only serves the range it was requested for — stepping the
-  // month makes the old result stale and the calendar renders its
-  // loading branch until the new load lands (same surface the prior
-  // effect-local clear produced).
-  const result = loaded !== null && loaded.range === range ? loaded.value : null;
+  // A response only serves the (load, range) pair it was requested for —
+  // stepping the month OR a fresh `load` identity (the page re-binds the
+  // server action on each RSC refresh) makes the old result stale, and
+  // the calendar renders its loading branch until the new load lands —
+  // the same surface the prior effect-local clear produced on every
+  // refetch trigger.
+  const result =
+    loaded !== null && loaded.range === range && loaded.load === load
+      ? loaded.value
+      : null;
 
   const byDay = useMemo(() => {
     const map = new Map<string, CheckInCalendarItem[]>();
