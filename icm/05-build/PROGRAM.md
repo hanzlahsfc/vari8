@@ -144,7 +144,7 @@ Simulated by the generator: graph cards start at 03:00 once the orchestrator rel
 
 Done by 05:00 in the simulation: `DEC-AUTH:decision` 02:30, `DEC-AUTH-REVIEW:decision` 02:30, `AUD-REDUCTION:decision` 02:30, `AUD-PRR-BASELINE:decision` 02:30, `AUD-REDUCTION-VERIFY:decision` 03:30, `PR-02:build` 02:30, `PR-02:verify` 02:30, `PR-02:merge` 02:30, `PR-P1:build` 03:15, `PR-P1:verify` 03:45, `PR-P1:merge` 03:55, `PR-03A:build` 03:30, `PR-03A:verify` 03:50, `PR-03A:merge` 04:05, `PR-03B:build` 03:15, `PR-03B:verify` 03:35, `PR-03B:merge` 03:45, `PR-04:build` 03:45, `PR-04:verify` 04:05, `PR-04:secverify` 04:05, `PR-04:merge` 04:15, `PR-01:build` 04:55, `PR-T2:build` 04:40, `PR-T2:verify` 05:00, `PR-05:build` 04:10, `PR-05:verify` 04:30, `PR-05:secverify` 04:30, `PR-05:merge` 04:40, `PR-X1:build` 03:20, `PR-X1:verify` 03:40, `PR-X1:merge` 04:25.
 
-What the checkpoint shows: PR-02 merged; the parity harness, the test cuts, the hooks fixes, the index, Better Auth (PR-05) and the dev seed (PR-04) merged; the canvas running on the root app (PR-01) merged at 04:55 with every screen at parity; D16a recorded. PR-01 has no buffer: its build starts at 03:00 only if the board is released by then. If PR-01 is not merged at 05:00, the checkpoint shows it open with its verifier report, and the program continues. Program finish in the simulation: Mon 19:40.
+What the checkpoint shows: PR-02 merged; the parity harness, the test cuts, the hooks fixes, the index, Better Auth (PR-05) and the dev seed (PR-04) merged; D16a recorded. PR-01 (canvas on the root app) waits for the verified harness (PR-P1 merge) and merges at 05:35 in the simulation, after 05:00, so the checkpoint shows PR-01 built or in build with its PR open, and the program continues. Program finish in the simulation: Mon 19:40.
 
 ## Self-check
 
@@ -155,5 +155,5 @@ What the checkpoint shows: PR-02 merged; the parity harness, the test cuts, the 
 | Verifier model differs from the builder model | yes for every PR                                                                                                                            |
 | Coverage ledger has zero unmapped rows        | 0 unmapped of 812 rows (matrix 338, orphan 82, parked 6, screen 35, test-audit 232, test-rewire 29, plan-pr 44, program 8, readiness-p0 38) |
 | Dependency graph has no cycles                | 0 cycles in 146 cards (topological sort in `program.py`)                                                                                    |
-| Timeline fits 05:00                           | the checkpoint set above is done by 05:00 with PR-01 at 04:55; the full program finishes Mon 19:40                                          |
-| Generator gate                                | `python3 icm/05-build/tools/program.py` exit 0                                                                                              |
+| Timeline fits 05:00                           | 05:00 is a checkpoint, not the end: 31 cards done by 05:00, PR-01 merged at 05:35; the full program finishes Mon 19:40                      |
+| Generator gate                                | `python3 icm/05-build/tools/program.py` problems: 0 (exit 0)                                                                                |
