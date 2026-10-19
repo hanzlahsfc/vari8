@@ -51,3 +51,37 @@ Updated 02:10 2026-10-19.
 ## 03:34 PR #65 FIX (Haiku): sheets routes dropped (SKIP_DIRS), re-exports missing (46 names), @/ alias root-resolved, icm/AGENTS.md dead link, router count convergence, auth() not detected; added F9 canvas COMPONENTS.md. ds4f/tenten fix pass deleg_638df433. Re-verify Haiku after.
 
 ## 03:37 PR #68 FIX (urokodaki/Opus): colour tolerance 16/255 lets small token changes pass; ambiguous clicks capture the wrong screen (s01-profile-checkins); --update-baseline not atomic; inner scrollers uncovered at 390. Haiku/zenitsu fix pass deleg_90d7ecfd; re-verify urokodaki after.
+
+## 03:45 PR #69 (PR-05) opened @e68a2ef: merged ea8f514 (conflicts resolved per audit), session export added, e2e rewired to Better Auth credential rows. Two verifiers in parallel: urokodaki Opus security (proc_150db503e1ae, card scratch/pr69-secverify-card.md, 10 guarantees incl. rate-limit bypass + IDOR) and Haiku/neji function (deleg_57735382). Merge needs BOTH SHIP.
+
+## 03:47 Canvas hydration mismatch (motion.button tabindex server vs client on /coach segment control), pre-existing in Lilly's canvas. Filed as GitHub issue #70, owner PR-01. Not a parity-harness defect.
+
+## 03:52 PR #63 fix pass 1 done (Devin): 288f83f/efecd1c/adac7e4/118e26f, merged ea8f514, e2e 131/0 pre-merge. Devin wrote docs/STATUS.md (rule breach) -> orchestrator reverted in 3cbee34. Haiku/shinobu re-verify deleg_8a468059. Add 'never write docs/STATUS.md' to every Devin card.
+
+## 03:55 W0 fix pass 1 done (meliodas) @416b2cc: all 11 rulings applied; board synced (146 cards, 10 done, 136 blocked, 0 diffs). Haiku/shikamaru re-verify deleg_c73ee4f3. On SHIP: merge #67, prep-worktrees, board.py --release.
+
+## 03:56 PR #65 fix pass 1 done (ds4f) @ef08c3e: 48 pages, 1161/119 symbols, COMPONENTS.md 112 components, 7/7 mutation tests red->green. Haiku/shino re-verify deleg_a6b04309.
+
+## 04:01 PR #67 re-verify: FIX narrow (9/11 + ledger pass). Remaining: PR-133 missing from gate-clean card; board.py:194 fails open on missing parents; ruling: PR-01 gets PR-P1:merge parent. meliodas W0-fix-2 running (../lead-w0-fix2.log). Next verify can be a targeted delta check.
+
+## 04:03 PR #65 re-verify FIX (8/10). Ruling: drop volatile file counts from generated routers (every report commit under icm/ would otherwise break index:check for all lanes); layout imports apply to child routes; COMPONENTS grouped by canvas surface; index:check fails on missing README. ds4f/tenten fix pass 2 deleg_d01c38d4.
+
+## 04:12 PR #69 both lanes FIX. neji (function): test surgery broke TEST-AUDIT rules (462 KEEP tests in 28 whole-file deletions, 4 KEEP-ALL files gone), raw reset tokens. urokodaki (security): 3 P0 (form login bypasses limiter; XFF trusted; change-password revokes only on flag) + F4-F14. Combined card cards/PR-05-fix-1.md (17 items + 4 follow-ups). Ruling F2: per-account throttle + no trusted IP header unless AUTH_TRUSTED_IP_HEADER. Devin running (pr-05-fix1.devin.log). F13 filed as issue (PR-R1).
+
+## 04:13 PR #63 re-verify 2 FIX (narrow). Hunks 1+2 proven by discriminating probes. Hunk 3 success path fixed; mount reconciliation still async-IIFE dodge. Ruling: success-path probe impossible (base and old fix identical), code-shape check suffices there. Devin fix 2 (cards/PR-03b-fix-2.md, pr-03b-fix2.devin.log). Next verify: delta-only on feedback-thread.
+
+## 04:16 PR #67 fix 2 landed (cdaea4d, 162ea70, 1bc14c6). Haiku shikamaru delta re-verify deleg_f93918a0 (own stub board for fail-closed, own cycle check, program.py portability).
+
+## 04:18 PR #65 fix 2 pushed 59aa906 (routers without counts, layout inheritance, COMPONENTS by surface, README guard; 4 mutation-checked tests). Builder flagged rulings 1 vs 4 conflict: resolved, convergence test deletes generated files only, a missing README failing check is N1 working. Haiku shino delta verify deleg_22215ff7.
+
+## 04:24 PR #65 SHIP (verify-3, 10/10). Ruling N3: router top-level file lists stay. MERGED 7072404 into Vari8-Beta. #62 closed by hand. Worktree system-index removed, branch deleted local+remote. Open PRs now rebase onto 7072404 at their next merge (index:check will need npm run index after merges that add routes or top-level files).
+
+## 04:27 PR #63 Devin fix 2 exit 0 (05b7250, STATUS.md untouched this time). Orchestrator merged origin/Vari8-Beta 7072404, index:check 0, pushed 0105160. Haiku shinobu delta verify 3 deleg_3778d8e3.
+
+## 04:30 PR #67 verify-3 FIX narrow: generator hard-codes live beta path; 66 committed files drift from generator output (pre-existing, hand edits). Ruling: generator is single source; root from script location; reconcile 66 into inputs; add --check wired into verify-local. meliodas W0-fix-3 (lead-w0-fix3.log).
+
+## 04:34 PR #63 SHIP (verify-3 5/5). MERGED 8d82b57. #60 closed by hand. Worktree + branch removed. Vari8-Beta now: 55a0f08 #57, ea8f514 #64, 7072404 #65, 8d82b57 #63.
+
+## 04:43 PR #68 fix 1 landed f99436b (tolerance 0, 30 scoped steps + throw on >1, atomic baseline, text-in-geometry for clipped scrollers, production build default). Flake on dev NOT root-caused; 5/5 prod runs green. Orchestrator merged Vari8-Beta 8d82b57 + index (tools/AGENTS.md), pushed 6b36bb0. urokodaki re-verify 2 (10-run determinism, fresh build, load, stale-port, non-text clipped mutation) proc in pr68-verify2.log.
+
+## 04:50 PR #67 fix 3 landed (db286dd, 94fdb35, c6c5cf8): root from script location, generate.py --check wired into verify-local, 66 files reconciled. Builder skipped committing the footer rule; orchestrator committed it (2c0799b), --check 0. Haiku shikamaru delta verify 4 deleg_4517192b. PROGRAM.md now computes the PR-01 checkpoint at 05:35 (was 04:55).
