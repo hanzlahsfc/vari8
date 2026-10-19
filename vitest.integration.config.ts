@@ -37,8 +37,8 @@ export default defineConfig({
         ? { DATABASE_URL: process.env.INTEGRATION_DATABASE_URL }
         : {}),
       // Test-only auth secret for the real Better Auth pipeline. Synthetic.
-      AUTH_SECRET: "integration-test-auth-secret-not-for-production",
-      AUTH_URL: "http://127.0.0.1:3000",
+      BETTER_AUTH_SECRET: "integration-test-auth-secret-not-for-production",
+      BETTER_AUTH_URL: "http://127.0.0.1:3000",
       // Mailbox output for reset flows lands under a disposable path when a
       // test sets DEV_MAILBOX_FILE; the dev-file adapter is the default
       // outside production.

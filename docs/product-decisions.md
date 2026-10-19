@@ -103,19 +103,17 @@ engineering recommendation:
     silently restored — a fresh explicit re-invitation is required.
 22. **Reset eligibility.** Password reset is available only to `ACTIVE`
     accounts.
-23. **Password policy.** Minimum **10 characters** — an explicit change from
-    the proposed 15; long passphrases allowed; **no** uppercase/lowercase/
-    number/symbol composition requirement. (Recorded risk: 10 is below the
-    current 15-character recommendation for password-only authentication —
-    accepted as a product decision, not silently overridden.)
-    **Update (relayed 2026-10-01, Phase 3.1):** invite password _setup_
-    additionally requires **at least one digit** — clarified as one ASCII
-    `0–9` character (not a broadened Unicode-digit rule) — still no uppercase
-    or symbol requirement. Ordinary sign-in performs no policy check.
-    **Update (Phase 3.2):** reset-completion passwords use the same setup
-    rule (≥10 + ≥1 ASCII digit) — the instruction explicitly confirmed it
-    for passwords set through reset. Both setup surfaces share
-    `validatePasswordSetup`.
+23. **Password policy.** Minimum **10 characters** (an explicit change from
+    the proposed 15) plus **at least one ASCII digit** (`0–9`, not a
+    broadened Unicode-digit rule) on every password-setting surface: invite
+    setup, reset completion, and change password. Long passphrases allowed;
+    **no** other composition requirement (no uppercase or symbol rule).
+    Ordinary sign-in performs no policy check. All setting surfaces share
+    `validatePasswordSetup`. (Recorded risk: 10 is below the current
+    15-character recommendation for password-only authentication, accepted
+    as a product decision, not silently overridden. The digit rule was
+    relayed 2026-10-01 for invite setup and confirmed for reset completion
+    in Phase 3.2; recorded here for every password-setting surface.)
 24. **Public reset response differs by account existence — accepted
     enumeration risk.** The public password-reset response deliberately differs
     depending on whether an account exists. Aleks was warned that this permits

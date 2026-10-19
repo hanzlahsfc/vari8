@@ -354,7 +354,11 @@ describe.skipIf(!enabled)("PR-05 security fixes (real PG)", () => {
       );
       const line = readFileSync(mailbox, "utf8").trim().split("\n").at(-1);
       const text = JSON.parse(line as string).text as string;
-      expect(text).toContain(`${process.env.AUTH_URL ?? ""}/reset?token=`);
+      expect(text).toContain(
+        `${
+          process.env.BETTER_AUTH_URL ?? process.env.AUTH_URL ?? ""
+        }/reset?token=`,
+      );
       expect(text).not.toContain("evil.example.net");
     });
   });
@@ -388,16 +392,52 @@ describe.skipIf(!enabled)("PR-05 security fixes (real PG)", () => {
         NODE_ENV: process.env.NODE_ENV,
         BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
         AUTH_SECRET: process.env.AUTH_SECRET,
+        BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+        AUTH_URL: process.env.AUTH_URL,
       };
       try {
         vi.stubEnv("NODE_ENV", "production");
         vi.stubEnv("BETTER_AUTH_SECRET", "");
         vi.stubEnv("AUTH_SECRET", "");
+        vi.stubEnv("BETTER_AUTH_URL", "");
+        vi.stubEnv("AUTH_URL", "");
         expect(() => assertAuthSecretConfigured()).toThrow(/32/);
         vi.stubEnv("BETTER_AUTH_SECRET", "short");
         expect(() => assertAuthSecretConfigured()).toThrow(/32/);
         vi.stubEnv("BETTER_AUTH_SECRET", "x".repeat(32));
         expect(() => assertAuthSecretConfigured()).not.toThrow();
+      } finally {
+        vi.unstubAllEnvs();
+        for (const [k, v] of Object.entries(saved)) {
+          if (v === undefined) delete process.env[k];
+          else process.env[k] = v;
+        }
+      }
+    });
+
+    it("refuses a conflicting BETTER_AUTH_*/AUTH_* alias pair", () => {
+      const saved = {
+        NODE_ENV: process.env.NODE_ENV,
+        BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
+        AUTH_SECRET: process.env.AUTH_SECRET,
+        BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+        AUTH_URL: process.env.AUTH_URL,
+      };
+      try {
+        vi.stubEnv("NODE_ENV", "production");
+        vi.stubEnv("BETTER_AUTH_SECRET", "x".repeat(40));
+        vi.stubEnv("AUTH_SECRET", "");
+        vi.stubEnv("BETTER_AUTH_URL", "http://a.example");
+        vi.stubEnv("AUTH_URL", "http://b.example");
+        expect(() => assertAuthSecretConfigured()).toThrow(
+          /BETTER_AUTH_URL and AUTH_URL/,
+        );
+        vi.stubEnv("AUTH_URL", "http://a.example");
+        expect(() => assertAuthSecretConfigured()).not.toThrow();
+        vi.stubEnv("AUTH_SECRET", `different-${"y".repeat(40)}`);
+        expect(() => assertAuthSecretConfigured()).toThrow(
+          /BETTER_AUTH_SECRET and AUTH_SECRET/,
+        );
       } finally {
         vi.unstubAllEnvs();
         for (const [k, v] of Object.entries(saved)) {

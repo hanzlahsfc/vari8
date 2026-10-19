@@ -73,9 +73,13 @@ import {
  *   (e) password-setting paths enforce the owner-decided policy (>=10 chars,
  *       >=1 digit) — `minPasswordLength` covers length, the hook adds the
  *       digit rule.
- * - In production the process refuses to serve when the auth secret is absent
- *   or shorter than 32 characters (`assertAuthSecretConfigured`, invoked by
- *   `instrumentation.ts` and at module load).
+ * - In production the process refuses to boot when the auth secret is absent
+ *   or shorter than 32 characters, or when a canonical and legacy name (say
+ *   `BETTER_AUTH_URL` and `AUTH_URL`) are set to different values
+ *   (`assertAuthSecretConfigured`, invoked by
+ *   `instrumentation.ts` and at module load; `instrumentation.ts` exits the
+ *   process non-zero on the refusal so a dead deployment cannot sit serving
+ *   500s with the port open).
  */
 
 /** Endpoints that resolve and act on a session — all deny non-ACTIVE users. */
@@ -127,6 +131,21 @@ async function consumeOrThrow(key: string, rule: { window: number; max: number }
 export function assertAuthSecretConfigured(): void {
   if (process.env.NODE_ENV !== "production") return;
   if (process.env.NEXT_PHASE === "phase-production-build") return;
+  // Conflicting canonical/legacy pairs fail at boot rather than serving
+  // 403 INVALID_ORIGIN on every auth call (the BETTER_AUTH_* name wins the
+  // `??` reads, so a stale AUTH_* value silently loses).
+  for (const [primary, legacy] of [
+    ["BETTER_AUTH_URL", "AUTH_URL"],
+    ["BETTER_AUTH_SECRET", "AUTH_SECRET"],
+  ] as const) {
+    const a = process.env[primary];
+    const b = process.env[legacy];
+    if (a && b && a !== b) {
+      throw new Error(
+        `Refusing to start: ${primary} and ${legacy} are both set to different values. Only the BETTER_AUTH_* names are supported: unset ${legacy} or make the two equal.`,
+      );
+    }
+  }
   const secret = process.env.BETTER_AUTH_SECRET ?? process.env.AUTH_SECRET;
   if (!secret || secret.length < 32) {
     throw new Error(

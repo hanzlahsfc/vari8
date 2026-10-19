@@ -45,9 +45,13 @@ export function SignupForm() {
           type="password"
           name="password"
           autoComplete="new-password"
+          aria-describedby="signup-password-hint"
           required
         />
       </label>
+      <p id="signup-password-hint" className="auth-hint">
+        At least 10 characters and at least one digit (0–9).
+      </p>
       <button className="auth-button" type="submit" disabled={pending}>
         Create workspace
       </button>

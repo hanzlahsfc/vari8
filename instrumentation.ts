@@ -5,7 +5,18 @@
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
-    const { assertAuthSecretConfigured } = await import("./lib/auth/server");
-    assertAuthSecretConfigured();
+    try {
+      const { assertAuthSecretConfigured } = await import("./lib/auth/server");
+      assertAuthSecretConfigured();
+    } catch (error) {
+      // Next 16 catches instrumentation failures and keeps the process alive
+      // serving 500s with the port open; in production a refused auth-env
+      // gate must take the process down instead.
+      if (process.env.NODE_ENV === "production") {
+        console.error(error);
+        process.exit(1);
+      }
+      throw error;
+    }
   }
 }

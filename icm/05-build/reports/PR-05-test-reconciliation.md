@@ -4,9 +4,10 @@ One row per audit block in every test file this PR touched. Audit source:
 `icm/03-plan/output/TEST-AUDIT.md` block tables. Actions: **kept** (verbatim or
 restored verbatim at the same path), **rewired** (guarantee re-expressed against
 Better Auth seams at the same path), **replaced** (old-matrix assertion retired;
-D15 coverage lives in `tests/unit/roles.test.ts` +
-`tests/integration/api-v1-session.test.ts`), **rewritten** (guarantee re-proven
-in `tests/integration/pr05-security.test.ts`).
+the replacement coverage is named in the row, usually `tests/unit/roles.test.ts`
++ `tests/integration/api-v1-session.test.ts`), **rewritten** (guarantee re-proven
+under new titles — moved to `tests/integration/pr05-security.test.ts` or
+rewritten at the same path).
 
 | File | Block | Tests | Audit verdict | Action / new location |
 |---|---|---:|---|---|
@@ -77,7 +78,10 @@ in `tests/integration/pr05-security.test.ts`).
 | `tests/integration/p025d2-checkin-calendar.test.ts` | TB2.024 P-025-D2 R2 truncation signal (real PG) | 4 | GUARD | Kept — removed blocks restored verbatim |
 | `tests/integration/p025d6-checkin-tracker-context.test.ts` | TB2.006 P-025-D6 tracker context (real PG) | 35 | CUT-AT-REPLACE | Kept — restored verbatim |
 | `tests/integration/phase-1-1-daily-tracker-guard.test.ts` | TB0.059 Phase 1.1 Daily Tracker route guard (real PG) | 2 | CUT-AT-REPLACE | Kept — restored verbatim |
+| `tests/integration/phase-3-1-invite-acceptance.test.ts` | TB1.014 Phase 3.1 invite acceptance boundary (real PG) | 6 | GUARD | Rewired — block titles intact; the stale reset-token fixture now mints a raw accessToken row directly (issuePasswordResetToken service retired) |
 | `tests/integration/phase-3-2-password-reset.test.ts` | TB0.061 Phase 3.2 password-reset boundary (real PG) | 6 | GUARD | Rewired — mailbox→digest-only verification row→consume→revocation pipeline |
+| `tests/integration/s1-a-identity.test.ts` | TB2.003 S1-A identity & tenancy (real PostgreSQL) | 11 | GUARD | Rewired — 10 titles verbatim; "still authorizes the existing credentials" rewritten as "still authenticates the existing credentials via the account backfill" (same invariant: a migrated user still signs in, wrong password refused) |
+| `tests/integration/s1-a-identity.test.ts` | TB2.004 S1-A migration preserves existing User and authentication | 2 | GUARD | Untouched — block was never removed |
 | `tests/integration/s1-b-authorization.test.ts` | TB3.016 S1-B authorization (real PostgreSQL) | 13 | CUT-AT-REPLACE | Kept — restored verbatim |
 | `tests/integration/s1-c-client-assignments.test.ts` | TB1.015 S1-C client ownership & assignments | 9 | CUT-AT-REPLACE | Kept — restored verbatim |
 | `tests/integration/s1-f2a-token-store.test.ts` | TB1.019 S1-F2A token store (real PostgreSQL) | 14 | GUARD | Partially rewritten — 2 reset-issuance tests moved to `tests/integration/pr05-security.test.ts` (digest-only storage, user-scoped supersede); the 12 access-token tests stay |
@@ -117,6 +121,10 @@ in `tests/integration/pr05-security.test.ts`).
 | `tests/unit/checkin-review.test.ts` | TB2.055 P-025-C ,  service exports | 1 | CUT pass 2 | Kept — restored verbatim |
 | `tests/unit/checkin-review.test.ts` | TB2.056 P-025-C ,  boundary exports | 1 | CUT pass 2 | Kept — restored verbatim |
 | `tests/unit/checkin-review.test.ts` | TB2.057 P-025-C ,  checkinsCoachReviews capability split | 1 | CUT-AT-REPLACE | Kept — restored verbatim |
+| `tests/unit/checkin-review-queue.test.ts` | TB2.048 CHECK-IN-OVERVIEW-I1 ,  review-queue cursor codec | 9 | GUARD | Untouched — block was never removed |
+| `tests/unit/checkin-review-queue.test.ts` | TB2.049 CHECK-IN-OVERVIEW-I1 ,  queue WHERE builder | 3 | GUARD | Untouched — block was never removed |
+| `tests/unit/checkin-review-queue.test.ts` | TB2.050 CHECK-IN-OVERVIEW-I1 ,  derived canReview | 8 | CUT-AT-REPLACE | Replaced — role×assignment matrix retired; canReview is proven per-row in tests/integration/checkin-overview-i1.test.ts |
+| `tests/unit/checkin-review-queue.test.ts` | TB2.051 CHECK-IN-OVERVIEW-I1 ,  deep-link param parser | 6 | GUARD | Untouched — block was never removed |
 | `tests/unit/checkin-tracker-context.test.ts` | TB0.012 reconcileTrackerContextScopes | 18 | CUT-AT-REPLACE | Replaced — old-matrix assertions retired; D15 coverage in tests/unit/roles.test.ts + tests/integration/api-v1-session.test.ts |
 | `tests/unit/checkin-tracker-context.test.ts` | TB0.013 declared-date contract (shared parser) | 5 | GUARD | Untouched — block was never removed |
 | `tests/unit/clients-service.test.ts` | TB1.028 buildClientProfileWhere | 1 | GUARD | Untouched — block was never removed |
@@ -141,6 +149,8 @@ in `tests/integration/pr05-security.test.ts`).
 | `tests/unit/invitations.test.ts` | TB1.048 P2002 race classification | 2 | GUARD | Kept — restored verbatim |
 | `tests/unit/invitations.test.ts` | TB1.049 list query bound | 1 | GUARD | Kept — restored verbatim |
 | `tests/unit/invitations.test.ts` | TB1.050 post-lock re-authorization | 1 | CUT-AT-REPLACE | Kept — restored verbatim |
+| `tests/unit/invite-acceptance.test.ts` | TB0.075 getInviteLinkState (non-consuming peek) | 3 | GUARD | Kept — titles intact; the invalid-variant set gained a foreign-workspaceId row (peek binds the workspace, F14) |
+| `tests/unit/invite-acceptance.test.ts` | TB0.076 acceptInvitationMessage (safe error mapping) | 3 | GUARD | Untouched — block was never removed |
 | `tests/unit/onboarding-forms.test.ts` | TB0.084 P-008 validation ,  definition bounds | 6 | GUARD | Untouched — block was never removed |
 | `tests/unit/onboarding-forms.test.ts` | TB0.085 P-008 validation ,  field ID trust | 2 | GUARD | Untouched — block was never removed |
 | `tests/unit/onboarding-forms.test.ts` | TB0.086 P-008 boundary ,  raw payload bound before parse | 1 | CUT pass 2 | Replaced — old-matrix assertions retired; D15 coverage in tests/unit/roles.test.ts + tests/integration/api-v1-session.test.ts |
@@ -156,11 +166,11 @@ in `tests/integration/pr05-security.test.ts`).
 | `tests/unit/onboarding-submission.test.ts` | TB3.061 P-023 canonicalizeAnswers | 10 | GUARD | Untouched — block was never removed |
 | `tests/unit/onboarding-submission.test.ts` | TB3.062 P-023 RBAC | 1 | CUT-AT-REPLACE | Replaced — old-matrix assertions retired; D15 coverage in tests/unit/roles.test.ts + tests/integration/api-v1-session.test.ts |
 | `tests/unit/onboarding-submission.test.ts` | TB3.063 P-023 route-leaf uniqueness | 1 | CUT pass 2 | Replaced — old-matrix assertions retired; D15 coverage in tests/unit/roles.test.ts + tests/integration/api-v1-session.test.ts |
-| `tests/unit/password-reset-boundary.test.ts` | TB3.064 getResetLinkState (non-consuming peek) | 3 | GUARD | Kept — removed blocks restored verbatim |
-| `tests/unit/password-reset-boundary.test.ts` | TB3.065 requestPasswordResetFromForm (non-enumerating) | 3 | GUARD | Kept — removed blocks restored verbatim |
-| `tests/unit/password-reset-boundary.test.ts` | TB3.066 passwordResetMessage (safe error mapping) | 3 | GUARD | Kept — removed blocks restored verbatim |
-| `tests/unit/password-reset-boundary.test.ts` | TB3.067 completePasswordReset | 2 | GUARD | Kept — removed blocks restored verbatim |
-| `tests/unit/password-reset-boundary.test.ts` | TB3.068 delivery-capability gate (fail closed until a real adapter) | 3 | GUARD | Kept — removed blocks restored verbatim |
+| `tests/unit/password-reset-boundary.test.ts` | TB3.064 getResetLinkState (non-consuming peek) | 3 | GUARD | Rewritten — same peek invariants on the hashed verification-row seam: live row → ready, no live row or storage failure → invalid, malformed input refused before any DB read (1 title verbatim, 1 added) |
+| `tests/unit/password-reset-boundary.test.ts` | TB3.065 requestPasswordResetFromForm (non-enumerating) | 3 | GUARD | Rewritten — identical generic non-enumerating message for every deliverable email, input never echoed; malformed email rejected before the endpoint is called (base titles merged/rewritten, normalization case added) |
+| `tests/unit/password-reset-boundary.test.ts` | TB3.066 passwordResetMessage (safe error mapping) | 3 | GUARD | Rewritten — every error maps to a fixed safe message that never echoes input or internals; adds the Better Auth endpoint-code mapping (policy-failure title verbatim) |
+| `tests/unit/password-reset-boundary.test.ts` | TB3.067 completePasswordReset | 2 | GUARD | Rewritten — endpoint token failure maps to the generic invalid-link message; a non-string token is claimed as `""` and never echoed; policy failure still returns before the token is claimed (1 title verbatim) |
+| `tests/unit/password-reset-boundary.test.ts` | TB3.068 delivery-capability gate (fail closed until a real adapter) | 3 | GUARD | Rewritten — with no delivery adapter the peek, request, and completion all fail closed before the auth surface; the peek still performs zero DB reads (1 title verbatim) |
 | `tests/unit/password-reset-delivery.test.ts` | TB1.061 passwordResetDeliveryAvailable | 3 | GUARD | Rewired — mailDeliveryConfigured env matrix + dev-file sendMail |
 | `tests/unit/password-reset-token-failure.test.ts` | TB0.095 safeTokenHash classification | 1 | GUARD | Rewired — boundary fail-closed cases via fake verification client |
 | `tests/unit/password-reset.test.ts` | TB2.088 S1-F2D password-reset ,  unit surface | 12 | GUARD | Rewired — kept TB2.088 boundary/audit-metadata; dropped deleted service machinery |
@@ -178,11 +188,11 @@ in `tests/integration/pr05-security.test.ts`).
 
 | Action | Tests |
 |---|---:|
-| Kept (verbatim / restored) | 706 |
-| Rewired to Better Auth | 68 |
-| Replaced by D15 matrix coverage | 78 |
-| Rewritten in pr05-security.test.ts | 3 |
-| Untouched | 186 |
+| Kept (verbatim / restored) | 695 |
+| Rewired to Better Auth | 85 |
+| Replaced (coverage in the row) | 86 |
+| Rewritten (moved or in place) | 17 |
+| Untouched | 209 |
 
 ## New coverage added by this PR (not in the audit tables)
 
