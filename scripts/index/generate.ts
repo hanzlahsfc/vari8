@@ -1051,8 +1051,14 @@ function routerTargets(): string[] {
     .filter((name) => {
       const file = path.join(ROOT, name, "AGENTS.md");
       if (!fs.existsSync(file)) return true;
-      // A router this generator created stays managed; a hand-written AGENTS.md is left alone.
-      return fs.readFileSync(file, "utf8").includes(MARK_BEGIN);
+      const text = fs.readFileSync(file, "utf8");
+      // A router this generator created stays managed even if its markers were
+      // removed by accident, so the check reports that instead of quietly
+      // dropping the directory from the index. A hand-written AGENTS.md is
+      // left alone.
+      return (
+        text.includes(MARK_BEGIN) || text.startsWith(`# AGENTS.md - ${name}/`)
+      );
     })
     .filter((name) => countFiles(path.join(ROOT, name)) > 0)
     .sort(cmp);
@@ -1208,7 +1214,13 @@ function check(): number {
   const problems: string[] = [];
   try {
     const outputs = buildAll();
-    writeOut(tmp, outputs);
+    try {
+      writeOut(tmp, outputs);
+    } catch (error) {
+      // A router without its markers is drift, not a crash.
+      problems.push(error instanceof Error ? error.message : String(error));
+      return report(problems);
+    }
     for (const output of outputs) {
       const expected = fs.readFileSync(path.join(tmp, output.relPath), "utf8");
       const onDiskPath = path.join(ROOT, output.relPath);
@@ -1235,20 +1247,25 @@ function check(): number {
   }
 
   if (problems.length > 0) {
-    process.stderr.write(
-      `index:check FAILED (${problems.length} problem${problems.length === 1 ? "" : "s"})\n`,
-    );
-    for (const p of problems) process.stderr.write(`  ${p}\n`);
-    process.stderr.write(
-      "Fix: npm run index (then commit docs/index/ and the routers).\n",
-    );
-    return 1;
+    return report(problems);
   }
   const docs = listIndexFiles().length;
   process.stdout.write(
     `index:check OK: ${docs} index docs and all AGENTS.md routers match the generator output.\n`,
   );
   return 0;
+}
+
+/** Print the check verdict for an early exit and return the process code. */
+function report(problems: string[]): number {
+  process.stderr.write(
+    `index:check FAILED (${problems.length} problem${problems.length === 1 ? "" : "s"})\n`,
+  );
+  for (const p of problems) process.stderr.write(`  ${p}\n`);
+  process.stderr.write(
+    "Fix: npm run index (then commit docs/index/ and the routers).\n",
+  );
+  return 1;
 }
 
 function firstDiffLine(a: string, b: string): string {

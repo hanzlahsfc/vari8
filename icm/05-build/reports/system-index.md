@@ -105,6 +105,18 @@ refuse instead of writing an unsorted index: `npm run index` exit 1 with
 silently because the assertion used the same comparator it was checking; commit `d50dd0e`
 makes `assertSorted` compare code points directly.
 
+**F. Hand-written router text survives.** Appending a note below the markers in `lib/AGENTS.md`
+and running `npm run index` leaves the note in place, leaves the generated block untouched, and
+`index:check` still exits 0. `git diff --stat lib/AGENTS.md` shows only the two added lines, so
+editing the hand-written region is not drift.
+
+**G. A router whose markers were deleted is reported, not silently dropped.** Stripping both
+markers from `themes/AGENTS.md`: `index:check` exit 1 with
+`themes/AGENTS.md exists without the generated markers; add them or delete the file`. The first
+implementation silently stopped managing such a file, because it used the marker itself to decide
+whether the directory was generator-managed; `routerTargets` now also recognises the generated
+heading. The check reports the same way whether the file was deleted or its markers were.
+
 ## 4. Gates
 
 Base `55a0f08` baseline in `icm/05-build/reports/PR-02.md`: 105 test files, 1308 tests,
