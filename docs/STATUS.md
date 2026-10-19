@@ -1,3 +1,31 @@
+## 2026-10-19 — PR-02: root app on Next.js 16.3.8 + React 19.3.0 — verified locally
+
+- Branch `beta/pr-02-next16` (worktree `vari8-worktrees/pr-02-next16`), base
+  `17352b0`. Implements DECISIONS.md D2 by re-running the P1 `b603c35` recipe on
+  this tree. Commits `1c3c59f` (deps), `d5b109d` (tsconfig), `4b67849` (eslint).
+- `npx @next/codemod upgrade 16.3.8 -y --verbose --skip-adoption` exit 0:
+  middleware-to-proxy, remove-unstable-prefix, remove-experimental-ppr all
+  0-changed over 614 files; Cache Components adoption skipped (cacheComponents
+  off). react pinned to canvas-exact 19.3.0; @types 19.3.0 + overrides;
+  eslint 9.39.5; eslint-config-next 16.3.8.
+- One upgrade break fixed at root cause: FlatCompat against flat-config-only
+  eslint-config-next@16 crashed lint (circular JSON). Config now imports the
+  flat `core-web-vitals` + `typescript` arrays; `@eslint/eslintrc` removed.
+- 11 react-hooks v6 findings (7 set-state-in-effect, 2 refs, 1 purity,
+  1 immutability) are pre-existing app code; fixed in PR-03 per D4a, so the
+  four rules are `"warn"` with a comment — lint exits 0, findings stay visible.
+- Gates on Next 16.3.8/React 19.3.0: typecheck 0; lint 0 (0 err/16 warn);
+  `npm run test` 0 with counts identical to baseline (105/4 files, 1308/23 of
+  1331; no `test:unit` script exists — `test` is the unit suite); build 0;
+  `frontend && npm run build` 0.
+- Live proof: fresh `app_pr02` on 127.0.0.1:5433, `prisma migrate deploy` ok,
+  dev server :3610 on Next 16.3.8 Turbopack — `/login` 200 and
+  `POST /api/auth/callback/credentials` 302 then `GET /api/auth/session` 200
+  with real session JSON. Server stopped, database dropped.
+- Stray: `next dev` injected a nextjs-agent-rules block into root `AGENTS.md`;
+  parked in `stash@{0}` pending a program decision (commit it vs
+  `agentRules: false`). Record: `icm/05-build/reports/PR-02.md`.
+
 ## 2026-10-18 — FRONTEND refresh and contributor PR route correction — in progress
 
 - Publication branch `FRONTEND` retains its published history and merged target
