@@ -1,0 +1,244 @@
+{
+  "note": "Seed for docs/index/GLOSSARY.md. `terms` is curated by hand: edit here, then run `npm run index`. `slices` is extracted from the F1 wiring spec, which is kept outside this repository; re-extract with `npx tsx scripts/index/generate.ts --refresh-glossary --spec <file> --ref icm/02-gap-matrix/output/F1/WIRING-SPEC.md`.",
+  "specPath": "icm/02-gap-matrix/output/F1/WIRING-SPEC.md",
+  "specSha256": "e4341bc1d169a5a2745360102cceee63d22df97f01d86caccd8e9331bf7a8d92",
+  "terms": [
+    {
+      "term": "Canvas",
+      "definition": "Lilly's frontend under `frontend/`. Authoritative for which screens, elements and data exist and how they look (source authority 0).",
+      "ref": "AGENTS.md"
+    },
+    {
+      "term": "Backend app",
+      "definition": "The root Next App Router app (`app/`, `lib/`, `components/`) that serves the canvas.",
+      "ref": "AGENTS.md"
+    },
+    {
+      "term": "Route group",
+      "definition": "A `(name)` directory that adds no path segment; `app/(tracker)` holds the client-facing tracker shell.",
+      "ref": "docs/index/ROUTES.md"
+    },
+    {
+      "term": "Gate",
+      "definition": "Resolver that combines an `ENABLE_*` flag with a trusted `APP_ENV` classification, so an unset, invalid or conflicting flag fails closed in production.",
+      "ref": "lib/checkin/forms-gate.ts"
+    },
+    {
+      "term": "Fail closed",
+      "definition": "Deny when configuration or state is missing, unknown or conflicting, instead of assuming the permissive case.",
+      "ref": "AGENTS.md"
+    },
+    {
+      "term": "Consent gate",
+      "definition": "Exact per-domain consent check that has to pass before health data is read or written.",
+      "ref": "lib/consent.ts"
+    },
+    {
+      "term": "RBAC cell",
+      "definition": "One resource/action/role cell of the authorization table. The guard re-reads current database state and never trusts token claims.",
+      "ref": "lib/auth/rbac.ts"
+    },
+    {
+      "term": "Structural audit",
+      "definition": "Audit event that carries ids and counts only, never values.",
+      "ref": "lib/audit.ts"
+    },
+    {
+      "term": "Boundary and gate pair",
+      "definition": "Per domain in `lib/`: `*-boundary.ts` validates the shape of input or stored payload, `*-gate.ts` decides runtime enablement.",
+      "ref": "lib/mealplan/gate.ts"
+    },
+    {
+      "term": "Slice",
+      "definition": "One card and PR of the program plan. Slice ids are the vocabulary used across `icm/` (table below).",
+      "ref": "icm/03-plan/output/PLAN.md"
+    },
+    {
+      "term": "F1 wiring spec",
+      "definition": "Spec that maps each canvas interaction onto the backend slices that deliver it; the source of the slice ids below.",
+      "ref": "icm/02-gap-matrix/output/F1/WIRING-SPEC.md"
+    },
+    {
+      "term": "CAS save",
+      "definition": "Compare-and-set save on a draft: a stale tab receives a conflict instead of silently overwriting newer work.",
+      "ref": "lib/coaching/templates.ts"
+    },
+    {
+      "term": "CONFLICT row",
+      "definition": "A gap-matrix row parked pending an owner answer; tracked in `docs/open-questions.md` and answered in `icm/03-plan/OWNER-ANSWERS-1018.md`.",
+      "ref": "docs/open-questions.md"
+    },
+    {
+      "term": "Own scope vs assigned scope",
+      "definition": "A client reads only their own records, staff read only assigned clients, owners read the workspace. Enforced server-side; UI hiding is not authorization.",
+      "ref": "docs/security/authorization-model.md"
+    },
+    {
+      "term": "Workspace",
+      "definition": "The tenant boundary. Membership carries one of WORKSPACE_OWNER, COACH, ASSISTANT_COACH, SUPPORT, CLIENT.",
+      "ref": "db/schema.prisma"
+    },
+    {
+      "term": "Canvas-exact parity",
+      "definition": "Any change to what a screen shows needs before/after screenshots at 1440 and 390 px.",
+      "ref": "icm/03-plan/DECISIONS.md"
+    },
+    {
+      "term": "One writer for the schema",
+      "definition": "Only one task at a time edits `db/schema.prisma` and its migrations.",
+      "ref": "icm/03-plan/DECISIONS.md"
+    },
+    {
+      "term": "State of record",
+      "definition": "`docs/STATUS.md` holds the implementation state; ICM lanes and this index never write it.",
+      "ref": "AGENTS.md"
+    },
+    {
+      "term": "PED/HRT/E2",
+      "definition": "Never implement client-visible or underivable behavior for these. No diagnoses and no automatic program changes.",
+      "ref": "AGENTS.md"
+    }
+  ],
+  "slices": [
+    {
+      "id": "B1",
+      "title": "Messaging: conversations, drafts, unread, priority flag, context links",
+      "definition": "S02-01..13, S11-13, S11-14, S03-20; #96 (:1071-1078), #101 (:1117-1125), #112 (:1557-1559); Q2"
+    },
+    {
+      "id": "B2",
+      "title": "Media storage: attachments, voice, video, check-in visuals, logo",
+      "definition": "S02-08, S02-12, S02-24, S02-25, S03-14, S03-18, S01-02; storage vendor `TODO(human)` (`lib/storage.ts:1-10`), PHOTOS consent (`lib/consent.ts:105`), retention D-10 / #102; Q2"
+    },
+    {
+      "id": "B3",
+      "title": "Specialist and derived data: cycle tracking, time fields, nutrition totals, muscle volume",
+      "definition": "S09-10, S09-17, S06-07, S06-08, S06-15, S07-15; #73, #75, #115, #116; Q7, Q10, Q11 (cycle is not a product call: legal gates #38, #73)"
+    },
+    {
+      "id": "M1",
+      "title": "Client profile fields and lifecycle",
+      "definition": "Entities: `ClientProfile` (`db/schema.prisma:290-300`, today id, workspaceId, userId, name only)."
+    },
+    {
+      "id": "M2",
+      "title": "Workspace and coach preferences",
+      "definition": "New entity for workspace branding (logo reference, accent) and coach preferences (availability text, notification toggles, sidebar collapsed). Logo depends on B2 media storage; ..."
+    },
+    {
+      "id": "M3",
+      "title": "Coach notes and coach to-dos",
+      "definition": "Coach notes are pre-authorized: RBAC `coachNotes` / `clientNotes` (`lib/auth/rbac.ts:212-227`), consent mapping (`lib/consent.ts:103-104`). Clients never see coach notes (`docs/..."
+    },
+    {
+      "id": "M4",
+      "title": "Template definition extension",
+      "definition": "Entities: `CoachingTemplate` draft and version definition (`lib/coaching/templates.ts:47-70`, strict validator `:150`)."
+    },
+    {
+      "id": "M5",
+      "title": "Meal-plan payload extension",
+      "definition": "Entity: `MealPlan` draft payload (`lib/mealplan/payload.ts:75`, `ROOT_KEYS = [\"variants\"]`)."
+    },
+    {
+      "id": "M6",
+      "title": "Training payload extension",
+      "definition": "Entity: training draft boundary maps (`lib/trainingprogram/payload.ts:59-68,145-168`)."
+    },
+    {
+      "id": "M7",
+      "title": "Habit fields",
+      "definition": "Add nullable bounded `Habit.reason`. Decide frequency + goal mapping onto `target` and the weekday schedule (`HabitSchedule`). Add an all-time done count read (today max 12 week..."
+    },
+    {
+      "id": "M8",
+      "title": "Check-in fields",
+      "definition": "Add a coach note on `CheckInInstance` (canvas `Extra.note`; no column, `schema.prisma:1281-1331`)."
+    },
+    {
+      "id": "M9",
+      "title": "Dashboard config adapter",
+      "definition": "No migration. Adapter between canvas `DashboardDraft` and `lib/dashboard/config-schema.ts`: default `settings.visibility`, explicit `labels` and `historyPeriod`, full per-breakp..."
+    },
+    {
+      "id": "P1",
+      "title": "Port the canvas into the backend app behind one route group",
+      "definition": "Move `frontend/src/components/coach/**`, `frontend/src/components/ethereal/**` (only parts the coach app imports) and the styles into the root app under a coach route group. Rec..."
+    },
+    {
+      "id": "R0",
+      "title": "Make the existing backend reachable in a normal dev run",
+      "definition": "Merge Hanzlah's training fix `3ed5642` from `/home/nexuslink/vari8-worktrees/r3` (final-week completed state, `r3:lib/trainingprogram/service.ts`; replacement v2 republish, `r3:..."
+    },
+    {
+      "id": "SV1",
+      "title": "Roster read model",
+      "definition": "One scoped query joining `ClientProfile`, active `ClientSetupPin` and its template version, next `CheckInInstance`, pending review count, overdue `ClientTask`. Search, sort, fil..."
+    },
+    {
+      "id": "SV2",
+      "title": "Daily-entry numeric series",
+      "definition": "Per-parameter time series for Week and Trends. Client own scope; staff assigned scope, latest revision only (decision #79). Consent PRIVACY_NOTICE + HEALTH_DATA."
+    },
+    {
+      "id": "SV3",
+      "title": "Dashboard widget feeds",
+      "definition": "Only CU03, CU04, CU16, TL21, TL22 are connected today (`config-schema.ts:92-98`). Add one read per source domain (bodyweight and measurements from SV2, nutrition targets from me..."
+    },
+    {
+      "id": "SV4",
+      "title": "Client creation and invitation routing",
+      "definition": "Route `createWorkspaceInvitation` (`lib/workspace/invitations.ts:185`, test callers only) from the roster. Invite acceptance already creates the profile (`invitations.ts:657-661..."
+    },
+    {
+      "id": "W1",
+      "title": "S11 identity, \"which client is me\"",
+      "definition": "P1; session, `ClientProfile.userId` own scope (`lib/auth/guard.ts:310-312`), app/(tracker) shell; existing; client signs in and lands on their own tracker; coach sees coach shel..."
+    },
+    {
+      "id": "W10",
+      "title": "S02 notes, S10 appearance",
+      "definition": "M3, M2; new notes service; preferences service; `components/theme-toggle.tsx`; `ENABLE_COACH_NOTES` (proposed); coach writes notes clients cannot see; accent persists per worksp..."
+    },
+    {
+      "id": "W2",
+      "title": "S01 roster and profile",
+      "definition": "M1, SV1, SV4; `app/workspace/[id]/clients` services; `ENABLE_CANVAS_SHELL` (proposed); roster lists real clients with next check-in and attention; archive works. Check: seed 3 c..."
+    },
+    {
+      "id": "W3",
+      "title": "S05 templates and setup",
+      "definition": "M4; `lib/coaching/templates*`, `client-setup*`, transitions; `ENABLE_COACHING_TEMPLATES`, `ENABLE_CLIENT_SETUP`, `ENABLE_CLIENT_SETUP_TRANSITIONS`, `ENABLE_PARAMETER_CLASSIFICAT..."
+    },
+    {
+      "id": "W4",
+      "title": "S09 client tracker",
+      "definition": "W3, SV2; `lib/daily-entry/**`, `app/(tracker)/.../daily`; `ENABLE_DAILY_ENTRY`; client logs today's values, sees Week and Trends from server. Time and cycle fields hidden (CONFL..."
+    },
+    {
+      "id": "W5",
+      "title": "S04 habits",
+      "definition": "M7; `lib/habits/**`, TL21/TL22; `ENABLE_CLIENT_DASHBOARD`; coach adds habit, client ticks scheduled habit only. Check: unscheduled habit toggle disabled"
+    },
+    {
+      "id": "W6",
+      "title": "S03 check-ins",
+      "definition": "M8, W3; `lib/checkin/**`, review queue, feedback; `ENABLE_CHECK_INS`; coach schedules (one rule per weekday), explicitly generates occurrences, client submits, coach reviews the..."
+    },
+    {
+      "id": "W7",
+      "title": "S06 nutrition",
+      "definition": "M5; `lib/mealplan/**`, `lib/nutrition/search.ts`; `ENABLE_MEAL_PLANS`; coach builds a plan from catalog foods with entered values, confirms timezone, publishes; client sees it. ..."
+    },
+    {
+      "id": "W8",
+      "title": "S07 training",
+      "definition": "M6, R0; `lib/trainingprogram/**`; `ENABLE_TRAINING_PLANS`; coach edits per-set rows, publishes, client sees current week; final week shows correctly. Check: plan ending this week"
+    },
+    {
+      "id": "W9",
+      "title": "S08 dashboard builder",
+      "definition": "M9, SV3; `lib/dashboard/**`, client dashboard page; `ENABLE_CLIENT_DASHBOARD`; coach lays out widgets, client sees the client-visible subset with live data where bound. Check: t..."
+    }
+  ]
+}

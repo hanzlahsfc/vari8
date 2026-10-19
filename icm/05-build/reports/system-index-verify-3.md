@@ -1,0 +1,63 @@
+# system-index re-verification after fix pass 2 (PR #65)
+
+Verifier: shino (independent; builder was deepseek-v4.1-flash). Not committed, pushed or merged.
+Worktree: `/home/nexuslink/vari8-worktrees/system-index`, branch `beta/system-index`, HEAD `59aa906`.
+Probe scripts: `~/.hermes/cache/scratch/verify3/` (outside the repo). Every mutation and probe was
+reverted; `git status --porcelain` shows only this file.
+
+## Verdict: SHIP
+
+All ten items pass. F5 (one-run convergence) holds, the N1 guard fires, the four pass-2 regression
+tests each go red under my own mutation, and the routers name where to go next. One Note (N3, below)
+is for the orchestrator to rule on; it does not block.
+
+## Per-item results
+
+| # | Item | Result | Commands and exit codes (observed) |
+|---|---|---|---|
+| 1 | Delete generated files only, one `npm run index`, check, bytes equal | **PASS** | Deleted `docs/index/{COMPONENTS,DATA-MODEL,GLOSSARY,ROUTES,SYMBOLS}.md`, stripped the text between the markers in the 10 generated routers (markers kept), README left alone. `npm run index` exit 0 (`wrote 5 docs and 10 AGENTS.md routers`). `npm run index:check` exit 0. sha256 over the 5 docs + 10 generated routers = `7d7423ad88fe4e2a` before and after. |
+| 2a | New file under `icm/05-build/reports/`: check exit 0 | **PASS** | `echo '# probe' > icm/05-build/reports/verify3-probe-N.md`; `index:check` exit 0; probe removed. |
+| 2b | New non-route file under `app/` | **PASS by ruling, see N3** | `app/verify3-probe-note.txt`; `index:check` exit 1, `drifted: app/AGENTS.md at line 5` (the router's `Top-level files:` line gained the name). Removed; exit 0 again. |
+| 2c | New `app/verify3-probe/page.tsx` must exit 1 | **PASS** | `index:check` exit 1, `drifted: docs/index/ROUTES.md at line 7`, `Counts: 48 backend pages` on disk vs `49` generated. Removed; exit 0. |
+| 3 | Delete `docs/index/README.md`: exit 1 naming it; restore | **PASS** | `rm docs/index/README.md; npm run index:check` exit 1: `missing: docs/index/README.md`. `git restore docs/index/README.md; npm run index:check` exit 0. |
+| 4 | MotionProvider lists `/, /coach, /ethereal`; independent derivation | **PASS** | Own script `p4.py`: regex import graph over `frontend/src` (`@/` and relative specifiers, no TS compiler). Layouts found: only `frontend/src/app/layout.tsx`, which wraps all three routes (`/`, `/coach`, `/ethereal`); no nested layouts exist. All 121 COMPONENTS.md rows compared strictly against my route sets: **0 mismatches**. `MotionProvider` row: `/, /coach, /ethereal`. Five components reached via layouts or shared files, all matching: `MotionProvider` (via root layout) `/, /coach, /ethereal`; `TrackerCell` (`coach/client-tracker-preview/tracker-cell.tsx`, shared file) `/, /coach, /ethereal`; `CoachingWidgetContent` (`ethereal/builder/coaching-content.tsx`) `/, /ethereal`; `Widget` (`ethereal/ui.tsx`) `/, /ethereal`; `Avatar` (`coach/ui.tsx`) `/coach`. |
+| 5 | One read of COMPONENTS.md per question | **PASS (2 with ambiguity noted)** | One `grep -n -i` per question, each with the `## ` headings. (a) coach roster: `ClientsWorkspace`, `frontend/src/components/coach/clients.tsx`, `/coach`. No row is named "roster" in the coach section; the only "roster" row is ethereal `ClientRoster`, so the answer needs the surface heading. (b) client profile check-ins tab: `ClientProfile`, `frontend/src/components/ethereal/clients/client-profile.tsx`, `/, /ethereal`; the file contains the `check-ins` tab (lines 39, 46, 291). (c) meal plan editor: ambiguous by name. Coach `NutritionEditor` (`coach/plans/nutrition/editor.tsx`, `/coach`) and ethereal `MealplanWorkspace` (`ethereal/mealplan/mealplan-workspace.tsx`, `/, /ethereal`). Both are listed under their surface. (d) coach dashboard: `CoachDashboardEditor`, `frontend/src/components/coach/builder/coach-dashboard.tsx`, `/coach`. (e) ethereal client roster: `ClientRoster`, `frontend/src/components/ethereal/clients/client-roster.tsx`, `/, /ethereal`. |
+| 6 | Regenerate twice zero diff; typecheck, lint, test, build, frontend build | **PASS** | `npm run index` run 1 exit 0, run 2 exit 0; hash identical `4542d331bec65c9e...` (5 docs + 10 generated routers, same set as the builder); `git diff HEAD` 0 lines. `npm run typecheck` exit 0. `npm run lint` exit 0: 0 errors, 14 warnings, none listed for `scripts/index/generate.ts` or `tests/unit/system-index.test.ts`. `npm run test` exit 0: 97 files, 1155 tests passed. `npm run build` exit 0. `cd frontend && npm run build` exit 0 (`/coach`, `/ethereal`, `/`, `/_not-found` prerendered). |
+| 7 | Four pass-2 regression tests: my mutations, red then restored, green | **PASS** | Baseline `npx vitest run tests/unit/system-index.test.ts`: 18 passed. Mutations applied one at a time to `scripts/index/generate.ts` (each replacement asserted to match exactly once), then `git checkout -- scripts/index/generate.ts`. **M1** `Contents: N files` line added to the router region: exit 1, red on `pass 2: a router carries no file count and no subdirectory list`. **M2** layout roots not inherited (`if (false) roots.push(layout)`): exit 1, red on `pass 2: a layout's imports apply to every route beneath it`. **M3** coach section fed every component (`const coach = components`): exit 1, red on `pass 2: COMPONENTS.md groups rows by canvas surface`. **M4** README existence loop removed: exit 1, red on `pass 2: index:check reports a missing hand-written index doc`. After restore: `git status` clean, test file 18 passed. |
+| 8 | Scope unchanged; routers still useful (open 3) | **PASS** | Scope unchanged from pass 2 (the builder's file set; no change under `frontend/src`, `db/`, `lib/`, `app/` code). See the router judgement below. |
+
+## Router judgement (item 8)
+
+- `app/AGENTS.md`: Purpose, the top-level files, then `Read next: docs/index/ROUTES.md`. An agent
+  lands on ROUTES.md, which has the route table (`/coach` to `frontend/src/app/coach/page.tsx`,
+  `/ethereal`, `/`). Navigable.
+- `lib/AGENTS.md`: purpose ("server-side domain services, authorization, consent and feature
+  gates"), 14 top-level modules, `Read next: docs/index/SYMBOLS.md`. SYMBOLS.md has the `lib/audit.ts`
+  section. Navigable.
+- `icm/AGENTS.md`: the purpose line sends the agent to the repo-root `CONTEXT.md` first, which is
+  the right entry for ICM stages. Its `Read next` line points at GLOSSARY.md, a weak pointer for
+  stage work, but the purpose line carries the real routing. Navigable, thin.
+
+## Notes (not blocking)
+
+- **N3 (Note, for the orchestrator to rule):** the routers list every top-level file, not only entry
+  files. The builder's report says "top-level entry files", and ruling 1 says the router carries
+  "purpose, top-level entry files, read next". So a new non-route file at the top of a routed
+  directory (for example `app/verify3-probe-note.txt`, or a future top-level `icm/*.md`) still breaks
+  `index:check` (probe 2b). This is the same churn the counts ruling removed, in a smaller form.
+  Either accept it as the rule, or restrict the list to entry files or drop it.
+- **Test sensitivity (Low):** the README test begins with `expect(indexProblems()).toEqual([])`, so
+  any generator mutation also turns it red (M1, M2, M3). The failure is correct but not specific to
+  its own rule. The test is fine as a guard; it just does not isolate.
+- **Report accuracy (Low):** the builder's pass-2 report says "eleven routers (ten directories plus
+  the root)". The root `AGENTS.md` is hand-written and has no markers. The generated set is ten.
+  The hash above covers ten routers, which is correct.
+- **Scope note:** this file lives under `icm/`. It is not a top-level file of a router directory,
+  so `index:check` stays exit 0 with it present (checked after writing).
+
+## Worktree state
+
+- Only this file added (untracked). No commit, no push, no merge.
+- Probes and mutations were all reverted: `docs/index` and the 10 routers are at their regenerated
+  state, which is byte-equal to HEAD; `scripts/index/generate.ts` restored from HEAD; probe files
+  removed.
