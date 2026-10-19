@@ -9,3 +9,5 @@ Repo: hanzlahsfc/The-great-tracker-. Integration branch `Vari8-Beta`. GitHub Act
 5. Write `icm/05-build/reports/<card id>.md` in your branch: what changed, every command with exit code, what you could not do. Do not merge your own PR; an independent verifier on a different model decides SHIP or FIX.
 6. End clean: stop every server and process you started, drop your databases, leave the worktree with no uncommitted changes.
 7. No em dashes in docs. Never touch `docs/STATUS.md`.
+
+- Since PR #65 (7072404): after merging origin/Vari8-Beta and before every push, run `npm run index` and make sure `npm run index:check` exits 0. Commit the regenerated `docs/index` and `AGENTS.md` routers with explicit pathspecs.
