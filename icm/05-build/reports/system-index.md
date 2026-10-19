@@ -144,7 +144,7 @@ come from. This card's own delta is its seven unit tests.
 | `cd frontend && npm run build` | 0 | `○ /`, `○ /_not-found`, `○ /coach`, `○ /ethereal` prerendered |
 | `npm run index` | 0 | wrote 4 docs and 10 routers |
 | `npm run index:check` | 0 | 5 index docs and all routers match |
-| `npm run test:integration` | 0 | 55 files, 873 tests passed before the merge; re-run on the merged HEAD recorded below |
+| `npm run test:integration` | 0 | 53 files, 850 tests passed on a disposable `app_sysindex` database on 127.0.0.1:5433 (created, `npx prisma migrate deploy`, run, then dropped; the only other databases on that server are `app_dev` and `app_pr05`, neither mine) |
 
 The merge drifted two routers and no index document: `icm/AGENTS.md` (185 to 188 files) and
 `tests/AGENTS.md` (214 to 157 files after PR-03a deleted tests). `npm run index:check` reported
