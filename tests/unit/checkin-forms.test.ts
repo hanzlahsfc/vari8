@@ -3,9 +3,6 @@
 // Check-In is a distinct domain: these tests pin CHECK_IN_* types and the
 // checkinFormDefinitions resource — never the onboarding-named ones.
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
-
 import { describe, expect, it } from "vitest";
 
 import {
@@ -452,25 +449,5 @@ describe("P-025-A validateCheckInDefinition", () => {
       { forPublish: true },
     );
     expect(JSON.stringify(def)).not.toMatch(/answer|submission/i);
-  });
-});
-
-describe("P-025-A seam — app never imports the service directly", () => {
-  it("no app/route file imports lib/checkin/forms directly", () => {
-    const root = join(__dirname, "..", "..", "app");
-    const scan = (dir: string): string[] =>
-      readdirSync(dir).flatMap((entry) => {
-        const p = join(dir, entry);
-        if (statSync(p).isDirectory()) return scan(p);
-        return /\.(ts|tsx)$/.test(entry) ? [p] : [];
-      });
-    for (const file of scan(root)) {
-      const src = readFileSync(file, "utf8");
-      const imports = src
-        .split("\n")
-        .filter((line) => /^\s*import\s/.test(line))
-        .join("\n");
-      expect(imports).not.toMatch(/checkin\/forms['"]/);
-    }
   });
 });

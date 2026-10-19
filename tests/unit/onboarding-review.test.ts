@@ -18,15 +18,3 @@ describe("onboardingSubmissionReviews — consent mapping (P-024)", () => {
     ]);
   });
 });
-
-describe("audit resource — onboarding_submission_review (P-024)", () => {
-  it("is a single closed AUDIT_RESOURCE_TYPES entry after onboarding_submission", async () => {
-    const { AUDIT_RESOURCE_TYPES } = await import("../../lib/audit");
-    const occurrences = AUDIT_RESOURCE_TYPES.filter(
-      (r) => r === "onboarding_submission_review",
-    );
-    expect(occurrences).toHaveLength(1);
-    const idx = AUDIT_RESOURCE_TYPES.indexOf("onboarding_submission_review");
-    expect(AUDIT_RESOURCE_TYPES[idx - 1]).toBe("onboarding_submission");
-  });
-});

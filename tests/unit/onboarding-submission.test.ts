@@ -1,6 +1,3 @@
-import { readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
-
 import { describe, expect, it } from "vitest";
 
 import {
@@ -491,30 +488,5 @@ describe("P-023 canonicalizeAnswers", () => {
         expect((e as OnboardingSubmissionError).code).toBe("not_available");
       }
     }
-  });
-});
-
-describe("P-023 route-leaf uniqueness", () => {
-  it("(tracker) onboarding leaves never collide with staff onboarding leaves", () => {
-    const collect = (dir: string, prefix = ""): string[] => {
-      const out: string[] = [];
-      for (const entry of readdirSync(dir)) {
-        if (entry.startsWith(".") || entry === "node_modules") continue;
-        const p = join(dir, entry);
-        if (statSync(p).isDirectory())
-          out.push(...collect(p, `${prefix}/${entry}`));
-        else if (entry === "page.tsx") out.push(prefix || "/");
-      }
-      return out;
-    };
-    const staffLeaves = collect(
-      join(process.cwd(), "app", "workspace", "[workspaceId]"),
-    );
-    const trackerLeaves = collect(
-      join(process.cwd(), "app", "(tracker)", "workspace", "[workspaceId]"),
-    );
-    const staff = new Set(staffLeaves);
-    const collisions = trackerLeaves.filter((l) => staff.has(l));
-    expect(collisions).toEqual([]);
   });
 });

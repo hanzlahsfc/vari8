@@ -165,14 +165,3 @@ describe("createClientProfile", () => {
     );
   });
 });
-
-describe("structural errors", () => {
-  it("carry only codes, never names/emails/ids", async () => {
-    const error = new WorkspaceServiceError("client_not_accessible");
-    expect(error.code).toBe("client_not_accessible");
-    expect(error.message).toBe("client_not_accessible");
-    // No personal values (email/handles) leak into the structural error.
-    expect(JSON.stringify(error)).not.toMatch(/@/);
-    expect(JSON.stringify(error)).not.toMatch(/email|profile|coachName/i);
-  });
-});

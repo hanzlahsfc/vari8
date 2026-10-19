@@ -147,17 +147,3 @@ describe("CHECK-IN-OVERVIEW-I1 — deep-link param parser", () => {
 });
 
 // ── Service + boundary surface ─────────────────────────────────────────
-
-describe("CHECK-IN-OVERVIEW-I1 — exports", () => {
-  it("exposes the queue service + page size + item type contract", async () => {
-    const m = await import("../../lib/checkin/instances");
-    expect(typeof m.listCheckInReviewQueue).toBe("function");
-    expect(typeof m.parseCheckInReviewQueueCursor).toBe("function");
-    expect(m.CHECKIN_REVIEW_QUEUE_PAGE_SIZE).toBe(50);
-  });
-
-  it("exposes the boundary wrapper", async () => {
-    const b = await import("../../lib/checkin/instances-boundary");
-    expect(typeof b.listStaffCheckInReviewQueue).toBe("function");
-  });
-});

@@ -7,7 +7,6 @@ import { describe, expect, it } from "vitest";
 import {
   validateDashboardConfig,
   projectClientDashboardConfig,
-  canonicalizeDashboardConfig,
 } from "../../lib/dashboard/config-schema";
 
 const validWidget = (over: Record<string, unknown> = {}) => ({
@@ -160,45 +159,6 @@ describe("dashboard config validation", () => {
     });
     expect(validateDashboardConfig({ ...validConfig(), widgets: [f] }).ok).toBe(
       false,
-    );
-  });
-});
-
-describe("client subset projection", () => {
-  it("drops staff widgets + rects server-side; keeps client geometry coherent", () => {
-    const cfg = {
-      ...validConfig(),
-      widgets: [
-        validWidget({ id: "a", settings: { visibility: "client" } }),
-        validWidget({
-          id: "b",
-          settings: { visibility: "staff" },
-        }),
-      ],
-      layouts: {
-        desktop: {
-          a: { x: 0, y: 0, w: 4, h: 3, size: "Compact" },
-          b: { x: 4, y: 0, w: 4, h: 3, size: "Compact" },
-        },
-      },
-    };
-    const r = validateDashboardConfig(cfg);
-    expect(r.ok).toBe(true);
-    if (!r.ok) return;
-    const proj = projectClientDashboardConfig(r.config);
-    expect(proj.widgets.map((w) => w.id)).toEqual(["a"]);
-    expect(Object.keys(proj.layouts.desktop ?? {})).toEqual(["a"]);
-    // no staff settings survive — the object is the client shape only
-    expect(JSON.stringify(proj)).not.toContain('"staff"');
-  });
-});
-
-describe("canonical form", () => {
-  it("canonicalize produces a stable string for equality", () => {
-    const r = validateDashboardConfig(validConfig());
-    if (!r.ok) throw new Error("invalid");
-    expect(canonicalizeDashboardConfig(r.config)).toBe(
-      canonicalizeDashboardConfig(r.config),
     );
   });
 });

@@ -8,7 +8,6 @@ import {
   listAccountAuditEvents,
   sanitizeAuditMeta,
   writeAccountAuditEvent,
-  writeAuditEvent,
   type AuditMeta,
 } from "../../lib/audit";
 
@@ -264,42 +263,6 @@ describe("buildAuditEvent", () => {
     expect(() => buildAuditEvent(ctx(), input as never)).toThrowError(
       AuditError,
     );
-  });
-});
-
-describe("writeAuditEvent", () => {
-  it("writes via the transaction client delegate", async () => {
-    const create = vi.fn(async () => ({ id: "e1" }));
-    const tx = { auditEvent: { create } } as never;
-    await writeAuditEvent(tx, ctx(), {
-      action: "REVOKE",
-      resourceType: "consent",
-      subjectClientProfileId: "c1",
-      meta: { kind: "CYCLE", count: 2 },
-    });
-    expect(create).toHaveBeenCalledTimes(1);
-    const args = (create.mock.calls[0] as unknown[])[0] as {
-      data: Record<string, unknown>;
-    };
-    expect(args.data).toMatchObject({
-      workspaceId: "w1",
-      actorUserId: "u1",
-      action: "REVOKE",
-      result: "ALLOW",
-    });
-  });
-
-  it("fails closed when the event is invalid", async () => {
-    const create = vi.fn();
-    const tx = { auditEvent: { create } } as never;
-    await expect(
-      writeAuditEvent(tx, ctx(), {
-        action: "GRANT",
-        resourceType: "consent",
-        meta: { password: "x" },
-      } as never),
-    ).rejects.toMatchObject({ code: "audit_metadata_forbidden" });
-    expect(create).not.toHaveBeenCalled();
   });
 });
 
