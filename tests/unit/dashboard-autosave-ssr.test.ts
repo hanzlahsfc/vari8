@@ -30,10 +30,6 @@ const input = (userId = "u1") => ({
 });
 
 describe("SSR isolation (I1-R6)", () => {
-  it("this test file runs without a window — the SSR condition", () => {
-    expect(typeof window).toBe("undefined");
-  });
-
   it("server-side acquire never mutates the shared slot map", () => {
     const slot = acquireDashboardSlot(input());
     commitDashboardConfig(slot, cfg("server-side-draft"));

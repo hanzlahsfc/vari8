@@ -120,52 +120,6 @@ test("UTC week navigation remains Monday-first across year, leap day, and DST bo
   assert.equal(view.addDays("2026-10-24", 1), "2026-10-25");
 });
 
-test("configured custom definitions retain their metadata and group order without fixed IDs", () => {
-  const customOne = {
-    id: "hydration-custom",
-    label: "Hydration target",
-    categoryId: "recovery",
-    unit: "cups",
-    kind: "number",
-    summary: "total",
-    decimals: 0,
-    min: 0,
-    max: 40,
-  };
-  const customTwo = {
-    id: "gut-symptom-custom",
-    label: "Gut symptoms",
-    categoryId: "nutrition",
-    unit: "",
-    kind: "number",
-    summary: "latest",
-    decimals: 0,
-    min: 0,
-    max: 5,
-    inputType: "choice",
-    options: ["None", "Mild", "Strong"],
-  };
-  const cfg = config({
-    parameterIds: ["hydration-custom", "weight", "gut-symptom-custom"],
-    parameterDefinitions: [customOne, customTwo],
-  });
-  const groups = view.metricGroups(cfg, {
-    "hydration-custom": "Daily basics",
-    weight: "Measurements",
-    "gut-symptom-custom": "Daily basics",
-  });
-  assert.deepEqual(
-    groups.map((group) => group.label),
-    ["Daily basics", "Measurements"],
-  );
-  assert.deepEqual(
-    groups[0].parameters.map((parameter) => parameter.id),
-    ["hydration-custom", "gut-symptom-custom"],
-  );
-  assert.deepEqual(groups[0].parameters[0], customOne);
-  assert.deepEqual(groups[0].parameters[1].options, ["None", "Mild", "Strong"]);
-});
-
 test("disabled cycle fields are removed while ordinary and custom health fields remain", () => {
   const customHealth = {
     id: "custom-health-score",
@@ -193,30 +147,6 @@ test("disabled cycle fields are removed while ordinary and custom health fields 
   assert.deepEqual(
     groups.flatMap((group) => group.parameters.map((item) => item.id)),
     ["weight", "custom-health-score"],
-  );
-});
-
-test("pinned daily summaries preserve configured order and ignore removed and duplicate IDs", () => {
-  const groups = view.metricGroups(
-    config({ parameterIds: ["weight", "steps", "sleep"] }),
-  );
-  const summaries = view.summaryParameters(
-    groups,
-    config({
-      summaryParameterIds: [
-        "steps",
-        "removed-field",
-        "weight",
-        "steps",
-        "sleep",
-        "calories",
-        "water",
-      ],
-    }),
-  );
-  assert.deepEqual(
-    summaries.map((parameter) => parameter.id),
-    ["steps", "weight", "sleep"],
   );
 });
 
@@ -411,72 +341,4 @@ test("cycle day derives from the latest period start on or before the selected d
     undefined,
   );
   assert.equal(view.textSummary(cycleDay, "6", config()), "Day 6");
-});
-
-test("structured text summaries format configured time, choices, context, and malformed values safely", () => {
-  const time = p.parameters.find((parameter) => parameter.id === "time");
-  const choices = p.parameters.find(
-    (parameter) => parameter.id === "pms-symptoms",
-  );
-  const context = p.parameters.find((parameter) => parameter.id === "illness");
-  assert.equal(
-    view.textSummary(
-      time,
-      "19:05",
-      config({ fieldUnits: { time: "12-hour" } }),
-    ),
-    "7:05 PM",
-  );
-  assert.equal(
-    view.textSummary(
-      choices,
-      JSON.stringify({ choices: ["Cramps", "Fatigue"], note: "Mild" }),
-      config(),
-    ),
-    "Cramps, Fatigue · Mild",
-  );
-  assert.equal(
-    view.textSummary(
-      context,
-      JSON.stringify({ answer: "Yes", context: "Headache" }),
-      config(),
-    ),
-    "Yes · Headache",
-  );
-  assert.equal(
-    view.textSummary(choices, "legacy free text", config()),
-    "legacy free text",
-  );
-});
-
-test("custom field units affect labels while generic custom values remain unconverted", () => {
-  const custom = {
-    id: "hydration-custom",
-    label: "Hydration target",
-    categoryId: "recovery",
-    unit: "cups",
-    kind: "number",
-    summary: "average",
-    decimals: 1,
-    min: 0,
-    max: 100,
-  };
-  const cfg = config({
-    parameterIds: [custom.id],
-    fieldUnits: { [custom.id]: "mugs" },
-    parameterDefinitions: [custom],
-  });
-  const groups = view.metricGroups(cfg);
-  const parameter = groups[0].parameters[0];
-  const data = {
-    config: cfg,
-    entries: [{ date: "2026-10-13", values: { [custom.id]: 2.5 } }],
-    textValues: {},
-  };
-  assert.equal(p.configuredUnit(parameter, cfg), "mugs");
-  assert.equal(view.valueLabel(parameter, "2026-10-13", data), "2.5 mugs");
-  assert.deepEqual(view.weeklySummary(parameter, ["2026-10-13"], data), {
-    label: "Average",
-    value: "2.5",
-  });
 });

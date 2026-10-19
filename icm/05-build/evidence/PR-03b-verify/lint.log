@@ -1,0 +1,22 @@
+
+> app@0.1.0 lint
+> eslint
+
+
+/home/nexuslink/vari8-worktrees/pr-03-react-hooks/icm/03-plan/tools/plan-to-issues.mjs
+  7:19  warning  'join' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/nexuslink/vari8-worktrees/pr-03-react-hooks/lib/dashboard/config-schema.ts
+  445:17  warning  'bp' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/nexuslink/vari8-worktrees/pr-03-react-hooks/tests/e2e/checkin-review-queue.spec.ts
+  49:5  warning  'coachUserId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/nexuslink/vari8-worktrees/pr-03-react-hooks/tests/e2e/daily-entry-lily.spec.ts
+  32:5  warning  'clientUserId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/nexuslink/vari8-worktrees/pr-03-react-hooks/tests/integration/p025b-checkin-instances.test.ts
+  1127:11  warning  'fieldId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 5 problems (0 errors, 5 warnings)
+

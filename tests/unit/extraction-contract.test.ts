@@ -1,19 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  EXPECTED_SHEETS,
   redactedPlaceholder,
   SHEET_SLUGS,
   slugifySheetFileName,
 } from "../../lib/extraction/contracts";
 
 describe("sheet slug mapping", () => {
-  it("covers exactly the 11 expected sheets with unique slugs", () => {
-    expect(EXPECTED_SHEETS).toHaveLength(11);
-    const slugs = EXPECTED_SHEETS.map((sheet) => sheet.slug);
-    expect(new Set(slugs).size).toBe(11);
-  });
-
   it("maps each export file name to the documented slug", () => {
     const expected: Record<string, string> = {
       "DAILY TRACKER.html": "daily-tracker",

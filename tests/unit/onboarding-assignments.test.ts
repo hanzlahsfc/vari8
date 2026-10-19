@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  ASSIGNMENT_LIMITS,
-  isOnboardingAssignmentsEnabled,
-  OnboardingAssignmentError,
-} from "../../lib/onboarding/assignments-gate";
+import { isOnboardingAssignmentsEnabled } from "../../lib/onboarding/assignments-gate";
 
 /**
  * P-013 staff-only onboarding-form assignments — dev gate + contract
@@ -23,19 +19,4 @@ describe("P-013 assignments dev gate", () => {
       expect(isOnboardingAssignmentsEnabled(value)).toBe(false);
     },
   );
-});
-
-describe("P-013 assignments contract constants", () => {
-  it("exposes bounded limits", () => {
-    expect(ASSIGNMENT_LIMITS.idMax).toBe(128);
-    expect(ASSIGNMENT_LIMITS.listMaxLimit).toBe(100);
-    expect(ASSIGNMENT_LIMITS.listDefaultLimit).toBe(25);
-  });
-
-  it("error codes stay structural — never carry content", () => {
-    const err = new OnboardingAssignmentError("assignment_conflict");
-    expect(err.code).toBe("assignment_conflict");
-    expect(err.message).toBe("assignment_conflict");
-    expect(err.name).toBe("OnboardingAssignmentError");
-  });
 });

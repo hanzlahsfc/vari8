@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import type { StaffBookingsPage } from "@/lib/trainingprogram/service";
 import {
@@ -112,11 +112,13 @@ export function TrainingBookings({
   // Re-sync from the server page whenever it re-renders (revalidation or
   // a different program/client target — also keyed upstream), so appended
   // pages never go stale or leak across targets.
-  useEffect(() => {
+  const [prevInitial, setPrevInitial] = useState(initial);
+  if (prevInitial !== initial) {
+    setPrevInitial(initial);
     setHistory(initial.history);
     setHistoryCursor(initial.nextCursor);
     setHistoryError("");
-  }, [initial]);
+  }
 
   const run = (fn: () => Promise<{ status: string; message?: string }>) =>
     startTransition(async () => {

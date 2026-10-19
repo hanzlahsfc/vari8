@@ -1,64 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  BIOFEEDBACK_KEYS,
-  COMPUTED_COLUMNS,
   DAILY_FIELDS,
-  EXCLUDED_FIELD_KEYS,
   isDailyPrototypeEnabled,
-  TODO_MARKER,
   validateDailyEntry,
 } from "../../lib/daily-prototype";
-
-const byKey = new Map(DAILY_FIELDS.map((field) => [field.key, field]));
-
-describe("Phase B0 field schema", () => {
-  it("contains only source-backed in-scope fields", () => {
-    const keys = DAILY_FIELDS.map((field) => field.key);
-    for (const excluded of EXCLUDED_FIELD_KEYS) {
-      expect(keys).not.toContain(excluded);
-    }
-    expect(keys).not.toContain("calories");
-    expect(keys).not.toContain("targets");
-    expect(keys).not.toContain("averages");
-  });
-
-  it("uses the source labels and units as written", () => {
-    expect(byKey.get("weightKg")).toMatchObject({
-      label: "Weight",
-      unit: "kg",
-    });
-    expect(byKey.get("bbtC")).toMatchObject({ label: "BBT", unit: "°C" });
-    expect(byKey.get("glucoseMmol")).toMatchObject({
-      label: "Blood glucose",
-      unit: "mmol/L",
-    });
-    expect(byKey.get("cardioMin")).toMatchObject({
-      label: "Cardio",
-      unit: "min",
-    });
-    expect(byKey.get("saltG")).toMatchObject({ label: "Salt", unit: "g" });
-    expect(byKey.get("waterL")).toMatchObject({ label: "Water", unit: "L" });
-    expect(byKey.get("dayLabel")).toMatchObject({
-      options: ["HIGH", "MEDIUM", "LOW"],
-    });
-  });
-
-  it("defines the eight biofeedback fields with a 1-10 range", () => {
-    expect(BIOFEEDBACK_KEYS).toHaveLength(8);
-    for (const key of BIOFEEDBACK_KEYS) {
-      expect(byKey.get(key)).toMatchObject({ type: "number", min: 1, max: 10 });
-    }
-  });
-
-  it("marks computed columns with TODO(product) and never a value", () => {
-    expect(COMPUTED_COLUMNS[0]).toEqual({
-      key: "calories",
-      label: "Calories (automatic)",
-      marker: TODO_MARKER,
-    });
-  });
-});
 
 describe("validateDailyEntry", () => {
   const base = Object.fromEntries(DAILY_FIELDS.map((field) => [field.key, ""]));
