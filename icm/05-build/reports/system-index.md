@@ -44,10 +44,15 @@ run and fails `index:check` until the index is regenerated and committed.
 | `1207139` | `docs/index/*`, ten `AGENTS.md` routers, `AGENTS.md` | generated index and routers |
 | `6cf181b` | `tests/unit/system-index.test.ts` | 7 behaviour tests on the real repo |
 | `d50dd0e` | `scripts/index/generate.ts` | stable-sort assertion made independent of the comparator (found by proof E) |
-| this report | `icm/05-build/reports/system-index.md` | record |
+| `2162774` | `icm/05-build/reports/system-index.md` | this report |
+| `161bbc4` | `scripts/index/generate.ts`, `docs/index/ROUTES.md`, report | canvas section lists pages only and names the canvas root layout |
+| `dee5d4a` | `icm/AGENTS.md` | regenerate the icm router after adding a file under `icm/` |
+| `dff5fc5` | `scripts/index/generate.ts`, `docs/index/SYMBOLS.md` | tidy wrapped parameter lists in signatures |
+| `cec1ffe` | `scripts/index/generate.ts`, report | fail loud when a router loses its generated markers (found by proof G) |
+| `566ebb6` | `scripts/index/generate.ts` | export only the test surface |
 
-No dependency was added: `tsx` and `typescript` were already dev dependencies, and the
-generator uses only Node stdlib otherwise.
+Head at the time of writing: `566ebb6`. No dependency was added: `tsx` and `typescript` were
+already dev dependencies, and the generator uses only Node stdlib otherwise.
 
 ## 3. Proofs
 
@@ -117,6 +122,10 @@ implementation silently stopped managing such a file, because it used the marker
 whether the directory was generator-managed; `routerTargets` now also recognises the generated
 heading. The check reports the same way whether the file was deleted or its markers were.
 
+Proofs B, C, D and E each mutated a real file and restored it with
+`git restore --source=HEAD <path>`. None of those paths appear in the diff (`git diff --name-only
+55a0f08..HEAD` shows no `db/`, `lib/` or `app/api/` source file).
+
 ## 4. Gates
 
 Base `55a0f08` baseline in `icm/05-build/reports/PR-02.md`: 105 test files, 1308 tests,
@@ -132,7 +141,7 @@ lint 0 errors / 16 warnings.
 | `cd frontend && npm run build` | 0 | `○ /`, `○ /_not-found`, `○ /coach`, `○ /ethereal` prerendered |
 | `npm run index` | 0 | wrote 4 docs and 10 routers |
 | `npm run index:check` | 0 | 5 index docs and all routers match |
-| `npm run test:integration` | see below | disposable DB `app_sysindex` on 127.0.0.1:5433 |
+| `npm run test:integration` | 0 | 55 files, 873 tests passed against a disposable `app_sysindex` database on 127.0.0.1:5433 (created, `npx prisma migrate deploy`, run, then dropped; only `app_dev`, `app_pr03bv` and `app_pr05` remain, none of them mine) |
 
 Canvas rule: no file under `frontend/src` and no markup, style or copy changed, so no
 screenshots. The only `frontend/` change is a `.prettierignore` entry that keeps the
