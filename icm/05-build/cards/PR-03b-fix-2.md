@@ -3,6 +3,7 @@
 The re-verify (`icm/05-build/reports/PR-03b-verify-2.md`) returned FIX on one narrow point. Hunks 1 and 2 are proven by discriminating probes; do not touch them.
 
 Hard rules:
+
 - Never write `docs/STATUS.md`.
 - Never touch `frontend/`.
 - Commit with explicit pathspecs.
@@ -13,10 +14,12 @@ Hard rules:
 **feedback-thread mount reconciliation.** The effect still calls `setNonce` and `setReconcile` synchronously inside `void (async () => { ... })()`. That is the same lint dodge round 1 flagged.
 
 Restructure it so that:
+
 - no setState runs synchronously in the effect body or in a wrapper that only exists to hide it;
 - the "Checking…" note appears at the same moment as on base `55a0f08`.
 
 Allowed patterns:
+
 - derive the initial nonce and reconcile state during render (initial state or a lazy initializer);
 - move the state into the awaited callback after a real `await`;
 - use `useSyncExternalStore` if the source is external.

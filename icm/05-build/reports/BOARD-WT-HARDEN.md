@@ -37,17 +37,17 @@ Issue #81, branch `beta/board-worktree-hardening`, PR #82 against `Vari8-Beta`.
 
 ## Commands and exit codes
 
-| Command | Exit |
-| --- | --- |
-| `python3 icm/05-build/tools/board_selftest.py` (after fix) | 0, 20/20 cases pass |
-| `python3 icm/05-build/tools/generate.py --check` | 0 (154 generated files match) |
-| `npm run index` | 0 (wrote 5 docs and 10 AGENTS.md routers) |
-| `npm run index:check` | 0 |
-| `npm run lint` | 0 |
-| `npm run test` | 0 (97 files, 1155 tests) |
-| `npm run typecheck` | 2, pre-existing base error (below) |
-| `npm run build` | 1, same pre-existing error during type check |
-| `git fetch origin Vari8-Beta` + merge check | base already at merge-base 3f3446e, no merge needed |
+| Command                                                    | Exit                                                |
+| ---------------------------------------------------------- | --------------------------------------------------- |
+| `python3 icm/05-build/tools/board_selftest.py` (after fix) | 0, 20/20 cases pass                                 |
+| `python3 icm/05-build/tools/generate.py --check`           | 0 (154 generated files match)                       |
+| `npm run index`                                            | 0 (wrote 5 docs and 10 AGENTS.md routers)           |
+| `npm run index:check`                                      | 0                                                   |
+| `npm run lint`                                             | 0                                                   |
+| `npm run test`                                             | 0 (97 files, 1155 tests)                            |
+| `npm run typecheck`                                        | 2, pre-existing base error (below)                  |
+| `npm run build`                                            | 1, same pre-existing error during type check        |
+| `git fetch origin Vari8-Beta` + merge check                | base already at merge-base 3f3446e, no merge needed |
 
 ## Could not do
 

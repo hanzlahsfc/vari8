@@ -5,6 +5,7 @@ Issue #81, branch `beta/board-worktree-hardening`, worktree `/home/nexuslink/var
 Code: `icm/05-build/tools/board.py` (`ensure_worktree`, `release_once`), selftest `icm/05-build/tools/board_selftest.py`.
 
 Two defects from the #78 verify:
+
 1. A failed `git worktree add -b beta/<slug>` leaves an orphan `beta/<slug>` ref. A failed creation must leave no new local ref behind (delete only a ref this call created, never a pre-existing one).
 2. `ensure_worktree` reuses any existing `<path>/.git` without checking it. Reuse only when that worktree is on `beta/<slug>`; otherwise fail closed (card stays blocked, non-zero exit, clear message naming path and actual branch).
 

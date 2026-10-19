@@ -33,3 +33,6 @@ themes/AGENTS.md
 
 # Independent frontend project uses Biome.
 frontend/
+icm/02-gap-matrix/
+icm/05-build/graph.json
+icm/05-build/graph-summary.json
