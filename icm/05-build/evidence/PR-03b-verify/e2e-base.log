@@ -1,0 +1,180 @@
+
+Running 131 tests using 1 worker
+
+[1/131] tests/e2e/checkin-calendar.spec.ts:261:5 › staff calendar: local-day chips, cancelled visible, month nav, agenda — three widths
+[2/131] tests/e2e/checkin-calendar.spec.ts:313:5 › staff calendar: viewer-local day placement (NY) for a UTC-midnight boundary dueAt
+[3/131] tests/e2e/checkin-calendar.spec.ts:344:5 › client calendar: own chips link to the existing detail page
+[4/131] tests/e2e/checkin-calendar.spec.ts:366:5 › truncation: a >200-month shows the incomplete notice in grid and agenda; navigating clears it
+[5/131] tests/e2e/checkin-calendar.spec.ts:403:5 › flag-off: the calendar is absent on the production-fail-closed build
+[6/131] tests/e2e/checkin-feedback.spec.ts:310:5 › flag-off server 404s the staff surface; zero feedback rows
+[7/131] tests/e2e/checkin-feedback.spec.ts:323:5 › assigned coach reviews → sends feedback → client sees 'Response sent'
+[8/131] tests/e2e/checkin-feedback.spec.ts:366:5 › unreviewed submission offers no composer (canSend false)
+[9/131] tests/e2e/checkin-feedback.spec.ts:404:5 › assigned assistant reads the thread but cannot send
+[10/131] tests/e2e/checkin-feedback.spec.ts:429:5 › aborted send response → remount reconciliation → retry commits exactly one row
+[11/131] tests/e2e/checkin-feedback.spec.ts:484:5 › follow-up appends a second dated row (immutable corrections)
+[12/131] tests/e2e/checkin-feedback.spec.ts:509:5 › remount with a never-committed attempt: truthful note, empty composer, retained nonce
+[13/131] tests/e2e/checkin-feedback.spec.ts:546:5 › consent withdrawal hides feedback from the client exactly like answers
+[14/131] tests/e2e/checkin-forms.spec.ts:83:7 › P-025-A authz + nav › owner sees the Check-In nav link; denied roles get 403 on every surface
+[15/131] tests/e2e/checkin-forms.spec.ts:103:7 › P-025-A authz + nav › nonmember + foreign workspace + malformed form id fail closed
+[16/131] tests/e2e/checkin-forms.spec.ts:117:7 › P-025-A authz + nav › flag-off server 404s the routes and hides the nav entry
+[17/131] tests/e2e/checkin-forms.spec.ts:146:9 › P-025-A staff lifecycle › full create → edit → save → publish → reopen → archive at 1440px
+[18/131] tests/e2e/checkin-forms.spec.ts:146:9 › P-025-A staff lifecycle › full create → edit → save → publish → reopen → archive at 834px
+[19/131] tests/e2e/checkin-forms.spec.ts:146:9 › P-025-A staff lifecycle › full create → edit → save → publish → reopen → archive at 390px
+[20/131] tests/e2e/checkin-forms.spec.ts:283:7 › P-025-A staff lifecycle › publish requires a saved-clean draft and publish keeps v1 immutable
+[21/131] tests/e2e/checkin-forms.spec.ts:331:7 › P-025-A staff lifecycle › stale revision surfaces the safe message and preserves edits
+[22/131] tests/e2e/checkin-forms.spec.ts:367:7 › P-025-A staff lifecycle › dirty editor warns on navigation; after save the warning clears
+[23/131] tests/e2e/checkin-forms.spec.ts:403:7 › P-025-A staff lifecycle › aria-live alert region + labeled controls are keyboard-reachable
+[24/131] tests/e2e/checkin-instances.spec.ts:271:5 › flag-off server 404s every P-025-B route; no rows or audits
+[25/131] tests/e2e/checkin-instances.spec.ts:298:5 › owner schedules via the UI; roster Check-Ins link is flag-gated
+[26/131] tests/e2e/checkin-instances.spec.ts:333:5 › assigned coach schedules and cancels with two-step confirmation
+[27/131] tests/e2e/checkin-instances.spec.ts:354:5 › assistant without a matching assignment gets no write controls
+[28/131] tests/e2e/checkin-instances.spec.ts:365:5 › client and support cannot reach the staff surface
+[29/131] tests/e2e/checkin-instances.spec.ts:376:5 › client sees the Check-Ins nav link, list, detail; submits once
+[30/131] tests/e2e/checkin-instances.spec.ts:457:5 › late Check-In shows the overdue marker and still submits (#93)
+[31/131] tests/e2e/checkin-instances.spec.ts:477:5 › cancelled instance detail is non-disclosing and cannot be submitted
+[32/131] tests/e2e/checkin-instances.spec.ts:500:5 › foreign client gets non-disclosing denial; submitted instance offers no cancel
+[33/131] tests/e2e/checkin-instances.spec.ts:528:5 › consent withdrawal denies submitted answer detail; list keeps metadata
+[34/131] tests/e2e/checkin-instances.spec.ts:581:7 › staff + client Check-In surfaces at desktop (1440px)
+[35/131] tests/e2e/checkin-instances.spec.ts:581:7 › staff + client Check-In surfaces at tablet (834px)
+[36/131] tests/e2e/checkin-instances.spec.ts:581:7 › staff + client Check-In surfaces at mobile (390px)
+[37/131] tests/e2e/checkin-instances.spec.ts:618:5 › client surfaces carry no review/acknowledgement metadata (P-025-C bounds it staff-side)
+[38/131] tests/e2e/checkin-instances.spec.ts:644:5 › beforeunload is suppressed immediately on success — inside the pre-unmount window
+  1) tests/e2e/checkin-instances.spec.ts:644:5 › beforeunload is suppressed immediately on success — inside the pre-unmount window 
+
+    Error: route.continue: Route is already handled!
+
+      674 |       await gate;
+      675 |     }
+    > 676 |     return route.continue();
+          |                          ^
+      677 |   });
+      678 |
+      679 |   const actionDone = page.waitForResponse(
+        at /home/nexuslink/vari8-worktrees/_verify-baseline/tests/e2e/checkin-instances.spec.ts:676:26
+
+    Error: page.goto: Test ended.
+    Call log:
+      - navigating to "http://127.0.0.1:3000/workspace/cmvekbmof0007wgi0h7u7533z/check-ins", waiting until "load"
+
+
+      703 |     timeout: 15_000,
+      704 |   });
+    > 705 |   await page.goto(clientListUrl());
+          |              ^
+      706 |   await expect(
+      707 |     page.getByTestId("checkin-item-submitted").first(),
+      708 |   ).toBeVisible();
+        at /home/nexuslink/vari8-worktrees/_verify-baseline/tests/e2e/checkin-instances.spec.ts:705:14
+
+    Error Context: test-results/checkin-instances-beforeun-a925f-side-the-pre-unmount-window/error-context.md
+
+    Error Context: test-results/checkin-instances-beforeun-a925f-side-the-pre-unmount-window/error-context.md
+
+
+[39/131] tests/e2e/client-dashboard.spec.ts:87:7 › DASHBOARD-I1 › owner adds + shares a widget; client sees the committed subset
+[40/131] tests/e2e/client-dashboard.spec.ts:135:7 › DASHBOARD-I1 › editor covers settings, breakpoints, preview and nav guard
+[41/131] tests/e2e/client-dashboard.spec.ts:193:7 › DASHBOARD-I1 › in-app link inside the debounce window must not drop the edit
+[42/131] tests/e2e/client-dashboard.spec.ts:223:7 › DASHBOARD-I1 › keyboard-activated link inside the debounce window is held
+[43/131] tests/e2e/client-dashboard.spec.ts:251:7 › DASHBOARD-I1 › failed save then in-app link → held with explicit prompt
+[44/131] tests/e2e/client-dashboard.spec.ts:297:7 › DASHBOARD-I1 › conflict save then link → explicit prompt, never silent
+[45/131] tests/e2e/client-dashboard.spec.ts:342:7 › DASHBOARD-I1 › in-flight save + newer queued edit → navigation waits for both
+[46/131] tests/e2e/client-dashboard.spec.ts:398:7 › DASHBOARD-I1 › multiple destination clicks → the last intent wins once
+[47/131] tests/e2e/client-dashboard.spec.ts:430:7 › DASHBOARD-I1 › protocol-relative // links are never intercepted
+[48/131] tests/e2e/client-dashboard.spec.ts:464:7 › DASHBOARD-I1 › same-document Back flushes the pending save; edit persists
+[49/131] tests/e2e/client-dashboard.spec.ts:499:7 › DASHBOARD-I1 › no Navigation API: same-document Back persists the pending edit
+[50/131] tests/e2e/client-dashboard.spec.ts:542:7 › DASHBOARD-I1 › failed save while away keeps a recoverable draft on return
+[51/131] tests/e2e/client-dashboard.spec.ts:590:7 › DASHBOARD-I1 › another client's editor never sees a different client's draft
+[52/131] tests/e2e/client-dashboard.spec.ts:659:7 › DASHBOARD-I1 › a pending draft cannot follow a sign-out into a new session
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3107689306'
+[WebServer] }
+
+[53/131] tests/e2e/client-dashboard.spec.ts:704:7 › DASHBOARD-I1 › browser Back while pending is held until the save commits
+[54/131] tests/e2e/client-dashboard.spec.ts:735:7 › DASHBOARD-I1 › no guard residue: unrelated routes navigate freely after unmount
+[55/131] tests/e2e/client-dashboard.spec.ts:753:7 › DASHBOARD-I1 › client view shows only the shared subset
+[56/131] tests/e2e/client-dashboard.spec.ts:779:7 › DASHBOARD-I1 › flag-off server returns 404 and hides the roster link
+[57/131] tests/e2e/client-dashboard.spec.ts:791:7 › DASHBOARD-I1 › assistant sees the read-only layout, no controls
+[58/131] tests/e2e/habits.spec.ts:185:7 › HABITS-I1 › owner creates; client marks done + undoes via TL21; TL22 counts
+[WebServer] ⨯ Error: The destination stream closed early.
+[WebServer]     at ignore-listed frames {
+[WebServer]   digest: '3107689306'
+[WebServer] }
+
+[59/131] tests/e2e/habits.spec.ts:231:7 › HABITS-I1 › archived habit leaves TL21 but TL22 keeps its history
+[60/131] tests/e2e/habits.spec.ts:279:7 › HABITS-I1 › assistant reads habits but sees no management controls
+[61/131] tests/e2e/habits.spec.ts:339:7 › HABITS-I1 › desktop 1440 / tablet 834 / mobile 390 stay operable
+[62/131] tests/e2e/habits.spec.ts:354:7 › HABITS-I1 › both themes render the widgets
+[63/131] tests/e2e/habits.spec.ts:384:7 › HABITS-I1 › flag-off server denies the staff habit surface
+[64/131] tests/e2e/onboarding-forms.spec.ts:139:5 › unauthenticated deep link redirects to /login
+[65/131] tests/e2e/onboarding-forms.spec.ts:144:5 › non-member gets HTTP 403 on the form library AND create page
+[66/131] tests/e2e/onboarding-forms.spec.ts:154:5 › foreign-workspace and malformed segments fail closed (non-disclosing)
+[67/131] tests/e2e/onboarding-forms.spec.ts:169:5 › client member is denied the list AND new-page deep link
+[68/131] tests/e2e/onboarding-forms.spec.ts:179:5 › assistant coach and support are denied list AND new-page deep link
+[69/131] tests/e2e/onboarding-forms.spec.ts:191:5 › nav gates the onboarding-forms entry by current server-side role
+[70/131] tests/e2e/onboarding-forms.spec.ts:222:7 › coach reaches the list and create page at 1440px
+[71/131] tests/e2e/onboarding-forms.spec.ts:222:7 › coach reaches the list and create page at 834px
+[72/131] tests/e2e/onboarding-forms.spec.ts:222:7 › coach reaches the list and create page at 390px
+[73/131] tests/e2e/onboarding-forms.spec.ts:291:7 › seeded list rendering › draft-only form renders DRAFT status with no published version
+[74/131] tests/e2e/onboarding-forms.spec.ts:312:7 › seeded list rendering › published form renders PUBLISHED status and its latest version
+[75/131] tests/e2e/onboarding-forms.spec.ts:349:7 › seeded list rendering › open draft over published history keeps DRAFT badge AND latest version
+[76/131] tests/e2e/onboarding-forms.spec.ts:389:7 › seeded list rendering › archived form renders ARCHIVED status and retained version
+[77/131] tests/e2e/onboarding-forms.spec.ts:424:9 › seeded list rendering › populated list has no horizontal overflow at 1440px
+[78/131] tests/e2e/onboarding-forms.spec.ts:424:9 › seeded list rendering › populated list has no horizontal overflow at 834px
+[79/131] tests/e2e/onboarding-forms.spec.ts:424:9 › seeded list rendering › populated list has no horizontal overflow at 390px
+[80/131] tests/e2e/onboarding-forms.spec.ts:465:9 › empty list + controlled-pending create › empty state + single-row create at 1440px
+[81/131] tests/e2e/onboarding-forms.spec.ts:465:9 › empty list + controlled-pending create › empty state + single-row create at 834px
+[82/131] tests/e2e/onboarding-forms.spec.ts:465:9 › empty list + controlled-pending create › empty state + single-row create at 390px
+[83/131] tests/e2e/onboarding-forms.spec.ts:541:7 › empty list + controlled-pending create › aborted action transport surfaces a safe inline error; retry succeeds
+[84/131] tests/e2e/onboarding-forms.spec.ts:702:7 › editor mount + read guards › unauthenticated deep link to the editor redirects to /login
+[85/131] tests/e2e/onboarding-forms.spec.ts:709:7 › editor mount + read guards › denied-role deep links get the identical non-disclosing 403
+[86/131] tests/e2e/onboarding-forms.spec.ts:735:7 › editor mount + read guards › dual-member isolation: wsA form under a wsB URL renders the IDENTICAL denial as nonexistent
+[87/131] tests/e2e/onboarding-forms.spec.ts:775:7 › editor mount + read guards › nonexistent and malformed formIds fail closed identically
+[88/131] tests/e2e/onboarding-forms.spec.ts:790:7 › editor mount + read guards › active form with an open draft mounts READ-ONLY: name + draft visible, zero mutation surface
+[89/131] tests/e2e/onboarding-forms.spec.ts:824:7 › editor mount + read guards › active form without a draft mounts the no-draft read state
+[90/131] tests/e2e/onboarding-forms.spec.ts:858:7 › editor mount + read guards › archived form mounts permanently read-only: banner, no mutation controls
+[91/131] tests/e2e/onboarding-forms.spec.ts:896:7 › editor mount + read guards › archived form WITH a preserved draft renders its content read-only
+[92/131] tests/e2e/onboarding-forms.spec.ts:935:9 › editor mount + read guards › mounted editor has no horizontal overflow at 1440px
+[93/131] tests/e2e/onboarding-forms.spec.ts:959:9 › editor mount + read guards › local metadata edits arm save — zero network/storage/DB delta at 1440px
+[94/131] tests/e2e/onboarding-forms.spec.ts:999:9 › editor mount + read guards › local structure edits arm save — zero network/storage/DB delta at 1440px
+[95/131] tests/e2e/onboarding-forms.spec.ts:935:9 › editor mount + read guards › mounted editor has no horizontal overflow at 834px
+[96/131] tests/e2e/onboarding-forms.spec.ts:959:9 › editor mount + read guards › local metadata edits arm save — zero network/storage/DB delta at 834px
+[97/131] tests/e2e/onboarding-forms.spec.ts:999:9 › editor mount + read guards › local structure edits arm save — zero network/storage/DB delta at 834px
+[98/131] tests/e2e/onboarding-forms.spec.ts:935:9 › editor mount + read guards › mounted editor has no horizontal overflow at 390px
+[99/131] tests/e2e/onboarding-forms.spec.ts:959:9 › editor mount + read guards › local metadata edits arm save — zero network/storage/DB delta at 390px
+[100/131] tests/e2e/onboarding-forms.spec.ts:999:9 › editor mount + read guards › local structure edits arm save — zero network/storage/DB delta at 390px
+[101/131] tests/e2e/onboarding-forms.spec.ts:1091:7 › editor save foundation › coach edits all six kinds, adds/removes/reorders, and saves twice with stable server IDs
+[102/131] tests/e2e/onboarding-forms.spec.ts:1267:7 › editor save foundation › all edit controls disable while a save is in flight, then re-enable
+[103/131] tests/e2e/onboarding-forms.spec.ts:1338:7 › editor save foundation › stale revision surfaces a safe inline alert and preserves unsaved edits
+[104/131] tests/e2e/onboarding-forms.spec.ts:1391:7 › editor save foundation › aborted save transport preserves unsaved edits; explicit retry succeeds once
+[105/131] tests/e2e/onboarding-forms.spec.ts:1435:7 › editor save foundation › committed-but-lost response reconciles safely — stale retry cannot double-apply
+[106/131] tests/e2e/onboarding-forms.spec.ts:1498:7 › editor save foundation › a field-only save preserves the seeded form name — never an empty name
+[107/131] tests/e2e/onboarding-forms.spec.ts:1531:7 › editor save foundation › dirty edits are discarded on reload — persisted state renders, nothing auto-saves
+[108/131] tests/e2e/onboarding-forms.spec.ts:1565:9 › editor save foundation › adding a singleChoice field seeds exactly one blank option input
+[109/131] tests/e2e/onboarding-forms.spec.ts:1565:9 › editor save foundation › adding a multiChoice field seeds exactly one blank option input
+[110/131] tests/e2e/onboarding-forms.spec.ts:1586:9 › editor save foundation › editing + save round-trips with no overflow at 1440px
+[111/131] tests/e2e/onboarding-forms.spec.ts:1586:9 › editor save foundation › editing + save round-trips with no overflow at 834px
+[112/131] tests/e2e/onboarding-forms.spec.ts:1586:9 › editor save foundation › editing + save round-trips with no overflow at 390px
+[113/131] tests/e2e/onboarding-forms.spec.ts:1621:5 › owner creates, edits, publishes, reopens, v2, and archives
+[114/131] tests/e2e/onboarding-forms.spec.ts:1768:5 › editor controls disable while a mutation is in flight (no mid-save clobber)
+[115/131] tests/e2e/onboarding-forms.spec.ts:2072:9 › responsive + keyboard › desktop: full lifecycle at 1440px
+[116/131] tests/e2e/onboarding-forms.spec.ts:2072:9 › responsive + keyboard › tablet: full lifecycle at 834px
+[117/131] tests/e2e/onboarding-forms.spec.ts:2072:9 › responsive + keyboard › mobile: full lifecycle at 390px
+[118/131] tests/e2e/onboarding-forms.spec.ts:2103:7 › editor lifecycle controls (ES-4a — preview independent) › publish → closed → reopen seeds → edit → save → publish v2
+[119/131] tests/e2e/onboarding-forms.spec.ts:2165:7 › editor lifecycle controls (ES-4a — preview independent) › archive from an open-draft state lands the form on the archived list
+[120/131] tests/e2e/onboarding-forms.spec.ts:2191:7 › editor lifecycle controls (ES-4a — preview independent) › archive from a closed (published, no draft) state archives the form
+[121/131] tests/e2e/onboarding-forms.spec.ts:2221:7 › editor lifecycle controls (ES-4a — preview independent) › a pending publish disables every editor + lifecycle control
+[122/131] tests/e2e/onboarding-forms.spec.ts:2284:7 › editor lifecycle controls (ES-4a — preview independent) › a stale publish shows the safe alert and writes no version
+[123/131] tests/e2e/onboarding-forms.spec.ts:2448:7 › form definition preview (ES-4b — zero-mutation reads) › draft preview renders every kind read-only; Enter submits nothing; workspace stays byte-identical
+[124/131] tests/e2e/onboarding-forms.spec.ts:2471:7 › form definition preview (ES-4b — zero-mutation reads) › src selection: missing/src=draft render the open draft; src=version renders the LATEST frozen version
+[125/131] tests/e2e/onboarding-forms.spec.ts:2525:7 › form definition preview (ES-4b — zero-mutation reads) › edge src legs fail closed non-disclosing: unknown value, version with zero history, draft on a closed form
+[126/131] tests/e2e/onboarding-forms.spec.ts:2583:7 › form definition preview (ES-4b — zero-mutation reads) › denied roles, foreign workspace, and nonexistent form get the identical non-disclosing denial
+[127/131] tests/e2e/onboarding-forms.spec.ts:2633:7 › form definition preview (ES-4b — zero-mutation reads) › an archived form's published history stays an allowed READ-ONLY version preview
+[128/131] tests/e2e/onboarding-forms.spec.ts:2669:7 › form definition preview (ES-4b — zero-mutation reads) › the closed no-draft branch exposes the version preview link
+[129/131] tests/e2e/onboarding-forms.spec.ts:2702:9 › form definition preview (ES-4b — zero-mutation reads) › draft preview has no horizontal overflow and all-disabled controls at 1440px
+[130/131] tests/e2e/onboarding-forms.spec.ts:2702:9 › form definition preview (ES-4b — zero-mutation reads) › draft preview has no horizontal overflow and all-disabled controls at 834px
+[131/131] tests/e2e/onboarding-forms.spec.ts:2702:9 › form definition preview (ES-4b — zero-mutation reads) › draft preview has no horizontal overflow and all-disabled controls at 390px
+  1 failed
+    tests/e2e/checkin-instances.spec.ts:644:5 › beforeunload is suppressed immediately on success — inside the pre-unmount window 
+  130 passed (2.3m)
+PLAYWRIGHT_EXIT=1

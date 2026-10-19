@@ -1,0 +1,6 @@
+_reverify2-base p2 exit=1
+_reverify2-base p3 exit=0
+_reverify2-fix p2 exit=1
+_reverify2-fix p3 exit=0
+pr-03-react-hooks p2 exit=1
+pr-03-react-hooks p3 exit=0

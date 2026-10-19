@@ -1,0 +1,34 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.2 /home/nexuslink/vari8-worktrees/_reverify2-base
+
+ ❯ tests/unit/zz-p1.dom.test.tsx (6 tests | 1 failed) 153ms
+   ❯ hunk 1 dashboard-editor: edit commits on the live slot config (2)
+     × GAP: a slot write NOT yet re-rendered is the base of the next commit (reload not reverted) 7ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/zz-p1.dom.test.tsx > hunk 1 dashboard-editor: edit commits on the live slot config > GAP: a slot write NOT yet re-rendered is the base of the next commit (reload not reverted)
+AssertionError: expected 'Alpha' to be 'RELOADED' // Object.is equality
+
+Expected: "RELOADED"
+Received: "Alpha"
+
+ ❯ tests/unit/zz-p1.dom.test.tsx:83:36
+     81|     slot.latestConfig = { ...slot.latestConfig, name: "RELOADED" } as …
+     82|     fireEvent.change(screen.getByTestId("add-widget"), { target: { val…
+     83|     expect(slot.latestConfig.name).toBe("RELOADED");
+       |                                    ^
+     84|   });
+     85| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 5 passed (6)
+   Start at  04:00:32
+   Duration  631ms (environment 53%, tests 27%, transform 11%, import 9%)
+

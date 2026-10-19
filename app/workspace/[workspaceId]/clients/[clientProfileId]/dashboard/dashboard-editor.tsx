@@ -57,6 +57,10 @@ const COLUMNS: Record<BreakpointName, number> = {
 const BREAKPOINTS: BreakpointName[] = ["desktop", "tablet", "mobile"];
 const ROW_PX = 72;
 
+function mintWidgetId(kind: WidgetKind): string {
+  return `w-${kind.toLowerCase()}-${Date.now().toString(36)}`;
+}
+
 /**
  * Lily-aligned autosaving builder (I1-R2): breakpoint canvas with
  * drag/resize commits (pointer end only — never per-move), per-widget
@@ -96,7 +100,9 @@ export function DashboardEditor({
   const [preview, setPreview] = useState(false);
   const router = useRouter();
   const routerRef = useRef(router);
-  routerRef.current = router;
+  useEffect(() => {
+    routerRef.current = router;
+  });
 
   // I1-R5/R6: the autosave slot is owned by the module-level coordinator
   // — drafts, debounce timers, queued saves and the confirmed revision
@@ -125,8 +131,6 @@ export function DashboardEditor({
   const dirty = slot.dirty;
   const saveState = slot.saveState;
   const leavePrompt = slot.leavePrompt;
-  const latestConfig = useRef(config);
-  latestConfig.current = config;
 
   // Navigation guard: singleton module-level listeners bound once to
   // coordinator-backed callbacks — pending work stays observable and
@@ -151,12 +155,16 @@ export function DashboardEditor({
   const columns = COLUMNS[bp];
 
   const setRect = (id: string, next: Rect) => {
+    // Commit on top of the slot's live config — a slot write that lands
+    // between pointerdown and pointerup (e.g. a conflict reload awaiting
+    // the server) is the base, never a snapshot that would revert it.
+    const base = slot.latestConfig;
     commitDashboardConfig(slot, {
-      ...latestConfig.current,
+      ...base,
       layouts: {
-        ...latestConfig.current.layouts,
+        ...base.layouts,
         [bp]: compactRects({
-          ...(latestConfig.current.layouts[bp] ?? {}),
+          ...(base.layouts[bp] ?? {}),
           [id]: next,
         }),
       },
@@ -227,11 +235,11 @@ export function DashboardEditor({
   // ---------- mutations ----------
 
   const mutate = (fn: (c: DashboardConfig) => DashboardConfig) => {
-    commitDashboardConfig(slot, fn(latestConfig.current));
+    commitDashboardConfig(slot, fn(slot.latestConfig));
   };
 
   const addWidget = (kind: WidgetKind) => {
-    const id = `w-${kind.toLowerCase()}-${Date.now().toString(36)}`;
+    const id = mintWidgetId(kind);
     mutate((c) => {
       const nextLayouts = { ...c.layouts };
       // a rect in every *present* breakpoint (coherence rule) + desktop

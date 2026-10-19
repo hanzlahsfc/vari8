@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import {
   archiveForm,
@@ -103,14 +103,22 @@ export function DraftEditor({
   const pending = savePending || lifecyclePending;
 
   // Route incoming server props through the monotonic seam.
-  useEffect(() => {
+  const [prevSeed, setPrevSeed] = useState<
+    readonly [string, number, EditorDefinition]
+  >([initialName, initialRevision, initialDraft]);
+  if (
+    prevSeed[0] !== initialName ||
+    prevSeed[1] !== initialRevision ||
+    prevSeed[2] !== initialDraft
+  ) {
+    setPrevSeed([initialName, initialRevision, initialDraft]);
     setState((prev) =>
       reseedDraftState(
         prev,
         initialDraftState(initialName, initialRevision, initialDraft),
       ),
     );
-  }, [initialName, initialRevision, initialDraft]);
+  }
 
   const updateName = (name: string) =>
     setState((prev) => ({ ...prev, name, dirty: true }));

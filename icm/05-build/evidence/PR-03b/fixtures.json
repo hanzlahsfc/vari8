@@ -1,0 +1,13 @@
+{
+  "workspaceId": "cmveiugeh0003wg1b5s0fwzbf",
+  "clientProfileId": "pr03b_client",
+  "ownerEmail": "pr03b-owner@example.invalid",
+  "coachEmail": "pr03b-coach@example.invalid",
+  "clientEmail": "pr03b-client@example.invalid",
+  "password": "pr03b-password",
+  "draftCheckInFormId": "pr03b_ci_draft",
+  "draftOnboardingFormId": "pr03b_ob_form",
+  "fillInstanceId": "pr03b_inst_fill",
+  "submissionId": "pr03b_sub",
+  "programId": "cmvej6u5y000xwgmpl7rkxkd1"
+}
