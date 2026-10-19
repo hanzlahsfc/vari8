@@ -1,0 +1,60 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.2 /home/nexuslink/vari8-worktrees/_reverify2-base
+
+stdout | tests/unit/zz-p2.dom.test.tsx > hunk 1 WINDOW: reloaded config survives a pointer commit that lands before passive effects > WINDOW: reload commit -> pointerup in the commit-to-passive-effect gap; reloaded name must survive
+PROBE2 {"dragCommitX":3,"name":"RELOADED"}
+
+ ❯ tests/unit/zz-p2.dom.test.tsx (2 tests | 2 failed) 111ms
+   ❯ hunk 1 WINDOW: reloaded config survives a pointer commit that lands before passive effects (2)
+     × CONTROL (fully flushed reload, then drag-commit): reloaded name survives on every tree 39ms
+     × WINDOW: reload commit -> pointerup in the commit-to-passive-effect gap; reloaded name must survive 71ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/zz-p2.dom.test.tsx > hunk 1 WINDOW: reloaded config survives a pointer commit that lands before passive effects > CONTROL (fully flushed reload, then drag-commit): reloaded name survives on every tree
+AssertionError: control: drag commit must run: expected +0 to be 8 // Object.is equality
+
+- Expected
++ Received
+
+- 8
++ 0
+
+ ❯ tests/unit/zz-p2.dom.test.tsx:61:91
+     59|       window.dispatchEvent(new MouseEvent("pointerup", { clientX: 40, …
+     60|     });
+     61|     expect(slot.latestConfig.layouts.desktop?.[w.id]?.x, "control: dra…
+       |                                                                                           ^
+     62|     expect(slot.latestConfig.name).toBe("RELOADED");
+     63|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/unit/zz-p2.dom.test.tsx > hunk 1 WINDOW: reloaded config survives a pointer commit that lands before passive effects > WINDOW: reload commit -> pointerup in the commit-to-passive-effect gap; reloaded name must survive
+AssertionError: probe invalid: pointerup did not commit a drag: expected 3 to be 8 // Object.is equality
+
+- Expected
++ Received
+
+- 8
++ 3
+
+ ❯ tests/unit/zz-p2.dom.test.tsx:96:73
+     94|     const committed = slot.latestConfig.layouts.desktop?.[w.id]?.x;
+     95|     console.log("PROBE2 " + JSON.stringify({ dragCommitX: committed, n…
+     96|     expect(committed, "probe invalid: pointerup did not commit a drag"…
+       |                                                                         ^
+     97|     expect(slot.latestConfig.name).toBe("RELOADED");
+     98|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  04:05:20
+   Duration  598ms (environment 57%, tests 22%, transform 10%, import 10%)
+

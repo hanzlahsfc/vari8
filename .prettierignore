@@ -11,5 +11,25 @@ docs/conductor-generic/SKILL.md
 # Generated, committed extraction artifacts — must not be reformatted.
 spec/
 
+# Generated system index (scripts/index/generate.ts) — regenerate with `npm run index`.
+# Formatting these by hand makes `npm run index:check` fail.
+docs/index/ROUTES.md
+docs/index/SYMBOLS.md
+docs/index/DATA-MODEL.md
+docs/index/GLOSSARY.md
+docs/index/COMPONENTS.md
+# Generated directory routers, with hand-written text preserved below the markers.
+# A new top-level directory adds one line here.
+app/AGENTS.md
+components/AGENTS.md
+db/AGENTS.md
+docs/AGENTS.md
+icm/AGENTS.md
+lib/AGENTS.md
+scripts/AGENTS.md
+spec/AGENTS.md
+tests/AGENTS.md
+themes/AGENTS.md
+
 # Independent frontend project uses Biome.
 frontend/

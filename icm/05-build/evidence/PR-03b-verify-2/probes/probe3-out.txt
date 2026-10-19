@@ -1,0 +1,6 @@
+_reverify2-base success {"clearMarkerCalls":1,"clearMarkerFromPassiveEffect":true,"atFirstConfirmCommit":{"items":0,"body":"Hello"}}
+_reverify2-base mount {"resolveCalledFromPassiveEffect":true}
+_reverify2-fix success {"clearMarkerCalls":1,"clearMarkerFromPassiveEffect":true,"atFirstConfirmCommit":{"items":0,"body":"Hello"}}
+_reverify2-fix mount {"resolveCalledFromPassiveEffect":true}
+pr-03-react-hooks success {"clearMarkerCalls":1,"clearMarkerFromPassiveEffect":false,"atFirstConfirmCommit":{"items":1,"body":""}}
+pr-03-react-hooks mount {"resolveCalledFromPassiveEffect":true}

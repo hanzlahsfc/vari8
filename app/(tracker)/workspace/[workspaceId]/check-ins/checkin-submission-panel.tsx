@@ -364,11 +364,18 @@ function FillForm({
     emptyAnswers(detail.definition.fields),
   );
   const [dirty, setDirty] = useState(false);
+  const submittedRef = useRef(false);
   const [state, action, pending] = useActionState<SubmitCheckInState, FormData>(
-    submitCheckInInstanceAction,
+    async (prev, formData) => {
+      const result = await submitCheckInInstanceAction(prev, formData);
+      if (result.ok === true) {
+        submittedRef.current = true;
+        setDirty(false);
+      }
+      return result;
+    },
     { ok: "idle" },
   );
-  const submittedRef = useRef(false);
 
   // Dirty-only beforeunload — removed after a committed submission and on
   // unmount.
@@ -382,11 +389,7 @@ function FillForm({
   }, [dirty]);
 
   useEffect(() => {
-    if (state.ok === true) {
-      submittedRef.current = true;
-      setDirty(false);
-      router.refresh();
-    }
+    if (state.ok === true) router.refresh();
   }, [state, router]);
 
   const error = state.ok === false ? state.message : null;
