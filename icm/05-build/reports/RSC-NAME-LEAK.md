@@ -36,26 +36,26 @@ Affected - same class (tenant-data read by URL ids before the authorization call
 
 - `app/workspace/[workspaceId]/clients/[clientProfileId]/training-program/page.tsx`
   - `clientProfile.findFirst` at :47-50 before `readStaffTrainingProgramsFromAction`
-  at :52; name rendered at :64 even when `result.ok` is false. Reported leak.
+    at :52; name rendered at :64 even when `result.ok` is false. Reported leak.
 - `app/workspace/[workspaceId]/clients/[clientProfileId]/training-program/[programId]/page.tsx`
   - same lookup at :52-55 before `readStaffTrainingProgramFromAction` at :57; name in
-  eyebrow link at :84 renders on the denied path.
+    eyebrow link at :84 renders on the denied path.
 - `app/workspace/[workspaceId]/clients/[clientProfileId]/meal-plan/page.tsx`
   - same lookup at :47-50 before `readStaffMealPlanFromAction` at :52; name at :64
-  renders on the denied path.
+    renders on the denied path.
 - `app/workspace/[workspaceId]/clients/[clientProfileId]/checkins/page.tsx`
   - same lookup at :71-74 before the four boundary calls at :76-95; name at :107
-  renders on the denied path (`denied` branch keeps the h1).
+    renders on the denied path (`denied` branch keeps the h1).
 - `app/workspace/[workspaceId]/clients/[clientProfileId]/coaches/page.tsx`
   - `clientProfile.findFirst` at :53-56 before `listClientAssignments` (the
-  `clientAssignments/read` authorization) at :62. Denial throws `forbidden()` before
-  the name renders, but the pre-authz `if (client === null) notFound()` leaks client
-  existence as a 404-vs-403 oracle. Fixed for the class.
+    `clientAssignments/read` authorization) at :62. Denial throws `forbidden()` before
+    the name renders, but the pre-authz `if (client === null) notFound()` leaks client
+    existence as a 404-vs-403 oracle. Fixed for the class.
 - `app/workspace/[workspaceId]/clients/[clientProfileId]/dashboard/page.tsx`
   - member + scope authorization at :47-55, then `clientProfile.findFirst` at :57-60
-  before the client-scoped boundary read `readStaffDashboardLayout` at :63. Denial
-  throws `notFound()` before render (no payload leak observed) but the lookup still
-  precedes the client-scoped authorization; reordered for the class.
+    before the client-scoped boundary read `readStaffDashboardLayout` at :63. Denial
+    throws `notFound()` before render (no payload leak observed) but the lookup still
+    precedes the client-scoped authorization; reordered for the class.
 
 Checked - not affected (authorization precedes tenant reads, or self-scoped only):
 
@@ -71,7 +71,7 @@ Checked - not affected (authorization precedes tenant reads, or self-scoped only
 - `app/workspace/[workspaceId]/clients/[clientProfileId]/daily/page.tsx` - explicit
   `authorize(dailyTracking/read)` at :59-72 precedes `listStaffDailyEntries`; the
   client name comes from inside the authorized read (`list.clientName`).
-- `app/workspace/[workspaceId]/clients/[clientProfileId]/onboarding/page.tsx`  - 
+- `app/workspace/[workspaceId]/clients/[clientProfileId]/onboarding/page.tsx` -
   explicit `authorize(onboardingSubmissionReviews/read)` at :55-68 precedes
   `listClientSubmissionsForReview`; the client name comes from inside the authorized
   read (`list.value.clientName`).
@@ -82,7 +82,7 @@ Checked - not affected (authorization precedes tenant reads, or self-scoped only
   `getCheckInFormForWorkspace`); `!ok` → `forbidden()` before any render.
 - `app/workspace/[workspaceId]/checkins/review-queue/page.tsx` - boundary-first
   (`listStaffCheckInReviewQueue`), `!ok` → `forbidden()`.
-- `app/workspace/[workspaceId]/client-setups/page.tsx`  - 
+- `app/workspace/[workspaceId]/client-setups/page.tsx` -
   `requireClientSetupAccess` at :59 precedes all reads.
 - `app/workspace/[workspaceId]/exercises/page.tsx`,
   `nutrition/page.tsx` - `requireWorkspaceAccess` at :45/:38 precedes catalog reads
@@ -91,12 +91,12 @@ Checked - not affected (authorization precedes tenant reads, or self-scoped only
   `onboarding/forms/new/page.tsx`, `onboarding/forms/[formId]/page.tsx`,
   `onboarding/forms/[formId]/preview/page.tsx` - boundary-first
   (`listFormsForWorkspace` / `requireWorkspaceAccess` write / `getFormForWorkspace`).
-- `app/workspace/[workspaceId]/onboarding/assignments/page.tsx`  - 
+- `app/workspace/[workspaceId]/onboarding/assignments/page.tsx` -
   `requireOnboardingAssignmentsAccess` at :63 precedes all reads.
 - `app/workspace/[workspaceId]/parameters/page.tsx` - boundary-first
   (`listParametersForWorkspace`).
 - `app/workspace/[workspaceId]/templates/page.tsx`,
-  `templates/[templateId]/page.tsx`, `templates/[templateId]/preview/page.tsx`  - 
+  `templates/[templateId]/page.tsx`, `templates/[templateId]/preview/page.tsx` -
   boundary-first (`listTemplatesForWorkspace` / `getTemplateForWorkspace` /
   `getTemplateVersionForWorkspace`).
 
@@ -170,21 +170,21 @@ lookup observed / 404-vs-403 oracle). After the fix: 8 of 8 pass.
 
 ## Commands and results
 
-| Command | Exit | Result |
-| --- | --- | --- |
-| `npm ci` | 0 | clean install |
-| `npx prisma migrate deploy` (app_rsc_leak) | 0 | schema applied |
-| live probe, unfixed (above) | - | 403 + foreign name in body (bug confirmed) |
-| `npx vitest run --config vitest.integration.config.ts tests/integration/rsc-name-leak.test.ts`, unfixed | 1 | 6 failed / 2 passed (RED) |
-| same, after fix | 0 | 8/8 passed (GREEN) |
-| live probe, fixed (above) | - | 403, zero marker bytes; owner 200 with name |
-| `npx tsc --noEmit` | 0 | clean (the one stale probe import was repaired, see below) |
-| `npm run lint` | 0 | 0 errors, 3 pre-existing warnings in untouched files |
-| `npm run test` | 0 | 1155/1155 unit tests |
-| `npm run test:integration` (INTEGRATION_DATABASE_URL=app_rsc_leak) | 0 | 858/858, 54 files |
-| `npm run build` | 0 | compiled + routes emitted |
-| `cd frontend && npm ci` / `npm run build` | 0 | static build OK |
-| `npm run index` / `npm run index:check` | 0 | regenerated, check OK |
+| Command                                                                                                 | Exit | Result                                                     |
+| ------------------------------------------------------------------------------------------------------- | ---- | ---------------------------------------------------------- |
+| `npm ci`                                                                                                | 0    | clean install                                              |
+| `npx prisma migrate deploy` (app_rsc_leak)                                                              | 0    | schema applied                                             |
+| live probe, unfixed (above)                                                                             | -    | 403 + foreign name in body (bug confirmed)                 |
+| `npx vitest run --config vitest.integration.config.ts tests/integration/rsc-name-leak.test.ts`, unfixed | 1    | 6 failed / 2 passed (RED)                                  |
+| same, after fix                                                                                         | 0    | 8/8 passed (GREEN)                                         |
+| live probe, fixed (above)                                                                               | -    | 403, zero marker bytes; owner 200 with name                |
+| `npx tsc --noEmit`                                                                                      | 0    | clean (the one stale probe import was repaired, see below) |
+| `npm run lint`                                                                                          | 0    | 0 errors, 3 pre-existing warnings in untouched files       |
+| `npm run test`                                                                                          | 0    | 1155/1155 unit tests                                       |
+| `npm run test:integration` (INTEGRATION_DATABASE_URL=app_rsc_leak)                                      | 0    | 858/858, 54 files                                          |
+| `npm run build`                                                                                         | 0    | compiled + routes emitted                                  |
+| `cd frontend && npm ci` / `npm run build`                                                               | 0    | static build OK                                            |
+| `npm run index` / `npm run index:check`                                                                 | 0    | regenerated, check OK                                      |
 
 Incidental repair required by the gates: `icm/05-build/evidence/PR-03b-verify-3/probes/variant-mount-timing.dom.test.tsx`
 imported `./v3-deferred-thread`, but the file on disk is
