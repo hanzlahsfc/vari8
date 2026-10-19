@@ -124,6 +124,7 @@ export function CheckInFeedbackThread({
   );
   const [loadingMore, setLoadingMore] = useState(false);
   const [moreError, setMoreError] = useState<string | null>(null);
+  const [body, setBody] = useState("");
 
   // Retry identity — one nonce per compose session (P3 §5).
   const [nonce, setNonce] = useState<string>(() => crypto.randomUUID());
@@ -145,15 +146,16 @@ export function CheckInFeedbackThread({
     reconciledRef.current = true;
     const marker = readMarker(key);
     if (!marker) return;
-    setNonce(marker.nonce);
-    setReconcile("checking");
-    void resolveCheckInFeedbackSendAction({
-      workspaceId,
-      clientProfileId,
-      submissionId,
-      clientRequestId: marker.nonce,
-    })
-      .then((res) => {
+    void (async () => {
+      setNonce(marker.nonce);
+      setReconcile("checking");
+      try {
+        const res = await resolveCheckInFeedbackSendAction({
+          workspaceId,
+          clientProfileId,
+          submissionId,
+          clientRequestId: marker.nonce,
+        });
         if (res.status === "sent") {
           clearMarker(key);
           setReconcile("idle");
@@ -178,8 +180,10 @@ export function CheckInFeedbackThread({
         } else {
           setReconcile("unavailable");
         }
-      })
-      .catch(() => setReconcile("unavailable"));
+      } catch {
+        setReconcile("unavailable");
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -189,27 +193,27 @@ export function CheckInFeedbackThread({
     if (sendState.status !== "ok" || lastHandledRef.current === sendState)
       return;
     lastHandledRef.current = sendState;
-    clearMarker(key);
-    setReconcile("idle");
-    setNonce(crypto.randomUUID());
-    setItems((prev) =>
-      prev === null || prev.some((i) => i.id === sendState.feedbackId)
-        ? prev
-        : [
-            ...prev,
-            {
-              id: sendState.feedbackId,
-              sentAt: sendState.sentAt,
-              byName: sendState.byName,
-              body: sendState.body,
-            },
-          ],
-    );
-    setBody("");
+    void (async () => {
+      clearMarker(key);
+      setReconcile("idle");
+      setNonce(crypto.randomUUID());
+      setItems((prev) =>
+        prev === null || prev.some((i) => i.id === sendState.feedbackId)
+          ? prev
+          : [
+              ...prev,
+              {
+                id: sendState.feedbackId,
+                sentAt: sendState.sentAt,
+                byName: sendState.byName,
+                body: sendState.body,
+              },
+            ],
+      );
+      setBody("");
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sendState]);
-
-  const [body, setBody] = useState("");
 
   return (
     <section
