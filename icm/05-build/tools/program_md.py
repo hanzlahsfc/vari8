@@ -51,9 +51,9 @@ w("| Work | Lane | Model |\n| --- | --- | --- |")
 for row in [
     ("Builders", "yamato drives Devin; the card names the gear SOUL and skills", "Devin swe-2-max (driver deepseek-v4.1-flash)"),
     ("Bulk mechanical (test cuts, index rebuild)", "tenten, shikamaru", "deepseek-v4.1-flash"),
-    ("Per-PR behavior and parity verify", "neji (urokodaki for PR-P1, whose builder ran on Haiku)", "claude-haiku-5-5 (claude-opus-5-5)"),
+    ("Per-PR behavior and parity verify", "neji (urokodaki for PR-P1 and AUD-REDUCTION, built on claude-haiku-5-5)", "claude-haiku-5-5 (claude-opus-5-5)"),
     ("Security verify (auth, schema, media, invitations)", "shinobu", "claude-haiku-5-5"),
-    ("Integration (merge cards)", "kakashi, escalation meliodas", "claude-sonnet-5-5"),
+    ("Integration (merge cards) and GATE-CLEAN", "kakashi profile, escalation meliodas", "deepseek-v4.1-flash"),
     ("Production-readiness gate", "urokodaki", "claude-opus-5-5, medium"),
     ("Final judgement, once", "minato", "gpt-6.1-sol"),
 ]:

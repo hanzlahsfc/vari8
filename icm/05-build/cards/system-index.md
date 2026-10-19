@@ -1,7 +1,7 @@
 # PR-X1 build: Build the system index generator and the first index
 
 Card slug `system-index`. Board `vari8`. Track Index. Depends on none. Builder: deepseek-v4.1-flash, outside the graph. Issue #62.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/system-index`, branch `beta/system-index` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prx1` on 127.0.0.1:5433 user `app`; dev port 3821. May touch `db/`: no; the local check fails if `db/` changes.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/system-index`, branch `beta/system-index` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prx1` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3821. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## State
 
@@ -29,7 +29,7 @@ In flight outside the graph: issue #62, worktree `/home/nexuslink/vari8-worktree
 
 ## Build
 
-- In flight outside the graph (ds4f, tenten gear, issue #62). Acceptance contract: `icm/05-build/SYSTEM-INDEX-SPEC.md` (deterministic generator, per-directory routers, symbol and route maps, glossary, check mode). Its verifier checks the generator against the spec, not the content of a tree that is still moving.
+- In flight outside the graph (deepseek-v4.1-flash, tenten gear, issue #62). Acceptance contract: `icm/05-build/SYSTEM-INDEX-SPEC.md` (deterministic generator, per-directory routers, symbol and route maps, glossary, check mode). Its verifier checks the generator against the spec, not the content of a tree that is still moving.
 
 ## Acceptance (you see)
 

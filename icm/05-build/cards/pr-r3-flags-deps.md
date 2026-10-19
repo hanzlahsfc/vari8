@@ -1,7 +1,7 @@
 # PR-R3 build: Collapse product flags and drop unused dependencies
 
-Card slug `pr-r3-flags-deps`. Board `vari8`. Track Reduction. Depends on PR-R1. Builder: Devin swe-2-max driven by yamato. Issue created in driver step 2.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-r3-flags-deps`, branch `beta/pr-r3-flags-deps` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prr3` on 127.0.0.1:5433 user `app`; dev port 3818. May touch `db/`: no; the local check fails if `db/` changes.
+Card slug `pr-r3-flags-deps`. Board `vari8`. Track Reduction. Depends on PR-R1. Builder: Devin swe-2-max driven by yamato (driver deepseek-v4.1-flash). Issue created in driver step 2.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-r3-flags-deps`, branch `beta/pr-r3-flags-deps` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prr3` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3818. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## Driver steps (yamato only; Devin skips this section)
 
@@ -29,7 +29,7 @@ Load `/home/nexuslink/.hermes/profiles/kakashi/SOUL.md` as your working persona 
 
 - none (foundation or tooling PR)
 
-## Backend orphans this PR disposes
+## Backend orphans this PR owns (delete or keep as each line says)
 
 - S12-75: ENABLE_SHEET_VIEWER flag. Evidence: `lib/sheet-viewer.ts:7, app/sheets/page.tsx:13`. (delete with the sheet viewer (D33))
 - S12-76: ENABLE_ONBOARDING_ASSIGNMENTS flag. Evidence: `lib/onboarding/assignments-boundary.ts:80, app/workspace/[works (collapse into product (D33))

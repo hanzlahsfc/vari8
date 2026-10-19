@@ -95,10 +95,13 @@ own("PR-05", "V2-H5", "V2-H12", "V3-CO01")
 ORPHAN_OWNER = {}
 for i in list(range(1, 8)) + list(range(34, 43)) + list(range(66, 72)) + [72]:
     ORPHAN_OWNER[f"S12-{i:02d}"] = ("PR-05", "keep or replace per D16a; covered by the roles test")
-for i in [8, 9, 45, 47, 50, 51, 52, 53]:
+for i in [8, 9, 45, 50, 51, 52, 53]:
     ORPHAN_OWNER[f"S12-{i:02d}"] = ("PR-R1", "delete when the census shows no runtime caller (D33, BACKEND-REDUCTION F5, F6)")
-for i in [44, 46, 48, 49]:
-    ORPHAN_OWNER[f"S12-{i:02d}"] = ("PR-R1", "keep; imported by the catalog importers (BACKEND-REDUCTION section 5 item 2)")
+# Live: the catalog importers (S12-57, S12-58) import these through lib/nutrition/source.ts and
+# lib/exercise/source.ts (contracts, databases, normalize, parse) and parse.ts imports css.ts.
+# BACKEND-REDUCTION section 5 item 2 names 44, 48, 49; 46 and 47 follow from the same import graph.
+for i in [44, 46, 47, 48, 49]:
+    ORPHAN_OWNER[f"S12-{i:02d}"] = ("PR-04", "keep; imported by the catalog importers that seed the catalogs (not R1 work)")
 for i in [10, 11, 12]:
     ORPHAN_OWNER[f"S12-{i:02d}"] = ("PR-R1", "old UI page, delete after the canvas screen is wired (D33)")
 for i in [13, 14, 15, 16] + list(range(59, 66)):
@@ -108,7 +111,7 @@ for i in list(range(17, 22)) + [23, 24] + list(range(25, 33)):
 for i in [22, 41, 54, 55, 56]:
     ORPHAN_OWNER[f"S12-{i:02d}"] = ("PR-04", "parked behind ENABLE_CONSENT_GATES, not extended (D19)")
 ORPHAN_OWNER["S12-33"] = ("PR-M3", "keep; structural audit for notes, tasks and messages")
-ORPHAN_OWNER["S12-43"] = ("PR-R1", "keep; Prisma singleton")
+ORPHAN_OWNER["S12-43"] = ("PR-R0", "keep; Prisma singleton, PR-R0 moves the shared retry helper into it (not R1 work)")
 ORPHAN_OWNER["S12-57"] = ("PR-04", "keep; run by db:fresh")
 ORPHAN_OWNER["S12-58"] = ("PR-04", "keep; run by db:fresh")
 ORPHAN_OWNER["S12-73"] = ("PR-SV4", "keep; routed from the roster")
@@ -117,7 +120,57 @@ ORPHAN_OWNER["S12-75"] = ("PR-R3", "delete with the sheet viewer (D33)")
 ORPHAN_OWNER["S12-76"] = ("PR-R3", "collapse into product (D33)")
 for rid in ["R3-16", "R3-18", "R3-20", "R3-21", "R3-22"]:
     ORPHAN_OWNER[rid] = ("PR-R1", "census then delete or keep (D33, BACKEND-REDUCTION F4, F6)")
-ORPHAN_OWNER["R3-17"] = ("PR-R1", "keep until Marcel answers D23 (`seed-catalog`); active orphan per GAP-MATRIX")
+ORPHAN_OWNER["R3-17"] = ("OWNER-QUESTION", "keep as an active orphan (GAP-MATRIX :515); no card deletes it; owner question Q-R3-17 in PLAN v2")
+
+# ---------- production-readiness P0 rows (baseline at 55a0f08) ----------
+# Disposition per W0-fix-1 ruling 7: an owning card, PRESENT, PARKED-D12, N/A or POST-BETA-INFRA.
+POST_BETA_INFRA = {
+    "PR-019": "backups", "PR-020": "restore test", "PR-021": "point-in-time recovery", "PR-045": "encryption at rest and in transit",
+    "PR-068": "DNS and TLS", "PR-074": "SPF, DKIM and DMARC", "PR-077": "cost alerts", "PR-081": "error tracking",
+    "PR-082": "external uptime checks", "PR-146": "account and domain ownership",
+    "PR-046": "least-privilege production access model (needs the hosting choice; lead classification)",
+}
+P0_OWNER_NEW = {  # baseline owner NEW or none, given a card
+    "PR-036": ("PR-03", "secret scan of the tree and full history in the local gate, plus a pre-commit secret hook"),
+    "PR-038": ("PR-03", "package provenance review next to the dependency scan (PR-039)"),
+    "PR-037": ("PR-D1", "key inventory and rotation procedure in `docs/setup.md`; real rotation needs production keys"),
+    "PR-041": ("PR-05", "every write behind the v1 boundary with Zod, CSRF from Better Auth; the security verifier runs a scan"),
+    "PR-133": ("GATE-CLEAN", "every program PR carries a SHIP verdict from a model other than its builder's; branch protection is an owner call"),
+    "PR-025": ("PR-W2", "live probe: create a client named Siobhan O'Brien-Nunez with accents, view the profile and every list"),
+    "PR-040": ("PR-W10", "live probe: save `<img onerror>` and `=HYPERLINK(...)` into note fields and view them escaped"),
+}
+
+
+def p0_rows():
+    rows = []
+    for line in open(f"{OUT}/audits/PRODREADY-BASELINE.md"):
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) >= 7 and re.match(r"^PR-\d{3}$", cells[0]) and cells[3] == "P0":
+            rows.append(dict(id=cells[0], title=cells[2], verdict=cells[4], note=cells[6]))
+    return rows
+
+
+P0 = p0_rows()
+
+
+def p0_owner(r):
+    m = re.match(r"Owner: PLAN (PR-[A-Z0-9]+)", r["note"])
+    if r["verdict"] == "PRESENT":
+        return "PRESENT", "present at 55a0f08; GATE-PRR re-checks"
+    if r["verdict"] == "PARKED":
+        return "PARKED-D12", "parked by D12; synthetic data only"
+    if r["verdict"] == "N/A":
+        return "N/A", "not applicable at beta (no payments, webhooks or AI); GATE-PRR re-checks"
+    if r["id"] in POST_BETA_INFRA:
+        return "POST-BETA-INFRA", POST_BETA_INFRA[r["id"]] + "; needs a hosting decision, see POST-BETA-INFRA.md"
+    if r["id"] in P0_OWNER_NEW:
+        return P0_OWNER_NEW[r["id"]]
+    if m:
+        return m.group(1), "baseline owner"
+    return None, ""
+
+
+SPECIAL_OWNERS = {"PRESENT", "PARKED-D12", "N/A", "POST-BETA-INFRA", "OWNER-QUESTION"}
 
 # ---------- TEST-AUDIT actions ----------
 TA = open(f"{ICM}/03-plan/output/TEST-AUDIT.md").read().split("\n")
@@ -218,6 +271,9 @@ def build_ledger():
         LEDGER.append(dict(kind="plan-pr", id=p["id"], detail=p["title"], owner=p["id"]))
     for d in DECISION_CARDS + GATES:
         LEDGER.append(dict(kind="program", id=d["id"], detail=d["title"], owner=d["id"]))
+    for r in P0:
+        owner, why = p0_owner(r)
+        LEDGER.append(dict(kind="readiness-p0", id=r["id"], detail=f'{r["title"]} ({r["verdict"]}): {why}', owner=owner))
 
 
 build_ledger()
@@ -226,6 +282,13 @@ build_ledger()
 def verification_for(row):
     o = row["owner"]
     p = PR_BY_ID.get(o)
+    if row["kind"] == "readiness-p0":
+        if o in SPECIAL_OWNERS:
+            return {"PRESENT": "GATE-PRR re-checks on the integrated tip", "PARKED-D12": "listed in PLAN v2 Parked; GATE-PRR confirms synthetic data only",
+                    "N/A": "GATE-PRR re-checks applicability", "POST-BETA-INFRA": "GitHub issue from POST-BETA-INFRA.md; GATE-PRR reports it BLOCKED on the owner"}[o]
+        return f"{o} verifier checks the item; GATE-PRR re-grades it on the integrated tip"
+    if row["kind"] == "orphan" and o == "OWNER-QUESTION":
+        return "untouched by every card (grep in GATE-PRR); owner answer recorded in DECISIONS"
     if row["kind"] == "screen":
         return f"D32 parity diff 1440x900 and 390x844 in {o} and PR-01 (before vs after) plus the live flow"
     if row["kind"] in ("test-audit", "test-rewire"):
@@ -278,9 +341,13 @@ def pr_card_bodies(p):
 {rows_txt}
 """
     if orph_txt:
-        common += f"\n## Backend orphans this PR disposes\n\n{orph_txt}\n"
+        common += f"\n## Backend orphans this PR owns (delete or keep as each line says)\n\n{orph_txt}\n"
     if ta_txt:
         common += f"\n## TEST-AUDIT actions this PR executes\n\n{ta_txt}\n"
+    p0 = [r for r in LEDGER if r["kind"] == "readiness-p0" and r["owner"] == pid]
+    if p0:
+        common += "\n## Production-readiness P0 rows this PR owns (`icm/05-build/audits/PRODREADY-BASELINE.md`)\n\n" + \
+            "\n".join(f"- {r['id']}: {r['detail']}" for r in p0) + "\n"
     files_txt = "\n".join(f"- `{f}`" if not " " in f else f"- {f}" for f in p["files"])
     build_txt = "\n".join(f"- {b}" for b in p["build"])
     see_txt = "\n".join(f"- {s}" for s in p["see"])
@@ -313,8 +380,8 @@ def pr_card_bodies(p):
 {gh_setup}"""
     build = f"""# {pid} build: {p['title']}
 
-Card slug `{slug}`. Board `vari8`. Track {p['track']}. Depends on {deps}. Builder: {('Devin swe-2-max driven by yamato' if devin else (p['who'] + ' (ds4f)' if p['who'] else str(p.get('builder_model')) + ', outside the graph'))}. Issue {issue_ref}.
-Repo `{REPO}`. Worktree `{WT}/{slug}`, branch `beta/{slug}` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `{dbname}` on 127.0.0.1:5433 user `app`; dev port {port}. May touch `db/`: {schema_ok}.
+Card slug `{slug}`. Board `vari8`. Track {p['track']}. Depends on {deps}. Builder: {('Devin swe-2-max driven by yamato (driver deepseek-v4.1-flash)' if devin else (p['who'] + ' (' + MODELS[p['who']][0] + ')' if p['who'] else str(p.get('builder_model')) + ', outside the graph'))}. Issue {issue_ref}.
+Repo `{REPO}`. Worktree `{WT}/{slug}`, branch `beta/{slug}` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `{dbname}` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port {port}. May touch `db/`: {schema_ok}.
 
 {driver}
 {gear_block(p)}
@@ -344,14 +411,17 @@ Write `icm/05-build/reports/{pid}.md` in the branch: head SHA, changed paths, ev
 """
     vslug = f"{slug}-verify"
     vdb = f"app_verify_{norm(pid)}"
+    vextra = ""
+    if p.get("verify_extra"):
+        vextra = "\n## Program contract checks (each must PASS for SHIP)\n\n" + "\n".join(f"- {x}" for x in p["verify_extra"]) + "\n"
     verify = f"""# {pid} verify: {p['title']}
 
-Card slug `{vslug}`. Independent verifier on a different model than the builder ({p.get('builder_model') or 'devin/swe-2-max'}). You never edit product code and never push. Worktree `{WT}/{vslug}` (local branch `beta/{vslug}`, never pushed). Evidence goes outside git to `{EVID}/{pid}/` and into the PR as a comment.
+Card slug `{vslug}`. Independent verifier on a different model than the builder ({p.get('builder_model') or 'swe-2-max'}). You never edit product code and never push. Worktree `{WT}/{vslug}` (local branch `beta/{vslug}`, never pushed). Evidence goes outside git to `{EVID}/{pid}/` and into the PR as a comment.
 
 ## Steps
 
 1. Find the PR: `gh pr list -R {REPO} --head beta/{slug} --state open --json number,headRefOid`. Then `cd {WT}/{vslug} && git fetch origin && git checkout --detach origin/beta/{slug}`; record the head SHA. Test-merge the current trunk the way GitHub will: `git merge --no-ff --no-edit origin/Vari8-Beta`. On a conflict: `git merge --abort`, comment `FIX: conflict with Vari8-Beta in <paths>` on the PR, block this card, stop.
-2. `mkdir -p {EVID}/{pid} && BASE_SHA=$(git rev-parse origin/Vari8-Beta) LANE_DB={vdb} LANE_PORT={vport} CARD={pid} icm/05-build/tools/verify-local.sh > {EVID}/{pid}/verify-local.log 2>&1; echo EXIT=$?`.
+2. Export `POSTGRES_PASSWORD` (RUNBOOK 'Local check'), then `mkdir -p {EVID}/{pid} && BASE_SHA=$(git rev-parse origin/Vari8-Beta) LANE_DB={vdb} LANE_PORT={vport} CARD={pid} icm/05-build/tools/verify-local.sh > {EVID}/{pid}/verify-local.log 2>&1; echo EXIT=$?`.
 3. Live receipt at that head: start the app on port {vport} with a fresh `{vdb}` (`npm run db:fresh`, or RUNBOOK 'Dev user before PR-04' while `db:fresh` does not exist yet), drive every acceptance item below in a real browser at 1440x900 and 390x844, as each of: {LIVE_ROLES}. Unauthorized direct requests to the PR's routes must fail closed. Save screenshots as `{EVID}/{pid}/<role>-<width>.png`.
 4. Parity (D32) on {scr_txt}: run the harness against your server; keep the report and diff images in `{EVID}/{pid}/parity/`.
 5. Check every matrix row listed below is visibly closed (or, for model and service rows, exercised by the wiring flow or a keep-category test). List each row with PASS or FAIL.
@@ -361,7 +431,7 @@ Card slug `{vslug}`. Independent verifier on a different model than the builder 
 ## Acceptance to check
 
 {see_txt}
-
+{vextra}
 {common}
 """
     mslug = f"{slug}-merge"
@@ -369,7 +439,7 @@ Card slug `{vslug}`. Independent verifier on a different model than the builder 
 
 Card slug `{mslug}`. Integration lead. Worktree `{WT}/{mslug}` (local branch `beta/{mslug}`, never pushed).
 
-1. `cd {WT}/{mslug} && icm/05-build/tools/integrate.sh {pid} beta/{slug}`. The script takes the integration lock; checks that every verifier comment on the PR says `SHIP {pid} <sha>` for the current head; test-merges the head with `origin/Vari8-Beta` and runs the fast gate (typecheck, lint, unit, build) on `app_merge_{norm(pid)}`; then `gh pr merge --merge --match-head-commit <sha>`; closes the issue with a link to the PR; fast-forwards the beta worktree to `origin/Vari8-Beta`; deletes the remote and local branches and removes the builder and verifier worktrees (ship-all and cleanup rule).
+1. Export `POSTGRES_PASSWORD` (RUNBOOK 'Local check'), then `cd {WT}/{mslug} && icm/05-build/tools/integrate.sh {pid} beta/{slug}`. The script takes the integration lock; checks that every verifier comment on the PR says `SHIP {pid} <sha>` for the current head; test-merges the head with `origin/Vari8-Beta` and runs the fast gate (typecheck, lint, unit, build) on `app_merge_{norm(pid)}`; then `gh pr merge --merge --match-head-commit <sha>`; closes the issue with a link to the PR; fast-forwards the beta worktree to `origin/Vari8-Beta`; deletes the remote and local branches and removes the builder and verifier worktrees (ship-all and cleanup rule).
 2. Exit 3 (conflict with trunk) or a red fast gate: comment `FIX` on the PR with the output, `request-changes` the builder card, stop. The builder updates the branch; the verifier runs again on the new head.
 3. Append the merge to the live log `{WT}/_live/merge-log.md` (the script does it under the lock). Complete this card with the merge commit SHA.
 """
@@ -500,7 +570,42 @@ for p in PRS:
             problems.append(f"{p['id']}: verifier model equals builder model")
 unmapped = [r for r in LEDGER if not r.get("owner")]
 badowner = [r for r in LEDGER if r.get("owner") and r["owner"] not in PR_BY_ID and r["owner"] not in
-            {d["id"] for d in DECISION_CARDS + GATES}]
+            {d["id"] for d in DECISION_CARDS + GATES} | SPECIAL_OWNERS]
+# W0-fix-1 ruling 1 and 3: exact model ids only, no Sonnet anywhere on the board.
+ALLOWED_MODELS = {"deepseek-v4.1-flash", "claude-haiku-5-5", "claude-opus-5-5", "gpt-6.1-sol", None}
+for c in cards:
+    if c["model"] not in ALLOWED_MODELS:
+        problems.append(f"{c['key']}: model {c['model']} not in the allowed exact ids")
+# Ruling 2: a claude-haiku-5-5 builder is verified on claude-opus-5-5.
+for p in PRS:
+    if p.get("builder_model") == "claude-haiku-5-5":
+        for kind in ("verify", "secverify"):
+            v = CARD_BY_KEY.get(card_key(p["id"], kind))
+            if v and v["model"] != "claude-opus-5-5":
+                problems.append(f"{p['id']}: haiku-built, {kind} on {v['model']} instead of claude-opus-5-5")
+for d in DECISION_CARDS:
+    if d.get("builder_model") == "claude-haiku-5-5":
+        kids = [c for c in cards if card_key(d["id"], "decision") in c["parents"] and c["model"] == "claude-opus-5-5"]
+        if not kids:
+            problems.append(f"{d['id']}: haiku-built decision without a claude-opus-5-5 verifier card")
+# Ruling 4: every canvas wiring build descends from PR-05 (auth, roles) and PR-P1 (parity harness).
+WIRING_GATE = []
+for p in PRS:
+    if p["track"] == "Wiring":
+        anc = ancestors(card_key(p["id"], "build"))
+        miss = [n for n in ("PR-05", "PR-P1") if card_key(n, "merge") not in anc]
+        WIRING_GATE.append((p["id"], miss))
+        if miss:
+            problems.append(f"wiring gate: {p['id']} build lacks ancestor(s) {', '.join(miss)}")
+# Ruling 6: live modules and the active orphan never appear in the R1 cards.
+R1_KEEP = ["S12-43", "S12-44", "S12-46", "S12-47", "S12-48", "S12-49", "R3-17"]
+for kind in ("build", "verify"):
+    body = CARD_BY_KEY[card_key("PR-R1", kind)]["body"]
+    hit = [i for i in R1_KEEP if re.search(rf"\b{i}\b", body)]
+    if hit:
+        problems.append(f"PR-R1 {kind} card names kept ids {hit}")
+# Ruling 7: every P0 row of the readiness baseline is in the ledger.
+P0_COUNT = sum(1 for r in LEDGER if r["kind"] == "readiness-p0")
 for r in unmapped:
     problems.append(f"ledger unmapped: {r['kind']} {r['id']}")
 for r in badowner:
@@ -601,7 +706,28 @@ with open(f"{OUT}/coverage-ledger.csv", "w", newline="") as f:
         else:
             d = next((x for x in DECISION_CARDS + GATES if x["id"] == o), None)
             bc, vc = (d["slug"], "") if d else ("", "")
-        w.writerow([r["kind"], r["id"], r["detail"], o or "", contrib, bc, vc, verification_for(r)])
+        w.writerow([str(x).replace(" \u2014 ", ", ").replace("\u2014", ", ") for x in
+                    [r["kind"], r["id"], r["detail"], o or "", contrib, bc, vc, verification_for(r)]])
+
+# POST-BETA-INFRA list (W0-fix-1 ruling 7): every readiness item that needs a hosting decision.
+all_rows = {}
+for line in open(f"{OUT}/audits/PRODREADY-BASELINE.md"):
+    cells = [c.strip() for c in line.strip().strip("|").split("|")]
+    if len(cells) >= 7 and re.match(r"^PR-\d{3}$", cells[0]):
+        all_rows[cells[0]] = dict(id=cells[0], area=cells[1], title=cells[2], sev=cells[3], verdict=cells[4], note=cells[6])
+with open(f"{OUT}/POST-BETA-INFRA.md", "w") as f:
+    f.write("# POST-BETA-INFRA: readiness items that wait for a hosting decision\n\n"
+            "Generated by `icm/05-build/tools/program.py` from `icm/05-build/audits/PRODREADY-BASELINE.md` (baseline at `55a0f08`). "
+            "Each item needs the owner to choose a host, a database provider, a mail provider or an account owner before it can be built, so the beta does not build it. "
+            "The orchestrator turns each row into one GitHub issue (label `vari8-beta`, title `[POST-BETA-INFRA] <id> <title>`). GATE-PRR reports each as BLOCKED on the owner.\n\n"
+            "| Id | Severity | Baseline verdict | Item | What it waits for | Baseline note |\n| --- | --- | --- | --- | --- | --- |\n")
+    for pid_, why in POST_BETA_INFRA.items():
+        r = all_rows.get(pid_)
+        if not r:
+            problems.append(f"POST-BETA-INFRA {pid_} not in the baseline")
+            continue
+        note = r["note"].replace("|", "/").replace("\u2014", ",")
+        f.write(f'| {r["id"]} | {r["sev"]} | {r["verdict"]} | {r["title"]} | {why} | {note[:220]} |\n')
 
 graph = dict(
     generated_by=rel(__file__),
@@ -619,7 +745,10 @@ by_kind = {}
 for c in cards:
     by_kind[c["kind"]] = by_kind.get(c["kind"], 0) + 1
 summary = dict(cards=len(cards), by_kind=by_kind, ledger=counts, unmapped=len(unmapped), cycles=len(cards) - len(topo),
-               finish=finish.strftime("%a %H:%M"), problems=problems,
+               finish=finish.strftime("%a %H:%M"), problems=problems, p0_rows=P0_COUNT,
+               p0_dispositions={k: sum(1 for r in LEDGER if r["kind"] == "readiness-p0" and (r["owner"] if r["owner"] in SPECIAL_OWNERS else "card") == k)
+                                for k in ["card"] + sorted(SPECIAL_OWNERS)},
+               wiring_gate={pid: ("PASS" if not miss else "FAIL " + ",".join(miss)) for pid, miss in WIRING_GATE},
                checkpoint=[(c["key"], done_at[c["key"]].strftime("%H:%M")) for c in cards
                            if c["key"] in done_at and done_at[c["key"]] <= datetime(2026, 10, 19, 5, 0)])
 json.dump(summary, open(f"{OUT}/graph-summary.json", "w"), indent=1, default=str)
@@ -637,6 +766,7 @@ with open(f"{OUT}/timeline.md", "w") as f:
         f.write(f"| {pid} | {who} | {g} | {s.strftime('%d %H:%M') if s else '-'} | {d.strftime('%d %H:%M') if d else '-'} |\n")
 
 print(json.dumps(dict(cards=len(cards), by_kind=by_kind, ledger=counts, unmapped=len(unmapped),
-                      cycles=len(cards) - len(topo), finish=summary["finish"], problems=problems[:20]), indent=1))
+                      cycles=len(cards) - len(topo), finish=summary["finish"], p0_rows=P0_COUNT,
+                      p0_dispositions=summary["p0_dispositions"], wiring_gate=summary["wiring_gate"], problems=problems[:20]), indent=1))
 print("checkpoint (done by 05:00):", [k for k, _ in summary["checkpoint"]])
 sys.exit(1 if problems else 0)

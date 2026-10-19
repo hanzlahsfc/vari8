@@ -1,7 +1,7 @@
 # PR-R0 build: Merge the copied retry and boundary helpers
 
-Card slug `pr-r0-lib-dedupe`. Board `vari8`. Track Reduction. Depends on PR-05. Builder: Devin swe-2-max driven by yamato. Issue created in driver step 2.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-r0-lib-dedupe`, branch `beta/pr-r0-lib-dedupe` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prr0` on 127.0.0.1:5433 user `app`; dev port 3734. May touch `db/`: no; the local check fails if `db/` changes.
+Card slug `pr-r0-lib-dedupe`. Board `vari8`. Track Reduction. Depends on PR-05, AUD-REDUCTION-VERIFY. Builder: Devin swe-2-max driven by yamato (driver deepseek-v4.1-flash). Issue created in driver step 2.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-r0-lib-dedupe`, branch `beta/pr-r0-lib-dedupe` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prr0` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3734. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## Driver steps (yamato only; Devin skips this section)
 
@@ -28,6 +28,10 @@ Load `/home/nexuslink/.hermes/profiles/kakashi/SOUL.md` as your working persona 
 ## Matrix rows this PR closes
 
 - none (foundation or tooling PR)
+
+## Backend orphans this PR owns (delete or keep as each line says)
+
+- S12-43: Prisma client singleton. Evidence: `lib/db.ts:1`. (keep; Prisma singleton, PR-R0 moves the shared retry helper into it (not R1 work))
 
 ## Files
 

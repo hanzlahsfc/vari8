@@ -1,7 +1,7 @@
 # PR-04 build: Make the backend reachable in dev and park the consent gates
 
-Card slug `pr-04-dev-runtime`. Board `vari8`. Track Foundation. Depends on none. Builder: Devin swe-2-max driven by yamato. Issue created in driver step 2.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-04-dev-runtime`, branch `beta/pr-04-dev-runtime` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_pr04` on 127.0.0.1:5433 user `app`; dev port 3713. May touch `db/`: no; the local check fails if `db/` changes.
+Card slug `pr-04-dev-runtime`. Board `vari8`. Track Foundation. Depends on none. Builder: Devin swe-2-max driven by yamato (driver deepseek-v4.1-flash). Issue created in driver step 2.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-04-dev-runtime`, branch `beta/pr-04-dev-runtime` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_pr04` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3713. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## Driver steps (yamato only; Devin skips this section)
 
@@ -34,10 +34,15 @@ Load `/home/nexuslink/.hermes/profiles/gowther/SOUL.md` as your working persona 
 - S11-23: UNCONFIGURED (S11): Implied consent step. None is required of the canvas (D19).
 - G6-102: PARKED-D12: Sensitive consent kinds and grant sources stay in the schema, unextended.
 
-## Backend orphans this PR disposes
+## Backend orphans this PR owns (delete or keep as each line says)
 
 - S12-22: ConsentRecord model. Evidence: `db/schema.prisma:355`. (parked behind ENABLE_CONSENT_GATES, not extended (D19))
 - S12-41: Versioned consent service + gates. Evidence: `lib/consent.ts:14`. (parked behind ENABLE_CONSENT_GATES, not extended (D19))
+- S12-44: Extraction contracts (sheet artifact types). Evidence: `lib/extraction/contracts.ts:1`. (keep; imported by the catalog importers that seed the catalogs (not R1 work))
+- S12-46: Extraction CSS parsing. Evidence: `lib/extraction/css.ts:1`. (keep; imported by the catalog importers that seed the catalogs (not R1 work))
+- S12-47: Extraction database parsing. Evidence: `lib/extraction/databases.ts:1`. (keep; imported by the catalog importers that seed the catalogs (not R1 work))
+- S12-48: Extraction normalize. Evidence: `lib/extraction/normalize.ts:1`. (keep; imported by the catalog importers that seed the catalogs (not R1 work))
+- S12-49: Extraction parse. Evidence: `lib/extraction/parse.ts:1`. (keep; imported by the catalog importers that seed the catalogs (not R1 work))
 - S12-54: GDPR boundary (fails closed). Evidence: `lib/gdpr.ts:1`. (parked behind ENABLE_CONSENT_GATES, not extended (D19))
 - S12-55: GDPR allowlist export. Evidence: `lib/gdpr/export.ts:1`. (parked behind ENABLE_CONSENT_GATES, not extended (D19))
 - S12-56: GDPR retention policy-as-data. Evidence: `lib/gdpr/retention.ts:1`. (parked behind ENABLE_CONSENT_GATES, not extended (D19))

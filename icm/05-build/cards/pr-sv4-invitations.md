@@ -1,7 +1,7 @@
 # PR-SV4 build: Client invitations
 
-Card slug `pr-sv4-invitations`. Board `vari8`. Track Service. Depends on PR-05. Builder: Devin swe-2-max driven by yamato. Issue created in driver step 2.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-sv4-invitations`, branch `beta/pr-sv4-invitations` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prsv4` on 127.0.0.1:5433 user `app`; dev port 3773. May touch `db/`: no; the local check fails if `db/` changes.
+Card slug `pr-sv4-invitations`. Board `vari8`. Track Service. Depends on PR-05. Builder: Devin swe-2-max driven by yamato (driver deepseek-v4.1-flash). Issue created in driver step 2.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-sv4-invitations`, branch `beta/pr-sv4-invitations` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prsv4` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3773. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## Driver steps (yamato only; Devin skips this section)
 
@@ -31,7 +31,7 @@ Load `/home/nexuslink/.hermes/profiles/kakashi/SOUL.md` as your working persona 
 - S11-16: S11 UNWIRED: "Onboarding invitation drafts (name · email · Not sent)" list
 - S11-17: S11 UNWIRED: Invite acceptance → new client account + profile (canvas implies email-invited clients; draws no accept screen)
 
-## Backend orphans this PR disposes
+## Backend orphans this PR owns (delete or keep as each line says)
 
 - S12-73: Workspace invitations service. Evidence: `lib/workspace/invitations.ts:1`. (keep; routed from the roster)
 - S12-74: Invite-acceptance route boundary. Evidence: `lib/workspace/invite-acceptance.ts:12`. (keep; invite acceptance)

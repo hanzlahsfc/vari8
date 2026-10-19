@@ -1,11 +1,11 @@
 # PR-W2 verify: Wire the roster and the client profile
 
-Card slug `pr-w2-roster-profile-verify`. Independent verifier on a different model than the builder (devin/swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-w2-roster-profile-verify` (local branch `beta/pr-w2-roster-profile-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-W2/` and into the PR as a comment.
+Card slug `pr-w2-roster-profile-verify`. Independent verifier on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-w2-roster-profile-verify` (local branch `beta/pr-w2-roster-profile-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-W2/` and into the PR as a comment.
 
 ## Steps
 
 1. Find the PR: `gh pr list -R hanzlahsfc/The-great-tracker- --head beta/pr-w2-roster-profile --state open --json number,headRefOid`. Then `cd /home/nexuslink/vari8-worktrees/pr-w2-roster-profile-verify && git fetch origin && git checkout --detach origin/beta/pr-w2-roster-profile`; record the head SHA. Test-merge the current trunk the way GitHub will: `git merge --no-ff --no-edit origin/Vari8-Beta`. On a conflict: `git merge --abort`, comment `FIX: conflict with Vari8-Beta in <paths>` on the PR, block this card, stop.
-2. `mkdir -p /home/nexuslink/vari8-worktrees/_evidence/PR-W2 && BASE_SHA=$(git rev-parse origin/Vari8-Beta) LANE_DB=app_verify_prw2 LANE_PORT=3786 CARD=PR-W2 icm/05-build/tools/verify-local.sh > /home/nexuslink/vari8-worktrees/_evidence/PR-W2/verify-local.log 2>&1; echo EXIT=$?`.
+2. Export `POSTGRES_PASSWORD` (RUNBOOK 'Local check'), then `mkdir -p /home/nexuslink/vari8-worktrees/_evidence/PR-W2 && BASE_SHA=$(git rev-parse origin/Vari8-Beta) LANE_DB=app_verify_prw2 LANE_PORT=3786 CARD=PR-W2 icm/05-build/tools/verify-local.sh > /home/nexuslink/vari8-worktrees/_evidence/PR-W2/verify-local.log 2>&1; echo EXIT=$?`.
 3. Live receipt at that head: start the app on port 3786 with a fresh `app_verify_prw2` (`npm run db:fresh`, or RUNBOOK 'Dev user before PR-04' while `db:fresh` does not exist yet), drive every acceptance item below in a real browser at 1440x900 and 390x844, as each of: owner, coach, client of the same workspace, staff of a foreign workspace, signed out. Unauthorized direct requests to the PR's routes must fail closed. Save screenshots as `/home/nexuslink/vari8-worktrees/_evidence/PR-W2/<role>-<width>.png`.
 4. Parity (D32) on `s01-roster.png`, `s01-profile-overview.png`, `s01-profile-plans.png`, `s01-profile-checkins.png`, `s01-profile-onboarding.png`, `s10-clients-studio.png`: run the harness against your server; keep the report and diff images in `/home/nexuslink/vari8-worktrees/_evidence/PR-W2/parity/`.
 5. Check every matrix row listed below is visibly closed (or, for model and service rows, exercised by the wiring flow or a keep-category test). List each row with PASS or FAIL.
@@ -45,7 +45,7 @@ Card slug `pr-w2-roster-profile-verify`. Independent verifier on a different mod
 - S11-15: S11 UNCONFIGURED: "Submitted onboarding" tab, client-submitted Q&A retained on the profile, coach reads them
 - S11-21: S11 PARTIAL: Archived clients hidden from the roster
 
-## Backend orphans this PR disposes
+## Backend orphans this PR owns (delete or keep as each line says)
 
 - S12-13: Onboarding form library + create/edit/preview. Evidence: `app/workspace/[workspaceId]/onboarding/forms/page.ts (keep; serves the canvas onboarding tab)
 - S12-14: Onboarding form CRUD server actions. Evidence: `app/workspace/[workspaceId]/onboarding/actions.ts:158`. (keep; serves the canvas onboarding tab)
@@ -58,3 +58,7 @@ Card slug `pr-w2-roster-profile-verify`. Independent verifier on a different mod
 - S12-63: Onboarding assignment gate. Evidence: `lib/onboarding/assignments-gate.ts:1`. (keep; serves the canvas onboarding tab)
 - S12-64: Onboarding submission review service. Evidence: `lib/onboarding/review.ts:379`. (keep; serves the canvas onboarding tab)
 - S12-65: Onboarding review boundary. Evidence: `lib/onboarding/review-boundary.ts:83`. (keep; serves the canvas onboarding tab)
+
+## Production-readiness P0 rows this PR owns (`icm/05-build/audits/PRODREADY-BASELINE.md`)
+
+- PR-025: Apostrophes in names (UNVERIFIED): live probe: create a client named Siobhan O'Brien-Nunez with accents, view the profile and every list

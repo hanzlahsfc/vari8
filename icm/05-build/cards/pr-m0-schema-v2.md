@@ -1,7 +1,7 @@
 # PR-M0 build: Schema v2: every canvas entity in one migration set
 
-Card slug `pr-m0-schema-v2`. Board `vari8`. Track Model. Depends on PR-05. Builder: Devin swe-2-max driven by yamato. Issue created in driver step 2.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-m0-schema-v2`, branch `beta/pr-m0-schema-v2` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prm0` on 127.0.0.1:5433 user `app`; dev port 3731. May touch `db/`: yes (D34 schema writer).
+Card slug `pr-m0-schema-v2`. Board `vari8`. Track Model. Depends on PR-05. Builder: Devin swe-2-max driven by yamato (driver deepseek-v4.1-flash). Issue created in driver step 2.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-m0-schema-v2`, branch `beta/pr-m0-schema-v2` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prm0` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3731. May touch `db/`: yes (D34 schema writer).
 
 ## Driver steps (yamato only; Devin skips this section)
 
@@ -31,6 +31,12 @@ Load `/home/nexuslink/.hermes/profiles/gowther/SOUL.md` as your working persona 
 - V3-L1-ClientPlans: S05 MISSING: ClientPlans aggregate has no backend equivalent
 - V3-L1-IIFYM: S06 MISSING: IifymOption and IifymPlan have no backend equivalent
 - V3-L1-ClientGoal: S07 MISSING: ClientGoal has no backend equivalent
+
+## Production-readiness P0 rows this PR owns (`icm/05-build/audits/PRODREADY-BASELINE.md`)
+
+- PR-001: Designed schema, not improvised tables (PARTIAL): baseline owner
+- PR-015: Migrations run forward and roll back (PARTIAL): baseline owner
+- PR-024: Timezones stored correctly (PARTIAL): baseline owner
 
 ## Files
 

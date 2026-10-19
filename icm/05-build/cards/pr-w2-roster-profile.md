@@ -1,7 +1,7 @@
 # PR-W2 build: Wire the roster and the client profile
 
-Card slug `pr-w2-roster-profile`. Board `vari8`. Track Wiring. Depends on PR-W0, PR-SV1, PR-SV2, PR-SV4, PR-M1. Builder: Devin swe-2-max driven by yamato. Issue created in driver step 2.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-w2-roster-profile`, branch `beta/pr-w2-roster-profile` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prw2` on 127.0.0.1:5433 user `app`; dev port 3785. May touch `db/`: no; the local check fails if `db/` changes.
+Card slug `pr-w2-roster-profile`. Board `vari8`. Track Wiring. Depends on PR-W0, PR-SV1, PR-SV2, PR-SV4, PR-M1. Builder: Devin swe-2-max driven by yamato (driver deepseek-v4.1-flash). Issue created in driver step 2.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-w2-roster-profile`, branch `beta/pr-w2-roster-profile` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prw2` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3785. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## Driver steps (yamato only; Devin skips this section)
 
@@ -51,7 +51,7 @@ Load `/home/nexuslink/.hermes/profiles/itachi/SOUL.md` as your working persona (
 - S11-15: S11 UNCONFIGURED: "Submitted onboarding" tab, client-submitted Q&A retained on the profile, coach reads them
 - S11-21: S11 PARTIAL: Archived clients hidden from the roster
 
-## Backend orphans this PR disposes
+## Backend orphans this PR owns (delete or keep as each line says)
 
 - S12-13: Onboarding form library + create/edit/preview. Evidence: `app/workspace/[workspaceId]/onboarding/forms/page.ts (keep; serves the canvas onboarding tab)
 - S12-14: Onboarding form CRUD server actions. Evidence: `app/workspace/[workspaceId]/onboarding/actions.ts:158`. (keep; serves the canvas onboarding tab)
@@ -64,6 +64,10 @@ Load `/home/nexuslink/.hermes/profiles/itachi/SOUL.md` as your working persona (
 - S12-63: Onboarding assignment gate. Evidence: `lib/onboarding/assignments-gate.ts:1`. (keep; serves the canvas onboarding tab)
 - S12-64: Onboarding submission review service. Evidence: `lib/onboarding/review.ts:379`. (keep; serves the canvas onboarding tab)
 - S12-65: Onboarding review boundary. Evidence: `lib/onboarding/review-boundary.ts:83`. (keep; serves the canvas onboarding tab)
+
+## Production-readiness P0 rows this PR owns (`icm/05-build/audits/PRODREADY-BASELINE.md`)
+
+- PR-025: Apostrophes in names (UNVERIFIED): live probe: create a client named Siobhan O'Brien-Nunez with accents, view the profile and every list
 
 ## Files
 

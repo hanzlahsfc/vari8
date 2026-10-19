@@ -24,18 +24,18 @@ Every PR is three cards: build, verify (plus a security verify for auth, schema 
 
 | PR       | Depends on                                                             | Builder                                 | Verifier                 |
 | -------- | ---------------------------------------------------------------------- | --------------------------------------- | ------------------------ |
-| PR-02    | -                                                                      | external devin/swe-2-max, issue #57     | neji                     |
+| PR-02    | -                                                                      | external swe-2-max, issue #57           | neji                     |
 | PR-P1    | -                                                                      | external claude-haiku-5-5, issue #61    | urokodaki                |
-| PR-03A   | -                                                                      | external devin/swe-2-max, issue #59     | neji                     |
-| PR-03B   | -                                                                      | external devin/swe-2-max, issue #60     | neji                     |
+| PR-03A   | -                                                                      | external swe-2-max, issue #59           | neji                     |
+| PR-03B   | -                                                                      | external swe-2-max, issue #60           | neji                     |
 | PR-04    | -                                                                      | Devin via yamato, gear gowther          | neji, shinobu (security) |
 | PR-01    | PR-02                                                                  | Devin via yamato, gear kakashi          | neji                     |
 | PR-W1    | PR-05, PR-01                                                           | Devin via yamato, gear itachi           | neji, shinobu (security) |
 | PR-03    | PR-01, PR-03A, PR-03B                                                  | Devin via yamato, gear kakashi          | neji                     |
 | PR-T2    | PR-04, PR-03A                                                          | tenten                                  | neji                     |
-| PR-05    | -                                                                      | external devin/swe-2-max, issue #58     | neji, shinobu (security) |
+| PR-05    | -                                                                      | external swe-2-max, issue #58           | neji, shinobu (security) |
 | PR-M0    | PR-05                                                                  | Devin via yamato, gear gowther          | neji                     |
-| PR-R0    | PR-05                                                                  | Devin via yamato, gear kakashi          | neji                     |
+| PR-R0    | PR-05, AUD-REDUCTION-VERIFY                                            | Devin via yamato, gear kakashi          | neji                     |
 | PR-M1    | PR-M0, PR-R0                                                           | Devin via yamato, gear gowther          | neji                     |
 | PR-M2    | PR-M0, PR-R0                                                           | Devin via yamato, gear gowther          | neji                     |
 | PR-M3    | PR-M0, PR-R0                                                           | Devin via yamato, gear gowther          | neji                     |
@@ -49,9 +49,9 @@ Every PR is three cards: build, verify (plus a security verify for auth, schema 
 | PR-SV2   | PR-M1                                                                  | Devin via yamato, gear kakashi          | neji                     |
 | PR-SV3   | PR-SV2, PR-M5, PR-M6, PR-M7                                            | Devin via yamato, gear kakashi          | neji                     |
 | PR-SV4   | PR-05                                                                  | Devin via yamato, gear kakashi          | neji, shinobu (security) |
-| PR-MEDIA | PR-M0, PR-05                                                           | Devin via yamato, gear kakashi          | neji, shinobu (security) |
+| PR-MEDIA | PR-M0, PR-05, PR-P1                                                    | Devin via yamato, gear kakashi          | neji, shinobu (security) |
 | PR-MSG   | PR-MEDIA, PR-M2, PR-W0, PR-SV1                                         | Devin via yamato, gear itachi           | neji, shinobu (security) |
-| PR-W0    | PR-01, PR-03                                                           | Devin via yamato, gear kakashi          | neji                     |
+| PR-W0    | PR-01, PR-03, PR-05, PR-P1                                             | Devin via yamato, gear kakashi          | neji                     |
 | PR-W2    | PR-W0, PR-SV1, PR-SV2, PR-SV4, PR-M1                                   | Devin via yamato, gear itachi           | neji                     |
 | PR-W3    | PR-W0, PR-M4, PR-SV1                                                   | Devin via yamato, gear itachi           | neji                     |
 | PR-W4    | PR-W0, PR-SV2, PR-M3, PR-M4                                            | Devin via yamato, gear itachi           | neji                     |
@@ -71,15 +71,15 @@ Every PR is three cards: build, verify (plus a security verify for auth, schema 
 
 ## Routing
 
-| Work                                               | Lane                                                         | Model                                        |
-| -------------------------------------------------- | ------------------------------------------------------------ | -------------------------------------------- |
-| Builders                                           | yamato drives Devin; the card names the gear SOUL and skills | Devin swe-2-max (driver deepseek-v4.1-flash) |
-| Bulk mechanical (test cuts, index rebuild)         | tenten, shikamaru                                            | deepseek-v4.1-flash                          |
-| Per-PR behavior and parity verify                  | neji (urokodaki for PR-P1, whose builder ran on Haiku)       | claude-haiku-5-5 (claude-opus-5-5)           |
-| Security verify (auth, schema, media, invitations) | shinobu                                                      | claude-haiku-5-5                             |
-| Integration (merge cards)                          | kakashi, escalation meliodas                                 | claude-sonnet-5-5                            |
-| Production-readiness gate                          | urokodaki                                                    | claude-opus-5-5, medium                      |
-| Final judgement, once                              | minato                                                       | gpt-6.1-sol                                  |
+| Work                                               | Lane                                                                    | Model                                        |
+| -------------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------- |
+| Builders                                           | yamato drives Devin; the card names the gear SOUL and skills            | Devin swe-2-max (driver deepseek-v4.1-flash) |
+| Bulk mechanical (test cuts, index rebuild)         | tenten, shikamaru                                                       | deepseek-v4.1-flash                          |
+| Per-PR behavior and parity verify                  | neji (urokodaki for PR-P1 and AUD-REDUCTION, built on claude-haiku-5-5) | claude-haiku-5-5 (claude-opus-5-5)           |
+| Security verify (auth, schema, media, invitations) | shinobu                                                                 | claude-haiku-5-5                             |
+| Integration (merge cards) and GATE-CLEAN           | kakashi profile, escalation meliodas                                    | deepseek-v4.1-flash                          |
+| Production-readiness gate                          | urokodaki                                                               | claude-opus-5-5, medium                      |
+| Final judgement, once                              | minato                                                                  | gpt-6.1-sol                                  |
 
 Max 5 Devin builders at once: `icm/05-build/tools/devin-slot.sh` counts every running `devin` binary, including the three started outside the graph.
 
@@ -95,13 +95,13 @@ Simulated by the generator: graph cards start at 03:00 once the orchestrator rel
 
 | PR       | Builder                      | Gear      | Build starts | Merged by |
 | -------- | ---------------------------- | --------- | ------------ | --------- |
-| PR-02    | external devin/swe-2-max     | kakashi   | 19 02:06     | 19 02:30  |
-| PR-03B   | external devin/swe-2-max     | itachi    | 19 02:24     | 19 03:45  |
+| PR-02    | external swe-2-max           | kakashi   | 19 02:06     | 19 02:30  |
+| PR-03B   | external swe-2-max           | itachi    | 19 02:24     | 19 03:45  |
 | PR-P1    | external claude-haiku-5-5    | zenitsu   | 19 02:24     | 19 03:55  |
-| PR-03A   | external devin/swe-2-max     | shikamaru | 19 02:24     | 19 04:05  |
+| PR-03A   | external swe-2-max           | shikamaru | 19 02:24     | 19 04:05  |
 | PR-04    | yamato                       | gowther   | 19 03:00     | 19 04:15  |
 | PR-X1    | external deepseek-v4.1-flash | tenten    | 19 02:24     | 19 04:25  |
-| PR-05    | external devin/swe-2-max     | kakashi   | 19 02:24     | 19 04:40  |
+| PR-05    | external swe-2-max           | kakashi   | 19 02:24     | 19 04:40  |
 | PR-01    | yamato                       | kakashi   | 19 03:00     | 19 04:55  |
 | PR-T2    | tenten                       | -         | 19 04:15     | 19 05:10  |
 | PR-R0    | yamato                       | kakashi   | 19 04:40     | 19 05:45  |
@@ -142,18 +142,18 @@ Simulated by the generator: graph cards start at 03:00 once the orchestrator rel
 
 ### 05:00 checkpoint
 
-Done by 05:00 in the simulation: `DEC-AUTH:decision` 02:30, `DEC-AUTH-REVIEW:decision` 02:30, `AUD-REDUCTION:decision` 02:30, `AUD-PRR-BASELINE:decision` 02:30, `PR-02:build` 02:30, `PR-02:verify` 02:30, `PR-02:merge` 02:30, `PR-P1:build` 03:15, `PR-P1:verify` 03:45, `PR-P1:merge` 03:55, `PR-03A:build` 03:30, `PR-03A:verify` 03:50, `PR-03A:merge` 04:05, `PR-03B:build` 03:15, `PR-03B:verify` 03:35, `PR-03B:merge` 03:45, `PR-04:build` 03:45, `PR-04:verify` 04:05, `PR-04:secverify` 04:05, `PR-04:merge` 04:15, `PR-01:build` 04:00, `PR-01:verify` 04:45, `PR-01:merge` 04:55, `PR-T2:build` 04:40, `PR-T2:verify` 05:00, `PR-05:build` 04:10, `PR-05:verify` 04:30, `PR-05:secverify` 04:30, `PR-05:merge` 04:40, `PR-X1:build` 03:20, `PR-X1:verify` 03:40, `PR-X1:merge` 04:25.
+Done by 05:00 in the simulation: `DEC-AUTH:decision` 02:30, `DEC-AUTH-REVIEW:decision` 02:30, `AUD-REDUCTION:decision` 02:30, `AUD-PRR-BASELINE:decision` 02:30, `AUD-REDUCTION-VERIFY:decision` 03:30, `PR-02:build` 02:30, `PR-02:verify` 02:30, `PR-02:merge` 02:30, `PR-P1:build` 03:15, `PR-P1:verify` 03:45, `PR-P1:merge` 03:55, `PR-03A:build` 03:30, `PR-03A:verify` 03:50, `PR-03A:merge` 04:05, `PR-03B:build` 03:15, `PR-03B:verify` 03:35, `PR-03B:merge` 03:45, `PR-04:build` 03:45, `PR-04:verify` 04:05, `PR-04:secverify` 04:05, `PR-04:merge` 04:15, `PR-01:build` 04:00, `PR-01:verify` 04:45, `PR-01:merge` 04:55, `PR-T2:build` 04:40, `PR-T2:verify` 05:00, `PR-05:build` 04:10, `PR-05:verify` 04:30, `PR-05:secverify` 04:30, `PR-05:merge` 04:40, `PR-X1:build` 03:20, `PR-X1:verify` 03:40, `PR-X1:merge` 04:25.
 
 What the checkpoint shows: PR-02 merged; the parity harness, the test cuts, the hooks fixes, the index, Better Auth (PR-05) and the dev seed (PR-04) merged; the canvas running on the root app (PR-01) merged at 04:55 with every screen at parity; D16a recorded. PR-01 has no buffer: its build starts at 03:00 only if the board is released by then. If PR-01 is not merged at 05:00, the checkpoint shows it open with its verifier report, and the program continues. Program finish in the simulation: Mon 19:30.
 
 ## Self-check
 
-| Check                                         | Result                                                                                                                     |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Every PLAN v2 PR has a card                   | 44 PR sections, 44 build cards, 44 merge cards                                                                             |
-| Every card has a verifier card                | 44 of 44 PRs have a verify card; 50 verify cards in total (security verifies included)                                     |
-| Verifier model differs from the builder model | yes for every PR                                                                                                           |
-| Coverage ledger has zero unmapped rows        | 0 unmapped of 773 rows (matrix 338, orphan 82, parked 6, screen 35, test-audit 232, test-rewire 29, plan-pr 44, program 7) |
-| Dependency graph has no cycles                | 0 cycles in 145 cards (topological sort in `program.py`)                                                                   |
-| Timeline fits 05:00                           | the checkpoint set above is done by 05:00 with PR-01 at 04:55; the full program finishes Mon 19:30                         |
-| Generator gate                                | `python3 icm/05-build/tools/program.py` exit 0                                                                             |
+| Check                                         | Result                                                                                                                                      |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Every PLAN v2 PR has a card                   | 44 PR sections, 44 build cards, 44 merge cards                                                                                              |
+| Every card has a verifier card                | 44 of 44 PRs have a verify card; 50 verify cards in total (security verifies included)                                                      |
+| Verifier model differs from the builder model | yes for every PR                                                                                                                            |
+| Coverage ledger has zero unmapped rows        | 0 unmapped of 812 rows (matrix 338, orphan 82, parked 6, screen 35, test-audit 232, test-rewire 29, plan-pr 44, program 8, readiness-p0 38) |
+| Dependency graph has no cycles                | 0 cycles in 146 cards (topological sort in `program.py`)                                                                                    |
+| Timeline fits 05:00                           | the checkpoint set above is done by 05:00 with PR-01 at 04:55; the full program finishes Mon 19:30                                          |
+| Generator gate                                | `python3 icm/05-build/tools/program.py` exit 0                                                                                              |

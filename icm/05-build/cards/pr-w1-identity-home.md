@@ -1,7 +1,7 @@
 # PR-W1 build: Wire identity, workspace and client home
 
-Card slug `pr-w1-identity-home`. Board `vari8`. Track Wiring. Depends on PR-05, PR-01. Builder: Devin swe-2-max driven by yamato. Issue created in driver step 2.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-w1-identity-home`, branch `beta/pr-w1-identity-home` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prw1` on 127.0.0.1:5433 user `app`; dev port 3719. May touch `db/`: no; the local check fails if `db/` changes.
+Card slug `pr-w1-identity-home`. Board `vari8`. Track Wiring. Depends on PR-05, PR-01. Builder: Devin swe-2-max driven by yamato (driver deepseek-v4.1-flash). Issue created in driver step 2.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-w1-identity-home`, branch `beta/pr-w1-identity-home` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prw1` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3719. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## Driver steps (yamato only; Devin skips this section)
 

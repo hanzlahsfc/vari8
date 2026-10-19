@@ -1,7 +1,7 @@
 # PR-31 build: PWA install and the Capacitor 8 scope
 
-Card slug `pr-31-pwa-mobile`. Board `vari8`. Track Mobile. Depends on PR-05, PR-W1. Builder: Devin swe-2-max driven by yamato. Issue created in driver step 2.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-31-pwa-mobile`, branch `beta/pr-31-pwa-mobile` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_pr31` on 127.0.0.1:5433 user `app`; dev port 3830. May touch `db/`: no; the local check fails if `db/` changes.
+Card slug `pr-31-pwa-mobile`. Board `vari8`. Track Mobile. Depends on PR-05, PR-W1. Builder: Devin swe-2-max driven by yamato (driver deepseek-v4.1-flash). Issue created in driver step 2.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-31-pwa-mobile`, branch `beta/pr-31-pwa-mobile` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_pr31` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3830. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## Driver steps (yamato only; Devin skips this section)
 

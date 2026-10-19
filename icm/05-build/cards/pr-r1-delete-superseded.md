@@ -1,7 +1,7 @@
 # PR-R1 build: Delete what the canvas replaced
 
-Card slug `pr-r1-delete-superseded`. Board `vari8`. Track Reduction. Depends on PR-W2, PR-W3, PR-W4, PR-W5, PR-W6, PR-W7, PR-W8, PR-W9, PR-W10, PR-MSG. Builder: Devin swe-2-max driven by yamato. Issue created in driver step 2.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-r1-delete-superseded`, branch `beta/pr-r1-delete-superseded` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prr1` on 127.0.0.1:5433 user `app`; dev port 3812. May touch `db/`: no; the local check fails if `db/` changes.
+Card slug `pr-r1-delete-superseded`. Board `vari8`. Track Reduction. Depends on PR-W2, PR-W3, PR-W4, PR-W5, PR-W6, PR-W7, PR-W8, PR-W9, PR-W10, PR-MSG. Builder: Devin swe-2-max driven by yamato (driver deepseek-v4.1-flash). Issue created in driver step 2.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-r1-delete-superseded`, branch `beta/pr-r1-delete-superseded` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prr1` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3812. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## Driver steps (yamato only; Devin skips this section)
 
@@ -29,26 +29,19 @@ Load `/home/nexuslink/.hermes/profiles/kakashi/SOUL.md` as your working persona 
 
 - S01-13: S01 MISSING: Whole-state persistence: localStorage key coach-desktop-mockup-v1, isCoachState validation, migrate+normalize on hydrate
 
-## Backend orphans this PR disposes
+## Backend orphans this PR owns (delete or keep as each line says)
 
 - S12-08: Raw workbook sheet index (dev tool). Evidence: `app/sheets/page.tsx:12`. (delete when the census shows no runtime caller (D33, BACKEND-REDUCTION F5, F6))
 - S12-09: Raw workbook sheet detail (dev tool). Evidence: `app/sheets/[slug]/page.tsx:20`. (delete when the census shows no runtime caller (D33, BACKEND-REDUCTION F5, F6))
 - S12-10: Workspace list (workspace picker). Evidence: `app/workspace/page.tsx:15`. (old UI page, delete after the canvas screen is wired (D33))
 - S12-11: Owner-only workspace admin area. Evidence: `app/workspace/[workspaceId]/admin/page.tsx:12`. (old UI page, delete after the canvas screen is wired (D33))
 - S12-12: Client coach-assignment panel + actions. Evidence: `app/workspace/[workspaceId]/clients/[clientProfileId]/coac (old UI page, delete after the canvas screen is wired (D33))
-- S12-43: Prisma client singleton. Evidence: `lib/db.ts:1`. (keep; Prisma singleton)
-- S12-44: Extraction contracts (sheet artifact types). Evidence: `lib/extraction/contracts.ts:1`. (keep; imported by the catalog importers (BACKEND-REDUCTION section 5 item 2))
 - S12-45: Extraction cross-sheet pass. Evidence: `lib/extraction/crosssheet.ts:1`. (delete when the census shows no runtime caller (D33, BACKEND-REDUCTION F5, F6))
-- S12-46: Extraction CSS parsing. Evidence: `lib/extraction/css.ts:1`. (keep; imported by the catalog importers (BACKEND-REDUCTION section 5 item 2))
-- S12-47: Extraction database parsing. Evidence: `lib/extraction/databases.ts:1`. (delete when the census shows no runtime caller (D33, BACKEND-REDUCTION F5, F6))
-- S12-48: Extraction normalize. Evidence: `lib/extraction/normalize.ts:1`. (keep; imported by the catalog importers (BACKEND-REDUCTION section 5 item 2))
-- S12-49: Extraction parse. Evidence: `lib/extraction/parse.ts:1`. (keep; imported by the catalog importers (BACKEND-REDUCTION section 5 item 2))
 - S12-50: Extraction redaction. Evidence: `lib/extraction/redact.ts:1`. (delete when the census shows no runtime caller (D33, BACKEND-REDUCTION F5, F6))
 - S12-51: Extraction source loader. Evidence: `lib/extraction/source.ts:1`. (delete when the census shows no runtime caller (D33, BACKEND-REDUCTION F5, F6))
 - S12-52: Extraction summaries. Evidence: `lib/extraction/summaries.ts:1`. (delete when the census shows no runtime caller (D33, BACKEND-REDUCTION F5, F6))
 - S12-53: Extraction theme. Evidence: `lib/extraction/theme.ts:1`. (delete when the census shows no runtime caller (D33, BACKEND-REDUCTION F5, F6))
 - R3-16: Template-version upgrade, rollback, discovery, review and execute. Evidence: `lib/coaching/client-setup-transi (census then delete or keep (D33, BACKEND-REDUCTION F4, F6))
-- R3-17: Parameter-definition create, edit and archive manager. Evidence: `app/workspace/[workspaceId]/parameters/param (keep until Marcel answers D23 (`seed-catalog`); active orphan per GAP-MATRIX)
 - R3-18: Client-task title and date editing, and cancellation. Evidence: `lib/tasks/service.ts:311,391`, `app/workspace (census then delete or keep (D33, BACKEND-REDUCTION F4, F6))
 - R3-20: Dead duplicate sheetDisplayName helper. Evidence: `lib/catalog.ts:172-174`, live duplicate `lib/spec-artifacts (census then delete or keep (D33, BACKEND-REDUCTION F4, F6))
 - R3-21: Public synthetic fixture library pages, not canvas catalog editors. Evidence: `app/library/foods/page.tsx:1-26 (census then delete or keep (D33, BACKEND-REDUCTION F4, F6))
@@ -62,7 +55,7 @@ Load `/home/nexuslink/.hermes/profiles/kakashi/SOUL.md` as your working persona 
 - `app/sheets/**`
 - `app/daily/**`
 - components/** (old UI, keep `sign-out-button.tsx` if still used)
-- `lib/extraction/{crosssheet,databases,redact,source,summaries,theme}.ts`
+- `lib/extraction/{crosssheet,redact,source,summaries,theme}.ts`
 - scripts/extract-sheets.ts and the `extract:sheets` script
 - `lib/daily-prototype.ts`
 - `lib/sheet-viewer.ts`
@@ -77,7 +70,7 @@ Load `/home/nexuslink/.hermes/profiles/kakashi/SOUL.md` as your working persona 
 ## Build
 
 - Input: `icm/05-build/BACKEND-REDUCTION.md` (findings F1, F2, F4, F5, F6, F13; about 21,800 lines). Census first: for every candidate, a committed command output proving zero runtime callers (`icm/05-build/reports/PR-R1-census.txt`).
-- Keep `lib/db.ts` (S12-43) and the extraction modules the catalog importers import: `contracts.ts`, `parse.ts`, `normalize.ts`, `css.ts` (S12-44, S12-46, S12-48, S12-49; BACKEND-REDUCTION section 5 item 2).
+- Do not delete `lib/db.ts` or the extraction modules the catalog importers (`lib/nutrition/source.ts`, `lib/exercise/source.ts`) import directly or through `parse.ts`: `contracts.ts`, `databases.ts`, `normalize.ts`, `parse.ts`, `css.ts`. They are not R1 work; the census only confirms they still have callers. The parameter manager (`app/workspace/[workspaceId]/parameters/**`, `lib/coaching/parameters.ts`) also stays, although it sits under `app/workspace/**`: it waits for an owner answer.
 - Delete the template-version transition subsystem (F4) only after confirming the canvas assign flow (S01-27 setup review) does not call `transition-diff`; otherwise keep it and say why.
 - Delete the old backend UI replaced by canvas screens, the public fixture library pages, dead helpers and dead exported symbols (D33).
 - Remove the localStorage fallbacks from the data providers (S01-13).

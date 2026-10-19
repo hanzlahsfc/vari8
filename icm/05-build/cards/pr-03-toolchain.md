@@ -1,7 +1,7 @@
 # PR-03 build: Adopt Biome, TypeScript 7 and Turbopack
 
-Card slug `pr-03-toolchain`. Board `vari8`. Track Foundation. Depends on PR-01, PR-03A, PR-03B. Builder: Devin swe-2-max driven by yamato. Issue created in driver step 2.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-03-toolchain`, branch `beta/pr-03-toolchain` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_pr03` on 127.0.0.1:5433 user `app`; dev port 3722. May touch `db/`: no; the local check fails if `db/` changes.
+Card slug `pr-03-toolchain`. Board `vari8`. Track Foundation. Depends on PR-01, PR-03A, PR-03B. Builder: Devin swe-2-max driven by yamato (driver deepseek-v4.1-flash). Issue created in driver step 2.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-03-toolchain`, branch `beta/pr-03-toolchain` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_pr03` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3722. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## Driver steps (yamato only; Devin skips this section)
 
@@ -28,6 +28,13 @@ Load `/home/nexuslink/.hermes/profiles/kakashi/SOUL.md` as your working persona 
 ## Matrix rows this PR closes
 
 - none (foundation or tooling PR)
+
+## Production-readiness P0 rows this PR owns (`icm/05-build/audits/PRODREADY-BASELINE.md`)
+
+- PR-036: Secrets out of code, repo and chat history (PARTIAL): secret scan of the tree and full history in the local gate, plus a pre-commit secret hook
+- PR-038: Every installed package exists and is the intended one (PARTIAL): package provenance review next to the dependency scan (PR-039)
+- PR-039: Dependency scanning (MISSING): baseline owner
+- PR-062: Deploy pipeline runs the tests (PARTIAL): baseline owner
 
 ## Files
 

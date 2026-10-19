@@ -64,6 +64,8 @@ Node: `/usr/bin/node` is v26.7.0; `frontend/.nvmrc` says 24. TEST-AUDIT ran gree
 
 ## Local check (D13)
 
+Both `verify-local.sh` and `integrate.sh` read the database password from `POSTGRES_PASSWORD` and stop with exit 2 when it is unset; no default is compiled in. Load it without printing it: `set -a; . /home/nexuslink/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.env; set +a`.
+
 ```bash
 BASE_SHA=$(git merge-base HEAD origin/Vari8-Beta) LANE_DB=app_pr01 LANE_PORT=3716 CARD=PR-01 \
   icm/05-build/tools/verify-local.sh > /home/nexuslink/vari8-worktrees/pr-01-canvas-takeover.check.log 2>&1; echo EXIT=$?
@@ -94,13 +96,15 @@ The yamato driver blocks until Devin exits, then runs the local check. Gear: the
 ## Board
 
 ```bash
-hermes kanban --board vari8 list                    # 145 cards
-python3 icm/05-build/tools/board.py --dry-run        # print the create commands
-python3 icm/05-build/tools/board.py                  # create (idempotent), ids in cards/board-ids.tsv
-python3 icm/05-build/tools/board.py --release        # orchestrator go step: unblock the graph
+hermes kanban --board vari8 list                       # 146 cards
+python3 icm/05-build/tools/board.py --dry-run           # print the create commands
+python3 icm/05-build/tools/board.py                     # create missing cards (idempotent), ids in cards/board-ids.tsv
+python3 icm/05-build/tools/board.py --sync              # make cards match graph.json: body, model, parent links
+python3 icm/05-build/tools/board.py --release --dry-run # list what a release would unblock
+python3 icm/05-build/tools/board.py --release --watch   # orchestrator go step: release as parents finish
 ```
 
-Every card was created blocked so nothing dispatches before the graph check. `--release` unblocks all cards except the in-flight external builds; those the orchestrator completes with `hermes kanban --board vari8 complete <id> --result "<PR url> <head sha>"` when their builders exit.
+Every card was created blocked so nothing dispatches before the graph check. `--release` unblocks only blocked cards whose every parent is done and reads each status back; cards with open parents stay blocked, and `--watch` repeats the release every 60 seconds. In-flight external builds have no assignee and are never released; the orchestrator completes them with `hermes kanban --board vari8 complete <id> --result "<PR url> <head sha>"` when their builders exit. Measured on a throwaway board: `hermes kanban unblock` sends a card with an open parent to todo, not ready; the script does not depend on that.
 
 ## Regenerating the plan
 

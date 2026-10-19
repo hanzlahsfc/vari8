@@ -1,12 +1,12 @@
 | PR       | Builder                      | Gear      | Build starts | Merged by |
 | -------- | ---------------------------- | --------- | ------------ | --------- |
-| PR-02    | external devin/swe-2-max     | kakashi   | 19 02:06     | 19 02:30  |
-| PR-03B   | external devin/swe-2-max     | itachi    | 19 02:24     | 19 03:45  |
+| PR-02    | external swe-2-max           | kakashi   | 19 02:06     | 19 02:30  |
+| PR-03B   | external swe-2-max           | itachi    | 19 02:24     | 19 03:45  |
 | PR-P1    | external claude-haiku-5-5    | zenitsu   | 19 02:24     | 19 03:55  |
-| PR-03A   | external devin/swe-2-max     | shikamaru | 19 02:24     | 19 04:05  |
+| PR-03A   | external swe-2-max           | shikamaru | 19 02:24     | 19 04:05  |
 | PR-04    | yamato                       | gowther   | 19 03:00     | 19 04:15  |
 | PR-X1    | external deepseek-v4.1-flash | tenten    | 19 02:24     | 19 04:25  |
-| PR-05    | external devin/swe-2-max     | kakashi   | 19 02:24     | 19 04:40  |
+| PR-05    | external swe-2-max           | kakashi   | 19 02:24     | 19 04:40  |
 | PR-01    | yamato                       | kakashi   | 19 03:00     | 19 04:55  |
 | PR-T2    | tenten                       | -         | 19 04:15     | 19 05:10  |
 | PR-R0    | yamato                       | kakashi   | 19 04:40     | 19 05:45  |

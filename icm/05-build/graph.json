@@ -87,6 +87,31 @@
    "branch": "beta/aud-prr-baseline"
   },
   {
+   "key": "AUD-REDUCTION-VERIFY:decision",
+   "slug": "aud-backend-reduction-verify",
+   "kind": "decision",
+   "pr": "AUD-REDUCTION-VERIFY",
+   "title": "AUD-REDUCTION-VERIFY: Verify the backend reduction audit before the reduction PRs use it",
+   "assignee": "urokodaki",
+   "model": "claude-opus-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "AUD-REDUCTION:decision"
+   ],
+   "est_min": 30,
+   "max_runtime": "30m",
+   "skills": [
+    "production-readiness-checklist",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "03:00",
+   "done": "19 03:30",
+   "body_file": "icm/05-build/cards/aud-backend-reduction-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/aud-backend-reduction-verify",
+   "branch": "beta/aud-backend-reduction-verify"
+  },
+  {
    "key": "PR-02:build",
    "slug": "pr-02-next16",
    "kind": "build",
@@ -139,8 +164,8 @@
    "pr": "PR-02",
    "title": "PR-02 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-02:verify"
    ],
@@ -209,8 +234,8 @@
    "pr": "PR-P1",
    "title": "PR-P1 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-P1:verify"
    ],
@@ -280,8 +305,8 @@
    "pr": "PR-03A",
    "title": "PR-03A merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-03A:verify"
    ],
@@ -351,8 +376,8 @@
    "pr": "PR-03B",
    "title": "PR-03B merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-03B:verify"
    ],
@@ -451,8 +476,8 @@
    "pr": "PR-04",
    "title": "PR-04 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-04:verify",
     "PR-04:secverify"
@@ -531,8 +556,8 @@
    "pr": "PR-01",
    "title": "PR-01 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-01:verify"
    ],
@@ -634,8 +659,8 @@
    "pr": "PR-W1",
    "title": "PR-W1 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-W1:verify",
     "PR-W1:secverify"
@@ -714,8 +739,8 @@
    "pr": "PR-03",
    "title": "PR-03 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-03:verify"
    ],
@@ -791,8 +816,8 @@
    "pr": "PR-T2",
    "title": "PR-T2 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-T2:verify"
    ],
@@ -887,8 +912,8 @@
    "pr": "PR-05",
    "title": "PR-05 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-05:verify",
     "PR-05:secverify"
@@ -966,8 +991,8 @@
    "pr": "PR-M0",
    "title": "PR-M0 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-M0:verify"
    ],
@@ -994,7 +1019,8 @@
    "model": "deepseek-v4.1-flash",
    "provider": "opencode-go",
    "parents": [
-    "PR-05:merge"
+    "PR-05:merge",
+    "AUD-REDUCTION-VERIFY:decision"
    ],
    "est_min": 35,
    "max_runtime": "52m",
@@ -1044,8 +1070,8 @@
    "pr": "PR-R0",
    "title": "PR-R0 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-R0:verify"
    ],
@@ -1122,8 +1148,8 @@
    "pr": "PR-M1",
    "title": "PR-M1 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-M1:verify"
    ],
@@ -1200,8 +1226,8 @@
    "pr": "PR-M2",
    "title": "PR-M2 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-M2:verify"
    ],
@@ -1278,8 +1304,8 @@
    "pr": "PR-M3",
    "title": "PR-M3 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-M3:verify"
    ],
@@ -1357,8 +1383,8 @@
    "pr": "PR-M4",
    "title": "PR-M4 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-M4:verify"
    ],
@@ -1435,8 +1461,8 @@
    "pr": "PR-M5",
    "title": "PR-M5 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-M5:verify"
    ],
@@ -1513,8 +1539,8 @@
    "pr": "PR-M6",
    "title": "PR-M6 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-M6:verify"
    ],
@@ -1591,8 +1617,8 @@
    "pr": "PR-M7",
    "title": "PR-M7 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-M7:verify"
    ],
@@ -1669,8 +1695,8 @@
    "pr": "PR-M8",
    "title": "PR-M8 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-M8:verify"
    ],
@@ -1747,8 +1773,8 @@
    "pr": "PR-M9",
    "title": "PR-M9 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-M9:verify"
    ],
@@ -1826,8 +1852,8 @@
    "pr": "PR-SV1",
    "title": "PR-SV1 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-SV1:verify"
    ],
@@ -1903,8 +1929,8 @@
    "pr": "PR-SV2",
    "title": "PR-SV2 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-SV2:verify"
    ],
@@ -1983,8 +2009,8 @@
    "pr": "PR-SV3",
    "title": "PR-SV3 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-SV3:verify"
    ],
@@ -2087,8 +2113,8 @@
    "pr": "PR-SV4",
    "title": "PR-SV4 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-SV4:verify",
     "PR-SV4:secverify"
@@ -2117,7 +2143,8 @@
    "provider": "opencode-go",
    "parents": [
     "PR-M0:merge",
-    "PR-05:merge"
+    "PR-05:merge",
+    "PR-P1:merge"
    ],
    "est_min": 60,
    "max_runtime": "90m",
@@ -2143,8 +2170,7 @@
    "model": "claude-haiku-5-5",
    "provider": "anthropic",
    "parents": [
-    "PR-MEDIA:build",
-    "PR-P1:merge"
+    "PR-MEDIA:build"
    ],
    "est_min": 20,
    "max_runtime": "45m",
@@ -2170,8 +2196,7 @@
    "model": "claude-haiku-5-5",
    "provider": "anthropic",
    "parents": [
-    "PR-MEDIA:build",
-    "PR-P1:merge"
+    "PR-MEDIA:build"
    ],
    "est_min": 20,
    "max_runtime": "45m",
@@ -2193,8 +2218,8 @@
    "pr": "PR-MEDIA",
    "title": "PR-MEDIA merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-MEDIA:verify",
     "PR-MEDIA:secverify"
@@ -2299,8 +2324,8 @@
    "pr": "PR-MSG",
    "title": "PR-MSG merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-MSG:verify",
     "PR-MSG:secverify"
@@ -2329,7 +2354,9 @@
    "provider": "opencode-go",
    "parents": [
     "PR-01:merge",
-    "PR-03:merge"
+    "PR-03:merge",
+    "PR-05:merge",
+    "PR-P1:merge"
    ],
    "est_min": 45,
    "max_runtime": "67m",
@@ -2378,8 +2405,8 @@
    "pr": "PR-W0",
    "title": "PR-W0 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-W0:verify"
    ],
@@ -2459,8 +2486,8 @@
    "pr": "PR-W2",
    "title": "PR-W2 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-W2:verify"
    ],
@@ -2538,8 +2565,8 @@
    "pr": "PR-W3",
    "title": "PR-W3 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-W3:verify"
    ],
@@ -2618,8 +2645,8 @@
    "pr": "PR-W4",
    "title": "PR-W4 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-W4:verify"
    ],
@@ -2697,8 +2724,8 @@
    "pr": "PR-W5",
    "title": "PR-W5 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-W5:verify"
    ],
@@ -2777,8 +2804,8 @@
    "pr": "PR-W6",
    "title": "PR-W6 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-W6:verify"
    ],
@@ -2856,8 +2883,8 @@
    "pr": "PR-W7",
    "title": "PR-W7 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-W7:verify"
    ],
@@ -2935,8 +2962,8 @@
    "pr": "PR-W8",
    "title": "PR-W8 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-W8:verify"
    ],
@@ -3015,8 +3042,8 @@
    "pr": "PR-W9",
    "title": "PR-W9 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-W9:verify"
    ],
@@ -3095,8 +3122,8 @@
    "pr": "PR-W10",
    "title": "PR-W10 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-W10:verify"
    ],
@@ -3181,8 +3208,8 @@
    "pr": "PR-R1",
    "title": "PR-R1 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-R1:verify"
    ],
@@ -3259,8 +3286,8 @@
    "pr": "PR-R2",
    "title": "PR-R2 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-R2:verify"
    ],
@@ -3336,8 +3363,8 @@
    "pr": "PR-R3",
    "title": "PR-R3 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-R3:verify"
    ],
@@ -3407,8 +3434,8 @@
    "pr": "PR-X1",
    "title": "PR-X1 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-X1:verify"
    ],
@@ -3485,8 +3512,8 @@
    "pr": "PR-X2",
    "title": "PR-X2 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-X2:verify"
    ],
@@ -3563,8 +3590,8 @@
    "pr": "PR-D1",
    "title": "PR-D1 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-D1:verify"
    ],
@@ -3641,8 +3668,8 @@
    "pr": "PR-31",
    "title": "PR-31 merge",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "PR-31:verify"
    ],
@@ -3760,8 +3787,8 @@
    "pr": "GATE-CLEAN",
    "title": "Ship-all and cleanup check",
    "assignee": "kakashi",
-   "model": "claude-sonnet-5-5",
-   "provider": "anthropic",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
    "parents": [
     "GATE-FINAL:gate"
    ],

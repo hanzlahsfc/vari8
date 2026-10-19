@@ -1,7 +1,7 @@
 {
- "cards": 145,
+ "cards": 146,
  "by_kind": {
-  "decision": 4,
+  "decision": 5,
   "build": 44,
   "verify": 50,
   "merge": 44,
@@ -15,12 +15,37 @@
   "test-audit": 232,
   "test-rewire": 29,
   "plan-pr": 44,
-  "program": 7
+  "program": 8,
+  "readiness-p0": 38
  },
  "unmapped": 0,
  "cycles": 0,
  "finish": "Mon 19:30",
  "problems": [],
+ "p0_rows": 38,
+ "p0_dispositions": {
+  "card": 21,
+  "N/A": 4,
+  "OWNER-QUESTION": 0,
+  "PARKED-D12": 1,
+  "POST-BETA-INFRA": 10,
+  "PRESENT": 2
+ },
+ "wiring_gate": {
+  "PR-W1": "PASS",
+  "PR-MEDIA": "PASS",
+  "PR-MSG": "PASS",
+  "PR-W0": "PASS",
+  "PR-W2": "PASS",
+  "PR-W3": "PASS",
+  "PR-W4": "PASS",
+  "PR-W5": "PASS",
+  "PR-W6": "PASS",
+  "PR-W7": "PASS",
+  "PR-W8": "PASS",
+  "PR-W9": "PASS",
+  "PR-W10": "PASS"
+ },
  "checkpoint": [
   [
    "DEC-AUTH:decision",
@@ -37,6 +62,10 @@
   [
    "AUD-PRR-BASELINE:decision",
    "02:30"
+  ],
+  [
+   "AUD-REDUCTION-VERIFY:decision",
+   "03:30"
   ],
   [
    "PR-02:build",

@@ -1,11 +1,11 @@
 # PR-M3 verify: Coach notes, coach tasks and tracker comments
 
-Card slug `pr-m3-notes-tasks-verify`. Independent verifier on a different model than the builder (devin/swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-m3-notes-tasks-verify` (local branch `beta/pr-m3-notes-tasks-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-M3/` and into the PR as a comment.
+Card slug `pr-m3-notes-tasks-verify`. Independent verifier on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-m3-notes-tasks-verify` (local branch `beta/pr-m3-notes-tasks-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-M3/` and into the PR as a comment.
 
 ## Steps
 
 1. Find the PR: `gh pr list -R hanzlahsfc/The-great-tracker- --head beta/pr-m3-notes-tasks --state open --json number,headRefOid`. Then `cd /home/nexuslink/vari8-worktrees/pr-m3-notes-tasks-verify && git fetch origin && git checkout --detach origin/beta/pr-m3-notes-tasks`; record the head SHA. Test-merge the current trunk the way GitHub will: `git merge --no-ff --no-edit origin/Vari8-Beta`. On a conflict: `git merge --abort`, comment `FIX: conflict with Vari8-Beta in <paths>` on the PR, block this card, stop.
-2. `mkdir -p /home/nexuslink/vari8-worktrees/_evidence/PR-M3 && BASE_SHA=$(git rev-parse origin/Vari8-Beta) LANE_DB=app_verify_prm3 LANE_PORT=3744 CARD=PR-M3 icm/05-build/tools/verify-local.sh > /home/nexuslink/vari8-worktrees/_evidence/PR-M3/verify-local.log 2>&1; echo EXIT=$?`.
+2. Export `POSTGRES_PASSWORD` (RUNBOOK 'Local check'), then `mkdir -p /home/nexuslink/vari8-worktrees/_evidence/PR-M3 && BASE_SHA=$(git rev-parse origin/Vari8-Beta) LANE_DB=app_verify_prm3 LANE_PORT=3744 CARD=PR-M3 icm/05-build/tools/verify-local.sh > /home/nexuslink/vari8-worktrees/_evidence/PR-M3/verify-local.log 2>&1; echo EXIT=$?`.
 3. Live receipt at that head: start the app on port 3744 with a fresh `app_verify_prm3` (`npm run db:fresh`, or RUNBOOK 'Dev user before PR-04' while `db:fresh` does not exist yet), drive every acceptance item below in a real browser at 1440x900 and 390x844, as each of: owner, coach, client of the same workspace, staff of a foreign workspace, signed out. Unauthorized direct requests to the PR's routes must fail closed. Save screenshots as `/home/nexuslink/vari8-worktrees/_evidence/PR-M3/<role>-<width>.png`.
 4. Parity (D32) on none: run the harness against your server; keep the report and diff images in `/home/nexuslink/vari8-worktrees/_evidence/PR-M3/parity/`.
 5. Check every matrix row listed below is visibly closed (or, for model and service rows, exercised by the wiring flow or a keep-category test). List each row with PASS or FAIL.
@@ -24,6 +24,6 @@ Card slug `pr-m3-notes-tasks-verify`. Independent verifier on a different model 
 
 - none (foundation or tooling PR)
 
-## Backend orphans this PR disposes
+## Backend orphans this PR owns (delete or keep as each line says)
 
 - S12-33: Metadata-only audit logger. Evidence: `lib/audit.ts:1`. (keep; structural audit for notes, tasks and messages)

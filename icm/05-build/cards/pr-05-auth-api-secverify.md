@@ -1,11 +1,11 @@
 # PR-05 security verify: Better Auth, versioned API and the ROLES table
 
-Card slug `pr-05-auth-api-secverify`. Independent verifier on a different model than the builder (devin/swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-05-auth-api-secverify` (local branch `beta/pr-05-auth-api-secverify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-05/` and into the PR as a comment.
+Card slug `pr-05-auth-api-secverify`. Independent verifier on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-05-auth-api-secverify` (local branch `beta/pr-05-auth-api-secverify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-05/` and into the PR as a comment.
 
 ## Steps
 
 1. Find the PR: `gh pr list -R hanzlahsfc/The-great-tracker- --head beta/pr-05-auth-api --state open --json number,headRefOid`. Then `cd /home/nexuslink/vari8-worktrees/pr-05-auth-api-secverify && git fetch origin && git checkout --detach origin/beta/pr-05-auth-api`; record the head SHA. Test-merge the current trunk the way GitHub will: `git merge --no-ff --no-edit origin/Vari8-Beta`. On a conflict: `git merge --abort`, comment `FIX: conflict with Vari8-Beta in <paths>` on the PR, block this card, stop.
-2. `mkdir -p /home/nexuslink/vari8-worktrees/_evidence/PR-05 && BASE_SHA=$(git rev-parse origin/Vari8-Beta) LANE_DB=app_verify_pr05 LANE_PORT=3729 CARD=PR-05 icm/05-build/tools/verify-local.sh > /home/nexuslink/vari8-worktrees/_evidence/PR-05/verify-local.log 2>&1; echo EXIT=$?`.
+2. Export `POSTGRES_PASSWORD` (RUNBOOK 'Local check'), then `mkdir -p /home/nexuslink/vari8-worktrees/_evidence/PR-05 && BASE_SHA=$(git rev-parse origin/Vari8-Beta) LANE_DB=app_verify_pr05 LANE_PORT=3729 CARD=PR-05 icm/05-build/tools/verify-local.sh > /home/nexuslink/vari8-worktrees/_evidence/PR-05/verify-local.log 2>&1; echo EXIT=$?`.
 3. Live receipt at that head: start the app on port 3729 with a fresh `app_verify_pr05` (`npm run db:fresh`, or RUNBOOK 'Dev user before PR-04' while `db:fresh` does not exist yet), drive every acceptance item below in a real browser at 1440x900 and 390x844, as each of: owner, coach, client of the same workspace, staff of a foreign workspace, signed out. Unauthorized direct requests to the PR's routes must fail closed. Save screenshots as `/home/nexuslink/vari8-worktrees/_evidence/PR-05/<role>-<width>.png`.
 4. Parity (D32) on none: run the harness against your server; keep the report and diff images in `/home/nexuslink/vari8-worktrees/_evidence/PR-05/parity/`.
 5. Check every matrix row listed below is visibly closed (or, for model and service rows, exercised by the wiring flow or a keep-category test). List each row with PASS or FAIL.
@@ -15,6 +15,11 @@ Card slug `pr-05-auth-api-secverify`. Independent verifier on a different model 
 ## Acceptance to check
 
 - Scripted HTTP flow on a fresh database: sign-up, sign-in, wrong password refused, 11th rapid attempt rate limited, reset link reused refused, expired reset refused, session revoked after password change, bearer call to the reference route 200 for the coach, 403 for another workspace, 401 without credentials.
+
+## Program contract checks (each must PASS for SHIP)
+
+- Roles table (D10 and owner answer Q3, written as D15): one module holds the complete capability table for every canvas surface (staff edit, clients read their own plans, D22 workspace-wide staff reads, R3-23 and R3-24 deny every cell), and one table-driven test runs every actor by every capability against the real server check with literal allow and deny. Name the module, the test file and its pass count; mutate one cell and show the test fails.
+- Session export for PR-01: `lib/auth/session.ts` (or the module PR-05 names in its report) exports one server-side session read that returns user id, name, workspace and role without importing `next-auth` or Better Auth in the caller. Show the export signature and one call from a server component; `lib/auth/viewer.ts` in PR-01 builds on it.
 
 ## Read first
 
@@ -35,7 +40,7 @@ Card slug `pr-05-auth-api-secverify`. Independent verifier on a different model 
 - R3-25: ROLES ROLES: Does the workspace-wide canvas roster stand, or does an actor see assigned scope only?
 - G6-504: PARKED-D12: Export, erasure and audit-log cells: no canvas surface, denied by D15.
 
-## Backend orphans this PR disposes
+## Backend orphans this PR owns (delete or keep as each line says)
 
 - S12-01: Auth.js v5 route handler. Evidence: `app/api/auth/[...nextauth]/route.ts:1`. (keep or replace per D16a; covered by the roles test)
 - S12-02: Login page + credentials action. Evidence: `app/login/page.tsx:7, app/login/actions.ts:1`. (keep or replace per D16a; covered by the roles test)
@@ -119,6 +124,19 @@ Card slug `pr-05-auth-api-secverify`. Independent verifier on a different model 
 - `tests/e2e/invite-acceptance.spec.ts`: REWIRE in PR-05. Retained GUARD flow cases only.
 - `tests/e2e/password-reset.spec.ts`: REWIRE in PR-05 if AUTH changes the session implementation. Retained GUARD flow cases only.
 - `tests/integration/s1-f2d-password-reset.test.ts`: REWIRE in PR-05 if AUTH replaces Auth.js. Block TB0.093 retains the password-reset and session-revocation contracts; replace only library-specific session setup
+
+## Production-readiness P0 rows this PR owns (`icm/05-build/audits/PRODREADY-BASELINE.md`)
+
+- PR-002: Login works with a plus sign in the email (PARTIAL): baseline owner
+- PR-003: Password reset links expire and work once (PARTIAL): baseline owner
+- PR-005: Session timeout and kill all sessions (PARTIAL): baseline owner
+- PR-013: Rate limits on login (MISSING): baseline owner
+- PR-009: Roles deeper than admin and everyone else (MISSING): baseline owner
+- PR-010: No IDOR: user A cannot read user B by changing an id (PARTIAL): baseline owner
+- PR-011: Tenant isolation (PARTIAL): baseline owner
+- PR-023: Server-side validation (PARTIAL): baseline owner
+- PR-041: OWASP protections: SQL injection, XSS, CSRF and the rest (PARTIAL): every write behind the v1 boundary with Zod, CSRF from Better Auth; the security verifier runs a scan
+- PR-092: End-to-end tests for money flows (PARTIAL): baseline owner
 
 ## Security focus
 

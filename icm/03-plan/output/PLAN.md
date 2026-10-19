@@ -45,6 +45,7 @@ Open calls for Marcel, each with a default already applied:
 - D23 parameter catalog. Production ships no parameter seed, so a new workspace cannot add tracker fields. Reverse with `seed-catalog`.
 - D20 video. The canvas offers video; it rides the media path. Reverse with `no-video`.
 - D32 truth-text copy for four storage labels. Reverse with `keep-demo-copy`.
+- Q-R3-17 parameter manager. Parameter-definition create, edit and archive (`app/workspace/[workspaceId]/parameters/parameter-manager.tsx`, `lib/coaching/parameters.ts`) has no canvas surface and stays as an active orphan (GAP-MATRIX :515). Default: keep it, untouched by every card, including PR-R1. Answer `drop-parameter-manager` to delete it in a later PR, or `wire-parameter-manager` to give it a canvas surface.
 
 ## How to read this
 
@@ -63,7 +64,7 @@ One section is one PR, one issue and one kanban card triple (build, verify, merg
 
 ### Verdict and merge, for every PR
 
-- [ ] A different model verifies (neji, Haiku; plus shinobu for security-relevant PRs) on its own branch: builder head merged with the current `Vari8-Beta`, `verify-local.sh`, live receipt, parity, matrix-row check. Evidence is committed on the verify branch.
+- [ ] A different model verifies (neji on claude-haiku-5-5, urokodaki on claude-opus-5-5 for claude-haiku-5-5 builds; plus shinobu on claude-haiku-5-5 for security-relevant PRs) on its own branch: builder head merged with the current `Vari8-Beta`, `verify-local.sh`, live receipt, parity, matrix-row check. Evidence is committed on the verify branch.
 - [ ] A changed head needs a fresh verdict.
 - [ ] The merge card (kakashi) runs `icm/05-build/tools/integrate.sh`: one lock, merge, fast gate, fast-forward `Vari8-Beta`.
 - [ ] Children start only after their parents' merge cards complete.
@@ -93,7 +94,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Depends on.** None.
 
-**Card.** `pr-02-next16` (build), `pr-02-next16-verify`, `pr-02-next16-merge`. Builder devin/swe-2-max outside the graph, gear kakashi, issue #57 (done). Estimate in flight minutes.
+**Card.** `pr-02-next16` (build), `pr-02-next16-verify`, `pr-02-next16-merge`. Builder swe-2-max outside the graph, gear kakashi, issue #57 (done). Estimate in flight minutes.
 
 **State.** Issue #57, shipped outside the graph; recorded as a completed card.
 
@@ -105,7 +106,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Build.**
 
-- [ ] Shipped outside the graph: PR #57 merged into `Vari8-Beta` at `55a0f08` (02:19), verified by Haiku (SHIP), branch and worktree cleaned. Folded in as a completed card.
+- [ ] Shipped outside the graph: PR #57 merged into `Vari8-Beta` at `55a0f08` (02:19), verified by claude-haiku-5-5 (SHIP), branch and worktree cleaned. Folded in as a completed card.
 - [ ] Root `next`, `react`, `react-dom` and types moved to the canvas versions; four react-hooks v6 rules downgraded to warn with 11 findings handed to PR-03B.
 
 **You see.**
@@ -155,7 +156,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Build.**
 
-- [ ] In flight outside the graph (Haiku, zenitsu gear, issue #61). Interface as built: `npm run parity` starts the canvas dev server on `PARITY_PORT` (default 3630) unless `PARITY_URL` points at a running app, captures every screen at 1440x900 and 390x844, compares with `tools/parity/baseline/`, writes `tools/parity/out/report.html`, stops the server; exit code is the comparison's. `npm run parity -- --update-baseline` recaptures. `verify-local.sh` calls it.
+- [ ] In flight outside the graph (builder claude-haiku-5-5, zenitsu gear, issue #61; verifier claude-opus-5-5 on urokodaki). Interface as built: `npm run parity` starts the canvas dev server on `PARITY_PORT` (default 3630) unless `PARITY_URL` points at a running app, captures every screen at 1440x900 and 390x844, compares with `tools/parity/baseline/`, writes `tools/parity/out/report.html`, stops the server; exit code is the comparison's. `npm run parity -- --update-baseline` recaptures. `verify-local.sh` calls it.
 - [ ] Acceptance contract the verifier checks: the screen list comes from `icm/04-briefing/shots/index.json` (35 screens, route and click path each), not a hand list; clock frozen and animations off; the next-dev write to `frontend/AGENTS.md` is restored after the run.
 - [ ] Pixel compare with a stated tolerance; masks only for the D32 truth-text table.
 - [ ] The harness bites: a run against the baseline itself passes; a run after one CSS change fails on the changed screens only.
@@ -195,7 +196,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Depends on.** None.
 
-**Card.** `pr-03-test-audit` (build), `pr-03-test-audit-verify`, `pr-03-test-audit-merge`. Builder devin/swe-2-max outside the graph, gear shikamaru, issue #59 (running). Estimate 60 minutes.
+**Card.** `pr-03-test-audit` (build), `pr-03-test-audit-verify`, `pr-03-test-audit-merge`. Builder swe-2-max outside the graph, gear shikamaru, issue #59 (running). Estimate 60 minutes.
 
 **State.** Issue #59, in flight outside the graph since about 02:24; folded in as a running card whose verifier checks the contract below.
 
@@ -207,7 +208,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Build.**
 
-- [ ] In flight outside the graph (Devin, shikamaru gear, issue #59, card `PR-03a`).
+- [ ] In flight outside the graph (swe-2-max, shikamaru gear, issue #59, card `PR-03a`).
 - [ ] Build the lever first: `icm/05-build/tools/apply-test-audit.mjs` parses the TEST-AUDIT per-file action list and the pass-2 block table (AST spans at `58eb6ed`), then deletes every CUT-FILE, the VISIBLE and CUT pass-2 blocks of every TRIM file, the named within-block exclusions, and the 41 old-UI e2e specs.
 - [ ] Leave every KEEP-ALL file, every GUARD block, every CUT-AT-REPLACE block (PR-04 via PR-T2, PR-05, PR-W4) and every REWIRE block untouched.
 - [ ] Re-run the script: the second run changes nothing (idempotent).
@@ -248,7 +249,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Depends on.** None.
 
-**Card.** `pr-03-react-hooks` (build), `pr-03-react-hooks-verify`, `pr-03-react-hooks-merge`. Builder devin/swe-2-max outside the graph, gear itachi, issue #60 (running). Estimate 45 minutes.
+**Card.** `pr-03-react-hooks` (build), `pr-03-react-hooks-verify`, `pr-03-react-hooks-merge`. Builder swe-2-max outside the graph, gear itachi, issue #60 (running). Estimate 45 minutes.
 
 **State.** Issue #60, in flight outside the graph since about 02:24; folded in as a running card whose verifier checks the contract below.
 
@@ -260,7 +261,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Build.**
 
-- [ ] In flight outside the graph (Devin, itachi gear, issue #60, card `PR-03b`).
+- [ ] In flight outside the graph (swe-2-max, itachi gear, issue #60, card `PR-03b`).
 - [ ] Fix each finding at the root cause; set the four rules back to `error`; lint exits 0 with zero react-hooks findings.
 - [ ] Canvas markup and styles stay byte-identical except where a hook fix requires it; each case named in the report.
 
@@ -338,7 +339,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 **Matrix rows closed.**
 
 - [ ] 6 rows: S08-37, V3-H4-04, V3-H4-02, V3-H4-03, S11-23, G6-102.
-- [ ] Backend orphans disposed: S12-22, S12-41, S12-54, S12-55, S12-56, S12-57, S12-58.
+- [ ] Backend orphans owned (deleted or kept as the card and the ledger say): S12-22, S12-41, S12-44, S12-46, S12-47, S12-48, S12-49, S12-54, S12-55, S12-56, S12-57, S12-58.
 
 **Review gate.**
 
@@ -493,6 +494,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 **Matrix rows closed.**
 
 - [ ] 0 rows: none.
+- [ ] Production-readiness P0 rows owned: PR-036, PR-038, PR-039, PR-062.
 
 **Review gate.**
 
@@ -507,7 +509,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Depends on.** PR-04, PR-03A.
 
-**Card.** `pr-t2-consent-test-cuts` (build), `pr-t2-consent-test-cuts-verify`, `pr-t2-consent-test-cuts-merge`. Builder tenten (ds4f). Estimate 25 minutes.
+**Card.** `pr-t2-consent-test-cuts` (build), `pr-t2-consent-test-cuts-verify`, `pr-t2-consent-test-cuts-merge`. Builder tenten (deepseek-v4.1-flash). Estimate 25 minutes.
 
 **Files.**
 
@@ -556,7 +558,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Depends on.** None.
 
-**Card.** `pr-05-auth-api` (build), `pr-05-auth-api-verify`, `pr-05-auth-api-secverify`, `pr-05-auth-api-merge`. Builder devin/swe-2-max outside the graph, gear kakashi, issue #58 (running). Estimate 90 minutes.
+**Card.** `pr-05-auth-api` (build), `pr-05-auth-api-verify`, `pr-05-auth-api-secverify`, `pr-05-auth-api-merge`. Builder swe-2-max outside the graph, gear kakashi, issue #58 (running). Estimate 90 minutes.
 
 **State.** Issue #58, in flight outside the graph since about 02:24; folded in as a running card whose verifier checks the contract below.
 
@@ -568,7 +570,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Build.**
 
-- [ ] In flight outside the graph (Devin, kakashi gear, issue #58, card `PR-05`), started from `55a0f08`. D16a: Better Auth replaces Auth.js v5 with the Prisma adapter; Hanzlah's invite token store stays; reset links 60 minutes, single use; bearer plugin for API clients; refresh rotation is a later mobile issue.
+- [ ] In flight outside the graph (swe-2-max, kakashi gear, issue #58, card `PR-05`), started from `55a0f08`. D16a: Better Auth replaces Auth.js v5 with the Prisma adapter; Hanzlah's invite token store stays; reset links 60 minutes, single use; bearer plugin for API clients; refresh rotation is a later mobile issue.
 - [ ] Sign-in, coach self-signup (D17), sign-out, reset, invite acceptance, session revocation on password change, inactive-account lockout, login rate limiting.
 - [ ] `/api/v1` route helper: authenticate (cookie or bearer), resolve workspace and role, Zod-validate, call one service, typed JSON errors (D6). Reference route: the coach roster read.
 - [ ] Delete what Better Auth replaces and its CUT-AT-REPLACE tests; keep the session-revocation, inactive-account, malformed-claim and fail-closed guarantees (TEST-AUDIT).
@@ -595,7 +597,8 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 **Matrix rows closed.**
 
 - [ ] 12 rows: V2-H5, V2-H12, V3-CO01, S11-24, S11-25, S11-26, V3-CO05, V3-H4-05, R3-23, R3-24, R3-25, G6-504.
-- [ ] Backend orphans disposed: S12-01, S12-02, S12-03, S12-04, S12-05, S12-06, S12-07, S12-34, S12-35, S12-36, S12-37, S12-38, S12-39, S12-40, S12-42, S12-66, S12-67, S12-68, S12-69, S12-70, S12-71, S12-72.
+- [ ] Backend orphans owned (deleted or kept as the card and the ledger say): S12-01, S12-02, S12-03, S12-04, S12-05, S12-06, S12-07, S12-34, S12-35, S12-36, S12-37, S12-38, S12-39, S12-40, S12-42, S12-66, S12-67, S12-68, S12-69, S12-70, S12-71, S12-72.
+- [ ] Production-readiness P0 rows owned: PR-002, PR-003, PR-005, PR-013, PR-009, PR-010, PR-011, PR-023, PR-041, PR-092.
 - [ ] TEST-AUDIT actions executed: 57 (listed in the ledger).
 
 **Review gate.**
@@ -651,6 +654,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 **Matrix rows closed.**
 
 - [ ] 4 rows: V3-L1-Plan, V3-L1-ClientPlans, V3-L1-IIFYM, V3-L1-ClientGoal.
+- [ ] Production-readiness P0 rows owned: PR-001, PR-015, PR-024.
 
 **Review gate.**
 
@@ -663,7 +667,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 ## Merge the copied retry and boundary helpers (PR-R0)
 
-**Depends on.** PR-05.
+**Depends on.** PR-05, AUD-REDUCTION-VERIFY.
 
 **Card.** `pr-r0-lib-dedupe` (build), `pr-r0-lib-dedupe-verify`, `pr-r0-lib-dedupe-merge`. Builder Devin swe-2-max via yamato, gear kakashi. Estimate 35 minutes.
 
@@ -700,6 +704,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 **Matrix rows closed.**
 
 - [ ] 0 rows: none.
+- [ ] Backend orphans owned (deleted or kept as the card and the ledger say): S12-43.
 
 **Review gate.**
 
@@ -848,7 +853,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 **Matrix rows closed.**
 
 - [ ] 0 rows: none.
-- [ ] Backend orphans disposed: S12-33.
+- [ ] Backend orphans owned (deleted or kept as the card and the ledger say): S12-33.
 
 **Review gate.**
 
@@ -1338,7 +1343,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 **Matrix rows closed.**
 
 - [ ] 3 rows: S01-20, S11-16, S11-17.
-- [ ] Backend orphans disposed: S12-73, S12-74.
+- [ ] Backend orphans owned (deleted or kept as the card and the ledger say): S12-73, S12-74.
 
 **Review gate.**
 
@@ -1351,7 +1356,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 ## Media storage, upload and the real recorder (PR-MEDIA)
 
-**Depends on.** PR-M0, PR-05.
+**Depends on.** PR-M0, PR-05, PR-P1.
 
 **Card.** `pr-media-storage` (build), `pr-media-storage-verify`, `pr-media-storage-secverify`, `pr-media-storage-merge`. Builder Devin swe-2-max via yamato, gear kakashi. Estimate 60 minutes.
 
@@ -1450,7 +1455,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 ## Split the canvas store into per-domain data providers (PR-W0)
 
-**Depends on.** PR-01, PR-03.
+**Depends on.** PR-01, PR-03, PR-05, PR-P1.
 
 **Card.** `pr-w0-data-seam` (build), `pr-w0-data-seam-verify`, `pr-w0-data-seam-merge`. Builder Devin swe-2-max via yamato, gear kakashi. Estimate 45 minutes.
 
@@ -1537,7 +1542,8 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 **Matrix rows closed.**
 
 - [ ] 22 rows: S01-11, S01-14, S01-15, S01-16, S01-17, S01-18, S01-19, S01-21, S01-22, S01-23, S01-24, S01-25, S01-33, S01-35, V1-C6, V1-C7, S10-19, S11-05, S11-06, S11-11, S11-15, S11-21.
-- [ ] Backend orphans disposed: S12-13, S12-14, S12-15, S12-16, S12-59, S12-60, S12-61, S12-62, S12-63, S12-64, S12-65.
+- [ ] Backend orphans owned (deleted or kept as the card and the ledger say): S12-13, S12-14, S12-15, S12-16, S12-59, S12-60, S12-61, S12-62, S12-63, S12-64, S12-65.
+- [ ] Production-readiness P0 rows owned: PR-025.
 
 **Review gate.**
 
@@ -1938,6 +1944,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 **Matrix rows closed.**
 
 - [ ] 27 rows: S01-06, S01-10, S01-31, S01-32, S01-40, S02-17, S02-18, S02-19, S02-20, S02-21, S02-22, S02-23, V3-L1-CoachTask, V3-L1-ClientNote, S10-01, S10-02, S10-03, S10-05, S10-06, S10-07, S10-08, S10-09, S10-10, S11-09, S11-10, S11-12, S11-22.
+- [ ] Production-readiness P0 rows owned: PR-040.
 
 **Review gate.**
 
@@ -1956,14 +1963,14 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Files.**
 
-- [ ] Edit app/workspace/** (UI pages), `app/(tracker)/**`, `app/library/**`, `app/sheets/**`, `app/daily/**`, components/** (old UI, keep `sign-out-button.tsx` if still used), `lib/extraction/{crosssheet,databases,redact,source,summaries,theme}.ts`, scripts/extract-sheets.ts and the `extract:sheets` script, `lib/daily-prototype.ts`, `lib/sheet-viewer.ts`, `lib/catalog.ts`, `lib/spec-artifacts.ts`, lib/trainingprogram/weeks.ts (`versionForWeek`), lib/coaching/_transition_ (conditional, F4), components/canvas/data/*.ts (localStorage fallbacks, created by PR-01 and PR-W0), `frontend/**`, tests that only covered deleted code.
+- [ ] Edit app/workspace/** (UI pages), `app/(tracker)/**`, `app/library/**`, `app/sheets/**`, `app/daily/**`, components/** (old UI, keep `sign-out-button.tsx` if still used), `lib/extraction/{crosssheet,redact,source,summaries,theme}.ts`, scripts/extract-sheets.ts and the `extract:sheets` script, `lib/daily-prototype.ts`, `lib/sheet-viewer.ts`, `lib/catalog.ts`, `lib/spec-artifacts.ts`, lib/trainingprogram/weeks.ts (`versionForWeek`), lib/coaching/_transition_ (conditional, F4), components/canvas/data/*.ts (localStorage fallbacks, created by PR-01 and PR-W0), `frontend/**`, tests that only covered deleted code.
 - [ ] Leave `db/` untouched (D34).
 - [ ] Write `icm/05-build/reports/pr-r1-delete-superseded.md` with commands and exit codes.
 
 **Build.**
 
 - [ ] Input: `icm/05-build/BACKEND-REDUCTION.md` (findings F1, F2, F4, F5, F6, F13; about 21,800 lines). Census first: for every candidate, a committed command output proving zero runtime callers (`icm/05-build/reports/PR-R1-census.txt`).
-- [ ] Keep `lib/db.ts` (S12-43) and the extraction modules the catalog importers import: `contracts.ts`, `parse.ts`, `normalize.ts`, `css.ts` (S12-44, S12-46, S12-48, S12-49; BACKEND-REDUCTION section 5 item 2).
+- [ ] Do not delete `lib/db.ts` or the extraction modules the catalog importers (`lib/nutrition/source.ts`, `lib/exercise/source.ts`) import directly or through `parse.ts`: `contracts.ts`, `databases.ts`, `normalize.ts`, `parse.ts`, `css.ts`. They are not R1 work; the census only confirms they still have callers. The parameter manager (`app/workspace/[workspaceId]/parameters/**`, `lib/coaching/parameters.ts`) also stays, although it sits under `app/workspace/**`: it waits for an owner answer.
 - [ ] Delete the template-version transition subsystem (F4) only after confirming the canvas assign flow (S01-27 setup review) does not call `transition-diff`; otherwise keep it and say why.
 - [ ] Delete the old backend UI replaced by canvas screens, the public fixture library pages, dead helpers and dead exported symbols (D33).
 - [ ] Remove the localStorage fallbacks from the data providers (S01-13).
@@ -1990,7 +1997,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 **Matrix rows closed.**
 
 - [ ] 1 rows: S01-13.
-- [ ] Backend orphans disposed: S12-08, S12-09, S12-10, S12-11, S12-12, S12-43, S12-44, S12-45, S12-46, S12-47, S12-48, S12-49, S12-50, S12-51, S12-52, S12-53, R3-16, R3-17, R3-18, R3-20, R3-21, R3-22.
+- [ ] Backend orphans owned (deleted or kept as the card and the ledger say): S12-08, S12-09, S12-10, S12-11, S12-12, S12-45, S12-50, S12-51, S12-52, S12-53, R3-16, R3-18, R3-20, R3-21, R3-22.
 
 **Review gate.**
 
@@ -2038,7 +2045,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 **Matrix rows closed.**
 
 - [ ] 0 rows: none.
-- [ ] Backend orphans disposed: S12-17, S12-18, S12-19, S12-20, S12-21, S12-23, S12-24, S12-25, S12-26, S12-27, S12-28, S12-29, S12-30, S12-31, S12-32.
+- [ ] Backend orphans owned (deleted or kept as the card and the ledger say): S12-17, S12-18, S12-19, S12-20, S12-21, S12-23, S12-24, S12-25, S12-26, S12-27, S12-28, S12-29, S12-30, S12-31, S12-32.
 
 **Review gate.**
 
@@ -2086,7 +2093,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 **Matrix rows closed.**
 
 - [ ] 0 rows: none.
-- [ ] Backend orphans disposed: S12-75, S12-76.
+- [ ] Backend orphans owned (deleted or kept as the card and the ledger say): S12-75, S12-76.
 
 **Review gate.**
 
@@ -2113,7 +2120,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Build.**
 
-- [ ] In flight outside the graph (ds4f, tenten gear, issue #62). Acceptance contract: `icm/05-build/SYSTEM-INDEX-SPEC.md` (deterministic generator, per-directory routers, symbol and route maps, glossary, check mode). Its verifier checks the generator against the spec, not the content of a tree that is still moving.
+- [ ] In flight outside the graph (deepseek-v4.1-flash, tenten gear, issue #62). Acceptance contract: `icm/05-build/SYSTEM-INDEX-SPEC.md` (deterministic generator, per-directory routers, symbol and route maps, glossary, check mode). Its verifier checks the generator against the spec, not the content of a tree that is still moving.
 
 **You see.**
 
@@ -2150,7 +2157,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Depends on.** PR-X1, PR-R2, PR-R3.
 
-**Card.** `pr-x2-index-final` (build), `pr-x2-index-final-verify`, `pr-x2-index-final-merge`. Builder shikamaru (ds4f). Estimate 25 minutes.
+**Card.** `pr-x2-index-final` (build), `pr-x2-index-final-verify`, `pr-x2-index-final-merge`. Builder shikamaru (deepseek-v4.1-flash). Estimate 25 minutes.
 
 **Files.**
 
@@ -2232,6 +2239,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 **Matrix rows closed.**
 
 - [ ] 0 rows: none.
+- [ ] Production-readiness P0 rows owned: PR-037.
 
 **Review gate.**
 

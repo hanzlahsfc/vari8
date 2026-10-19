@@ -1,7 +1,7 @@
 # PR-X2 build: Rebuild the system index on the final tree
 
-Card slug `pr-x2-index-final`. Board `vari8`. Track Index. Depends on PR-X1, PR-R2, PR-R3. Builder: shikamaru (ds4f). Issue created in driver step 2.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-x2-index-final`, branch `beta/pr-x2-index-final` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prx2` on 127.0.0.1:5433 user `app`; dev port 3824. May touch `db/`: no; the local check fails if `db/` changes.
+Card slug `pr-x2-index-final`. Board `vari8`. Track Index. Depends on PR-X1, PR-R2, PR-R3. Builder: shikamaru (deepseek-v4.1-flash). Issue created in driver step 2.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-x2-index-final`, branch `beta/pr-x2-index-final` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prx2` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3824. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## Steps before the build
 

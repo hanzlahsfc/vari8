@@ -1,7 +1,7 @@
 # PR-W0 build: Split the canvas store into per-domain data providers
 
-Card slug `pr-w0-data-seam`. Board `vari8`. Track Wiring. Depends on PR-01, PR-03. Builder: Devin swe-2-max driven by yamato. Issue created in driver step 2.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-w0-data-seam`, branch `beta/pr-w0-data-seam` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prw0` on 127.0.0.1:5433 user `app`; dev port 3782. May touch `db/`: no; the local check fails if `db/` changes.
+Card slug `pr-w0-data-seam`. Board `vari8`. Track Wiring. Depends on PR-01, PR-03, PR-05, PR-P1. Builder: Devin swe-2-max driven by yamato (driver deepseek-v4.1-flash). Issue created in driver step 2.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-w0-data-seam`, branch `beta/pr-w0-data-seam` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prw0` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3782. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## Driver steps (yamato only; Devin skips this section)
 

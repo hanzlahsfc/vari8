@@ -1,7 +1,7 @@
 # PR-02 build: Upgrade root to Next 16.3 and React 19.3
 
-Card slug `pr-02-next16`. Board `vari8`. Track Foundation. Depends on none. Builder: devin/swe-2-max, outside the graph. Issue #57.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-02-next16`, branch `beta/pr-02-next16` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_pr02` on 127.0.0.1:5433 user `app`; dev port 3701. May touch `db/`: no; the local check fails if `db/` changes.
+Card slug `pr-02-next16`. Board `vari8`. Track Foundation. Depends on none. Builder: swe-2-max, outside the graph. Issue #57.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-02-next16`, branch `beta/pr-02-next16` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_pr02` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3701. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## State
 
@@ -25,7 +25,7 @@ Shipped outside the graph as PR #57. This card exists for traceability and is co
 
 ## Build
 
-- Shipped outside the graph: PR #57 merged into `Vari8-Beta` at `55a0f08` (02:19), verified by Haiku (SHIP), branch and worktree cleaned. Folded in as a completed card.
+- Shipped outside the graph: PR #57 merged into `Vari8-Beta` at `55a0f08` (02:19), verified by claude-haiku-5-5 (SHIP), branch and worktree cleaned. Folded in as a completed card.
 - Root `next`, `react`, `react-dom` and types moved to the canvas versions; four react-hooks v6 rules downgraded to warn with 11 findings handed to PR-03B.
 
 ## Acceptance (you see)

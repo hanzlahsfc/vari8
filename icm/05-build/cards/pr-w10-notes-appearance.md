@@ -1,7 +1,7 @@
 # PR-W10 build: Wire notes, to-dos, appearance and preferences
 
-Card slug `pr-w10-notes-appearance`. Board `vari8`. Track Wiring. Depends on PR-W0, PR-M2, PR-M3, PR-MEDIA. Builder: Devin swe-2-max driven by yamato. Issue created in driver step 2.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-w10-notes-appearance`, branch `beta/pr-w10-notes-appearance` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prw10` on 127.0.0.1:5433 user `app`; dev port 3809. May touch `db/`: no; the local check fails if `db/` changes.
+Card slug `pr-w10-notes-appearance`. Board `vari8`. Track Wiring. Depends on PR-W0, PR-M2, PR-M3, PR-MEDIA. Builder: Devin swe-2-max driven by yamato (driver deepseek-v4.1-flash). Issue created in driver step 2.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-w10-notes-appearance`, branch `beta/pr-w10-notes-appearance` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prw10` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3809. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## Driver steps (yamato only; Devin skips this section)
 
@@ -55,6 +55,10 @@ Load `/home/nexuslink/.hermes/profiles/itachi/SOUL.md` as your working persona (
 - S11-10: S11 MISSING: General/shared notes "Visible to you and your coach"
 - S11-12: S11 MISSING: Coach personal to-dos linked to a client ("Coach to-do" / coachTasks)
 - S11-22: S11 PARTIAL: Workspace preferences dialog: logo upload, availability string, notification toggles, theme
+
+## Production-readiness P0 rows this PR owns (`icm/05-build/audits/PRODREADY-BASELINE.md`)
+
+- PR-040: Input sanitization everywhere a user can type (UNVERIFIED): live probe: save `<img onerror>` and `=HYPERLINK(...)` into note fields and view them escaped
 
 ## Files
 

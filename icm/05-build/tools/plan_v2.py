@@ -64,7 +64,8 @@ w("Open calls for Marcel, each with a default already applied:\n")
 w("- D16a, the AUTH outcome: Better Auth (recorded in DECISIONS from `icm/05-build/AUTH-DECISION.md` and the 02:12 ruling). PR-05 implements it, in flight as #58.")
 w("- D23 parameter catalog. Production ships no parameter seed, so a new workspace cannot add tracker fields. Reverse with `seed-catalog`.")
 w("- D20 video. The canvas offers video; it rides the media path. Reverse with `no-video`.")
-w("- D32 truth-text copy for four storage labels. Reverse with `keep-demo-copy`.\n")
+w("- D32 truth-text copy for four storage labels. Reverse with `keep-demo-copy`.")
+w("- Q-R3-17 parameter manager. Parameter-definition create, edit and archive (`app/workspace/[workspaceId]/parameters/parameter-manager.tsx`, `lib/coaching/parameters.ts`) has no canvas surface and stays as an active orphan (GAP-MATRIX :515). Default: keep it, untouched by every card, including PR-R1. Answer `drop-parameter-manager` to delete it in a later PR, or `wire-parameter-manager` to give it a canvas surface.\n")
 
 w("## How to read this\n")
 w("One section is one PR, one issue and one kanban card triple (build, verify, merge) on board `vari8`. A box is checked only when its evidence exists in `/home/nexuslink/vari8-worktrees/_evidence/<PR-id>/`, the PR comments or the card report. Each card creates its own GitHub issue (label `vari8-beta`) and PR against `Vari8-Beta`.\n")
@@ -82,7 +83,7 @@ for line in [
     w(f"- [ ] {line}")
 w("\n### Verdict and merge, for every PR\n")
 for line in [
-    "A different model verifies (neji, Haiku; plus shinobu for security-relevant PRs) on its own branch: builder head merged with the current `Vari8-Beta`, `verify-local.sh`, live receipt, parity, matrix-row check. Evidence is committed on the verify branch.",
+    "A different model verifies (neji on claude-haiku-5-5, urokodaki on claude-opus-5-5 for claude-haiku-5-5 builds; plus shinobu on claude-haiku-5-5 for security-relevant PRs) on its own branch: builder head merged with the current `Vari8-Beta`, `verify-local.sh`, live receipt, parity, matrix-row check. Evidence is committed on the verify branch.",
     "A changed head needs a fresh verdict.",
     "The merge card (kakashi) runs `icm/05-build/tools/integrate.sh`: one lock, merge, fast gate, fast-forward `Vari8-Beta`.",
     "Children start only after their parents' merge cards complete.",
@@ -113,7 +114,7 @@ for p in PRS:
     if p["who"] == "yamato":
         builder = "Devin swe-2-max via yamato, gear " + str(p["gear"])
     elif p["who"]:
-        builder = p["who"] + " (ds4f)"
+        builder = p["who"] + " (deepseek-v4.1-flash)"
     else:
         builder = f'{p.get("builder_model")} outside the graph, gear {p.get("gear")}, issue #{p.get("issue")} ({p.get("ext")})'
     w(f"**Card.** `{p['slug']}` (build), `{p['slug']}-verify`{', `' + p['slug'] + '-secverify`' if p.get('sec') else ''}, `{p['slug']}-merge`. Builder {builder}. Estimate {p['est'] or 'in flight'} minutes.\n")
@@ -149,7 +150,10 @@ for p in PRS:
     w("\n**Matrix rows closed.**\n")
     w(f"- [ ] {len(rows)} rows: " + (", ".join(rows) if rows else "none") + ".")
     if orph_by_owner.get(pid):
-        w(f"- [ ] Backend orphans disposed: {', '.join(orph_by_owner[pid])}.")
+        w(f"- [ ] Backend orphans owned (deleted or kept as the card and the ledger say): {', '.join(orph_by_owner[pid])}.")
+    p0 = [r["id"] for r in ledger if r["kind"] == "readiness-p0" and r["owning_task"] == pid]
+    if p0:
+        w(f"- [ ] Production-readiness P0 rows owned: {', '.join(p0)}.")
     if ta_by_owner.get(pid):
         w(f"- [ ] TEST-AUDIT actions executed: {ta_by_owner[pid]} (listed in the ledger).")
     w("\n**Review gate.**\n")

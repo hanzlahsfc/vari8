@@ -1,11 +1,11 @@
 # PR-05 build: Better Auth, versioned API and the ROLES table
 
-Card slug `pr-05-auth-api`. Board `vari8`. Track Foundation. Depends on none. Builder: devin/swe-2-max, outside the graph. Issue #58.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-05-auth-api`, branch `beta/pr-05-auth-api` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_pr05` on 127.0.0.1:5433 user `app`; dev port 3728. May touch `db/`: yes (D34 schema writer).
+Card slug `pr-05-auth-api`. Board `vari8`. Track Foundation. Depends on none. Builder: swe-2-max, outside the graph. Issue #58.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-05-auth-api`, branch `beta/pr-05-auth-api` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_pr05` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3728. May touch `db/`: yes (D34 schema writer).
 
 ## State
 
-In flight outside the graph: issue #58, worktree `/home/nexuslink/vari8-worktrees/pr-05-auth-api`, branch `beta/pr-05-auth-api`, builder devin/swe-2-max. The orchestrator completes this card (`hermes kanban --board vari8 complete <id>`) when the builder exits with its PR open; the verify card then runs. The sections below are the program's acceptance contract for that PR.
+In flight outside the graph: issue #58, worktree `/home/nexuslink/vari8-worktrees/pr-05-auth-api`, branch `beta/pr-05-auth-api`, builder swe-2-max. The orchestrator completes this card (`hermes kanban --board vari8 complete <id>`) when the builder exits with its PR open; the verify card then runs. The sections below are the program's acceptance contract for that PR.
 
 ## Read first
 
@@ -26,7 +26,7 @@ In flight outside the graph: issue #58, worktree `/home/nexuslink/vari8-worktree
 - R3-25: ROLES ROLES: Does the workspace-wide canvas roster stand, or does an actor see assigned scope only?
 - G6-504: PARKED-D12: Export, erasure and audit-log cells: no canvas surface, denied by D15.
 
-## Backend orphans this PR disposes
+## Backend orphans this PR owns (delete or keep as each line says)
 
 - S12-01: Auth.js v5 route handler. Evidence: `app/api/auth/[...nextauth]/route.ts:1`. (keep or replace per D16a; covered by the roles test)
 - S12-02: Login page + credentials action. Evidence: `app/login/page.tsx:7, app/login/actions.ts:1`. (keep or replace per D16a; covered by the roles test)
@@ -111,6 +111,19 @@ In flight outside the graph: issue #58, worktree `/home/nexuslink/vari8-worktree
 - `tests/e2e/password-reset.spec.ts`: REWIRE in PR-05 if AUTH changes the session implementation. Retained GUARD flow cases only.
 - `tests/integration/s1-f2d-password-reset.test.ts`: REWIRE in PR-05 if AUTH replaces Auth.js. Block TB0.093 retains the password-reset and session-revocation contracts; replace only library-specific session setup
 
+## Production-readiness P0 rows this PR owns (`icm/05-build/audits/PRODREADY-BASELINE.md`)
+
+- PR-002: Login works with a plus sign in the email (PARTIAL): baseline owner
+- PR-003: Password reset links expire and work once (PARTIAL): baseline owner
+- PR-005: Session timeout and kill all sessions (PARTIAL): baseline owner
+- PR-013: Rate limits on login (MISSING): baseline owner
+- PR-009: Roles deeper than admin and everyone else (MISSING): baseline owner
+- PR-010: No IDOR: user A cannot read user B by changing an id (PARTIAL): baseline owner
+- PR-011: Tenant isolation (PARTIAL): baseline owner
+- PR-023: Server-side validation (PARTIAL): baseline owner
+- PR-041: OWASP protections: SQL injection, XSS, CSRF and the rest (PARTIAL): every write behind the v1 boundary with Zod, CSRF from Better Auth; the security verifier runs a scan
+- PR-092: End-to-end tests for money flows (PARTIAL): baseline owner
+
 ## Files
 
 - `auth.ts`
@@ -127,7 +140,7 @@ In flight outside the graph: issue #58, worktree `/home/nexuslink/vari8-worktree
 
 ## Build
 
-- In flight outside the graph (Devin, kakashi gear, issue #58, card `PR-05`), started from `55a0f08`. D16a: Better Auth replaces Auth.js v5 with the Prisma adapter; Hanzlah's invite token store stays; reset links 60 minutes, single use; bearer plugin for API clients; refresh rotation is a later mobile issue.
+- In flight outside the graph (swe-2-max, kakashi gear, issue #58, card `PR-05`), started from `55a0f08`. D16a: Better Auth replaces Auth.js v5 with the Prisma adapter; Hanzlah's invite token store stays; reset links 60 minutes, single use; bearer plugin for API clients; refresh rotation is a later mobile issue.
 - Sign-in, coach self-signup (D17), sign-out, reset, invite acceptance, session revocation on password change, inactive-account lockout, login rate limiting.
 - `/api/v1` route helper: authenticate (cookie or bearer), resolve workspace and role, Zod-validate, call one service, typed JSON errors (D6). Reference route: the coach roster read.
 - Delete what Better Auth replaces and its CUT-AT-REPLACE tests; keep the session-revocation, inactive-account, malformed-claim and fail-closed guarantees (TEST-AUDIT).

@@ -16,14 +16,14 @@ MODELS = {
     "shikamaru": ("deepseek-v4.1-flash", "opencode-go"),
     "neji": ("claude-haiku-5-5", "anthropic"),
     "shinobu": ("claude-haiku-5-5", "anthropic"),
-    "kakashi": ("claude-sonnet-5-5", "anthropic"),
+    "kakashi": ("deepseek-v4.1-flash", "opencode-go"),  # merge cards and GATE-CLEAN are mechanical (W0-fix-1 ruling 1)
     "meliodas": ("claude-opus-5-5", "anthropic"),
     "urokodaki": ("claude-opus-5-5", "anthropic"),
     "minato": ("gpt-6.1-sol", "openai-codex"),
 }
 
 # The model that actually writes the code, for the "verifier differs from builder" check.
-BUILDER_MODEL = {"yamato": "devin/swe-2-max"}
+BUILDER_MODEL = {"yamato": "swe-2-max"}
 
 WORKER_SKILLS = {
     "yamato": ["devin", "verification-before-completion", "show-me-your-work"],
@@ -56,10 +56,10 @@ LIVE_ROLES = "owner, coach, client of the same workspace, staff of a foreign wor
 PRS = [
     dict(
         id="PR-02", slug="pr-02-next16", title="Upgrade root to Next 16.3 and React 19.3", track="Foundation",
-        deps=[], who=None, gear="kakashi", est=0, ext="done", issue=57, builder_model="devin/swe-2-max",
+        deps=[], who=None, gear="kakashi", est=0, ext="done", issue=57, builder_model="swe-2-max",
         files=["package.json", "package-lock.json", "tsconfig.json", "eslint.config.mjs", "next.config.ts"],
         build=[
-            "Shipped outside the graph: PR #57 merged into `Vari8-Beta` at `55a0f08` (02:19), verified by Haiku (SHIP), branch and worktree cleaned. Folded in as a completed card.",
+            "Shipped outside the graph: PR #57 merged into `Vari8-Beta` at `55a0f08` (02:19), verified by claude-haiku-5-5 (SHIP), branch and worktree cleaned. Folded in as a completed card.",
             "Root `next`, `react`, `react-dom` and types moved to the canvas versions; four react-hooks v6 rules downgraded to warn with 11 findings handed to PR-03B.",
         ],
         see=["Root typecheck, lint, build and unit tests exit 0 on Next 16.3 and React 19.3; `frontend/` still builds; sign-in page answers 200."],
@@ -71,7 +71,7 @@ PRS = [
         deps=[], who=None, gear="zenitsu", est=45, ext="running", issue=61, eta=45, builder_model="claude-haiku-5-5", verifier="urokodaki",
         files=["tools/parity/run.mjs, capture.mjs, compare.mjs (in flight)", "tools/parity/baseline/**", "package.json (script `parity` only)", ".gitignore (`tools/parity/out/`)"],
         build=[
-            "In flight outside the graph (Haiku, zenitsu gear, issue #61). Interface as built: `npm run parity` starts the canvas dev server on `PARITY_PORT` (default 3630) unless `PARITY_URL` points at a running app, captures every screen at 1440x900 and 390x844, compares with `tools/parity/baseline/`, writes `tools/parity/out/report.html`, stops the server; exit code is the comparison's. `npm run parity -- --update-baseline` recaptures. `verify-local.sh` calls it.",
+            "In flight outside the graph (builder claude-haiku-5-5, zenitsu gear, issue #61; verifier claude-opus-5-5 on urokodaki). Interface as built: `npm run parity` starts the canvas dev server on `PARITY_PORT` (default 3630) unless `PARITY_URL` points at a running app, captures every screen at 1440x900 and 390x844, compares with `tools/parity/baseline/`, writes `tools/parity/out/report.html`, stops the server; exit code is the comparison's. `npm run parity -- --update-baseline` recaptures. `verify-local.sh` calls it.",
             "Acceptance contract the verifier checks: the screen list comes from `icm/04-briefing/shots/index.json` (35 screens, route and click path each), not a hand list; clock frozen and animations off; the next-dev write to `frontend/AGENTS.md` is restored after the run.",
             "Pixel compare with a stated tolerance; masks only for the D32 truth-text table.",
             "The harness bites: a run against the baseline itself passes; a run after one CSS change fails on the changed screens only.",
@@ -82,11 +82,11 @@ PRS = [
     ),
     dict(
         id="PR-03A", slug="pr-03-test-audit", title="Apply the TEST-AUDIT cuts", track="Foundation",
-        deps=[], who=None, gear="shikamaru", est=60, ext="running", issue=59, eta=60, builder_model="devin/swe-2-max",
+        deps=[], who=None, gear="shikamaru", est=60, ext="running", issue=59, eta=60, builder_model="swe-2-max",
         files=["tests/**", "frontend/**/*.test.mjs", "frontend/**/*.checks.mjs", "frontend/scripts/*.test.*", "test configs", "package.json scripts",
                "icm/05-build/tools/apply-test-audit.mjs"],
         build=[
-            "In flight outside the graph (Devin, shikamaru gear, issue #59, card `PR-03a`).",
+            "In flight outside the graph (swe-2-max, shikamaru gear, issue #59, card `PR-03a`).",
             "Build the lever first: `icm/05-build/tools/apply-test-audit.mjs` parses the TEST-AUDIT per-file action list and the pass-2 block table (AST spans at `58eb6ed`), then deletes every CUT-FILE, the VISIBLE and CUT pass-2 blocks of every TRIM file, the named within-block exclusions, and the 41 old-UI e2e specs.",
             "Leave every KEEP-ALL file, every GUARD block, every CUT-AT-REPLACE block (PR-04 via PR-T2, PR-05, PR-W4) and every REWIRE block untouched.",
             "Re-run the script: the second run changes nothing (idempotent).",
@@ -97,10 +97,10 @@ PRS = [
     ),
     dict(
         id="PR-03B", slug="pr-03-react-hooks", title="Fix the react-hooks v6 findings", track="Foundation",
-        deps=[], who=None, gear="itachi", est=45, ext="running", issue=60, eta=45, builder_model="devin/swe-2-max",
+        deps=[], who=None, gear="itachi", est=45, ext="running", issue=60, eta=45, builder_model="swe-2-max",
         files=["the 11 finding sites listed in `icm/05-build/reports/PR-02.md` section E2", "eslint.config.mjs"],
         build=[
-            "In flight outside the graph (Devin, itachi gear, issue #60, card `PR-03b`).",
+            "In flight outside the graph (swe-2-max, itachi gear, issue #60, card `PR-03b`).",
             "Fix each finding at the root cause; set the four rules back to `error`; lint exits 0 with zero react-hooks findings.",
             "Canvas markup and styles stay byte-identical except where a hook fix requires it; each case named in the report.",
         ],
@@ -188,18 +188,22 @@ PRS = [
     ),
     dict(
         id="PR-05", slug="pr-05-auth-api", title="Better Auth, versioned API and the ROLES table", track="Foundation",
-        deps=[], who=None, gear="kakashi", est=90, sec=True, schema=True, ext="running", issue=58, eta=100, builder_model="devin/swe-2-max",
+        deps=[], who=None, gear="kakashi", est=90, sec=True, schema=True, ext="running", issue=58, eta=100, builder_model="swe-2-max",
         files=["auth.ts", "auth.config.ts", "lib/auth/**", "app/api/v1/**", "app/signup/**", "app/reset/**",
                "app/reset-request/**", "lib/mail/**", "docs/security/authorization-model.md", "db/schema.prisma and one migration for the Better Auth tables",
                "tests: the PR-05 CUT-AT-REPLACE and REWIRE files from TEST-AUDIT, a table-driven roles test"],
         build=[
-            "In flight outside the graph (Devin, kakashi gear, issue #58, card `PR-05`), started from `55a0f08`. D16a: Better Auth replaces Auth.js v5 with the Prisma adapter; Hanzlah's invite token store stays; reset links 60 minutes, single use; bearer plugin for API clients; refresh rotation is a later mobile issue.",
+            "In flight outside the graph (swe-2-max, kakashi gear, issue #58, card `PR-05`), started from `55a0f08`. D16a: Better Auth replaces Auth.js v5 with the Prisma adapter; Hanzlah's invite token store stays; reset links 60 minutes, single use; bearer plugin for API clients; refresh rotation is a later mobile issue.",
             "Sign-in, coach self-signup (D17), sign-out, reset, invite acceptance, session revocation on password change, inactive-account lockout, login rate limiting.",
             "`/api/v1` route helper: authenticate (cookie or bearer), resolve workspace and role, Zod-validate, call one service, typed JSON errors (D6). Reference route: the coach roster read.",
             "Delete what Better Auth replaces and its CUT-AT-REPLACE tests; keep the session-revocation, inactive-account, malformed-claim and fail-closed guarantees (TEST-AUDIT).",
             "Program additions checked by its verifier: the D15 capability table lives in one module with one table-driven test of every actor by every capability; `lib/auth/session.ts` keeps an exported session read that `lib/auth/viewer.ts` (PR-01) can call.",
         ],
         see=["Scripted HTTP flow on a fresh database: sign-up, sign-in, wrong password refused, 11th rapid attempt rate limited, reset link reused refused, expired reset refused, session revoked after password change, bearer call to the reference route 200 for the coach, 403 for another workspace, 401 without credentials."],
+        verify_extra=[
+            "Roles table (D10 and owner answer Q3, written as D15): one module holds the complete capability table for every canvas surface (staff edit, clients read their own plans, D22 workspace-wide staff reads, R3-23 and R3-24 deny every cell), and one table-driven test runs every actor by every capability against the real server check with literal allow and deny. Name the module, the test file and its pass count; mutate one cell and show the test fails.",
+            "Session export for PR-01: `lib/auth/session.ts` (or the module PR-05 names in its report) exports one server-side session read that returns user id, name, workspace and role without importing `next-auth` or Better Auth in the caller. Show the export signature and one call from a server component; `lib/auth/viewer.ts` in PR-01 builds on it.",
+        ],
         unit="Table-driven roles test (every actor by every capability against the real server check) plus the preserved session and token guards.",
         screens=[],
     ),
@@ -223,7 +227,7 @@ PRS = [
     ),
     dict(
         id="PR-R0", slug="pr-r0-lib-dedupe", title="Merge the copied retry and boundary helpers", track="Reduction",
-        deps=["PR-05"], who="yamato", gear="kakashi", est=35,
+        deps=["PR-05", "AUD-REDUCTION-VERIFY"], who="yamato", gear="kakashi", est=35,
         files=["lib/db.ts", "lib/boundary.ts", "the 18 service files with `withSerializedRetry` copies", "the 16 `lib/*/boundary.ts` files"],
         build=[
             "BACKEND-REDUCTION F8: one `withSerializedRetry` in `lib/db.ts` (the classifier already lives at `lib/db.ts:19`); delete the 18 copies and their constants.",
@@ -325,7 +329,7 @@ for (pid, slug, title, deps, est, files, build, see, unit, sec) in SV:
 PRS += [
     dict(
         id="PR-MEDIA", slug="pr-media-storage", title="Media storage, upload and the real recorder", track="Wiring",
-        deps=["PR-M0", "PR-05"], who="yamato", gear="kakashi", est=60, sec=True,
+        deps=["PR-M0", "PR-05", "PR-P1"], who="yamato", gear="kakashi", est=60, sec=True,
         files=["lib/storage.ts", "lib/storage/local.ts", "lib/storage/s3.ts", "app/api/v1/media/**", "components/canvas/coach/media-card.tsx",
                "components/canvas/coach/demo-recorder.tsx", ".env.example (storage lines)", "scripts/seed/40-media.seed.ts"],
         build=[
@@ -354,7 +358,7 @@ PRS += [
     ),
     dict(
         id="PR-W0", slug="pr-w0-data-seam", title="Split the canvas store into per-domain data providers", track="Wiring",
-        deps=["PR-01", "PR-03"], who="yamato", gear="kakashi", est=45,
+        deps=["PR-01", "PR-03", "PR-05", "PR-P1"], who="yamato", gear="kakashi", est=45,
         files=["components/canvas/coach/store.tsx", "components/canvas/data/index.ts", "components/canvas/data/<domain>.ts",
                "components/canvas/ethereal/**/(persistence modules only)"],
         build=[
@@ -430,12 +434,12 @@ PRS += [
         id="PR-R1", slug="pr-r1-delete-superseded", title="Delete what the canvas replaced", track="Reduction",
         deps=["PR-W2", "PR-W3", "PR-W4", "PR-W5", "PR-W6", "PR-W7", "PR-W8", "PR-W9", "PR-W10", "PR-MSG"], who="yamato", gear="kakashi", est=60,
         files=["app/workspace/** (UI pages)", "app/(tracker)/**", "app/library/**", "app/sheets/**", "app/daily/**", "components/** (old UI, keep `sign-out-button.tsx` if still used)",
-               "lib/extraction/{crosssheet,databases,redact,source,summaries,theme}.ts", "scripts/extract-sheets.ts and the `extract:sheets` script",
+               "lib/extraction/{crosssheet,redact,source,summaries,theme}.ts", "scripts/extract-sheets.ts and the `extract:sheets` script",
                "lib/daily-prototype.ts", "lib/sheet-viewer.ts", "lib/catalog.ts", "lib/spec-artifacts.ts", "lib/trainingprogram/weeks.ts (`versionForWeek`)",
                "lib/coaching/*transition* (conditional, F4)", "components/canvas/data/*.ts (localStorage fallbacks, created by PR-01 and PR-W0)", "frontend/**", "tests that only covered deleted code"],
         build=[
             "Input: `icm/05-build/BACKEND-REDUCTION.md` (findings F1, F2, F4, F5, F6, F13; about 21,800 lines). Census first: for every candidate, a committed command output proving zero runtime callers (`icm/05-build/reports/PR-R1-census.txt`).",
-            "Keep `lib/db.ts` (S12-43) and the extraction modules the catalog importers import: `contracts.ts`, `parse.ts`, `normalize.ts`, `css.ts` (S12-44, S12-46, S12-48, S12-49; BACKEND-REDUCTION section 5 item 2).",
+            "Do not delete `lib/db.ts` or the extraction modules the catalog importers (`lib/nutrition/source.ts`, `lib/exercise/source.ts`) import directly or through `parse.ts`: `contracts.ts`, `databases.ts`, `normalize.ts`, `parse.ts`, `css.ts`. They are not R1 work; the census only confirms they still have callers. The parameter manager (`app/workspace/[workspaceId]/parameters/**`, `lib/coaching/parameters.ts`) also stays, although it sits under `app/workspace/**`: it waits for an owner answer.",
             "Delete the template-version transition subsystem (F4) only after confirming the canvas assign flow (S01-27 setup review) does not call `transition-diff`; otherwise keep it and say why.",
             "Delete the old backend UI replaced by canvas screens, the public fixture library pages, dead helpers and dead exported symbols (D33).",
             "Remove the localStorage fallbacks from the data providers (S01-13).",
@@ -468,7 +472,7 @@ PRS += [
         deps=[], who=None, gear="tenten", est=50, ext="running", issue=62, eta=50, builder_model="deepseek-v4.1-flash",
         files=["scripts/index/generate.ts and glossary-seed.json (in flight)", "AGENTS.md routers per directory (generated)", "docs/index/SYMBOLS.md", "docs/index/ROUTES.md",
                "docs/index/DATA-MODEL.md", "docs/index/GLOSSARY.md", "docs/index/README.md", "package.json (scripts `index`, `index:check` only)", "tests/unit/system-index.test.ts"],
-        build=["In flight outside the graph (ds4f, tenten gear, issue #62). Acceptance contract: `icm/05-build/SYSTEM-INDEX-SPEC.md` (deterministic generator, per-directory routers, symbol and route maps, glossary, check mode). Its verifier checks the generator against the spec, not the content of a tree that is still moving."],
+        build=["In flight outside the graph (deepseek-v4.1-flash, tenten gear, issue #62). Acceptance contract: `icm/05-build/SYSTEM-INDEX-SPEC.md` (deterministic generator, per-directory routers, symbol and route maps, glossary, check mode). Its verifier checks the generator against the spec, not the content of a tree that is still moving."],
         see=["`npm run index` twice produces no diff; `npm run index:check` fails after a route is added without rebuilding."],
         unit="None needed; the determinism and staleness checks are the proof.",
         screens=[],
@@ -509,17 +513,25 @@ PRS += [
 # Decision and audit cards outside the PR list. ext: "done" (create, then complete) or "running" (parked as blocked).
 DECISION_CARDS = [
     dict(id="DEC-AUTH", slug="dec-auth-evaluation", title="AUTH evaluation: Better Auth vs Auth.js v5 plus own tokens", who=None,
-         deps=[], ext="done", est=0,
-         body="Done outside the graph (Haiku lane): `icm/05-build/AUTH-DECISION.md`, verdict Better Auth, with the orchestrator ruling of 02:12. Recorded as D16a in `icm/03-plan/DECISIONS.md`."),
+         deps=[], ext="done", est=0, builder_model="claude-haiku-5-5",
+         body="Done outside the graph (builder claude-haiku-5-5; reviewed by DEC-AUTH-REVIEW on claude-opus-5-5): `icm/05-build/AUTH-DECISION.md`, verdict Better Auth, with the orchestrator ruling of 02:12. Recorded as D16a in `icm/03-plan/DECISIONS.md`."),
     dict(id="DEC-AUTH-REVIEW", slug="dec-auth-review", title="Review of the AUTH decision, record D16a", who="meliodas",
          deps=["DEC-AUTH"], ext="done", est=0,
          body="Done: the orchestrator ruled at 02:12 (verdict accepted, reset links 60 minutes single use, refresh rotation deferred to the Capacitor milestone). The W0 lead recorded D16a and committed AUTH-DECISION.md."),
     dict(id="AUD-REDUCTION", slug="aud-backend-reduction", title="Backend reduction audit", who=None,
-         deps=[], ext="done", est=0,
-         body="Done outside the graph (Haiku, kakuzu gear): `icm/05-build/BACKEND-REDUCTION.md`. Folded into PR-04, PR-R0, PR-R1, PR-R2 and PR-R3; its section 5 defects are fixed in PLAN v2."),
+         deps=[], ext="done", est=0, builder_model="claude-haiku-5-5",
+         body="Done outside the graph (builder claude-haiku-5-5, kakuzu gear; verified by AUD-REDUCTION-VERIFY on claude-opus-5-5): `icm/05-build/BACKEND-REDUCTION.md`. Folded into PR-04, PR-R0, PR-R1, PR-R2 and PR-R3; its section 5 defects are fixed in PLAN v2."),
     dict(id="AUD-PRR-BASELINE", slug="aud-prr-baseline", title="Production-readiness baseline audit", who=None,
          deps=[], ext="done", est=0,
-         body="Done outside the graph (urokodaki, Opus medium): `icm/05-build/audits/PRODREADY-BASELINE.md` at `55a0f08` (160 entries, 31 P0 gaps, 2 P0 present). GATE-PRR re-runs it on the integrated tip; its `NEW` P0 rows (hosting, backups, TLS, mail domain, monitoring, org ownership) are owner decisions listed in the lead report."),
+         body="Done outside the graph (urokodaki, claude-opus-5-5, medium): `icm/05-build/audits/PRODREADY-BASELINE.md` at `55a0f08` (160 entries, 38 P0 rows: 31 gaps, 2 present, 4 parked, 4 not applicable as graded by the baseline; every P0 row has a ledger disposition). GATE-PRR re-runs it on the integrated tip; the hosting-dependent rows are listed in `icm/05-build/POST-BETA-INFRA.md`."),
+    dict(id="AUD-REDUCTION-VERIFY", slug="aud-backend-reduction-verify", title="Verify the backend reduction audit before the reduction PRs use it", who="urokodaki",
+         deps=["AUD-REDUCTION"], est=30,
+         body=("Independent check of `icm/05-build/BACKEND-REDUCTION.md` (built on claude-haiku-5-5) on claude-opus-5-5. Worktree `/home/nexuslink/vari8-worktrees/aud-backend-reduction-verify`, "
+               "detached at `origin/Vari8-Beta`. Read only; no product edits.\n\n"
+               "1. For every finding F1 to F13 re-run the caller census it cites (or an equivalent `rg`/`git grep` over `app/`, `lib/`, `scripts/`, `components/`, `tests/`) and record the command, the count and PASS or FAIL against the audit's claim.\n"
+               "2. Check the import closure of the catalog importers (`lib/nutrition/source.ts`, `lib/exercise/source.ts`, `lib/nutrition/import.ts`, `lib/exercise/import.ts`): every `lib/extraction/*` module in it must be absent from PR-R1's delete list (the program lead found `databases.ts` and `css.ts` in the closure at 03:20; the audit names only `contracts`, `normalize`, `parse`).\n"
+               "3. Check the line counts the audit claims per finding within 10 percent.\n"
+               "4. Write `/home/nexuslink/vari8-worktrees/_evidence/AUD-REDUCTION/verify.md` with the table and a first line `SHIP AUD-REDUCTION` or `FIX AUD-REDUCTION`. On FIX, list the PR-R0, PR-R1, PR-R2 or PR-R3 card text that must change; the program lead regenerates the cards. Complete this card with the verdict line.\n")),
 ]
 GATES = [
     dict(id="GATE-PRR", slug="gate-prr-readiness", title="Production-readiness gate on integrated Vari8-Beta", who="urokodaki",

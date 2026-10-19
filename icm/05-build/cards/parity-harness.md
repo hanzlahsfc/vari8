@@ -1,7 +1,7 @@
 # PR-P1 build: Build the visual parity harness and capture baselines
 
 Card slug `parity-harness`. Board `vari8`. Track Foundation. Depends on none. Builder: claude-haiku-5-5, outside the graph. Issue #61.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/parity-harness`, branch `beta/parity-harness` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prp1` on 127.0.0.1:5433 user `app`; dev port 3704. May touch `db/`: no; the local check fails if `db/` changes.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/parity-harness`, branch `beta/parity-harness` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prp1` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3704. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## State
 
@@ -24,7 +24,7 @@ In flight outside the graph: issue #61, worktree `/home/nexuslink/vari8-worktree
 
 ## Build
 
-- In flight outside the graph (Haiku, zenitsu gear, issue #61). Interface as built: `npm run parity` starts the canvas dev server on `PARITY_PORT` (default 3630) unless `PARITY_URL` points at a running app, captures every screen at 1440x900 and 390x844, compares with `tools/parity/baseline/`, writes `tools/parity/out/report.html`, stops the server; exit code is the comparison's. `npm run parity -- --update-baseline` recaptures. `verify-local.sh` calls it.
+- In flight outside the graph (builder claude-haiku-5-5, zenitsu gear, issue #61; verifier claude-opus-5-5 on urokodaki). Interface as built: `npm run parity` starts the canvas dev server on `PARITY_PORT` (default 3630) unless `PARITY_URL` points at a running app, captures every screen at 1440x900 and 390x844, compares with `tools/parity/baseline/`, writes `tools/parity/out/report.html`, stops the server; exit code is the comparison's. `npm run parity -- --update-baseline` recaptures. `verify-local.sh` calls it.
 - Acceptance contract the verifier checks: the screen list comes from `icm/04-briefing/shots/index.json` (35 screens, route and click path each), not a hand list; clock frozen and animations off; the next-dev write to `frontend/AGENTS.md` is restored after the run.
 - Pixel compare with a stated tolerance; masks only for the D32 truth-text table.
 - The harness bites: a run against the baseline itself passes; a run after one CSS change fails on the changed screens only.

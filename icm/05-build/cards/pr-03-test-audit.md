@@ -1,11 +1,11 @@
 # PR-03A build: Apply the TEST-AUDIT cuts
 
-Card slug `pr-03-test-audit`. Board `vari8`. Track Foundation. Depends on none. Builder: devin/swe-2-max, outside the graph. Issue #59.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-03-test-audit`, branch `beta/pr-03-test-audit` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_pr03a` on 127.0.0.1:5433 user `app`; dev port 3707. May touch `db/`: no; the local check fails if `db/` changes.
+Card slug `pr-03-test-audit`. Board `vari8`. Track Foundation. Depends on none. Builder: swe-2-max, outside the graph. Issue #59.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-03-test-audit`, branch `beta/pr-03-test-audit` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_pr03a` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3707. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## State
 
-In flight outside the graph: issue #59, worktree `/home/nexuslink/vari8-worktrees/pr-03-test-audit`, branch `beta/pr-03-test-audit`, builder devin/swe-2-max. The orchestrator completes this card (`hermes kanban --board vari8 complete <id>`) when the builder exits with its PR open; the verify card then runs. The sections below are the program's acceptance contract for that PR.
+In flight outside the graph: issue #59, worktree `/home/nexuslink/vari8-worktrees/pr-03-test-audit`, branch `beta/pr-03-test-audit`, builder swe-2-max. The orchestrator completes this card (`hermes kanban --board vari8 complete <id>`) when the builder exits with its PR open; the verify card then runs. The sections below are the program's acceptance contract for that PR.
 
 ## Read first
 
@@ -225,7 +225,7 @@ In flight outside the graph: issue #59, worktree `/home/nexuslink/vari8-worktree
 
 ## Build
 
-- In flight outside the graph (Devin, shikamaru gear, issue #59, card `PR-03a`).
+- In flight outside the graph (swe-2-max, shikamaru gear, issue #59, card `PR-03a`).
 - Build the lever first: `icm/05-build/tools/apply-test-audit.mjs` parses the TEST-AUDIT per-file action list and the pass-2 block table (AST spans at `58eb6ed`), then deletes every CUT-FILE, the VISIBLE and CUT pass-2 blocks of every TRIM file, the named within-block exclusions, and the 41 old-UI e2e specs.
 - Leave every KEEP-ALL file, every GUARD block, every CUT-AT-REPLACE block (PR-04 via PR-T2, PR-05, PR-W4) and every REWIRE block untouched.
 - Re-run the script: the second run changes nothing (idempotent).

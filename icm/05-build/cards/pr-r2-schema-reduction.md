@@ -1,7 +1,7 @@
 # PR-R2 build: Drop database models left without a reader
 
-Card slug `pr-r2-schema-reduction`. Board `vari8`. Track Reduction. Depends on PR-R1, PR-M0. Builder: Devin swe-2-max driven by yamato. Issue created in driver step 2.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-r2-schema-reduction`, branch `beta/pr-r2-schema-reduction` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prr2` on 127.0.0.1:5433 user `app`; dev port 3815. May touch `db/`: yes (D34 schema writer).
+Card slug `pr-r2-schema-reduction`. Board `vari8`. Track Reduction. Depends on PR-R1, PR-M0. Builder: Devin swe-2-max driven by yamato (driver deepseek-v4.1-flash). Issue created in driver step 2.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-r2-schema-reduction`, branch `beta/pr-r2-schema-reduction` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prr2` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3815. May touch `db/`: yes (D34 schema writer).
 
 ## Driver steps (yamato only; Devin skips this section)
 
@@ -29,7 +29,7 @@ Load `/home/nexuslink/.hermes/profiles/gowther/SOUL.md` as your working persona 
 
 - none (foundation or tooling PR)
 
-## Backend orphans this PR disposes
+## Backend orphans this PR owns (delete or keep as each line says)
 
 - S12-17: User model (platform identity). Evidence: `db/schema.prisma:124`. (model census: keep if read, drop if not (D33, D34))
 - S12-18: Workspace model (tenant boundary). Evidence: `db/schema.prisma:160`. (model census: keep if read, drop if not (D33, D34))

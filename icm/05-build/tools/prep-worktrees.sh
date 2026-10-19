@@ -11,7 +11,7 @@ BASE="${PREP_BASE:-origin/Vari8-Beta}"
 created=0
 reused=0
 # Cards that shipped outside the graph (external "done") need no worktree.
-for slug in $(python3 -c 'import json,sys; [print(c["slug"]) for c in json.load(open(sys.argv[1]))["cards"] if c.get("external") != "done" and c["kind"] != "decision"]' icm/05-build/graph.json); do
+for slug in $(python3 -c 'import json,sys; [print(c["slug"]) for c in json.load(open(sys.argv[1]))["cards"] if c.get("external") != "done" and (c["kind"] != "decision" or c["assignee"])]' icm/05-build/graph.json); do
   path="$WT/$slug"
   if [[ -e "$path/.git" ]]; then
     reused=$((reused + 1))
