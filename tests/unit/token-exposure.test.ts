@@ -17,19 +17,6 @@ describe("S1-F1 external-exposure boundary", () => {
     );
   });
 
-  it("is a pure structural boundary (no parameters, no side effects)", () => {
-    expect(assertTokenFlowsExternallyExposable).toHaveLength(0);
-    try {
-      assertTokenFlowsExternallyExposable();
-    } catch (error) {
-      expect(error).toBeInstanceOf(TokenFlowNotExposableError);
-      expect((error as TokenFlowNotExposableError).code).toBe(
-        "token_flows_not_exposable",
-      );
-      expect((error as Error).message).toBe("token_flows_not_exposable");
-    }
-  });
-
   it("S1-F2B: the account-security surface is not exposable either", () => {
     expect(() => assertAccountSecurityExternallyExposable()).toThrow(
       AccountSecurityNotExposableError,

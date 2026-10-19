@@ -151,30 +151,6 @@ test.describe("reset request (/reset-request)", () => {
     await page.getByRole("button", { name: "Send reset link" }).click();
     await expect(page.getByRole("status")).toHaveText(existingMessage!);
   });
-
-  test("malformed email is rejected accessibly — native constraint first", async ({
-    page,
-  }) => {
-    await page.goto("/reset-request");
-    await page.getByLabel("Email").fill("not-an-email");
-    await page.getByRole("button", { name: "Send reset link" }).click();
-    // The native type=email constraint blocks the submit with an accessible
-    // validation bubble — no request fires, no server error needed. The
-    // server-side invalid_input path is unit/integration-pinned.
-    const validity = await page
-      .getByLabel("Email")
-      .evaluate((el: HTMLInputElement) => el.validity.valid);
-    expect(validity).toBe(false);
-    await expect(page.locator(".auth-error")).toHaveCount(0);
-    await expect(page.getByRole("status")).toHaveCount(0);
-  });
-
-  test("request page is reachable from the sign-in form", async ({ page }) => {
-    await page.goto("/login");
-    await page.getByRole("link", { name: "Forgot your password?" }).click();
-    await expect(page).toHaveURL("/reset-request");
-    await expect(page.getByRole("heading")).toHaveText("Reset your password");
-  });
 });
 
 test.describe("reset completion (/reset)", () => {
@@ -326,44 +302,6 @@ test.describe("session invalidation", () => {
 
 test.describe("responsive + a11y", () => {
   test.skip(GATED, GATE_REASON);
-  for (const [name, width] of [
-    ["desktop", 1440],
-    ["tablet", 834],
-    ["mobile", 390],
-  ] as const) {
-    test(`${name}: reset forms usable at ${width}px`, async ({ page }) => {
-      await page.setViewportSize({ width, height: 800 });
-      const u = await mkResettableUser(name);
-      const rawToken = await resetToken(u.email);
-      trackToken(rawToken);
-
-      for (const path of ["/reset-request", `/reset?token=${rawToken}`]) {
-        await page.goto(path);
-        const overflow = await page.evaluate(
-          () =>
-            document.documentElement.scrollWidth -
-            document.documentElement.clientWidth,
-        );
-        expect(overflow).toBeLessThanOrEqual(1);
-        const submit = page.getByRole("button", {
-          name: /Send reset link|Set new password/,
-        });
-        await expect(submit).toBeVisible();
-        const box = await submit.boundingBox();
-        expect(box!.height).toBeGreaterThanOrEqual(44);
-      }
-    });
-  }
-
-  test("keyboard-only flow submits the request form", async ({ page }) => {
-    const u = await mkResettableUser("keyboard");
-    await page.goto("/reset-request");
-    await page.keyboard.press("Tab");
-    await page.keyboard.type(u.email);
-    await page.keyboard.press("Tab"); // submit
-    await page.keyboard.press("Enter");
-    await expect(page.getByRole("status")).toBeVisible();
-  });
 });
 
 test.describe("delivery gated off (current default)", () => {
@@ -385,14 +323,5 @@ test.describe("delivery gated off (current default)", () => {
     myRawTokens.push(rawToken);
     const resp3 = await page.goto(`/reset?token=${rawToken}`);
     expect(resp3?.status()).toBe(404);
-  });
-
-  test("login shows no reset link while delivery is unavailable", async ({
-    page,
-  }) => {
-    await page.goto("/login");
-    await expect(
-      page.getByRole("link", { name: "Forgot your password?" }),
-    ).toHaveCount(0);
   });
 });

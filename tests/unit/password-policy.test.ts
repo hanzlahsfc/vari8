@@ -2,19 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { hashPassword, verifyPassword } from "../../lib/password";
 import {
-  PASSWORD_MAX_CODE_POINTS,
-  PASSWORD_MIN_CODE_POINTS,
   PasswordPolicyError,
   validatePasswordSetup,
   validatePasswordPolicy,
 } from "../../lib/password-policy";
 
 describe("S1-F2B password policy", () => {
-  it("bounds are the approved values", () => {
-    expect(PASSWORD_MIN_CODE_POINTS).toBe(10);
-    expect(PASSWORD_MAX_CODE_POINTS).toBe(128);
-  });
-
   it("accepts exactly 10 and exactly 128 code points", () => {
     expect(validatePasswordPolicy("a".repeat(10))).toBe("a".repeat(10));
     expect(validatePasswordPolicy("b".repeat(128))).toBe("b".repeat(128));

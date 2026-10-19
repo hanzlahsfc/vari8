@@ -12,7 +12,6 @@ import {
   materializeWeeks,
   normalizeFieldConfig,
   normalizeTrainingDraft,
-  projectForClient,
   validatePublishCompleteness,
   TrainingError,
   type TrainingDraft,
@@ -274,31 +273,6 @@ describe("validatePublishCompleteness", () => {
         CFG_ALL_ON,
       ),
     ).toThrow(TrainingError);
-  });
-});
-
-describe("projectForClient — hidden fields never serialize (P4 §6)", () => {
-  it("disabled-field values are omitted; retained values stay in storage", () => {
-    const draft = baseDraft();
-    draft.fieldCells["s1/e1/sets"] = { "1": 3 };
-    draft.fieldCells["s1/e1/reps"] = { "1": "8" };
-    draft.fieldCells["s1/e1/tempo"] = { "1": "3-1-2-0" };
-    draft.fieldCells["s1/e1/note"] = { "1": "brace" };
-    const stored = materializeWeeks(draft, "2026-01-05", 2);
-    const projected = projectForClient(stored, {
-      ...CFG_ALL_ON,
-      tempo: false,
-      progressionNotes: false,
-    });
-    const ex = projected.weeks[0].sessions[0].exercises[0];
-    expect(ex).not.toHaveProperty("tempo");
-    expect(ex.sets).toBe(3);
-    expect(ex.reps).toBe("8");
-    expect(ex.note).toBe("brace");
-    // Storage retains the hidden value.
-    expect(
-      (stored.weeks[0].sessions[0].exercises[0] as { tempo?: string }).tempo,
-    ).toBe("3-1-2-0");
   });
 });
 

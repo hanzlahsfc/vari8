@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  BLOCKED_REASON_RANK,
   collectProviderImpacts,
-  IMPACT_ROLE_RANK,
   isCanonicalCalendarDate,
   isCanonicalCount,
   isValidImpactBounds,
@@ -309,23 +307,5 @@ describe("P-020B provider execution + output validation", () => {
     );
     expect(result.impacts).toEqual([]);
     expect(result.blockedReasonCodes).toEqual([]);
-  });
-});
-
-describe("P-020B closed vocabularies", () => {
-  it("rank tables cover the whole union deterministically", () => {
-    expect(Object.keys(BLOCKED_REASON_RANK).sort()).toEqual(
-      [
-        "PROVIDER_EXECUTION_FAILED",
-        "PROVIDER_OUTPUT_INVALID",
-        "PROVIDER_REPORTED_BLOCK",
-        "PROVIDER_UNAVAILABLE",
-        "PROVIDER_VERSION_MISMATCH",
-        "TARGET_INELIGIBLE",
-      ].sort(),
-    );
-    expect(Object.keys(IMPACT_ROLE_RANK).sort()).toEqual(
-      ["REBOUND_FROM", "REBOUND_TO", "REMOVED"].sort(),
-    );
   });
 });

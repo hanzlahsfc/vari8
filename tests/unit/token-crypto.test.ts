@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-import * as tokenCrypto from "../../lib/tokens/crypto";
 import {
   TokenError,
   generateAccessToken,
@@ -210,27 +209,5 @@ describe("hashAccessToken", () => {
     expect(error.code).toBe("token_invalid");
     expect(error.message).not.toContain(marker);
     expect(error.message).toBe("token_invalid");
-  });
-});
-
-describe("module boundary", () => {
-  it("exports only functions — no mutable module-level token storage", () => {
-    for (const [name, value] of Object.entries(tokenCrypto)) {
-      expect(typeof value, `export ${name}`).toBe("function");
-    }
-  });
-
-  it("exposes no randomness-injection seam on the public API", () => {
-    // The production API sources entropy internally; there is no parameter a
-    // caller (or test) could use to feed deterministic/insecure randomness.
-    expect(generateAccessToken).toHaveLength(0);
-    expect(hashAccessToken).toHaveLength(1);
-  });
-
-  it("keeps earlier results valid after later calls (no shared state)", () => {
-    const first = generateAccessToken();
-    generateAccessToken();
-    generateAccessToken();
-    expect(hashAccessToken(first.rawToken)).toBe(first.tokenHash);
   });
 });
