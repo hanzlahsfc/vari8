@@ -16,7 +16,10 @@ Worktree and verdict cases:
   wt-create       C has a worktree path, none exists           -> exit 0, worktree on beta/c, C unblocked
   wt-fail         worktree path is a non-empty dir, no .git    -> exit 1, C stays blocked, C named
   wt-branch       beta/c already exists                        -> exit 0, worktree on beta/c, C unblocked
-  wt-dotgit       path/.git already exists                     -> exit 0, no git call, C unblocked
+  wt-dotgit       path is a worktree already on beta/c         -> exit 0, reused, C unblocked
+  wt-orphan-ref   worktree add fails after creating beta/c     -> exit 1, the new ref is deleted
+  wt-kept-ref     beta/c pre-exists and the add still fails    -> exit 1, beta/c kept at its sha
+  wt-wrong-branch path is a worktree on another branch         -> exit 1, C blocked, names branch
   open-parent-wt  P running, C has a worktree path             -> exit 0, no worktree, C blocked
   verify-fix      verify parent done, result FIX               -> exit 0, C blocked, no worktree
   verify-ship     verify parent done, result SHIP              -> exit 0, C unblocked, worktree made
@@ -89,7 +92,7 @@ def graph(pkind, wt):
     return {"cards": [p, c]}
 
 
-# name: dict(mode, pkind, pstatus, presult, wt, pre, args, rc, unblocked, wt_exists, branch_ok, out, err)
+# name: dict(mode, pkind, pstatus, presult, wt, pre, args, rc, unblocked, wt_exists, branch_ok, ref_gone, ref_kept, out, err)
 CASES = {
     "ok": dict(rc=0, unblocked=True),
     "missing": dict(mode="missing", rc=3, unblocked=False),
@@ -100,7 +103,13 @@ CASES = {
     "wt-create": dict(wt=True, rc=0, unblocked=True, wt_exists=True, branch_ok=True),
     "wt-fail": dict(wt=True, pre="block", rc=1, unblocked=False, wt_exists=False, err=["C:build t_c", "worktree creation failed"]),
     "wt-branch": dict(wt=True, pre="branch", rc=0, unblocked=True, wt_exists=True, branch_ok=True),
-    "wt-dotgit": dict(wt=True, pre="dotgit", rc=0, unblocked=True, wt_exists=True),
+    "wt-dotgit": dict(wt=True, pre="dotgit", rc=0, unblocked=True, wt_exists=True, branch_ok=True),
+    "wt-orphan-ref": dict(wt=True, pre="block", rc=1, unblocked=False, wt_exists=False, ref_gone=True,
+                          err=["C:build t_c", "worktree creation failed"]),
+    "wt-kept-ref": dict(wt=True, pre="branchblock", rc=1, unblocked=False, wt_exists=False, ref_kept=True,
+                        err=["C:build t_c", "worktree creation failed"]),
+    "wt-wrong-branch": dict(wt=True, pre="otherbranch", rc=1, unblocked=False, wt_exists=True,
+                            err=["C:build t_c", "/wt/c", "beta/other"]),
     "open-parent-wt": dict(mode="open-parent", wt=True, rc=0, unblocked=False, wt_exists=False),
     "verify-fix": dict(pkind="verify", presult="FIX AUD-REDUCTION", wt=True, rc=0, unblocked=False, wt_exists=False,
                        out=["FIX AUD-REDUCTION"]),
@@ -160,8 +169,16 @@ def main():
             elif pre == "branch":
                 git("branch", "beta/c", "origin/Vari8-Beta", cwd=work)
             elif pre == "dotgit":
+                os.makedirs(os.path.dirname(wt), exist_ok=True)
+                git("worktree", "add", "-q", "-b", "beta/c", wt, "origin/Vari8-Beta", cwd=work)
+            elif pre == "otherbranch":
+                os.makedirs(os.path.dirname(wt), exist_ok=True)
+                git("worktree", "add", "-q", "-b", "beta/other", wt, "origin/Vari8-Beta", cwd=work)
+            elif pre == "branchblock":
                 os.makedirs(wt)
-                open(os.path.join(wt, ".git"), "w").write("gitdir: /nowhere\n")
+                open(os.path.join(wt, "junk.txt"), "w").write("not a worktree\n")
+                git("branch", "beta/c", "origin/Vari8-Beta", cwd=work)
+            pre_sha = git("rev-parse", "refs/heads/beta/c", cwd=work) if case.get("ref_kept") else None
             env = dict(os.environ, PATH=bindir + os.pathsep + os.environ["PATH"], STUB_MODE=case.get("mode", "ok"),
                        STUB_LOG=log, STUB_P_STATUS="done", STUB_P_RESULT=case.get("presult") or "",
                        BOARD_SLUG=slug, BOARD_GRAPH=graph_file, BOARD_IDS=ids_file, BOARD_REPO=work,
@@ -183,6 +200,18 @@ def main():
                     problems.append(f"worktree HEAD {head!r}, want 'beta/c'")
             elif case.get("branch_ok"):
                 problems.append("no worktree created")
+            if case.get("ref_gone"):
+                rc = subprocess.run(["git", "-C", work, "show-ref", "--verify", "--quiet",
+                                     "refs/heads/beta/c"]).returncode
+                if rc == 0:
+                    problems.append("orphan ref refs/heads/beta/c left behind")
+            if case.get("ref_kept"):
+                r2 = subprocess.run(["git", "-C", work, "rev-parse", "--verify", "--quiet",
+                                     "refs/heads/beta/c"], capture_output=True, text=True)
+                if r2.returncode:
+                    problems.append("pre-existing ref refs/heads/beta/c was deleted")
+                elif r2.stdout.strip() != pre_sha:
+                    problems.append(f"refs/heads/beta/c moved to {r2.stdout.strip()}, want {pre_sha}")
             text = r.stdout + r.stderr
             for want in case.get("out", []):
                 if want not in text:
