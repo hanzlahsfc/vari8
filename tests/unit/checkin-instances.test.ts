@@ -360,7 +360,7 @@ describe("P-025-B — answer canonicalization (typed, definition-bound)", () => 
 describe("P-025-B — consent policy resolver", () => {
   it("synthetic registry requires flag AND trusted runtime", async () => {
     const { resolveCheckInConsentPolicy } =
-      await import("../../lib/checkin/instances-consent");
+      await import("../../lib/consent");
     // Flag + trusted → synthetic registry.
     const on = resolveCheckInConsentPolicy({
       ENABLE_CHECK_INS: "1",
