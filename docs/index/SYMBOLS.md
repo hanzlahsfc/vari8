@@ -7,8 +7,7 @@ Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
 Counts: 124 modules with exports, 1179 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
-Inferred types are omitted when the compiler cannot state them self-containedly (unresolved imports,
-`any`, absolute paths, or an inferred type longer than the cap), so a line is never checkout-specific.
+Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
 Imported type names are shown without their `import("...")` prefix.
 
 ## `frontend/src/lib/coaching-data.ts`
@@ -50,13 +49,13 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type ApiWorkspaceContext = { workspaceId: string; memberId: string; role: Role; scope: Exclude<CapabilityScope, "deny">; }`
 - `export type V1RouteContext<P, Q> = { viewer: ApiViewer; workspace: ApiWorkspaceContext; params: P; query: Q; request: Request; }`
 - `export type V1RouteDefinition<P, Q, R> = { capability: Capability; params: ZodType<P>; query?: ZodType<Q>; handler: (ctx: V1RouteContext<P, Q>) => Promise<R>; }`
-- `export function defineApiV1Route<P extends { workspaceId: string }, Q, R>(def: V1RouteDefinition<P, Q, R>): (request: Request, routeCtx: { params: Promise<unknown>; }) => Promise<Response>`
+- `export function defineApiV1Route<P extends { workspaceId: string }, Q, R>(def: V1RouteDefinition<P, Q, R>)`
 
 ## `lib/audit.ts`
 
-- `export const ACCOUNT_AUDIT_ACTIONS: readonly ["PASSWORD_RESET"]`
-- `export const ACCOUNT_AUDIT_RESOURCES: readonly ["user", "access_token"]`
-- `export const AUDIT_ACTIONS: readonly ["READ", "CREATE", "UPDATE", "DELETE", "EXPORT", "GRANT", "REVOKE", "INVITE", "ASSIGN", "DENY", "LOGIN", "PASSWORD_RESET"]`
+- `export const ACCOUNT_AUDIT_ACTIONS = ["PASSWORD_RESET"] as const`
+- `export const ACCOUNT_AUDIT_RESOURCES = ["user", "access_token"] as const`
+- `export const AUDIT_ACTIONS = [ "READ", "CREATE", "UPDATE", "DELETE", "EXPORT", "GRANT", "REVOKE", "INVITE", "ASSIGN", "DENY", "LOGIN", "PASSWORD_RESET", ] as const`
 - `export const AUDIT_RESOURCE_TYPES = [ "consent", "client_assignment", "access_token", "user", "client_export", "onboarding_form", "onboarding_assignment", "parameter_definition", "coaching_template...`
 - `export type AccountAuditContext = { subjectUserId: string; actorUserId?: string | null; actorRole?: MemberRole | null; }`
 - `export type AccountAuditEventInput = | { action: "PASSWORD_RESET"; resourceType: "access_token"; resourceId?: string | null; meta?: AccountAuditMeta; } | { action: "PASSWORD_RESET"; resourceType: "...`
@@ -122,14 +121,14 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/auth/rbac.ts`
 
 - `export type Action = "read" | "write"`
-- `export const PRINCIPAL_ROLES: readonly ["PLATFORM_ADMIN", "WORKSPACE_OWNER", "COACH", "ASSISTANT_COACH", "SUPPORT", "CLIENT"]`
+- `export const PRINCIPAL_ROLES = ["PLATFORM_ADMIN", ...WORKSPACE_ROLES] as const`
 - `export type PrincipalRole = (typeof PRINCIPAL_ROLES)[number]`
 - `export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>>`
 - `export const RESOURCES = [ "workspaceSettings", "membersInvitations", "clientInvitations", "clientAssignments", "clientProfiles", "dailyTracking", "mealPlans", "trainingPlansLogs", "checkinsCoachRe...`
 - `export type Resource = (typeof RESOURCES)[number]`
 - `export type Scope = "own" | "assigned" | "workspace" | "platform" | "denied"`
 - `export type ScopeCell = Record<Action, Scope>`
-- `export const WORKSPACE_ROLES: readonly ["WORKSPACE_OWNER", "COACH", "ASSISTANT_COACH", "SUPPORT", "CLIENT"]`
+- `export const WORKSPACE_ROLES = [ "WORKSPACE_OWNER", "COACH", "ASSISTANT_COACH", "SUPPORT", "CLIENT", ] as const`
 - `export type WorkspaceRole = (typeof WORKSPACE_ROLES)[number]`
 - `export function isAction(value: unknown): value is Action`
 - `export function isPrincipalRole(value: unknown): value is PrincipalRole`
@@ -138,11 +137,11 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/auth/roles.ts`
 
-- `export const CAPABILITIES: Capability[]`
+- `export const CAPABILITIES = Object.keys(CAPABILITY_MATRIX) as Capability[]`
 - `export const CAPABILITY_MATRIX: Record<Capability, Record<Role, CapabilityScope>>`
 - `export type Capability = | "roster.read" | "plan.read" | "plan.write" | "clientData.read" | "own.read" | "own.write" | "notes.write" | "tasks.manage" | "library.manage" | "message.write" | "appeara...`
 - `export type CapabilityScope = "workspace" | "own" | "deny"`
-- `export const ROLES: readonly ["owner", "coach", "client"]`
+- `export const ROLES = ["owner", "coach", "client"] as const`
 - `export type Role = "owner" | "coach" | "client"`
 - `export function capabilityScope(role: Role, capability: Capability): CapabilityScope`
 - `export function memberRoleToRole(role: MemberRole): Role | null`
@@ -157,7 +156,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function requireDailyTrackerAccess(session: SessionLike, workspaceId: string, client: PrismaLike = prisma): Promise<CollectionContext>`
 - `export async function requireOnboardingAssignmentsAccess(session: SessionLike, workspaceId: string, client: PrismaLike = prisma): Promise<CollectionContext>`
 - `export async function requireOnboardingSubmissionsAccess(session: SessionLike, workspaceId: string, client: PrismaLike = prisma): Promise<CollectionContext>`
-- `export const requireSessionUser: () => Promise<{ userId: string; session: SessionLike; }>`
+- `export const requireSessionUser = cache( async (): Promise<{ userId: string; session: SessionLike }> => { const session = await auth(); const userId = session?.user?.id; if (typeof userId !== "stri...`
 - `export async function requireWorkspaceAccess(session: SessionLike, request: WorkspaceAccessRequest, client: PrismaLike = prisma): Promise<AuthorizationContext>`
 - `export async function resolveWorkspaceAccess(session: SessionLike, request: WorkspaceAccessRequest, client: PrismaLike = prisma): Promise<AuthorizationContext | null>`
 
@@ -183,8 +182,8 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/catalog.ts`
 
-- `export const EXERCISE_FIELDS: readonly ["id", "name", "muscleGroup", "primaryTarget", "additionalTargets", "equipment", "movementPattern", "positionSetup", "cues", "videoLink"]`
-- `export const FOOD_FIELDS: readonly ["no", "food", "amount", "unit", "calories", "protein", "carbs", "fats", "state", "category"]`
+- `export const EXERCISE_FIELDS = [ "id", "name", "muscleGroup", "primaryTarget", "additionalTargets", "equipment", "movementPattern", "positionSetup", "cues", "videoLink", ] as const`
+- `export const FOOD_FIELDS = [ "no", "food", "amount", "unit", "calories", "protein", "carbs", "fats", "state", "category", ] as const`
 - `export type SparseCell = { row: number; col: number; rowSpan: number; colSpan: number; className: string | null; kind: SparseCellKind; text: string; checkbox?: "checked" | "unchecked"; }`
 - `export type SparseCellKind = "text" | "redacted" | "checkbox"`
 - `export type SparseGrid = { cells: SparseCell[]; rows: number; cols: number; redactedCount: number; emptyOmitted: number; }`
@@ -222,7 +221,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/checkin/forms.ts`
 
-- `export const CHECKIN_FIELD_KINDS: readonly ["shortText", "longText", "number", "date", "singleChoice", "multiChoice"]`
+- `export const CHECKIN_FIELD_KINDS = [ "shortText", "longText", "number", "date", "singleChoice", "multiChoice", ] as const`
 - `export const CHECKIN_FORM_LIMITS = { maxFields: 100, minPublishFields: 1, labelMax: 200, helpTextMax: 500, classificationMax: 64, minOptions: 1, maxOptions: 50, optionLabelMax: 200, nameMax: 120, d...`
 - `export type CheckInDefinition = { title: string; fields: CheckInField[] }`
 - `export type CheckInField = { fieldId: string; kind: CheckInFieldKind; label: string; required: boolean; order: number; helpText?: string; options?: CheckInOption[]; classification?: string; }`
@@ -274,17 +273,17 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/checkin/instances-consent.ts`
 
-- `export const CHECKIN_DEV_CONSENT: { readonly PRIVACY_NOTICE: "check-in-dev-privacy-v1"; readonly HEALTH_DATA: "check-in-dev-health-v1"; }`
+- `export const CHECKIN_DEV_CONSENT = { PRIVACY_NOTICE: "check-in-dev-privacy-v1", HEALTH_DATA: "check-in-dev-health-v1", } as const`
 - `export function resolveCheckInConsentPolicy(env: ResolverEnv = process.env): ConsentPolicyRegistry`
 
 ## `lib/checkin/instances.ts`
 
-- `export const CALENDAR_RANGE_MAX_DAYS: 95`
-- `export const CHECKIN_FEEDBACK_BODY_MAX: 2000`
-- `export const CHECKIN_FEEDBACK_NONCE_MAX: 64`
-- `export const CHECKIN_FEEDBACK_PAGE_SIZE: 50`
+- `export const CALENDAR_RANGE_MAX_DAYS = 95`
+- `export const CHECKIN_FEEDBACK_BODY_MAX = 2000`
+- `export const CHECKIN_FEEDBACK_NONCE_MAX = 64`
+- `export const CHECKIN_FEEDBACK_PAGE_SIZE = 50`
 - `export const CHECKIN_INSTANCE_LIMITS = { answersJsonMaxBytes: 128 * 1024, answerTextMax: 4000, optionIdsMaxPerField: 50, idMax: 128, dueTzMax: 64, dueAtMinIsoYear: 2000, dueAtMaxIsoYear: 2100, list...`
-- `export const CHECKIN_REVIEW_QUEUE_PAGE_SIZE: 50`
+- `export const CHECKIN_REVIEW_QUEUE_PAGE_SIZE = 50`
 - `export type CancelCheckInInstanceInput = { workspaceId: string; clientProfileId: string; instanceId: string; }`
 - `export type CancelCheckInInstanceResult = { status: "cancelled" }`
 - `export type CanonicalCheckInAnswer = { fieldId: string; kind: (typeof KIND_TO_ENUM)[keyof typeof KIND_TO_ENUM]; answered: boolean; valueText: string | null; valueNumeric: string | null; valueDate: ...`
@@ -299,7 +298,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type CheckInInstancePresentation = { state: CheckInInstanceState; late: boolean; }`
 - `export type CheckInInstanceState = "CANCELLED" | "REVIEWED" | "SUBMITTED" | "SCHEDULED"`
 - `export type GetOwnCheckInInstanceInput = { workspaceId: string; instanceId: string; }`
-- `export const KIND_TO_ENUM: { readonly shortText: "SHORT_TEXT"; readonly longText: "LONG_TEXT"; readonly number: "NUMBER"; readonly date: "DATE"; readonly singleChoice: "SINGLE_CHOICE"; readonly multiChoice: "MULTI_CHOICE"; }`
+- `export const KIND_TO_ENUM = { shortText: "SHORT_TEXT", longText: "LONG_TEXT", number: "NUMBER", date: "DATE", singleChoice: "SINGLE_CHOICE", multiChoice: "MULTI_CHOICE", } as const`
 - `export type ListCheckInFeedbackInput = { workspaceId: string; clientProfileId: string; submissionId: string; cursor?: string; limit?: number; }`
 - `export type ListCheckInInstancesInput = { workspaceId: string; clientProfileId: string; range?: { from: string; to: string }; }`
 - `export type ListOwnCheckInFeedbackInput = { workspaceId: string; instanceId: string; cursor?: string; }`
@@ -356,8 +355,8 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/checkin/schedules.ts`
 
-- `export const CHECKIN_SCHEDULE_HORIZON_DAYS: 56`
-- `export const CHECKIN_SCHEDULE_LIMITS: { readonly idMax: 128; readonly horizonDays: 56; }`
+- `export const CHECKIN_SCHEDULE_HORIZON_DAYS = CHECKIN_SCHEDULE_LIMITS.horizonDays`
+- `export const CHECKIN_SCHEDULE_LIMITS = { idMax: 128, horizonDays: 56, } as const`
 - `export { CheckInInstanceError }`
 - `export type CheckInRuleWeekday = (typeof WEEKDAYS)[number]`
 - `export type CheckInScheduleDeps = { db?: PrismaLike; now?: () => Date; }`
@@ -379,7 +378,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/checkin/timezone.ts`
 
-- `export const CHECKIN_TZ_LIMITS: { readonly minIsoYear: 2000; readonly maxIsoYear: 2100; readonly timezoneMax: 64; readonly gapBoundMinutes: 181; }`
+- `export const CHECKIN_TZ_LIMITS = { minIsoYear: 2000, maxIsoYear: 2100, timezoneMax: 64, gapBoundMinutes: 181, } as const`
 - `export type ResolveLocalInstantResult = | { status: "ok"; instant: Date } | { status: "unrepresentable" } | { status: "invalid" }`
 - `export function isValidIanaTimeZone(zone: string): boolean`
 - `export function localDateInZone(instant: Date, zone: string): string | null`
@@ -408,7 +407,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/coaching/client-setup-gate.ts`
 
-- `export const CLIENT_SETUP_LIMITS: { readonly idMax: 128; readonly listDefaultLimit: 25; readonly listMaxLimit: 100; readonly indexMax: 100000; }`
+- `export const CLIENT_SETUP_LIMITS = { idMax: 128, listDefaultLimit: 25, listMaxLimit: 100, indexMax: 100_000, } as const`
 - `export class ClientSetupError extends Error (1 members)`
 - `export type ClientSetupErrorCode = | "invalid_input" | "assignment_not_accessible" | "assignment_not_active" | "client_not_eligible" | "template_not_eligible" | "assignment_conflict" | "serializati...`
 - `export function isClientSetupEnabled(env: string | undefined): boolean`
@@ -501,9 +500,9 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/coaching/parameters.ts`
 
-- `export const ASSIGNABLE_CLASSIFICATIONS: readonly ["GENERAL_HEALTH", "CYCLE"]`
-- `export const PARAMETER_CLASSIFICATIONS: readonly ["GENERAL_HEALTH", "CYCLE", "BLOODWORK", "PED_HRT"]`
-- `export const PARAMETER_KINDS: readonly ["MEASUREMENT", "RATING", "TIME", "DURATION", "OPTION", "TEXT"]`
+- `export const ASSIGNABLE_CLASSIFICATIONS = [ "GENERAL_HEALTH", "CYCLE", ] as const satisfies readonly ParameterDataClassification[]`
+- `export const PARAMETER_CLASSIFICATIONS = [ "GENERAL_HEALTH", "CYCLE", "BLOODWORK", "PED_HRT", ] as const`
+- `export const PARAMETER_KINDS = [ "MEASUREMENT", "RATING", "TIME", "DURATION", "OPTION", "TEXT", ] as const`
 - `export type ParameterDataClassification = (typeof PARAMETER_CLASSIFICATIONS)[number]`
 - `export type ParameterDetail = ParameterSummary & { helpText: string | null; unit: string | null; ratingScheme: RatingScheme | null; options: ParameterOption[]; validation: ParameterValidation | nul...`
 - `export class ParameterError extends Error (1 members)`
@@ -513,7 +512,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type ParameterState = { id: string; key: string; kind: ParameterKind; label: string; helpText: string | null; unit: string | null; ratingScheme: RatingScheme | null; options: ParameterOption...`
 - `export type ParameterSummary = { id: string; key: string; kind: ParameterKind; label: string; status: "ACTIVE" | "ARCHIVED"; dataClassification: ParameterDataClassification | null; revision: number...`
 - `export type ParameterValidation = { min?: number; max?: number }`
-- `export const RATING_SCHEMES: readonly ["SCALE_1_10", "SCALE_1_5", "WORD_LABELS"]`
+- `export const RATING_SCHEMES = [ "SCALE_1_10", "SCALE_1_5", "WORD_LABELS", ] as const`
 - `export type RatingScheme = (typeof RATING_SCHEMES)[number]`
 - `export function applyParameterEdits(state: ParameterState, patch: unknown, opts: { published?: boolean } = {}): ParameterState`
 - `export async function archiveParameter(session: SessionLike, input: { workspaceId: string; parameterId: string }, client?: PrismaClient): Promise<{ parameterId: string }>`
@@ -569,10 +568,10 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/coaching/transition-diff.ts`
 
-- `export const DIFF_CATEGORY_RANK: { readonly removed: 0; readonly rebound: 1; readonly added: 2; readonly moved: 3; readonly required: 4; readonly display: 5; }`
+- `export const DIFF_CATEGORY_RANK = { removed: 0, rebound: 1, added: 2, moved: 3, required: 4, display: 5, } as const`
 - `export type DiffCategory = keyof typeof DIFF_CATEGORY_RANK`
 - `export type DiffDetail = | "item_removed" | "item_rebound" | "item_added" | "item_moved" | "required_on" | "required_off" | "label_changed" | "help_changed" | "group_changed" | "title_changed" | "s...`
-- `export const TRANSITION_SUMMARY_REASONS: readonly ["REMOVED", "REBOUND"]`
+- `export const TRANSITION_SUMMARY_REASONS = ["REMOVED", "REBOUND"] as const`
 - `export type TransitionCategories = Record<DiffCategory, number>`
 - `export type TransitionDiff = { entries: TransitionDiffEntry[]; categories: TransitionCategories; warningCount: number; defective: boolean; diffHash: string; }`
 - `export type TransitionDiffEntry = { category: DiffCategory; parameterId: string; parameterKey: string; parameterLabel: string | null; reboundParameterId?: string; reboundParameterKey?: string; rebo...`
@@ -594,7 +593,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export const IMPACT_ROLE_RANK: Record<ImpactRole, number>`
 - `export type ImpactReasonCode = "REMOVED_WITH_HISTORY" | "REBOUND_WITH_HISTORY"`
 - `export type ImpactRole = "REMOVED" | "REBOUND_FROM" | "REBOUND_TO"`
-- `export const PROVIDER_SET_MANIFEST_VERSION: 1`
+- `export const PROVIDER_SET_MANIFEST_VERSION = 1`
 - `export type ParameterImpact = { parameterId: string; parameterKey: string; impactRole: ImpactRole; count: CanonicalCount; earliestDate: string | null; latestDate: string | null; reasonCode: ImpactR...`
 - `export type ProviderImpact = { consumerKey: string; contractVersion: number; affectedParameters: ParameterImpact[]; blockedReasonCodes: BlockedReasonCode[]; }`
 - `export type ProviderSet = { declarations: readonly ConsumerDeclaration[]; providers: Readonly<Record<string, TransitionImpactProvider>>; }`
@@ -643,9 +642,9 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/daily-entry/canonical.ts`
 
-- `export const FORM_TOKEN_DOMAIN: "DAILY-ENTRY-FORM-v1"`
+- `export const FORM_TOKEN_DOMAIN = "DAILY-ENTRY-FORM-v1"`
 - `export type HashParam = { parameterId: string; parameterKey: string; dataClassification: string | null; kind: string; snapshotRevision: number; sectionId: string; itemId: string; value: TaggedValue; }`
-- `export const REVISION_HASH_DOMAIN: "DAILY-ENTRY-REV-v1"`
+- `export const REVISION_HASH_DOMAIN = "DAILY-ENTRY-REV-v1"`
 - `export type TaggedValue = | { tag: "absent" } | { tag: "measurement"; canonical: string } | { tag: "rating"; value: number } | { tag: "option"; optionId: string } | { tag: "text"; value: string }`
 - `export function canonicalizeDecimal(raw: string): string | null`
 - `export function computeDailyEntryFormToken(input: { workspaceId: string; clientProfileId: string; entryDate: string; pinId: string; templateVersionId: string; currentRevision: | { tag: "absent" } |...`
@@ -663,7 +662,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/daily-entry/service.ts`
 
-- `export const DAILY_ENTRY_DEV_CONSENT: { readonly PRIVACY_NOTICE: "daily-entry-dev-privacy-v1"; readonly HEALTH_DATA: "daily-entry-dev-health-v1"; }`
+- `export const DAILY_ENTRY_DEV_CONSENT = { PRIVACY_NOTICE: "daily-entry-dev-privacy-v1", HEALTH_DATA: "daily-entry-dev-health-v1", } as const`
 - `export type DailyEntryDeps = { db?: PrismaClient; registry?: ConsentPolicyRegistry; }`
 - `export { DailyEntryError } from "./gate"`
 - `export type DailyEntryHistoryEntry = { entryDate: string; declaredAt: string; revisionCount: number; values: DailyEntryHistoryRow[]; }`
@@ -671,7 +670,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type DailyEntrySurface = | { state: "ready"; formToken: string; entryDate: string; sections: DailyEntrySurfaceSection[]; history: DailyEntryHistoryEntry[]; } | { state: "not_applicable" } | ...`
 - `export type DailyEntrySurfaceItem = { ordinal: number; parameterKey: string; label: string; helpText: string | null; unit: string | null; kind: string; required: boolean; ratingScheme: string | nul...`
 - `export type DailyEntrySurfaceSection = { sectionKey: string; label: string; items: DailyEntrySurfaceItem[]; }`
-- `export const STAFF_ENTRY_PAGE_SIZE: 25`
+- `export const STAFF_ENTRY_PAGE_SIZE = 25`
 - `export type SaveDailyEntryInput = { workspaceId: string; entryDate: string; formToken: string; values: OrdinalValue[]; }`
 - `export type SaveDailyEntryResult = { status: "saved"; revisionSeq: number } | { status: "no_op" }`
 - `export type StaffDailyEntryDetail = { entryDate: string; revisionSeq: number; revisionCount: number; declaredAt: string; values: DailyEntryHistoryRow[]; }`
@@ -688,7 +687,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/daily-entry/validate.ts`
 
-- `export const DAILY_ENTRY_TEXT_MAX: 5000`
+- `export const DAILY_ENTRY_TEXT_MAX = 5000`
 - `export type OrdinalValue = { ordinal: number; raw: string }`
 - `export type SnapshotParam = { parameterId: string; parameterKey: string; kind: string; required: boolean; unit: string | null; ratingScheme: string | null; options: Array<{ optionId: string; label:...`
 - `export function resolveDailyEntryValues(values: readonly OrdinalValue[], ordinals: readonly string[], snapshot: readonly SnapshotParam[]): ResolveOk | ResolveErr`
@@ -701,23 +700,23 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/daily-prototype.ts`
 
-- `export const BIOFEEDBACK_KEYS: string[]`
-- `export const COMPUTED_COLUMNS: { key: string; label: string; marker: string; }[]`
+- `export const BIOFEEDBACK_KEYS = biofeedback.map((field) => field.key)`
+- `export const COMPUTED_COLUMNS = [ { key: "calories", label: "Calories (automatic)", marker: TODO_MARKER }, ]`
 - `export const DAILY_FIELDS: DailyField[]`
 - `export type DailyField = { key: string; label: string; group: string; type: DailyFieldType; unit?: string; min?: number; max?: number; options?: string[]; }`
 - `export type DailyFieldType = "date" | "time" | "number" | "text" | "textarea" | "enum"`
-- `export const EXCLUDED_FIELD_KEYS: readonly ["e2", "prog", "coachNote", "calories", "targets", "averages"]`
-- `export const TODO_MARKER: "TODO(product)"`
+- `export const EXCLUDED_FIELD_KEYS = [ "e2", "prog", "coachNote", "calories", "targets", "averages", ] as const`
+- `export const TODO_MARKER = "TODO(product)"`
 - `export type ValidationError = { field: string; message: string }`
 - `export function isDailyPrototypeEnabled(env: string | undefined): boolean`
 - `export function validateDailyEntry(values: Record<string, string>): ValidationError[]`
 
 ## `lib/daily-tracker.ts`
 
-- `export const BIOFEEDBACK_FIELD_KEYS: string[]`
+- `export const BIOFEEDBACK_FIELD_KEYS = biofeedbackFields.map( (field) => field.key, )`
 - `export const DAILY_TRACKER_SECTIONS: readonly TrackerSection[]`
-- `export const EXCLUDED_TRACKER_FIELD_KEYS: readonly ["e2", "prog", "coachNotes", "targets", "averages"]`
-- `export const TODO_PRODUCT_MARKER: "TODO(product)"`
+- `export const EXCLUDED_TRACKER_FIELD_KEYS = [ "e2", "prog", "coachNotes", "targets", "averages", ] as const`
+- `export const TODO_PRODUCT_MARKER = "TODO(product)"`
 - `export type TrackerField = { key: string; label: string; kind: TrackerFieldKind; unit?: string; hint?: string; min?: number; max?: number; options?: readonly string[]; }`
 - `export type TrackerFieldKind = "text" | "date" | "time" | "number" | "enum" | "textarea" | "computed"`
 - `export type TrackerSection = { id: string; name: string; fields: readonly TrackerField[]; requires?: readonly TrackerSectionRequirement[]; note?: string; }`
@@ -733,21 +732,21 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type AutosaveSaveResult = DashboardSafeResult<{ revision: number; config: DashboardConfig; }>`
 - `export type AutosaveSlot = { key: string; userId: string; workspaceId: string; clientProfileId: string; canEdit: boolean; actions: AutosaveActions; latestConfig: DashboardConfig; confirmedRevision:...`
 - `export type AutosaveState = "idle" | "saving" | "saved" | "failed" | "conflict" | "denied" | "readonly"`
-- `export const abandonDashboardSlot = (slot: AutosaveSlot): void =>`
+- `export const abandonDashboardSlot = (slot: AutosaveSlot) =>`
 - `export const acquireDashboardSlot = (input: { userId: string; workspaceId: string; clientProfileId: string; initialConfig: DashboardConfig; initialRevision: number; canEdit: boolean; actions: Autos...`
 - `export const anyPendingSlot = (): AutosaveSlot | null =>`
-- `export const cancelPendingTimer = (): void =>`
-- `export const cancelSlotTimer = (slot: AutosaveSlot): void =>`
-- `export const clearAllDashboardSlots = (): void =>`
-- `export const commitDashboardConfig = (slot: AutosaveSlot, next: DashboardConfig): void =>`
+- `export const cancelPendingTimer = () =>`
+- `export const cancelSlotTimer = (slot: AutosaveSlot) =>`
+- `export const clearAllDashboardSlots = () =>`
+- `export const commitDashboardConfig = (slot: AutosaveSlot, next: DashboardConfig) =>`
 - `export async function flushDashboardSlot(slot: AutosaveSlot, attempt = 1): Promise<void>`
-- `export const flushPendingSlot = (): void =>`
-- `export const reloadDashboardSlot = async (slot: AutosaveSlot): Promise<void> =>`
-- `export const scheduleDashboardSlot = (slot: AutosaveSlot): void =>`
-- `export const slotPending = (slot: AutosaveSlot): boolean =>`
-- `export const stayDashboardSlot = (slot: AutosaveSlot): void =>`
+- `export const flushPendingSlot = () =>`
+- `export const reloadDashboardSlot = async (slot: AutosaveSlot) =>`
+- `export const scheduleDashboardSlot = (slot: AutosaveSlot) =>`
+- `export const slotPending = (slot: AutosaveSlot) =>`
+- `export const stayDashboardSlot = (slot: AutosaveSlot) =>`
 - `export const subscribeDashboardSlot = (slot: AutosaveSlot, listener: () => void): (() => void) =>`
-- `export const travelDashboardConfig = (slot: AutosaveSlot, dir: "undo" | "redo"): void =>`
+- `export const travelDashboardConfig = (slot: AutosaveSlot, dir: "undo" | "redo") =>`
 
 ## `lib/dashboard/boundary.ts`
 
@@ -760,16 +759,16 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/dashboard/config-schema.ts`
 
 - `export type BreakpointName = "desktop" | "tablet" | "mobile"`
-- `export const CONNECTED_KINDS: Set<"BN21" | "BN01" | "BN08" | "BN15" | "BN19" | "TL26" | "TL28" | "TL06" | "TL11" | "TL14" | "TL21" | "TL22" | "CU01" | "CU02" | "CU03" | "CU04" | "CU06" | "CU09" | "CU10" | "CU16">`
+- `export const CONNECTED_KINDS = new Set<WidgetKind>([ "CU04", "CU16", "CU03", "TL21", "TL22", ])`
 - `export type DashboardConfig = { version: 1; name: string; widgets: WidgetInstance[]; layouts: Partial<Record<BreakpointName, Record<string, Rect>>>; widths: Partial<Record<BreakpointName, number>>; }`
-- `export const HISTORY_PERIODS: readonly ["auto", "3m", "6m", "1y"]`
+- `export const HISTORY_PERIODS = ["auto", "3m", "6m", "1y"] as const`
 - `export type Rect = { x: number; y: number; w: number; h: number; size: SizeName; }`
-- `export const SETTINGS_LIMITS: { payloadBytes: number; widgets: number; idPattern: RegExp; string: number; unit: number; period: number; fields: number; labels: number; }`
-- `export const SIZE_OPTIONS: readonly ["Compact", "Regular", "Wide", "Tall", "Expanded"]`
+- `export const SETTINGS_LIMITS = LIMITS`
+- `export const SIZE_OPTIONS = SIZES`
 - `export type SizeName = (typeof SIZES)[number]`
 - `export type ValidationResult = { ok: true; config: DashboardConfig } | { ok: false; reason: string }`
 - `export const WIDGET_CATALOGUE: Record< WidgetKind, { name: string; category: string; connected: boolean } >`
-- `export const WIDGET_KINDS: readonly ["BN21", "BN01", "BN08", "BN15", "BN19", "TL26", "TL28", "TL06", "TL11", "TL14", "TL21", "TL22", "CU01", "CU02", "CU03", "CU04", "CU06", "CU09", "CU10", "CU16"]`
+- `export const WIDGET_KINDS = [ "BN21", "BN01", "BN08", "BN15", "BN19", "TL26", "TL28", "TL06", "TL11", "TL14", "TL21", "TL22", "CU01", "CU02", "CU03", "CU04", "CU06", "CU09", "CU10", "CU16", ] as const`
 - `export type WidgetInstance = { id: string; kind: WidgetKind; settings: WidgetSettings; }`
 - `export type WidgetKind = (typeof WIDGET_KINDS)[number]`
 - `export type WidgetSettings = { title: string; source: string; summary: string; period: string; historyPeriod: "auto" | "3m" | "6m" | "1y"; target: boolean; size: SizeName; fields: string[]; labels:...`
@@ -780,13 +779,13 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function projectClientDashboardConfig(config: DashboardConfig): DashboardConfig`
 - `export function readingOrder(layout: Record<string, Rect>): string[]`
 - `export function validateDashboardConfig(value: unknown): ValidationResult`
-- `export const widgetOptionOptions = (kind: WidgetKind): readonly string[] =>`
-- `export const widgetPeriodOptions = (kind: WidgetKind): readonly string[] =>`
-- `export const widgetSizeOptions = (): readonly ["Compact", "Regular", "Wide", "Tall", "Expanded"] =>`
-- `export const widgetSourceOptions = (kind: WidgetKind): readonly string[] =>`
-- `export const widgetStaticFieldOptions = (kind: WidgetKind): readonly string[] | undefined =>`
-- `export const widgetSummaryOptions = (kind: WidgetKind, source: string): readonly string[] =>`
-- `export const widgetTargetAvailable = (kind: WidgetKind): boolean =>`
+- `export const widgetOptionOptions = (kind: WidgetKind) =>`
+- `export const widgetPeriodOptions = (kind: WidgetKind) =>`
+- `export const widgetSizeOptions = () =>`
+- `export const widgetSourceOptions = (kind: WidgetKind) =>`
+- `export const widgetStaticFieldOptions = (kind: WidgetKind) =>`
+- `export const widgetSummaryOptions = (kind: WidgetKind, source: string) =>`
+- `export const widgetTargetAvailable = (kind: WidgetKind) =>`
 
 ## `lib/dashboard/gate.ts`
 
@@ -797,11 +796,11 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export type DashboardNavApi = { pending: () => boolean; cancelTimer: () => void; flush: () => void; navigateTo: (href: string) => void; }`
 - `export type HeldNav = { href?: string; key?: string } | null`
-- `export const bindDashboardNavGuard = (api: DashboardNavApi): void =>`
-- `export const clearHeldNavigation = (): void =>`
-- `export const completeHeldNavigation = (): void =>`
+- `export const bindDashboardNavGuard = (api: DashboardNavApi) =>`
+- `export const clearHeldNavigation = () =>`
+- `export const completeHeldNavigation = () =>`
 - `export const heldNavigation = (): HeldNav =>`
-- `export const unbindDashboardNavGuard = (): void =>`
+- `export const unbindDashboardNavGuard = () =>`
 
 ## `lib/dashboard/service.ts`
 
@@ -830,8 +829,8 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/exercise/search.ts`
 
-- `export const EXERCISE_SEARCH_MAX_LIMIT: 50`
-- `export const EXERCISE_SEARCH_MIN_QUERY_LENGTH: 2`
+- `export const EXERCISE_SEARCH_MAX_LIMIT = 50`
+- `export const EXERCISE_SEARCH_MIN_QUERY_LENGTH = 2`
 - `export type ExerciseSearchParams = { query: string; muscleGroup?: string; equipment?: string; limit?: number; }`
 - `export type ExerciseSearchResult = { query: string; muscleGroup: string; equipment: string; queryApplied: boolean; total: number; limit: number; items: ExerciseCatalogItem[]; }`
 - `export async function listExerciseEquipment(client: PrismaClient): Promise<string[]>`
@@ -840,7 +839,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/exercise/source.ts`
 
-- `export const EXERCISE_SOURCE_FIELDS: readonly ["id", "name", "muscleGroup", "primaryTarget", "additionalTargets", "equipment", "movementPattern", "positionSetup", "cues", "videoLink"]`
+- `export const EXERCISE_SOURCE_FIELDS = [ "id", "name", "muscleGroup", "primaryTarget", "additionalTargets", "equipment", "movementPattern", "positionSetup", "cues", "videoLink", ] as const`
 - `export const EXERCISE_SOURCE_HEADERS: Record<ExerciseSourceField, string>`
 - `export type ExerciseRejectedRow = { sourceRow: number; sourceId: number | null; reasonCode: ExerciseRejectionReason; reasonField?: ExerciseSourceField; }`
 - `export type ExerciseRejectionReason = "missing_name" | "non_data_row" | "invalid_source_id" | "duplicate_source_id"`
@@ -862,7 +861,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type FoodArtifact = { version: number; sourceFile: string; count: number; skippedNumberedRows: number; records: FoodRecord[]; }`
 - `export type FoodRecord = { no: string; food: string; amount: string; unit: string; calories: string; protein: string; carbs: string; fats: string; state: string; category: string; normalized?: Norm...`
 - `export type NormalizedMacros = { calories?: number; protein?: number; carbs?: number; fats?: number; }`
-- `export const REDACTED_PREFIX: "[REDACTED:"`
+- `export const REDACTED_PREFIX = "[REDACTED:"`
 - `export type RedactionEntry = { artifact: string; sheet?: string; cell?: { row: number; col: number }; section?: string; fieldCategory: string; placeholder: string; reason: string; }`
 - `export type RedactionManifest = { version: number; policy: string; placeholderConvention: string; redactions: RedactionEntry[]; }`
 - `export const SHEET_SLUGS: Record<string, SheetSlug>`
@@ -925,7 +924,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/extraction/source.ts`
 
-- `export const DEFAULT_SHEETS_SOURCE_DIR: "/Users/apple/Downloads/PRGRSS 2.0 extracted/Copy of PRGRSS 2.0"`
+- `export const DEFAULT_SHEETS_SOURCE_DIR = "/Users/apple/Downloads/PRGRSS 2.0 extracted/Copy of PRGRSS 2.0"`
 - `export class SourceConfigError extends Error (1 members)`
 - `export type ValidatedSource = { dir: string; sheets: ExpectedSheet[]; missing: string[]; unexpected: string[]; }`
 - `export function assertRawDirIsIgnored(rawDir: string, repoRoot: string): void`
@@ -954,9 +953,9 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type AssignmentExportRow = { role: string; status: string; assignedAt: string; }`
 - `export type ClientExportDocument = { formatVersion: 1; manifest: { sections: Record<ExportSection, number>; totalRecords: number; }; sections: ExportSectionsData; }`
 - `export type ConsentExportRow = { kind: string; version: string; grantedAt: string; revokedAt: string | null; source: string; }`
-- `export const EXPORT_PAGE_SIZE: 500`
-- `export const EXPORT_SECTIONS: readonly ["clientProfile", "consents", "assignments"]`
-- `export const EXPORT_SECTION_ROW_MAX: 100000`
+- `export const EXPORT_PAGE_SIZE = 500`
+- `export const EXPORT_SECTIONS = [ "clientProfile", "consents", "assignments", ] as const`
+- `export const EXPORT_SECTION_ROW_MAX = 100_000`
 - `export type ExportOptions = { pageSize?: number; maxSectionRows?: number; }`
 - `export type ExportSection = (typeof EXPORT_SECTIONS)[number]`
 - `export type ExportSectionsData = { clientProfile: { name: string; createdAt: string }; consents: ConsentExportRow[]; assignments: AssignmentExportRow[]; }`
@@ -968,7 +967,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/gdpr/retention.ts`
 
-- `export const RETENTION_FAMILIES: readonly ["clientProfile", "consentRecord", "auditEvent", "accessToken", "dailyTracking", "cycleData", "nutrition", "training", "checkIn", "note", "bloodwork", "pedHrt", "media"]`
+- `export const RETENTION_FAMILIES = [ "clientProfile", "consentRecord", "auditEvent", "accessToken", "dailyTracking", "cycleData", "nutrition", "training", "checkIn", "note", "bloodwork", "pedHrt", "...`
 - `export const RETENTION_POLICY: RetentionPolicy`
 - `export class RetentionError extends Error (1 members)`
 - `export type RetentionFamily = (typeof RETENTION_FAMILIES)[number]`
@@ -992,10 +991,10 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/habits/date.ts`
 
-- `export const ARCHIVE_WEEKDAY_MASK: 0`
-- `export const HABIT_HORIZON_YEARS: 5`
-- `export const WEEKDAY_MASK_MAX: 127`
-- `export const WEEKDAY_MASK_MIN: 1`
+- `export const ARCHIVE_WEEKDAY_MASK = 0`
+- `export const HABIT_HORIZON_YEARS = 5`
+- `export const WEEKDAY_MASK_MAX = 127`
+- `export const WEEKDAY_MASK_MIN = 1`
 - `export function formatHabitDate(date: string): string`
 - `export function habitPeriodDays(period: string): number | null`
 - `export function maskCoversDate(mask: number, date: string): boolean`
@@ -1025,8 +1024,8 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/mail/index.ts`
 
-- `export const DEV_MAILBOX_FILE_ENV: "DEV_MAILBOX_FILE"`
-- `export const MAIL_DELIVERY_ADAPTER_ENV: "MAIL_DELIVERY_ADAPTER"`
+- `export const DEV_MAILBOX_FILE_ENV = "DEV_MAILBOX_FILE"`
+- `export const MAIL_DELIVERY_ADAPTER_ENV = "MAIL_DELIVERY_ADAPTER"`
 - `export type MailAdapter = (message: MailMessage) => Promise<void>`
 - `export type MailMessage = { to: string; subject: string; text: string }`
 - `export function mailDeliveryConfigured(): boolean`
@@ -1044,7 +1043,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/mealplan/consent.ts`
 
-- `export const MEALPLAN_DEV_CONSENT: { readonly PRIVACY_NOTICE: "meal-plan-dev-privacy-v1"; readonly HEALTH_DATA: "meal-plan-dev-health-v1"; }`
+- `export const MEALPLAN_DEV_CONSENT = { PRIVACY_NOTICE: "meal-plan-dev-privacy-v1", HEALTH_DATA: "meal-plan-dev-health-v1", } as const`
 - `export function resolveMealPlanConsentPolicy(env: ResolverEnv = process.env): ConsentPolicyRegistry`
 
 ## `lib/mealplan/gate.ts`
@@ -1060,7 +1059,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/mealplan/payload.ts`
 
-- `export const MEALPLAN_TARGET_MODES: readonly ["FIXED", "RANGE", "MINIMUM"]`
+- `export const MEALPLAN_TARGET_MODES = ["FIXED", "RANGE", "MINIMUM"] as const`
 - `export type MealPlanDraft = { variants: MealPlanVariant[] }`
 - `export class MealPlanError extends Error (1 members)`
 - `export type MealPlanErrorCode = | "invalid_input" | "plan_not_accessible" | "stale_revision" | "timezone_required" | "unrepresentable_date" | "publish_incomplete" | "consent_missing" | "policy_not_...`
@@ -1103,8 +1102,8 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/nutrition/search.ts`
 
-- `export const NUTRITION_SEARCH_MAX_LIMIT: 50`
-- `export const NUTRITION_SEARCH_MIN_QUERY_LENGTH: 2`
+- `export const NUTRITION_SEARCH_MAX_LIMIT = 50`
+- `export const NUTRITION_SEARCH_MIN_QUERY_LENGTH = 2`
 - `export type NutritionSearchParams = { query: string; category?: string; limit?: number; }`
 - `export type NutritionSearchResult = { query: string; category: string; queryApplied: boolean; total: number; limit: number; items: NutritionCatalogItem[]; }`
 - `export async function listNutritionCategories(client: PrismaClient): Promise<string[]>`
@@ -1112,7 +1111,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/nutrition/source.ts`
 
-- `export const NUTRITION_SOURCE_FIELDS: readonly ["no", "food", "amount", "unit", "calories", "protein", "carbs", "fats", "state", "category"]`
+- `export const NUTRITION_SOURCE_FIELDS = [ "no", "food", "amount", "unit", "calories", "protein", "carbs", "fats", "state", "category", ] as const`
 - `export const NUTRITION_SOURCE_HEADERS: Record<NutritionSourceField, string>`
 - `export type NutritionRejectedRow = { sourceRow: number; sourceNo: number | null; reasonCode: NutritionRejectionReason; reasonField?: NutritionSourceField; }`
 - `export type NutritionRejectionReason = | "missing_food" | "non_data_row" | "invalid_source_number" | "invalid_numeric" | "duplicate_source_number"`
@@ -1138,7 +1137,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/onboarding/assignments-gate.ts`
 
-- `export const ASSIGNMENT_LIMITS: { readonly idMax: 128; readonly listDefaultLimit: 25; readonly listMaxLimit: 100; }`
+- `export const ASSIGNMENT_LIMITS = { idMax: 128, listDefaultLimit: 25, listMaxLimit: 100, } as const`
 - `export class OnboardingAssignmentError extends Error (1 members)`
 - `export type OnboardingAssignmentErrorCode = | "invalid_input" | "assignment_not_accessible" | "assignment_not_active" | "client_not_eligible" | "form_not_eligible" | "assignment_conflict" | "serial...`
 - `export function isOnboardingAssignmentsEnabled(env: string | undefined): boolean`
@@ -1169,7 +1168,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/onboarding/forms.ts`
 
-- `export const FIELD_KINDS: readonly ["shortText", "longText", "number", "date", "singleChoice", "multiChoice"]`
+- `export const FIELD_KINDS = [ "shortText", "longText", "number", "date", "singleChoice", "multiChoice", ] as const`
 - `export const FORM_LIMITS = { maxFields: 100, minPublishFields: 1, labelMax: 200, helpTextMax: 500, minOptions: 1, maxOptions: 50, optionLabelMax: 200, nameMax: 120, definitionMaxBytes: 64 * 1024, }...`
 - `export type FieldKind = (typeof FIELD_KINDS)[number]`
 - `export type FieldOption = { optionId: string; label: string }`
@@ -1215,7 +1214,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/onboarding/submission-consent.ts`
 
-- `export const ONBOARDING_SUBMISSION_DEV_CONSENT: { readonly PRIVACY_NOTICE: "onboarding-submission-dev-privacy-v1"; readonly HEALTH_DATA: "onboarding-submission-dev-health-v1"; }`
+- `export const ONBOARDING_SUBMISSION_DEV_CONSENT = { PRIVACY_NOTICE: "onboarding-submission-dev-privacy-v1", HEALTH_DATA: "onboarding-submission-dev-health-v1", } as const`
 - `export type SubmissionRuntimeClass = "development" | "test" | "production"`
 - `export function classifySubmissionRuntime(env: RuntimeEnv = process.env): SubmissionRuntimeClass`
 - `export function resolveOnboardingSubmissionConsentPolicy(env: ResolverEnv = process.env): ConsentPolicyRegistry`
@@ -1260,8 +1259,8 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/password-policy.ts`
 
-- `export const PASSWORD_MAX_CODE_POINTS: 128`
-- `export const PASSWORD_MIN_CODE_POINTS: 10`
+- `export const PASSWORD_MAX_CODE_POINTS = 128`
+- `export const PASSWORD_MIN_CODE_POINTS = 10`
 - `export class PasswordPolicyError extends Error (1 members)`
 - `export type PasswordPolicyErrorCode = "password_too_short" | "password_too_long" | "password_needs_digit"`
 - `export function validatePasswordPolicy(candidate: unknown): string`
@@ -1312,7 +1311,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/tasks/date.ts`
 
-- `export const TASK_DUE_HORIZON_YEARS: 5`
+- `export const TASK_DUE_HORIZON_YEARS = 5`
 - `export type TaskDueState = "overdue" | "due-today" | "upcoming"`
 - `export function formatTaskDueDate(dueDate: string): string`
 - `export function parseTaskDueDate(input: unknown, opts: { today?: string } = {}): string | null`
@@ -1352,9 +1351,9 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/tokens/store.ts`
 
-- `export const ACCESS_TOKEN_CLEANUP_BATCH_LIMIT: 1000`
-- `export const ACCESS_TOKEN_TERMINAL_RETENTION_MS: number`
-- `export const ACCESS_TOKEN_TTL_MS: number`
+- `export const ACCESS_TOKEN_CLEANUP_BATCH_LIMIT = 1000`
+- `export const ACCESS_TOKEN_TERMINAL_RETENTION_MS = 30 * 24 * 60 * 60 * 1000`
+- `export const ACCESS_TOKEN_TTL_MS = 12 * 60 * 60 * 1000`
 - `export class TokenStoreError extends Error (1 members)`
 - `export type TokenStoreErrorCode = "invalid_input" | "token_store_failed"`
 - `export async function claimAccessToken(tx: Prisma.TransactionClient, input: { rawToken: unknown; purpose: AccessTokenPurpose; workspaceId?: string; userId?: string; }): Promise<{ ok: true; token: A...`
@@ -1385,7 +1384,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/trainingprogram/consent.ts`
 
-- `export const TRAINING_DEV_CONSENT: { readonly PRIVACY_NOTICE: "training-plan-dev-privacy-v1"; readonly HEALTH_DATA: "training-plan-dev-health-v1"; }`
+- `export const TRAINING_DEV_CONSENT = { PRIVACY_NOTICE: "training-plan-dev-privacy-v1", HEALTH_DATA: "training-plan-dev-health-v1", } as const`
 - `export function resolveTrainingConsentPolicy(env: ResolverEnv = process.env): ConsentPolicyRegistry`
 
 ## `lib/trainingprogram/gate.ts`
@@ -1406,7 +1405,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type MaterializedProgram = { programMode: "WEEK_BASED" | "EVERGREEN"; startDate: string; weekCount: number; weeks: MaterializedWeek[]; }`
 - `export type MaterializedSession = { id: string; name: string; exercises: MaterializedExercise[]; }`
 - `export type MaterializedWeek = { week: number; sessions: MaterializedSession[]; }`
-- `export const TRAINING_FIELD_KEYS: readonly ["sets", "fixedReps", "repRanges", "tempo", "setType", "restPause", "instructions", "progressionNotes"]`
+- `export const TRAINING_FIELD_KEYS = [ "sets", "fixedReps", "repRanges", "tempo", "setType", "restPause", "instructions", "progressionNotes", ] as const`
 - `export type TrainingDraft = { programMode: "WEEK_BASED" | "EVERGREEN"; sessions: { id: string; name: string }[]; exercises: { id: string; sessionId: string; name: string; catalogItemId?: string; }[...`
 - `export class TrainingError extends Error (3 members)`
 - `export type TrainingFieldConfig = Record<TrainingFieldKey, boolean>`
@@ -1489,14 +1488,14 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export type PrismaLike = PrismaClient | Prisma.TransactionClient`
 - `export function createPrismaAuthorizationRepo(client: PrismaLike = prisma): AuthorizationRepo`
-- `export const prismaAuthorizationRepo: AuthorizationRepo`
+- `export const prismaAuthorizationRepo = createPrismaAuthorizationRepo()`
 
 ## `lib/workspace/clients.ts`
 
 - `export type AssignmentMutationResult = { clientProfileId: string; coachMemberId: string; role: "PRIMARY" | "COACH"; status: "ACTIVE" | "REMOVED"; changed: boolean; }`
 - `export type AssignmentSummary = { id: string; clientProfileId: string; coachMemberId: string; role: "PRIMARY" | "COACH"; status: "ACTIVE" | "REMOVED"; assignedAt: Date; }`
-- `export const CLIENT_LIST_DEFAULT_LIMIT: 25`
-- `export const CLIENT_LIST_MAX_LIMIT: 100`
+- `export const CLIENT_LIST_DEFAULT_LIMIT = 25`
+- `export const CLIENT_LIST_MAX_LIMIT = 100`
 - `export type ClientProfileSummary = { id: string; workspaceId: string; name: string; createdAt: Date; updatedAt: Date; }`
 - `export type ServiceErrorCode = | "invalid_input" | "client_not_accessible" | "member_not_eligible" | "assignment_not_accessible" | "assignment_conflict" | "serialization_conflict" | "audit_not_wire...`
 - `export class WorkspaceServiceError extends Error (1 members)`
@@ -1529,7 +1528,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function assertInvitationOrchestrationExternallyExposable(): never`
 - `export async function createWorkspaceInvitation(session: SessionLike, input: { workspaceId: string; targetEmail: unknown; intendedRole: unknown }, client: PrismaClient = prisma): Promise<CreatedInv...`
 - `export function invitationResource(intendedRole: InvitableRole): "membersInvitations" | "clientInvitations"`
-- `export function isExpectedUniqueRace(error: Prisma.PrismaClientKnownRequestError): boolean`
+- `export function isExpectedUniqueRace(error: Prisma.PrismaClientKnownRequestError)`
 - `export function isInvitableRole(value: unknown): value is InvitableRole`
 - `export async function listWorkspaceInvitations(session: SessionLike, input: { workspaceId: string; limit?: number; cursor?: string }, client: PrismaLike = prisma): Promise<{ items: InvitationSummar...`
 - `export async function revokeWorkspaceInvitation(session: SessionLike, input: { workspaceId: string; invitationId: unknown }, client: PrismaClient = prisma): Promise<{ changed: boolean }>`
@@ -1544,8 +1543,8 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/workspace/roster-query.ts`
 
-- `export const HISTORY_START: "-"`
-- `export const ROSTER_PAGE_SIZE: 25`
+- `export const HISTORY_START = "-"`
+- `export const ROSTER_PAGE_SIZE = 25`
 - `export type RosterQuery = { cursor: string | undefined; history: string[]; }`
 - `export function nextRosterHref(base: string, current: RosterQuery, nextCursor: string): string`
 - `export function parseRosterQuery(raw: { c?: string | string[]; p?: string | string[]; }): RosterQuery | null`
@@ -1556,8 +1555,8 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export type ClientRosterEntry = { clientProfileId: string; name: string; }`
 - `export type ClientRosterResult = { items: ClientRosterEntry[]; nextCursor: string | null; }`
-- `export const ROSTER_DEFAULT_LIMIT: 25`
-- `export const ROSTER_MAX_LIMIT: 100`
+- `export const ROSTER_DEFAULT_LIMIT = 25`
+- `export const ROSTER_MAX_LIMIT = 100`
 - `export function encodeRosterCursor(createdAt: Date, id: string): string`
 - `export async function listWorkspaceClientRoster(viewer: ApiViewer, workspace: ApiWorkspaceContext, input: { limit?: number; cursor?: string }, client: PrismaLike = prisma): Promise<ClientRosterResult>`
 - `export function parseRosterCursor(cursor: string): { createdAt: Date; id: string } | null`

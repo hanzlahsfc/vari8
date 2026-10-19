@@ -88,9 +88,11 @@ Prisma client generation and engine availability are verified by the Phase 6 che
   path including the server actions; the built-in IP limiter additionally engages ONLY
   when `AUTH_TRUSTED_IP_HEADER` names the proxy header — unset means no forwarding header
   is trusted and IP limiting is off.
-- In production the process refuses to serve when `BETTER_AUTH_SECRET` is missing or
-  shorter than 32 characters. Deactivated users are refused on every session-bearing
-  auth endpoint and their session rows are deleted.
+- In production the process exits non-zero at boot when `BETTER_AUTH_SECRET` is
+  missing or shorter than 32 characters, or when a `BETTER_AUTH_*`/`AUTH_*` pair
+  is set to different values (only the `BETTER_AUTH_*` names are supported; the
+  `AUTH_*` aliases must be unset or equal). Deactivated users are refused on
+  every session-bearing auth endpoint and their session rows are deleted.
 - `GET /api/v1/workspaces/:id/session` and `GET /api/v1/workspaces/:id/clients` accept the
   session cookie or `Authorization: Bearer <token>` (`bearer()` plugin) and enforce the
   owner-decided role matrix (`lib/auth/roles.ts`).

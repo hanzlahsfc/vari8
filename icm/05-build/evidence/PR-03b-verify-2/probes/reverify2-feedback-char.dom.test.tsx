@@ -5,7 +5,13 @@ import { appendFileSync } from "node:fs";
 // and the mount reconciliation's synchronous setState run from inside a passive-effect flush
 // (React stack frames), plus what the DOM shows at the first commit that shows "Response sent.".
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  cleanup,
+} from "@testing-library/react";
 
 afterEach(() => cleanup());
 
@@ -13,15 +19,22 @@ vi.mock(
   "@/app/workspace/[workspaceId]/clients/[clientProfileId]/checkins/actions",
   () => ({
     sendCheckInFeedbackAction: vi.fn(),
-    resolveCheckInFeedbackSendAction: vi.fn(async () => ({ status: "unavailable" })),
-    listStaffCheckInFeedbackAction: vi.fn(async () => ({ status: "ok", items: [], nextCursor: null })),
+    resolveCheckInFeedbackSendAction: vi.fn(async () => ({
+      status: "unavailable",
+    })),
+    listStaffCheckInFeedbackAction: vi.fn(async () => ({
+      status: "ok",
+      items: [],
+      nextCursor: null,
+    })),
   }),
 );
 
 import { CheckInFeedbackThread } from "@/components/checkin/feedback-thread";
 import * as checkinActions from "@/app/workspace/[workspaceId]/clients/[clientProfileId]/checkins/actions";
 
-const EFFECT_FRAME = /flushPassiveEffects|commitHookEffectList|commitPassiveMount/;
+const EFFECT_FRAME =
+  /flushPassiveEffects|commitHookEffectList|commitPassiveMount/;
 const props = {
   workspaceId: "w1",
   clientProfileId: "c1",
@@ -38,10 +51,12 @@ describe("hunk 3 characterisation", () => {
     window.sessionStorage.clear();
     const removeStacks: string[] = [];
     const realRemove = Storage.prototype.removeItem;
-    const spy = vi.spyOn(Storage.prototype, "removeItem").mockImplementation(function (this: Storage, k: string) {
-      if (k === key) removeStacks.push(new Error().stack ?? "");
-      return realRemove.call(this, k);
-    });
+    const spy = vi
+      .spyOn(Storage.prototype, "removeItem")
+      .mockImplementation(function (this: Storage, k: string) {
+        if (k === key) removeStacks.push(new Error().stack ?? "");
+        return realRemove.call(this, k);
+      });
     vi.mocked(checkinActions.sendCheckInFeedbackAction).mockImplementation(
       (async (_p: unknown, fd: FormData) => ({
         status: "ok",
@@ -52,7 +67,9 @@ describe("hunk 3 characterisation", () => {
       })) as never,
     );
     const { container } = render(<CheckInFeedbackThread {...props} />);
-    const textarea = screen.getByTestId("checkin-feedback-input") as HTMLTextAreaElement;
+    const textarea = screen.getByTestId(
+      "checkin-feedback-input",
+    ) as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: "Hello" } });
     // snapshot at the first commit showing the confirm line
     let atConfirm: { items: number; body: string } | null = null;
@@ -60,34 +77,66 @@ describe("hunk 3 characterisation", () => {
       if (atConfirm !== null) return;
       if (container.querySelector('[data-testid="checkin-feedback-confirm"]')) {
         atConfirm = {
-          items: container.querySelectorAll('[data-testid="checkin-feedback-item"]').length,
+          items: container.querySelectorAll(
+            '[data-testid="checkin-feedback-item"]',
+          ).length,
           body: textarea.value,
         };
       }
     });
-    mo.observe(container, { subtree: true, childList: true, characterData: true });
+    mo.observe(container, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+    });
     fireEvent.click(screen.getByTestId("checkin-feedback-send"));
     await waitFor(() => expect(window.sessionStorage.getItem(key)).toBeNull());
-    await waitFor(() => expect(container.querySelectorAll('[data-testid="checkin-feedback-item"]').length).toBe(1));
+    await waitFor(() =>
+      expect(
+        container.querySelectorAll('[data-testid="checkin-feedback-item"]')
+          .length,
+      ).toBe(1),
+    );
     mo.disconnect();
     spy.mockRestore();
     const successInEffect = removeStacks.some((s) => EFFECT_FRAME.test(s));
-    appendFileSync("/home/nexuslink/.hermes/cache/scratch/reverify2/probe3-out.txt", process.cwd().split("/").pop() + " success " + JSON.stringify({ clearMarkerCalls: removeStacks.length, clearMarkerFromPassiveEffect: successInEffect, atFirstConfirmCommit: atConfirm }) + "\n");
+    appendFileSync(
+      "/home/nexuslink/.hermes/cache/scratch/reverify2/probe3-out.txt",
+      process.cwd().split("/").pop() +
+        " success " +
+        JSON.stringify({
+          clearMarkerCalls: removeStacks.length,
+          clearMarkerFromPassiveEffect: successInEffect,
+          atFirstConfirmCommit: atConfirm,
+        }) +
+        "\n",
+    );
     expect(removeStacks.length).toBeGreaterThan(0);
   });
 
   it("MOUNT: is the synchronous setState path entered from a passive-effect flush?", async () => {
     window.sessionStorage.clear();
-    window.sessionStorage.setItem(key, JSON.stringify({ nonce: "n-prev", attempted: true }));
+    window.sessionStorage.setItem(
+      key,
+      JSON.stringify({ nonce: "n-prev", attempted: true }),
+    );
     const resolveStacks: string[] = [];
-    vi.mocked(checkinActions.resolveCheckInFeedbackSendAction).mockImplementationOnce((() => {
+    vi.mocked(
+      checkinActions.resolveCheckInFeedbackSendAction,
+    ).mockImplementationOnce((() => {
       resolveStacks.push(new Error().stack ?? "");
       return new Promise(() => {});
     }) as never);
     render(<CheckInFeedbackThread {...props} />);
     await waitFor(() => expect(resolveStacks.length).toBe(1));
     const fromEffect = EFFECT_FRAME.test(resolveStacks[0]);
-    appendFileSync("/home/nexuslink/.hermes/cache/scratch/reverify2/probe3-out.txt", process.cwd().split("/").pop() + " mount " + JSON.stringify({ resolveCalledFromPassiveEffect: fromEffect }) + "\n");
+    appendFileSync(
+      "/home/nexuslink/.hermes/cache/scratch/reverify2/probe3-out.txt",
+      process.cwd().split("/").pop() +
+        " mount " +
+        JSON.stringify({ resolveCalledFromPassiveEffect: fromEffect }) +
+        "\n",
+    );
     expect(resolveStacks.length).toBe(1);
   });
 });
