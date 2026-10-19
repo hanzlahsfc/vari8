@@ -1,6 +1,6 @@
 # PR-M6 verify: Training payload and the shared volume math
 
-Card slug `pr-m6-training-payload-verify`. Independent verifier on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-m6-training-payload-verify` (local branch `beta/pr-m6-training-payload-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-M6/` and into the PR as a comment.
+Card slug `pr-m6-training-payload-verify`. Independent verifier (claude-haiku-5-5) on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-m6-training-payload-verify` (local branch `beta/pr-m6-training-payload-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-M6/` and into the PR as a comment.
 
 ## Steps
 

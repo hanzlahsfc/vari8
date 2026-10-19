@@ -1,6 +1,6 @@
 # PR-R2 verify: Drop database models left without a reader
 
-Card slug `pr-r2-schema-reduction-verify`. Independent verifier on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-r2-schema-reduction-verify` (local branch `beta/pr-r2-schema-reduction-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-R2/` and into the PR as a comment.
+Card slug `pr-r2-schema-reduction-verify`. Independent verifier (claude-haiku-5-5) on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-r2-schema-reduction-verify` (local branch `beta/pr-r2-schema-reduction-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-R2/` and into the PR as a comment.
 
 ## Steps
 

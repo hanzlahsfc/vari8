@@ -1,6 +1,6 @@
 # PR-M7 verify: Habit fields and all-time completion
 
-Card slug `pr-m7-habits-verify`. Independent verifier on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-m7-habits-verify` (local branch `beta/pr-m7-habits-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-M7/` and into the PR as a comment.
+Card slug `pr-m7-habits-verify`. Independent verifier (claude-haiku-5-5) on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-m7-habits-verify` (local branch `beta/pr-m7-habits-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-M7/` and into the PR as a comment.
 
 ## Steps
 

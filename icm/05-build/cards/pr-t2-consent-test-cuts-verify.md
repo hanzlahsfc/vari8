@@ -1,6 +1,6 @@
 # PR-T2 verify: Delete the parked consent tests
 
-Card slug `pr-t2-consent-test-cuts-verify`. Independent verifier on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-t2-consent-test-cuts-verify` (local branch `beta/pr-t2-consent-test-cuts-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-T2/` and into the PR as a comment.
+Card slug `pr-t2-consent-test-cuts-verify`. Independent verifier (claude-haiku-5-5) on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-t2-consent-test-cuts-verify` (local branch `beta/pr-t2-consent-test-cuts-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-T2/` and into the PR as a comment.
 
 ## Steps
 

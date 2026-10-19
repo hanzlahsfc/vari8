@@ -1,6 +1,6 @@
 # PR-P1 verify: Build the visual parity harness and capture baselines
 
-Card slug `parity-harness-verify`. Independent verifier on a different model than the builder (claude-haiku-5-5). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/parity-harness-verify` (local branch `beta/parity-harness-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-P1/` and into the PR as a comment.
+Card slug `parity-harness-verify`. Independent verifier (claude-opus-5-5) on a different model than the builder (claude-haiku-5-5). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/parity-harness-verify` (local branch `beta/parity-harness-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-P1/` and into the PR as a comment.
 
 ## Steps
 

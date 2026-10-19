@@ -1,6 +1,6 @@
 # PR-M1 verify: Client profile, archive and retention services
 
-Card slug `pr-m1-client-lifecycle-verify`. Independent verifier on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-m1-client-lifecycle-verify` (local branch `beta/pr-m1-client-lifecycle-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-M1/` and into the PR as a comment.
+Card slug `pr-m1-client-lifecycle-verify`. Independent verifier (claude-haiku-5-5) on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-m1-client-lifecycle-verify` (local branch `beta/pr-m1-client-lifecycle-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-M1/` and into the PR as a comment.
 
 ## Steps
 

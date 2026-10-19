@@ -1,6 +1,6 @@
 # PR-02 verify: Upgrade root to Next 16.3 and React 19.3
 
-Card slug `pr-02-next16-verify`. Independent verifier on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-02-next16-verify` (local branch `beta/pr-02-next16-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-02/` and into the PR as a comment.
+Card slug `pr-02-next16-verify`. Independent verifier (claude-haiku-5-5) on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-02-next16-verify` (local branch `beta/pr-02-next16-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-02/` and into the PR as a comment.
 
 ## Steps
 

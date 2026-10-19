@@ -20,7 +20,7 @@
  },
  "unmapped": 0,
  "cycles": 0,
- "finish": "Mon 19:30",
+ "finish": "Mon 19:40",
  "problems": [],
  "p0_rows": 38,
  "p0_dispositions": {
@@ -133,14 +133,6 @@
   ],
   [
    "PR-01:build",
-   "04:00"
-  ],
-  [
-   "PR-01:verify",
-   "04:45"
-  ],
-  [
-   "PR-01:merge",
    "04:55"
   ],
   [

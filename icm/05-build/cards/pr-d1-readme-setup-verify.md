@@ -1,6 +1,6 @@
 # PR-D1 verify: README, setup guide and infographics
 
-Card slug `pr-d1-readme-setup-verify`. Independent verifier on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-d1-readme-setup-verify` (local branch `beta/pr-d1-readme-setup-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-D1/` and into the PR as a comment.
+Card slug `pr-d1-readme-setup-verify`. Independent verifier (claude-haiku-5-5) on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-d1-readme-setup-verify` (local branch `beta/pr-d1-readme-setup-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-D1/` and into the PR as a comment.
 
 ## Steps
 

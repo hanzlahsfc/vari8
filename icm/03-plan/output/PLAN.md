@@ -352,7 +352,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 ## Take over the whole canvas into the root app (PR-01)
 
-**Depends on.** PR-02.
+**Depends on.** PR-02, PR-P1.
 
 **Card.** `pr-01-canvas-takeover` (build), `pr-01-canvas-takeover-verify`, `pr-01-canvas-takeover-merge`. Builder Devin swe-2-max via yamato, gear kakashi. Estimate 60 minutes.
 

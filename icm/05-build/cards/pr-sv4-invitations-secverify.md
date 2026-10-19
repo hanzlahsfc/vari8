@@ -1,6 +1,6 @@
 # PR-SV4 security verify: Client invitations
 
-Card slug `pr-sv4-invitations-secverify`. Independent verifier on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-sv4-invitations-secverify` (local branch `beta/pr-sv4-invitations-secverify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-SV4/` and into the PR as a comment.
+Card slug `pr-sv4-invitations-secverify`. Independent verifier (claude-haiku-5-5) on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-sv4-invitations-secverify` (local branch `beta/pr-sv4-invitations-secverify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-SV4/` and into the PR as a comment.
 
 ## Steps
 

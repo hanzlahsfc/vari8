@@ -1,6 +1,6 @@
 # PR-X1 verify: Build the system index generator and the first index
 
-Card slug `system-index-verify`. Independent verifier on a different model than the builder (deepseek-v4.1-flash). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/system-index-verify` (local branch `beta/system-index-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-X1/` and into the PR as a comment.
+Card slug `system-index-verify`. Independent verifier (claude-haiku-5-5) on a different model than the builder (deepseek-v4.1-flash). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/system-index-verify` (local branch `beta/system-index-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-X1/` and into the PR as a comment.
 
 ## Steps
 

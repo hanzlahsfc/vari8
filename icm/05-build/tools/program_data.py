@@ -128,7 +128,7 @@ PRS = [
     ),
     dict(
         id="PR-01", slug="pr-01-canvas-takeover", title="Take over the whole canvas into the root app", track="Foundation",
-        deps=["PR-02"], who="yamato", gear="kakashi", est=60,
+        deps=["PR-02", "PR-P1"], who="yamato", gear="kakashi", est=60,
         files=["app/coach/**", "app/ethereal/**", "app/page.tsx", "app/layout.tsx", "app/globals.css", "components/canvas/**",
                "lib/auth/viewer.ts", "proxy.ts or middleware.ts", "package.json", "package-lock.json", "tsconfig.json", "postcss.config.mjs"],
         build=[

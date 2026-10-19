@@ -1,6 +1,6 @@
 # PR-MSG verify: Messaging: domain, routes and the three canvas screens
 
-Card slug `pr-msg-messaging-verify`. Independent verifier on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-msg-messaging-verify` (local branch `beta/pr-msg-messaging-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-MSG/` and into the PR as a comment.
+Card slug `pr-msg-messaging-verify`. Independent verifier (claude-haiku-5-5) on a different model than the builder (swe-2-max). You never edit product code and never push. Worktree `/home/nexuslink/vari8-worktrees/pr-msg-messaging-verify` (local branch `beta/pr-msg-messaging-verify`, never pushed). Evidence goes outside git to `/home/nexuslink/vari8-worktrees/_evidence/PR-MSG/` and into the PR as a comment.
 
 ## Steps
 

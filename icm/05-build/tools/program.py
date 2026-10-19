@@ -172,6 +172,17 @@ def p0_owner(r):
 
 SPECIAL_OWNERS = {"PRESENT", "PARKED-D12", "N/A", "POST-BETA-INFRA", "OWNER-QUESTION"}
 
+# Concrete checks for P0 rows owned by a gate card (W0-fix-2 item 1).
+GATE_P0_CHECK = {
+    "PR-133": ("for every program PR merged into `Vari8-Beta` (`gh pr list -R hanzlahsfc/The-great-tracker- --base Vari8-Beta --state merged "
+               "--search 'merged:>=2026-10-19' --json number,title,headRefOid,mergeCommit`), `gh pr view <n> --json comments` contains a line "
+               "`SHIP <PR-id> <sha>` whose sha is the PR's last head before the merge, posted by a verifier card whose model differs from the builder's "
+               "(builder and verifier models from `icm/05-build/graph.json`). Write the table (PR, head sha, SHIP line found, verifier model, builder model) "
+               "to `/home/nexuslink/vari8-worktrees/_evidence/GATE-CLEAN/pr-133.md`; any PR without a matching SHIP fails this card. Also record "
+               "`gh api repos/hanzlahsfc/The-great-tracker-/branches/Vari8-Beta/protection` (404 today); turning protection on is the owner's call, "
+               "so a 404 is reported, not failed."),
+}
+
 # ---------- TEST-AUDIT actions ----------
 TA = open(f"{ICM}/03-plan/output/TEST-AUDIT.md").read().split("\n")
 ta_actions = []
@@ -416,7 +427,7 @@ Write `icm/05-build/reports/{pid}.md` in the branch: head SHA, changed paths, ev
         vextra = "\n## Program contract checks (each must PASS for SHIP)\n\n" + "\n".join(f"- {x}" for x in p["verify_extra"]) + "\n"
     verify = f"""# {pid} verify: {p['title']}
 
-Card slug `{vslug}`. Independent verifier on a different model than the builder ({p.get('builder_model') or 'swe-2-max'}). You never edit product code and never push. Worktree `{WT}/{vslug}` (local branch `beta/{vslug}`, never pushed). Evidence goes outside git to `{EVID}/{pid}/` and into the PR as a comment.
+Card slug `{vslug}`. Independent verifier ({MODELS[p.get('verifier', 'neji')][0]}) on a different model than the builder ({p.get('builder_model') or 'swe-2-max'}). You never edit product code and never push. Worktree `{WT}/{vslug}` (local branch `beta/{vslug}`, never pushed). Evidence goes outside git to `{EVID}/{pid}/` and into the PR as a comment.
 
 ## Steps
 
@@ -504,6 +515,10 @@ for g in GATES:
                 f'- `git branch -r` shows only main, FRONTEND, TRACKER, Vari8-Beta and branches that existed before the program (record the pre-program list from `icm/05-build/RUNBOOK.md`).\n'
                 f'- `git worktree list` shows only the root checkout and `{BETA}`; run `git worktree prune` after removals. `{WT}/_evidence` stays (outside git).\n'
                 f'- `docker exec vari8-db-1 psql -U app -d postgres -Atc "select datname from pg_database where datname like \'app_%\'"` shows only `app_dev`.\n')
+    p0 = [r for r in LEDGER if r["kind"] == "readiness-p0" and r["owner"] == g["id"]]
+    if p0:
+        body += ("\n## Production-readiness P0 rows this card owns (`icm/05-build/audits/PRODREADY-BASELINE.md`)\n\n"
+                 + "\n".join(f"- {r['id']}: {r['detail']}" + (f"\n  Check: {GATE_P0_CHECK[r['id']]}" if r["id"] in GATE_P0_CHECK else "") for r in p0) + "\n")
     add_card(card_key(g["id"], "gate"), "gate", g["id"], g["slug"], g["title"], g["who"], parents, g["est"], body, "2h")
 
 CARD_BY_KEY = {c["key"]: c for c in cards}
@@ -606,6 +621,19 @@ for kind in ("build", "verify"):
         problems.append(f"PR-R1 {kind} card names kept ids {hit}")
 # Ruling 7: every P0 row of the readiness baseline is in the ledger.
 P0_COUNT = sum(1 for r in LEDGER if r["kind"] == "readiness-p0")
+# W0-fix-2 item 1: a P0 row mapped to a card is named in that card's body.
+for r in LEDGER:
+    if r["kind"] != "readiness-p0" or r["owner"] in SPECIAL_OWNERS:
+        continue
+    o = r["owner"]
+    key = card_key(o, "build") if o in PR_BY_ID else (card_key(o, "gate") if o.startswith("GATE-") else card_key(o, "decision"))
+    if key not in CARD_BY_KEY or not re.search(rf"\b{r['id']}\b", CARD_BY_KEY[key]["body"]):
+        problems.append(f"P0 {r['id']} mapped to {o} but {key} does not name it")
+# W0-fix-2 item 3: a PR that edits the parity harness starts after the verified harness merged.
+for p in PRS:
+    if p["id"] != "PR-P1" and any("tools/parity" in s for s in p["build"] + p["files"]):
+        if card_key("PR-P1", "merge") not in ancestors(card_key(p["id"], "build")):
+            problems.append(f"{p['id']} edits tools/parity but its build does not descend from PR-P1:merge")
 for r in unmapped:
     problems.append(f"ledger unmapped: {r['kind']} {r['id']}")
 for r in badowner:

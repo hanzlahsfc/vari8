@@ -505,7 +505,8 @@
    "model": "deepseek-v4.1-flash",
    "provider": "opencode-go",
    "parents": [
-    "PR-02:merge"
+    "PR-02:merge",
+    "PR-P1:merge"
    ],
    "est_min": 60,
    "max_runtime": "90m",
@@ -515,8 +516,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "03:00",
-   "done": "19 04:00",
+   "start": "03:55",
+   "done": "19 04:55",
    "body_file": "icm/05-build/cards/pr-01-canvas-takeover.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-01-canvas-takeover",
    "branch": "beta/pr-01-canvas-takeover"
@@ -532,8 +533,7 @@
    "provider": "anthropic",
    "parents": [
     "PR-01:build",
-    "PR-04:merge",
-    "PR-P1:merge"
+    "PR-04:merge"
    ],
    "est_min": 30,
    "max_runtime": "45m",
@@ -543,8 +543,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "04:15",
-   "done": "19 04:45",
+   "start": "04:55",
+   "done": "19 05:25",
    "body_file": "icm/05-build/cards/pr-01-canvas-takeover-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-01-canvas-takeover-verify",
    "branch": "beta/pr-01-canvas-takeover-verify"
@@ -568,8 +568,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "04:45",
-   "done": "19 04:55",
+   "start": "05:25",
+   "done": "19 05:35",
    "body_file": "icm/05-build/cards/pr-01-canvas-takeover-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-01-canvas-takeover-merge",
    "branch": "beta/pr-01-canvas-takeover-merge"
@@ -595,8 +595,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "04:55",
-   "done": "19 05:35",
+   "start": "05:35",
+   "done": "19 06:15",
    "body_file": "icm/05-build/cards/pr-w1-identity-home.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w1-identity-home",
    "branch": "beta/pr-w1-identity-home"
@@ -621,8 +621,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "05:35",
-   "done": "19 05:55",
+   "start": "06:15",
+   "done": "19 06:35",
    "body_file": "icm/05-build/cards/pr-w1-identity-home-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w1-identity-home-verify",
    "branch": "beta/pr-w1-identity-home-verify"
@@ -646,8 +646,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "05:35",
-   "done": "19 05:55",
+   "start": "06:15",
+   "done": "19 06:35",
    "body_file": "icm/05-build/cards/pr-w1-identity-home-secverify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w1-identity-home-secverify",
    "branch": "beta/pr-w1-identity-home-secverify"
@@ -672,8 +672,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "05:55",
-   "done": "19 06:05",
+   "start": "06:35",
+   "done": "19 06:45",
    "body_file": "icm/05-build/cards/pr-w1-identity-home-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w1-identity-home-merge",
    "branch": "beta/pr-w1-identity-home-merge"
@@ -700,8 +700,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "04:55",
-   "done": "19 05:45",
+   "start": "05:35",
+   "done": "19 06:25",
    "body_file": "icm/05-build/cards/pr-03-toolchain.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-03-toolchain",
    "branch": "beta/pr-03-toolchain"
@@ -726,8 +726,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "05:45",
-   "done": "19 06:15",
+   "start": "06:25",
+   "done": "19 06:55",
    "body_file": "icm/05-build/cards/pr-03-toolchain-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-03-toolchain-verify",
    "branch": "beta/pr-03-toolchain-verify"
@@ -751,8 +751,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "06:25",
-   "done": "19 06:35",
+   "start": "06:55",
+   "done": "19 07:05",
    "body_file": "icm/05-build/cards/pr-03-toolchain-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-03-toolchain-merge",
    "branch": "beta/pr-03-toolchain-merge"
@@ -1344,8 +1344,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "07:40",
-   "done": "19 08:30",
+   "start": "07:50",
+   "done": "19 08:40",
    "body_file": "icm/05-build/cards/pr-m4-template-definitions.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-m4-template-definitions",
    "branch": "beta/pr-m4-template-definitions"
@@ -1370,8 +1370,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "08:30",
-   "done": "19 08:50",
+   "start": "08:40",
+   "done": "19 09:00",
    "body_file": "icm/05-build/cards/pr-m4-template-definitions-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-m4-template-definitions-verify",
    "branch": "beta/pr-m4-template-definitions-verify"
@@ -1395,8 +1395,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "09:00",
-   "done": "19 09:10",
+   "start": "09:10",
+   "done": "19 09:20",
    "body_file": "icm/05-build/cards/pr-m4-template-definitions-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-m4-template-definitions-merge",
    "branch": "beta/pr-m4-template-definitions-merge"
@@ -1422,8 +1422,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "06:50",
-   "done": "19 07:40",
+   "start": "06:25",
+   "done": "19 07:15",
    "body_file": "icm/05-build/cards/pr-m5-mealplan-payload.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-m5-mealplan-payload",
    "branch": "beta/pr-m5-mealplan-payload"
@@ -1448,8 +1448,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "07:40",
-   "done": "19 08:00",
+   "start": "07:15",
+   "done": "19 07:35",
    "body_file": "icm/05-build/cards/pr-m5-mealplan-payload-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-m5-mealplan-payload-verify",
    "branch": "beta/pr-m5-mealplan-payload-verify"
@@ -1734,8 +1734,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "07:25",
-   "done": "19 08:05",
+   "start": "07:15",
+   "done": "19 07:55",
    "body_file": "icm/05-build/cards/pr-m9-dashboard-config.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-m9-dashboard-config",
    "branch": "beta/pr-m9-dashboard-config"
@@ -1760,8 +1760,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "08:05",
-   "done": "19 08:25",
+   "start": "07:55",
+   "done": "19 08:15",
    "body_file": "icm/05-build/cards/pr-m9-dashboard-config-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-m9-dashboard-config-verify",
    "branch": "beta/pr-m9-dashboard-config-verify"
@@ -1813,8 +1813,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "09:10",
-   "done": "19 09:55",
+   "start": "09:20",
+   "done": "19 10:05",
    "body_file": "icm/05-build/cards/pr-sv1-roster-read.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-sv1-roster-read",
    "branch": "beta/pr-sv1-roster-read"
@@ -1839,8 +1839,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "09:55",
-   "done": "19 10:15",
+   "start": "10:05",
+   "done": "19 10:25",
    "body_file": "icm/05-build/cards/pr-sv1-roster-read-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-sv1-roster-read-verify",
    "branch": "beta/pr-sv1-roster-read-verify"
@@ -1864,8 +1864,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "10:15",
-   "done": "19 10:25",
+   "start": "10:25",
+   "done": "19 10:35",
    "body_file": "icm/05-build/cards/pr-sv1-roster-read-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-sv1-roster-read-merge",
    "branch": "beta/pr-sv1-roster-read-merge"
@@ -1941,8 +1941,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "09:10",
-   "done": "19 09:20",
+   "start": "09:20",
+   "done": "19 09:30",
    "body_file": "icm/05-build/cards/pr-sv2-daily-series-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-sv2-daily-series-merge",
    "branch": "beta/pr-sv2-daily-series-merge"
@@ -1970,8 +1970,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "09:55",
-   "done": "19 10:55",
+   "start": "10:05",
+   "done": "19 11:05",
    "body_file": "icm/05-build/cards/pr-sv3-widget-feeds.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-sv3-widget-feeds",
    "branch": "beta/pr-sv3-widget-feeds"
@@ -1996,8 +1996,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "10:55",
-   "done": "19 11:15",
+   "start": "11:05",
+   "done": "19 11:25",
    "body_file": "icm/05-build/cards/pr-sv3-widget-feeds-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-sv3-widget-feeds-verify",
    "branch": "beta/pr-sv3-widget-feeds-verify"
@@ -2021,8 +2021,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "11:15",
-   "done": "19 11:25",
+   "start": "11:25",
+   "done": "19 11:35",
    "body_file": "icm/05-build/cards/pr-sv3-widget-feeds-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-sv3-widget-feeds-merge",
    "branch": "beta/pr-sv3-widget-feeds-merge"
@@ -2260,8 +2260,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "10:25",
-   "done": "19 11:55",
+   "start": "10:35",
+   "done": "19 12:05",
    "body_file": "icm/05-build/cards/pr-msg-messaging.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-msg-messaging",
    "branch": "beta/pr-msg-messaging"
@@ -2286,8 +2286,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "11:55",
-   "done": "19 12:15",
+   "start": "12:05",
+   "done": "19 12:25",
    "body_file": "icm/05-build/cards/pr-msg-messaging-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-msg-messaging-verify",
    "branch": "beta/pr-msg-messaging-verify"
@@ -2311,8 +2311,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "11:55",
-   "done": "19 12:15",
+   "start": "12:05",
+   "done": "19 12:25",
    "body_file": "icm/05-build/cards/pr-msg-messaging-secverify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-msg-messaging-secverify",
    "branch": "beta/pr-msg-messaging-secverify"
@@ -2337,8 +2337,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "12:15",
-   "done": "19 12:25",
+   "start": "12:25",
+   "done": "19 12:35",
    "body_file": "icm/05-build/cards/pr-msg-messaging-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-msg-messaging-merge",
    "branch": "beta/pr-msg-messaging-merge"
@@ -2417,8 +2417,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "08:50",
-   "done": "19 09:00",
+   "start": "09:00",
+   "done": "19 09:10",
    "body_file": "icm/05-build/cards/pr-w0-data-seam-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w0-data-seam-merge",
    "branch": "beta/pr-w0-data-seam-merge"
@@ -2447,8 +2447,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "10:25",
-   "done": "19 11:25",
+   "start": "10:35",
+   "done": "19 11:35",
    "body_file": "icm/05-build/cards/pr-w2-roster-profile.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w2-roster-profile",
    "branch": "beta/pr-w2-roster-profile"
@@ -2473,8 +2473,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "11:25",
-   "done": "19 11:45",
+   "start": "11:35",
+   "done": "19 11:55",
    "body_file": "icm/05-build/cards/pr-w2-roster-profile-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w2-roster-profile-verify",
    "branch": "beta/pr-w2-roster-profile-verify"
@@ -2498,8 +2498,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "11:50",
-   "done": "19 12:00",
+   "start": "12:00",
+   "done": "19 12:10",
    "body_file": "icm/05-build/cards/pr-w2-roster-profile-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w2-roster-profile-merge",
    "branch": "beta/pr-w2-roster-profile-merge"
@@ -2526,8 +2526,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "10:55",
-   "done": "19 12:10",
+   "start": "11:05",
+   "done": "19 12:20",
    "body_file": "icm/05-build/cards/pr-w3-templates-setup.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w3-templates-setup",
    "branch": "beta/pr-w3-templates-setup"
@@ -2552,8 +2552,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "12:10",
-   "done": "19 12:30",
+   "start": "12:20",
+   "done": "19 12:40",
    "body_file": "icm/05-build/cards/pr-w3-templates-setup-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w3-templates-setup-verify",
    "branch": "beta/pr-w3-templates-setup-verify"
@@ -2577,8 +2577,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "12:30",
-   "done": "19 12:40",
+   "start": "12:40",
+   "done": "19 12:50",
    "body_file": "icm/05-build/cards/pr-w3-templates-setup-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w3-templates-setup-merge",
    "branch": "beta/pr-w3-templates-setup-merge"
@@ -2606,8 +2606,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "10:00",
-   "done": "19 11:15",
+   "start": "10:10",
+   "done": "19 11:25",
    "body_file": "icm/05-build/cards/pr-w4-tracker.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w4-tracker",
    "branch": "beta/pr-w4-tracker"
@@ -2632,8 +2632,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "11:15",
-   "done": "19 11:35",
+   "start": "11:25",
+   "done": "19 11:45",
    "body_file": "icm/05-build/cards/pr-w4-tracker-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w4-tracker-verify",
    "branch": "beta/pr-w4-tracker-verify"
@@ -2657,8 +2657,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "11:40",
-   "done": "19 11:50",
+   "start": "11:50",
+   "done": "19 12:00",
    "body_file": "icm/05-build/cards/pr-w4-tracker-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w4-tracker-merge",
    "branch": "beta/pr-w4-tracker-merge"
@@ -2685,8 +2685,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "09:10",
-   "done": "19 09:55",
+   "start": "09:20",
+   "done": "19 10:05",
    "body_file": "icm/05-build/cards/pr-w5-habits.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w5-habits",
    "branch": "beta/pr-w5-habits"
@@ -2711,8 +2711,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "09:55",
-   "done": "19 10:15",
+   "start": "10:05",
+   "done": "19 10:25",
    "body_file": "icm/05-build/cards/pr-w5-habits-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w5-habits-verify",
    "branch": "beta/pr-w5-habits-verify"
@@ -2736,8 +2736,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "10:35",
-   "done": "19 10:45",
+   "start": "10:45",
+   "done": "19 10:55",
    "body_file": "icm/05-build/cards/pr-w5-habits-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w5-habits-merge",
    "branch": "beta/pr-w5-habits-merge"
@@ -2765,8 +2765,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "09:10",
-   "done": "19 10:25",
+   "start": "09:20",
+   "done": "19 10:35",
    "body_file": "icm/05-build/cards/pr-w6-checkins.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w6-checkins",
    "branch": "beta/pr-w6-checkins"
@@ -2791,8 +2791,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "10:25",
-   "done": "19 10:45",
+   "start": "10:35",
+   "done": "19 10:55",
    "body_file": "icm/05-build/cards/pr-w6-checkins-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w6-checkins-verify",
    "branch": "beta/pr-w6-checkins-verify"
@@ -2816,8 +2816,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "10:45",
-   "done": "19 10:55",
+   "start": "10:55",
+   "done": "19 11:05",
    "body_file": "icm/05-build/cards/pr-w6-checkins-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w6-checkins-merge",
    "branch": "beta/pr-w6-checkins-merge"
@@ -2844,8 +2844,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "09:10",
-   "done": "19 10:25",
+   "start": "09:20",
+   "done": "19 10:35",
    "body_file": "icm/05-build/cards/pr-w7-nutrition.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w7-nutrition",
    "branch": "beta/pr-w7-nutrition"
@@ -2870,8 +2870,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "10:25",
-   "done": "19 10:45",
+   "start": "10:35",
+   "done": "19 10:55",
    "body_file": "icm/05-build/cards/pr-w7-nutrition-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w7-nutrition-verify",
    "branch": "beta/pr-w7-nutrition-verify"
@@ -2895,8 +2895,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "10:55",
-   "done": "19 11:05",
+   "start": "11:05",
+   "done": "19 11:15",
    "body_file": "icm/05-build/cards/pr-w7-nutrition-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w7-nutrition-merge",
    "branch": "beta/pr-w7-nutrition-merge"
@@ -2923,8 +2923,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "09:55",
-   "done": "19 11:10",
+   "start": "10:05",
+   "done": "19 11:20",
    "body_file": "icm/05-build/cards/pr-w8-training.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w8-training",
    "branch": "beta/pr-w8-training"
@@ -2949,8 +2949,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "11:10",
-   "done": "19 11:30",
+   "start": "11:20",
+   "done": "19 11:40",
    "body_file": "icm/05-build/cards/pr-w8-training-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w8-training-verify",
    "branch": "beta/pr-w8-training-verify"
@@ -2974,8 +2974,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "11:30",
-   "done": "19 11:40",
+   "start": "11:40",
+   "done": "19 11:50",
    "body_file": "icm/05-build/cards/pr-w8-training-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w8-training-merge",
    "branch": "beta/pr-w8-training-merge"
@@ -3003,8 +3003,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "11:25",
-   "done": "19 12:40",
+   "start": "11:35",
+   "done": "19 12:50",
    "body_file": "icm/05-build/cards/pr-w9-dashboard.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w9-dashboard",
    "branch": "beta/pr-w9-dashboard"
@@ -3029,8 +3029,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "12:40",
-   "done": "19 13:00",
+   "start": "12:50",
+   "done": "19 13:10",
    "body_file": "icm/05-build/cards/pr-w9-dashboard-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w9-dashboard-verify",
    "branch": "beta/pr-w9-dashboard-verify"
@@ -3054,8 +3054,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "13:00",
-   "done": "19 13:10",
+   "start": "13:10",
+   "done": "19 13:20",
    "body_file": "icm/05-build/cards/pr-w9-dashboard-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w9-dashboard-merge",
    "branch": "beta/pr-w9-dashboard-merge"
@@ -3083,8 +3083,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "09:00",
-   "done": "19 10:00",
+   "start": "09:10",
+   "done": "19 10:10",
    "body_file": "icm/05-build/cards/pr-w10-notes-appearance.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w10-notes-appearance",
    "branch": "beta/pr-w10-notes-appearance"
@@ -3109,8 +3109,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "10:00",
-   "done": "19 10:20",
+   "start": "10:10",
+   "done": "19 10:30",
    "body_file": "icm/05-build/cards/pr-w10-notes-appearance-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w10-notes-appearance-verify",
    "branch": "beta/pr-w10-notes-appearance-verify"
@@ -3134,8 +3134,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "10:25",
-   "done": "19 10:35",
+   "start": "10:35",
+   "done": "19 10:45",
    "body_file": "icm/05-build/cards/pr-w10-notes-appearance-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-w10-notes-appearance-merge",
    "branch": "beta/pr-w10-notes-appearance-merge"
@@ -3169,8 +3169,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "13:10",
-   "done": "19 14:10",
+   "start": "13:20",
+   "done": "19 14:20",
    "body_file": "icm/05-build/cards/pr-r1-delete-superseded.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-r1-delete-superseded",
    "branch": "beta/pr-r1-delete-superseded"
@@ -3195,8 +3195,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "14:10",
-   "done": "19 14:40",
+   "start": "14:20",
+   "done": "19 14:50",
    "body_file": "icm/05-build/cards/pr-r1-delete-superseded-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-r1-delete-superseded-verify",
    "branch": "beta/pr-r1-delete-superseded-verify"
@@ -3220,8 +3220,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "14:40",
-   "done": "19 14:50",
+   "start": "14:50",
+   "done": "19 15:00",
    "body_file": "icm/05-build/cards/pr-r1-delete-superseded-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-r1-delete-superseded-merge",
    "branch": "beta/pr-r1-delete-superseded-merge"
@@ -3247,8 +3247,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "14:50",
-   "done": "19 15:30",
+   "start": "15:00",
+   "done": "19 15:40",
    "body_file": "icm/05-build/cards/pr-r2-schema-reduction.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-r2-schema-reduction",
    "branch": "beta/pr-r2-schema-reduction"
@@ -3273,8 +3273,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "15:30",
-   "done": "19 15:50",
+   "start": "15:40",
+   "done": "19 16:00",
    "body_file": "icm/05-build/cards/pr-r2-schema-reduction-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-r2-schema-reduction-verify",
    "branch": "beta/pr-r2-schema-reduction-verify"
@@ -3298,8 +3298,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "15:50",
-   "done": "19 16:00",
+   "start": "16:00",
+   "done": "19 16:10",
    "body_file": "icm/05-build/cards/pr-r2-schema-reduction-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-r2-schema-reduction-merge",
    "branch": "beta/pr-r2-schema-reduction-merge"
@@ -3324,8 +3324,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "14:50",
-   "done": "19 15:30",
+   "start": "15:00",
+   "done": "19 15:40",
    "body_file": "icm/05-build/cards/pr-r3-flags-deps.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-r3-flags-deps",
    "branch": "beta/pr-r3-flags-deps"
@@ -3350,8 +3350,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "15:30",
-   "done": "19 16:00",
+   "start": "15:40",
+   "done": "19 16:10",
    "body_file": "icm/05-build/cards/pr-r3-flags-deps-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-r3-flags-deps-verify",
    "branch": "beta/pr-r3-flags-deps-verify"
@@ -3375,8 +3375,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "16:00",
-   "done": "19 16:10",
+   "start": "16:10",
+   "done": "19 16:20",
    "body_file": "icm/05-build/cards/pr-r3-flags-deps-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-r3-flags-deps-merge",
    "branch": "beta/pr-r3-flags-deps-merge"
@@ -3473,8 +3473,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "16:10",
-   "done": "19 16:35",
+   "start": "16:20",
+   "done": "19 16:45",
    "body_file": "icm/05-build/cards/pr-x2-index-final.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-x2-index-final",
    "branch": "beta/pr-x2-index-final"
@@ -3499,8 +3499,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "16:35",
-   "done": "19 16:55",
+   "start": "16:45",
+   "done": "19 17:05",
    "body_file": "icm/05-build/cards/pr-x2-index-final-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-x2-index-final-verify",
    "branch": "beta/pr-x2-index-final-verify"
@@ -3524,8 +3524,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "16:55",
-   "done": "19 17:05",
+   "start": "17:05",
+   "done": "19 17:15",
    "body_file": "icm/05-build/cards/pr-x2-index-final-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-x2-index-final-merge",
    "branch": "beta/pr-x2-index-final-merge"
@@ -3551,8 +3551,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "16:10",
-   "done": "19 17:00",
+   "start": "16:20",
+   "done": "19 17:10",
    "body_file": "icm/05-build/cards/pr-d1-readme-setup.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-d1-readme-setup",
    "branch": "beta/pr-d1-readme-setup"
@@ -3577,8 +3577,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "17:00",
-   "done": "19 17:20",
+   "start": "17:10",
+   "done": "19 17:30",
    "body_file": "icm/05-build/cards/pr-d1-readme-setup-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-d1-readme-setup-verify",
    "branch": "beta/pr-d1-readme-setup-verify"
@@ -3602,8 +3602,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "17:20",
-   "done": "19 17:30",
+   "start": "17:30",
+   "done": "19 17:40",
    "body_file": "icm/05-build/cards/pr-d1-readme-setup-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-d1-readme-setup-merge",
    "branch": "beta/pr-d1-readme-setup-merge"
@@ -3629,8 +3629,8 @@
     "show-me-your-work"
    ],
    "external": false,
-   "start": "06:05",
-   "done": "19 06:50",
+   "start": "07:25",
+   "done": "19 08:10",
    "body_file": "icm/05-build/cards/pr-31-pwa-mobile.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-31-pwa-mobile",
    "branch": "beta/pr-31-pwa-mobile"
@@ -3655,8 +3655,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "06:50",
-   "done": "19 07:10",
+   "start": "08:10",
+   "done": "19 08:30",
    "body_file": "icm/05-build/cards/pr-31-pwa-mobile-verify.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-31-pwa-mobile-verify",
    "branch": "beta/pr-31-pwa-mobile-verify"
@@ -3680,8 +3680,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "07:10",
-   "done": "19 07:20",
+   "start": "08:50",
+   "done": "19 09:00",
    "body_file": "icm/05-build/cards/pr-31-pwa-mobile-merge.md",
    "worktree": "/home/nexuslink/vari8-worktrees/pr-31-pwa-mobile-merge",
    "branch": "beta/pr-31-pwa-mobile-merge"
@@ -3749,8 +3749,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "17:30",
-   "done": "19 18:30",
+   "start": "17:40",
+   "done": "19 18:40",
    "body_file": "icm/05-build/cards/gate-prr-readiness.md",
    "worktree": "/home/nexuslink/vari8-worktrees/gate-prr-readiness",
    "branch": "beta/gate-prr-readiness"
@@ -3774,8 +3774,8 @@
     "principle-attack-the-premise"
    ],
    "external": false,
-   "start": "18:30",
-   "done": "19 19:10",
+   "start": "18:40",
+   "done": "19 19:20",
    "body_file": "icm/05-build/cards/gate-final-judgement.md",
    "worktree": "/home/nexuslink/vari8-worktrees/gate-final-judgement",
    "branch": "beta/gate-final-judgement"
@@ -3799,8 +3799,8 @@
     "verification-before-completion"
    ],
    "external": false,
-   "start": "19:10",
-   "done": "19 19:30",
+   "start": "19:20",
+   "done": "19 19:40",
    "body_file": "icm/05-build/cards/gate-clean.md",
    "worktree": "/home/nexuslink/vari8-worktrees/gate-clean",
    "branch": "beta/gate-clean"

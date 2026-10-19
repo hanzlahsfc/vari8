@@ -29,7 +29,7 @@ Every PR is three cards: build, verify (plus a security verify for auth, schema 
 | PR-03A   | -                                                                      | external swe-2-max, issue #59           | neji                     |
 | PR-03B   | -                                                                      | external swe-2-max, issue #60           | neji                     |
 | PR-04    | -                                                                      | Devin via yamato, gear gowther          | neji, shinobu (security) |
-| PR-01    | PR-02                                                                  | Devin via yamato, gear kakashi          | neji                     |
+| PR-01    | PR-02, PR-P1                                                           | Devin via yamato, gear kakashi          | neji                     |
 | PR-W1    | PR-05, PR-01                                                           | Devin via yamato, gear itachi           | neji, shinobu (security) |
 | PR-03    | PR-01, PR-03A, PR-03B                                                  | Devin via yamato, gear kakashi          | neji                     |
 | PR-T2    | PR-04, PR-03A                                                          | tenten                                  | neji                     |
@@ -102,49 +102,49 @@ Simulated by the generator: graph cards start at 03:00 once the orchestrator rel
 | PR-04    | yamato                       | gowther   | 19 03:00     | 19 04:15  |
 | PR-X1    | external deepseek-v4.1-flash | tenten    | 19 02:24     | 19 04:25  |
 | PR-05    | external swe-2-max           | kakashi   | 19 02:24     | 19 04:40  |
-| PR-01    | yamato                       | kakashi   | 19 03:00     | 19 04:55  |
 | PR-T2    | tenten                       | -         | 19 04:15     | 19 05:10  |
+| PR-01    | yamato                       | kakashi   | 19 03:55     | 19 05:35  |
 | PR-R0    | yamato                       | kakashi   | 19 04:40     | 19 05:45  |
 | PR-SV4   | yamato                       | kakashi   | 19 04:40     | 19 05:55  |
-| PR-W1    | yamato                       | itachi    | 19 04:55     | 19 06:05  |
 | PR-M0    | yamato                       | gowther   | 19 04:40     | 19 06:25  |
-| PR-03    | yamato                       | kakashi   | 19 04:55     | 19 06:35  |
-| PR-31    | yamato                       | kakashi   | 19 06:05     | 19 07:20  |
+| PR-W1    | yamato                       | itachi    | 19 05:35     | 19 06:45  |
+| PR-03    | yamato                       | kakashi   | 19 05:35     | 19 07:05  |
 | PR-M2    | yamato                       | gowther   | 19 06:25     | 19 07:30  |
 | PR-M1    | yamato                       | gowther   | 19 06:25     | 19 07:40  |
 | PR-M3    | yamato                       | gowther   | 19 06:25     | 19 07:50  |
 | PR-MEDIA | yamato                       | kakashi   | 19 06:25     | 19 08:00  |
-| PR-M5    | yamato                       | gowther   | 19 06:50     | 19 08:10  |
+| PR-M5    | yamato                       | gowther   | 19 06:25     | 19 08:10  |
 | PR-M6    | yamato                       | gowther   | 19 07:00     | 19 08:20  |
 | PR-M7    | yamato                       | gowther   | 19 07:05     | 19 08:30  |
 | PR-M8    | yamato                       | gowther   | 19 07:05     | 19 08:40  |
-| PR-M9    | yamato                       | gowther   | 19 07:25     | 19 08:50  |
-| PR-W0    | yamato                       | kakashi   | 19 07:35     | 19 09:00  |
-| PR-M4    | yamato                       | gowther   | 19 07:40     | 19 09:10  |
-| PR-SV2   | yamato                       | kakashi   | 19 07:50     | 19 09:20  |
-| PR-SV1   | yamato                       | kakashi   | 19 09:10     | 19 10:25  |
-| PR-W10   | yamato                       | itachi    | 19 09:00     | 19 10:35  |
-| PR-W5    | yamato                       | itachi    | 19 09:10     | 19 10:45  |
-| PR-W6    | yamato                       | itachi    | 19 09:10     | 19 10:55  |
-| PR-W7    | yamato                       | itachi    | 19 09:10     | 19 11:05  |
-| PR-SV3   | yamato                       | kakashi   | 19 09:55     | 19 11:25  |
-| PR-W8    | yamato                       | itachi    | 19 09:55     | 19 11:40  |
-| PR-W4    | yamato                       | itachi    | 19 10:00     | 19 11:50  |
-| PR-W2    | yamato                       | itachi    | 19 10:25     | 19 12:00  |
-| PR-MSG   | yamato                       | itachi    | 19 10:25     | 19 12:25  |
-| PR-W3    | yamato                       | itachi    | 19 10:55     | 19 12:40  |
-| PR-W9    | yamato                       | itachi    | 19 11:25     | 19 13:10  |
-| PR-R1    | yamato                       | kakashi   | 19 13:10     | 19 14:50  |
-| PR-R2    | yamato                       | gowther   | 19 14:50     | 19 16:00  |
-| PR-R3    | yamato                       | kakashi   | 19 14:50     | 19 16:10  |
-| PR-X2    | shikamaru                    | -         | 19 16:10     | 19 17:05  |
-| PR-D1    | yamato                       | jiraiya   | 19 16:10     | 19 17:30  |
+| PR-M9    | yamato                       | gowther   | 19 07:15     | 19 08:50  |
+| PR-31    | yamato                       | kakashi   | 19 07:25     | 19 09:00  |
+| PR-W0    | yamato                       | kakashi   | 19 07:35     | 19 09:10  |
+| PR-M4    | yamato                       | gowther   | 19 07:50     | 19 09:20  |
+| PR-SV2   | yamato                       | kakashi   | 19 07:50     | 19 09:30  |
+| PR-SV1   | yamato                       | kakashi   | 19 09:20     | 19 10:35  |
+| PR-W10   | yamato                       | itachi    | 19 09:10     | 19 10:45  |
+| PR-W5    | yamato                       | itachi    | 19 09:20     | 19 10:55  |
+| PR-W6    | yamato                       | itachi    | 19 09:20     | 19 11:05  |
+| PR-W7    | yamato                       | itachi    | 19 09:20     | 19 11:15  |
+| PR-SV3   | yamato                       | kakashi   | 19 10:05     | 19 11:35  |
+| PR-W8    | yamato                       | itachi    | 19 10:05     | 19 11:50  |
+| PR-W4    | yamato                       | itachi    | 19 10:10     | 19 12:00  |
+| PR-W2    | yamato                       | itachi    | 19 10:35     | 19 12:10  |
+| PR-MSG   | yamato                       | itachi    | 19 10:35     | 19 12:35  |
+| PR-W3    | yamato                       | itachi    | 19 11:05     | 19 12:50  |
+| PR-W9    | yamato                       | itachi    | 19 11:35     | 19 13:20  |
+| PR-R1    | yamato                       | kakashi   | 19 13:20     | 19 15:00  |
+| PR-R2    | yamato                       | gowther   | 19 15:00     | 19 16:10  |
+| PR-R3    | yamato                       | kakashi   | 19 15:00     | 19 16:20  |
+| PR-X2    | shikamaru                    | -         | 19 16:20     | 19 17:15  |
+| PR-D1    | yamato                       | jiraiya   | 19 16:20     | 19 17:40  |
 
 ### 05:00 checkpoint
 
-Done by 05:00 in the simulation: `DEC-AUTH:decision` 02:30, `DEC-AUTH-REVIEW:decision` 02:30, `AUD-REDUCTION:decision` 02:30, `AUD-PRR-BASELINE:decision` 02:30, `AUD-REDUCTION-VERIFY:decision` 03:30, `PR-02:build` 02:30, `PR-02:verify` 02:30, `PR-02:merge` 02:30, `PR-P1:build` 03:15, `PR-P1:verify` 03:45, `PR-P1:merge` 03:55, `PR-03A:build` 03:30, `PR-03A:verify` 03:50, `PR-03A:merge` 04:05, `PR-03B:build` 03:15, `PR-03B:verify` 03:35, `PR-03B:merge` 03:45, `PR-04:build` 03:45, `PR-04:verify` 04:05, `PR-04:secverify` 04:05, `PR-04:merge` 04:15, `PR-01:build` 04:00, `PR-01:verify` 04:45, `PR-01:merge` 04:55, `PR-T2:build` 04:40, `PR-T2:verify` 05:00, `PR-05:build` 04:10, `PR-05:verify` 04:30, `PR-05:secverify` 04:30, `PR-05:merge` 04:40, `PR-X1:build` 03:20, `PR-X1:verify` 03:40, `PR-X1:merge` 04:25.
+Done by 05:00 in the simulation: `DEC-AUTH:decision` 02:30, `DEC-AUTH-REVIEW:decision` 02:30, `AUD-REDUCTION:decision` 02:30, `AUD-PRR-BASELINE:decision` 02:30, `AUD-REDUCTION-VERIFY:decision` 03:30, `PR-02:build` 02:30, `PR-02:verify` 02:30, `PR-02:merge` 02:30, `PR-P1:build` 03:15, `PR-P1:verify` 03:45, `PR-P1:merge` 03:55, `PR-03A:build` 03:30, `PR-03A:verify` 03:50, `PR-03A:merge` 04:05, `PR-03B:build` 03:15, `PR-03B:verify` 03:35, `PR-03B:merge` 03:45, `PR-04:build` 03:45, `PR-04:verify` 04:05, `PR-04:secverify` 04:05, `PR-04:merge` 04:15, `PR-01:build` 04:55, `PR-T2:build` 04:40, `PR-T2:verify` 05:00, `PR-05:build` 04:10, `PR-05:verify` 04:30, `PR-05:secverify` 04:30, `PR-05:merge` 04:40, `PR-X1:build` 03:20, `PR-X1:verify` 03:40, `PR-X1:merge` 04:25.
 
-What the checkpoint shows: PR-02 merged; the parity harness, the test cuts, the hooks fixes, the index, Better Auth (PR-05) and the dev seed (PR-04) merged; the canvas running on the root app (PR-01) merged at 04:55 with every screen at parity; D16a recorded. PR-01 has no buffer: its build starts at 03:00 only if the board is released by then. If PR-01 is not merged at 05:00, the checkpoint shows it open with its verifier report, and the program continues. Program finish in the simulation: Mon 19:30.
+What the checkpoint shows: PR-02 merged; the parity harness, the test cuts, the hooks fixes, the index, Better Auth (PR-05) and the dev seed (PR-04) merged; the canvas running on the root app (PR-01) merged at 04:55 with every screen at parity; D16a recorded. PR-01 has no buffer: its build starts at 03:00 only if the board is released by then. If PR-01 is not merged at 05:00, the checkpoint shows it open with its verifier report, and the program continues. Program finish in the simulation: Mon 19:40.
 
 ## Self-check
 
@@ -155,5 +155,5 @@ What the checkpoint shows: PR-02 merged; the parity harness, the test cuts, the 
 | Verifier model differs from the builder model | yes for every PR                                                                                                                            |
 | Coverage ledger has zero unmapped rows        | 0 unmapped of 812 rows (matrix 338, orphan 82, parked 6, screen 35, test-audit 232, test-rewire 29, plan-pr 44, program 8, readiness-p0 38) |
 | Dependency graph has no cycles                | 0 cycles in 146 cards (topological sort in `program.py`)                                                                                    |
-| Timeline fits 05:00                           | the checkpoint set above is done by 05:00 with PR-01 at 04:55; the full program finishes Mon 19:30                                          |
+| Timeline fits 05:00                           | the checkpoint set above is done by 05:00 with PR-01 at 04:55; the full program finishes Mon 19:40                                          |
 | Generator gate                                | `python3 icm/05-build/tools/program.py` exit 0                                                                                              |
