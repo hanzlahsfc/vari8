@@ -1,0 +1,113 @@
+# PR-05 security re-verify 2 (PR #69, branch `beta/pr-05-auth-api`)
+
+Verifier: independent re-verifier (different model from the builder Devin swe-2-max and from the round-1 Opus report). Date: 2026-10-19, 16:35 to 17:40 CEST.
+
+## Verdict: SHIP
+
+Every round-1 finding this card asks about is closed, and each closure was re-probed against a production build (`next start`, `NODE_ENV=production`) with a discriminating check that fails on the pre-fix code. 74 probes, 74 PASS, 0 FAIL.
+
+Five notes that do not block the merge are recorded under "Observations". O1 (the F11 process does not exit) is the only one that is a deviation from a stated acceptance criterion, and it fails closed.
+
+## Target
+
+| Field | Value |
+|---|---|
+| Worktree | `/home/nexuslink/vari8-worktrees/pr-05-auth-api` (read-only; nothing committed, pushed or merged) |
+| Branch / HEAD | `beta/pr-05-auth-api` @ `bf93d2a1ac7f25a4900ff183c3406f092a0b3e24` |
+| Fix commit under test | `ba3b3f7` ("fix(pr-05): verifier fix pass 1"), merged with `origin/Vari8-Beta` @ `f02a6d6` in `a408b54` |
+| Pre-fix baseline for the discriminating checks | `e68a2ef` (the head the round-1 report tested) |
+| Build | `npm run build` in a scratch copy of the worktree, exit 0 |
+| Database | `app_pr05sec2b` on 127.0.0.1:5433, created for this run, 37 migrations applied, synthetic users only |
+| Ports | 3690, 3691, 3692, 3693, 3694, 3695, 3696 (the card's 3671 and the database `app_pr05sec2` were already in use by a parallel verifier run, so both were left alone) |
+| Mail | dev-file adapter, mailbox in the scratch dir |
+| Clients | Node `fetch` for HTTP, real Chromium (Playwright 1.63) for forms, Prisma reads/writes on `app_pr05sec2b` for status changes and row counts |
+
+The known base defect (issue #74: TS2307 in `icm/05-build/evidence/PR-03b-verify-3/probes/variant-mount-timing.dom.test.tsx`) was excluded from the build in the scratch copy only, per the card. The worktree's `tsconfig.json` was not touched.
+
+## Method
+
+Five server postures, each started with a **cleared environment** (`env -i`, only the named variables present). This matters: the ambient shell of this machine carries leftover `BETTER_AUTH_URL`, `AUTH_URL`, `AUTH_SECRET` and `AUTH_TRUST_HOST` from another run, and a non-cleared start silently inherits them (see "Observations" O3). Every posture below is isolated.
+
+| Posture | Port | Distinguishing env | Used for |
+|---|---|---|---|
+| main | 3695 | `BETTER_AUTH_SECRET` (43 chars), `BETTER_AUTH_URL`, `MAIL_DELIVERY_ADAPTER=dev-file`, no `AUTH_TRUSTED_IP_HEADER` | F1, F2, F3, F4, F5, F6, F7, F8, F14, regressions, G probes |
+| trusted-ip | 3694 | `AUTH_TRUSTED_IP_HEADER=x-real-ip` | F2e (header honoured) |
+| no-adapter | 3693 | `MAIL_DELIVERY_ADAPTER=` (empty) | F9 (fail closed) |
+| legacy-env | 3696 | `AUTH_SECRET` + `AUTH_URL` + `AUTH_TRUST_HOST`, **no** `BETTER_AUTH_*` | leftover-Auth.js-env check (E probes) |
+| no-secret / short-secret / control | 3690 / 3691 / 3692 | secret unset / 8 chars / 43 chars | F11 (boot refusal) |
+
+Probe scripts: `/home/nexuslink/.hermes/cache/scratch/pr05sec2/probe/*.mjs` and `*.sh`. Raw results: `results.json` in the same directory. Each probe uses its own seeded account so one probe's throttle cannot mask another's result.
+
+## Per-finding table
+
+| Finding | Status | Evidence (command and output) |
+|---|---|---|
+| **F1** form login limiter | PASS | `node probe/browser.mjs` (real Chromium, `/login` form, 15 wrong passwords): `invalid=10 limited=5 firstLimitedAt=11 alerts=["Invalid email or passw" x10, "Too many attempts. Ple" x5]`. The limiter engages on attempt 11. The right password afterwards: `alert="Too many attempts. Please try again later." url=http://127.0.0.1:3695/login` (F1b PASS). Discriminating: on `e68a2ef`, `app/login/actions.ts` had no rate-limit handling (`git show e68a2ef:app/login/actions.ts \| grep -nE "TOO_MANY\|RateLimit\|rate"` returns nothing). |
+| **F2** IP header: rotating XFF buys no extra guesses | PASS | `node probe/core.mjs` (F2a): 14 wrong sign-ins with a fresh `X-Forwarded-For` each time: `codes=401 x10, 429 x4`. The bucket that refused it is the per-account one: `rate_limit` row `acct:sign-in:<sha256>` with `count=10`. F2b: the right password from a new IP after the limit: `status=429`. |
+| **F2** proxy chain: one attacker cannot lock out a second user | PASS | F2c: attacker burns 14 guesses on `f2c@probe.test` (`attacker=401 x10, 429 x4`), then a **different** user signs in: `victim=200`. |
+| **F2** per-account throttle across IP changes | PASS | F2b `status=429`. F2d: the base account re-throttled (`base=401 x10, 429 x2`), then the case variant `F2B@probe.test` and the whitespace variant `  f2b@probe.test  ` both return `429`. |
+| **F2** no header trusted when the env var is unset | PASS | F2e: `rate_limit` rows matching `\|/sign-in/email` (Better Auth's per-IP key shape): `rows=0`. The HTTP limiter's IP bucket does not exist at all in this posture, so there is no shared bucket a single attacker could fill. Discriminating: the pre-fix `lib/auth/server.ts` set no `advanced.ipAddress` (`git show e68a2ef:lib/auth/server.ts \| grep -n "ipAddress"` returns nothing), and Better Auth then trusted a single-value `X-Forwarded-For`. |
+| **F2** `AUTH_TRUSTED_IP_HEADER` honoured when set | PASS | `PROBE_BASE=http://127.0.0.1:3694 node probe/trustedip.mjs`: F2e-a `codes=401 x10, 429, 429`; F2e-b `rows=1 keys=["198.51.100.20"]` (the bucket is keyed on the header's value); F2e-c a second trusted IP gets its own bucket, `keys=["198.51.100.20","203.0.113.77"]`, and there is **no** `no-trusted-ip` key; F2e-d the per-account throttle still holds with the trusted IP rotating (`codes=429 x6`). |
+| **F3** password change revokes the other sessions without the flag | PASS | F3a: `POST /api/auth/change-password` with `{currentPassword, newPassword}` and **no** `revokeOtherSessions` field; the other session's cookie to `GET /api/v1/workspaces/:id/session` gives `status=401`. F3b the same for the other session's bearer: `status=401`. F3c the call itself: `status=200`. F3d `old=401 new=200`. Discriminating (live): with the forced revoke removed from the scratch copy and rebuilt, F3a/F3b report `status=403` (the other session still works), i.e. the probe fails without the fix. |
+| **F4** deactivated user refused on every session-bearing endpoint | PASS | F4: `get-session` `401`, `list-sessions` `401`, `update-user` `401`, `change-password` `401` (cookie). F4-get-session-body `body=null`; F4-bearer `status=200 body=null` (no session object, not a session). F4-rows `before=1 after=0` (session rows deleted). F4-name: the name was not changed to the attacker's value. |
+| **F5** reset identifier at rest is not the mailed token | PASS | `node probe/tokenatrest.mjs` (the comparison happens in code; no token value printed): `mailed token: len=24 sha8=bd3dd90f` / `any stored id CONTAINS the mailed token: false` / `a stored id EQUALS sha256_b64url("reset-password:<token>"): true` / `stored id lengths: 43`. F5c: `/reset?token=<mailed token>` still renders the form (`status=200 hasForm=true`); F5d a bogus token does not (`hasForm=false`). Discriminating: `git show e68a2ef:lib/auth/server.ts \| grep -n "storeIdentifier"` returns nothing, so the pre-fix row held the raw token. |
+| **F6** superseded reset links | PASS | F6a: request A, request B, use B (`useB=200`), then use A (`useA=400`, code `INVALID_TOKEN`). F6b: a second live reset row for the same user (injected at the DB level, the race the source comment describes) is deleted by `onPasswordReset` after a successful reset: `useA=200 useInjected=400 rowsBefore=2 rowsAfter=0`. F6b-pw `old=401 new=200`. Note: the card's "use A first, then B must fail" ordering is unreachable through the endpoint, because requesting B already deletes A's row, so at most one link per user is ever live. The `onPasswordReset` cleanup was probed directly instead. |
+| **F7** signup existence-oracle is throttled | PASS | `node probe/browser.mjs` (real Chromium, `/signup` form, 12 rapid submissions for an existing email): `exists=10 limited=2 answers=["An account already exi" x10, "Too many attempts. Ple" x2]`. |
+| **F8** reset link origin always `BETTER_AUTH_URL` | PASS | `node probe/resetlink.mjs`: a request carrying `Host: evil.example`, `X-Forwarded-Host: evil.example` and `X-Forwarded-Proto: https` still produced `linkOrigin=http://127.0.0.1:3695`, i.e. the configured base URL, never `evil.example`. Discriminating: the pre-fix code built the link from `new URL(request.url).origin`. |
+| **F9** reset API fails closed with no mail adapter | PASS | `PROBE_BASE=http://127.0.0.1:3693 node probe/noadapter.mjs`: F9a `status=400`; F9b the unknown account gets the identical status and body (`bodiesEqual=true`); F9c `before=1 after=1` (no verification row written); F9d `POST /api/auth/reset-password` `status=400`; F9e `/reset` `404`; F9f `/reset-request` `404`; F9g `/login` has no "Forgot your password" link. |
+| **F11** production boot refuses without a proper secret | PASS (with a caveat, see O1) | `probe/f11.sh f11-nosecret 3690 UNSET` (cleared env, no `BETTER_AUTH_SECRET`, no `AUTH_SECRET`): the log carries `Failed to prepare server Error: An error occurred while loading instrumentation hook: Refusing to start: BETTER_AUTH_SECRET must be set and at least 32 characters long in production.` and every route answers `500` (`/login` 500, `/api/auth/get-session` 500, `/api/v1/workspaces/x/session` 500). The same with an 8-char secret (port 3691). Discriminating control (port 3692, 43-char secret): `/login` 200, `/api/auth/get-session` 200, and the log has 0 "Refusing to start" lines. |
+| **F14** invite peek binds the workspace | PASS | `node probe/invite.mjs`: F14a the correct workspace renders the form (`ready=true`); F14b a mismatched workspace shows the invalid state (`ready=false invalid=true`); F14c the mismatched peek did not consume the token (the correct workspace is still `ready=true`). |
+| **Regression, round-1 item 3** 401 on missing or malformed credentials | PASS | `node probe/regression.mjs`: 2 routes x 9 credential variants = 18 requests, `all 18 = 401`; a nonexistent workspace id also `401` (not 500). |
+| **Regression, round-1 item 4** invites are single-use | PASS | `node probe/invitebrowser.mjs` (real Chromium, the acceptance server action driven through the form): `readyBefore=true submitUrl=/invite alert="App" readyAfter=false invalidAfter=true`. |
+| **Regression, round-1 item 7** roles and IDOR on the PR-05 surface | PASS | R7: `ownerA->wsB clients (cookie)=403`, `clientA1->wsA clients (cookie)=403`, `clientA1->wsB session (cookie)=403`, and the owner control `ownerA->wsA clients (control)=200`. R7b the bearer form of the cross-workspace denial is `403`. |
+| **Regression, round-1 item 8** email normalisation | PASS | R8a an uppercase email signs in (`status=200`); R8b a whitespace-padded email is refused by validation, not a 500 (`status=400`); R8c a plus-addressed email is a different account (`status=401`). |
+| **Diff scan: no secrets in `ba3b3f7`** | PASS | `git show ba3b3f7 --unified=0 \| grep -E "^\+" \| grep -inE "(AKIA[0-9A-Z]{16}\|sk_live_\|ghp_\|github_pat_\|xox[baprs]-\|-----BEGIN .*PRIVATE KEY-----\|eyJhbGciOi...)"` -> empty. No credential-bearing URL added (`grep -E "postgresql://\|https?://[^/]*:[^@/]*@"` on added lines -> empty). No `.env`, `.pem`, `.key` or credential file added (`git show ba3b3f7 --name-only --diff-filter=A`). The only password-like literals are synthetic test fixtures in `tests/**` and prose in the committed verifier reports. `.env.example` adds documentation and a commented `# AUTH_TRUSTED_IP_HEADER=x-real-ip` placeholder, no value. |
+| **Diff scan: no new auth bypass** | PASS | The new `hooks.before` in `lib/auth/server.ts` has no path-skip branch: every branch either throws (429 / 400 / 401) or tightens. The only two `catch` blocks added in production code both **fail closed**: `lib/auth/viewer.ts` returns `null` (401 downstream, never 500) and `lib/auth/password-reset-boundary.ts` returns `{ state: "invalid" }`. No broad try/catch turns an error into a 200. |
+| **Diff scan: hook paths match Better Auth's endpoint names** | PASS | `node probe/diffscan.mjs`: D1 every path in `SESSION_BOUND_PATHS` (20), `RESET_PATHS` (2) and `PASSWORD_SETTING_PATHS` (3) exists as a Better Auth 1.7.10 endpoint (`all 20 known`, `all 2 known`, `all 3 known`); D2 the session-bound list covers all 19 session-bearing endpoints (`all 19 covered`); D3 no over-broad entry; D4/D5 the reset and password-setting sets are complete. |
+| **G probes: no bypass through the body-`userId` endpoints** | PASS | G1 `GET-access-token` with a body `userId` and no session: `status=400`; G2 with the session cookie: `status=401`; G3 `refresh-token` with a body `userId`: `status=400`; G4 `verify-password` with a deactivated user's cookie: `status=401`; G5 `/set-password` is not on the HTTP surface (`status=404`). |
+
+### Counting
+
+74 probes: 48 in the main posture, 7 (F9), 4 (F2e), 4 (E), 8 (diff scan), 3 (F11: two refusals plus the positive control).
+
+```
+main posture: total=48 pass=48 fail=0
+```
+
+## The leftover Auth.js env vars (the parallel verifier's warning)
+
+The card asked me to report any security behaviour that depends on leftover `AUTH_URL`, `AUTH_SECRET` or `AUTH_TRUST_HOST`.
+
+- `AUTH_TRUST_HOST` is **inert**. `grep -rn "AUTH_TRUST_HOST" app lib scripts tests db` -> 0 references, and `grep -rn "AUTH_TRUST_HOST" node_modules/better-auth/dist node_modules/@better-auth/core/dist` -> 0 references. It is an Auth.js variable that Better Auth 1.7.10 does not read. (E1 PASS, E2 PASS.)
+- `AUTH_SECRET` is a real alias: `lib/auth/server.ts:130` reads `BETTER_AUTH_SECRET ?? AUTH_SECRET`. With only `AUTH_SECRET` set, the boot check still refuses a short secret and the app otherwise behaves identically.
+- `AUTH_URL` is a real alias for `BETTER_AUTH_URL` (`lib/auth/server.ts:143`, and the reset-link origin at `:174-176`).
+- **The one behaviour that does depend on them is the trusted origin.** With only `AUTH_URL` set (no `BETTER_AUTH_URL`), the origin check accepts the app's own origin: E3 `status=401` (throttled per account), E4 `body=null` (an anonymous `get-session` returns no session).
+
+The trap is the reverse direction, and it is a real operational hazard, not a theoretical one: **if `BETTER_AUTH_URL` and `AUTH_URL` disagree, the app trusts `BETTER_AUTH_URL`** (`??` takes the first). I hit this accidentally: my first legacy-env server inherited `BETTER_AUTH_URL=http://127.0.0.1:3680` from the ambient shell while `AUTH_URL` said 3687, and every auth call answered `403 INVALID_ORIGIN` with the log line `Invalid origin: http://127.0.0.1:3687`. A deployment that sets a stale `BETTER_AUTH_URL` next to a correct `AUTH_URL` would serve 403s on every auth endpoint, and would mint reset links pointing at the stale host. No security guarantee is bypassed (the origin check fails closed), but it is a configuration landmine worth naming in the README. See O3.
+
+## Observations (not blocking)
+
+**O1. F11: the process refuses to serve but does not exit.** The fix card's acceptance was "next start in production exits non-zero without a secret". What the code does: `assertAuthSecretConfigured()` throws at module load, and `instrumentation.ts` calls it from `register()`. Next.js 16 catches the instrumentation failure (`node_modules/next/dist/server/next-server.js:502`: `this.prepare().catch((err) => { console.error('Failed to prepare server', err); })`), so the process **stays alive and the port stays open**, but every route answers `500 Internal Server Error` and the refusal is on stderr. The security guarantee holds (nothing is served, no auth path works), and the positive control proves the check is load-bearing. But "exits non-zero" is not what the code does: a supervisor that only watches the exit code would see a healthy process that serves 500s, and a health check that only tests "is the port open" would see it as up. Recommend either an explicit `process.exit(1)` in `instrumentation.ts` after the throw, or a health endpoint that reflects the failed prepare. Status: **PASS on the security behaviour, deviation from the stated acceptance**.
+
+**O2. `SESSION_BOUND_PATHS` contains a dead entry.** `/set-password` is in the list, but Better Auth's `setPassword` is a `createAuthEndpoint.serverOnly` endpoint with **no path**, so `ctx.path` can never equal `/set-password` and the entry never matches. It is harmless (D3b confirms the endpoint is not routable, and G5 confirms `POST /api/auth/set-password` is a 404), but it is dead weight in a security-critical list, and it will mislead the next reader who greps the list to find a real endpoint. The other 19 entries are live and correct.
+
+**O3. `BETTER_AUTH_URL` and `AUTH_URL` are both read, and they can disagree.** `lib/auth/server.ts:143` uses `process.env.BETTER_AUTH_URL ?? process.env.AUTH_URL` and `:174-176` does the same for the reset-link origin. A deployment that sets both to different values silently uses the first. The failure mode is fail-closed (403 `INVALID_ORIGIN` on every auth call, reset links pointing at the wrong host), not a bypass, but it is easy to hit and the README does not say the two must agree. Recommend the README state that `BETTER_AUTH_URL` wins, or that only one of the two should be set.
+
+**O4. Round-1 findings this card does not re-test, and their status.** F10 (reset-response timing) is unchanged and remains the owner's open question; the owner ruling of 2026-09-30 allows existence disclosure, so it is noted only. F12 (D15 role matrix on server actions) and F13 (the pre-existing training-page name leak) are out of this PR's scope per the fix card and remain follow-ups. `sessions.token` is still stored raw (Better Auth's default); treat DB read access as session access. `member.remove` was dropped from the capability matrix as the fix card required, so the matrix is now 12 capabilities.
+
+**O5. The per-account throttle is 10/min, and it counts successful sign-ins too.** The bucket is consumed before the credential check, so a legitimate user who signs in more than 10 times a minute is locked out for the rest of the window. This is the standard trade for a per-account limiter and the fix card specified 10/min, so I am not treating it as a defect; it is worth a note for anyone who expects a human to sign in repeatedly from one account.
+
+## Not covered
+
+- The PR's own unit, integration and e2e suites were not re-run here. That is the functional verifier's lane (it reported the leftover-env concern I checked above). My scope was the security probes the card names.
+- Full git-history secret scan (gitleaks is not installed). I scanned the `ba3b3f7` diff only, as the card asks.
+- MFA and lockout (PR-004, PR-014 beyond the limiter) are out of this PR's built scope.
+- Mobile bearer refresh rotation is deferred by the 02:12 ruling.
+- The hosting choice (which proxy, which trusted header) is still the owner's. `AUTH_TRUSTED_IP_HEADER` is documented in the README and `.env.example` and defaults to trusting nothing, which is the safe default, but a production host behind a proxy must set it or the per-IP limiter stays off. The per-account throttle covers the gap in the meantime.
+
+## Cleanup
+
+- Every server I started was stopped: `ss -ltn | grep -E ':369[0-9]'` returns nothing. The card's 3671 and the database `app_pr05sec2` were already in use by a parallel verifier run and were left untouched (3671 is still listening).
+- Database `app_pr05sec2b` dropped: `psql -h 127.0.0.1 -p 5433 -U app -d postgres -c "DROP DATABASE IF EXISTS app_pr05sec2b;"` -> `DROP DATABASE`. (The drop first failed with "being accessed by other users": two orphaned `next-server` processes I had started earlier still held idle Prisma connections. Both were killed, the session count went to 0, and the drop then succeeded.)
+- Probe scripts and raw results live in `/home/nexuslink/.hermes/cache/scratch/pr05sec2/` and `/home/nexuslink/.hermes/cache/scratch/pr05sec2-tools/`, which are pruned after 24 h.
+- The worktree was not modified: `git status --short` in `/home/nexuslink/vari8-worktrees/pr-05-auth-api` shows `?? icm/05-build/reports/PR-05-secverify-2.md` (mine) and `?? icm/05-build/reports/PR-05-verify-2.md` (the other verifier's, not mine). HEAD is still `bf93d2a`. This report is the only file I added, and it is left untracked as the card asks. Nothing was committed, pushed or merged.
