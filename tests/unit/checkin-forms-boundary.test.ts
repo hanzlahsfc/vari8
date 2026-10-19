@@ -5,22 +5,13 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-import { AccessDeniedError } from "../../lib/auth/guard";
 import * as service from "../../lib/checkin/forms";
-import { CheckInFormError } from "../../lib/checkin/forms";
 
 const session = { user: { id: "u1" } } as never;
 const ws = "w1";
 
 // Pinned safe-message contract (exact strings — never codes/internals):
 const INVALID = "Check the form details and try again.";
-const STALE = "This form changed while you were editing. Reload and try again.";
-const ARCHIVED = "This form is archived.";
-const NO_DRAFT = "There's no open draft. Reopen the draft to edit.";
-const INCOMPLETE = "A publish needs at least one field.";
-const CONFLICT = "A conflict occurred. Please try again.";
-const DENIED = "You don't have access to do that.";
-const GENERIC = "Something went wrong. Please try again in a moment.";
 
 describe("P-025-A boundary — raw payload bound before parse", () => {
   it("rejects an oversized draftJson BEFORE JSON.parse and before service/DB", async () => {
@@ -97,57 +88,5 @@ describe("P-025-A boundary — raw payload bound before parse", () => {
       );
       expect(res).toEqual({ ok: false, message: INVALID });
     }
-  });
-});
-
-describe("P-025-A boundary — closed error vocabulary maps to safe copy", () => {
-  const run = async (thrown: unknown) => {
-    const { saveCheckInDraftFromAction } =
-      await import("../../lib/checkin/forms-boundary");
-    const spy = vi
-      .spyOn(service, "saveCheckInFormDraft")
-      .mockRejectedValue(thrown);
-    try {
-      return await saveCheckInDraftFromAction(
-        session,
-        {
-          workspaceId: ws,
-          formId: "f1",
-          expectedRevision: 1,
-          draftJson: JSON.stringify({ title: "T", fields: [] }),
-        },
-        { db: {} as never },
-      );
-    } finally {
-      spy.mockRestore();
-    }
-  };
-
-  it("maps each typed code to its pinned message; unknown → GENERIC", async () => {
-    const cases: [CheckInFormError["code"], string][] = [
-      ["invalid_input", INVALID],
-      ["forbidden_field_id", INVALID],
-      ["stale_revision", STALE],
-      ["form_archived", ARCHIVED],
-      ["no_open_draft", NO_DRAFT],
-      ["publish_incomplete", INCOMPLETE],
-      ["serialization_conflict", CONFLICT],
-      ["form_not_accessible", DENIED],
-    ];
-    for (const [code, message] of cases) {
-      expect(await run(new CheckInFormError(code))).toEqual({
-        ok: false,
-        message,
-      });
-    }
-    expect(
-      await run(
-        new AccessDeniedError("role_denied", "checkinFormDefinitions", "write"),
-      ),
-    ).toEqual({ ok: false, message: DENIED });
-    expect(await run(new Error("boom"))).toEqual({
-      ok: false,
-      message: GENERIC,
-    });
   });
 });

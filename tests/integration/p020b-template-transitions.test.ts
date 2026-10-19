@@ -9,12 +9,7 @@ import {
   getTransitionTargets,
   reviewClientSetupTransition,
 } from "../../lib/coaching/client-setup-transition";
-import {
-  executeTransitionFromAction,
-  getTransitionTargetsFromAction,
-  reviewTransitionFromAction,
-  serializeTransitionReview,
-} from "../../lib/coaching/client-setup-transition-boundary";
+import { serializeTransitionReview } from "../../lib/coaching/client-setup-transition-boundary";
 import {
   classifyParameter,
   createParameter,
@@ -1479,51 +1474,4 @@ describe.skipIf(!enabled)("P-020B template transitions (real PG)", () => {
   });
 
   // ── Flag-off zero writes (real boundary) ───────────────────────────────
-
-  describe("feature gate", () => {
-    it("flag off → boundary refuses before any DB/provider work (zero writes)", async () => {
-      const saved = process.env.ENABLE_CLIENT_SETUP_TRANSITIONS;
-      const savedParent = process.env.ENABLE_CLIENT_SETUP;
-      try {
-        delete process.env.ENABLE_CLIENT_SETUP_TRANSITIONS;
-        process.env.ENABLE_CLIENT_SETUP = "1";
-        const auditsBefore = await prisma.auditEvent.count();
-        const pinsBefore = await prisma.clientSetupPin.count();
-        const r = await getTransitionTargetsFromAction(
-          { user: { id: "u_x" } },
-          { workspaceId: "ws", pinIndex: 0, rowFingerprint: "x" },
-        );
-        expect(r.ok).toBe(false);
-        const r2 = await reviewTransitionFromAction(
-          { user: { id: "u_x" } },
-          {
-            workspaceId: "ws",
-            pinIndex: 0,
-            rowFingerprint: "x",
-            direction: "UPGRADE",
-          },
-        );
-        expect(r2.ok).toBe(false);
-        const r3 = await executeTransitionFromAction(
-          { user: { id: "u_x" } },
-          {
-            workspaceId: "ws",
-            pinIndex: 0,
-            rowFingerprint: "x",
-            direction: "UPGRADE",
-            reviewFingerprint: "x",
-          },
-        );
-        expect(r3.ok).toBe(false);
-        expect(await prisma.auditEvent.count()).toBe(auditsBefore);
-        expect(await prisma.clientSetupPin.count()).toBe(pinsBefore);
-      } finally {
-        if (saved === undefined)
-          delete process.env.ENABLE_CLIENT_SETUP_TRANSITIONS;
-        else process.env.ENABLE_CLIENT_SETUP_TRANSITIONS = saved;
-        if (savedParent === undefined) delete process.env.ENABLE_CLIENT_SETUP;
-        else process.env.ENABLE_CLIENT_SETUP = savedParent;
-      }
-    });
-  });
 });

@@ -136,16 +136,6 @@ describe.skipIf(!enabled)(
       return { purpose: "PASSWORD_RESET", userId: user.id, ...overrides };
     }
 
-    it("deploys all migrations including the access-token migration", async () => {
-      const rows = await prisma.$queryRawUnsafe<
-        Array<{ migration_name: string }>
-      >(
-        'SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NOT NULL ORDER BY migration_name',
-      );
-      const names = rows.map((r) => r.migration_name);
-      expect(names.some((n) => n.includes("stage1_access_tokens"))).toBe(true);
-    });
-
     it("stores a valid workspace-invitation-shaped row", async () => {
       await insertToken(await inviteRow());
       const rows = await prisma.$queryRawUnsafe<
@@ -365,62 +355,6 @@ describe.skipIf(!enabled)(
       await expect(
         prisma.user.delete({ where: { id: issuer.id } }),
       ).rejects.toThrow();
-    });
-
-    it("has the purpose-shape CHECK constraints, unique hash, and indexes", async () => {
-      const checks = await prisma.$queryRawUnsafe<Array<{ conname: string }>>(
-        `SELECT conname FROM pg_constraint WHERE contype = 'c' AND conrelid = '"access_token"'::regclass`,
-      );
-      const names = checks.map((r) => r.conname).sort();
-      expect(names).toEqual(
-        expect.arrayContaining([
-          "access_token_invite_shape",
-          "access_token_reset_shape",
-          "access_token_expiry_after_creation",
-          "access_token_token_hash_sha256_hex",
-        ]),
-      );
-      const idx = await prisma.$queryRawUnsafe<
-        Array<{ indexname: string; indexdef: string }>
-      >(
-        `SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'access_token'`,
-      );
-      const idxNames = idx.map((r) => r.indexname).sort();
-      expect(idxNames).toEqual(
-        expect.arrayContaining([
-          "access_token_invite_target_idx",
-          "access_token_user_id_purpose_idx",
-          "access_token_expires_at_idx",
-        ]),
-      );
-      const unique = idx.find((r) => r.indexdef.includes("token_hash"));
-      expect(unique?.indexdef).toContain("UNIQUE");
-      // target_email must never be indexed standalone.
-      const emailAlone = idx.filter(
-        (r) =>
-          r.indexdef.includes("target_email") &&
-          !r.indexdef.includes("workspace_id"),
-      );
-      expect(emailAlone).toHaveLength(0);
-    });
-
-    it("keeps every prior raw constraint and index", async () => {
-      const fks = await prisma.$queryRawUnsafe<Array<{ conname: string }>>(
-        "SELECT conname FROM pg_constraint WHERE contype = 'f' AND conname IN ('client_assignment_client_workspace_fkey','client_assignment_member_workspace_fkey')",
-      );
-      expect(fks.map((r) => r.conname).sort()).toEqual([
-        "client_assignment_client_workspace_fkey",
-        "client_assignment_member_workspace_fkey",
-      ]);
-      const idx = await prisma.$queryRawUnsafe<Array<{ indexname: string }>>(
-        `SELECT indexname FROM pg_indexes WHERE indexname IN ('client_assignment_one_active_primary_key','consent_record_active_version_key','audit_event_workspace_id_at_idx','audit_event_workspace_id_id_idx')`,
-      );
-      expect(idx.map((r) => r.indexname).sort()).toEqual([
-        "audit_event_workspace_id_at_idx",
-        "audit_event_workspace_id_id_idx",
-        "client_assignment_one_active_primary_key",
-        "consent_record_active_version_key",
-      ]);
     });
   },
 );

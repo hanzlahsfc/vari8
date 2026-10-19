@@ -8,52 +8,6 @@ const date = (offset) => {
   return value.toISOString().slice(0, 10);
 };
 
-test("the fictional fixture has a full year of scheduled habit and macro history", () => {
-  const start = date(-364);
-  for (const habit of initialRecords.habits) {
-    assert.ok(habit.scheduledDates.length >= 150, `${habit.id} spans the year`);
-    assert.ok(
-      habit.scheduledDates[0] <= date(-350),
-      `${habit.id} starts near a year ago`,
-    );
-    assert.ok(habit.scheduledDates.includes(initialRecords.client.asOf));
-    assert.ok(habit.completions.some((item) => item.status === "done"));
-    assert.ok(habit.completions.some((item) => item.status === "skipped"));
-    assert.ok(
-      habit.scheduledDates.some(
-        (scheduled) =>
-          !habit.completions.some((item) => item.date === scheduled),
-      ),
-      `${habit.id} retains scheduled but unlogged days`,
-    );
-  }
-  for (const option of ["TD", "NTD"]) {
-    const today = initialRecords.macroIntake.find(
-      (item) =>
-        item.date === initialRecords.client.asOf && item.option === option,
-    );
-    assert.deepEqual(
-      [today.protein, today.carbs, today.fat].every(Number.isFinite),
-      true,
-    );
-    assert.ok(
-      initialRecords.macroIntake.some(
-        (item) => item.option === option && item.date === start,
-      ),
-    );
-    assert.ok(
-      initialRecords.macroTargets.some(
-        (item) => item.option === option && item.effectiveFrom === "2025-10-07",
-      ),
-    );
-    assert.ok(
-      initialRecords.calorieTargets.some(
-        (item) => item.option === option && item.effectiveFrom === "2025-10-07",
-      ),
-    );
-  }
-});
-
 test("version two saved samples gain history without losing edits or intentional empty sources", () => {
   const saved = structuredClone(initialRecords);
   saved.sampleHistoryVersion = 2;

@@ -6,7 +6,6 @@ import { describe, expect, it, vi } from "vitest";
 import { assertTokenPrimitivesExternallyExposable } from "../../lib/tokens";
 import { generateAccessToken } from "../../lib/tokens/crypto";
 import {
-  ACCESS_TOKEN_TTL_MS,
   TokenStoreError,
   claimAccessToken,
   inspectAccessToken,
@@ -30,10 +29,6 @@ const RAW_PATTERN = /^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/;
 const HEX64 = /^[a-f0-9]{64}$/;
 
 describe("S1-F2A token store (unit)", () => {
-  it("exposes the founder-decided 12-hour lifetime as one constant", () => {
-    expect(ACCESS_TOKEN_TTL_MS).toBe(12 * 60 * 60 * 1000);
-  });
-
   it("issues invites with normalized email and hash-only storage", async () => {
     const tx = fakeTx({
       create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({

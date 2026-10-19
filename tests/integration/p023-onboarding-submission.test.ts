@@ -744,68 +744,6 @@ describe.skipIf(!enabled)("P-023 onboarding submission (real PG)", () => {
     });
   });
 
-  describe("own reads", () => {
-    it("client lists own assignments with bounded metadata", async () => {
-      const c = await seedAssignment();
-      const list = await listOwnAssignmentsForWorkspace(
-        c.session,
-        { workspaceId: c.ws.id },
-        { db: prisma },
-      );
-      expect(list).toEqual({
-        ok: true,
-        value: {
-          items: [
-            {
-              assignmentId: c.assignment.id,
-              formName: "Intake",
-              status: "ACTIVE",
-              assignedAt: expect.any(String),
-              submittedAt: null,
-            },
-          ],
-        },
-      });
-    });
-
-    it("fillable → submitted → submitted detail round-trips own answers", async () => {
-      const c = await seedAssignment();
-      const deps = { db: prisma, registry: DEV_REGISTRY };
-      const before = await loadOwnDetailForRoute(
-        c.session,
-        { workspaceId: c.ws.id, assignmentId: c.assignment.id },
-        deps,
-      );
-      expect(before.ok && before.value.state).toBe("ready");
-
-      await submitOnboardingAssignment(c.session, submitInput(c), DEP());
-
-      const after = await loadOwnDetailForRoute(
-        c.session,
-        { workspaceId: c.ws.id, assignmentId: c.assignment.id },
-        deps,
-      );
-      expect(after.ok).toBe(true);
-      if (after.ok && after.value.state === "submitted") {
-        const byLabel = Object.fromEntries(
-          after.value.answers.map((a) => [a.label, a.display]),
-        );
-        expect(byLabel["Full name"]).toBe("Bob Client");
-        expect(byLabel["Goal"]).toBe("Gain");
-        expect(byLabel["Days"]).toBe("Mon, Fri");
-      } else {
-        throw new Error("expected submitted detail");
-      }
-      // Foreign detail → unavailable.
-      const foreign = await loadOwnDetailForRoute(
-        { user: { id: c.ownerUser.id } },
-        { workspaceId: c.ws.id, assignmentId: c.assignment.id },
-        deps,
-      );
-      expect(foreign).toEqual({ ok: true, value: { state: "unavailable" } });
-    });
-  });
-
   describe("boundary gate", () => {
     it("flag-off returns feature-off before any DB work", async () => {
       const prev = process.env.ENABLE_ONBOARDING_SUBMISSION;

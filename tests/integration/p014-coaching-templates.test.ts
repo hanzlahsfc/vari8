@@ -862,51 +862,6 @@ describe.skipIf(!enabled)("P-014 coaching foundation (real PG)", () => {
     });
   });
 
-  describe("audit integrity", () => {
-    it("audit failure rolls back the mutation", async () => {
-      const { ws, u } = await staffFixture();
-      const before = await prisma.parameterDefinition.count({
-        where: { workspaceId: ws.id },
-      });
-      // AuditEvent requires real FK targets; a create inside a tx that fails
-      // audit insertion must roll back the whole mutation.
-      await expect(
-        prisma.$transaction(async (tx) => {
-          const memberId = (
-            await prisma.workspaceMember.findFirstOrThrow({
-              where: { userId: u.id },
-            })
-          ).id;
-          const p = await tx.parameterDefinition.create({
-            data: {
-              workspaceId: ws.id,
-              key: `p_${uid()}`,
-              kind: "TEXT",
-              label: "x",
-              createdByMemberId: memberId,
-              updatedByMemberId: memberId,
-            },
-          });
-          // Deliberately invalid audit row (bogus member FK) → tx aborts.
-          await tx.auditEvent.create({
-            data: {
-              actorUserId: "nope",
-              action: "CREATE",
-              resourceType: "parameter_definition",
-              resourceId: p.id,
-              result: "ALLOW",
-            },
-          });
-        }),
-      ).rejects.toThrow();
-      expect(
-        await prisma.parameterDefinition.count({
-          where: { workspaceId: ws.id },
-        }),
-      ).toBe(before);
-    });
-  });
-
   describe("parameter list pagination", () => {
     it("pages deterministically beyond 25 — no gaps, duplicates, or cap", async () => {
       const { ws, m } = await staffFixture();

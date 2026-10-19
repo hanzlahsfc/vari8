@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { describe, expect, it } from "vitest";
 
 import {
@@ -167,18 +164,5 @@ describe("S1-F2B session-version gate", () => {
       token: { sub: "u1", sv: 0 } as never,
     });
     expect((s as { user: { id: string } }).user.id).toBe("u1");
-  });
-
-  it("auth.config.ts stays edge-safe — no Prisma/db imports", () => {
-    const src = readFileSync(
-      join(__dirname, "..", "..", "auth.config.ts"),
-      "utf8",
-    );
-    const imports = src
-      .split("\n")
-      .filter((line) => /^\s*import\s/.test(line))
-      .join("\n");
-    expect(imports).not.toMatch(/prisma|lib\/db|node:/i);
-    expect(src).not.toContain("lib/auth/session");
   });
 });

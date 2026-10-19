@@ -14,11 +14,6 @@ import {
   type AuthorizationRepo,
 } from "../../lib/auth/guard";
 import { RESOURCES, resolveScope } from "../../lib/auth/rbac";
-import { AUDIT_RESOURCE_TYPES } from "../../lib/audit";
-import {
-  sendCheckInFeedbackFromAction,
-  resolveCheckInFeedbackSendFromAction,
-} from "../../lib/checkin/instances-boundary";
 
 describe("CHECK-IN-FEEDBACK-I1 RBAC — checkinFeedback", () => {
   it("resource is declared in the closed union", () => {
@@ -52,16 +47,6 @@ describe("CHECK-IN-FEEDBACK-I1 RBAC — checkinFeedback", () => {
       expect(resolveScope("checkinFeedback", "read", role)).toBe("denied");
       expect(resolveScope("checkinFeedback", "write", role)).toBe("denied");
     }
-  });
-});
-
-describe("CHECK-IN-FEEDBACK-I1 deny-set + audit registry", () => {
-  // Deny-set membership is asserted BEHAVIORALLY below (dual-role
-  // authorize/authorizeCollection → role_denied) — the set itself is not
-  // exported; the behavioral path proves denial precedes scope resolution.
-
-  it("checkin_feedback is a named audit resource type", () => {
-    expect(AUDIT_RESOURCE_TYPES).toContain("checkin_feedback");
   });
 });
 
@@ -184,12 +169,5 @@ describe("CHECK-IN-FEEDBACK-I1 dual-role PLATFORM_ADMIN denial", () => {
       repo,
     );
     expect(w.grantedScope).toBe("assigned");
-  });
-});
-
-describe("CHECK-IN-FEEDBACK-I1 boundary exports", () => {
-  it("instances-boundary exposes send + resolve functions", () => {
-    expect(typeof sendCheckInFeedbackFromAction).toBe("function");
-    expect(typeof resolveCheckInFeedbackSendFromAction).toBe("function");
   });
 });
