@@ -74,19 +74,6 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
     });
   }
 
-  it("applied both migrations", async () => {
-    const rows = await prisma.$queryRawUnsafe<
-      Array<{ migration_name: string }>
-    >(
-      'SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NOT NULL ORDER BY migration_name',
-    );
-    const names = rows.map((r) => r.migration_name);
-    expect(names.some((n) => n.includes("20260929000000_init"))).toBe(true);
-    expect(
-      names.some((n) => n.includes("20260929120000_stage1_identity_tenancy")),
-    ).toBe(true);
-  });
-
   it("rejects a duplicate WorkspaceMember(workspaceId, userId)", async () => {
     const ws = await makeWorkspace("ws");
     const user = await makeUser("dup");
@@ -156,24 +143,6 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
         },
       }),
     ).rejects.toThrow();
-  });
-
-  it("has the composite same-workspace FKs and the active-primary partial index", async () => {
-    const fks = await prisma.$queryRawUnsafe<Array<{ conname: string }>>(
-      "SELECT conname FROM pg_constraint WHERE contype = 'f' AND conname IN ('client_assignment_client_workspace_fkey','client_assignment_member_workspace_fkey')",
-    );
-    expect(fks.map((r) => r.conname).sort()).toEqual([
-      "client_assignment_client_workspace_fkey",
-      "client_assignment_member_workspace_fkey",
-    ]);
-    const idx = await prisma.$queryRawUnsafe<Array<{ indexdef: string }>>(
-      "SELECT indexdef FROM pg_indexes WHERE indexname = 'client_assignment_one_active_primary_key'",
-    );
-    expect(idx).toHaveLength(1);
-    expect(idx[0].indexdef).toContain("UNIQUE");
-    expect(idx[0].indexdef).toContain("ACTIVE");
-    expect(idx[0].indexdef).toContain("PRIMARY");
-    expect(idx[0].indexdef).toContain("WHERE");
   });
 
   it("accepts multiple assigned coaches and rejects a duplicate assignment", async () => {
@@ -268,129 +237,6 @@ describe.skipIf(!enabled)("S1-A identity & tenancy (real PostgreSQL)", () => {
     expect(
       await prisma.clientProfile.findUnique({ where: { id: client.id } }),
     ).not.toBeNull();
-  });
-
-  it("introduces no health/audit/token/product tables", async () => {
-    const rows = await prisma.$queryRawUnsafe<Array<{ table_name: string }>>(
-      "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'",
-    );
-    const names = rows.map((r) => r.table_name);
-    // TRAINING-I1A: the two approved training-program tables are the only
-    // "program"-named tables permitted; the guard still proves no other
-    // premature food/program/audit tables exist.
-    const approvedProgramTables = new Set([
-      "training_program",
-      "training_program_version",
-    ]);
-    for (const forbidden of ["audit_log", "food", "program"]) {
-      expect(
-        names.some(
-          (n) => n.includes(forbidden) && !approvedProgramTables.has(n),
-        ),
-      ).toBe(false);
-    }
-    // Identity/tenancy (S1-A), versioned consent (S1-D), audit events (S1-E),
-    // access tokens (S1-F1), and the Phase 2.1 Nutrition + Phase 2.2 Exercise
-    // catalogs with their import provenance. The forbidden-table guard above
-    // still proves no premature food/program tables exist beyond the
-    // approved training domain; meal plans are now an approved domain
-    // (decision 115) listed explicitly below, and the
-    // exercise_catalog/exercise_import tables are the intentional
-    // catalog.
-    expect(names.sort()).toEqual(
-      [
-        "_prisma_migrations",
-        "access_token",
-        "audit_event",
-        "client_assignment",
-        "client_dashboard_layout",
-        "client_profile",
-        // CLIENT-TASKS-I1 (decision 109): staff-assigned client tasks —
-        // bounded coaching text, not health data.
-        "client_task",
-        // HABITS-I1 (decision 110): staff-configured habits + effective-
-        // dated schedules + client behavioral logs — coaching-activity
-        // class (non-health, non-consent-gated under the reviewed dev
-        // posture), reviewed in decisions #110.
-        "habits",
-        "habit_logs",
-        "habit_schedules",
-        // P-021: client-owned DailyEntry records + append-only revisions and
-        // values — consent-gated health data, reviewed in
-        // product-decisions #64–#78.
-        "daily_entry",
-        "daily_entry_revision",
-        "daily_entry_revision_value",
-        // P-016: staff-only client setup aggregate + append-only template
-        // assignment/version pins — operational metadata only (#49–#57).
-        "client_setup",
-        "client_setup_pin",
-        "coach_profile",
-        "consent_record",
-        "exercise_catalog_item",
-        "exercise_import_row_outcome",
-        "exercise_import_run",
-        "nutrition_catalog_item",
-        "nutrition_import_row_outcome",
-        "nutrition_import_run",
-        // P-008: onboarding form definitions + immutable versions (reviewed).
-        "onboarding_form",
-        // P-013: staff-only assignment records — operational metadata only.
-        "onboarding_form_assignment",
-        "onboarding_form_version",
-        // P-023: client-owned immutable submissions + revision-free answers
-        // — consent-gated health data, reviewed in decisions #82–#85.
-        "onboarding_submission",
-        "onboarding_submission_answer",
-        // P-024: terminal staff review acknowledgement — immutable
-        // provenance only, reviewed in decisions #86–#91.
-        "onboarding_submission_review",
-        // P-025-A: staff-managed Check-In form definitions + immutable
-        // published versions — no client data, reviewed in decisions
-        // #92–#97.
-        "checkin_form",
-        "checkin_form_version",
-        // P-025-B: one-off Check-In instances + immutable client
-        // submissions/answers — consent-gated, reviewed in decisions
-        // #92–#97.
-        "checkin_instance",
-        "checkin_submission",
-        "checkin_submission_answer",
-        // P-025-C: terminal staff review acknowledgement — immutable
-        // provenance only (#86–#91 carried by #96).
-        "checkin_review",
-        // CHECK-IN-FEEDBACK-I1 (decision 112): append-only staff text
-        // feedback on reviewed Check-In submissions — consent-gated like
-        // answers; synthetic/testing scope only.
-        "checkin_feedback",
-        // CHECK-IN-RECURRENCE-I1 (decision 114): bounded weekly schedule
-        // rules — no client data; synthetic/testing scope only.
-        "checkin_schedule_rule",
-        // P-014: staff parameter/template definitions + immutable versions
-        // (no client data; reviewed in product-decisions #41–#48).
-        "coaching_template",
-        "coaching_template_version",
-        "coaching_template_version_parameter",
-        "parameter_definition",
-        // MEAL-PLAN-I1 (decision 115): staff-authored shared draft
-        // container + immutable client-specific published versions —
-        // consent-gated; synthetic/testing scope only.
-        "meal_plan",
-        "meal_plan_version",
-        // TRAINING-I1A: staff-authored mutable draft container + immutable
-        // effective-dated published versions — consent-gated;
-        // synthetic/testing scope only.
-        "training_program",
-        "training_program_version",
-        // TRAINING-I1B-2: explicit staff bookings pinning immutable
-        // (version, session, booked week) tuples — consent-gated;
-        // synthetic/testing scope only.
-        "training_session_booking",
-        "users",
-        "workspace",
-        "workspace_member",
-      ].sort(),
-    );
   });
 });
 

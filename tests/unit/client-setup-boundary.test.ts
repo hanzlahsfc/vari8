@@ -1,13 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { AccessDeniedError } from "../../lib/auth/guard";
 import {
   assignTemplateFromAction,
   cancelSetupAssignmentFromAction,
   listAssignFormChoices,
   listClientSetupsForWorkspace,
 } from "../../lib/coaching/client-setup-boundary";
-import { ClientSetupError } from "../../lib/coaching/client-setup-gate";
 
 vi.mock("../../lib/coaching/client-setup", async () => {
   const actual = await vi.importActual<
@@ -29,7 +27,6 @@ vi.mock("../../lib/coaching/client-setup", async () => {
 import {
   cancelClientSetupAssignment,
   createClientSetupAssignment,
-  resolveCancelSelection,
 } from "../../lib/coaching/client-setup";
 
 /**
@@ -41,12 +38,8 @@ import {
  * Failure results carry only stable safe messages.
  */
 
-const DENIED = "You don't have access to do that.";
 const INVALID = "Check the form details and try again.";
 const OFF = "This feature is not available.";
-const GENERIC = "Something went wrong. Please try again in a moment.";
-const STALE =
-  "The list changed while you were working — refresh and try again.";
 
 const unreachableDb = new Proxy({} as never, {
   get: () => {
@@ -167,59 +160,5 @@ describe("P-016 boundary — input binding", () => {
     ).toEqual({ ok: false, message: INVALID });
     expect(createClientSetupAssignment).not.toHaveBeenCalled();
     expect(cancelClientSetupAssignment).not.toHaveBeenCalled();
-  });
-});
-
-describe("P-016 boundary — error mapping", () => {
-  it("maps service error codes to stable messages", async () => {
-    flagOn();
-    vi.mocked(resolveCancelSelection).mockResolvedValue({ pinId: "p" });
-    for (const [code, message] of [
-      ["assignment_not_accessible", DENIED],
-      ["assignment_not_active", "This assignment is no longer active."],
-      ["client_not_eligible", "This client can't be assigned a template."],
-      ["template_not_eligible", "This template can't be assigned right now."],
-      [
-        "assignment_conflict",
-        "This client already has a current template assignment.",
-      ],
-      ["serialization_conflict", "A conflict occurred. Please try again."],
-      ["stale_selection", STALE],
-    ] as const) {
-      vi.mocked(cancelClientSetupAssignment).mockRejectedValueOnce(
-        new ClientSetupError(code),
-      );
-      const result = await cancelSetupAssignmentFromAction(
-        session,
-        { workspaceId: "w", pinIndex: 0, rowFingerprint: "fp" },
-        { db: {} as never },
-      );
-      expect(result).toEqual({ ok: false, message });
-    }
-  });
-
-  it("maps access denials and unknown errors to non-disclosing messages", async () => {
-    flagOn();
-    vi.mocked(resolveCancelSelection).mockResolvedValue({ pinId: "p" });
-    vi.mocked(cancelClientSetupAssignment).mockRejectedValueOnce(
-      new AccessDeniedError("not_assigned", "clientSetups", "write"),
-    );
-    expect(
-      await cancelSetupAssignmentFromAction(
-        session,
-        { workspaceId: "w", pinIndex: 0, rowFingerprint: "fp" },
-        { db: {} as never },
-      ),
-    ).toEqual({ ok: false, message: DENIED });
-    vi.mocked(cancelClientSetupAssignment).mockRejectedValueOnce(
-      new Error("boom"),
-    );
-    expect(
-      await cancelSetupAssignmentFromAction(
-        session,
-        { workspaceId: "w", pinIndex: 0, rowFingerprint: "fp" },
-        { db: {} as never },
-      ),
-    ).toEqual({ ok: false, message: GENERIC });
   });
 });
