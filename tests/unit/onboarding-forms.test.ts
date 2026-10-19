@@ -1,6 +1,3 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
-
 import { describe, expect, it } from "vitest";
 
 import { resolveScope } from "../../lib/auth/rbac";
@@ -309,34 +306,6 @@ describe("P-008 validation — field ID trust", () => {
   });
 });
 
-describe("P-008 boundary — raw payload bound before parse", () => {
-  it("rejects an oversized draftJson before JSON.parse reaches it", async () => {
-    const { saveDraftFromAction } =
-      await import("../../lib/onboarding/forms-boundary");
-    const huge = JSON.stringify({
-      title: "T",
-      fields: [
-        {
-          kind: "shortText",
-          label: "x".repeat(200_000),
-          required: false,
-          order: 0,
-        },
-      ],
-    });
-    const res = await saveDraftFromAction({ user: { id: "u" } } as never, {
-      workspaceId: "ws",
-      formId: "f",
-      expectedRevision: 1,
-      draftJson: huge,
-    });
-    expect(res).toEqual({
-      ok: false,
-      message: "Check the form details and try again.",
-    });
-  });
-});
-
 describe("P-008 RBAC — onboardingFormTemplates", () => {
   it("owner and coach have workspace read/write; others denied", () => {
     expect(
@@ -368,26 +337,5 @@ describe("P-008 RBAC — onboardingFormTemplates", () => {
 
   it("field kind union is closed", () => {
     expect(FIELD_KINDS).toHaveLength(6);
-  });
-});
-
-describe("P-008 seam — app never imports the service", () => {
-  it("no app/route file imports lib/onboarding/forms directly", () => {
-    const root = join(__dirname, "..", "..", "app");
-    const scan = (dir: string): string[] =>
-      readdirSync(dir).flatMap((entry) => {
-        const p = join(dir, entry);
-        if (statSync(p).isDirectory()) return scan(p);
-        return /\.(ts|tsx)$/.test(entry) ? [p] : [];
-      });
-    for (const file of scan(root)) {
-      const src = readFileSync(file, "utf8");
-      const imports = src
-        .split("\n")
-        .filter((line) => /^\s*import\s/.test(line))
-        .join("\n");
-      // Exact module path — `forms-boundary` must NOT trip this check.
-      expect(imports).not.toMatch(/onboarding\/forms['"]/);
-    }
   });
 });

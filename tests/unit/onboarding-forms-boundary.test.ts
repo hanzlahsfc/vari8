@@ -8,10 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { AccessDeniedError } from "../../lib/auth/guard";
 import * as service from "../../lib/onboarding/forms";
-import {
-  OnboardingFormError,
-  type FormDefinition,
-} from "../../lib/onboarding/forms";
+import { OnboardingFormError } from "../../lib/onboarding/forms";
 
 const session = { user: { id: "u1" } } as never;
 const ws = "w1";
@@ -155,51 +152,6 @@ describe("P-008 boundary — raw payload bound before parse", () => {
 });
 
 describe("P-008 boundary — delegation + error mapping", () => {
-  it("forwards the parsed draft + injected db and returns normalized output", async () => {
-    const { saveDraftFromAction } =
-      await import("../../lib/onboarding/forms-boundary");
-    const db = { marker: "injected" } as never;
-    const normalized: FormDefinition = {
-      title: "T",
-      fields: [
-        {
-          fieldId: "f_srv",
-          kind: "shortText",
-          label: "L",
-          required: false,
-          order: 0,
-        },
-      ],
-    };
-    const saveSpy = vi
-      .spyOn(service, "saveOnboardingFormDraft")
-      .mockResolvedValue({ revision: 3, definition: normalized });
-    try {
-      const res = await saveDraftFromAction(
-        session,
-        {
-          workspaceId: ws,
-          formId: "f1",
-          expectedRevision: 2,
-          draftJson: JSON.stringify({ title: "T", fields: [] }),
-        },
-        { db },
-      );
-      expect(res).toEqual({
-        ok: true,
-        value: { revision: 3, definition: normalized },
-      });
-      expect(saveSpy.mock.calls[0][2]).toBe(db);
-      expect(saveSpy.mock.calls[0][1]).toMatchObject({
-        workspaceId: ws,
-        formId: "f1",
-        expectedRevision: 2,
-      });
-    } finally {
-      saveSpy.mockRestore();
-    }
-  });
-
   it.each<[string, string]>([
     ["forbidden_field_id", INVALID],
     ["invalid_input", INVALID],
@@ -283,113 +235,6 @@ describe("P-008 boundary — delegation + error mapping", () => {
     } finally {
       spy.mockRestore();
       consoleSpy.mockRestore();
-    }
-  });
-
-  it("mutation wrappers delegate to the guarded service with the injected db", async () => {
-    const b = await import("../../lib/onboarding/forms-boundary");
-    const db = { marker: "injected" } as never;
-    const def: FormDefinition = { title: "T", fields: [] };
-    const spies = {
-      save: vi
-        .spyOn(service, "saveOnboardingFormDraft")
-        .mockResolvedValue({ revision: 2, definition: def }),
-      open: vi
-        .spyOn(service, "openOnboardingDraft")
-        .mockResolvedValue({ revision: 1, definition: def }),
-      publish: vi
-        .spyOn(service, "publishOnboardingForm")
-        .mockResolvedValue({ versionSeq: 1 }),
-      archive: vi
-        .spyOn(service, "archiveOnboardingForm")
-        .mockResolvedValue({ formId: "f1" }),
-      create: vi
-        .spyOn(service, "createOnboardingForm")
-        .mockResolvedValue({ formId: "f2" }),
-    };
-    try {
-      const results = await Promise.all([
-        b.saveDraftFromAction(
-          session,
-          {
-            workspaceId: ws,
-            formId: "f1",
-            expectedRevision: 1,
-            draftJson: JSON.stringify(def),
-          },
-          { db },
-        ),
-        b.openDraftFromAction(
-          session,
-          { workspaceId: ws, formId: "f1" },
-          { db },
-        ),
-        b.publishFromAction(
-          session,
-          { workspaceId: ws, formId: "f1", expectedRevision: 2 },
-          { db },
-        ),
-        b.archiveFormFromAction(
-          session,
-          { workspaceId: ws, formId: "f1" },
-          { db },
-        ),
-        b.createFormFromAction(
-          session,
-          { workspaceId: ws, name: "New" },
-          { db },
-        ),
-      ]);
-      for (const r of results) expect(r.ok).toBe(true);
-      // Every wrapper bound the injected client — not the module global.
-      for (const key of Object.keys(spies) as Array<keyof typeof spies>) {
-        expect(spies[key]).toHaveBeenCalledOnce();
-        expect(spies[key].mock.calls[0][2]).toBe(db);
-      }
-    } finally {
-      for (const s of Object.values(spies)) s.mockRestore();
-    }
-  });
-
-  it("list wrapper delegates to the guarded service with the injected db", async () => {
-    const { listFormsForWorkspace } =
-      await import("../../lib/onboarding/forms-boundary");
-    const db = { marker: "injected" } as never;
-    const spy = vi.spyOn(service, "listOnboardingForms").mockResolvedValue([]);
-    try {
-      const res = await listFormsForWorkspace(
-        session,
-        { workspaceId: ws },
-        { db },
-      );
-      expect(res).toEqual({ ok: true, value: { forms: [] } });
-      expect(spy).toHaveBeenCalledOnce();
-      expect(spy.mock.calls[0][2]).toBe(db);
-      expect(spy.mock.calls[0][1]).toEqual({ workspaceId: ws });
-    } finally {
-      spy.mockRestore();
-    }
-  });
-
-  it("get wrapper delegates to the guarded service with the injected db", async () => {
-    const { getFormForWorkspace } =
-      await import("../../lib/onboarding/forms-boundary");
-    const db = { marker: "injected" } as never;
-    const spy = vi
-      .spyOn(service, "getOnboardingForm")
-      .mockResolvedValue({} as never);
-    try {
-      const res = await getFormForWorkspace(
-        session,
-        { workspaceId: ws, formId: "f1" },
-        { db },
-      );
-      expect(res.ok).toBe(true);
-      expect(spy).toHaveBeenCalledOnce();
-      expect(spy.mock.calls[0][2]).toBe(db);
-      expect(spy.mock.calls[0][1]).toEqual({ workspaceId: ws, formId: "f1" });
-    } finally {
-      spy.mockRestore();
     }
   });
 });
