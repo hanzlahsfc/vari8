@@ -113,6 +113,6 @@ FIX (P0 rows)
 
 ## Limits
 
-- Worktree has untracked files not in the PR (ORCHESTRATOR-STATE.md, audits/PRODREADY-TICKETS.md, cards/PR-02.md, cards/issue-ids.txt, tools/**pycache**). Not reviewed as part of the diff; ORCHESTRATOR-STATE.md:30 still says "no Sonnet".
+- Worktree has untracked files not in the PR (ORCHESTRATOR-STATE.md, audits/PRODREADY-TICKETS.md, cards/PR-02.md, cards/issue-ids.txt, `tools/__pycache__`). Not reviewed as part of the diff; ORCHESTRATOR-STATE.md:30 still says "no Sonnet".
 - Did not run the local gate, verify-local.sh or any Devin/Hermes CLI against the real board.
 - The `--release` and `--dry-run` runs used a stub `hermes` binary, so no kanban state was touched.

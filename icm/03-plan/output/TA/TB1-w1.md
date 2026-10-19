@@ -70,5 +70,5 @@ Anomalies:
 - every KEEP row has a failing mutation with named failed tests above.
 - worktree clean: `git status --porcelain` empty at end.
 - writes limited to this output file and /tmp scripts+logs
-  (/tmp/tb1-w1-mutate.sh, /tmp/tb1-w1-_.log, /tmp/tb1-w1-_.out).
+  (/tmp/tb1-w1-mutate.sh, `/tmp/tb1-w1-*.log`, `/tmp/tb1-w1-*.out`).
 - DB: only app_tb_tb1_w1 touched; left recreated and clean.
