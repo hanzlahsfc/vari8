@@ -126,12 +126,19 @@ export function CheckInFeedbackThread({
   const [moreError, setMoreError] = useState<string | null>(null);
   const [body, setBody] = useState("");
 
-  // Retry identity — one nonce per compose session (P3 §5).
-  const [nonce, setNonce] = useState<string>(() => crypto.randomUUID());
+  // Retry identity — one nonce per compose session (P3 §5). A stored
+  // marker means a prior dispatch's outcome is unknown, so the mount
+  // marker is read once in the initial state: the composer mounts
+  // already "checking" with the stored nonce restored as its identity,
+  // and the effect below performs only the authorized resolve read.
+  const key = markerKey(userId, workspaceId, submissionId);
+  const [mountMarker] = useState<Marker | null>(() => readMarker(key));
+  const [nonce, setNonce] = useState<string>(
+    () => mountMarker?.nonce ?? crypto.randomUUID(),
+  );
   const [reconcile, setReconcile] = useState<
     "idle" | "checking" | "recovered" | "unavailable"
-  >("idle");
-  const key = markerKey(userId, workspaceId, submissionId);
+  >(() => (mountMarker === null ? "idle" : "checking"));
   const reconciledRef = useRef(false);
 
   // Confirmed success → clear marker, append the persisted row, fresh
@@ -168,23 +175,20 @@ export function CheckInFeedbackThread({
     { status: "idle" },
   );
 
-  // Mount reconciliation — a stored marker means a prior dispatch's
-  // outcome is unknown; ask the server before offering a compose.
+  // Mount reconciliation — ask the server whether the stored attempt
+  // landed before offering a compose. The marker and "checking" state
+  // are derived at mount above; the effect only performs the resolve
+  // read, so every setState runs inside an async callback.
   useEffect(() => {
-    if (reconciledRef.current) return;
+    if (reconciledRef.current || mountMarker === null) return;
     reconciledRef.current = true;
-    const marker = readMarker(key);
-    if (!marker) return;
-    void (async () => {
-      setNonce(marker.nonce);
-      setReconcile("checking");
-      try {
-        const res = await resolveCheckInFeedbackSendAction({
-          workspaceId,
-          clientProfileId,
-          submissionId,
-          clientRequestId: marker.nonce,
-        });
+    void resolveCheckInFeedbackSendAction({
+      workspaceId,
+      clientProfileId,
+      submissionId,
+      clientRequestId: mountMarker.nonce,
+    })
+      .then((res) => {
         if (res.status === "sent") {
           clearMarker(key);
           setReconcile("idle");
@@ -209,10 +213,8 @@ export function CheckInFeedbackThread({
         } else {
           setReconcile("unavailable");
         }
-      } catch {
-        setReconcile("unavailable");
-      }
-    })();
+      })
+      .catch(() => setReconcile("unavailable"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

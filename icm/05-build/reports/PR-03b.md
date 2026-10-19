@@ -167,3 +167,75 @@ is the runtime evidence; the merge changed nothing it covered.
   not product.
 - `app_pr03b` on `vari8-db-1` was created for this pass; `prisma migrate
   deploy` exit 0.
+
+## 8. Fix pass 2 — mount reconciliation IIFE removed
+
+Re-verification (`icm/05-build/reports/PR-03b-verify-2.md`, verdict FIX)
+cleared hunks 1 and 2 on discriminating probes — they are untouched —
+and failed one item: the feedback-thread mount reconciliation still ran
+`setNonce(marker.nonce)` + `setReconcile("checking")` synchronously at the
+top of an effect-launched `void (async () => { ... })()` — the same
+`set-state-in-effect` dodge pass 1 removed from the success path.
+
+**Fix.** The mount state is now derived during render, not set from the
+effect. `readMarker(key)` runs once in a lazy `useState` initializer;
+`nonce` initializes to `mountMarker?.nonce ?? crypto.randomUUID()` and
+`reconcile` to `mountMarker === null ? "idle" : "checking"`. The effect
+keeps only the authorized resolve read — `reconciledRef` guard, then
+`void resolveCheckInFeedbackSendAction(...)` — and every setState lives
+in its `.then`/`.catch` callbacks, the same shape base used for the
+outcome handling. `CheckInFeedbackThread` mounts only client-side
+(inside `detailState.status === "ok"`, reachable only via a dispatched
+action), so the render-time marker read never participates in SSR.
+
+Timing vs base: base painted "Checking…" in the passive-effect flush
+after mount; it is now in the mount commit itself — same moment or one
+commit earlier, never later, and never deferred into the resolve
+callback (the disabled-composer surface is identical). The
+`sendCheckInFeedbackAction` success path from pass 1 is unchanged.
+
+`eslint.config.mjs`: `icm/**/evidence/` added to the flat-config ignores.
+The verifier's probe sources (committed unchanged as evidence, per the
+card) carry intentional `any` casts; without the ignore, `npm run lint`
+reports 2 `no-explicit-any` errors on those lane artifacts. No rule
+level changed — the four react-hooks rules stay `"error"` and all other
+coverage is identical (the 3 pre-existing warnings remain).
+
+### Probes (this head)
+
+Verifier probes from `icm/05-build/evidence/PR-03b-verify-2/probes/`
+copied temporarily into `tests/unit/`, run, removed — all pass.
+New mount-timing assertion `fix2-mount-timing.dom.test.tsx` (in
+`icm/05-build/evidence/PR-03b-fix2/probes/`): with a stored marker and a
+never-resolving resolve mock, `checkin-feedback-checking`, the disabled
+textarea and the disabled send button are all committed synchronously
+right after `render()` — no `findBy`/`waitFor` — so the note cannot come
+from the resolve callback. The same probe passes unchanged on base
+`55a0f08` (log: `mount-timing-base-55a0f08.log`).
+
+| Probe | Result |
+|---|---|
+| reverify2-probe (H1 PARITY, H1 GAP, H2 PARITY, H2 LOAD-REBIND, H3 success/error parity) | 6/6 pass |
+| reverify2-window (CONTROL + WINDOW) | 2/2 pass |
+| reverify2-mount (checking / sent / not_sent) | 3/3 pass |
+| reverify2-feedback-char (characterisation) | 2/2 pass |
+| fix2-mount-timing (HEAD + base `55a0f08`) | 2/2 pass on each |
+
+`grep -n "async () =>" components/checkin/feedback-thread.tsx` → no
+match; no effect-level IIFE remains. The only `async` in the file is the
+`useActionState` action wrapper signature `async (prev, formData)`.
+
+### Gates after fix pass 2 (this tree)
+
+| Command | Exit | Result |
+|---|---|---|
+| `npm run typecheck` | 0 | `tsc --noEmit` clean |
+| `npm run lint` | 0 | 0 errors, 3 pre-existing `no-unused-vars` warnings |
+| `npx eslint . \| grep -cE '(warning\|error)  .*react-hooks/'` | 0 | zero react-hooks findings |
+| `npm run test` | 0 | 96 files / 1137 tests passed |
+| `npm run build` | 0 | `next build --turbopack` |
+| `cd frontend && npm run build` | 0 | static export (no `frontend/` source touched) |
+
+Evidence + logs: `icm/05-build/evidence/PR-03b-fix2/`. The verify-2
+report and `icm/05-build/evidence/PR-03b-verify-2/` are committed
+unchanged. `docs/STATUS.md` untouched; nothing merged.

@@ -1,0 +1,139 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.2 /home/nexuslink/vari8-worktrees/_reverify2-base
+
+ ❯ tests/unit/zz-p3.dom.test.tsx (2 tests | 1 failed) 1033ms
+   ❯ hunk 3 characterisation (2)
+     × SUCCESS: where do the consequences run, and what does the first 'Response sent.' commit show? 1029ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/zz-p3.dom.test.tsx > hunk 3 characterisation > SUCCESS: where do the consequences run, and what does the first 'Response sent.' commit show?
+AssertionError: expected '{"nonce":"154de391-2604-4ea8-849a-95a…' to be null
+
+Ignored nodes: comments, script, style
+[36m<html>[39m
+  [36m<head />[39m
+  [36m<body>[39m
+    [36m<div>[39m
+      [36m<section[39m
+        [33maria-label[39m=[32m"Check-In feedback"[39m
+        [33mdata-testid[39m=[32m"checkin-feedback-thread"[39m
+      [36m>[39m
+        [36m<h3[39m
+          [33mclass[39m=[32m"assignment-manager__subtitle"[39m
+        [36m>[39m
+          [0mResponses[0m
+        [36m</h3>[39m
+        [36m<ul[39m
+          [33mclass[39m=[32m"tracker-list"[39m
+          [33mdata-testid[39m=[32m"checkin-feedback-list"[39m
+        [36m>[39m
+          [36m<li[39m
+            [33mclass[39m=[32m"tracker-list__row"[39m
+            [33mdata-testid[39m=[32m"checkin-feedback-item"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"tracker-list__sub"[39m
+            [36m>[39m
+              [0mCoach[0m
+              [0m · [0m
+              [0m19 Oct 2026, 12:00[0m
+            [36m</span>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"tracker-list__title"[39m
+              [33mstyle[39m=[32m"white-space: pre-wrap;"[39m
+            [36m>[39m
+              [0mHello[0m
+            [36m</span>[39m
+          [36m</li>[39m
+        [36m</ul>[39m
+        [36m<form[39m
+          [33maction[39m=[32m"javascript:throw new Error('A React form was unexpectedly submitted. If you called form.submit() manually, consider using form.requestSubmit() instead. If you\\'re trying to use event.stopPropagation() in a submit event handler, consider also calling event.preventDefault().')"[39m
+          [33mdata-testid[39m=[32m"checkin-feedback-form"[39m
+        [36m>[39m
+          [36m<input[39m
+            [33mname[39m=[32m"workspaceId"[39m
+            [33mtype[39m=[32m"hidden"[39m
+            [33mvalue[39m=[32m"w1"[39m
+          [36m/>[39m
+          [36m<input[39m
+            [33mname[39m=[32m"clientProfileId"[39m
+            [33mtype[39m=[32m"hidden"[39m
+            [33mvalue[39m=[32m"c1"[39m
+          [36m/>[39m
+          [36m<input[39m
+            [33mname[39m=[32m"submissionId"[39m
+            [33mtype[39m=[32m"hidden"[39m
+            [33mvalue[39m=[32m"s1"[39m
+          [36m/>[39m
+          [36m<input[39m
+            [33mname[39m=[32m"clientRequestId"[39m
+            [33mtype[39m=[32m"hidden"[39m
+            [33mvalue[39m=[32m"2d32ad28-67be-4d4a-8e63-fed17f7bb5d0"[39m
+          [36m/>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"daily-field"[39m
+          [36m>[39m
+            [36m<label[39m
+              [33mfor[39m=[32m"checkin-feedback-body"[39m
+            [36m>[39m
+              [0mSend a response[0m
+            [36m</label>[39m
+            [36m<textarea[39m
+              [33mclass[39m=[32m"catalog-search__input"[39m
+              [33mdata-testid[39m=[32m"checkin-feedback-input"[39m
+              [33mid[39m=[32m"checkin-feedback-body"[39m
+              [33mmaxlength[39m=[32m"2000"[39m
+              [33mname[39m=[32m"body"[39m
+              [33mrequired[39m=[32m""[39m
+              [33mrows[39m=[32m"4"[39m
+            [36m/>[39m
+          [36m</div>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"tracker-list__sub"[39m
+            [33mdata-testid[39m=[32m"checkin-feedback-confirm"[39m
+          [36m>[39m
+            [0mResponse sent.[0m
+          [36m</p>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"catalog-search__submit"[39m
+            [33mdata-testid[39m=[32m"checkin-feedback-send"[39m
+            [33mdisabled[39m=[32m""[39m
+            [33mtype[39m=[32m"submit"[39m
+          [36m>[39m
+            [0mSend response[0m
+          [36m</button>[39m
+        [36m</form>[39m
+      [36m</section>[39m
+    [36m</div>[39m
+  [36m</body>[39m
+[36m</html>[39m
+
+- Expected:
+null
+
++ Received:
+"{\"nonce\":\"154de391-2604-4ea8-849a-95a0085a13ef\",\"attempted\":true}"
+
+ ❯ tests/unit/zz-p3.dom.test.tsx:68:68
+     66|     mo.observe(container, { subtree: true, childList: true, characterD…
+     67|     fireEvent.click(screen.getByTestId("checkin-feedback-send"));
+     68|     await waitFor(() => expect(window.sessionStorage.getItem(key)).toB…
+       |                                                                    ^
+     69|     await waitFor(() => expect(container.querySelectorAll('[data-testi…
+     70|     mo.disconnect();
+ ❯ runWithExpensiveErrorDiagnosticsDisabled ../pr-03-react-hooks/node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback ../pr-03-react-hooks/node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback ../pr-03-react-hooks/node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  04:00:34
+   Duration  1.46s (tests 74%, environment 21%, import 3%, transform 2%)
+

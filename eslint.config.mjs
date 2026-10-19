@@ -26,6 +26,9 @@ const eslintConfig = [
       "next-env.d.ts",
       "playwright-report/**",
       "test-results/**",
+      // ICM lane artifacts (reports, evidence, verifier probes) — not
+      // product code; e.g. probe sources carry intentional `any`.
+      "icm/**/evidence/",
     ],
   },
 ];
