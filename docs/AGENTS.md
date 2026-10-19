@@ -2,8 +2,8 @@
 
 <!-- BEGIN GENERATED: scripts/index/generate.ts (npm run index) -->
 Purpose: Product, security and task documents. `docs/STATUS.md` is the implementation state of record.
-Contents: 87 files in 4 subdirectories.
-Subdirectories: conductor-generic/ (1), index/ (5), security/ (3), tasks/ (69)
+Contents: 83 files in 4 subdirectories.
+Subdirectories: conductor-generic/ (1), index/ (1), security/ (3), tasks/ (69)
 Top-level files: STATUS.md, extraction-contract.md, implementation-plan.md, open-questions.md,
   product-alignment-blueprint.md, product-decisions.md, redaction-policy.md, reuse-assessment.md,
   source-inventory.md

@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 46 backend pages, 1 API routes, 8 layouts, 3 canvas pages.
+Counts: 48 backend pages, 1 API routes, 8 layouts, 3 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -18,12 +18,14 @@ Route groups (do not add a path segment): `(tracker)`.
 |---|---|---|---|
 | `/` | `app/page.tsx` | server | none detected |
 | `/daily` | `app/daily/page.tsx` | server | none detected |
-| `/invite` | `app/invite/page.tsx` | server | none detected |
+| `/invite` | `app/invite/page.tsx` | server | auth |
 | `/library/exercises` | `app/library/exercises/page.tsx` | server | none detected |
 | `/library/foods` | `app/library/foods/page.tsx` | server | none detected |
 | `/login` | `app/login/page.tsx` | server | none detected |
 | `/reset` | `app/reset/page.tsx` | server | none detected |
 | `/reset-request` | `app/reset-request/page.tsx` | server | none detected |
+| `/sheets` | `app/sheets/page.tsx` | server | requireSheetViewer |
+| `/sheets/[slug]` | `app/sheets/[slug]/page.tsx` | server | requireSheetViewer |
 | `/workspace` | `app/workspace/page.tsx` | server | requireSessionUser |
 | `/workspace/[workspaceId]` | `app/workspace/[workspaceId]/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/admin` | `app/workspace/[workspaceId]/admin/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |

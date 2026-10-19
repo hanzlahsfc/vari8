@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 118 modules with exports, 1114 exported symbols.
+Counts: 119 modules with exports, 1161 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Inferred types are omitted when the compiler cannot state them self-containedly (unresolved imports,
@@ -38,6 +38,10 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function normalizeHex(value: string): string | null`
 - `export function themeVariables(appearance: Appearance): CSSProperties`
 - `export function useAppearance(): AppearanceContextValue`
+
+## `frontend/src/lib/utils.ts`
+
+- `export { cn } from "cn"`
 
 ## `lib/audit.ts`
 
@@ -78,6 +82,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type PlatformRole = "USER" | "PLATFORM_ADMIN"`
 - `export type SessionLike = { user?: { id?: string | null } | null } | null | undefined`
 - `export type UserStatus = "ACTIVE" | "DEACTIVATED" | "INVITED"`
+- `export type { WorkspaceRole } from "./rbac"`
 - `export type WorkspaceStatus = "ACTIVE" | "SUSPENDED"`
 - `export async function authorize(session: SessionLike, request: AuthorizationRequest, repo: AuthorizationRepo = prismaAuthorizationRepo): Promise<AuthorizationContext>`
 - `export async function authorizeCollection(session: SessionLike, request: { resource: Resource; action: Action; workspaceId?: string }, repo: AuthorizationRepo = prismaAuthorizationRepo): Promise<Co...`
@@ -218,7 +223,10 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/checkin/instances-boundary.ts`
 
+- `export { CheckInInstanceError }`
+- `export type { CheckInInstanceState }`
 - `export type CheckInSafeResult<T> = | { ok: true; value: T } | { ok: false; code: | "denied" | "invalid_input" | "not_available" | "already_submitted" | "consent_missing" | "policy_not_configured" |...`
+- `export type { StaffCheckInReviewQueueItem }`
 - `export async function cancelCheckInInstanceFromAction(session: Session, input: CancelCheckInInstanceInput, deps: CheckInInstanceDeps = {}): Promise<CheckInSafeResult<CancelCheckInInstanceResult>>`
 - `export async function createCheckInScheduleRuleFromAction(session: Session, input: CreateCheckInScheduleRuleInput, deps: CheckInScheduleDeps = {}): Promise<CheckInSafeResult<CreateCheckInScheduleRu...`
 - `export async function generateCheckInScheduleRuleInstancesFromAction(session: Session, input: GenerateCheckInScheduleRuleInput, deps: CheckInScheduleDeps = {}): Promise<CheckInSafeResult<GenerateCh...`
@@ -232,6 +240,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function listStaffCheckInReviewQueue(session: Session, input: { workspaceId: string; cursor?: string }, deps: CheckInInstanceDeps = {}): Promise< CheckInSafeResult<{ items: StaffCheckI...`
 - `export async function listStaffCheckInSubmissions(session: Session, input: { workspaceId: string; clientProfileId: string }, deps: CheckInInstanceDeps = {}): Promise<CheckInSafeResult<{ items: Staf...`
 - `export async function markCheckInSubmissionReviewedFromAction(session: Session, input: MarkCheckInSubmissionReviewedInput, deps: CheckInInstanceDeps = {}): Promise<CheckInSafeResult<MarkCheckInSubm...`
+- `export { parseCheckInSubmissionParam }`
 - `export async function readCheckInReviewTrackerContextFromAction(session: Session, input: { workspaceId: string; clientProfileId: string; submissionId: string; entryDate: string; }, deps: CheckInTra...`
 - `export async function readOwnCheckInCalendar(session: Session, input: { workspaceId: string; from: string; to: string }, deps: CheckInInstanceDeps = {}): Promise< CheckInSafeResult<{ items: OwnChec...`
 - `export async function readOwnNextCheckInInstance(session: Session, input: { workspaceId: string }, deps: CheckInInstanceDeps = {}): Promise<CheckInSafeResult<{ next: OwnNextCheckInInstance | null }>>`
@@ -259,8 +268,10 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type CancelCheckInInstanceInput = { workspaceId: string; clientProfileId: string; instanceId: string; }`
 - `export type CancelCheckInInstanceResult = { status: "cancelled" }`
 - `export type CanonicalCheckInAnswer = { fieldId: string; kind: (typeof KIND_TO_ENUM)[keyof typeof KIND_TO_ENUM]; answered: boolean; valueText: string | null; valueNumeric: string | null; valueDate: ...`
+- `export type { CheckInDefinition }`
 - `export type CheckInFeedbackItem = { id: string; sentAt: string; byName: string; body: string; }`
 - `export type CheckInFeedbackPage = { items: CheckInFeedbackItem[]; nextCursor: string | null; hasMore: boolean; }`
+- `export type { CheckInField }`
 - `export type CheckInInstanceDeps = { db?: PrismaLike; registry?: ConsentPolicyRegistry; }`
 - `export class CheckInInstanceError extends Error (1 members)`
 - `export type CheckInInstanceErrorCode = | "invalid_input" | "not_available" | "already_submitted" | "instance_not_accessible" | "consent_missing" | "policy_not_configured" | "serialization_conflict"...`
@@ -327,6 +338,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export const CHECKIN_SCHEDULE_HORIZON_DAYS: 56`
 - `export const CHECKIN_SCHEDULE_LIMITS: { readonly idMax: 128; readonly horizonDays: 56; }`
+- `export { CheckInInstanceError }`
 - `export type CheckInRuleWeekday = (typeof WEEKDAYS)[number]`
 - `export type CheckInScheduleDeps = { db?: PrismaLike; now?: () => Date; }`
 - `export type CheckInScheduleRuleItem = { ruleId: string; formId: string; formName: string; weekday: CheckInRuleWeekday; localTimeMinutes: number; timezone: string; startDate: string; endDate: string...`
@@ -368,6 +380,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type SetupClientChoice = { name: string }`
 - `export type SetupRowList = { items: TemplateAssignmentSummary[]; nextCursor: string | null; fingerprint: string; }`
 - `export type SetupTemplateChoice = { name: string; latestVersionSeq: number; }`
+- `export type { TemplateAssignmentSummary }`
 - `export async function assignTemplateFromAction(session: SessionLike, input: { workspaceId: string; clientIndex: number; templateIndex: number; listFingerprint: string; }, deps: { db?: PrismaClient ...`
 - `export async function cancelSetupAssignmentFromAction(session: SessionLike, input: { workspaceId: string; pinIndex: number; rowFingerprint: string }, deps: { db?: PrismaClient } = {}): Promise<Acti...`
 - `export async function listAssignFormChoices(session: SessionLike, input: { workspaceId: string }, deps: { db?: PrismaClient } = {}): Promise<ActionResult<AssignFormChoices>>`
@@ -416,6 +429,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type AssignableTemplate = { id: string; name: string; latestVersionSeq: number; createdAt: string; }`
 - `export type TemplateAssignmentSummary = { index: number; clientName: string; templateName: string; templateArchived: boolean; versionSeq: number; status: "ACTIVE" | "SUPERSEDED" | "CANCELLED"; assi...`
 - `export async function cancelClientSetupAssignment(session: SessionLike, input: { workspaceId: string; pinId: string }, client: PrismaClient = defaultPrisma): Promise<void>`
+- `export { computeSelectionFingerprint } from "./selection-fingerprint"`
 - `export async function createClientSetupAssignment(session: SessionLike, input: { workspaceId: string; clientProfileId: string; templateId: string }, client: PrismaClient = defaultPrisma): Promise<{...`
 - `export async function listAssignableSetupClients(session: SessionLike, input: { workspaceId: string }, client: PrismaClient = defaultPrisma): Promise<AssignableSetupClient[]>`
 - `export async function listAssignableTemplates(session: SessionLike, input: { workspaceId: string }, client: PrismaClient = defaultPrisma): Promise<AssignableTemplate[]>`
@@ -455,6 +469,8 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export type ActionResult<T> = { ok: true; value: T } | { ok: false; message: string }`
 - `export type BoundaryDeps = { db?: PrismaClient }`
+- `export type { ParameterDetail }`
+- `export type { ParameterSummary }`
 - `export async function archiveParameterFromAction(_session: SessionLike, _input: { workspaceId: string; parameterId: string }, _deps: BoundaryDeps = {}): Promise<ActionResult<{ parameterId: string }>>`
 - `export async function classifyParameterFromAction(_session: SessionLike, _input: { workspaceId: string; parameterIndex: number; expectedRevision: number; fingerprint: string; classification: string...`
 - `export async function createParameterFromAction(_session: SessionLike, _input: { workspaceId: string; inputJson: string }, _deps: BoundaryDeps = {}): Promise<ActionResult<{ parameterId: string; key...`
@@ -497,6 +513,10 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export type ActionResult<T> = { ok: true; value: T } | { ok: false; message: string }`
 - `export type BoundaryDeps = { db?: PrismaClient }`
+- `export type { TemplateDetail }`
+- `export type { TemplateDraft }`
+- `export type { TemplateSummary }`
+- `export type { TemplateVersionDefinition }`
 - `export async function archiveTemplateFromAction(_session: SessionLike, _input: { workspaceId: string; templateId: string }, _deps: BoundaryDeps = {}): Promise<ActionResult<{ templateId: string }>>`
 - `export async function createTemplateFromAction(_session: SessionLike, _input: { workspaceId: string; name: string }, _deps: BoundaryDeps = {}): Promise<ActionResult<{ templateId: string }>>`
 - `export async function getTemplateForWorkspace(_session: SessionLike, _input: { workspaceId: string; templateId: string }, _deps: BoundaryDeps = {}): Promise<ActionResult<TemplateDetail>>`
@@ -626,12 +646,14 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type DailyEntryMode = "off" | "persistent" | "conflict"`
 - `export function isDailyEntryEnabled(env: string | undefined): boolean`
 - `export function isDailyEntryPersistenceUsable(entryEnv: string | undefined, prototypeEnv: string | undefined): boolean`
+- `export { isDailyPrototypeEnabled } from "../daily-prototype"`
 - `export function resolveDailyEntryMode(entryEnv: string | undefined, prototypeEnv: string | undefined): DailyEntryMode`
 
 ## `lib/daily-entry/service.ts`
 
 - `export const DAILY_ENTRY_DEV_CONSENT: { readonly PRIVACY_NOTICE: "daily-entry-dev-privacy-v1"; readonly HEALTH_DATA: "daily-entry-dev-health-v1"; }`
 - `export type DailyEntryDeps = { db?: PrismaClient; registry?: ConsentPolicyRegistry; }`
+- `export { DailyEntryError } from "./gate"`
 - `export type DailyEntryHistoryEntry = { entryDate: string; declaredAt: string; revisionCount: number; values: DailyEntryHistoryRow[]; }`
 - `export type DailyEntryHistoryRow = { parameterKey: string; label: string; unit: string | null; display: string; }`
 - `export type DailyEntrySurface = | { state: "ready"; formToken: string; entryDate: string; sections: DailyEntrySurfaceSection[]; history: DailyEntryHistoryEntry[]; } | { state: "not_applicable" } | ...`
@@ -1028,6 +1050,13 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export type MealPlanActivation = | { status: "ok"; instant: Date } | { status: "unrepresentable" } | { status: "invalid" }`
 - `export type MealPlanDeps = { db?: PrismaClient; registry?: ConsentPolicyRegistry; now?: Date; }`
+- `export type { MealPlanDraft } from "./payload"`
+- `export { MealPlanError } from "./payload"`
+- `export type { MealPlanMacroTargets } from "./payload"`
+- `export type { MealPlanMeal } from "./payload"`
+- `export type { MealPlanTarget } from "./payload"`
+- `export type { MealPlanTargetMode } from "./payload"`
+- `export type { MealPlanVariant } from "./payload"`
 - `export type MealPlanVersionDetail = { id: string; versionSeq: number; effectiveDate: string; effectiveTimezone: string; activationInstant: string; payload: MealPlanDraft; publishedAt: string; }`
 - `export type MealPlanVersionHeader = { id: string; versionSeq: number; effectiveDate: string; effectiveTimezone: string; publishedAt: string; }`
 - `export type OwnMealPlanView = { current: { versionSeq: number; effectiveDate: string; effectiveTimezone: string; payload: MealPlanDraft; } | null; upcoming: { versionSeq: number; effectiveDate: str...`
@@ -1071,6 +1100,9 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/onboarding/assignments-boundary.ts`
 
 - `export type ActionResult<T> = { ok: true; value: T } | { ok: false; message: string }`
+- `export type { AssignableClient } from "./assignments"`
+- `export type { AssignableForm } from "./assignments"`
+- `export type { AssignmentSummary } from "./assignments"`
 - `export type BoundaryDeps = { db?: PrismaClient }`
 - `export async function assignFormFromAction(_session: SessionLike, _input: { workspaceId: string; clientProfileId: string; formId: string }, _deps: BoundaryDeps = {}): Promise<ActionResult<{ assignm...`
 - `export async function cancelAssignmentFromAction(_session: SessionLike, _input: { workspaceId: string; assignmentId: string }, _deps: BoundaryDeps = {}): Promise<ActionResult<{ cancelled: true }>>`
@@ -1135,6 +1167,10 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export type ActionResult<T> = { ok: true; value: T } | { ok: false; message: string }`
 - `export type BoundaryDeps = { db?: PrismaClient; registry?: ConsentPolicyRegistry; }`
+- `export type { StaffOnboardingAnswerRow } from "./review"`
+- `export type { StaffOnboardingReviewDetail } from "./review"`
+- `export type { StaffOnboardingSubmissionItem } from "./review"`
+- `export type { StaffOnboardingSubmissionList } from "./review"`
 - `export async function listClientSubmissionsForReview(_session: SessionLike, _input: { workspaceId: string; clientProfileId: string; cursor?: string }, _deps: BoundaryDeps = {}): Promise<ActionResul...`
 - `export async function markSubmissionReviewedFromAction(_session: SessionLike, _input: { workspaceId: string; clientProfileId: string; submissionId: string; }, _deps: BoundaryDeps = {}): Promise<Act...`
 - `export async function viewSubmissionReviewDetail(_session: SessionLike, _input: { workspaceId: string; clientProfileId: string; submissionId: string; }, _deps: BoundaryDeps = {}): Promise<ActionRes...`
@@ -1170,6 +1206,10 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export type ActionResult<T> = { ok: true; value: T } | { ok: false; message: string }`
 - `export type BoundaryDeps = { db?: PrismaClient; registry?: ConsentPolicyRegistry; }`
+- `export type { OwnAssignmentItem } from "./submissions"`
+- `export type { OwnFormField } from "./submissions"`
+- `export type { OwnOnboardingDetail } from "./submissions"`
+- `export type { OwnSubmittedAnswer } from "./submissions"`
 - `export async function listOwnAssignmentsForWorkspace(_session: SessionLike, _input: { workspaceId: string }, _deps: BoundaryDeps = {}): Promise<ActionResult<{ items: OwnAssignmentItem[] }>>`
 - `export async function loadOwnDetailForRoute(_session: SessionLike, _input: { workspaceId: string; assignmentId: string }, _deps: BoundaryDeps = {}): Promise<ActionResult<OwnOnboardingDetail>>`
 - `export async function submitOnboardingFromAction(_session: SessionLike, _input: { workspaceId: string; assignmentId: string; answersJson: string; }, _deps: BoundaryDeps = {}): Promise<ActionResult<...`
@@ -1177,7 +1217,9 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/onboarding/submissions.ts`
 
 - `export type CanonicalAnswer = { fieldId: string; kind: | "SHORT_TEXT" | "LONG_TEXT" | "NUMBER" | "DATE" | "SINGLE_CHOICE" | "MULTI_CHOICE"; valueText: string | null; valueNumeric: string | null; va...`
+- `export { ONBOARDING_SUBMISSION_DEV_CONSENT } from "./submission-consent"`
 - `export type OnboardingSubmissionDeps = { db?: PrismaClient; registry?: ConsentPolicyRegistry; }`
+- `export { OnboardingSubmissionError } from "./submission-gate"`
 - `export type OwnAssignmentItem = { assignmentId: string; formName: string; status: "ACTIVE" | "SUPERSEDED" | "CANCELLED" | "COMPLETED"; assignedAt: string; submittedAt: string | null; }`
 - `export type OwnFormField = { fieldId: string; kind: FieldKind; label: string; helpText: string | null; required: boolean; options: { optionId: string; label: string }[]; }`
 - `export type OwnOnboardingDetail = | { state: "ready"; assignmentId: string; title: string; fields: OwnFormField[]; } | { state: "submitted"; assignmentId: string; title: string; submittedAt: string...`
@@ -1364,6 +1406,10 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type ClientBookingHistoryRow = { bookingId: string; scheduledDate: string; bookedWeek: number; sessionName: string; session: MaterializedSession; replacedProgramLabel: string | null; }`
 - `export type ClientHistoryPage = { programs: { programId: string; startDate: string; takeoverInstant: string; superseded: boolean; }[]; nextCursor: { firstPublishedAt: string; id: string } | null; }`
 - `export type ClientVersionsPage = { programId: string; versions: { id: string; versionSeq: number; effectiveDate: string; activationInstant: string; }[]; nextCursor: number | null; }`
+- `export type { MaterializedExercise } from "./payload"`
+- `export type { MaterializedProgram } from "./payload"`
+- `export type { MaterializedSession } from "./payload"`
+- `export type { MaterializedWeek } from "./payload"`
 - `export type OwnTrainingView = { state: "none" | "upcoming" | "active" | "completed"; agenda: ClientAgendaItem[]; current: { programId: string; title: string; versionSeq: number; weekIndex: number; ...`
 - `export type OwnVersionDetail = { id: string; programId: string; versionSeq: number; effectiveDate: string; activationInstant: string; scheduled: boolean; payload: MaterializedProgram; }`
 - `export type StaffBooking = { bookingId: string; scheduledDate: string; bookedWeek: number; pinnedVersionSeq: number; session: MaterializedSession; cancelledAt: string | null; programUpdatedSinceBoo...`
@@ -1371,7 +1417,11 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type StaffProgramDetail = { program: { id: string; title: string; startDate: string; weekCount: number; programMode: "WEEK_BASED" | "EVERGREEN"; fieldConfig: TrainingFieldConfig; confirmedTi...`
 - `export type StaffProgramList = { programs: TrainingProgramListItem[]; nextCursor: { createdAt: string; id: string } | null; canWrite: boolean; }`
 - `export type StaffVersionDetail = { id: string; programId: string; versionSeq: number; effectiveDate: string; effectiveTimezone: string; activationInstant: string; fieldConfig: TrainingFieldConfig; ...`
+- `export { TRAINING_FIELD_KEYS } from "./payload"`
 - `export type TrainingDeps = { db?: PrismaClient; registry?: ConsentPolicyRegistry; now?: Date; }`
+- `export type { TrainingDraft } from "./payload"`
+- `export { TrainingError } from "./payload"`
+- `export type { TrainingFieldConfig } from "./payload"`
 - `export type TrainingProgramListItem = { programId: string; title: string; startDate: string; weekCount: number; programMode: "WEEK_BASED" | "EVERGREEN"; firstPublishedAt: string | null; cancelledAt...`
 - `export async function bookTrainingSession(session: SessionLike, input: { workspaceId: string; clientProfileId: string; programId: string; sessionId: string; scheduledDate: string; }, deps: Training...`
 - `export async function cancelTrainingProgram(session: SessionLike, input: { workspaceId: string; clientProfileId: string; programId: string; }, deps: TrainingDeps = {}): Promise<{ programId: string;...`

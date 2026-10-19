@@ -7,6 +7,7 @@
  *   docs/index/SYMBOLS.md      exported symbols per module in `lib/` and `frontend/src/lib`
  *   docs/index/DATA-MODEL.md   Prisma models, fields and relations from `db/schema.prisma`
  *   docs/index/GLOSSARY.md     seed domain terms + live feature flags
+ *   docs/index/COMPONENTS.md   exported React components in `frontend/src` and which route reaches each
  *   <top-dir>/AGENTS.md        short router for top-level directories that lack one
  *
  * Usage:
@@ -34,18 +35,26 @@ const ROUTER_HINT =
   "<!-- Hand-written notes go below this line. Everything outside the two markers\n" +
   "     is preserved verbatim by `npm run index`; only the generated block is rewritten. -->";
 
-/** Directories never given a router and never scanned. */
-const SKIP_DIRS = new Set([
+/** Build and editor output: skipped at any depth, never a route segment. */
+const ALWAYS_SKIP = new Set([
   ".git",
   ".next",
   ".vscode",
   ".hermes",
   "node_modules",
-  "out",
-  "build",
   "coverage",
   "test-results",
   "playwright-report",
+]);
+
+/**
+ * Data/tooling directories. These names can collide with a route segment
+ * (`app/sheets/`) or a source tree (`spec/sheets/`), so they are skipped only
+ * when they sit directly under the repository root and never deeper.
+ */
+const TOP_LEVEL_SKIP = new Set([
+  "out",
+  "build",
   "sources",
   "exports",
   "sheets",
@@ -54,6 +63,11 @@ const SKIP_DIRS = new Set([
   ".raw-extraction",
   ".local-raw",
 ]);
+
+function shouldSkip(fullPath: string, name: string): boolean {
+  if (ALWAYS_SKIP.has(name)) return true;
+  return TOP_LEVEL_SKIP.has(name) && path.dirname(fullPath) === ROOT;
+}
 
 /** One-line purpose per top-level directory. Curated: update when a directory's role changes. */
 const DIR_PURPOSE: Record<string, string> = {
@@ -64,7 +78,7 @@ const DIR_PURPOSE: Record<string, string> = {
   docs: "Product, security and task documents. `docs/STATUS.md` is the implementation state of record.",
   frontend:
     "Lilly's canvas app (Ethereal/coach UI). Authoritative for screens, elements and look (AGENTS.md source authority 0).",
-  icm: "ICM workspace stages: recon, gap matrix, plan, briefing, build, verify. Read `icm/CONTEXT.md` first.",
+  icm: "ICM workspace stages: recon, gap matrix, plan, briefing, build, verify. Read the repo-root `CONTEXT.md` first.",
   lib: "Server-side domain services, authorization, consent and feature gates. No UI, no React.",
   scripts:
     "Runnable maintenance and import scripts (`tsx scripts/<name>.ts`). Includes the system index generator.",
@@ -112,8 +126,8 @@ function walkFiles(dirAbs: string, keep: (name: string) => boolean): string[] {
   const out: string[] = [];
   const visit = (d: string): void => {
     for (const entry of fs.readdirSync(d, { withFileTypes: true })) {
-      if (SKIP_DIRS.has(entry.name)) continue;
       const full = path.join(d, entry.name);
+      if (shouldSkip(full, entry.name)) continue;
       if (entry.isDirectory()) visit(full);
       else if (entry.isFile() && keep(entry.name)) out.push(full);
     }
@@ -126,15 +140,37 @@ function dirsIn(dirAbs: string): string[] {
   if (!fs.existsSync(dirAbs)) return [];
   return fs
     .readdirSync(dirAbs, { withFileTypes: true })
-    .filter((e) => e.isDirectory() && !SKIP_DIRS.has(e.name))
+    .filter(
+      (e) => e.isDirectory() && !shouldSkip(path.join(dirAbs, e.name), e.name),
+    )
     .map((e) => e.name)
     .sort(cmp);
 }
 
+/** Docs the generator writes into `docs/index`; never counted by a router. */
+const GENERATED_DOC_NAMES = new Set([
+  "ROUTES.md",
+  "SYMBOLS.md",
+  "DATA-MODEL.md",
+  "GLOSSARY.md",
+  "COMPONENTS.md",
+]);
+
+function isGeneratedIndexFile(fileAbs: string): boolean {
+  const r = rel(fileAbs);
+  if (!r.startsWith(`${DOCS_INDEX}/`)) return false;
+  return GENERATED_DOC_NAMES.has(r.slice(DOCS_INDEX.length + 1));
+}
+
 function countFiles(dirAbs: string): number {
-  // The router itself never counts toward its own inventory, so the numbers do
-  // not depend on whether the router has been generated yet.
-  return walkFiles(dirAbs, (n) => n !== "AGENTS.md").length;
+  // The router itself never counts toward its own inventory, and neither do the
+  // generated docs/index files, so `docs/AGENTS.md` counts only the files that
+  // exist no matter whether the index has been generated yet. Without this a run
+  // from a deleted-docs state diverges on the first pass and converges on the
+  // second, which breaks the one-run idempotence the README promises.
+  return walkFiles(dirAbs, (n) => n !== "AGENTS.md").filter(
+    (f) => !isGeneratedIndexFile(f),
+  ).length;
 }
 
 function splitRegion(
@@ -169,8 +205,9 @@ const APP_ROOTS: { dir: string; label: "backend" | "canvas" }[] = [
   { dir: "frontend/src/app", label: "canvas" },
 ];
 
+/** Guard helpers and NextAuth-style session reads (`auth()`, `getSession()`). */
 const GUARD_RE =
-  /\b(require[A-Za-z]*Access|requireSessionUser|requireSheetViewer)\s*\(/g;
+  /\b(require[A-Za-z]*Access|requireSessionUser|requireSheetViewer|getServerSession|getSession|auth)\s*\(/g;
 
 function guardsIn(fileAbs: string): string[] {
   const text = fs.readFileSync(fileAbs, "utf8");
@@ -382,7 +419,6 @@ function buildRoutes(): string {
 
 type Sym = { name: string; kind: string; sig: string };
 
-const SYMBOL_ROOTS = ["lib", "frontend/src/lib"];
 const MAX_SIG = 200;
 
 function sanitizeType(s: string): string | null {
@@ -486,17 +522,87 @@ function variableSym(
   return { name, kind, sig: `export ${kw} ${name}` };
 }
 
+const bySym = (a: Sym, b: Sym): number =>
+  cmp(a.name, b.name) || cmp(a.kind, b.kind) || cmp(a.sig, b.sig);
+
+/** Export names a module actually exposes, re-exports (`export … from`) included. */
+function exportedNames(sf: ts.SourceFile, checker: ts.TypeChecker): string[] {
+  const symbol = checker.getSymbolAtLocation(sf);
+  if (!symbol) return [];
+  return checker
+    .getExportsOfModule(symbol)
+    .map((s) => s.name)
+    .sort(cmp);
+}
+
+/**
+ * `export { X } from "m"`, `export type { X } from "m"`, `export { X }` and
+ * `export * from "m"`, keyed by the exported name. The signature names the
+ * source module so the hop is readable without opening the file.
+ */
+function reexportSyms(
+  sf: ts.SourceFile,
+  checker: ts.TypeChecker,
+): Map<string, Sym> {
+  const out = new Map<string, Sym>();
+  const add = (name: string, from: string, typeOnly: boolean): void => {
+    if (out.has(name)) return;
+    const keyword = typeOnly ? "export type" : "export";
+    out.set(name, {
+      name,
+      kind: "re-export",
+      sig: from
+        ? `${keyword} { ${name} } from ${from}`
+        : `${keyword} { ${name} }`,
+    });
+  };
+  for (const stmt of sf.statements) {
+    if (!ts.isExportDeclaration(stmt)) continue;
+    const from = stmt.moduleSpecifier
+      ? rawText(stmt.moduleSpecifier.getText(sf))
+      : "";
+    const clause = stmt.exportClause;
+    if (clause && ts.isNamedExports(clause)) {
+      for (const el of clause.elements) {
+        add(el.name.text, from, stmt.isTypeOnly || el.isTypeOnly);
+      }
+      continue;
+    }
+    if (clause && ts.isNamespaceExport(clause)) {
+      add(clause.name.text, from, false);
+      continue;
+    }
+    // `export * from "m"`: the names come from the source module.
+    if (!clause && stmt.moduleSpecifier) {
+      const source = checker.getSymbolAtLocation(stmt.moduleSpecifier);
+      if (!source) continue;
+      for (const exp of checker.getExportsOfModule(source)) {
+        if (exp.name !== "default") add(exp.name, from, false);
+      }
+    }
+  }
+  return out;
+}
+
 function symbolsOf(sf: ts.SourceFile, checker: ts.TypeChecker): Sym[] {
-  const out: Sym[] = [];
+  const declared = new Map<string, Sym>();
+  const add = (name: string, sym: Sym): void => {
+    if (!declared.has(name)) declared.set(name, sym);
+  };
   for (const stmt of sf.statements) {
     const mods = ts.canHaveModifiers(stmt) ? ts.getModifiers(stmt) : undefined;
     const exported = (mods ?? []).some(
       (m) => m.kind === ts.SyntaxKind.ExportKeyword,
     );
     if (!exported) continue;
+    // `export default function foo` is exported under the name `default`.
+    const isDefault = (mods ?? []).some(
+      (m) => m.kind === ts.SyntaxKind.DefaultKeyword,
+    );
+    const asName = (local: string): string => (isDefault ? "default" : local);
     if (ts.isFunctionDeclaration(stmt) && stmt.name) {
-      out.push({
-        name: stmt.name.text,
+      add(asName(stmt.name.text), {
+        name: asName(stmt.name.text),
         kind: "function",
         sig: callableSignature(stmt, sf, checker),
       });
@@ -507,8 +613,8 @@ function symbolsOf(sf: ts.SourceFile, checker: ts.TypeChecker): Sym[] {
       const head = [`export class ${stmt.name.text}`, heritage]
         .filter(Boolean)
         .join(" ");
-      out.push({
-        name: stmt.name.text,
+      add(asName(stmt.name.text), {
+        name: asName(stmt.name.text),
         kind: "class",
         sig: cut(`${head} (${stmt.members.length} members)`, MAX_SIG),
       });
@@ -519,13 +625,13 @@ function symbolsOf(sf: ts.SourceFile, checker: ts.TypeChecker): Sym[] {
       const head = [`export interface ${stmt.name.text}`, heritage]
         .filter(Boolean)
         .join(" ");
-      out.push({
+      add(stmt.name.text, {
         name: stmt.name.text,
         kind: "interface",
         sig: cut(`${head} (${stmt.members.length} members)`, MAX_SIG),
       });
     } else if (ts.isTypeAliasDeclaration(stmt)) {
-      out.push({
+      add(stmt.name.text, {
         name: stmt.name.text,
         kind: "type",
         sig: cut(
@@ -541,7 +647,7 @@ function symbolsOf(sf: ts.SourceFile, checker: ts.TypeChecker): Sym[] {
       const members = stmt.members.map((m) => m.name.getText(sf));
       const shown = members.slice(0, 8).join(", ");
       const suffix = members.length > 8 ? `, +${members.length - 8} more` : "";
-      out.push({
+      add(stmt.name.text, {
         name: stmt.name.text,
         kind: "enum",
         sig: cut(
@@ -550,26 +656,40 @@ function symbolsOf(sf: ts.SourceFile, checker: ts.TypeChecker): Sym[] {
         ),
       });
     } else if (ts.isModuleDeclaration(stmt)) {
-      out.push({
+      add(stmt.name.getText(sf), {
         name: stmt.name.getText(sf),
         kind: "namespace",
         sig: `export namespace ${stmt.name.getText(sf)}`,
       });
     } else if (ts.isVariableStatement(stmt)) {
       for (const decl of stmt.declarationList.declarations) {
-        if (
-          ts.isIdentifier(decl.name) ||
-          ts.isObjectBindingPattern(decl.name) ||
-          ts.isArrayBindingPattern(decl.name)
-        ) {
-          out.push(variableSym(decl, sf, checker));
+        if (ts.isIdentifier(decl.name)) {
+          const sym = variableSym(decl, sf, checker);
+          add(sym.name, sym);
         }
       }
     }
   }
-  out.sort(
-    (a, b) => cmp(a.name, b.name) || cmp(a.kind, b.kind) || cmp(a.sig, b.sig),
+
+  const reexports = reexportSyms(sf, checker);
+  const names = exportedNames(sf, checker);
+  if (names.length === 0) {
+    // Not a module the checker can enumerate; fall back to the statement walk
+    // rather than emitting nothing.
+    return [...declared.values(), ...reexports.values()].sort(bySym);
+  }
+  // One line per export the checker reports, so the count cannot drift from
+  // `ts` itself: a declaration wins over a re-export of the same name.
+  const out = names.map(
+    (name) =>
+      declared.get(name) ??
+      reexports.get(name) ?? {
+        name,
+        kind: "re-export",
+        sig: `export { ${name} }`,
+      },
   );
+  out.sort(bySym);
   return out;
 }
 
@@ -590,23 +710,60 @@ function compilerOptions(): ts.CompilerOptions {
   };
 }
 
+/**
+ * Options for the canvas tree, read from `frontend/tsconfig.json` so `@/*`
+ * resolves to `frontend/src/*` exactly as the frontend build does. The root
+ * program's `@/*` points at the repository root, which is wrong for canvas
+ * files (`frontend/src/lib/coaching-data.ts` imports `@/data/mock-data.json`).
+ */
+function frontendCompilerOptions(): ts.CompilerOptions {
+  const configPath = path.join(ROOT, "frontend/tsconfig.json");
+  const read = ts.readConfigFile(configPath, ts.sys.readFile);
+  if (read.error) {
+    throw new Error(
+      `frontend/tsconfig.json could not be read: ${ts.flattenDiagnosticMessageText(read.error.messageText, " ")}`,
+    );
+  }
+  const parsed = ts.parseJsonConfigFileContent(
+    read.config,
+    ts.sys,
+    path.join(ROOT, "frontend"),
+  );
+  return {
+    ...parsed.options,
+    // `paths` without `baseUrl` is ambiguous; frontend/ means frontend/src.
+    baseUrl: path.join(ROOT, "frontend"),
+    paths: parsed.options.paths ?? { "@/*": ["./src/*"] },
+    noEmit: true,
+    incremental: false,
+    allowJs: false,
+  };
+}
+
 function buildSymbols(): string {
-  const files = SYMBOL_ROOTS.flatMap((dir) =>
+  const filesFor = (dir: string): string[] =>
     walkFiles(
       path.join(ROOT, dir),
       (n) => /\.(ts|tsx)$/.test(n) && !/\.d\.ts$/.test(n),
-    ),
-  ).filter((f) => !/(^|\/)[^/]+\.(test|spec)\.tsx?$/.test(rel(f)));
+    ).filter((f) => !/(^|\/)[^/]+\.(test|spec)\.tsx?$/.test(rel(f)));
 
-  const program = ts.createProgram(files, compilerOptions());
-  const checker = program.getTypeChecker();
+  // Two programs: `lib/**` uses the root tsconfig (`@/*` -> repo root), the
+  // canvas tree uses `frontend/tsconfig.json` (`@/*` -> frontend/src).
+  const programs: { files: string[]; options: ts.CompilerOptions }[] = [
+    { files: filesFor("lib"), options: compilerOptions() },
+    { files: filesFor("frontend/src/lib"), options: frontendCompilerOptions() },
+  ];
 
   const modules: { file: string; symbols: Sym[] }[] = [];
-  for (const fileAbs of files) {
-    const sf = program.getSourceFile(fileAbs);
-    if (!sf) continue;
-    const symbols = symbolsOf(sf, checker);
-    if (symbols.length > 0) modules.push({ file: rel(fileAbs), symbols });
+  for (const { files, options } of programs) {
+    const program = ts.createProgram(files, options);
+    const checker = program.getTypeChecker();
+    for (const fileAbs of files) {
+      const sf = program.getSourceFile(fileAbs);
+      if (!sf) continue;
+      const symbols = symbolsOf(sf, checker);
+      if (symbols.length > 0) modules.push({ file: rel(fileAbs), symbols });
+    }
   }
   modules.sort((a, b) => cmp(a.file, b.file));
   assertSorted(
@@ -1045,7 +1202,9 @@ function routerTargets(): string[] {
     .readdirSync(ROOT, { withFileTypes: true })
     .filter(
       (e) =>
-        e.isDirectory() && !SKIP_DIRS.has(e.name) && !e.name.startsWith("."),
+        e.isDirectory() &&
+        !shouldSkip(path.join(ROOT, e.name), e.name) &&
+        !e.name.startsWith("."),
     )
     .map((e) => e.name)
     .filter((name) => {
@@ -1066,7 +1225,9 @@ function routerTargets(): string[] {
 
 function generatedRegion(dir: string): string {
   const dirAbs = path.join(ROOT, dir);
-  const files = walkFiles(dirAbs, (n) => n !== "AGENTS.md");
+  const files = walkFiles(dirAbs, (n) => n !== "AGENTS.md").filter(
+    (f) => !isGeneratedIndexFile(f),
+  );
   const subdirs = dirsIn(dirAbs).map(
     (d) => `${d}/ (${countFiles(path.join(dirAbs, d))})`,
   );
@@ -1138,6 +1299,161 @@ function assertRouterFits(dir: string, content: string): void {
 }
 
 // ---------------------------------------------------------------------------
+// COMPONENTS.md
+// ---------------------------------------------------------------------------
+
+type CanvasComponent = { name: string; file: string; importedBy: string[] };
+
+const CANVAS_ROOT = "frontend/src";
+const CANVAS_ENTRY_DIR = `${CANVAS_ROOT}/app`;
+
+function containsJsx(node: ts.Node): boolean {
+  if (
+    ts.isJsxElement(node) ||
+    ts.isJsxSelfClosingElement(node) ||
+    ts.isJsxFragment(node)
+  ) {
+    return true;
+  }
+  return ts.forEachChild(node, containsJsx) ?? false;
+}
+
+/** Resolve a canvas specifier (`@/x`, `./x`) to a file under `frontend/src`. */
+function canvasImportTarget(
+  fromFile: string,
+  specifier: string,
+): string | null {
+  const base = specifier.startsWith("@/")
+    ? path.join(ROOT, CANVAS_ROOT, specifier.slice(2))
+    : specifier.startsWith(".")
+      ? path.resolve(path.dirname(fromFile), specifier)
+      : null;
+  if (!base) return null;
+  for (const candidate of [
+    base,
+    `${base}.ts`,
+    `${base}.tsx`,
+    path.join(base, "index.ts"),
+    path.join(base, "index.tsx"),
+  ]) {
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+/** Which canvas file renders each exported component, and which route reaches it. */
+function buildComponents(): string {
+  const files = walkFiles(
+    path.join(ROOT, CANVAS_ROOT),
+    (n) => /\.(ts|tsx)$/.test(n) && !/\.d\.ts$/.test(n),
+  ).filter((f) => !/\.(test|spec)\.tsx?$/.test(rel(f)));
+
+  const program = ts.createProgram(files, frontendCompilerOptions());
+  const checker = program.getTypeChecker();
+
+  const components: CanvasComponent[] = [];
+  const edges = new Map<string, string[]>();
+  for (const fileAbs of files) {
+    const sf = program.getSourceFile(fileAbs);
+    if (!sf) continue;
+    const targets = new Set<string>();
+    for (const stmt of sf.statements) {
+      if (
+        (ts.isImportDeclaration(stmt) || ts.isExportDeclaration(stmt)) &&
+        stmt.moduleSpecifier &&
+        ts.isStringLiteral(stmt.moduleSpecifier)
+      ) {
+        const target = canvasImportTarget(fileAbs, stmt.moduleSpecifier.text);
+        if (target) targets.add(target);
+      }
+    }
+    edges.set(fileAbs, [...targets]);
+
+    const moduleSymbol = checker.getSymbolAtLocation(sf);
+    if (!moduleSymbol) continue;
+    for (const exported of checker.getExportsOfModule(moduleSymbol)) {
+      const target =
+        (exported.flags & ts.SymbolFlags.Alias) !== 0
+          ? checker.getAliasedSymbol(exported)
+          : exported;
+      const decl = target.declarations?.[0];
+      if (!decl) continue;
+      const fn = ts.isFunctionDeclaration(decl)
+        ? decl
+        : ts.isVariableDeclaration(decl) &&
+            decl.initializer &&
+            (ts.isArrowFunction(decl.initializer) ||
+              ts.isFunctionExpression(decl.initializer))
+          ? decl.initializer
+          : null;
+      if (!fn) continue;
+      const name =
+        exported.name === "default" ? target.getName() : exported.name;
+      if (!/^[A-Z]/.test(name)) continue;
+      if (!containsJsx(fn)) continue;
+      components.push({ name, file: rel(fileAbs), importedBy: [] });
+    }
+  }
+
+  const entries = files.filter((f) =>
+    f.startsWith(path.join(ROOT, CANVAS_ENTRY_DIR) + path.sep),
+  );
+  const reach = (entry: string): Set<string> => {
+    const seen = new Set<string>([entry]);
+    const queue = [entry];
+    while (queue.length > 0) {
+      const file = queue.pop() as string;
+      for (const next of edges.get(file) ?? []) {
+        if (seen.has(next)) continue;
+        seen.add(next);
+        queue.push(next);
+      }
+    }
+    return seen;
+  };
+  const entryReach = entries.map((entry) => ({
+    label: routePath(CANVAS_ENTRY_DIR, entry),
+    seen: reach(entry),
+  }));
+  for (const component of components) {
+    const abs = path.join(ROOT, component.file);
+    component.importedBy = [
+      ...new Set(entryReach.filter((e) => e.seen.has(abs)).map((e) => e.label)),
+    ].sort(cmp);
+  }
+
+  components.sort((a, b) => cmp(a.name, b.name) || cmp(a.file, b.file));
+  assertSorted(
+    "COMPONENTS.md",
+    components.map((c) => `${c.name}\u0000${c.file}`),
+  );
+  const fileCount = new Set(components.map((c) => c.file)).size;
+
+  return [
+    MARKDOWN_HEADER("COMPONENTS.md - exported React components (canvas)", [
+      "",
+      `Source: TypeScript compiler API over \`${CANVAS_ROOT}/**\`. A component is an exported`,
+      "function, or a const whose initializer is a function, whose body contains JSX.",
+      "`Imported by` lists the canvas route entries that reach the component through imports;",
+      "`-` means no route entry imports it.",
+      `Counts: ${components.length} components in ${fileCount} files.`,
+      "",
+      "To name the canvas file behind a screen element, find the component here and open the",
+      "file in the second column. Canvas screens: see `ROUTES.md` (`/coach`, `/ethereal`).",
+    ]),
+    "| Component | File | Imported by |",
+    "|---|---|---|",
+    ...components.map(
+      (c) =>
+        `| \`${c.name}\` | \`${c.file}\` | ${c.importedBy.length > 0 ? c.importedBy.join(", ") : "-"} |`,
+    ),
+    "",
+  ].join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // Output
 // ---------------------------------------------------------------------------
 
@@ -1163,6 +1479,11 @@ function buildAll(): Output[] {
     {
       relPath: `${DOCS_INDEX}/GLOSSARY.md`,
       content: buildGlossary(),
+      router: false,
+    },
+    {
+      relPath: `${DOCS_INDEX}/COMPONENTS.md`,
+      content: buildComponents(),
       router: false,
     },
   ];
@@ -1309,10 +1630,13 @@ if (process.argv[1] && /generate\.ts$/.test(process.argv[1])) {
 
 // Test surface only: what tests/unit/system-index.test.ts drives.
 export {
+  buildComponents,
   buildDataModel,
   buildGlossary,
   buildRoutes,
   buildSymbols,
+  countFiles,
+  frontendCompilerOptions,
   renderRouter,
   routePath,
   splitRegion,

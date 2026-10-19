@@ -1,7 +1,7 @@
 # docs/index - the generated system index
 
 An agent landing anywhere in this repo can route from the top-level `AGENTS.md` routers into
-these four files instead of crawling the tree. Everything here is generated; findings go in the
+these files instead of crawling the tree. Everything here is generated; findings go in the
 code and in the source docs, not in the index.
 
 ## Files
@@ -10,6 +10,7 @@ code and in the source docs, not in the index.
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ROUTES.md`     | Which Next routes exist in `app/` and `frontend/src/app`, which file renders each, server or client, and which guard helpers it calls. API routes list their HTTP methods. |
 | `SYMBOLS.md`    | Every exported symbol per module in `lib/` and `frontend/src/lib`, one-line signature, TypeScript compiler API.                                                            |
+| `COMPONENTS.md` | Every exported React component in `frontend/src`, the file that renders it, and the canvas route entries that import it.                                                   |
 | `DATA-MODEL.md` | Prisma models, fields, relations, enums and constraints, with source line numbers.                                                                                         |
 | `GLOSSARY.md`   | Domain terms with the file that defines them, the program slice ids, and the live feature flags.                                                                           |
 
@@ -20,7 +21,7 @@ purpose, an inventory, and a pointer to the right index file.
 
 | Command                                                                                      | Effect                                                                                                                      |
 | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `npm run index`                                                                              | Regenerates all four docs and every managed `AGENTS.md` router, in place.                                                   |
+| `npm run index`                                                                              | Regenerates all five docs and every managed `AGENTS.md` router, in place.                                                   |
 | `npm run index:check`                                                                        | Regenerates into a temp directory, compares, exits 1 with the drifted paths and the first differing line.                   |
 | `npx tsx scripts/index/generate.ts --refresh-glossary --spec <file> --ref <repo path label>` | Re-extracts the slice table in `scripts/index/glossary-seed.json` from the F1 wiring spec, which is kept outside this repo. |
 
