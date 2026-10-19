@@ -67,9 +67,13 @@ describe("feedback-thread mount timing: Checking... note", () => {
     // Synchronous: no findBy/waitFor. A note deferred by a tick fails here.
     const note = screen.getByTestId("checkin-feedback-checking");
     expect(note).toBeTruthy();
-    const textarea = screen.getByTestId("checkin-feedback-input") as HTMLTextAreaElement;
+    const textarea = screen.getByTestId(
+      "checkin-feedback-input",
+    ) as HTMLTextAreaElement;
     expect(textarea.disabled).toBe(true);
-    const send = screen.getByTestId("checkin-feedback-send") as HTMLButtonElement;
+    const send = screen.getByTestId(
+      "checkin-feedback-send",
+    ) as HTMLButtonElement;
     expect(send.disabled).toBe(true);
   });
 

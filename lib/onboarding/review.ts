@@ -54,7 +54,8 @@ import {
   OnboardingSubmissionError,
   SUBMISSION_LIMITS,
 } from "./submission-gate";
-import { resolveOnboardingSubmissionConsentPolicy } from "./submission-consent";
+import { resolveOnboardingSubmissionConsentPolicy } from "../consent";
+import { consentGatesEnabled } from "../runtime";
 
 // ── Concurrency protocol (mirrors the reviewed P-022/P-025-C shape) ────
 
@@ -255,6 +256,9 @@ async function checkReviewConsent(
   registry: ConsentPolicyRegistry,
   forUpdate: boolean,
 ): Promise<void> {
+  // D19: parked consent gate — allows (and skips the consent reads) when
+  // ENABLE_CONSENT_GATES is off.
+  if (!consentGatesEnabled()) return;
   const required = requiredConsentsFor(resource) ?? [];
   for (const kind of required) {
     const version = registry.currentVersion(kind);

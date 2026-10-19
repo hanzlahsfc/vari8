@@ -1,4 +1,5 @@
 import { ACCESS_TOKEN_TERMINAL_RETENTION_MS } from "../tokens/store";
+import { consentGatesEnabled, type ConsentGateEnv } from "../runtime";
 
 /**
  * S1-G retention: policy represented as data, evaluation only.
@@ -113,7 +114,13 @@ export function evaluateRetention(
  * Automatic retention enforcement is forbidden until human policy supplies
  * durations and an approved runner exists. No code may arrange or trigger
  * cleanup through this module.
+ *
+ * D19: a parked consent/health-data gate — with `ENABLE_CONSENT_GATES`
+ * off the assertion allows; when set it keeps failing closed as before.
  */
-export function assertAutomaticRetentionConfigured(): never {
+export function assertAutomaticRetentionConfigured(
+  env: ConsentGateEnv = process.env,
+): void {
+  if (!consentGatesEnabled(env)) return;
   throw new RetentionError("retention_not_configured");
 }

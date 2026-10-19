@@ -41,6 +41,10 @@ export default defineConfig({
       // Keep local integration runs on the same request-rewrite path as CI.
       AUTH_URL: "http://127.0.0.1:3000",
       AUTH_TRUST_HOST: "true",
+      // D19: the consent suites keep exercising the parked gates until
+      // PR-T2 removes them; the flag is unset (off) in every other
+      // environment.
+      ENABLE_CONSENT_GATES: "1",
     },
   },
 });

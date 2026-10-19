@@ -20,6 +20,8 @@
     "extract:sheets": "tsx scripts/extract-sheets.ts",
     "import:nutrition": "tsx scripts/import-nutrition.ts",
     "import:exercise": "tsx scripts/import-exercise.ts",
+    "seed:dev": "tsx scripts/seed/index.ts",
+    "db:fresh": "tsx scripts/db-fresh.ts",
     "verify": "npm run typecheck && npm run lint && npm run test",
     "parity": "node tools/parity/run.mjs"
   },

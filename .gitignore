@@ -51,3 +51,6 @@ icm/**/*.log
 
 # test-audit run logs
 icm/03-plan/*.log
+
+# W0 program generator bytecode
+icm/05-build/tools/__pycache__/

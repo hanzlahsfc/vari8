@@ -410,35 +410,8 @@ type Sym = { name: string; kind: string; sig: string };
 
 const MAX_SIG = 200;
 
-function sanitizeType(s: string): string | null {
-  if (!s) return null;
-  if (s.includes(ROOT)) return null;
-  if (/\bany\b/.test(s)) return null;
-  // `import("/abs/or/relative/path").Name` -> `Name`
-  const cleaned = collapse(
-    s
-      .replace(/import\("[^"]*"\)\./g, "")
-      .replace(/\btypeof\s+import\("[^"]*"\)/g, "typeof"),
-  );
-  if (cleaned.length === 0 || cleaned.length > MAX_SIG) return null;
-  return cut(cleaned, MAX_SIG);
-}
-
-function returnTypeOf(
-  node: ts.SignatureDeclaration,
-  checker: ts.TypeChecker,
-): string | null {
-  const sig = checker.getSignatureFromDeclaration(node);
-  if (!sig) return null;
-  return sanitizeType(
-    checker.typeToString(
-      sig.getReturnType(),
-      node,
-      ts.TypeFormatFlags.NoTruncation,
-    ),
-  );
-}
-
+// Signatures use only source text, never checker-inferred types: inferred types change with the
+// installed node_modules (frontend deps, generated Prisma client), which made index:check env-dependent.
 function sliceText(node: ts.Node, stop: number, sf: ts.SourceFile): string {
   return rawText(sf.text.slice(node.getStart(sf), stop))
     .replace(/\(\s+/g, "(")
@@ -446,11 +419,7 @@ function sliceText(node: ts.Node, stop: number, sf: ts.SourceFile): string {
     .replace(/,\s*\)/g, ")");
 }
 
-function callableSignature(
-  node: ts.Node,
-  sf: ts.SourceFile,
-  checker: ts.TypeChecker,
-): string {
+function callableSignature(node: ts.Node, sf: ts.SourceFile): string {
   const fn = node as ts.FunctionLikeDeclaration;
   const arrow = ts.isArrowFunction(node) || ts.isFunctionExpression(node);
   let head = sliceText(
@@ -459,19 +428,11 @@ function callableSignature(
     sf,
   );
   if (arrow) head = head.replace(/=>$/, "").trimEnd();
-  if (!fn.type) {
-    const rt = returnTypeOf(fn as ts.SignatureDeclaration, checker);
-    if (rt) head += `: ${rt}`;
-  }
   if (arrow) head += " =>";
   return cut(head, MAX_SIG);
 }
 
-function variableSym(
-  decl: ts.VariableDeclaration,
-  sf: ts.SourceFile,
-  checker: ts.TypeChecker,
-): Sym {
+function variableSym(decl: ts.VariableDeclaration, sf: ts.SourceFile): Sym {
   const name = decl.name.getText(sf);
   const list = decl.parent as ts.VariableDeclarationList;
   const kw = (list.flags & ts.NodeFlags.Const) !== 0 ? "const" : "let";
@@ -489,19 +450,11 @@ function variableSym(
       name,
       kind,
       sig: cut(
-        `export ${kw} ${name} = ${callableSignature(init, sf, checker)}`,
+        `export ${kw} ${name} = ${callableSignature(init, sf)}`,
         MAX_SIG,
       ),
     };
   }
-  const inferred = sanitizeType(
-    checker.typeToString(
-      checker.getTypeAtLocation(decl.name),
-      decl,
-      ts.TypeFormatFlags.NoTruncation,
-    ),
-  );
-  if (inferred) return { name, kind, sig: `export ${kw} ${name}: ${inferred}` };
   if (init)
     return {
       name,
@@ -593,7 +546,7 @@ function symbolsOf(sf: ts.SourceFile, checker: ts.TypeChecker): Sym[] {
       add(asName(stmt.name.text), {
         name: asName(stmt.name.text),
         kind: "function",
-        sig: callableSignature(stmt, sf, checker),
+        sig: callableSignature(stmt, sf),
       });
     } else if (ts.isClassDeclaration(stmt) && stmt.name) {
       const heritage = (stmt.heritageClauses ?? [])
@@ -653,7 +606,7 @@ function symbolsOf(sf: ts.SourceFile, checker: ts.TypeChecker): Sym[] {
     } else if (ts.isVariableStatement(stmt)) {
       for (const decl of stmt.declarationList.declarations) {
         if (ts.isIdentifier(decl.name)) {
-          const sym = variableSym(decl, sf, checker);
+          const sym = variableSym(decl, sf);
           add(sym.name, sym);
         }
       }
@@ -777,8 +730,7 @@ function buildSymbols(): string {
       `Counts: ${modules.length} modules with exports, ${total} exported symbols.`,
       "",
       `Signatures are one line, collapsed from source and cut at ${MAX_SIG} characters with a trailing \`...\`.`,
-      "Inferred types are omitted when the compiler cannot state them self-containedly (unresolved imports,",
-      "`any`, absolute paths, or an inferred type longer than the cap), so a line is never checkout-specific.",
+      "Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.",
       'Imported type names are shown without their `import("...")` prefix.',
     ]),
     ...body,

@@ -18,6 +18,7 @@ import {
   unconfiguredConsentPolicy,
   type ConsentPolicyRegistry,
 } from "../consent";
+import { consentGatesEnabled } from "../runtime";
 import {
   OnboardingSubmissionError,
   SUBMISSION_LIMITS,
@@ -52,8 +53,8 @@ export { OnboardingSubmissionError } from "./submission-gate";
 
 // ── Development consent policy (#83, dev/test-only) ───────────────────────
 // The dev consent versions and the trusted-environment resolver live in
-// ./submission-consent; re-exported here for the existing import path.
-export { ONBOARDING_SUBMISSION_DEV_CONSENT } from "./submission-consent";
+// ../consent (F11 merge); re-exported here for the existing import path.
+export { ONBOARDING_SUBMISSION_DEV_CONSENT } from "../consent";
 
 export type OnboardingSubmissionDeps = {
   db?: PrismaClient;
@@ -394,6 +395,9 @@ async function checkRequiredConsent(
   registry: ConsentPolicyRegistry,
   forUpdate: boolean,
 ): Promise<void> {
+  // D19: parked consent gate — allows (and skips the consent reads) when
+  // ENABLE_CONSENT_GATES is off.
+  if (!consentGatesEnabled()) return;
   const required = requiredConsentsFor("onboardingSubmissions") ?? [];
   for (const kind of required) {
     const version = registry.currentVersion(kind);

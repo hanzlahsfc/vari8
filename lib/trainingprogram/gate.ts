@@ -15,28 +15,24 @@
  * authorization every operation performs. Server-only: reads
  * process.env directly and is never exported to the client bundle.
  */
-export type TrainingRuntimeClass = "development" | "test" | "production";
+import {
+  classifyRuntime,
+  devFlagEnabled,
+  type RuntimeClass,
+  type RuntimeEnv,
+} from "../runtime";
 
-type RuntimeEnv = { APP_ENV?: string; NODE_ENV?: string };
+export type TrainingRuntimeClass = RuntimeClass;
+
 export type TrainingPlansEnv = RuntimeEnv & { ENABLE_TRAINING_PLANS?: string };
 
-export function classifyTrainingRuntime(
-  env: RuntimeEnv = process.env,
-): TrainingRuntimeClass {
-  const explicit = env.APP_ENV;
-  if (explicit !== undefined)
-    return explicit === "development" || explicit === "test"
-      ? explicit
-      : "production";
-  const nodeEnv = env.NODE_ENV;
-  if (nodeEnv === "development" || nodeEnv === "test") return nodeEnv;
-  return "production";
-}
+export const classifyTrainingRuntime: (
+  env?: RuntimeEnv,
+) => TrainingRuntimeClass = classifyRuntime;
 
 /** The shared enablement decision — flag AND trusted runtime, else closed. */
 export function isTrainingPlansEnabled(
   env: TrainingPlansEnv = process.env,
 ): boolean {
-  if (env.ENABLE_TRAINING_PLANS !== "1") return false;
-  return classifyTrainingRuntime(env) !== "production";
+  return devFlagEnabled(env.ENABLE_TRAINING_PLANS, env);
 }

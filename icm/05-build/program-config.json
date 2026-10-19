@@ -1,0 +1,9 @@
+{
+  "_comment": "Machine paths written into card text and used by the generator. Tools derive the repo root from their own location; only these deployment values are configured.",
+  "worktrees_root": "/home/nexuslink/vari8-worktrees",
+  "integration_worktree": "/home/nexuslink/vari8-worktrees/beta",
+  "hermes_home": "/home/nexuslink/.hermes",
+  "jobcap": "/home/nexuslink/.local/bin/jobcap",
+  "root_checkout": "/home/nexuslink/NEXUS_AI_CENTER/04_PROJECTS/Vari8",
+  "prettier": "/home/nexuslink/vari8-worktrees/merge-proto/node_modules/.bin/prettier"
+}

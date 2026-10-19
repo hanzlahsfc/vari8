@@ -11,10 +11,13 @@
  * form content, or internals.
  */
 
+import { devFlagEnabled, type RuntimeEnv } from "../runtime";
+
 export function isOnboardingAssignmentsEnabled(
-  env: string | undefined,
+  flag: string | undefined,
+  env: RuntimeEnv = process.env,
 ): boolean {
-  return env === "1";
+  return devFlagEnabled(flag, env);
 }
 
 export const ASSIGNMENT_LIMITS = {

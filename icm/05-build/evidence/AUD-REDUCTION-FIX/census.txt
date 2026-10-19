@@ -1,0 +1,77 @@
+## F1 census
+app/workspace tsx: 45; app/(tracker) tsx: 21
+## F2 components
+components ts/tsx files: 31
+sign-out-button importers:
+  app/(tracker)/workspace/[workspaceId]/check-ins/layout.tsx
+  app/(tracker)/workspace/[workspaceId]/daily/layout.tsx
+  app/(tracker)/workspace/[workspaceId]/home/layout.tsx
+  app/(tracker)/workspace/[workspaceId]/meal-plan/layout.tsx
+  app/(tracker)/workspace/[workspaceId]/onboarding/layout.tsx
+  app/(tracker)/workspace/[workspaceId]/training-program/layout.tsx
+  app/workspace/[workspaceId]/layout.tsx
+  components/AGENTS.md
+## F4 transition modules, importers outside the subsystem
+frontend/src rollback hits (files): 0
+frontend/src impact hits (files): 0
+frontend/src upgrade hits (files, lines): 6, 60
+## F5 importers of extraction modules
+  lib/exercise/source.ts:8:} from "../extraction/databases";
+  lib/exercise/source.ts:15: * the Exercise header aliases from `lib/extraction/databases.ts`. The source is
+  lib/nutrition/source.ts:8:} from "../extraction/databases";
+  lib/nutrition/source.ts:16: * Nutrition header aliases from `lib/extraction/databases.ts`. The source is a
+  scripts/extract-sheets.ts:32:} from "../lib/extraction/css";
+  scripts/extract-sheets.ts:33:import { extractExercises, extractFoods } from "../lib/extraction/databases";
+  tests/unit/databases.test.ts:3:import { extractExercises, extractFoods } from "../../lib/extraction/databases";
+  tests/unit/theme-artifact.test.ts:3:import type { ClassDeclarations } from "../../lib/extraction/css";
+extract:sheets in package.json:
+  20:    "extract:sheets": "tsx scripts/extract-sheets.ts",
+## F10 flags
+.env.example commented or set flags: 10
+distinct ENABLE_ names in code (app lib components auth.ts):
+  ENABLE_CHECK_INS
+  ENABLE_CLIENT_DASHBOARD
+  ENABLE_CLIENT_SETUP
+  ENABLE_CLIENT_SETUP_TRANSITIONS
+  ENABLE_COACHING_TEMPLATES
+  ENABLE_DAILY_ENTRY
+  ENABLE_DAILY_PROTOTYPE
+  ENABLE_MEAL_PLANS
+  ENABLE_ONBOARDING_ASSIGNMENTS
+  ENABLE_ONBOARDING_SUBMISSION
+  ENABLE_PARAMETER_CLASSIFICATION
+  ENABLE_SHEET_VIEWER
+  ENABLE_TRAINING_PLANS
+flag mention lines, app lib components auth.ts: 112
+process.env.ENABLE_ lines: 64
+flag mention + is*Enabled( + classify*Runtime( call lines: 243
+classifyXRuntime definitions:
+  lib/checkin/forms-gate.ts:31:export function classifyCheckInRuntime(
+  lib/mealplan/gate.ts:33:export function classifyMealPlanRuntime(
+  lib/onboarding/submission-consent.ts:43:export function classifySubmissionRuntime(
+  lib/trainingprogram/gate.ts:23:export function classifyTrainingRuntime(
+## Tests and e2e
+tests tracked files (incl. AGENTS.md): 159
+tests/unit files: 97
+tests/integration files: 56
+tests/e2e files: 5
+e2e files hitting /workspace, /daily, /login:
+  tests/e2e/fixture-sweep.ts ws=3 daily=0 login=0
+  tests/e2e/global-setup.ts ws=0 daily=0 login=0
+  tests/e2e/global-teardown.ts ws=0 daily=0 login=0
+  tests/e2e/invite-acceptance.spec.ts ws=1 daily=0 login=6
+  tests/e2e/password-reset.spec.ts ws=2 daily=0 login=9
+## PLAN references (current line numbers)
+  342:- [ ] Backend orphans owned (deleted or kept as the card and the ledger say): S12-22, S12-41, S12-44, S12-46, S12-47, S12-48, S12-49, S12-54, S12-55, S12-56, S12-57, S12-58.
+  707:- [ ] Backend orphans owned (deleted or kept as the card and the ledger say): S12-43.
+  2000:- [ ] Backend orphans owned (deleted or kept as the card and the ledger say): S12-08, S12-09, S12-10, S12-11, S12-12, S12-45, S12-50, S12-51, S12-52, S12-53, R3-16, R3-18, R3-20, R3-21, R3-22.
+## Cards and state files that cite BACKEND-REDUCTION
+  icm/03-plan/output/PLAN.md
+  icm/05-build/cards/aud-backend-reduction.md
+  icm/05-build/cards/aud-backend-reduction-verify.md
+  icm/05-build/cards/pr-04-dev-runtime.md
+  icm/05-build/cards/pr-r0-lib-dedupe.md
+  icm/05-build/cards/pr-r1-delete-superseded.md
+  icm/05-build/cards/pr-r1-delete-superseded-verify.md
+  icm/05-build/cards/pr-r3-flags-deps.md
+  icm/05-build/ORCHESTRATOR-STATE.md

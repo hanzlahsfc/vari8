@@ -13,8 +13,11 @@
  * field/parser, universal duplicate-publish invariant (#64), and pure
  * eligibility module are live on merge and are NOT flag-gated.
  */
+import { devFlagEnabled, type RuntimeEnv } from "../runtime";
+
 export function isParameterClassificationEnabled(
-  env: string | undefined,
+  flag: string | undefined,
+  env: RuntimeEnv = process.env,
 ): boolean {
-  return env === "1";
+  return devFlagEnabled(flag, env);
 }
