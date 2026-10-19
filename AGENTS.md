@@ -12,6 +12,9 @@ This is the new PRGRSS-derived product. Read these files completely before any w
 Do not rely on chat history. Do not invent formulas, permissions, thresholds, health-data
 policy, workflows, or layouts.
 
+Navigation: `docs/index/README.md` is the generated index (routes, exported symbols, Prisma data
+model, glossary). Regenerate it with `npm run index` and verify it with `npm run index:check`.
+
 ## Source authority (highest first)
 
 0. The canvas. Lilly's frontend (`frontend/`, from branch `FRONTEND`) dictates which screens,
