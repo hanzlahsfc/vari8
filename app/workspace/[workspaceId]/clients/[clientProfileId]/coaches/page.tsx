@@ -20,11 +20,15 @@ const MAX_ID_LEN = 128;
 /**
  * SOLO-COACH-I1 — owner-managed coach assignments (decision 111).
  *
- * Admission: session gate → bounded route-ID parse → client/workspace
- * coherence (404) → `listClientAssignments` collection authorization
- * (`clientAssignments/read`, workspace-scope-only → owner only). Every
- * denial maps to the repo-standard non-disclosing 403, including the
- * dual-role PLATFORM_ADMIN + ACTIVE owner-membership path (deny-set).
+ * Admission: session gate → bounded route-ID parse →
+ * `listClientAssignments` collection authorization
+ * (`clientAssignments/read`, workspace-scope-only → owner only) →
+ * client/workspace coherence (404). Authorization precedes the client
+ * lookup so a denied caller cannot distinguish a missing client from a
+ * foreign one, and no tenant data is read before the boundary
+ * (RSC-NAME-LEAK). Every denial maps to the repo-standard
+ * non-disclosing 403, including the dual-role PLATFORM_ADMIN + ACTIVE
+ * owner-membership path (deny-set).
  *
  * Mutations are POST-only through ./actions; each action independently
  * re-authorizes inside the service transaction — this page's admission is
@@ -50,12 +54,6 @@ export default async function ClientCoachesPage({
 
   const session = { user: { id: userId } };
 
-  const client = await prisma.clientProfile.findFirst({
-    where: { id: clientProfileId, workspaceId },
-    select: { name: true },
-  });
-  if (client === null) notFound();
-
   let assignments;
   let eligibleMembers;
   try {
@@ -71,6 +69,12 @@ export default async function ClientCoachesPage({
     if (error instanceof AccessDeniedError) forbidden();
     throw error;
   }
+
+  const client = await prisma.clientProfile.findFirst({
+    where: { id: clientProfileId, workspaceId },
+    select: { name: true },
+  });
+  if (client === null) notFound();
 
   return (
     <div className="catalog-page" data-testid="coach-assignments-page">

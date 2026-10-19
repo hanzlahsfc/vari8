@@ -54,17 +54,19 @@ export default async function StaffClientDashboardPage({
   const writeScope = resolveScope("clientDashboards", "write", member.role);
   const canEdit = writeScope === "workspace" || writeScope === "assigned";
 
-  const client = await prisma.clientProfile.findFirst({
-    where: { id: clientProfileId, workspaceId },
-    select: { name: true },
-  });
-  if (!client) notFound();
-
   const result = await readStaffDashboardLayout(
     { user: { id: userId } },
     { workspaceId, clientProfileId },
   );
   if (!result.ok) notFound();
+
+  // The client name is tenant data: read it only after the authorizing
+  // boundary call, so a denied response cannot carry it (RSC-NAME-LEAK).
+  const client = await prisma.clientProfile.findFirst({
+    where: { id: clientProfileId, workspaceId },
+    select: { name: true },
+  });
+  if (!client) notFound();
 
   // HABITS-I1 (decision 110): habit data must not gate the editor's
   // first paint or hydration — the serialized boundary reads would

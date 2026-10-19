@@ -8,13 +8,13 @@ Every gate re-run independently exits 0 with counts matching the builder's repor
 
 ## 1. Gates (re-run by verifier, real exit codes)
 
-| # | Command (cwd) | Exit | Result |
-|---|---|---|---|
-| 1 | `npm run typecheck` (root) | 0 | `tsc --noEmit`, no diagnostics |
-| 2 | `npm run lint` (root) | 0 | 16 problems: 0 errors, 16 warnings = 5 `@typescript-eslint/no-unused-vars` (pre-existing) + 11 `react-hooks/*` downgraded to warn (see note A) |
-| 3 | `npm run test` (root) | 0 | Test Files 105 passed / 4 skipped (109). Tests **1308 passed / 23 skipped (1331)**. Matches expected 1308/23. |
-| 4 | `npm run build` (root) | 0 | `▲ Next.js 16.3.8 (Turbopack)`, `✓ Compiled successfully`, routes emitted |
-| 5 | `npm run build` (`frontend/`) | 0 | `Next.js` build, routes `/`, `/_not-found`, `/coach`, `/ethereal` prerendered |
+| #   | Command (cwd)                 | Exit | Result                                                                                                                                         |
+| --- | ----------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `npm run typecheck` (root)    | 0    | `tsc --noEmit`, no diagnostics                                                                                                                 |
+| 2   | `npm run lint` (root)         | 0    | 16 problems: 0 errors, 16 warnings = 5 `@typescript-eslint/no-unused-vars` (pre-existing) + 11 `react-hooks/*` downgraded to warn (see note A) |
+| 3   | `npm run test` (root)         | 0    | Test Files 105 passed / 4 skipped (109). Tests **1308 passed / 23 skipped (1331)**. Matches expected 1308/23.                                  |
+| 4   | `npm run build` (root)        | 0    | `▲ Next.js 16.3.8 (Turbopack)`, `✓ Compiled successfully`, routes emitted                                                                      |
+| 5   | `npm run build` (`frontend/`) | 0    | `Next.js` build, routes `/`, `/_not-found`, `/coach`, `/ethereal` prerendered                                                                  |
 
 Note: the card names `npm run test:unit`; no such script exists. `npm run test` is the unit suite and was used.
 
@@ -22,21 +22,21 @@ Note: the card names `npm run test:unit`; no such script exists. `npm run test` 
 
 Port 3611 was used per the verifier brief (the card says 3610; the builder ran 3610). Database `app_pr02v` was created fresh and dropped at the end. Secrets were read from the local Vari8 `.env` into the process environment only and never printed. `DATABASE_URL` and `AUTH_URL` were overridden in the process environment, so no worktree `.env` was written.
 
-| Step | Command | Exit / result |
-|---|---|---|
-| DB create | `CREATE DATABASE app_pr02v` on 127.0.0.1:5433 | 0 |
-| Migrate | `npx prisma migrate deploy` | 0 |
-| Prisma client | `npx prisma generate` | 0 |
-| Test coach | `tests/e2e/global-setup.ts` (repo's seed helper) run via `npx tsx`; creates `coach@s1h-e2e.test` (COACH in workspace `s1h-e2e-workspace`) on the fresh DB only | 0, `seed ok` |
-| Dev server | `npx next dev --turbopack -p 3611 -H 127.0.0.1` | `Next.js 16.3.8 (Turbopack)`, `Ready in 166ms` |
-| `GET /login` | `curl` | **200**, 13,890 bytes, password input present, no error overlay |
-| `GET /api/auth/session` (anonymous) | `curl` | `null` |
-| `POST /api/auth/callback/credentials` (valid test coach) | `curl`, CSRF from `/api/auth/csrf` | **302**, `Set-Cookie: authjs.session-token` |
-| `GET /api/auth/session` (with cookie) | `curl` | **200**, JSON user `coach@s1h-e2e.test`, id present, expires set |
-| Negative control (wrong password) | `curl` | 302 to `/login?error=CredentialsSignin`, no session cookie, session `null` |
-| Dev server log | scan | only error is the expected `[auth][error] CredentialsSignin` from the negative control |
-| Stop server | kill process group | port 3611 closed |
-| Drop DB | `DROP DATABASE app_pr02v WITH (FORCE)` | 0; `pg_database` count for `app_pr02v` = 0 |
+| Step                                                     | Command                                                                                                                                                        | Exit / result                                                                          |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| DB create                                                | `CREATE DATABASE app_pr02v` on 127.0.0.1:5433                                                                                                                  | 0                                                                                      |
+| Migrate                                                  | `npx prisma migrate deploy`                                                                                                                                    | 0                                                                                      |
+| Prisma client                                            | `npx prisma generate`                                                                                                                                          | 0                                                                                      |
+| Test coach                                               | `tests/e2e/global-setup.ts` (repo's seed helper) run via `npx tsx`; creates `coach@s1h-e2e.test` (COACH in workspace `s1h-e2e-workspace`) on the fresh DB only | 0, `seed ok`                                                                           |
+| Dev server                                               | `npx next dev --turbopack -p 3611 -H 127.0.0.1`                                                                                                                | `Next.js 16.3.8 (Turbopack)`, `Ready in 166ms`                                         |
+| `GET /login`                                             | `curl`                                                                                                                                                         | **200**, 13,890 bytes, password input present, no error overlay                        |
+| `GET /api/auth/session` (anonymous)                      | `curl`                                                                                                                                                         | `null`                                                                                 |
+| `POST /api/auth/callback/credentials` (valid test coach) | `curl`, CSRF from `/api/auth/csrf`                                                                                                                             | **302**, `Set-Cookie: authjs.session-token`                                            |
+| `GET /api/auth/session` (with cookie)                    | `curl`                                                                                                                                                         | **200**, JSON user `coach@s1h-e2e.test`, id present, expires set                       |
+| Negative control (wrong password)                        | `curl`                                                                                                                                                         | 302 to `/login?error=CredentialsSignin`, no session cookie, session `null`             |
+| Dev server log                                           | scan                                                                                                                                                           | only error is the expected `[auth][error] CredentialsSignin` from the negative control |
+| Stop server                                              | kill process group                                                                                                                                             | port 3611 closed                                                                       |
+| Drop DB                                                  | `DROP DATABASE app_pr02v WITH (FORCE)`                                                                                                                         | 0; `pg_database` count for `app_pr02v` = 0                                             |
 
 ## 3. Diff review (`git diff Vari8-Beta..HEAD`)
 

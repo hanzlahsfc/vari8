@@ -12,15 +12,15 @@ Hunk 1 (dashboard-editor) and hunk 2 (checkin-calendar) pass with discriminating
 
 ## Per-item verdicts
 
-| Item | Verdict | Basis |
-|---|---|---|
-| (a) hunk 1 dashboard-editor | PASS, with one declared divergence from base | WINDOW probe discriminates (fails 26b8690, passes base and HEAD). Divergence: GAP window (see below). |
-| (a) hunk 2 checkin-calendar | PASS | LOAD-REBIND discriminates (fails 26b8690, passes base and HEAD). |
-| (a) hunk 3 feedback-thread | No discriminating probe exists; success path PASS on end state; mount path not a runtime defect | See §3. |
-| (b) no effect setState, no IIFE, no eslint-disable in diff | **FAIL** | Mount reconciliation IIFE, §4. |
-| (c) four rules at error, zero react-hooks findings | PASS | §5. |
-| (d) gates fresh; round-1 e2e | PASS for gates; round-1 e2e: none exist | §6. |
-| (e) frontend/ and docs/STATUS.md unchanged | PASS | §7. |
+| Item                                                       | Verdict                                                                                         | Basis                                                                                                 |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| (a) hunk 1 dashboard-editor                                | PASS, with one declared divergence from base                                                    | WINDOW probe discriminates (fails 26b8690, passes base and HEAD). Divergence: GAP window (see below). |
+| (a) hunk 2 checkin-calendar                                | PASS                                                                                            | LOAD-REBIND discriminates (fails 26b8690, passes base and HEAD).                                      |
+| (a) hunk 3 feedback-thread                                 | No discriminating probe exists; success path PASS on end state; mount path not a runtime defect | See §3.                                                                                               |
+| (b) no effect setState, no IIFE, no eslint-disable in diff | **FAIL**                                                                                        | Mount reconciliation IIFE, §4.                                                                        |
+| (c) four rules at error, zero react-hooks findings         | PASS                                                                                            | §5.                                                                                                   |
+| (d) gates fresh; round-1 e2e                               | PASS for gates; round-1 e2e: none exist                                                         | §6.                                                                                                   |
+| (e) frontend/ and docs/STATUS.md unchanged                 | PASS                                                                                            | §7.                                                                                                   |
 
 ## 1. Probes
 
@@ -28,17 +28,17 @@ Probe sources: `icm/05-build/evidence/PR-03b-verify-2/probes/`. Run with `npx vi
 
 Results (pass/fail per tree; 26b8690 is the old FIX):
 
-| Probe | 55a0f08 base | 26b8690 old FIX | 3cbee34 HEAD | Discriminates 26b8690 from base? |
-|---|---|---|---|---|
-| H1 CONTROL: flushed reload, then drag commit | pass | pass | pass | n/a (sanity: drag commit runs, x=8) |
-| **H1 WINDOW: reload commit, then pointerup before passive effects flush; reloaded name must survive** | **pass** (name RELOADED, drag commit x=8) | **FAIL** (name reverted to "Alpha", drag commit x=8) | **pass** | **yes**. Repeated 3 times: base pass, 26b8690 fail each time. |
-| H1 PARITY: rendered reload, then add widget x2 | pass | pass | pass | no (parity) |
-| H1 GAP: slot write not yet rendered, then add widget | FAIL | FAIL | pass | HEAD differs from base here, see below |
-| H2 LOAD-REBIND: same range, new `load` identity | pass | **FAIL** (stale result, no Loading) | pass | **yes** |
-| H2 PARITY: month navigation shows Loading | pass | pass | pass | no (parity) |
-| H3 end-state PARITY: ok send (row, cleared composer, rotated nonce, marker cleared) | pass | pass | pass | no |
-| H3 end-state PARITY: error send (body kept, no row, marker kept) | pass | pass | pass | no |
-| H3 MOUNT PARITY: checking / sent / not_sent | pass x3 | pass x3 | pass x3 | no |
+| Probe                                                                                                 | 55a0f08 base                              | 26b8690 old FIX                                      | 3cbee34 HEAD | Discriminates 26b8690 from base?                              |
+| ----------------------------------------------------------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------- | ------------ | ------------------------------------------------------------- |
+| H1 CONTROL: flushed reload, then drag commit                                                          | pass                                      | pass                                                 | pass         | n/a (sanity: drag commit runs, x=8)                           |
+| **H1 WINDOW: reload commit, then pointerup before passive effects flush; reloaded name must survive** | **pass** (name RELOADED, drag commit x=8) | **FAIL** (name reverted to "Alpha", drag commit x=8) | **pass**     | **yes**. Repeated 3 times: base pass, 26b8690 fail each time. |
+| H1 PARITY: rendered reload, then add widget x2                                                        | pass                                      | pass                                                 | pass         | no (parity)                                                   |
+| H1 GAP: slot write not yet rendered, then add widget                                                  | FAIL                                      | FAIL                                                 | pass         | HEAD differs from base here, see below                        |
+| H2 LOAD-REBIND: same range, new `load` identity                                                       | pass                                      | **FAIL** (stale result, no Loading)                  | pass         | **yes**                                                       |
+| H2 PARITY: month navigation shows Loading                                                             | pass                                      | pass                                                 | pass         | no (parity)                                                   |
+| H3 end-state PARITY: ok send (row, cleared composer, rotated nonce, marker cleared)                   | pass                                      | pass                                                 | pass         | no                                                            |
+| H3 end-state PARITY: error send (body kept, no row, marker kept)                                      | pass                                      | pass                                                 | pass         | no                                                            |
+| H3 MOUNT PARITY: checking / sent / not_sent                                                           | pass x3                                   | pass x3                                              | pass x3      | no                                                            |
 
 The first mount probe (`reverify2-mount`) passed on all three trees. It is parity only and was not used as evidence for (a).
 
@@ -65,11 +65,11 @@ The first mount probe (`reverify2-mount`) passed on all three trees. It is parit
 
 - Characterisation (`probe3-out.txt`):
 
-| Tree | `clearMarker` (success) called from a passive-effect flush | Items and textarea at first commit showing "Response sent." | Mount `resolve` called from a passive-effect flush |
-|---|---|---|---|
-| 55a0f08 base | true | 0 rows, "Hello" | true |
-| 26b8690 old FIX | true | 0 rows, "Hello" | true |
-| 3cbee34 HEAD | **false** | 1 row, "" | true |
+| Tree            | `clearMarker` (success) called from a passive-effect flush | Items and textarea at first commit showing "Response sent." | Mount `resolve` called from a passive-effect flush |
+| --------------- | ---------------------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------- |
+| 55a0f08 base    | true                                                       | 0 rows, "Hello"                                             | true                                               |
+| 26b8690 old FIX | true                                                       | 0 rows, "Hello"                                             | true                                               |
+| 3cbee34 HEAD    | **false**                                                  | 1 row, ""                                                   | true                                               |
 
 - Base and 26b8690 are behaviourally identical on the success path (same effect origin, same commit timing). Therefore no probe can fail 26b8690 and pass base. The IIFE-wrapper defect is a code-shape defect that the runtime cannot see.
 - HEAD's success consequences now run inside the action. The row and cleared composer appear one commit earlier than base, in the same commit as the confirm line. End state is identical (PARITY passes on all three). This is a commit-granularity change, not a user-visible one.
@@ -110,14 +110,14 @@ Required repair (for the builder, not done here): remove the IIFE. The mount rec
 
 Driver: `icm/05-build/evidence/PR-03b-verify-2/run-gates.sh`; `summary.txt`.
 
-| Command | Exit | Result |
-|---|---|---|
-| `npm run typecheck` | 0 | `tsc --noEmit` clean |
-| `npm run lint` | 0 | 0 errors, 3 pre-existing warnings (see §5) |
-| `npx eslint . \| grep -cE '(warning\|error)  .*react-hooks/'` | 0 (count 0) | zero react-hooks findings |
-| `npm run test` | 0 | 96 files passed, 1137 tests passed, 0 skipped (count changed from the 105/1308 in PR-03b because PR-03a's test-audit deletions landed) |
-| `npm run build` | 0 | `next build --turbopack`, compiled |
-| `cd frontend && npm run build` | 0 | static export |
+| Command                                                       | Exit        | Result                                                                                                                                 |
+| ------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run typecheck`                                           | 0           | `tsc --noEmit` clean                                                                                                                   |
+| `npm run lint`                                                | 0           | 0 errors, 3 pre-existing warnings (see §5)                                                                                             |
+| `npx eslint . \| grep -cE '(warning\|error)  .*react-hooks/'` | 0 (count 0) | zero react-hooks findings                                                                                                              |
+| `npm run test`                                                | 0           | 96 files passed, 1137 tests passed, 0 skipped (count changed from the 105/1308 in PR-03b because PR-03a's test-audit deletions landed) |
+| `npm run build`                                               | 0           | `next build --turbopack`, compiled                                                                                                     |
+| `cd frontend && npm run build`                                | 0           | static export                                                                                                                          |
 
 Round-1 e2e specs: none exist at HEAD. `tests/e2e/` holds only `fixture-sweep.ts`, `global-setup.ts`, `global-teardown.ts`, `invite-acceptance.spec.ts`, `password-reset.spec.ts`. All seven round-1 specs (client-dashboard, checkin-feedback, checkin-calendar, checkin-instances, checkin-forms, onboarding-forms, habits) were deleted by PR-03a (`ef012f1`, owner-approved). The `118e26f` harness fix targeted `checkin-instances.spec.ts:644`, which no longer exists. That fix is moot at HEAD and is not runtime evidence for anything. No e2e run was performed; the runtime evidence is the probes above, which is what (a) required.
 

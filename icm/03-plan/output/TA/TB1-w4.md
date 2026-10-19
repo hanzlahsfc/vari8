@@ -15,7 +15,7 @@ Lever: /tmp/tb1-w4-mutate.sh. Logs: /tmp/tb1-w4-*.log.
 | tests/unit/route-guard.test.ts | requireSessionUser | 194-213 | 3 | lib/auth/route-guard.ts requireSessionUser | KEEP | route-guard.ts:171 redirect("/login") -> redirect("/other"), 2 failed | redirects to /login when unauthenticated, redirects when the session has no user id |
 | tests/unit/route-guard.test.ts | listSessionWorkspaces | 215-251 | 1 | lib/auth/route-guard.ts listSessionWorkspaces | KEEP | route-guard.ts:189 role in STAFF_WORKSPACE_ROLES -> ["CLIENT"], 1 failed | scopes by user + ACTIVE membership + ACTIVE workspace + staff role, minimal fields |
 | tests/unit/route-guard.test.ts | getAuthorizedWorkspaceSummary | 253-272 | 2 | lib/auth/route-guard.ts getAuthorizedWorkspaceSummary | KEEP | route-guard.ts:237 workspaceId guard -> if (false), 1 failed | fails closed when the context has no workspace id |
-| tests/unit/source-data-policy.test.ts | source-data policy: committed catalog artifacts are synthetic fixtures | 26-74 | 4 | spec/data/*.json + spec/sheets/*-database.json committed artifacts | KEEP | m1: foods.json sourceFile -> REAL-EXPORT, 1 failed; m2: nutrition-database.json sourceFile -> REAL-EXPORT, 1 failed; m3: exercises.json inject "Chicken Breast" note field, 1 failed; m4: exercises.json sourceFile -> REAL-EXPORT, 1 failed | m1: foods.json is a synthetic fixture; m2: catalog sheet grids are synthetic fixtures; m3: contains none of the known real catalog records; m4: exercises.json is a synthetic fixture |
+| tests/unit/source-data-policy.test.ts | source-data policy: committed catalog artifacts are synthetic fixtures | 26-74 | 4 | `spec/data/*.json` + `spec/sheets/*-database.json` committed artifacts | KEEP | m1: foods.json sourceFile -> REAL-EXPORT, 1 failed; m2: nutrition-database.json sourceFile -> REAL-EXPORT, 1 failed; m3: exercises.json inject "Chicken Breast" note field, 1 failed; m4: exercises.json sourceFile -> REAL-EXPORT, 1 failed | m1: foods.json is a synthetic fixture; m2: catalog sheet grids are synthetic fixtures; m3: contains none of the known real catalog records; m4: exercises.json is a synthetic fixture |
 | tests/unit/theme.test.ts | pro-dark theme | 52-70 | 2 | themes/pro-dark.css token values | CUT | constant pin: restates exact hex literals and the font name from the css; no computation, any legitimate palette change fails it | — |
 | tests/unit/theme.test.ts | pro-white theme | 72-99 | 3 | themes/pro-white.css luminance + WCAG contrast | KEEP | pro-white.css:11 --color-base #f7f7f5 -> #2a2a2a, 2 failed (token-parity test is a pin but the contrast and luminance-threshold tests compute from the tokens) | is a distinct light theme, meets WCAG AA contrast for body text and success |
 | tests/unit/theme.test.ts | theme application | 101-117 | 2 | app/layout.tsx data-theme + app/** hex scan | KEEP | m1: layout.tsx:12 data-theme pro-dark -> pro-white, 1 failed; m2: app/page.tsx inject #a1b2c3 literal, 1 failed | m1: selects pro-dark on the html element; m2: keeps hex colors out of application styles and components |
@@ -26,6 +26,7 @@ Lever: /tmp/tb1-w4-mutate.sh. Logs: /tmp/tb1-w4-*.log.
 | tests/unit/transition-review.test.ts | P-020B serializeTransitionReview — sole browser boundary | 64-172 | 1 | lib/coaching/client-setup-transition-boundary.ts serializeTransitionReview | KEEP | client-setup-transition-boundary.ts:187 inject parameterId: e.parameterId into serialized diff entry, 1 failed | strips every raw database id from the serialized payload |
 
 Per-file verdict lines:
+
 - tests/unit/parameter-classification-dom.test.tsx: KEEP-ALL
 - tests/unit/parse.test.ts: KEEP-ALL
 - tests/unit/password-reset-delivery.test.ts: KEEP-ALL
@@ -39,14 +40,17 @@ Per-file verdict lines:
 - tests/unit/transition-review.test.ts: KEEP-ALL
 
 ## Could not check
+
 None. Every file ran a green baseline (3/9/3/5/14/11/4/7/3/12/12 tests, no skips) and every non-CUT block produced at least one failing own-test under mutation.
 
 ## Anomalies and mutation no-ops
+
 - parameter-classification-dom m3 first attempt (render `<div />` instead of null for missing classifyIndex) was a no-op (0 failures): it added no select. Retried by inverting the guard, killed all 3 tests.
 - rbac.ts first m2 attempt (`?? "denied"` on the final return) was unreachable: the isResource/isAction/isPrincipalRole guard returns undefined first. Retried at the guard itself, killed the fail-closed test.
 - Lever script /tmp/tb1-w4-mutate.sh was fixed mid-run: `grep -c -F` counts matching lines, not occurrences of a multi-line string; the uniqueness check now runs inside python only. Contract (assert-once, replace, run, restore, assert clean) unchanged.
 
 ## Self-check
+
 - 11 files audited, 19 top-level describe blocks, 18 KEEP / 1 CUT.
 - Every KEEP row cites at least one mutation run in /tmp/tb1-w4-*.log with named failed tests from that block.
 - `git -C worktree status --porcelain` empty at end; nothing written outside the output file and /tmp.
