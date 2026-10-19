@@ -1,8 +1,9 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { useMemo, useState } from "react";
+import { useReducedMotion } from "@/lib/reduced-motion";
 import { type CoachClient, formatDate, TODAY } from "./model";
 import { Empty } from "./ui";
 import "./habits-tab.css";

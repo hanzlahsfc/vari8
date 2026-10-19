@@ -1,8 +1,9 @@
 "use client";
 
 import { Check, ChevronLeft, ChevronRight, Settings2 } from "lucide-react";
-import { LayoutGroup, motion, useReducedMotion } from "motion/react";
+import { LayoutGroup, motion } from "motion/react";
 import { useCallback, useId, useMemo, useState } from "react";
+import { useReducedMotion } from "@/lib/reduced-motion";
 import { TrackerEditorContext } from "./editor-context";
 import type { TrackerConfig, TrackerEntry } from "./preview-model";
 import { TodayView } from "./today-view";

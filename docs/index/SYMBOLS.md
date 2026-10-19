@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 116 modules with exports, 1169 exported symbols.
+Counts: 117 modules with exports, 1170 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -37,6 +37,10 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function normalizeHex(value: string): string | null`
 - `export function themeVariables(appearance: Appearance): CSSProperties`
 - `export function useAppearance(): AppearanceContextValue`
+
+## `frontend/src/lib/reduced-motion.ts`
+
+- `export function useReducedMotion(): boolean`
 
 ## `frontend/src/lib/utils.ts`
 

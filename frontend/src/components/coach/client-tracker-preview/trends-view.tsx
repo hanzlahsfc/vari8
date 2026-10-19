@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, Search, X } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   type CSSProperties,
   type KeyboardEvent,
@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useReducedMotion } from "@/lib/reduced-motion";
 import {
   configuredDecimals,
   configuredUnit,

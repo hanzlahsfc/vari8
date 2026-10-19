@@ -11,7 +11,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   type ComponentPropsWithoutRef,
   useEffect,
@@ -20,6 +20,7 @@ import {
   useState,
 } from "react";
 import foodSource from "@/data/food-database.json";
+import { useReducedMotion } from "@/lib/reduced-motion";
 import { createInitialClients } from "../clients/model";
 import { ClientPlanPreview } from "./client-plan-preview";
 import { DatePicker, TimePicker } from "./date-time-fields";

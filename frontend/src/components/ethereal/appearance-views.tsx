@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Moon, RotateCcw, Sun, X } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { type CSSProperties, useEffect, useState } from "react";
 import {
   Avatar,
@@ -14,6 +14,7 @@ import {
   fontOptions,
   useAppearance,
 } from "@/lib/ethereal-appearance";
+import { useReducedMotion } from "@/lib/reduced-motion";
 import { FoundationComponents } from "./foundation-components";
 import { BodyweightTrend, NutritionTargets } from "./tracker-components";
 
