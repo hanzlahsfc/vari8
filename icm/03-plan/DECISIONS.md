@@ -76,3 +76,183 @@ Owner decision (Marcel, 2026-10-18). GitHub Actions minutes are not spent on thi
 Amends D11 (owner, 2026-10-18). A test that fails when its code breaks is not automatically worth keeping. Keep a test only if it bites AND guards something a browser check cannot easily see: workspace isolation, validation at trust boundaries, token and password rules, date and timezone rules, calculations whose numbers a person would not check by eye, and data integrity (transactions, concurrent writes, uniqueness). Tests of things visible on screen (layout limits, labels, what a component shows, navigation) are cut: the live lane covers them. Builders write new tests only in the keep categories.
 
 Tests of code that an owner decision replaces are CUT-AT-REPLACE: they stay until the replacing PR and are deleted in it. This covers every test of today's permission model (`lib/auth/rbac.ts`, `guard.ts`, `docs/security/authorization-model.md`), because permissions are redefined from scratch (owner, 2026-10-18; D10 `ROLES`); auth-library tests if the `AUTH` decision replaces the library; and consent tests (D12). The new permission model gets one table-driven test generated from the `ROLES` matrix (every role by every capability, allow or deny, run against the real server check), written in the PR that builds the matrix.
+
+## Owner answers of 2026-10-18 (D15 to D36)
+
+Source: `icm/03-plan/OWNER-ANSWERS-1018.md` (verbatim answers win on conflict). Each entry names the question it settles, what it supersedes, and the PR that builds it. A "Default" line marks an interpretation Marcel can reverse with the named word.
+
+## D15. ROLES: staff edit, clients read their own plans
+
+Settles D10 and Q15 (`ROLES`, answer 3). Two actor kinds exist. Staff are the workspace `owner` and `coach`. They hold the same data capabilities over every client of their workspace (D22). The client is self-scoped.
+
+| Capability                                                                                                             | Owner | Coach | Client           |
+| ---------------------------------------------------------------------------------------------------------------------- | ----- | ----- | ---------------- |
+| Read and edit a client's plans (training, nutrition, habits, check-in schedule, template assignment, dashboard layout) | allow | allow | deny             |
+| Read own plans, dashboard, check-in schedule and feedback                                                              | n/a   | n/a   | allow            |
+| Log own tracker values, submit own check-ins, complete own habits and tasks                                            | n/a   | n/a   | allow            |
+| Read a client's tracker values, submissions and onboarding answers                                                     | allow | allow | own only         |
+| Private coach notes and coach tasks (D26)                                                                              | allow | allow | deny             |
+| Templates, parameter picks, saved meals, exercise library                                                              | allow | allow | deny             |
+| Messages with a client (D20)                                                                                           | allow | allow | own conversation |
+| Workspace appearance and preferences (D25)                                                                             | allow | allow | deny             |
+| Invite a client, archive and delete a client (D27)                                                                     | allow | allow | deny             |
+| Anything the canvas does not draw (platform admin, assistant, support, export, erasure)                                | deny  | deny  | deny             |
+
+- Rows resolved: V2-H5 and V3-CO01 allow, because the canvas renders the coach library cue and the tracker value comment inside the client view. V2-H12 allow (staff write). V3-CO05 binds the standalone tracker to the signed-in client's own profile. R3-23 and R3-24 deny every cell; no canvas console exists, and the `assistant` and `support` enum values stay unused. R3-25 keeps the workspace-wide roster (D22).
+- Enforcement is server side, one capability table in `lib/auth/roles.ts`, with one table-driven test of every actor by every capability against the real server check (D14). PR-05 writes the complete table for every canvas surface up front, so wiring PRs only consume it.
+- Supersedes `docs/security/authorization-model.md` and the grants in `lib/auth/rbac.ts`. PR-05 rewrites the security doc from this table and deletes the CUT-AT-REPLACE permission tests (TEST-AUDIT).
+
+## D16. AUTH: pick Better Auth only on evidence
+
+Settles the `AUTH` decision (answer 4). The evaluation lane writes `icm/05-build/AUTH-DECISION.md` comparing Better Auth with Auth.js v5 plus own tokens on these criteria, each with a cited source or a measured prototype: mobile bearer tokens for Capacitor, session revocation, organization or workspace plugin, two-factor, admin impersonation, rate limits, Prisma adapter, Next 16 support, and lines of code we keep.
+
+- Rule: Better Auth wins only if it covers every criterion with less code we own. Otherwise Auth.js v5 plus own tokens stays (D5).
+- The outcome is recorded as D16a when the lane lands, and PR-05 implements it. Session revocation, inactive-account rejection, malformed-claim rejection and fail-closed lookup survive either way (TEST-AUDIT conditional cases `TB0.093`, `TB1.020`, `TB1.021`, `TB3.070`).
+- Mobile token issuance (D6) stays a reviewed design inside PR-31; PR-05 builds the cookie session, the `app/api/v1` boundary and the identity seam `getViewer()` that every screen calls.
+
+## D17. Coach self-signup
+
+Settles Q1 (answer 5) and amends product decision #13. A public sign-up page creates a `User`, a new `Workspace` and an `owner` membership in one transaction. Clients still join only by a staff invite (D15). Sign-up is rate limited. Mail goes through one delivery port with a development adapter that writes to a local mailbox file; the production provider stays an open owner choice. PR-04 adds a development seed so every lane can sign in without the public page; PR-05 builds the page.
+
+## D18. Show the real role name
+
+Settles Q15 (answer 6). The canvas account block shows the member's real role, `Owner` or `Coach`, in the same slot with the same typography. A self-signed-up coach owns the workspace and reads `Owner`. Built in PR-01 (account block) on the PR-04 seed.
+
+## D19. Consent and health-data gates are off behind one flag
+
+Settles answer 7 and implements D12. Every consent and health-data gate in `lib/consent.ts`, `lib/*/consent.ts` and `lib/gdpr*` reads one flag, `ENABLE_CONSENT_GATES`, which is unset (off) in every environment. With the flag off a gate allows the operation and writes no consent record. Messages and media are never gated by consent. The photo-consent blocker in the old PLAN Appendix C is void.
+
+- Health fields the canvas shows (cycle tracking in the tracker and the template goal picker, rows S09-17 and V2-H4) are wired like any other parameter.
+- Every gate turned off is listed in PLAN v2 `## Parked: consent and health data` with file and line, so the gates can be designed later. Built in PR-04, which also deletes the consent CUT-AT-REPLACE tests (TEST-AUDIT).
+- Risk recorded, not a blocker: health data is special-category personal data. The beta runs on synthetic data until the parked gates are designed.
+
+## D20. Messaging and media: full canvas scope
+
+Settles Q2 (answer 8). Build everything the canvas messaging screens draw: conversations with search and All, Unread and Flagged tabs, thread search, text messages, drafts per client, read state and unread counts (S02-05), priority flags with the per-client permission, context links to plans and check-ins, the emoji grid and reusable replies, the athlete context panel, and the nav badges.
+
+- Attachments: images, documents and audio voice messages, recorded in the browser through the same dialog the canvas draws (the `DemoRecorder` UI with a real `MediaRecorder` source). Size caps as the canvas shows them (20 MB per attachment).
+- Default, reverse with `no-video`: the canvas also offers video files and video feedback (S02-08, S03-18). They ride the same media path as audio.
+- Storage sits behind `lib/storage.ts` (D8): a local-disk adapter for development and an S3-compatible adapter configured by environment. The vendor stays open.
+- Voice transcription and transcript export are a follow-up issue (`FOLLOW-UP-TRANSCRIBE` in PLAN v2). No interface is scaffolded.
+- Built in PR-MEDIA (storage, upload, recorder) and PR-MSG (domain, routes, screens).
+
+## D21. The Ethereal studio is product
+
+Settles Q9 (answer 9). `/ethereal` and its hash pages (appearance, foundations, dashboard builder, tracker configurator, clients, meal plans) are product routes behind the staff session, taken over in PR-01 exactly as they render today. Their data screens wire to the same services as `/coach` (dashboard builder PR-W9, tracker configurator PR-W4, clients PR-W2, meal plans PR-W7, appearance PR-W10). Supersedes the "dev-only or drop" options in WIRING-SPEC section 4.
+
+## D22. Workspace calendar and roster are workspace-wide
+
+Settles Q14 (answer 10). Staff read every client of their own workspace on the roster, the check-in board and the calendar. Attention rules are the canvas rules as coded today (pending feedback, overdue tasks, unread messages, per `frontend/src/components/coach/model.ts`). Foreign workspaces are never readable. Built in PR-SV1, wired in PR-W2 and PR-W6.
+
+## D23. Ship an empty template library
+
+Settles Q5 (answer 11). The product database starts with no templates and no bundled parameter seed (decision #48 holds). The development seed loads the canvas demo set (synthetic) so every screen renders as it does today and the parity gate (D32) compares like with like.
+
+- Open risk for Marcel: the canvas has no parameter-create screen (the backend manager is orphan R3-17), so a new production workspace cannot add tracker fields. Reverse with `seed-catalog` to ship the 55 canvas parameter definitions after a source-fidelity review.
+
+## D24. Undo: confirmation and timed restore
+
+Settles Q12 (answer 12) and amends #44. Where the canvas shows an Undo toast (S01-11, S03-09, S05-05, S06-10), the server soft-deletes and keeps the row restorable for the toast lifetime plus a 10 second grace; after that the archive is terminal (#44). Where the canvas draws a confirmation dialog, it stays. No new visible UI. Builder undo and redo (S08-09) is editor history, not deletion, and stays client side.
+
+## D25. Appearance is saved per workspace
+
+Settles Q6 (answer 13). Color mode, accent, font, density, logo, availability text and notification toggles live on the server per workspace. Logo upload uses the media port (D20). Built in PR-M2 (service) and PR-W10 (screens).
+
+## D26. Private coach tasks are their own entity
+
+Settles Q4 (answer 14). `CoachTask` (workspace-level or linked to a client) and `CoachNote` are staff-only tables with structural audit (ids and counts, never bodies). They are never `ClientTask` (#109). Built in PR-M0 (schema), PR-M3 (service), PR-W10 (screens).
+
+## D27. Archive and retention
+
+Settles Q3 (answer 15). Archive is a soft archive (`archivedAt`). Ending a membership archives the client. Archived clients leave the roster and can be restored. After the retention period, default 90 days and configurable per workspace, staff may delete the client for good; nothing is deleted automatically. Delete writes a structural audit event. Phase and week stay derived from the assigned plan. Built in PR-M0, PR-M1, PR-W2.
+
+## D28. Time and duration format
+
+Settles Q10 (answer 16) and amends #75. TIME fields display as the canvas does (24-hour `HH:mm` by default, the canvas 12/24-hour editor stays) and are stored as minutes after midnight, 0 to 1439. DURATION fields keep the canvas unit (hours with decimals or whole minutes) and store that number. Built in PR-M0 and PR-W4.
+
+## D29. Nutrition totals and training volume are computed as the canvas shows
+
+Settles Q7 and Q11 (answers 17 and 18, "canvas wins" default) and amends #115 and #116. Where the canvas computes a number (portion, meal, option and day kcal and macros from catalog food values, the 4/4/9 ring, IIFYM derived kcal, attainment status, weekly muscle-group working sets), the product computes the same number with the canvas function, moved to one shared module used by server and client. Nothing the canvas does not compute is added. A blank numeric input stays missing, never zero (#36), and renders as the canvas renders an empty field. Built in PR-W7 and PR-W8.
+
+## D30. Check-ins are generated explicitly
+
+Settles Q13 (answer 19). Saving a schedule is the explicit staff action that generates occurrences through T+56 days (#114). No background replenishment. The calendar renders later recurring dates as a read-only projection of the schedule, so the board looks as it does today. Plan adjustments bundled with feedback (S03-19) are activated only by the coach's explicit submit. Built in PR-M8 and PR-W6.
+
+## D31. Dashboard: wire what the canvas builder does today
+
+Settles Q8 (answer 20). The layout lives where the canvas keeps it: on the template, copied into the client's setup on assignment (assigned clients keep their snapshot), plus the studio draft per workspace. The widget catalog is the canvas catalog (20 kinds in 9 categories). Bound widgets read live data; unbound widgets show the canvas empty state. Percent fills and counts are computed as the canvas computes them. No new widget system; themes are future work. Built in PR-M9, PR-SV3, PR-W9.
+
+## D32. Canvas-exact visual parity is an acceptance gate
+
+Owner overriding rule. Every screen in `icm/04-briefing/shots/index.json` (35) passes a before and after comparison at desktop 1440 by 900 and mobile 390 by 844.
+
+- Before: the canvas app in `frontend/` at `Vari8-Beta` `17352b0` with its demo state, the same tree the briefing shots came from (`frontend/` is identical to `58eb6ed`).
+- After: the root app, signed in, on a fresh database loaded by the development seed that reproduces the canvas demo data.
+- Both runs freeze the clock at `2026-10-19T09:00:00+02:00`, disable animation and replay the click path recorded per screen in `index.json`.
+- Pass: DOM geometry (every visible element's role, accessible name, text and bounding box within 1 CSS pixel) and a pixel diff of at most 0.1 percent of pixels (pixelmatch threshold 0.1), with masks only for the truth-text exceptions below.
+- PR-01 gates all 35 screens. Each wiring PR gates the screens it wires. The harness and baselines come from PR-P1. Evidence goes to `icm/05-build/evidence/<card>/parity/`.
+
+Truth-text exceptions (copy that names browser-local storage would become false once data lives on the server; same position, style and size, new words). Reverse with `keep-demo-copy`.
+
+| Row    | Today                                | After                                             |
+| ------ | ------------------------------------ | ------------------------------------------------- |
+| S01-09 | "Local demo" / "Session only"        | "Saved" / "Saving"                                |
+| S10-09 | "Saved automatically on this device" | "Saved automatically for this workspace"          |
+| S03-17 | "Sent locally"                       | "Sent"                                            |
+| S02-24 | "Local demo media"                   | the file size, as the canvas shows for real files |
+
+Demo-only controls ("Reset this mockup", "Load demo audio preview") render only when `APP_ENV` is development, which is the mode the parity gate runs in.
+
+## D33. Reduce the backend
+
+Owner overriding rule: take the best of both, delete over-engineering. Deletion needs proof of zero callers (a census command in the PR) and moves or deletes the code's GUARD tests with it.
+
+- PR-R1 deletes the old backend UI that the canvas replaces (`app/workspace/**` pages and `components/**` once their screen is wired), the public fixture library pages (R3-21), dead helpers (R3-20, R3-22), the raw sheet viewer and the extraction pipeline when no runtime caller remains (S12-08, S12-09, S12-44 to S12-53, S12-75), the browser-local persistence seam of the canvas (S01-13), and finally `frontend/` itself after the last parity pass.
+- PR-R2 drops database models left without a reader after PR-R1, through the schema chain (D34).
+- PR-R3 removes the `ENABLE_*` flags of features that are now product (always on), keeps development-only gates and `ENABLE_CONSENT_GATES`, and drops dependencies left unused.
+- Kept: domain services, audit, tokens, catalog importers, onboarding (the canvas has an onboarding tab), template transitions only if a canvas flow calls them.
+
+## D34. One writer for the database schema
+
+Separate before serializing shared state. `db/schema.prisma` and `db/migrations/**` have exactly one writer at a time, through the dependency chain PR-04 (seed only, no schema), PR-05 (auth tables if D16a needs them), PR-M0 (every canvas entity and field in one migration set), PR-R2 (reductions). Every other branch must leave `db/` untouched; the local check (`icm/05-build/tools/verify-local.sh`) fails a branch that is not on the allowlist and touches `db/`. Shared registries follow the same rule: the seed is one file per domain under `scripts/seed/`, routes are one folder per operation under `app/api/v1/`, and the capability table is written once in PR-05.
+
+## D35. Program mechanics for the Vari8-Beta run
+
+Amends D9 for this run. `Vari8-Beta` is the integration branch in place of `TRACKER`. Each PLAN v2 PR is one kanban card on board `vari8`, built on branch `beta/<card-slug>` off `Vari8-Beta` in `/home/nexuslink/vari8-worktrees/<card-slug>`, verified by a different model on its own branch (which carries the evidence commit), and merged by an integration card through `icm/05-build/tools/integrate.sh` (one lock, merge in the card's own worktree, checks, then fast-forward `Vari8-Beta`). Lanes never push. The orchestrator pushes, and generates issues and PRs from PLAN v2.
+
+## D36. Canvas wins on every CONFLICT row
+
+The 30 CONFLICT rows of the gap matrix were blocked by product rules the owner answers now replace. Each row's treatment and owning PR:
+
+| Row      | Treatment                                                             | PR       |
+| -------- | --------------------------------------------------------------------- | -------- |
+| S02-05   | Read state and unread counts as the canvas draws (D20)                | PR-MSG   |
+| S02-09   | Context links built (D20)                                             | PR-MSG   |
+| S02-12   | Voice note with a real recorder in the same dialog (D20)              | PR-MSG   |
+| S02-08   | Attachments: photo, video, file, 20 MB cap (D20)                      | PR-MEDIA |
+| S02-24   | MediaCard on stored media (D20, D32 truth text)                       | PR-MEDIA |
+| S02-25   | Recorder records for real, same UI (D20)                              | PR-MEDIA |
+| S03-11   | Explicit generation plus read-only projection (D30)                   | PR-W6    |
+| S03-18   | Video feedback through the media path (D20)                           | PR-W6    |
+| S03-19   | Plan adjustments activate on the coach's explicit submit (D30)        | PR-W6    |
+| S03-20   | Feedback lands in the conversation as a message with links (D20)      | PR-MSG   |
+| S05-05   | Delete with timed restore (D24)                                       | PR-W3    |
+| S05-24   | One variant as the canvas normalizes it; no variant layer (#63 holds) | PR-W3    |
+| S06-07   | Computed kcal and macros (D29)                                        | PR-W7    |
+| S06-08   | 4/4/9 ring (D29)                                                      | PR-W7    |
+| S06-15   | IIFYM derived kcal and ring (D29)                                     | PR-W7    |
+| V2-H2    | Blank stays missing (#36, D29)                                        | PR-W7    |
+| V3-CP10  | IIFYM ring (D29)                                                      | PR-W7    |
+| V3-CO02  | Automatic nutrition totals (D29)                                      | PR-W7    |
+| R3-4     | Attainment status as the canvas computes it (D29)                     | PR-W7    |
+| R3-5     | Percent fill against the target as the canvas computes it (D29)       | PR-W7    |
+| R3-9     | Weekly and monthly means as the canvas computes them (D29)            | PR-W7    |
+| R3-11    | Range targets as the canvas renders them (D29)                        | PR-W7    |
+| R3-14    | Starter meals only where the canvas creates them (D29)                | PR-W7    |
+| S07-15   | Weekly muscle volume panel (D29)                                      | PR-W8    |
+| V3-CP13  | Muscle volume table (D29)                                             | PR-W8    |
+| S09-10   | Time fields with the canvas editor (D28)                              | PR-W4    |
+| V3-CO03  | Edits keep revision history (#79); the canvas edit flow is unchanged  | PR-W4    |
+| R3-13    | Calories as the canvas offers it, an ordinary parameter               | PR-W4    |
+| R3-12    | Habit percent fill as the canvas computes it (D31)                    | PR-W9    |
+| V3-H4-02 | Trusted-runtime check on exact-1 flags                                | PR-04    |
