@@ -1,0 +1,2129 @@
+/* biome-ignore-all lint/style/noDescendingSpecificity: editor rules are scoped to coach and intentionally follow component structure. */
+.coach-root .cn-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  min-width: 0;
+  color: var(--cd-text);
+}
+.coach-root .cn-editor button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--cd-line);
+  border-radius: 8px;
+  background: var(--cd-wash);
+  padding: 8px 11px;
+  color: var(--cd-text);
+  font-size: 13px;
+  line-height: 1.3;
+}
+.coach-root .cn-editor button:hover {
+  background: var(--cd-highlight);
+}
+.coach-root .cn-editor button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.coach-root .cn-editor input:not([type="checkbox"]),
+.coach-root .cn-editor select {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--cd-line);
+  border-radius: 8px;
+  color: var(--cd-text);
+  background: var(--cd-field);
+  font-size: 13px;
+}
+.coach-root .cn-editor h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 550;
+}
+.coach-root .cn-overview,
+.coach-root .cn-schedule {
+  border: 1px solid var(--cd-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--cd-surface) 94%, var(--cd-bg));
+  padding: 16px 18px;
+}
+.coach-root .cn-overview h3 {
+  margin-bottom: 12px;
+}
+.coach-root .cn-overview-head,
+.coach-root .cn-overview-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 1.4fr) repeat(4, minmax(82px, 0.75fr)) minmax(
+      90px,
+      0.8fr
+    );
+  align-items: center;
+  gap: 12px;
+}
+.coach-root .cn-overview-head {
+  padding: 0 10px 8px;
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .cn-overview-row {
+  min-height: 48px;
+  padding: 7px 10px;
+  border-top: 1px solid var(--cd-line);
+  font-size: 13px;
+}
+.coach-root .cn-overview-row[data-active="true"] {
+  background: color-mix(in srgb, var(--cd-accent) 8%, transparent);
+}
+.coach-root .cn-overview-row > button {
+  display: flex;
+  justify-content: flex-start;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+  font-weight: 550;
+}
+.coach-root .cn-overview-row small {
+  display: block;
+  font-size: 11px;
+  color: var(--cd-muted);
+  font-weight: 400;
+}
+.coach-root .cn-energy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.coach-root .cn-energy svg {
+  width: 44px;
+  height: 44px;
+  overflow: visible;
+}
+.coach-root .cn-energy circle {
+  fill: none;
+  stroke-width: 8;
+}
+.coach-root .cn-ring-track {
+  stroke: var(--cd-raised);
+}
+.coach-root .cn-energy svg circle:not(.cn-ring-track) {
+  stroke-dasharray: 100 100;
+}
+.coach-root .cn-ring-protein {
+  stroke: var(--cd-accent);
+}
+.coach-root .cn-ring-carbs {
+  stroke: color-mix(in srgb, var(--cd-accent) 54%, var(--cd-muted));
+}
+.coach-root .cn-ring-fat {
+  stroke: var(--cd-muted);
+}
+.coach-root .cn-energy-key {
+  display: grid;
+  gap: 1px;
+  color: var(--cd-muted);
+  font-size: 9px;
+  line-height: 1.3;
+}
+.coach-root .cn-library {
+  border-block: 1px solid var(--cd-line);
+}
+.coach-root .cn-library-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+}
+.coach-root .cn-library-head > button:first-child {
+  border: 0;
+  padding: 4px 0;
+  background: transparent;
+}
+.coach-root .cn-library-head > button:first-child span {
+  color: var(--cd-muted);
+}
+.coach-root .cn-editor button.cn-undo {
+  color: var(--cd-accent);
+}
+.coach-root .cn-library-body {
+  display: grid;
+  gap: 10px;
+  padding: 4px 0 14px;
+}
+.coach-root .cn-library-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 5px;
+  max-width: 360px;
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .cn-saved-row {
+  display: grid;
+  grid-template-columns: minmax(200px, 1.2fr) minmax(180px, 2fr) auto;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid var(--cd-line);
+  padding: 10px 0;
+}
+.coach-root .cn-saved-title {
+  display: grid;
+  gap: 4px;
+}
+.coach-root .cn-saved-title > span,
+.coach-root .cn-saved-foods {
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .cn-saved-foods {
+  display: grid;
+  gap: 3px;
+}
+.coach-root .cn-saved-foods > span {
+  display: grid;
+  gap: 3px;
+}
+.coach-root .cn-saved-swap {
+  padding-left: 14px;
+  color: var(--cd-muted);
+}
+.coach-root .cn-saved-actions {
+  display: flex;
+  gap: 5px;
+}
+.coach-root .cn-saved-actions button {
+  padding: 6px 8px;
+  font-size: 11px;
+}
+.coach-root .cn-library-body > p {
+  color: var(--cd-muted);
+  font-size: 13px;
+}
+.coach-root .cn-preview {
+  --mp-client-ink: var(--cd-text);
+  --mp-client-muted: var(--cd-muted);
+  --mp-client-rule: var(--cd-line);
+  min-width: 0;
+}
+.coach-root .cn-preview .mp-client-plan {
+  --mp-client-ink: var(--cd-text);
+  --mp-client-muted: var(--cd-muted);
+  --mp-client-rule: var(--cd-line);
+}
+.coach-root .cn-preview-schedule {
+  margin-bottom: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--cd-line);
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .cn-iifym-preview > section {
+  border-bottom: 1px solid var(--cd-line);
+  padding: 16px 4px;
+}
+.coach-root .cn-iifym-preview h3 {
+  margin: 0 0 12px;
+}
+.coach-root .cn-iifym-preview dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  margin: 0;
+}
+.coach-root .cn-iifym-derived {
+  display: grid;
+  grid-template-columns: auto minmax(180px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 18px;
+}
+.coach-root .cn-iifym-derived > strong {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .cn-iifym-derived > span {
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .cn-iifym-derived .cn-energy svg {
+  width: 52px;
+  height: 52px;
+}
+.coach-root .cn-iifym-preview dt {
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .cn-iifym-preview dd {
+  margin: 2px 0 0;
+  font-size: 16px;
+}
+.coach-root .cn-section-title,
+.coach-root .cn-iifym-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.coach-root .cn-segment {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--cd-line);
+  background: var(--cd-field);
+}
+.coach-root fieldset.cn-segment {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--cd-line);
+}
+.coach-root .cn-segment legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.coach-root .cn-segment button {
+  border: 0;
+  background: transparent;
+  padding: 6px 9px;
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .cn-segment button[aria-pressed="true"] {
+  background: var(--cd-raised);
+  color: var(--cd-text);
+}
+.coach-root .cn-assignment,
+.coach-root .cn-date {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 390px;
+  font-size: 13px;
+}
+.coach-root .cn-assignment select {
+  flex: 1;
+}
+.coach-root .cn-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+.coach-root .cn-week label {
+  display: grid;
+  gap: 6px;
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .cn-week select {
+  width: 100%;
+}
+.coach-root .cn-cycle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.coach-root .cn-cycle > span {
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .cn-cycle-step {
+  display: grid;
+  grid-template-columns: 75px minmax(120px, 1fr) 70px 35px 34px;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--cd-line);
+}
+.coach-root .cn-cycle-step b,
+.coach-root .cn-cycle-step > span {
+  font-size: 12px;
+  color: var(--cd-muted);
+}
+.coach-root .cn-schedule-note {
+  margin-top: 12px;
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .cn-options {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.coach-root .cn-option-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  border-bottom: 1px solid var(--cd-line);
+}
+.coach-root .cn-option-tabs > button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  padding: 9px 12px;
+  color: var(--cd-muted);
+}
+.coach-root .cn-option-tabs > button[aria-selected="true"] {
+  border-bottom-color: var(--cd-accent);
+  color: var(--cd-text);
+}
+.coach-root .cn-option-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}
+.coach-root .cn-option-tools label {
+  display: grid;
+  gap: 5px;
+  width: min(260px, 100%);
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .cn-meal-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.coach-root .cn-meal {
+  border: 1px solid var(--cd-line);
+  background: var(--cd-surface);
+}
+.coach-root .cn-meal > header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--cd-line);
+}
+.coach-root .cn-meal-number {
+  color: var(--cd-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .cn-meal > header > input {
+  flex: 1;
+  font-weight: 550;
+}
+.coach-root .cn-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 100px;
+  padding: 8px 10px;
+  border: 1px solid var(--cd-line);
+  border-radius: 8px;
+  color: var(--cd-text);
+  background: var(--cd-field);
+  font-size: 13px;
+}
+.coach-root .cn-actions {
+  display: flex;
+  gap: 4px;
+}
+.coach-root .cn-actions button,
+.coach-root .cn-remove {
+  padding: 7px;
+  border: 0;
+  background: transparent;
+  color: var(--cd-muted);
+}
+.coach-root .cn-foods {
+  padding: 0 14px;
+}
+.coach-root .cn-food {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 82px 70px 100px 50px 30px;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--cd-line);
+  font-size: 12px;
+}
+.coach-root .cn-food-main {
+  display: grid;
+  gap: 2px;
+}
+.coach-root .cn-food-main small,
+.coach-root .cn-swap small {
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .cn-food > span,
+.coach-root .cn-swap > span {
+  color: var(--cd-muted);
+}
+.coach-root .cn-food .cn-kcal {
+  color: var(--cd-muted);
+}
+.coach-root .cn-editor button.cn-text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: var(--cd-accent);
+  font-size: 12px;
+}
+.coach-root .cn-swap {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 82px 70px minmax(150px, 1fr) 30px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 0 16px;
+  border-left: 2px solid var(--cd-line);
+}
+.coach-root .cn-empty {
+  padding: 16px 0;
+  color: var(--cd-muted);
+  font-size: 13px;
+}
+.coach-root .cn-meal-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 14px;
+}
+.coach-root .cn-load {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .cn-load select {
+  width: auto;
+  min-width: 130px;
+}
+.coach-root .cn-meal footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--cd-line);
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .cn-meal footer strong {
+  color: var(--cd-text);
+}
+.coach-root .cn-editor button.cn-add-meal {
+  justify-self: start;
+  border-style: dashed;
+  padding: 11px 15px;
+}
+.coach-root .cn-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 240px;
+}
+.coach-root .cn-search > input {
+  flex: 1;
+}
+.coach-root .cn-results {
+  position: absolute;
+  z-index: 15;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid var(--cd-line);
+  background: var(--cd-raised);
+  box-shadow: 0 8px 24px #0005;
+}
+.coach-root .cn-results button {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--cd-line);
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+.coach-root .cn-results button > span {
+  display: grid;
+  text-align: left;
+}
+.coach-root .cn-results small {
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .cn-results p {
+  padding: 12px;
+  color: var(--cd-muted);
+}
+.coach-root .cn-popover-positioner {
+  z-index: 20;
+}
+.coach-root .cn-popover {
+  position: relative;
+  width: min(340px, calc(100vw - 24px));
+  max-height: min(430px, calc(100dvh - 24px));
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--cd-line);
+  background: var(--cd-raised);
+  box-shadow: 0 12px 30px #0006;
+}
+.coach-root .cn-popover > strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+.coach-root .cn-popover .cn-search {
+  margin-bottom: 8px;
+}
+.coach-root .cn-swap-search .cn-results {
+  display: none;
+}
+.coach-root .cn-time-popup {
+  display: grid;
+  gap: 10px;
+}
+.coach-root .cn-time-popup label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--cd-muted);
+}
+.coach-root .cn-time-popup > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+}
+.coach-root .cn-date {
+  position: relative;
+}
+.coach-root .cn-editor button.cn-date-trigger {
+  min-width: 145px;
+  justify-content: flex-start;
+}
+.coach-root .cn-calendar {
+  width: 260px;
+}
+.coach-root .cn-calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 9px;
+}
+.coach-root .cn-calendar-head strong {
+  font-size: 13px;
+}
+.coach-root .cn-calendar-head button {
+  padding: 5px;
+}
+.coach-root .cn-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.coach-root .cn-calendar-grid > span {
+  padding: 5px 0;
+  color: var(--cd-muted);
+  text-align: center;
+  font-size: 10px;
+}
+.coach-root .cn-calendar-grid > button {
+  padding: 6px 2px;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+}
+.coach-root .cn-calendar-grid > button[data-outside="true"] {
+  color: var(--cd-muted);
+  opacity: 0.6;
+}
+.coach-root .cn-calendar-grid > button[aria-pressed="true"] {
+  background: var(--cd-accent);
+  color: var(--cd-action-text);
+}
+.coach-root .cn-editor button.cn-calendar-today {
+  margin-top: 8px;
+  color: var(--cd-accent);
+}
+.coach-root .cn-iifym > p {
+  margin: -10px 0 2px;
+  color: var(--cd-muted);
+  font-size: 13px;
+}
+.coach-root .cn-target-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+}
+.coach-root .cn-target-option {
+  border: 1px solid var(--cd-line);
+  background: var(--cd-surface);
+  padding: 14px;
+}
+.coach-root .cn-target-option > header {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.coach-root .cn-target-option > header input {
+  flex: 1;
+}
+.coach-root .cn-target-option > header button {
+  padding: 7px;
+}
+.coach-root .cn-target-style {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .cn-target-style button[aria-pressed="true"] {
+  border-color: var(--cd-accent);
+  color: var(--cd-text);
+}
+.coach-root .cn-target-field {
+  display: grid;
+  grid-template-columns: 75px 95px 1fr auto 1fr;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+.coach-root .cn-target-field > strong {
+  grid-column: 1;
+}
+.coach-root .cn-target-field select {
+  grid-column: 2;
+}
+.coach-root .cn-target-field input {
+  grid-column: auto;
+  width: 100%;
+}
+.coach-root .cn-target-field > span {
+  color: var(--cd-muted);
+}
+@media (max-width: 760px) {
+  .coach-root .cn-overview {
+    overflow-x: auto;
+  }
+  .coach-root .cn-overview-head,
+  .coach-root .cn-overview-row {
+    min-width: 650px;
+  }
+  .coach-root .cn-section-title {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .coach-root .cn-week {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .coach-root .cn-meal > header {
+    flex-wrap: wrap;
+  }
+  .coach-root .cn-meal > header > input {
+    flex-basis: calc(100% - 45px);
+  }
+  .coach-root .cn-actions {
+    margin-left: auto;
+  }
+  .coach-root .cn-food {
+    grid-template-columns: minmax(0, 1fr) auto 28px;
+  }
+  .coach-root .cn-food-main {
+    grid-column: 1 / -1;
+  }
+  .coach-root .cn-food > input {
+    grid-column: 1;
+  }
+  .coach-root .cn-food > span:not(.cn-kcal):not(.cn-food-metrics) {
+    grid-column: 2;
+  }
+  .coach-root .cn-food .cn-kcal {
+    grid-column: 1;
+  }
+  .coach-root .cn-food > .cn-text-button {
+    grid-column: 2;
+  }
+  .coach-root .cn-food > .cn-remove {
+    grid-column: 3;
+    grid-row: 3;
+  }
+  .coach-root .cn-swap {
+    grid-template-columns: minmax(0, 1fr) auto 25px;
+  }
+  .coach-root .cn-swap > input {
+    grid-column: 1;
+  }
+  .coach-root .cn-swap > span:nth-of-type(2) {
+    grid-column: 2;
+  }
+  .coach-root .cn-swap > small {
+    grid-column: 1 / 3;
+  }
+  .coach-root .cn-swap > .cn-remove {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .coach-root .cn-cycle-step {
+    grid-template-columns: 55px minmax(100px, 1fr) 55px auto 30px;
+  }
+  .coach-root .cn-saved-row {
+    grid-template-columns: 1fr;
+  }
+  .coach-root .cn-iifym-derived {
+    grid-template-columns: 1fr auto;
+  }
+  .coach-root .cn-iifym-derived > span {
+    grid-column: 1;
+  }
+  .coach-root .cn-iifym-derived .cn-energy {
+    grid-column: 2;
+    grid-row: 1 / 3;
+  }
+  .coach-root .cn-saved-actions {
+    justify-content: flex-start;
+  }
+  .coach-root .cn-target-field {
+    grid-template-columns: 68px 85px minmax(55px, 1fr) auto minmax(55px, 1fr);
+  }
+}
+
+/* Ethereal meal-plan workspace adaptation: a quiet recessed shell around a bright
+   working surface, rounded controls, and wide nutrition rows. All styles remain
+   within the coach namespace. */
+.coach-root .cn-editor {
+  --cn-shell: color-mix(in srgb, var(--cd-bg) 70%, var(--cd-surface));
+  --cn-core: color-mix(in srgb, var(--cd-surface) 97%, var(--cd-bg));
+  --cn-soft-edge: color-mix(in srgb, var(--cd-text) 7%, transparent);
+  gap: 16px;
+}
+.coach-root .cn-editor button {
+  min-height: 36px;
+  border-radius: 999px;
+  padding-inline: 13px;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+.coach-root .cn-editor button:active {
+  transform: scale(0.985);
+}
+.coach-root .cn-editor input:not([type="checkbox"]),
+.coach-root .cn-editor select {
+  min-height: 40px;
+  border-radius: 999px;
+  padding-inline: 14px;
+}
+.coach-root .cn-overview,
+.coach-root .cn-schedule {
+  padding: 5px;
+  border: 1px solid var(--cn-soft-edge);
+  border-radius: 24px;
+  background: var(--cn-shell);
+  box-shadow:
+    inset 0 1px color-mix(in srgb, var(--cd-text) 7%, transparent),
+    0 5px 18px color-mix(in srgb, #000 5%, transparent);
+}
+.coach-root .cn-overview > h3,
+.coach-root .cn-overview-head,
+.coach-root .cn-overview-row,
+.coach-root .cn-schedule > :not(.cn-schedule-note) {
+  position: relative;
+  z-index: 1;
+}
+.coach-root .cn-overview > h3 {
+  margin: 0;
+  padding: 16px 18px 10px;
+}
+.coach-root .cn-overview-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px 9px;
+}
+.coach-root .cn-overview-title h3 {
+  margin: 0;
+}
+.coach-root .cn-overview-title > span {
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .cn-overview-head,
+.coach-root .cn-overview-row {
+  grid-template-columns: minmax(100px, 0.65fr) minmax(105px, 0.75fr) minmax(
+      210px,
+      1.6fr
+    ) minmax(155px, 1.1fr);
+  gap: 20px;
+  padding-inline: 18px;
+  background: transparent;
+}
+.coach-root .cn-overview-head {
+  padding-top: 10px;
+}
+.coach-root .cn-overview-row:last-child {
+  padding-bottom: 14px;
+  border-radius: 0 0 18px 18px;
+}
+.coach-root .cn-overview-head {
+  border-radius: 18px 18px 0 0;
+}
+.coach-root .cn-overview-row[data-active="true"] {
+  background: color-mix(in srgb, var(--cd-accent) 7%, transparent);
+}
+.coach-root .cn-overview-row > b {
+  font-size: 25px;
+  font-weight: 550;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .cn-overview-row > b small {
+  display: inline;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--cd-muted);
+}
+.coach-root .cn-overview-row > button {
+  display: grid;
+  justify-items: start;
+  gap: 5px;
+}
+.coach-root .cn-overview-row > button small {
+  padding-left: 3px;
+}
+.coach-root .cn-overview-row[data-active="true"] > button {
+  width: fit-content;
+  min-width: 52px;
+  padding: 6px 14px;
+  border: 1px solid color-mix(in srgb, var(--cd-accent) 35%, var(--cd-line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cd-accent) 9%, transparent);
+}
+.coach-root .cn-overview-macros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+.coach-root .cn-overview-macros dt {
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .cn-overview-macros dd {
+  margin: 2px 0 0;
+  font-size: 16px;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .cn-overview-macros dd span {
+  color: var(--cd-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+.coach-root .cn-energy svg {
+  width: 52px;
+  height: 52px;
+}
+.coach-root .cn-schedule {
+  padding: 5px;
+}
+.coach-root .cn-schedule > .cn-section-title {
+  padding: 14px 16px 12px;
+  margin: 0;
+}
+.coach-root .cn-schedule > .cn-assignment,
+.coach-root .cn-schedule > .cn-week,
+.coach-root .cn-schedule > .cn-cycle {
+  margin: 0 5px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--cn-core);
+}
+.coach-root .cn-schedule .cn-schedule-roles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin: 0 16px 14px;
+}
+.coach-root .cn-schedule .cn-schedule-roles label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  color: var(--cd-muted);
+  font-size: 10px;
+}
+.coach-root .cn-schedule .cn-schedule-roles select {
+  min-height: 34px;
+  padding: 5px 28px 5px 10px;
+  font-size: 11px;
+}
+.coach-root .cn-schedule .cn-schedule-roles button[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--cd-accent) 38%, var(--cd-line));
+  background: color-mix(in srgb, var(--cd-accent) 10%, var(--cn-core));
+  color: var(--cd-text);
+}
+.coach-root .cn-schedule .cn-week-strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  min-width: 0;
+  margin: 0 16px;
+  border-block: 1px solid var(--cn-soft-edge);
+  padding: 8px 0;
+}
+.coach-root .cn-schedule .cn-week-day {
+  display: grid;
+  align-content: start;
+  justify-items: stretch;
+  gap: 6px;
+  min-width: 0;
+  min-height: 62px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 7px 5px;
+  background: transparent;
+  color: var(--cd-muted);
+  text-align: center;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+.coach-root .cn-schedule .cn-week-day:hover {
+  border-color: var(--cn-soft-edge);
+  background: color-mix(in srgb, var(--cd-text) 4%, transparent);
+}
+.coach-root .cn-schedule .cn-week-day.is-assigned {
+  color: var(--cd-text);
+}
+.coach-root .cn-schedule .cn-week-day[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--cd-accent) 37%, var(--cn-soft-edge));
+  background: color-mix(in srgb, var(--cd-accent) 8%, transparent);
+}
+.coach-root .cn-schedule .cn-week-day:focus-visible,
+.coach-root .cn-schedule .cn-week-day-select:focus-visible,
+.coach-root .cn-schedule .cn-schedule-advanced summary:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--cd-accent) 70%, white);
+  outline-offset: 2px;
+}
+.coach-root .cn-week-day-name {
+  overflow: hidden;
+  color: var(--cd-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.045em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.coach-root .cn-week-day-variant {
+  display: block;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.coach-root .cn-schedule .cn-schedule-advanced {
+  margin: 14px 16px 0;
+  border-top: 1px solid var(--cn-soft-edge);
+  padding-top: 11px;
+}
+.coach-root .cn-schedule-advanced > summary {
+  width: fit-content;
+  color: var(--cd-muted);
+  cursor: pointer;
+  font-size: 11px;
+  list-style-position: inside;
+}
+.coach-root .cn-schedule-advanced[open] > summary {
+  margin-bottom: 12px;
+}
+.coach-root .cn-schedule-advanced .cn-week,
+.coach-root .cn-schedule-advanced .cn-cycle {
+  margin: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 0 12px;
+}
+.coach-root .cn-schedule-note {
+  margin: 0;
+  padding: 12px 16px 14px;
+}
+.coach-root .cn-segment {
+  border-radius: 999px;
+  padding: 3px;
+}
+.coach-root .cn-segment button {
+  min-height: 32px;
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+.coach-root .cn-segment button[aria-pressed="true"] {
+  box-shadow: inset 0 1px color-mix(in srgb, var(--cd-text) 8%, transparent);
+}
+.coach-root .cn-options {
+  gap: 14px;
+}
+.coach-root .cn-option-tabs {
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--cn-shell);
+  width: fit-content;
+  max-width: 100%;
+}
+.coach-root .cn-option-tabs > button {
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 5px 14px;
+}
+.coach-root .cn-option-tabs > button[aria-selected="true"] {
+  border-color: var(--cd-line);
+  border-bottom-color: var(--cd-line);
+  background: var(--cn-core);
+  box-shadow: inset 0 1px color-mix(in srgb, var(--cd-text) 7%, transparent);
+}
+.coach-root .cn-option-tools {
+  align-items: flex-start;
+}
+.coach-root .cn-meal-list {
+  gap: 14px;
+}
+.coach-root .cn-meal {
+  min-width: 0;
+  padding: 5px;
+  border: 1px solid var(--cn-soft-edge);
+  border-radius: 25px;
+  background: var(--cn-shell);
+  box-shadow:
+    inset 0 1px color-mix(in srgb, var(--cd-text) 7%, transparent),
+    0 5px 18px color-mix(in srgb, #000 5%, transparent);
+}
+.coach-root .cn-meal > header {
+  min-height: 54px;
+  gap: 8px;
+  padding: 8px 10px 10px 14px;
+  border: 0;
+}
+.coach-root .cn-meal-number {
+  width: 24px;
+  text-align: center;
+}
+.coach-root .cn-meal > header > input {
+  font-size: 14px;
+}
+.coach-root .cn-time {
+  min-height: 38px;
+  border-radius: 999px;
+  padding: 7px 13px;
+  background: var(--cn-core);
+}
+.coach-root .cn-actions {
+  gap: 0;
+}
+.coach-root .cn-meal .cn-actions button,
+.coach-root .cn-meal .cn-remove {
+  display: inline-flex;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--cd-muted);
+}
+.coach-root .cn-meal .cn-actions button:hover,
+.coach-root .cn-meal .cn-remove:hover {
+  background: color-mix(in srgb, var(--cd-text) 6%, transparent);
+  color: var(--cd-text);
+}
+.coach-root .cn-foods {
+  margin: 0 3px;
+  padding: 3px 14px;
+  border: 1px solid color-mix(in srgb, var(--cd-line) 78%, transparent);
+  border-radius: 19px;
+  background: var(--cn-core);
+}
+.coach-root .cn-food {
+  grid-template-columns: minmax(160px, 1.15fr) 72px 54px minmax(190px, 1fr) 60px 34px;
+  gap: 4px 8px;
+  min-height: 46px;
+  padding: 5px 0;
+  border-color: color-mix(in srgb, var(--cd-line) 72%, transparent);
+  font-size: 12px;
+}
+.coach-root .cn-food-main {
+  gap: 4px;
+  line-height: 1.35;
+}
+.coach-root .cn-food-main strong {
+  font-size: 13px;
+  font-weight: 540;
+}
+.coach-root .cn-food-main small {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .cn-editor .cn-food > input {
+  width: 100%;
+  min-height: 34px;
+  padding: 3px 6px;
+  border: 1px solid var(--cd-line);
+  border-radius: 999px;
+  background: var(--cd-field);
+  box-shadow: none;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .cn-editor .cn-swap > input {
+  width: 100%;
+  min-height: 26px;
+  padding: 1px 3px;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .cn-editor .cn-swap > input:hover {
+  border-bottom-color: color-mix(in srgb, var(--cd-accent) 60%, var(--cd-line));
+}
+.coach-root .cn-editor .cn-swap > input:focus-visible {
+  border-bottom: 2px solid var(--cd-accent);
+  outline: 2px solid color-mix(in srgb, var(--cd-accent) 22%, transparent);
+  outline-offset: 2px;
+}
+.coach-root .cn-food > span {
+  white-space: nowrap;
+  font-size: 11px;
+}
+.coach-root .cn-food .cn-kcal {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .cn-swap {
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  gap: 8px;
+  padding: 2px 0 1px;
+  border-left: 1px solid
+    color-mix(in srgb, var(--cd-accent) 35%, var(--cd-line));
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .cn-meal-tools {
+  padding: 0;
+  gap: 12px;
+}
+.coach-root .cn-meal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px 6px;
+}
+.coach-root .cn-editor button.cn-text-button {
+  min-height: 32px;
+  border-radius: 999px;
+  padding: 5px 12px;
+}
+.coach-root .cn-search {
+  min-width: min(320px, 100%);
+}
+.coach-root .cn-results,
+.coach-root .cn-popover {
+  border-radius: 18px;
+  border-color: var(--cd-line);
+  background: var(--cn-core);
+  box-shadow:
+    0 14px 34px color-mix(in srgb, #000 22%, transparent),
+    inset 0 1px color-mix(in srgb, var(--cd-text) 6%, transparent);
+}
+.coach-root .cn-results button {
+  border-radius: 12px;
+}
+.coach-root .cn-popover {
+  padding: 14px;
+}
+.coach-root .cn-popover .cn-search input {
+  min-width: 0;
+}
+.coach-root .cn-meal footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  white-space: nowrap;
+}
+.coach-root .cn-food-picker {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  width: min(390px, calc(100vw - 24px));
+  max-height: min(440px, calc(100dvh - 24px));
+  gap: 10px;
+  padding: 12px;
+  overflow: hidden;
+}
+.coach-root .cn-food-picker-head,
+.coach-root .cn-food-picker-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.coach-root .cn-food-picker-head {
+  justify-content: space-between;
+}
+.coach-root .cn-food-picker-head > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.coach-root .cn-food-picker-head strong {
+  font-size: 13px;
+}
+.coach-root .cn-food-picker .cn-remove {
+  display: inline-flex;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--cd-muted);
+}
+.coach-root .cn-food-picker .cn-remove:hover {
+  background: color-mix(in srgb, var(--cd-text) 7%, transparent);
+  color: var(--cd-text);
+}
+.coach-root .cn-food-picker-head span,
+.coach-root .cn-food-picker-row small,
+.coach-root .cn-food-picker-count {
+  color: var(--cd-muted);
+  font-size: 10px;
+}
+.coach-root .cn-food-picker-search {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  min-width: 0;
+}
+.coach-root .cn-food-picker-search input {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 9px;
+  border: 1px solid var(--cd-line);
+  border-radius: 8px;
+  color: var(--cd-text);
+  background: var(--cd-field);
+  font-size: 12px;
+}
+.coach-root .cn-food-picker input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--cd-accent);
+}
+.coach-root .cn-food-picker-list {
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  border-inline: 0;
+  border-block: 1px solid var(--cd-line);
+}
+.coach-root .cn-food-picker-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 6px 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--cd-line) 70%, transparent);
+  cursor: pointer;
+}
+.coach-root .cn-food-picker-row:last-child {
+  border-bottom: 0;
+}
+.coach-root .cn-food-picker-row:hover {
+  background: color-mix(in srgb, var(--cd-accent) 7%, transparent);
+}
+.coach-root .cn-food-picker-row:focus-within {
+  outline: 2px solid color-mix(in srgb, var(--cd-accent) 68%, transparent);
+  outline-offset: -2px;
+}
+.coach-root .cn-food-picker-row > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.coach-root .cn-food-picker-row strong {
+  overflow: hidden;
+  color: var(--cd-text);
+  font-size: 12px;
+  font-weight: 520;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.coach-root .cn-food-picker-empty {
+  margin: 0;
+  padding: 16px 10px;
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .cn-food-picker-actions {
+  justify-content: flex-end;
+}
+.coach-root .cn-food-picker-count {
+  margin-right: auto;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .cn-food-picker-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  border: 1px solid var(--cd-line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cd-accent) 10%, var(--cd-surface));
+  color: var(--cd-text);
+  padding: 5px 11px;
+  font-size: 11px;
+}
+.coach-root .cn-food-picker-actions .cn-text-button {
+  border: 0;
+  background: transparent;
+  color: var(--cd-muted);
+}
+.coach-root .cn-editor button.cn-add-meal {
+  min-height: 42px;
+  border-style: dashed;
+  border-radius: 999px;
+}
+.coach-root .cn-target-option {
+  border-radius: 22px;
+  padding: 5px;
+  background: var(--cn-shell);
+}
+.coach-root .cn-target-option > header,
+.coach-root .cn-target-option > .cn-target-style,
+.coach-root .cn-target-option > .cn-target-fields {
+  margin: 8px 10px;
+}
+.coach-root .cn-target-option > header {
+  margin-top: 10px;
+}
+.coach-root .cn-target-option > .cn-target-fields {
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--cn-core);
+}
+.coach-root .cn-preview .cn-energy svg {
+  width: 54px;
+  height: 54px;
+}
+.coach-root .cn-iifym-derived {
+  padding: 10px 14px;
+  border-radius: 18px;
+  background: var(--cn-shell);
+}
+
+@media (max-width: 900px) {
+  .coach-root .cn-overview {
+    overflow-x: auto;
+  }
+  .coach-root .cn-overview-head,
+  .coach-root .cn-overview-row {
+    min-width: 700px;
+  }
+  .coach-root .cn-food {
+    grid-template-columns: minmax(150px, 1fr) 82px 56px minmax(150px, 1fr) 56px 32px;
+    gap: 6px;
+  }
+  .coach-root .cn-swap {
+    grid-template-columns: minmax(150px, 1fr) 82px 56px minmax(140px, 1fr) 32px;
+  }
+}
+@media (max-width: 620px) {
+  .coach-root .cn-meal-footer {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 7px 10px 5px;
+  }
+  .coach-root .cn-meal-tools {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .coach-root .cn-meal footer {
+    margin-left: auto;
+    font-size: 10px;
+  }
+  .coach-root .cn-meal footer strong {
+    font-size: 11px;
+  }
+  .coach-root .cn-overview > h3 {
+    padding: 13px 14px 8px;
+  }
+  .coach-root .cn-schedule > .cn-section-title {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 13px 13px 10px;
+  }
+  .coach-root .cn-schedule > .cn-week {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .coach-root .cn-schedule > .cn-assignment,
+  .coach-root .cn-schedule > .cn-week,
+  .coach-root .cn-schedule > .cn-cycle {
+    padding: 12px;
+  }
+  .coach-root .cn-segment {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .coach-root .cn-segment button {
+    white-space: nowrap;
+  }
+  .coach-root .cn-option-tabs {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+  .coach-root .cn-option-tabs > button {
+    flex: none;
+    white-space: nowrap;
+  }
+  .coach-root .cn-option-tools {
+    align-items: stretch;
+  }
+  .coach-root .cn-meal {
+    border-radius: 21px;
+  }
+  .coach-root .cn-meal > header {
+    flex-wrap: wrap;
+    padding: 8px 9px;
+  }
+  .coach-root .cn-meal > header > input {
+    flex: 1 1 40%;
+  }
+  .coach-root .cn-time {
+    min-width: 88px;
+  }
+  .coach-root .cn-actions {
+    margin-left: auto;
+  }
+  .coach-root .cn-foods {
+    padding-inline: 11px;
+  }
+  .coach-root .cn-food {
+    grid-template-columns: minmax(0, 1fr) 68px max-content max-content 34px;
+    gap: 5px;
+    padding-block: 9px;
+  }
+  .coach-root .cn-food-main {
+    grid-column: 1;
+  }
+  .coach-root .cn-food > input {
+    grid-column: 2;
+  }
+  .coach-root .cn-food > span:not(.cn-kcal):not(.cn-food-metrics) {
+    grid-column: 3;
+    white-space: normal;
+  }
+  .coach-root .cn-food .cn-kcal {
+    display: none;
+  }
+  .coach-root .cn-food > .cn-text-button {
+    grid-column: 4;
+    grid-row: 1;
+    padding-inline: 8px;
+  }
+  .coach-root .cn-food > .cn-remove {
+    grid-column: 5;
+    grid-row: 1;
+  }
+  .coach-root .cn-food .cn-food-main small {
+    display: block;
+  }
+  .coach-root .cn-food .cn-swap {
+    grid-template-columns: minmax(0, 1fr) 68px max-content 34px;
+    gap: 5px;
+    padding-left: 10px;
+  }
+  .coach-root .cn-swap > span:first-child {
+    grid-column: 1;
+  }
+  .coach-root .cn-swap > input {
+    grid-column: 2;
+  }
+  .coach-root .cn-swap > span:nth-of-type(2) {
+    grid-column: 3;
+  }
+  .coach-root .cn-swap > small {
+    grid-column: 1 / -2;
+    grid-row: 2;
+  }
+  .coach-root .cn-swap > button {
+    grid-column: 4;
+    grid-row: 1;
+  }
+  .coach-root .cn-saved-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .coach-root .cn-saved-actions {
+    flex-wrap: wrap;
+  }
+  .coach-root .cn-cycle-step {
+    grid-template-columns: 52px minmax(85px, 1fr) 62px 28px 30px;
+    gap: 5px;
+  }
+  .coach-root .cn-target-field {
+    grid-template-columns: 65px 82px 1fr auto 1fr;
+    gap: 5px;
+  }
+  .coach-root .cn-iifym-derived {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .coach-root .cn-iifym-derived .cn-energy {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Nutrition editor refinements */
+.coach-root .cn-editor select {
+  appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237f7c75' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+}
+.coach-root .cn-option-tools {
+  align-items: center;
+}
+.coach-root .cn-option-tools > label,
+.coach-root .cn-option-tools > button {
+  align-self: center;
+}
+.coach-root .cn-option-tools > button {
+  margin-top: 18px;
+}
+.coach-root .cn-overview-row[data-active="true"] {
+  background: color-mix(in srgb, var(--cd-accent) 6%, transparent);
+}
+.coach-root .cn-overview-row > .cn-overview-option {
+  display: grid;
+  justify-items: start;
+  gap: 5px;
+  min-width: 0;
+  font-weight: 550;
+}
+.coach-root .cn-overview-row > .cn-overview-option small {
+  padding-left: 0;
+  font-weight: 400;
+}
+.coach-root .cn-ring-protein {
+  stroke: var(--cd-accent);
+}
+.coach-root .cn-ring-carbs {
+  stroke: color-mix(in srgb, var(--cd-accent) 62%, var(--cd-text));
+}
+.coach-root .cn-ring-fat {
+  stroke: color-mix(in srgb, var(--cd-accent) 30%, var(--cd-muted));
+}
+.coach-root .cn-week-wrap {
+  margin: 0 5px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--cn-core);
+}
+.coach-root .cn-week-wrap > .cn-week {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+.coach-root .cn-day-mapping {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--cd-line);
+}
+.coach-root .cn-week-wrap > .cn-day-mapping {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+.coach-root .cn-day-mapping-head,
+.coach-root .cn-day-mapping-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.coach-root .cn-day-mapping-head > div {
+  display: grid;
+  gap: 3px;
+}
+.coach-root .cn-day-mapping-head strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+.coach-root .cn-day-mapping-head span,
+.coach-root .cn-day-mapping-options > label {
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .cn-day-mapping-options {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.coach-root .cn-day-mapping-options > label {
+  display: grid;
+  gap: 5px;
+  min-width: 145px;
+}
+.coach-root .cn-training-days {
+  display: flex;
+  gap: 5px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.coach-root .cn-training-days legend {
+  margin-bottom: 5px;
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .cn-training-days label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 7px;
+  border: 1px solid var(--cd-line);
+  border-radius: 9px;
+  color: var(--cd-text);
+  font-size: 10px;
+}
+.coach-root .cn-editor input[type="checkbox"] {
+  width: auto;
+  min-height: 0;
+  flex: none;
+  padding: 0;
+  accent-color: var(--cd-accent);
+}
+.coach-root .cn-time {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.coach-root .cn-time .cn-dt-trigger {
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--cn-core);
+}
+.coach-root .cn-food {
+  grid-template-columns: minmax(160px, 1.15fr) 72px 54px minmax(190px, 1fr) 60px 34px;
+}
+.coach-root .cn-food:last-child {
+  border-bottom: 0;
+}
+.coach-root .cn-food-main small {
+  display: none;
+}
+.coach-root .cn-food-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  color: var(--cd-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.coach-root .cn-food-metrics > *,
+.coach-root .cn-swap-metrics > * {
+  min-width: 0;
+  text-align: left;
+}
+.coach-root .cn-food-metrics b,
+.coach-root .cn-swap-metrics b {
+  color: var(--cd-text);
+  font-weight: 550;
+}
+.coach-root .cn-swap {
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  padding: 2px 0 1px;
+  border-left: 0;
+  font-size: 10px;
+}
+.coach-root .cn-swap > span:first-child {
+  grid-column: 1;
+  min-width: 0;
+  padding-left: 10px;
+  border-left: 1px solid
+    color-mix(in srgb, var(--cd-accent) 42%, var(--cd-line));
+}
+.coach-root .cn-swap > input {
+  grid-column: 2;
+  min-height: 32px;
+  font-size: 11px;
+}
+.coach-root .cn-swap > span:nth-of-type(2) {
+  grid-column: 3;
+}
+.coach-root .cn-swap-metrics {
+  display: grid;
+  grid-column: 4;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.coach-root .cn-swap > .cn-remove {
+  grid-column: 6;
+}
+.coach-root .cn-meal .cn-swap > .cn-remove {
+  min-height: 24px;
+  height: 24px;
+}
+.coach-root .cn-popover-positioner {
+  max-width: calc(100vw - 24px);
+}
+.coach-root .cn-popover {
+  display: grid;
+  background: var(--cd-surface);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  width: min(390px, calc(100vw - 24px));
+  max-height: min(430px, calc(100dvh - 24px));
+  overflow: hidden;
+}
+.coach-root .cn-popover > .cn-results {
+  background: var(--cd-surface);
+}
+.coach-root .cn-popover > strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.coach-root .cn-popover .cn-swap-search {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  margin: 0 0 8px;
+}
+.coach-root .cn-popover .cn-swap-search > input {
+  width: 100%;
+}
+.coach-root .cn-popover .cn-swap-search .cn-results {
+  display: none;
+}
+.coach-root .cn-popover > .cn-results {
+  position: static;
+  z-index: auto;
+  max-height: min(300px, calc(100dvh - 190px));
+  overflow: auto;
+  border-radius: 12px;
+  box-shadow: none;
+}
+.coach-root .cn-popover > .cn-results button {
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+}
+.coach-root .cn-popover > .cn-results button > span {
+  min-width: 0;
+}
+.coach-root .cn-popover > .cn-results button strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.coach-root .cn-target-field select {
+  min-width: 105px;
+  padding-right: 29px;
+  background-position: right 9px center;
+}
+.coach-root .cn-target-field {
+  grid-template-columns: 75px 105px minmax(55px, 1fr) auto minmax(55px, 1fr);
+}
+@media (max-width: 900px) {
+  .coach-root .cn-food {
+    grid-template-columns: minmax(150px, 1fr) 82px 56px minmax(170px, 1fr) 56px 32px;
+  }
+  .coach-root .cn-swap {
+    grid-template-columns: minmax(150px, 1fr) 82px 56px minmax(170px, 1fr) 56px 32px;
+  }
+}
+@media (max-width: 620px) {
+  .coach-root .cn-schedule .cn-week-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 3px;
+    margin-inline: 12px;
+  }
+  .coach-root .cn-schedule .cn-week-day {
+    min-height: 56px;
+    padding-inline: 3px;
+  }
+  .coach-root .cn-schedule .cn-schedule-roles {
+    margin-inline: 12px;
+  }
+  .coach-root .cn-schedule .cn-schedule-advanced {
+    margin-inline: 12px;
+  }
+  .coach-root .cn-week-wrap {
+    padding: 12px;
+  }
+  .coach-root .cn-week-wrap > .cn-week {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .coach-root .cn-day-mapping-head,
+  .coach-root .cn-day-mapping-options {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .coach-root .cn-training-days {
+    flex-wrap: wrap;
+  }
+  .coach-root .cn-food {
+    grid-template-columns: minmax(0, 1fr) 68px max-content 34px;
+  }
+  .coach-root .cn-food-main {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .coach-root .cn-food-metrics {
+    grid-column: 2 / 5;
+    grid-row: 1;
+    flex-wrap: wrap;
+    gap: 3px 7px;
+    white-space: normal;
+  }
+  .coach-root .cn-food > input {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .coach-root .cn-food > span:not(.cn-kcal):not(.cn-food-metrics) {
+    grid-column: 3;
+    grid-row: 3;
+  }
+  .coach-root .cn-food > .cn-kcal {
+    display: none;
+  }
+  .coach-root .cn-food > .cn-text-button {
+    grid-column: 3;
+    grid-row: 2;
+  }
+  .coach-root .cn-food > .cn-remove {
+    grid-column: 4;
+    grid-row: 2;
+  }
+  .coach-root .cn-swap {
+    grid-template-columns: minmax(0, 1fr) 68px max-content 34px;
+    gap: 5px;
+  }
+  .coach-root .cn-swap > span:first-child {
+    grid-column: 1;
+  }
+  .coach-root .cn-swap > input {
+    grid-column: 2;
+  }
+  .coach-root .cn-swap > span:nth-of-type(2) {
+    grid-column: 3;
+  }
+  .coach-root .cn-swap-metrics {
+    grid-column: 1 / 4;
+    grid-row: 2;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .coach-root .cn-swap > .cn-remove {
+    grid-column: 4;
+    grid-row: 1;
+  }
+  .coach-root .cn-target-field {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+  .coach-root .cn-target-field > strong {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .coach-root .cn-target-field > select {
+    grid-column: 2 / 4;
+    grid-row: 1;
+    justify-self: end;
+    width: 112px;
+  }
+  .coach-root .cn-target-field > input:first-of-type {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .coach-root .cn-target-field > span {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .coach-root .cn-target-field > input:nth-of-type(2) {
+    grid-column: 3;
+    grid-row: 2;
+  }
+  .coach-root .cn-option-tools > button {
+    margin-top: 0;
+  }
+  .coach-root .cn-editor > * {
+    min-width: 0;
+  }
+  .coach-root .cn-overview {
+    overflow: visible;
+  }
+  .coach-root .cn-overview-head {
+    display: none;
+  }
+  .coach-root .cn-overview-row {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px;
+    padding: 16px 13px;
+  }
+  .coach-root .cn-overview-macros {
+    grid-column: 1;
+    grid-row: 2;
+    gap: 8px;
+  }
+  .coach-root .cn-overview-row > .cn-energy {
+    grid-column: 2;
+    grid-row: 2;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .coach-root fieldset.cn-segment {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    border-radius: 18px;
+    overflow: visible;
+  }
+  .coach-root .cn-segment button {
+    white-space: normal;
+    font-size: 11px;
+  }
+  .coach-root .cn-food,
+  .coach-root .cn-food .cn-swap {
+    grid-template-columns: minmax(0, 1fr) 56px 38px 32px 32px;
+    padding-left: 0;
+    column-gap: 5px;
+    row-gap: 2px;
+  }
+  .coach-root .cn-food-main {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .coach-root .cn-food > .cn-text-button {
+    grid-column: 4;
+    grid-row: 1;
+    min-height: 28px;
+    padding: 2px 0;
+    font-size: 10px;
+  }
+  .coach-root .cn-food > .cn-remove {
+    grid-column: 5;
+    grid-row: 1;
+  }
+  .coach-root .cn-food > .cn-food-metrics,
+  .coach-root .cn-food .cn-swap > .cn-swap-metrics {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 3px;
+    font-size: 11px;
+  }
+  .coach-root .cn-food > input,
+  .coach-root .cn-food .cn-swap > input {
+    grid-column: 2;
+    grid-row: 1;
+    min-height: 26px;
+    font-size: 11px;
+  }
+  .coach-root .cn-editor .cn-food > input,
+  .coach-root .cn-editor .cn-food .cn-swap > input {
+    width: 100%;
+    min-height: 26px;
+    padding: 2px 4px;
+  }
+  .coach-root .cn-food > span:not(.cn-kcal):not(.cn-food-metrics),
+  .coach-root .cn-food .cn-swap > span:nth-of-type(2) {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: center;
+    font-size: 10px;
+  }
+  .coach-root .cn-food .cn-swap > span:first-child {
+    grid-column: 1;
+    grid-row: 1;
+    overflow-wrap: anywhere;
+    padding-left: 8px;
+    font-size: 10px;
+  }
+  .coach-root .cn-food .cn-swap > .cn-swap-metrics {
+    font-size: 10px;
+  }
+  .coach-root .cn-food .cn-swap > .cn-remove {
+    grid-column: 5;
+    grid-row: 1;
+    min-height: 28px;
+    height: 28px;
+  }
+  .coach-root .cn-food .cn-swap {
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    padding-top: 3px;
+    padding-bottom: 2px;
+  }
+}
+.coach-root .cn-target-option > .cn-target-field {
+  margin: 8px 10px;
+  padding: 11px;
+  border-radius: 15px;
+  background: var(--cn-core);
+}
+.coach-root .cn-target-option > .cn-target-style {
+  flex-wrap: wrap;
+}

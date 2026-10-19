@@ -141,3 +141,9 @@ reached directly at `/daily` (not linked in navigation, so no dead link is baked
 builds). Leave the flag unset in any real deployment — persistent health data,
 roles/ownership, consent/audit, and access policy are undecided (see
 `docs/tasks/phase-b0.md`).
+
+## Standalone frontend preview
+
+The current UI snapshot is in [`frontend/`](frontend/README.md). It runs as an
+independent project on port 3001; the full-stack application above remains intact.
+See the frontend README for installation, preview routes, and checks.

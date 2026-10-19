@@ -1,3 +1,51 @@
+## 2026-10-18 — FRONTEND refresh and contributor PR route correction — in progress
+
+- Publication branch `FRONTEND` retains its published history and merged target
+  `main`; source UI was overlaid into `frontend/` without source-workspace history.
+- Source mapping audit checked 207 source files against their publication paths:
+  zero missing and zero mismatches. Existing 15 publication-only tests remain.
+- `npm run check` in `frontend/` passed: 157 tests, context guard, typecheck,
+  Biome (199 files), and production build for `/`, `/coach`, and `/ethereal`.
+- The focused source context suite passed 16/16; source context check and lint
+  passed. Mobile visual check passed page overflow at 360px and 1440px; the
+  360px tab strip scrolls to reveal Onboarding. Screenshot API evidence was
+  inline only; no exported proof file or full accessibility/performance audit.
+- Added a frontend-only CI workflow and repeatable `FRONTEND` → `main` guide.
+  Root `.github/workflows/ci.yml` is unchanged. No required-check policy changed.
+- Independent read-only SWE-2 review found no blocking findings. Conditional
+  guard scope and mobile visual-proof limits are documented in the draft PR;
+  no full accessibility/performance/cross-browser audit is claimed.
+- The initial draft PR #51 incorrectly targeted `main`; it was closed without
+  merging. The requested UI remains on shared `FRONTEND` at `d458003` and
+  `main` remains `5f9cb41`.
+- Correction branch `codex/frontend-pr-target` starts from `FRONTEND`; it updates
+  the contributor flow and frontend CI so feature PRs target `FRONTEND`. Hanzlah
+  retains the later `FRONTEND` to `main` promotion.
+- Root backend CI, UI behavior, and shared branch history are unchanged. The
+  corrected draft PR and its checks are pending.
+
+## 2026-10-15 — FRONTEND standalone UI snapshot — verified for publication
+
+- User-selected `frontend/` import on `FRONTEND`, based on main
+  `c63ddfb01005d0e853906d2ad3e3445ee5e7e3d5`; plan commit `85c3305`.
+- Exact import: production build exit 0 (including TypeScript), 62 frontend tests
+  passed / zero failed, source-hash audit zero mismatches, staged diff check exit 0.
+- Independent read-only Luna packaging review: PASS; temporary dependency symlink
+  removed after verification. Dependencies, build output, environments, and local
+  captures are excluded.
+- Existing root application/backend/database/workflows/tests are unchanged. Root
+  README links the preview; TypeScript, ESLint, and Prettier isolate `frontend/`.
+- Task record: `docs/tasks/frontend-snapshot.md`. This entry is included in the
+  snapshot commit. Authorized destination is `FRONTEND` only; no merge or deploy.
+
+## 2026-10-15 — FRONTEND standalone UI snapshot — planned
+
+- User authorized branch creation and push to `FRONTEND`, based on current `main`.
+- User selected a separate `frontend/` project, preserving the full-stack app.
+- Plan: `docs/tasks/frontend-snapshot.md`. Source workspace remains unchanged.
+- Base: `c63ddfb01005d0e853906d2ad3e3445ee5e7e3d5`.
+- Verification/review/import commit/push are pending.
+
 # STATUS — App foundation & extraction build
 
 Append-only loop memory (newest first). "Done" = the exact gate re-run on the current

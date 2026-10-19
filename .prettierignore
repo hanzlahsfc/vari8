@@ -10,3 +10,6 @@ next-env.d.ts
 docs/conductor-generic/SKILL.md
 # Generated, committed extraction artifacts — must not be reformatted.
 spec/
+
+# Independent frontend project uses Biome.
+frontend/
