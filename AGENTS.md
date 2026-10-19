@@ -24,7 +24,9 @@ model, glossary). Regenerate it with `npm run index` and verify it with `npm run
    decision (`icm/03-plan/DECISIONS.md` D10). Server-side enforcement of whatever the owner
    decides stays mandatory. Consent, health-data storage and data-protection rules are parked
    for now (D12): do not let them block or shape canvas work (owner decision, Marcel,
-   2026-10-18).
+   2026-10-18). `spec/core-coaching-system-brief.html` is the product owner's core coaching
+   system brief (1 October 2026): the product-intent source alongside the canvas, carrying the
+   function ids W01-W11, D01-D05, T01-T04, R01-R04, N01-N08, P01-P08, C01-C07, M01-M05.
 1. Hanzlah's direct instructions and confirmed stakeholder decisions.
 2. Decisions recorded in `docs/product-decisions.md` and the relevant security/design docs.
 3. The approved requirements document.
