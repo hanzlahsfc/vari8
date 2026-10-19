@@ -32,7 +32,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type Appearance = { mode: AppearanceMode; accent: string; font: AppearanceFont; }`
 - `export type AppearanceFont = | "sans" | "serif" | "condensed" | "mono" | "rounded"`
 - `export type AppearanceMode = "light" | "dark"`
-- `export function AppearanceProvider({ children }: { children: ReactNode })`
+- `export function AppearanceProvider({ children }: { children: ReactNode }): JSX.Element`
 - `export const defaultAppearance: Appearance`
 - `export const fontOptions: { id: AppearanceFont; label: string; name: string; family: string; }[]`
 - `export function normalizeHex(value: string): string | null`
@@ -804,7 +804,7 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/db.ts`
 
 - `export function isSerializationConflict(error: unknown): boolean`
-- `export const prisma = globalForPrisma.prisma ?? new PrismaClient()`
+- `export const prisma: PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>`
 
 ## `lib/exercise/import.ts`
 
