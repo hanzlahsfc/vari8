@@ -10,7 +10,6 @@ import {
   TokenStoreError,
   claimAccessToken,
   inspectAccessToken,
-  issuePasswordResetToken,
   issueWorkspaceInviteToken,
 } from "../../lib/tokens/store";
 
@@ -90,27 +89,6 @@ describe("S1-F2A token store (unit)", () => {
       ).rejects.toThrow("invalid_input");
     }
     expect(tx.accessToken.create).not.toHaveBeenCalled();
-  });
-
-  it("issues resets with the user-owned reset shape and digest only", async () => {
-    const tx = fakeTx({
-      create: vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({
-        id: "tok-r",
-        expiresAt: data.expiresAt,
-      })),
-    });
-    const issued = await issuePasswordResetToken(tx, { userId: "u-1" });
-    const data = (tx.accessToken.create as ReturnType<typeof vi.fn>).mock
-      .calls[0][0].data;
-    expect(data.purpose).toBe("PASSWORD_RESET");
-    expect(data.userId).toBe("u-1");
-    expect(data.workspaceId ?? null).toBeNull();
-    expect(data.targetEmail ?? null).toBeNull();
-    expect(data.intendedRole ?? null).toBeNull();
-    expect(data.createdByUserId ?? null).toBeNull();
-    expect(data.tokenHash).toMatch(HEX64);
-    expect("rawToken" in data).toBe(false);
-    expect(issued.rawToken).toMatch(RAW_PATTERN);
   });
 
   it("claim returns the indistinguishable invalid result for malformed input without database work", async () => {

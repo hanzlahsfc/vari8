@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { passwordResetDeliveryConfigured } from "@/lib/auth/password-reset-delivery";
+import { passwordResetDeliveryConfigured } from "@/lib/auth/password-reset-boundary";
 
 import { LoginForm } from "./login-form";
 
@@ -29,6 +29,9 @@ export default async function LoginPage({
       ) : null}
       <p className="app-lede">Sign in to continue.</p>
       <LoginForm />
+      <p className="app-lede">
+        Coaching workspace? <Link href="/signup">Create one</Link>
+      </p>
       {passwordResetDeliveryConfigured() ? (
         <p className="app-lede">
           <Link href="/reset-request">Forgot your password?</Link>

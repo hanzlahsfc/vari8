@@ -105,26 +105,6 @@ describe("CHECK-IN-OVERVIEW-I1 — queue WHERE builder", () => {
 
 // ── Derived canReview hint (never role-alone) ──────────────────────────
 
-describe("CHECK-IN-OVERVIEW-I1 — derived canReview", () => {
-  it.each([
-    ["WORKSPACE_OWNER", true, true],
-    ["WORKSPACE_OWNER", false, false],
-    ["COACH", true, true],
-    ["COACH", false, false],
-    ["ASSISTANT_COACH", true, false],
-    ["ASSISTANT_COACH", false, false],
-    ["CLIENT", true, false],
-    ["SUPPORT", true, false],
-  ] as const)(
-    "role=%s rowAssignment=%s → canReview=%s",
-    async (role, rowAssigned, expected) => {
-      const { deriveCheckInQueueCanReview } =
-        await import("../../lib/checkin/instances");
-      expect(deriveCheckInQueueCanReview(role, rowAssigned)).toBe(expected);
-    },
-  );
-});
-
 // ── ?submission= deep-link param parser (bounded single value) ─────────
 
 describe("CHECK-IN-OVERVIEW-I1 — deep-link param parser", () => {

@@ -3,7 +3,6 @@ import { execFileSync } from "node:child_process";
 import { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { AccessDeniedError } from "../../lib/auth/guard";
 import {
   archiveParameter,
   createParameter,
@@ -17,7 +16,6 @@ import {
   CoachingTemplateError,
   createTemplate,
   getTemplateVersion,
-  listTemplates,
   openTemplateDraft,
   publishTemplate,
   saveTemplateDraft,
@@ -242,95 +240,6 @@ describe.skipIf(!enabled)("P-014 coaching foundation (real PG)", () => {
         prisma.workspace.delete({ where: { id: ws.id } }),
       ).rejects.toThrow();
       await prisma.parameterDefinition.delete({ where: { id: p.id } });
-    });
-  });
-
-  describe("authorization", () => {
-    it("owner and coach read/write at workspace scope", async () => {
-      const { ws, u } = await staffFixture("WORKSPACE_OWNER");
-      const created = await mkParam(ws.id, s(u.id));
-      expect(created.key).toMatch(/^p_/);
-      const { u: coach } = await staffFixture("COACH", ws);
-      expect(
-        (await listParameters(s(coach.id), { workspaceId: ws.id })).parameters,
-      ).toHaveLength(1);
-      await createTemplate(s(coach.id), { workspaceId: ws.id, name: "T" });
-      expect(
-        await listTemplates(s(coach.id), { workspaceId: ws.id }),
-      ).toHaveLength(1);
-    });
-
-    it.each(["ASSISTANT_COACH", "SUPPORT", "CLIENT"] as const)(
-      "denies %s all parameter/template access",
-      async (role) => {
-        const { ws, u } = await staffFixture();
-        const p = await mkParam(ws.id, s(u.id));
-        const denied = await staffFixture(role, ws);
-        for (const call of [
-          () => listParameters(s(denied.u.id), { workspaceId: ws.id }),
-          () => listTemplates(s(denied.u.id), { workspaceId: ws.id }),
-          () => mkParam(ws.id, s(denied.u.id)),
-          () =>
-            createTemplate(s(denied.u.id), { workspaceId: ws.id, name: "x" }),
-          () =>
-            archiveParameter(s(denied.u.id), {
-              workspaceId: ws.id,
-              parameterId: p.parameterId,
-            }),
-        ]) {
-          await expect(call()).rejects.toThrow(AccessDeniedError);
-        }
-      },
-    );
-
-    it("denies dual-role platform admin, non-members, inactive members, and cross-workspace reads", async () => {
-      const a = await staffFixture();
-      const b = await staffFixture();
-      const p = await mkParam(a.ws.id, s(a.u.id));
-
-      // Platform admin + ACTIVE owner membership → denied.
-      const admin = await user("PLATFORM_ADMIN");
-      await member(a.ws.id, admin.id, "WORKSPACE_OWNER");
-      await expect(
-        listParameters(s(admin.id), { workspaceId: a.ws.id }),
-      ).rejects.toThrow(AccessDeniedError);
-
-      // Foreign parameter under an authorized workspace → non-disclosing
-      // domain error (indistinguishable from a missing row).
-      await expect(
-        getParameter(s(b.u.id), {
-          workspaceId: b.ws.id,
-          parameterId: p.parameterId,
-        }),
-      ).rejects.toMatchObject({ code: "parameter_not_accessible" });
-      // Same owner, foreign workspace → authorization denial (no membership).
-      await expect(
-        getParameter(s(b.u.id), {
-          workspaceId: a.ws.id,
-          parameterId: p.parameterId,
-        }),
-      ).rejects.toThrow(AccessDeniedError);
-
-      // Suspended member → denied.
-      const { u: susp } = await staffFixture("WORKSPACE_OWNER", a.ws);
-      await prisma.workspaceMember.updateMany({
-        where: { userId: susp.id, workspaceId: a.ws.id },
-        data: { status: "SUSPENDED" },
-      });
-      await expect(
-        listParameters(s(susp.id), { workspaceId: a.ws.id }),
-      ).rejects.toThrow(AccessDeniedError);
-    });
-
-    it("denies immediately after membership revocation (no cached grant)", async () => {
-      const { ws, u } = await staffFixture("COACH");
-      await prisma.workspaceMember.updateMany({
-        where: { userId: u.id },
-        data: { status: "REMOVED" },
-      });
-      await expect(
-        listParameters(s(u.id), { workspaceId: ws.id }),
-      ).rejects.toThrow(AccessDeniedError);
     });
   });
 

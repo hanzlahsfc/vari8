@@ -46,7 +46,6 @@ let coachMemberId: string;
 let assistantMemberId: string;
 let clientUserId: string;
 let clientMemberId: string;
-let coachUserId: string;
 // Profiles THIS spec created for the shared client user — removed at
 // teardown so sibling specs' own (workspace,user) seeds don't collide.
 let createdProfileIds: string[] = [];
@@ -178,7 +177,6 @@ test.beforeAll(async () => {
   ]);
   ownerMemberId = ownerMember.id;
   wsBOwnerMemberId = wsBOwnerMember.id;
-  coachUserId = coach.id;
   coachMemberId = coachMember.id;
   assistantMemberId = assistantMember.id;
   clientUserId = clientUser.id;

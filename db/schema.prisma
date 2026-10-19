@@ -124,7 +124,10 @@ enum ExerciseImportOutcome {
 model User {
   id             String       @id @default(cuid())
   email          String       @unique
-  passwordHash   String       @map("password_hash")
+  // PR-05: legacy mirror column — Better Auth writes credential hashes to
+  // `accounts.password`; kept with a default so Better Auth's user insert
+  // doesn't trip on a required column it doesn't know.
+  passwordHash   String       @default("") @map("password_hash")
   name           String?
   platformRole   PlatformRole @default(USER) @map("platform_role")
   status         UserStatus   @default(ACTIVE)
@@ -132,8 +135,16 @@ model User {
   // become stale (founder decision: reset logs out other devices). Not yet
   // embedded in or compared by JWT validation — no auth behavior change yet.
   sessionVersion Int          @default(0) @map("session_version")
+  // PR-05 (Better Auth): credential identity now lives on `account` rows; this
+  // flag records whether the address was verified (invite acceptance counts).
+  emailVerified  Boolean      @default(false) @map("email_verified")
+  image          String?
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  // PR-05 (Better Auth): database sessions + credential/OAuth account records.
+  sessions   Session[]
+  accounts   Account[]
 
   memberships                    WorkspaceMember[]
   clientProfiles                 ClientProfile[]
@@ -155,6 +166,73 @@ model User {
 
   @@map("users")
 
+}
+
+// PR-05 (Better Auth): session rows ARE the session — revocation is row
+// deletion, so no per-request version compare is needed anymore.
+model Session {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// PR-05 (Better Auth): credential accounts carry the scrypt password hash;
+// providerId "credential" + accountId = user id (Better Auth convention).
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String    @map("user_id")
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  idToken               String?   @map("id_token")
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+// PR-05 (Better Auth): reset/verification tokens. Password-reset rows use
+// identifier "reset-password:<token>", value = user id, and are consumed
+// atomically (single use) inside the password write transaction.
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([identifier])
+  @@map("verifications")
+}
+
+// PR-05 (Better Auth): DB-backed rate-limit buckets (storage="database").
+model RateLimit {
+  id          String @id @default(cuid())
+  key         String @unique
+  count       Int
+  lastRequest BigInt @map("last_request")
+
+  @@map("rate_limit")
 }
 
 model Workspace {

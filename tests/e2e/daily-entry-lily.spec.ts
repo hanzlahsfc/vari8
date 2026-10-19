@@ -29,7 +29,6 @@ let wsId: string;
 let ownerMemberId: string;
 let profileId: string;
 let profileCreated = false;
-let clientUserId: string;
 
 async function signIn(page: Page, email: string, base = BASE) {
   await page.goto(`${base}/login`);
@@ -138,7 +137,6 @@ test.beforeAll(async () => {
   const clientUser = await prisma.user.findUniqueOrThrow({
     where: { email: E2E.client },
   });
-  clientUserId = clientUser.id;
 
   const staleRevisions = await prisma.dailyEntryRevision.findMany({
     where: { workspaceId: wsId },

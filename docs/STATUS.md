@@ -1,3 +1,40 @@
+## 2026-10-19 — PR-05: Better Auth + /api/v1 foundation — verified locally
+
+- Branch `beta/pr-05-auth-api` (worktree `vari8-worktrees/pr-05-auth-api`),
+  base `55a0f08` (post-PR-02 merge). Auth.js v5 removed; Better Auth 1.7.10
+  with the Prisma adapter now owns sessions (`session` rows), credential
+  accounts, reset verifications, and DB-backed rate limiting.
+- Schema/migration `20261020000000_pr05_better_auth`: adds `sessions`,
+  `accounts`, `verifications`, `rate_limit`, `users.email_verified`, `image`;
+  `password_hash` gains a default (legacy mirror column, removed in PR-R2);
+  a backfill `INSERT` gives every existing user a `credential` account row
+  carrying the same scrypt hash — seeded users sign in unchanged.
+- Compat seam: `auth.ts` still exports `auth()` (SessionLike `{user:{id}}`),
+  `signIn`, `signOut`; all ~69 call sites unchanged. New `lib/auth/viewer.ts`
+  resolves Better Auth sessions and re-checks `User.status` per request.
+- Behavior: `/signup` coach self-signup (user+account+workspace+owner member
+  in one tx), `/api/auth/*` sign-in/out/reset/change-password, 60-min
+  single-use reset via `verification` rows + dev-file mail adapter
+  (`lib/mail`), DB rate limit (10/min on sign-in), inactive-account lockout,
+  `bearer` plugin for API clients, public `/api/auth/sign-up/email` disabled.
+- `/api/v1` foundation: `lib/api/v1.ts` route helper (cookie|bearer →
+  Zod params/query → workspace+role → one service call → typed JSON),
+  `lib/auth/roles.ts` D15 capability matrix, reference route
+  `GET /api/v1/workspaces/:id/clients` → `lib/workspace/roster.ts`.
+- Test surgery per TEST-AUDIT: 37 whole-file CUT-AT-REPLACE + named-block
+  trims; kept suites rewired (token store, invite acceptance, s1-a identity,
+  mail/boundary). New: `tests/unit/roles.test.ts` (table-driven role matrix),
+  `tests/integration/auth-flow.test.ts` (real handler, real PG — 10 cases),
+  `tests/integration/api-v1-clients.test.ts` (literal JSON + 200/403/401).
+- Gates: typecheck 0; lint 0 errors (14 pre-existing warnings outside card);
+  unit 1190/1190; integration 284/284 on `app_pr05`; `next build` 0.
+- Live proof `scripts/live-proof-pr05.mjs` on dev :3620 + fresh `app_pr05`,
+  14/14: real-browser signup+login+wrong-password, API sign-in 200+bearer,
+  10×401 then 11th 429, reset consume 200 / replay 400 / expired 400,
+  change-password revokes old sessions (fresh token works), roster bearer
+  200 / foreign workspace 403 / anonymous 401. Report:
+  `icm/05-build/reports/PR-05.md`.
+
 ## 2026-10-19 — PR-02: root app on Next.js 16.3.8 + React 19.3.0 — verified locally
 
 - Branch `beta/pr-02-next16` (worktree `vari8-worktrees/pr-02-next16`), base

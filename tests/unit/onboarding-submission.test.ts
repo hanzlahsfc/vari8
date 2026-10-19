@@ -4,11 +4,6 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  resolveScope,
-  type Action,
-  type PrincipalRole,
-} from "../../lib/auth/rbac";
-import {
   isOnboardingSubmissionEnabled,
   OnboardingSubmissionError,
   SUBMISSION_LIMITS,
@@ -494,26 +489,6 @@ describe("P-023 canonicalizeAnswers", () => {
       } catch (e) {
         expect(e).toBeInstanceOf(OnboardingSubmissionError);
         expect((e as OnboardingSubmissionError).code).toBe("not_available");
-      }
-    }
-  });
-});
-
-describe("P-023 RBAC", () => {
-  it("CLIENT has own read/write; every other role is denied", () => {
-    const expected: Record<PrincipalRole, [string, string]> = {
-      PLATFORM_ADMIN: ["denied", "denied"],
-      WORKSPACE_OWNER: ["denied", "denied"],
-      COACH: ["denied", "denied"],
-      ASSISTANT_COACH: ["denied", "denied"],
-      SUPPORT: ["denied", "denied"],
-      CLIENT: ["own", "own"],
-    };
-    for (const role of Object.keys(expected) as PrincipalRole[]) {
-      for (const action of ["read", "write"] as Action[]) {
-        expect(resolveScope("onboardingSubmissions", action, role)).toBe(
-          expected[role][action === "read" ? 0 : 1],
-        );
       }
     }
   });

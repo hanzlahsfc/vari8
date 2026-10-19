@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { passwordResetDeliveryConfigured } from "@/lib/auth/password-reset-delivery";
+import { passwordResetDeliveryConfigured } from "@/lib/auth/password-reset-boundary";
 
 import { ResetRequestForm } from "./reset-request-form";
 

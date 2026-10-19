@@ -50,3 +50,4 @@ icm/**/*.log
 
 # test-audit run logs
 icm/03-plan/*.log
+/var/

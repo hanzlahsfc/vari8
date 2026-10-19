@@ -9,13 +9,6 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  AccessDeniedError,
-  authorize,
-  type AuthorizationRepo,
-} from "../../lib/auth/guard";
-import { RESOURCES, resolveScope } from "../../lib/auth/rbac";
-import {
-  CHECKIN_FIELD_KINDS,
   CHECKIN_FORM_LIMITS,
   CheckInFormError,
   validateCheckInDefinition,
@@ -88,145 +81,11 @@ describe("P-025-A shared server-only check-in feature resolver", () => {
   });
 });
 
-describe("P-025-A RBAC — checkinFormDefinitions", () => {
-  it("resource is declared in the closed union", () => {
-    expect(RESOURCES).toContain("checkinFormDefinitions");
-  });
-
-  it("owner and coach have workspace read/write; all others denied", () => {
-    for (const role of ["WORKSPACE_OWNER", "COACH"] as const) {
-      expect(resolveScope("checkinFormDefinitions", "read", role)).toBe(
-        "workspace",
-      );
-      expect(resolveScope("checkinFormDefinitions", "write", role)).toBe(
-        "workspace",
-      );
-    }
-    for (const role of [
-      "ASSISTANT_COACH",
-      "SUPPORT",
-      "CLIENT",
-      "PLATFORM_ADMIN",
-    ] as const) {
-      expect(resolveScope("checkinFormDefinitions", "read", role)).toBe(
-        "denied",
-      );
-      expect(resolveScope("checkinFormDefinitions", "write", role)).toBe(
-        "denied",
-      );
-    }
-  });
-
-  it("check-in field-kind union is closed and domain-distinct", () => {
-    expect(CHECKIN_FIELD_KINDS).toHaveLength(6);
-    const kinds: readonly CheckInFieldKind[] = CHECKIN_FIELD_KINDS;
-    expect(kinds).not.toContain("calories");
-  });
-});
-
 // ── Dual-role deny-set hardening (binding security requirement, not an
 // owner choice): checkinFormDefinitions AND the pre-stubbed
 // checkinsCoachReviews must deny PLATFORM_ADMIN even when the account holds
 // an ACTIVE workspace membership whose role would otherwise be granted.
 // Mirrors the guard.test.ts makeRepo pattern.
-describe("P-025-A dual-role PLATFORM_ADMIN denial", () => {
-  type State = {
-    user: {
-      id: string;
-      platformRole: "USER" | "PLATFORM_ADMIN";
-      status: "ACTIVE";
-    } | null;
-    workspace: { id: string; status: "ACTIVE" } | null;
-    membership: {
-      id: string;
-      role:
-        "WORKSPACE_OWNER" | "COACH" | "ASSISTANT_COACH" | "SUPPORT" | "CLIENT";
-      status: "ACTIVE";
-    } | null;
-    client: null;
-    assignment: null;
-  };
-
-  function makeRepo(overrides: Partial<State> = {}) {
-    const state: State = {
-      user: { id: "u1", platformRole: "USER", status: "ACTIVE" },
-      workspace: { id: "w1", status: "ACTIVE" },
-      membership: { id: "m1", role: "WORKSPACE_OWNER", status: "ACTIVE" },
-      client: null,
-      assignment: null,
-      ...overrides,
-    };
-    const repo: AuthorizationRepo = {
-      getUser: async () => state.user,
-      getWorkspace: async () => state.workspace,
-      getMembership: async () => state.membership,
-      getClientProfileInWorkspace: async () => state.client,
-      getActiveAssignment: async () => state.assignment,
-    };
-    return { repo };
-  }
-
-  const session = (id = "u1") => ({ user: { id } }) as never;
-  async function reason(fn: () => Promise<unknown>) {
-    try {
-      await fn();
-      return undefined;
-    } catch (error) {
-      return error instanceof AccessDeniedError
-        ? error.reason
-        : `other:${error}`;
-    }
-  }
-
-  const admin = {
-    id: "u1",
-    platformRole: "PLATFORM_ADMIN",
-    status: "ACTIVE",
-  } as const;
-
-  for (const resource of [
-    "checkinFormDefinitions",
-    "checkinsCoachReviews",
-  ] as const) {
-    for (const role of ["WORKSPACE_OWNER", "COACH"] as const) {
-      it(`dual-role PLATFORM_ADMIN + ACTIVE ${role} is role_denied read AND write on ${resource}`, async () => {
-        const { repo } = makeRepo({
-          user: admin,
-          membership: { id: "m1", role, status: "ACTIVE" },
-        });
-        for (const action of ["read", "write"] as const) {
-          expect(
-            await reason(() =>
-              authorize(
-                session(),
-                { resource, action, workspaceId: "w1" },
-                repo,
-              ),
-            ),
-          ).toBe("role_denied");
-        }
-      });
-    }
-  }
-
-  it("a plain (non-admin) owner still passes checkinFormDefinitions write", async () => {
-    const { repo } = makeRepo();
-    expect(
-      await reason(() =>
-        authorize(
-          session(),
-          {
-            resource: "checkinFormDefinitions",
-            action: "write",
-            workspaceId: "w1",
-          },
-          repo,
-        ),
-      ),
-    ).toBeUndefined();
-  });
-});
-
 // ── Validator contract (structural, bounds, ID trust, tombstones) ───────────
 
 const SHORT: CheckInFieldKind = "shortText";

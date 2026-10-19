@@ -5,7 +5,7 @@ import type {
   AccessToken,
 } from "@prisma/client";
 
-import { normalizeEmail } from "../credentials";
+import { normalizeEmail } from "../email";
 import {
   generateAccessToken,
   hashAccessToken,
@@ -127,29 +127,6 @@ export async function issueWorkspaceInviteToken(
 }
 
 /**
- * Issue a password-reset token record inside the caller's transaction. The
- * caller has already decided eligibility; this primitive only writes the
- * user-owned, hash-only row. Returns the raw token once.
- */
-export async function issuePasswordResetToken(
-  tx: Prisma.TransactionClient,
-  input: { userId: string },
-): Promise<{ tokenId: string; rawToken: RawAccessToken; expiresAt: Date }> {
-  const userId = requireId(input.userId);
-  const { rawToken, tokenHash } = generateAccessToken();
-  const row = await tx.accessToken.create({
-    data: {
-      purpose: "PASSWORD_RESET",
-      tokenHash,
-      userId,
-      expiresAt: new Date(Date.now() + ACCESS_TOKEN_TTL_MS),
-    },
-    select: { id: true, expiresAt: true },
-  });
-  return { tokenId: row.id, rawToken, expiresAt: row.expiresAt };
-}
-
-/**
  * Revoke outstanding invites matching exactly one (workspace, email, role)
  * tuple — the founder-decided "replacement cancels previous matching links"
  * semantics. Only unconsumed, unrevoked, unexpired rows are touched.
@@ -171,29 +148,6 @@ export async function revokeMatchingInviteTokens(
       workspaceId,
       targetEmail,
       intendedRole: input.intendedRole,
-      consumedAt: null,
-      revokedAt: null,
-      expiresAt: { gt: now },
-    },
-    data: { revokedAt: now },
-  });
-  return { revokedCount: result.count };
-}
-
-/**
- * Revoke outstanding reset tokens for exactly one user. Same active-only
- * semantics as invite revocation.
- */
-export async function revokeUserResetTokens(
-  tx: Prisma.TransactionClient,
-  input: { userId: string },
-): Promise<{ revokedCount: number }> {
-  const userId = requireId(input.userId);
-  const now = new Date();
-  const result = await tx.accessToken.updateMany({
-    where: {
-      purpose: "PASSWORD_RESET",
-      userId,
       consumedAt: null,
       revokedAt: null,
       expiresAt: { gt: now },

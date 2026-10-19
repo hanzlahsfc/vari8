@@ -144,11 +144,20 @@ describe.skipIf(!enabled)(
           status: "ACTIVE",
         },
       });
-      const { rawToken: resetRaw } = await prisma.$transaction(async (tx) => {
-        const { issuePasswordResetToken } =
-          await import("../../lib/tokens/store");
-        return issuePasswordResetToken(tx, { userId: resetUser.id });
-      });
+      const { rawToken: resetRaw } = await (async () => {
+        const { generateAccessToken, hashAccessToken } =
+          await import("../../lib/tokens/crypto");
+        const generated = generateAccessToken();
+        await prisma.accessToken.create({
+          data: {
+            userId: resetUser.id,
+            purpose: "PASSWORD_RESET",
+            tokenHash: hashAccessToken(generated.rawToken),
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+          },
+        });
+        return generated;
+      })();
       await expect(
         getInviteLinkState({ workspaceId: ws.id, rawToken: resetRaw }, prisma),
       ).resolves.toEqual({ state: "invalid" });

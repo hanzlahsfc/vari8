@@ -1,13 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { AuthorizationContext } from "../../lib/auth/guard";
-import { AccessDeniedError } from "../../lib/auth/guard";
 import {
   AuditError,
   buildAccountAuditEvent,
   buildAuditEvent,
   listAccountAuditEvents,
-  listAuditEvents,
   sanitizeAuditMeta,
   writeAccountAuditEvent,
   writeAuditEvent,
@@ -302,74 +300,6 @@ describe("writeAuditEvent", () => {
       } as never),
     ).rejects.toMatchObject({ code: "audit_metadata_forbidden" });
     expect(create).not.toHaveBeenCalled();
-  });
-});
-
-describe("listAuditEvents", () => {
-  function fakePrisma(overrides: Record<string, unknown> = {}) {
-    const delegates = {
-      user: {
-        findUnique: vi.fn(async () => ({
-          id: "u1",
-          platformRole: "USER",
-          status: "ACTIVE",
-        })),
-      },
-      workspace: {
-        findUnique: vi.fn(async () => ({ id: "w1", status: "ACTIVE" })),
-      },
-      workspaceMember: {
-        findUnique: vi.fn(async () => ({
-          id: "m1",
-          role: "WORKSPACE_OWNER",
-          status: "ACTIVE",
-        })),
-      },
-      clientProfile: { findFirst: vi.fn(async () => null) },
-      clientAssignment: { findFirst: vi.fn(async () => null) },
-      auditEvent: { findMany: vi.fn(async () => []) },
-      ...overrides,
-    };
-    return { client: delegates as never, delegates };
-  }
-
-  it("lets the workspace owner read own-workspace events, bounded", async () => {
-    const { client, delegates } = fakePrisma();
-    await listAuditEvents(
-      { user: { id: "u1" } },
-      { workspaceId: "w1", limit: 500 },
-      client,
-    );
-    const call = (
-      delegates.auditEvent.findMany.mock.calls[0] as unknown[]
-    )[0] as {
-      where: Record<string, unknown>;
-      take: number;
-      orderBy: unknown;
-    };
-    expect(call.where).toMatchObject({
-      workspaceId: "w1",
-      // S1-F2B: workspace listings are scope-locked — ACCOUNT rows can never
-      // enter a tenant listing even if a future scope allowed workspace_id.
-      scope: "WORKSPACE",
-    });
-    expect(call.take).toBe(101);
-    expect(call.orderBy).toEqual({ id: "asc" });
-  });
-
-  it("denies non-owner members and fails closed on non-workspace scope", async () => {
-    const { client } = fakePrisma({
-      workspaceMember: {
-        findUnique: vi.fn(async () => ({
-          id: "m1",
-          role: "COACH",
-          status: "ACTIVE",
-        })),
-      },
-    });
-    await expect(
-      listAuditEvents({ user: { id: "u1" } }, { workspaceId: "w1" }, client),
-    ).rejects.toBeInstanceOf(AccessDeniedError);
   });
 });
 

@@ -1,6 +1,6 @@
 "use server";
 
-import { AuthError } from "next-auth";
+import { APIError } from "better-auth/api";
 
 import { signIn } from "@/auth";
 
@@ -21,7 +21,7 @@ export async function authenticate(
     });
     return undefined;
   } catch (error) {
-    if (error instanceof AuthError) {
+    if (error instanceof APIError) {
       return "Invalid email or password.";
     }
     // Re-throw redirects and other framework errors.
