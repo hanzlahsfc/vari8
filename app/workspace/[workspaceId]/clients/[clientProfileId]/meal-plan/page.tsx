@@ -44,15 +44,19 @@ export default async function StaffClientMealPlanPage({
   )
     notFound();
 
-  const client = await prisma.clientProfile.findFirst({
-    where: { id: clientProfileId, workspaceId },
-    select: { name: true },
-  });
-
   const result = await readStaffMealPlanFromAction(
     { user: { id: userId } },
     { workspaceId, clientProfileId },
   );
+
+  // The client name is tenant data: read it only after the authorizing
+  // boundary call, so a denied response cannot carry it (RSC-NAME-LEAK).
+  const client = result.ok
+    ? await prisma.clientProfile.findFirst({
+        where: { id: clientProfileId, workspaceId },
+        select: { name: true },
+      })
+    : null;
 
   return (
     <div className="tracker-page" data-testid="staff-mealplan-page">
