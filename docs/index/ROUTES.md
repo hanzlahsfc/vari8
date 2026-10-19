@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 48 backend pages, 1 API routes, 8 layouts, 3 canvas pages.
+Counts: 49 backend pages, 3 API routes, 8 layouts, 3 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -26,6 +26,7 @@ Route groups (do not add a path segment): `(tracker)`.
 | `/reset-request` | `app/reset-request/page.tsx` | server | none detected |
 | `/sheets` | `app/sheets/page.tsx` | server | requireSheetViewer |
 | `/sheets/[slug]` | `app/sheets/[slug]/page.tsx` | server | requireSheetViewer |
+| `/signup` | `app/signup/page.tsx` | server | none detected |
 | `/workspace` | `app/workspace/page.tsx` | server | requireSessionUser |
 | `/workspace/[workspaceId]` | `app/workspace/[workspaceId]/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/admin` | `app/workspace/[workspaceId]/admin/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
@@ -69,7 +70,9 @@ Route groups (do not add a path segment): `(tracker)`.
 
 | Path | File | Methods | Auth (detected) |
 |---|---|---|---|
-| `/api/auth/[...nextauth]` | `app/api/auth/[...nextauth]/route.ts` | GET, POST | none detected |
+| `/api/auth/[...all]` | `app/api/auth/[...all]/route.ts` | GET, POST | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients` | `app/api/v1/workspaces/[workspaceId]/clients/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/session` | `app/api/v1/workspaces/[workspaceId]/session/route.ts` | - | none detected |
 
 ## Backend layouts (`app/`)
 

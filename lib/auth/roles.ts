@@ -41,9 +41,9 @@ export type Capability =
   | "message.write"
   // Appearance/preview editing.
   | "appearance.write"
-  // Workspace membership administration.
-  | "member.invite"
-  | "member.remove";
+  // Workspace membership administration. (member.remove is not in the
+  // matrix — the canvas exposes no removal capability, per D10/owner Q3.)
+  | "member.invite";
 
 export type CapabilityScope = "workspace" | "own" | "deny";
 
@@ -64,7 +64,6 @@ export const CAPABILITY_MATRIX: Record<Capability, Record<Role, CapabilityScope>
   "message.write":    { owner: "workspace", coach: "workspace", client: "own" },
   "appearance.write": { owner: "workspace", coach: "workspace", client: "deny" },
   "member.invite":    { owner: "workspace", coach: "workspace", client: "deny" },
-  "member.remove":    { owner: "workspace", coach: "workspace", client: "deny" },
 };
 
 export const CAPABILITIES = Object.keys(CAPABILITY_MATRIX) as Capability[];

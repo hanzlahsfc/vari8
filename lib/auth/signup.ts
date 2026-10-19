@@ -6,6 +6,11 @@ import { prisma } from "../db";
 import { normalizeEmail } from "../email";
 import { hashPassword } from "../password";
 import { validatePasswordSetup } from "../password-policy";
+import {
+  accountLimitKey,
+  consumeRateLimit,
+  RateLimitExceededError,
+} from "./rate-limit";
 
 /**
  * PR-05 coach self-signup (owner answer 5): a coach creates their account AND
@@ -64,6 +69,14 @@ export async function signUpCoachAccount(
   if (!email.includes("@") || email.length > 254) {
     throw new SignupError("invalid_input");
   }
+  // PR-05 sec pass: the form path bypasses Better Auth's HTTP limiter, so the
+  // per-account throttle runs here — keyed on the normalized email, shared
+  // `rate_limit` table, independent of any forwarding header.
+  const limit = await consumeRateLimit(accountLimitKey("sign-up", email), {
+    window: 60,
+    max: 10,
+  });
+  if (!limit.allowed) throw new RateLimitExceededError(limit.retryAfter);
   // validatePasswordSetup throws PasswordPolicyError with a structural code —
   // callers map codes to copy; the candidate never appears in errors.
   const password = validatePasswordSetup(input.password);

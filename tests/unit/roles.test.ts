@@ -66,9 +66,6 @@ describe("capability matrix (owner-decided)", () => {
     ["member.invite", "owner", "workspace"],
     ["member.invite", "coach", "workspace"],
     ["member.invite", "client", "deny"],
-    ["member.remove", "owner", "workspace"],
-    ["member.remove", "coach", "workspace"],
-    ["member.remove", "client", "deny"],
     // messaging — staff anywhere, client only own conversation
     ["message.write", "owner", "workspace"],
     ["message.write", "coach", "workspace"],

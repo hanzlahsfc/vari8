@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { expect, test, type Page } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
 
@@ -66,7 +68,11 @@ async function mkResettableUser(tag: string) {
   return user;
 }
 
-const resetIdentifier = (rawToken: string) => `reset-password:${rawToken}`;
+// PR-05: `verification.storeIdentifier: "hashed"` — rows key the SHA-256
+// digest (base64url, unpadded) of `reset-password:<rawToken>`; the raw token
+// is never stored.
+const resetIdentifier = (rawToken: string) =>
+  createHash("sha256").update(`reset-password:${rawToken}`).digest("base64url");
 
 /** Mint a real reset token: the same verification row the auth flow writes. */
 async function resetToken(email: string): Promise<string> {
@@ -223,6 +229,23 @@ test.describe("reset completion (/reset)", () => {
     await expect(
       page.getByRole("link", { name: "Request a new link" }),
     ).toHaveAttribute("href", "/reset-request");
+  });
+
+  test("superseded links fail safely", async ({ page }) => {
+    // A newer request revokes the earlier token — simulate the supersede the
+    // real endpoint performs by deleting the first row the way the
+    // request-password-reset hook does.
+    const u = await mkResettableUser("superseded");
+    const first = await resetToken(u.email);
+    trackToken(first);
+    const second = await resetToken(u.email);
+    trackToken(second);
+    await prisma.verification.deleteMany({
+      where: { identifier: resetIdentifier(first) },
+    });
+    await page.goto(`/reset?token=${first}`);
+    await expect(page.getByLabel("New password")).toHaveCount(0);
+    await expect(page.locator("main")).toContainText("invalid");
   });
 
   test("expired links fail safely", async ({ page }) => {

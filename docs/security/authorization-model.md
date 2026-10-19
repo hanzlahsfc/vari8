@@ -25,7 +25,7 @@ in the workspace), `own` (own records only), `deny`.
 | message.write       | workspace | workspace | own    |
 | appearance.write    | workspace | workspace | deny   |
 | member.invite       | workspace | workspace | deny   |
-| member.remove       | workspace | workspace | deny   |
+
 
 Key owner rulings encoded here: a coach **can** edit a client's plan
 (`plan.write: workspace`), a client **cannot** (`deny`) — enforced at the

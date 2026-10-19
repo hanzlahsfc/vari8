@@ -17,14 +17,21 @@ export type Viewer = { id: string; email: string; name: string | null };
 export async function getViewerFromHeaders(
   requestHeaders: Headers,
 ): Promise<Viewer | null> {
-  const session = await auth.api.getSession({ headers: requestHeaders });
-  if (!session) return null;
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { id: true, email: true, name: true, status: true },
-  });
-  if (!user || user.status !== "ACTIVE") return null;
-  return { id: user.id, email: user.email, name: user.name };
+  try {
+    const session = await auth.api.getSession({ headers: requestHeaders });
+    const userId = session?.user?.id;
+    if (typeof userId !== "string" || userId.length === 0) return null;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, name: true, status: true },
+    });
+    if (!user || user.status !== "ACTIVE") return null;
+    return { id: user.id, email: user.email, name: user.name };
+  } catch {
+    // Fail closed: a session-store error or malformed resolution is an
+    // anonymous viewer (401 downstream), never a 500 on a protected route.
+    return null;
+  }
 }
 
 export async function getViewer(): Promise<Viewer | null> {

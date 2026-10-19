@@ -12,7 +12,7 @@ workbook data, and the sheet-extraction pipeline arrive in later phases (see
 ## Stack
 
 Next.js 15 (App Router) · React 19 · TypeScript (strict) · Tailwind CSS 4 · Prisma +
-PostgreSQL · Auth.js v5 (Credentials) · Vitest · Playwright · ESLint · Prettier · npm.
+PostgreSQL · Better Auth (email+password) · Vitest · Playwright · ESLint · Prettier · npm.
 
 ## Prerequisites
 
@@ -25,7 +25,7 @@ PostgreSQL · Auth.js v5 (Credentials) · Vitest · Playwright · ESLint · Pret
 ```sh
 # 1. Environment (never commit real secrets)
 cp .env.example .env
-# set AUTH_SECRET in .env, e.g.:
+# set BETTER_AUTH_SECRET in .env, e.g.:
 #   openssl rand -base64 32
 
 # 2. Start local PostgreSQL (health-checked)
@@ -44,13 +44,15 @@ npm run dev            # http://127.0.0.1:3000
 
 ### Environment variables
 
-| Variable                                              | Purpose                                            |
-| ----------------------------------------------------- | -------------------------------------------------- |
-| `DATABASE_URL`                                        | Prisma connection string for local PostgreSQL      |
-| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Used by `docker-compose.yml`                       |
-| `AUTH_SECRET`                                         | Auth.js signing secret (`openssl rand -base64 32`) |
-| `AUTH_URL`                                            | Base URL Auth.js is served from                    |
-| `AUTH_TRUST_HOST`                                     | Trust the host header (local/simple deployments)   |
+| Variable                                              | Purpose                                                                                    |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`                                        | Prisma connection string for local PostgreSQL                                              |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Used by `docker-compose.yml`                                                               |
+| `BETTER_AUTH_SECRET`                                  | Auth signing secret, ≥32 chars — required in production (`openssl rand -base64 32`)         |
+| `BETTER_AUTH_URL`                                     | Canonical base URL — session cookies and reset-link origins are built from this only        |
+| `AUTH_TRUSTED_IP_HEADER`                              | Optional trusted client-IP header for rate limiting (e.g. `x-real-ip`); unset = trust none  |
+| `MAIL_DELIVERY_ADAPTER`                               | Outbound mail adapter; production requires it (mail-gated routes fail closed without it)    |
+| `DEV_MAILBOX_FILE`                                    | Dev-file adapter sink for reset mail in development                                        |
 
 Local defaults in `docker-compose.yml` and `.env.example` are development placeholders
 only. Override them for any real environment and never commit `.env`.
@@ -66,15 +68,33 @@ Prisma client generation and engine availability are verified by the Phase 6 che
 
 ## Authentication
 
-- Auth.js v5 **Credentials** provider, for **existing database users only**. There is no
-  registration, password reset, seeded account, or default credential in this foundation.
-- **Session strategy: JWT.** Credentials requires JWT sessions in Auth.js v5; the signed
-  session cookie is HttpOnly. This is documented in `auth.config.ts`.
+- [Better Auth](https://www.better-auth.com) (`lib/auth/server.ts`) with the Prisma adapter —
+  database sessions in the `session` table (revocation is row deletion), credentials on
+  `account` rows. The design record is `icm/05-build/AUTH-DECISION.md`; `auth.ts` keeps the
+  `auth()`/`signIn`/`signOut` call-site contract for server actions.
+- Email + password only. Coach self-signup (`/signup`) creates user + workspace + owner
+  membership atomically (`lib/auth/signup.ts`); clients join through workspace invitations
+  (`/invite`). Better Auth's own `/sign-up/email` endpoint is disabled.
 - Passwords are hashed with Node's built-in `scrypt` KDF (`lib/password.ts`). Only the
   derived hash and a random per-password salt are stored; plaintext is never stored or
-  logged. `lib/credentials.ts` returns a single generic failure for both unknown email and
-  wrong password, so callers cannot tell whether an account exists.
-- Sign-in UI: `/login` (minimal).
+  logged. Sign-in returns a single generic failure for both unknown email and wrong
+  password, so callers cannot tell whether an account exists.
+- Password reset (`/reset-request`, `/reset`) mails a 60-minute single-use token.
+  `verification` rows store only the SHA-256 digest of the token identifier
+  (`storeIdentifier: "hashed"`); a new request supersedes earlier tokens, and a completed
+  reset clears every outstanding reset token plus all sessions.
+- Rate limiting is layered: a per-account throttle on normalized email/user id (10/min
+  sign-in, 3/min reset request, 10/min change-password, 10/min sign-up) applies to every
+  path including the server actions; the built-in IP limiter additionally engages ONLY
+  when `AUTH_TRUSTED_IP_HEADER` names the proxy header — unset means no forwarding header
+  is trusted and IP limiting is off.
+- In production the process refuses to serve when `BETTER_AUTH_SECRET` is missing or
+  shorter than 32 characters. Deactivated users are refused on every session-bearing
+  auth endpoint and their session rows are deleted.
+- `GET /api/v1/workspaces/:id/session` and `GET /api/v1/workspaces/:id/clients` accept the
+  session cookie or `Authorization: Bearer <token>` (`bearer()` plugin) and enforce the
+  owner-decided role matrix (`lib/auth/roles.ts`).
+- Sign-in UI: `/login`.
 
 ## Theming
 

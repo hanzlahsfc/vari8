@@ -136,13 +136,17 @@ async function apiSteps() {
   });
   record("wrong password: 401 INVALID_EMAIL_OR_PASSWORD", eq(wrong.status, 401), `${wrong.status} ${wrong.text.slice(0, 80)}`);
 
-  // 6. 11 rapid wrong-password attempts from one IP -> the 11th is 429.
+  // 6. 11 rapid wrong-password attempts -> the 11th is refused (429). The
+  // account limiter counts every sign-in attempt for an address, including
+  // the earlier checks in this script — so the burst uses a decoy address:
+  // throttling applies to unknown accounts exactly as to real ones, and
+  // coach.email's bucket stays available for the password-change checks.
   const burstIp = ip();
   const statuses = [];
   for (let i = 0; i < 11; i++) {
     const r = await api("/api/auth/sign-in/email", {
       method: "POST",
-      body: { email: coach.email, password: "nope-12345" },
+      body: { email: `burst-${burstIp}@proof.test`, password: "nope-12345" },
       headers: { "x-forwarded-for": burstIp },
     });
     statuses.push(r.status);

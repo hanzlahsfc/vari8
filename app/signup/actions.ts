@@ -3,6 +3,7 @@
 import { APIError } from "better-auth/api";
 
 import { signIn } from "@/auth";
+import { RateLimitExceededError } from "@/lib/auth/rate-limit";
 import { signUpCoachAccount, SignupError } from "@/lib/auth/signup";
 import { PasswordPolicyError } from "@/lib/password-policy";
 
@@ -44,7 +45,13 @@ export async function signUpCoach(
             : "Password must be at least 10 characters.",
       };
     }
+    if (error instanceof RateLimitExceededError) {
+      return { error: "Too many attempts. Please try again later." };
+    }
     if (error instanceof APIError) {
+      if (error.status === "TOO_MANY_REQUESTS") {
+        return { error: "Too many attempts. Please try again later." };
+      }
       return { error: "Could not sign you in. Try signing in manually." };
     }
     // Re-throw redirects and other framework errors.

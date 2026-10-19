@@ -234,6 +234,7 @@ export async function inspectAccessToken(
         >;
       },
   rawToken: unknown,
+  binding?: { workspaceId: string },
 ): Promise<
   | { valid: false }
   | { valid: true; purpose: AccessTokenPurpose; expiresAt: Date }
@@ -252,9 +253,15 @@ export async function inspectAccessToken(
       expiresAt: true,
       consumedAt: true,
       revokedAt: true,
+      workspaceId: true,
     },
   });
   if (!row || row.consumedAt || row.revokedAt || row.expiresAt <= new Date()) {
+    return { valid: false };
+  }
+  // A token minted for one workspace never peeks valid under another — the
+  // workspace id is checked inside the store, never exposed to the caller.
+  if (binding?.workspaceId !== undefined && row.workspaceId !== binding.workspaceId) {
     return { valid: false };
   }
   return { valid: true, purpose: row.purpose, expiresAt: row.expiresAt };

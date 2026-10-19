@@ -22,6 +22,9 @@ export async function authenticate(
     return undefined;
   } catch (error) {
     if (error instanceof APIError) {
+      if (error.status === "TOO_MANY_REQUESTS") {
+        return "Too many attempts. Please try again later.";
+      }
       return "Invalid email or password.";
     }
     // Re-throw redirects and other framework errors.

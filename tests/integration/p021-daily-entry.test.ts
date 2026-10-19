@@ -3,8 +3,10 @@ import { execFileSync } from "node:child_process";
 import { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { AccessDeniedError } from "../../lib/auth/guard";
 import {
   DAILY_ENTRY_DEV_CONSENT,
+  DailyEntryError,
   loadDailyEntrySurface,
   saveDailyEntry,
 } from "../../lib/daily-entry/service";
@@ -448,6 +450,560 @@ describe.skipIf(!enabled)("P-021 DailyEntry (real PG)", () => {
       { registry },
     );
   }
+
+  describe("save lifecycle", () => {
+    it("saves a first revision, sets the pointer, and audits", async () => {
+      const c = await seedClient();
+      const s = await surface(c.session, c.ws.id);
+      expect(s.state).toBe("ready");
+      if (s.state !== "ready") return;
+      const r = await saveDailyEntry(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          formToken: s.formToken,
+          values: [
+            { ordinal: 0, raw: "75,5" },
+            { ordinal: 1, raw: "7" },
+            { ordinal: 2, raw: "1" },
+            { ordinal: 3, raw: "ok" },
+          ],
+        },
+        { registry: DEV_REGISTRY },
+      );
+      expect(r.status).toBe("saved");
+      const entry = await prisma.dailyEntry.findFirstOrThrow({
+        where: {
+          workspaceId: c.ws.id,
+          clientProfileId: c.profile.id,
+        },
+      });
+      expect(entry.currentRevisionId).not.toBeNull();
+      const rev = await prisma.dailyEntryRevision.findUniqueOrThrow({
+        where: { id: entry.currentRevisionId! },
+        include: { values: true },
+      });
+      expect(rev.dailyEntryId).toBe(entry.id);
+      expect(rev.seq).toBe(1);
+      expect(rev.values).toHaveLength(4);
+      const audits = await prisma.auditEvent.findMany({
+        where: { resourceType: "daily_entry" },
+      });
+      expect(audits).toHaveLength(1);
+      expect(audits[0].action).toBe("CREATE");
+      expect(audits[0].subjectClientProfileId).toBe(c.profile.id);
+    });
+
+    it("identical resubmission is a no-op: no revision, no audit", async () => {
+      const c = await seedClient();
+      const s1 = await surface(c.session, c.ws.id);
+      if (s1.state !== "ready") throw new Error("not ready");
+      const values = [
+        { ordinal: 0, raw: "75,5" },
+        { ordinal: 1, raw: "7" },
+      ];
+      await saveDailyEntry(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          formToken: s1.formToken,
+          values,
+        },
+        { registry: DEV_REGISTRY },
+      );
+      const s2 = await surface(c.session, c.ws.id);
+      if (s2.state !== "ready") throw new Error("not ready");
+      const r = await saveDailyEntry(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          formToken: s2.formToken,
+          values,
+        },
+        { registry: DEV_REGISTRY },
+      );
+      expect(r.status).toBe("no_op");
+      expect(
+        await prisma.dailyEntryRevision.count({
+          where: { clientProfileId: c.profile.id },
+        }),
+      ).toBe(1);
+      expect(
+        await prisma.auditEvent.count({
+          where: {
+            resourceType: "daily_entry",
+            subjectClientProfileId: c.profile.id,
+          },
+        }),
+      ).toBe(1);
+    });
+
+    it("edit appends a new revision and repoints", async () => {
+      const c = await seedClient();
+      let s = await surface(c.session, c.ws.id);
+      if (s.state !== "ready") throw new Error("not ready");
+      await saveDailyEntry(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          formToken: s.formToken,
+          values: [{ ordinal: 0, raw: "75" }],
+        },
+        { registry: DEV_REGISTRY },
+      );
+      s = await surface(c.session, c.ws.id);
+      if (s.state !== "ready") throw new Error("not ready");
+      const r = await saveDailyEntry(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          formToken: s.formToken,
+          values: [{ ordinal: 0, raw: "76" }],
+        },
+        { registry: DEV_REGISTRY },
+      );
+      expect(r.status).toBe("saved");
+      const entry = await prisma.dailyEntry.findFirstOrThrow({
+        where: { clientProfileId: c.profile.id },
+      });
+      const revs = await prisma.dailyEntryRevision.findMany({
+        where: { dailyEntryId: entry.id },
+        orderBy: { seq: "asc" },
+        include: { values: true },
+      });
+      expect(revs).toHaveLength(2);
+      expect(String(revs[0].values[0].valueNumeric)).toBe("75");
+      expect(String(revs[1].values[0].valueNumeric)).toBe("76");
+      expect(entry.currentRevisionId).toBe(revs[1].id);
+    });
+
+    it("history stays stable after a template transition (#71)", async () => {
+      const c = await seedClient();
+      if (!c.pin || !c.setup) throw new Error("seed did not pin");
+      const pin = c.pin;
+      const setup = c.setup;
+      let s = await surface(c.session, c.ws.id);
+      if (s.state !== "ready") throw new Error("not ready");
+      await saveDailyEntry(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          formToken: s.formToken,
+          values: [{ ordinal: 0, raw: "75" }],
+        },
+        { registry: DEV_REGISTRY },
+      );
+
+      // Publish a second version with a renamed label, then repin.
+      const template = await prisma.coachingTemplateVersion.findFirstOrThrow({
+        where: { id: pin.templateVersionId },
+      });
+      const newDefinition = JSON.parse(
+        JSON.stringify(template.definition),
+      ) as Record<string, unknown>;
+      (newDefinition.parameters as Record<string, { label: string }>)[
+        c.paramIds[0]
+      ].label = "Bodyweight (renamed)";
+      const v2 = await prisma.coachingTemplateVersion.create({
+        data: {
+          workspaceId: c.ws.id,
+          templateId: template.templateId,
+          versionSeq: 2,
+          definition: newDefinition as never,
+          publishOriginRevision: 2,
+          publishedByMemberId: pin.assignedByMemberId,
+        },
+      });
+      await prisma.clientSetupPin.update({
+        where: { id: pin.id },
+        data: {
+          status: "SUPERSEDED",
+          endedByMemberId: pin.assignedByMemberId,
+          endedAt: new Date(),
+        },
+      });
+      await prisma.clientSetupPin.create({
+        data: {
+          clientSetupId: setup.id,
+          workspaceId: c.ws.id,
+          clientProfileId: c.profile.id,
+          seq: 2,
+          templateId: template.templateId,
+          templateVersionId: v2.id,
+          assignedByMemberId: pin.assignedByMemberId,
+          supersedesPinId: pin.id,
+          transitionKind: "UPGRADE",
+          transitionSummary: {
+            schemaVersion: 1,
+            direction: "UPGRADE",
+            categories: {
+              added: 0,
+              removed: 0,
+              rebound: 0,
+              moved: 0,
+              required: 0,
+              display: 1,
+            },
+            reasonCodes: ["display_only"],
+          } as never,
+        },
+      });
+
+      s = await surface(c.session, c.ws.id);
+      if (s.state !== "ready") throw new Error("not ready");
+      // The form renders the NEW version's labels.
+      const formItem = s.sections
+        .flatMap((sec) => sec.items)
+        .find((i) => i.parameterKey === `p_${c.paramIds[0]}`);
+      expect(formItem?.label).toBe("Bodyweight (renamed)");
+      // History renders the OLD immutable version's labels.
+      expect(s.history[0].values[0].label).toBe(`Label ${c.paramIds[0]}`);
+    });
+
+    it("stale token fails closed with zero writes", async () => {
+      const c = await seedClient();
+      const s1 = await surface(c.session, c.ws.id);
+      if (s1.state !== "ready") throw new Error("not ready");
+      await saveDailyEntry(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          formToken: s1.formToken,
+          values: [{ ordinal: 0, raw: "75" }],
+        },
+        { registry: DEV_REGISTRY },
+      );
+      // reuse the old token (minted when no revision existed)
+      await expect(
+        saveDailyEntry(
+          c.session,
+          {
+            workspaceId: c.ws.id,
+            entryDate: DATE,
+            formToken: s1.formToken,
+            values: [{ ordinal: 0, raw: "80" }],
+          },
+          { registry: DEV_REGISTRY },
+        ),
+      ).rejects.toThrow(DailyEntryError);
+      expect(
+        await prisma.dailyEntryRevision.count({
+          where: { clientProfileId: c.profile.id },
+        }),
+      ).toBe(1);
+      expect(
+        await prisma.auditEvent.count({
+          where: { subjectClientProfileId: c.profile.id },
+        }),
+      ).toBe(1);
+    });
+
+    it("cross-user / replaced-membership token replay fails", async () => {
+      const c = await seedClient();
+      const s = await surface(c.session, c.ws.id);
+      if (s.state !== "ready") throw new Error("not ready");
+      const other = await seedClient();
+      // token minted for c replayed by another user's workspace/client
+      await expect(
+        saveDailyEntry(
+          other.session,
+          {
+            workspaceId: other.ws.id,
+            entryDate: DATE,
+            formToken: s.formToken,
+            values: [{ ordinal: 0, raw: "75" }],
+          },
+          { registry: DEV_REGISTRY },
+        ),
+      ).rejects.toThrow();
+      // replaced membership row (new id) stales the token
+      await prisma.workspaceMember.delete({
+        where: { id: c.clientMember.id },
+      });
+      const newMember = await prisma.workspaceMember.create({
+        data: {
+          workspaceId: c.ws.id,
+          userId: c.clientUser.id,
+          role: "CLIENT",
+          status: "ACTIVE",
+        },
+      });
+      expect(newMember.id).not.toBe(c.clientMember.id);
+      await expect(
+        saveDailyEntry(
+          c.session,
+          {
+            workspaceId: c.ws.id,
+            entryDate: DATE,
+            formToken: s.formToken,
+            values: [{ ordinal: 0, raw: "75" }],
+          },
+          { registry: DEV_REGISTRY },
+        ),
+      ).rejects.toThrow();
+      expect(
+        await prisma.dailyEntryRevision.count({
+          where: { clientProfileId: c.profile.id },
+        }),
+      ).toBe(0);
+    });
+
+    it("revoked membership denies the save (zero writes)", async () => {
+      const c = await seedClient();
+      const s = await surface(c.session, c.ws.id);
+      if (s.state !== "ready") throw new Error("not ready");
+      await prisma.workspaceMember.update({
+        where: { id: c.clientMember.id },
+        data: { status: "REMOVED" },
+      });
+      await expect(
+        saveDailyEntry(
+          c.session,
+          {
+            workspaceId: c.ws.id,
+            entryDate: DATE,
+            formToken: s.formToken,
+            values: [{ ordinal: 0, raw: "75" }],
+          },
+          { registry: DEV_REGISTRY },
+        ),
+      ).rejects.toThrow(AccessDeniedError);
+      expect(
+        await prisma.dailyEntryRevision.count({
+          where: { clientProfileId: c.profile.id },
+        }),
+      ).toBe(0);
+    });
+
+    it("missing consent fails; revoked consent fails; history retained", async () => {
+      const c = await seedClient(undefined, { consent: false });
+      const s0 = await surface(c.session, c.ws.id);
+      expect(s0.state).not.toBe("ready");
+      await expect(
+        saveDailyEntry(
+          c.session,
+          {
+            workspaceId: c.ws.id,
+            entryDate: DATE,
+            formToken: "x",
+            values: [],
+          },
+          { registry: DEV_REGISTRY },
+        ),
+      ).rejects.toThrow(DailyEntryError);
+      // grant → save → revoke → fail but retain
+      for (const [kind, version] of [
+        ["PRIVACY_NOTICE", DAILY_ENTRY_DEV_CONSENT.PRIVACY_NOTICE],
+        ["HEALTH_DATA", DAILY_ENTRY_DEV_CONSENT.HEALTH_DATA],
+      ] as const)
+        await prisma.consentRecord.create({
+          data: { clientProfileId: c.profile.id, kind, version },
+        });
+      const s = await surface(c.session, c.ws.id);
+      if (s.state !== "ready") throw new Error("not ready");
+      await saveDailyEntry(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          formToken: s.formToken,
+          values: [{ ordinal: 0, raw: "75" }],
+        },
+        { registry: DEV_REGISTRY },
+      );
+      await prisma.consentRecord.updateMany({
+        where: { clientProfileId: c.profile.id },
+        data: { revokedAt: new Date() },
+      });
+      // After revocation the surface refuses to mint a token; a replayed
+      // pre-revocation token also fails at the locked consent recheck.
+      const s2 = await surface(c.session, c.ws.id);
+      expect(s2.state).toBe("consent_missing");
+      await expect(
+        saveDailyEntry(
+          c.session,
+          {
+            workspaceId: c.ws.id,
+            entryDate: DATE,
+            formToken: s.formToken,
+            values: [{ ordinal: 0, raw: "76" }],
+          },
+          { registry: DEV_REGISTRY },
+        ),
+      ).rejects.toThrow(DailyEntryError);
+      // Retained history is not deleted.
+      expect(
+        await prisma.dailyEntryRevision.count({
+          where: { clientProfileId: c.profile.id },
+        }),
+      ).toBe(1);
+      const s3 = await surface(c.session, c.ws.id);
+      expect(s3.state).not.toBe("ready");
+    });
+
+    it("unconfigured registry fails closed (production shape)", async () => {
+      const c = await seedClient();
+      const s = await surface(c.session, c.ws.id);
+      if (s.state !== "ready") throw new Error("not ready");
+      await expect(
+        saveDailyEntry(
+          c.session,
+          {
+            workspaceId: c.ws.id,
+            entryDate: DATE,
+            formToken: s.formToken,
+            values: [{ ordinal: 0, raw: "75" }],
+          },
+          {}, // no registry → unconfigured
+        ),
+      ).rejects.toThrow(DailyEntryError);
+      expect(
+        await prisma.dailyEntryRevision.count({
+          where: { clientProfileId: c.profile.id },
+        }),
+      ).toBe(0);
+    });
+
+    it("staff write is denied", async () => {
+      const c = await seedClient();
+      const ownerSession: SessionLike = {
+        user: {
+          id: (
+            await prisma.user.findFirstOrThrow({
+              where: {
+                memberships: {
+                  some: {
+                    role: "WORKSPACE_OWNER",
+                    workspaceId: c.ws.id,
+                  },
+                },
+              },
+            })
+          ).id,
+        },
+      };
+      const s = await surface(c.session, c.ws.id);
+      if (s.state !== "ready") throw new Error("not ready");
+      await expect(
+        saveDailyEntry(
+          ownerSession,
+          {
+            workspaceId: c.ws.id,
+            entryDate: DATE,
+            formToken: s.formToken,
+            values: [{ ordinal: 0, raw: "75" }],
+          },
+          { registry: DEV_REGISTRY },
+        ),
+      ).rejects.toThrow(AccessDeniedError);
+      expect(
+        await prisma.dailyEntryRevision.count({
+          where: { clientProfileId: c.profile.id },
+        }),
+      ).toBe(0);
+    });
+
+    it("concurrent saves: one commits, stale loser writes nothing", async () => {
+      const c = await seedClient();
+      const s = await surface(c.session, c.ws.id);
+      if (s.state !== "ready") throw new Error("not ready");
+      const results = await Promise.allSettled([
+        saveDailyEntry(
+          c.session,
+          {
+            workspaceId: c.ws.id,
+            entryDate: DATE,
+            formToken: s.formToken,
+            values: [{ ordinal: 0, raw: "75" }],
+          },
+          { registry: DEV_REGISTRY },
+        ),
+        saveDailyEntry(
+          c.session,
+          {
+            workspaceId: c.ws.id,
+            entryDate: DATE,
+            formToken: s.formToken,
+            values: [{ ordinal: 0, raw: "80" }],
+          },
+          { registry: DEV_REGISTRY },
+        ),
+      ]);
+      const ok = results.filter(
+        (r) => r.status === "fulfilled" && r.value.status === "saved",
+      );
+      expect(ok).toHaveLength(1);
+      expect(
+        await prisma.dailyEntryRevision.count({
+          where: { clientProfileId: c.profile.id },
+        }),
+      ).toBe(1);
+      const entry = await prisma.dailyEntry.findFirstOrThrow({
+        where: { clientProfileId: c.profile.id },
+      });
+      expect(entry.currentRevisionId).not.toBeNull();
+    });
+
+    it("no setup/pin → unavailable state and write denial", async () => {
+      const c = await seedClient([], { pin: false });
+      const s = await surface(c.session, c.ws.id);
+      expect(s.state).toBe("unavailable");
+      await expect(
+        saveDailyEntry(
+          c.session,
+          {
+            workspaceId: c.ws.id,
+            entryDate: DATE,
+            formToken: "x",
+            values: [{ ordinal: 0, raw: "75" }],
+          },
+          { registry: DEV_REGISTRY },
+        ),
+      ).rejects.toThrow(DailyEntryError);
+    });
+
+    it("rejects out-of-bounds declared date and malformed values", async () => {
+      const c = await seedClient();
+      const s = await surface(c.session, c.ws.id);
+      if (s.state !== "ready") throw new Error("not ready");
+      await expect(
+        saveDailyEntry(
+          c.session,
+          {
+            workspaceId: c.ws.id,
+            entryDate: "1900-01-01",
+            formToken: s.formToken,
+            values: [{ ordinal: 0, raw: "75" }],
+          },
+          { registry: DEV_REGISTRY },
+        ),
+      ).rejects.toThrow(DailyEntryError);
+      await expect(
+        saveDailyEntry(
+          c.session,
+          {
+            workspaceId: c.ws.id,
+            entryDate: DATE,
+            formToken: s.formToken,
+            values: [{ ordinal: 0, raw: "abc" }],
+          },
+          { registry: DEV_REGISTRY },
+        ),
+      ).rejects.toThrow(DailyEntryError);
+      expect(
+        await prisma.dailyEntryRevision.count({
+          where: { clientProfileId: c.profile.id },
+        }),
+      ).toBe(0);
+    });
+  });
 
   // ── C2 provider ─────────────────────────────────────────────────────────
 

@@ -48,7 +48,12 @@ export async function getInviteLinkState(
   ) {
     return { state: "invalid" };
   }
-  const peek = await inspectAccessToken(client, input.rawToken);
+  // PR-05 sec pass F14: the peek binds the requested workspace — a token
+  // minted for workspace A renders "invalid" under workspace B, same as every
+  // other invalid shape (no cross-workspace validity oracle).
+  const peek = await inspectAccessToken(client, input.rawToken, {
+    workspaceId: input.workspaceId,
+  });
   if (!peek.valid || peek.purpose !== "WORKSPACE_INVITE") {
     return { state: "invalid" };
   }

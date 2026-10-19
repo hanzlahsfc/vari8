@@ -121,7 +121,6 @@ describe.skipIf(!enabled)(
           "message.write": "workspace",
           "appearance.write": "workspace",
           "member.invite": "workspace",
-          "member.remove": "workspace",
         },
       });
     });

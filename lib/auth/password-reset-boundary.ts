@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { headers } from "next/headers";
 import { APIError } from "better-auth/api";
 
@@ -33,6 +35,18 @@ const deliveryAvailable = (gate?: ResetGate): boolean =>
 
 const RESET_IDENTIFIER_PREFIX = "reset-password:";
 
+/**
+ * Verification identifiers are stored hashed (`verification.storeIdentifier:
+ * "hashed"` in `lib/auth/server.ts`): Better Auth stores SHA-256(identifier)
+ * base64url-encoded, without padding. The peek hashes the same composite
+ * identifier — the raw mailed token is never matched against a plain row.
+ */
+function storedResetIdentifier(rawToken: string): string {
+  return createHash("sha256")
+    .update(`${RESET_IDENTIFIER_PREFIX}${rawToken}`)
+    .digest("base64url");
+}
+
 export interface VerificationLookup {
   verification: {
     findFirst: (args: {
@@ -54,7 +68,7 @@ export async function getResetLinkState(
   try {
     const row = await client.verification.findFirst({
       where: {
-        identifier: `${RESET_IDENTIFIER_PREFIX}${rawToken}`,
+        identifier: storedResetIdentifier(rawToken),
         expiresAt: { gt: new Date() },
       },
       select: { id: true },
