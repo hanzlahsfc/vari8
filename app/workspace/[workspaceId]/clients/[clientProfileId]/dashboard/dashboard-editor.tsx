@@ -131,10 +131,6 @@ export function DashboardEditor({
   const dirty = slot.dirty;
   const saveState = slot.saveState;
   const leavePrompt = slot.leavePrompt;
-  const latestConfig = useRef(config);
-  useEffect(() => {
-    latestConfig.current = config;
-  });
 
   // Navigation guard: singleton module-level listeners bound once to
   // coordinator-backed callbacks — pending work stays observable and
@@ -159,12 +155,16 @@ export function DashboardEditor({
   const columns = COLUMNS[bp];
 
   const setRect = (id: string, next: Rect) => {
+    // Commit on top of the slot's live config — a slot write that lands
+    // between pointerdown and pointerup (e.g. a conflict reload awaiting
+    // the server) is the base, never a snapshot that would revert it.
+    const base = slot.latestConfig;
     commitDashboardConfig(slot, {
-      ...latestConfig.current,
+      ...base,
       layouts: {
-        ...latestConfig.current.layouts,
+        ...base.layouts,
         [bp]: compactRects({
-          ...(latestConfig.current.layouts[bp] ?? {}),
+          ...(base.layouts[bp] ?? {}),
           [id]: next,
         }),
       },
@@ -235,7 +235,7 @@ export function DashboardEditor({
   // ---------- mutations ----------
 
   const mutate = (fn: (c: DashboardConfig) => DashboardConfig) => {
-    commitDashboardConfig(slot, fn(latestConfig.current));
+    commitDashboardConfig(slot, fn(slot.latestConfig));
   };
 
   const addWidget = (kind: WidgetKind) => {
