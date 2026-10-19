@@ -68,11 +68,6 @@ export default async function StaffClientCheckInsPage({
   // click uses, so existence/tenancy/consent/audit stay unchanged.
   const deepLink = parseCheckInSubmissionParam(submissionParam);
 
-  const client = await prisma.clientProfile.findFirst({
-    where: { id: clientProfileId, workspaceId },
-    select: { name: true },
-  });
-
   const [instances, versions, submissions, rules] = await Promise.all([
     listStaffCheckInInstances(
       { user: { id: userId } },
@@ -96,6 +91,15 @@ export default async function StaffClientCheckInsPage({
 
   const denied = !instances.ok && !versions.ok;
   const canWrite = versions.ok;
+
+  // The client name is tenant data: read it only after the authorizing
+  // boundary calls, so a denied response cannot carry it (RSC-NAME-LEAK).
+  const client = denied
+    ? null
+    : await prisma.clientProfile.findFirst({
+        where: { id: clientProfileId, workspaceId },
+        select: { name: true },
+      });
 
   return (
     <div className="tracker-page" data-testid="staff-checkins-page">
