@@ -380,11 +380,22 @@ export async function captureAll({
     failures: [],
     retried: 0,
   };
+  // Ownership is re-checked before every capture and once after the last: a port that still
+  // answers means nothing when the server this run started died and another process took it.
+  // serverMine is null for PARITY_URL runs and standalone capture.mjs.
+  let serverLost = false;
   try {
     for (const vp of Object.keys(VIEWPORTS)) {
       await mkdir(path.join(outDir, vp), { recursive: true });
       for (const shot of index.shots) {
         const stem = shot.file.replace(/\.(png|webp)$/, "");
+        if (serverMine && !serverMine()) {
+          serverLost = true;
+          const msg = `server died or was replaced on ${baseUrl}`;
+          manifest.failures.push({ id: `${stem}@${vp}`, error: msg });
+          log(`FAIL ${stem}@${vp}: ${msg}`);
+          break;
+        }
         let entry = null;
         let lastErr = null;
         for (let attempt = 0; attempt < 2 && !entry; attempt++) {
@@ -494,7 +505,14 @@ export async function captureAll({
           log(`FAIL ${stem}@${vp}: ${msg}`);
         }
       }
+      if (serverLost) break;
     }
+    // And once after the last capture: a swap in the final window loses the same server.
+    if (!serverLost && serverMine && !serverMine())
+      manifest.failures.push({
+        id: "post-capture",
+        error: `server died or was replaced on ${baseUrl}`,
+      });
   } finally {
     await browser.close().catch(() => {});
   }

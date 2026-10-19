@@ -155,9 +155,9 @@ try {
         `port ${port} answers from a process this run did not start. Refusing to compare it.`,
       );
   }
-  // Re-checked by captureAll before every capture retry: a port that answers again means nothing
-  // if this run's server died and another process took the port. null for PARITY_URL runs, where
-  // no spawned server exists to own the port.
+  // Re-checked by captureAll before every capture, before a retry, and once after the last
+  // capture: a port that answers means nothing if this run's server died and another process
+  // took it. null for PARITY_URL runs, where no spawned server exists to own the port.
   const serverMine = server ? () => ownsPort(port, server.pid) : null;
   if (update) {
     // Capture into a temp dir; the committed baseline is replaced only when every shot captured.

@@ -142,7 +142,9 @@ What is pinned, so an unchanged tree reruns green:
   deterministic and changes no baseline pixel.
 - Capture retry: under heavy CPU load Chromium can drop a navigation or a screenshot. A failed capture is replayed
   once, after a fresh browser launch and a server-readiness wait; the run line and the report show `retried=N`. A
-  pixel or geometry comparison is never retried: only a capture that produced no image.
+  pixel or geometry comparison is never retried: only a capture that produced no image. The startup ownership check
+  also runs before every capture and once after the last; if the spawned server died or was replaced mid-run the
+  capture stops, the manifest records it, and the run exits 1.
 - Mobile labels: the 390 px layout shows shorter tab names (`02 Dashboard` is `Dashboard`, `Training Program` is
   `Training`). `mobileFallback` in `capture.mjs` covers those labels and is used only at 390; the manifest records
   the label that was clicked.
