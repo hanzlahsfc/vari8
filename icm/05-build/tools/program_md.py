@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Write icm/05-build/PROGRAM.md from graph.json, graph-summary.json and timeline.md (run after program.py)."""
+"""Write icm/05-build/PROGRAM.md from graph.json, graph-summary.json and timeline.md (run by generate.py after program.py)."""
 import json
 import os
-import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
-from program_data import PRS  # noqa: E402
+from program_data import OUTROOT, PRS  # noqa: E402
+
+OUT = f"{OUTROOT}/icm/05-build"
 
 G = json.load(open(f"{OUT}/graph.json"))
 S = json.load(open(f"{OUT}/graph-summary.json"))
@@ -74,7 +74,13 @@ w("")
 cp = dict(S["checkpoint"])
 w("### 05:00 checkpoint\n")
 w("Done by 05:00 in the simulation: " + ", ".join(f"`{k}` {t}" for k, t in S["checkpoint"]) + ".\n")
-w("What the checkpoint shows: PR-02 merged; the parity harness, the test cuts, the hooks fixes, the index, Better Auth (PR-05) and the dev seed (PR-04) merged; the canvas running on the root app (PR-01) merged at 04:55 with every screen at parity; D16a recorded. PR-01 has no buffer: its build starts at 03:00 only if the board is released by then. If PR-01 is not merged at 05:00, the checkpoint shows it open with its verifier report, and the program continues. Program finish in the simulation: " + S["finish"] + ".\n")
+pr01 = next((d for c, d in ((c["key"], c["done"]) for c in G["cards"]) if c == "PR-01:merge"), None)
+pr01_txt = pr01.split(" ")[-1] if pr01 else "unscheduled"
+in_cp = "PR-01:merge" in cp
+w("What the checkpoint shows: PR-02 merged; the parity harness, the test cuts, the hooks fixes, the index, Better Auth (PR-05) and the dev seed (PR-04) merged; D16a recorded. "
+  f"PR-01 (canvas on the root app) waits for the verified harness (PR-P1 merge) and merges at {pr01_txt} in the simulation, "
+  + ("inside the 05:00 set. " if in_cp else "after 05:00, so the checkpoint shows PR-01 built or in build with its PR open, and the program continues. ")
+  + "Program finish in the simulation: " + S["finish"] + ".\n")
 w("## Self-check\n")
 n_prs = len(PRS)
 builds = sum(1 for c in G["cards"] if c["kind"] == "build")
@@ -82,21 +88,20 @@ verifies = {c["pr"] for c in G["cards"] if c["kind"] == "verify"}
 merges = sum(1 for c in G["cards"] if c["kind"] == "merge")
 same_model = []
 for p in PRS:
-    bm = p.get("builder_model") or "devin/swe-2-max"
+    bm = p.get("builder_model") or "swe-2-max"
     for k in ("verify", "secverify"):
         v = BY_KEY.get(f'{p["id"]}:{k}')
         if v and v["model"] and v["model"] in bm:
             same_model.append(p["id"])
-cmd = ["python3", f"{HERE}/program.py"]
-rc = subprocess.run(cmd, capture_output=True, text=True).returncode
+rc = 1 if S["problems"] else 0
 w("| Check | Result |\n| --- | --- |")
 w(f"| Every PLAN v2 PR has a card | {n_prs} PR sections, {builds} build cards, {merges} merge cards |")
 w(f"| Every card has a verifier card | {len(verifies)} of {n_prs} PRs have a verify card; {S['by_kind'].get('verify', 0)} verify cards in total (security verifies included) |")
 w(f"| Verifier model differs from the builder model | {'yes for every PR' if not same_model else 'NO: ' + ', '.join(same_model)} |")
 w(f"| Coverage ledger has zero unmapped rows | {S['unmapped']} unmapped of {sum(S['ledger'].values())} rows ({', '.join(f'{k} {v}' for k, v in S['ledger'].items())}) |")
 w(f"| Dependency graph has no cycles | {S['cycles']} cycles in {S['cards']} cards (topological sort in `program.py`) |")
-w(f"| Timeline fits 05:00 | the checkpoint set above is done by 05:00 with PR-01 at 04:55; the full program finishes {S['finish']} |")
-w(f"| Generator gate | `python3 icm/05-build/tools/program.py` exit {rc} |")
+w(f"| Timeline fits 05:00 | 05:00 is a checkpoint, not the end: {len(S['checkpoint'])} cards done by 05:00, PR-01 merged at {pr01_txt}; the full program finishes {S['finish']} |")
+w(f"| Generator gate | `python3 icm/05-build/tools/program.py` problems: {len(S['problems'])} (exit {rc}) |")
 w("")
 open(f"{OUT}/PROGRAM.md", "w").write("\n".join(lines) + "\n")
 print(f"PROGRAM.md written; generator exit {rc}; same-model verifiers {same_model}")

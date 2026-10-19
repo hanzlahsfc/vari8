@@ -1,6 +1,8 @@
-"""Generate PLAN v2, cards, coverage ledger, graph and timeline from program_data.py.
+"""Generate cards, coverage ledger, graph, timeline and POST-BETA-INFRA from program_data.py.
 
-Run from anywhere: python3 /home/nexuslink/vari8-worktrees/beta/icm/05-build/tools/program.py
+Do not run this alone; run `python3 icm/05-build/tools/generate.py` (it also runs plan_v2.py,
+program_md.py and prettier, and `--check` compares the result with the committed tree).
+Inputs are read below ROOT, outputs are written below OUTROOT (program_data.py).
 Exit code 0 only when every hard gate holds (zero unmapped ledger rows, no cycles,
 every PR has a build, verify and merge card, every verifier differs from its builder).
 """
@@ -11,14 +13,15 @@ import re
 import sys
 from datetime import datetime, timedelta
 
-sys.path.insert(0, os.path.dirname(__file__))
-from program_data import (BETA, BUILDER_MODEL, DECISION_CARDS, GATES, GEAR, HERMES, LIVE_ROLES, MODELS, PARKED,  # noqa: E402
-                          PRS, UI_EXTRA, WORKER_SKILLS, WT)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from program_data import (BETA, BUILDER_MODEL, DECISION_CARDS, EVID, GATES, GEAR, HERMES, JOBCAP, LIVE_ROLES,  # noqa: E402
+                          MODELS, OUTROOT, PARKED, PRS, ROOT, UI_EXTRA, WORKER_SKILLS, WT)
 
-ICM = f"{BETA}/icm"
-OUT = f"{ICM}/05-build"
+ICM = f"{ROOT}/icm"
+IN5 = f"{ICM}/05-build"
+OUT = f"{OUTROOT}/icm/05-build"
+os.makedirs(f"{OUT}/cards", exist_ok=True)
 REPO = "hanzlahsfc/The-great-tracker-"
-EVID = f"{WT}/_evidence"
 SHOTS = json.load(open(f"{ICM}/04-briefing/shots/index.json"))["shots"]
 SHOT_FILES = [s["file"] for s in SHOTS]
 PR_BY_ID = {p["id"]: p for p in PRS}
@@ -143,7 +146,7 @@ P0_OWNER_NEW = {  # baseline owner NEW or none, given a card
 
 def p0_rows():
     rows = []
-    for line in open(f"{OUT}/audits/PRODREADY-BASELINE.md"):
+    for line in open(f"{IN5}/audits/PRODREADY-BASELINE.md"):
         cells = [c.strip() for c in line.strip().strip("|").split("|")]
         if len(cells) >= 7 and re.match(r"^PR-\d{3}$", cells[0]) and cells[3] == "P0":
             rows.append(dict(id=cells[0], title=cells[2], verdict=cells[4], note=cells[6]))
@@ -178,7 +181,7 @@ GATE_P0_CHECK = {
                "--search 'merged:>=2026-10-19' --json number,title,headRefOid,mergeCommit`), `gh pr view <n> --json comments` contains a line "
                "`SHIP <PR-id> <sha>` whose sha is the PR's last head before the merge, posted by a verifier card whose model differs from the builder's "
                "(builder and verifier models from `icm/05-build/graph.json`). Write the table (PR, head sha, SHIP line found, verifier model, builder model) "
-               "to `/home/nexuslink/vari8-worktrees/_evidence/GATE-CLEAN/pr-133.md`; any PR without a matching SHIP fails this card. Also record "
+               f"to `{EVID}/GATE-CLEAN/pr-133.md`; any PR without a matching SHIP fails this card. Also record "
                "`gh api repos/hanzlahsfc/The-great-tracker-/branches/Vari8-Beta/protection` (404 today); turning protection on is the owner's call, "
                "so a 404 is reported, not failed."),
 }
@@ -239,7 +242,7 @@ def next_port():
 
 
 def rel(path):
-    return path.replace(BETA + "/", "")
+    return os.path.relpath(os.path.abspath(path), ROOT)
 
 
 def gear_block(p):
@@ -366,7 +369,7 @@ def pr_card_bodies(p):
     ext = p.get("ext")
     issue = p.get("issue")
     issue_ref = f"#{issue}" if issue else "created in driver step 2"
-    launch = (f"cd {WT}/{slug} && icm/05-build/tools/devin-slot.sh -- env CAP=10G /home/nexuslink/.local/bin/jobcap "
+    launch = (f"cd {WT}/{slug} && icm/05-build/tools/devin-slot.sh -- env CAP=10G {JOBCAP} "
               f"devin -p --model swe-2-max --permission-mode dangerous --prompt-file icm/05-build/cards/{slug}.md")
     gh_setup = f"""1. `cd {WT}/{slug} && git fetch origin && git merge --ff-only origin/Vari8-Beta`. Stop and block the card if it is not a fast-forward.
 2. Issue first (idempotent): `gh issue list -R {REPO} --label vari8-beta --search "[{pid}] in:title" --state all` ; if none, `gh issue create -R {REPO} --label vari8-beta --title "[{pid}] {p['title']}" --body-file icm/05-build/cards/{slug}.md`. Record the number on the card (`hermes kanban comment`).
@@ -739,7 +742,7 @@ with open(f"{OUT}/coverage-ledger.csv", "w", newline="") as f:
 
 # POST-BETA-INFRA list (W0-fix-1 ruling 7): every readiness item that needs a hosting decision.
 all_rows = {}
-for line in open(f"{OUT}/audits/PRODREADY-BASELINE.md"):
+for line in open(f"{IN5}/audits/PRODREADY-BASELINE.md"):
     cells = [c.strip() for c in line.strip().strip("|").split("|")]
     if len(cells) >= 7 and re.match(r"^PR-\d{3}$", cells[0]):
         all_rows[cells[0]] = dict(id=cells[0], area=cells[1], title=cells[2], sev=cells[3], verdict=cells[4], note=cells[6])

@@ -6,11 +6,11 @@ import csv
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(__file__))
-from program_data import BETA, LIVE_ROLES, PARKED, PRS, WT  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from program_data import EVID, LIVE_ROLES, OUTROOT, PARKED, PRS, WT  # noqa: E402
 
-ICM = f"{BETA}/icm"
-ledger = list(csv.DictReader(open(f"{ICM}/05-build/coverage-ledger.csv")))
+OUTICM = f"{OUTROOT}/icm"
+ledger = list(csv.DictReader(open(f"{OUTICM}/05-build/coverage-ledger.csv")))
 rows_by_owner = {}
 for r in ledger:
     if r["kind"] in ("matrix", "parked"):
@@ -68,7 +68,7 @@ w("- D32 truth-text copy for four storage labels. Reverse with `keep-demo-copy`.
 w("- Q-R3-17 parameter manager. Parameter-definition create, edit and archive (`app/workspace/[workspaceId]/parameters/parameter-manager.tsx`, `lib/coaching/parameters.ts`) has no canvas surface and stays as an active orphan (GAP-MATRIX :515). Default: keep it, untouched by every card, including PR-R1. Answer `drop-parameter-manager` to delete it in a later PR, or `wire-parameter-manager` to give it a canvas surface.\n")
 
 w("## How to read this\n")
-w("One section is one PR, one issue and one kanban card triple (build, verify, merge) on board `vari8`. A box is checked only when its evidence exists in `/home/nexuslink/vari8-worktrees/_evidence/<PR-id>/`, the PR comments or the card report. Each card creates its own GitHub issue (label `vari8-beta`) and PR against `Vari8-Beta`.\n")
+w(f"One section is one PR, one issue and one kanban card triple (build, verify, merge) on board `vari8`. A box is checked only when its evidence exists in `{EVID}/<PR-id>/`, the PR comments or the card report. Each card creates its own GitHub issue (label `vari8-beta`) and PR against `Vari8-Beta`.\n")
 
 w("## Program checklist\n")
 w("### Mechanics, for every PR\n")
@@ -224,5 +224,5 @@ unmapped = sum(1 for r in ledger if not r["owning_task"])
 w(f"- PR sections: {len(PRS)}, each with Depends on, Files, Build, You see, Verify unit, live and parity, Matrix rows, Review gate and Merge.")
 w(f"- Matrix rows mapped: {n_rows} of 338. Unmapped ledger rows: {unmapped}.")
 w("- Cycle check and timeline: `python3 icm/05-build/tools/program.py` exit 0 (see PROGRAM.md self-check).")
-open(f"{ICM}/03-plan/output/PLAN.md", "w").write("\n".join(out) + "\n")
+open(f"{OUTICM}/03-plan/output/PLAN.md", "w").write("\n".join(out) + "\n")
 print("PLAN.md v2 written:", len(PRS), "sections,", n_rows, "matrix rows,", unmapped, "unmapped")

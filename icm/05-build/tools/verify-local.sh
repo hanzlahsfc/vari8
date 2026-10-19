@@ -11,8 +11,7 @@ set -euo pipefail
 : "${LANE_DB:?Set LANE_DB to this lane database, app_<lane>}"
 LANE_PORT="${LANE_PORT:-3999}"
 CARD="${CARD:-}"
-ROOT_CHECKOUT="/home/nexuslink/NEXUS_AI_CENTER/04_PROJECTS/Vari8"
-LOCKS="/home/nexuslink/vari8-worktrees/.locks"
+. "$(dirname "${BASH_SOURCE[0]}")/paths.sh"
 SCHEMA_WRITERS="PR-05 PR-M0 PR-R2"
 
 if [[ ! "$LANE_DB" =~ ^app_[a-z0-9_]+$ ]] || [[ "$LANE_DB" == "app_dev" ]]; then
@@ -77,6 +76,10 @@ schema_guard() {
   return 1
 }
 step "schema guard (D34)" schema_guard
+# W0-fix-3: the committed program files must be the generator's output (generate.py --check).
+if [[ -f icm/05-build/tools/generate.py ]]; then
+  step "program generator check" python3 icm/05-build/tools/generate.py --root "$TOP" --check
+fi
 
 step "npm ci" npm ci --no-audit --no-fund --prefer-offline
 step "prisma generate" npx prisma generate

@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# Pre-create every card worktree under /home/nexuslink/vari8-worktrees on branch beta/<slug> at the
+# Pre-create every card worktree under the worktrees root (program-config.json) on branch beta/<slug> at the
 # current Vari8-Beta tip. The kanban dispatcher only reuses an existing linked worktree at a path
 # outside a git repo; it cannot create one there (hermes_cli/kanban_db_workspace.py). Idempotent.
 set -euo pipefail
-BETA="/home/nexuslink/vari8-worktrees/beta"
-WT="/home/nexuslink/vari8-worktrees"
+. "$(dirname "${BASH_SOURCE[0]}")/paths.sh"
 cd "$BETA"
 git fetch -q origin
 BASE="${PREP_BASE:-origin/Vari8-Beta}"

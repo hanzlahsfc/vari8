@@ -1,13 +1,26 @@
 """Single source of truth for the Vari8-Beta program (PLAN v2, cards, ledger, graph).
 
-Edit this file, then run `python3 icm/05-build/tools/program.py` from the beta worktree.
-Every generated artifact (PLAN.md v2, cards/*.md, coverage-ledger.csv, graph.json,
-PROGRAM tables) comes from these tables, so they cannot drift apart.
-"""
+Edit this file, then run `python3 icm/05-build/tools/generate.py` (add `--check` to verify the
+committed tree is the generator's output). Every generated artifact (PLAN.md v2, cards/*.md,
+coverage-ledger.csv, graph.json, PROGRAM.md, timeline, POST-BETA-INFRA) comes from these tables,
+so they cannot drift apart.
 
-WT = "/home/nexuslink/vari8-worktrees"
-BETA = f"{WT}/beta"
-HERMES = "/home/nexuslink/.hermes"
+Paths: ROOT (inputs) is derived from this file's location, or PROGRAM_ROOT. OUTROOT (where the
+generated files go) is ROOT, or PROGRAM_OUT for `--check`. Machine paths that appear inside card
+text (worktrees root, Hermes home, jobcap) live in `icm/05-build/program-config.json`, not here.
+"""
+import json
+import os
+from pathlib import Path
+
+ROOT = Path(os.environ.get("PROGRAM_ROOT") or Path(__file__).resolve().parents[3]).resolve()
+OUTROOT = Path(os.environ.get("PROGRAM_OUT") or ROOT).resolve()
+CFG = json.load(open(ROOT / "icm" / "05-build" / "program-config.json"))
+WT = CFG["worktrees_root"]          # lane worktrees, as written into the cards
+BETA = CFG["integration_worktree"]  # the integration worktree, as written into the cards
+HERMES = CFG["hermes_home"]
+JOBCAP = CFG["jobcap"]
+EVID = f"{WT}/_evidence"
 
 # Routing (PROGRAM-BRIEF "Routing"). model, provider per assignee.
 MODELS = {
@@ -526,12 +539,12 @@ DECISION_CARDS = [
          body="Done outside the graph (urokodaki, claude-opus-5-5, medium): `icm/05-build/audits/PRODREADY-BASELINE.md` at `55a0f08` (160 entries, 38 P0 rows: 31 gaps, 2 present, 1 parked, 4 not applicable as graded by the baseline; every P0 row has a ledger disposition). GATE-PRR re-runs it on the integrated tip; the hosting-dependent rows are listed in `icm/05-build/POST-BETA-INFRA.md`."),
     dict(id="AUD-REDUCTION-VERIFY", slug="aud-backend-reduction-verify", title="Verify the backend reduction audit before the reduction PRs use it", who="urokodaki",
          deps=["AUD-REDUCTION"], est=30,
-         body=("Independent check of `icm/05-build/BACKEND-REDUCTION.md` (built on claude-haiku-5-5) on claude-opus-5-5. Worktree `/home/nexuslink/vari8-worktrees/aud-backend-reduction-verify`, "
+         body=(f"Independent check of `icm/05-build/BACKEND-REDUCTION.md` (built on claude-haiku-5-5) on claude-opus-5-5. Worktree `{WT}/aud-backend-reduction-verify`, "
                "detached at `origin/Vari8-Beta`. Read only; no product edits.\n\n"
                "1. For every finding F1 to F13 re-run the caller census it cites (or an equivalent `rg`/`git grep` over `app/`, `lib/`, `scripts/`, `components/`, `tests/`) and record the command, the count and PASS or FAIL against the audit's claim.\n"
                "2. Check the import closure of the catalog importers (`lib/nutrition/source.ts`, `lib/exercise/source.ts`, `lib/nutrition/import.ts`, `lib/exercise/import.ts`): every `lib/extraction/*` module in it must be absent from PR-R1's delete list (the program lead found `databases.ts` and `css.ts` in the closure at 03:20; the audit names only `contracts`, `normalize`, `parse`).\n"
                "3. Check the line counts the audit claims per finding within 10 percent.\n"
-               "4. Write `/home/nexuslink/vari8-worktrees/_evidence/AUD-REDUCTION/verify.md` with the table and a first line `SHIP AUD-REDUCTION` or `FIX AUD-REDUCTION`. On FIX, list the PR-R0, PR-R1, PR-R2 or PR-R3 card text that must change; the program lead regenerates the cards. Complete this card with the verdict line.\n")),
+               f"4. Write `{EVID}/AUD-REDUCTION/verify.md` with the table and a first line `SHIP AUD-REDUCTION` or `FIX AUD-REDUCTION`. On FIX, list the PR-R0, PR-R1, PR-R2 or PR-R3 card text that must change; the program lead regenerates the cards. Complete this card with the verdict line.\n")),
 ]
 GATES = [
     dict(id="GATE-PRR", slug="gate-prr-readiness", title="Production-readiness gate on integrated Vari8-Beta", who="urokodaki",

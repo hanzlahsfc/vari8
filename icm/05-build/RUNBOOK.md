@@ -109,7 +109,8 @@ Every card was created blocked so nothing dispatches before the graph check. `--
 ## Regenerating the plan
 
 ```bash
-python3 icm/05-build/tools/program.py && python3 icm/05-build/tools/plan_v2.py
+python3 icm/05-build/tools/generate.py           # regenerate in place, prettier included
+python3 icm/05-build/tools/generate.py --check   # exit 1 and name every file that is not the generator's output
 ```
 
-`program_data.py` is the single source. The generator writes the cards, `graph.json`, `graph-summary.json`, `coverage-ledger.csv` and `timeline.md`, and exits 1 on any unmapped ledger row, cycle, missing build, verify or merge card, or a verifier on the builder's model.
+`program_data.py` is the single source and the committed files are its output; never hand-edit a generated file. `generate.py` runs `program.py`, `plan_v2.py` and `program_md.py`, then the prettier pinned in `package-lock.json`. Together they write the cards, `graph.json`, `graph-summary.json`, `coverage-ledger.csv`, `timeline.md`, `POST-BETA-INFRA.md`, `PROGRAM.md` and PLAN v2. The run exits 1 on any unmapped ledger row, cycle, missing build, verify or merge card, a verifier on the builder's model, or any other gate in `program.py`. The tools find the repo root from their own location (`--root` overrides it). Machine paths written into card text live in `icm/05-build/program-config.json`. `verify-local.sh` runs `--check` as its "program generator check" step.

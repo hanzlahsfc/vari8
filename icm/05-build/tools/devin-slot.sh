@@ -6,12 +6,12 @@
 set -euo pipefail
 [[ "${1:-}" == "--" ]] && shift
 SLOTS="${DEVIN_SLOTS:-5}"
-LOCKS="/home/nexuslink/vari8-worktrees/.locks"
+. "$(dirname "${BASH_SOURCE[0]}")/paths.sh"
 mkdir -p "$LOCKS"
 while true; do
   # Count the devin binary itself only: the bash and jobcap wrappers carry the same arguments and
   # would double-count (measured 02:55: 3 builders gave pgrep -fc 7, pgrep -x 6).
-  running="$(pgrep -fc '^(/home/nexuslink/\.local/bin/)?devin -p --model swe-2-max' || true)"
+  running="$(pgrep -fc '^([^ ]*/)?devin -p --model swe-2-max' || true)"
   if (( running < SLOTS )); then
     for i in $(seq 1 "$SLOTS"); do
       exec 8>"$LOCKS/devin-slot-$i.lock"
