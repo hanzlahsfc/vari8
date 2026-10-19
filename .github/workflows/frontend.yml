@@ -1,16 +1,8 @@
 name: Frontend
 
 on:
-  pull_request:
-    branches: [main, FRONTEND]
-    paths:
-      - "frontend/**"
-      - ".github/workflows/frontend.yml"
-  push:
-    branches: [main, FRONTEND]
-    paths:
-      - "frontend/**"
-      - ".github/workflows/frontend.yml"
+  # D13: no GitHub CI minutes. Checks run locally (scripts/check). Manual runs only.
+  workflow_dispatch:
 
 jobs:
   verify:

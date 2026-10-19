@@ -1,9 +1,8 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  # D13: no GitHub CI minutes. Checks run locally (scripts/check). Manual runs only.
+  workflow_dispatch:
 
 jobs:
   verify:
