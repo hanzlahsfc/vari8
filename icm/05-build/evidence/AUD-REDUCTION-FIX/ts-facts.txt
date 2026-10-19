@@ -57,7 +57,7 @@ action files: 19; gross nonblank: 3908; import a boundary: 17
 
 ## Prod totals (app, lib, components, scripts, auth.ts; non-blank)
 {"app":15885,"auth.ts":52,"components":6078,"lib":38114,"scripts":2120} total=62249 files=262
-tests: {"tests/e2e":{"files":5,"lines":816},"tests/integration":{"files":56,"lines":38802},"tests/unit":{"files":97,"lines":17731}} total files=158
+tests: {"tests/e2e":{"files":5,"lines":816},"tests/integration":{"files":56,"lines":38826},"tests/unit":{"files":97,"lines":17731}} total files=158
 ## F8 isRetryableSerialization variants
 isRetryableSerialization definitions: 15; distinct printer bodies: 2
   body a4117c81 x14: lib/checkin/forms.ts lib/checkin/instances.ts lib/checkin/schedules.ts lib/coaching/client-setup-transition.ts lib/coaching/client-setup.ts lib/coaching/parameters.ts lib/coaching/templates.ts lib/daily-entry/service.ts lib/mealplan/service.ts lib/onboarding/assignments.ts lib/onboarding/forms.ts lib/onboarding/review.ts lib/onboarding/submissions.ts lib/trainingprogram/service.ts
