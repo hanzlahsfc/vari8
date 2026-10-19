@@ -254,17 +254,15 @@ for (const d of retryFns) {
       (bc ? bc.value : ""),
   );
   if (!groups.has(key)) groups.set(key, []);
-  groups
-    .get(key)
-    .push({
-      file: d.file,
-      line: d.startLine,
-      nonblank: d.nonblank + cLines,
-      max: ma ? ma.value : "-",
-      backoff: bb ? bb.value : "-",
-      cap: bc ? bc.value : "-",
-      norm: d.norm,
-    });
+  groups.get(key).push({
+    file: d.file,
+    line: d.startLine,
+    nonblank: d.nonblank + cLines,
+    max: ma ? ma.value : "-",
+    backoff: bb ? bb.value : "-",
+    cap: bc ? bc.value : "-",
+    norm: d.norm,
+  });
 }
 log(`files with withSerializedRetry: ${retryFiles.length}`);
 log(
