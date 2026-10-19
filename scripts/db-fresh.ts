@@ -107,5 +107,10 @@ try {
   main();
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
+  console.error(
+    "[db:fresh] failed: the lane database may be missing or partially " +
+      "populated. Fix the cause and re-run `npm run db:fresh`; it always " +
+      "recreates the database from scratch.",
+  );
   process.exitCode = 1;
 }

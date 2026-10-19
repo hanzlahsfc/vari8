@@ -20,7 +20,7 @@ and how to build a seeded lane database. All of it lives in `lib/runtime.ts`.
 
 An `ENABLE_*` flag counts ONLY when it is exactly `1` AND the runtime
 classifies as trusted development/test (`devFlagEnabled`). A flag set in a
-production runtime stays off — production can never opt into a development
+production runtime stays off - production can never opt into a development
 surface. These flags are development controls, never a substitute for the
 server-side authorization every operation performs.
 
@@ -69,7 +69,7 @@ Gates that read the flag: the consent service
 
 `npm run db:fresh` builds a fresh lane database in one step. Both commands
 refuse an unclassified runtime, so run them with the trusted classification
-set explicitly — `NODE_ENV=development npm run db:fresh` (a bare shell has
+set explicitly - `NODE_ENV=development npm run db:fresh` (a bare shell has
 no `NODE_ENV`, which resolves production-safe). `db:fresh` then:
 
 1. validates the runtime is development/test and `DATABASE_URL` names a
@@ -81,7 +81,7 @@ no `NODE_ENV`, which resolves production-safe). `db:fresh` then:
 5. runs the seed (`scripts/seed/index.ts`).
 
 `npm run seed:dev` runs only the seed. `scripts/seed/index.ts` loads every
-`scripts/seed/*.seed.ts` in name order — one file per domain (D34) — and
+`scripts/seed/*.seed.ts` in name order - one file per domain (D34) - and
 refuses outside a trusted development/test runtime.
 
 `00-workspace.seed.ts` creates the canvas demo workspace (`canvas-demo`,
@@ -93,8 +93,8 @@ idempotent upserts.
 
 Credentials are environment variables, never committed:
 
-- `SEED_OWNER_EMAIL`, `SEED_OWNER_PASSWORD` — the owner sign-in.
-- `SEED_COACH_EMAIL`, `SEED_COACH_PASSWORD` — the coach sign-in.
+- `SEED_OWNER_EMAIL`, `SEED_OWNER_PASSWORD` - the owner sign-in.
+- `SEED_COACH_EMAIL`, `SEED_COACH_PASSWORD` - the coach sign-in.
 
 Catalog sources are raw workbook exports kept outside version control.
 Point `SHEETS_SOURCE_DIR` at the folder containing

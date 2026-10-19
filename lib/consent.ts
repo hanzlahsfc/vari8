@@ -623,6 +623,12 @@ export async function authorizeHealthOperation(
     input.action,
   );
 
+  // PED/HRT stays fail-closed regardless of any stored consent row. This is a
+  // product boundary, not a consent rule: it holds even while the consent
+  // gates are parked (D19).
+  if (input.resource === "pedHrt")
+    throw new ConsentError("ped_hrt_not_approved");
+
   // D19: with ENABLE_CONSENT_GATES off the consent gate allows the operation;
   // authorization above is unaffected.
   if (!consentGatesEnabled())
@@ -632,10 +638,6 @@ export async function authorizeHealthOperation(
       clientProfileId,
       grantedScope: context.grantedScope,
     };
-
-  // PED/HRT stays fail-closed regardless of any stored consent row.
-  if (input.resource === "pedHrt")
-    throw new ConsentError("ped_hrt_not_approved");
 
   // 3. Resolve exact required versions, then query ONLY those active rows.
   const registry = deps.registry ?? unconfiguredConsentPolicy;
