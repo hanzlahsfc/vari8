@@ -586,7 +586,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export type AuthorizedHealthOperation = { userId: string; workspaceId: string; clientProfileId: string; grantedScope: string; }`
 - `export const BASE_CONSENTS: readonly ConsentKind[]`
-- `export const CHECKIN_DEV_CONSENT: { readonly PRIVACY_NOTICE: "check-in-dev-privacy-v1"; readonly HEALTH_DATA: "check-in-dev-health-v1"; }`
+- `export const CHECKIN_DEV_CONSENT = { PRIVACY_NOTICE: "check-in-dev-privacy-v1", HEALTH_DATA: "check-in-dev-health-v1", } as const`
 - `export const CONSENT_KINDS: readonly ConsentKind[]`
 - `export class ConsentError extends Error (1 members)`
 - `export type ConsentErrorCode = | "invalid_input" | "policy_not_configured" | "coach_attested_unsupported" | "ped_hrt_not_approved" | "consent_missing" | "consent_conflict" | "audit_not_wired_for_ex...`
@@ -600,11 +600,11 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type ConsentStatusRow = { id: string; kind: ConsentKind; version: string; grantedAt: Date; revokedAt: Date | null; }`
 - `export type ConsentVersionPair = { kind: ConsentKind; version: string }`
 - `export type HealthOperationDeps = { client?: PrismaLike; registry?: ConsentPolicyRegistry; }`
-- `export const MEALPLAN_DEV_CONSENT: { readonly PRIVACY_NOTICE: "meal-plan-dev-privacy-v1"; readonly HEALTH_DATA: "meal-plan-dev-health-v1"; }`
-- `export const ONBOARDING_SUBMISSION_DEV_CONSENT: { readonly PRIVACY_NOTICE: "onboarding-submission-dev-privacy-v1"; readonly HEALTH_DATA: "onboarding-submission-dev-health-v1"; }`
+- `export const MEALPLAN_DEV_CONSENT = { PRIVACY_NOTICE: "meal-plan-dev-privacy-v1", HEALTH_DATA: "meal-plan-dev-health-v1", } as const`
+- `export const ONBOARDING_SUBMISSION_DEV_CONSENT = { PRIVACY_NOTICE: "onboarding-submission-dev-privacy-v1", HEALTH_DATA: "onboarding-submission-dev-health-v1", } as const`
 - `export type OnboardingSubmissionConsentEnv = RuntimeEnv & { ENABLE_ONBOARDING_SUBMISSION?: string; }`
 - `export type SubmissionRuntimeClass = RuntimeClass`
-- `export const TRAINING_DEV_CONSENT: { readonly PRIVACY_NOTICE: "training-plan-dev-privacy-v1"; readonly HEALTH_DATA: "training-plan-dev-health-v1"; }`
+- `export const TRAINING_DEV_CONSENT = { PRIVACY_NOTICE: "training-plan-dev-privacy-v1", HEALTH_DATA: "training-plan-dev-health-v1", } as const`
 - `export function assertConsentMutationsExternallyExposable(env: ConsentGateEnv = process.env): void`
 - `export async function authorizeHealthOperation(session: SessionLike, input: { resource: Resource; action: "read" | "write"; workspaceId?: string; clientProfileId?: string; }, deps: HealthOperationD...`
 - `export const classifySubmissionRuntime: ( env?: RuntimeEnv, ) => SubmissionRuntimeClass`
