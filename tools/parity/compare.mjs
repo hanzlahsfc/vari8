@@ -14,9 +14,26 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "@playwright/test";
 
-export const AA_TOLERANCE = Number(process.env.PARITY_AA_TOLERANCE ?? 0);
-export const MAX_DIFF_PIXELS = Number(process.env.PARITY_MAX_DIFF_PIXELS ?? 0);
 const MOVE_PX = 0.5;
+
+// Bad input is a refusal (exit 2), never a silent fallback: Number("abc") is NaN and `d > NaN` is always false,
+// which would switch the pixel check off.
+export class ConfigError extends Error {}
+export function envThresholds(env = process.env) {
+  const int = (name, max) => {
+    const raw = env[name];
+    if (raw === undefined) return 0;
+    if (!/^\d+$/.test(raw) || Number(raw) > max)
+      throw new ConfigError(
+        `${name}="${raw}" must be a whole number from 0 to ${max === Infinity ? "any size" : max}`,
+      );
+    return Number(raw);
+  };
+  return {
+    tol: int("PARITY_AA_TOLERANCE", 255),
+    maxDiff: int("PARITY_MAX_DIFF_PIXELS", Infinity),
+  };
+}
 
 async function pixelDiff(page, aBuf, bBuf, tol) {
   return page.evaluate(
@@ -132,7 +149,7 @@ const esc = (s) =>
     (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
   );
 
-function renderReport(results, extra, meta) {
+function renderReport(results, extra, meta, { tol, maxDiff }) {
   const failed = results.filter((r) => r.problems.length);
   const rows = results
     .map(
@@ -176,7 +193,7 @@ tr.fail{background:#fde2e2}tr.pass td:last-child{color:#166534}.imgs{display:fle
 <h1>Canvas visual parity</h1>
 <p>${esc(meta)}</p>
 <p><b>${failed.length + extra.length ? "FAIL" : "PASS"}</b>: ${failed.length} of ${results.length} screens changed${extra.length ? `, ${extra.length} capture problems` : ""}.
-Pixel tolerance ${AA_TOLERANCE}/255 per channel, max ${MAX_DIFF_PIXELS} changed pixels. Geometry: added/removed/moved elements.</p>
+Pixel tolerance ${tol}/255 per channel, max ${maxDiff} changed pixels. Geometry: added/removed/moved elements.</p>
 ${extra.length ? `<ul>${extra.map((e) => `<li>${esc(e)}</li>`).join("")}</ul>` : ""}
 <table><tr><th>screen</th><th>route</th><th>changed px</th><th>geom +/-/moved</th><th>result</th></tr>
 ${rows}</table>
@@ -188,7 +205,9 @@ export async function compareRuns({
   current,
   report,
   log = console.log,
+  th = envThresholds(),
 }) {
+  const { tol, maxDiff } = th;
   const base = JSON.parse(
     await readFile(path.join(baseline, "manifest.json"), "utf8"),
   );
@@ -220,13 +239,36 @@ export async function compareRuns({
         readFile(path.join(baseline, b.png)),
         readFile(path.join(current, c.png)),
       ]);
-      const px = await pixelDiff(page, aBuf, bBuf, AA_TOLERANCE);
+      const px = await pixelDiff(page, aBuf, bBuf, tol);
       r.pixels = { diff: px.diff, bbox: px.bbox, sizes: px.sizes };
       const sizeChanged = px.sizes[0].join() !== px.sizes[1].join();
       if (sizeChanged)
         r.problems.push(`page size ${px.sizes[0]} -> ${px.sizes[1]}`);
-      if (px.diff > MAX_DIFF_PIXELS)
-        r.problems.push(`${px.diff} changed pixels`);
+      if (px.diff > maxDiff) r.problems.push(`${px.diff} changed pixels`);
+      // Inner scroll containers: one PNG per scroll step (see capture.mjs). A paint change on a clipped row shows here.
+      const bs = b.scrolls ?? [];
+      const cs = c.scrolls ?? [];
+      if (bs.length !== cs.length) {
+        r.problems.push(`scroll captures ${bs.length} -> ${cs.length}`);
+      } else {
+        for (const [i, sb] of bs.entries()) {
+          const sc = cs[i];
+          const where = `scroll ${sb.scroller} at ${sb.x},${sb.y}`;
+          if (sb.scroller !== sc.scroller || sb.x !== sc.x || sb.y !== sc.y) {
+            r.problems.push(`${where}: now ${sc.scroller} at ${sc.x},${sc.y}`);
+            continue;
+          }
+          const [s1, s2] = await Promise.all([
+            readFile(path.join(baseline, sb.png)),
+            readFile(path.join(current, sc.png)),
+          ]);
+          const sp = await pixelDiff(page, s1, s2, tol);
+          if (sp.sizes[0].join() !== sp.sizes[1].join())
+            r.problems.push(`${where}: size ${sp.sizes[0]} -> ${sp.sizes[1]}`);
+          if (sp.diff > maxDiff)
+            r.problems.push(`${where}: ${sp.diff} changed pixels`);
+        }
+      }
       const bg = JSON.parse(
         gunzipSync(
           await readFile(path.join(baseline, b.vp, `${b.stem}.geom.json.gz`)),
@@ -260,8 +302,8 @@ export async function compareRuns({
     await browser.close();
   }
   const failed = results.filter((r) => r.problems.length).length + extra.length;
-  const meta = `baseline ${base.baseUrl} (${base.screens.length} screens), current ${cur.baseUrl} (${cur.screens.length} screens), ${new Date().toISOString()}`;
-  await writeFile(report, renderReport(results, extra, meta));
+  const meta = `baseline ${base.baseUrl} (${base.screens.length} screens), current ${cur.baseUrl} (${cur.screens.length} screens), retried ${cur.retried ?? 0} capture(s), ${new Date().toISOString()}`;
+  await writeFile(report, renderReport(results, extra, meta, th));
   extra.forEach((e) => log(`FAIL ${e}`));
   return { failed, results, extra, report };
 }
@@ -275,11 +317,18 @@ if (
     const i = process.argv.indexOf(name);
     return i > -1 ? path.resolve(process.argv[i + 1]) : dflt;
   };
-  const r = await compareRuns({
-    baseline: arg("--baseline", path.join(HERE, "baseline")),
-    current: arg("--current", path.join(HERE, "out/current")),
-    report: arg("--report", path.join(HERE, "out/report.html")),
-  });
+  let r;
+  try {
+    r = await compareRuns({
+      baseline: arg("--baseline", path.join(HERE, "baseline")),
+      current: arg("--current", path.join(HERE, "out/current")),
+      report: arg("--report", path.join(HERE, "out/report.html")),
+    });
+  } catch (e) {
+    if (!(e instanceof ConfigError)) throw e;
+    console.error(`parity: ${e.message}`);
+    process.exit(2);
+  }
   console.log(
     `parity ${r.failed ? "FAIL" : "PASS"}: ${r.failed} problem(s); report ${r.report}`,
   );

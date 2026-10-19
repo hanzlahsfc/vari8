@@ -247,102 +247,242 @@ export const geometry = () => {
   return out;
 };
 
+// Inner scroll containers that overflow (overflow auto or scroll). Index = position in document.body.querySelectorAll("*"),
+// stable while the DOM shape is stable (a shape change already shows as moved or added geometry).
+// ponytail: overflow hidden is not swept (text-overflow ellipsis would add many tiny containers). Upgrade: include it if a clipped hidden box needs gating.
+export const scrollers = () => {
+  const out = [];
+  [...document.body.querySelectorAll("*")].forEach((el, idx) => {
+    const cs = getComputedStyle(el);
+    const scrolls = (v) => v === "auto" || v === "scroll";
+    if (!scrolls(cs.overflowX) && !scrolls(cs.overflowY)) return;
+    const maxX = el.scrollWidth - el.clientWidth;
+    const maxY = el.scrollHeight - el.clientHeight;
+    if (maxX < 1 && maxY < 1) return;
+    const r = el.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) return;
+    out.push({
+      idx,
+      name: `${el.tagName.toLowerCase()}#${idx}`,
+      box: [r.x + scrollX, r.y + scrollY, r.width, r.height],
+      cw: el.clientWidth,
+      ch: el.clientHeight,
+      maxX,
+      maxY,
+    });
+  });
+  return out;
+};
+
+// Scroll offsets that show the whole range: 0, one client box per step, and the exact end.
+const steps = (max, size) => {
+  if (max < 1) return [0];
+  const out = [];
+  for (let o = 0; o < max; o += Math.max(1, size)) out.push(o);
+  out.push(max);
+  return out;
+};
+
+// Two animation frames plus a short pause: a scroll step needs a paint, not the full 400 ms DOM-quiet window.
+const frames = (page) =>
+  page.evaluate(
+    () =>
+      new Promise((r) =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => setTimeout(r, 100)),
+        ),
+      ),
+  );
+
+// Scrolls each inner scroller through its full range and screenshots its box at every step, so clipped paint
+// (a colour on a row below the fold) is compared, not only its geometry. Restores scroll to 0 afterwards.
+async function captureScrollers(page, outDir, vp, stem) {
+  const shots = [];
+  for (const s of await page.evaluate(scrollers)) {
+    const at = (x, y) =>
+      page.evaluate(
+        ([idx, x, y]) => {
+          const el = document.body.querySelectorAll("*")[idx];
+          el.scrollLeft = x;
+          el.scrollTop = y;
+        },
+        [s.idx, x, y],
+      );
+    for (const y of steps(s.maxY, s.ch))
+      for (const x of steps(s.maxX, s.cw)) {
+        await at(x, y);
+        await frames(page);
+        const file = `${vp}/${stem}.s${s.idx}-${x}-${y}.png`;
+        // fullPage + clip in page coordinates, so a scroller box below the viewport still resolves. Bounds are
+        // integers inside the page box so no step clips outside it. (One renderer crash in 171 shots at
+        // s05-templates@1440; the capture retry in captureAll covers a repeat.)
+        const [bx, by, bw, bh] = s.box;
+        const [pw, ph] = await page.evaluate(() => [
+          document.documentElement.scrollWidth,
+          document.documentElement.scrollHeight,
+        ]);
+        const cx = Math.max(0, Math.min(Math.round(bx), pw - 1));
+        const cy = Math.max(0, Math.min(Math.round(by), ph - 1));
+        const cw = Math.min(Math.round(bw), pw - cx);
+        const ch = Math.min(Math.round(bh), ph - cy);
+        if (cw < 1 || ch < 1) continue;
+        const box = [cx, cy, cw, ch];
+        await writeFile(
+          path.join(outDir, file),
+          await page.screenshot({
+            fullPage: true,
+            clip: { x: cx, y: cy, width: cw, height: ch },
+            animations: "disabled",
+            caret: "hide",
+          }),
+        );
+        shots.push({ scroller: s.name, x, y, png: file, box });
+      }
+    await at(0, 0);
+  }
+  return shots;
+}
+
+// Under CPU load Chromium can drop a navigation or a screenshot mid-run. One retry of the capture is allowed
+// (never of a comparison): relaunch the browser, wait for the server to answer again, then replay the same shot.
+async function waitForServer(baseUrl, ms = 60000) {
+  const t0 = Date.now();
+  for (;;) {
+    try {
+      if (
+        (await fetch(`${baseUrl}/coach`, { signal: AbortSignal.timeout(5000) }))
+          .ok
+      )
+        return true;
+    } catch {}
+    if (Date.now() - t0 > ms) return false;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+}
+
 export async function captureAll({ baseUrl, outDir, log = console.log }) {
   const index = JSON.parse(await readFile(INDEX_PATH, "utf8"));
-  const browser = await chromium.launch();
+  // --disable-partial-raster: partial raster re-rasters only the invalidated part of a tile, so the anti-aliased
+  // border of a sub-pixel-positioned swatch rasterizes differently under CPU load (verify-2 section 5). Full raster
+  // is deterministic. It changes no baseline pixel.
+  const launch = () => chromium.launch({ args: ["--disable-partial-raster"] });
+  let browser = await launch();
   const manifest = {
     baseUrl,
     fixedNow: FIXED_NOW,
     timezone: TIMEZONE,
     screens: [],
     failures: [],
+    retried: 0,
   };
   try {
     for (const vp of Object.keys(VIEWPORTS)) {
       await mkdir(path.join(outDir, vp), { recursive: true });
       for (const shot of index.shots) {
         const stem = shot.file.replace(/\.(png|webp)$/, "");
-        const ctx = await browser.newContext({
-          viewport: VIEWPORTS[vp],
-          deviceScaleFactor: 1,
-          timezoneId: TIMEZONE,
-          locale: "en-US",
-          colorScheme: "light",
-          reducedMotion: "reduce",
-          serviceWorkers: "block",
-        });
-        await ctx.addInitScript(initScript(STORAGE_SEED));
-        const page = await ctx.newPage();
-        const pageErrors = [];
-        page.on("pageerror", (e) => pageErrors.push(e.message));
-        try {
-          await page.clock.setFixedTime(new Date(FIXED_NOW));
-          await page.goto(baseUrl + shot.route, {
-            waitUntil: "domcontentloaded",
-            timeout: 120000,
+        let entry = null;
+        let lastErr = null;
+        for (let attempt = 0; attempt < 2 && !entry; attempt++) {
+          if (attempt > 0) {
+            manifest.retried++;
+            await browser.close().catch(() => {});
+            browser = await launch();
+            if (!(await waitForServer(baseUrl))) {
+              lastErr = new Error(
+                `server at ${baseUrl} stopped answering; retry not attempted`,
+              );
+              break;
+            }
+          }
+          const ctx = await browser.newContext({
+            viewport: VIEWPORTS[vp],
+            deviceScaleFactor: 1,
+            timezoneId: TIMEZONE,
+            locale: "en-US",
+            colorScheme: "light",
+            reducedMotion: "reduce",
+            serviceWorkers: "block",
           });
-          await page.addStyleTag({ content: FREEZE_CSS });
-          await settle(page);
-          const clickLog = [];
-          for (const label of shot.clicks)
-            clickLog.push(
-              await clickByText(page, label, {
-                fallback: vp === "390",
-                scope: STEP_SCOPES[stem]?.[label] ?? null,
-              }),
-            );
-          await page.evaluate(() => window.scrollTo(0, 0));
-          await settle(page);
-          const png = await page.screenshot({
-            fullPage: true,
-            animations: "disabled",
-            caret: "hide",
-          });
-          const geom = await page.evaluate(geometry);
-          const rel = path.join(vp, `${stem}.png`);
-          await writeFile(path.join(outDir, rel), png);
-          await writeFile(
-            path.join(outDir, vp, `${stem}.geom.json.gz`),
-            gzipSync(JSON.stringify(geom)),
-          );
-          const size = await page.evaluate(() => [
-            document.documentElement.scrollWidth,
-            document.documentElement.scrollHeight,
-          ]);
-          manifest.screens.push({
-            id: `${stem}@${vp}`,
-            vp,
-            stem,
-            route: shot.route,
-            screen: shot.screen,
-            clicks: clickLog,
-            png: rel.split(path.sep).join("/"),
-            sha256: createHash("sha256").update(png).digest("hex"),
-            size: { width: size[0], height: size[1] },
-            elements: geom.length,
-            pageErrors,
-          });
-          if (pageErrors.length)
-            manifest.failures.push({
-              id: `${stem}@${vp}`,
-              error: `pageerror: ${pageErrors[0]}`,
+          await ctx.addInitScript(initScript(STORAGE_SEED));
+          const page = await ctx.newPage();
+          const pageErrors = [];
+          page.on("pageerror", (e) => pageErrors.push(e.message));
+          try {
+            await page.clock.setFixedTime(new Date(FIXED_NOW));
+            await page.goto(baseUrl + shot.route, {
+              waitUntil: "domcontentloaded",
+              timeout: 120000,
             });
-          log(`OK ${stem}@${vp} ${size[0]}x${size[1]} elements=${geom.length}`);
-        } catch (err) {
-          manifest.failures.push({
-            id: `${stem}@${vp}`,
-            error: String(err.message || err).split("\n")[0],
-          });
+            await page.addStyleTag({ content: FREEZE_CSS });
+            await settle(page);
+            const clickLog = [];
+            for (const label of shot.clicks)
+              clickLog.push(
+                await clickByText(page, label, {
+                  fallback: vp === "390",
+                  scope: STEP_SCOPES[stem]?.[label] ?? null,
+                }),
+              );
+            await page.evaluate(() => window.scrollTo(0, 0));
+            await settle(page);
+            const png = await page.screenshot({
+              fullPage: true,
+              animations: "disabled",
+              caret: "hide",
+            });
+            const geom = await page.evaluate(geometry);
+            const rel = path.join(vp, `${stem}.png`);
+            await writeFile(path.join(outDir, rel), png);
+            await writeFile(
+              path.join(outDir, vp, `${stem}.geom.json.gz`),
+              gzipSync(JSON.stringify(geom)),
+            );
+            const size = await page.evaluate(() => [
+              document.documentElement.scrollWidth,
+              document.documentElement.scrollHeight,
+            ]);
+            // Sweep inner scrollers last: scrolling one can fire a scroll handler that changes the page, and that must
+            // not leak into the main capture or its geometry (it did: 10 screens re-baselined when this ran first).
+            const scrolls = await captureScrollers(page, outDir, vp, stem);
+            entry = {
+              id: `${stem}@${vp}`,
+              vp,
+              stem,
+              route: shot.route,
+              screen: shot.screen,
+              clicks: clickLog,
+              png: rel.split(path.sep).join("/"),
+              scrolls,
+              sha256: createHash("sha256").update(png).digest("hex"),
+              size: { width: size[0], height: size[1] },
+              elements: geom.length,
+              pageErrors,
+            };
+          } catch (err) {
+            lastErr = err;
+          } finally {
+            await ctx.close().catch(() => {});
+          }
+        }
+        if (entry) {
+          manifest.screens.push(entry);
+          if (entry.pageErrors.length)
+            manifest.failures.push({
+              id: entry.id,
+              error: `pageerror: ${entry.pageErrors[0]}`,
+            });
           log(
-            `FAIL ${stem}@${vp}: ${String(err.message || err).split("\n")[0]}`,
+            `OK ${stem}@${vp} ${entry.size.width}x${entry.size.height} elements=${entry.elements}`,
           );
-        } finally {
-          await ctx.close();
+        } else {
+          const msg = String(lastErr?.message || lastErr).split("\n")[0];
+          manifest.failures.push({ id: `${stem}@${vp}`, error: msg });
+          log(`FAIL ${stem}@${vp}: ${msg}`);
         }
       }
     }
   } finally {
-    await browser.close();
+    await browser.close().catch(() => {});
   }
   await writeFile(
     path.join(outDir, "manifest.json"),

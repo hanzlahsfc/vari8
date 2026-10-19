@@ -1,5 +1,5 @@
 {
-  "baseUrl": "http://127.0.0.1:3630",
+  "baseUrl": "http://127.0.0.1:42645",
   "fixedNow": "2026-10-19T10:00:00+02:00",
   "timezone": "Europe/Vienna",
   "screens": [
@@ -20,6 +20,44 @@
         }
       ],
       "png": "390/s01-roster.png",
+      "scrolls": [
+        {
+          "scroller": "div#143",
+          "x": 0,
+          "y": 0,
+          "png": "390/s01-roster.s143-0-0.png",
+          "box": [
+            39,
+            342,
+            312,
+            1377
+          ]
+        },
+        {
+          "scroller": "div#143",
+          "x": 312,
+          "y": 0,
+          "png": "390/s01-roster.s143-312-0.png",
+          "box": [
+            39,
+            342,
+            312,
+            1377
+          ]
+        },
+        {
+          "scroller": "div#143",
+          "x": 468,
+          "y": 0,
+          "png": "390/s01-roster.s143-468-0.png",
+          "box": [
+            39,
+            342,
+            312,
+            1377
+          ]
+        }
+      ],
       "sha256": "ee8ce6f6ba77f6f81693c491031bdb08d8d06055d7d66afccdb9b99c366d893b",
       "size": {
         "width": 762,
@@ -53,6 +91,32 @@
         }
       ],
       "png": "390/s01-profile-overview.png",
+      "scrolls": [
+        {
+          "scroller": "div#129",
+          "x": 0,
+          "y": 0,
+          "png": "390/s01-profile-overview.s129-0-0.png",
+          "box": [
+            16,
+            418,
+            358,
+            52
+          ]
+        },
+        {
+          "scroller": "div#129",
+          "x": 47,
+          "y": 0,
+          "png": "390/s01-profile-overview.s129-47-0.png",
+          "box": [
+            16,
+            418,
+            358,
+            52
+          ]
+        }
+      ],
       "sha256": "1c86954bed650fa87d204b1d5d20cbcf996ea9087190690d9c5c4d2707871cc7",
       "size": {
         "width": 390,
@@ -94,6 +158,32 @@
         }
       ],
       "png": "390/s01-profile-plans.png",
+      "scrolls": [
+        {
+          "scroller": "div#129",
+          "x": 0,
+          "y": 0,
+          "png": "390/s01-profile-plans.s129-0-0.png",
+          "box": [
+            16,
+            418,
+            358,
+            52
+          ]
+        },
+        {
+          "scroller": "div#129",
+          "x": 47,
+          "y": 0,
+          "png": "390/s01-profile-plans.s129-47-0.png",
+          "box": [
+            16,
+            418,
+            358,
+            52
+          ]
+        }
+      ],
       "sha256": "111527a4b63891e079f9fab086f280722d7abf4cd445ba541a347b9c4817205d",
       "size": {
         "width": 390,
@@ -135,6 +225,32 @@
         }
       ],
       "png": "390/s01-profile-checkins.png",
+      "scrolls": [
+        {
+          "scroller": "div#129",
+          "x": 0,
+          "y": 0,
+          "png": "390/s01-profile-checkins.s129-0-0.png",
+          "box": [
+            16,
+            418,
+            358,
+            52
+          ]
+        },
+        {
+          "scroller": "div#129",
+          "x": 47,
+          "y": 0,
+          "png": "390/s01-profile-checkins.s129-47-0.png",
+          "box": [
+            16,
+            418,
+            358,
+            52
+          ]
+        }
+      ],
       "sha256": "1285eb43a25227dd34571669115d5a306ac2226642cb4cd88e877fcde9875b30",
       "size": {
         "width": 390,
@@ -176,6 +292,32 @@
         }
       ],
       "png": "390/s01-profile-notes.png",
+      "scrolls": [
+        {
+          "scroller": "div#129",
+          "x": 0,
+          "y": 0,
+          "png": "390/s01-profile-notes.s129-0-0.png",
+          "box": [
+            16,
+            418,
+            358,
+            52
+          ]
+        },
+        {
+          "scroller": "div#129",
+          "x": 47,
+          "y": 0,
+          "png": "390/s01-profile-notes.s129-47-0.png",
+          "box": [
+            16,
+            418,
+            358,
+            52
+          ]
+        }
+      ],
       "sha256": "e8caff61acdf4576149e393d332968257401d0e4b36d4867788f39c20f00c3a7",
       "size": {
         "width": 390,
@@ -217,6 +359,32 @@
         }
       ],
       "png": "390/s01-profile-onboarding.png",
+      "scrolls": [
+        {
+          "scroller": "div#129",
+          "x": 0,
+          "y": 0,
+          "png": "390/s01-profile-onboarding.s129-0-0.png",
+          "box": [
+            16,
+            418,
+            358,
+            52
+          ]
+        },
+        {
+          "scroller": "div#129",
+          "x": 47,
+          "y": 0,
+          "png": "390/s01-profile-onboarding.s129-47-0.png",
+          "box": [
+            16,
+            418,
+            358,
+            52
+          ]
+        }
+      ],
       "sha256": "f0ff22269f4b85a603a51e92b890f8eba54aa6fc5851368fec8c8aad89eb18a7",
       "size": {
         "width": 390,
@@ -242,6 +410,44 @@
         }
       ],
       "png": "390/s02-messages.png",
+      "scrolls": [
+        {
+          "scroller": "div#115",
+          "x": 0,
+          "y": 0,
+          "png": "390/s02-messages.s115-0-0.png",
+          "box": [
+            0,
+            317,
+            390,
+            454
+          ]
+        },
+        {
+          "scroller": "div#115",
+          "x": 0,
+          "y": 454,
+          "png": "390/s02-messages.s115-0-454.png",
+          "box": [
+            0,
+            317,
+            390,
+            454
+          ]
+        },
+        {
+          "scroller": "div#115",
+          "x": 0,
+          "y": 844,
+          "png": "390/s02-messages.s115-0-844.png",
+          "box": [
+            0,
+            317,
+            390,
+            454
+          ]
+        }
+      ],
       "sha256": "6b9c2988868370444b0534a69d4df13fb6b8167e9cac155d55c42c8c862c1352",
       "size": {
         "width": 390,
@@ -283,6 +489,7 @@
         }
       ],
       "png": "390/s02-thread.png",
+      "scrolls": [],
       "sha256": "cf2603d12eef1dc29428bcadf7f85f7e7870748e6480938d37f449b724e4d4d6",
       "size": {
         "width": 390,
@@ -332,6 +539,7 @@
         }
       ],
       "png": "390/s02-thread-attachments.png",
+      "scrolls": [],
       "sha256": "a6afddd1f3a9c21400acbce6836ca0e9bcd80cbb666160931ce4ae3d8a7378e0",
       "size": {
         "width": 390,
@@ -357,6 +565,7 @@
         }
       ],
       "png": "390/s02-notes-todos.png",
+      "scrolls": [],
       "sha256": "291d54a9021d754ec544a82f544ca4f84be32ce5da0f0a8283f5061204b4916b",
       "size": {
         "width": 390,
@@ -382,6 +591,7 @@
         }
       ],
       "png": "390/s03-checkins-board.png",
+      "scrolls": [],
       "sha256": "8c8a50c98f9379c59d247580e0a118a7529b0e6aa385a6d0278e3cbfc953bc6a",
       "size": {
         "width": 390,
@@ -415,6 +625,7 @@
         }
       ],
       "png": "390/s03-add-extra.png",
+      "scrolls": [],
       "sha256": "d2a0bd9a01dc32d75a0b264dfe78f2f32c12a53d0503b3ab32d7b57f3c0032c6",
       "size": {
         "width": 390,
@@ -456,6 +667,7 @@
         }
       ],
       "png": "390/s03-checkin-review.png",
+      "scrolls": [],
       "sha256": "8b5594ec0ddbd7dd041c9641a4fa3258ef0f80cd7ee1349b5097daac6b90261a",
       "size": {
         "width": 390,
@@ -505,6 +717,7 @@
         }
       ],
       "png": "390/s04-habit-editor.png",
+      "scrolls": [],
       "sha256": "4a84a8b50e087ca979bf59e478efaa5f9cc3f6fc1019d0ce6510102410c9d8bc",
       "size": {
         "width": 430,
@@ -586,6 +799,32 @@
         }
       ],
       "png": "390/s04-template-habits.png",
+      "scrolls": [
+        {
+          "scroller": "nav#120",
+          "x": 0,
+          "y": 0,
+          "png": "390/s04-template-habits.s120-0-0.png",
+          "box": [
+            16,
+            282,
+            358,
+            50
+          ]
+        },
+        {
+          "scroller": "nav#120",
+          "x": 325,
+          "y": 0,
+          "png": "390/s04-template-habits.s120-325-0.png",
+          "box": [
+            16,
+            282,
+            358,
+            50
+          ]
+        }
+      ],
       "sha256": "c01d88ac99632b2a2300fb0a00e0898242de0aeecf0ab9eef08d7794ee9b8d78",
       "size": {
         "width": 390,
@@ -602,6 +841,7 @@
       "screen": "Template library",
       "clicks": [],
       "png": "390/s05-templates.png",
+      "scrolls": [],
       "sha256": "565a96ce6f335b829902e8c89ae7ae46b6c467fb73a892ac2bdab38ff5e54bda",
       "size": {
         "width": 390,
@@ -627,6 +867,32 @@
         }
       ],
       "png": "390/s05-template-editor.png",
+      "scrolls": [
+        {
+          "scroller": "nav#120",
+          "x": 0,
+          "y": 0,
+          "png": "390/s05-template-editor.s120-0-0.png",
+          "box": [
+            16,
+            282,
+            358,
+            50
+          ]
+        },
+        {
+          "scroller": "nav#120",
+          "x": 325,
+          "y": 0,
+          "png": "390/s05-template-editor.s120-325-0.png",
+          "box": [
+            16,
+            282,
+            358,
+            50
+          ]
+        }
+      ],
       "sha256": "d8c45b7500ebfb77bbc616dda4aef3f20468db4a6b1ddf3ffef1f5d06cda34ba",
       "size": {
         "width": 390,
@@ -676,6 +942,32 @@
         }
       ],
       "png": "390/s05-tracker-setup.png",
+      "scrolls": [
+        {
+          "scroller": "nav#120",
+          "x": 0,
+          "y": 0,
+          "png": "390/s05-tracker-setup.s120-0-0.png",
+          "box": [
+            16,
+            282,
+            358,
+            50
+          ]
+        },
+        {
+          "scroller": "nav#120",
+          "x": 325,
+          "y": 0,
+          "png": "390/s05-tracker-setup.s120-325-0.png",
+          "box": [
+            16,
+            282,
+            358,
+            50
+          ]
+        }
+      ],
       "sha256": "6865032a51dc91abe620e56a22fa5bde664ea098591b076efea6aa336c785883",
       "size": {
         "width": 390,
@@ -717,6 +1009,32 @@
         }
       ],
       "png": "390/s05-client-setup.png",
+      "scrolls": [
+        {
+          "scroller": "div#129",
+          "x": 0,
+          "y": 0,
+          "png": "390/s05-client-setup.s129-0-0.png",
+          "box": [
+            16,
+            418,
+            358,
+            52
+          ]
+        },
+        {
+          "scroller": "div#129",
+          "x": 47,
+          "y": 0,
+          "png": "390/s05-client-setup.s129-47-0.png",
+          "box": [
+            16,
+            418,
+            358,
+            52
+          ]
+        }
+      ],
       "sha256": "e93236a6472ebb451cbf7c256c2fa5ee6029b9290eec72c6734d47d5407204c9",
       "size": {
         "width": 390,
@@ -766,6 +1084,7 @@
         }
       ],
       "png": "390/s06-mealplan-editor.png",
+      "scrolls": [],
       "sha256": "d53dfd8d825ffbc96234f06a2eb2a72457e8cb5d85baba7d34bf9c4cb85c1e45",
       "size": {
         "width": 390,
@@ -839,6 +1158,32 @@
         }
       ],
       "png": "390/s06-template-nutrition.png",
+      "scrolls": [
+        {
+          "scroller": "nav#120",
+          "x": 0,
+          "y": 0,
+          "png": "390/s06-template-nutrition.s120-0-0.png",
+          "box": [
+            16,
+            282,
+            358,
+            50
+          ]
+        },
+        {
+          "scroller": "nav#120",
+          "x": 325,
+          "y": 0,
+          "png": "390/s06-template-nutrition.s120-325-0.png",
+          "box": [
+            16,
+            282,
+            358,
+            50
+          ]
+        }
+      ],
       "sha256": "48e58a4f8fc04e7f365e99dceec3c4af96278eb6162531cf1c3f733dc911b092",
       "size": {
         "width": 390,
@@ -888,6 +1233,7 @@
         }
       ],
       "png": "390/s07-training-editor.png",
+      "scrolls": [],
       "sha256": "bb054ed740a435644634c5a6569e8faf1daaddb22af10d83f21bdadc03ba8235",
       "size": {
         "width": 390,
@@ -945,6 +1291,44 @@
         }
       ],
       "png": "390/s07-exercise-library.png",
+      "scrolls": [
+        {
+          "scroller": "select#178",
+          "x": 0,
+          "y": 0,
+          "png": "390/s07-exercise-library.s178-0-0.png",
+          "box": [
+            30,
+            1082,
+            330,
+            86
+          ]
+        },
+        {
+          "scroller": "select#178",
+          "x": 0,
+          "y": 84,
+          "png": "390/s07-exercise-library.s178-0-84.png",
+          "box": [
+            30,
+            1082,
+            330,
+            86
+          ]
+        },
+        {
+          "scroller": "select#178",
+          "x": 0,
+          "y": 102,
+          "png": "390/s07-exercise-library.s178-0-102.png",
+          "box": [
+            30,
+            1082,
+            330,
+            86
+          ]
+        }
+      ],
       "sha256": "4117e255a871fa2f788a989cd2a205a38a5abdf38e5a07e109ff30401ce429da",
       "size": {
         "width": 390,
@@ -961,6 +1345,32 @@
       "screen": "Dashboard builder (Ethereal studio)",
       "clicks": [],
       "png": "390/s08-builder.png",
+      "scrolls": [
+        {
+          "scroller": "nav#12",
+          "x": 0,
+          "y": 0,
+          "png": "390/s08-builder.s12-0-0.png",
+          "box": [
+            27,
+            68,
+            336,
+            48
+          ]
+        },
+        {
+          "scroller": "nav#12",
+          "x": 11,
+          "y": 0,
+          "png": "390/s08-builder.s12-11-0.png",
+          "box": [
+            27,
+            68,
+            336,
+            48
+          ]
+        }
+      ],
       "sha256": "97d602f1c705deeef68816fc181e2efb6ecf15ae3921ace945d3e821ef95d0f6",
       "size": {
         "width": 390,
@@ -986,6 +1396,164 @@
         }
       ],
       "png": "390/s08-widget-gallery.png",
+      "scrolls": [
+        {
+          "scroller": "nav#12",
+          "x": 0,
+          "y": 0,
+          "png": "390/s08-widget-gallery.s12-0-0.png",
+          "box": [
+            27,
+            68,
+            336,
+            48
+          ]
+        },
+        {
+          "scroller": "nav#12",
+          "x": 11,
+          "y": 0,
+          "png": "390/s08-widget-gallery.s12-11-0.png",
+          "box": [
+            27,
+            68,
+            336,
+            48
+          ]
+        },
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 0,
+          "png": "390/s08-widget-gallery.s92-0-0.png",
+          "box": [
+            0,
+            100,
+            390,
+            650
+          ]
+        },
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 650,
+          "png": "390/s08-widget-gallery.s92-0-650.png",
+          "box": [
+            0,
+            100,
+            390,
+            650
+          ]
+        },
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 1300,
+          "png": "390/s08-widget-gallery.s92-0-1300.png",
+          "box": [
+            0,
+            100,
+            390,
+            650
+          ]
+        },
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 1950,
+          "png": "390/s08-widget-gallery.s92-0-1950.png",
+          "box": [
+            0,
+            100,
+            390,
+            650
+          ]
+        },
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 2600,
+          "png": "390/s08-widget-gallery.s92-0-2600.png",
+          "box": [
+            0,
+            100,
+            390,
+            650
+          ]
+        },
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 3250,
+          "png": "390/s08-widget-gallery.s92-0-3250.png",
+          "box": [
+            0,
+            100,
+            390,
+            650
+          ]
+        },
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 3900,
+          "png": "390/s08-widget-gallery.s92-0-3900.png",
+          "box": [
+            0,
+            100,
+            390,
+            650
+          ]
+        },
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 4550,
+          "png": "390/s08-widget-gallery.s92-0-4550.png",
+          "box": [
+            0,
+            100,
+            390,
+            650
+          ]
+        },
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 5200,
+          "png": "390/s08-widget-gallery.s92-0-5200.png",
+          "box": [
+            0,
+            100,
+            390,
+            650
+          ]
+        },
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 5850,
+          "png": "390/s08-widget-gallery.s92-0-5850.png",
+          "box": [
+            0,
+            100,
+            390,
+            650
+          ]
+        },
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 6271,
+          "png": "390/s08-widget-gallery.s92-0-6271.png",
+          "box": [
+            0,
+            100,
+            390,
+            650
+          ]
+        }
+      ],
       "sha256": "b850287cf6ee373a06bcca15128f81dec99dbba6c601e6ddac34b49e9fd3a748",
       "size": {
         "width": 390,
@@ -1019,6 +1587,32 @@
         }
       ],
       "png": "390/s08-template-dashboard.png",
+      "scrolls": [
+        {
+          "scroller": "nav#120",
+          "x": 0,
+          "y": 0,
+          "png": "390/s08-template-dashboard.s120-0-0.png",
+          "box": [
+            16,
+            282,
+            358,
+            50
+          ]
+        },
+        {
+          "scroller": "nav#120",
+          "x": 325,
+          "y": 0,
+          "png": "390/s08-template-dashboard.s120-325-0.png",
+          "box": [
+            16,
+            282,
+            358,
+            50
+          ]
+        }
+      ],
       "sha256": "6a0dd2c0e599de0a86e14aea5d6e238a18b827606088def5b0530c3306a55195",
       "size": {
         "width": 390,
@@ -1060,6 +1654,56 @@
         }
       ],
       "png": "390/s09-tracker-today.png",
+      "scrolls": [
+        {
+          "scroller": "dialog#236",
+          "x": 0,
+          "y": 0,
+          "png": "390/s09-tracker-today.s236-0-0.png",
+          "box": [
+            16,
+            16,
+            358,
+            812
+          ]
+        },
+        {
+          "scroller": "dialog#236",
+          "x": 0,
+          "y": 619,
+          "png": "390/s09-tracker-today.s236-0-619.png",
+          "box": [
+            16,
+            16,
+            358,
+            812
+          ]
+        },
+        {
+          "scroller": "nav#251",
+          "x": 0,
+          "y": 0,
+          "png": "390/s09-tracker-today.s251-0-0.png",
+          "box": [
+            36,
+            185,
+            318,
+            52
+          ]
+        },
+        {
+          "scroller": "nav#251",
+          "x": 299,
+          "y": 0,
+          "png": "390/s09-tracker-today.s251-299-0.png",
+          "box": [
+            36,
+            185,
+            318,
+            52
+          ]
+        }
+      ],
       "sha256": "9e098667605e901de58b4f58e962e4682a3bdd9b185fb10356f742d201a455f0",
       "size": {
         "width": 390,
@@ -1109,6 +1753,68 @@
         }
       ],
       "png": "390/s09-tracker-week.png",
+      "scrolls": [
+        {
+          "scroller": "dialog#236",
+          "x": 0,
+          "y": 0,
+          "png": "390/s09-tracker-week.s236-0-0.png",
+          "box": [
+            16,
+            16,
+            358,
+            812
+          ]
+        },
+        {
+          "scroller": "dialog#236",
+          "x": 0,
+          "y": 810,
+          "png": "390/s09-tracker-week.s236-0-810.png",
+          "box": [
+            16,
+            16,
+            358,
+            812
+          ]
+        },
+        {
+          "scroller": "dialog#236",
+          "x": 0,
+          "y": 1471,
+          "png": "390/s09-tracker-week.s236-0-1471.png",
+          "box": [
+            16,
+            16,
+            358,
+            812
+          ]
+        },
+        {
+          "scroller": "nav#251",
+          "x": 0,
+          "y": 0,
+          "png": "390/s09-tracker-week.s251-0-0.png",
+          "box": [
+            36,
+            185,
+            318,
+            52
+          ]
+        },
+        {
+          "scroller": "nav#251",
+          "x": 299,
+          "y": 0,
+          "png": "390/s09-tracker-week.s251-299-0.png",
+          "box": [
+            36,
+            185,
+            318,
+            52
+          ]
+        }
+      ],
       "sha256": "c653a3f5fd501cc34617cd19e4204447166900f2538d1e893cfc5983cf902a23",
       "size": {
         "width": 390,
@@ -1158,6 +1864,56 @@
         }
       ],
       "png": "390/s09-tracker-trends.png",
+      "scrolls": [
+        {
+          "scroller": "dialog#236",
+          "x": 0,
+          "y": 0,
+          "png": "390/s09-tracker-trends.s236-0-0.png",
+          "box": [
+            16,
+            16,
+            358,
+            812
+          ]
+        },
+        {
+          "scroller": "dialog#236",
+          "x": 0,
+          "y": 232,
+          "png": "390/s09-tracker-trends.s236-0-232.png",
+          "box": [
+            16,
+            16,
+            358,
+            812
+          ]
+        },
+        {
+          "scroller": "nav#251",
+          "x": 0,
+          "y": 0,
+          "png": "390/s09-tracker-trends.s251-0-0.png",
+          "box": [
+            36,
+            185,
+            318,
+            52
+          ]
+        },
+        {
+          "scroller": "nav#251",
+          "x": 299,
+          "y": 0,
+          "png": "390/s09-tracker-trends.s251-299-0.png",
+          "box": [
+            36,
+            185,
+            318,
+            52
+          ]
+        }
+      ],
       "sha256": "a98dd094255c7f5d151393c55add0d1cd8dcabfa5399adeff8ea6ba4d6d3ae71",
       "size": {
         "width": 390,
@@ -1183,6 +1939,32 @@
         }
       ],
       "png": "390/s09-tracker-config.png",
+      "scrolls": [
+        {
+          "scroller": "nav#12",
+          "x": 0,
+          "y": 0,
+          "png": "390/s09-tracker-config.s12-0-0.png",
+          "box": [
+            24,
+            65,
+            345,
+            48
+          ]
+        },
+        {
+          "scroller": "nav#12",
+          "x": 13,
+          "y": 0,
+          "png": "390/s09-tracker-config.s12-13-0.png",
+          "box": [
+            24,
+            65,
+            345,
+            48
+          ]
+        }
+      ],
       "sha256": "10065a99740486fc30ce6b3f4897ee34b444337aee69e9063b181aef55a0a893",
       "size": {
         "width": 390,
@@ -1208,6 +1990,32 @@
         }
       ],
       "png": "390/s10-appearance.png",
+      "scrolls": [
+        {
+          "scroller": "nav#12",
+          "x": 0,
+          "y": 0,
+          "png": "390/s10-appearance.s12-0-0.png",
+          "box": [
+            24,
+            65,
+            345,
+            48
+          ]
+        },
+        {
+          "scroller": "nav#12",
+          "x": 13,
+          "y": 0,
+          "png": "390/s10-appearance.s12-13-0.png",
+          "box": [
+            24,
+            65,
+            345,
+            48
+          ]
+        }
+      ],
       "sha256": "d750bbd05d989eacb1a9fd6741940207d99191b0b82c1d19d00df9e90a318172",
       "size": {
         "width": 390,
@@ -1224,6 +2032,32 @@
       "screen": "Clients studio",
       "clicks": [],
       "png": "390/s10-clients-studio.png",
+      "scrolls": [
+        {
+          "scroller": "nav#12",
+          "x": 0,
+          "y": 0,
+          "png": "390/s10-clients-studio.s12-0-0.png",
+          "box": [
+            24,
+            65,
+            345,
+            48
+          ]
+        },
+        {
+          "scroller": "nav#12",
+          "x": 13,
+          "y": 0,
+          "png": "390/s10-clients-studio.s12-13-0.png",
+          "box": [
+            24,
+            65,
+            345,
+            48
+          ]
+        }
+      ],
       "sha256": "bef0c16c884ff963d9a8aa83238d0a996d35140f9de11573c2424d9feb1f378f",
       "size": {
         "width": 390,
@@ -1240,6 +2074,32 @@
       "screen": "Meal plans studio",
       "clicks": [],
       "png": "390/s10-mealplan-studio.png",
+      "scrolls": [
+        {
+          "scroller": "nav#12",
+          "x": 0,
+          "y": 0,
+          "png": "390/s10-mealplan-studio.s12-0-0.png",
+          "box": [
+            24,
+            65,
+            345,
+            48
+          ]
+        },
+        {
+          "scroller": "nav#12",
+          "x": 13,
+          "y": 0,
+          "png": "390/s10-mealplan-studio.s12-13-0.png",
+          "box": [
+            24,
+            65,
+            345,
+            48
+          ]
+        }
+      ],
       "sha256": "7c5df9918fd83f8b2a4622e9563d3e9df0b3864a261e2f8d40399a46d705ef6a",
       "size": {
         "width": 390,
@@ -1265,6 +2125,32 @@
         }
       ],
       "png": "390/s11-preferences.png",
+      "scrolls": [
+        {
+          "scroller": "dialog#236",
+          "x": 0,
+          "y": 0,
+          "png": "390/s11-preferences.s236-0-0.png",
+          "box": [
+            18,
+            15,
+            354,
+            814
+          ]
+        },
+        {
+          "scroller": "dialog#236",
+          "x": 0,
+          "y": 315,
+          "png": "390/s11-preferences.s236-0-315.png",
+          "box": [
+            18,
+            15,
+            354,
+            814
+          ]
+        }
+      ],
       "sha256": "ab3d5f55aac53094d35b4be8dcd9aaac24d520088a3bb0ff981575a2030876c0",
       "size": {
         "width": 390,
@@ -1306,6 +2192,80 @@
         }
       ],
       "png": "390/s11-client-preview.png",
+      "scrolls": [
+        {
+          "scroller": "div#130",
+          "x": 0,
+          "y": 0,
+          "png": "390/s11-client-preview.s130-0-0.png",
+          "box": [
+            16,
+            418,
+            358,
+            52
+          ]
+        },
+        {
+          "scroller": "div#130",
+          "x": 47,
+          "y": 0,
+          "png": "390/s11-client-preview.s130-47-0.png",
+          "box": [
+            16,
+            418,
+            358,
+            52
+          ]
+        },
+        {
+          "scroller": "dialog#218",
+          "x": 0,
+          "y": 0,
+          "png": "390/s11-client-preview.s218-0-0.png",
+          "box": [
+            16,
+            16,
+            358,
+            812
+          ]
+        },
+        {
+          "scroller": "dialog#218",
+          "x": 0,
+          "y": 567,
+          "png": "390/s11-client-preview.s218-0-567.png",
+          "box": [
+            16,
+            16,
+            358,
+            812
+          ]
+        },
+        {
+          "scroller": "nav#233",
+          "x": 0,
+          "y": 0,
+          "png": "390/s11-client-preview.s233-0-0.png",
+          "box": [
+            36,
+            185,
+            318,
+            52
+          ]
+        },
+        {
+          "scroller": "nav#233",
+          "x": 299,
+          "y": 0,
+          "png": "390/s11-client-preview.s233-299-0.png",
+          "box": [
+            36,
+            185,
+            318,
+            52
+          ]
+        }
+      ],
       "sha256": "c1f46ec9acd3737f88abfe138a5c31845386169ef003967d6704721904eadf64",
       "size": {
         "width": 390,
@@ -1331,6 +2291,7 @@
         }
       ],
       "png": "1440/s01-roster.png",
+      "scrolls": [],
       "sha256": "deacd2d542a056802ffd090a4c2058066a020e8c578a01a0255eeb103227eff2",
       "size": {
         "width": 1440,
@@ -1364,6 +2325,7 @@
         }
       ],
       "png": "1440/s01-profile-overview.png",
+      "scrolls": [],
       "sha256": "c5118de9fb323b36a0dbd19d65d75343f4a2515fbfe428a9d9dcc9896c1564b4",
       "size": {
         "width": 1440,
@@ -1405,6 +2367,7 @@
         }
       ],
       "png": "1440/s01-profile-plans.png",
+      "scrolls": [],
       "sha256": "e9bf3af492aa7291b3283d30e3cb10e6d21ab0a6bcfd9bb95f342a827a802b70",
       "size": {
         "width": 1440,
@@ -1446,6 +2409,7 @@
         }
       ],
       "png": "1440/s01-profile-checkins.png",
+      "scrolls": [],
       "sha256": "197f11e5954701aeb6cf1fcf1a85860d64b577d6abe7c2819cf8d7eb9b8c4b7d",
       "size": {
         "width": 1440,
@@ -1487,6 +2451,7 @@
         }
       ],
       "png": "1440/s01-profile-notes.png",
+      "scrolls": [],
       "sha256": "55728a17e3a6fc3fc6aa2f920f44e8bdfd0d37af588330a405e748728afd457c",
       "size": {
         "width": 1440,
@@ -1528,6 +2493,7 @@
         }
       ],
       "png": "1440/s01-profile-onboarding.png",
+      "scrolls": [],
       "sha256": "3ae09f7433c460e1aa4b2d79c7bbea9200d9f8944766f813837651fc96f8e2ab",
       "size": {
         "width": 1440,
@@ -1553,6 +2519,44 @@
         }
       ],
       "png": "1440/s02-messages.png",
+      "scrolls": [
+        {
+          "scroller": "div#115",
+          "x": 0,
+          "y": 0,
+          "png": "1440/s02-messages.s115-0-0.png",
+          "box": [
+            216,
+            348,
+            304,
+            552
+          ]
+        },
+        {
+          "scroller": "div#115",
+          "x": 0,
+          "y": 552,
+          "png": "1440/s02-messages.s115-0-552.png",
+          "box": [
+            216,
+            348,
+            304,
+            552
+          ]
+        },
+        {
+          "scroller": "div#115",
+          "x": 0,
+          "y": 746,
+          "png": "1440/s02-messages.s115-0-746.png",
+          "box": [
+            216,
+            348,
+            304,
+            552
+          ]
+        }
+      ],
       "sha256": "07962141f5190455e6ab4f7680f87019f4de0da9b5e86592892899dd86e5b1de",
       "size": {
         "width": 1440,
@@ -1594,6 +2598,44 @@
         }
       ],
       "png": "1440/s02-thread.png",
+      "scrolls": [
+        {
+          "scroller": "div#115",
+          "x": 0,
+          "y": 0,
+          "png": "1440/s02-thread.s115-0-0.png",
+          "box": [
+            216,
+            348,
+            304,
+            552
+          ]
+        },
+        {
+          "scroller": "div#115",
+          "x": 0,
+          "y": 552,
+          "png": "1440/s02-thread.s115-0-552.png",
+          "box": [
+            216,
+            348,
+            304,
+            552
+          ]
+        },
+        {
+          "scroller": "div#115",
+          "x": 0,
+          "y": 746,
+          "png": "1440/s02-thread.s115-0-746.png",
+          "box": [
+            216,
+            348,
+            304,
+            552
+          ]
+        }
+      ],
       "sha256": "c1afa0e0e2f3a3275970a941bd3676a62d10a425b052835f83c5121681b81042",
       "size": {
         "width": 1440,
@@ -1643,6 +2685,44 @@
         }
       ],
       "png": "1440/s02-thread-attachments.png",
+      "scrolls": [
+        {
+          "scroller": "div#115",
+          "x": 0,
+          "y": 0,
+          "png": "1440/s02-thread-attachments.s115-0-0.png",
+          "box": [
+            216,
+            348,
+            304,
+            552
+          ]
+        },
+        {
+          "scroller": "div#115",
+          "x": 0,
+          "y": 552,
+          "png": "1440/s02-thread-attachments.s115-0-552.png",
+          "box": [
+            216,
+            348,
+            304,
+            552
+          ]
+        },
+        {
+          "scroller": "div#115",
+          "x": 0,
+          "y": 746,
+          "png": "1440/s02-thread-attachments.s115-0-746.png",
+          "box": [
+            216,
+            348,
+            304,
+            552
+          ]
+        }
+      ],
       "sha256": "d45081e74676797a11147a6a781ec2322ced22f36315f8968fb5627b2da6de23",
       "size": {
         "width": 1440,
@@ -1668,6 +2748,7 @@
         }
       ],
       "png": "1440/s02-notes-todos.png",
+      "scrolls": [],
       "sha256": "2906bea8b00132b916c0260a57b1fe68d554a1bda2288fdc8936bd785f52af0c",
       "size": {
         "width": 1440,
@@ -1693,6 +2774,7 @@
         }
       ],
       "png": "1440/s03-checkins-board.png",
+      "scrolls": [],
       "sha256": "8ab38cdfaffd7b9c4247097549b5b44070106cefd5d32e5f13c10a95ea232aa3",
       "size": {
         "width": 1440,
@@ -1726,6 +2808,7 @@
         }
       ],
       "png": "1440/s03-add-extra.png",
+      "scrolls": [],
       "sha256": "13f981840f5cb96f939a129828b42863b31d6cfbcc64f6d50b4a6682cabd7daa",
       "size": {
         "width": 1440,
@@ -1767,6 +2850,7 @@
         }
       ],
       "png": "1440/s03-checkin-review.png",
+      "scrolls": [],
       "sha256": "608f7f5cd301022a0b400c63948d98c4aee983d359d575e4007d403beafea1eb",
       "size": {
         "width": 1440,
@@ -1816,6 +2900,7 @@
         }
       ],
       "png": "1440/s04-habit-editor.png",
+      "scrolls": [],
       "sha256": "87d51f8bcef84095b247f4aeec1f0491460483e82f66a90043713d156c0ca9c2",
       "size": {
         "width": 1440,
@@ -1897,6 +2982,7 @@
         }
       ],
       "png": "1440/s04-template-habits.png",
+      "scrolls": [],
       "sha256": "a0be0721c0bcff6844f0efe418fd4ab6bfe0c9ed5e91032f3280d05be60a9f7f",
       "size": {
         "width": 1440,
@@ -1913,6 +2999,7 @@
       "screen": "Template library",
       "clicks": [],
       "png": "1440/s05-templates.png",
+      "scrolls": [],
       "sha256": "dd8a50a568638c7e9b33cd33af63691ec4f7c140c686db6177751b9868f8e676",
       "size": {
         "width": 1440,
@@ -1938,6 +3025,7 @@
         }
       ],
       "png": "1440/s05-template-editor.png",
+      "scrolls": [],
       "sha256": "825998fc68354bfc35efc21aa5f8602b5e84b2db96fc7b7550856ef9089d8ef3",
       "size": {
         "width": 1440,
@@ -1987,6 +3075,7 @@
         }
       ],
       "png": "1440/s05-tracker-setup.png",
+      "scrolls": [],
       "sha256": "6c3ce11e4eeb3008baa3b3558dd03d4efe78ad80982ee88c3a45b5ab2bd65c67",
       "size": {
         "width": 1440,
@@ -2028,6 +3117,7 @@
         }
       ],
       "png": "1440/s05-client-setup.png",
+      "scrolls": [],
       "sha256": "0864d117dbbe1d2a6d763a5eee713e3ac76e7ea8ca2352b7ae1eb03637201d69",
       "size": {
         "width": 1440,
@@ -2077,6 +3167,7 @@
         }
       ],
       "png": "1440/s06-mealplan-editor.png",
+      "scrolls": [],
       "sha256": "2cd7dcdddfa30190e9abe577357c82af4d6fdb3653ba975ae8c9b1d02012ec84",
       "size": {
         "width": 1440,
@@ -2150,6 +3241,7 @@
         }
       ],
       "png": "1440/s06-template-nutrition.png",
+      "scrolls": [],
       "sha256": "e9375a35cf1bd797d9fae86b85cb32482f1bbc6b6b9789fa3df09479287dfd18",
       "size": {
         "width": 1440,
@@ -2199,6 +3291,7 @@
         }
       ],
       "png": "1440/s07-training-editor.png",
+      "scrolls": [],
       "sha256": "df2bf4469a6d32970bb2af614a25825907d1b763652ade1a0c9f544b78180c66",
       "size": {
         "width": 1440,
@@ -2256,6 +3349,44 @@
         }
       ],
       "png": "1440/s07-exercise-library.png",
+      "scrolls": [
+        {
+          "scroller": "select#178",
+          "x": 0,
+          "y": 0,
+          "png": "1440/s07-exercise-library.s178-0-0.png",
+          "box": [
+            492,
+            713,
+            216,
+            86
+          ]
+        },
+        {
+          "scroller": "select#178",
+          "x": 0,
+          "y": 84,
+          "png": "1440/s07-exercise-library.s178-0-84.png",
+          "box": [
+            492,
+            713,
+            216,
+            86
+          ]
+        },
+        {
+          "scroller": "select#178",
+          "x": 0,
+          "y": 102,
+          "png": "1440/s07-exercise-library.s178-0-102.png",
+          "box": [
+            492,
+            713,
+            216,
+            86
+          ]
+        }
+      ],
       "sha256": "036e576c662a5a82db1c404d6d9f054eb0c16bddc83109d845c6d231d403ea3f",
       "size": {
         "width": 1440,
@@ -2272,6 +3403,7 @@
       "screen": "Dashboard builder (Ethereal studio)",
       "clicks": [],
       "png": "1440/s08-builder.png",
+      "scrolls": [],
       "sha256": "aa93f4c1ab02a79a9cfef5a6a255c02698c9e99322227eebb2fa0e2e1fda7390",
       "size": {
         "width": 1440,
@@ -2297,6 +3429,80 @@
         }
       ],
       "png": "1440/s08-widget-gallery.png",
+      "scrolls": [
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 0,
+          "png": "1440/s08-widget-gallery.s92-0-0.png",
+          "box": [
+            25,
+            132,
+            1390,
+            661
+          ]
+        },
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 661,
+          "png": "1440/s08-widget-gallery.s92-0-661.png",
+          "box": [
+            25,
+            132,
+            1390,
+            661
+          ]
+        },
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 1322,
+          "png": "1440/s08-widget-gallery.s92-0-1322.png",
+          "box": [
+            25,
+            132,
+            1390,
+            661
+          ]
+        },
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 1983,
+          "png": "1440/s08-widget-gallery.s92-0-1983.png",
+          "box": [
+            25,
+            132,
+            1390,
+            661
+          ]
+        },
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 2644,
+          "png": "1440/s08-widget-gallery.s92-0-2644.png",
+          "box": [
+            25,
+            132,
+            1390,
+            661
+          ]
+        },
+        {
+          "scroller": "section#92",
+          "x": 0,
+          "y": 3137,
+          "png": "1440/s08-widget-gallery.s92-0-3137.png",
+          "box": [
+            25,
+            132,
+            1390,
+            661
+          ]
+        }
+      ],
       "sha256": "632660ed0a93a7592e3919c85d1d1358eb51ac1e81040bc73cf0601d4a892e9d",
       "size": {
         "width": 1440,
@@ -2330,6 +3536,7 @@
         }
       ],
       "png": "1440/s08-template-dashboard.png",
+      "scrolls": [],
       "sha256": "408038dd43cf5e9e4f8d84f09206746953a60d77e29acee1dea420909426894e",
       "size": {
         "width": 1440,
@@ -2371,6 +3578,32 @@
         }
       ],
       "png": "1440/s09-tracker-today.png",
+      "scrolls": [
+        {
+          "scroller": "dialog#236",
+          "x": 0,
+          "y": 0,
+          "png": "1440/s09-tracker-today.s236-0-0.png",
+          "box": [
+            16,
+            16,
+            1408,
+            868
+          ]
+        },
+        {
+          "scroller": "dialog#236",
+          "x": 0,
+          "y": 330,
+          "png": "1440/s09-tracker-today.s236-0-330.png",
+          "box": [
+            16,
+            16,
+            1408,
+            868
+          ]
+        }
+      ],
       "sha256": "e3db24b573d4d0409027bfcae34f9ac06e0e6a91a5815a4caf8104efa32f4eaa",
       "size": {
         "width": 1440,
@@ -2420,6 +3653,32 @@
         }
       ],
       "png": "1440/s09-tracker-week.png",
+      "scrolls": [
+        {
+          "scroller": "dialog#236",
+          "x": 0,
+          "y": 0,
+          "png": "1440/s09-tracker-week.s236-0-0.png",
+          "box": [
+            16,
+            16,
+            1408,
+            868
+          ]
+        },
+        {
+          "scroller": "dialog#236",
+          "x": 0,
+          "y": 82,
+          "png": "1440/s09-tracker-week.s236-0-82.png",
+          "box": [
+            16,
+            16,
+            1408,
+            868
+          ]
+        }
+      ],
       "sha256": "f8a16909d5dfadf9f9e37915f7e8c3927735387e5153dc3c72d88c9d543a81f8",
       "size": {
         "width": 1440,
@@ -2469,6 +3728,7 @@
         }
       ],
       "png": "1440/s09-tracker-trends.png",
+      "scrolls": [],
       "sha256": "5473c54a90a6d9f7f03d0fc10e47457f417a1a5a000b6bf7d8f52bd73b6de129",
       "size": {
         "width": 1440,
@@ -2494,6 +3754,7 @@
         }
       ],
       "png": "1440/s09-tracker-config.png",
+      "scrolls": [],
       "sha256": "b91f011447a94551b5b7665138dc80eec257187e5f56483405eef6c301a277ed",
       "size": {
         "width": 1440,
@@ -2519,6 +3780,7 @@
         }
       ],
       "png": "1440/s10-appearance.png",
+      "scrolls": [],
       "sha256": "ce14e7a2e8d7894c38122a4bcb4307eee586cdfb5c476dfdc8605b199589c2d7",
       "size": {
         "width": 1440,
@@ -2535,6 +3797,7 @@
       "screen": "Clients studio",
       "clicks": [],
       "png": "1440/s10-clients-studio.png",
+      "scrolls": [],
       "sha256": "9949871a581c71cf2821dddbd923374ba7b6138c840f0e9a1a246bd56dabd63a",
       "size": {
         "width": 1440,
@@ -2551,6 +3814,7 @@
       "screen": "Meal plans studio",
       "clicks": [],
       "png": "1440/s10-mealplan-studio.png",
+      "scrolls": [],
       "sha256": "c8c8798032ee319c9d2a7535d8b9919a5a38bf0f63ea10b01abb49d855222451",
       "size": {
         "width": 1440,
@@ -2576,6 +3840,32 @@
         }
       ],
       "png": "1440/s11-preferences.png",
+      "scrolls": [
+        {
+          "scroller": "dialog#236",
+          "x": 0,
+          "y": 0,
+          "png": "1440/s11-preferences.s236-0-0.png",
+          "box": [
+            465,
+            25,
+            510,
+            850
+          ]
+        },
+        {
+          "scroller": "dialog#236",
+          "x": 0,
+          "y": 240,
+          "png": "1440/s11-preferences.s236-0-240.png",
+          "box": [
+            465,
+            25,
+            510,
+            850
+          ]
+        }
+      ],
       "sha256": "c2f6367772f27f34573d23eec4df84ba46167962cd4000b48b15557fee8f266d",
       "size": {
         "width": 1440,
@@ -2617,6 +3907,32 @@
         }
       ],
       "png": "1440/s11-client-preview.png",
+      "scrolls": [
+        {
+          "scroller": "dialog#218",
+          "x": 0,
+          "y": 0,
+          "png": "1440/s11-client-preview.s218-0-0.png",
+          "box": [
+            16,
+            16,
+            1408,
+            868
+          ]
+        },
+        {
+          "scroller": "dialog#218",
+          "x": 0,
+          "y": 3,
+          "png": "1440/s11-client-preview.s218-0-3.png",
+          "box": [
+            16,
+            16,
+            1408,
+            868
+          ]
+        }
+      ],
       "sha256": "b1244a0055406de9aed69c4e7524db8a883153e5a65cf092b87cf143738d41d4",
       "size": {
         "width": 1440,

@@ -170,3 +170,120 @@ item: if `s02-thread-attachments@390` fails on the production build again, the c
 - O5 (click log is not compared with the baseline's click log): open. The manifest now records the matched element's
   visible text (`seen`) and whether a scope applied (`scoped`), so a future compare can use them.
 - The flake root cause (see above): open.
+
+## Fix pass 2
+
+Closes B1, B2, F3 and F4 from the independent verify round 2 (`parity-harness-verify-2.md`). Started at `e2772d1`.
+No tolerance was raised: `PARITY_AA_TOLERANCE` and `PARITY_MAX_DIFF_PIXELS` stay 0, and every run below used the
+defaults. One parity run at a time; the host is shared, so `load1` is recorded per run.
+
+### What changed
+
+- `tools/parity/run.mjs`: binds a free port per run (`bind(0)`), refuses a pinned `PARITY_PORT` that is already bound
+  (exit 2 before any build), and after `waitForHttp` checks that every listener on the port is in the spawned server's
+  process group (`lsof` + `pgid`; fails closed). Cleanup is wrapped so an already-dead server cannot skip the
+  `frontend/AGENTS.md` restore. Bad env or a refused port exits 2 with a `parity:` message; nothing is compared.
+- `tools/parity/compare.mjs`: `envThresholds()` refuses a `PARITY_AA_TOLERANCE` outside 0..255 and a
+  `PARITY_MAX_DIFF_PIXELS` that is not a whole number (exit 2). Compares the inner-scroller PNGs per scroll step.
+- `tools/parity/capture.mjs`: `--disable-partial-raster` (B1 root cause), inner-scroller sweep over the full scroll
+  range with one PNG per step clipped to the scroller box (`scrolls` in the manifest), and one capture retry for a
+  dropped navigation or screenshot (fresh browser + server-readiness wait; counted as `retried=N` in the manifest,
+  the run line and the report). A pixel or geometry comparison is never retried.
+- `tools/parity/baseline/`: recaptured from this tree: 70 screen PNGs plus 101 inner-scroller PNGs, `manifest.json`.
+- `README.md`: free port, exit 2 cases, ownership check, inner scrollers, raster flag, capture retry.
+
+### B1: determinism, idle host (10 runs, unchanged tree)
+
+| run     | exit | load1 | result           |
+| ------- | ---- | ----- | ---------------- |
+| idle-1  | 0    | 6.24  | PASS, 0 problems |
+| idle-2  | 0    | 8.42  | PASS, 0 problems |
+| idle-3  | 0    | 6.45  | PASS, 0 problems |
+| idle-4  | 0    | 7.14  | PASS, 0 problems |
+| idle-5  | 0    | 7.63  | PASS, 0 problems |
+| idle-6  | 0    | 7.49  | PASS, 0 problems |
+| idle-7  | 0    | 7.04  | PASS, 0 problems |
+| idle-8  | 0    | 8.87  | PASS, 0 problems |
+| idle-9  | 0    | 16.38 | PASS, 0 problems |
+| idle-10 | 0    | 20.27 | PASS, 0 problems |
+
+### B1: determinism under CPU load
+
+Busy loops (`yes`) in parallel with the gate, sequential runs. The 24-loop stage ran on 16 cores and a shared host
+(`load1` up to 70); two of its three runs lost captures, not pixels.
+
+| run        | loops          | exit | load1 | retried | result                                                                                                                               |
+| ---------- | -------------- | ---- | ----- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| load-1     | 24             | 0    | 24.64 | n/a     | PASS, 0 problems                                                                                                                     |
+| load-2     | 24             | 1    | 45.69 | n/a     | 1 capture failure: `s08-widget-gallery@1440: page.screenshot: Protocol error (Page.captureScreenshot): Unable to capture screenshot` |
+| load-3     | 24             | 0    | 70.28 | n/a     | PASS, 0 problems                                                                                                                     |
+| loadhalf-1 | 8 (half of 16) | 0    | 29.98 | n/a     | PASS, 0 problems                                                                                                                     |
+| loadhalf-2 | 8              | 0    | 37.82 | n/a     | PASS, 0 problems                                                                                                                     |
+| loadhalf-3 | 8              | 1    | 37.45 | n/a     | 54 capture failures, all after 16 screens captured                                                                                   |
+| idlefix-1  | 0              | 0    | 27.44 | 0       | PASS, 0 problems                                                                                                                     |
+| loadfix-1  | 12             | 0    | 23.64 | 0       | PASS, 0 problems                                                                                                                     |
+
+`loadhalf-3` exact failure, quoted from `loadhalf-3.log`:
+
+```
+FAIL s05-template-editor@390: page.goto: net::ERR_CONNECTION_REFUSED at http://127.0.0.1:36041/coach
+```
+
+That is not a timeout and not a pixel change: the server had answered (`✓ Ready in 99ms` in `out/server.log`) and 16
+screens had been captured, then the listener stopped answering for the remaining 54. Every run that captured fully
+was PASS with 0 problems. Diagnosis: capture robustness under CPU load, not comparison determinism. Fix: one capture
+retry with a fresh browser after a server-readiness wait (above). Post-fix, `idlefix-1` and `loadfix-1` (12 loops)
+both PASS with `retried=0`; the retry path only runs when a capture actually fails.
+
+### Mutation table (each reverted; `git status -- frontend` empty after every stage)
+
+| ID       | mutation                                                         | exit | result                                       |
+| -------- | ---------------------------------------------------------------- | ---- | -------------------------------------------- |
+| m1       | text label `Submission history` -> `histroy`, `clients.tsx`      | 1    | 2 problems                                   |
+| m2       | colour token `--cd-muted: #ababab` -> `#a0a0a0`, `coach.css:15`  | 1    | 58 of 70 screens pixel-diff                  |
+| m3       | 1 px shift at 390 only, `coach.css`                              | 1    | 1 problem                                    |
+| m4       | clipped-header text `Summary` -> `Summery`, `week-view.tsx`      | 1    | 1 problem                                    |
+| m5       | clipped-row colour `#ff0000` on off-screen rows, `week-view.css` | 1    | 1 problem (F4)                               |
+| b2b      | m2 with a stale foreign server on :3630                          | 1    | 58 screens (`s11-preferences@1440` px 48129) |
+| mutfix-1 | m2 under 12 busy loops                                           | 1    | 58 screens, `retried=0`                      |
+
+`m5` is the F4 proof: the mutated row is outside the clipped viewport, so the change is only visible after a scroll.
+The scroller sweep captures it and the run exits 1.
+
+### B2: taken port and server ownership
+
+| check                                                                   | exit | evidence                                                                                |
+| ----------------------------------------------------------------------- | ---- | --------------------------------------------------------------------------------------- |
+| pinned `PARITY_PORT=3630` with a foreign `python3 -m http.server` on it | 2    | `parity: port 3630 is in use; PARITY_PORT must name a free port. Nothing was compared.` |
+| `ownsPort` probe, foreign listener on :3639                             | n/a  | `listener pid 1195050 pgid 1195025 -> foreign (would refuse)`                           |
+| `ownsPort` probe, own detached child on :3639                           | n/a  | `pgid == child pid -> ownsPort=true`                                                    |
+| no listener on :3640                                                    | n/a  | `ownsPort=false` (fails closed)                                                         |
+| default run with the stale foreign server still on :3630, m2 applied    | 1    | gate chose `http://127.0.0.1:35375`, captured its own server, 58 screens failed         |
+
+The last row is the proof that the gate no longer compares whatever answers on the old port: the foreign server stays
+on :3630 untouched, the run picks a free port, validates the listener's process group, and still catches the mutation.
+
+### F3: invalid env refuses before capture
+
+| env                                                            | exit | message                                                                          |
+| -------------------------------------------------------------- | ---- | -------------------------------------------------------------------------------- |
+| `PARITY_AA_TOLERANCE=abc`                                      | 2    | `parity: PARITY_AA_TOLERANCE="abc" must be a whole number from 0 to 255`         |
+| `PARITY_AA_TOLERANCE=-1`                                       | 2    | same, `"-1"`                                                                     |
+| `PARITY_AA_TOLERANCE=999`                                      | 2    | same, `"999"`                                                                    |
+| `PARITY_MAX_DIFF_PIXELS=abc`                                   | 2    | `parity: PARITY_MAX_DIFF_PIXELS="abc" must be a whole number from 0 to any size` |
+| `PARITY_MAX_DIFF_PIXELS=1.5`                                   | 2    | same, `"1.5"`                                                                    |
+| `node tools/parity/compare.mjs` with `PARITY_AA_TOLERANCE=abc` | 2    | same as row 1                                                                    |
+
+### Gates (final tree)
+
+| command                        | exit | result                                       |
+| ------------------------------ | ---- | -------------------------------------------- |
+| `npm run lint`                 | 0    | 0 errors, 3 warnings (pre-existing)          |
+| `npm run test`                 | 0    | 97 files, 1155 tests passed                  |
+| `cd frontend && npm run build` | 0    | canvas builds unchanged                      |
+| `npm run index`                | 0    | 5 docs and 11 routers written (no diff)      |
+| `npm run index:check`          | 0    | 6 index docs and all AGENTS.md routers match |
+
+`npm run typecheck` and the root `npm run build` still fail on `icm/05-build/evidence/PR-03b-verify-3/...`
+`TS2307 Cannot find module './v3-deferred-thread'`. That is inherited from the base branch and fixed by PR #75; it is
+not caused by this pass, and no file under `frontend/` is in this diff.
