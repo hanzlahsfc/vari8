@@ -1,0 +1,154 @@
+{
+ "cards": 145,
+ "by_kind": {
+  "decision": 4,
+  "build": 44,
+  "verify": 50,
+  "merge": 44,
+  "gate": 3
+ },
+ "ledger": {
+  "matrix": 338,
+  "orphan": 82,
+  "parked": 6,
+  "screen": 35,
+  "test-audit": 232,
+  "test-rewire": 29,
+  "plan-pr": 44,
+  "program": 7
+ },
+ "unmapped": 0,
+ "cycles": 0,
+ "finish": "Mon 19:30",
+ "problems": [],
+ "checkpoint": [
+  [
+   "DEC-AUTH:decision",
+   "02:30"
+  ],
+  [
+   "DEC-AUTH-REVIEW:decision",
+   "02:30"
+  ],
+  [
+   "AUD-REDUCTION:decision",
+   "02:30"
+  ],
+  [
+   "AUD-PRR-BASELINE:decision",
+   "02:30"
+  ],
+  [
+   "PR-02:build",
+   "02:30"
+  ],
+  [
+   "PR-02:verify",
+   "02:30"
+  ],
+  [
+   "PR-02:merge",
+   "02:30"
+  ],
+  [
+   "PR-P1:build",
+   "03:15"
+  ],
+  [
+   "PR-P1:verify",
+   "03:45"
+  ],
+  [
+   "PR-P1:merge",
+   "03:55"
+  ],
+  [
+   "PR-03A:build",
+   "03:30"
+  ],
+  [
+   "PR-03A:verify",
+   "03:50"
+  ],
+  [
+   "PR-03A:merge",
+   "04:05"
+  ],
+  [
+   "PR-03B:build",
+   "03:15"
+  ],
+  [
+   "PR-03B:verify",
+   "03:35"
+  ],
+  [
+   "PR-03B:merge",
+   "03:45"
+  ],
+  [
+   "PR-04:build",
+   "03:45"
+  ],
+  [
+   "PR-04:verify",
+   "04:05"
+  ],
+  [
+   "PR-04:secverify",
+   "04:05"
+  ],
+  [
+   "PR-04:merge",
+   "04:15"
+  ],
+  [
+   "PR-01:build",
+   "04:00"
+  ],
+  [
+   "PR-01:verify",
+   "04:45"
+  ],
+  [
+   "PR-01:merge",
+   "04:55"
+  ],
+  [
+   "PR-T2:build",
+   "04:40"
+  ],
+  [
+   "PR-T2:verify",
+   "05:00"
+  ],
+  [
+   "PR-05:build",
+   "04:10"
+  ],
+  [
+   "PR-05:verify",
+   "04:30"
+  ],
+  [
+   "PR-05:secverify",
+   "04:30"
+  ],
+  [
+   "PR-05:merge",
+   "04:40"
+  ],
+  [
+   "PR-X1:build",
+   "03:20"
+  ],
+  [
+   "PR-X1:verify",
+   "03:40"
+  ],
+  [
+   "PR-X1:merge",
+   "04:25"
+  ]
+ ]
+}

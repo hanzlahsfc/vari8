@@ -1,0 +1,3782 @@
+{
+ "generated_by": "icm/05-build/tools/program.py",
+ "cards": [
+  {
+   "key": "DEC-AUTH:decision",
+   "slug": "dec-auth-evaluation",
+   "kind": "decision",
+   "pr": "DEC-AUTH",
+   "title": "DEC-AUTH: AUTH evaluation: Better Auth vs Auth.js v5 plus own tokens",
+   "assignee": null,
+   "model": null,
+   "provider": null,
+   "parents": [],
+   "est_min": 0,
+   "max_runtime": "30m",
+   "skills": [],
+   "external": "done",
+   "start": "02:06",
+   "done": "19 02:30",
+   "body_file": "icm/05-build/cards/dec-auth-evaluation.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/dec-auth-evaluation",
+   "branch": "beta/dec-auth-evaluation"
+  },
+  {
+   "key": "DEC-AUTH-REVIEW:decision",
+   "slug": "dec-auth-review",
+   "kind": "decision",
+   "pr": "DEC-AUTH-REVIEW",
+   "title": "DEC-AUTH-REVIEW: Review of the AUTH decision, record D16a",
+   "assignee": "meliodas",
+   "model": "claude-opus-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "DEC-AUTH:decision"
+   ],
+   "est_min": 0,
+   "max_runtime": "30m",
+   "skills": [
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": "done",
+   "start": "02:06",
+   "done": "19 02:30",
+   "body_file": "icm/05-build/cards/dec-auth-review.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/dec-auth-review",
+   "branch": "beta/dec-auth-review"
+  },
+  {
+   "key": "AUD-REDUCTION:decision",
+   "slug": "aud-backend-reduction",
+   "kind": "decision",
+   "pr": "AUD-REDUCTION",
+   "title": "AUD-REDUCTION: Backend reduction audit",
+   "assignee": null,
+   "model": null,
+   "provider": null,
+   "parents": [],
+   "est_min": 0,
+   "max_runtime": "30m",
+   "skills": [],
+   "external": "done",
+   "start": "02:06",
+   "done": "19 02:30",
+   "body_file": "icm/05-build/cards/aud-backend-reduction.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/aud-backend-reduction",
+   "branch": "beta/aud-backend-reduction"
+  },
+  {
+   "key": "AUD-PRR-BASELINE:decision",
+   "slug": "aud-prr-baseline",
+   "kind": "decision",
+   "pr": "AUD-PRR-BASELINE",
+   "title": "AUD-PRR-BASELINE: Production-readiness baseline audit",
+   "assignee": null,
+   "model": null,
+   "provider": null,
+   "parents": [],
+   "est_min": 0,
+   "max_runtime": "30m",
+   "skills": [],
+   "external": "done",
+   "start": "02:06",
+   "done": "19 02:30",
+   "body_file": "icm/05-build/cards/aud-prr-baseline.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/aud-prr-baseline",
+   "branch": "beta/aud-prr-baseline"
+  },
+  {
+   "key": "PR-02:build",
+   "slug": "pr-02-next16",
+   "kind": "build",
+   "pr": "PR-02",
+   "title": "PR-02 build: Upgrade root to Next 16.3 and React 19.3",
+   "assignee": null,
+   "model": null,
+   "provider": null,
+   "parents": [],
+   "est_min": 0,
+   "max_runtime": "3h",
+   "skills": [],
+   "external": "done",
+   "start": "02:06",
+   "done": "19 02:30",
+   "body_file": "icm/05-build/cards/pr-02-next16.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-02-next16",
+   "branch": "beta/pr-02-next16"
+  },
+  {
+   "key": "PR-02:verify",
+   "slug": "pr-02-next16-verify",
+   "kind": "verify",
+   "pr": "PR-02",
+   "title": "PR-02 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-02:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": "done",
+   "start": "02:06",
+   "done": "19 02:30",
+   "body_file": "icm/05-build/cards/pr-02-next16-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-02-next16-verify",
+   "branch": "beta/pr-02-next16-verify"
+  },
+  {
+   "key": "PR-02:merge",
+   "slug": "pr-02-next16-merge",
+   "kind": "merge",
+   "pr": "PR-02",
+   "title": "PR-02 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-02:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": "done",
+   "start": "02:06",
+   "done": "19 02:30",
+   "body_file": "icm/05-build/cards/pr-02-next16-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-02-next16-merge",
+   "branch": "beta/pr-02-next16-merge"
+  },
+  {
+   "key": "PR-P1:build",
+   "slug": "parity-harness",
+   "kind": "build",
+   "pr": "PR-P1",
+   "title": "PR-P1 build: Build the visual parity harness and capture baselines",
+   "assignee": null,
+   "model": null,
+   "provider": null,
+   "parents": [],
+   "est_min": 0,
+   "max_runtime": "67m",
+   "skills": [],
+   "external": "running",
+   "start": "02:24",
+   "done": "19 03:15",
+   "body_file": "icm/05-build/cards/parity-harness.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/parity-harness",
+   "branch": "beta/parity-harness"
+  },
+  {
+   "key": "PR-P1:verify",
+   "slug": "parity-harness-verify",
+   "kind": "verify",
+   "pr": "PR-P1",
+   "title": "PR-P1 verify",
+   "assignee": "urokodaki",
+   "model": "claude-opus-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-P1:build"
+   ],
+   "est_min": 30,
+   "max_runtime": "45m",
+   "skills": [
+    "production-readiness-checklist",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "03:15",
+   "done": "19 03:45",
+   "body_file": "icm/05-build/cards/parity-harness-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/parity-harness-verify",
+   "branch": "beta/parity-harness-verify"
+  },
+  {
+   "key": "PR-P1:merge",
+   "slug": "parity-harness-merge",
+   "kind": "merge",
+   "pr": "PR-P1",
+   "title": "PR-P1 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-P1:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "03:45",
+   "done": "19 03:55",
+   "body_file": "icm/05-build/cards/parity-harness-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/parity-harness-merge",
+   "branch": "beta/parity-harness-merge"
+  },
+  {
+   "key": "PR-03A:build",
+   "slug": "pr-03-test-audit",
+   "kind": "build",
+   "pr": "PR-03A",
+   "title": "PR-03A build: Apply the TEST-AUDIT cuts",
+   "assignee": null,
+   "model": null,
+   "provider": null,
+   "parents": [],
+   "est_min": 0,
+   "max_runtime": "90m",
+   "skills": [],
+   "external": "running",
+   "start": "02:24",
+   "done": "19 03:30",
+   "body_file": "icm/05-build/cards/pr-03-test-audit.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-03-test-audit",
+   "branch": "beta/pr-03-test-audit"
+  },
+  {
+   "key": "PR-03A:verify",
+   "slug": "pr-03-test-audit-verify",
+   "kind": "verify",
+   "pr": "PR-03A",
+   "title": "PR-03A verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-03A:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "03:30",
+   "done": "19 03:50",
+   "body_file": "icm/05-build/cards/pr-03-test-audit-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-03-test-audit-verify",
+   "branch": "beta/pr-03-test-audit-verify"
+  },
+  {
+   "key": "PR-03A:merge",
+   "slug": "pr-03-test-audit-merge",
+   "kind": "merge",
+   "pr": "PR-03A",
+   "title": "PR-03A merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-03A:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "03:55",
+   "done": "19 04:05",
+   "body_file": "icm/05-build/cards/pr-03-test-audit-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-03-test-audit-merge",
+   "branch": "beta/pr-03-test-audit-merge"
+  },
+  {
+   "key": "PR-03B:build",
+   "slug": "pr-03-react-hooks",
+   "kind": "build",
+   "pr": "PR-03B",
+   "title": "PR-03B build: Fix the react-hooks v6 findings",
+   "assignee": null,
+   "model": null,
+   "provider": null,
+   "parents": [],
+   "est_min": 0,
+   "max_runtime": "67m",
+   "skills": [],
+   "external": "running",
+   "start": "02:24",
+   "done": "19 03:15",
+   "body_file": "icm/05-build/cards/pr-03-react-hooks.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-03-react-hooks",
+   "branch": "beta/pr-03-react-hooks"
+  },
+  {
+   "key": "PR-03B:verify",
+   "slug": "pr-03-react-hooks-verify",
+   "kind": "verify",
+   "pr": "PR-03B",
+   "title": "PR-03B verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-03B:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "03:15",
+   "done": "19 03:35",
+   "body_file": "icm/05-build/cards/pr-03-react-hooks-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-03-react-hooks-verify",
+   "branch": "beta/pr-03-react-hooks-verify"
+  },
+  {
+   "key": "PR-03B:merge",
+   "slug": "pr-03-react-hooks-merge",
+   "kind": "merge",
+   "pr": "PR-03B",
+   "title": "PR-03B merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-03B:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "03:35",
+   "done": "19 03:45",
+   "body_file": "icm/05-build/cards/pr-03-react-hooks-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-03-react-hooks-merge",
+   "branch": "beta/pr-03-react-hooks-merge"
+  },
+  {
+   "key": "PR-04:build",
+   "slug": "pr-04-dev-runtime",
+   "kind": "build",
+   "pr": "PR-04",
+   "title": "PR-04 build: Make the backend reachable in dev and park the consent gates",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [],
+   "est_min": 45,
+   "max_runtime": "67m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "03:00",
+   "done": "19 03:45",
+   "body_file": "icm/05-build/cards/pr-04-dev-runtime.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-04-dev-runtime",
+   "branch": "beta/pr-04-dev-runtime"
+  },
+  {
+   "key": "PR-04:verify",
+   "slug": "pr-04-dev-runtime-verify",
+   "kind": "verify",
+   "pr": "PR-04",
+   "title": "PR-04 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-04:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "03:45",
+   "done": "19 04:05",
+   "body_file": "icm/05-build/cards/pr-04-dev-runtime-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-04-dev-runtime-verify",
+   "branch": "beta/pr-04-dev-runtime-verify"
+  },
+  {
+   "key": "PR-04:secverify",
+   "slug": "pr-04-dev-runtime-secverify",
+   "kind": "verify",
+   "pr": "PR-04",
+   "title": "PR-04 security verify",
+   "assignee": "shinobu",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-04:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "security-diff-scan",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "03:45",
+   "done": "19 04:05",
+   "body_file": "icm/05-build/cards/pr-04-dev-runtime-secverify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-04-dev-runtime-secverify",
+   "branch": "beta/pr-04-dev-runtime-secverify"
+  },
+  {
+   "key": "PR-04:merge",
+   "slug": "pr-04-dev-runtime-merge",
+   "kind": "merge",
+   "pr": "PR-04",
+   "title": "PR-04 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-04:verify",
+    "PR-04:secverify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "04:05",
+   "done": "19 04:15",
+   "body_file": "icm/05-build/cards/pr-04-dev-runtime-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-04-dev-runtime-merge",
+   "branch": "beta/pr-04-dev-runtime-merge"
+  },
+  {
+   "key": "PR-01:build",
+   "slug": "pr-01-canvas-takeover",
+   "kind": "build",
+   "pr": "PR-01",
+   "title": "PR-01 build: Take over the whole canvas into the root app",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-02:merge"
+   ],
+   "est_min": 60,
+   "max_runtime": "90m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "03:00",
+   "done": "19 04:00",
+   "body_file": "icm/05-build/cards/pr-01-canvas-takeover.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-01-canvas-takeover",
+   "branch": "beta/pr-01-canvas-takeover"
+  },
+  {
+   "key": "PR-01:verify",
+   "slug": "pr-01-canvas-takeover-verify",
+   "kind": "verify",
+   "pr": "PR-01",
+   "title": "PR-01 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-01:build",
+    "PR-04:merge",
+    "PR-P1:merge"
+   ],
+   "est_min": 30,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "04:15",
+   "done": "19 04:45",
+   "body_file": "icm/05-build/cards/pr-01-canvas-takeover-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-01-canvas-takeover-verify",
+   "branch": "beta/pr-01-canvas-takeover-verify"
+  },
+  {
+   "key": "PR-01:merge",
+   "slug": "pr-01-canvas-takeover-merge",
+   "kind": "merge",
+   "pr": "PR-01",
+   "title": "PR-01 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-01:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "04:45",
+   "done": "19 04:55",
+   "body_file": "icm/05-build/cards/pr-01-canvas-takeover-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-01-canvas-takeover-merge",
+   "branch": "beta/pr-01-canvas-takeover-merge"
+  },
+  {
+   "key": "PR-W1:build",
+   "slug": "pr-w1-identity-home",
+   "kind": "build",
+   "pr": "PR-W1",
+   "title": "PR-W1 build: Wire identity, workspace and client home",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-05:merge",
+    "PR-01:merge"
+   ],
+   "est_min": 40,
+   "max_runtime": "60m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "04:55",
+   "done": "19 05:35",
+   "body_file": "icm/05-build/cards/pr-w1-identity-home.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w1-identity-home",
+   "branch": "beta/pr-w1-identity-home"
+  },
+  {
+   "key": "PR-W1:verify",
+   "slug": "pr-w1-identity-home-verify",
+   "kind": "verify",
+   "pr": "PR-W1",
+   "title": "PR-W1 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W1:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "05:35",
+   "done": "19 05:55",
+   "body_file": "icm/05-build/cards/pr-w1-identity-home-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w1-identity-home-verify",
+   "branch": "beta/pr-w1-identity-home-verify"
+  },
+  {
+   "key": "PR-W1:secverify",
+   "slug": "pr-w1-identity-home-secverify",
+   "kind": "verify",
+   "pr": "PR-W1",
+   "title": "PR-W1 security verify",
+   "assignee": "shinobu",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W1:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "security-diff-scan",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "05:35",
+   "done": "19 05:55",
+   "body_file": "icm/05-build/cards/pr-w1-identity-home-secverify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w1-identity-home-secverify",
+   "branch": "beta/pr-w1-identity-home-secverify"
+  },
+  {
+   "key": "PR-W1:merge",
+   "slug": "pr-w1-identity-home-merge",
+   "kind": "merge",
+   "pr": "PR-W1",
+   "title": "PR-W1 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W1:verify",
+    "PR-W1:secverify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "05:55",
+   "done": "19 06:05",
+   "body_file": "icm/05-build/cards/pr-w1-identity-home-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w1-identity-home-merge",
+   "branch": "beta/pr-w1-identity-home-merge"
+  },
+  {
+   "key": "PR-03:build",
+   "slug": "pr-03-toolchain",
+   "kind": "build",
+   "pr": "PR-03",
+   "title": "PR-03 build: Adopt Biome, TypeScript 7 and Turbopack",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-01:merge",
+    "PR-03A:merge",
+    "PR-03B:merge"
+   ],
+   "est_min": 50,
+   "max_runtime": "75m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "04:55",
+   "done": "19 05:45",
+   "body_file": "icm/05-build/cards/pr-03-toolchain.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-03-toolchain",
+   "branch": "beta/pr-03-toolchain"
+  },
+  {
+   "key": "PR-03:verify",
+   "slug": "pr-03-toolchain-verify",
+   "kind": "verify",
+   "pr": "PR-03",
+   "title": "PR-03 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-03:build"
+   ],
+   "est_min": 30,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "05:45",
+   "done": "19 06:15",
+   "body_file": "icm/05-build/cards/pr-03-toolchain-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-03-toolchain-verify",
+   "branch": "beta/pr-03-toolchain-verify"
+  },
+  {
+   "key": "PR-03:merge",
+   "slug": "pr-03-toolchain-merge",
+   "kind": "merge",
+   "pr": "PR-03",
+   "title": "PR-03 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-03:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "06:25",
+   "done": "19 06:35",
+   "body_file": "icm/05-build/cards/pr-03-toolchain-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-03-toolchain-merge",
+   "branch": "beta/pr-03-toolchain-merge"
+  },
+  {
+   "key": "PR-T2:build",
+   "slug": "pr-t2-consent-test-cuts",
+   "kind": "build",
+   "pr": "PR-T2",
+   "title": "PR-T2 build: Delete the parked consent tests",
+   "assignee": "tenten",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-04:merge",
+    "PR-03A:merge"
+   ],
+   "est_min": 25,
+   "max_runtime": "37m",
+   "skills": [
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "04:15",
+   "done": "19 04:40",
+   "body_file": "icm/05-build/cards/pr-t2-consent-test-cuts.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-t2-consent-test-cuts",
+   "branch": "beta/pr-t2-consent-test-cuts"
+  },
+  {
+   "key": "PR-T2:verify",
+   "slug": "pr-t2-consent-test-cuts-verify",
+   "kind": "verify",
+   "pr": "PR-T2",
+   "title": "PR-T2 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-T2:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "04:40",
+   "done": "19 05:00",
+   "body_file": "icm/05-build/cards/pr-t2-consent-test-cuts-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-t2-consent-test-cuts-verify",
+   "branch": "beta/pr-t2-consent-test-cuts-verify"
+  },
+  {
+   "key": "PR-T2:merge",
+   "slug": "pr-t2-consent-test-cuts-merge",
+   "kind": "merge",
+   "pr": "PR-T2",
+   "title": "PR-T2 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-T2:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "05:00",
+   "done": "19 05:10",
+   "body_file": "icm/05-build/cards/pr-t2-consent-test-cuts-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-t2-consent-test-cuts-merge",
+   "branch": "beta/pr-t2-consent-test-cuts-merge"
+  },
+  {
+   "key": "PR-05:build",
+   "slug": "pr-05-auth-api",
+   "kind": "build",
+   "pr": "PR-05",
+   "title": "PR-05 build: Better Auth, versioned API and the ROLES table",
+   "assignee": null,
+   "model": null,
+   "provider": null,
+   "parents": [],
+   "est_min": 0,
+   "max_runtime": "135m",
+   "skills": [],
+   "external": "running",
+   "start": "02:24",
+   "done": "19 04:10",
+   "body_file": "icm/05-build/cards/pr-05-auth-api.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-05-auth-api",
+   "branch": "beta/pr-05-auth-api"
+  },
+  {
+   "key": "PR-05:verify",
+   "slug": "pr-05-auth-api-verify",
+   "kind": "verify",
+   "pr": "PR-05",
+   "title": "PR-05 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-05:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "04:10",
+   "done": "19 04:30",
+   "body_file": "icm/05-build/cards/pr-05-auth-api-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-05-auth-api-verify",
+   "branch": "beta/pr-05-auth-api-verify"
+  },
+  {
+   "key": "PR-05:secverify",
+   "slug": "pr-05-auth-api-secverify",
+   "kind": "verify",
+   "pr": "PR-05",
+   "title": "PR-05 security verify",
+   "assignee": "shinobu",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-05:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "security-diff-scan",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "04:10",
+   "done": "19 04:30",
+   "body_file": "icm/05-build/cards/pr-05-auth-api-secverify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-05-auth-api-secverify",
+   "branch": "beta/pr-05-auth-api-secverify"
+  },
+  {
+   "key": "PR-05:merge",
+   "slug": "pr-05-auth-api-merge",
+   "kind": "merge",
+   "pr": "PR-05",
+   "title": "PR-05 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-05:verify",
+    "PR-05:secverify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "04:30",
+   "done": "19 04:40",
+   "body_file": "icm/05-build/cards/pr-05-auth-api-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-05-auth-api-merge",
+   "branch": "beta/pr-05-auth-api-merge"
+  },
+  {
+   "key": "PR-M0:build",
+   "slug": "pr-m0-schema-v2",
+   "kind": "build",
+   "pr": "PR-M0",
+   "title": "PR-M0 build: Schema v2: every canvas entity in one migration set",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-05:merge"
+   ],
+   "est_min": 75,
+   "max_runtime": "112m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "04:40",
+   "done": "19 05:55",
+   "body_file": "icm/05-build/cards/pr-m0-schema-v2.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m0-schema-v2",
+   "branch": "beta/pr-m0-schema-v2"
+  },
+  {
+   "key": "PR-M0:verify",
+   "slug": "pr-m0-schema-v2-verify",
+   "kind": "verify",
+   "pr": "PR-M0",
+   "title": "PR-M0 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M0:build",
+    "PR-04:merge"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "05:55",
+   "done": "19 06:15",
+   "body_file": "icm/05-build/cards/pr-m0-schema-v2-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m0-schema-v2-verify",
+   "branch": "beta/pr-m0-schema-v2-verify"
+  },
+  {
+   "key": "PR-M0:merge",
+   "slug": "pr-m0-schema-v2-merge",
+   "kind": "merge",
+   "pr": "PR-M0",
+   "title": "PR-M0 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M0:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "06:15",
+   "done": "19 06:25",
+   "body_file": "icm/05-build/cards/pr-m0-schema-v2-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m0-schema-v2-merge",
+   "branch": "beta/pr-m0-schema-v2-merge"
+  },
+  {
+   "key": "PR-R0:build",
+   "slug": "pr-r0-lib-dedupe",
+   "kind": "build",
+   "pr": "PR-R0",
+   "title": "PR-R0 build: Merge the copied retry and boundary helpers",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-05:merge"
+   ],
+   "est_min": 35,
+   "max_runtime": "52m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "04:40",
+   "done": "19 05:15",
+   "body_file": "icm/05-build/cards/pr-r0-lib-dedupe.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-r0-lib-dedupe",
+   "branch": "beta/pr-r0-lib-dedupe"
+  },
+  {
+   "key": "PR-R0:verify",
+   "slug": "pr-r0-lib-dedupe-verify",
+   "kind": "verify",
+   "pr": "PR-R0",
+   "title": "PR-R0 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-R0:build",
+    "PR-04:merge"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "05:15",
+   "done": "19 05:35",
+   "body_file": "icm/05-build/cards/pr-r0-lib-dedupe-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-r0-lib-dedupe-verify",
+   "branch": "beta/pr-r0-lib-dedupe-verify"
+  },
+  {
+   "key": "PR-R0:merge",
+   "slug": "pr-r0-lib-dedupe-merge",
+   "kind": "merge",
+   "pr": "PR-R0",
+   "title": "PR-R0 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-R0:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "05:35",
+   "done": "19 05:45",
+   "body_file": "icm/05-build/cards/pr-r0-lib-dedupe-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-r0-lib-dedupe-merge",
+   "branch": "beta/pr-r0-lib-dedupe-merge"
+  },
+  {
+   "key": "PR-M1:build",
+   "slug": "pr-m1-client-lifecycle",
+   "kind": "build",
+   "pr": "PR-M1",
+   "title": "PR-M1 build: Client profile, archive and retention services",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-M0:merge",
+    "PR-R0:merge"
+   ],
+   "est_min": 40,
+   "max_runtime": "60m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "06:25",
+   "done": "19 07:05",
+   "body_file": "icm/05-build/cards/pr-m1-client-lifecycle.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m1-client-lifecycle",
+   "branch": "beta/pr-m1-client-lifecycle"
+  },
+  {
+   "key": "PR-M1:verify",
+   "slug": "pr-m1-client-lifecycle-verify",
+   "kind": "verify",
+   "pr": "PR-M1",
+   "title": "PR-M1 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M1:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "07:05",
+   "done": "19 07:25",
+   "body_file": "icm/05-build/cards/pr-m1-client-lifecycle-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m1-client-lifecycle-verify",
+   "branch": "beta/pr-m1-client-lifecycle-verify"
+  },
+  {
+   "key": "PR-M1:merge",
+   "slug": "pr-m1-client-lifecycle-merge",
+   "kind": "merge",
+   "pr": "PR-M1",
+   "title": "PR-M1 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M1:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "07:30",
+   "done": "19 07:40",
+   "body_file": "icm/05-build/cards/pr-m1-client-lifecycle-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m1-client-lifecycle-merge",
+   "branch": "beta/pr-m1-client-lifecycle-merge"
+  },
+  {
+   "key": "PR-M2:build",
+   "slug": "pr-m2-preferences",
+   "kind": "build",
+   "pr": "PR-M2",
+   "title": "PR-M2 build: Workspace appearance and preference services",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-M0:merge",
+    "PR-R0:merge"
+   ],
+   "est_min": 35,
+   "max_runtime": "52m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "06:25",
+   "done": "19 07:00",
+   "body_file": "icm/05-build/cards/pr-m2-preferences.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m2-preferences",
+   "branch": "beta/pr-m2-preferences"
+  },
+  {
+   "key": "PR-M2:verify",
+   "slug": "pr-m2-preferences-verify",
+   "kind": "verify",
+   "pr": "PR-M2",
+   "title": "PR-M2 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M2:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "07:00",
+   "done": "19 07:20",
+   "body_file": "icm/05-build/cards/pr-m2-preferences-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m2-preferences-verify",
+   "branch": "beta/pr-m2-preferences-verify"
+  },
+  {
+   "key": "PR-M2:merge",
+   "slug": "pr-m2-preferences-merge",
+   "kind": "merge",
+   "pr": "PR-M2",
+   "title": "PR-M2 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M2:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "07:20",
+   "done": "19 07:30",
+   "body_file": "icm/05-build/cards/pr-m2-preferences-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m2-preferences-merge",
+   "branch": "beta/pr-m2-preferences-merge"
+  },
+  {
+   "key": "PR-M3:build",
+   "slug": "pr-m3-notes-tasks",
+   "kind": "build",
+   "pr": "PR-M3",
+   "title": "PR-M3 build: Coach notes, coach tasks and tracker comments",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-M0:merge",
+    "PR-R0:merge"
+   ],
+   "est_min": 40,
+   "max_runtime": "60m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "06:25",
+   "done": "19 07:05",
+   "body_file": "icm/05-build/cards/pr-m3-notes-tasks.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m3-notes-tasks",
+   "branch": "beta/pr-m3-notes-tasks"
+  },
+  {
+   "key": "PR-M3:verify",
+   "slug": "pr-m3-notes-tasks-verify",
+   "kind": "verify",
+   "pr": "PR-M3",
+   "title": "PR-M3 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M3:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "07:05",
+   "done": "19 07:25",
+   "body_file": "icm/05-build/cards/pr-m3-notes-tasks-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m3-notes-tasks-verify",
+   "branch": "beta/pr-m3-notes-tasks-verify"
+  },
+  {
+   "key": "PR-M3:merge",
+   "slug": "pr-m3-notes-tasks-merge",
+   "kind": "merge",
+   "pr": "PR-M3",
+   "title": "PR-M3 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M3:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "07:40",
+   "done": "19 07:50",
+   "body_file": "icm/05-build/cards/pr-m3-notes-tasks-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m3-notes-tasks-merge",
+   "branch": "beta/pr-m3-notes-tasks-merge"
+  },
+  {
+   "key": "PR-M4:build",
+   "slug": "pr-m4-template-definitions",
+   "kind": "build",
+   "pr": "PR-M4",
+   "title": "PR-M4 build: Template definition services",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-M0:merge",
+    "PR-M1:merge",
+    "PR-R0:merge"
+   ],
+   "est_min": 50,
+   "max_runtime": "75m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "07:40",
+   "done": "19 08:30",
+   "body_file": "icm/05-build/cards/pr-m4-template-definitions.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m4-template-definitions",
+   "branch": "beta/pr-m4-template-definitions"
+  },
+  {
+   "key": "PR-M4:verify",
+   "slug": "pr-m4-template-definitions-verify",
+   "kind": "verify",
+   "pr": "PR-M4",
+   "title": "PR-M4 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M4:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "08:30",
+   "done": "19 08:50",
+   "body_file": "icm/05-build/cards/pr-m4-template-definitions-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m4-template-definitions-verify",
+   "branch": "beta/pr-m4-template-definitions-verify"
+  },
+  {
+   "key": "PR-M4:merge",
+   "slug": "pr-m4-template-definitions-merge",
+   "kind": "merge",
+   "pr": "PR-M4",
+   "title": "PR-M4 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M4:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "09:00",
+   "done": "19 09:10",
+   "body_file": "icm/05-build/cards/pr-m4-template-definitions-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m4-template-definitions-merge",
+   "branch": "beta/pr-m4-template-definitions-merge"
+  },
+  {
+   "key": "PR-M5:build",
+   "slug": "pr-m5-mealplan-payload",
+   "kind": "build",
+   "pr": "PR-M5",
+   "title": "PR-M5 build: Meal-plan payload and the shared nutrition math",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-M0:merge",
+    "PR-R0:merge"
+   ],
+   "est_min": 50,
+   "max_runtime": "75m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "06:50",
+   "done": "19 07:40",
+   "body_file": "icm/05-build/cards/pr-m5-mealplan-payload.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m5-mealplan-payload",
+   "branch": "beta/pr-m5-mealplan-payload"
+  },
+  {
+   "key": "PR-M5:verify",
+   "slug": "pr-m5-mealplan-payload-verify",
+   "kind": "verify",
+   "pr": "PR-M5",
+   "title": "PR-M5 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M5:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "07:40",
+   "done": "19 08:00",
+   "body_file": "icm/05-build/cards/pr-m5-mealplan-payload-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m5-mealplan-payload-verify",
+   "branch": "beta/pr-m5-mealplan-payload-verify"
+  },
+  {
+   "key": "PR-M5:merge",
+   "slug": "pr-m5-mealplan-payload-merge",
+   "kind": "merge",
+   "pr": "PR-M5",
+   "title": "PR-M5 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M5:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "08:00",
+   "done": "19 08:10",
+   "body_file": "icm/05-build/cards/pr-m5-mealplan-payload-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m5-mealplan-payload-merge",
+   "branch": "beta/pr-m5-mealplan-payload-merge"
+  },
+  {
+   "key": "PR-M6:build",
+   "slug": "pr-m6-training-payload",
+   "kind": "build",
+   "pr": "PR-M6",
+   "title": "PR-M6 build: Training payload and the shared volume math",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-M0:merge",
+    "PR-R0:merge"
+   ],
+   "est_min": 50,
+   "max_runtime": "75m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "07:00",
+   "done": "19 07:50",
+   "body_file": "icm/05-build/cards/pr-m6-training-payload.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m6-training-payload",
+   "branch": "beta/pr-m6-training-payload"
+  },
+  {
+   "key": "PR-M6:verify",
+   "slug": "pr-m6-training-payload-verify",
+   "kind": "verify",
+   "pr": "PR-M6",
+   "title": "PR-M6 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M6:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "07:50",
+   "done": "19 08:10",
+   "body_file": "icm/05-build/cards/pr-m6-training-payload-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m6-training-payload-verify",
+   "branch": "beta/pr-m6-training-payload-verify"
+  },
+  {
+   "key": "PR-M6:merge",
+   "slug": "pr-m6-training-payload-merge",
+   "kind": "merge",
+   "pr": "PR-M6",
+   "title": "PR-M6 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M6:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "08:10",
+   "done": "19 08:20",
+   "body_file": "icm/05-build/cards/pr-m6-training-payload-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m6-training-payload-merge",
+   "branch": "beta/pr-m6-training-payload-merge"
+  },
+  {
+   "key": "PR-M7:build",
+   "slug": "pr-m7-habits",
+   "kind": "build",
+   "pr": "PR-M7",
+   "title": "PR-M7 build: Habit fields and all-time completion",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-M0:merge",
+    "PR-R0:merge"
+   ],
+   "est_min": 30,
+   "max_runtime": "45m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "07:05",
+   "done": "19 07:35",
+   "body_file": "icm/05-build/cards/pr-m7-habits.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m7-habits",
+   "branch": "beta/pr-m7-habits"
+  },
+  {
+   "key": "PR-M7:verify",
+   "slug": "pr-m7-habits-verify",
+   "kind": "verify",
+   "pr": "PR-M7",
+   "title": "PR-M7 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M7:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "07:35",
+   "done": "19 07:55",
+   "body_file": "icm/05-build/cards/pr-m7-habits-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m7-habits-verify",
+   "branch": "beta/pr-m7-habits-verify"
+  },
+  {
+   "key": "PR-M7:merge",
+   "slug": "pr-m7-habits-merge",
+   "kind": "merge",
+   "pr": "PR-M7",
+   "title": "PR-M7 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M7:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "08:20",
+   "done": "19 08:30",
+   "body_file": "icm/05-build/cards/pr-m7-habits-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m7-habits-merge",
+   "branch": "beta/pr-m7-habits-merge"
+  },
+  {
+   "key": "PR-M8:build",
+   "slug": "pr-m8-checkins",
+   "kind": "build",
+   "pr": "PR-M8",
+   "title": "PR-M8 build: Check-in fields, explicit generation and projection",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-M0:merge",
+    "PR-R0:merge"
+   ],
+   "est_min": 45,
+   "max_runtime": "67m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "07:05",
+   "done": "19 07:50",
+   "body_file": "icm/05-build/cards/pr-m8-checkins.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m8-checkins",
+   "branch": "beta/pr-m8-checkins"
+  },
+  {
+   "key": "PR-M8:verify",
+   "slug": "pr-m8-checkins-verify",
+   "kind": "verify",
+   "pr": "PR-M8",
+   "title": "PR-M8 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M8:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "07:50",
+   "done": "19 08:10",
+   "body_file": "icm/05-build/cards/pr-m8-checkins-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m8-checkins-verify",
+   "branch": "beta/pr-m8-checkins-verify"
+  },
+  {
+   "key": "PR-M8:merge",
+   "slug": "pr-m8-checkins-merge",
+   "kind": "merge",
+   "pr": "PR-M8",
+   "title": "PR-M8 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M8:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "08:30",
+   "done": "19 08:40",
+   "body_file": "icm/05-build/cards/pr-m8-checkins-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m8-checkins-merge",
+   "branch": "beta/pr-m8-checkins-merge"
+  },
+  {
+   "key": "PR-M9:build",
+   "slug": "pr-m9-dashboard-config",
+   "kind": "build",
+   "pr": "PR-M9",
+   "title": "PR-M9 build: Dashboard configuration adapter",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-M0:merge",
+    "PR-R0:merge"
+   ],
+   "est_min": 40,
+   "max_runtime": "60m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "07:25",
+   "done": "19 08:05",
+   "body_file": "icm/05-build/cards/pr-m9-dashboard-config.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m9-dashboard-config",
+   "branch": "beta/pr-m9-dashboard-config"
+  },
+  {
+   "key": "PR-M9:verify",
+   "slug": "pr-m9-dashboard-config-verify",
+   "kind": "verify",
+   "pr": "PR-M9",
+   "title": "PR-M9 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M9:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "08:05",
+   "done": "19 08:25",
+   "body_file": "icm/05-build/cards/pr-m9-dashboard-config-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m9-dashboard-config-verify",
+   "branch": "beta/pr-m9-dashboard-config-verify"
+  },
+  {
+   "key": "PR-M9:merge",
+   "slug": "pr-m9-dashboard-config-merge",
+   "kind": "merge",
+   "pr": "PR-M9",
+   "title": "PR-M9 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-M9:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "08:40",
+   "done": "19 08:50",
+   "body_file": "icm/05-build/cards/pr-m9-dashboard-config-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-m9-dashboard-config-merge",
+   "branch": "beta/pr-m9-dashboard-config-merge"
+  },
+  {
+   "key": "PR-SV1:build",
+   "slug": "pr-sv1-roster-read",
+   "kind": "build",
+   "pr": "PR-SV1",
+   "title": "PR-SV1 build: Workspace-wide roster and calendar read model",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-M1:merge",
+    "PR-M4:merge",
+    "PR-M8:merge"
+   ],
+   "est_min": 45,
+   "max_runtime": "67m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "09:10",
+   "done": "19 09:55",
+   "body_file": "icm/05-build/cards/pr-sv1-roster-read.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-sv1-roster-read",
+   "branch": "beta/pr-sv1-roster-read"
+  },
+  {
+   "key": "PR-SV1:verify",
+   "slug": "pr-sv1-roster-read-verify",
+   "kind": "verify",
+   "pr": "PR-SV1",
+   "title": "PR-SV1 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-SV1:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "09:55",
+   "done": "19 10:15",
+   "body_file": "icm/05-build/cards/pr-sv1-roster-read-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-sv1-roster-read-verify",
+   "branch": "beta/pr-sv1-roster-read-verify"
+  },
+  {
+   "key": "PR-SV1:merge",
+   "slug": "pr-sv1-roster-read-merge",
+   "kind": "merge",
+   "pr": "PR-SV1",
+   "title": "PR-SV1 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-SV1:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "10:15",
+   "done": "19 10:25",
+   "body_file": "icm/05-build/cards/pr-sv1-roster-read-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-sv1-roster-read-merge",
+   "branch": "beta/pr-sv1-roster-read-merge"
+  },
+  {
+   "key": "PR-SV2:build",
+   "slug": "pr-sv2-daily-series",
+   "kind": "build",
+   "pr": "PR-SV2",
+   "title": "PR-SV2 build: Daily-entry numeric series",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-M1:merge"
+   ],
+   "est_min": 40,
+   "max_runtime": "60m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "07:50",
+   "done": "19 08:30",
+   "body_file": "icm/05-build/cards/pr-sv2-daily-series.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-sv2-daily-series",
+   "branch": "beta/pr-sv2-daily-series"
+  },
+  {
+   "key": "PR-SV2:verify",
+   "slug": "pr-sv2-daily-series-verify",
+   "kind": "verify",
+   "pr": "PR-SV2",
+   "title": "PR-SV2 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-SV2:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "08:30",
+   "done": "19 08:50",
+   "body_file": "icm/05-build/cards/pr-sv2-daily-series-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-sv2-daily-series-verify",
+   "branch": "beta/pr-sv2-daily-series-verify"
+  },
+  {
+   "key": "PR-SV2:merge",
+   "slug": "pr-sv2-daily-series-merge",
+   "kind": "merge",
+   "pr": "PR-SV2",
+   "title": "PR-SV2 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-SV2:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "09:10",
+   "done": "19 09:20",
+   "body_file": "icm/05-build/cards/pr-sv2-daily-series-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-sv2-daily-series-merge",
+   "branch": "beta/pr-sv2-daily-series-merge"
+  },
+  {
+   "key": "PR-SV3:build",
+   "slug": "pr-sv3-widget-feeds",
+   "kind": "build",
+   "pr": "PR-SV3",
+   "title": "PR-SV3 build: Dashboard widget feeds",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-SV2:merge",
+    "PR-M5:merge",
+    "PR-M6:merge",
+    "PR-M7:merge"
+   ],
+   "est_min": 60,
+   "max_runtime": "90m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "09:55",
+   "done": "19 10:55",
+   "body_file": "icm/05-build/cards/pr-sv3-widget-feeds.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-sv3-widget-feeds",
+   "branch": "beta/pr-sv3-widget-feeds"
+  },
+  {
+   "key": "PR-SV3:verify",
+   "slug": "pr-sv3-widget-feeds-verify",
+   "kind": "verify",
+   "pr": "PR-SV3",
+   "title": "PR-SV3 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-SV3:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "10:55",
+   "done": "19 11:15",
+   "body_file": "icm/05-build/cards/pr-sv3-widget-feeds-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-sv3-widget-feeds-verify",
+   "branch": "beta/pr-sv3-widget-feeds-verify"
+  },
+  {
+   "key": "PR-SV3:merge",
+   "slug": "pr-sv3-widget-feeds-merge",
+   "kind": "merge",
+   "pr": "PR-SV3",
+   "title": "PR-SV3 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-SV3:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "11:15",
+   "done": "19 11:25",
+   "body_file": "icm/05-build/cards/pr-sv3-widget-feeds-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-sv3-widget-feeds-merge",
+   "branch": "beta/pr-sv3-widget-feeds-merge"
+  },
+  {
+   "key": "PR-SV4:build",
+   "slug": "pr-sv4-invitations",
+   "kind": "build",
+   "pr": "PR-SV4",
+   "title": "PR-SV4 build: Client invitations",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-05:merge"
+   ],
+   "est_min": 35,
+   "max_runtime": "52m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "04:40",
+   "done": "19 05:15",
+   "body_file": "icm/05-build/cards/pr-sv4-invitations.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-sv4-invitations",
+   "branch": "beta/pr-sv4-invitations"
+  },
+  {
+   "key": "PR-SV4:verify",
+   "slug": "pr-sv4-invitations-verify",
+   "kind": "verify",
+   "pr": "PR-SV4",
+   "title": "PR-SV4 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-SV4:build",
+    "PR-04:merge"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "05:15",
+   "done": "19 05:35",
+   "body_file": "icm/05-build/cards/pr-sv4-invitations-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-sv4-invitations-verify",
+   "branch": "beta/pr-sv4-invitations-verify"
+  },
+  {
+   "key": "PR-SV4:secverify",
+   "slug": "pr-sv4-invitations-secverify",
+   "kind": "verify",
+   "pr": "PR-SV4",
+   "title": "PR-SV4 security verify",
+   "assignee": "shinobu",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-SV4:build",
+    "PR-04:merge"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "security-diff-scan",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "05:15",
+   "done": "19 05:35",
+   "body_file": "icm/05-build/cards/pr-sv4-invitations-secverify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-sv4-invitations-secverify",
+   "branch": "beta/pr-sv4-invitations-secverify"
+  },
+  {
+   "key": "PR-SV4:merge",
+   "slug": "pr-sv4-invitations-merge",
+   "kind": "merge",
+   "pr": "PR-SV4",
+   "title": "PR-SV4 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-SV4:verify",
+    "PR-SV4:secverify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "05:45",
+   "done": "19 05:55",
+   "body_file": "icm/05-build/cards/pr-sv4-invitations-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-sv4-invitations-merge",
+   "branch": "beta/pr-sv4-invitations-merge"
+  },
+  {
+   "key": "PR-MEDIA:build",
+   "slug": "pr-media-storage",
+   "kind": "build",
+   "pr": "PR-MEDIA",
+   "title": "PR-MEDIA build: Media storage, upload and the real recorder",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-M0:merge",
+    "PR-05:merge"
+   ],
+   "est_min": 60,
+   "max_runtime": "90m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "06:25",
+   "done": "19 07:25",
+   "body_file": "icm/05-build/cards/pr-media-storage.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-media-storage",
+   "branch": "beta/pr-media-storage"
+  },
+  {
+   "key": "PR-MEDIA:verify",
+   "slug": "pr-media-storage-verify",
+   "kind": "verify",
+   "pr": "PR-MEDIA",
+   "title": "PR-MEDIA verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-MEDIA:build",
+    "PR-P1:merge"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "07:25",
+   "done": "19 07:45",
+   "body_file": "icm/05-build/cards/pr-media-storage-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-media-storage-verify",
+   "branch": "beta/pr-media-storage-verify"
+  },
+  {
+   "key": "PR-MEDIA:secverify",
+   "slug": "pr-media-storage-secverify",
+   "kind": "verify",
+   "pr": "PR-MEDIA",
+   "title": "PR-MEDIA security verify",
+   "assignee": "shinobu",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-MEDIA:build",
+    "PR-P1:merge"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "security-diff-scan",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "07:25",
+   "done": "19 07:45",
+   "body_file": "icm/05-build/cards/pr-media-storage-secverify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-media-storage-secverify",
+   "branch": "beta/pr-media-storage-secverify"
+  },
+  {
+   "key": "PR-MEDIA:merge",
+   "slug": "pr-media-storage-merge",
+   "kind": "merge",
+   "pr": "PR-MEDIA",
+   "title": "PR-MEDIA merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-MEDIA:verify",
+    "PR-MEDIA:secverify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "07:50",
+   "done": "19 08:00",
+   "body_file": "icm/05-build/cards/pr-media-storage-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-media-storage-merge",
+   "branch": "beta/pr-media-storage-merge"
+  },
+  {
+   "key": "PR-MSG:build",
+   "slug": "pr-msg-messaging",
+   "kind": "build",
+   "pr": "PR-MSG",
+   "title": "PR-MSG build: Messaging: domain, routes and the three canvas screens",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-MEDIA:merge",
+    "PR-M2:merge",
+    "PR-W0:merge",
+    "PR-SV1:merge"
+   ],
+   "est_min": 90,
+   "max_runtime": "135m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "10:25",
+   "done": "19 11:55",
+   "body_file": "icm/05-build/cards/pr-msg-messaging.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-msg-messaging",
+   "branch": "beta/pr-msg-messaging"
+  },
+  {
+   "key": "PR-MSG:verify",
+   "slug": "pr-msg-messaging-verify",
+   "kind": "verify",
+   "pr": "PR-MSG",
+   "title": "PR-MSG verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-MSG:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "11:55",
+   "done": "19 12:15",
+   "body_file": "icm/05-build/cards/pr-msg-messaging-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-msg-messaging-verify",
+   "branch": "beta/pr-msg-messaging-verify"
+  },
+  {
+   "key": "PR-MSG:secverify",
+   "slug": "pr-msg-messaging-secverify",
+   "kind": "verify",
+   "pr": "PR-MSG",
+   "title": "PR-MSG security verify",
+   "assignee": "shinobu",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-MSG:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "security-diff-scan",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "11:55",
+   "done": "19 12:15",
+   "body_file": "icm/05-build/cards/pr-msg-messaging-secverify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-msg-messaging-secverify",
+   "branch": "beta/pr-msg-messaging-secverify"
+  },
+  {
+   "key": "PR-MSG:merge",
+   "slug": "pr-msg-messaging-merge",
+   "kind": "merge",
+   "pr": "PR-MSG",
+   "title": "PR-MSG merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-MSG:verify",
+    "PR-MSG:secverify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "12:15",
+   "done": "19 12:25",
+   "body_file": "icm/05-build/cards/pr-msg-messaging-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-msg-messaging-merge",
+   "branch": "beta/pr-msg-messaging-merge"
+  },
+  {
+   "key": "PR-W0:build",
+   "slug": "pr-w0-data-seam",
+   "kind": "build",
+   "pr": "PR-W0",
+   "title": "PR-W0 build: Split the canvas store into per-domain data providers",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-01:merge",
+    "PR-03:merge"
+   ],
+   "est_min": 45,
+   "max_runtime": "67m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "07:35",
+   "done": "19 08:20",
+   "body_file": "icm/05-build/cards/pr-w0-data-seam.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w0-data-seam",
+   "branch": "beta/pr-w0-data-seam"
+  },
+  {
+   "key": "PR-W0:verify",
+   "slug": "pr-w0-data-seam-verify",
+   "kind": "verify",
+   "pr": "PR-W0",
+   "title": "PR-W0 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W0:build"
+   ],
+   "est_min": 30,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "08:20",
+   "done": "19 08:50",
+   "body_file": "icm/05-build/cards/pr-w0-data-seam-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w0-data-seam-verify",
+   "branch": "beta/pr-w0-data-seam-verify"
+  },
+  {
+   "key": "PR-W0:merge",
+   "slug": "pr-w0-data-seam-merge",
+   "kind": "merge",
+   "pr": "PR-W0",
+   "title": "PR-W0 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W0:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "08:50",
+   "done": "19 09:00",
+   "body_file": "icm/05-build/cards/pr-w0-data-seam-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w0-data-seam-merge",
+   "branch": "beta/pr-w0-data-seam-merge"
+  },
+  {
+   "key": "PR-W2:build",
+   "slug": "pr-w2-roster-profile",
+   "kind": "build",
+   "pr": "PR-W2",
+   "title": "PR-W2 build: Wire the roster and the client profile",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-W0:merge",
+    "PR-SV1:merge",
+    "PR-SV2:merge",
+    "PR-SV4:merge",
+    "PR-M1:merge"
+   ],
+   "est_min": 60,
+   "max_runtime": "90m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "10:25",
+   "done": "19 11:25",
+   "body_file": "icm/05-build/cards/pr-w2-roster-profile.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w2-roster-profile",
+   "branch": "beta/pr-w2-roster-profile"
+  },
+  {
+   "key": "PR-W2:verify",
+   "slug": "pr-w2-roster-profile-verify",
+   "kind": "verify",
+   "pr": "PR-W2",
+   "title": "PR-W2 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W2:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "11:25",
+   "done": "19 11:45",
+   "body_file": "icm/05-build/cards/pr-w2-roster-profile-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w2-roster-profile-verify",
+   "branch": "beta/pr-w2-roster-profile-verify"
+  },
+  {
+   "key": "PR-W2:merge",
+   "slug": "pr-w2-roster-profile-merge",
+   "kind": "merge",
+   "pr": "PR-W2",
+   "title": "PR-W2 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W2:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "11:50",
+   "done": "19 12:00",
+   "body_file": "icm/05-build/cards/pr-w2-roster-profile-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w2-roster-profile-merge",
+   "branch": "beta/pr-w2-roster-profile-merge"
+  },
+  {
+   "key": "PR-W3:build",
+   "slug": "pr-w3-templates-setup",
+   "kind": "build",
+   "pr": "PR-W3",
+   "title": "PR-W3 build: Wire templates, setup and client preview",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-W0:merge",
+    "PR-M4:merge",
+    "PR-SV1:merge"
+   ],
+   "est_min": 75,
+   "max_runtime": "112m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "10:55",
+   "done": "19 12:10",
+   "body_file": "icm/05-build/cards/pr-w3-templates-setup.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w3-templates-setup",
+   "branch": "beta/pr-w3-templates-setup"
+  },
+  {
+   "key": "PR-W3:verify",
+   "slug": "pr-w3-templates-setup-verify",
+   "kind": "verify",
+   "pr": "PR-W3",
+   "title": "PR-W3 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W3:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "12:10",
+   "done": "19 12:30",
+   "body_file": "icm/05-build/cards/pr-w3-templates-setup-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w3-templates-setup-verify",
+   "branch": "beta/pr-w3-templates-setup-verify"
+  },
+  {
+   "key": "PR-W3:merge",
+   "slug": "pr-w3-templates-setup-merge",
+   "kind": "merge",
+   "pr": "PR-W3",
+   "title": "PR-W3 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W3:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "12:30",
+   "done": "19 12:40",
+   "body_file": "icm/05-build/cards/pr-w3-templates-setup-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w3-templates-setup-merge",
+   "branch": "beta/pr-w3-templates-setup-merge"
+  },
+  {
+   "key": "PR-W4:build",
+   "slug": "pr-w4-tracker",
+   "kind": "build",
+   "pr": "PR-W4",
+   "title": "PR-W4 build: Wire the client tracker, trends and roadmap",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-W0:merge",
+    "PR-SV2:merge",
+    "PR-M3:merge",
+    "PR-M4:merge"
+   ],
+   "est_min": 75,
+   "max_runtime": "112m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "10:00",
+   "done": "19 11:15",
+   "body_file": "icm/05-build/cards/pr-w4-tracker.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w4-tracker",
+   "branch": "beta/pr-w4-tracker"
+  },
+  {
+   "key": "PR-W4:verify",
+   "slug": "pr-w4-tracker-verify",
+   "kind": "verify",
+   "pr": "PR-W4",
+   "title": "PR-W4 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W4:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "11:15",
+   "done": "19 11:35",
+   "body_file": "icm/05-build/cards/pr-w4-tracker-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w4-tracker-verify",
+   "branch": "beta/pr-w4-tracker-verify"
+  },
+  {
+   "key": "PR-W4:merge",
+   "slug": "pr-w4-tracker-merge",
+   "kind": "merge",
+   "pr": "PR-W4",
+   "title": "PR-W4 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W4:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "11:40",
+   "done": "19 11:50",
+   "body_file": "icm/05-build/cards/pr-w4-tracker-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w4-tracker-merge",
+   "branch": "beta/pr-w4-tracker-merge"
+  },
+  {
+   "key": "PR-W5:build",
+   "slug": "pr-w5-habits",
+   "kind": "build",
+   "pr": "PR-W5",
+   "title": "PR-W5 build: Wire habits",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-W0:merge",
+    "PR-M7:merge",
+    "PR-M4:merge"
+   ],
+   "est_min": 45,
+   "max_runtime": "67m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "09:10",
+   "done": "19 09:55",
+   "body_file": "icm/05-build/cards/pr-w5-habits.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w5-habits",
+   "branch": "beta/pr-w5-habits"
+  },
+  {
+   "key": "PR-W5:verify",
+   "slug": "pr-w5-habits-verify",
+   "kind": "verify",
+   "pr": "PR-W5",
+   "title": "PR-W5 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W5:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "09:55",
+   "done": "19 10:15",
+   "body_file": "icm/05-build/cards/pr-w5-habits-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w5-habits-verify",
+   "branch": "beta/pr-w5-habits-verify"
+  },
+  {
+   "key": "PR-W5:merge",
+   "slug": "pr-w5-habits-merge",
+   "kind": "merge",
+   "pr": "PR-W5",
+   "title": "PR-W5 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W5:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "10:35",
+   "done": "19 10:45",
+   "body_file": "icm/05-build/cards/pr-w5-habits-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w5-habits-merge",
+   "branch": "beta/pr-w5-habits-merge"
+  },
+  {
+   "key": "PR-W6:build",
+   "slug": "pr-w6-checkins",
+   "kind": "build",
+   "pr": "PR-W6",
+   "title": "PR-W6 build: Wire check-ins",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-W0:merge",
+    "PR-M8:merge",
+    "PR-M4:merge",
+    "PR-MEDIA:merge"
+   ],
+   "est_min": 75,
+   "max_runtime": "112m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "09:10",
+   "done": "19 10:25",
+   "body_file": "icm/05-build/cards/pr-w6-checkins.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w6-checkins",
+   "branch": "beta/pr-w6-checkins"
+  },
+  {
+   "key": "PR-W6:verify",
+   "slug": "pr-w6-checkins-verify",
+   "kind": "verify",
+   "pr": "PR-W6",
+   "title": "PR-W6 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W6:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "10:25",
+   "done": "19 10:45",
+   "body_file": "icm/05-build/cards/pr-w6-checkins-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w6-checkins-verify",
+   "branch": "beta/pr-w6-checkins-verify"
+  },
+  {
+   "key": "PR-W6:merge",
+   "slug": "pr-w6-checkins-merge",
+   "kind": "merge",
+   "pr": "PR-W6",
+   "title": "PR-W6 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W6:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "10:45",
+   "done": "19 10:55",
+   "body_file": "icm/05-build/cards/pr-w6-checkins-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w6-checkins-merge",
+   "branch": "beta/pr-w6-checkins-merge"
+  },
+  {
+   "key": "PR-W7:build",
+   "slug": "pr-w7-nutrition",
+   "kind": "build",
+   "pr": "PR-W7",
+   "title": "PR-W7 build: Wire nutrition and meal plans",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-W0:merge",
+    "PR-M5:merge",
+    "PR-M4:merge"
+   ],
+   "est_min": 75,
+   "max_runtime": "112m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "09:10",
+   "done": "19 10:25",
+   "body_file": "icm/05-build/cards/pr-w7-nutrition.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w7-nutrition",
+   "branch": "beta/pr-w7-nutrition"
+  },
+  {
+   "key": "PR-W7:verify",
+   "slug": "pr-w7-nutrition-verify",
+   "kind": "verify",
+   "pr": "PR-W7",
+   "title": "PR-W7 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W7:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "10:25",
+   "done": "19 10:45",
+   "body_file": "icm/05-build/cards/pr-w7-nutrition-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w7-nutrition-verify",
+   "branch": "beta/pr-w7-nutrition-verify"
+  },
+  {
+   "key": "PR-W7:merge",
+   "slug": "pr-w7-nutrition-merge",
+   "kind": "merge",
+   "pr": "PR-W7",
+   "title": "PR-W7 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W7:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "10:55",
+   "done": "19 11:05",
+   "body_file": "icm/05-build/cards/pr-w7-nutrition-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w7-nutrition-merge",
+   "branch": "beta/pr-w7-nutrition-merge"
+  },
+  {
+   "key": "PR-W8:build",
+   "slug": "pr-w8-training",
+   "kind": "build",
+   "pr": "PR-W8",
+   "title": "PR-W8 build: Wire training",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-W0:merge",
+    "PR-M6:merge",
+    "PR-M4:merge"
+   ],
+   "est_min": 75,
+   "max_runtime": "112m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "09:55",
+   "done": "19 11:10",
+   "body_file": "icm/05-build/cards/pr-w8-training.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w8-training",
+   "branch": "beta/pr-w8-training"
+  },
+  {
+   "key": "PR-W8:verify",
+   "slug": "pr-w8-training-verify",
+   "kind": "verify",
+   "pr": "PR-W8",
+   "title": "PR-W8 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W8:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "11:10",
+   "done": "19 11:30",
+   "body_file": "icm/05-build/cards/pr-w8-training-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w8-training-verify",
+   "branch": "beta/pr-w8-training-verify"
+  },
+  {
+   "key": "PR-W8:merge",
+   "slug": "pr-w8-training-merge",
+   "kind": "merge",
+   "pr": "PR-W8",
+   "title": "PR-W8 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W8:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "11:30",
+   "done": "19 11:40",
+   "body_file": "icm/05-build/cards/pr-w8-training-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w8-training-merge",
+   "branch": "beta/pr-w8-training-merge"
+  },
+  {
+   "key": "PR-W9:build",
+   "slug": "pr-w9-dashboard",
+   "kind": "build",
+   "pr": "PR-W9",
+   "title": "PR-W9 build: Wire the dashboard builder",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-W0:merge",
+    "PR-M9:merge",
+    "PR-SV3:merge",
+    "PR-M4:merge"
+   ],
+   "est_min": 75,
+   "max_runtime": "112m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "11:25",
+   "done": "19 12:40",
+   "body_file": "icm/05-build/cards/pr-w9-dashboard.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w9-dashboard",
+   "branch": "beta/pr-w9-dashboard"
+  },
+  {
+   "key": "PR-W9:verify",
+   "slug": "pr-w9-dashboard-verify",
+   "kind": "verify",
+   "pr": "PR-W9",
+   "title": "PR-W9 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W9:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "12:40",
+   "done": "19 13:00",
+   "body_file": "icm/05-build/cards/pr-w9-dashboard-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w9-dashboard-verify",
+   "branch": "beta/pr-w9-dashboard-verify"
+  },
+  {
+   "key": "PR-W9:merge",
+   "slug": "pr-w9-dashboard-merge",
+   "kind": "merge",
+   "pr": "PR-W9",
+   "title": "PR-W9 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W9:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "13:00",
+   "done": "19 13:10",
+   "body_file": "icm/05-build/cards/pr-w9-dashboard-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w9-dashboard-merge",
+   "branch": "beta/pr-w9-dashboard-merge"
+  },
+  {
+   "key": "PR-W10:build",
+   "slug": "pr-w10-notes-appearance",
+   "kind": "build",
+   "pr": "PR-W10",
+   "title": "PR-W10 build: Wire notes, to-dos, appearance and preferences",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-W0:merge",
+    "PR-M2:merge",
+    "PR-M3:merge",
+    "PR-MEDIA:merge"
+   ],
+   "est_min": 60,
+   "max_runtime": "90m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "09:00",
+   "done": "19 10:00",
+   "body_file": "icm/05-build/cards/pr-w10-notes-appearance.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w10-notes-appearance",
+   "branch": "beta/pr-w10-notes-appearance"
+  },
+  {
+   "key": "PR-W10:verify",
+   "slug": "pr-w10-notes-appearance-verify",
+   "kind": "verify",
+   "pr": "PR-W10",
+   "title": "PR-W10 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W10:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "10:00",
+   "done": "19 10:20",
+   "body_file": "icm/05-build/cards/pr-w10-notes-appearance-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w10-notes-appearance-verify",
+   "branch": "beta/pr-w10-notes-appearance-verify"
+  },
+  {
+   "key": "PR-W10:merge",
+   "slug": "pr-w10-notes-appearance-merge",
+   "kind": "merge",
+   "pr": "PR-W10",
+   "title": "PR-W10 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-W10:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "10:25",
+   "done": "19 10:35",
+   "body_file": "icm/05-build/cards/pr-w10-notes-appearance-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-w10-notes-appearance-merge",
+   "branch": "beta/pr-w10-notes-appearance-merge"
+  },
+  {
+   "key": "PR-R1:build",
+   "slug": "pr-r1-delete-superseded",
+   "kind": "build",
+   "pr": "PR-R1",
+   "title": "PR-R1 build: Delete what the canvas replaced",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-W2:merge",
+    "PR-W3:merge",
+    "PR-W4:merge",
+    "PR-W5:merge",
+    "PR-W6:merge",
+    "PR-W7:merge",
+    "PR-W8:merge",
+    "PR-W9:merge",
+    "PR-W10:merge",
+    "PR-MSG:merge"
+   ],
+   "est_min": 60,
+   "max_runtime": "90m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "13:10",
+   "done": "19 14:10",
+   "body_file": "icm/05-build/cards/pr-r1-delete-superseded.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-r1-delete-superseded",
+   "branch": "beta/pr-r1-delete-superseded"
+  },
+  {
+   "key": "PR-R1:verify",
+   "slug": "pr-r1-delete-superseded-verify",
+   "kind": "verify",
+   "pr": "PR-R1",
+   "title": "PR-R1 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-R1:build"
+   ],
+   "est_min": 30,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "14:10",
+   "done": "19 14:40",
+   "body_file": "icm/05-build/cards/pr-r1-delete-superseded-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-r1-delete-superseded-verify",
+   "branch": "beta/pr-r1-delete-superseded-verify"
+  },
+  {
+   "key": "PR-R1:merge",
+   "slug": "pr-r1-delete-superseded-merge",
+   "kind": "merge",
+   "pr": "PR-R1",
+   "title": "PR-R1 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-R1:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "14:40",
+   "done": "19 14:50",
+   "body_file": "icm/05-build/cards/pr-r1-delete-superseded-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-r1-delete-superseded-merge",
+   "branch": "beta/pr-r1-delete-superseded-merge"
+  },
+  {
+   "key": "PR-R2:build",
+   "slug": "pr-r2-schema-reduction",
+   "kind": "build",
+   "pr": "PR-R2",
+   "title": "PR-R2 build: Drop database models left without a reader",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-R1:merge",
+    "PR-M0:merge"
+   ],
+   "est_min": 40,
+   "max_runtime": "60m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "14:50",
+   "done": "19 15:30",
+   "body_file": "icm/05-build/cards/pr-r2-schema-reduction.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-r2-schema-reduction",
+   "branch": "beta/pr-r2-schema-reduction"
+  },
+  {
+   "key": "PR-R2:verify",
+   "slug": "pr-r2-schema-reduction-verify",
+   "kind": "verify",
+   "pr": "PR-R2",
+   "title": "PR-R2 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-R2:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "15:30",
+   "done": "19 15:50",
+   "body_file": "icm/05-build/cards/pr-r2-schema-reduction-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-r2-schema-reduction-verify",
+   "branch": "beta/pr-r2-schema-reduction-verify"
+  },
+  {
+   "key": "PR-R2:merge",
+   "slug": "pr-r2-schema-reduction-merge",
+   "kind": "merge",
+   "pr": "PR-R2",
+   "title": "PR-R2 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-R2:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "15:50",
+   "done": "19 16:00",
+   "body_file": "icm/05-build/cards/pr-r2-schema-reduction-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-r2-schema-reduction-merge",
+   "branch": "beta/pr-r2-schema-reduction-merge"
+  },
+  {
+   "key": "PR-R3:build",
+   "slug": "pr-r3-flags-deps",
+   "kind": "build",
+   "pr": "PR-R3",
+   "title": "PR-R3 build: Collapse product flags and drop unused dependencies",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-R1:merge"
+   ],
+   "est_min": 40,
+   "max_runtime": "60m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "14:50",
+   "done": "19 15:30",
+   "body_file": "icm/05-build/cards/pr-r3-flags-deps.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-r3-flags-deps",
+   "branch": "beta/pr-r3-flags-deps"
+  },
+  {
+   "key": "PR-R3:verify",
+   "slug": "pr-r3-flags-deps-verify",
+   "kind": "verify",
+   "pr": "PR-R3",
+   "title": "PR-R3 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-R3:build"
+   ],
+   "est_min": 30,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "15:30",
+   "done": "19 16:00",
+   "body_file": "icm/05-build/cards/pr-r3-flags-deps-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-r3-flags-deps-verify",
+   "branch": "beta/pr-r3-flags-deps-verify"
+  },
+  {
+   "key": "PR-R3:merge",
+   "slug": "pr-r3-flags-deps-merge",
+   "kind": "merge",
+   "pr": "PR-R3",
+   "title": "PR-R3 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-R3:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "16:00",
+   "done": "19 16:10",
+   "body_file": "icm/05-build/cards/pr-r3-flags-deps-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-r3-flags-deps-merge",
+   "branch": "beta/pr-r3-flags-deps-merge"
+  },
+  {
+   "key": "PR-X1:build",
+   "slug": "system-index",
+   "kind": "build",
+   "pr": "PR-X1",
+   "title": "PR-X1 build: Build the system index generator and the first index",
+   "assignee": null,
+   "model": null,
+   "provider": null,
+   "parents": [],
+   "est_min": 0,
+   "max_runtime": "75m",
+   "skills": [],
+   "external": "running",
+   "start": "02:24",
+   "done": "19 03:20",
+   "body_file": "icm/05-build/cards/system-index.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/system-index",
+   "branch": "beta/system-index"
+  },
+  {
+   "key": "PR-X1:verify",
+   "slug": "system-index-verify",
+   "kind": "verify",
+   "pr": "PR-X1",
+   "title": "PR-X1 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-X1:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "03:20",
+   "done": "19 03:40",
+   "body_file": "icm/05-build/cards/system-index-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/system-index-verify",
+   "branch": "beta/system-index-verify"
+  },
+  {
+   "key": "PR-X1:merge",
+   "slug": "system-index-merge",
+   "kind": "merge",
+   "pr": "PR-X1",
+   "title": "PR-X1 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-X1:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "04:15",
+   "done": "19 04:25",
+   "body_file": "icm/05-build/cards/system-index-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/system-index-merge",
+   "branch": "beta/system-index-merge"
+  },
+  {
+   "key": "PR-X2:build",
+   "slug": "pr-x2-index-final",
+   "kind": "build",
+   "pr": "PR-X2",
+   "title": "PR-X2 build: Rebuild the system index on the final tree",
+   "assignee": "shikamaru",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-X1:merge",
+    "PR-R2:merge",
+    "PR-R3:merge"
+   ],
+   "est_min": 25,
+   "max_runtime": "37m",
+   "skills": [
+    "principle-sequence-verifiable-units",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "16:10",
+   "done": "19 16:35",
+   "body_file": "icm/05-build/cards/pr-x2-index-final.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-x2-index-final",
+   "branch": "beta/pr-x2-index-final"
+  },
+  {
+   "key": "PR-X2:verify",
+   "slug": "pr-x2-index-final-verify",
+   "kind": "verify",
+   "pr": "PR-X2",
+   "title": "PR-X2 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-X2:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "16:35",
+   "done": "19 16:55",
+   "body_file": "icm/05-build/cards/pr-x2-index-final-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-x2-index-final-verify",
+   "branch": "beta/pr-x2-index-final-verify"
+  },
+  {
+   "key": "PR-X2:merge",
+   "slug": "pr-x2-index-final-merge",
+   "kind": "merge",
+   "pr": "PR-X2",
+   "title": "PR-X2 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-X2:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "16:55",
+   "done": "19 17:05",
+   "body_file": "icm/05-build/cards/pr-x2-index-final-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-x2-index-final-merge",
+   "branch": "beta/pr-x2-index-final-merge"
+  },
+  {
+   "key": "PR-D1:build",
+   "slug": "pr-d1-readme-setup",
+   "kind": "build",
+   "pr": "PR-D1",
+   "title": "PR-D1 build: README, setup guide and infographics",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-R3:merge",
+    "PR-X1:merge"
+   ],
+   "est_min": 50,
+   "max_runtime": "75m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "16:10",
+   "done": "19 17:00",
+   "body_file": "icm/05-build/cards/pr-d1-readme-setup.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-d1-readme-setup",
+   "branch": "beta/pr-d1-readme-setup"
+  },
+  {
+   "key": "PR-D1:verify",
+   "slug": "pr-d1-readme-setup-verify",
+   "kind": "verify",
+   "pr": "PR-D1",
+   "title": "PR-D1 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-D1:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "17:00",
+   "done": "19 17:20",
+   "body_file": "icm/05-build/cards/pr-d1-readme-setup-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-d1-readme-setup-verify",
+   "branch": "beta/pr-d1-readme-setup-verify"
+  },
+  {
+   "key": "PR-D1:merge",
+   "slug": "pr-d1-readme-setup-merge",
+   "kind": "merge",
+   "pr": "PR-D1",
+   "title": "PR-D1 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-D1:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "17:20",
+   "done": "19 17:30",
+   "body_file": "icm/05-build/cards/pr-d1-readme-setup-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-d1-readme-setup-merge",
+   "branch": "beta/pr-d1-readme-setup-merge"
+  },
+  {
+   "key": "PR-31:build",
+   "slug": "pr-31-pwa-mobile",
+   "kind": "build",
+   "pr": "PR-31",
+   "title": "PR-31 build: PWA install and the Capacitor 8 scope",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-05:merge",
+    "PR-W1:merge"
+   ],
+   "est_min": 45,
+   "max_runtime": "67m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "06:05",
+   "done": "19 06:50",
+   "body_file": "icm/05-build/cards/pr-31-pwa-mobile.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-31-pwa-mobile",
+   "branch": "beta/pr-31-pwa-mobile"
+  },
+  {
+   "key": "PR-31:verify",
+   "slug": "pr-31-pwa-mobile-verify",
+   "kind": "verify",
+   "pr": "PR-31",
+   "title": "PR-31 verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-31:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "06:50",
+   "done": "19 07:10",
+   "body_file": "icm/05-build/cards/pr-31-pwa-mobile-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-31-pwa-mobile-verify",
+   "branch": "beta/pr-31-pwa-mobile-verify"
+  },
+  {
+   "key": "PR-31:merge",
+   "slug": "pr-31-pwa-mobile-merge",
+   "kind": "merge",
+   "pr": "PR-31",
+   "title": "PR-31 merge",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-31:verify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "07:10",
+   "done": "19 07:20",
+   "body_file": "icm/05-build/cards/pr-31-pwa-mobile-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-31-pwa-mobile-merge",
+   "branch": "beta/pr-31-pwa-mobile-merge"
+  },
+  {
+   "key": "GATE-PRR:gate",
+   "slug": "gate-prr-readiness",
+   "kind": "gate",
+   "pr": "GATE-PRR",
+   "title": "Production-readiness gate on integrated Vari8-Beta",
+   "assignee": "urokodaki",
+   "model": "claude-opus-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-02:merge",
+    "PR-P1:merge",
+    "PR-03A:merge",
+    "PR-03B:merge",
+    "PR-04:merge",
+    "PR-01:merge",
+    "PR-W1:merge",
+    "PR-03:merge",
+    "PR-T2:merge",
+    "PR-05:merge",
+    "PR-M0:merge",
+    "PR-R0:merge",
+    "PR-M1:merge",
+    "PR-M2:merge",
+    "PR-M3:merge",
+    "PR-M4:merge",
+    "PR-M5:merge",
+    "PR-M6:merge",
+    "PR-M7:merge",
+    "PR-M8:merge",
+    "PR-M9:merge",
+    "PR-SV1:merge",
+    "PR-SV2:merge",
+    "PR-SV3:merge",
+    "PR-SV4:merge",
+    "PR-MEDIA:merge",
+    "PR-MSG:merge",
+    "PR-W0:merge",
+    "PR-W2:merge",
+    "PR-W3:merge",
+    "PR-W4:merge",
+    "PR-W5:merge",
+    "PR-W6:merge",
+    "PR-W7:merge",
+    "PR-W8:merge",
+    "PR-W9:merge",
+    "PR-W10:merge",
+    "PR-R1:merge",
+    "PR-R2:merge",
+    "PR-R3:merge",
+    "PR-X1:merge",
+    "PR-X2:merge",
+    "PR-D1:merge",
+    "PR-31:merge",
+    "AUD-PRR-BASELINE:decision"
+   ],
+   "est_min": 60,
+   "max_runtime": "2h",
+   "skills": [
+    "production-readiness-checklist",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "17:30",
+   "done": "19 18:30",
+   "body_file": "icm/05-build/cards/gate-prr-readiness.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/gate-prr-readiness",
+   "branch": "beta/gate-prr-readiness"
+  },
+  {
+   "key": "GATE-FINAL:gate",
+   "slug": "gate-final-judgement",
+   "kind": "gate",
+   "pr": "GATE-FINAL",
+   "title": "Final branch judgement",
+   "assignee": "minato",
+   "model": "gpt-6.1-sol",
+   "provider": "openai-codex",
+   "parents": [
+    "GATE-PRR:gate"
+   ],
+   "est_min": 40,
+   "max_runtime": "2h",
+   "skills": [
+    "verification-before-completion",
+    "principle-attack-the-premise"
+   ],
+   "external": false,
+   "start": "18:30",
+   "done": "19 19:10",
+   "body_file": "icm/05-build/cards/gate-final-judgement.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/gate-final-judgement",
+   "branch": "beta/gate-final-judgement"
+  },
+  {
+   "key": "GATE-CLEAN:gate",
+   "slug": "gate-clean",
+   "kind": "gate",
+   "pr": "GATE-CLEAN",
+   "title": "Ship-all and cleanup check",
+   "assignee": "kakashi",
+   "model": "claude-sonnet-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "GATE-FINAL:gate"
+   ],
+   "est_min": 20,
+   "max_runtime": "2h",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "19:10",
+   "done": "19 19:30",
+   "body_file": "icm/05-build/cards/gate-clean.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/gate-clean",
+   "branch": "beta/gate-clean"
+  }
+ ]
+}

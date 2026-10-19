@@ -125,10 +125,12 @@ else
   fi
 fi
 
-if [[ -f tests/parity/parity.spec.ts && -d app/coach ]]; then
-  step "parity regression (D32)" npm run parity:check -- --start --port "$LANE_PORT" --screens "${PARITY_SCREENS:-ALL}"
+if [[ -f tools/parity/run.mjs ]]; then
+  # PR-P1 harness: starts the canvas on PARITY_PORT, captures 1440x900 and 390x844, compares with the baseline.
+  # After PR-01 the harness serves the root app (PR-01 points it there); PARITY_URL reuses a running lane server.
+  step "parity regression (D32)" env PARITY_PORT="$((LANE_PORT + 1))" npm run parity
 else
-  skip "parity regression (D32)" "harness (PR-P1) or root canvas routes (PR-01) not on this branch yet"
+  skip "parity regression (D32)" "harness (PR-P1) not on this branch yet"
 fi
 
 finish 0

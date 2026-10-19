@@ -17,6 +17,8 @@ from program_data import (BETA, BUILDER_MODEL, DECISION_CARDS, GATES, GEAR, HERM
 
 ICM = f"{BETA}/icm"
 OUT = f"{ICM}/05-build"
+REPO = "hanzlahsfc/The-great-tracker-"
+EVID = f"{WT}/_evidence"
 SHOTS = json.load(open(f"{ICM}/04-briefing/shots/index.json"))["shots"]
 SHOT_FILES = [s["file"] for s in SHOTS]
 PR_BY_ID = {p["id"]: p for p in PRS}
@@ -93,8 +95,10 @@ own("PR-05", "V2-H5", "V2-H12", "V3-CO01")
 ORPHAN_OWNER = {}
 for i in list(range(1, 8)) + list(range(34, 43)) + list(range(66, 72)) + [72]:
     ORPHAN_OWNER[f"S12-{i:02d}"] = ("PR-05", "keep or replace per D16a; covered by the roles test")
-for i in [8, 9] + list(range(44, 54)):
-    ORPHAN_OWNER[f"S12-{i:02d}"] = ("PR-R1", "delete when the census shows no runtime caller (D33)")
+for i in [8, 9, 45, 47, 50, 51, 52, 53]:
+    ORPHAN_OWNER[f"S12-{i:02d}"] = ("PR-R1", "delete when the census shows no runtime caller (D33, BACKEND-REDUCTION F5, F6)")
+for i in [44, 46, 48, 49]:
+    ORPHAN_OWNER[f"S12-{i:02d}"] = ("PR-R1", "keep; imported by the catalog importers (BACKEND-REDUCTION section 5 item 2)")
 for i in [10, 11, 12]:
     ORPHAN_OWNER[f"S12-{i:02d}"] = ("PR-R1", "old UI page, delete after the canvas screen is wired (D33)")
 for i in [13, 14, 15, 16] + list(range(59, 66)):
@@ -111,8 +115,9 @@ ORPHAN_OWNER["S12-73"] = ("PR-SV4", "keep; routed from the roster")
 ORPHAN_OWNER["S12-74"] = ("PR-SV4", "keep; invite acceptance")
 ORPHAN_OWNER["S12-75"] = ("PR-R3", "delete with the sheet viewer (D33)")
 ORPHAN_OWNER["S12-76"] = ("PR-R3", "collapse into product (D33)")
-for rid in ["R3-16", "R3-17", "R3-18", "R3-20", "R3-21", "R3-22"]:
-    ORPHAN_OWNER[rid] = ("PR-R1", "census then delete or keep (D33); R3-17 is the D23 open risk")
+for rid in ["R3-16", "R3-18", "R3-20", "R3-21", "R3-22"]:
+    ORPHAN_OWNER[rid] = ("PR-R1", "census then delete or keep (D33, BACKEND-REDUCTION F4, F6)")
+ORPHAN_OWNER["R3-17"] = ("PR-R1", "keep until Marcel answers D23 (`seed-catalog`); active orphan per GAP-MATRIX")
 
 # ---------- TEST-AUDIT actions ----------
 TA = open(f"{ICM}/03-plan/output/TEST-AUDIT.md").read().split("\n")
@@ -132,7 +137,7 @@ def ta_owner(action):
     a = action
     tasks = []
     if "in PR-03" in a or a.startswith("KEEP-ALL") or a.startswith("TRIM"):
-        tasks.append("PR-T1")
+        tasks.append("PR-03A")
     if "PR-04" in a:
         tasks.append("PR-T2")
     if "PR-05" in a:
@@ -280,26 +285,36 @@ def pr_card_bodies(p):
     build_txt = "\n".join(f"- {b}" for b in p["build"])
     see_txt = "\n".join(f"- {s}" for s in p["see"])
     devin = p["who"] == "yamato"
-    launch = (f"cd {WT}/{slug} && {rel(OUT)}/tools/devin-slot.sh -- env CAP=10G /home/nexuslink/.local/bin/jobcap "
+    ext = p.get("ext")
+    issue = p.get("issue")
+    issue_ref = f"#{issue}" if issue else "created in driver step 2"
+    launch = (f"cd {WT}/{slug} && icm/05-build/tools/devin-slot.sh -- env CAP=10G /home/nexuslink/.local/bin/jobcap "
               f"devin -p --model swe-2-max --permission-mode dangerous --prompt-file icm/05-build/cards/{slug}.md")
-    driver = ""
-    if devin:
+    gh_setup = f"""1. `cd {WT}/{slug} && git fetch origin && git merge --ff-only origin/Vari8-Beta`. Stop and block the card if it is not a fast-forward.
+2. Issue first (idempotent): `gh issue list -R {REPO} --label vari8-beta --search "[{pid}] in:title" --state all` ; if none, `gh issue create -R {REPO} --label vari8-beta --title "[{pid}] {p['title']}" --body-file icm/05-build/cards/{slug}.md`. Record the number on the card (`hermes kanban comment`).
+3. Push the branch and open a draft PR at once: `git push -u origin HEAD` and `gh pr create -R {REPO} --draft --base Vari8-Beta --head beta/{slug} --title "[{pid}] {p['title']}" --body "Closes #<issue>. Card {slug}. Plan section {pid} in icm/03-plan/output/PLAN.md."`.
+"""
+    if ext == "done":
+        driver = f"## State\n\nShipped outside the graph as PR #{issue}. This card exists for traceability and is completed at board creation.\n"
+    elif ext == "running":
+        driver = (f"## State\n\nIn flight outside the graph: issue #{issue}, worktree `{WT}/{slug}`, branch `beta/{slug}`, builder {p.get('builder_model')}. "
+                  f"The orchestrator completes this card (`hermes kanban --board vari8 complete <id>`) when the builder exits with its PR open; the verify card then runs. "
+                  f"The sections below are the program's acceptance contract for that PR.\n")
+    elif devin:
         driver = f"""## Driver steps (yamato only; Devin skips this section)
 
-1. `cd {WT}/{slug} && git merge --ff-only Vari8-Beta` (the branch may have been created at an older tip). Stop and block the card if it is not a fast-forward.
-2. Launch Devin and block until it exits: `{launch} > {WT}/{slug}.devin.log 2>&1`
-3. Run the local gate: `BASE_SHA=$(git merge-base HEAD Vari8-Beta) LANE_DB={dbname} LANE_PORT={port} CARD={pid} icm/05-build/tools/verify-local.sh > {WT}/{slug}.check.log 2>&1`; record the exit code.
-4. Attach `{slug}.devin.log`, `{slug}.check.log` and `icm/05-build/reports/{slug}.md` to the card (`hermes kanban attach`). Complete the card with the head SHA and the gate exit code; block it with the failing step if the gate failed after one repair round by Devin.
+{gh_setup}4. Launch Devin and block until it exits: `{launch} > {WT}/{slug}.devin.log 2>&1`
+5. Run the local gate: `BASE_SHA=$(git merge-base HEAD origin/Vari8-Beta) LANE_DB={dbname} LANE_PORT={port} CARD={pid} icm/05-build/tools/verify-local.sh > {WT}/{slug}.check.log 2>&1; echo EXIT=$?`. Paste the summary block into the PR (`gh pr comment`).
+6. Push, mark the PR ready (`gh pr ready`), attach `{slug}.devin.log` and `{slug}.check.log` to the card (`hermes kanban attach`), and complete the card with the PR URL, head SHA and gate exit code. If the gate failed, give Devin one repair round with the failing output; if it still fails, block the card with the failing step.
 """
     else:
-        driver = f"""## Worktree step 0
+        driver = f"""## Steps before the build
 
-`cd {WT}/{slug} && git merge --ff-only Vari8-Beta`. Stop and block the card if it is not a fast-forward.
-"""
+{gh_setup}"""
     build = f"""# {pid} build: {p['title']}
 
-Card slug `{slug}`. Board `vari8`. Track {p['track']}. Depends on {deps}. Builder: {'Devin swe-2-max driven by yamato' if devin else p['who'] + ' (ds4f)'}.
-Worktree `{WT}/{slug}`, branch `beta/{slug}` off `Vari8-Beta`. Never push. Never edit `docs/STATUS.md` (shared state; the merge card records status). Lane database `{dbname}` on 127.0.0.1:5433 user `app`; dev port {port}. May touch `db/`: {schema_ok}.
+Card slug `{slug}`. Board `vari8`. Track {p['track']}. Depends on {deps}. Builder: {('Devin swe-2-max driven by yamato' if devin else (p['who'] + ' (ds4f)' if p['who'] else str(p.get('builder_model')) + ', outside the graph'))}. Issue {issue_ref}.
+Repo `{REPO}`. Worktree `{WT}/{slug}`, branch `beta/{slug}` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `{dbname}` on 127.0.0.1:5433 user `app`; dev port {port}. May touch `db/`: {schema_ok}.
 
 {driver}
 {gear_block(p)}
@@ -318,29 +333,30 @@ Worktree `{WT}/{slug}`, branch `beta/{slug}` off `Vari8-Beta`. Never push. Never
 
 ## Verification you run before handing over
 
-- `icm/05-build/tools/verify-local.sh` with `BASE_SHA` = merge base with `Vari8-Beta`, exit 0 (format, typecheck, lint, unit, integration when `db/`, `lib/` or `app/api/` changed, build, schema guard).
-- Live: start the app on port {port} against `{dbname}` (`npm run db:fresh` once PR-04 has landed, RUNBOOK otherwise), drive the acceptance flow in a real browser at 1440 and 390, save screenshots to `icm/05-build/evidence/{slug}/`.
-- Parity (D32) on: {scr_txt}. Command: `npm run parity:check -- --base-url http://127.0.0.1:{port} --screens <files>` once PR-P1 has landed.
+- `icm/05-build/tools/verify-local.sh` with `BASE_SHA` = merge base with `origin/Vari8-Beta`, exit 0 (format, typecheck, lint, unit, integration when `db/`, `lib/` or `app/api/` changed, build, schema guard, e2e flow specs, parity regression once PR-P1 and PR-01 are on the branch).
+- Live: start the app on port {port} against `{dbname}` (`npm run db:fresh` once PR-04 has landed, RUNBOOK otherwise), drive the acceptance flow in a real browser at 1440 and 390, save screenshots under `{EVID}/{pid}/build/`.
+- Parity (D32) on: {scr_txt}.
 - Unit (D11, D14): {p['unit']}
 
 ## Report
 
-Write `icm/05-build/reports/{slug}.md`: head SHA, changed paths, every command with its exit code, screenshots, parity result per screen and width, matrix rows closed, what you could not do. Commit in small commits with explicit pathspecs. Tests follow the keep rule: a new test calls the code the way users do, asserts a literal, fails when the code breaks, and guards something a browser cannot see (D14).
+Write `icm/05-build/reports/{pid}.md` in the branch: head SHA, changed paths, every command with its exit code, screenshots (paths), parity result per screen and width, matrix rows closed, what you could not do. Commit in small commits with explicit pathspecs. Tests follow the keep rule: a new test calls the code the way users do, asserts a literal, fails when the code breaks, and guards something a browser cannot see (D14).
 """
     vslug = f"{slug}-verify"
     vdb = f"app_verify_{norm(pid)}"
     verify = f"""# {pid} verify: {p['title']}
 
-Card slug `{vslug}`. Independent verifier (different model than the builder). You never edit product code. Worktree `{WT}/{vslug}`, branch `beta/{vslug}`.
+Card slug `{vslug}`. Independent verifier on a different model than the builder ({p.get('builder_model') or 'devin/swe-2-max'}). You never edit product code and never push. Worktree `{WT}/{vslug}` (local branch `beta/{vslug}`, never pushed). Evidence goes outside git to `{EVID}/{pid}/` and into the PR as a comment.
 
 ## Steps
 
-1. `cd {WT}/{vslug} && git merge --ff-only beta/{slug} && git merge --no-ff --no-edit Vari8-Beta`. On a conflict: `git merge --abort`, block this card with reason `conflict: <paths>` and stop; the merge lead resolves it in the builder worktree.
-2. `mkdir -p icm/05-build/evidence/{slug} && BASE_SHA=$(git rev-parse Vari8-Beta) LANE_DB={vdb} LANE_PORT={vport} CARD={pid} icm/05-build/tools/verify-local.sh > icm/05-build/evidence/{slug}/verify-local.log 2>&1; echo EXIT=$?`. Paste the exit code.
-3. Live receipt at the exact head: start the app on port {vport} with a fresh `{vdb}` (`npm run db:fresh`, or RUNBOOK 'Dev user before PR-04' while `db:fresh` does not exist yet), drive every acceptance item below in a real browser at 1440x900 and 390x844, as each of: {LIVE_ROLES}. Unauthorized direct requests to the PR's routes must fail closed. Save screenshots as `evidence/{slug}/<role>-<width>.png`.
-4. Parity (D32) on {scr_txt}: run the harness against your server and commit the report and diff images under `icm/05-build/evidence/{slug}/parity/`.
+1. Find the PR: `gh pr list -R {REPO} --head beta/{slug} --state open --json number,headRefOid`. Then `cd {WT}/{vslug} && git fetch origin && git checkout --detach origin/beta/{slug}`; record the head SHA. Test-merge the current trunk the way GitHub will: `git merge --no-ff --no-edit origin/Vari8-Beta`. On a conflict: `git merge --abort`, comment `FIX: conflict with Vari8-Beta in <paths>` on the PR, block this card, stop.
+2. `mkdir -p {EVID}/{pid} && BASE_SHA=$(git rev-parse origin/Vari8-Beta) LANE_DB={vdb} LANE_PORT={vport} CARD={pid} icm/05-build/tools/verify-local.sh > {EVID}/{pid}/verify-local.log 2>&1; echo EXIT=$?`.
+3. Live receipt at that head: start the app on port {vport} with a fresh `{vdb}` (`npm run db:fresh`, or RUNBOOK 'Dev user before PR-04' while `db:fresh` does not exist yet), drive every acceptance item below in a real browser at 1440x900 and 390x844, as each of: {LIVE_ROLES}. Unauthorized direct requests to the PR's routes must fail closed. Save screenshots as `{EVID}/{pid}/<role>-<width>.png`.
+4. Parity (D32) on {scr_txt}: run the harness against your server; keep the report and diff images in `{EVID}/{pid}/parity/`.
 5. Check every matrix row listed below is visibly closed (or, for model and service rows, exercised by the wiring flow or a keep-category test). List each row with PASS or FAIL.
-6. Commit the evidence with an explicit pathspec (`git add -- icm/05-build/evidence/{slug}`), complete the card with `PASS <head sha>` or block it with `FAIL` and the findings for the builder.
+6. Verdict: `gh pr comment <n> -R {REPO} --body-file {EVID}/{pid}/verdict.md`, where the first line is `SHIP {pid} <head sha>` or `FIX {pid} <head sha>`, followed by the gate summary, the live receipt table, the parity table and the matrix-row list. Attach the evidence folder listing to this card. Complete the card on SHIP; block it with the findings on FIX (the builder repairs, pushes, and this card runs again on the new head).
+7. Stop your servers, drop `{vdb}`, leave the worktree clean.
 
 ## Acceptance to check
 
@@ -351,13 +367,11 @@ Card slug `{vslug}`. Independent verifier (different model than the builder). Yo
     mslug = f"{slug}-merge"
     merge = f"""# {pid} merge: integrate into Vari8-Beta
 
-Card slug `{mslug}`. Integration lead. Worktree `{WT}/{mslug}`, branch `beta/{mslug}`.
+Card slug `{mslug}`. Integration lead. Worktree `{WT}/{mslug}` (local branch `beta/{mslug}`, never pushed).
 
-1. Confirm every verifier card of {pid} completed with PASS at the same head SHA.
-2. `cd {WT}/{mslug} && icm/05-build/tools/integrate.sh beta/{vslug} {pid}`. The script takes the integration lock, merges the verified branch on top of the current `Vari8-Beta`, re-runs the fast gate (typecheck, lint, unit, build) on port {mport} with `app_merge_{norm(pid)}`, and fast-forwards `Vari8-Beta` only when it passes.
-3. On a conflict: resolve it in this worktree (format-only hunks: take either side and re-run `npm run format`), re-run step 2. A conflict in product logic goes back to the builder card as `request-changes`.
-4. Append one line to `icm/05-build/BLACKBOARD.md` log (time, {pid}, merged SHA) inside the same lock, as the script does.
-5. Never push.
+1. `cd {WT}/{mslug} && icm/05-build/tools/integrate.sh {pid} beta/{slug}`. The script takes the integration lock; checks that every verifier comment on the PR says `SHIP {pid} <sha>` for the current head; test-merges the head with `origin/Vari8-Beta` and runs the fast gate (typecheck, lint, unit, build) on `app_merge_{norm(pid)}`; then `gh pr merge --merge --match-head-commit <sha>`; closes the issue with a link to the PR; fast-forwards the beta worktree to `origin/Vari8-Beta`; deletes the remote and local branches and removes the builder and verifier worktrees (ship-all and cleanup rule).
+2. Exit 3 (conflict with trunk) or a red fast gate: comment `FIX` on the PR with the output, `request-changes` the builder card, stop. The builder updates the branch; the verifier runs again on the new head.
+3. Append the merge to the live log `{WT}/_live/merge-log.md` (the script does it under the lock). Complete this card with the merge commit SHA.
 """
     return build, verify, merge, dict(port=port, vport=vport, mport=mport, db=dbname, vdb=vdb)
 
@@ -377,19 +391,19 @@ def merge_key(dep):
 for d in DECISION_CARDS:
     add_card(card_key(d["id"], "decision"), "decision", d["id"], d["slug"], f'{d["id"]}: {d["title"]}', d["who"],
              [card_key(x, "decision") for x in d["deps"]], d["est"],
-             f'# {d["id"]}: {d["title"]}\n\nWorktree `{WT}/{d["slug"]}`, branch `beta/{d["slug"]}`. Step 0: `git merge --ff-only Vari8-Beta`.\n\n{d["body"]}\n',
-             "30m", dict(ext=d.get("ext", False)))
+             f'# {d["id"]}: {d["title"]}\n\n{d["body"]}\n',
+             "30m", dict(ext=d.get("ext", False), eta=d.get("eta")))
 
 for p in PRS:
     b, v, m, ports = pr_card_bodies(p)
     parents = [merge_key(d) for d in p["deps"]]
     rt = f'{max(30, int(p["est"] * 1.5))}m' if p["est"] else "3h"
     add_card(card_key(p["id"], "build"), "build", p["id"], p["slug"], f'{p["id"]} build: {p["title"]}', p["who"], parents,
-             p["est"], b, rt, dict(ext=p.get("ext", False), **ports))
+             0 if p.get("ext") else p["est"], b, rt, dict(ext=p.get("ext", False), eta=p.get("eta"), issue=p.get("issue"), **ports))
     vparents = [card_key(p["id"], "build")]
     vest = 30 if screens_of(p) == SHOT_FILES else 20
-    add_card(card_key(p["id"], "verify"), "verify", p["id"], f'{p["slug"]}-verify', f'{p["id"]} verify', "neji", vparents,
-             vest, v, "45m", ports)
+    add_card(card_key(p["id"], "verify"), "verify", p["id"], f'{p["slug"]}-verify', f'{p["id"]} verify', p.get("verifier", "neji"), vparents,
+             vest, v, "45m", dict(ports, ext="done" if p.get("ext") == "done" else False))
     mparents = [card_key(p["id"], "verify")]
     if p.get("sec"):
         sbody = v.replace(f'# {p["id"]} verify', f'# {p["id"]} security verify').replace(f'{p["slug"]}-verify', f'{p["slug"]}-secverify') + \
@@ -397,20 +411,29 @@ for p in PRS:
         add_card(card_key(p["id"], "secverify"), "verify", p["id"], f'{p["slug"]}-secverify', f'{p["id"]} security verify', "shinobu",
                  vparents, 20, sbody, "45m", ports)
         mparents.append(card_key(p["id"], "secverify"))
-    add_card(card_key(p["id"], "merge"), "merge", p["id"], f'{p["slug"]}-merge', f'{p["id"]} merge', "kakashi", mparents, 10, m, "30m", ports)
+    add_card(card_key(p["id"], "merge"), "merge", p["id"], f'{p["slug"]}-merge', f'{p["id"]} merge', "kakashi", mparents, 10, m, "30m",
+             dict(ports, ext="done" if p.get("ext") == "done" else False))
 
 for g in GATES:
-    parents = [merge_key(d) if d in PR_BY_ID else card_key(d, "gate") for d in g["deps"]]
+    parents = [merge_key(d) if d in PR_BY_ID else (card_key(d, "decision") if d.startswith(("DEC-", "AUD-")) else card_key(d, "gate"))
+               for d in g["deps"]]
     if g["id"] == "GATE-PRR":
-        parents = [card_key(p["id"], "merge") for p in PRS]
-    body = (f'# {g["id"]}: {g["title"]}\n\nWorktree `{WT}/{g["slug"]}`, branch `beta/{g["slug"]}`. Step 0: `git merge --ff-only Vari8-Beta`.\n\n')
+        parents = [card_key(p["id"], "merge") for p in PRS] + [card_key("AUD-PRR-BASELINE", "decision")]
+    head = (f'# {g["id"]}: {g["title"]}\n\nRepo `{REPO}`. Worktree `{WT}/{g["slug"]}`, branch `beta/{g["slug"]}`. Step 0: `git fetch origin && git merge --ff-only origin/Vari8-Beta`. '
+            f'A report this card commits ships like every PR: issue `[{g["id"]}]` with label `vari8-beta`, push, PR against `Vari8-Beta`, rules in `icm/05-build/cards/PIPELINE-FOOTER.md`.\n\n')
     if g["id"] == "GATE-PRR":
-        body += ("Run the `production-readiness-checklist` skill against the integrated `Vari8-Beta` tip: full `verify-local.sh`, a fresh-clone setup per `docs/setup.md`, "
-                 "parity on all 35 screens at both widths, the live role matrix, the security doc against `lib/auth/roles.ts`, the D19 parked list, open risks. "
-                 "Write `icm/05-build/reports/gate-prr.md` with READY, REPAIR or BLOCKED per item and commit it with an explicit pathspec. REPAIR items become new cards via the program lead.\n")
+        body = head + ("Run the `production-readiness-checklist` skill against the integrated `origin/Vari8-Beta` tip, starting from the baseline in `icm/05-build/audits/`: full `verify-local.sh`, a fresh-clone setup per `docs/setup.md`, "
+                       "parity on all 35 screens at both widths, the live role matrix, the security doc against the D15 capability table, the D19 parked list, open risks. "
+                       "Write `icm/05-build/reports/GATE-PRR.md` with READY, REPAIR or BLOCKED per item. REPAIR items become new cards through the program lead.\n")
+    elif g["id"] == "GATE-FINAL":
+        body = head + ("Judge the integrated branch once: read `icm/05-build/reports/GATE-PRR.md`, PLAN v2, the coverage ledger and the evidence tree. Attack the premise: is `Vari8-Beta` "
+                       "a functional first beta that keeps the canvas exactly as it looks today? Write `icm/05-build/reports/GATE-FINAL.md` with SHIP or HOLD and the reasons.\n")
     else:
-        body += ("Judge the integrated branch once: read `icm/05-build/reports/gate-prr.md`, PLAN v2, the coverage ledger and the evidence tree. Attack the premise: is `Vari8-Beta` "
-                 "a functional first beta that keeps the canvas exactly as it looks today? Write `icm/05-build/reports/gate-final.md` with SHIP or HOLD and the reasons, commit it with an explicit pathspec.\n")
+        body = (f'# {g["id"]}: {g["title"]}\n\nRun from `{BETA}` after `git pull --ff-only origin Vari8-Beta`. Ship-all and cleanup rule (orchestrator, 02:35). Every check must hold; fix what a merge card left behind, then report the command outputs on this card:\n\n'
+                f'- `gh pr list -R {REPO} --state open` lists no program PR, and `gh issue list -R {REPO} --label vari8-beta --state open` is empty.\n'
+                f'- `git branch -r` shows only main, FRONTEND, TRACKER, Vari8-Beta and branches that existed before the program (record the pre-program list from `icm/05-build/RUNBOOK.md`).\n'
+                f'- `git worktree list` shows only the root checkout and `{BETA}`; run `git worktree prune` after removals. `{WT}/_evidence` stays (outside git).\n'
+                f'- `docker exec vari8-db-1 psql -U app -d postgres -Atc "select datname from pg_database where datname like \'app_%\'"` shows only `app_dev`.\n')
     add_card(card_key(g["id"], "gate"), "gate", g["id"], g["slug"], g["title"], g["who"], parents, g["est"], body, "2h")
 
 CARD_BY_KEY = {c["key"]: c for c in cards}
@@ -428,7 +451,7 @@ def ancestors(key, acc=None):
 # Verifiers need the parity harness (screen PRs) and the dev seed (every live lane) on Vari8-Beta.
 # Add the edge only where it is not already implied.
 for p in PRS:
-    if p["id"] in ("PR-02", "PR-P1", "PR-T1", "PR-04"):
+    if p["id"] in ("PR-02", "PR-P1", "PR-03A", "PR-03B", "PR-04", "PR-05", "PR-X1"):
         continue
     for kind in ("verify", "secverify"):
         v = CARD_BY_KEY.get(card_key(p["id"], kind))
@@ -470,7 +493,7 @@ for p in PRS:
         if card_key(p["id"], kind) not in CARD_BY_KEY:
             problems.append(f"{p['id']}: missing {kind} card")
     b = CARD_BY_KEY[card_key(p["id"], "build")]
-    bm = BUILDER_MODEL.get(b["who"], b["model"])
+    bm = p.get("builder_model") or BUILDER_MODEL.get(b["who"], b["model"])
     for kind in ("verify", "secverify"):
         v = CARD_BY_KEY.get(card_key(p["id"], kind))
         if v and v["model"] == bm:
@@ -500,11 +523,18 @@ start_at = {}
 pending = {c["key"] for c in cards}
 running = []  # (end, key)
 now = T0
-# Work already in flight: PR-02 Devin and the AUTH lane.
-assumed = {card_key("PR-02", "build"): T0, card_key("DEC-AUTH", "decision"): datetime(2026, 10, 19, 2, 50)}
+MERGE_LOCK = {"free": T0}
+# Work already in flight or done outside the graph, as of 02:30.
+T_EXT = datetime(2026, 10, 19, 2, 30)
+assumed = {}
+for c in cards:
+    if c.get("ext") == "done":
+        assumed[c["key"]] = T_EXT
+    elif c.get("ext") == "running":
+        assumed[c["key"]] = T_EXT + timedelta(minutes=c.get("eta") or 60)
 for k, t in assumed.items():
     done_at[k] = t
-    start_at[k] = datetime(2026, 10, 19, 2, 6)
+    start_at[k] = datetime(2026, 10, 19, 2, 6) if t == T_EXT else datetime(2026, 10, 19, 2, 24)
     pending.discard(k)
 
 
@@ -515,28 +545,48 @@ def is_devin(c):
 while pending:
     ready = [k for k in pending if all(pk in done_at and done_at[pk] <= now for pk in CARD_BY_KEY[k]["parents"])]
     ready.sort(key=lambda k: topo.index(k))
+    ext_devins = sum(1 for k, t in assumed.items() if t > now and CARD_BY_KEY[k].get("ext") == "running"
+                     and "devin" in str(PR_BY_ID.get(CARD_BY_KEY[k]["pr"], {}).get("builder_model", "")))
     for k in ready:
         c = CARD_BY_KEY[k]
-        if is_devin(c) and sum(1 for e, rk in running if is_devin(CARD_BY_KEY[rk])) >= DEVIN_CAP:
+        if is_devin(c) and ext_devins + sum(1 for e, rk in running if is_devin(CARD_BY_KEY[rk])) >= DEVIN_CAP:
             continue
         start_at[k] = now
         end = now + timedelta(minutes=c["est"])
+        if c["kind"] == "merge":
+            if MERGE_LOCK["free"] > now:
+                continue
+            MERGE_LOCK["free"] = end
         running.append((end, k))
         pending.discard(k)
-    if not running:
+    future_ext = [t for t in assumed.values() if t > now]
+    nxt = min([e for e, _ in running] + future_ext + ([MERGE_LOCK["free"]] if MERGE_LOCK["free"] > now else []), default=None)
+    if nxt is None:
         problems.append("timeline: deadlock")
         break
+    now = nxt
     running.sort()
-    end, k = running.pop(0)
-    now = max(now, end)
-    done_at[k] = end
+    while running and running[0][0] <= now:
+        end, k = running.pop(0)
+        done_at[k] = end
 for e, k in running:
     done_at[k] = e
 finish = max(done_at.values())
 
 # ---------- outputs ----------
 os.makedirs(f"{OUT}/cards", exist_ok=True)
+manifest = f"{OUT}/cards/.generated"
+previous = set(open(manifest).read().split()) if os.path.exists(manifest) else set()
+previous |= {"pr-p1-parity-harness.md", "pr-p1-parity-harness-verify.md", "pr-p1-parity-harness-merge.md",
+             "pr-t1-test-cuts.md", "pr-t1-test-cuts-verify.md", "pr-t1-test-cuts-merge.md",
+             "pr-x1-system-index.md", "pr-x1-system-index-verify.md", "pr-x1-system-index-merge.md"}
+current = {f"{c['slug']}.md" for c in cards}
+for stale in previous - current:
+    if os.path.exists(f"{OUT}/cards/{stale}"):
+        os.remove(f"{OUT}/cards/{stale}")
+open(manifest, "w").write("\n".join(sorted(current)) + "\n")
 for c in cards:
+    c["body"] = c["body"].replace(" \u2014 ", ", ").replace("\u2014", ", ")
     open(f"{OUT}/cards/{c['slug']}.md", "w").write(c["body"])
 
 with open(f"{OUT}/coverage-ledger.csv", "w", newline="") as f:
@@ -579,7 +629,7 @@ rows = []
 for p in PRS:
     b = card_key(p["id"], "build")
     mk = card_key(p["id"], "merge")
-    rows.append((done_at.get(mk), p["id"], start_at.get(b), done_at.get(mk), p["who"], p.get("gear") or "-"))
+    rows.append((done_at.get(mk), p["id"], start_at.get(b), done_at.get(mk), p["who"] or f'external {p.get("builder_model")}', p.get("gear") or "-"))
 rows.sort(key=lambda r: r[0])
 with open(f"{OUT}/timeline.md", "w") as f:
     f.write("| PR | Builder | Gear | Build starts | Merged by |\n| --- | --- | --- | --- | --- |\n")

@@ -9,7 +9,7 @@ The canvas (`frontend/`) is taken over exactly as it looks today, every screen, 
 - PR-01 is now the canvas-wide takeover into the root app, every route at its current path, with real identity in the account block (D18, D21). No dev-route split. The FRONTEND merge itself already sits on `Vari8-Beta` (`0610cd6`).
 - Schema work is consolidated: `db/schema.prisma` and migrations have one writer at a time, the chain PR-05, PR-M0, PR-R2 (D34). PR-M1 to PR-M9 become service and validator PRs that never touch `db/`.
 - Messaging and media are full scope: text, voice, documents, images and video as the canvas draws them (D20). PR-MEDIA and PR-MSG wire the three message screens.
-- New tracks. Parity harness PR-P1 (D32). Test cuts PR-T1 and PR-T2 (TEST-AUDIT). Data seam PR-W0 so wiring PRs never edit a shared store. Backend reduction PR-R1 to PR-R3 (D33). System index PR-X1. README, setup and infographics PR-D1.
+- New tracks. Parity harness PR-P1 (D32). Test cuts PR-03A and PR-T2 (TEST-AUDIT), react-hooks fixes PR-03B. Data seam PR-W0 so wiring PRs never edit a shared store. Backend reduction PR-R0 to PR-R3 (D33, BACKEND-REDUCTION). System index PR-X1 and PR-X2. README, setup and infographics PR-D1.
 - Every v1 owner question is settled (table below). Consent and health-data gates are parked behind one flag (D19). CONFLICT rows follow D36.
 - Wiring PRs depend on the model PR of their domain, not on PR-W3; the model PR seeds the canvas demo data, so seven wiring PRs run in parallel.
 - Verification replaces the v1 ten-lane template: a local gate (D13), one live receipt per role and width, and the parity gate. The v1 consent lanes are gone (D12, D19).
@@ -41,14 +41,14 @@ All v1 questions are answered. Remaining calls are listed with their reversal wo
 
 Open calls for Marcel, each with a default already applied:
 
-- D16a, the AUTH outcome. The evaluation lane writes `icm/05-build/AUTH-DECISION.md`; card DEC-AUTH-REVIEW records it. PR-05 waits for it.
+- D16a, the AUTH outcome: Better Auth (recorded in DECISIONS from `icm/05-build/AUTH-DECISION.md` and the 02:12 ruling). PR-05 implements it, in flight as #58.
 - D23 parameter catalog. Production ships no parameter seed, so a new workspace cannot add tracker fields. Reverse with `seed-catalog`.
 - D20 video. The canvas offers video; it rides the media path. Reverse with `no-video`.
 - D32 truth-text copy for four storage labels. Reverse with `keep-demo-copy`.
 
 ## How to read this
 
-One section is one PR, one issue and one kanban card triple (build, verify, merge) on board `vari8`. A box is checked only when its evidence exists in `icm/05-build/evidence/<card-slug>/` or the card report. Section headings keep the `(PR-id)` suffix that `icm/03-plan/tools/plan-to-issues.mjs` parses; the new prefixes PR-P, PR-T, PR-R, PR-X and PR-D need label rules in that generator before issues are created (see Appendix B).
+One section is one PR, one issue and one kanban card triple (build, verify, merge) on board `vari8`. A box is checked only when its evidence exists in `/home/nexuslink/vari8-worktrees/_evidence/<PR-id>/`, the PR comments or the card report. Each card creates its own GitHub issue (label `vari8-beta`) and PR against `Vari8-Beta`.
 
 ## Program checklist
 
@@ -78,12 +78,12 @@ One section is one PR, one issue and one kanban card triple (build, verify, merg
 
 | Track      | PRs                                                                                            |
 | ---------- | ---------------------------------------------------------------------------------------------- |
-| Foundation | PR-02, PR-P1, PR-T1, PR-04, PR-01, PR-03, PR-T2, PR-05                                         |
+| Foundation | PR-02, PR-P1, PR-03A, PR-03B, PR-04, PR-01, PR-03, PR-T2, PR-05                                |
 | Wiring     | PR-W1, PR-MEDIA, PR-MSG, PR-W0, PR-W2, PR-W3, PR-W4, PR-W5, PR-W6, PR-W7, PR-W8, PR-W9, PR-W10 |
 | Model      | PR-M0, PR-M1, PR-M2, PR-M3, PR-M4, PR-M5, PR-M6, PR-M7, PR-M8, PR-M9                           |
+| Reduction  | PR-R0, PR-R1, PR-R2, PR-R3                                                                     |
 | Service    | PR-SV1, PR-SV2, PR-SV3, PR-SV4                                                                 |
-| Reduction  | PR-R1, PR-R2, PR-R3                                                                            |
-| Index      | PR-X1                                                                                          |
+| Index      | PR-X1, PR-X2                                                                                   |
 | Docs       | PR-D1                                                                                          |
 | Mobile     | PR-31                                                                                          |
 
@@ -93,9 +93,9 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Depends on.** None.
 
-**Card.** `pr-02-next16` (build), `pr-02-next16-verify`, `pr-02-next16-merge`. Builder Devin swe-2-max via yamato, gear kakashi. Estimate in flight minutes.
+**Card.** `pr-02-next16` (build), `pr-02-next16-verify`, `pr-02-next16-merge`. Builder devin/swe-2-max outside the graph, gear kakashi, issue #57 (done). Estimate in flight minutes.
 
-**State.** In progress outside the graph since 02:06; folded in as a running card.
+**State.** Issue #57, shipped outside the graph; recorded as a completed card.
 
 **Files.**
 
@@ -105,8 +105,8 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Build.**
 
-- [ ] Running outside the graph since 02:06 (Devin, card `icm/05-build/cards/PR-02.md` in its worktree). Folded in here as an in-progress card.
-- [ ] Root `next`, `react`, `react-dom` and types move to the canvas versions; official codemods; root causes fixed (D2).
+- [ ] Shipped outside the graph: PR #57 merged into `Vari8-Beta` at `55a0f08` (02:19), verified by Haiku (SHIP), branch and worktree cleaned. Folded in as a completed card.
+- [ ] Root `next`, `react`, `react-dom` and types moved to the canvas versions; four react-hooks v6 rules downgraded to warn with 11 findings handed to PR-03B.
 
 **You see.**
 
@@ -143,21 +143,22 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Depends on.** None.
 
-**Card.** `pr-p1-parity-harness` (build), `pr-p1-parity-harness-verify`, `pr-p1-parity-harness-merge`. Builder Devin swe-2-max via yamato, gear zenitsu. Estimate 45 minutes.
+**Card.** `parity-harness` (build), `parity-harness-verify`, `parity-harness-merge`. Builder claude-haiku-5-5 outside the graph, gear zenitsu, issue #61 (running). Estimate 45 minutes.
+
+**State.** Issue #61, in flight outside the graph since about 02:24; folded in as a running card whose verifier checks the contract below.
 
 **Files.**
 
-- [ ] Edit `tests/parity/parity.spec.ts`, `tests/parity/screens.ts`, `tests/parity/geometry.ts`, `playwright.parity.config.ts`, `icm/05-build/parity/baseline/**`, package.json (scripts `parity:baseline`, `parity:check` only).
+- [ ] Edit tools/parity/run.mjs, capture.mjs, compare.mjs (in flight), `tools/parity/baseline/**`, package.json (script `parity` only), .gitignore (`tools/parity/out/`).
 - [ ] Leave `db/` untouched (D34).
-- [ ] Write `icm/05-build/reports/pr-p1-parity-harness.md` with commands and exit codes.
+- [ ] Write `icm/05-build/reports/parity-harness.md` with commands and exit codes.
 
 **Build.**
 
-- [ ] Generate `tests/parity/screens.ts` from `icm/04-briefing/shots/index.json` (35 screens, route and click path each) with a script, not by hand.
-- [ ] One Playwright spec replays each click path at 1440x900 and 390x844 with the clock frozen at `2026-10-19T09:00:00+02:00` and animations off, then saves a PNG and a DOM geometry JSON (role, accessible name, text, bounding box of every visible element).
-- [ ] `npm run parity:baseline` captures the canvas (`frontend/` dev server) into `icm/05-build/parity/baseline/{desktop,mobile}/`. `npm run parity:check -- --base-url <url> --screens <ids>` compares any running app against the baseline with the D32 rule and writes a diff report and diff images.
-- [ ] Pixel compare uses Playwright's built-in screenshot comparator (`maxDiffPixelRatio: 0.001`, `threshold: 0.1`); no new dependency. Masks come only from the D32 truth-text table.
-- [ ] Prove the harness bites: run check against the baseline itself (PASS), then against a copy with one CSS change (FAIL on the changed screens only).
+- [ ] In flight outside the graph (Haiku, zenitsu gear, issue #61). Interface as built: `npm run parity` starts the canvas dev server on `PARITY_PORT` (default 3630) unless `PARITY_URL` points at a running app, captures every screen at 1440x900 and 390x844, compares with `tools/parity/baseline/`, writes `tools/parity/out/report.html`, stops the server; exit code is the comparison's. `npm run parity -- --update-baseline` recaptures. `verify-local.sh` calls it.
+- [ ] Acceptance contract the verifier checks: the screen list comes from `icm/04-briefing/shots/index.json` (35 screens, route and click path each), not a hand list; clock frozen and animations off; the next-dev write to `frontend/AGENTS.md` is restored after the run.
+- [ ] Pixel compare with a stated tolerance; masks only for the D32 truth-text table.
+- [ ] The harness bites: a run against the baseline itself passes; a run after one CSS change fails on the changed screens only.
 
 **You see.**
 
@@ -190,27 +191,30 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 - [ ] Every verifier card records PASS at the exact head SHA.
 - [ ] The merge card integrates into `Vari8-Beta` and logs the SHA on the blackboard.
 
-## Apply the TEST-AUDIT cuts (PR-T1)
+## Apply the TEST-AUDIT cuts (PR-03A)
 
 **Depends on.** None.
 
-**Card.** `pr-t1-test-cuts` (build), `pr-t1-test-cuts-verify`, `pr-t1-test-cuts-merge`. Builder tenten (ds4f). Estimate 50 minutes.
+**Card.** `pr-03-test-audit` (build), `pr-03-test-audit-verify`, `pr-03-test-audit-merge`. Builder devin/swe-2-max outside the graph, gear shikamaru, issue #59 (running). Estimate 60 minutes.
+
+**State.** Issue #59, in flight outside the graph since about 02:24; folded in as a running card whose verifier checks the contract below.
 
 **Files.**
 
-- [ ] Edit `tests/**`, `frontend/**/*.test.mjs`, `frontend/**/*.checks.mjs`, `frontend/scripts/*.test.*`, `icm/05-build/tools/apply-test-audit.py`.
+- [ ] Edit `tests/**`, `frontend/**/*.test.mjs`, `frontend/**/*.checks.mjs`, `frontend/scripts/*.test.*`, test configs, package.json scripts, `icm/05-build/tools/apply-test-audit.mjs`.
 - [ ] Leave `db/` untouched (D34).
-- [ ] Write `icm/05-build/reports/pr-t1-test-cuts.md` with commands and exit codes.
+- [ ] Write `icm/05-build/reports/pr-03-test-audit.md` with commands and exit codes.
 
 **Build.**
 
-- [ ] Build the lever first: `icm/05-build/tools/apply-test-audit.py` parses the TEST-AUDIT per-file action list and the pass-2 block table (AST spans at `58eb6ed`), then deletes every CUT-FILE, the VISIBLE and CUT pass-2 blocks of every TRIM file, the named within-block exclusions, and the 41 old-UI e2e specs.
+- [ ] In flight outside the graph (Devin, shikamaru gear, issue #59, card `PR-03a`).
+- [ ] Build the lever first: `icm/05-build/tools/apply-test-audit.mjs` parses the TEST-AUDIT per-file action list and the pass-2 block table (AST spans at `58eb6ed`), then deletes every CUT-FILE, the VISIBLE and CUT pass-2 blocks of every TRIM file, the named within-block exclusions, and the 41 old-UI e2e specs.
 - [ ] Leave every KEEP-ALL file, every GUARD block, every CUT-AT-REPLACE block (PR-04 via PR-T2, PR-05, PR-W4) and every REWIRE block untouched.
 - [ ] Re-run the script: the second run changes nothing (idempotent).
 
 **You see.**
 
-- [ ] `npm run test` and `npm --prefix frontend test` exit 0; the deleted line count matches TEST-AUDIT (about 24,330 allocated lines) within the import-cleanup tolerance, with the difference explained.
+- [ ] `npm run test` and `npm --prefix frontend test` exit 0; the remaining counts reconcile with TEST-AUDIT GUARD plus CUT-AT-REPLACE totals, table in the report.
 
 **Verify, unit.**
 
@@ -230,6 +234,57 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 - [ ] 0 rows: none.
 - [ ] TEST-AUDIT actions executed: 195 (listed in the ledger).
+
+**Review gate.**
+
+- [ ] Parity report and screenshots attached for Marcel's asynchronous review; a screen he rejects reopens this PR.
+
+**Merge.**
+
+- [ ] Every verifier card records PASS at the exact head SHA.
+- [ ] The merge card integrates into `Vari8-Beta` and logs the SHA on the blackboard.
+
+## Fix the react-hooks v6 findings (PR-03B)
+
+**Depends on.** None.
+
+**Card.** `pr-03-react-hooks` (build), `pr-03-react-hooks-verify`, `pr-03-react-hooks-merge`. Builder devin/swe-2-max outside the graph, gear itachi, issue #60 (running). Estimate 45 minutes.
+
+**State.** Issue #60, in flight outside the graph since about 02:24; folded in as a running card whose verifier checks the contract below.
+
+**Files.**
+
+- [ ] Edit the 11 finding sites listed in `icm/05-build/reports/PR-02.md` section E2, `eslint.config.mjs`.
+- [ ] Leave `db/` untouched (D34).
+- [ ] Write `icm/05-build/reports/pr-03-react-hooks.md` with commands and exit codes.
+
+**Build.**
+
+- [ ] In flight outside the graph (Devin, itachi gear, issue #60, card `PR-03b`).
+- [ ] Fix each finding at the root cause; set the four rules back to `error`; lint exits 0 with zero react-hooks findings.
+- [ ] Canvas markup and styles stay byte-identical except where a hook fix requires it; each case named in the report.
+
+**You see.**
+
+- [ ] Lint exits 0 with the four rules at `error`; before and after screenshots at 1440 and 390 show no visual change on every touched screen.
+
+**Verify, unit.**
+
+- [ ] None needed; behavior-preserving, proven by screenshots and the existing suites.
+
+**Verify, live.**
+
+- [ ] `icm/05-build/tools/verify-local.sh` exits 0 at the verify head (format, typecheck, lint, unit, integration when `db/`, `lib/` or `app/api/` changed, build, schema guard, e2e flow specs).
+- [ ] Live receipt at 1440 and 390 as owner, coach, client of the same workspace, staff of a foreign workspace, signed out; unauthorized direct requests fail closed. Screenshots `<role>-<width>.png`.
+- [ ] Keyboard-only pass of the changed interaction: focus order and accessible names.
+
+**Verify, parity.**
+
+- [ ] No screen changes. Once PR-01 has landed, the regression parity run in `verify-local.sh` stays green.
+
+**Matrix rows closed.**
+
+- [ ] 0 rows: none.
 
 **Review gate.**
 
@@ -260,6 +315,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 - [ ] `npm run db:fresh` creates `app_<lane>`, migrates, runs the catalog imports (`import:nutrition`, `import:exercise`) and the seed.
 - [ ] Consent and health-data gates read `ENABLE_CONSENT_GATES`, unset by default (D19). Gates allow when it is off. The test environment sets it to 1 in `vitest.config.ts` so the existing consent suites keep testing the parked code until PR-T2 deletes them.
 - [ ] List every gate turned off with file and line in the PR report; PLAN v2 `## Parked: consent and health data` gets the same list at merge.
+- [ ] Merge the five consent gate files into one gate behind the flag where that is a pure move (BACKEND-REDUCTION F11) and inline the empty reset-delivery adapter registry only if PR-05 has not already replaced it (F12).
 
 **You see.**
 
@@ -309,9 +365,10 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 - [ ] Move every canvas route into the root app with its path unchanged: `/coach`, `/ethereal` and `/` (which re-exports the studio today). Move `frontend/src/components/{coach,ethereal,ui}` and `frontend/src/lib` under `components/canvas/` and `lib/canvas/` with `git mv` history where possible; `frontend/` stays as the parity baseline until PR-R1.
 - [ ] Merge the canvas dependencies into the root `package.json` at the canvas versions; one Tailwind 4 and PostCSS setup; carry every canvas CSS file (`globals.css`, `tracker.css`, `weight.css`, `ethereal-*.css`) byte for byte. Do not port the dead `appearance.css` rules beyond `.ap-screen` (S10-21), only if parity stays green.
+- [ ] Point the PR-P1 harness at the root app (`tools/parity/run.mjs` starts the root dev server instead of `frontend/` and signs in as the dev user when a route needs a session); the baseline stays the one captured from `frontend/`.
 - [ ] Behavior stays browser-local exactly as today (the canvas store and its localStorage keys). No screen reads the database yet except identity.
 - [ ] Gate `/coach`, `/ethereal` and `/` behind the existing session: signed out goes to `/login`.
-- [ ] Add the identity seam `lib/auth/viewer.ts` (`getViewer()`: name, initials, workspace, real role `Owner` or `Coach`, D18). The account block shows the viewer instead of the hardcoded coach; add sign-out to the account block's existing menu or dialog without new visible chrome, calling `app/logout/actions.ts`.
+- [ ] Add the identity seam `lib/auth/viewer.ts` (`getViewer()`: name, initials, workspace, real role `Owner` or `Coach`, D18). It reads the session only through the existing `lib/auth/session.ts` and `lib/auth/route-guard.ts` exports, never `next-auth` directly, so PR-05's Better Auth swap (in flight, #58) changes one module, not the screens. If PR-05 merges first, build on its session API instead. The account block shows the viewer instead of the hardcoded coach; add sign-out to the account block's existing menu or dialog without new visible chrome.
 - [ ] Until PR-04 lands, create a local dev user per `icm/05-build/RUNBOOK.md` section 'Dev user before PR-04'.
 
 **You see.**
@@ -347,7 +404,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 ## Wire identity, workspace and client home (PR-W1)
 
-**Depends on.** PR-05.
+**Depends on.** PR-05, PR-01.
 
 **Card.** `pr-w1-identity-home` (build), `pr-w1-identity-home-verify`, `pr-w1-identity-home-secverify`, `pr-w1-identity-home-merge`. Builder Devin swe-2-max via yamato, gear itachi. Estimate 40 minutes.
 
@@ -396,19 +453,19 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 ## Adopt Biome, TypeScript 7 and Turbopack (PR-03)
 
-**Depends on.** PR-01, PR-T1.
+**Depends on.** PR-01, PR-03A, PR-03B.
 
 **Card.** `pr-03-toolchain` (build), `pr-03-toolchain-verify`, `pr-03-toolchain-merge`. Builder Devin swe-2-max via yamato, gear kakashi. Estimate 50 minutes.
 
 **Files.**
 
-- [ ] Edit `package.json`, `package-lock.json`, `biome.json`, `frontend/biome.json`, `tsconfig.json`, eslint.config.mjs (deleted), `.prettierrc`, `.prettierignore`, `playwright.config.ts`, `scripts/verify-local.sh`, the 10 react-hooks finding sites from P1.
+- [ ] Edit `package.json`, `package-lock.json`, `biome.json`, `frontend/biome.json`, `tsconfig.json`, eslint.config.mjs (deleted), `.prettierrc`, `.prettierignore`, `playwright.config.ts`, `scripts/verify-local.sh`.
 - [ ] Leave `db/` untouched (D34).
 - [ ] Write `icm/05-build/reports/pr-03-toolchain.md` with commands and exit codes.
 
 **Build.**
 
-- [ ] Apply the P2 prototype (`d1b1668`, `ce2efed`) as one policy for root and canvas (D4a): canvas `recommended`, `organizeImports`, `noNextAsyncClientComponent`, `nursery/useReactCompiler` as warning. Fix the 10 P1 hook findings at the root cause.
+- [ ] Apply the P2 prototype (`d1b1668`, `ce2efed`) as one policy for root and canvas (D4a): canvas `recommended`, `organizeImports`, `noNextAsyncClientComponent`, `nursery/useReactCompiler` as warning. The react-hooks fixes already landed in PR-03B; keep them green under Biome.
 - [ ] TypeScript 7 native as the only `typescript`; Turbopack for every build (drop `--webpack`); Node 24 in `.nvmrc` and engines.
 - [ ] Prettier only for `*.md`, `*.yml`, `*.yaml`. The reformat is one mechanical commit produced by `npm run format`; the integrator re-runs it after any conflict instead of hand-merging format hunks.
 - [ ] Make Playwright ports selectable by environment (`PLAYWRIGHT_PORT_BASE`) so verifier lanes stop sharing 3000, 3101 and 3102.
@@ -448,7 +505,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 ## Delete the parked consent tests (PR-T2)
 
-**Depends on.** PR-04, PR-T1.
+**Depends on.** PR-04, PR-03A.
 
 **Card.** `pr-t2-consent-test-cuts` (build), `pr-t2-consent-test-cuts-verify`, `pr-t2-consent-test-cuts-merge`. Builder tenten (ds4f). Estimate 25 minutes.
 
@@ -460,7 +517,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Build.**
 
-- [ ] Delete the 9 whole files and the PR-04 CUT-AT-REPLACE blocks the TEST-AUDIT lists, with the same `apply-test-audit.py` lever (`--replace PR-04`).
+- [ ] Delete the 9 whole files and the PR-04 CUT-AT-REPLACE blocks the TEST-AUDIT lists, with the PR-03A lever (`icm/05-build/tools/apply-test-audit.mjs`), extended with a replace-PR filter if it lacks one.
 - [ ] Remove the test-only `ENABLE_CONSENT_GATES=1` from `vitest.config.ts`.
 
 **You see.**
@@ -495,35 +552,35 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 - [ ] Every verifier card records PASS at the exact head SHA.
 - [ ] The merge card integrates into `Vari8-Beta` and logs the SHA on the blackboard.
 
-## Auth per D16a, versioned API and the ROLES table (PR-05)
+## Better Auth, versioned API and the ROLES table (PR-05)
 
-**Depends on.** DEC-AUTH-REVIEW, PR-01, PR-T2.
+**Depends on.** None.
 
-**Card.** `pr-05-auth-api` (build), `pr-05-auth-api-verify`, `pr-05-auth-api-secverify`, `pr-05-auth-api-merge`. Builder Devin swe-2-max via yamato, gear kakashi. Estimate 90 minutes.
+**Card.** `pr-05-auth-api` (build), `pr-05-auth-api-verify`, `pr-05-auth-api-secverify`, `pr-05-auth-api-merge`. Builder devin/swe-2-max outside the graph, gear kakashi, issue #58 (running). Estimate 90 minutes.
+
+**State.** Issue #58, in flight outside the graph since about 02:24; folded in as a running card whose verifier checks the contract below.
 
 **Files.**
 
-- [ ] Edit `auth.ts`, `auth.config.ts`, `lib/auth/**`, `lib/http/boundary.ts`, `app/api/v1/**`, `app/signup/**`, `app/reset/**`, `app/reset-request/**`, `lib/mail/**`, `docs/security/authorization-model.md`, db/schema.prisma and one migration (only if D16a needs auth tables), tests: the PR-05 CUT-AT-REPLACE and REWIRE files from TEST-AUDIT, `tests/unit/roles-matrix.test.ts`.
+- [ ] Edit `auth.ts`, `auth.config.ts`, `lib/auth/**`, `app/api/v1/**`, `app/signup/**`, `app/reset/**`, `app/reset-request/**`, `lib/mail/**`, `docs/security/authorization-model.md`, db/schema.prisma and one migration for the Better Auth tables, tests: the PR-05 CUT-AT-REPLACE and REWIRE files from TEST-AUDIT, a table-driven roles test.
 - [ ] May edit `db/` as a D34 schema writer.
 - [ ] Write `icm/05-build/reports/pr-05-auth-api.md` with commands and exit codes.
 
 **Build.**
 
-- [ ] Implement the library D16a picks behind `getViewer()`; PR-01 and PR-W1 screens do not change.
-- [ ] `lib/auth/roles.ts` holds the complete D15 capability table for every canvas surface (written once here, D34). `authorize(viewer, capability, target)` is the only server check; `rbac.ts` and `guard.ts` callers migrate and the old modules are deleted in this PR.
-- [ ] `lib/http/boundary.ts`: one Zod-validated boundary per operation, used by `app/api/v1/**` route handlers and by thin server actions (D6).
-- [ ] Coach self-signup page (D17) creating user, workspace and owner membership in one transaction; rate limited.
-- [ ] Mail port with a development mailbox adapter; password reset delivered through it, so the six reset GUARD cases run instead of skipping.
-- [ ] Delete the PR-05 CUT-AT-REPLACE tests and rewire the REWIRE blocks (TEST-AUDIT) after the new table-driven test covers each rule. Preserve the CAS, race, rollback, date, token and isolation guarantees named in TEST-AUDIT.
-- [ ] Rewrite `docs/security/authorization-model.md` from D15.
+- [ ] In flight outside the graph (Devin, kakashi gear, issue #58, card `PR-05`), started from `55a0f08`. D16a: Better Auth replaces Auth.js v5 with the Prisma adapter; Hanzlah's invite token store stays; reset links 60 minutes, single use; bearer plugin for API clients; refresh rotation is a later mobile issue.
+- [ ] Sign-in, coach self-signup (D17), sign-out, reset, invite acceptance, session revocation on password change, inactive-account lockout, login rate limiting.
+- [ ] `/api/v1` route helper: authenticate (cookie or bearer), resolve workspace and role, Zod-validate, call one service, typed JSON errors (D6). Reference route: the coach roster read.
+- [ ] Delete what Better Auth replaces and its CUT-AT-REPLACE tests; keep the session-revocation, inactive-account, malformed-claim and fail-closed guarantees (TEST-AUDIT).
+- [ ] Program additions checked by its verifier: the D15 capability table lives in one module with one table-driven test of every actor by every capability; `lib/auth/session.ts` keeps an exported session read that `lib/auth/viewer.ts` (PR-01) can call.
 
 **You see.**
 
-- [ ] Cookie session and `GET /api/v1/me` resolve the same viewer; a new coach signs up and lands in an empty workspace; the role matrix passes for every actor.
+- [ ] Scripted HTTP flow on a fresh database: sign-up, sign-in, wrong password refused, 11th rapid attempt rate limited, reset link reused refused, expired reset refused, session revoked after password change, bearer call to the reference route 200 for the coach, 403 for another workspace, 401 without credentials.
 
 **Verify, unit.**
 
-- [ ] `tests/unit/roles-matrix.test.ts`: every actor by every capability against the real `authorize`, allow and deny literal; plus the preserved session-revocation and token guards.
+- [ ] Table-driven roles test (every actor by every capability against the real server check) plus the preserved session and token guards.
 
 **Verify, live.**
 
@@ -533,7 +590,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Verify, parity.**
 
-- [ ] D32 parity at 1440x900 and 390x844 on `s01-roster.png`, `s11-preferences.png`.
+- [ ] No screen changes. Once PR-01 has landed, the regression parity run in `verify-local.sh` stays green.
 
 **Matrix rows closed.**
 
@@ -604,9 +661,58 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 - [ ] Every verifier card records PASS at the exact head SHA.
 - [ ] The merge card integrates into `Vari8-Beta` and logs the SHA on the blackboard.
 
+## Merge the copied retry and boundary helpers (PR-R0)
+
+**Depends on.** PR-05.
+
+**Card.** `pr-r0-lib-dedupe` (build), `pr-r0-lib-dedupe-verify`, `pr-r0-lib-dedupe-merge`. Builder Devin swe-2-max via yamato, gear kakashi. Estimate 35 minutes.
+
+**Files.**
+
+- [ ] Edit `lib/db.ts`, `lib/boundary.ts`, the 18 service files with `withSerializedRetry` copies, the 16 `lib/*/boundary.ts` files.
+- [ ] Leave `db/` untouched (D34).
+- [ ] Write `icm/05-build/reports/pr-r0-lib-dedupe.md` with commands and exit codes.
+
+**Build.**
+
+- [ ] BACKEND-REDUCTION F8: one `withSerializedRetry` in `lib/db.ts` (the classifier already lives at `lib/db.ts:19`); delete the 18 copies and their constants.
+- [ ] BACKEND-REDUCTION F9: one closed, non-disclosing error vocabulary in `lib/boundary.ts` (`CLOSED_MESSAGES`, `fail`, `mapError`, `guard`); delete the 16 copies. Keep every message string identical (R3-15, R3-19).
+- [ ] Runs before the model wave so PR-M1 to PR-M9 edit the merged helpers, not the copies. No `db/` edits (D34).
+
+**You see.**
+
+- [ ] About 650 lines out; every existing retry and boundary test passes unchanged.
+
+**Verify, unit.**
+
+- [ ] Existing data-integrity and trust-boundary GUARD tests pass unchanged; none added.
+
+**Verify, live.**
+
+- [ ] `icm/05-build/tools/verify-local.sh` exits 0 at the verify head (format, typecheck, lint, unit, integration when `db/`, `lib/` or `app/api/` changed, build, schema guard, e2e flow specs).
+- [ ] Live receipt at 1440 and 390 as owner, coach, client of the same workspace, staff of a foreign workspace, signed out; unauthorized direct requests fail closed. Screenshots `<role>-<width>.png`.
+- [ ] Keyboard-only pass of the changed interaction: focus order and accessible names.
+
+**Verify, parity.**
+
+- [ ] No screen changes. Once PR-01 has landed, the regression parity run in `verify-local.sh` stays green.
+
+**Matrix rows closed.**
+
+- [ ] 0 rows: none.
+
+**Review gate.**
+
+- [ ] Parity report and screenshots attached for Marcel's asynchronous review; a screen he rejects reopens this PR.
+
+**Merge.**
+
+- [ ] Every verifier card records PASS at the exact head SHA.
+- [ ] The merge card integrates into `Vari8-Beta` and logs the SHA on the blackboard.
+
 ## Client profile, archive and retention services (PR-M1)
 
-**Depends on.** PR-M0.
+**Depends on.** PR-M0, PR-R0.
 
 **Card.** `pr-m1-client-lifecycle` (build), `pr-m1-client-lifecycle-verify`, `pr-m1-client-lifecycle-merge`. Builder Devin swe-2-max via yamato, gear gowther. Estimate 40 minutes.
 
@@ -656,7 +762,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 ## Workspace appearance and preference services (PR-M2)
 
-**Depends on.** PR-M0.
+**Depends on.** PR-M0, PR-R0.
 
 **Card.** `pr-m2-preferences` (build), `pr-m2-preferences-verify`, `pr-m2-preferences-merge`. Builder Devin swe-2-max via yamato, gear gowther. Estimate 35 minutes.
 
@@ -705,7 +811,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 ## Coach notes, coach tasks and tracker comments (PR-M3)
 
-**Depends on.** PR-M0.
+**Depends on.** PR-M0, PR-R0.
 
 **Card.** `pr-m3-notes-tasks` (build), `pr-m3-notes-tasks-verify`, `pr-m3-notes-tasks-merge`. Builder Devin swe-2-max via yamato, gear gowther. Estimate 40 minutes.
 
@@ -755,7 +861,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 ## Template definition services (PR-M4)
 
-**Depends on.** PR-M0, PR-M1.
+**Depends on.** PR-M0, PR-M1, PR-R0.
 
 **Card.** `pr-m4-template-definitions` (build), `pr-m4-template-definitions-verify`, `pr-m4-template-definitions-merge`. Builder Devin swe-2-max via yamato, gear gowther. Estimate 50 minutes.
 
@@ -804,7 +910,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 ## Meal-plan payload and the shared nutrition math (PR-M5)
 
-**Depends on.** PR-M0.
+**Depends on.** PR-M0, PR-R0.
 
 **Card.** `pr-m5-mealplan-payload` (build), `pr-m5-mealplan-payload-verify`, `pr-m5-mealplan-payload-merge`. Builder Devin swe-2-max via yamato, gear gowther. Estimate 50 minutes.
 
@@ -854,7 +960,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 ## Training payload and the shared volume math (PR-M6)
 
-**Depends on.** PR-M0.
+**Depends on.** PR-M0, PR-R0.
 
 **Card.** `pr-m6-training-payload` (build), `pr-m6-training-payload-verify`, `pr-m6-training-payload-merge`. Builder Devin swe-2-max via yamato, gear gowther. Estimate 50 minutes.
 
@@ -904,7 +1010,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 ## Habit fields and all-time completion (PR-M7)
 
-**Depends on.** PR-M0.
+**Depends on.** PR-M0, PR-R0.
 
 **Card.** `pr-m7-habits` (build), `pr-m7-habits-verify`, `pr-m7-habits-merge`. Builder Devin swe-2-max via yamato, gear gowther. Estimate 30 minutes.
 
@@ -953,7 +1059,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 ## Check-in fields, explicit generation and projection (PR-M8)
 
-**Depends on.** PR-M0.
+**Depends on.** PR-M0, PR-R0.
 
 **Card.** `pr-m8-checkins` (build), `pr-m8-checkins-verify`, `pr-m8-checkins-merge`. Builder Devin swe-2-max via yamato, gear gowther. Estimate 45 minutes.
 
@@ -1003,7 +1109,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 ## Dashboard configuration adapter (PR-M9)
 
-**Depends on.** PR-M0.
+**Depends on.** PR-M0, PR-R0.
 
 **Card.** `pr-m9-dashboard-config` (build), `pr-m9-dashboard-config-verify`, `pr-m9-dashboard-config-merge`. Builder Devin swe-2-max via yamato, gear gowther. Estimate 40 minutes.
 
@@ -1850,16 +1956,18 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Files.**
 
-- [ ] Edit app/workspace/** (UI pages), `app/(tracker)/**`, `app/library/**`, `app/sheets/**`, components/** (old UI), `lib/extraction/**`, lib/catalog.ts (dead helper), lib/trainingprogram/weeks.ts (dead helper), components/canvas/data/*.ts (localStorage fallbacks), `frontend/**`, tests that only covered deleted code.
+- [ ] Edit app/workspace/** (UI pages), `app/(tracker)/**`, `app/library/**`, `app/sheets/**`, `app/daily/**`, components/** (old UI, keep `sign-out-button.tsx` if still used), `lib/extraction/{crosssheet,databases,redact,source,summaries,theme}.ts`, scripts/extract-sheets.ts and the `extract:sheets` script, `lib/daily-prototype.ts`, `lib/sheet-viewer.ts`, `lib/catalog.ts`, `lib/spec-artifacts.ts`, lib/trainingprogram/weeks.ts (`versionForWeek`), lib/coaching/_transition_ (conditional, F4), components/canvas/data/*.ts (localStorage fallbacks, created by PR-01 and PR-W0), `frontend/**`, tests that only covered deleted code.
 - [ ] Leave `db/` untouched (D34).
 - [ ] Write `icm/05-build/reports/pr-r1-delete-superseded.md` with commands and exit codes.
 
 **Build.**
 
-- [ ] Census first: for every candidate, a committed command output proving zero runtime callers (`icm/05-build/reports/pr-r1-census.txt`).
-- [ ] Delete the old backend UI replaced by canvas screens, the public fixture library pages, dead helpers, the sheet viewer and the extraction pipeline when the census is empty (D33).
+- [ ] Input: `icm/05-build/BACKEND-REDUCTION.md` (findings F1, F2, F4, F5, F6, F13; about 21,800 lines). Census first: for every candidate, a committed command output proving zero runtime callers (`icm/05-build/reports/PR-R1-census.txt`).
+- [ ] Keep `lib/db.ts` (S12-43) and the extraction modules the catalog importers import: `contracts.ts`, `parse.ts`, `normalize.ts`, `css.ts` (S12-44, S12-46, S12-48, S12-49; BACKEND-REDUCTION section 5 item 2).
+- [ ] Delete the template-version transition subsystem (F4) only after confirming the canvas assign flow (S01-27 setup review) does not call `transition-diff`; otherwise keep it and say why.
+- [ ] Delete the old backend UI replaced by canvas screens, the public fixture library pages, dead helpers and dead exported symbols (D33).
 - [ ] Remove the localStorage fallbacks from the data providers (S01-13).
-- [ ] Last step: after one final parity run against the committed baseline, delete `frontend/`. The baseline images stay in `icm/05-build/parity/baseline/`.
+- [ ] Last step: after one final parity run against the committed baseline, delete `frontend/` and switch the harness to serve only the root app. The baseline images stay in `tools/parity/baseline/`.
 
 **You see.**
 
@@ -1955,7 +2063,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 
 **Build.**
 
-- [ ] Delete the `ENABLE_*` flags of features that are now product; keep development-only gates and `ENABLE_CONSENT_GATES` (D33). Remove dependencies with no import left.
+- [ ] BACKEND-REDUCTION F10 and F6: delete the 11 product `ENABLE_*` flags and the 2 dev-tool flags whose tools PR-R1 removed; merge the four `classifyXRuntime` copies into one; keep the `APP_ENV` trust check and `ENABLE_CONSENT_GATES` (D19, D33). Remove dependencies with no import left.
 
 **You see.**
 
@@ -1989,25 +2097,27 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 - [ ] Every verifier card records PASS at the exact head SHA.
 - [ ] The merge card integrates into `Vari8-Beta` and logs the SHA on the blackboard.
 
-## Generate the system index for agent navigation (PR-X1)
+## Build the system index generator and the first index (PR-X1)
 
-**Depends on.** PR-R2, PR-R3.
+**Depends on.** None.
 
-**Card.** `pr-x1-system-index` (build), `pr-x1-system-index-verify`, `pr-x1-system-index-merge`. Builder shikamaru (ds4f). Estimate 50 minutes.
+**Card.** `system-index` (build), `system-index-verify`, `system-index-merge`. Builder deepseek-v4.1-flash outside the graph, gear tenten, issue #62 (running). Estimate 50 minutes.
+
+**State.** Issue #62, in flight outside the graph since about 02:24; folded in as a running card whose verifier checks the contract below.
 
 **Files.**
 
-- [ ] Edit `scripts/index/build.mjs`, AGENTS.md routers per directory (generated), `docs/index/SYMBOLS.md`, `docs/index/symbols.json`, `docs/index/ROUTES.md`, `docs/index/GLOSSARY.md`, package.json (scripts `index:build`, `index:check` only).
+- [ ] Edit scripts/index/generate.ts and glossary-seed.json (in flight), AGENTS.md routers per directory (generated), `docs/index/SYMBOLS.md`, `docs/index/ROUTES.md`, `docs/index/DATA-MODEL.md`, `docs/index/GLOSSARY.md`, `docs/index/README.md`, package.json (scripts `index`, `index:check` only), `tests/unit/system-index.test.ts`.
 - [ ] Leave `db/` untouched (D34).
-- [ ] Write `icm/05-build/reports/pr-x1-system-index.md` with commands and exit codes.
+- [ ] Write `icm/05-build/reports/system-index.md` with commands and exit codes.
 
 **Build.**
 
-- [ ] Implement `icm/05-build/SYSTEM-INDEX-SPEC.md` exactly: deterministic generator, per-directory routers, symbol and route maps, glossary, and a check mode the local gate runs.
+- [ ] In flight outside the graph (ds4f, tenten gear, issue #62). Acceptance contract: `icm/05-build/SYSTEM-INDEX-SPEC.md` (deterministic generator, per-directory routers, symbol and route maps, glossary, check mode). Its verifier checks the generator against the spec, not the content of a tree that is still moving.
 
 **You see.**
 
-- [ ] `npm run index:build` twice produces no diff; `npm run index:check` fails after a route is added without rebuilding.
+- [ ] `npm run index` twice produces no diff; `npm run index:check` fails after a route is added without rebuilding.
 
 **Verify, unit.**
 
@@ -2036,9 +2146,56 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 - [ ] Every verifier card records PASS at the exact head SHA.
 - [ ] The merge card integrates into `Vari8-Beta` and logs the SHA on the blackboard.
 
+## Rebuild the system index on the final tree (PR-X2)
+
+**Depends on.** PR-X1, PR-R2, PR-R3.
+
+**Card.** `pr-x2-index-final` (build), `pr-x2-index-final-verify`, `pr-x2-index-final-merge`. Builder shikamaru (ds4f). Estimate 25 minutes.
+
+**Files.**
+
+- [ ] Edit the generated index files only, scripts/index/** (only to fix a spec gap found on the final tree).
+- [ ] Leave `db/` untouched (D34).
+- [ ] Write `icm/05-build/reports/pr-x2-index-final.md` with commands and exit codes.
+
+**Build.**
+
+- [ ] Run `npm run index` on the reduced tree, review the routers for dead paths, commit. Add `index:check` to `scripts/verify-local.sh` if PR-03 has not.
+
+**You see.**
+
+- [ ] `npm run index:check` exits 0 on the final tree; every router names only paths that exist.
+
+**Verify, unit.**
+
+- [ ] None needed.
+
+**Verify, live.**
+
+- [ ] `icm/05-build/tools/verify-local.sh` exits 0 at the verify head (format, typecheck, lint, unit, integration when `db/`, `lib/` or `app/api/` changed, build, schema guard, e2e flow specs).
+- [ ] Live receipt at 1440 and 390 as owner, coach, client of the same workspace, staff of a foreign workspace, signed out; unauthorized direct requests fail closed. Screenshots `<role>-<width>.png`.
+- [ ] Keyboard-only pass of the changed interaction: focus order and accessible names.
+
+**Verify, parity.**
+
+- [ ] No screen changes. Once PR-01 has landed, the regression parity run in `verify-local.sh` stays green.
+
+**Matrix rows closed.**
+
+- [ ] 0 rows: none.
+
+**Review gate.**
+
+- [ ] Parity report and screenshots attached for Marcel's asynchronous review; a screen he rejects reopens this PR.
+
+**Merge.**
+
+- [ ] Every verifier card records PASS at the exact head SHA.
+- [ ] The merge card integrates into `Vari8-Beta` and logs the SHA on the blackboard.
+
 ## README, setup guide and infographics (PR-D1)
 
-**Depends on.** PR-R3.
+**Depends on.** PR-R3, PR-X1.
 
 **Card.** `pr-d1-readme-setup` (build), `pr-d1-readme-setup-verify`, `pr-d1-readme-setup-merge`. Builder Devin swe-2-max via yamato, gear jiraiya. Estimate 50 minutes.
 
@@ -2182,8 +2339,8 @@ Parked matrix rows:
 
 ## Appendix B. Generator and tooling notes
 
-- `plan-to-issues.mjs` `labelFor` throws on PR-P1, PR-T1, PR-T2, PR-R1 to PR-R3, PR-X1 and PR-D1. Proposed rules: PR-P and PR-T to `foundation`, PR-R to `service`, PR-X and PR-D to a new `docs` label. The generator has uncommitted edits in the root checkout, so the orchestrator applies this.
-- `plan-to-issues.check.mjs` expected counts move from 31 build issues to 41.
+- Issues and PRs are created by each card (02:25 rule), so `plan-to-issues.mjs` is not used for this program. Issues already open: #58 PR-05, #59 PR-03A, #60 PR-03B, #61 PR-P1, #62 PR-X1; PR-02 shipped as #57.
+- PLAN v2 has 44 PR sections; issues are opened by the cards, one per section.
 
 ## Appendix C. Risks
 
@@ -2196,6 +2353,6 @@ Parked matrix rows:
 
 ## Appendix D. Self-check
 
-- PR sections: 41, each with Depends on, Files, Build, You see, Verify unit, live and parity, Matrix rows, Review gate and Merge.
+- PR sections: 44, each with Depends on, Files, Build, You see, Verify unit, live and parity, Matrix rows, Review gate and Merge.
 - Matrix rows mapped: 338 of 338. Unmapped ledger rows: 0.
 - Cycle check and timeline: `python3 icm/05-build/tools/program.py` exit 0 (see PROGRAM.md self-check).

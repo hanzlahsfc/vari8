@@ -36,7 +36,7 @@ for line in [
     "PR-01 is now the canvas-wide takeover into the root app, every route at its current path, with real identity in the account block (D18, D21). No dev-route split. The FRONTEND merge itself already sits on `Vari8-Beta` (`0610cd6`).",
     "Schema work is consolidated: `db/schema.prisma` and migrations have one writer at a time, the chain PR-05, PR-M0, PR-R2 (D34). PR-M1 to PR-M9 become service and validator PRs that never touch `db/`.",
     "Messaging and media are full scope: text, voice, documents, images and video as the canvas draws them (D20). PR-MEDIA and PR-MSG wire the three message screens.",
-    "New tracks. Parity harness PR-P1 (D32). Test cuts PR-T1 and PR-T2 (TEST-AUDIT). Data seam PR-W0 so wiring PRs never edit a shared store. Backend reduction PR-R1 to PR-R3 (D33). System index PR-X1. README, setup and infographics PR-D1.",
+    "New tracks. Parity harness PR-P1 (D32). Test cuts PR-03A and PR-T2 (TEST-AUDIT), react-hooks fixes PR-03B. Data seam PR-W0 so wiring PRs never edit a shared store. Backend reduction PR-R0 to PR-R3 (D33, BACKEND-REDUCTION). System index PR-X1 and PR-X2. README, setup and infographics PR-D1.",
     "Every v1 owner question is settled (table below). Consent and health-data gates are parked behind one flag (D19). CONFLICT rows follow D36.",
     "Wiring PRs depend on the model PR of their domain, not on PR-W3; the model PR seeds the canvas demo data, so seven wiring PRs run in parallel.",
     "Verification replaces the v1 ten-lane template: a local gate (D13), one live receipt per role and width, and the parity gate. The v1 consent lanes are gone (D12, D19).",
@@ -61,13 +61,13 @@ for q, a, d in [
     w(f"| {q} | {a} | {d} |")
 w("")
 w("Open calls for Marcel, each with a default already applied:\n")
-w("- D16a, the AUTH outcome. The evaluation lane writes `icm/05-build/AUTH-DECISION.md`; card DEC-AUTH-REVIEW records it. PR-05 waits for it.")
+w("- D16a, the AUTH outcome: Better Auth (recorded in DECISIONS from `icm/05-build/AUTH-DECISION.md` and the 02:12 ruling). PR-05 implements it, in flight as #58.")
 w("- D23 parameter catalog. Production ships no parameter seed, so a new workspace cannot add tracker fields. Reverse with `seed-catalog`.")
 w("- D20 video. The canvas offers video; it rides the media path. Reverse with `no-video`.")
 w("- D32 truth-text copy for four storage labels. Reverse with `keep-demo-copy`.\n")
 
 w("## How to read this\n")
-w("One section is one PR, one issue and one kanban card triple (build, verify, merge) on board `vari8`. A box is checked only when its evidence exists in `icm/05-build/evidence/<card-slug>/` or the card report. Section headings keep the `(PR-id)` suffix that `icm/03-plan/tools/plan-to-issues.mjs` parses; the new prefixes PR-P, PR-T, PR-R, PR-X and PR-D need label rules in that generator before issues are created (see Appendix B).\n")
+w("One section is one PR, one issue and one kanban card triple (build, verify, merge) on board `vari8`. A box is checked only when its evidence exists in `/home/nexuslink/vari8-worktrees/_evidence/<PR-id>/`, the PR comments or the card report. Each card creates its own GitHub issue (label `vari8-beta`) and PR against `Vari8-Beta`.\n")
 
 w("## Program checklist\n")
 w("### Mechanics, for every PR\n")
@@ -110,10 +110,17 @@ for p in PRS:
     pid = p["id"]
     w(f"## {p['title']} ({pid})\n")
     w(f"**Depends on.** {', '.join(p['deps']) if p['deps'] else 'None'}.\n")
-    builder = "Devin swe-2-max via yamato, gear " + p["gear"] if p["who"] == "yamato" else p["who"] + " (ds4f)"
+    if p["who"] == "yamato":
+        builder = "Devin swe-2-max via yamato, gear " + str(p["gear"])
+    elif p["who"]:
+        builder = p["who"] + " (ds4f)"
+    else:
+        builder = f'{p.get("builder_model")} outside the graph, gear {p.get("gear")}, issue #{p.get("issue")} ({p.get("ext")})'
     w(f"**Card.** `{p['slug']}` (build), `{p['slug']}-verify`{', `' + p['slug'] + '-secverify`' if p.get('sec') else ''}, `{p['slug']}-merge`. Builder {builder}. Estimate {p['est'] or 'in flight'} minutes.\n")
     if p.get("ext"):
-        w("**State.** In progress outside the graph since 02:06; folded in as a running card.\n")
+        state = ("shipped outside the graph; recorded as a completed card" if p["ext"] == "done"
+                 else "in flight outside the graph since about 02:24; folded in as a running card whose verifier checks the contract below")
+        w(f"**State.** Issue #{p.get('issue')}, {state}.\n")
     w("**Files.**\n")
     w("- [ ] Edit " + ", ".join(f"`{f}`" if " " not in f else f for f in p["files"]) + ".")
     w("- [ ] " + ("May edit `db/` as a D34 schema writer." if p.get("schema") else "Leave `db/` untouched (D34)."))
@@ -194,8 +201,8 @@ w("- Merge `58eb6ed`: FRONTEND merged cleanly; `frontend/` on `Vari8-Beta` is by
 w("- P1 `b603c35` (Next 16) and P2 `d1b1668`, `ce2efed` (Biome) passed their gates; PR-02 and PR-03 reuse them.")
 w("- TEST-AUDIT ran 1,306 unit, 845 integration and 157 canvas tests green at `58eb6ed` on Node 26.\n")
 w("## Appendix B. Generator and tooling notes\n")
-w("- `plan-to-issues.mjs` `labelFor` throws on PR-P1, PR-T1, PR-T2, PR-R1 to PR-R3, PR-X1 and PR-D1. Proposed rules: PR-P and PR-T to `foundation`, PR-R to `service`, PR-X and PR-D to a new `docs` label. The generator has uncommitted edits in the root checkout, so the orchestrator applies this.")
-w("- `plan-to-issues.check.mjs` expected counts move from 31 build issues to 41.\n")
+w("- Issues and PRs are created by each card (02:25 rule), so `plan-to-issues.mjs` is not used for this program. Issues already open: #58 PR-05, #59 PR-03A, #60 PR-03B, #61 PR-P1, #62 PR-X1; PR-02 shipped as #57.")
+w("- PLAN v2 has 44 PR sections; issues are opened by the cards, one per section.\n")
 w("## Appendix C. Risks\n")
 for line in [
     "Health data stored without the parked consent step; synthetic data only until D19 follow-up (special-category data).",
