@@ -693,7 +693,11 @@ test("beforeunload is suppressed immediately on success — inside the pre-unmou
   // Release the refresh → submitted state mounts → listener removed for
   // real; navigating away immediately raises no dialog.
   releaseRefresh();
-  await page.unrouteAll();
+  // "wait" lets the gate-held handler finish its route.continue() before
+  // the route is removed — unrouting mid-hold lets the server auto-continue
+  // the in-flight request and the handler's continue then throws
+  // "Route is already handled!".
+  await page.unrouteAll({ behavior: "wait" });
   let dialogSeen = false;
   page.on("dialog", async (d) => {
     dialogSeen = true;
