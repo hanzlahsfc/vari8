@@ -55,7 +55,9 @@ const booking = (id: string, date: string): StaffBooking => ({
   programUpdatedSinceBooked: false,
 });
 
-const initial = (over?: Partial<Parameters<typeof TrainingBookings>[0]["initial"]>) => ({
+const initial = (
+  over?: Partial<Parameters<typeof TrainingBookings>[0]["initial"]>,
+) => ({
   upcoming: [] as StaffBooking[],
   history: [booking("h1", "2026-09-01")],
   nextCursor: { scheduledDate: "2026-09-01", id: "h1" } as {
@@ -113,9 +115,9 @@ describe("TRAINING-I1B-R3 transport failures (A1-D1)", () => {
     expect(
       (screen.getByTestId("booking-session") as HTMLSelectElement).value,
     ).toBe("s1");
-    expect(
-      (screen.getByTestId("booking-date") as HTMLInputElement).value,
-    ).toBe("2026-11-05");
+    expect((screen.getByTestId("booking-date") as HTMLInputElement).value).toBe(
+      "2026-11-05",
+    );
     await vi.waitFor(() =>
       expect(
         (screen.getByTestId("booking-submit") as HTMLButtonElement).disabled,
@@ -124,7 +126,9 @@ describe("TRAINING-I1B-R3 transport failures (A1-D1)", () => {
   });
 
   it("rejected move dispatch reports uncertainty without claiming failure", async () => {
-    vi.mocked(moveTrainingBookingAction).mockRejectedValue(new Error("offline"));
+    vi.mocked(moveTrainingBookingAction).mockRejectedValue(
+      new Error("offline"),
+    );
     renderPanel({ upcoming: [booking("u1", "2026-11-10")] });
     const date = screen.getByTestId("booking-u1-move-date");
     fireEvent.change(date, { target: { value: "2026-11-12" } });

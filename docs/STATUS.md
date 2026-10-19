@@ -5,6 +5,24 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## TRAINING-I1B-R4 — R3 formatting-only repair
+
+- R3-R1 independent review (`53f8f09e…131f2d`, 194 lines) closed A1-D1
+  **functionally** (CONDITIONAL PASS) but found `npm run format:check`
+  failing on `tests/unit/training-bookings-transport.dom.test.tsx` — my
+  earlier "format:check clean" claim was **inaccurate** (a `| tail`
+  pipe masked prettier's nonzero exit).
+- Repair: `npx prettier --write` on that one test file only. `git
+diff -w` shows pure reflow/trailing-comma changes — formatting-only,
+  no behavior change. format:check + `git diff --check` + focused
+  6/6 + full unit 1337/1337 all pass on the new tree.
+- Carried forward (byte-identity, not rerun): integration 873/873,
+  build clean, focused E2E 8/8, full E2E 419/12/0, migration evidence.
+- Still unproven in-browser: the commit-then-response-loss path
+  (only abort-before-commit observed; post-commit rejection covered
+  by component-mock). Claim not upgraded.
+- Commit `<r4-sha>` — see git log.
+
 ## TRAINING-I1B-R3 — acceptance defect A1-D1 repair
 
 - Bounded repair on `feature/training-i1b2-r3` (from merged main

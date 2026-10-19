@@ -81,6 +81,16 @@ with one must-fix (F1) plus F2; repaired forward-only on this branch.
   (prospective only), pending-leaf cascade single program-level audit
   is contract-authorized (no change), client history still unwired.
 
+## R4 — formatting-only repair (R3-R1 F1)
+
+R3-R1 review closed A1-D1 functionally but found `format:check`
+failing on the new transport test file (the R3 builder report's
+"format:check clean" was inaccurate — a pipe masked the exit code).
+Prettier applied to that file only; diff is reflow/trailing-comma
+only. Gates re-run: format/diff --check/focused 6/6/unit 1337; rest
+carried forward by byte-identity. Commit-then-lose browser path still
+unproven — claim unchanged.
+
 ## R3 — A1-D1 transport-failure repair (feature/training-i1b2-r3)
 
 Merged at `688b5e6`. Synthetic browser acceptance found A1-D1:
