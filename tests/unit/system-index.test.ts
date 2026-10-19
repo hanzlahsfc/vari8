@@ -11,6 +11,8 @@ import {
   buildSymbols,
   countFiles,
   frontendCompilerOptions,
+  generatedRegion,
+  indexProblems,
   renderRouter,
   routePath,
   splitRegion,
@@ -123,10 +125,12 @@ describe("system index generator", () => {
       "| `/sheets/[slug]` | `app/sheets/[slug]/page.tsx` |",
     );
     expect(routes).toContain("Counts: 48 backend pages");
-    // The same name collides inside spec/, which must be inventoried too.
+    // The same name collides inside spec/, which must be inventoried too: a
+    // managed router exists for spec/ and its region carries no file counts.
     expect(
       fs.readFileSync(path.join(ROOT, "spec/AGENTS.md"), "utf8"),
-    ).toContain("sheets/ (");
+    ).toContain("<!-- BEGIN GENERATED: scripts/index/generate.ts");
+    expect(generatedRegion("spec")).toContain("Committed source layouts");
   });
 
   it("F2: indexes re-exports and matches an independent compiler count", () => {
@@ -188,7 +192,7 @@ describe("system index generator", () => {
     expect(fs.existsSync(path.join(ROOT, "CONTEXT.md"))).toBe(true);
   });
 
-  it("F5: keeps generated docs out of the docs/ router count", () => {
+  it("F5: keeps generated docs out of the directory's own file count", () => {
     const docsAbs = path.join(ROOT, "docs");
     const all = walkAll(docsAbs).filter(
       (f) => path.basename(f) !== "AGENTS.md",
@@ -211,10 +215,102 @@ describe("system index generator", () => {
 
   it("F9: names the canvas component behind a screen element", () => {
     const row =
-      "| `ClientRoster` | `frontend/src/components/ethereal/clients/client-roster.tsx` |";
+      "| `ClientRoster` | `frontend/src/components/ethereal/clients/client-roster.tsx` | /, /ethereal |";
     expect(buildComponents()).toContain(row);
     expect(
       fs.readFileSync(path.join(ROOT, "docs/index/COMPONENTS.md"), "utf8"),
     ).toContain(row);
   });
+
+  it("pass 2: a router carries no file count and no subdirectory list", () => {
+    const dirs = [
+      "app",
+      "components",
+      "db",
+      "docs",
+      "icm",
+      "lib",
+      "scripts",
+      "spec",
+      "tests",
+      "themes",
+    ];
+    for (const dir of dirs) {
+      // The generator's own output must not carry either line...
+      const region = generatedRegion(dir);
+      expect(region, `${dir}/AGENTS.md`).not.toMatch(/Contents:/);
+      expect(region, `${dir}/AGENTS.md`).not.toMatch(/Subdirectories:/);
+      // ...and the committed router must be exactly that region.
+      expect(
+        fs.readFileSync(path.join(ROOT, dir, "AGENTS.md"), "utf8"),
+      ).toContain(region);
+    }
+    // A lane committing a report under icm/ must not change the icm router, or
+    // every such commit breaks `index:check`.
+    const before = generatedRegion("icm");
+    const probe = path.join(ROOT, "icm/05-build/reports/route-probe.md");
+    expect(fs.existsSync(probe)).toBe(false);
+    fs.writeFileSync(probe, "# probe\n");
+    try {
+      expect(generatedRegion("icm")).toBe(before);
+    } finally {
+      fs.rmSync(probe);
+    }
+    expect(generatedRegion("icm")).toBe(before);
+  });
+
+  it("pass 2: a layout's imports apply to every route beneath it", () => {
+    const rows = buildComponents()
+      .split("\n")
+      .filter((line) =>
+        line.includes("`frontend/src/components/motion-provider.tsx`"),
+      );
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      // Imported by the root layout, which wraps /, /coach and /ethereal.
+      expect(row).toBe(
+        "| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /coach, /ethereal |",
+      );
+    }
+  });
+
+  it("pass 2: COMPONENTS.md groups rows by canvas surface", () => {
+    const md = buildComponents();
+    const coachAt = md.indexOf("## Coach surface (`/coach`)");
+    const etherealAt = md.indexOf("## Ethereal surface (`/`, `/ethereal`)");
+    expect(coachAt).toBeGreaterThan(-1);
+    expect(etherealAt).toBeGreaterThan(coachAt);
+    const coach = md.slice(coachAt, etherealAt);
+    const ethereal = md.slice(etherealAt);
+    // "coach roster" resolves to the coach ClientsWorkspace in one read, and the
+    // ethereal one is not in the coach section.
+    expect(coach).toContain(
+      "| `ClientsWorkspace` | `frontend/src/components/coach/clients.tsx` | /coach |",
+    );
+    expect(coach).not.toContain(
+      "`frontend/src/components/ethereal/clients/clients-workspace.tsx`",
+    );
+    // "meal plan editor" shows both, each under its surface.
+    expect(coach).toContain(
+      "| `NutritionEditor` | `frontend/src/components/coach/plans/nutrition/editor.tsx` | /coach |",
+    );
+    expect(ethereal).toContain(
+      "| `MealplanWorkspace` | `frontend/src/components/ethereal/mealplan/mealplan-workspace.tsx` | /, /ethereal |",
+    );
+  });
+
+  it("pass 2: index:check reports a missing hand-written index doc", () => {
+    const readme = path.join(ROOT, "docs/index/README.md");
+    const stash = `${readme}.n1-probe`;
+    expect(fs.existsSync(readme)).toBe(true);
+    expect(indexProblems()).toEqual([]);
+    fs.renameSync(readme, stash);
+    try {
+      // The generator never writes this file, so a deletion is otherwise
+      // invisible to the byte comparison.
+      expect(indexProblems()).toContain("missing: docs/index/README.md");
+    } finally {
+      fs.renameSync(stash, readme);
+    }
+  }, 30_000);
 });

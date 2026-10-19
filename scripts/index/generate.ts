@@ -136,17 +136,6 @@ function walkFiles(dirAbs: string, keep: (name: string) => boolean): string[] {
   return out.sort(cmp);
 }
 
-function dirsIn(dirAbs: string): string[] {
-  if (!fs.existsSync(dirAbs)) return [];
-  return fs
-    .readdirSync(dirAbs, { withFileTypes: true })
-    .filter(
-      (e) => e.isDirectory() && !shouldSkip(path.join(dirAbs, e.name), e.name),
-    )
-    .map((e) => e.name)
-    .sort(cmp);
-}
-
 /** Docs the generator writes into `docs/index`; never counted by a router. */
 const GENERATED_DOC_NAMES = new Set([
   "ROUTES.md",
@@ -1225,33 +1214,27 @@ function routerTargets(): string[] {
 
 function generatedRegion(dir: string): string {
   const dirAbs = path.join(ROOT, dir);
-  const files = walkFiles(dirAbs, (n) => n !== "AGENTS.md").filter(
-    (f) => !isGeneratedIndexFile(f),
-  );
-  const subdirs = dirsIn(dirAbs).map(
-    (d) => `${d}/ (${countFiles(path.join(dirAbs, d))})`,
-  );
+  // A router states what lives here, the entry files at the top level, and where
+  // to look next. It deliberately carries no file count and no subdirectory
+  // inventory: those change whenever any lane commits a file into a routed
+  // directory (every new `icm/05-build/reports/*.md`, for instance), which made
+  // `index:check` fail on trees that had not touched the generator's own inputs,
+  // and told a reader nothing the entry-file line does not.
   const rootFiles = fs
     .readdirSync(dirAbs, { withFileTypes: true })
     .filter((e) => e.isFile() && e.name !== "AGENTS.md")
     .map((e) => e.name)
     .sort(cmp);
   const purpose =
-    DIR_PURPOSE[dir] ?? "No curated purpose yet; inspect the listing below.";
-  const packed = packList(subdirs);
+    DIR_PURPOSE[dir] ?? "No curated purpose yet; inspect the directory.";
   const pointers = indexPointers(dir);
 
   const body: string[] = [
     MARK_BEGIN,
     `Purpose: ${purpose}`,
-    `Contents: ${files.length} files${subdirs.length > 0 ? ` in ${subdirs.length} subdirectories` : ""}.`,
-    ...(packed.length === 0
+    ...(rootFiles.length === 0
       ? []
-      : [
-          `Subdirectories: ${packed[0]}`,
-          ...packed.slice(1).map((line) => `  ${line}`),
-        ]),
-    `Top-level files: ${packList(rootFiles).join("\n  ")}`,
+      : [`Top-level files: ${packList(rootFiles).join("\n  ")}`]),
     pointers.length > 0
       ? `Read next: ${pointers} while working in here. Repo-wide index: docs/index/README.md.`
       : "Read next: docs/index/README.md while working in here.",
@@ -1306,6 +1289,9 @@ type CanvasComponent = { name: string; file: string; importedBy: string[] };
 
 const CANVAS_ROOT = "frontend/src";
 const CANVAS_ENTRY_DIR = `${CANVAS_ROOT}/app`;
+/** The two canvas surfaces: coach at `/coach`, ethereal at `/ethereal` and `/`. */
+const COACH_ROUTE = "/coach";
+const ETHEREAL_ROUTES = ["/", "/ethereal"];
 
 function containsJsx(node: ts.Node): boolean {
   if (
@@ -1400,22 +1386,38 @@ function buildComponents(): string {
   const entries = files.filter((f) =>
     f.startsWith(path.join(ROOT, CANVAS_ENTRY_DIR) + path.sep),
   );
-  const reach = (entry: string): Set<string> => {
-    const seen = new Set<string>([entry]);
-    const queue = [entry];
+  // A `layout.tsx` wraps every route beneath it, so the components it imports
+  // render on those routes too: root `app/layout.tsx` reaches `/`, `/coach` and
+  // `/ethereal`, not just `/`.
+  const entryRoots = (entry: string): string[] => {
+    const roots = [entry];
+    const stop = path.join(ROOT, CANVAS_ENTRY_DIR);
+    for (
+      let dir = path.dirname(entry);
+      dir.startsWith(stop);
+      dir = path.dirname(dir)
+    ) {
+      const layout = path.join(dir, "layout.tsx");
+      if (layout !== entry && edges.has(layout)) roots.push(layout);
+    }
+    return roots;
+  };
+  const reach = (roots: string[]): Set<string> => {
+    const seen = new Set<string>();
+    const queue = [...roots];
     while (queue.length > 0) {
       const file = queue.pop() as string;
+      if (seen.has(file)) continue;
+      seen.add(file);
       for (const next of edges.get(file) ?? []) {
-        if (seen.has(next)) continue;
-        seen.add(next);
-        queue.push(next);
+        if (!seen.has(next)) queue.push(next);
       }
     }
     return seen;
   };
   const entryReach = entries.map((entry) => ({
     label: routePath(CANVAS_ENTRY_DIR, entry),
-    seen: reach(entry),
+    seen: reach(entryRoots(entry)),
   }));
   for (const component of components) {
     const abs = path.join(ROOT, component.file);
@@ -1431,25 +1433,51 @@ function buildComponents(): string {
   );
   const fileCount = new Set(components.map((c) => c.file)).size;
 
+  // Rows are grouped by canvas surface so a screen element resolves in one read.
+  // The canvas has two surfaces: the coach workspace at `/coach`, and the
+  // ethereal canvas at `/ethereal` and `/` (the root route re-exports the
+  // ethereal page). A component both surfaces reach is listed under each.
+  const coach = components.filter((c) => c.importedBy.includes(COACH_ROUTE));
+  const ethereal = components.filter((c) =>
+    c.importedBy.some((route) => ETHEREAL_ROUTES.includes(route)),
+  );
+  const unreached = components.filter(
+    (c) => !coach.includes(c) && !ethereal.includes(c),
+  );
+  const table = (rows: CanvasComponent[]): string[] => [
+    "| Component | File | Imported by |",
+    "|---|---|---|",
+    ...rows.map(
+      (c) =>
+        `| \`${c.name}\` | \`${c.file}\` | ${c.importedBy.length > 0 ? c.importedBy.join(", ") : "-"} |`,
+    ),
+    "",
+  ];
+
   return [
     MARKDOWN_HEADER("COMPONENTS.md - exported React components (canvas)", [
       "",
       `Source: TypeScript compiler API over \`${CANVAS_ROOT}/**\`. A component is an exported`,
       "function, or a const whose initializer is a function, whose body contains JSX.",
       "`Imported by` lists the canvas route entries that reach the component through imports;",
-      "`-` means no route entry imports it.",
+      "a layout's imports count for every route beneath it.",
       `Counts: ${components.length} components in ${fileCount} files.`,
       "",
-      "To name the canvas file behind a screen element, find the component here and open the",
-      "file in the second column. Canvas screens: see `ROUTES.md` (`/coach`, `/ethereal`).",
+      "Rows are grouped by canvas surface: the coach workspace at `/coach`, the ethereal",
+      "canvas at `/ethereal` and `/`. A screen element shared by both surfaces is listed in",
+      "both sections. To name the canvas file behind a screen element, find the component in",
+      "its surface section and open the file in the second column. Canvas screens: see",
+      "`ROUTES.md`.",
     ]),
-    "| Component | File | Imported by |",
-    "|---|---|---|",
-    ...components.map(
-      (c) =>
-        `| \`${c.name}\` | \`${c.file}\` | ${c.importedBy.length > 0 ? c.importedBy.join(", ") : "-"} |`,
-    ),
+    `## Coach surface (\`${COACH_ROUTE}\`)`,
     "",
+    ...table(coach),
+    `## Ethereal surface (${ETHEREAL_ROUTES.map((r) => `\`${r}\``).join(", ")})`,
+    "",
+    ...table(ethereal),
+    ...(unreached.length === 0
+      ? []
+      : ["## No canvas route", "", ...table(unreached)]),
   ].join("\n");
 }
 
@@ -1531,6 +1559,19 @@ function listIndexFiles(): string[] {
 }
 
 function check(): number {
+  const problems = indexProblems();
+  if (problems.length > 0) {
+    return report(problems);
+  }
+  const docs = listIndexFiles().length;
+  process.stdout.write(
+    `index:check OK: ${docs} index docs and all AGENTS.md routers match the generator output.\n`,
+  );
+  return 0;
+}
+
+/** Everything a fresh generation disagrees with on the committed index. */
+function indexProblems(): string[] {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "vari8-index-"));
   const problems: string[] = [];
   try {
@@ -1539,8 +1580,7 @@ function check(): number {
       writeOut(tmp, outputs);
     } catch (error) {
       // A router without its markers is drift, not a crash.
-      problems.push(error instanceof Error ? error.message : String(error));
-      return report(problems);
+      return [error instanceof Error ? error.message : String(error)];
     }
     for (const output of outputs) {
       const expected = fs.readFileSync(path.join(tmp, output.relPath), "utf8");
@@ -1556,6 +1596,13 @@ function check(): number {
         );
       }
     }
+    // The hand-written index docs are never written by the generator, so the
+    // comparison above cannot see one that was deleted. Check them by existence.
+    for (const file of HAND_WRITTEN_INDEX) {
+      if (!fs.existsSync(path.join(ROOT, file))) {
+        problems.push(`missing: ${file}`);
+      }
+    }
     const generatedDocs = new Set(
       outputs.filter((o) => !o.router).map((o) => o.relPath),
     );
@@ -1566,15 +1613,7 @@ function check(): number {
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
-
-  if (problems.length > 0) {
-    return report(problems);
-  }
-  const docs = listIndexFiles().length;
-  process.stdout.write(
-    `index:check OK: ${docs} index docs and all AGENTS.md routers match the generator output.\n`,
-  );
-  return 0;
+  return problems;
 }
 
 /** Print the check verdict for an early exit and return the process code. */
@@ -1637,6 +1676,8 @@ export {
   buildSymbols,
   countFiles,
   frontendCompilerOptions,
+  generatedRegion,
+  indexProblems,
   renderRouter,
   routePath,
   splitRegion,

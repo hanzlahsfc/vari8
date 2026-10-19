@@ -237,3 +237,122 @@ defect reverted, the test went green.
 | `countFiles` counting the generated docs again   | F5 red (exit 1) |
 | `auth` dropped from `GUARD_RE`                   | F7 red (exit 1) |
 | canvas root narrowed to `frontend/src/app`       | F9 red (exit 1) |
+
+## 7. Fix pass 2
+
+Addresses `icm/05-build/reports/system-index-verify-2.md` (verifier verdict: FIX, eight of ten
+items pass) plus four orchestrator rulings. Base `ea8f514`; head before this pass `ef08c3e`.
+One commit carries the code, the regenerated index, the verifier's report and this section.
+
+### The four rulings
+
+| #   | Ruling                                               | What changed                                                                                                                                                                                                                                                                        | Regression test                                                   |
+| --- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| 1   | Routers carry no volatile inventory                  | `generatedRegion` no longer emits `Contents: N files in N subdirectories` or the `Subdirectories:` list, and `dirsIn` is deleted. A router is now purpose, top-level entry files, read next. Routers run 10 to 13 lines, four shorter than before; the 25-line budget is unchanged. | `pass 2: a router carries no file count and no subdirectory list` |
+| 2   | A layout's imports apply to every route beneath it   | `entryReach` walks from the route entry **and every ancestor `layout.tsx`**, so `app/layout.tsx`'s `MotionProvider` is listed `/, /coach, /ethereal`. This is the only row in the file whose routes changed.                                                                        | `pass 2: a layout's imports apply to every route beneath it`      |
+| 3   | COMPONENTS.md grouped by canvas surface              | Rows sit under `## Coach surface (/coach)` and `## Ethereal surface (/, /ethereal)`; a component both surfaces reach is listed in both. Counts stay, because a new component must still fail `index:check`.                                                                         | `pass 2: COMPONENTS.md groups rows by canvas surface`             |
+| 4   | N1: a missing hand-written index doc fails the check | `check()` is now `indexProblems()` plus the verdict print, and `indexProblems` reports `missing: docs/index/README.md` by existence. The generator never writes that file, so the byte comparison cannot see it.                                                                    | `pass 2: index:check reports a missing hand-written index doc`    |
+
+Why the counts had to go: every router is regenerated text, and the count moved whenever a file
+landed anywhere under a routed directory. `icm/` grows with every report, so a lane committing a
+report broke `index:check` on a tree whose generator inputs had not changed. The entry-file line
+is stable and is what an agent actually routes on.
+
+### One-run convergence (F5), proven by construction
+
+Deleting the whole generated directory and generating **once** now reproduces every generated
+byte. The hash covers the five docs and all eleven routers (ten directories plus the root):
+
+```
+$ h() { cat docs/index/{COMPONENTS,DATA-MODEL,GLOSSARY,ROUTES,SYMBOLS}.md AGENTS.md */AGENTS.md | sha256sum; }
+$ h
+4542d331bec65c9ece42af6401c4d805c1979b8e8a9b922b05dad1dcd57e7645  -
+$ rm -rf docs/index && npm run index          # exit 0, one run
+$ h
+4542d331bec65c9ece42af6401c4d805c1979b8e8a9b922b05dad1dcd57e7645  -
+```
+
+Then the requirement that motivated the ruling, a report committed under `icm/`:
+
+```
+$ echo '# probe' > icm/05-build/reports/f5-probe-N.md
+$ npm run index:check                          # exit 0
+$ rm icm/05-build/reports/f5-probe-N.md
+$ npm run index:check                          # exit 0
+```
+
+Ruling 4 sharpens the delete sequence: `rm -rf docs/index` also removes the hand-written
+`docs/index/README.md`, which no run can recreate. Ruling 1's literal sequence therefore ends at
+exit 1 for exactly one reason, and ruling 4 says it must:
+
+```
+$ rm -rf docs/index && npm run index           # exit 0
+$ npm run index:check
+index:check FAILED (1 problem)
+  missing: docs/index/README.md
+EXIT=1
+$ git restore docs/index/README.md && npm run index:check   # exit 0
+```
+
+The convergence claim is untouched: the README was the only missing byte, and the hash above
+proves no generated file drifted. Rulings 1 and 4 cannot both hold literally on the same command
+sequence. Both substances are proven here (zero generated drift after one run; the check names the
+missing hand-written file). If a literal 0 on that sequence is required, the alternative is to
+move the README out of `docs/index` and drop the N1 check.
+
+### COMPONENTS.md (rulings 2 and 3)
+
+- 112 components in 67 files, unchanged. 121 table rows, because 9 components are reachable from
+  both surfaces and appear in both sections.
+- 70 rows under `## Coach surface (/coach)`, 50 under `## Ethereal surface (/, /ethereal)`, 1
+  under `## No canvas route` (`TrackerCell` in `ethereal/client-tracker/`, imported by no entry).
+- `MotionProvider` is the only row whose route list changed: `/` to `/, /coach, /ethereal`.
+- One read now resolves both screen questions:
+
+```
+$ awk '/^## /{s=$0} /roster|ClientsWorkspace/{print s" :: "$0}' docs/index/COMPONENTS.md
+## Coach surface (`/coach`) :: | `ClientsWorkspace` | `frontend/src/components/coach/clients.tsx` | /coach |
+## Ethereal surface (`/`, `/ethereal`) :: | `ClientRoster` | `frontend/src/components/ethereal/clients/client-roster.tsx` | /, /ethereal |
+## Ethereal surface (`/`, `/ethereal`) :: | `ClientsWorkspace` | `frontend/src/components/ethereal/clients/clients-workspace.tsx` | /, /ethereal |
+
+$ awk '/^## /{s=$0} /MealplanWorkspace|NutritionEditor/{print s" :: "$0}' docs/index/COMPONENTS.md
+## Coach surface (`/coach`) :: | `NutritionEditor` | `frontend/src/components/coach/plans/nutrition/editor.tsx` | /coach |
+## Ethereal surface (`/`, `/ethereal`) :: | `MealplanWorkspace` | `frontend/src/components/ethereal/mealplan/mealplan-workspace.tsx` | /, /ethereal |
+```
+
+### Gates (fix pass 2)
+
+| Command                                          | Exit | Result                                                             |
+| ------------------------------------------------ | ---- | ------------------------------------------------------------------ |
+| `npm run index`                                  | 0    | wrote 5 docs and 10 AGENTS.md routers                              |
+| `npm run index` twice                            | 0    | sha256 `4542d331...` identical after run 1 and run 2, so zero diff |
+| `npm run index` after `rm -rf docs/index`        | 0    | same sha256 after a single run (F5)                                |
+| `npm run index:check`                            | 0    | 6 index docs and all AGENTS.md routers match                       |
+| `npx vitest run tests/unit/system-index.test.ts` | 0    | 18 passed (14 pre-existing + 4 pass-2 tests)                       |
+| `npm run typecheck`                              | 0    | clean                                                              |
+| `npm run lint`                                   | 0    | 0 errors, 14 warnings, none in the changed files                   |
+| `npm run test`                                   | 0    | 97 files passed (97), 1155 tests passed (1155)                     |
+| `npm run build`                                  | 0    | Next 16.3.8, full route table printed                              |
+| `cd frontend && npm run build`                   | 0    | `/`, `/_not-found`, `/coach`, `/ethereal` prerendered              |
+
+### Mutation checks (fix pass 2)
+
+Each regression test was proved to bite: the defect was reintroduced, the test went red, the defect
+reverted, the test went green.
+
+| Defect reintroduced                                | Result       |
+| -------------------------------------------------- | ------------ |
+| `Contents: N files` line back in `generatedRegion` | red (exit 1) |
+| layout roots not inherited (`reach([entry])`)      | red (exit 1) |
+| coach section fed every component                  | red (exit 1) |
+| `HAND_WRITTEN_INDEX` existence loop removed        | red (exit 1) |
+
+After the last revert `scripts/index/generate.ts` was byte-identical to the fixed version. The
+N1 test runs the generator twice, so it carries an explicit 30 s timeout; its measured runtime is
+about 4.5 s, close enough to the 5 s default to flake under load, which it did once.
+
+### Scope of this pass
+
+`scripts/index/generate.ts`, `tests/unit/system-index.test.ts`, the five `docs/index` docs, the
+ten directory routers, both `icm/05-build/reports/system-index*.md` files. No change under
+`frontend/src`, `db/`, `lib/`, `app/`, and none to `docs/STATUS.md`.
