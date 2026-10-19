@@ -523,7 +523,7 @@ DECISION_CARDS = [
          body="Done outside the graph (builder claude-haiku-5-5, kakuzu gear; verified by AUD-REDUCTION-VERIFY on claude-opus-5-5): `icm/05-build/BACKEND-REDUCTION.md`. Folded into PR-04, PR-R0, PR-R1, PR-R2 and PR-R3; its section 5 defects are fixed in PLAN v2."),
     dict(id="AUD-PRR-BASELINE", slug="aud-prr-baseline", title="Production-readiness baseline audit", who=None,
          deps=[], ext="done", est=0,
-         body="Done outside the graph (urokodaki, claude-opus-5-5, medium): `icm/05-build/audits/PRODREADY-BASELINE.md` at `55a0f08` (160 entries, 38 P0 rows: 31 gaps, 2 present, 4 parked, 4 not applicable as graded by the baseline; every P0 row has a ledger disposition). GATE-PRR re-runs it on the integrated tip; the hosting-dependent rows are listed in `icm/05-build/POST-BETA-INFRA.md`."),
+         body="Done outside the graph (urokodaki, claude-opus-5-5, medium): `icm/05-build/audits/PRODREADY-BASELINE.md` at `55a0f08` (160 entries, 38 P0 rows: 31 gaps, 2 present, 1 parked, 4 not applicable as graded by the baseline; every P0 row has a ledger disposition). GATE-PRR re-runs it on the integrated tip; the hosting-dependent rows are listed in `icm/05-build/POST-BETA-INFRA.md`."),
     dict(id="AUD-REDUCTION-VERIFY", slug="aud-backend-reduction-verify", title="Verify the backend reduction audit before the reduction PRs use it", who="urokodaki",
          deps=["AUD-REDUCTION"], est=30,
          body=("Independent check of `icm/05-build/BACKEND-REDUCTION.md` (built on claude-haiku-5-5) on claude-opus-5-5. Worktree `/home/nexuslink/vari8-worktrees/aud-backend-reduction-verify`, "
