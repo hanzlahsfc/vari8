@@ -2,9 +2,9 @@
 
 <!-- BEGIN GENERATED: scripts/index/generate.ts (npm run index) -->
 Purpose: ICM workspace stages: recon, gap matrix, plan, briefing, build, verify. Read `icm/CONTEXT.md` first.
-Contents: 184 files in 7 subdirectories.
+Contents: 185 files in 7 subdirectories.
 Subdirectories: 01-recon/ (3), 02-gap-matrix/ (19), 03-plan/ (73), 04-briefing/ (79), 04-build/ (1),
-  05-build/ (3), 05-verify/ (5)
+  05-build/ (4), 05-verify/ (5)
 Top-level files: RESUME-2026-10-18-crash.md
 Read next: docs/index/GLOSSARY.md while working in here. Repo-wide index: docs/index/README.md.
 Rules: see the repo-root AGENTS.md and CONTEXT.md.
