@@ -310,6 +310,11 @@ function buildRoutes(): string {
   };
 
   const groupList = [...groups].sort(cmp);
+  const canvasRoots =
+    rows
+      .filter((r) => r.app === "canvas" && r.kind === "layout")
+      .map((r) => `\`${r.file}\``)
+      .join(", ") || "none found";
   const counts = {
     backendPages: rows.filter((r) => r.app === "backend" && r.kind === "page")
       .length,
@@ -361,10 +366,12 @@ function buildRoutes(): string {
     "| Path | File | Rendered | Auth (detected) |",
     "|---|---|---|---|",
     ...rows
-      .filter((r) => r.app === "canvas")
+      .filter((r) => r.app === "canvas" && r.kind === "page")
       .map(
         (r) => `| \`${r.path}\` | \`${r.file}\` | ${r.render} | ${r.auth} |`,
       ),
+    "",
+    `Canvas root layout (wraps every canvas page, no guard): ${canvasRoots}`,
     "",
   ].join("\n");
 }

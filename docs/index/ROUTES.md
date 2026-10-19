@@ -90,7 +90,8 @@ Lilly's canvas app. It is authoritative for screens and appearance; the backend 
 
 | Path | File | Rendered | Auth (detected) |
 |---|---|---|---|
-| `/` | `frontend/src/app/layout.tsx` | server | none detected |
 | `/` | `frontend/src/app/page.tsx` | server | none detected |
 | `/coach` | `frontend/src/app/coach/page.tsx` | server | none detected |
 | `/ethereal` | `frontend/src/app/ethereal/page.tsx` | server | none detected |
+
+Canvas root layout (wraps every canvas page, no guard): `frontend/src/app/layout.tsx`

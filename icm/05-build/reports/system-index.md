@@ -14,7 +14,7 @@ top-level `AGENTS.md` routers, deterministically. `npm run index` writes them;
 |---|---|---|
 | Routes | `docs/index/ROUTES.md` | `app/**` and `frontend/src/app/**` page/layout/route files |
 | Symbols | `docs/index/SYMBOLS.md` | TypeScript compiler API over `lib/**` and `frontend/src/lib/**` |
-| Data model | `docs/index/DATA-MODEL.md` | `db/schema.prisma` |
+| Data model | `docs/index/DATA-MODEL.md` | `db/schema.prisma` (48 models, 31 enums) |
 | Routers | `AGENTS.md` in `app/`, `components/`, `db/`, `docs/`, `icm/`, `lib/`, `scripts/`, `spec/`, `tests/`, `themes/` | directory walk, 12 to 15 lines each, max 25 enforced |
 | Glossary | `docs/index/GLOSSARY.md` | curated terms + F1 slice ids + live `ENABLE_*` reads |
 
