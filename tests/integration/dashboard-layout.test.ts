@@ -1,7 +1,16 @@
 import { execFileSync } from "node:child_process";
 
 import { PrismaClient } from "@prisma/client";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import { AccessDeniedError } from "../../lib/auth/guard";
 import {
@@ -26,6 +35,16 @@ const enabled = typeof url === "string" && url.length > 0;
 describe.skipIf(!enabled)("DASHBOARD-I1 layout persistence (real PG)", () => {
   let prisma: PrismaClient;
   let n = 0;
+
+  // The boundary reads ENABLE_CLIENT_DASHBOARD from process.env at call
+  // time. Pin it off so the flag-off assertions never inherit the
+  // developer shell's flags.
+  beforeEach(() => {
+    vi.stubEnv("ENABLE_CLIENT_DASHBOARD", "0");
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
 
   beforeAll(async () => {
     execFileSync("npx", ["prisma", "migrate", "deploy"], {

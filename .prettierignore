@@ -11,6 +11,10 @@ docs/conductor-generic/SKILL.md
 # Generated, committed extraction artifacts — must not be reformatted.
 spec/
 
+# The product owner's core coaching system brief (1 Oct 2026): kept byte-identical to the
+# received file, so Prettier must not touch it.
+spec/core-coaching-system-brief.html
+
 # Generated system index (scripts/index/generate.ts) — regenerate with `npm run index`.
 # Formatting these by hand makes `npm run index:check` fail.
 docs/index/ROUTES.md
