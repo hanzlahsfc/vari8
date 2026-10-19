@@ -5,6 +5,44 @@ tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extra
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
 
+## TRAINING-I1B-R4 — R3 formatting-only repair
+
+- R3-R1 independent review (`53f8f09e…131f2d`, 194 lines) closed A1-D1
+  **functionally** (CONDITIONAL PASS) but found `npm run format:check`
+  failing on `tests/unit/training-bookings-transport.dom.test.tsx` — my
+  earlier "format:check clean" claim was **inaccurate** (a `| tail`
+  pipe masked prettier's nonzero exit).
+- Repair: `npx prettier --write` on that one test file only. `git
+diff -w` shows pure reflow/trailing-comma changes — formatting-only,
+  no behavior change. format:check + `git diff --check` + focused
+  6/6 + full unit 1337/1337 all pass on the new tree.
+- Carried forward (byte-identity, not rerun): integration 873/873,
+  build clean, focused E2E 8/8, full E2E 419/12/0, migration evidence.
+- Still unproven in-browser: the commit-then-response-loss path
+  (only abort-before-commit observed; post-commit rejection covered
+  by component-mock). Claim not upgraded.
+- Commit `<r4-sha>` — see git log.
+
+## TRAINING-I1B-R3 — acceptance defect A1-D1 repair
+
+- Bounded repair on `feature/training-i1b2-r3` (from merged main
+  `688b5e6`) for acceptance defect A1-D1 confirmed by independent
+  review `3e9dedd4…30373fc7` (MODERATE, robustness).
+- `components/trainingprogram/program-bookings.tsx`: rejected
+  server-action promises inside `startTransition` escaped to the app
+  error boundary (full-page client-side exception). `run()`
+  (book/move/cancel) and `loadMoreHistory()` now catch transport
+  failures: mutations surface truthful uncertainty in
+  `booking-message` ("could not confirm… refresh to check, then
+  retry") plus `router.refresh()` reconciliation — a lost response
+  does not prove the server failed to commit; pagination surfaces
+  `bookings-history-error` with loaded rows and the same cursor kept
+  for a deduped retry. Structured action errors unchanged. No
+  automatic mutation retries; server idempotency untouched.
+- RED→GREEN: `9427c7c` regression tests fail on baseline (4 unhandled
+  rejections); `2f7bbf2` fix → 6/6. Mutation: catch removal fails the
+  4 transport tests, restored byte-identical (`e2901b52…`).
+
 ## TRAINING-I1B-2-R2 — review-findings repair (PROMPT R2)
 
 - Bounded repair on `feature/training-i1b2` for the I1-R1 independent
