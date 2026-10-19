@@ -940,7 +940,12 @@ describe.skipIf(!enabled)("P-023 onboarding submission (real PG)", () => {
         workspaceId: c.ws.id,
         assignmentId: c.assignment.id,
       });
-      expect(res).toEqual({ ok: true, value: { state: "unavailable" } });
+      // V3-H4-02: the exact-1 flag no longer counts in production — the
+      // boundary itself refuses before any consent-layer "unavailable".
+      expect(res).toEqual({
+        ok: false,
+        message: "This feature is not available.",
+      });
     });
 
     it("flag on + unclassified/missing environment fails closed (real path)", async () => {

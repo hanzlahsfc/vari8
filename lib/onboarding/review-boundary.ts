@@ -22,7 +22,7 @@ import {
   type OnboardingSubmissionErrorCode,
   SUBMISSION_LIMITS,
 } from "./submission-gate";
-import { resolveOnboardingSubmissionConsentPolicy } from "./submission-consent";
+import { resolveOnboardingSubmissionConsentPolicy } from "../consent";
 import {
   listClientOnboardingSubmissions,
   markSubmissionReviewed,

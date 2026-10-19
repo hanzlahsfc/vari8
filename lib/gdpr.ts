@@ -13,7 +13,13 @@
  *   `docs/tasks/s1-g-privacy-storage.md` §5) and route-layer rate limiting.
  *
  * This assertion fails closed; it is not a no-op placeholder.
+ *
+ * D19: the GDPR boundary is a parked consent/health-data gate — with
+ * `ENABLE_CONSENT_GATES` off the assertion allows; when set it keeps
+ * failing closed exactly as before.
  */
+import { consentGatesEnabled, type ConsentGateEnv } from "./runtime";
+
 export class GdprNotExposableError extends Error {
   constructor(readonly code: "gdpr_not_exposable") {
     super(code);
@@ -21,6 +27,9 @@ export class GdprNotExposableError extends Error {
   }
 }
 
-export function assertGdprExternallyExposable(): never {
+export function assertGdprExternallyExposable(
+  env: ConsentGateEnv = process.env,
+): void {
+  if (!consentGatesEnabled(env)) return;
   throw new GdprNotExposableError("gdpr_not_exposable");
 }

@@ -45,7 +45,8 @@ import {
   requiredConsentsFor,
   type ConsentPolicyRegistry,
 } from "../consent";
-import { resolveCheckInConsentPolicy } from "./instances-consent";
+import { resolveCheckInConsentPolicy } from "../consent";
+import { consentGatesEnabled } from "../runtime";
 import type { CheckInDefinition, CheckInField } from "./forms";
 
 // Type-only re-export — app surfaces consume the definition contract
@@ -624,6 +625,9 @@ async function checkRequiredConsent(
   registry: ConsentPolicyRegistry,
   forUpdate: boolean,
 ): Promise<void> {
+  // D19: parked consent gate — allows (and skips the consent reads) when
+  // ENABLE_CONSENT_GATES is off.
+  if (!consentGatesEnabled()) return;
   const required = requiredConsentsFor("checkinsCoachReviews") ?? [];
   for (const kind of required) {
     const version = registry.currentVersion(kind);

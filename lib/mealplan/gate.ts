@@ -16,9 +16,15 @@
  * process.env directly and is never exported to the client bundle.
  */
 
-export type MealPlanRuntimeClass = "development" | "test" | "production";
+import {
+  classifyRuntime,
+  devFlagEnabled,
+  type RuntimeClass,
+  type RuntimeEnv,
+} from "../runtime";
 
-type RuntimeEnv = { APP_ENV?: string; NODE_ENV?: string };
+export type MealPlanRuntimeClass = RuntimeClass;
+
 export type MealPlansEnv = RuntimeEnv & { ENABLE_MEAL_PLANS?: string };
 
 /**
@@ -29,22 +35,13 @@ export type MealPlansEnv = RuntimeEnv & { ENABLE_MEAL_PLANS?: string };
  * applies the same allowlist — `next start` is always
  * `NODE_ENV=production`, so a disposable test/proof server must set
  * `APP_ENV=test`. Missing or unknown values resolve production-safe.
+ * Shared implementation lives in `lib/runtime.ts` (PR-04).
  */
-export function classifyMealPlanRuntime(
-  env: RuntimeEnv = process.env,
-): MealPlanRuntimeClass {
-  const explicit = env.APP_ENV;
-  if (explicit !== undefined)
-    return explicit === "development" || explicit === "test"
-      ? explicit
-      : "production";
-  const nodeEnv = env.NODE_ENV;
-  if (nodeEnv === "development" || nodeEnv === "test") return nodeEnv;
-  return "production";
-}
+export const classifyMealPlanRuntime: (
+  env?: RuntimeEnv,
+) => MealPlanRuntimeClass = classifyRuntime;
 
 /** The shared enablement decision — flag AND trusted runtime, else closed. */
 export function isMealPlansEnabled(env: MealPlansEnv = process.env): boolean {
-  if (env.ENABLE_MEAL_PLANS !== "1") return false;
-  return classifyMealPlanRuntime(env) !== "production";
+  return devFlagEnabled(env.ENABLE_MEAL_PLANS, env);
 }

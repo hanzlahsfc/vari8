@@ -12,8 +12,13 @@
  * template content, or internals.
  */
 
-export function isClientSetupEnabled(env: string | undefined): boolean {
-  return env === "1";
+import { devFlagEnabled, type RuntimeEnv } from "../runtime";
+
+export function isClientSetupEnabled(
+  flag: string | undefined,
+  env: RuntimeEnv = process.env,
+): boolean {
+  return devFlagEnabled(flag, env);
 }
 
 export const CLIENT_SETUP_LIMITS = {

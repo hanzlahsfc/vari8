@@ -13,7 +13,7 @@ import {
 import {
   classifySubmissionRuntime,
   resolveOnboardingSubmissionConsentPolicy,
-} from "../../lib/onboarding/submission-consent";
+} from "../../lib/consent";
 import { unconfiguredConsentPolicy } from "../../lib/consent";
 import {
   canonicalizeAnswers,

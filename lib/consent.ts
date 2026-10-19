@@ -5,6 +5,20 @@ import { writeAuditEvent } from "./audit";
 import { AccessDeniedError, authorize, type SessionLike } from "./auth/guard";
 import { type Resource } from "./auth/rbac";
 import {
+  classifyCheckInRuntime,
+  isCheckInsEnabled,
+} from "./checkin/forms-gate";
+import { isMealPlansEnabled } from "./mealplan/gate";
+import { isOnboardingSubmissionEnabled } from "./onboarding/submission-gate";
+import {
+  classifyRuntime,
+  consentGatesEnabled,
+  type ConsentGateEnv,
+  type RuntimeClass,
+  type RuntimeEnv,
+} from "./runtime";
+import { isTrainingPlansEnabled } from "./trainingprogram/gate";
+import {
   createPrismaAuthorizationRepo,
   type PrismaLike,
 } from "./workspace/access";
@@ -142,7 +156,12 @@ export function hasExactActiveConsent(
   );
 }
 
-export function assertConsentMutationsExternallyExposable(): never {
+export function assertConsentMutationsExternallyExposable(
+  env: ConsentGateEnv = process.env,
+): void {
+  // D19: the assertion is a parked consent gate — with ENABLE_CONSENT_GATES
+  // off it allows; when set it keeps failing closed exactly as before.
+  if (!consentGatesEnabled(env)) return;
   // S1-E now couples audit writing transactionally, but that alone does not
   // authorize exposure: no route/action may expose consent mutations until the
   // routing slice and its independent review. This is not a no-op auditor; it
@@ -313,6 +332,10 @@ export async function grantOwnConsent(
           "write",
         );
 
+        // D19: with ENABLE_CONSENT_GATES off the gate allows the operation
+        // and writes no consent record.
+        if (!consentGatesEnabled()) return { kind: input.kind, changed: false };
+
         // 3. Runtime source policy — caller cannot choose the source.
         const requestedSource = (input as { source?: unknown }).source;
         if (
@@ -462,6 +485,9 @@ export async function revokeOwnConsent(
           "consent",
           "write",
         );
+        // D19: with ENABLE_CONSENT_GATES off the gate allows the operation
+        // and writes no consent record.
+        if (!consentGatesEnabled()) return { kind: input.kind, changed: false };
         // Revoke every active version; workspace relation predicate is embedded.
         const result = await tx.consentRecord.updateMany({
           where: {
@@ -597,9 +623,21 @@ export async function authorizeHealthOperation(
     input.action,
   );
 
-  // PED/HRT stays fail-closed regardless of any stored consent row.
+  // PED/HRT stays fail-closed regardless of any stored consent row. This is a
+  // product boundary, not a consent rule: it holds even while the consent
+  // gates are parked (D19).
   if (input.resource === "pedHrt")
     throw new ConsentError("ped_hrt_not_approved");
+
+  // D19: with ENABLE_CONSENT_GATES off the consent gate allows the operation;
+  // authorization above is unaffected.
+  if (!consentGatesEnabled())
+    return {
+      userId: context.userId,
+      workspaceId,
+      clientProfileId,
+      grantedScope: context.grantedScope,
+    };
 
   // 3. Resolve exact required versions, then query ONLY those active rows.
   const registry = deps.registry ?? unconfiguredConsentPolicy;
@@ -627,4 +665,92 @@ export async function authorizeHealthOperation(
     clientProfileId,
     grantedScope: context.grantedScope,
   };
+}
+
+// --- F11 merge: per-domain dev/test consent-policy resolvers ----------------
+// Formerly lib/checkin/instances-consent.ts, lib/mealplan/consent.ts,
+// lib/trainingprogram/consent.ts and lib/onboarding/submission-consent.ts —
+// a pure move (BACKEND-REDUCTION F11). Each resolver hands a DETERMINISTIC
+// development/test registry to the parked gate layer: it resolves only when
+// the domain flag counts in a trusted development/test runtime, and returns
+// the fail-closed `unconfiguredConsentPolicy` otherwise. These are synthetic
+// version strings for dev/test suites, not production policy.
+
+export const CHECKIN_DEV_CONSENT = {
+  PRIVACY_NOTICE: "check-in-dev-privacy-v1",
+  HEALTH_DATA: "check-in-dev-health-v1",
+} as const;
+
+export const MEALPLAN_DEV_CONSENT = {
+  PRIVACY_NOTICE: "meal-plan-dev-privacy-v1",
+  HEALTH_DATA: "meal-plan-dev-health-v1",
+} as const;
+
+export const TRAINING_DEV_CONSENT = {
+  PRIVACY_NOTICE: "training-plan-dev-privacy-v1",
+  HEALTH_DATA: "training-plan-dev-health-v1",
+} as const;
+
+export const ONBOARDING_SUBMISSION_DEV_CONSENT = {
+  PRIVACY_NOTICE: "onboarding-submission-dev-privacy-v1",
+  HEALTH_DATA: "onboarding-submission-dev-health-v1",
+} as const;
+
+/** Shared classifier — kept under the submission-era alias so existing
+ * imports/tests keep their reviewed name. */
+export type SubmissionRuntimeClass = RuntimeClass;
+export const classifySubmissionRuntime: (
+  env?: RuntimeEnv,
+) => SubmissionRuntimeClass = classifyRuntime;
+
+export type OnboardingSubmissionConsentEnv = RuntimeEnv & {
+  ENABLE_ONBOARDING_SUBMISSION?: string;
+};
+
+export function resolveCheckInConsentPolicy(
+  env: {
+    ENABLE_CHECK_INS?: string;
+    APP_ENV?: string;
+    NODE_ENV?: string;
+  } = process.env,
+): ConsentPolicyRegistry {
+  if (!isCheckInsEnabled(env)) return unconfiguredConsentPolicy;
+  if (classifyCheckInRuntime(env) === "production")
+    return unconfiguredConsentPolicy;
+  return createStaticConsentPolicy({ ...CHECKIN_DEV_CONSENT });
+}
+
+export function resolveMealPlanConsentPolicy(
+  env: {
+    ENABLE_MEAL_PLANS?: string;
+    APP_ENV?: string;
+    NODE_ENV?: string;
+  } = process.env,
+): ConsentPolicyRegistry {
+  if (!isMealPlansEnabled(env)) return unconfiguredConsentPolicy;
+  if (classifyRuntime(env) === "production") return unconfiguredConsentPolicy;
+  return createStaticConsentPolicy({ ...MEALPLAN_DEV_CONSENT });
+}
+
+export function resolveTrainingConsentPolicy(
+  env: {
+    ENABLE_TRAINING_PLANS?: string;
+    APP_ENV?: string;
+    NODE_ENV?: string;
+  } = process.env,
+): ConsentPolicyRegistry {
+  if (!isTrainingPlansEnabled(env)) return unconfiguredConsentPolicy;
+  if (classifyRuntime(env) === "production") return unconfiguredConsentPolicy;
+  return createStaticConsentPolicy({ ...TRAINING_DEV_CONSENT });
+}
+
+export function resolveOnboardingSubmissionConsentPolicy(
+  env: OnboardingSubmissionConsentEnv = process.env,
+): ConsentPolicyRegistry {
+  if (!isOnboardingSubmissionEnabled(env.ENABLE_ONBOARDING_SUBMISSION, env))
+    return unconfiguredConsentPolicy;
+  if (classifyRuntime(env) === "production") return unconfiguredConsentPolicy;
+  return createStaticConsentPolicy({
+    ...ONBOARDING_SUBMISSION_DEV_CONSENT,
+  });
 }

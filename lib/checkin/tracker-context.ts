@@ -16,7 +16,8 @@ import {
   type StaffDailyEntryDetail,
 } from "../daily-entry/service";
 import { CheckInInstanceError, type PrismaLike } from "./instances";
-import { resolveCheckInConsentPolicy } from "./instances-consent";
+import { resolveCheckInConsentPolicy } from "../consent";
+import { consentGatesEnabled } from "../runtime";
 import { isCheckInsEnabled } from "./forms-gate";
 
 /**
@@ -148,6 +149,9 @@ async function checkConsentIntersection(
     registry: ConsentPolicyRegistry;
   }>,
 ): Promise<void> {
+  // D19: parked consent gate — allows (and skips the consent reads) when
+  // ENABLE_CONSENT_GATES is off.
+  if (!consentGatesEnabled()) return;
   const required: { kind: ConsentKind; version: string }[] = [];
   for (const { resource, registry } of pairs) {
     for (const kind of requiredConsentsFor(resource) ?? []) {
