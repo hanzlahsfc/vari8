@@ -74,7 +74,7 @@ PRS = [
         build=[
             "Generate `tests/parity/screens.ts` from `icm/04-briefing/shots/index.json` (35 screens, route and click path each) with a script, not by hand.",
             "One Playwright spec replays each click path at 1440x900 and 390x844 with the clock frozen at `2026-10-19T09:00:00+02:00` and animations off, then saves a PNG and a DOM geometry JSON (role, accessible name, text, bounding box of every visible element).",
-            "`npm run parity:baseline` captures the canvas (`frontend/` dev server) into `icm/05-build/parity/baseline/{desktop,mobile}/`. `npm run parity:check -- --base-url <url> --screens <ids>` compares any running app against the baseline with the D32 rule and writes a diff report and diff images.",
+            "`npm run parity:baseline` captures the canvas (`frontend/` dev server) into `icm/05-build/parity/baseline/{desktop,mobile}/`. `npm run parity:check -- --base-url <url> --screens <ids|ALL>` compares any running app against the baseline with the D32 rule and writes a diff report and diff images. `npm run parity:check -- --start --port <n> --screens <ids|ALL>` builds nothing: it starts the already built root app on that port against `$DATABASE_URL` after `npm run db:fresh` when that script exists, signs in as the seed owner, runs the check and stops the server (used by `verify-local.sh`).",
             "Pixel compare uses Playwright's built-in screenshot comparator (`maxDiffPixelRatio: 0.001`, `threshold: 0.1`); no new dependency. Masks come only from the D32 truth-text table.",
             "Prove the harness bites: run check against the baseline itself (PASS), then against a copy with one CSS change (FAIL on the changed screens only).",
         ],
