@@ -20,7 +20,15 @@ import { execFileSync } from "node:child_process";
 
 import { encode } from "@auth/core/jwt";
 import { PrismaClient } from "@prisma/client";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 // route-guard + pages import next/navigation (redirect/forbidden/notFound) at
 // top level; client components in the module graph import useRouter.
@@ -115,7 +123,11 @@ describe.skipIf(!enabled)("RSC-NAME-LEAK (real PG)", () => {
       },
     });
     const wsA = await fixture.workspace.create({
-      data: { name: "Workspace A", slug: `ws-a-${Date.now()}`, status: "ACTIVE" },
+      data: {
+        name: "Workspace A",
+        slug: `ws-a-${Date.now()}`,
+        status: "ACTIVE",
+      },
     });
     await fixture.workspaceMember.create({
       data: {
@@ -151,7 +163,11 @@ describe.skipIf(!enabled)("RSC-NAME-LEAK (real PG)", () => {
       },
     });
     const wsB = await fixture.workspace.create({
-      data: { name: "Workspace B", slug: `ws-b-${Date.now()}`, status: "ACTIVE" },
+      data: {
+        name: "Workspace B",
+        slug: `ws-b-${Date.now()}`,
+        status: "ACTIVE",
+      },
     });
     for (const [userId, role] of [
       [ownerB.id, "WORKSPACE_OWNER"],
@@ -163,7 +179,11 @@ describe.skipIf(!enabled)("RSC-NAME-LEAK (real PG)", () => {
       });
     }
     const clientB = await fixture.clientProfile.create({
-      data: { workspaceId: wsB.id, userId: clientUserB.id, name: CLIENT_B_NAME },
+      data: {
+        workspaceId: wsB.id,
+        userId: clientUserB.id,
+        name: CLIENT_B_NAME,
+      },
     });
     for (const [kind, version] of [
       ["PRIVACY_NOTICE", "training-plan-dev-privacy-v1"],
@@ -203,7 +223,11 @@ describe.skipIf(!enabled)("RSC-NAME-LEAK (real PG)", () => {
   /** Real Auth.js session cookie through the stubbed headers hook. */
   async function asUser(userId: string) {
     const jwt = await encode({
-      token: { iat: Math.floor(Date.now() / 1000), sub: userId, sv: 0 } as never,
+      token: {
+        iat: Math.floor(Date.now() / 1000),
+        sub: userId,
+        sv: 0,
+      } as never,
       secret: AUTH_SECRET,
       salt: COOKIE_NAME,
       maxAge: 30 * 24 * 60 * 60,
