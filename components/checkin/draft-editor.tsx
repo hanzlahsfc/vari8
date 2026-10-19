@@ -84,14 +84,22 @@ export function CheckInDraftEditor({
   const pending = savePending || lifecyclePending;
 
   // Route incoming server props through the monotonic seam.
-  useEffect(() => {
+  const [prevSeed, setPrevSeed] = useState<
+    readonly [string, number, EditorDefinition]
+  >([initialName, initialRevision, initialDraft]);
+  if (
+    prevSeed[0] !== initialName ||
+    prevSeed[1] !== initialRevision ||
+    prevSeed[2] !== initialDraft
+  ) {
+    setPrevSeed([initialName, initialRevision, initialDraft]);
     setState((prev) =>
       reseedDraftState(
         prev,
         initialDraftState(initialName, initialRevision, initialDraft),
       ),
     );
-  }, [initialName, initialRevision, initialDraft]);
+  }
 
   // Dirty-form navigation warning — armed only while edits are unsaved,
   // removed after a successful save (dirty clears) and on unmount.

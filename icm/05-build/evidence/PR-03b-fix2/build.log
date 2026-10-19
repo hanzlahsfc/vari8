@@ -1,0 +1,77 @@
+
+> app@0.1.0 build
+> next build --turbopack
+
+▲ Next.js 16.3.8 (Turbopack)
+✓ Running next.config.ts took 15ms
+- Experiments (use with caution):
+  ✓ authInterrupts
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 482ms
+  Running TypeScript ...
+  Finished TypeScript in 2.2s ...
+  Collecting page data using 23 workers ...
+  Generating static pages using 23 workers (0/6) ...
+  Generating static pages using 23 workers (1/6) 
+  Generating static pages using 23 workers (2/6) 
+  Generating static pages using 23 workers (4/6) 
+✓ Generating static pages using 23 workers (6/6) in 119ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /daily
+├ ƒ /invite
+├ ○ /library/exercises
+├ ○ /library/foods
+├ ƒ /login
+├ ƒ /reset
+├ ƒ /reset-request
+├ ƒ /sheets
+├ ƒ /sheets/[slug]
+├ ƒ /workspace
+├ ƒ /workspace/[workspaceId]
+├ ƒ /workspace/[workspaceId]/admin
+├ ƒ /workspace/[workspaceId]/check-ins
+├ ƒ /workspace/[workspaceId]/check-ins/[instanceId]
+├ ƒ /workspace/[workspaceId]/checkins/forms
+├ ƒ /workspace/[workspaceId]/checkins/forms/[formId]
+├ ƒ /workspace/[workspaceId]/checkins/forms/[formId]/preview
+├ ƒ /workspace/[workspaceId]/checkins/forms/new
+├ ƒ /workspace/[workspaceId]/checkins/review-queue
+├ ƒ /workspace/[workspaceId]/client-setups
+├ ƒ /workspace/[workspaceId]/clients
+├ ƒ /workspace/[workspaceId]/clients/[clientProfileId]/checkins
+├ ƒ /workspace/[workspaceId]/clients/[clientProfileId]/coaches
+├ ƒ /workspace/[workspaceId]/clients/[clientProfileId]/daily
+├ ƒ /workspace/[workspaceId]/clients/[clientProfileId]/dashboard
+├ ƒ /workspace/[workspaceId]/clients/[clientProfileId]/meal-plan
+├ ƒ /workspace/[workspaceId]/clients/[clientProfileId]/onboarding
+├ ƒ /workspace/[workspaceId]/clients/[clientProfileId]/training-program
+├ ƒ /workspace/[workspaceId]/clients/[clientProfileId]/training-program/[programId]
+├ ƒ /workspace/[workspaceId]/daily
+├ ƒ /workspace/[workspaceId]/dashboard
+├ ƒ /workspace/[workspaceId]/exercises
+├ ƒ /workspace/[workspaceId]/home
+├ ƒ /workspace/[workspaceId]/meal-plan
+├ ƒ /workspace/[workspaceId]/nutrition
+├ ƒ /workspace/[workspaceId]/onboarding
+├ ƒ /workspace/[workspaceId]/onboarding/[assignmentId]
+├ ƒ /workspace/[workspaceId]/onboarding/assignments
+├ ƒ /workspace/[workspaceId]/onboarding/forms
+├ ƒ /workspace/[workspaceId]/onboarding/forms/[formId]
+├ ƒ /workspace/[workspaceId]/onboarding/forms/[formId]/preview
+├ ƒ /workspace/[workspaceId]/onboarding/forms/new
+├ ƒ /workspace/[workspaceId]/parameters
+├ ƒ /workspace/[workspaceId]/templates
+├ ƒ /workspace/[workspaceId]/templates/[templateId]
+├ ƒ /workspace/[workspaceId]/templates/[templateId]/preview
+└ ƒ /workspace/[workspaceId]/training-program
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

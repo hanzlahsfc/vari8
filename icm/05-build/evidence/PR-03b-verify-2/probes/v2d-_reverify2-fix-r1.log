@@ -1,0 +1,37 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.2 /home/nexuslink/vari8-worktrees/_reverify2-fix
+
+stdout | tests/unit/zz-p2.dom.test.tsx > hunk 1 WINDOW: reloaded config survives a pointer commit that lands before passive effects > WINDOW: reload commit -> pointerup in the commit-to-passive-effect gap; reloaded name must survive
+PROBE2 {"dragCommitX":8,"name":"Alpha"}
+
+ ❯ tests/unit/zz-p2.dom.test.tsx (2 tests | 1 failed) 111ms
+   ❯ hunk 1 WINDOW: reloaded config survives a pointer commit that lands before passive effects (2)
+     × WINDOW: reload commit -> pointerup in the commit-to-passive-effect gap; reloaded name must survive 71ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/zz-p2.dom.test.tsx > hunk 1 WINDOW: reloaded config survives a pointer commit that lands before passive effects > WINDOW: reload commit -> pointerup in the commit-to-passive-effect gap; reloaded name must survive
+AssertionError: expected 'Alpha' to be 'RELOADED' // Object.is equality
+
+Expected: "RELOADED"
+Received: "Alpha"
+
+ ❯ tests/unit/zz-p2.dom.test.tsx:97:36
+     95|     console.log("PROBE2 " + JSON.stringify({ dragCommitX: committed, n…
+     96|     expect(committed, "probe invalid: pointerup did not commit a drag"…
+     97|     expect(slot.latestConfig.name).toBe("RELOADED");
+       |                                    ^
+     98|   });
+     99| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  04:06:18
+   Duration  591ms (environment 58%, tests 22%, transform 10%, import 10%)
+

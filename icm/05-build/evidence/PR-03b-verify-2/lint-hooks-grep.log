@@ -1,0 +1,2 @@
+### lint-hooks-grep: sh -c npx eslint . 2>&1 | grep -c 'react-hooks/' ; true
+3

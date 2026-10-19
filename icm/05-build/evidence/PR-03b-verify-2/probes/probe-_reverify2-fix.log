@@ -1,0 +1,240 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.2 /home/nexuslink/vari8-worktrees/_reverify2-fix
+
+ ❯ tests/unit/zz-reverify2-probe.dom.test.tsx (6 tests | 2 failed) 264ms
+   ❯ hunk 1 dashboard-editor: edit commits on the live slot config (2)
+     × GAP: a slot write NOT yet re-rendered is the base of the next commit (reload not reverted) 19ms
+   ❯ hunk 2 checkin-calendar: fresh load identity resets to loading (2)
+     × LOAD-REBIND: a fresh load identity on the same range shows Loading, not the stale result 29ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/unit/zz-reverify2-probe.dom.test.tsx > hunk 1 dashboard-editor: edit commits on the live slot config > GAP: a slot write NOT yet re-rendered is the base of the next commit (reload not reverted)
+AssertionError: expected 'Alpha' to be 'RELOADED' // Object.is equality
+
+Expected: "RELOADED"
+Received: "Alpha"
+
+ ❯ tests/unit/zz-reverify2-probe.dom.test.tsx:83:36
+     81|     slot.latestConfig = { ...slot.latestConfig, name: "RELOADED" } as …
+     82|     fireEvent.change(screen.getByTestId("add-widget"), { target: { val…
+     83|     expect(slot.latestConfig.name).toBe("RELOADED");
+       |                                    ^
+     84|   });
+     85| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/unit/zz-reverify2-probe.dom.test.tsx > hunk 2 checkin-calendar: fresh load identity resets to loading > LOAD-REBIND: a fresh load identity on the same range shows Loading, not the stale result
+TestingLibraryElementError: Unable to find an element with the text: Loading…. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<section[39m
+      [33mclass[39m=[32m"tracker-section checkin-calendar"[39m
+      [33mdata-testid[39m=[32m"checkin-calendar"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"checkin-calendar__toolbar"[39m
+      [36m>[39m
+        [36m<h2[39m
+          [33mclass[39m=[32m"tracker-section__title checkin-calendar__month"[39m
+        [36m>[39m
+          [0mOctober 2026[0m
+        [36m</h2>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"checkin-calendar__nav"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-label[39m=[32m"Previous month"[39m
+            [33mclass[39m=[32m"checkin-calendar__nav-btn"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0m‹[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"checkin-calendar__nav-btn"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mToday[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33maria-label[39m=[32m"Next month"[39m
+            [33mclass[39m=[32m"checkin-calendar__nav-btn"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0m›[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33mclass[39m=[32m"checkin-calendar__nav-btn"[39m
+            [33mdata-testid[39m=[32m"checkin-calendar-toggle"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mList[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<p[39m
+        [33mclass[39m=[32m"tracker-section__note"[39m
+      [36m>[39m
+        [0mDays shown in your local timezone — viewers elsewhere may see a different day.[0m
+      [36m</p>[39m
+      [36m<p[39m
+        [33maria-live[39m=[32m"polite"[39m
+        [33mclass[39m=[32m"checkin-calendar__status"[39m
+      [36m/>[39m
+      [36m<table[39m
+        [33maria-label[39m=[32m"Check-Ins for October 2026"[39m
+        [33mclass[39m=[32m"checkin-calendar__grid"[39m
+        [33mdata-testid[39m=[32m"checkin-calendar-grid"[39m
+        [33mrole[39m=[32m"grid"[39m
+      [36m>[39m
+        [36m<thead>[39m
+          [36m<tr>[39m
+            [36m<th[39m
+              [33mscope[39m=[32m"col"[39m
+            [36m>[39m
+              [0mMon[0m
+            [36m</th>[39m
+            [36m<th[39m
+              [33mscope[39m=[32m"col"[39m
+            [36m>[39m
+              [0mTue[0m
+            [36m</th>[39m
+            [36m<th[39m
+              [33mscope[39m=[32m"col"[39m
+            [36m>[39m
+              [0mWed[0m
+            [36m</th>[39m
+            [36m<th[39m
+              [33mscope[39m=[32m"col"[39m
+            [36m>[39m
+              [0mThu[0m
+            [36m</th>[39m
+            [36m<th[39m
+              [33mscope[39m=[32m"col"[39m
+            [36m>[39m
+              [0mFri[0m
+            [36m</th>[39m
+            [36m<th[39m
+              [33mscope[39m=[32m"col"[39m
+            [36m>[39m
+              [0mSat[0m
+            [36m</th>[39m
+            [36m<th[39m
+              [33mscope[39m=[32m"col"[39m
+            [36m>[39m
+              [0mSun[0m
+            [36m</th>[39m
+          [36m</tr>[39m
+        [36m</thead>[39m
+        [36m<tbody>[39m
+          [36m<tr>[39m
+            [36m<td[39m
+              [33mclass[39m=[32m"checkin-calendar__cell checkin-calendar__cell--outside"[39m
+              [33mdata-testid[39m=[32m"calendar-cell-2026-09-28"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"checkin-calendar__day"[39m
+              [36m>[39m
+                [0m28[0m
+              [36m</span>[39m
+              [36m<ul[39m
+                [33mclass[39m=[32m"checkin-calendar__chips"[39m
+              [36m/>[39m
+            [36m</td>[39m
+            [36m<td[39m
+              [33mclass[39m=[32m"checkin-calendar__cell checkin-calendar__cell--outside"[39m
+              [33mdata-testid[39m=[32m"calendar-cell-2026-09-29"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"checkin-calendar__day"[39m
+              [36m>[39m
+                [0m29[0m
+              [36m</span>[39m
+              [36m<ul[39m
+                [33mclass[39m=[32m"checkin-calendar__chips"[39m
+              [36m/>[39m
+            [36m</td>[39m
+            [36m<td[39m
+              [33mclass[39m=[32m"checkin-calendar__cell checkin-calendar__cell--outside"[39m
+              [33mdata-testid[39m=[32m"calendar-cell-2026-09-30"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"checkin-calendar__day"[39m
+              [36m>[39m
+                [0m30[0m
+              [36m</span>[39m
+              [36m<ul[39m
+                [33mclass[39m=[32m"checkin-calendar__chips"[39m
+              [36m/>[39m
+            [36m</td>[39m
+            [36m<td[39m
+              [33mclass[39m=[32m"checkin-calendar__cell"[39m
+              [33mdata-testid[39m=[32m"calendar-cell-2026-10-01"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"checkin-calendar__day"[39m
+              [36m>[39m
+                [0m1[0m
+              [36m</span>[39m
+              [36m<ul[39m
+                [33mclass[39m=[32m"checkin-calendar__chips"[39m
+              [36m/>[39m
+            [36m</td>[39m
+            [36m<td[39m
+              [33mclass[39m=[32m"checkin-calendar__cell"[39m
+              [33mdata-testid[39m=[32m"calendar-cell-2026-10-02"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"checkin-calendar__day"[39m
+              [36m>[39m
+                [0m2[0m
+              [36m</span>[39m
+              [36m<ul[39m
+                [33mclass[39m=[32m"checkin-calendar__chips"[39m
+              [36m/>[39m
+            [36m</td>[39m
+            [36m<td[39m
+              [33mclass[39m=[32m"checkin-calendar__cell"[39m
+              [33mdata-testid[39m=[32m"calendar-cell-2026-10-03"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"checkin-calendar__day"[39m
+              [36m>[39m
+                [0m3[0m
+              [36m</span>[39m
+              [36m<ul[39m
+                [33mclass[39m=[32m"checkin-calendar__chips"[39m
+              [36m/>[39m
+            [36m</td>[39m
+            [36m<td[39m
+              [33mclass[39m=[32m"checkin-calendar__cell"[39m
+              [33mdata-testid[39m=[32m"calendar-cell-2026-10-04"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"checkin-calendar...
+ ❯ Object.getElementError ../pr-03-react-hooks/node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ ../pr-03-react-hooks/node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ ../pr-03-react-hooks/node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ ../pr-03-react-hooks/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ tests/unit/zz-reverify2-probe.dom.test.tsx:115:19
+    113|     rerender(<CheckInCalendar load={loadB as never} detailHrefBase="/d…
+    114|     expect(loadB).toHaveBeenCalled();
+    115|     expect(screen.getByText("Loading…")).toBeTruthy();
+       |                   ^
+    116|     expect(screen.queryAllByText("Alpha").length).toBe(0);
+    117|     await act(async () => {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 4 passed (6)
+   Start at  03:56:49
+   Duration  924ms (environment 46%, tests 31%, transform 13%, import 10%)
+

@@ -1,0 +1,6 @@
+### lint-rules-config: sh -c grep -n 'react-hooks' eslint.config.mjs
+8:    // eslint-config-next@16 bundles eslint-plugin-react-hooks v6, whose new
+13:      "react-hooks/set-state-in-effect": "error",
+14:      "react-hooks/refs": "error",
+15:      "react-hooks/purity": "error",
+16:      "react-hooks/immutability": "error",

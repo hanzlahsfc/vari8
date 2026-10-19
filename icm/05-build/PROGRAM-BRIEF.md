@@ -33,3 +33,10 @@ It is 02:06 now. 05:00 is under 3 hours away. Plan the program so that 05:00 is 
 Already running outside your graph (fold them into the board as in-progress cards, do not duplicate):
 - `beta/pr-02-next16`: Devin swe-2-max upgrading the root app to Next 16.3 + React 19.3 (D2) in `/home/nexuslink/vari8-worktrees/pr-02-next16`.
 - Better Auth vs Auth.js evaluation (Haiku), writing `icm/05-build/AUTH-DECISION.md` in the beta worktree.
+
+## GitHub rule change (orchestrator, 02:25, Marcel)
+Everything happens on GitHub in hanzlahsfc/The-great-tracker-, not only locally. `TRACKER`, `Vari8-Beta` and `beta/pr-02-next16` are pushed; PR-02 is https://github.com/hanzlahsfc/The-great-tracker-/pull/57 (base Vari8-Beta). Actions stay manual-only (no CI minutes; verified: our push and PR started no runs).
+Every card body must therefore say: create the GitHub issue for the card first (`gh issue create`, label `vari8-beta`), work on branch `beta/<card-slug>` off the latest `Vari8-Beta`, push early and often, open a PR against `Vari8-Beta` that closes the issue, paste local check output and verifier report into the PR. Merges into `Vari8-Beta` happen only after the verifier card says SHIP, via the integration lane (`gh pr merge --merge`), in dependency order. Replace the earlier "never push / never open issues" rule accordingly.
+
+## Ship-all and cleanup rule (orchestrator, 02:35, Marcel)
+Ship every PR through the full pipeline: issue, branch, PR, local checks, independent verifier SHIP, merge into Vari8-Beta, issue closed. Nothing left open at the end: no open issues of the program, no open PRs. After each merge the integration lane deletes the remote branch (`git push origin --delete beta/<slug>`), the local branch, and removes the worktree (`git worktree remove`), then prunes (`git worktree prune`). The final card checks: `gh pr list --state open` and `gh issue list --label vari8-beta --state open` are empty, `git branch -r` shows only main, FRONTEND, TRACKER, Vari8-Beta and branches that existed before the program, and `git worktree list` shows only the root checkout and the beta worktree. PR-02 already shipped and was cleaned up this way (PR #57).

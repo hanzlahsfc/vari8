@@ -7,13 +7,13 @@ const eslintConfig = [
   {
     // eslint-config-next@16 bundles eslint-plugin-react-hooks v6, whose new
     // recommended rules flag pre-existing code (10 findings across 6 files).
-    // PR-03 fixes those findings per DECISIONS.md D4a; downgraded to warn here
-    // so the upgrade diff stays behavior-neutral and lint exits 0.
+    // PR-03b fixed those findings at their root causes; the rules are back
+    // at error so the codebase cannot regress.
     rules: {
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/refs": "warn",
-      "react-hooks/purity": "warn",
-      "react-hooks/immutability": "warn",
+      "react-hooks/set-state-in-effect": "error",
+      "react-hooks/refs": "error",
+      "react-hooks/purity": "error",
+      "react-hooks/immutability": "error",
     },
   },
   {
@@ -26,6 +26,9 @@ const eslintConfig = [
       "next-env.d.ts",
       "playwright-report/**",
       "test-results/**",
+      // ICM lane artifacts (reports, evidence, verifier probes) — not
+      // product code; e.g. probe sources carry intentional `any`.
+      "icm/**/evidence/",
     ],
   },
 ];

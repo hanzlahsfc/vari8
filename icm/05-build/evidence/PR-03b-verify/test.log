@@ -1,0 +1,20 @@
+
+> app@0.1.0 test
+> vitest run
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.2 /home/nexuslink/vari8-worktrees/pr-03-react-hooks
+
+
+ Test Files  105 passed | 4 skipped (109)
+      Tests  1308 passed | 23 skipped (1331)
+   Start at  03:00:30
+   Duration  2.04s (transform 48%, tests 21%, import 19%, environment 11%, worker 1%)
+
+  Transform  transforming modules took 14.45s · 48% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns
+
