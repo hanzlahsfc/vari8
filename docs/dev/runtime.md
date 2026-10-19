@@ -67,7 +67,10 @@ Gates that read the flag: the consent service
 
 ## Lane databases and the seed
 
-`npm run db:fresh` builds a fresh lane database in one step:
+`npm run db:fresh` builds a fresh lane database in one step. Both commands
+refuse an unclassified runtime, so run them with the trusted classification
+set explicitly — `NODE_ENV=development npm run db:fresh` (a bare shell has
+no `NODE_ENV`, which resolves production-safe). `db:fresh` then:
 
 1. validates the runtime is development/test and `DATABASE_URL` names a
    lane database (`app_<lane>`, never `app_dev`),

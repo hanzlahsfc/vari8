@@ -8,6 +8,7 @@ import { laneDbName } from "./seed/index";
 /**
  * PR-04 — one-command lane database bootstrap.
  *
+ *   NODE_ENV=development \
  *   DATABASE_URL=postgresql://app:<pw>@127.0.0.1:5433/app_<lane>?schema=public \
  *   SEED_OWNER_EMAIL=owner@vari8.test SEED_OWNER_PASSWORD=<15+ chars> \
  *   SEED_COACH_EMAIL=coach@vari8.test SEED_COACH_PASSWORD=<15+ chars> \
