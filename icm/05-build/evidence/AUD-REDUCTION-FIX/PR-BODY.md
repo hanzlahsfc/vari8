@@ -2,7 +2,7 @@
 
 Refs #76. Documentation only. No product code is touched: no `app/`, `lib/`, `db/`, `frontend/`, no `docs/STATUS.md`, no generated card, graph or ledger file.
 
-Independent check AUD-REDUCTION-VERIFY returned FIX: the census reproduces on 11 of 13 findings and four claims did not hold (F5 deleting `lib/extraction/databases.ts`, F8's "18 retry copies", F9's counts, and the F1/F2 blanket deletion of `app/workspace/**` and `components/**`). Every number below is re-derived by two committed scripts, run at f02a6d6 from the repo root:
+Independent check AUD-REDUCTION-VERIFY returned FIX: the census reproduces on 11 of 13 findings and four claims did not hold (F5 deleting `lib/extraction/databases.ts`, F8's "18 retry copies", F9's counts, and the F1/F2 blanket deletion of `app/workspace/**` and `components/**`). Every number below is re-derived by two committed scripts, run from the repo root (currently on the merged tree over `b0ee8be`, see Rebase 1):
 
 - `node icm/05-build/evidence/AUD-REDUCTION-FIX/ts-facts.cjs` (TypeScript compiler API: import closure, statement spans, printer-normalised bodies)
 - `bash icm/05-build/evidence/AUD-REDUCTION-FIX/census.sh` (shell census: file counts, greps, flags, tests)
@@ -44,7 +44,7 @@ No contradiction found in `aud-backend-reduction.md`, `aud-backend-reduction-ver
 
 ## Verification run in this branch
 
-- `npm ci` then `npm run index` and `npm run index:check`: exit 0. `docs/index/SYMBOLS.md` is regenerated in this PR because it is stale at f02a6d6 (`index:check` fails on a clean checkout of the base: two printer lines for `AppearanceProvider` and `prisma`). It is the generator's own output, 2 lines.
+- `npm ci` then `npm run index` and `npm run index:check`: exit 0. `docs/index/SYMBOLS.md` was regenerated in this PR because it was stale at f02a6d6 (`index:check` failed on a clean checkout of that base: two printer lines for `AppearanceProvider` and `prisma`). After Rebase 1 the file is identical to the new base, so it no longer appears in this PR's diff.
 - `npx prettier --write icm/05-build/BACKEND-REDUCTION.md`, `npx prettier --check icm/05-build/evidence/AUD-REDUCTION-FIX/ts-facts.cjs`: clean.
 - No em dashes in any edited file.
 
@@ -55,5 +55,19 @@ Round-2 verify fixes (independent verifier, verdict FIX on four doc claims):
 - The unreproducible "1,988 (22 files import only cut-set files)" figure and its 2,923 total are removed; the surviving qualitative claim is kept without a count.
 - The "13 by the check's whitespace hash" readings and the "two readings differ by method rather than by fact" sentence are removed; the check's own `fnlen.py` also counts 15 distinct bodies. `tests/unit/crosssheet.test.ts` is now noted as surviving the F5 cut with an edit, not a delete.
 - `npx prettier --check` on both edited markdown files: clean. `npm run index` and `npm run index:check`: exit 0.
+
+## Rebase 1 (merge, not rebase)
+
+`origin/Vari8-Beta` moved after this PR was verified: PR #75 `6a0d605`, PR #83 `a439787`, PR #84 `b0ee8be`. Merged in as `bf2d9a7` (over `a439787`) then `0ad9807` (over `b0ee8be`); no rebase, no force-push.
+
+Conflict: `icm/05-build/BACKEND-REDUCTION.md` only. The base side changed three `---` separator rows (prettier column padding, zero content change). Resolved by taking the PR side; `npx prettier --write icm/05-build/BACKEND-REDUCTION.md` reported the file unchanged.
+
+Evidence regenerated on the merged tree with the same invocations (`node icm/05-build/evidence/AUD-REDUCTION-FIX/ts-facts.cjs` and `bash icm/05-build/evidence/AUD-REDUCTION-FIX/census.sh`, run from the repo root):
+
+- `ts-facts.txt`: prod total 62,221 to 62,197 lines (261 files), `scripts/` 2,166 to 2,120 lines, `scripts/index/**` 1,578 to 1,532 lines, `app/` 15,863 to 15,885 lines (PR #83). The cut against today's scope stays 37.3 percent (23,224 / 62,197 = 37.34). `BACKEND-REDUCTION.md` line 46 and the raw-data note now cite `b0ee8be`.
+- `census.txt`: tests 158 to 159 tracked files and `tests/integration` 55 to 56 (PR #83 added `tests/integration/rsc-name-leak.test.ts`).
+- `docs/index/SYMBOLS.md` left this PR's diff: the new base already contains the regenerated file (PR #84 restored `frontend/src/lib/reduced-motion.ts`, so the index lists 120 modules and 1,162 symbols).
+
+The audit-basis ledger is unchanged: 23,224 out over 60,588 measured at the audit's HEAD (18,553 certain, 4,671 conditional).
 
 Not merged. Nothing in `app/`, `lib/`, `db/`, `frontend/` or `docs/STATUS.md` is touched, and no card, graph or coverage ledger is edited.

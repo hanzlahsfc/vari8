@@ -51,9 +51,9 @@ classifyXRuntime definitions:
   lib/onboarding/submission-consent.ts:43:export function classifySubmissionRuntime(
   lib/trainingprogram/gate.ts:23:export function classifyTrainingRuntime(
 ## Tests and e2e
-tests tracked files (incl. AGENTS.md): 158
+tests tracked files (incl. AGENTS.md): 159
 tests/unit files: 97
-tests/integration files: 55
+tests/integration files: 56
 tests/e2e files: 5
 e2e files hitting /workspace, /daily, /login:
   tests/e2e/fixture-sweep.ts ws=3 daily=0 login=0

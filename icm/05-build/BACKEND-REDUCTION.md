@@ -43,7 +43,7 @@ Non-blank lines, tracked `.ts/.tsx/.js/.mjs/.cjs`. Method in section 6.
 | `tests/`           |   158 |     57,042 | Not in prod total. Restated after PR-03A: unit 97 files, integration 55, e2e 5, plus `tests/AGENTS.md`. Was 213 files and 78,183 lines.                                                                                               |
 | `frontend/src`     |   189 |    102,397 | Canvas. Not touched.                                                                                                                                                                                                                  |
 
-Measured at the audit's HEAD. At f02a6d6 the same scope measures 62,221 prod lines in 261 files: `scripts/index/**` (the index generator, 1,578 lines) landed after the audit, so `scripts/` reads 4 files and 2,166 lines. Every percentage and the ledger stay on the audit's 60,588 basis; against today's 62,221 the same cut is 37.3 percent.
+Measured at the audit's HEAD. At `b0ee8be` (the `Vari8-Beta` head after PRs #75, #83 and #84) the same scope measures 62,197 prod lines in 261 files: `scripts/index/**` (the index generator, 1,532 lines) landed after the audit, so `scripts/` reads 4 files and 2,120 lines. Every percentage and the ledger stay on the audit's 60,588 basis; against today's 62,197 the same cut is 37.3 percent.
 
 ## 2. Findings
 
@@ -122,4 +122,4 @@ Test lines that die with the code: the four transition unit tests (`transition-d
 - Boundary helpers: statement spans of the named declarations in `lib/*boundary*.ts`. The independent check brace-matched from the declaration line, which reads `guard` about 20 lines smaller.
 - Flag call sites: grep, 112 lines strict and 243 with the gate and classifier call sites.
 - Items marked "est." or "estimate" are judgement, not measured. Expect about plus or minus 10% on F3 and F11.
-- Raw data: `icm/05-build/evidence/AUD-REDUCTION-FIX/census.txt` and `ts-facts.txt` (both regenerated at f02a6d6), plus `/home/nexuslink/.hermes/cache/scratch/graph.json` (import graph, exports, per-file LOC) and `loc.json` from the first pass.
+- Raw data: `icm/05-build/evidence/AUD-REDUCTION-FIX/census.txt` and `ts-facts.txt` (both regenerated on the merged tree over `b0ee8be`), plus `/home/nexuslink/.hermes/cache/scratch/graph.json` (import graph, exports, per-file LOC) and `loc.json` from the first pass.

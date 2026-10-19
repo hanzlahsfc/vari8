@@ -56,8 +56,8 @@ action files: 19; gross nonblank: 3908; import a boundary: 17
   components/ .ts/.tsx files: 31; nonblank: 6078
 
 ## Prod totals (app, lib, components, scripts, auth.ts; non-blank)
-{"app":15863,"auth.ts":52,"components":6078,"lib":38114,"scripts":2166} total=62273 files=262
-tests: {"tests/e2e":{"files":5,"lines":816},"tests/integration":{"files":55,"lines":38487},"tests/unit":{"files":97,"lines":17731}} total files=157
+{"app":15885,"auth.ts":52,"components":6078,"lib":38114,"scripts":2120} total=62249 files=262
+tests: {"tests/e2e":{"files":5,"lines":816},"tests/integration":{"files":56,"lines":38802},"tests/unit":{"files":97,"lines":17731}} total files=158
 ## F8 isRetryableSerialization variants
 isRetryableSerialization definitions: 15; distinct printer bodies: 2
   body a4117c81 x14: lib/checkin/forms.ts lib/checkin/instances.ts lib/checkin/schedules.ts lib/coaching/client-setup-transition.ts lib/coaching/client-setup.ts lib/coaching/parameters.ts lib/coaching/templates.ts lib/daily-entry/service.ts lib/mealplan/service.ts lib/onboarding/assignments.ts lib/onboarding/forms.ts lib/onboarding/review.ts lib/onboarding/submissions.ts lib/trainingprogram/service.ts
@@ -67,14 +67,14 @@ lib/db.ts isSerializationConflict at line 19
 ## overlap: app/workspace/[workspaceId]/client-setups/transition-actions.ts nonblank=225 (in F3 gross and F4)
 
 ## Section 1 rows (non-blank, .ts/.tsx/.js/.mjs/.cjs; auth.ts excluded as in the audit)
-app/workspace/**: 60 files, 10966 lines
+app/workspace/**: 60 files, 10988 lines
 app/(tracker)/**: 25 files, 3747 lines
 app other: 25 files, 1150 lines
 lib/**: 116 files, 38114 lines
 components/**: 31 files, 6078 lines
-scripts/**: 4 files, 2166 lines
-scripts/index/** (generator, added after the audit): 1 files, 1578 lines
-prod total: 261 files, 62221 lines
+scripts/**: 4 files, 2120 lines
+scripts/index/** (generator, added after the audit): 1 files, 1532 lines
+prod total: 261 files, 62197 lines
 F5 delete list: lib/extraction/crosssheet.ts=179 lib/extraction/redact.ts=190 lib/extraction/source.ts=122 lib/extraction/summaries.ts=263 lib/extraction/theme.ts=78 scripts/extract-sheets.ts=430
 F5 databases (closure, must stay): lib/extraction/databases.ts=247
 F1 parameter kept set: app/workspace/[workspaceId]/parameters/page.tsx=95 app/workspace/[workspaceId]/parameters/parameter-manager.tsx=433 app/workspace/[workspaceId]/parameters/actions.ts=251 app/workspace/[workspaceId]/layout.tsx=63
