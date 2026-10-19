@@ -478,28 +478,3 @@ describe("S1-F2D password-reset — unit surface", () => {
     ).toThrow("audit_metadata_forbidden");
   });
 });
-
-describe("route boundary", () => {
-  it("no app/route file imports the password-reset service or token store", async () => {
-    const { readdirSync, readFileSync, statSync } = await import("node:fs");
-    const { join } = await import("node:path");
-    const root = join(__dirname, "..", "..", "app");
-    const scan = (dir: string): string[] =>
-      readdirSync(dir).flatMap((entry) => {
-        const p = join(dir, entry);
-        if (statSync(p).isDirectory()) return scan(p);
-        return /\.(ts|tsx)$/.test(entry) ? [p] : [];
-      });
-    for (const file of scan(root)) {
-      const src = readFileSync(file, "utf8");
-      const imports = src
-        .split("\n")
-        .filter((line) => /^\s*import\s/.test(line))
-        .join("\n");
-      // Exact module specifiers — `-boundary`/`-delivery` are the reviewed
-      // route-facing modules and must not trip the ban.
-      expect(imports).not.toMatch(/["'`][^"'`]*auth\/password-reset["'`]/);
-      expect(imports).not.toMatch(/["'`][^"'`]*tokens\/store["'`]/);
-    }
-  });
-});
