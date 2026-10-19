@@ -18,7 +18,8 @@
     "extract:sheets": "tsx scripts/extract-sheets.ts",
     "import:nutrition": "tsx scripts/import-nutrition.ts",
     "import:exercise": "tsx scripts/import-exercise.ts",
-    "verify": "npm run typecheck && npm run lint && npm run test"
+    "verify": "npm run typecheck && npm run lint && npm run test",
+    "parity": "node tools/parity/run.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",

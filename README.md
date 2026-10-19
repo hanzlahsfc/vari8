@@ -98,6 +98,43 @@ Prisma client generation and engine availability are verified by the Phase 6 che
 | `npm run test`           | Vitest unit tests                                              |
 | `npm run test:e2e`       | Playwright e2e (needs PostgreSQL up)                           |
 | `npm run extract:sheets` | Validate + parse the 11 source sheets (non-writing by default) |
+| `npm run parity`         | Canvas visual-parity gate, see below                           |
+
+## Visual parity gate
+
+The canvas in `frontend/` must look exactly as it does on `Vari8-Beta`. The gate replays the 35 click paths in
+`icm/04-briefing/shots/index.json` at 1440x900 and 390x844 (70 captures), diffs each capture against the committed
+baseline in `tools/parity/baseline/`, and exits 1 on any real change.
+
+```bash
+npm run parity                        # starts the canvas dev server on :3630, captures, compares, stops it
+npm run parity -- --update-baseline   # recaptures the baseline; run only for an intended visual change
+```
+
+- Exit 0: every screen matches. Exit 1: a pixel or geometry change, a missing screen, or a click path that did not resolve.
+- Report: `tools/parity/out/report.html` (gitignored; failing screens show baseline, current, and a red diff).
+- `PARITY_URL=http://127.0.0.1:3630` reuses a running server instead of starting one.
+
+What is pinned, so an unchanged tree reruns green:
+
+- `capture.mjs`: fresh browser context per screen; `Europe/Vienna`; clock frozen at 2026-10-19T10:00+02:00; seeded
+  `Math.random` and `crypto.randomUUID`; empty localStorage seed; CSS animations, transitions, and caret off; fonts
+  awaited; DOM quiet for 400 ms before the screenshot; Next dev overlay hidden.
+- `compare.mjs`: a pixel whose channels differ by at most 16/255 is anti-aliasing noise. Any other changed pixel fails
+  (`PARITY_MAX_DIFF_PIXELS` allows a count, default 0). Geometry: visible elements added, removed, or moved by more than 0.5 px.
+- Mobile labels: the 390 px layout shows shorter tab names (`02 Dashboard` is `Dashboard`, `Training Program` is
+  `Training`). `mobileFallback` in `capture.mjs` covers those labels and is used only at 390; the manifest records
+  the label that was clicked.
+- Next dev appends to `frontend/AGENTS.md` on start; `run.mjs` restores it, so the canvas tree stays clean.
+
+Self-test (as run for issue #61):
+
+- Unchanged tree, two runs: `npm run parity` exits 0, 70 of 70 screens ok.
+- Deliberate change: add `padding-bottom: 2px` to `.coach-root .cd-roster-toolbar` in
+  `frontend/src/components/coach/coach.css`. `npm run parity` exits 1; `s01-roster` fails at 390 and 1440. Revert with
+  `git checkout -- frontend/src/components/coach/coach.css`.
+
+Baseline: 70 PNGs (12 MB) plus gzipped geometry and `manifest.json`, captured from `Vari8-Beta` at `55a0f08`.
 
 ## Privacy
 
