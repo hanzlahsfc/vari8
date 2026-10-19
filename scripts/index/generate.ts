@@ -415,7 +415,10 @@ function returnTypeOf(
 }
 
 function sliceText(node: ts.Node, stop: number, sf: ts.SourceFile): string {
-  return rawText(sf.text.slice(node.getStart(sf), stop));
+  return rawText(sf.text.slice(node.getStart(sf), stop))
+    .replace(/\(\s+/g, "(")
+    .replace(/\s+\)/g, ")")
+    .replace(/,\s*\)/g, ")");
 }
 
 function callableSignature(
