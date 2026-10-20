@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 132 modules with exports, 1306 exported symbols.
+Counts: 135 modules with exports, 1336 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -234,16 +234,19 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/checkin/forms.ts`
 
-- `export const CHECKIN_FIELD_KINDS = [ "shortText", "longText", "number", "date", "singleChoice", "multiChoice", ] as const`
+- `export const CHECKIN_FIELD_KINDS = [ "shortText", "longText", "number", "date", "singleChoice", "multiChoice", "rating", "visual", ] as const`
 - `export const CHECKIN_FORM_LIMITS = { maxFields: 100, minPublishFields: 1, labelMax: 200, helpTextMax: 500, classificationMax: 64, minOptions: 1, maxOptions: 50, optionLabelMax: 200, nameMax: 120, d...`
+- `export const CHECKIN_RATING_SCHEMES = [ "SCALE_1_10", "SCALE_1_5", "WORD_LABELS", ] as const`
+- `export const CHECKIN_RATING_WORD_LABELS = [ "Low", "Okay", "Good", "Excellent", ] as const`
 - `export type CheckInDefinition = { title: string; fields: CheckInField[] }`
-- `export type CheckInField = { fieldId: string; kind: CheckInFieldKind; label: string; required: boolean; order: number; helpText?: string; options?: CheckInOption[]; classification?: string; }`
+- `export type CheckInField = { fieldId: string; kind: CheckInFieldKind; label: string; required: boolean; order: number; helpText?: string; options?: CheckInOption[]; ratingScheme?: CheckInRatingSche...`
 - `export type CheckInFieldKind = (typeof CHECKIN_FIELD_KINDS)[number]`
 - `export type CheckInFormDetail = { id: string; name: string; status: "ACTIVE" | "ARCHIVED"; draftRevision: number; draft: CheckInDefinition | null; versions: Array<{ versionSeq: number; publishedAt:...`
 - `export class CheckInFormError extends Error (1 members)`
 - `export type CheckInFormErrorCode = | "invalid_input" | "form_not_accessible" | "form_archived" | "no_open_draft" | "stale_revision" | "forbidden_field_id" | "publish_incomplete" | "serialization_co...`
 - `export type CheckInFormSummary = { id: string; name: string; status: "ACTIVE" | "ARCHIVED"; draftRevision: number; hasDraft: boolean; latestVersionSeq: number | null; updatedAt: string; }`
 - `export type CheckInOption = { optionId: string; label: string }`
+- `export type CheckInRatingScheme = (typeof CHECKIN_RATING_SCHEMES)[number]`
 - `export async function archiveCheckInForm(session: SessionLike, input: { workspaceId: string; formId: string }, client?: PrismaClient): Promise<{ formId: string }>`
 - `export async function createCheckInForm(session: SessionLike, input: { workspaceId: string; name: string }, client?: PrismaClient): Promise<{ formId: string }>`
 - `export async function getCheckInForm(session: SessionLike, input: { workspaceId: string; formId: string }, client?: PrismaClient): Promise<CheckInFormDetail>`
@@ -273,6 +276,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function listStaffCheckInSubmissions(session: Session, input: { workspaceId: string; clientProfileId: string }, deps: CheckInInstanceDeps = {}): Promise<CheckInSafeResult<{ items: Staf...`
 - `export async function markCheckInSubmissionReviewedFromAction(session: Session, input: MarkCheckInSubmissionReviewedInput, deps: CheckInInstanceDeps = {}): Promise<CheckInSafeResult<MarkCheckInSubm...`
 - `export { parseCheckInSubmissionParam }`
+- `export async function projectStaffCheckInScheduleOccurrences(session: Session, input: ProjectCheckInScheduleOccurrencesInput, deps: CheckInScheduleDeps = {}): Promise<CheckInSafeResult<ProjectCheck...`
 - `export async function readCheckInReviewTrackerContextFromAction(session: Session, input: { workspaceId: string; clientProfileId: string; submissionId: string; entryDate: string; }, deps: CheckInTra...`
 - `export async function readOwnCheckInCalendar(session: Session, input: { workspaceId: string; from: string; to: string }, deps: CheckInInstanceDeps = {}): Promise< CheckInSafeResult<{ items: OwnChec...`
 - `export async function readOwnNextCheckInInstance(session: Session, input: { workspaceId: string }, deps: CheckInInstanceDeps = {}): Promise<CheckInSafeResult<{ next: OwnNextCheckInInstance | null }>>`
@@ -290,7 +294,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export const CHECKIN_FEEDBACK_BODY_MAX = 2000`
 - `export const CHECKIN_FEEDBACK_NONCE_MAX = 64`
 - `export const CHECKIN_FEEDBACK_PAGE_SIZE = 50`
-- `export const CHECKIN_INSTANCE_LIMITS = { answersJsonMaxBytes: 128 * 1024, answerTextMax: 4000, optionIdsMaxPerField: 50, idMax: 128, dueTzMax: 64, dueAtMinIsoYear: 2000, dueAtMaxIsoYear: 2100, list...`
+- `export const CHECKIN_INSTANCE_LIMITS = { answersJsonMaxBytes: 128 * 1024, answerTextMax: 4000, optionIdsMaxPerField: 50, visualMediaIdsMax: 10, coachNoteMax: 500, idMax: 128, dueTzMax: 64, dueAtMin...`
 - `export const CHECKIN_REVIEW_QUEUE_PAGE_SIZE = 50`
 - `export type CancelCheckInInstanceInput = { workspaceId: string; clientProfileId: string; instanceId: string; }`
 - `export type CancelCheckInInstanceResult = { status: "cancelled" }`
@@ -306,7 +310,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type CheckInInstancePresentation = { state: CheckInInstanceState; late: boolean; }`
 - `export type CheckInInstanceState = "CANCELLED" | "REVIEWED" | "SUBMITTED" | "SCHEDULED"`
 - `export type GetOwnCheckInInstanceInput = { workspaceId: string; instanceId: string; }`
-- `export const KIND_TO_ENUM = { shortText: "SHORT_TEXT", longText: "LONG_TEXT", number: "NUMBER", date: "DATE", singleChoice: "SINGLE_CHOICE", multiChoice: "MULTI_CHOICE", } as const`
+- `export const KIND_TO_ENUM = { shortText: "SHORT_TEXT", longText: "LONG_TEXT", number: "NUMBER", date: "DATE", singleChoice: "SINGLE_CHOICE", multiChoice: "MULTI_CHOICE", rating: "RATING", visual: "...`
 - `export type ListCheckInFeedbackInput = { workspaceId: string; clientProfileId: string; submissionId: string; cursor?: string; limit?: number; }`
 - `export type ListCheckInInstancesInput = { workspaceId: string; clientProfileId: string; range?: { from: string; to: string }; }`
 - `export type ListOwnCheckInFeedbackInput = { workspaceId: string; instanceId: string; cursor?: string; }`
@@ -320,15 +324,15 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type RawCheckInAnswerEntry = { fieldId: string; value: unknown }`
 - `export type ResolveCheckInFeedbackSendInput = { workspaceId: string; clientProfileId: string; submissionId: string; clientRequestId: string; }`
 - `export type ResolveCheckInFeedbackSendResult = | { status: "sent"; feedbackId: string; sentAt: string; byName: string; body: string; } | { status: "not_sent" }`
-- `export type ScheduleCheckInInstanceInput = { workspaceId: string; clientProfileId: string; formId: string; formVersionId: string; dueAt: string; dueTz?: string | null; }`
+- `export type ScheduleCheckInInstanceInput = { workspaceId: string; clientProfileId: string; formId: string; formVersionId: string; dueAt: string; dueTz?: string | null; coachNote?: string | null; }`
 - `export type ScheduleCheckInInstanceResult = | { status: "scheduled"; instanceId: string } | { status: "already_scheduled"; instanceId: string }`
 - `export type ScheduleFormOption = { position: number; formName: string; versionSeq: number; formId: string; formVersionId: string; }`
 - `export type SendCheckInFeedbackInput = { workspaceId: string; clientProfileId: string; submissionId: string; body: string; clientRequestId: string; }`
 - `export type SendCheckInFeedbackResult = { status: "sent" | "already_sent"; feedbackId: string; sentAt: string; byName: string; body: string; }`
-- `export type StaffCheckInInstanceItem = { instanceId: string; formId: string; formName: string; versionSeq: number; dueAt: string; dueTz: string | null; state: CheckInInstanceState; late: boolean; s...`
+- `export type StaffCheckInInstanceItem = { instanceId: string; formId: string; formName: string; versionSeq: number; dueAt: string; dueTz: string | null; coachNote: string | null; state: CheckInInsta...`
 - `export type StaffCheckInReviewQueueItem = { submissionId: string; instanceId: string; clientProfileId: string; clientName: string; formName: string; versionSeq: number; dueAt: string; submittedAt: ...`
 - `export type StaffCheckInSubmissionDetail = { submissionId: string; instanceId: string; formName: string; versionSeq: number; dueAt: string; submittedAt: string; late: boolean; reviewed: { byName: s...`
-- `export type StaffCheckInSubmissionFieldView = { fieldId: string; label: string; kind: string; required: boolean; display: string; }`
+- `export type StaffCheckInSubmissionFieldView = { fieldId: string; label: string; kind: string; required: boolean; display: string; mediaIds: string[]; }`
 - `export type StaffCheckInSubmissionItem = { instanceId: string; submissionId: string; formName: string; versionSeq: number; dueAt: string; dueTz: string | null; submittedAt: string; late: boolean; r...`
 - `export type SubmitCheckInInstanceInput = { workspaceId: string; instanceId: string; answersJson: string; }`
 - `export type SubmitCheckInInstanceResult = | { status: "submitted"; submissionId: string } | { status: "already_submitted"; submissionId: string }`
@@ -349,6 +353,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function normalizeCheckInFeedbackBody(raw: unknown): string | null`
 - `export function parseCheckInAnswersJson(raw: unknown): RawCheckInAnswerEntry[]`
 - `export function parseCheckInCalendarRange(raw: { from?: unknown; to?: unknown; }): { from: Date; to: Date } | null`
+- `export function parseCheckInCoachNote(raw: unknown): string | null`
 - `export function parseCheckInDueAt(raw: unknown): Date | null`
 - `export function parseCheckInDueTz(raw: unknown): string | null`
 - `export function parseCheckInReviewQueueCursor(raw: string): { submittedAt: Date; id: string; }`
@@ -364,7 +369,7 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/checkin/schedules.ts`
 
 - `export const CHECKIN_SCHEDULE_HORIZON_DAYS = CHECKIN_SCHEDULE_LIMITS.horizonDays`
-- `export const CHECKIN_SCHEDULE_LIMITS = { idMax: 128, horizonDays: 56, } as const`
+- `export const CHECKIN_SCHEDULE_LIMITS = { idMax: 128, horizonDays: 56, projectionRangeMaxDays: 95, } as const`
 - `export { CheckInInstanceError }`
 - `export type CheckInRuleWeekday = (typeof WEEKDAYS)[number]`
 - `export type CheckInScheduleDeps = { db?: PrismaLike; now?: () => Date; }`
@@ -373,15 +378,20 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type CreateCheckInScheduleRuleResult = | { status: "created"; ruleId: string } | { status: "replaced"; ruleId: string; endedRuleId: string }`
 - `export type GenerateCheckInScheduleRuleInput = { workspaceId: string; clientProfileId: string; ruleId: string; }`
 - `export type GenerateCheckInScheduleRuleResult = | { status: "generated"; examinedThrough: string | null; created: number; alreadyGenerated: number; skippedConflicts: string[]; unrepresentable: stri...`
+- `export type ProjectCheckInScheduleOccurrencesInput = { workspaceId: string; clientProfileId: string; rangeStart: string; rangeEnd: string; }`
+- `export type ProjectCheckInScheduleOccurrencesResult = { items: ProjectedCheckInOccurrence[]; unrepresentable: { ruleId: string; occurrenceDate: string }[]; }`
+- `export type ProjectedCheckInOccurrence = { ruleId: string; formId: string; occurrenceDate: string; dueAt: string; }`
 - `export type SetCheckInScheduleRuleStatusInput = { workspaceId: string; clientProfileId: string; ruleId: string; action: "pause" | "resume" | "end"; }`
 - `export type SetCheckInScheduleRuleStatusResult = | { status: "paused" } | { status: "resumed" } | { status: "ended"; cancelledCount: number }`
 - `export async function createCheckInScheduleRule(session: SessionLike, input: CreateCheckInScheduleRuleInput, deps: CheckInScheduleDeps = {}): Promise<CreateCheckInScheduleRuleResult>`
 - `export function enumerateRuleOccurrenceDates(input: { weekday: CheckInRuleWeekday; startDate: string; endDate: string | null; todayLocal: string; }): string[]`
+- `export function enumerateRuleOccurrenceDatesInRange(input: { weekday: CheckInRuleWeekday; startDate: string; endDate: string | null; rangeStart: string; rangeEnd: string; }): string[]`
 - `export async function generateCheckInScheduleRuleInstances(session: SessionLike, input: GenerateCheckInScheduleRuleInput, deps: CheckInScheduleDeps = {}): Promise<GenerateCheckInScheduleRuleResult>`
 - `export async function listCheckInScheduleRules(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: CheckInScheduleDeps = {}): Promise<{ items: CheckInScheduleRuleIt...`
 - `export function parseCheckInScheduleLocalDate(raw: unknown): string | null`
 - `export function parseCheckInScheduleLocalTimeMinutes(raw: unknown): number | null`
 - `export function parseCheckInScheduleWeekday(raw: unknown): CheckInRuleWeekday | null`
+- `export async function projectCheckInScheduleOccurrences(session: SessionLike, input: ProjectCheckInScheduleOccurrencesInput, deps: CheckInScheduleDeps = {}): Promise<ProjectCheckInScheduleOccurrenc...`
 - `export async function setCheckInScheduleRuleStatus(session: SessionLike, input: SetCheckInScheduleRuleStatusInput, deps: CheckInScheduleDeps = {}): Promise<SetCheckInScheduleRuleStatusResult>`
 
 ## `lib/checkin/timezone.ts`

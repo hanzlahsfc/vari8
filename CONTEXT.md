@@ -15,4 +15,4 @@ Where do I go? Route by task, open one stage, stop early.
 
 Stage status is whatever exists in each stage's `output/`. No status file.
 
-Branch model. `TRACKER` is the integration branch and becomes `main`. Work branches come off `TRACKER` and return by PR.
+Branch model. `Vari8-Beta` is the beta integration branch. Work branches `beta/<slug>` come off it and return by PR. `main` changes only after the full beta review.

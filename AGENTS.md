@@ -1,7 +1,7 @@
 # AGENTS.md — read this first
 
 This repo is an ICM workspace. After this file, open `CONTEXT.md` and route to one stage under `icm/`.
-Branch `TRACKER` is the integration branch and becomes `main`.
+`Vari8-Beta` is the beta integration branch. Work branches `beta/<slug>` come off it and return by PR. `main` changes only after the full beta review.
 
 This is the new PRGRSS-derived product. Read these files completely before any work:
 
