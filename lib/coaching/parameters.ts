@@ -569,7 +569,7 @@ export async function listParameters(
     parameters: page.map((row) => ({
       id: row.id,
       key: row.key,
-      kind: row.kind,
+      kind: row.kind as ParameterKind,
       label: row.label,
       status: row.status,
       dataClassification: row.dataClassification,
@@ -605,7 +605,7 @@ export async function getParameter(
   return {
     id: row.id,
     key: row.key,
-    kind: row.kind,
+    kind: row.kind as ParameterKind,
     label: row.label,
     status: row.status,
     dataClassification: row.dataClassification,
