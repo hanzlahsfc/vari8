@@ -346,22 +346,27 @@ def pr_card_bodies(p):
     orph_txt = "\n".join(f"- {r['id']}: {r['detail']}" for r in orph)
     ta_txt = "\n".join(f"- `{r['id']}`: {r['detail']}" for r in tas)
     scr_txt = ", ".join(f"`{s}`" for s in scr) if scr else "none"
-    common = f"""## Read first
+    def make_common(with_rulings):
+        rulings_txt = ("\n".join(p.get("rulings", [])) + "\n\n") if with_rulings else ""
+        c = f"""## Read first
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `{pid}` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
-## Matrix rows this PR closes
+{rulings_txt}## Matrix rows this PR closes
 
 {rows_txt}
 """
-    if orph_txt:
-        common += f"\n## Backend orphans this PR owns (delete or keep as each line says)\n\n{orph_txt}\n"
-    if ta_txt:
-        common += f"\n## TEST-AUDIT actions this PR executes\n\n{ta_txt}\n"
-    p0 = [r for r in LEDGER if r["kind"] == "readiness-p0" and r["owner"] == pid]
-    if p0:
-        common += "\n## Production-readiness P0 rows this PR owns (`icm/05-build/audits/PRODREADY-BASELINE.md`)\n\n" + \
-            "\n".join(f"- {r['id']}: {r['detail']}" for r in p0) + "\n"
+        if orph_txt:
+            c += f"\n## Backend orphans this PR owns (delete or keep as each line says)\n\n{orph_txt}\n"
+        if ta_txt:
+            c += f"\n## TEST-AUDIT actions this PR executes\n\n{ta_txt}\n"
+        p0 = [r for r in LEDGER if r["kind"] == "readiness-p0" and r["owner"] == pid]
+        if p0:
+            c += "\n## Production-readiness P0 rows this PR owns (`icm/05-build/audits/PRODREADY-BASELINE.md`)\n\n" + \
+                "\n".join(f"- {r['id']}: {r['detail']}" for r in p0) + "\n"
+        return c
+    common = make_common(True)
+    common_verify = make_common(False)
     files_txt = "\n".join(f"- `{f}`" if not " " in f else f"- {f}" for f in p["files"])
     build_txt = "\n".join(f"- {b}" for b in p["build"])
     see_txt = "\n".join(f"- {s}" for s in p["see"])
@@ -446,7 +451,7 @@ Card slug `{vslug}`. Independent verifier ({MODELS[p.get('verifier', 'neji')][0]
 
 {see_txt}
 {vextra}
-{common}
+{common_verify}
 """
     mslug = f"{slug}-merge"
     merge = f"""# {pid} merge: integrate into Vari8-Beta
