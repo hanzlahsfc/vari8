@@ -56,26 +56,28 @@
           </div>
 
           <div class="hero-stage" aria-label="Product preview composition">
-            <figure class="hero-shot hero-shot-main">
-              <img
-                src="assets/shots/s01-roster.png"
-                alt="Coach workspace roster in Vari8, listing sample clients with status pills"
-                width="1440"
-                height="900"
-                loading="eager"
-                decoding="async"
-              />
-            </figure>
-            <figure class="hero-shot hero-shot-float">
-              <img
-                src="assets/shots/s11-client-preview.png"
-                alt="Client daily overview in Vari8 showing bodyweight trend, nutrition and sleep widgets"
-                width="1440"
-                height="900"
-                loading="eager"
-                decoding="async"
-              />
-            </figure>
+            <div class="hero-shots">
+              <figure class="hero-shot hero-shot-main">
+                <img
+                  src="assets/shots/s01-roster.png"
+                  alt="Coach workspace roster in Vari8, listing sample clients with status pills"
+                  width="1440"
+                  height="900"
+                  loading="eager"
+                  decoding="async"
+                />
+              </figure>
+              <figure class="hero-shot hero-shot-float">
+                <img
+                  src="assets/shots/s11-client-preview.png"
+                  alt="Client daily overview in Vari8 showing bodyweight trend, nutrition and sleep widgets"
+                  width="1440"
+                  height="900"
+                  loading="eager"
+                  decoding="async"
+                />
+              </figure>
+            </div>
             <p class="shot-caption">
               Product preview — illustrative demo data. In-app branding shown in
               captures is a design preview and being finalized.
@@ -193,6 +195,67 @@
                     <div class="ci-lines"><i></i><i></i><i></i></div>
                     <span class="ci-btn" data-in="2">Send check-in</span>
                     <span class="pill pill-sent" data-in="3">Sent&nbsp;✓</span>
+                  </div>
+                </div>
+
+                <!-- compact summary shown only at <=760px: both ends of the
+                     exchange stay on screen together, driven by the same
+                     data-phase / data-in mechanism as the full panes -->
+                <div class="mini">
+                  <div class="mini-pane mini-coach">
+                    <p class="mini-head">
+                      <span class="mini-role">Coach</span>
+                      <span class="mini-name">Liliana</span>
+                    </p>
+                    <p class="mini-row">
+                      <span class="mini-tag">Plan</span>
+                      <span class="mini-vals">
+                        <span class="mini-val" data-in="0"
+                          >Draft — not sent</span
+                        >
+                        <span class="mini-val mini-good" data-in="1 2 3"
+                          >Published&nbsp;✓</span
+                        >
+                      </span>
+                    </p>
+                    <p class="mini-row">
+                      <span class="mini-tag">Check-in</span>
+                      <span class="mini-vals">
+                        <span class="mini-val" data-in="0 1">None waiting</span>
+                        <span class="mini-val" data-in="2"
+                          >Emma’s — awaiting</span
+                        >
+                        <span class="mini-val mini-good" data-in="3"
+                          >Reviewed&nbsp;✓</span
+                        >
+                      </span>
+                    </p>
+                  </div>
+                  <div class="mini-lane"></div>
+                  <div class="mini-pane mini-client">
+                    <p class="mini-head">
+                      <span class="mini-role">Client</span>
+                      <span class="mini-name">Emma</span>
+                    </p>
+                    <p class="mini-row">
+                      <span class="mini-tag">Today</span>
+                      <span class="mini-vals">
+                        <span class="mini-val" data-in="0">Plan coming…</span>
+                        <span class="mini-val" data-in="1 2 3"
+                          >Session + 2 logs</span
+                        >
+                      </span>
+                    </p>
+                    <p class="mini-row">
+                      <span class="mini-tag">Check-in</span>
+                      <span class="mini-vals">
+                        <span class="mini-val" data-in="0 1">—</span>
+                        <span class="mini-val" data-in="2">Sending…</span>
+                        <span class="mini-val mini-good" data-in="3"
+                          >Sent&nbsp;✓</span
+                        >
+                      </span>
+                    </p>
                   </div>
                 </div>
 

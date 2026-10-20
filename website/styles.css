@@ -264,9 +264,13 @@ select:focus-visible,
 }
 
 .hero-stage {
+  min-width: 0;
+}
+/* positioning context for the layered shots; bottom padding reserves the
+   space the floating shot protrudes into, so the caption below clears it */
+.hero-shots {
   position: relative;
   padding-bottom: clamp(2.5rem, 8%, 6rem);
-  min-width: 0;
 }
 .hero-shot {
   margin: 0;
@@ -296,9 +300,6 @@ select:focus-visible,
     0 36px 80px rgb(0 0 0 / 60%);
 }
 .hero-stage .shot-caption {
-  position: absolute;
-  left: 0;
-  bottom: -0.2rem;
   text-align: left;
 }
 
@@ -641,6 +642,97 @@ select:focus-visible,
   padding: 0 0.35rem;
 }
 
+/* compact scene summary — rendered only at <=760px, where it replaces the
+   two full panes so both ends of the exchange stay on screen together.
+   States reuse the same data-in tokens, so phases, snapping and the no-JS
+   end state work without any script changes */
+.mini {
+  display: none;
+}
+.mini-pane {
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.8rem;
+  display: grid;
+  gap: 0.4rem;
+  align-content: start;
+  min-width: 0;
+}
+.mini-client {
+  /* echoes the device framing of the full client pane */
+  border: 2px solid var(--border-strong);
+  border-radius: 1.1rem;
+}
+.mini-head {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.35rem;
+}
+.mini-role {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.64rem;
+  color: var(--accent-ink);
+}
+.mini-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.mini-row {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.6rem;
+  align-items: baseline;
+  font-size: 0.8rem;
+}
+.mini-tag {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.62rem;
+  color: var(--muted);
+}
+.mini-vals {
+  display: grid;
+}
+.mini-val {
+  grid-area: 1 / 1;
+  justify-self: end;
+  text-align: right;
+  color: var(--muted);
+}
+.mini-good {
+  color: var(--accent-ink);
+}
+.mini-lane {
+  position: relative;
+  height: 1.6rem;
+}
+.mini-lane::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  border-left: 2px dashed var(--accent);
+  opacity: 0.55;
+}
+.mini-lane::after {
+  content: "⇄";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(90deg);
+  color: var(--accent);
+  font-size: 1rem;
+  background: var(--canvas);
+  padding: 0.1rem 0;
+}
+
 .travel {
   position: absolute;
   top: 38%;
@@ -672,7 +764,8 @@ select:focus-visible,
 .client-wait,
 .pill-await,
 .ci-btn,
-.travel {
+.travel,
+.mini-val:not([data-in~="3"]) {
   visibility: hidden;
 }
 .js .scene [data-in] {
@@ -795,16 +888,6 @@ select:focus-visible,
   to {
     opacity: 1;
     transform: translateY(-50%) scale(1);
-  }
-}
-@keyframes pillInStatic {
-  from {
-    opacity: 0;
-    transform: scale(0.7);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
   }
 }
 @keyframes glowPulse {
@@ -1357,63 +1440,48 @@ select:focus-visible,
 }
 
 @media (max-width: 760px) {
+  /* compact exchange: full panes are replaced by the mini summary so coach,
+     client and the transfer path all fit one viewport */
   .scene {
     grid-template-columns: 1fr;
     min-height: 0;
+    padding: 0.8rem;
   }
-  .pane-coach {
-    grid-column: 1;
-    grid-row: 1;
-  }
-  .connector {
-    grid-column: 1;
-    grid-row: 2;
-    height: 2.4rem;
-  }
-  .conn-line {
-    width: 0;
-    height: 100%;
-    border-top: 0;
-    border-left: 2px dashed var(--accent);
-  }
-  .connector::after {
-    transform: rotate(90deg);
-    padding: 0.35rem 0;
-  }
+  .pane-coach,
+  .connector,
   .pane-client {
+    display: none;
+  }
+  .mini {
+    display: grid;
     grid-column: 1;
-    grid-row: 3;
-    width: 100%;
-    max-width: 21rem;
-    margin: 0 auto;
+    gap: 0.5rem;
   }
-  /* inbox pill flows inline instead of absolute so narrow panes can shrink */
-  .inbox-item {
-    padding-right: 0;
-    flex-wrap: wrap;
-  }
-  .inbox-item .pill {
-    position: static;
-    transform: none;
-    margin-left: auto;
-  }
-  .js .scene[data-phase="3"] .pill-done {
-    animation-name: pillInStatic;
-  }
-  /* cards travel vertically between stacked panes */
+  /* chips travel down/up the centre lane between the summary panes */
   .travel-plan {
     top: 30%;
-    left: 8%;
+    left: 50%;
+    transform: translateX(-50%);
   }
   .travel-ci {
     top: 66%;
-    right: 8%;
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
   }
   .js .scene[data-phase="1"] .travel-plan {
     animation-name: flyPlanY;
   }
   .js .scene[data-phase="2"] .travel-ci {
     animation-name: flyCiY;
+  }
+  /* keep caption and controls close to the scene */
+  .demo-stage {
+    gap: 0.8rem;
+  }
+  .demo-controls {
+    margin-top: 0.9rem;
+    padding-top: 0.9rem;
   }
 }
 
@@ -1439,14 +1507,16 @@ select:focus-visible,
   .hero-shot-main {
     width: 100%;
   }
+  /* float shot flows under the main one — no protrusion to reserve */
+  .hero-shots {
+    padding-bottom: 0;
+  }
   .hero-shot-float {
     position: static;
     width: 78%;
     margin: -2.4rem 0 0 auto;
   }
   .hero-stage .shot-caption {
-    position: static;
-    text-align: left;
     margin-top: 0.8rem;
   }
   .demo-controls {
