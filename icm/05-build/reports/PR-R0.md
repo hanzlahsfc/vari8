@@ -6,9 +6,9 @@ Depends on PR-05 and AUD-REDUCTION-VERIFY.
 
 ## Head
 
-- Head SHA: `5ee4df0b3cc0f871581bd02b2673ee5dbf24e7f4`
+- Head SHA: gate and live evidence ran at `5ee4df0b3cc0f871581bd02b2673ee5dbf24e7f4`; PR head is the report commit `8ab9f05` plus this formatting fix, docs only.
 - Merge base with `origin/Vari8-Beta`: `1b066e468051c37c3e3e93861545ed1f49425ed5`
-- Diff vs base: 42 files changed, +763 / −824
+- Diff vs base: 42 files changed, +881 / −824 (at `8ab9f05`)
 - `db/` untouched (schema guard passed; see limitations for the one cherry-picked infra commit).
 
 ## What changed
@@ -31,26 +31,26 @@ Depends on PR-05 and AUD-REDUCTION-VERIFY.
 
 ## Commands and exit codes
 
-| Command | Exit |
-|---|---|
-| `npm ci` | 0 |
-| `npx tsc --noEmit` (first pass) | 2 (six `unknown`-generic errors in guard adapters; fixed by pinning `mapError<T>`/`fail<T>`) |
-| `npx tsc --noEmit` (after fix) | 0 |
-| `npm run lint` | 0 (3 pre-existing warnings: `icm/03-plan/tools/plan-to-issues.mjs` `join`, `lib/dashboard/config-schema.ts` `bp`, `tests/integration/p025b-checkin-instances.test.ts` `fieldId`) |
-| `npm run test` (parallel) | 137 (Vitest worker killed under load; resource kill, not a test failure) |
-| `npm run test` (serialized, workers=1) | surfaced 2 stale-index failures only (index not yet regenerated) |
-| `npm run index` | 0 |
-| `npm run test` (full, after index regen) | 0 - 1147 tests pass |
-| `npx prettier --check` on touched files | 1 (37 files) |
-| `npx prettier --write` + re-check | 0 |
-| `BASE_SHA=$(git merge-base HEAD origin/Vari8-Beta) LANE_DB=app_prr0 LANE_PORT=3734 CARD=PR-R0 icm/05-build/tools/verify-local.sh` (first run) | 1 - program generator check failed: 16 card files drifted from generator output at base (owner-rulings hand-edit on base, commit `f5bf9f7` lineage) |
-| `git cherry-pick 5ee4df0` (repair authored on another lane) + `program.py --check` | 0 - 154 files match |
-| `verify-local.sh` (re-run, same env) | 0 - `VERIFY-LOCAL PASS` |
-| `DB_FRESH_SKIP_CATALOGS=1 npm run db:fresh` (lane `app_prr0`) | 0 |
-| credential-account insert for seed users (scratch script, password hashing identical to `lib/auth/signup.ts`) | 0 |
-| `next dev --turbopack` on `127.0.0.1:3734` | served; stopped after evidence (port closed) |
-| `node ./prr0-live-check.mjs` (first live run) | 0 exit but 13/16 - script assertion bugs (body-text asserts, navigation race), app behavior correct per server log |
-| `node ./prr0-live-check.mjs` (fixed assertions) | 0 - 16/16 PASS |
+| Command                                                                                                                                       | Exit                                                                                                                                                                             |
+| --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm ci`                                                                                                                                      | 0                                                                                                                                                                                |
+| `npx tsc --noEmit` (first pass)                                                                                                               | 2 (six `unknown`-generic errors in guard adapters; fixed by pinning `mapError<T>`/`fail<T>`)                                                                                     |
+| `npx tsc --noEmit` (after fix)                                                                                                                | 0                                                                                                                                                                                |
+| `npm run lint`                                                                                                                                | 0 (3 pre-existing warnings: `icm/03-plan/tools/plan-to-issues.mjs` `join`, `lib/dashboard/config-schema.ts` `bp`, `tests/integration/p025b-checkin-instances.test.ts` `fieldId`) |
+| `npm run test` (parallel)                                                                                                                     | 137 (Vitest worker killed under load; resource kill, not a test failure)                                                                                                         |
+| `npm run test` (serialized, workers=1)                                                                                                        | surfaced 2 stale-index failures only (index not yet regenerated)                                                                                                                 |
+| `npm run index`                                                                                                                               | 0                                                                                                                                                                                |
+| `npm run test` (full, after index regen)                                                                                                      | 0 - 1147 tests pass                                                                                                                                                              |
+| `npx prettier --check` on touched files                                                                                                       | 1 (37 files)                                                                                                                                                                     |
+| `npx prettier --write` + re-check                                                                                                             | 0                                                                                                                                                                                |
+| `BASE_SHA=$(git merge-base HEAD origin/Vari8-Beta) LANE_DB=app_prr0 LANE_PORT=3734 CARD=PR-R0 icm/05-build/tools/verify-local.sh` (first run) | 1 - program generator check failed: 16 card files drifted from generator output at base (owner-rulings hand-edit on base, commit `f5bf9f7` lineage)                              |
+| `git cherry-pick 5ee4df0` (repair authored on another lane) + `program.py --check`                                                            | 0 - 154 files match                                                                                                                                                              |
+| `verify-local.sh` (re-run, same env)                                                                                                          | 0 - `VERIFY-LOCAL PASS`                                                                                                                                                          |
+| `DB_FRESH_SKIP_CATALOGS=1 npm run db:fresh` (lane `app_prr0`)                                                                                 | 0                                                                                                                                                                                |
+| credential-account insert for seed users (scratch script, password hashing identical to `lib/auth/signup.ts`)                                 | 0                                                                                                                                                                                |
+| `next dev --turbopack` on `127.0.0.1:3734`                                                                                                    | served; stopped after evidence (port closed)                                                                                                                                     |
+| `node ./prr0-live-check.mjs` (first live run)                                                                                                 | 0 exit but 13/16 - script assertion bugs (body-text asserts, navigation race), app behavior correct per server log                                                               |
+| `node ./prr0-live-check.mjs` (fixed assertions)                                                                                               | 0 - 16/16 PASS                                                                                                                                                                   |
 
 ## verify-local summary (exit 0)
 
