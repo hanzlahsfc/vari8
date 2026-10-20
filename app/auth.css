@@ -1,38 +1,37 @@
 /*
- * Auth surfaces (owner ruling O16). These routes stay where they are and keep
- * their behaviour; only the presentation moves onto the app shell. Tokens only:
- * layout and surface from components/canvas/app/globals.css, runtime appearance
- * aliases from components/canvas/app/appearance.css, colour/space/radius/type
- * scale from the app themes. No new colour, radius, shadow or font.
+ * Auth surfaces (owner ruling O16). The pages, fields, actions and copy are
+ * unchanged; only the presentation is restyled onto the app's own vocabulary:
+ * the shell/panel pattern, the space and radius scale, and the theme tokens
+ * from themes/pro-dark.css and themes/pro-white.css. Tokens only, no new
+ * colour, radius, shadow or font. Both themes work because every value below
+ * resolves through the active theme.
  */
 
 .auth-screen {
   display: grid;
   place-items: center;
+  box-sizing: border-box;
+  min-height: 100vh;
   padding: var(--space-6);
+  background-color: var(--color-base);
 }
 
 .auth-card {
+  box-sizing: border-box;
   width: min(100%, 28rem);
   padding: var(--space-8);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  background: var(--glass-surface);
-  box-shadow: var(--panel-shadow);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
 }
 
-/* The page's own <main class="app-main"> sits inside the card now. */
+/* The page's own <main class="app-main"> sits inside the card. */
 .auth-screen .app-main {
   padding: 0;
 }
 
-.auth-screen .app-title {
-  font-family: var(--font-ui);
-  letter-spacing: -0.012em;
-}
-
 .auth-screen .app-lede {
-  color: var(--muted-foreground);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
 }
 
@@ -47,22 +46,23 @@
 
 .auth-screen .auth-field {
   gap: var(--space-1);
-  color: var(--muted-foreground);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
 }
 
 .auth-screen .auth-input {
+  box-sizing: border-box;
   min-height: 44px;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--input);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--surface-subtle);
-  color: var(--text);
+  background-color: var(--color-base);
+  color: var(--color-text-primary);
   font: inherit;
 }
 
 .auth-screen .auth-input::placeholder {
-  color: var(--muted-foreground);
+  color: var(--color-text-secondary);
 }
 
 .auth-screen .auth-input:focus-visible {
@@ -71,19 +71,15 @@
   outline-offset: 2px;
 }
 
-.auth-screen .auth-input[aria-invalid="true"] {
-  border-color: var(--danger);
-}
-
 .auth-screen .auth-button {
+  box-sizing: border-box;
   min-height: 44px;
   padding: var(--space-2) var(--space-4);
-  border: 0;
+  border: 1px solid var(--color-accent);
   border-radius: var(--radius-md);
-  background: var(--color-accent);
+  background-color: var(--color-surface-2);
   color: var(--color-text-primary);
   font: inherit;
-  font-weight: 600;
   cursor: pointer;
   transition:
     background-color 140ms ease,
@@ -91,7 +87,11 @@
 }
 
 .auth-screen .auth-button:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--color-accent) 86%, var(--canvas));
+  background-color: color-mix(
+    in srgb,
+    var(--color-surface-2) 84%,
+    var(--color-text-primary)
+  );
 }
 
 .auth-screen .auth-button:active:not(:disabled) {
@@ -109,21 +109,21 @@
 }
 
 .auth-screen .auth-error {
-  color: var(--danger);
+  color: var(--color-accent);
   font-size: var(--font-size-sm);
 }
 
 .auth-screen .auth-success {
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-success);
   border-radius: var(--radius-md);
-  background: var(--success-soft);
-  color: var(--success);
+  background-color: var(--color-surface-2);
+  color: var(--color-text-primary);
   font-size: var(--font-size-sm);
 }
 
 .auth-screen .auth-hint {
-  color: var(--muted-foreground);
+  color: var(--color-text-secondary);
   font-size: var(--font-size-sm);
 }
 
@@ -134,6 +134,5 @@
 
   .auth-card {
     padding: var(--space-6);
-    border-radius: var(--radius-lg);
   }
 }

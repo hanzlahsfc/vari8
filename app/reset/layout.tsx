@@ -1,17 +1,16 @@
 import type { ReactNode } from "react";
 
-import "@/components/canvas/app/globals.css";
-import "@/components/canvas/app/appearance.css";
 import "@/app/auth.css";
 
 /**
- * O16: the auth routes keep their behaviour and stay outside the canvas parity
- * comparison, but render inside the same shell as the rest of the app.
+ * O16: the auth routes keep their pages, fields, actions and copy, and stay
+ * outside the canvas parity comparison, but render in the app's own panel
+ * pattern and tokens (both pro-dark and pro-white).
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="appearance-root auth-screen">
-      <div className="auth-card ap-screen">{children}</div>
+    <div className="auth-screen">
+      <div className="auth-card">{children}</div>
     </div>
   );
 }
