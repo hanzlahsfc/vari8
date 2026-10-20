@@ -196,9 +196,76 @@ and this branch changes no canvas markup, styles or copy. The base
 `tools/parity/run.mjs` is present and its result is recorded verbatim below
 whether it passes or fails.
 
+## Gate
+
+`BASE_SHA=$(git merge-base HEAD origin/Vari8-Beta) LANE_DB=app_wb_sv4 LANE_PORT=3940 CARD=PR-SV4 icm/05-build/tools/verify-local.sh`
+
+Run 2 at head `d093a6a157e7f460ef63bdf208faa96f47d89c14`, base
+`fb5c38780b729679b11b4d2a32d7ce14d3f65ab9`, log
+`Vari8-evidence/WAVEB-LEAD/pr-sv4-invitations.check.log`, exit **1**.
+
+```
+head=d093a6a157e7f460ef63bdf208faa96f47d89c14 base=fb5c38780b729679b11b4d2a32d7ce14d3f65ab9 node=v26.12.0 card=PR-SV4 db=app_wb_sv4 port=3940
+PASS clean tree (0s)
+WARN node: target 24 (D5), running v26.12.0; recorded, not certified
+PASS schema guard (D34) (0s)
+PASS program generator check (1s)
+PASS npm ci (13s)
+PASS prisma generate (1s)
+PASS frontend npm ci (6s)
+PASS format check (10s)
+PASS typecheck (3s)
+PASS frontend typecheck (3s)
+PASS lint (17s)
+PASS frontend lint (1s)
+PASS unit tests (14s)
+PASS frontend tests (1s)
+PASS integration tests (132s)
+PASS migrate deploy (1s)
+PASS build (44s)
+PASS frontend build (18s)
+PASS e2e flow specs (serialized) (30s)
+FAIL parity regression (D32) exit=1 (229s)
+VERIFY-LOCAL FAIL
+```
+
+Every step passes except the parity regression, which is the only reason the
+gate exit is not 0. The base `verify-local.sh` has no `SKIP_PARITY` switch
+(`grep -c SKIP_PARITY` on `origin/Vari8-Beta` returns 0), so the step cannot be
+skipped, and the card's own contract says "Parity (D32) on: none".
+
+Parity result, verbatim sample (the log carries 71 `FAIL` comparison lines and
+no passing comparison; captures themselves all report OK):
+
+```
+OK s01-roster@390 762x1842 elements=417
+...
+FAIL s01-roster@390 px=64387 geom=0/0/139 text=0
+FAIL s11-preferences@390 px=124894 geom=0/0/114 text=0 ruled=1
+FAIL s01-roster@1440 px=240859 geom=0/0/280 text=0 ruled=2
+FAIL s07-exercise-library@1440 px=1117109 geom=0/0/55 text=0 ruled=2
+```
+
+Diagnosis, and why it is not this diff:
+
+- All 34 screens fail at both widths, including screens this branch cannot
+  reach: `git diff --stat <merge-base>..HEAD -- frontend/ components/canvas/
+'app/(canvas)/'` is empty, so no canvas markup, style or copy changed here.
+- `tools/parity/compare.mjs` and `tools/parity/baseline` are untouched on this
+  branch (baseline present, 14 MB, `390/` and `1440/` with `manifest.json`).
+- The failure shape is a global shift on every screen (`geom=0/0/N`, pixel
+  deltas in the tens of thousands on every route), which is the known harness
+  defect tracked as PR #137 and reported for other lanes, not a per-screen
+  regression. Per the standing instructions the harness was not modified.
+
 ## What I could not do
 
 - Nothing in the card's own file list is unimplemented.
+- A gate exit of 0 is not reachable on this base: the only failing step is the
+  parity regression, its result is recorded verbatim in "Gate" above, the base
+  `verify-local.sh` offers no way to skip it, and the card rates parity as
+  "none". For that reason the branch is pushed and its report is committed but
+  the PR is left in draft and no READY line was written.
 - O6's onboarding-submit half, per the section above (schema freeze, outside
   file list).
 - The Linux lane's own screenshots were not produced here; the double
