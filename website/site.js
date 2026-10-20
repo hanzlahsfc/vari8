@@ -20,7 +20,6 @@
     var toggle = demo.querySelector("[data-demo-toggle]");
     var replay = demo.querySelector("[data-demo-replay]");
     var status = demo.querySelector("[data-demo-status]");
-    var progress = demo.querySelector(".demo-progress i");
 
     // Per-phase durations; the completed review holds longer before the
     // story loops back to Prepare.
@@ -37,9 +36,6 @@
       var snap = (!playing && !frozen) || (reducedMotion.matches && !frozen);
       demo.classList.toggle("is-frozen", frozen);
       demo.classList.toggle("is-snap", snap);
-      if (progress && (!playing || snap)) {
-        progress.style.animation = "none";
-      }
     }
 
     function showStep(index) {
@@ -61,12 +57,6 @@
           captions.length +
           ": " +
           captions[current].textContent.trim();
-      }
-      if (progress && playing) {
-        progress.style.animation = "none";
-        void progress.offsetWidth; // restart fill for the new phase
-        progress.style.animation =
-          "progFill " + PHASE_MS[current] + "ms linear forwards";
       }
       updateMotion();
     }
@@ -97,13 +87,6 @@
       playing = next;
       if (playing) {
         holdFrame = false;
-        if (progress) {
-          // resume restarts this phase's progress fill
-          progress.style.animation = "none";
-          void progress.offsetWidth;
-          progress.style.animation =
-            "progFill " + PHASE_MS[current] + "ms linear forwards";
-        }
       }
       if (status) status.setAttribute("aria-live", playing ? "off" : "polite");
       if (toggle) {
@@ -167,14 +150,21 @@
 
   var showcase = document.querySelector("[data-showcase]");
   if (showcase) {
-    var stageImg = showcase.querySelector("[data-showcase-img]");
     var stageTitle = showcase.querySelector("[data-showcase-title]");
     var stageText = showcase.querySelector("[data-showcase-text]");
     var panel = showcase.querySelector("[role='tabpanel']");
     var tabs = Array.prototype.slice.call(
       showcase.querySelectorAll(".feature-tab"),
     );
+    var fdemos = Array.prototype.slice.call(
+      showcase.querySelectorAll("[data-fdemo]"),
+    );
+    var fdemoToggle = showcase.querySelector("[data-fdemo-toggle]");
+    var fdemoInView = false;
 
+    // Feature scenes are pure CSS loops gated on .is-active: removing the
+    // class stops the previous demo outright, re-adding it restarts the new
+    // one from its first frame — no timers, nothing runs hidden.
     function selectTab(tab, focus) {
       tabs.forEach(function (t) {
         var on = t === tab;
@@ -182,15 +172,52 @@
         t.setAttribute("aria-selected", on ? "true" : "false");
         t.setAttribute("tabindex", on ? "0" : "-1");
       });
-      if (stageImg) {
-        stageImg.src = tab.getAttribute("data-img");
-        stageImg.alt = tab.getAttribute("data-alt") || "";
-      }
+      fdemos.forEach(function (d) {
+        d.classList.toggle(
+          "is-active",
+          d.getAttribute("data-fdemo") === tab.getAttribute("data-feature"),
+        );
+      });
       if (stageTitle) stageTitle.textContent = tab.getAttribute("data-title");
       if (stageText) stageText.textContent = tab.getAttribute("data-text");
       if (panel) panel.setAttribute("aria-labelledby", tab.id);
       if (focus) tab.focus();
     }
+
+    function updateFdemoFreeze() {
+      showcase.classList.toggle("is-frozen", !fdemoInView || document.hidden);
+    }
+
+    function setFdemoPaused(paused) {
+      showcase.classList.toggle("is-paused", paused);
+      if (fdemoToggle) {
+        fdemoToggle.textContent = paused ? "Play" : "Pause";
+        fdemoToggle.setAttribute("aria-pressed", paused ? "false" : "true");
+      }
+    }
+
+    if (fdemoToggle) {
+      fdemoToggle.addEventListener("click", function () {
+        setFdemoPaused(!showcase.classList.contains("is-paused"));
+      });
+    }
+
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(
+        function (entries) {
+          fdemoInView = entries[0].isIntersecting;
+          updateFdemoFreeze();
+        },
+        { threshold: 0.25 },
+      ).observe(panel || showcase);
+    } else {
+      fdemoInView = true;
+    }
+    document.addEventListener("visibilitychange", updateFdemoFreeze);
+
+    // Reduced motion is honoured in CSS (scenes render their complete static
+    // state); start the toggle paused there so its label tells the truth.
+    setFdemoPaused(reducedMotion.matches);
 
     tabs.forEach(function (tab, i) {
       tab.setAttribute(

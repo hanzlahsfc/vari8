@@ -804,9 +804,13 @@ select:focus-visible,
   0% {
     left: 6%;
     opacity: 0;
+    transform: translateY(0);
   }
   12% {
     opacity: 1;
+  }
+  55% {
+    transform: translateY(-14px);
   }
   82% {
     opacity: 1;
@@ -815,15 +819,20 @@ select:focus-visible,
   100% {
     left: 82%;
     opacity: 0;
+    transform: translateY(0);
   }
 }
 @keyframes flyCiX {
   0% {
     right: 6%;
     opacity: 0;
+    transform: translateY(0);
   }
   12% {
     opacity: 1;
+  }
+  55% {
+    transform: translateY(12px);
   }
   82% {
     opacity: 1;
@@ -832,6 +841,7 @@ select:focus-visible,
   100% {
     right: 82%;
     opacity: 0;
+    transform: translateY(0);
   }
 }
 @keyframes flyPlanY {
@@ -890,30 +900,17 @@ select:focus-visible,
     transform: translateY(-50%) scale(1);
   }
 }
-@keyframes glowPulse {
-  0%,
-  100% {
+@keyframes reviewRing {
+  0% {
     box-shadow: 0 0 0 0 rgb(235 145 184 / 0%);
   }
-  40% {
-    box-shadow: 0 0 0 4px rgb(235 145 184 / 35%);
+  35% {
+    box-shadow: 0 0 0 4px rgb(235 145 184 / 32%);
   }
-}
-@keyframes waitPulse {
-  0%,
   100% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 1;
+    box-shadow: 0 0 0 1.5px rgb(235 145 184 / 22%);
   }
 }
-@keyframes progFill {
-  to {
-    transform: scaleX(1);
-  }
-}
-
 /* phase 0 — coach rows populate one by one; client waits */
 .js .scene[data-phase="0"] .plan-card .prow-1 {
   animation: rowIn 0.5s ease 0.4s both;
@@ -926,9 +923,6 @@ select:focus-visible,
 }
 .js .scene[data-phase="0"] .pub-btn {
   animation: revealUp 0.5s ease 2.1s both;
-}
-.js .scene[data-phase="0"] .client-wait {
-  animation: waitPulse 2.2s ease-in-out 0.4s infinite;
 }
 
 /* phase 1 — publish presses, plan travels right, client card reveals */
@@ -969,9 +963,10 @@ select:focus-visible,
   animation: revealUp 0.5s ease 3s both;
 }
 
-/* phase 3 — review opens and highlights on the coach side */
+/* phase 3 — review opens: a single ring lands on the card and stays as a
+   quiet highlight for the rest of the phase */
 .js .scene[data-phase="3"] .inbox-card {
-  animation: glowPulse 1.6s ease 0.3s 2 both;
+  animation: reviewRing 0.9s ease 0.3s both;
 }
 .js .scene[data-phase="3"] .reply-box {
   animation: revealUp 0.55s ease 0.7s both;
@@ -981,36 +976,16 @@ select:focus-visible,
 }
 
 /* paused mid-flight or blocked (offscreen/hidden): freeze everything */
-.demo.is-frozen .scene *,
-.demo.is-frozen .demo-progress i {
+.demo.is-frozen .scene * {
   animation-play-state: paused !important;
 }
 /* paused by user / manual browsing / reduced motion: instant end state */
-.demo.is-snap .scene *,
-.demo.is-snap .demo-progress i {
+.demo.is-snap .scene * {
   animation: none !important;
 }
 /* manual/snapped states show the landed result — no chip stranded mid-pane */
 .demo.is-snap .scene .travel {
   visibility: hidden !important;
-}
-
-.demo-progress {
-  height: 3px;
-  border-radius: 99px;
-  background: var(--surface-subtle);
-  overflow: hidden;
-  display: none;
-}
-.js .demo-progress {
-  display: block;
-}
-.demo-progress i {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: left;
 }
 
 .demo-captions {
@@ -1113,22 +1088,461 @@ select:focus-visible,
   border-radius: var(--radius);
 }
 
-.showcase-stage {
-  background: var(--surface);
+/* ---------- animated feature scenes ---------- */
+
+/* all four scenes share one grid cell, so the stage never changes size
+   when the feature switches; only the active scene is visible/animated */
+.fdemo-stage {
+  display: grid;
+  background: var(--canvas);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  overflow: hidden;
   box-shadow: 0 26px 60px rgb(0 0 0 / 42%);
 }
-.showcase-stage img {
+.fdemo {
+  grid-area: 1 / 1;
+  min-width: 0;
+  visibility: hidden;
+}
+.fdemo.is-active {
+  visibility: visible;
+}
+
+/* scene frame — same visual language as the workflow .scene */
+.fx {
+  height: 100%;
+  background: var(--canvas);
+  border-radius: calc(var(--radius) - 0.25rem);
+  padding: clamp(0.9rem, 2vw, 1.4rem);
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+}
+.fx-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.6rem;
+}
+.fx-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.fx-tag {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* resting placeholders overlay their panel; hidden by default so the
+   no-JS/reduced-motion scene reads as the completed state */
+.fx-empty,
+.fx-review-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0.85rem 1rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-style: italic;
+  text-align: center;
+  opacity: 0;
+}
+
+/* --- training: open a session, exercises and prescription reveal --- */
+.fx-training {
+  grid-template-rows: auto auto 1fr;
+}
+.fx-week {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.fx-sess {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.fx-sess i {
+  font-style: normal;
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+/* resting state = the session already open */
+.fx-sess-open {
+  border-color: var(--accent);
+  color: var(--text);
+}
+.fx-detail {
+  position: relative;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  display: grid;
+  gap: 0.5rem;
+  min-height: 9.5rem;
+  align-content: center;
+}
+.fx-detail-title {
+  margin: 0 0 0.15rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.fx-ex {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
+  font-size: 0.85rem;
+}
+.fx-ex b {
+  font-weight: 600;
+}
+.fx-ex span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+/* --- nutrition: pick a day variant, its meals swap in --- */
+.fx-nutrition {
+  grid-template-rows: auto auto 1fr auto;
+}
+.fx-opts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+.fx-opt {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.85rem;
+  display: grid;
+  gap: 0.1rem;
+}
+.fx-opt b {
+  font-size: 0.88rem;
+}
+.fx-opt i {
+  font-style: normal;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+.fx-opt-td {
+  border-color: var(--accent);
+}
+.fx-opt-td b {
+  color: var(--accent-ink);
+}
+.fx-meals {
+  display: grid;
+  position: relative;
+}
+.fx-mealset {
+  grid-area: 1 / 1;
+  list-style: none;
+  margin: 0;
+  padding: 0.85rem 1rem;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 0.55rem;
+  align-content: center;
+}
+.fx-mealset li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  font-size: 0.85rem;
+}
+.fx-mealset b {
+  font-weight: 600;
+}
+.fx-mealset span {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: right;
+}
+.fx-meals-rd {
+  opacity: 0;
+}
+.fx-macros {
+  display: grid;
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.fx-macros span {
+  grid-area: 1 / 1;
+  justify-self: end;
+}
+.fx-macros-rd {
+  opacity: 0;
+}
+
+/* --- check-ins: open a submitted check-in, review, state flips --- */
+.fx-checkins {
+  grid-template-rows: auto 1fr;
+}
+.fx-ci {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(0, 6fr);
+  grid-template-rows: 1fr;
+  gap: 0.9rem;
+  align-items: stretch;
+}
+.fx-ci-item {
+  align-self: center;
+  position: relative;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 0.9rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3rem 0.6rem;
+  align-items: center;
+}
+.fx-avatar {
+  grid-row: span 2;
+  display: inline-grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.fx-ci-meta {
+  display: grid;
+}
+.fx-ci-meta b {
+  font-size: 0.85rem;
+}
+.fx-ci-meta i {
+  font-style: normal;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.fx-pill {
+  grid-column: 1 / -1;
+  justify-self: start;
+  border-radius: 999px;
+  padding: 0.18rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.fx-p-await {
+  grid-area: 3 / 1 / 4 / -1;
+  border: 1px solid var(--accent);
+  color: var(--accent-ink);
+  opacity: 0;
+}
+.fx-p-sent {
+  grid-area: 3 / 1 / 4 / -1;
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+.fx-review {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+}
+.fx-review-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.fx-review-title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.fx-qa {
+  display: grid;
+  gap: 0.1rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
+}
+.fx-qa span {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.fx-qa b {
+  font-size: 0.84rem;
+  font-weight: 500;
+}
+.fx-reply {
+  margin-top: auto;
+  display: grid;
+  gap: 0.35rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 0.6rem;
+  padding: 0.55rem;
+}
+.fx-reply i {
+  height: 0.5rem;
+  border-radius: 99px;
+  background: var(--border);
+}
+.fx-reply i:nth-child(2) {
+  width: 55%;
+}
+.fx-reply-btn {
+  justify-self: end;
+  border: 1px solid var(--accent);
+  color: var(--accent-ink);
+  border-radius: 999px;
+  padding: 0.15rem 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+/* --- progress: pick the metric, its recorded trend draws in --- */
+.fx-progress {
+  grid-template-rows: auto auto 1fr;
+}
+.fx-filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.fx-chips {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+.fx-chip {
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent-ink);
+}
+.fx-chip-idle {
+  border-color: var(--border);
+  color: var(--muted);
+}
+.fx-range {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+.fx-r {
+  font-style: normal;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.fx-r-30 {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.fx-chart {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.35rem;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem 0.9rem 0.6rem;
+}
+.fx-chart-svg {
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 16 / 10;
-  object-fit: cover;
-  object-position: top center;
+}
+.fx-grid line {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.fx-ylabels text {
+  fill: var(--muted);
+  font-size: 10px;
+}
+.fx-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+}
+.fx-area {
+  fill: var(--accent);
+}
+.fx-area-30 {
+  opacity: 0.07;
+}
+.fx-enddot {
+  fill: var(--canvas);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.fx-endlabel {
+  fill: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+}
+.fx-stats {
+  display: grid;
+  margin: 0.4rem 0 0;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+.fx-stats span {
+  grid-area: 1 / 1;
 }
 
+.showcase-caption {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.showcase-caption-text {
+  min-width: 0;
+}
+.fdemo-toggle {
+  flex: none;
+  padding: 0.4rem 0.95rem;
+  font-size: 0.82rem;
+}
+/* user pause and offscreen/hidden freeze stop every scene mid-frame */
+.showcase.is-paused .fdemo.is-active *,
+.showcase.is-frozen .fdemo.is-active * {
+  animation-play-state: paused !important;
+}
 .showcase-caption h3 {
   margin: 0 0 0.3rem;
   font-size: 1.15rem;
@@ -1182,6 +1596,521 @@ select:focus-visible,
 }
 .feature-tab.is-active span {
   color: var(--accent-ink);
+}
+
+/* ---------- feature scene motion ----------
+   each scene is one calm 8s loop. Elements' natural styles are the
+   completed end state — keyframes only introduce the earlier moments —
+   so no-JS and reduced-motion render the finished scene untouched.
+   Animations exist solely on the active scene: switching features stops
+   the old loop and restarts the new one from frame zero. */
+
+/* training — a session opens; its exercises and prescriptions reveal */
+@keyframes tSess {
+  0%,
+  7% {
+    border-color: var(--border);
+  }
+  13%,
+  88% {
+    border-color: var(--accent);
+  }
+  94%,
+  100% {
+    border-color: var(--border);
+  }
+}
+@keyframes tEmpty {
+  0%,
+  11% {
+    opacity: 1;
+  }
+  17%,
+  93% {
+    opacity: 0;
+  }
+  98%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes tTitle {
+  0%,
+  15% {
+    opacity: 0;
+  }
+  22%,
+  88% {
+    opacity: 1;
+  }
+  94%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes tEx1 {
+  0%,
+  20% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  28%,
+  88% {
+    opacity: 1;
+    transform: none;
+  }
+  94%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes tEx2 {
+  0%,
+  28% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  36%,
+  88% {
+    opacity: 1;
+    transform: none;
+  }
+  94%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes tEx3 {
+  0%,
+  36% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  44%,
+  88% {
+    opacity: 1;
+    transform: none;
+  }
+  94%,
+  100% {
+    opacity: 0;
+  }
+}
+.js .fdemo.is-active .fx-sess-open {
+  animation: tSess 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-empty {
+  animation: tEmpty 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-detail-title {
+  animation: tTitle 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-ex-1 {
+  animation: tEx1 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-ex-2 {
+  animation: tEx2 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-ex-3 {
+  animation: tEx3 8s ease-in-out infinite;
+}
+
+/* nutrition — the selected day variant swaps the matching meal plan */
+@keyframes nOptTd {
+  0%,
+  52% {
+    border-color: var(--accent);
+  }
+  58%,
+  94% {
+    border-color: var(--border);
+  }
+  98%,
+  100% {
+    border-color: var(--accent);
+  }
+}
+@keyframes nOptRd {
+  0%,
+  52% {
+    border-color: var(--border);
+  }
+  58%,
+  94% {
+    border-color: var(--accent);
+  }
+  98%,
+  100% {
+    border-color: var(--border);
+  }
+}
+@keyframes nOptTdInk {
+  0%,
+  52% {
+    color: var(--accent-ink);
+  }
+  58%,
+  94% {
+    color: var(--text);
+  }
+  98%,
+  100% {
+    color: var(--accent-ink);
+  }
+}
+@keyframes nOptRdInk {
+  0%,
+  52% {
+    color: var(--text);
+  }
+  58%,
+  94% {
+    color: var(--accent-ink);
+  }
+  98%,
+  100% {
+    color: var(--text);
+  }
+}
+@keyframes nMealsTd {
+  0%,
+  54% {
+    opacity: 1;
+    transform: none;
+  }
+  62%,
+  92% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  97%,
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes nMealsRd {
+  0%,
+  60% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  70%,
+  90% {
+    opacity: 1;
+    transform: none;
+  }
+  95%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes nMacTd {
+  0%,
+  56% {
+    opacity: 1;
+  }
+  64%,
+  92% {
+    opacity: 0;
+  }
+  97%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes nMacRd {
+  0%,
+  62% {
+    opacity: 0;
+  }
+  70%,
+  90% {
+    opacity: 1;
+  }
+  95%,
+  100% {
+    opacity: 0;
+  }
+}
+.js .fdemo.is-active .fx-opt-td {
+  animation: nOptTd 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-opt-td b {
+  animation: nOptTdInk 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-opt-rd {
+  animation: nOptRd 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-opt-rd b {
+  animation: nOptRdInk 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-meals-td {
+  animation: nMealsTd 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-meals-rd {
+  animation: nMealsRd 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-macros-td {
+  animation: nMacTd 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-macros-rd {
+  animation: nMacRd 8s ease-in-out infinite;
+}
+
+/* check-ins — the submitted check-in opens, answers reveal, state flips */
+@keyframes cItem {
+  0%,
+  8% {
+    border-color: var(--border);
+  }
+  14%,
+  90% {
+    border-color: var(--accent);
+  }
+  95%,
+  100% {
+    border-color: var(--border);
+  }
+}
+@keyframes cAwait {
+  0%,
+  72% {
+    opacity: 1;
+  }
+  78%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cSent {
+  0%,
+  76% {
+    opacity: 0;
+  }
+  82%,
+  90% {
+    opacity: 1;
+  }
+  96%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cEmpty {
+  0%,
+  13% {
+    opacity: 1;
+  }
+  19%,
+  92% {
+    opacity: 0;
+  }
+  97%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes cTitle {
+  0%,
+  16% {
+    opacity: 0;
+  }
+  24%,
+  86% {
+    opacity: 1;
+  }
+  92%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cQa1 {
+  0%,
+  22% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  30%,
+  86% {
+    opacity: 1;
+    transform: none;
+  }
+  92%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cQa2 {
+  0%,
+  32% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  40%,
+  86% {
+    opacity: 1;
+    transform: none;
+  }
+  92%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cQa3 {
+  0%,
+  42% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  50%,
+  86% {
+    opacity: 1;
+    transform: none;
+  }
+  92%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cReply {
+  0%,
+  54% {
+    opacity: 0;
+  }
+  62%,
+  88% {
+    opacity: 1;
+  }
+  94%,
+  100% {
+    opacity: 0;
+  }
+}
+.js .fdemo.is-active .fx-ci-item {
+  animation: cItem 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-p-await {
+  animation: cAwait 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-p-sent {
+  animation: cSent 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-review-empty {
+  animation: cEmpty 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-review-title {
+  animation: cTitle 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-qa-1 {
+  animation: cQa1 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-qa-2 {
+  animation: cQa2 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-qa-3 {
+  animation: cQa3 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-reply {
+  animation: cReply 8s ease-in-out infinite;
+}
+
+/* progress — picking the metric reveals its recorded 30-day trend, which
+   then holds to be read before the loop resets */
+@keyframes pChip {
+  0%,
+  6% {
+    border-color: var(--border);
+    color: var(--muted);
+  }
+  12%,
+  90% {
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+  96%,
+  100% {
+    border-color: var(--border);
+    color: var(--muted);
+  }
+}
+@keyframes pLine30 {
+  0%,
+  14% {
+    stroke-dashoffset: 100;
+    opacity: 0;
+  }
+  16% {
+    opacity: 1;
+  }
+  44%,
+  88% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  94%,
+  100% {
+    stroke-dashoffset: 100;
+    opacity: 0;
+  }
+}
+@keyframes pArea30 {
+  0%,
+  46% {
+    opacity: 0;
+  }
+  54%,
+  88% {
+    opacity: 0.07;
+  }
+  94%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes pEnd {
+  0%,
+  48% {
+    opacity: 0;
+  }
+  56%,
+  88% {
+    opacity: 1;
+  }
+  94%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes pStats30 {
+  0%,
+  50% {
+    opacity: 0;
+  }
+  58%,
+  88% {
+    opacity: 1;
+  }
+  94%,
+  100% {
+    opacity: 0;
+  }
+}
+.js .fdemo.is-active .fx-chip-pick {
+  animation: pChip 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-line-30 {
+  animation: pLine30 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-area-30 {
+  animation: pArea30 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-enddot,
+.js .fdemo.is-active .fx-endlabel {
+  animation: pEnd 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-s-30 {
+  animation: pStats30 8s ease-in-out infinite;
 }
 
 /* ---------- split section ---------- */
@@ -1483,6 +2412,24 @@ select:focus-visible,
     margin-top: 0.9rem;
     padding-top: 0.9rem;
   }
+  /* feature scenes stack so action and result stay together; on mobile
+     only the active scene takes layout space (their heights differ) */
+  .fdemo {
+    display: none;
+  }
+  .fdemo.is-active {
+    display: block;
+  }
+  .fx-ci {
+    grid-template-columns: 1fr;
+  }
+  .fx-chart-svg {
+    height: 7.5rem;
+  }
+  /* the stats line below the chart carries the endpoint value instead */
+  .fx-endlabel {
+    display: none;
+  }
 }
 
 @media (max-width: 720px) {
@@ -1544,5 +2491,13 @@ select:focus-visible,
   .demo-step,
   .feature-tab {
     transition: none;
+  }
+  /* feature scenes rest on their completed static state — nothing to
+     pause, so the transport button hides rather than lying */
+  .fdemo * {
+    animation: none !important;
+  }
+  .fdemo-toggle {
+    display: none;
   }
 }
