@@ -37,3 +37,65 @@ export async function getViewerFromHeaders(
 export async function getViewer(): Promise<Viewer | null> {
   return getViewerFromHeaders(await headers());
 }
+
+/**
+ * PR-01 canvas account identity (D18): the signed-in member as the canvas
+ * account block shows it. `role` is the real workspace role, `Owner` or
+ * `Coach`; a user with no ACTIVE owner/coach membership in an ACTIVE
+ * workspace has no canvas account (`null`), so the canvas fails closed.
+ * With several staff workspaces the first by workspace name is shown (no
+ * switcher, ruling O15). The session itself is never read here: callers pass
+ * the user id from the session gate (`requireSessionUser`, ruling O9).
+ */
+export type CanvasRole = "Owner" | "Coach";
+export type CanvasViewer = {
+  name: string;
+  initials: string;
+  role: CanvasRole;
+  workspace: { id: string; name: string };
+};
+
+const CANVAS_ROLES = {
+  WORKSPACE_OWNER: "Owner",
+  COACH: "Coach",
+} as const satisfies Record<string, CanvasRole>;
+
+export function initialsOf(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const letters =
+    words.length > 1 ? [words[0], words[words.length - 1]] : words;
+  return letters.map((w) => w[0]!.toUpperCase()).join("");
+}
+
+export async function getCanvasViewer(
+  userId: string,
+): Promise<CanvasViewer | null> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      email: true,
+      name: true,
+      status: true,
+      memberships: {
+        where: {
+          status: "ACTIVE",
+          role: { in: ["WORKSPACE_OWNER", "COACH"] },
+          workspace: { status: "ACTIVE" },
+        },
+        select: { role: true, workspace: { select: { id: true, name: true } } },
+        orderBy: { workspace: { name: "asc" } },
+        take: 1,
+      },
+    },
+  });
+  const membership = user?.memberships[0];
+  if (!user || user.status !== "ACTIVE" || !membership) return null;
+  const role = CANVAS_ROLES[membership.role as keyof typeof CANVAS_ROLES];
+  const name = user.name?.trim() || user.email;
+  return {
+    name,
+    initials: initialsOf(name),
+    role,
+    workspace: membership.workspace,
+  };
+}

@@ -1,0 +1,49 @@
+.ct-shared-tracker.coach-root {
+  min-height: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  --cd-bg: var(--canvas);
+  --cd-surface: var(--surface);
+  --cd-raised: var(--surface-subtle);
+  --cd-field: var(--surface);
+  --cd-text: var(--text);
+  --cd-muted: var(--muted);
+  --cd-line: var(--eg-line);
+  --cd-accent: var(--accent);
+  --cd-accent-ring: var(--accent-ring);
+  --cd-chart-line: var(--chart-line);
+  --cd-action-bg: var(--accent);
+  --cd-action-text: var(--accent-contrast);
+  --cd-wash: var(--eg-wash);
+}
+
+.ct-shared-tracker :where(button, input, select, textarea) {
+  color: inherit;
+  font: inherit;
+}
+
+.ct-shared-tracker :where(button) {
+  background-color: transparent;
+}
+
+.ct-shared-tracker :where(input, select, textarea) {
+  background-color: var(--cd-field);
+}
+
+.ct-shared-tracker :where(button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--cd-accent-ring, var(--cd-accent));
+  outline-offset: 2px;
+}
+.ct-shared-tracker,
+.ct-shared-tracker * {
+  box-sizing: border-box;
+}
+.eg-content:has(.ct-workspace) {
+  padding-top: clamp(28px, 3vw, 44px);
+}
+@media (max-width: 760px) {
+  .eg-content:has(.ct-workspace) {
+    padding-top: 24px;
+  }
+}

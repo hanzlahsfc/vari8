@@ -1,0 +1,620 @@
+/* biome-ignore-all lint/style/noDescendingSpecificity: Builder selectors address distinct scoped controls and surfaces. */
+.eg-root .db-builder {
+  width: min(100%, 1360px);
+  margin: 0 auto;
+  padding: 24px 0 40px;
+  color: var(--text);
+  font-size: 14px;
+}
+.db-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.db-name-label {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+.db-heading input {
+  display: block;
+  width: min(600px, 100%);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: 520 clamp(24px, 3vw, 34px) / 1.2 var(--font-ui);
+  letter-spacing: -0.035em;
+}
+.db-heading p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.db-save {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 260px;
+}
+.db-save svg {
+  flex-shrink: 0;
+  color: var(--accent-ink);
+}
+.db-builder button:not(:where(.dw-adaptive button)),
+.db-detail-dialog button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 13px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--eg-wash);
+  color: var(--text);
+  font: 500 12px var(--font-ui);
+  cursor: pointer;
+  transition:
+    background 0.16s,
+    color 0.16s;
+}
+.db-builder button:not(:where(.dw-adaptive button)):hover,
+.db-detail-dialog button:hover {
+  background: color-mix(in srgb, var(--text) 9%, var(--surface));
+}
+.db-builder button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.db-builder .db-primary,
+.db-detail-dialog .db-primary {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: transparent;
+  box-shadow: inset 0 1px rgb(255 255 255 / 18%);
+}
+.db-builder .db-primary:hover {
+  background: color-mix(in srgb, var(--accent) 86%, var(--text));
+}
+.db-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  box-shadow: inset 0 1px color-mix(in srgb, var(--text) 7%, transparent);
+  margin-bottom: 16px;
+}
+.db-action-group {
+  display: flex;
+  gap: 6px;
+  margin-right: auto;
+}
+.db-client-switch[aria-pressed="true"] {
+  color: var(--accent-ink);
+  border-color: var(--accent-border);
+}
+.db-canvas-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.db-canvas-wrap {
+  margin-inline: auto;
+  width: 100%;
+}
+.db-canvas {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+.db-empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px dashed color-mix(in srgb, var(--text) 18%, transparent);
+  border-radius: 18px;
+  background: linear-gradient(
+    155deg,
+    color-mix(in srgb, var(--text) 3%, transparent),
+    transparent 65%
+  );
+}
+.db-empty-symbol {
+  height: 58px;
+  width: 58px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  background: var(--eg-wash);
+  border: 1px solid var(--border);
+  color: var(--accent-ink);
+  margin-bottom: 20px;
+}
+.db-empty h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+.db-empty p {
+  margin: 12px 20px 24px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.db-empty .db-example {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  margin-top: 10px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.db-card {
+  position: absolute;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--text) 11%, transparent);
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--text) 3%, transparent),
+      transparent 55%
+    ),
+    color-mix(in srgb, var(--surface) 97%, transparent);
+  box-shadow: inset 0 1px color-mix(in srgb, var(--text) 5%, transparent);
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.16s;
+}
+.db-card[data-affected="true"] {
+  border-color: var(--accent-border);
+}
+.db-card[data-moving="true"] {
+  opacity: 0.6;
+}
+.db-card:focus {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 4px;
+}
+.db-card-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 24px;
+  margin-bottom: 10px;
+}
+.db-card-header h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.db-card-tools {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0;
+  margin-right: -8px;
+}
+.db-card-tools .db-move {
+  min-height: 32px;
+  width: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  touch-action: none;
+  user-select: none;
+  cursor: grab;
+}
+.db-card-tools .db-move:active {
+  cursor: grabbing;
+}
+.db-card .db-resize {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 10px 5px 2px 14px;
+  border: 0;
+  border-radius: 0 0 16px 0;
+  background: transparent;
+  color: var(--muted);
+  touch-action: none;
+  user-select: none;
+  cursor: nwse-resize;
+}
+.db-card .db-resize:hover {
+  background: var(--eg-wash);
+}
+.db-card-menu,
+.db-dashboard-menu {
+  position: relative;
+}
+.db-card-menu summary,
+.db-dashboard-menu summary {
+  list-style: none;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: var(--muted);
+}
+.db-dashboard-menu summary {
+  height: 40px;
+  width: 40px;
+}
+.db-card-menu summary::-webkit-details-marker,
+.db-dashboard-menu summary::-webkit-details-marker {
+  display: none;
+}
+.db-card-menu[open],
+.db-dashboard-menu[open] {
+  z-index: 20;
+}
+.db-card-menu[open] summary,
+.db-dashboard-menu[open] summary {
+  background: var(--eg-wash);
+  color: var(--text);
+}
+.db-card-menu > div,
+.db-dashboard-menu > div {
+  position: absolute;
+  right: 0;
+  top: 38px;
+  width: 242px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 10px 32px rgb(0 0 0 / 25%);
+  max-height: 70vh;
+  overflow: auto;
+}
+.db-card:has(.db-card-menu[open]) {
+  z-index: 25;
+}
+.db-card-menu > div > button,
+.db-dashboard-menu > div > button {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+.db-card-menu label {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.db-card-menu select {
+  flex: 1;
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-subtle);
+  color: var(--text);
+  font: inherit;
+}
+.db-step-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
+  padding-block: 6px;
+}
+.db-step-buttons button {
+  padding-inline: 3px;
+}
+.db-card-menu .db-remove {
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+}
+.db-proposed {
+  position: absolute;
+  pointer-events: none;
+  z-index: 10;
+  border: 2px solid var(--accent-border);
+  border-radius: 17px;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+.db-proposed[data-valid="false"] {
+  border-style: dashed;
+  border-color: var(--text);
+}
+.db-proposed > span {
+  position: absolute;
+  top: -25px;
+  left: 0;
+  padding: 4px 9px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-radius: 5px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.db-gesture-bar {
+  position: sticky;
+  bottom: 20px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--accent-border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--panel-shadow);
+  margin-top: 16px;
+}
+.db-gesture-bar span {
+  margin-right: auto;
+  font-size: 12px;
+}
+.db-size-fields {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+}
+.db-size-fields label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.db-size-fields input {
+  width: 82px;
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-subtle);
+  color: var(--text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.db-footnote {
+  margin: 20px 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.db-toast {
+  font-size: 12px;
+  color: var(--accent-ink);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 24px;
+  overflow-wrap: anywhere;
+}
+.db-toast button {
+  min-height: 30px;
+}
+.db-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.db-detail-dialog {
+  position: fixed;
+  margin: auto;
+  width: min(680px, calc(100vw - 32px));
+  max-height: 90dvh;
+  overflow: auto;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--text);
+  font: 14px / 1.6 var(--font-ui);
+  box-shadow: var(--panel-shadow);
+}
+.db-detail-dialog::backdrop {
+  background: rgb(0 0 0 / 65%);
+  backdrop-filter: blur(8px);
+}
+.db-detail-dialog > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.db-detail-dialog h2 {
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0;
+}
+.db-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+.db-detail-dialog :where(select, input) {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px;
+}
+.db-builder ::selection {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+.db-builder input {
+  caret-color: var(--accent-ink);
+}
+@media (min-width: 1100px) {
+  .eg-content:has(.db-builder) {
+    width: min(calc(100% - 64px), 1360px);
+    padding: 36px 0 24px;
+  }
+}
+@media (max-width: 700px) {
+  .db-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .db-heading > div {
+    width: 100%;
+  }
+  .db-heading input {
+    font-size: 26px;
+    width: 100%;
+  }
+  .db-toolbar {
+    gap: 8px;
+    padding: 8px;
+  }
+  .db-action-group {
+    margin-right: 0;
+    flex: 1;
+  }
+  .db-toolbar > button {
+    min-height: 44px;
+  }
+  .db-card {
+    padding: 14px;
+  }
+  .db-card-tools .db-move,
+  .db-card-menu summary {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+  .db-card .db-resize {
+    width: 44px;
+    height: 44px;
+  }
+  .db-canvas-meta {
+    font-size: 10px;
+  }
+  .db-empty h2 {
+    font-size: 22px;
+    padding: 0 16px;
+  }
+  .db-card-menu > div {
+    right: -4px;
+    width: 240px;
+  }
+  .db-gesture-bar {
+    flex-wrap: wrap;
+  }
+  .db-gesture-bar span {
+    width: 100%;
+  }
+  .db-size-fields {
+    flex: 1;
+  }
+  .db-detail-dialog {
+    padding: 20px 16px;
+  }
+  .eg-island:has(+ main .db-builder) {
+    gap: 4px;
+  }
+  .eg-island .eg-segment {
+    padding-inline: 10px;
+    font-size: 12px;
+  }
+}
+@media (max-width: 420px) {
+  .eg-content:has(.db-builder) {
+    width: calc(100% - 32px);
+    padding-inline: 0;
+  }
+  .eg-island:has(+ main .db-builder) {
+    grid-template-columns: 1fr;
+    width: calc(100% - 32px);
+    border-radius: 17px;
+    gap: 8px;
+    padding: 10px;
+    position: relative;
+    top: 0;
+  }
+  .eg-island:has(+ main .db-builder) .eg-wordmark {
+    justify-content: center;
+  }
+  .eg-island:has(+ main .db-builder) .eg-island-actions {
+    display: none;
+  }
+  .eg-island:has(+ main .db-builder) .eg-segments {
+    justify-content: center;
+    width: 100%;
+  }
+  .eg-island:has(+ main .db-builder) .eg-segment {
+    flex: 1;
+  }
+  .db-builder .db-client-switch {
+    padding-inline: 10px;
+    font-size: 11px;
+  }
+  .db-canvas-meta span {
+    max-width: 60%;
+  }
+  .db-empty {
+    height: 400px;
+  }
+  .db-card-header h2 {
+    font-size: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .db-builder button,
+  .db-builder .db-canvas-wrap,
+  .db-builder .db-card {
+    transition: none;
+  }
+}
+
+.db-builder summary:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+.db-card-tools .db-move,
+.db-card-menu summary {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+.db-card .db-resize {
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
