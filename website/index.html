@@ -3,173 +3,444 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Vari8 — one workspace for coaches and the people they coach</title>
+    <title>Vari8 — coaching, connected</title>
     <meta
       name="description"
-      content="Vari8 brings plans, check-ins, habits and progress into one shared workspace for coaches and clients. Early access is not yet open."
+      content="Vari8 is a coaching workspace where trainers plan training, nutrition and check-ins, and clients follow one clear daily view. Local product preview."
     />
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%23070707'/%3E%3Ccircle cx='8' cy='8' r='4' fill='%23EB91B8'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23070707'/%3E%3Ctext x='9' y='23' font-family='sans-serif' font-size='19' font-weight='700' fill='%23eb91b8'%3EV.%3C/text%3E%3C/svg%3E"
     />
     <link rel="stylesheet" href="styles.css" />
+    <script src="site.js" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
 
     <header class="site-header">
-      <span class="wordmark">Vari8</span>
-      <nav aria-label="Page sections">
-        <a href="#product">Product</a>
-        <a href="#coaches">Coaches</a>
-        <a href="#clients">Clients</a>
-        <a href="#early-access" class="nav-cta">Request early access</a>
-      </nav>
+      <div class="wrap header-inner">
+        <a class="wordmark" href="#top" aria-label="Vari8 home"
+          >Vari8<span aria-hidden="true">.</span></a
+        >
+        <nav class="site-nav" aria-label="Sections">
+          <a href="#demo">Demo</a>
+          <a href="#features">Product</a>
+          <a href="#coaches">Coaches</a>
+          <a href="#clients">Clients</a>
+        </nav>
+        <a class="btn btn-cta" href="#early-access">Request early access</a>
+      </div>
     </header>
 
     <main id="main">
-      <section class="hero" aria-labelledby="hero-title">
-        <p class="eyebrow">In development</p>
-        <h1 id="hero-title">
-          One workspace for coaches and the people they coach.
-        </h1>
-        <p class="lede">
-          Vari8 brings plans, check-ins, habits and progress into one shared
-          place — so a coach sees the whole picture, and a client always knows
-          what today asks of them.
-        </p>
-        <div class="hero-actions">
-          <a class="button button-primary" href="#early-access"
-            >Request early access</a
-          >
-          <a class="button button-ghost" href="#product">See the product</a>
+      <!-- ============================ HERO ============================ -->
+      <section class="hero" id="top">
+        <div class="wrap">
+          <p class="kicker">Local product preview — not connected</p>
+          <h1 class="hero-title">
+            One workspace.<br />
+            <em>Both sides</em> of coaching.
+          </h1>
+          <p class="hero-sub">
+            Vari8 is a coaching workspace where trainers build training,
+            nutrition and check-ins — and clients follow it all in one clear
+            daily view.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-cta" href="#early-access">Request early access</a>
+            <a class="btn btn-quiet" href="#demo">See the workflow&nbsp;↓</a>
+          </div>
+          <p class="hero-note">
+            Still in development. This page is a local preview.
+          </p>
+
+          <div class="hero-stage" aria-label="Product preview composition">
+            <figure class="hero-shot hero-shot-main">
+              <img
+                src="assets/shots/s01-roster.png"
+                alt="Coach workspace roster in Vari8, listing sample clients with status pills"
+                loading="eager"
+              />
+            </figure>
+            <figure class="hero-shot hero-shot-float">
+              <img
+                src="assets/shots/s11-client-preview.png"
+                alt="Client daily overview in Vari8 showing bodyweight trend, nutrition and sleep widgets"
+                loading="eager"
+              />
+            </figure>
+            <p class="shot-caption">Product preview — illustrative demo data</p>
+          </div>
         </div>
       </section>
 
-      <section id="product" class="section" aria-labelledby="product-title">
-        <h2 id="product-title">The product</h2>
-        <p class="section-lede">
-          Real screens from the Vari8 preview build. All names, metrics and
-          plans shown are illustrative demo data.
-        </p>
-        <div class="showcase">
-          <figure>
-            <img
-              src="assets/shots/s01-roster.png"
-              alt="Coach workspace client roster: a list of athletes with their coaching focus, assigned template, next check-in date and attention status."
-              loading="lazy"
-            />
-            <figcaption>
-              The coach roster — every client’s plan, phase and next check-in at
-              a glance. <em>Product preview — illustrative demo data.</em>
-            </figcaption>
-          </figure>
-          <figure>
-            <img
-              src="assets/shots/s03-checkins-board.png"
-              alt="Coach workspace check-in board: a weekly grid of scheduled client check-ins with status labels such as scheduled, awaiting feedback and overdue."
-              loading="lazy"
-            />
-            <figcaption>
-              The check-in board — the week’s conversations, scheduled and
-              reviewed in one place.
-              <em>Product preview — illustrative demo data.</em>
-            </figcaption>
-          </figure>
-          <figure>
-            <img
-              src="assets/shots/s09-tracker-today.png"
-              alt="Client daily tracker view: a week strip, a daily check-in card and metric fields for bodyweight, sleep and energy with completion counts."
-              loading="lazy"
-            />
-            <figcaption>
-              The client’s daily tracker — today’s fields, filled in a minute.
-              <em>Product preview — illustrative demo data.</em>
-            </figcaption>
-          </figure>
+      <!-- ====================== WORKFLOW DEMO ====================== -->
+      <section class="section" id="demo" aria-labelledby="demo-title">
+        <div class="wrap">
+          <p class="kicker">Workflow</p>
+          <h2 class="section-title" id="demo-title">
+            A coaching loop you can see
+          </h2>
+          <p class="section-sub">
+            One ordinary week in Vari8 — the coach prepares, the client follows,
+            the check-in comes back, the coach reviews. Illustrative product
+            preview, not a live backend connection.
+          </p>
+
+          <div class="demo" data-demo>
+            <div class="demo-stage">
+              <figure class="demo-step is-active" data-step="0">
+                <img
+                  src="assets/shots/s07-training-editor.png"
+                  alt="Coach training program editor with draft controls and a Review and activate action"
+                />
+                <figcaption>
+                  <strong>1 · Coach prepares a plan.</strong> Training is
+                  drafted and activated for the client — saved drafts stay
+                  separate from what the client sees.
+                </figcaption>
+              </figure>
+              <figure class="demo-step" data-step="1">
+                <img
+                  src="assets/shots/s09-tracker-today.png"
+                  alt="Client tracker today view listing the day's metrics and habits"
+                />
+                <figcaption>
+                  <strong>2 · The client sees it.</strong> The same plan arrives
+                  as a clear daily view — today's training, nutrition targets
+                  and habits in one place.
+                </figcaption>
+              </figure>
+              <figure class="demo-step" data-step="2">
+                <img
+                  src="assets/shots/s03-checkins-board.png"
+                  alt="Coach check-in board showing a submitted check-in marked awaiting feedback"
+                />
+                <figcaption>
+                  <strong>3 · The check-in comes back.</strong> The client
+                  submits their update; it lands on the coach's board as
+                  awaiting feedback.
+                </figcaption>
+              </figure>
+              <figure class="demo-step" data-step="3">
+                <img
+                  src="assets/shots/s03-checkin-review.png"
+                  alt="Coach reviewing a client check-in with questionnaire answers and a respond panel"
+                />
+                <figcaption>
+                  <strong>4 · The coach reviews.</strong> Answers, metrics and
+                  context in one screen — the coach replies and decides what
+                  happens next. The client decides nothing automatically.
+                </figcaption>
+              </figure>
+            </div>
+
+            <div class="demo-controls">
+              <div class="demo-steps" role="group" aria-label="Demo steps">
+                <button
+                  type="button"
+                  class="demo-dot is-active"
+                  data-goto="0"
+                  aria-pressed="true"
+                >
+                  <span class="dot-num">1</span> Prepare
+                </button>
+                <button
+                  type="button"
+                  class="demo-dot"
+                  data-goto="1"
+                  aria-pressed="false"
+                >
+                  <span class="dot-num">2</span> Client sees
+                </button>
+                <button
+                  type="button"
+                  class="demo-dot"
+                  data-goto="2"
+                  aria-pressed="false"
+                >
+                  <span class="dot-num">3</span> Check-in
+                </button>
+                <button
+                  type="button"
+                  class="demo-dot"
+                  data-goto="3"
+                  aria-pressed="false"
+                >
+                  <span class="dot-num">4</span> Review
+                </button>
+              </div>
+              <div class="demo-transport">
+                <button
+                  type="button"
+                  class="btn btn-quiet"
+                  data-demo-toggle
+                  aria-pressed="false"
+                >
+                  Pause
+                </button>
+                <button type="button" class="btn btn-quiet" data-demo-replay>
+                  Replay
+                </button>
+              </div>
+            </div>
+            <p class="visually-hidden" data-demo-status aria-live="polite">
+              Step 1 of 4: coach prepares a plan.
+            </p>
+          </div>
         </div>
       </section>
 
-      <section
-        id="coaches"
-        class="section section-split"
-        aria-labelledby="coaches-title"
-      >
-        <h2 id="coaches-title">For coaches</h2>
-        <p>
-          Build nutrition and training plans from templates you control, assign
-          them to clients, and review check-ins from one board. Habits, notes
-          and to-dos live beside the plan — not in a spreadsheet, a chat thread
-          and a screenshot folder.
-        </p>
+      <!-- ===================== FEATURE SHOWCASE ===================== -->
+      <section class="section" id="features" aria-labelledby="features-title">
+        <div class="wrap">
+          <p class="kicker">Product</p>
+          <h2 class="section-title" id="features-title">
+            Pick a feature, see it for real
+          </h2>
+          <p class="section-sub">
+            Every preview below is an actual Vari8 screen from the design canvas
+            — captured with synthetic demo data.
+          </p>
+
+          <div class="showcase" data-showcase>
+            <div class="showcase-stage">
+              <img
+                data-showcase-img
+                src="assets/shots/s07-training-editor.png"
+                alt="Coach training program editor with draft controls and a Review and activate action"
+              />
+            </div>
+            <div class="showcase-caption">
+              <h3 data-showcase-title>Training</h3>
+              <p data-showcase-text>
+                Coaches build training programs with drafts kept separate from
+                what the client sees — review and activate when ready.
+              </p>
+            </div>
+            <div
+              class="showcase-tabs"
+              role="tablist"
+              aria-label="Product features"
+            >
+              <button
+                type="button"
+                class="feature-tab is-active"
+                role="tab"
+                aria-selected="true"
+                data-feature="training"
+                data-img="assets/shots/s07-training-editor.png"
+                data-alt="Coach training program editor with draft controls and a Review and activate action"
+                data-title="Training"
+                data-text="Coaches build training programs with drafts kept separate from what the client sees — review and activate when ready."
+              >
+                <img
+                  src="assets/shots/s07-training-editor.png"
+                  alt=""
+                  aria-hidden="true"
+                />
+                <span>Training</span>
+              </button>
+              <button
+                type="button"
+                class="feature-tab"
+                role="tab"
+                aria-selected="false"
+                data-feature="nutrition"
+                data-img="assets/shots/s06-mealplan-editor.png"
+                data-alt="Meal plan editor with training day and rest day options and a weekly variant schedule"
+                data-title="Nutrition"
+                data-text="Meal plans with training-day and rest-day variants, scheduled across the week — targets the client can actually follow."
+              >
+                <img
+                  src="assets/shots/s06-mealplan-editor.png"
+                  alt=""
+                  aria-hidden="true"
+                />
+                <span>Nutrition</span>
+              </button>
+              <button
+                type="button"
+                class="feature-tab"
+                role="tab"
+                aria-selected="false"
+                data-feature="checkins"
+                data-img="assets/shots/s03-checkin-review.png"
+                data-alt="Coach reviewing a client check-in with questionnaire answers and a respond panel"
+                data-title="Check-ins"
+                data-text="Structured client check-ins land in a review queue; coaches respond with the full context in front of them."
+              >
+                <img
+                  src="assets/shots/s03-checkin-review.png"
+                  alt=""
+                  aria-hidden="true"
+                />
+                <span>Check-ins</span>
+              </button>
+              <button
+                type="button"
+                class="feature-tab"
+                role="tab"
+                aria-selected="false"
+                data-feature="progress"
+                data-img="assets/shots/s09-tracker-trends.png"
+                data-alt="Client trends view charting bodyweight over thirty days of sample data"
+                data-title="Progress"
+                data-text="Clients log daily metrics and see their own trends — the same picture the coach reviews between check-ins."
+              >
+                <img
+                  src="assets/shots/s09-tracker-trends.png"
+                  alt=""
+                  aria-hidden="true"
+                />
+                <span>Progress</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section
-        id="clients"
-        class="section section-split"
-        aria-labelledby="clients-title"
-      >
-        <h2 id="clients-title">For clients</h2>
-        <p>
-          Your plan, your check-ins, your progress — in one clear daily view.
-          See what your coach set out for the week, record it in a minute, and
-          watch the trend build over time.
-        </p>
+      <!-- ======================= SPLIT SECTION ======================= -->
+      <section class="split" aria-labelledby="split-title">
+        <div class="wrap split-inner">
+          <div class="split-copy">
+            <h2 class="split-title" id="split-title">
+              Built<br />for&nbsp;two.<br />
+              <span class="split-title-indent">Working</span><br />
+              <span class="split-title-indent">as&nbsp;one.</span>
+            </h2>
+            <p class="split-mono">
+              COACH PLANS · CLIENT FOLLOWS · BOTH SEE THE SAME WEEK.
+            </p>
+            <a class="split-cta" href="#early-access">
+              <span class="split-cta-arrow" aria-hidden="true">→</span>
+              <span class="split-cta-label">Request early access</span>
+            </a>
+          </div>
+          <div class="split-visual" aria-hidden="false">
+            <p class="split-giant" aria-hidden="true">IN&nbsp;SYNC</p>
+            <figure class="split-shot split-shot-a">
+              <img
+                src="assets/shots/s03-checkins-board.png"
+                alt="Coach check-in board in Vari8 with sample client check-ins"
+                loading="lazy"
+              />
+            </figure>
+            <figure class="split-shot split-shot-b">
+              <img
+                src="assets/shots/s09-tracker-today.png"
+                alt="Client daily tracker view in Vari8"
+                loading="lazy"
+              />
+            </figure>
+          </div>
+        </div>
       </section>
 
-      <section class="section" aria-labelledby="fit-title">
-        <h2 id="fit-title">How it fits together</h2>
-        <ol class="loop">
-          <li>
-            <strong>Coach plans.</strong> A coach shapes the template, assigns
-            the plan and schedules check-ins.
-          </li>
-          <li>
-            <strong>Client tracks.</strong> The client sees exactly what’s asked
-            and fills in the day’s fields.
-          </li>
-          <li>
-            <strong>Coach reviews.</strong> Check-ins land on the board; the
-            next week’s plan follows the real data.
-          </li>
-        </ol>
+      <!-- ===================== COACH / CLIENT ===================== -->
+      <section class="section" id="coaches" aria-labelledby="coaches-title">
+        <div class="wrap two-col">
+          <div>
+            <p class="kicker">For coaches</p>
+            <h2 class="section-title" id="coaches-title">
+              The whole roster, one desk
+            </h2>
+            <ul class="concrete-list">
+              <li>
+                Open the roster and see who submitted, who's awaiting feedback
+                and who needs a nudge — before the week gets away from you.
+              </li>
+              <li>
+                Draft a training program or meal plan, preview it as the client,
+                and activate it when it's ready — drafts never leak early.
+              </li>
+              <li>
+                Review a check-in with the questionnaire, submitted visuals and
+                trends on one screen, then reply in context.
+              </li>
+            </ul>
+          </div>
+          <div id="clients">
+            <p class="kicker">For clients</p>
+            <h2 class="section-title" id="clients-title">
+              Today, made obvious
+            </h2>
+            <ul class="concrete-list">
+              <li>
+                One daily view answers “what do I do today” — training session,
+                nutrition targets, habits and weigh-ins together.
+              </li>
+              <li>
+                Check-ins arrive on a rhythm your coach sets — a structured
+                update, not a scattered chat thread.
+              </li>
+              <li>
+                Log a metric once and see it become a trend — your week, month
+                and season in the same place your coach watches.
+              </li>
+            </ul>
+          </div>
+        </div>
       </section>
 
+      <!-- ======================== EARLY ACCESS ======================== -->
       <section
-        id="early-access"
         class="section early"
+        id="early-access"
         aria-labelledby="early-title"
       >
-        <h2 id="early-title">Request early access</h2>
-        <p>
-          Early access isn’t open yet, and this preview can’t take requests —
-          the fields below are shown for layout only and nothing you enter is
-          sent or stored. When sign-up opens, this is where it will live.
-        </p>
-        <form
-          class="early-form"
-          aria-describedby="early-note"
-          aria-disabled="true"
-        >
-          <label>
-            Name
-            <input type="text" name="name" autocomplete="off" disabled />
-          </label>
-          <label>
-            Email
-            <input type="email" name="email" autocomplete="off" disabled />
-          </label>
-          <button type="button" disabled>Not connected yet</button>
-        </form>
-        <p id="early-note" class="fine">
-          No data is collected in this preview.
-        </p>
+        <div class="wrap early-inner">
+          <p class="kicker">Early access</p>
+          <h2 class="section-title" id="early-title">Request early access</h2>
+          <p class="section-sub">
+            Vari8 is in active development and being shared with a small group
+            first. Leave your details to hear when a place opens.
+          </p>
+
+          <div class="honesty-box" role="note">
+            <strong>This preview is not connected.</strong> The fields below are
+            disabled — nothing you type is sent or stored. The signup
+            destination and privacy wording are still being decided; this page
+            shows the intended interaction only.
+          </div>
+
+          <form
+            class="early-form"
+            aria-label="Early access signup (disabled in this preview)"
+          >
+            <label>
+              <span>Name</span>
+              <input type="text" disabled placeholder="Your name" />
+            </label>
+            <label>
+              <span>Email</span>
+              <input type="email" disabled placeholder="you@example.com" />
+            </label>
+            <label>
+              <span>I am a</span>
+              <select disabled>
+                <option>Coach</option>
+                <option>Client</option>
+                <option>Both / other</option>
+              </select>
+            </label>
+            <button type="button" class="btn btn-cta" disabled>
+              Not connected yet
+            </button>
+          </form>
+        </div>
       </section>
     </main>
 
     <footer class="site-footer">
-      <span class="wordmark">Vari8</span>
-      <p>Product preview — in development. Demo imagery only.</p>
+      <div class="wrap footer-inner">
+        <p class="wordmark">Vari8<span aria-hidden="true">.</span></p>
+        <p>
+          Local product preview — synthetic demo data only. No analytics, no
+          tracking, no external calls.
+        </p>
+      </div>
     </footer>
   </body>
 </html>

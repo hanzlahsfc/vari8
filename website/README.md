@@ -18,12 +18,16 @@ python3 -m http.server 8420
 
 - `index.html` — single product page
 - `styles.css` — scoped styles; visual tokens mirror the canvas preview
+- `site.js` — small dependency-free script for the two local interactions
+  (workflow demo stepper, feature showcase). The page stays fully readable
+  with JavaScript disabled.
 - `assets/fonts/` — `InfinityGeist.woff2` + `StudioGaramond-Regular.ttf`,
   copied from `frontend/public/fonts/` (in-repo canvas assets)
 - `assets/grain.png` — copied from `frontend/public/grain.png`
-- `assets/shots/` — three canvas captures from `icm/04-briefing/shots/`
+- `assets/shots/` — canvas captures from `icm/04-briefing/shots/`
   (synthetic demo data only): `s01-roster`, `s03-checkins-board`,
-  `s09-tracker-today`
+  `s03-checkin-review`, `s06-mealplan-editor`, `s07-training-editor`,
+  `s09-tracker-today`, `s09-tracker-trends`, `s11-client-preview`
 
 ## Known limitations
 
