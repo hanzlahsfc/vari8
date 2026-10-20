@@ -1,0 +1,274 @@
+/* Source details and the shared content frame. Widget instruments own their styles. */
+.dw-content {
+  --dw-line: color-mix(in srgb, var(--text) 12%, transparent);
+  --dw-soft: color-mix(in srgb, var(--text) 7%, transparent);
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 9px;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+.dw-content button {
+  color: inherit;
+  font: inherit;
+}
+
+.dw-data-row > span,
+.dw-check-row small {
+  color: var(--muted);
+}
+
+.dw-plot {
+  display: block;
+  width: 100%;
+  max-height: 88px;
+  overflow: visible;
+}
+
+.dw-weight-gridline {
+  fill: none;
+  stroke: var(--border);
+  stroke-dasharray: 1 5;
+  stroke-width: 1;
+}
+
+.dw-weight-area {
+  fill: color-mix(in srgb, var(--chart-line) 11%, transparent);
+}
+
+.dw-plot.is-weight .dw-plot-point:focus-visible {
+  stroke: var(--surface);
+  stroke-width: 2;
+  outline: 2px solid var(--accent);
+}
+
+.dw-plot-rule,
+.dw-plot-gap {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.dw-plot-line {
+  fill: none;
+  stroke: var(--chart-line);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.dw-plot-point {
+  fill: var(--surface);
+  stroke: var(--chart-line);
+  stroke-width: 1.6;
+}
+
+.dw-data-row,
+.dw-switch-line {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dw-data-row {
+  font-size: 12px;
+}
+
+.dw-data-row strong {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 610;
+  text-align: right;
+}
+
+.dw-dated-rows {
+  display: grid;
+  min-width: 0;
+  gap: 0;
+}
+
+.dw-data-row {
+  min-height: 22px;
+  padding: 4px 0;
+  border-top: 1px solid var(--dw-soft);
+}
+
+.dw-data-row > span,
+.dw-check-row > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dw-empty {
+  display: flex;
+  min-height: 44px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.dw-action,
+.dw-switch-line button,
+.dw-check-toggle {
+  width: fit-content;
+  min-height: 27px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 560;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.dw-action {
+  margin-top: auto;
+  padding: 4px 9px;
+}
+
+.dw-action.is-quiet {
+  align-self: flex-start;
+  min-height: 22px;
+  padding: 2px 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--accent);
+}
+
+.dw-action:hover,
+.dw-switch-line button:hover,
+.dw-check-toggle:hover {
+  border-color: color-mix(in srgb, var(--accent) 52%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.dw-content button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.dw-plot-date {
+  fill: var(--muted);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.dw-switch-line {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.dw-switch-line button {
+  min-height: 24px;
+  padding: 3px 7px;
+}
+
+.dw-check-row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 33px;
+  padding: 3px 0;
+  border-top: 1px solid var(--dw-soft);
+}
+
+.dw-check-toggle {
+  min-width: 62px;
+  min-height: 25px;
+  padding: 3px 7px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.dw-check-toggle.is-done {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  color: var(--accent);
+}
+
+.dw-check-row > span {
+  display: grid;
+  gap: 1px;
+}
+
+.dw-check-row small {
+  font-size: 12px;
+}
+
+.dw-detail {
+  --dw-line: color-mix(in srgb, var(--text) 12%, transparent);
+  --dw-soft: color-mix(in srgb, var(--text) 7%, transparent);
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.dw-detail h3,
+.dw-detail h4,
+.dw-detail p {
+  margin: 0;
+}
+
+.dw-detail h3 {
+  font-size: 17px;
+  font-weight: 620;
+  letter-spacing: -0.025em;
+}
+
+.dw-detail h4 {
+  margin-bottom: 3px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dw-detail-group {
+  display: grid;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--dw-line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dw-action,
+  .dw-switch-line button,
+  .dw-check-toggle {
+    transition: none;
+  }
+}
+.dw-data-row > span,
+.dw-check-row > span {
+  overflow: visible;
+}
+.dw-detail .dw-check-toggle {
+  min-height: 44px;
+  min-width: 68px;
+  padding: 5px 7px;
+  font-size: 12px;
+}
+.dw-check-row {
+  min-height: 48px;
+}
+@media (max-width: 700px) {
+  .dw-check-row {
+    padding-block: 5px;
+  }
+}
+
+.dw-content :where(small) {
+  font-size: 12px;
+}

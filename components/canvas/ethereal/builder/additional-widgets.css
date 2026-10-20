@@ -1,0 +1,99 @@
+/* Source details and the shared content frame. Widget instruments own their styles. */
+.da-chart-empty {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.da-chart-empty {
+  border-left: 2px solid var(--da-line);
+  padding: 5px 0 5px 9px;
+}
+
+.da-detail {
+  --da-line: var(--border);
+  display: grid;
+  gap: 14px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.da-detail > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.da-detail-table {
+  display: grid;
+  min-width: 0;
+}
+
+.da-detail-header,
+.da-detail-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.85fr) minmax(140px, 1.4fr) minmax(
+      95px,
+      0.8fr
+    );
+  gap: 12px;
+  align-items: baseline;
+  border-bottom: 1px solid var(--da-line);
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.da-detail-header {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.da-detail-row time {
+  color: var(--muted);
+}
+
+.da-detail-row strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 620;
+  text-align: right;
+}
+
+.da-detail-context {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+.da-detail-context > div {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.7fr) minmax(0, 1.5fr);
+  gap: 16px;
+  border-bottom: 1px solid var(--da-line);
+  padding: 9px 0;
+}
+
+.da-detail-context dt {
+  color: var(--muted);
+}
+
+.da-detail-context dd {
+  margin: 0;
+  color: var(--text);
+}
+
+@media (max-width: 520px) {
+  .da-detail-header,
+  .da-detail-row {
+    grid-template-columns: minmax(90px, 0.8fr) minmax(100px, 1fr) minmax(
+        70px,
+        0.7fr
+      );
+    gap: 7px;
+    font-size: 12px;
+  }
+
+  .da-detail-row strong {
+    font-size: 12px;
+  }
+}

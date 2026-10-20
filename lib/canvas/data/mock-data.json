@@ -1,0 +1,778 @@
+{
+  "referenceDate": "2026-10-05",
+  "referenceDay": "Monday",
+  "units": {
+    "weight": "kg",
+    "height": "cm",
+    "foodAmount": "g"
+  },
+  "dataNote": "All people and figures are synthetic illustrative mock data. Meal nutrition figures are not calculated from the listed food amounts.",
+  "brand": {
+    "name": "Forma",
+    "coach": {
+      "name": "Sofia Miller",
+      "initials": "SM"
+    },
+    "note": "Illustrative placeholder identity; use the target project branding or neutral project naming."
+  },
+  "defaultDemoClientId": "client-001",
+  "rosterViews": ["cards", "table"],
+  "clients": [
+    {
+      "id": "client-001",
+      "name": "Emma Anders",
+      "initials": "EA",
+      "label": "Lifestyle",
+      "phase": "Fat loss",
+      "week": 8,
+      "checkInStatus": "awaiting feedback",
+      "lastCheckIn": "2026-10-05T08:42",
+      "nextCheckIn": "2026-10-09",
+      "unreadCount": 1,
+      "overdueTaskCount": 1,
+      "heightCm": 170,
+      "bodyweightKg": 71.9,
+      "bodyweightDate": "2026-10-02",
+      "weightTrend": [
+        {
+          "date": "2026-09-26",
+          "kg": 72.5
+        },
+        {
+          "date": "2026-09-27",
+          "kg": 72.3
+        },
+        {
+          "date": "2026-09-28",
+          "kg": 72.1
+        },
+        {
+          "date": "2026-09-29",
+          "kg": 72.1
+        },
+        {
+          "date": "2026-09-30",
+          "kg": 72.0
+        },
+        {
+          "date": "2026-10-01",
+          "kg": 71.8
+        },
+        {
+          "date": "2026-10-02",
+          "kg": 71.9
+        }
+      ],
+      "template": "Forma Lifestyle",
+      "presentation": "meal_plan",
+      "coachingSince": "2026-08-10",
+      "recurringCheckIn": "Every Friday"
+    },
+    {
+      "id": "client-002",
+      "name": "James Reed",
+      "initials": "JR",
+      "label": "Prep",
+      "phase": "Prep",
+      "week": 12,
+      "checkInStatus": "overdue",
+      "lastCheckIn": "2026-09-24",
+      "nextCheckIn": "2026-10-01",
+      "unreadCount": 2,
+      "overdueTaskCount": 1,
+      "heightCm": 182,
+      "bodyweightKg": 84.2,
+      "bodyweightDate": "2026-10-02",
+      "weightTrend": [
+        {
+          "date": "2026-09-25",
+          "kg": 84.8
+        },
+        {
+          "date": "2026-10-02",
+          "kg": 84.2
+        }
+      ],
+      "template": "Forma Prep",
+      "presentation": "meal_plan",
+      "coachingSince": "2026-07-13",
+      "recurringCheckIn": "Every Thursday"
+    },
+    {
+      "id": "client-003",
+      "name": "Lily Chen",
+      "initials": "LC",
+      "label": "Lifestyle",
+      "phase": "Maintenance",
+      "week": 6,
+      "checkInStatus": "on track",
+      "lastCheckIn": "2026-10-02",
+      "nextCheckIn": "2026-10-09",
+      "unreadCount": 0,
+      "overdueTaskCount": 0,
+      "heightCm": 164,
+      "bodyweightKg": 61.8,
+      "bodyweightDate": "2026-10-02",
+      "weightTrend": [
+        {
+          "date": "2026-09-25",
+          "kg": 61.5
+        },
+        {
+          "date": "2026-10-02",
+          "kg": 61.8
+        }
+      ],
+      "template": "Forma Lifestyle",
+      "presentation": "meal_plan",
+      "coachingSince": "2026-08-24",
+      "recurringCheckIn": "Every Friday"
+    },
+    {
+      "id": "client-004",
+      "name": "Oliver Stone",
+      "initials": "OS",
+      "label": "Lifestyle",
+      "phase": "Strength",
+      "week": 10,
+      "checkInStatus": "on track",
+      "lastCheckIn": "2026-10-02",
+      "nextCheckIn": "2026-10-09",
+      "unreadCount": 0,
+      "overdueTaskCount": 1,
+      "heightCm": 176,
+      "bodyweightKg": 91.3,
+      "bodyweightDate": "2026-10-02",
+      "weightTrend": [
+        {
+          "date": "2026-09-25",
+          "kg": 91.7
+        },
+        {
+          "date": "2026-10-02",
+          "kg": 91.3
+        }
+      ],
+      "template": "Forma Lifestyle",
+      "presentation": "meal_plan",
+      "coachingSince": "2026-07-27",
+      "recurringCheckIn": "Every Friday"
+    },
+    {
+      "id": "client-005",
+      "name": "Maya Patel",
+      "initials": "MP",
+      "label": "Lifestyle",
+      "phase": "Fat loss",
+      "week": 4,
+      "checkInStatus": "awaiting feedback",
+      "lastCheckIn": "2026-10-05T08:12",
+      "nextCheckIn": "2026-10-12",
+      "unreadCount": 1,
+      "overdueTaskCount": 0,
+      "heightCm": 168,
+      "bodyweightKg": 68.1,
+      "bodyweightDate": "2026-10-04",
+      "weightTrend": [
+        {
+          "date": "2026-09-27",
+          "kg": 68.4
+        },
+        {
+          "date": "2026-10-04",
+          "kg": 68.1
+        }
+      ],
+      "template": "Forma Lifestyle",
+      "presentation": "meal_plan",
+      "coachingSince": "2026-09-07",
+      "recurringCheckIn": "Every Monday"
+    },
+    {
+      "id": "client-006",
+      "name": "Noah Williams",
+      "initials": "NW",
+      "label": "Prep",
+      "phase": "Prep",
+      "week": 9,
+      "checkInStatus": "on track",
+      "lastCheckIn": "2026-10-03",
+      "nextCheckIn": "2026-10-10",
+      "unreadCount": 3,
+      "overdueTaskCount": 0,
+      "heightCm": 185,
+      "bodyweightKg": 82.6,
+      "bodyweightDate": "2026-10-03",
+      "weightTrend": [
+        {
+          "date": "2026-09-26",
+          "kg": 83.1
+        },
+        {
+          "date": "2026-10-03",
+          "kg": 82.6
+        }
+      ],
+      "template": "Forma Prep",
+      "presentation": "meal_plan",
+      "coachingSince": "2026-08-03",
+      "recurringCheckIn": "Every Saturday"
+    },
+    {
+      "id": "client-007",
+      "name": "Amara Lewis",
+      "initials": "AL",
+      "label": "Lifestyle",
+      "phase": "Strength",
+      "week": 7,
+      "checkInStatus": "on track",
+      "lastCheckIn": "2026-10-02",
+      "nextCheckIn": "2026-10-09",
+      "unreadCount": 0,
+      "overdueTaskCount": 0,
+      "heightCm": 162,
+      "bodyweightKg": 72.5,
+      "bodyweightDate": "2026-10-02",
+      "weightTrend": [
+        {
+          "date": "2026-09-25",
+          "kg": 72.8
+        },
+        {
+          "date": "2026-10-02",
+          "kg": 72.5
+        }
+      ],
+      "template": "Forma Lifestyle",
+      "presentation": "meal_plan",
+      "coachingSince": "2026-08-17",
+      "recurringCheckIn": "Every Friday"
+    },
+    {
+      "id": "client-008",
+      "name": "Jack Kim",
+      "initials": "JK",
+      "label": "Prep",
+      "phase": "Prep",
+      "week": 5,
+      "checkInStatus": "awaiting feedback",
+      "lastCheckIn": "2026-10-04T17:20",
+      "nextCheckIn": "2026-10-11",
+      "unreadCount": 1,
+      "overdueTaskCount": 0,
+      "heightCm": 179,
+      "bodyweightKg": 76.9,
+      "bodyweightDate": "2026-10-04",
+      "weightTrend": [
+        {
+          "date": "2026-09-27",
+          "kg": 77.2
+        },
+        {
+          "date": "2026-10-04",
+          "kg": 76.9
+        }
+      ],
+      "template": "Forma Prep",
+      "presentation": "meal_plan",
+      "coachingSince": "2026-08-31",
+      "recurringCheckIn": "Every Sunday"
+    },
+    {
+      "id": "client-009",
+      "name": "Isla Morgan",
+      "initials": "IM",
+      "label": "Lifestyle",
+      "phase": "Maintenance",
+      "week": 11,
+      "checkInStatus": "on track",
+      "lastCheckIn": "2026-10-01",
+      "nextCheckIn": "2026-10-08",
+      "unreadCount": 0,
+      "overdueTaskCount": 0,
+      "heightCm": 167,
+      "bodyweightKg": 64.7,
+      "bodyweightDate": "2026-10-01",
+      "weightTrend": [
+        {
+          "date": "2026-09-24",
+          "kg": 64.8
+        },
+        {
+          "date": "2026-10-01",
+          "kg": 64.7
+        }
+      ],
+      "template": "Forma Lifestyle",
+      "presentation": "meal_plan",
+      "coachingSince": "2026-07-20",
+      "recurringCheckIn": "Every Thursday"
+    },
+    {
+      "id": "client-010",
+      "name": "Ethan Cole",
+      "initials": "EC",
+      "label": "Lifestyle",
+      "phase": "Fat loss",
+      "week": 3,
+      "checkInStatus": "overdue",
+      "lastCheckIn": "2026-09-21",
+      "nextCheckIn": "2026-09-28",
+      "unreadCount": 0,
+      "overdueTaskCount": 2,
+      "heightCm": 185,
+      "bodyweightKg": 96.4,
+      "bodyweightDate": "2026-10-02",
+      "weightTrend": [
+        {
+          "date": "2026-09-25",
+          "kg": 96.7
+        },
+        {
+          "date": "2026-10-02",
+          "kg": 96.4
+        }
+      ],
+      "template": "Forma Lifestyle",
+      "presentation": "meal_plan",
+      "coachingSince": "2026-09-14",
+      "recurringCheckIn": "Every Monday"
+    },
+    {
+      "id": "client-011",
+      "name": "Zara Ahmed",
+      "initials": "ZA",
+      "label": "Prep",
+      "phase": "Prep",
+      "week": 14,
+      "checkInStatus": "on track",
+      "lastCheckIn": "2026-10-03",
+      "nextCheckIn": "2026-10-10",
+      "unreadCount": 0,
+      "overdueTaskCount": 0,
+      "heightCm": 171,
+      "bodyweightKg": 70.3,
+      "bodyweightDate": "2026-10-03",
+      "weightTrend": [
+        {
+          "date": "2026-09-26",
+          "kg": 70.2
+        },
+        {
+          "date": "2026-10-03",
+          "kg": 70.3
+        }
+      ],
+      "template": "Forma Prep",
+      "presentation": "meal_plan",
+      "coachingSince": "2026-06-29",
+      "recurringCheckIn": "Every Saturday"
+    },
+    {
+      "id": "client-012",
+      "name": "Finn Walsh",
+      "initials": "FW",
+      "label": "Lifestyle",
+      "phase": "Strength",
+      "week": 8,
+      "checkInStatus": "on track",
+      "lastCheckIn": "2026-10-04",
+      "nextCheckIn": "2026-10-11",
+      "unreadCount": 0,
+      "overdueTaskCount": 0,
+      "heightCm": 188,
+      "bodyweightKg": 82.6,
+      "bodyweightDate": "2026-10-04",
+      "weightTrend": [
+        {
+          "date": "2026-09-27",
+          "kg": 82.8
+        },
+        {
+          "date": "2026-10-04",
+          "kg": 82.6
+        }
+      ],
+      "template": "Forma Lifestyle",
+      "presentation": "meal_plan",
+      "coachingSince": "2026-08-10",
+      "recurringCheckIn": "Every Sunday"
+    },
+    {
+      "id": "client-013",
+      "name": "Chloe Park",
+      "initials": "CP",
+      "label": "Lifestyle",
+      "phase": "Fat loss",
+      "week": 6,
+      "checkInStatus": "awaiting feedback",
+      "lastCheckIn": "2026-10-05T07:55",
+      "nextCheckIn": "2026-10-12",
+      "unreadCount": 0,
+      "overdueTaskCount": 1,
+      "heightCm": 159,
+      "bodyweightKg": 59.4,
+      "bodyweightDate": "2026-10-04",
+      "weightTrend": [
+        {
+          "date": "2026-09-27",
+          "kg": 59.6
+        },
+        {
+          "date": "2026-10-04",
+          "kg": 59.4
+        }
+      ],
+      "template": "Forma Lifestyle",
+      "presentation": "meal_plan",
+      "coachingSince": "2026-08-24",
+      "recurringCheckIn": "Every Monday"
+    },
+    {
+      "id": "client-014",
+      "name": "Theo Grant",
+      "initials": "TG",
+      "label": "Prep",
+      "phase": "Prep",
+      "week": 2,
+      "checkInStatus": "overdue",
+      "lastCheckIn": "2026-09-20",
+      "nextCheckIn": "2026-09-27",
+      "unreadCount": 2,
+      "overdueTaskCount": 1,
+      "heightCm": 182,
+      "bodyweightKg": 103.2,
+      "bodyweightDate": "2026-10-02",
+      "weightTrend": [
+        {
+          "date": "2026-09-25",
+          "kg": 103.7
+        },
+        {
+          "date": "2026-10-02",
+          "kg": 103.2
+        }
+      ],
+      "template": "Forma Prep",
+      "presentation": "meal_plan",
+      "coachingSince": "2026-09-21",
+      "recurringCheckIn": "Every Sunday"
+    },
+    {
+      "id": "client-015",
+      "name": "Eva Fischer",
+      "initials": "EF",
+      "label": "Lifestyle",
+      "phase": "Maintenance",
+      "week": 9,
+      "checkInStatus": "on track",
+      "lastCheckIn": "2026-10-01",
+      "nextCheckIn": "2026-10-08",
+      "unreadCount": 1,
+      "overdueTaskCount": 0,
+      "heightCm": 166,
+      "bodyweightKg": 63.5,
+      "bodyweightDate": "2026-10-01",
+      "weightTrend": [
+        {
+          "date": "2026-09-24",
+          "kg": 63.2
+        },
+        {
+          "date": "2026-10-01",
+          "kg": 63.5
+        }
+      ],
+      "template": "Forma Lifestyle",
+      "presentation": "meal_plan",
+      "coachingSince": "2026-08-03",
+      "recurringCheckIn": "Every Thursday"
+    }
+  ],
+  "clientProfile": {
+    "clientId": "client-001",
+    "coach": {
+      "name": "Sofia Miller",
+      "initials": "SM"
+    },
+    "coachingSince": "2026-08-10",
+    "clientTasks": [
+      {
+        "label": "Upload training log",
+        "status": "overdue",
+        "dueDate": "2026-10-02"
+      },
+      {
+        "label": "Review updated meal plan",
+        "status": "open",
+        "dueDate": "2026-10-06"
+      },
+      {
+        "label": "Confirm next check-in",
+        "status": "complete",
+        "dueDate": "2026-10-05"
+      }
+    ],
+    "privateCoachNotes": {
+      "visibility": "coach_only",
+      "notes": ["Review split-squat setup before increasing load."],
+      "coachTasks": ["Prepare feedback video"]
+    },
+    "generalNotes": ["Prefers morning training."],
+    "checkInHistory": [
+      {
+        "date": "2026-10-05",
+        "status": "awaiting feedback"
+      },
+      {
+        "date": "2026-09-25",
+        "status": "feedback sent"
+      },
+      {
+        "date": "2026-09-18",
+        "status": "feedback sent"
+      }
+    ]
+  },
+  "dashboard": {
+    "clientId": "client-001",
+    "fixtureNote": "For other profile previews, use the selected client identity, core metrics, check-in state and dated weight trend. Training, recovery and nutrition/meal content may reuse a clearly labeled illustrative fixture. Emma-specific notes, assigned tasks and history stay on Emma's profile. Meal variants are example content, not individually assigned prescriptions.",
+    "period": {
+      "start": "2026-09-26",
+      "end": "2026-10-02"
+    },
+    "bodyweight": {
+      "currentKg": 71.9,
+      "date": "2026-10-02",
+      "weeklyAverageKg": 72.1,
+      "changeKg": -0.4,
+      "trendSource": "clients[client-001].weightTrend",
+      "previousWeeklyAverageKg": 72.5,
+      "changeBasis": "Current weekly average minus previous weekly average"
+    },
+    "nutrition": {
+      "dayType": "TD",
+      "target": {
+        "kcal": 1997,
+        "proteinG": 150,
+        "carbsG": 230,
+        "fatG": 53
+      },
+      "progress": {
+        "kcal": 1045,
+        "proteinG": 85,
+        "carbsG": 120,
+        "fatG": 25
+      },
+      "date": "2026-10-05",
+      "progressLabel": "Logged today",
+      "variantSelectionNote": "TD is the initial demo selection. One active nutrition variant per selected client is shared by Dashboard and Meal plan. Change target values from that variant; keep logged progress separate."
+    },
+    "training": {
+      "sessionsComplete": 3,
+      "sessionsPlanned": 4,
+      "nextSession": "Lower body B"
+    },
+    "recovery": {
+      "averageSleepHours": 7.4,
+      "energyOutOf5": 4,
+      "dailyEnergyOutOf5": [4, 4, 3, 4, 3, 4, 4]
+    },
+    "habits": {
+      "date": "2026-10-05",
+      "items": [
+        {
+          "label": "Drink 2.5 L water",
+          "complete": true
+        },
+        {
+          "label": "10-minute walk",
+          "complete": false
+        }
+      ]
+    },
+    "nextCheckIn": "2026-10-09",
+    "checkInWidget": {
+      "submittedAt": "2026-10-05T08:42",
+      "status": "awaiting feedback"
+    },
+    "lastFeedbackPreview": {
+      "from": "Sofia",
+      "text": "Focus on controlled reps this week."
+    }
+  },
+  "mealPlan": {
+    "clientId": "client-001",
+    "assignedTemplate": "Forma Lifestyle",
+    "presentation": "meal_plan",
+    "sampleUseNote": "For other client profiles, reuse this clearly labeled illustrative example meal plan; it is not an individually assigned plan.",
+    "variants": [
+      {
+        "id": "td",
+        "name": "TD Training day",
+        "targetMode": "Fixed",
+        "total": {
+          "kcal": 1997,
+          "proteinG": 150,
+          "carbsG": 230,
+          "fatG": 53
+        },
+        "meals": [
+          {
+            "order": 1,
+            "name": "Breakfast",
+            "time": "08:00",
+            "frequency": "Every day",
+            "food": ["Greek yogurt 250 g", "Oats 50 g", "Berries 100 g"],
+            "kcal": 352,
+            "proteinG": 30,
+            "carbsG": 40,
+            "fatG": 8
+          },
+          {
+            "order": 2,
+            "name": "Morning meal",
+            "time": "10:30",
+            "frequency": "Every day",
+            "food": ["Cottage cheese 150 g", "Rye bread 60 g", "Tomato 100 g"],
+            "kcal": 303,
+            "proteinG": 25,
+            "carbsG": 35,
+            "fatG": 7
+          },
+          {
+            "order": 3,
+            "name": "Lunch",
+            "time": "12:30",
+            "frequency": "Training days",
+            "food": [
+              "Chicken breast 150 g",
+              "Rice 180 g",
+              "Mixed vegetables 200 g"
+            ],
+            "kcal": 390,
+            "proteinG": 30,
+            "carbsG": 45,
+            "fatG": 10
+          },
+          {
+            "order": 4,
+            "name": "Pre-training",
+            "time": "15:30",
+            "frequency": "Training days",
+            "food": ["Protein shake 30 g", "Banana 120 g"],
+            "kcal": 254,
+            "proteinG": 20,
+            "carbsG": 30,
+            "fatG": 6
+          },
+          {
+            "order": 5,
+            "name": "Dinner",
+            "time": "19:00",
+            "frequency": "Every day",
+            "food": ["Salmon 150 g", "Potatoes 250 g", "Vegetables 200 g"],
+            "kcal": 426,
+            "proteinG": 30,
+            "carbsG": 45,
+            "fatG": 14
+          },
+          {
+            "order": 6,
+            "name": "Evening meal",
+            "time": "21:00",
+            "frequency": "Every day",
+            "food": ["Quark 180 g", "Cereal 30 g", "Kiwi 100 g"],
+            "kcal": 272,
+            "proteinG": 15,
+            "carbsG": 35,
+            "fatG": 8
+          }
+        ]
+      },
+      {
+        "id": "ntd",
+        "name": "NTD Non-training day",
+        "targetMode": "Fixed",
+        "total": {
+          "kcal": 1860,
+          "proteinG": 150,
+          "carbsG": 180,
+          "fatG": 60
+        },
+        "meals": [
+          {
+            "order": 1,
+            "name": "Breakfast",
+            "time": "08:00",
+            "frequency": "Every day",
+            "food": ["Eggs 2", "Rye bread 60 g", "Tomato 100 g"],
+            "kcal": 348,
+            "proteinG": 30,
+            "carbsG": 30,
+            "fatG": 12
+          },
+          {
+            "order": 2,
+            "name": "Morning meal",
+            "time": "10:30",
+            "frequency": "Every day",
+            "food": ["Skyr 200 g", "Oats 35 g", "Apple 100 g"],
+            "kcal": 314,
+            "proteinG": 30,
+            "carbsG": 35,
+            "fatG": 6
+          },
+          {
+            "order": 3,
+            "name": "Lunch",
+            "time": "12:30",
+            "frequency": "Every day",
+            "food": ["Turkey 140 g", "Quinoa 100 g", "Vegetables 150 g"],
+            "kcal": 350,
+            "proteinG": 30,
+            "carbsG": 35,
+            "fatG": 10
+          },
+          {
+            "order": 4,
+            "name": "Afternoon meal",
+            "time": "15:30",
+            "frequency": "Every day",
+            "food": [
+              "Cottage cheese 150 g",
+              "Crispbread 25 g",
+              "Cucumber 100 g"
+            ],
+            "kcal": 290,
+            "proteinG": 25,
+            "carbsG": 25,
+            "fatG": 10
+          },
+          {
+            "order": 5,
+            "name": "Dinner",
+            "time": "19:00",
+            "frequency": "Every day",
+            "food": ["White fish 150 g", "Potatoes 150 g", "Green beans 120 g"],
+            "kcal": 292,
+            "proteinG": 25,
+            "carbsG": 30,
+            "fatG": 8
+          },
+          {
+            "order": 6,
+            "name": "Evening meal",
+            "time": "21:00",
+            "frequency": "Every day",
+            "food": ["Quark 180 g", "Walnuts 12 g", "Berries 80 g"],
+            "kcal": 266,
+            "proteinG": 10,
+            "carbsG": 25,
+            "fatG": 14
+          }
+        ]
+      }
+    ]
+  }
+}

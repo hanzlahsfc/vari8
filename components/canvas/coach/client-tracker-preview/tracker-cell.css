@@ -1,0 +1,642 @@
+.coach-root .ct-tracking .tc-cell {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.coach-root .ct-tracking .tc-period-start {
+  display: inline-flex;
+  min-width: 34px;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.coach-root .ct-tracking .tc-period-start input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.coach-root .ct-tracking .tc-period-start input:focus-visible {
+  outline: 2px solid var(--accent-ring, var(--accent));
+  outline-offset: 3px;
+}
+
+.coach-root .ct-tracking .tc-value-trigger {
+  position: relative;
+  display: inline-flex;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 7px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition:
+    background-color 170ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 170ms cubic-bezier(0.32, 0.72, 0, 1),
+    transform 150ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.coach-root .ct-tracking .tc-value-trigger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+.coach-root .ct-tracking .tc-value-trigger:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.coach-root .ct-tracking .tc-value-trigger:focus-visible,
+.coach-root .ct-tracking .tc-rating-select:focus-visible,
+.coach-root .ct-tracking .tc-number-input:focus-visible,
+.coach-root .ct-tracking .tc-number-done:focus-visible,
+.tc-comment-popover :is(textarea, button):focus-visible {
+  outline: 2px solid var(--accent-ring, var(--accent));
+  outline-offset: 2px;
+}
+
+.coach-root .ct-tracking .tc-coach-trigger {
+  cursor: pointer;
+}
+
+.coach-root .ct-tracking .tc-coach-trigger:disabled {
+  cursor: default;
+}
+
+.coach-root .ct-tracking .tc-value-trigger:disabled {
+  opacity: 0.55;
+}
+
+.coach-root .ct-tracking .tc-value-trigger.tc-missing {
+  color: color-mix(in srgb, var(--text) 38%, transparent);
+}
+
+.coach-root .ct-tracking .tc-unit-suffix {
+  color: color-mix(in srgb, var(--text) 55%, transparent);
+  font-size: 11px;
+}
+
+.coach-root .ct-tracking .tc-trend {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  margin-left: 3px;
+  color: color-mix(in srgb, var(--text) 47%, transparent);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.coach-root .ct-tracking .tc-trend[data-direction="up"] {
+  color: color-mix(in srgb, var(--text) 47%, transparent);
+}
+
+.coach-root .ct-tracking .tc-trend[data-direction="down"] {
+  color: color-mix(in srgb, var(--text) 47%, transparent);
+}
+
+.coach-root .ct-tracking .tc-rating-value {
+  display: inline-flex;
+  max-width: 100%;
+  overflow: hidden;
+  min-width: 44px;
+  min-height: 25px;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 7%, var(--surface));
+  font-size: 12px;
+  font-weight: 570;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coach-root .ct-tracking .tc-value-copy {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coach-root .ct-tracking .tc-tone-good .tc-rating-value {
+  border-color: color-mix(in srgb, #62bc82 15%, transparent);
+  background: color-mix(in srgb, #62bc82 12%, var(--surface));
+  color: color-mix(in srgb, #7fd696 84%, var(--text));
+}
+
+.coach-root .ct-tracking .tc-tone-middle .tc-rating-value {
+  border-color: color-mix(in srgb, #d6ad6a 14%, transparent);
+  background: color-mix(in srgb, #d6ad6a 11%, var(--surface));
+  color: color-mix(in srgb, #e2c184 86%, var(--text));
+}
+
+.coach-root .ct-tracking .tc-tone-poor .tc-rating-value {
+  border-color: color-mix(in srgb, #d46f71 15%, transparent);
+  background: color-mix(in srgb, #d46f71 11%, var(--surface));
+  color: color-mix(in srgb, #e48c8d 86%, var(--text));
+}
+
+.coach-root .ct-tracking .tc-comment-mark {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.coach-root .ct-tracking .tc-number-edit-wrap {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+}
+.coach-root .ct-tracking .tc-number-input {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.coach-root .ct-tracking .tc-number-input::-webkit-inner-spin-button,
+.coach-root .ct-tracking .tc-number-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.coach-root .ct-tracking .tc-number-done {
+  display: inline-flex;
+  min-width: 53px;
+  min-height: 40px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--text);
+  font: 550 11px / 1 var(--font-ui);
+  cursor: pointer;
+  transition:
+    background-color 150ms cubic-bezier(0.2, 0.75, 0.25, 1),
+    border-color 150ms cubic-bezier(0.2, 0.75, 0.25, 1),
+    color 150ms cubic-bezier(0.2, 0.75, 0.25, 1),
+    transform 150ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+.coach-root .ct-tracking .tc-number-done:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 20%, var(--surface));
+}
+
+.coach-root .ct-tracking .tc-number-done:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.coach-root .ct-tracking .tc-number-done:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.coach-root .ct-tracking .tc-number-input,
+.coach-root .ct-tracking .tc-rating-select,
+.coach-root .ct-tracking .tc-text-input,
+.coach-root .ct-tracking .tc-text-select,
+.coach-root .ct-tracking .tc-text-area {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding: 4px 7px;
+  border: 1px solid
+    color-mix(in srgb, var(--accent) 55%, var(--eg-line, var(--border)));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.coach-root .ct-tracking .tc-rating-select {
+  min-width: 0;
+  cursor: pointer;
+}
+
+.coach-root .ct-tracking .tc-text-editor {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  justify-items: stretch;
+  gap: 5px;
+}
+
+.tc-text-popover {
+  display: grid;
+  min-width: 0;
+  justify-items: stretch;
+  gap: 8px;
+  position: fixed;
+  z-index: 41;
+  width: min(320px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
+  max-height: min(72vh, 520px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--text) 15%, transparent);
+  border-radius: 9px;
+  background: var(--surface-subtle);
+  box-shadow: 0 10px 24px color-mix(in srgb, #000 20%, transparent);
+}
+
+.tc-text-popover :is(input, select, textarea, button):focus-visible {
+  outline: 2px solid var(--accent-ring, var(--accent));
+  outline-offset: 2px;
+}
+
+.tc-text-popover :is(.tc-text-input, .tc-text-select, .tc-text-area) {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  padding: 5px 7px;
+  border: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+  color: var(--text);
+  font: 450 12px / 1.4 var(--font-ui);
+  text-align: left;
+}
+
+.tc-text-popover.tc-text-editor .tc-text-area {
+  min-height: 72px;
+  max-height: 32vh;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  resize: vertical;
+  white-space: pre-wrap;
+}
+
+.coach-root .ct-tracking .tc-summary-value {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tc-text-popover .tc-choice-list {
+  display: grid;
+  min-width: 0;
+  max-height: 24vh;
+  gap: 5px;
+  overflow: auto;
+  margin: 0;
+  padding: 7px;
+  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  text-align: left;
+}
+
+.tc-text-popover .tc-structured-fields,
+.tc-text-popover .tc-field-label,
+.tc-text-popover .tc-choice-note-label {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.tc-text-popover .tc-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.tc-text-popover .tc-value-error {
+  position: static;
+  width: auto;
+  max-width: none;
+}
+
+.coach-root
+  .ct-tracking
+  .tc-text-editor
+  :is(.tc-text-input, .tc-text-select, .tc-text-area) {
+  min-height: 32px;
+  padding: 5px 7px;
+  border: 1px solid
+    color-mix(in srgb, var(--accent) 44%, var(--eg-line, var(--border)));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+  color: var(--text);
+  font: 450 12px / 1.3 var(--font-ui);
+  text-align: left;
+}
+
+.coach-root .ct-tracking .tc-text-editor .tc-text-input::placeholder,
+.coach-root .ct-tracking .tc-text-editor .tc-text-area::placeholder {
+  color: color-mix(in srgb, var(--text) 55%, transparent);
+}
+
+.coach-root .ct-tracking .tc-text-editor .tc-text-area {
+  min-height: 55px;
+  max-height: 32vh;
+  resize: vertical;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.coach-root .ct-tracking .tc-text-editor select option {
+  color: var(--text);
+  background: var(--surface-subtle);
+}
+
+.coach-root .ct-tracking .tc-text-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+:where(.coach-root .ct-tracking) .tc-text-editor-actions button {
+  min-height: 26px;
+  padding: 0 7px;
+  border: 1px solid
+    var(--tc-line, color-mix(in srgb, var(--text) 17%, transparent));
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: 500 10px var(--font-ui);
+  cursor: pointer;
+}
+
+.coach-root .ct-tracking .tc-text-editor-actions button:last-child {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-contrast, #fff);
+}
+
+.coach-root
+  .ct-tracking
+  .tc-text-editor
+  :is(input, select, textarea, button):focus-visible {
+  outline: 2px solid var(--accent-ring, var(--accent));
+  outline-offset: 2px;
+}
+
+.coach-root .ct-tracking .tc-choice-list {
+  display: grid;
+  min-width: 0;
+  max-height: 100px;
+  gap: 4px;
+  overflow: auto;
+  margin: 0;
+  padding: 5px;
+  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  border-radius: 7px;
+  background: var(--surface-subtle);
+  color: var(--text);
+  font-size: 11px;
+  text-align: left;
+}
+
+:where(.coach-root .ct-tracking) .tc-choice-list label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.coach-root .ct-tracking .tc-choice-list input {
+  accent-color: var(--accent);
+}
+
+.coach-root .ct-tracking .tc-structured-fields {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.coach-root .ct-tracking .tc-field-label,
+.coach-root .ct-tracking .tc-choice-note-label {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  color: color-mix(in srgb, var(--text) 76%, transparent);
+  font-size: 10px;
+  text-align: left;
+}
+
+.coach-root .ct-tracking .tc-derived {
+  cursor: default;
+}
+
+.coach-root .ct-tracking .tc-value-error {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 5px);
+  left: 0;
+  width: max-content;
+  max-width: 220px;
+  padding: 6px 8px;
+  border: 1px solid
+    color-mix(in srgb, #d46f71 35%, var(--eg-line, var(--border)));
+  border-radius: 7px;
+  background: var(--surface-subtle);
+  color: var(--text);
+  font-size: 10px;
+  line-height: 1.35;
+  box-shadow: 0 8px 20px color-mix(in srgb, #000 15%, transparent);
+}
+
+.tc-comment-popover {
+  position: fixed;
+  z-index: 40;
+  display: grid;
+  width: min(280px, calc(100vw - 24px));
+  gap: 9px;
+  padding: 13px;
+  border: 1px solid color-mix(in srgb, var(--text) 13%, transparent);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--surface-subtle) 96%, transparent);
+  color: var(--text);
+  font-family: var(--font-ui);
+  box-shadow:
+    0 18px 44px color-mix(in srgb, #000 25%, transparent),
+    inset 0 1px color-mix(in srgb, var(--text) 7%, transparent);
+  animation: tc-panel-in 160ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.tc-comment-popover > label {
+  color: color-mix(in srgb, var(--text) 72%, transparent);
+  font-size: 11px;
+  font-weight: 570;
+}
+
+.tc-comment-popover > textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 76px;
+  max-height: 32vh;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  resize: vertical;
+  padding: 9px 10px;
+  border: 1px solid color-mix(in srgb, var(--text) 13%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  color: var(--text);
+  font: 400 12px / 1.45 var(--font-ui);
+  white-space: pre-wrap;
+}
+
+.tc-comment-popover > textarea::placeholder {
+  color: color-mix(in srgb, var(--text) 42%, transparent);
+}
+
+.tc-comment-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.tc-comment-actions > button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font: 500 10px var(--font-ui);
+  cursor: pointer;
+  transition:
+    background 160ms cubic-bezier(0.32, 0.72, 0, 1),
+    transform 160ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.tc-comment-actions > button:hover {
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+}
+
+.tc-comment-actions > button:active {
+  transform: scale(0.98);
+}
+
+.tc-comment-actions > .tc-comment-save {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-contrast, #fff);
+}
+
+.tc-comment-actions > .tc-comment-save:hover {
+  background: color-mix(in srgb, var(--accent) 86%, var(--text));
+}
+
+@keyframes tc-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-root .ct-tracking .tc-value-trigger,
+  .coach-root .ct-tracking .tc-number-done,
+  .tc-comment-actions > button {
+    transition: none;
+  }
+
+  .tc-comment-popover {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .tc-comment-popover {
+    background: var(--surface-subtle);
+  }
+}
+
+.coach-root[data-mode="light"] .ct-tracking .tc-tone-good .tc-rating-value {
+  color: color-mix(in srgb, #62bc82 38%, var(--text));
+}
+.coach-root[data-mode="light"] .ct-tracking .tc-tone-middle .tc-rating-value {
+  color: color-mix(in srgb, #d6ad6a 38%, var(--text));
+}
+.coach-root[data-mode="light"] .ct-tracking .tc-tone-poor .tc-rating-value {
+  color: color-mix(in srgb, #d46f71 38%, var(--text));
+}
+
+.tc-text-popover .tc-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.tc-text-popover .tc-popover-actions button {
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font: 500 11px var(--font-ui);
+  cursor: pointer;
+}
+
+.tc-text-popover.tc-text-editor .tc-popover-actions button:last-child {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-contrast, #fff);
+}
+
+.tc-text-popover.tc-time-popover {
+  overflow: visible;
+}
+@media (max-width: 420px) {
+  .tc-text-popover,
+  .tc-comment-popover,
+  .tc-text-popover.tc-time-popover {
+    max-width: calc(100vw - 64px);
+  }
+}

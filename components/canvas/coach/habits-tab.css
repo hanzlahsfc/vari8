@@ -1,0 +1,312 @@
+.coach-root .cd-habits {
+  display: grid;
+  gap: 16px;
+}
+
+.coach-root .cd-habits-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.coach-root .cd-habits-head h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 560;
+  letter-spacing: -0.02em;
+}
+
+.coach-root .cd-habits-head .cd-muted {
+  margin: 6px 0 0;
+}
+
+.coach-root .cd-habits-week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.coach-root .cd-habits-week li {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 52px;
+  padding: 8px 6px;
+  border: 1px solid var(--cd-line);
+  border-radius: 12px;
+  background: var(--cd-raised);
+  color: var(--cd-muted);
+}
+
+.coach-root .cd-habits-week li span {
+  font-size: 11px;
+  font-weight: 520;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.coach-root .cd-habits-week strong {
+  font-size: 15px;
+  font-weight: 580;
+  color: var(--cd-text);
+}
+
+.coach-root .cd-habits-week li.is-today {
+  background: var(--cd-action-bg);
+  border-color: var(--cd-action-bg);
+  color: var(--cd-action-text);
+}
+
+.coach-root .cd-habits-filters {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--cd-line);
+  border-radius: 12px;
+  background: var(--cd-raised);
+  width: fit-content;
+}
+
+.coach-root .cd-habits-filters button {
+  min-height: 44px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--cd-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 540;
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .coach-root .cd-habits-filters button:hover:not(.active) {
+    background: var(--cd-wash);
+    color: var(--cd-text);
+  }
+
+  .coach-root .cd-habits-filters button.active:hover {
+    background: var(--cd-action-bg);
+    color: var(--cd-action-text);
+  }
+}
+
+.coach-root .cd-habits-filters button.active {
+  background: var(--cd-action-bg);
+  color: var(--cd-action-text);
+}
+
+.coach-root .cd-habits-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.coach-root .cd-habits-list {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.coach-root .cd-habit-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--cd-line);
+  border-radius: 14px;
+  background: var(--cd-raised);
+}
+
+.coach-root .cd-habit-toggle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid var(--cd-line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--cd-muted);
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .coach-root .cd-habit-toggle:hover {
+    border-color: var(--cd-action-bg);
+    color: var(--cd-action-bg);
+  }
+
+  .coach-root .cd-habit-toggle.is-done:hover {
+    color: var(--cd-action-text);
+  }
+}
+
+.coach-root .cd-habit-toggle.is-done {
+  border-color: var(--cd-action-bg);
+  background: var(--cd-action-bg);
+  color: var(--cd-action-text);
+}
+
+.coach-root .cd-habit-check {
+  display: grid;
+  place-items: center;
+}
+
+.coach-root .cd-habit-info {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.coach-root .cd-habit-info strong {
+  font-size: 15px;
+  font-weight: 560;
+}
+
+.coach-root .cd-habit-info small {
+  color: var(--cd-muted);
+  font-size: 13px;
+}
+
+.coach-root .cd-habit-info p {
+  margin: 2px 0 0;
+  color: var(--cd-muted);
+  font-size: 13px;
+}
+
+.coach-root .cd-habit-state {
+  padding: 4px 10px;
+  border: 1px solid var(--cd-line);
+  border-radius: 999px;
+  color: var(--cd-muted);
+  font-size: 13px;
+  font-weight: 540;
+  white-space: nowrap;
+}
+
+.coach-root .cd-habit-state.is-done {
+  border-color: color-mix(in srgb, var(--cd-action-bg) 45%, transparent);
+  color: var(--cd-text);
+}
+
+.coach-root .cd-habits-summary {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--cd-line);
+  border-radius: 16px;
+  background: var(--cd-raised);
+}
+
+.coach-root .cd-habits-summary h3 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 560;
+  letter-spacing: -0.01em;
+}
+
+.coach-root .cd-habits-summary ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.coach-root .cd-habits-summary li {
+  display: grid;
+  gap: 2px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--cd-line);
+}
+
+.coach-root .cd-habits-summary li:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.coach-root .cd-habits-summary li strong {
+  font-size: 14px;
+  font-weight: 560;
+}
+
+.coach-root .cd-habits-summary li span {
+  color: var(--cd-muted);
+  font-size: 13px;
+}
+
+.coach-root .cd-habits-note {
+  margin: 0;
+  color: var(--cd-muted);
+  font-size: 13px;
+}
+
+.coach-root .cd-habits-empty {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 32px 16px;
+  border: 1px dashed var(--cd-line);
+  border-radius: 14px;
+  text-align: center;
+}
+
+.coach-root .cd-habits-empty .cd-muted {
+  margin: 0;
+}
+
+.coach-root .cd-habits-reset {
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--cd-line);
+  border-radius: 10px;
+  background: var(--cd-raised);
+  color: var(--cd-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 540;
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .coach-root .cd-habits-reset:hover {
+    background: var(--cd-wash);
+    color: var(--cd-text);
+  }
+}
+
+.coach-root .cd-habits-week li.is-today strong,
+.coach-root .cd-habits-week li.is-today span {
+  color: var(--cd-action-text);
+}
+
+@media (max-width: 900px) {
+  .coach-root .cd-habits-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .coach-root .cd-habits-week li {
+    min-width: 0;
+  }
+
+  .coach-root .cd-habit-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .coach-root .cd-habit-state {
+    grid-column: 2;
+    justify-self: start;
+  }
+}

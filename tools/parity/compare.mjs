@@ -4,6 +4,7 @@
 //      a screen fails above MAX_DIFF_PIXELS changed pixels (env PARITY_MAX_DIFF_PIXELS) or on any size change.
 //   2. DOM-geometry diff: visible elements added, removed, or moved by more than 0.5 px, or whose own text changed
 //      (text covers scroll-clipped content that pixels cannot show).
+//   Owner-ruled differences (RULED below) are the only exceptions: exact matches, listed per screen in the report.
 // Pixel work runs in Chromium (canvas getImageData), so there is no PNG dependency.
 // Usage: node tools/parity/compare.mjs [--baseline tools/parity/baseline] [--current tools/parity/out/current]
 //        [--report tools/parity/out/report.html]
@@ -35,9 +36,81 @@ export function envThresholds(env = process.env) {
   };
 }
 
-async function pixelDiff(page, aBuf, bBuf, tol) {
+// Owner-ruled differences the gate accepts, each tied to its decision; D32 itself lists the truth-text exceptions.
+// Matching is exact (tag, baseline text, current text, screen). A ruled element leaves the geometry diff, and its
+// baseline and current boxes (RULED_PAD) leave the pixel diff of the page and of every scroll capture. Anything else,
+// including a ruled element's neighbours moving, still fails.
+export const RULED = [
+  {
+    rule: "D18 real role in the account block",
+    text: { tag: "small", base: "Coach", now: "Owner" },
+  },
+  {
+    rule: "S11-03 sign-out in the preferences dialog",
+    added: { stem: "s11-preferences", tag: "button", text: "Sign out" },
+  },
+];
+
+// Three sigma of the coach dialog's 7 px backdrop blur (coach.css .cd-dialog::backdrop): a ruled text change under an
+// open dialog shows through the blur up to 14 px around its box (measured on s03-add-extra@1440).
+const RULED_PAD = 21;
+
+export function applyRuled(stem, g, baseRows, curRows) {
+  const keys = new Set();
+  const rules = new Set();
+  for (const r of RULED) {
+    for (const t of r.text ? g.texts : [])
+      if (
+        t.tag === r.text.tag &&
+        t.base === r.text.base &&
+        t.now === r.text.now
+      ) {
+        keys.add(t.key);
+        rules.add(r.rule);
+      }
+    if (!r.added || r.added.stem !== stem) continue;
+    const added = new Set(g.added.map((a) => a[0]));
+    for (const a of g.added)
+      if (a[1] === r.added.tag && a[6] === r.added.text) {
+        keys.add(a[0]);
+        // Its own wrapper (the sign-out form) when that is new too, and anything inside it.
+        const parent = a[0].slice(0, a[0].lastIndexOf(">"));
+        if (added.has(parent)) keys.add(parent);
+        for (const k of added) if (k.startsWith(`${a[0]}>`)) keys.add(k);
+        rules.add(r.rule);
+      }
+  }
+  const masks = [...baseRows, ...curRows]
+    .filter((row) => keys.has(row[0]))
+    .map((row) => [
+      row[2] - RULED_PAD,
+      row[3] - RULED_PAD,
+      row[4] + 2 * RULED_PAD,
+      row[5] + 2 * RULED_PAD,
+    ]);
+  return {
+    geom: {
+      added: g.added.filter((a) => !keys.has(a[0])),
+      removed: g.removed,
+      moved: g.moved.filter((m) => !keys.has(m.key)),
+      texts: g.texts.filter((t) => !keys.has(t.key)),
+    },
+    masks,
+    rules: [...rules],
+  };
+}
+
+// Masks in document coordinates mapped into a scroll capture of box [x, y, w, h] at scroll offset (sx, sy): once as a
+// fixed element and once as content of the scroller, since the geometry rows do not say which one it is.
+const scrollMasks = (masks, box, sx, sy) =>
+  masks.flatMap(([x, y, w, h]) => [
+    [x - box[0], y - box[1], w, h],
+    [x - box[0] - sx, y - box[1] - sy, w, h],
+  ]);
+
+async function pixelDiff(page, aBuf, bBuf, tol, masks = []) {
   return page.evaluate(
-    async ({ a, b, tol }) => {
+    async ({ a, b, tol, masks }) => {
       const load = (src) =>
         new Promise((ok, no) => {
           const img = new Image();
@@ -69,6 +142,11 @@ async function pixelDiff(page, aBuf, bBuf, tol) {
       let minY = h;
       let maxX = -1;
       let maxY = -1;
+      const masked = (x, y) =>
+        masks.some(
+          ([mx, my, mw, mh]) =>
+            x >= mx && x < mx + mw && y >= my && y < my + mh,
+        );
       for (let i = 0, p = 0; i < da.length; i += 4, p++) {
         const d = Math.max(
           Math.abs(da[i] - db[i]),
@@ -76,10 +154,10 @@ async function pixelDiff(page, aBuf, bBuf, tol) {
           Math.abs(da[i + 2] - db[i + 2]),
           Math.abs(da[i + 3] - db[i + 3]),
         );
-        if (d > tol) {
+        const x = p % w;
+        const y = (p - x) / w;
+        if (d > tol && !masked(x, y)) {
           diff++;
-          const x = p % w;
-          const y = (p - x) / w;
           if (x < minX) minX = x;
           if (x > maxX) maxX = x;
           if (y < minY) minY = y;
@@ -110,7 +188,7 @@ async function pixelDiff(page, aBuf, bBuf, tol) {
         png,
       };
     },
-    { a: aBuf.toString("base64"), b: bBuf.toString("base64"), tol },
+    { a: aBuf.toString("base64"), b: bBuf.toString("base64"), tol, masks },
   );
 }
 
@@ -157,7 +235,7 @@ function renderReport(results, extra, meta, { tol, maxDiff }) {
         r,
       ) => `<tr class="${r.problems.length ? "fail" : "pass"}"><td>${esc(r.id)}</td><td>${esc(r.route)}</td>
 <td>${r.pixels ? r.pixels.diff : "-"}</td><td>${r.geom ? `${r.geom.added.length}/${r.geom.removed.length}/${r.geom.moved.length}` : "-"}</td>
-<td>${r.problems.length ? esc(r.problems.join("; ")) : "PASS"}</td></tr>`,
+<td>${r.problems.length ? esc(r.problems.join("; ")) : "PASS"}${r.ruled?.length ? ` (ruled: ${esc(r.ruled.join(", "))})` : ""}</td></tr>`,
     )
     .join("\n");
   const details = failed
@@ -239,7 +317,20 @@ export async function compareRuns({
         readFile(path.join(baseline, b.png)),
         readFile(path.join(current, c.png)),
       ]);
-      const px = await pixelDiff(page, aBuf, bBuf, tol);
+      const bg = JSON.parse(
+        gunzipSync(
+          await readFile(path.join(baseline, b.vp, `${b.stem}.geom.json.gz`)),
+        ),
+      );
+      const cg = JSON.parse(
+        gunzipSync(
+          await readFile(path.join(current, c.vp, `${c.stem}.geom.json.gz`)),
+        ),
+      );
+      const ruled = applyRuled(b.stem, geomDiff(bg, cg), bg, cg);
+      r.geom = ruled.geom;
+      r.ruled = ruled.rules;
+      const px = await pixelDiff(page, aBuf, bBuf, tol, ruled.masks);
       r.pixels = { diff: px.diff, bbox: px.bbox, sizes: px.sizes };
       const sizeChanged = px.sizes[0].join() !== px.sizes[1].join();
       if (sizeChanged)
@@ -262,24 +353,19 @@ export async function compareRuns({
             readFile(path.join(baseline, sb.png)),
             readFile(path.join(current, sc.png)),
           ]);
-          const sp = await pixelDiff(page, s1, s2, tol);
+          const sp = await pixelDiff(
+            page,
+            s1,
+            s2,
+            tol,
+            scrollMasks(ruled.masks, sc.box ?? [0, 0], sc.x, sc.y),
+          );
           if (sp.sizes[0].join() !== sp.sizes[1].join())
             r.problems.push(`${where}: size ${sp.sizes[0]} -> ${sp.sizes[1]}`);
           if (sp.diff > maxDiff)
             r.problems.push(`${where}: ${sp.diff} changed pixels`);
         }
       }
-      const bg = JSON.parse(
-        gunzipSync(
-          await readFile(path.join(baseline, b.vp, `${b.stem}.geom.json.gz`)),
-        ),
-      );
-      const cg = JSON.parse(
-        gunzipSync(
-          await readFile(path.join(current, c.vp, `${c.stem}.geom.json.gz`)),
-        ),
-      );
-      r.geom = geomDiff(bg, cg);
       const g = r.geom;
       if (g.added.length || g.removed.length || g.moved.length) {
         r.problems.push(
@@ -295,7 +381,7 @@ export async function compareRuns({
         };
       }
       log(
-        `${r.problems.length ? "FAIL" : "ok  "} ${b.id} px=${px.diff} geom=${g.added.length}/${g.removed.length}/${g.moved.length} text=${g.texts.length}`,
+        `${r.problems.length ? "FAIL" : "ok  "} ${b.id} px=${px.diff} geom=${g.added.length}/${g.removed.length}/${g.moved.length} text=${g.texts.length}${r.ruled.length ? ` ruled=${r.ruled.length}` : ""}`,
       );
     }
   } finally {
