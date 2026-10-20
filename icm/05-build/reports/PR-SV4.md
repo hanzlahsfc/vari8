@@ -60,7 +60,39 @@ Change set:
 - `tests/integration/s1-f2c-invitations.test.ts`
 - `tests/unit/invitations.test.ts`
 - `docs/index/ROUTES.md`, `docs/index/SYMBOLS.md` (generated)
+- `scripts/index/generate.ts` (base defect fix, see "Gate run 1")
 - `icm/05-build/reports/PR-SV4.md`
+
+## Gate run 1 failure: `var/` and the index generator
+
+`verify-local.sh` at head `76a5587` exited 1 on the unit step:
+
+```
+FAIL tests/unit/system-index.test.ts > system index generator > pass 2: index:check reports a missing hand-written index doc
+AssertionError: expected [ 'missing: var/AGENTS.md' ] to deeply equal []
+ Test Files  1 failed | 96 passed (97)
+```
+
+Root cause, not a flake: base PR-MEDIA's local storage adapter writes uploads to
+`var/media/...` (`/var/` is gitignored, line 54). `routerTargets()` in
+`scripts/index/generate.ts` treats every top-level directory that contains files
+as a doc target, and `var` was missing from its `TOP_LEVEL_SKIP` set. So as soon
+as any media test wrote a file (the media integration suite did, and the gate's
+own unit run does), `index:check` and `system-index.test.ts` demanded a
+`var/AGENTS.md` that must never be committed. The failure therefore hit every
+lane that ran the media suite before the unit suite, not this diff.
+
+Fix: `"var"` added to `TOP_LEVEL_SKIP` (top-level only, so an `app/var/` route
+segment or a deeper `var` source dir is untouched), with a comment naming why.
+Existing test coverage is the failing test itself: `system-index.test.ts` calls
+the real generator. Verified in the failing environment (`var/media/...` still
+present):
+
+| Command                                                     | Exit | Result                                        |
+| ----------------------------------------------------------- | ---- | --------------------------------------------- |
+| `vitest run tests/unit/system-index.test.ts` before the fix | 1    | 18 tests, 1 failed (`missing: var/AGENTS.md`) |
+| `vitest run tests/unit/system-index.test.ts` after the fix  | 0    | 18/18                                         |
+| `npm run index:check` after the fix                         | 0    | 6 docs and all routers match                  |
 
 ## The Linux integration failure and its root cause
 
@@ -93,19 +125,19 @@ a certification. `npm` is the real install at `/opt/homebrew/bin/npm` (11.20.0),
 not a stub, and `node_modules` held 561 entries plus `.package-lock.json` after
 the install.
 
-| Command                                            | Exit     | Result                                                            |
-| -------------------------------------------------- | -------- | ----------------------------------------------------------------- |
-| `git merge origin/Vari8-Beta`                      | 1        | conflicts only in `docs/index/ROUTES.md`, `docs/index/SYMBOLS.md` |
-| `npm run index`                                    | 0        | 5 docs + 12 AGENTS.md routers written, conflict markers 0         |
-| `npm run index:check`                              | 0        | "6 index docs and all AGENTS.md routers match"                    |
-| `git commit` (merge)                               | 0        | merge commit `01a20c6`                                            |
-| `npm ci --no-audit --no-fund`                      | 0        | 767 packages, 561 node_modules entries                            |
-| `npm --prefix frontend ci`                         | 0        | 383 packages                                                      |
-| `npx prisma migrate deploy` (lane DB)              | 0        | all migrations applied                                            |
-| `vitest run s1-f2c-invitations api-v1-invitations` | 0        | 2 files, 39 tests                                                 |
-| `npm run test:integration`                         | 0        | 62 files, 872 tests, 134 s                                        |
-| double-submission probe (tsx, lane DB)             | 0        | counts below                                                      |
-| `verify-local.sh` (gate)                           | see Gate |                                                                   |
+| Command                                            | Exit | Result                                                                                      |
+| -------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------- |
+| `git merge origin/Vari8-Beta`                      | 1    | conflicts only in `docs/index/ROUTES.md`, `docs/index/SYMBOLS.md`                           |
+| `npm run index`                                    | 0    | 5 docs + 12 AGENTS.md routers written, conflict markers 0                                   |
+| `npm run index:check`                              | 0    | "6 index docs and all AGENTS.md routers match"                                              |
+| `git commit` (merge)                               | 0    | merge commit `01a20c6`                                                                      |
+| `npm ci --no-audit --no-fund`                      | 0    | 767 packages, 561 node_modules entries                                                      |
+| `npm --prefix frontend ci`                         | 0    | 383 packages                                                                                |
+| `npx prisma migrate deploy` (lane DB)              | 0    | all migrations applied                                                                      |
+| `vitest run s1-f2c-invitations api-v1-invitations` | 0    | 2 files, 39 tests                                                                           |
+| `npm run test:integration`                         | 0    | 62 files, 872 tests, 134 s                                                                  |
+| double-submission probe (tsx, lane DB)             | 0    | counts below                                                                                |
+| `verify-local.sh` run 1 (head `76a5587`)           | 1    | FAIL unit tests, `system-index.test.ts` `missing: var/AGENTS.md` (base defect, fixed above) |
 
 ## Double submission: row counts
 
