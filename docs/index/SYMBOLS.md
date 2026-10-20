@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 131 modules with exports, 1296 exported symbols.
+Counts: 133 modules with exports, 1317 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1432,15 +1432,42 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/storage.ts`
 
-- `export type ObjectStorageBackend = { readonly name: string; presignGet(key: string, ttlSeconds: number): Promise<string>; deletePrefix(prefix: string): Promise<{ deleted: number }>; }`
-- `export class ObjectStorageNotExposableError extends Error (1 members)`
+- `export const DEFAULT_PRESIGN_TTL_SECONDS = 300`
+- `export const MAX_MEDIA_BYTES = 20 * 1024 * 1024`
+- `export const MAX_PRESIGN_TTL_SECONDS = 3600`
+- `export const MEDIA_CONTENT_TYPES: Readonly<Record<string, MediaKindName>>`
+- `export type MediaKindName = "IMAGE" | "VIDEO" | "AUDIO" | "DOCUMENT"`
+- `export type ObjectStorageBackend = { readonly name: string; presignGet(key: string, ttlSeconds: number): Promise<PresignedDownload>; presignPut( key: string, options: { contentType: string; byteSiz...`
+- `export type PresignedDownload = { readonly url: string; readonly expiresAt: string; }`
+- `export type PresignedUpload = { readonly url: string; readonly method: "PUT"; readonly headers: Record<string, string>; readonly expiresAt: string; }`
 - `export class StorageError extends Error (1 members)`
-- `export type StorageErrorCode = "invalid_input" | "invalid_key" | "invalid_ttl" | "storage_not_configured"`
+- `export type StorageErrorCode = | "invalid_input" | "invalid_key" | "invalid_ttl" | "invalid_signature" | "payload_too_large" | "unsupported_media_type" | "storage_not_configured"`
 - `export function assertClientObjectKey(key: unknown, workspaceId: string, clientProfileId: string): string`
-- `export function assertObjectStorageExternallyExposable(): never`
+- `export function assertMediaByteSize(byteSize: unknown): number`
 - `export function assertPresignGetTtl(ttlSeconds: number, maxTtlSeconds: number): void`
 - `export function clientObjectPrefix(workspaceId: string, clientProfileId: string): string`
+- `export async function getObjectStorage(): Promise<ObjectStorageBackend>`
+- `export function mediaKindForContentType(contentType: unknown): MediaKindName | null`
 - `export const nullObjectStorage: ObjectStorageBackend`
+- `export function parseClientObjectKey(key: unknown): { workspaceId: string; clientProfileId: string; objectId: string; }`
+- `export function presignTtlSeconds(env: Record<string, string | undefined> = process.env): number`
+
+## `lib/storage/local.ts`
+
+- `export type LocalStorageConfig = { dir: string; secret: string; }`
+- `export function localObjectPath(dir: string, key: string): string`
+- `export const localObjectStorage: ObjectStorageBackend`
+- `export function localStorageConfig(env: Record<string, string | undefined> = process.env): LocalStorageConfig`
+- `export async function readLocalObject(key: string): Promise<Uint8Array | null>`
+- `export function verifyLocalObjectSignature(input: { secret: string; op: "get" | "put"; key: string; expiresAt: number; signature: string; now?: number; }): boolean`
+- `export async function writeLocalObject(key: string, bytes: Uint8Array): Promise<void>`
+
+## `lib/storage/s3.ts`
+
+- `export type S3Config = { endpoint: string; bucket: string; region: string; accessKeyId: string; secretAccessKey: string; pathStyle: boolean; }`
+- `export function presignS3Url(input: { config: S3Config; method: "GET" | "PUT"; key: string; ttlSeconds: number; extraHeaders?: Record<string, string>; now?: Date; }): { url: string; headers: Record...`
+- `export function s3Config(env: Record<string, string | undefined> = process.env): S3Config | null`
+- `export const s3ObjectStorage: ObjectStorageBackend`
 
 ## `lib/tasks/boundary.ts`
 
