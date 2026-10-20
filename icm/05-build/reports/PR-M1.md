@@ -2,8 +2,9 @@
 
 Card `icm/05-build/cards/pr-m1-client-lifecycle.md`, issue #105, PR #106.
 Branch `beta/pr-m1-client-lifecycle`, base `f00d37b` (merge base with
-`origin/Vari8-Beta`). Gate-verified head: see the gate summary below; this
-report is committed after that head and changes no product code.
+`origin/Vari8-Beta`) for the original Linux run, base `fb5c387` for the
+macOS run in the last section. Gate-verified head: see the gate summary
+below; this report is committed after that head and changes no product code.
 
 ## What changed
 
@@ -118,3 +119,64 @@ None (foundation/service PR per the card).
 - Archive/restore audit events are new (the card requires delete audited;
   archive and restore get the same structural treatment since they change
   staff-visible state).
+
+## macOS run, 2026-10-20 (this machine, gate blocked on parity)
+
+Branches merged into `beta/pr-m1-client-lifecycle` on this run:
+`origin/beta/pr-m1-client-lifecycle` was already an ancestor (fast-forward a
+no-op), then `origin/Vari8-Beta` at `bb31401`, then `origin/Vari8-Beta` at
+`fb5c387`. The only merge conflict was the generated `docs/index/SYMBOLS.md`
+counts line; resolved by regenerating (`npm run index`) and committing the
+result, not by hand-editing a count.
+
+Gate-verified head `20651ab02dfd72ccc4e418e2a600340100ea63cc`, `BASE_SHA`
+`fb5c38780b729679b11b4d2a32d7ce14d3f65ab9` (merge base with `origin/Vari8-Beta`),
+`LANE_DB=app_wb_m1`, `LANE_PORT=3900`, node v26.12.0 (gate WARN, target 24).
+Log: `Vari8-evidence/WAVEB-LEAD/pr-m1-client-lifecycle.check4.log`.
+
+| Step                            | Result                                   |
+| ------------------------------- | ---------------------------------------- |
+| clean tree                      | PASS                                     |
+| schema guard (D34)              | PASS (no `db/` change)                   |
+| program generator check         | PASS                                     |
+| npm ci / prisma generate        | PASS / PASS                              |
+| frontend npm ci                 | PASS                                     |
+| format check / typecheck / lint | PASS / PASS / PASS                       |
+| frontend typecheck / lint/tests | PASS / PASS / PASS                       |
+| unit tests                      | PASS 97 files, 1111 tests                |
+| integration tests               | PASS 62 files, 875 tests (real Postgres) |
+| migrate deploy                  | PASS, 38 migrations                      |
+| build / frontend build          | PASS / PASS                              |
+| e2e flow specs (serialized)     | PASS 10 passed, 7 skipped                |
+| parity regression (D32)         | FAIL exit=1 (see below)                  |
+
+The gate exits 1 on parity only, and that failure is not caused by this
+card. Evidence:
+
+- Every 1440x900 screen matches the baseline (`OK ... @1440`, 35 screens).
+- Every 390x844 screen reports a large pixel diff with unchanged geometry
+  and text, e.g. `FAIL s01-roster@390 px=64387 geom=0/0/139 text=0`. A
+  whole-width pixel difference with identical element geometry and text
+  points at the baseline capture platform, not at a markup change. This
+  branch changes no `frontend/` file (`git diff --stat fb5c387...HEAD`
+  touches `lib/`, `scripts/seed/`, `tests/` and `icm/`).
+- The other lanes on this machine (PR-M3, PR-M5, PR-M7) fail the same step
+  with the same shape, so the parity harness/baseline is red machine-wide,
+  which is the defect PR #137 addresses with `SKIP_PARITY`.
+- `SKIP_PARITY` is absent from `icm/05-build/tools/verify-local.sh` on both
+  this branch and `origin/Vari8-Beta` (`grep -c SKIP_PARITY` returns 0), so
+  the gate cannot be run with parity skipped yet.
+
+Integration state found and cleared on this run: at base `bb31401`,
+`tests/integration/seed-credentials.test.ts` fails 1 of 2 (the SEED-FIX
+client link is overwritten by `scripts/seed/33-checkins.seed.ts`). Re-ran
+the same file in a detached base worktree: `bb31401` fails the same way,
+`fb5c387` passes 2/2. Merging `fb5c387` fixed it on this branch; the
+failure was never in this card's code. The earlier "prisma migrate deploy
+under host load" note did not reproduce: migrate deploy passed in all three
+gate runs.
+
+Not done on this machine: the live browser receipt in
+`/home/nexuslink/vari8-worktrees/_evidence/PR-M1/build/` is from the Linux
+run and was not re-captured here, and the report's gate table row for the
+Linux run still reads `TBD` because that log is on the other machine.
