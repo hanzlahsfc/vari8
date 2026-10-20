@@ -26,6 +26,8 @@ Load `/home/nexuslink/.hermes/profiles/itachi/SOUL.md` as your working persona (
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-W6` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
+Owner ruling O4 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): clients may not start a custom check-in; the client-side custom-start control is not wired and the server keeps CLIENT create denied on `checkinInstances`.
+
 ## Matrix rows this PR closes
 
 - S01-28: S01 PARTIAL: "Coaching rhythm" weekday toggles: multi-day recurring schedule effective tomorrow, history retained

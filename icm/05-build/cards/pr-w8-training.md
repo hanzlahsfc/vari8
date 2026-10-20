@@ -26,6 +26,9 @@ Load `/home/nexuslink/.hermes/profiles/itachi/SOUL.md` as your working persona (
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-W8` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
+Owner ruling O5 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): set logging P04 to P06 is in scope: PR-M6 adds the model (actual reps, load, RPE, set note, flags) and this card wires it.
+Owner ruling O12 (owner, 2026-10-20, same source): no prescribed load per set; the canvas does not show it.
+
 ## Matrix rows this PR closes
 
 - S01-39: S01 PARTIAL: Store slices: client.plans, habits, retiredHabits, entries, exerciseLibrary, coach-level plan (owned by plans/habits/daily surfaces)

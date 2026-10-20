@@ -267,3 +267,7 @@ The 30 CONFLICT rows of the gap matrix were blocked by product rules the owner a
 | R3-13    | Calories as the canvas offers it, an ordinary parameter               | PR-W4    |
 | R3-12    | Habit percent fill as the canvas computes it (D31)                    | PR-W9    |
 | V3-H4-02 | Trusted-runtime check on exact-1 flags                                | PR-04    |
+
+## D37. Owner rulings O1 to O16 recorded
+
+Owner decision (Marcel, 2026-10-20). The sixteen open items of the wiring spec are ruled. `icm/03-plan/output/WIRING-SPEC.md` section "Owner rulings" records each ruling with the options considered and the owning wave it lands on, and `docs/product-decisions.md` records the product-behaviour rulings as decisions #120 to #132. The wiring waves apply them; they are not reopened.

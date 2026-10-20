@@ -25,6 +25,9 @@ Load `/home/nexuslink/.hermes/profiles/kakashi/SOUL.md` as your working persona 
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-SV4` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
+Owner ruling O6 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): the submitted onboarding form creates the client record; this card owns the backend change so invite acceptance no longer creates the `ClientProfile` (`lib/workspace/invitations.ts:657-661`) while the invitation still creates the account and membership.
+Owner ruling O8 (owner, 2026-10-20, same source): the roster gets exactly one Add or invite control under a D32 parity exception; it calls this card's invitation API.
+
 ## Matrix rows this PR closes
 
 - S01-20: S01 UNWIRED: Client create, not drawn in canvas (roster has no Add/New control; seed clients only)

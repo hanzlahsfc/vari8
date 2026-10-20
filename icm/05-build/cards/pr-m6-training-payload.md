@@ -25,6 +25,9 @@ Load `/home/nexuslink/.hermes/profiles/gowther/SOUL.md` as your working persona 
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-M6` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
+Owner ruling O5 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): this card adds the set-logging model with the per-set shape (actual reps, load, RPE, set note, flags); PR-W8 wires it.
+Owner ruling O12 (owner, 2026-10-20, same source): no prescribed load per set; the canvas does not show it.
+
 ## Matrix rows this PR closes
 
 - V3-L1-TrainingSet: S07 PARTIAL: TrainingSet, TrainingExercise and TrainingSession shapes differ

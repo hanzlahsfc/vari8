@@ -25,6 +25,8 @@ Load `/home/nexuslink/.hermes/profiles/kakashi/SOUL.md` as your working persona 
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-31` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
+Owner ruling O1 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): cookie session for web and PWA, bearer token for Capacitor apps (spec X3); token storage and refresh rotation stay in this card's scope.
+
 ## Matrix rows this PR closes
 
 - none (foundation or tooling PR)

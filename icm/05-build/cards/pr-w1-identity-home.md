@@ -26,6 +26,9 @@ Load `/home/nexuslink/.hermes/profiles/itachi/SOUL.md` as your working persona (
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-W1` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
+Owner ruling O9 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): the server parent passes the viewer down; `getViewer()` stays server-side and the client shell does not fetch the session route for first paint.
+Owner ruling O15 (owner, 2026-10-20, same source): no multi-workspace switcher; the shell keeps one workspace label showing the real workspace name.
+
 ## Matrix rows this PR closes
 
 - S11-04: S11 PARTIAL: Single fixed "COACH WORKSPACE" container

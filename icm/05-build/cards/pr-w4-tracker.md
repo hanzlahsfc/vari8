@@ -26,6 +26,10 @@ Load `/home/nexuslink/.hermes/profiles/itachi/SOUL.md` as your working persona (
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-W4` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
+Owner ruling O2 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): the food diary N04 to N07 stays deferred and out of wiring scope; only generic tracker intake is wired.
+Owner ruling O7 (owner, 2026-10-20, same source): the tracker mode switch is view versus comment, not entry mode; coaches never log entries for a client and the `dailyTracking` coach write grant (`lib/auth/rbac.ts:134`) is narrowed to comments.
+Owner ruling O10 (owner, 2026-10-20, same source): calories are an ordinary tracked daily parameter (gap row R3-13); the old exclusion is superseded.
+
 ## Matrix rows this PR closes
 
 - S07-17: S07 PARTIAL: Roadmap / Timeline tab: weekly rows (Mon-Sun), phase column + badge, per-metric cells (Weekly average / Trend / Adherence / Target vs actual

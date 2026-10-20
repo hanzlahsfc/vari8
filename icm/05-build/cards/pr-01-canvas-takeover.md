@@ -25,6 +25,8 @@ Load `/home/nexuslink/.hermes/profiles/kakashi/SOUL.md` as your working persona 
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-01` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
+Owner ruling O9 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): the server parent passes the viewer down; `getViewer()` stays server-side for the session gate (spec X9).
+
 ## Matrix rows this PR closes
 
 - S01-01: S01 PARTIAL: /coach page mounts the whole workspace client-side inside Suspense

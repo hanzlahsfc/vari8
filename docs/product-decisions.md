@@ -1804,3 +1804,111 @@ screen added — and it is not in the product owner's core brief. It is
 therefore flagged as possibly removed later; revisit when PR-W8 is
 planned. Until a ruling removes it, the code and its fail-closed gate
 stay maintained.
+
+## WIRING-SPEC owner rulings — owner approvals (Marcel, 2026-10-20)
+
+The owner ruled on the sixteen open items of the wiring spec
+(`icm/03-plan/output/WIRING-SPEC.md`, section "Owner rulings"; owner
+ruling 2026-10-20). The rulings that change or settle product behaviour
+are recorded here.
+
+**Decision #120 (APPROVED — owner ruling O2, 2026-10-20):** the client
+food diary (brief N04 to N07: food search and diary, reusable entries,
+consumed-versus-remaining, coach review of per-food entries) stays
+deferred and is out of the wiring scope. No wave wires it; daily intake
+stays on the generic tracker parameters. This records the existing
+deferral (`frontend/MEALPLANS.md:5`). Source: WIRING-SPEC "Owner
+rulings" O2.
+
+**Decision #121 (APPROVED — owner ruling O3, 2026-10-20):** a client
+settings screen will be designed in the canvas by Lilly. Until that
+design lands no client settings screen is wired; the wave is blocked on
+the design (external dependency). Coach-side settings and appearance
+proceed (PR-W10, PR-M2); per-user client preferences stay unwired until
+the design lands. Source: WIRING-SPEC "Owner rulings" O3.
+
+**Decision #122 (APPROVED — owner ruling O4, 2026-10-20):** clients may
+not start a custom check-in. Only the coach schedules check-ins; the
+client-side custom-start control is not wired and the server keeps
+CLIENT create denied on `checkinInstances` (`lib/auth/rbac.ts:169-176`).
+Consistent with the staff-scheduled model (#114) and the P-025
+implementation boundary ("no client-created Check-Ins",
+`docs/product-decisions.md:1338`). Source: WIRING-SPEC "Owner rulings"
+O4.
+
+**Decision #123 (APPROVED — owner ruling O6, 2026-10-20):** the
+submitted onboarding form creates the client record
+(`spec/core-coaching-system-brief.html`, `brief:281`), replacing
+invite-first profile creation. Supersedes the engineering consequence
+recorded under item 15 (`docs/product-decisions.md:72-76`): invite
+acceptance no longer creates the `ClientProfile`
+(`lib/workspace/invitations.ts:657-661`); the submitted form does.
+Invite-only registration (#13) and invite acceptance (#20) stay: the
+invitation still identifies the client and creates the user account and
+membership. The backend change is owned by PR-SV4 (invitations and
+onboarding services) and the roster/profile wiring by PR-W2. Source:
+WIRING-SPEC "Owner rulings" O6.
+
+**Decision #124 (APPROVED — owner ruling O7, 2026-10-20):** coaches do
+not log tracker entries on a client's behalf; coaches read the client's
+tracker and write comments only. The tracker entry-mode toggle in the
+coach view switches between view and comment mode (not entry mode).
+Tracker writes stay own-scope only, and the COACH write grant on
+`dailyTracking` (`lib/auth/rbac.ts:134`) is narrowed to comments by the
+owning wave. Source: WIRING-SPEC "Owner rulings" O7.
+
+**Decision #125 (APPROVED — owner ruling O8, 2026-10-20):** a narrow
+parity exception to D32 (`icm/03-plan/DECISIONS.md`) is granted for
+exactly one control in the coach roster: the Add or invite-client
+control needed to deliver coach invitations (brief W11) from the
+canvas. No other new visible chrome is permitted. Source: WIRING-SPEC
+"Owner rulings" O8.
+
+**Decision #126 (APPROVED — owner ruling O10, 2026-10-20):** calories
+are allowed as a tracked daily parameter because the canvas offers it
+(canvas-wins, D1). Supersedes the CALORIES exclusions recorded at
+`docs/product-decisions.md:297-299` (item 48) and `:654-655` for the
+daily-tracker parameter; the slice-level "no CALORIES input"
+authorization boundaries (`:822-823`, `:1016`, `:1342`) remain scoped to
+their own slices. Gap-matrix row R3-13 resolves as "calories as the
+canvas offers it, an ordinary parameter" (`icm/03-plan/DECISIONS.md`
+D36). Source: WIRING-SPEC "Owner rulings" O10.
+
+**Decision #127 (APPROVED — owner ruling O11, 2026-10-20):** archived
+meal plans are the superseded immutable plan versions; there is no
+separate archive model. PR-W7 lists superseded versions as the archive
+the canvas shows (brief N08), consistent with the immutable-version
+model of #115. Source: WIRING-SPEC "Owner rulings" O11.
+
+**Decision #128 (APPROVED — owner ruling O12, 2026-10-20):** no
+prescribed load per set is added; the canvas does not show it and the
+canvas-drives rule (D1) adds only what the canvas shows. Source:
+WIRING-SPEC "Owner rulings" O12.
+
+**Decision #129 (APPROVED — owner ruling O13, 2026-10-20):** general
+coaching notes are visible to the client. This settles the previously
+undefined visibility of the brief-W04 "general coaching notes" surface
+(the canvas section at `frontend/src/components/coach/clients.tsx:607-612`).
+Private coach notes and coach to-dos stay staff-only
+(`icm/03-plan/DECISIONS.md` D26 is unchanged); the note model carries
+the two kinds. Source: WIRING-SPEC "Owner rulings" O13.
+
+**Decision #130 (APPROVED — owner ruling O14, 2026-10-20):** the
+assigned coach may complete a client task. Supersedes the staff bar in
+#109 ("staff cannot complete on a client's behalf",
+`docs/product-decisions.md:1425-1427`); the rest of #109 stands.
+"Overdue" stays derived from the due date as computed display metadata
+(`taskDueState`, `lib/tasks/date.ts:73`), consistent with #109. Source:
+WIRING-SPEC "Owner rulings" O14.
+
+**Decision #131 (APPROVED — owner ruling O15, 2026-10-20):** no
+multi-workspace switcher is built in the wiring waves; the shell keeps
+one workspace label showing the real workspace name. Source:
+WIRING-SPEC "Owner rulings" O15.
+
+**Decision #132 (APPROVED — owner ruling O16, 2026-10-20):** sign-in,
+sign-up, password reset and invite-acceptance keep the working generic
+pages and are excluded from the canvas parity comparison, but they are
+restyled to match the rest of the app exactly (canvas tokens,
+typography, spacing, components). PR-W10 owns the restyle; the pages'
+function is unchanged. Source: WIRING-SPEC "Owner rulings" O16.

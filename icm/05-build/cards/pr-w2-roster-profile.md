@@ -26,6 +26,10 @@ Load `/home/nexuslink/.hermes/profiles/itachi/SOUL.md` as your working persona (
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-W2` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
+Owner ruling O6 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): the submitted onboarding form creates the client record, replacing invite-first profile creation; PR-SV4 owns the backend change and this card wires the roster/profile side.
+Owner ruling O8 (owner, 2026-10-20, same source): a narrow D32 parity exception grants exactly one Add or invite-client control in the coach roster; no other new chrome.
+Owner ruling O14 (owner, 2026-10-20, same source): the assigned coach may complete a client task (supersedes the staff bar in decision #109); "overdue" derives from the due date (`taskDueState`).
+
 ## Matrix rows this PR closes
 
 - S01-11: S01 MISSING: Toast notice with Undo action

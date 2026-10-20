@@ -26,6 +26,10 @@ Load `/home/nexuslink/.hermes/profiles/itachi/SOUL.md` as your working persona (
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-W10` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
+Owner ruling O3 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): no client settings screen is wired until Lilly's canvas design lands; this card keeps the coach-side settings only.
+Owner ruling O13 (owner, 2026-10-20, same source): general coaching notes render to the client; private coach notes and coach to-dos stay staff-only (D26).
+Owner ruling O16 (owner, 2026-10-20, same source): the generic sign-in, sign-up, reset and invite-acceptance pages are kept, excluded from parity, and this card owns their restyle to canvas tokens, type, spacing and components.
+
 ## Matrix rows this PR closes
 
 - S01-06: S01 MISSING: Sidebar collapse toggle with persisted state
