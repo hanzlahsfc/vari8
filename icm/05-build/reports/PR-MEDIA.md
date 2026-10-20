@@ -210,3 +210,41 @@ Repair gate results: typecheck 0, lint 0 (one `Date.now()` purity error
 found and fixed via `uid()`), unit 0 (93 files / 1066 tests), integration
 0 (app_media, 861), root build 0, frontend build 0, index+index:check 0,
 prettier 0.
+
+## Repair round 2 (verifier FIX on e355c59)
+
+**Finding 1 (FIXED): roster cache written before res.ok.**
+`store.tsx` assigned `roster.current = new Map()` before checking the
+response, so one transient 401/network failure cached an empty roster and
+every later staff upload lost `clientProfileId` (service rejects 400
+invalid_input). Now the map is only assigned inside the `res.ok` branch; a
+failed fetch returns null and retries on the next call.
+
+**Finding 2 (FIXED, proven live): wired UI never driven in a browser.**
+Real Chrome drive (`scratch/pr-media-storage/drive.mjs`) with real clicks:
+`/login` form fill + submit as `coach@vari8.test` -> redirect to
+`/#dashboard` -> `/coach?section=messages&client=client-001` -> paperclip
+button click -> file chooser -> `drive-proof.png` -> voice dialog -> Mic
+-> "Record voice note" -> Stop -> Attach (fake-media Chrome flags for the
+mic). Network evidence captured live:
+
+```
+200 GET  /api/v1/workspaces/<ws>/clients
+200 POST /api/v1/media/<ws>            (image intent)
+200 PUT  /api/v1/media/object          (image bytes)
+200 POST /api/v1/media/<ws>            (voice-note intent)
+200 PUT  /api/v1/media/object          (voice bytes)
+200 GET  /api/v1/media/<ws>/<id>  x2   (minted download URLs)
+200 GET  /api/v1/media/object          (playback bytes)
+```
+
+Screenshots: `drive-attach-1440.png`, `drive-voice-1440.png`,
+`drive-390.png`. Ran against `AUTH_SECRET` only (no
+BETTER_AUTH_SECRET/MEDIA_STORAGE_SIGNING_SECRET), so round-1 finding 1
+stays dead under the documented env.
+
+**Finding 3 (FIXED): PR body stale.** PR #128 body rewritten to describe
+the wired canvas (S02-24/S02-25 delivered in the UI) and the roster-cache
+fix; stale wording removed.
+
+Repair gate results (this round): see table below; all exits 0.

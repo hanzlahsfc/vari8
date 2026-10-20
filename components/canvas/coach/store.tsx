@@ -156,13 +156,18 @@ export function CoachProvider({
           const res = await fetch(
             `/api/v1/workspaces/${workspaceId}/clients?limit=100`,
           );
-          roster.current = new Map();
+          // Cache only a successful response: a transient 401/network error
+          // must not poison the roster for the rest of the session.
           if (res.ok) {
             const body = (await res.json()) as {
               items?: { clientProfileId: string; name: string }[];
             };
+            const map = new Map<string, string>();
             for (const item of body.items ?? [])
-              roster.current.set(item.name, item.clientProfileId);
+              map.set(item.name, item.clientProfileId);
+            roster.current = map;
+          } else {
+            return null;
           }
         } catch {
           return null;
