@@ -1,6 +1,9 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 
-import { prisma as defaultPrisma } from "../db";
+import {
+  prisma as defaultPrisma,
+  withSerializedRetry as sharedWithSerializedRetry,
+} from "../db";
 import {
   AccessDeniedError,
   authorize,
@@ -63,26 +66,6 @@ export type OnboardingSubmissionDeps = {
 
 // ── Concurrency protocol (mirrors the reviewed DailyEntry service) ────────
 
-const RAW_SERIALIZATION_SQLSTATES = new Set(["40001", "40P01"]);
-const MAX_ATTEMPTS = 8;
-const BACKOFF_BASE_MS = 10;
-const BACKOFF_CAP_MS = 50;
-
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
-function isRetryableSerialization(error: unknown): boolean {
-  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
-  if (error.code === "P2034") return true;
-  if (error.code === "P2010") {
-    const meta = error.meta as { code?: unknown } | undefined;
-    return (
-      typeof meta?.code === "string" &&
-      RAW_SERIALIZATION_SQLSTATES.has(meta.code)
-    );
-  }
-  return false;
-}
-
 /** P2002 — any unique-constraint violation (the submit path's relevant
  * one is `unique(assignment_id)`, the final double-submit backstop). */
 function isUniqueViolation(error: unknown): boolean {
@@ -93,20 +76,12 @@ function isUniqueViolation(error: unknown): boolean {
 }
 
 async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
-  let attempt = 0;
-  for (;;) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (isRetryableSerialization(error) && ++attempt < MAX_ATTEMPTS) {
-        await sleep(Math.min(BACKOFF_BASE_MS * attempt, BACKOFF_CAP_MS));
-        continue;
-      }
-      if (isRetryableSerialization(error))
-        throw new OnboardingSubmissionError("serialization_conflict");
-      throw error;
-    }
-  }
+  return sharedWithSerializedRetry(fn, {
+    maxAttempts: 8,
+    backoffBaseMs: 10,
+    backoffCapMs: 50,
+    onExhausted: () => new OnboardingSubmissionError("serialization_conflict"),
+  });
 }
 
 async function advisoryLock(

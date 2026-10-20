@@ -10,7 +10,10 @@
  * operation authority; caller-supplied role/mode fields are ignored.
  */
 import { Prisma, type PrismaClient } from "@prisma/client";
-import { isSerializationConflict, prisma } from "../db";
+import {
+  prisma,
+  withSerializedRetry as sharedWithSerializedRetry,
+} from "../db";
 import { AccessDeniedError, authorize } from "../auth/guard";
 import { createPrismaAuthorizationRepo } from "../workspace/access";
 import { writeAuditEvent } from "../audit";
@@ -65,18 +68,10 @@ export type TaskView = {
 };
 
 async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (isSerializationConflict(error)) {
-        if (attempt < MAX_ATTEMPTS) continue;
-        throw new TaskError("serialization_conflict");
-      }
-      throw error;
-    }
-  }
-  throw new TaskError("serialization_conflict");
+  return sharedWithSerializedRetry(fn, {
+    maxAttempts: MAX_ATTEMPTS,
+    onExhausted: () => new TaskError("serialization_conflict"),
+  });
 }
 
 async function advisoryLock(

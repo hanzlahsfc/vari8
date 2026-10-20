@@ -4,7 +4,11 @@
  * non-disclosing safe vocabulary; nothing raw escapes to the client.
  */
 
-import { AccessDeniedError } from "../auth/guard";
+import {
+  fail as sharedFail,
+  guard as sharedGuard,
+  mapError as sharedMapError,
+} from "../boundary";
 import { isCheckInsEnabled } from "./forms-gate";
 import {
   CheckInInstanceError,
@@ -107,16 +111,19 @@ const CLOSED_MESSAGES: Record<
 };
 
 function fail<T>(code: keyof typeof CLOSED_MESSAGES): CheckInSafeResult<T> {
-  return { ok: false, code, message: CLOSED_MESSAGES[code] };
+  return sharedFail(CLOSED_MESSAGES, code);
 }
 
 function mapError<T>(error: unknown): CheckInSafeResult<T> {
-  if (error instanceof AccessDeniedError) return fail("denied");
-  if (error instanceof CheckInInstanceError) {
-    if (error.code === "instance_not_accessible") return fail("not_available");
-    return fail(error.code);
-  }
-  return fail("not_available");
+  return sharedMapError(error, {
+    denied: () => fail("denied"),
+    domain: (e) => {
+      if (!(e instanceof CheckInInstanceError)) return null;
+      if (e.code === "instance_not_accessible") return fail("not_available");
+      return fail(e.code);
+    },
+    fallback: () => fail("not_available"),
+  });
 }
 
 async function guard<T>(
@@ -125,12 +132,14 @@ async function guard<T>(
 ): Promise<CheckInSafeResult<T>> {
   // Feature boundary FIRST — flag+trusted runtime before any session/DB
   // work in the actions; unknown/production fails closed.
-  if (!isCheckInsEnabled(env)) return fail("not_available");
-  try {
-    return { ok: true, value: await fn() };
-  } catch (error) {
-    return mapError(error);
-  }
+  return sharedGuard(
+    {
+      enabled: isCheckInsEnabled(env),
+      off: () => fail<T>("not_available"),
+      map: (e) => mapError<T>(e),
+    },
+    fn,
+  );
 }
 
 type Session = { user?: { id?: string } } | null | undefined;
