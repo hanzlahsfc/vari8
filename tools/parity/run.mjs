@@ -187,7 +187,7 @@ try {
         [
           "next",
           "dev",
-          ROOT_APP ? "--turbopack" : "--webpack",
+          "--webpack",
           "--hostname",
           "127.0.0.1",
           "--port",
@@ -196,12 +196,11 @@ try {
         { cwd: APP, env, detached: true, stdio },
       );
     } else {
-      // The root app ships with Turbopack (package.json "build"); frontend/ with webpack.
-      const build = spawnSync(
-        "npx",
-        ["next", "build", ROOT_APP ? "--turbopack" : "--webpack"],
-        { cwd: APP, env, stdio },
-      );
+      const build = spawnSync("npx", ["next", "build", "--webpack"], {
+        cwd: APP,
+        env,
+        stdio,
+      });
       if (build.status !== 0)
         throw new Refuse(
           `next build failed (exit ${build.status}); see ${LOG}`,
