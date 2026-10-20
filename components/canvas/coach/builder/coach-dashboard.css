@@ -1,0 +1,81 @@
+.coach-root {
+  --accent: var(--cd-accent);
+  --accent-ink: var(--cd-accent-text);
+  --accent-contrast: var(--cd-accent-contrast);
+  --accent-border: color-mix(in srgb, var(--cd-accent) 30%, transparent);
+  --accent-ring: var(--cd-accent-ring);
+  --border: var(--cd-line);
+  --surface: var(--cd-surface);
+  --surface-primary: var(--cd-surface);
+  --surface-subtle: var(--cd-raised);
+  --text: var(--cd-text);
+  --text-primary: var(--cd-text);
+  --text-muted: var(--cd-muted);
+  --muted: var(--cd-muted);
+  --input: var(--cd-line);
+  --ring: var(--cd-accent-ring);
+  --cb-eg-wash: var(--cd-wash);
+  --cb-eg-muted: var(--cd-muted);
+  --chart-line: var(--cd-chart-line);
+  --chrome: var(--cd-text);
+  --danger: var(--cd-text);
+  --panel-shadow: 0 16px 44px rgb(0 0 0 / 12%);
+}
+.coach-root .cd-editor-layout[data-dashboard="true"] {
+  grid-template-columns: 174px minmax(0, 1fr);
+}
+.coach-root .cd-editor-layout[data-dashboard="true"] .cd-live-preview {
+  display: none;
+}
+.coach-root .cb-db-builder {
+  padding: 0;
+}
+.coach-root .cb-db-heading input {
+  font-size: 20px;
+}
+.coach-root .cb-db-heading {
+  margin-bottom: 20px;
+}
+.coach-root .cd-original-preview-widgets {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.coach-root .cd-original-preview-widgets > .cb-db-card {
+  position: relative;
+  height: 180px;
+  min-height: 180px;
+  padding: 13px;
+  min-width: 0;
+  border-radius: 17px;
+  background: var(--cd-raised);
+}
+.coach-root .cd-original-preview-widgets .cb-db-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 22px;
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+.coach-root .cd-original-preview-widgets .cb-db-card-header strong {
+  font-size: 11px;
+}
+.coach-root .cd-draft-resume {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+@media (max-width: 1320px) {
+  .coach-root .cd-editor-layout[data-dashboard="true"] {
+    grid-template-columns: 155px minmax(0, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .coach-root .cd-editor-layout[data-dashboard="true"] {
+    grid-template-columns: 1fr;
+  }
+}

@@ -6,12 +6,15 @@
  * Application base styles. Colors and spacing come exclusively from the theme
  * custom properties (see themes/). No hex values belong here.
  */
-body {
-  margin: 0;
-  background-color: var(--color-base);
-  color: var(--color-text-primary);
-  font-family: var(--font-sans);
-  font-size: var(--font-size-base);
+/* PR-01: in the base layer so the canvas routes' own base body rule wins there. */
+@layer base {
+  body {
+    margin: 0;
+    background-color: var(--color-base);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    font-size: var(--font-size-base);
+  }
 }
 
 .app-main {

@@ -1,0 +1,147 @@
+.coach-root .cb-pc-smooth-trend {
+  flex: 0 0 auto;
+  margin: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.coach-root .cb-pc-smooth-trend-surface {
+  isolation: isolate;
+  min-width: 0;
+  position: relative;
+  touch-action: pan-y;
+  width: 100%;
+}
+
+.coach-root .cb-pc-smooth-trend-surface:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.coach-root .cb-pc-smooth-trend-surface svg {
+  display: block;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.coach-root .cb-pc-smooth-grid {
+  fill: none;
+  stroke: var(--border);
+  stroke-dasharray: 1 5;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.coach-root .cb-pc-smooth-y-label {
+  fill: var(--muted);
+  font-family: inherit;
+  font-size: 11px;
+}
+
+.coach-root .cb-pc-smooth-area {
+  pointer-events: none;
+  fill: none;
+  stroke: none;
+}
+
+.coach-root .cb-pc-smooth-target-band {
+  fill: color-mix(in srgb, var(--accent) 7%, transparent);
+  pointer-events: none;
+  stroke: none;
+}
+
+.coach-root .cb-pc-smooth-target-series {
+  fill: none;
+  stroke: var(--accent-ink);
+  stroke-dasharray: 3 4;
+  stroke-opacity: 0.74;
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
+.coach-root .cb-pc-smooth-line {
+  fill: none;
+  stroke-width: 2.2;
+}
+
+.coach-root .cb-pc-smooth-inspection {
+  pointer-events: none;
+  stroke: var(--chrome);
+  stroke-dasharray: 3 4;
+  stroke-opacity: 0.62;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.coach-root .cb-pc-smooth-active-point {
+  fill: var(--accent);
+  stroke: var(--surface);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.coach-root .cb-pc-smooth-tooltip {
+  align-items: flex-start;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  backdrop-filter: blur(12px) saturate(135%);
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px color-mix(in srgb, #000 12%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-width: min(154px, calc(100% - 4px));
+  padding: 5px 8px;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.coach-root .cb-pc-smooth-tooltip > span,
+.coach-root .cb-pc-smooth-tooltip > strong small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 450;
+  white-space: nowrap;
+}
+
+.coach-root .cb-pc-smooth-tooltip > strong {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 560;
+  line-height: 1.2;
+}
+
+.coach-root .cb-pc-smooth-tooltip-target {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.coach-root .cb-pc-smooth-dates {
+  color: var(--muted);
+  display: flex;
+  font-size: 11px;
+  justify-content: space-between;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.coach-root .cb-pc-smooth-target-label {
+  color: var(--muted);
+  display: flex;
+  font-size: 11px;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+.coach-root .cb-pc-smooth-trend.is-compact .cb-pc-smooth-tooltip {
+  padding: 3px 6px;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .coach-root .cb-pc-smooth-tooltip {
+    background: var(--surface);
+    backdrop-filter: none;
+  }
+}

@@ -1,0 +1,1095 @@
+/* biome-ignore-all lint/style/noDescendingSpecificity: Selectors stay scoped to the training editor; structure-specific rules intentionally follow shared component rules. */
+.coach-root .te-editor {
+  color: var(--cd-text);
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+.coach-root .te-editor button,
+.coach-root .te-editor input,
+.coach-root .te-editor select,
+.coach-root .te-editor textarea,
+.coach-root .te-preview button,
+.coach-root .te-preview input,
+.coach-root .te-preview select,
+.coach-root .te-preview textarea {
+  font: inherit;
+}
+.coach-root .te-editor input,
+.coach-root .te-editor select,
+.coach-root .te-editor textarea {
+  min-width: 0;
+  color: var(--cd-text);
+  background: var(--cd-field);
+  border: 1px solid var(--cd-line);
+  border-radius: 5px;
+  padding: 7px 9px;
+}
+.coach-root .te-editor input:focus-visible,
+.coach-root .te-editor select:focus-visible,
+.coach-root .te-editor textarea:focus-visible,
+.coach-root .te-editor button:focus-visible {
+  outline: 2px solid var(--cd-accent-ring);
+  outline-offset: 2px;
+}
+.coach-root .te-editor button {
+  color: inherit;
+}
+.coach-root .te-editor button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.coach-root .te-program-bar,
+.coach-root .te-program-bar > div,
+.coach-root .te-program-select,
+.coach-root .te-week-count,
+.coach-root .te-column-head,
+.coach-root .te-section-head,
+.coach-root .te-session-head,
+.coach-root .te-exercise-head,
+.coach-root .te-actions,
+.coach-root .te-line-field,
+.coach-root .te-set-row,
+.coach-root .te-set-labels,
+.coach-root .te-volume-head,
+.coach-root .te-volume-table > div {
+  display: flex;
+  align-items: center;
+}
+.coach-root .te-program-bar {
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line);
+  border-left: 2px solid var(--cd-accent);
+}
+.coach-root .te-program-bar > div {
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.coach-root .te-program-select,
+.coach-root .te-week-count {
+  gap: 9px;
+  font-size: 13px;
+}
+.coach-root .te-program-bar input[type="number"] {
+  width: 68px;
+}
+.coach-root .te-program-bar p,
+.coach-root .te-plan-meta,
+.coach-root .te-column-head p {
+  margin: 0;
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .te-override-note {
+  margin: -9px 0 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--cd-line);
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .te-week-nav {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 1px 7px;
+  scrollbar-width: thin;
+}
+.coach-root .te-week-nav button {
+  min-width: 58px;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 7px 9px;
+  border: 1px solid var(--cd-line);
+  border-radius: 4px;
+  background: var(--cd-surface);
+  cursor: pointer;
+  transition:
+    background-color 150ms var(--cd-ease-out),
+    border-color 150ms var(--cd-ease-out),
+    color 150ms var(--cd-ease-out);
+}
+.coach-root .te-week-nav button span {
+  color: var(--cd-muted);
+  font-size: 10px;
+}
+.coach-root .te-week-nav button[aria-current="step"] {
+  color: var(--cd-accent-text);
+  background: color-mix(in srgb, var(--cd-accent) 12%, var(--cd-surface));
+  border-color: color-mix(in srgb, var(--cd-accent) 50%, var(--cd-line));
+}
+.coach-root .te-week-nav button:hover:not([aria-current="step"]) {
+  background: var(--cd-highlight);
+}
+.coach-root .te-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(245px, 0.8fr);
+  gap: 18px;
+  align-items: start;
+}
+.coach-root .te-edit-column,
+.coach-root .te-preview-column {
+  min-width: 0;
+}
+.coach-root .te-column-head {
+  justify-content: space-between;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 13px;
+}
+.coach-root .te-column-head h2,
+.coach-root .te-section-head h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.coach-root .te-column-head p {
+  margin-top: 3px;
+}
+.coach-root .te-text-button,
+.coach-root .te-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--cd-line);
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    background-color 150ms var(--cd-ease-out),
+    border-color 150ms var(--cd-ease-out),
+    color 150ms var(--cd-ease-out);
+}
+.coach-root .te-text-button {
+  padding: 7px 10px;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.coach-root .te-icon-button {
+  width: 29px;
+  height: 29px;
+  padding: 0;
+  color: var(--cd-muted);
+}
+.coach-root .te-text-button:hover,
+.coach-root .te-icon-button:hover {
+  background: var(--cd-highlight);
+  border-color: color-mix(in srgb, var(--cd-accent) 32%, var(--cd-line));
+  color: var(--cd-text);
+}
+.coach-root .te-sessions {
+  display: grid;
+  gap: 12px;
+}
+.coach-root .te-session {
+  min-width: 0;
+  border: 1px solid var(--cd-line);
+  background: color-mix(in srgb, var(--cd-surface) 85%, transparent);
+}
+.coach-root .te-session-head {
+  min-height: 48px;
+  gap: 10px;
+  padding: 8px 11px;
+  border-bottom: 1px solid var(--cd-line);
+}
+.coach-root .te-session-head > input {
+  flex: 1;
+  border-color: transparent;
+  background: transparent;
+  font-weight: 600;
+}
+.coach-root .te-index {
+  flex: none;
+  color: var(--cd-accent-text);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+}
+.coach-root .te-actions {
+  gap: 4px;
+}
+.coach-root .te-exercises {
+  padding: 0 11px;
+}
+.coach-root .te-exercise {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--cd-line);
+}
+.coach-root .te-exercise:last-child {
+  border-bottom: 0;
+}
+.coach-root .te-exercise-head {
+  gap: 8px;
+}
+.coach-root .te-exercise-name {
+  flex: 1;
+  font-weight: 600;
+}
+.coach-root .te-muscle {
+  display: grid;
+  gap: 3px;
+  min-width: 126px;
+  color: var(--cd-muted);
+  font-size: 10px;
+}
+.coach-root .te-muscle select {
+  padding: 4px 7px;
+  font-size: 11px;
+}
+.coach-root .te-line-field {
+  gap: 10px;
+  margin-top: 9px;
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .te-line-field > span {
+  width: 112px;
+  flex: none;
+}
+.coach-root .te-line-field input,
+.coach-root .te-line-field textarea {
+  flex: 1;
+}
+.coach-root .te-line-field textarea {
+  resize: vertical;
+}
+.coach-root .te-set-list {
+  margin: 12px 0 0 28px;
+}
+.coach-root .te-set-labels {
+  justify-content: space-between;
+  margin: 0 3px 5px;
+  color: var(--cd-muted);
+  font-size: 10px;
+}
+.coach-root .te-set-row {
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 5px 3px;
+  border-top: 1px solid color-mix(in srgb, var(--cd-line) 65%, transparent);
+}
+.coach-root .te-set-index {
+  width: 24px;
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .te-set-row label {
+  display: grid;
+  gap: 2px;
+  color: var(--cd-muted);
+  font-size: 9px;
+}
+.coach-root .te-set-row label input {
+  width: 67px;
+  padding: 4px 6px;
+  font-size: 11px;
+}
+.coach-root .te-set-row label select {
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 8px;
+  font-size: 11px;
+}
+.coach-root .te-set-row label.te-wide input {
+  width: 92px;
+}
+.coach-root .te-remove-set {
+  margin-left: auto;
+}
+.coach-root .te-set-note {
+  flex: 1 0 100%;
+  margin-left: 24px;
+}
+.coach-root .te-set-row .te-set-note input {
+  width: 100%;
+}
+.coach-root .te-set-list > .te-text-button {
+  margin: 8px 0 0 24px;
+}
+.coach-root .te-add-exercise {
+  margin: 0 11px 11px;
+}
+.coach-root .te-empty {
+  padding: 20px;
+  text-align: center;
+  border: 1px dashed var(--cd-line);
+  color: var(--cd-muted);
+}
+.coach-root .te-empty p {
+  margin: 0 0 9px;
+  font-size: 13px;
+}
+.coach-root .te-preview-column {
+  border-left: 1px solid var(--cd-line);
+  padding-left: 16px;
+}
+.coach-root .te-preview {
+  display: grid;
+  gap: 13px;
+}
+.coach-root .te-section-head {
+  justify-content: space-between;
+  gap: 10px;
+}
+.coach-root .te-section-head h3 {
+  font-size: 14px;
+}
+.coach-root .te-section-head > span {
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .te-preview-session {
+  padding-top: 10px;
+  border-top: 1px solid var(--cd-line);
+}
+.coach-root .te-preview-session h4 {
+  margin: 0 0 7px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.coach-root .te-preview-session article {
+  padding: 7px 0;
+  border-top: 1px solid color-mix(in srgb, var(--cd-line) 65%, transparent);
+}
+.coach-root .te-preview-session article > strong {
+  font-size: 12px;
+}
+.coach-root .te-preview-session article > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 9px;
+  margin-top: 3px;
+  color: var(--cd-muted);
+  font-size: 10px;
+}
+.coach-root .te-preview-session article p {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  line-height: 1.45;
+}
+.coach-root .te-preview > p {
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .te-volume {
+  padding-top: 12px;
+  border-top: 1px solid var(--cd-line);
+}
+.coach-root .te-volume-table {
+  margin-top: 8px;
+}
+.coach-root .te-volume-table > div {
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--cd-line) 65%, transparent);
+  font-size: 11px;
+}
+.coach-root .te-volume-table b {
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .te-volume-table p {
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .te-volume-head {
+  color: var(--cd-muted);
+  font-size: 10px;
+}
+.coach-root .te-volume-head b {
+  font-weight: 500;
+}
+.coach-root .te-volume-table .te-unassigned {
+  color: var(--cd-muted);
+}
+.coach-root .te-heatmap {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 9px;
+}
+.coach-root .te-heatmap > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 7px 8px;
+  border: 1px solid var(--cd-line);
+  background: color-mix(
+    in srgb,
+    var(--cd-accent) calc(var(--te-intensity, 0) * 38%),
+    var(--cd-surface)
+  );
+  font-size: 10px;
+}
+.coach-root .te-heatmap > div:not([data-active="true"]) {
+  color: var(--cd-muted);
+}
+.coach-root .te-volume-note {
+  margin: -8px 0 0;
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+@media (max-width: 900px) {
+  .coach-root .te-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .coach-root .te-preview-column {
+    border-left: 0;
+    border-top: 1px solid var(--cd-line);
+    padding: 14px 0 0;
+  }
+}
+@media (max-width: 600px) {
+  .coach-root .te-program-bar {
+    align-items: start;
+    flex-direction: column;
+  }
+  .coach-root .te-program-bar > div {
+    align-items: start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .coach-root .te-column-head {
+    align-items: start;
+    flex-direction: column;
+  }
+  .coach-root .te-session-head {
+    flex-wrap: wrap;
+  }
+  .coach-root .te-session-head > input {
+    min-width: 60%;
+  }
+  .coach-root .te-session-head .te-actions {
+    margin-left: auto;
+  }
+  .coach-root .te-exercise-head {
+    flex-wrap: wrap;
+  }
+  .coach-root .te-exercise-name {
+    min-width: 55%;
+  }
+  .coach-root .te-muscle {
+    order: 3;
+    margin-left: 32px;
+  }
+  .coach-root .te-exercise-head .te-actions {
+    margin-left: auto;
+  }
+  .coach-root .te-line-field {
+    align-items: start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .coach-root .te-line-field > span {
+    width: auto;
+  }
+  .coach-root .te-line-field input,
+  .coach-root .te-line-field textarea {
+    width: 100%;
+  }
+  .coach-root .te-set-list {
+    margin-left: 0;
+  }
+  .coach-root .te-set-note {
+    margin-left: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .coach-root .te-week-nav button,
+  .coach-root .te-text-button,
+  .coach-root .te-icon-button {
+    transition: none;
+  }
+}
+
+/* The library is a working catalog, not another nested card grid. */
+.coach-root .te-library {
+  min-width: 0;
+  border-block: 1px solid var(--cd-line);
+}
+.coach-root .te-library-head,
+.coach-root .te-library-head > div,
+.coach-root .te-library-picker-head,
+.coach-root .te-library-form-actions,
+.coach-root .te-library-item,
+.coach-root .te-library-item > div,
+.coach-root .te-library-form-row {
+  display: flex;
+  align-items: center;
+}
+.coach-root .te-library-head {
+  min-height: 54px;
+  justify-content: space-between;
+  gap: 14px;
+}
+.coach-root .te-library-head > div {
+  gap: 10px;
+  color: var(--cd-accent-text);
+}
+.coach-root .te-library-head span,
+.coach-root .te-library-item > div:first-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.coach-root .te-library-head strong {
+  color: var(--cd-text);
+  font-size: 13px;
+}
+.coach-root .te-library-head small,
+.coach-root .te-library-item small {
+  color: var(--cd-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.coach-root .te-library-manager {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+  gap: 20px;
+  padding: 18px 0;
+  border-top: 1px solid var(--cd-line);
+}
+.coach-root .te-library-form {
+  display: grid;
+  align-content: start;
+  gap: 11px;
+  min-width: 0;
+}
+.coach-root .te-library-form h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.coach-root .te-library-form label {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .te-library-form input,
+.coach-root .te-library-form select,
+.coach-root .te-library-form textarea,
+.coach-root .te-library-search input {
+  width: 100%;
+  min-height: 38px;
+}
+.coach-root .te-library-form select[multiple] {
+  min-height: 74px;
+}
+.coach-root .te-library-form textarea {
+  resize: vertical;
+}
+.coach-root .te-library-form-row {
+  align-items: stretch;
+  gap: 10px;
+}
+.coach-root .te-library-form-row > label {
+  flex: 1;
+}
+.coach-root .te-library-form-actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.coach-root .te-library-form .te-primary-action {
+  border-color: color-mix(in srgb, var(--cd-accent) 55%, var(--cd-line));
+  color: var(--cd-accent-text);
+  background: color-mix(in srgb, var(--cd-accent) 12%, var(--cd-surface));
+}
+.coach-root .te-library-list {
+  min-width: 0;
+  border-top: 1px solid var(--cd-line);
+}
+.coach-root .te-library-item {
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--cd-line) 65%, transparent);
+}
+.coach-root .te-library-item > div:first-child {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.coach-root .te-library-item strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+.coach-root .te-library-item .te-actions {
+  flex: none;
+}
+.coach-root .te-library-picker {
+  margin: 10px 11px;
+  padding: 12px 14px;
+  border-left: 2px solid var(--cd-accent);
+  background: color-mix(in srgb, var(--cd-raised) 76%, var(--cd-surface));
+}
+.coach-root .te-library-picker-head {
+  gap: 8px;
+}
+.coach-root .te-library-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  color: var(--cd-muted);
+}
+.coach-root .te-library-search input {
+  background: var(--cd-field);
+}
+.coach-root .te-library-results {
+  display: grid;
+  max-height: 260px;
+  margin-top: 8px;
+  overflow: auto;
+}
+.coach-root .te-library-result {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--cd-line);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.coach-root .te-library-result:hover {
+  background: color-mix(in srgb, var(--cd-accent) 8%, transparent);
+}
+.coach-root .te-library-result > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.coach-root .te-library-result strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+.coach-root .te-library-result small,
+.coach-root .te-library-empty {
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .te-library-empty {
+  margin: 9px 0;
+}
+.coach-root .te-general-notes {
+  margin: 9px 0 0 32px;
+  padding: 8px 10px;
+  border-left: 2px solid
+    color-mix(in srgb, var(--cd-accent) 44%, var(--cd-line));
+  background: color-mix(in srgb, var(--cd-accent) 5%, transparent);
+  color: var(--cd-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.coach-root .te-general-notes span {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--cd-accent-text);
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.coach-root .te-library-snapshot {
+  margin: 5px 0 0 32px;
+  color: var(--cd-muted);
+  font-size: 10px;
+}
+.coach-root .te-preview-session article .te-preview-library-note {
+  color: var(--cd-text);
+}
+
+/* Stack set fields fluidly; each value keeps its label at every width. */
+.coach-root .te-set-labels {
+  display: none;
+}
+.coach-root .te-set-list {
+  margin-left: 32px;
+}
+.coach-root .te-set-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 92px), 1fr));
+  align-items: end;
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid color-mix(in srgb, var(--cd-line) 65%, transparent);
+}
+.coach-root .te-set-index {
+  width: auto;
+  align-self: center;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .te-set-row label {
+  min-width: 0;
+  gap: 4px;
+  font-size: 10px;
+}
+.coach-root .te-set-row label input {
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 9px;
+  font-size: 12px;
+}
+.coach-root .te-set-row label.te-wide {
+  min-width: 0;
+}
+.coach-root .te-set-row label.te-wide input {
+  width: 100%;
+}
+.coach-root .te-set-row .te-set-note {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.coach-root .te-set-row .te-set-note input {
+  min-height: 40px;
+}
+.coach-root .te-remove-set {
+  margin: 0;
+  justify-self: end;
+  align-self: center;
+}
+.coach-root .te-set-list > .te-text-button {
+  margin-left: 0;
+}
+.coach-root .te-session-head > input {
+  min-width: 0;
+}
+.coach-root .te-exercise-name {
+  min-width: 0;
+}
+.coach-root .te-option-source {
+  margin: -12px 0 0;
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .te-option-hint {
+  color: var(--cd-muted);
+  font-size: 9px;
+  line-height: 1.35;
+}
+.coach-root .te-line-field {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: start;
+}
+.coach-root .te-line-field > select {
+  min-height: 36px;
+}
+.coach-root .te-line-field .te-option-hint {
+  grid-column: 2;
+}
+@media (max-width: 720px) {
+  .coach-root .te-library-manager {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .coach-root .te-library-form-row {
+    flex-direction: column;
+  }
+  .coach-root .te-set-list {
+    margin-left: 0;
+  }
+  .coach-root .te-general-notes,
+  .coach-root .te-library-snapshot {
+    margin-left: 0;
+  }
+  .coach-root .te-line-field {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .coach-root .te-line-field .te-option-hint {
+    grid-column: 1;
+  }
+}
+/* The program editor shares the coach's neutral bezel and inset working material.
+   Sessions use the full canvas so prescription fields have predictable room. */
+.coach-root .te-editor {
+  --te-shell: color-mix(in srgb, var(--cd-text) 5%, var(--cd-bg));
+  --te-core: var(--cd-surface);
+  gap: 20px;
+}
+.coach-root .te-workspace {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+.coach-root .te-program-bar {
+  padding: 18px 20px;
+  border: 1px solid var(--cd-line);
+  border-radius: 20px;
+  background: var(--cd-wash);
+  box-shadow: inset 0 1px var(--cd-highlight);
+}
+.coach-root .te-program-select {
+  white-space: nowrap;
+}
+.coach-root .te-editor input,
+.coach-root .te-editor select {
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+.coach-root .te-editor textarea {
+  border-radius: 16px;
+  min-height: 72px;
+  padding: 12px 14px;
+  font-size: 13px;
+  resize: vertical;
+}
+.coach-root .te-text-button {
+  border-radius: 999px;
+  min-height: 40px;
+  padding: 9px 15px;
+}
+.coach-root .te-icon-button {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 50%;
+  border-color: transparent;
+  background: transparent;
+}
+.coach-root .te-icon-button:hover {
+  background: var(--cd-highlight);
+}
+.coach-root .te-sessions {
+  gap: 20px;
+}
+.coach-root .te-session {
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--cd-text) 7%, transparent);
+  border-radius: 30px;
+  background: var(--te-shell);
+  box-shadow:
+    inset 0 1px color-mix(in srgb, var(--cd-text) 10%, transparent),
+    0 5px 18px rgb(0 0 0 / 5%);
+}
+.coach-root .te-session-core {
+  min-width: 0;
+  border: 1px solid var(--cd-line);
+  border-radius: 24px;
+  background: var(--te-core);
+  overflow: hidden;
+  box-shadow: inset 0 1px var(--cd-highlight);
+}
+.coach-root .te-session-head {
+  padding: 14px 18px;
+  gap: 12px;
+}
+.coach-root .te-session-head > input {
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  min-height: 40px;
+}
+.coach-root .te-index {
+  color: var(--cd-muted);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.coach-root .te-exercises {
+  padding: 0 20px;
+}
+.coach-root .te-exercise {
+  padding: 20px 0 24px;
+}
+.coach-root .te-exercise-head {
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.coach-root .te-exercise-name {
+  flex: 1;
+  min-width: 180px;
+}
+.coach-root .te-muscle {
+  width: 160px;
+  min-width: 0;
+}
+.coach-root .te-general-notes {
+  margin: 14px 0 6px 32px;
+  border-left: 0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--cd-wash);
+  font-size: 12px;
+}
+.coach-root .te-general-notes span {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--cd-muted);
+}
+.coach-root .te-library-snapshot {
+  font-size: 11px;
+}
+.coach-root .te-line-field {
+  margin-top: 16px;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  font-size: 12px;
+}
+.coach-root .te-line-field > span {
+  color: var(--cd-muted);
+}
+.coach-root .te-set-list {
+  margin-top: 20px;
+}
+.coach-root .te-set-row {
+  padding: 14px 0;
+  gap: 10px;
+}
+.coach-root .te-set-row label {
+  font-size: 11px;
+}
+.coach-root .te-set-row label input,
+.coach-root .te-set-row label select {
+  min-height: 40px;
+  font-size: 13px;
+}
+.coach-root .te-set-index {
+  font-size: 12px;
+  color: var(--cd-muted);
+}
+.coach-root .te-set-note {
+  max-width: none;
+}
+.coach-root .te-add-exercise {
+  margin: 0 20px 20px;
+}
+.coach-root .te-preview-column {
+  padding: 18px 20px;
+  border-block: 1px solid var(--cd-line);
+}
+.coach-root .te-preview-column > summary {
+  cursor: pointer;
+  color: var(--cd-muted);
+  font-size: 13px;
+}
+.coach-root .te-preview-column[open] > summary {
+  margin-bottom: 20px;
+  color: var(--cd-text);
+}
+.coach-root .te-week-nav button {
+  border-radius: 14px;
+  min-width: 56px;
+  min-height: 54px;
+}
+.coach-root .te-library-manager {
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--cd-wash);
+}
+.coach-root .te-library-picker {
+  border-left: 0;
+  border-radius: 18px;
+  border: 1px solid var(--cd-line);
+  margin: 14px 20px;
+  padding: 16px;
+}
+@media (max-width: 700px) {
+  .coach-root .te-program-bar {
+    align-items: start;
+    gap: 12px;
+  }
+  .coach-root .te-program-bar > div {
+    gap: 12px;
+  }
+  .coach-root .te-plan-meta {
+    display: none;
+  }
+  .coach-root .te-session {
+    padding: 4px;
+    border-radius: 23px;
+  }
+  .coach-root .te-session-core {
+    border-radius: 19px;
+  }
+  .coach-root .te-session-head {
+    padding: 12px;
+    flex-wrap: wrap;
+  }
+  .coach-root .te-session-head .te-index {
+    width: auto;
+  }
+  .coach-root .te-session-head .te-actions {
+    margin-left: auto;
+  }
+  .coach-root .te-session-head > input {
+    flex-basis: 70%;
+    min-width: 0;
+  }
+  .coach-root .te-exercises {
+    padding: 0 12px;
+  }
+  .coach-root .te-exercise-head .te-actions {
+    margin-left: auto;
+  }
+  .coach-root .te-exercise-name {
+    flex-basis: 80%;
+    min-width: 0;
+  }
+  .coach-root .te-muscle {
+    width: auto;
+    flex: 1;
+  }
+  .coach-root .te-general-notes,
+  .coach-root .te-library-snapshot {
+    margin-left: 0;
+  }
+  .coach-root .te-line-field {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  .coach-root .te-set-list {
+    margin-left: 0;
+  }
+  .coach-root .te-set-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .coach-root .te-set-index {
+    grid-column: 1;
+  }
+  .coach-root .te-set-row label {
+    grid-column: auto;
+  }
+  .coach-root .te-set-row .te-set-note {
+    grid-column: 1 / -1;
+  }
+  .coach-root .te-remove-set {
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .coach-root .te-library-manager {
+    padding: 14px;
+  }
+  .coach-root .te-add-exercise {
+    margin-left: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .coach-root .te-editor * {
+    transition: none;
+  }
+}
+@media (max-width: 700px) {
+  .coach-root .te-set-row .te-set-index {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+  }
+  .coach-root .te-set-row .te-remove-set {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+}

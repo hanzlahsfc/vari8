@@ -1,0 +1,114 @@
+.coach-root .cd-notes-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 260px);
+  align-items: end;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.coach-root .cd-notes-toolbar > .cd-field,
+.coach-root .cd-notes-form > .cd-field {
+  margin: 0;
+}
+.coach-root .cd-notes-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+.coach-root .cd-notes-heading,
+.coach-root .cd-notes-item-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.coach-root .cd-notes-heading {
+  margin-bottom: 20px;
+}
+.coach-root .cd-notes-heading h2 {
+  margin: 0;
+}
+.coach-root .cd-notes-heading > span {
+  color: var(--cd-muted);
+  font-size: 13px;
+}
+.coach-root .cd-notes-status {
+  width: fit-content;
+  margin-bottom: 12px;
+}
+.coach-root .cd-notes-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.coach-root .cd-notes-list > li {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--cd-line);
+}
+.coach-root .cd-notes-list > li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.coach-root .cd-notes-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0 0 10px;
+}
+.coach-root .cd-notes-owner {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  padding: 4px 0;
+  background: none;
+  color: var(--cd-muted);
+  font-size: 12px;
+  text-align: left;
+}
+.coach-root button.cd-notes-owner:hover {
+  color: var(--cd-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.coach-root .cd-notes-todo > label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  overflow-wrap: anywhere;
+}
+.coach-root .cd-notes-todo input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 3px;
+  accent-color: var(--cd-action-bg);
+}
+.coach-root .cd-notes-todo .is-complete {
+  text-decoration: line-through;
+  color: var(--cd-muted);
+}
+.coach-root .cd-notes-todo .cd-notes-item-footer {
+  padding-left: 30px;
+  margin-top: 8px;
+}
+.coach-root .cd-notes-form {
+  display: grid;
+  gap: 20px;
+}
+.coach-root .cd-notes-form > .cd-actions {
+  justify-content: flex-end;
+}
+@media (max-width: 1080px) {
+  .coach-root .cd-notes-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .coach-root .cd-notes-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .coach-root .cd-notes-form > .cd-actions {
+    flex-wrap: wrap;
+  }
+}
