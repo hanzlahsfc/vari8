@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
  * O16 look guard, one rule: the auth routes render inside a canvas card.
  *
  * The rest of the auth suite drives the forms, so it stays green even when the
- * `.auth-card` wrapper is deleted — the fields, actions and copy survive, only
+ * `.auth-card` wrapper is deleted: the fields, actions and copy survive, only
  * the look is lost. This asserts the computed canvas surface on the wrapper
  * itself, which is the thing that cannot be observed any other way.
  */
