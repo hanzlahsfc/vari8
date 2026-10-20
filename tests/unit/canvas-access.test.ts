@@ -138,4 +138,14 @@ describe("requireClientAccess (the /me gate)", () => {
       name: "ForbiddenSentinel",
     });
   });
+
+  it("sends a signed-out visitor to the client sign-in, not /login", async () => {
+    authMock.mockResolvedValue(null);
+    await expect(requireClientAccess()).rejects.toMatchObject({
+      name: "RedirectSentinel",
+      url: "/me/login",
+    });
+    expect(redirect).toHaveBeenCalledWith("/me/login");
+    expect(findUnique).not.toHaveBeenCalled();
+  });
 });
