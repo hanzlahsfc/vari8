@@ -53,6 +53,10 @@ const ALWAYS_SKIP = new Set([
  * when they sit directly under the repository root and never deeper.
  */
 const TOP_LEVEL_SKIP = new Set([
+  // `/var/` is the gitignored local media root (lib/storage/local.ts). Runtime
+  // output, never a source tree: indexing it made `index:check` demand a
+  // `var/AGENTS.md` as soon as any media test wrote a file.
+  "var",
   "out",
   "build",
   "sources",
