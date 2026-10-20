@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 131 modules with exports, 1296 exported symbols.
+Counts: 132 modules with exports, 1306 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1126,9 +1126,10 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export type HabitSafeResult<T> = | { ok: true; value: T } | { ok: false; code: | "denied" | "invalid_input" | "not_available" | "conflict" | "serialization_conflict"; message: string; }`
 - `export const archiveHabitFromAction = (session: Session, input: { workspaceId: string; clientProfileId: string; habitId: string; expectedRevision: number; }, deps: HabitDeps = {}): Promise<HabitSaf...`
-- `export const createHabitFromAction = (session: Session, input: { workspaceId: string; clientProfileId: string; name: unknown; target: unknown; startDate: unknown; weekdays: unknown; endDate?: unkno...`
-- `export const editHabitFromAction = (session: Session, input: { workspaceId: string; clientProfileId: string; habitId: string; name?: unknown; target?: unknown; schedule?: { weekdays?: unknown; endD...`
+- `export const createHabitFromAction = (session: Session, input: { workspaceId: string; clientProfileId: string; name: unknown; target: unknown; reason?: unknown; startDate: unknown; weekdays: unknow...`
+- `export const editHabitFromAction = (session: Session, input: { workspaceId: string; clientProfileId: string; habitId: string; name?: unknown; target?: unknown; reason?: unknown; schedule?: { weekda...`
 - `export const readHabitChoices = (session: Session, input: { workspaceId: string; clientProfileId: string }, deps: HabitDeps = {}): Promise< HabitSafeResult<{ choices: { id: string; name: string }[]...`
+- `export const readHabitCompletions = (session: Session, input: { workspaceId: string; clientProfileId?: string; fields?: unknown; }, deps: HabitDeps = {}): Promise<HabitSafeResult<{ habits: HabitCom...`
 - `export const readHabitConsistency = (session: Session, input: { workspaceId: string; clientProfileId?: string; period: unknown; fields?: unknown; }, deps: HabitDeps = {}): Promise<HabitSafeResult<H...`
 - `export const readStaffHabits = (session: Session, input: { workspaceId: string; clientProfileId: string }, deps: HabitDeps = {}): Promise<HabitSafeResult<{ habits: HabitView[]; hasMore: boolean }>> =>`
 - `export const readTodayHabits = (session: Session, input: { workspaceId: string; fields?: unknown }, deps: HabitDeps = {}): Promise< HabitSafeResult<{ habits: TodayHabitView[]; hasMore: boolean; dat...`
@@ -1150,19 +1151,31 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function shiftDateUtc(date: string, days: number): string`
 - `export function weekdayBit(date: string): number`
 
+## `lib/habits/frequency.ts`
+
+- `export const DAILY_WEEKDAY_MASK = 127`
+- `export const WEEKDAYS_MASK = 0b0011111`
+- `export const WEEKENDS_MASK = 0b1100000`
+- `export function frequencyToWeekdayMask(input: unknown): number | null`
+- `export function spreadMask(daysPerWeek: number): number | null`
+- `export function weekdayMaskToFrequency(mask: number): string | null`
+
 ## `lib/habits/service.ts`
 
+- `export const HABIT_REASON_MAX = 500`
+- `export type HabitCompletionRow = { habitId: string; name: string; target: string; reason: string; frequency: string | null; completed: number; archived: boolean; }`
 - `export type HabitConsistencyResult = { period: string; from: string; to: string; rows: HabitConsistencyRow[]; totals: { scheduled: number; done: number; skipped: number; missing: number }; }`
 - `export type HabitConsistencyRow = { habitId: string; name: string; target: string; scheduled: number; done: number; skipped: number; missing: number; }`
 - `export type HabitDeps = { db?: PrismaLike; now?: Date }`
 - `export class HabitError extends Error (1 members)`
-- `export type HabitView = { id: string; name: string; target: string; archived: boolean; revision: number; schedule: { weekdays: number; endDate: string | null } | null; }`
-- `export type TodayHabitView = { id: string; name: string; target: string; status: "DONE" | "SKIPPED" | "NONE"; }`
+- `export type HabitView = { id: string; name: string; target: string; reason: string; archived: boolean; revision: number; schedule: { weekdays: number; endDate: string | null } | null; frequency: st...`
+- `export type TodayHabitView = { id: string; name: string; target: string; reason: string; frequency: string | null; status: "DONE" | "SKIPPED" | "NONE"; }`
 - `export async function archiveHabit(session: SessionLike, input: { workspaceId: string; clientProfileId: string; habitId: string; expectedRevision: number; }, deps: HabitDeps = {}): Promise<{ revisi...`
-- `export async function createHabit(session: SessionLike, input: { workspaceId: string; clientProfileId: string; name: unknown; target: unknown; startDate: unknown; weekdays: unknown; endDate?: unkno...`
-- `export async function editHabit(session: SessionLike, input: { workspaceId: string; clientProfileId: string; habitId: string; name?: unknown; target?: unknown; schedule?: { weekdays?: unknown; endD...`
+- `export async function createHabit(session: SessionLike, input: { workspaceId: string; clientProfileId: string; name: unknown; target: unknown; reason?: unknown; startDate: unknown; weekdays: unknow...`
+- `export async function editHabit(session: SessionLike, input: { workspaceId: string; clientProfileId: string; habitId: string; name?: unknown; target?: unknown; reason?: unknown; schedule?: { weekda...`
 - `export async function habitConsistency(session: SessionLike, input: { workspaceId: string; clientProfileId?: string; period: unknown; fields?: unknown; }, deps: HabitDeps = {}): Promise<HabitConsis...`
 - `export async function listHabitChoices(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: HabitDeps = {}): Promise<{ choices: { id: string; name: string }[]; hasMo...`
+- `export async function listHabitCompletions(session: SessionLike, input: { workspaceId: string; clientProfileId?: string; fields?: unknown; }, deps: HabitDeps = {}): Promise<{ habits: HabitCompletio...`
 - `export async function listStaffHabits(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: HabitDeps = {}): Promise<{ habits: HabitView[]; hasMore: boolean }>`
 - `export async function listTodayHabits(session: SessionLike, input: { workspaceId: string; fields?: unknown }, deps: HabitDeps = {}): Promise<{ habits: TodayHabitView[]; hasMore: boolean; date: stri...`
 - `export async function setHabitLog(session: SessionLike, input: { workspaceId: string; clientProfileId: string; habitId: string; date: unknown; desired: "DONE" | "CLEARED"; }, deps: HabitDeps = {}):...`
