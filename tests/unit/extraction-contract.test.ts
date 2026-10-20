@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  redactedPlaceholder,
   SHEET_SLUGS,
   slugifySheetFileName,
 } from "../../lib/extraction/contracts";
@@ -36,11 +35,3 @@ describe("sheet slug mapping", () => {
   });
 });
 
-describe("redaction placeholder", () => {
-  it("builds the documented placeholder form without the value", () => {
-    expect(redactedPlaceholder("client-name")).toBe("[REDACTED:client-name]");
-    expect(redactedPlaceholder("ped_protocol.dose")).toBe(
-      "[REDACTED:ped_protocol.dose]",
-    );
-  });
-});

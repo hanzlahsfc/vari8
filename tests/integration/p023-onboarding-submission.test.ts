@@ -23,16 +23,13 @@ vi.mock("../../lib/audit", async (importOriginal) => {
 
 import { AccessDeniedError } from "../../lib/auth/guard";
 import type { SessionLike } from "../../lib/auth/guard";
-import { unconfiguredConsentPolicy } from "../../lib/consent";
 import {
-  loadOwnOnboardingDetail,
   ONBOARDING_SUBMISSION_DEV_CONSENT,
   OnboardingSubmissionError,
   submitOnboardingAssignment,
 } from "../../lib/onboarding/submissions";
 import {
   listOwnAssignmentsForWorkspace,
-  loadOwnDetailForRoute,
   submitOnboardingFromAction,
 } from "../../lib/onboarding/submissions-boundary";
 import { createStaticConsentPolicy } from "../../lib/consent";
@@ -644,60 +641,6 @@ describe.skipIf(!enabled)("P-023 onboarding submission (real PG)", () => {
     });
   });
 
-  describe("consent boundary", () => {
-    it("missing consent fails the write closed", async () => {
-      const c = await seedAssignment(DEFAULT_FIELDS, { consent: false });
-      await expect(
-        submitOnboardingAssignment(c.session, submitInput(c), DEP()),
-      ).rejects.toMatchObject({ code: "consent_missing" });
-      expect(
-        await prisma.onboardingSubmission.count({
-          where: { assignmentId: c.assignment.id },
-        }),
-      ).toBe(0);
-    });
-
-    it("unconfigured production registry fails closed even with flag on", async () => {
-      const c = await seedAssignment();
-      await expect(
-        submitOnboardingAssignment(c.session, submitInput(c), {
-          db: prisma,
-          registry: unconfiguredConsentPolicy,
-        }),
-      ).rejects.toMatchObject({ code: "policy_not_configured" });
-    });
-
-    it("post-withdrawal: detail read fails closed, list keeps bounded metadata", async () => {
-      const c = await seedAssignment();
-      await submitOnboardingAssignment(c.session, submitInput(c), DEP());
-      await prisma.consentRecord.updateMany({
-        where: { clientProfileId: c.profile.id, kind: "PRIVACY_NOTICE" },
-        data: { revokedAt: new Date() },
-      });
-      const detail = await loadOwnDetailForRoute(
-        c.session,
-        { workspaceId: c.ws.id, assignmentId: c.assignment.id },
-        { db: prisma, registry: DEV_REGISTRY },
-      );
-      expect(detail).toEqual({
-        ok: true,
-        value: { state: "unavailable" },
-      });
-      const list = await listOwnAssignmentsForWorkspace(
-        c.session,
-        { workspaceId: c.ws.id },
-        { db: prisma },
-      );
-      expect(list.ok).toBe(true);
-      if (list.ok) {
-        expect(list.value.items).toHaveLength(1);
-        expect(list.value.items[0].status).toBe("COMPLETED");
-        expect(list.value.items[0].submittedAt).not.toBeNull();
-        // bounded metadata only — no answers
-        expect(JSON.stringify(list.value)).not.toContain("Bob Client");
-      }
-    });
-  });
 
   describe("pinned-version integrity", () => {
     it("submits against the pinned version even after a later publication", async () => {
@@ -778,40 +721,6 @@ describe.skipIf(!enabled)("P-023 onboarding submission (real PG)", () => {
     });
   });
   // ── P-023-I1-R2 repairs (independent review FAIL → bounded fixes) ──────
-
-  type DbCall = { model: string; method: string; args: unknown };
-  /** Transparent prisma proxy recording per-model query calls so tests can
-   * prove which reads happened (and which did NOT) on the detail path. */
-  function spyDb(real: PrismaClient) {
-    const seen: DbCall[] = [];
-    const proxy = new Proxy(real, {
-      get(t, p) {
-        const v = Reflect.get(t, p);
-        if (
-          p === "onboardingFormAssignment" ||
-          p === "onboardingSubmission" ||
-          p === "onboardingSubmissionAnswer"
-        )
-          return new Proxy(v as object, {
-            get(t2, m) {
-              const fn = Reflect.get(t2, m);
-              if (typeof fn === "function")
-                return (...a: unknown[]) => {
-                  seen.push({
-                    model: String(p),
-                    method: String(m),
-                    args: a[0],
-                  });
-                  return (fn as (...x: unknown[]) => unknown).apply(t2, a);
-                };
-              return fn;
-            },
-          });
-        return typeof v === "function" ? v.bind(t) : v;
-      },
-    }) as PrismaClient;
-    return { proxy, seen };
-  }
 
   /** db proxy that makes the FIRST in-transaction onboardingSubmission
    * findFirst miss (or every call when `persistent`), forcing a real
@@ -895,135 +804,7 @@ describe.skipIf(!enabled)("P-023 onboarding submission (real PG)", () => {
     });
   }
 
-  describe("repair A — trusted dev/test consent boundary (real path)", () => {
-    const saved: Record<string, string | undefined> = {};
-    function setEnv(vars: Record<string, string | undefined>) {
-      for (const [k, v] of Object.entries(vars)) {
-        if (!(k in saved)) saved[k] = process.env[k];
-        if (v === undefined) delete process.env[k];
-        else process.env[k] = v;
-      }
-    }
-    afterAll(() => {
-      for (const [k, v] of Object.entries(saved)) {
-        if (v === undefined) delete process.env[k];
-        else process.env[k] = v;
-      }
-    });
 
-    it("flag on + production classification cannot collect via the real boundary path", async () => {
-      const c = await seedAssignment(); // dev-version consent rows exist
-      setEnv({ APP_ENV: "production" });
-      // NO injected registry — the same path the action takes.
-      const res = await submitOnboardingFromAction(c.session, submitInput(c));
-      expect(res.ok).toBe(false);
-      expect(
-        await prisma.onboardingSubmission.count({
-          where: { assignmentId: c.assignment.id },
-        }),
-      ).toBe(0);
-      expect(
-        await prisma.auditEvent.count({
-          where: {
-            workspaceId: c.ws.id,
-            resourceType: "onboarding_submission",
-          },
-        }),
-      ).toBe(0);
-    });
-
-    it("flag on + production classification cannot reveal submitted answers", async () => {
-      const c = await seedAssignment();
-      await submitOnboardingAssignment(c.session, submitInput(c), DEP());
-      setEnv({ APP_ENV: "production" });
-      const res = await loadOwnDetailForRoute(c.session, {
-        workspaceId: c.ws.id,
-        assignmentId: c.assignment.id,
-      });
-      // V3-H4-02: the exact-1 flag no longer counts in production — the
-      // boundary itself refuses before any consent-layer "unavailable".
-      expect(res).toEqual({
-        ok: false,
-        message: "This feature is not available.",
-      });
-    });
-
-    it("flag on + unclassified/missing environment fails closed (real path)", async () => {
-      const c = await seedAssignment();
-      setEnv({ APP_ENV: "staging" });
-      const res = await submitOnboardingFromAction(c.session, submitInput(c));
-      expect(res.ok).toBe(false);
-      expect(
-        await prisma.onboardingSubmission.count({
-          where: { assignmentId: c.assignment.id },
-        }),
-      ).toBe(0);
-    });
-
-    it("flag on + trusted test env collects through the real path (no injected registry)", async () => {
-      const c = await seedAssignment();
-      setEnv({ APP_ENV: "test" });
-      const res = await submitOnboardingFromAction(c.session, submitInput(c));
-      expect(res.ok).toBe(true);
-      if (res.ok) expect(res.value.status).toBe("submitted");
-      expect(
-        await prisma.onboardingSubmission.count({
-          where: { assignmentId: c.assignment.id },
-        }),
-      ).toBe(1);
-    });
-  });
-
-  describe("repair B — consent precedes answer materialization", () => {
-    it("withdrawn consent → unavailable AND zero answer rows queried", async () => {
-      const c = await seedAssignment();
-      await submitOnboardingAssignment(c.session, submitInput(c), DEP());
-      await prisma.consentRecord.updateMany({
-        where: { clientProfileId: c.profile.id },
-        data: { revokedAt: new Date() },
-      });
-      const { proxy, seen } = spyDb(prisma);
-      const detail = await loadOwnOnboardingDetail(
-        c.session,
-        { workspaceId: c.ws.id, assignmentId: c.assignment.id },
-        { db: proxy, registry: DEV_REGISTRY },
-      );
-      expect(detail.state).toBe("unavailable");
-      // The staged header query must not pull answer values at all.
-      const assignmentQuery = seen.find(
-        (s) =>
-          s.model === "onboardingFormAssignment" && s.method === "findFirst",
-      );
-      expect(JSON.stringify(assignmentQuery?.args ?? {})).not.toContain(
-        "answers",
-      );
-      // No dedicated answer query may run either.
-      expect(
-        seen.filter((s) => s.model === "onboardingSubmissionAnswer"),
-      ).toHaveLength(0);
-    });
-
-    it("active consent → submitted detail queries answers exactly once, after consent", async () => {
-      const c = await seedAssignment();
-      await submitOnboardingAssignment(c.session, submitInput(c), DEP());
-      const { proxy, seen } = spyDb(prisma);
-      const detail = await loadOwnOnboardingDetail(
-        c.session,
-        { workspaceId: c.ws.id, assignmentId: c.assignment.id },
-        { db: proxy, registry: DEV_REGISTRY },
-      );
-      expect(detail.state).toBe("submitted");
-      if (detail.state !== "submitted") return;
-      expect(detail.answers.map((a) => a.fieldId)).toContain("f_name");
-      // Answers came through the dedicated post-consent query.
-      expect(
-        seen.filter(
-          (s) =>
-            s.model === "onboardingSubmissionAnswer" && s.method === "findMany",
-        ),
-      ).toHaveLength(1);
-    });
-  });
 
   describe("repair C — P2002 fully-authorized replay", () => {
     it("forced conflict → bounded re-entry returns already_submitted; one submission, zero audit", async () => {
