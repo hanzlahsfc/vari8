@@ -124,7 +124,7 @@ describe("system index generator", () => {
     expect(routes).toContain(
       "| `/sheets/[slug]` | `app/sheets/[slug]/page.tsx` |",
     );
-    expect(routes).toContain("Counts: 49 backend pages");
+    expect(routes).toContain("Counts: 52 backend pages");
     // The same name collides inside spec/, which must be inventoried too: a
     // managed router exists for spec/ and its region carries no file counts.
     expect(

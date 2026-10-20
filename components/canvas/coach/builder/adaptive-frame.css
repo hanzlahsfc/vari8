@@ -1,0 +1,83 @@
+/* Chrome reserves real space before any widget chooses its composition. */
+.coach-root .cb-db-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.coach-root .cb-db-card-header {
+  flex: 0 0 auto;
+}
+
+.coach-root .cb-db-card[data-size="Compact"] {
+  padding: 12px 14px;
+}
+
+.coach-root .cb-db-card[data-size="Compact"] .cb-db-card-header {
+  height: 22px;
+  margin-bottom: 6px;
+}
+
+.coach-root .cb-db-builder .cb-db-card .cb-db-source-title {
+  display: block;
+  max-width: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coach-root .cb-db-builder .cb-db-card .cb-db-source-title:hover {
+  color: var(--accent-ink, var(--accent));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.coach-root .cb-db-card > .cb-dw-content.cb-dw-adaptive,
+.coach-root .cb-eg-gallery-preview-body > .cb-dw-content.cb-dw-adaptive {
+  position: relative;
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  gap: 0;
+  padding-bottom: 6px;
+  overflow: visible;
+  box-sizing: border-box;
+}
+
+.coach-root .cb-dw-adaptive > :first-child {
+  flex: 1 1 auto;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.coach-root .cb-dw-adaptive :where(button):focus-visible {
+  outline: 2px solid var(--accent-ring, var(--accent));
+  outline-offset: 3px;
+}
+
+.coach-root .cb-dw-adaptive :where(small, time) {
+  font-size: 12px;
+}
+
+.coach-root .cb-dw-adaptive :where(svg) {
+  flex-shrink: 0;
+}
+
+.coach-root .cb-dw-adaptive ::selection {
+  background: var(--cd-action-bg);
+  color: var(--cd-action-text);
+}
+
+.coach-root
+  .cb-db-card[data-size="Compact"]
+  > .cb-dw-adaptive[data-kind="CU16"] {
+  padding-bottom: 0;
+}

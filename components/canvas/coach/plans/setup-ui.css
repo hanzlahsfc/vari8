@@ -1,0 +1,214 @@
+.coach-root .cd-plan-summary {
+  margin: 24px 0 18px;
+  border-top: 1px solid var(--cd-line);
+}
+.coach-root .cd-plan-summary-heading,
+.coach-root .cd-plan-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--cd-line);
+}
+.coach-root .cd-plan-summary-heading h3,
+.coach-root .cd-client-plans-summary h2,
+.coach-root .cd-setup-editor h2 {
+  margin: 0;
+}
+.coach-root .cd-plan-summary-heading > span,
+.coach-root .cd-plan-summary-meta,
+.coach-root .cd-plan-summary-row small {
+  color: var(--cd-muted);
+  font-size: 0.875rem;
+}
+.coach-root .cd-plan-summary-row > span:first-child,
+.coach-root .cd-plan-summary-meta {
+  display: grid;
+  gap: 3px;
+}
+.coach-root .cd-plan-summary-meta {
+  text-align: right;
+}
+.coach-root .cd-client-plans-summary,
+.coach-root .cd-setup-editor {
+  width: 100%;
+  min-width: 0;
+}
+.coach-root .cd-client-plans-summary > header,
+.coach-root .cd-setup-editor > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.coach-root .cd-client-plans-summary > header .cd-plan-description,
+.coach-root .cd-setup-editor > header .cd-setup-description {
+  margin: 5px 0 0;
+  color: var(--cd-muted);
+}
+.coach-root .cd-plan-module-list {
+  display: grid;
+  gap: 12px;
+}
+.coach-root .cd-plan-module {
+  display: block;
+  width: 100%;
+}
+.coach-root .cd-plan-module > .cd-core {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(180px, 0.9fr) auto;
+  align-items: center;
+  gap: 20px;
+}
+.coach-root .cd-plan-module h3,
+.coach-root .cd-plan-module p {
+  margin: 0;
+}
+.coach-root .cd-plan-module p,
+.coach-root .cd-plan-module-detail small {
+  margin-top: 4px;
+  color: var(--cd-muted);
+}
+.coach-root .cd-plan-module-detail {
+  display: grid;
+  gap: 3px;
+}
+.coach-root .cd-plan-module-action {
+  justify-self: end;
+}
+.coach-root .cd-plan-module > .cd-core > :first-child {
+  min-width: 0;
+}
+.coach-root .cd-plan-module small {
+  display: block;
+  margin-top: 5px;
+  color: var(--cd-muted);
+}
+.coach-root .cd-plan-module-detail {
+  min-width: 0;
+  padding-left: 18px;
+  border-left: 1px solid var(--cd-line);
+}
+.coach-root .cd-setup-editor {
+  max-width: 1100px;
+}
+.coach-root .cd-goal-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) minmax(110px, 0.7fr) minmax(
+      110px,
+      0.7fr
+    ) minmax(150px, 0.9fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 16px 0 20px;
+  border-bottom: 1px solid var(--cd-line);
+}
+.coach-root .cd-goal-list,
+.coach-root .cd-habit-list {
+  display: grid;
+}
+.coach-root .cd-goal-row,
+.coach-root .cd-habit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--cd-line);
+}
+.coach-root .cd-goal-row > span,
+.coach-root .cd-habit-row > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+.coach-root .cd-goal-row small,
+.coach-root .cd-habit-row small {
+  color: var(--cd-muted);
+}
+.coach-root .cd-habit-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.coach-root .cd-goal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.coach-root .cd-habit-form {
+  max-width: 680px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--cd-line);
+}
+.coach-root .cd-habit-form h3 {
+  margin: 0 0 16px;
+}
+.coach-root .cd-habit-form .cd-field {
+  margin-bottom: 12px;
+}
+.coach-root .cd-assignment-review {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+.coach-root .cd-assignment-review h3,
+.coach-root .cd-assignment-review .cd-assignment-description {
+  margin: 0;
+}
+.coach-root .cd-assignment-review .cd-assignment-description {
+  color: var(--cd-muted);
+}
+.coach-root .cd-assignment-views {
+  display: grid;
+  gap: 4px;
+  padding: 12px 0;
+  border-top: 1px solid var(--cd-line);
+  border-bottom: 1px solid var(--cd-line);
+}
+.coach-root .cd-assignment-views span {
+  color: var(--cd-muted);
+}
+.coach-root .cd-assignment-empty {
+  display: grid;
+  gap: 14px;
+}
+@media (max-width: 760px) {
+  .coach-root .cd-plan-module > .cd-core {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .coach-root .cd-plan-module-detail {
+    padding: 0;
+    border: 0;
+  }
+  .coach-root .cd-plan-module-action {
+    justify-self: stretch;
+  }
+  .coach-root .cd-plan-module-action .cd-button {
+    width: 100%;
+    min-height: 44px;
+  }
+  .coach-root .cd-goal-form {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .coach-root .cd-goal-form > .cd-button {
+    min-height: 44px;
+    grid-column: 1 / -1;
+  }
+  .coach-root .cd-habit-actions .cd-button,
+  .coach-root .cd-habit-actions .cd-icon-button,
+  .coach-root .cd-goal-actions .cd-button,
+  .coach-root .cd-goal-actions .cd-icon-button,
+  .coach-root .cd-goal-row .cd-icon-button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+@media (max-width: 440px) {
+  .coach-root .cd-goal-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
