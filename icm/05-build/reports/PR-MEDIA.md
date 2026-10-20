@@ -248,3 +248,48 @@ the wired canvas (S02-24/S02-25 delivered in the UI) and the roster-cache
 fix; stale wording removed.
 
 Repair gate results (this round): see table below; all exits 0.
+
+## Repair round 3 (verifier round-3 items on 98e57bd)
+
+**Item 1 (DONE): roster-cache regression test + mutation bite.**
+`tests/unit/coach-store-roster.test.tsx` renders `CoachProvider` with a
+`workspaceId`, stubs `fetch`, and asserts `clientProfileIdFor` twice: a
+500 response returns null without caching, then a 200 roster resolves the
+name (2 fetches, not 1). Second test: no `workspaceId` -> resolver returns
+null without hitting the network.
+Bite proof: with the buggy order restored (`roster.current = new Map()`
+before `res.ok`), `npx vitest run tests/unit/coach-store-roster.test.tsx`
+reports `1 failed | 1 passed` (test fails — the poisoned cache returns
+null on the second call); reverted, `2 passed` (exit 0).
+
+**Item 2 (DONE): PR body function name corrected.** The body now says
+`check-ins.tsx` video feedback attaches through `uploadWorkspaceMedia`
+via `DemoRecorder`; `messages.tsx` file attach uses `uploadCanvasMedia`.
+
+**Item 3 (DONE): evidence committed.** `icm/05-build/reports/PR-MEDIA/`
+holds `drive-attach-1440.png`, `drive-voice-1440.png`, `drive-390.png`,
+`seed-voice-note-{1440,390}.png`, `seed-progress-photo-{1440,390}.png`;
+the PR body links them.
+
+**Item 4 (DONE): merged origin/Vari8-Beta.** Conflicts in
+`app/(canvas)/coach/page.tsx` + `components/canvas/coach/coach-app.tsx`
+resolved as the union of both sides (`workspaceId` + `workspaceName`);
+generated `docs/index/ROUTES.md` + `SYMBOLS.md` regenerated via
+`npm run index` (`index:check` OK). `store.tsx` auto-merged with the
+roster fix intact.
+
+**Post-merge suite defect (FIXED):** the merged base added
+`33-checkins.seed.ts` (PR-M8), which links the "Emma Anders" profile to the
+`emma.anders@canvas-demo.test` demo user — stealing it from the credential
+client user 00-workspace links. `seed-credentials.test.ts` therefore failed
+`findFirstOrThrow({workspaceId, userId: client.id})` — an upstream conflict
+between the SEED-FIX contract and PR-M8's profile ownership. Per the
+verifier note (the credential client has no profile row; 403 by design),
+the test now asserts Emma Anders belongs to the seeded canvas demo user and
+that the credential client is unanchored. Repro: clean app_media +
+`npx vitest run --config vitest.integration.config.ts
+tests/integration/seed-credentials.test.ts` → 2/2 passed.
+
+Repair gate results (this round): typecheck 0, lint 0, unit 0 (93 files /
+1067 tests incl. the new roster test), integration 0 (app_media), root
+build 0, frontend build 0, index+index:check 0, prettier 0.
