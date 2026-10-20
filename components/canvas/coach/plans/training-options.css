@@ -1,0 +1,192 @@
+.coach-root .cd-training-options {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid var(--cd-line);
+  border-radius: 18px;
+  background:
+    radial-gradient(
+      ellipse at 100% 0,
+      color-mix(in srgb, var(--cd-accent) 7%, transparent),
+      transparent 52%
+    ),
+    var(--cd-wash);
+}
+
+.coach-root .cd-training-options-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.coach-root .cd-training-options-eyebrow {
+  color: var(--cd-accent);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.coach-root .cd-training-options-heading h3 {
+  margin: 4px 0 3px;
+  font-size: 18px;
+  letter-spacing: -0.025em;
+}
+
+.coach-root .cd-training-options-heading p,
+.coach-root .cd-training-option-group header p {
+  max-width: 58ch;
+  margin: 0;
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+
+.coach-root .cd-training-options-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.coach-root .cd-training-option-group {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--cd-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--cd-surface) 84%, transparent);
+}
+
+.coach-root .cd-training-option-group > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.coach-root .cd-training-option-group h4 {
+  margin: 0 0 3px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.coach-root .cd-training-default {
+  display: grid;
+  gap: 4px;
+  min-width: 112px;
+  color: var(--cd-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.coach-root .cd-training-default select {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 26px 6px 9px;
+  border: 1px solid var(--cd-line);
+  border-radius: 9px;
+  background: var(--cd-field);
+  color: var(--cd-text);
+  font: inherit;
+  font-size: 12px;
+  text-transform: none;
+}
+
+.coach-root .cd-training-option-rows {
+  display: grid;
+  gap: 7px;
+}
+
+.coach-root .cd-training-option-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.coach-root .cd-training-option-row input {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--cd-line);
+  border-radius: 9px;
+  background: var(--cd-field);
+  color: var(--cd-text);
+  font: inherit;
+  font-size: 13px;
+  transition:
+    border-color 160ms var(--cd-ease-out),
+    background-color 160ms var(--cd-ease-out);
+}
+
+.coach-root .cd-training-option-row input:focus-visible,
+.coach-root .cd-training-default select:focus-visible {
+  outline: 2px solid var(--cd-accent-ring);
+  outline-offset: 2px;
+}
+
+.coach-root .cd-training-option-remove {
+  display: grid;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--cd-muted);
+  cursor: pointer;
+  transition:
+    background-color 160ms var(--cd-ease-out),
+    color 160ms var(--cd-ease-out);
+}
+
+.coach-root .cd-training-option-remove:hover:not(:disabled) {
+  background: color-mix(in srgb, #d56b73 14%, transparent);
+  color: #e78c92;
+}
+
+.coach-root .cd-training-option-remove:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.coach-root .cd-training-option-empty {
+  margin: 0;
+  padding: 10px;
+  border-radius: 9px;
+  background: var(--cd-wash);
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+
+.coach-root .cd-training-option-add {
+  justify-self: start;
+  min-height: 38px;
+  padding: 7px 11px;
+  font-size: 12px;
+}
+
+.coach-root .cd-training-options > .cd-caption {
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .coach-root .cd-training-options {
+    padding: 14px;
+  }
+
+  .coach-root .cd-training-options-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .coach-root .cd-training-option-group {
+    padding: 13px;
+  }
+}

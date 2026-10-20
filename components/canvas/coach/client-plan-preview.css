@@ -1,0 +1,305 @@
+.coach-root .mp-client-plan {
+  --mp-client-ink: var(--mp-text, var(--text));
+  --mp-client-muted: color-mix(in srgb, var(--mp-client-ink) 69%, transparent);
+  --mp-client-rule: color-mix(
+    in srgb,
+    var(--mp-edge, var(--border)) 82%,
+    transparent
+  );
+  min-width: 0;
+  width: 100%;
+  max-width: 960px;
+  margin-inline: auto;
+  color: var(--mp-client-ink);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.coach-root .mp-client-plan-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 7px 4px 17px;
+  border-bottom: 1px solid var(--mp-client-rule);
+}
+.coach-root .mp-client-plan-heading p {
+  margin: 0 0 4px;
+  color: var(--mp-client-muted);
+  font-size: 12px;
+}
+.coach-root .mp-client-plan-heading h2 {
+  margin: 0;
+  font-size: clamp(20px, 2.4vw, 27px);
+  font-weight: 560;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+.coach-root .mp-client-meal {
+  min-width: 0;
+  padding: 21px 4px 15px;
+  border-bottom: 1px solid var(--mp-client-rule);
+}
+.coach-root .mp-client-meal-heading {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 12px;
+}
+.coach-root .mp-client-meal-index {
+  flex: 0 0 23px;
+  color: var(--mp-client-muted);
+  font-size: 11px;
+}
+.coach-root .mp-client-meal-heading h3 {
+  min-width: 0;
+  margin: 0;
+  font-size: 19px;
+  font-weight: 580;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.coach-root .mp-client-meal-heading time {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--mp-client-ink);
+  font-size: 14px;
+  font-weight: 530;
+  white-space: nowrap;
+}
+.coach-root .mp-client-frequency {
+  margin: 6px 0 2px 35px;
+  color: var(--mp-client-ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.coach-root .mp-client-food-table {
+  width: 100%;
+  margin-top: 15px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  text-align: right;
+}
+.coach-root .mp-client-food-table th,
+.coach-root .mp-client-food-table td {
+  min-width: 0;
+  padding: 9px 7px;
+  vertical-align: baseline;
+}
+.coach-root .mp-client-food-table th:first-child,
+.coach-root .mp-client-food-table td:first-child {
+  padding-left: 4px;
+}
+.coach-root .mp-client-food-table thead th {
+  border-bottom: 1px solid var(--mp-client-rule);
+  color: var(--mp-client-muted);
+  font-size: 10px;
+  font-weight: 450;
+  white-space: nowrap;
+}
+.coach-root .mp-client-food-table thead th:first-child {
+  text-align: left;
+}
+.coach-root .mp-client-food-table thead th:nth-child(1) {
+  width: 37%;
+}
+.coach-root .mp-client-food-table thead th:nth-child(2) {
+  width: 17%;
+}
+.coach-root .mp-client-food-table thead th:nth-child(n + 3) {
+  width: 11.5%;
+}
+.coach-root .mp-client-food-group {
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--mp-client-rule) 70%, transparent);
+}
+.coach-root .mp-client-food-table .mp-client-food-row th {
+  text-align: left;
+}
+.coach-root .mp-client-food-name {
+  font-size: 13px;
+  font-weight: 520;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.coach-root .mp-client-food-row td {
+  color: var(--mp-client-ink);
+  font-size: 12px;
+}
+.coach-root .mp-client-food-table .mp-client-food-portion {
+  color: var(--mp-client-muted);
+  white-space: nowrap;
+}
+.coach-root .mp-client-quantity {
+  color: var(--mp-client-ink);
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.coach-root .mp-client-quantity > span {
+  color: var(--mp-client-muted);
+  font-weight: 420;
+}
+.coach-root .mp-client-calories {
+  font-weight: 550;
+}
+.coach-root .mp-client-food-table .mp-client-swap-row th {
+  padding: 1px 7px 10px 15px;
+  color: var(--mp-client-ink);
+  font-size: 11px;
+  font-weight: 450;
+  line-height: 1.5;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.coach-root .mp-client-swap-branch {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-left: 10px;
+  border-left: 2px solid
+    color-mix(in srgb, var(--accent) 42%, var(--mp-client-rule));
+}
+.coach-root .mp-client-swap-label {
+  flex: none;
+  color: var(--accent-ink, var(--accent));
+  font-size: 11px;
+  font-weight: 550;
+}
+.coach-root .mp-client-swap-name {
+  color: var(--mp-client-ink);
+  font-size: 13px;
+  font-weight: 500;
+}
+.coach-root .mp-client-swap-row td {
+  padding-top: 1px;
+  padding-bottom: 10px;
+  color: var(--mp-client-ink);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.coach-root .mp-client-swap-note-row td {
+  padding: 0 4px 11px 17px;
+  text-align: left;
+}
+.coach-root .mp-client-swap-note-row p {
+  margin: 0;
+  padding-left: 10px;
+  border-left: 2px solid
+    color-mix(in srgb, var(--accent) 58%, var(--mp-client-rule));
+  color: var(--mp-client-ink);
+  font-size: 12px;
+  line-height: 1.55;
+  white-space: normal;
+}
+.coach-root .mp-client-food-table tfoot td {
+  padding-top: 12px;
+  font-size: 12px;
+  font-weight: 620;
+}
+.coach-root .mp-client-food-table tfoot .mp-client-meal-total-label {
+  padding-top: 12px;
+  font-size: 12px;
+  font-weight: 620;
+  text-align: left;
+}
+.coach-root .mp-client-food-table .mp-client-empty {
+  padding: 14px 4px;
+  color: var(--mp-client-ink);
+  font-size: 13px;
+  text-align: left;
+}
+.coach-root .mp-client-empty-plan {
+  padding: 20px 4px 8px;
+}
+
+@media (max-width: 700px) {
+  .coach-root .mp-client-plan-heading {
+    padding-inline: 2px;
+  }
+  .coach-root .mp-client-meal {
+    padding: 20px 2px;
+  }
+  .coach-root .mp-client-meal-heading {
+    gap: 8px;
+  }
+  .coach-root .mp-client-meal-heading h3 {
+    font-size: 18px;
+  }
+  .coach-root .mp-client-food-table {
+    display: block;
+    margin-top: 16px;
+  }
+  .coach-root .mp-client-food-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .coach-root .mp-client-food-table tbody,
+  .coach-root .mp-client-food-table tfoot {
+    display: block;
+  }
+  .coach-root .mp-client-food-row,
+  .coach-root .mp-client-food-table tfoot tr {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px 8px;
+    padding: 14px 0;
+  }
+  .coach-root .mp-client-food-table tfoot td,
+  .coach-root .mp-client-food-table .mp-client-food-row th,
+  .coach-root .mp-client-food-table .mp-client-food-row td,
+  .coach-root .mp-client-food-table tfoot .mp-client-meal-total-label {
+    padding: 0;
+  }
+  .coach-root .mp-client-food-table .mp-client-food-row th {
+    grid-column: 1 / 3;
+  }
+  .coach-root .mp-client-food-table .mp-client-food-portion {
+    grid-column: 3 / 5;
+  }
+  .coach-root .mp-client-food-name {
+    font-size: 14px;
+  }
+  .coach-root .mp-client-quantity {
+    font-size: 16px;
+  }
+  .coach-root .mp-client-food-table td[data-label] {
+    text-align: left;
+    font-size: 13px;
+  }
+  .coach-root .mp-client-food-table td[data-label]::before {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--mp-client-muted);
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 400;
+  }
+  .coach-root .mp-client-food-table tfoot .mp-client-meal-total-label {
+    grid-column: 1 / -1;
+  }
+  .coach-root .mp-client-swap-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .coach-root .mp-client-food-table .mp-client-swap-row th {
+    padding: 0 0 12px 8px;
+  }
+  .coach-root .mp-client-food-table .mp-client-swap-row td {
+    padding: 0 0 12px;
+  }
+  .coach-root .mp-client-swap-row td[colspan] {
+    display: none;
+  }
+  .coach-root .mp-client-swap-note-row {
+    display: block;
+  }
+  .coach-root .mp-client-food-table .mp-client-swap-note-row td {
+    display: block;
+    padding: 0 0 12px 8px;
+  }
+}
