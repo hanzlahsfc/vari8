@@ -1822,6 +1822,7 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 - [ ] Each screen keeps its exact markup; only the data provider and server calls change.
 - [ ] The canvas demo data for this domain comes from the model PR's seed file; if a value the screen shows is missing, add it to that seed file in this PR.
 - [ ] No `db/` edits (D34).
+- [ ] Booking code (TRAINING-I1B-2, `TrainingSessionBooking`) stays and is flagged as possibly removed later (docs/product-decisions.md #119); PR-W8 must not delete booking code without a ruling.
 
 **You see.**
 
