@@ -290,11 +290,15 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         status: "ACTIVE",
       },
     });
-    // Do not steal a link that the SEED-FIX credential client already owns:
-    // profile 0 is "Emma Anders", and 00-workspace.seed.ts links the sign-in
-    // client user to it. The demo user only fills an unowned profile.
+    // Rerun safety: free the user from any profile it already owns —
+    // `clients` is createdAt-ordered and bulk rows share a timestamp, so a
+    // previous run may have linked this user to a different profile.
     await prisma.clientProfile.updateMany({
-      where: { id: clientId(i), userId: null },
+      where: { workspaceId: ws, userId: user.id },
+      data: { userId: null },
+    });
+    await prisma.clientProfile.update({
+      where: { id: clientId(i) },
       data: { userId: user.id },
     });
     const member = await prisma.workspaceMember.findFirst({

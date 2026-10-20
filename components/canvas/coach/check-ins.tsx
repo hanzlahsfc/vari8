@@ -658,6 +658,7 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
               ) : (
                 <DemoRecorder
                   kind="video"
+                  clientName={c.name}
                   onAttach={(video) => setDraft({ video })}
                 />
               )}

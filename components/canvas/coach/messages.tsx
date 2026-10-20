@@ -18,6 +18,7 @@ import {
 import { Fragment, useEffect, useRef, useState } from "react";
 import { nextEvent } from "./clients";
 import { DemoRecorder, MediaCard } from "./media";
+import { uploadCanvasMedia } from "./media-card";
 import {
   type CoachClient,
   formatDate,
@@ -38,7 +39,16 @@ const SNIPPETS = [
   "Let’s keep things simple: consistency first, then we’ll build from here.",
 ];
 export function MessagesWorkspace() {
-  const { state, setState, route, navigate, attach, toast } = useCoach();
+  const {
+    state,
+    setState,
+    route,
+    navigate,
+    attach,
+    toast,
+    workspaceId,
+    clientProfileIdFor,
+  } = useCoach();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
   const [threadSearch, setThreadSearch] = useState("");
@@ -697,6 +707,17 @@ export function MessagesWorkspace() {
                       };
                       attach(item, f);
                       items.push(item);
+                      // PR-MEDIA: real upload in the background; the item
+                      // stays local-previewable meanwhile (S02-08).
+                      void (async () => {
+                        const profileId = client
+                          ? await clientProfileIdFor(client.name)
+                          : null;
+                        await uploadCanvasMedia(item, f, {
+                          workspaceId,
+                          clientProfileId: profileId ?? undefined,
+                        });
+                      })();
                     }
                     setDraft({ attachments: [...draft.attachments, ...items] });
                     e.target.value = "";
@@ -737,10 +758,11 @@ export function MessagesWorkspace() {
           onClose={() => setVoice(false)}
         >
           <p className="cd-muted">
-            Use a local demo audio clip to try the complete voice-note flow.
+            Use your microphone to record a voice note.
           </p>
           <DemoRecorder
             kind="voice"
+            clientName={client.name}
             onAttach={(item) => {
               setDraft({ attachments: [...draft.attachments, item] });
               setVoice(false);
