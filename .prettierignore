@@ -36,6 +36,7 @@ spec/AGENTS.md
 tests/AGENTS.md
 themes/AGENTS.md
 tools/AGENTS.md
+public/AGENTS.md
 
 # Written by the parity harness on every baseline capture (tools/parity/capture.mjs).
 tools/parity/baseline/manifest.json
@@ -45,3 +46,7 @@ frontend/
 icm/02-gap-matrix/
 icm/05-build/graph.json
 icm/05-build/graph-summary.json
+
+# PR-01: Lilly's canvas carried from frontend/ (Biome-formatted there); CSS stays byte for byte.
+components/canvas/
+lib/canvas/

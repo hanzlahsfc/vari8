@@ -1,0 +1,798 @@
+/* biome-ignore-all lint/style/noDescendingSpecificity: trends selectors are scoped to the tracker surface. */
+.coach-root .ct-tracking .ct-trends {
+  --ct-trends-accent: var(--cd-chart-line, var(--ct-accent, var(--accent)));
+  min-width: 0;
+  padding-top: 16px;
+}
+
+.coach-root .ct-tracking .ct-trends-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--ct-edge, var(--ct-rule)) 70%, transparent);
+}
+
+.coach-root .ct-tracking .ct-trends-picker {
+  position: relative;
+  min-width: 0;
+}
+
+.coach-root .ct-tracking .ct-trends-picker-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid
+    color-mix(in srgb, var(--ct-edge, var(--ct-rule)) 72%, transparent);
+  border-radius: 8px;
+  background: var(--ct-panel-raised, var(--surface-subtle));
+  color: var(--ct-text, var(--text));
+  font: inherit;
+  font-size: 13px;
+  font-weight: 580;
+  cursor: pointer;
+  transition:
+    background 170ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 170ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 170ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.coach-root .ct-tracking .ct-trends-picker-toggle:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--ct-trends-accent) 42%,
+    var(--ct-edge, var(--ct-rule))
+  );
+  background: var(--ct-panel-raised, var(--surface-subtle));
+}
+
+.coach-root .ct-tracking .ct-trends-picker-toggle:active,
+.coach-root .ct-tracking .ct-trends-range button:active,
+.coach-root .ct-tracking .ct-trends-tag button:active {
+  transform: scale(0.97);
+}
+
+.coach-root .ct-tracking .ct-trends-picker-count {
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-root .ct-tracking .ct-trends-picker-chevron {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+}
+
+.coach-root .ct-tracking .ct-trends-picker-chevron > svg {
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.coach-root .ct-tracking .ct-trends-picker-chevron .is-open {
+  transform: rotate(180deg);
+}
+
+.coach-root .ct-tracking .ct-trends-picker-toggle:focus-visible,
+.coach-root .ct-tracking .ct-trends-range button:focus-visible,
+.coach-root .ct-tracking .ct-trends-tag button:focus-visible,
+.coach-root
+  .ct-tracking
+  .ct-trends-options
+  input[type="checkbox"]:focus-visible,
+.coach-root .ct-tracking .ct-trends-options label:focus-within,
+.coach-root .ct-tracking .ct-trends-day:focus-visible,
+.coach-root .ct-tracking .ct-trends-plot-wrap:focus-visible,
+.coach-root .ct-tracking .ct-trends-text-list button:focus-visible {
+  outline: 2px solid var(--ct-trends-accent);
+  outline-offset: 2px;
+}
+
+.coach-root .ct-tracking .ct-trends-options {
+  position: relative;
+  width: min(390px, 100%);
+  max-height: 300px;
+  display: flex;
+  flex-direction: column;
+  margin-top: 7px;
+  padding: 9px;
+  border: 1px solid var(--ct-edge, var(--ct-rule));
+  border-radius: 13px;
+  background: var(--ct-panel-raised, var(--surface));
+  box-shadow:
+    0 12px 32px color-mix(in srgb, var(--ct-text, var(--text)) 12%, transparent),
+    inset 0 1px color-mix(in srgb, white 7%, transparent);
+  transform-origin: top left;
+}
+
+.coach-root .ct-tracking .ct-trends-search-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid var(--ct-edge, var(--ct-rule));
+  border-radius: 8px;
+  background: var(--ct-field, var(--surface-subtle));
+  color: var(--ct-text-secondary, var(--ct-quiet));
+}
+
+.coach-root .ct-tracking .ct-trends-search-icon {
+  flex: 0 0 auto;
+}
+
+.coach-root .ct-tracking .ct-trends-search-label input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ct-text, var(--text));
+  font: inherit;
+  font-size: 13px;
+}
+
+.coach-root .ct-tracking .ct-trends-options-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-height: 230px;
+  margin-top: 10px;
+  padding: 2px 2px 4px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.coach-root .ct-tracking .ct-trends-options fieldset {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.coach-root .ct-tracking .ct-trends-options legend {
+  width: 100%;
+  margin-bottom: 4px;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.coach-root .ct-tracking .ct-trends-options fieldset label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 7px;
+  border-radius: 7px;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.coach-root .ct-tracking .ct-trends-options fieldset label:hover,
+.coach-root .ct-tracking .ct-trends-options fieldset label.is-selected {
+  background: color-mix(in srgb, var(--ct-trends-accent) 9%, transparent);
+  color: var(--ct-text, var(--text));
+}
+
+.coach-root .ct-tracking .ct-trends-options fieldset label:has(input:disabled) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.coach-root .ct-tracking .ct-trends-options input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--ct-trends-accent);
+}
+
+.coach-root .ct-tracking .ct-trends-options fieldset label span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.coach-root .ct-tracking .ct-trends-no-matches {
+  grid-column: 1 / -1;
+  margin: 4px 0;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 13px;
+}
+
+.coach-root .ct-tracking .ct-trends-range {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  margin: 0;
+  padding: 3px;
+  border: 1px solid
+    color-mix(in srgb, var(--ct-edge, var(--ct-rule)) 64%, transparent);
+  border-radius: 8px;
+  background: var(--ct-field, var(--surface-subtle));
+}
+
+.coach-root .ct-tracking .ct-trends-range legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.coach-root .ct-tracking .ct-trends-range button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 170ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 170ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 170ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.coach-root .ct-tracking .ct-trends-range button:hover {
+  color: var(--ct-text, var(--text));
+}
+
+.coach-root .ct-tracking .ct-trends-range button.is-selected {
+  background: var(--ct-panel, var(--surface));
+  color: var(--ct-text, var(--text));
+  box-shadow:
+    0 1px 3px color-mix(in srgb, var(--ct-text, var(--text)) 11%, transparent),
+    inset 0 1px color-mix(in srgb, white 10%, transparent);
+}
+
+.coach-root .ct-tracking .ct-trends-selected {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 0;
+  margin: 0;
+  padding: 9px 0 2px;
+  list-style: none;
+}
+
+.coach-root .ct-tracking .ct-trends-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  min-height: 30px;
+  padding: 0 4px 0 10px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--ct-trends-accent) 25%,
+      var(--ct-edge, var(--ct-rule))
+    );
+  border-radius: 7px;
+  background: color-mix(
+    in srgb,
+    var(--ct-trends-accent) 7%,
+    var(--ct-panel, var(--surface))
+  );
+  color: var(--ct-text, var(--text));
+  font-size: 13px;
+}
+
+.coach-root .ct-tracking .ct-trends-tag > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coach-root .ct-tracking .ct-trends-tag button {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font: inherit;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.coach-root .ct-tracking .ct-trends-remove-icon {
+  display: block;
+}
+
+.coach-root .ct-tracking .ct-trends-tag button:hover {
+  color: var(--ct-text, var(--text));
+}
+
+.coach-root .ct-tracking .ct-trends-headline {
+  display: flex;
+  justify-content: flex-end;
+  padding: 9px 3px 0;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-root .ct-tracking .ct-trends-tray {
+  margin-top: 6px;
+  padding: 0;
+}
+
+.coach-root .ct-tracking .ct-trends-series-core {
+  min-width: 0;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.coach-root .ct-tracking .ct-trends-series {
+  display: grid;
+  min-width: 0;
+}
+
+.coach-root .ct-tracking .ct-trends-series-item {
+  min-width: 0;
+  padding: 17px 10px 18px;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--ct-edge, var(--ct-rule)) 65%, transparent);
+}
+
+.coach-root .ct-tracking .ct-trends-series-item:last-child {
+  border-bottom: 0;
+}
+
+.coach-root .ct-tracking .ct-trends-series-item > header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.coach-root .ct-tracking .ct-trends-series-item > header > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.coach-root .ct-tracking .ct-trends-series-item h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ct-text, var(--text));
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.coach-root .ct-tracking .ct-trends-series-item header span,
+.coach-root .ct-tracking .ct-trends-series-item header p {
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 12px;
+}
+
+.coach-root .ct-tracking .ct-trends-series-item header span {
+  display: block;
+  margin-top: 2px;
+}
+
+.coach-root .ct-tracking .ct-trends-series-item header p {
+  flex: 0 0 auto;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-root .ct-tracking .ct-trends-text-list button {
+  min-height: 36px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.coach-root .ct-tracking .ct-trends-text-list button:hover {
+  background: color-mix(in srgb, var(--ct-trends-accent) 8%, transparent);
+  color: var(--ct-text, var(--text));
+}
+
+.coach-root .ct-tracking .ct-trends-plot-wrap {
+  position: relative;
+  min-width: 0;
+  min-height: 214px;
+  margin-top: 12px;
+  touch-action: pan-y;
+}
+
+.coach-root .ct-tracking .ct-trends-plot {
+  display: block;
+  width: 100%;
+  height: 208px;
+  overflow: visible;
+  touch-action: pan-y;
+  cursor: crosshair;
+}
+
+.coach-root .ct-tracking .ct-trends-grid {
+  stroke: color-mix(in srgb, var(--ct-edge, var(--ct-rule)) 74%, transparent);
+  stroke-width: 1;
+}
+
+.coach-root .ct-tracking .ct-trends-axis {
+  fill: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-root .ct-tracking .ct-trends-empty-label {
+  fill: var(--ct-text, var(--text));
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.coach-root .ct-tracking .ct-trends-empty-hint {
+  fill: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 11px;
+}
+
+.coach-root .ct-tracking .ct-trends-line {
+  fill: none;
+  stroke: var(--ct-trends-accent);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.coach-root .ct-tracking .ct-trends-area {
+  fill: color-mix(in srgb, var(--ct-trends-accent) 8%, transparent);
+  stroke: none;
+  pointer-events: none;
+}
+
+.coach-root .ct-tracking .ct-trends-point {
+  fill: var(--ct-panel-raised, var(--surface));
+  stroke: var(--ct-trends-accent);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.coach-root .ct-tracking .ct-trends-bar {
+  fill: color-mix(in srgb, var(--ct-trends-accent) 62%, transparent);
+}
+
+.coach-root .ct-tracking .ct-trends-bar.is-active {
+  fill: var(--ct-trends-accent);
+}
+
+.coach-root .ct-tracking .ct-trends-cursor {
+  stroke: color-mix(in srgb, var(--ct-trends-accent) 52%, transparent);
+  stroke-dasharray: 2 3;
+  stroke-width: 1;
+}
+
+.coach-root .ct-tracking .ct-trends-tooltip {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 12px 0 48px;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-root .ct-tracking .ct-trends-chart-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 16px;
+  margin: 9px 12px 0 48px;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-root .ct-tracking .ct-trends-open-day {
+  min-height: 30px;
+  margin-left: auto;
+  padding: 0 9px;
+  border: 1px solid
+    color-mix(in srgb, var(--ct-edge, var(--ct-rule)) 70%, transparent);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ct-text, var(--text));
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition:
+    border-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.coach-root .ct-tracking .ct-trends-open-day:hover:not(:disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--ct-trends-accent) 45%,
+    var(--ct-edge, var(--ct-rule))
+  );
+  background: color-mix(in srgb, var(--ct-trends-accent) 7%, transparent);
+}
+
+.coach-root .ct-tracking .ct-trends-open-day:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.coach-root .ct-tracking .ct-trends-tooltip strong {
+  color: var(--ct-text, var(--text));
+  font-weight: 580;
+  text-align: right;
+}
+
+.coach-root .ct-tracking .ct-trends-empty-state,
+.coach-root .ct-tracking .ct-trends-empty {
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 13px;
+}
+
+.coach-root .ct-tracking .ct-trends-empty-state {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 28px 14px;
+  border: 1px dashed var(--ct-edge, var(--ct-rule));
+  border-radius: 10px;
+}
+
+.coach-root .ct-tracking .ct-trends-empty-state strong {
+  color: var(--ct-text, var(--text));
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.coach-root .ct-tracking .ct-trends-completion {
+  padding-top: 17px;
+}
+
+.coach-root .ct-tracking .ct-trends-completion-strip {
+  display: grid;
+  grid-template-columns: repeat(var(--ct-trends-days, 30), minmax(2px, 1fr));
+  align-items: center;
+  gap: 2px;
+}
+
+.coach-root .ct-tracking .ct-trends-day {
+  position: relative;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.coach-root .ct-tracking .ct-trends-day::after {
+  position: absolute;
+  top: 21px;
+  right: 0;
+  left: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--ct-edge, var(--ct-rule));
+  content: "";
+}
+
+.coach-root .ct-tracking .ct-trends-day.is-yes::after {
+  background: var(--ct-trends-accent);
+  box-shadow: 0 0 7px
+    color-mix(in srgb, var(--ct-trends-accent) 40%, transparent);
+}
+
+.coach-root .ct-tracking .ct-trends-day.is-no::after {
+  background: color-mix(in srgb, var(--ct-text, var(--text)) 40%, transparent);
+}
+
+.coach-root .ct-tracking .ct-trends-day.is-active::before {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--ct-trends-accent);
+  border-radius: 50%;
+  background: var(--ct-panel-raised, var(--surface));
+  content: "";
+  transform: translateX(-50%);
+}
+
+.coach-root .ct-tracking .ct-trends-legend {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-top: 8px;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 12px;
+}
+
+.coach-root .ct-tracking .ct-trends-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.coach-root .ct-tracking .ct-trends-legend i {
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--ct-edge, var(--ct-rule));
+  border-radius: 2px;
+  background: transparent;
+}
+
+.coach-root .ct-tracking .ct-trends-legend i.is-yes {
+  border-color: var(--ct-trends-accent);
+  background: var(--ct-trends-accent);
+}
+
+.coach-root .ct-tracking .ct-trends-legend i.is-no {
+  background: color-mix(in srgb, var(--ct-text, var(--text)) 30%, transparent);
+}
+
+.coach-root .ct-tracking .ct-trends-legend strong {
+  margin-left: auto;
+  color: var(--ct-text, var(--text));
+  font-weight: 550;
+}
+
+.coach-root .ct-tracking .ct-trends-text-list {
+  max-height: 260px;
+  margin: 10px 0 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.coach-root .ct-tracking .ct-trends-text-list li {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  padding: 7px 0;
+  border-top: 1px solid
+    color-mix(in srgb, var(--ct-edge, var(--ct-rule)) 65%, transparent);
+  font-size: 13px;
+}
+
+.coach-root .ct-tracking .ct-trends-text-list time {
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-root .ct-tracking .ct-trends-text-list li > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ct-text, var(--text));
+  white-space: pre-wrap;
+}
+
+.coach-root .ct-tracking .ct-trends-observed-point {
+  fill: var(--ct-trends-accent);
+}
+
+.coach-root .ct-tracking .ct-trends-open-day:focus-visible {
+  outline: 2px solid var(--ct-trends-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-root .ct-tracking .ct-trends-picker-toggle,
+  .coach-root .ct-tracking .ct-trends-range button,
+  .coach-root .ct-tracking .ct-trends-tag button,
+  .coach-root .ct-tracking .ct-trends-options fieldset label {
+    transition: none;
+  }
+
+  .coach-root .ct-tracking .ct-trends-picker-chevron > svg {
+    transition: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .coach-root .ct-tracking .ct-trends-controls {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+
+  .coach-root .ct-tracking .ct-trends-picker-toggle {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .coach-root .ct-tracking .ct-trends-picker-chevron {
+    margin-left: auto;
+  }
+
+  .coach-root .ct-tracking .ct-trends-options-groups {
+    grid-template-columns: 1fr;
+    max-height: 250px;
+  }
+
+  .coach-root .ct-tracking .ct-trends-range {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .coach-root .ct-tracking .ct-trends-range button {
+    flex: 1 1 auto;
+    min-height: 40px;
+    padding: 0 7px;
+    font-size: 12px;
+  }
+
+  .coach-root .ct-tracking .ct-trends-series-core {
+    padding: 0;
+  }
+
+  .coach-root .ct-tracking .ct-trends-series-item {
+    padding-inline: 2px;
+  }
+
+  .coach-root .ct-tracking .ct-trends-legend {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+
+  .coach-root .ct-tracking .ct-trends-legend strong {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .coach-root .ct-tracking .ct-trends-text-list li {
+    grid-template-columns: 76px minmax(0, 1fr) auto;
+    gap: 6px;
+  }
+
+  .coach-root .ct-tracking .ct-trends-text-list button {
+    padding-inline: 4px;
+  }
+
+  .coach-root .ct-tracking .ct-trends-chart-footer {
+    margin-left: 34px;
+    gap: 5px 12px;
+  }
+
+  .coach-root .ct-tracking .ct-trends-open-day {
+    width: 100%;
+    margin-left: 0;
+  }
+}

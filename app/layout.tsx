@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" data-theme="pro-dark" suppressHydrationWarning>
-      <body>
+      <head>
         {/* FI-I3: browser-local appearance bootstrap. Reads the dedicated
             `appearance` key and applies it ONLY when the value is one of
             the two existing theme identifiers — malformed, foreign or
@@ -25,8 +25,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               "document.documentElement.dataset.theme=v;}catch(e){}",
           }}
         />
-        {children}
-      </body>
+      </head>
+      <body>{children}</body>
     </html>
   );
 }
