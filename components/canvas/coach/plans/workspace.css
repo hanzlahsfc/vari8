@@ -1,0 +1,323 @@
+/* biome-ignore-all lint/style/noDescendingSpecificity: Authoring, date and responsive selectors are scoped to separate coach controls. */
+.coach-root .cp-workspace {
+  min-width: 0;
+}
+.coach-root .cp-workspace:has(> .cn-editor) {
+  width: 100%;
+  max-width: 1320px;
+  margin-inline: auto;
+}
+.coach-root .cp-context,
+.coach-root .cp-toolbar,
+.coach-root .cp-footer,
+.coach-root .cp-schedule-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.coach-root .cp-context {
+  color: var(--cd-muted);
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+.coach-root .cp-context > span:first-of-type {
+  margin-right: auto;
+}
+.coach-root .cp-toolbar {
+  margin-bottom: 12px;
+}
+.coach-root .cp-toolbar h1 {
+  font-size: 28px;
+  letter-spacing: -0.025em;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.coach-root .cp-toolbar p,
+.coach-root .cp-footer p,
+.coach-root .cp-schedule-link p {
+  color: var(--cd-muted);
+  font-size: 13px;
+  margin-top: 6px;
+}
+.coach-root .cp-save-state {
+  color: var(--cd-muted);
+  font-size: 13px;
+  min-height: 24px;
+  margin-bottom: 20px;
+}
+.coach-root .cp-plan-meta {
+  display: flex;
+  gap: 20px;
+  align-items: end;
+  flex-wrap: wrap;
+  padding: 20px;
+  background: var(--cd-wash);
+  border: 1px solid var(--cd-line);
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+.coach-root .cp-plan-meta .cd-field:first-child {
+  flex: 1;
+  min-width: 180px;
+}
+.coach-root .cp-plan-meta p {
+  font-size: 13px;
+  color: var(--cd-muted);
+}
+.coach-root .cp-errors {
+  padding: 16px;
+  border: 1px solid var(--cd-accent);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+.coach-root .cp-errors ul {
+  margin-bottom: 0;
+  padding-left: 20px;
+}
+.coach-root .cp-footer {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--cd-line);
+}
+.coach-root .cp-preview-label {
+  margin-bottom: 24px;
+  color: var(--cd-muted);
+}
+.coach-root .cp-schedule-link {
+  margin-top: 20px;
+}
+@media (max-width: 600px) {
+  .coach-root .cp-context > span:first-of-type {
+    width: 100%;
+    order: -1;
+  }
+  .coach-root .cp-toolbar .cd-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .coach-root .cp-toolbar .cd-actions button:last-child {
+    grid-column: 1 / -1;
+  }
+  .coach-root .cp-plan-meta {
+    padding: 16px;
+    gap: 16px;
+  }
+  .coach-root .cp-plan-meta .cd-field {
+    width: 100%;
+  }
+  .coach-root .cp-footer {
+    align-items: stretch;
+  }
+  .coach-root .cp-footer .cd-actions {
+    width: 100%;
+  }
+  .coach-root .cp-footer button {
+    flex: 1;
+  }
+}
+/* The authoring bar follows the original meal-plan workspace: quiet metadata,
+   uninterrupted full-width content, with identity always one step away. */
+.coach-root .cp-toolbar {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--cd-line);
+  margin-bottom: 0;
+}
+.coach-root .cp-toolbar h1 {
+  font-size: clamp(28px, 3vw, 36px);
+  font-weight: 540;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+.coach-root .cp-toolbar p {
+  max-width: 52ch;
+}
+.coach-root .cp-save-state {
+  margin: 10px 0 0;
+  min-height: 20px;
+  font-size: 12px;
+}
+.coach-root .cp-plan-meta {
+  padding: 14px 0 22px;
+  gap: 14px;
+  margin: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  align-items: start;
+}
+.coach-root .cp-plan-meta .cd-field:first-child {
+  flex: 0 1 400px;
+  min-width: 220px;
+  margin: 0;
+}
+.coach-root .cp-plan-meta .cd-field > span,
+.coach-root .cp-date-control .cn-date > span {
+  min-height: 15px;
+  line-height: 15px;
+  font-size: 12px;
+  color: var(--cd-muted);
+}
+.coach-root .cp-date-control {
+  margin-top: 0;
+}
+.coach-root .cp-date-control .cn-date {
+  flex-direction: column;
+  align-items: stretch;
+}
+.coach-root .cp-plan-meta .cd-field > input {
+  min-height: 44px;
+}
+.coach-root .cp-plan-meta .cp-date-control {
+  width: 174px;
+  flex: none;
+  font-size: 12px;
+}
+.coach-root .cp-date-control .cn-date > span {
+  padding-inline-start: 13px;
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .cp-date-control .cn-date {
+  gap: 5px;
+}
+.coach-root .cp-date-control button.cn-dt-trigger {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--cd-line);
+  background: var(--cd-wash);
+  color: var(--cd-text);
+  border-radius: 999px;
+  padding: 8px 16px;
+}
+.coach-root .cp-plan-meta > p {
+  flex: 1;
+  min-width: 140px;
+  margin: 22px 0 0;
+  font-size: 12px;
+}
+.coach-root .cp-toolbar .cd-actions {
+  align-items: center;
+}
+.coach-root .cp-toolbar .cd-actions > button:last-child {
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--cd-accent) 20%, transparent);
+}
+.coach-root .cp-history-days {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+  margin: 16px 0;
+}
+.coach-root .cp-history-day {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--cd-line);
+  border-radius: 10px;
+  background: var(--cd-wash);
+}
+.coach-root .cp-history-day span {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.coach-root .cp-history-day small {
+  grid-column: 1 / -1;
+  color: var(--cd-muted);
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .cp-footer {
+  background: color-mix(in srgb, var(--cd-bg) 92%, transparent);
+  padding-bottom: 12px;
+}
+.coach-root .cp-date-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--cd-line);
+  font-size: 12px;
+  color: var(--cd-muted);
+}
+.coach-root .cp-date-preview input,
+.coach-root .cp-date-preview select {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--cd-line);
+  border-radius: 999px;
+  background: var(--cd-field);
+  color: var(--cd-text);
+}
+@media (max-width: 600px) {
+  .coach-root .cp-context {
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .coach-root .cp-toolbar {
+    gap: 16px;
+  }
+  .coach-root .cp-plan-meta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px 0 20px;
+    gap: 12px;
+  }
+  .coach-root .cp-plan-meta .cd-field:first-child {
+    min-width: 0;
+    width: 100%;
+  }
+  .coach-root .cp-plan-meta .cp-date-control {
+    width: 100%;
+  }
+  .coach-root .cp-plan-meta > p {
+    margin: 0;
+  }
+  .coach-root .cp-footer {
+    position: sticky;
+    bottom: 62px;
+    z-index: 2;
+    padding: 12px 0 14px;
+    backdrop-filter: blur(16px);
+  }
+  .coach-root .cp-footer > p {
+    display: none;
+  }
+  .coach-root .cp-footer button {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .coach-root .cp-footer {
+    background: var(--cd-bg);
+    backdrop-filter: none;
+  }
+}
+.coach-root .cp-mobile-back {
+  display: none;
+}
+.coach-root .cp-date-control .cn-dt-root,
+.coach-root .cp-date-control .cn-dt-trigger {
+  width: 100%;
+}
+.coach-root .cp-date-control .cn-dt-trigger {
+  min-height: 44px;
+}
+@media (max-width: 600px) {
+  .coach-root .cp-footer .cp-mobile-back {
+    display: inline-flex;
+    flex: 0 0 40px;
+    padding: 0;
+  }
+  .coach-root .cp-footer .cd-actions {
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+  .coach-root .cp-footer .cd-actions > button {
+    padding-inline: 10px;
+    font-size: 12px;
+  }
+}
