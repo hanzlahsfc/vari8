@@ -3,8 +3,36 @@
 Card `icm/05-build/cards/pr-m3-notes-tasks.md`, issue #109, PR #110, branch
 `beta/pr-m3-notes-tasks`, lane DB `app_wb_m3`, lane port 3910.
 
-Gate head: `b1bdc0ffa81240b0aa877a09abd1259a31a5d46d`. Gate base
-`bb3140111d9f02ab0fd7e2ecdf16a1732536c66e` (`origin/Vari8-Beta`).
+Gate head: `8a42418f514678b2cdd070f92aecea2ccdf33773`. Gate base
+`fb5c38780b729679b11b4d2a32d7ce14d3f65ab9` (`origin/Vari8-Beta`).
+
+Gate result: 19 of 20 steps PASS, one FAIL on `parity regression (D32)`. Parity is
+not this card's contract (`- Parity (D32) on: none.`), it is red on every lane in
+this wave because the committed baseline is captured on the Linux reference host
+and the macOS font metrics differ, and the gate has no skip switch until PR #137
+lands. No other step fails: format, typecheck, lint, unit 1115, frontend tests,
+integration 872, migrate deploy, build, frontend build and e2e all pass.
+
+## Merge resolution, verifier FIX round 1
+
+The verifier accepted the card's content on `ba0f525`; the only blocker was the
+base moving to `fb5c387`. Merging raised one substantive conflict, in
+`scripts/seed/33-checkins.seed.ts`. The card had guarded the link so the demo
+user could not take a client profile the SEED-FIX credential client owned. The
+base changed that ownership model: `tests/integration/seed-credentials.test.ts`
+lines 126 to 140 now require the canvas demo user to own the "Emma Anders"
+profile and the credential client to own none, with own-scope media 403 by
+design. The two intents are mutually exclusive, so the base wins and the card's
+guard is dropped. The file now has an empty diff against `origin/Vari8-Beta`,
+and the integration suite passes, seed-credentials included.
+
+Proven on a fresh `app_wb_m3` with `npm run db:fresh` run twice: both exit 0 with
+identical counts (14 client profiles, 31 notes, 8 to-dos, 2 forms, 14 rules, 114
+occurrences, 3 extras, 3 submissions, 1 review, 1 feedback, 2 media objects, 4
+modules). The only difference between runs is the generated cuid. Log:
+`Vari8-evidence/WAVEB-LEAD/pr-m3-seed-twice.log`. Note for other lanes:
+`db:fresh` needs `BETTER_AUTH_SECRET` (or `AUTH_SECRET`) or `40-media.seed.ts`
+fails closed with `storage_not_configured`.
 
 ## What changed
 
