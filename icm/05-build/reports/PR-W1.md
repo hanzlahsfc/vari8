@@ -152,3 +152,71 @@ What the runs proved about this change:
   profile; real entry and template wiring is PR-W4 plus PR-M0 by design.
 - `app/(canvas)/me` has no `loading.tsx` (the X7 convention belongs to
   PR-W0's shared client, O1).
+
+## Repair round 1 (verifier FIX on 48a3e0db)
+
+### Finding 1: RULED_PAD slack, FIXED
+
+`tools/parity/compare.mjs:64` carried `RULED_PAD = 21` while the comment
+documents blur bleed-through up to 14px. Set to 14, one-line change. The
+verifier had already proven the harness green at 14 (70 screens, 140
+captures, tolerance 0).
+
+### Finding 2: base moved (PR-W0 merged), FIXED
+
+`origin/Vari8-Beta` a5cf559 moved `readDraft`/`writeDraft` into
+`components/canvas/data/tracker.ts` as `readClientTrackerDraft` /
+`writeClientTrackerDraft`. Merge conflicted in
+`components/canvas/ethereal/client-tracker/client-tracker.tsx`. Resolved per
+verifier direction: kept the PR-W0 data module and threaded the pinned
+identity into it, so `readClientTrackerDraft(identity)` and
+`writeClientTrackerDraft(identity, draft)` take
+`ClientTrackerIdentityRef = { storageKey, asOf }` (exported from the data
+module). The old local `readDraft`/`writeDraft` are gone; the module's own
+validation (parameter allowlist, summary cap, unit clamps, comment trim)
+is unchanged, with `identity.asOf` replacing the hardcoded 2026-10-08 bound
+and `identity.storageKey` replacing the hardcoded maya key. The component's
+`ClientTrackerIdentity` (adds clientName/clientInitials) is a structural
+superset passed straight through. `/me` wiring untouched.
+Merge commit: f5f1c60.
+
+### Repair gate results (at f5f1c60)
+
+- `npx tsc --noEmit`: exit 0.
+- `npm run lint`: exit 0.
+- `npm run test` (vitest unit): exit 0, incl. `canvas-access.test.ts` 5/5.
+- `npm run index:check`: exit 0.
+- `npx prettier --check .`: exit 0.
+- `npm run build` (root, nice): exit 0.
+- `cd frontend && npm run build` (nice): exit 0.
+- `npm run test:integration`: first repair run exited 1 with 58/59 files
+  green; the single failure was `seed-credentials.test.ts` and the cause was
+  a shell bug in my run wrapper (`export A=.. B=$A` expands the stale
+  `DATABASE_URL=app_dev` from `.env`, so the seed correctly refused a
+  non-lane database). Re-run with corrected env:
+  `npx vitest run --config vitest.integration.config.ts
+tests/integration/seed-credentials.test.ts`: exit 0, 2/2. No code issue.
+- Root and frontend builds had additionally failed in the same batch with
+  `useContext` prerender errors: root cause was a corrupted `.next/`
+  produced by leftover overlapping `next build` processes from the earlier
+  session. After killing them and removing both `.next` dirs, the serial
+  rebuilds above are clean. This also explains the earlier pixel-level
+  parity failures: they came from the corrupted build, not the host.
+
+### Repair parity run
+
+`npm run parity` re-run at the merged head: exit 1. All 70 screens pass
+structure (the harness's `OK` lines, elements geometry) and all 70 fail the
+pixel compare only (`FAIL` lines, `text=0` on every screen, `geom=0/0/N`
+meaning zero added and zero removed boxes, `ruled=2` on the two screens
+carrying the ruled workspace/account-truth deltas). Same conclusion as
+before, now confirmed against a clean `.next`: pixel noise is host
+rasterization on this Mac, no DOM or layout regression. Log `r3-parity.log`,
+report `tools/parity/out/report.html`.
+
+### Repair state
+
+- Lane database `app_w1` recreated (`createdb` + `prisma migrate deploy`,
+  both exit 0).
+- Final cleanup (dropdb, worktree clean, pushed SHA) recorded in the PR
+  comment / final message.
