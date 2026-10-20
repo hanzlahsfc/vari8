@@ -18,9 +18,35 @@ import { TrackerConfigurator } from "./tracker-configurator";
 import { TrackingView } from "./tracking-view";
 import "./client-tracker.css";
 
+/**
+ * PR-W1 (S11-18): the tracker pins to one client. The canvas default keeps the
+ * studio demo exactly as drawn ("Maya Chen", the maya-v1 storage key, the
+ * 2026-10-08 as-of bound); `/me` passes the viewer's own identity so the same
+ * screen binds to their `ClientProfile` — own name, own storage key, real
+ * today as the upper date bound.
+ */
+export type ClientTrackerIdentity = {
+  storageKey: string;
+  clientName: string;
+  clientInitials: string;
+  asOf: string;
+};
+
+const DEFAULT_IDENTITY: ClientTrackerIdentity = {
+  storageKey: "coaching-client-tracker-maya-v1",
+  clientName: "Maya Chen",
+  clientInitials: "MC",
+  asOf: "2026-10-08",
+};
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const allowedIds = new Set(parameters.map((parameter) => parameter.id));
 
-export function ClientTracker() {
+export function ClientTracker({
+  identity = DEFAULT_IDENTITY,
+}: {
+  identity?: ClientTrackerIdentity;
+}) {
   const [config, setConfig] = useState<TrackerConfig | null>(null);
   const [entries, setEntries] = useState<TrackerEntry[]>(sampleEntries);
   const [ready, setReady] = useState(false);
@@ -31,14 +57,14 @@ export function ClientTracker() {
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
-    const draft = readClientTrackerDraft();
+    const draft = readClientTrackerDraft(identity);
     if (draft) {
       setConfig(draft.config);
       setEntries(draft.entries);
       setComments(draft.comments);
     }
     setReady(true);
-  }, []);
+  }, [identity]);
 
   function save(
     nextConfig: TrackerConfig,
@@ -50,7 +76,7 @@ export function ClientTracker() {
     setEntries(nextEntries);
     setComments(nextComments);
     try {
-      writeClientTrackerDraft({
+      writeClientTrackerDraft(identity, {
         config: nextConfig,
         entries: nextEntries,
         comments: nextComments,
@@ -103,6 +129,9 @@ export function ClientTracker() {
           <TrackingView
             config={config}
             entries={entries}
+            clientName={identity.clientName}
+            clientInitials={identity.clientInitials}
+            asOf={identity.asOf}
             onConfigure={() => {
               setStatus("");
               setConfiguring(true);
@@ -113,8 +142,8 @@ export function ClientTracker() {
               const parameter = parameters.find((item) => item.id === id);
               if (
                 !parameter ||
-                !/^2026-\d{2}-\d{2}$/.test(date) ||
-                date > "2026-10-08" ||
+                !DATE_RE.test(date) ||
+                date > identity.asOf ||
                 (value !== null &&
                   (!Number.isFinite(value) ||
                     value < parameter.min ||

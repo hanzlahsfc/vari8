@@ -315,8 +315,11 @@ describe.skipIf(!enabled)("P-025-D2 calendar list (real PG)", () => {
       ]);
       expect(r.items.map((i) => i.late)).toEqual([true, false, false, false]);
       // Answer-free — no answers/definition/values on the wire items.
+      // PR-M8: coachNote is instance metadata (canvas Extra.note), not
+      // answer content — it joins the header key set.
       for (const item of r.items)
         expect(Object.keys(item).sort()).toEqual([
+          "coachNote",
           "dueAt",
           "dueTz",
           "formId",

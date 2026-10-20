@@ -49,11 +49,19 @@ export const RULED = [
     rule: "S11-03 sign-out in the preferences dialog",
     added: { stem: "s11-preferences", tag: "button", text: "Sign out" },
   },
+  {
+    rule: "S11-04 real workspace name in the shell label (O15)",
+    text: {
+      tag: "div",
+      base: "COACH WORKSPACE",
+      now: "Liliana Mansfeld Coaching",
+    },
+  },
 ];
 
 // Three sigma of the coach dialog's 7 px backdrop blur (coach.css .cd-dialog::backdrop): a ruled text change under an
 // open dialog shows through the blur up to 14 px around its box (measured on s03-add-extra@1440).
-const RULED_PAD = 21;
+const RULED_PAD = 14;
 
 export function applyRuled(stem, g, baseRows, curRows) {
   const keys = new Set();

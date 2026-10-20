@@ -12,6 +12,9 @@ import "./shared-tracker.css";
 type TrackingViewProps = {
   config: TrackerConfig;
   entries: TrackerEntry[];
+  clientName: string;
+  clientInitials: string;
+  asOf: string;
   onConfigure: () => void;
   onUpdateValue: (date: string, id: string, value: number | null) => void;
   comments: Record<string, string>;
@@ -32,6 +35,9 @@ const SHARED_PARAMETERS = parameters;
 export function TrackingView({
   config,
   entries,
+  clientName,
+  clientInitials,
+  asOf,
   onConfigure,
   onUpdateValue,
   comments,
@@ -47,9 +53,9 @@ export function TrackingView({
         onUpdateText={NOOP_UPDATE_TEXT}
         comments={comments}
         onSaveComment={onSaveComment}
-        clientName="Maya Chen"
-        clientInitials="MC"
-        asOf="2026-10-08"
+        clientName={clientName}
+        clientInitials={clientInitials}
+        asOf={asOf}
         parameterGroups={PARAMETER_GROUPS}
         onConfigure={onConfigure}
         allowCoachMode

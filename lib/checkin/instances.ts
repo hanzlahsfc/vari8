@@ -50,6 +50,7 @@ import {
 } from "../consent";
 import { resolveCheckInConsentPolicy } from "../consent";
 import { consentGatesEnabled } from "../runtime";
+import { CHECKIN_RATING_WORD_LABELS } from "./forms";
 import type { CheckInDefinition, CheckInField } from "./forms";
 
 // Type-only re-export — app surfaces consume the definition contract
@@ -137,6 +138,10 @@ export const CHECKIN_INSTANCE_LIMITS = {
   answersJsonMaxBytes: 128 * 1024,
   answerTextMax: 4000,
   optionIdsMaxPerField: 50,
+  /** PR-M8: media ids a single VISUAL answer may carry. */
+  visualMediaIdsMax: 10,
+  /** PR-M8: staff coach note on the instance (canvas Extra.note). */
+  coachNoteMax: 500,
   idMax: 128,
   dueTzMax: 64,
   dueAtMinIsoYear: 2000,
@@ -170,6 +175,18 @@ export function parseCheckInDueTz(raw: unknown): string | null {
   const v = raw.trim();
   if (v.length === 0) return null;
   if (v.length > CHECKIN_INSTANCE_LIMITS.dueTzMax)
+    throw new CheckInInstanceError("invalid_input");
+  return v;
+}
+
+/** PR-M8: optional staff note on the instance (the canvas `Extra.note`) —
+ *  bounded, trimmed, null when absent or blank. */
+export function parseCheckInCoachNote(raw: unknown): string | null {
+  if (raw === undefined || raw === null) return null;
+  if (typeof raw !== "string") throw new CheckInInstanceError("invalid_input");
+  const v = raw.trim();
+  if (v.length === 0) return null;
+  if (v.length > CHECKIN_INSTANCE_LIMITS.coachNoteMax)
     throw new CheckInInstanceError("invalid_input");
   return v;
 }
@@ -232,10 +249,22 @@ export const KIND_TO_ENUM = {
   date: "DATE",
   singleChoice: "SINGLE_CHOICE",
   multiChoice: "MULTI_CHOICE",
+  rating: "RATING",
+  visual: "VISUAL",
 } as const;
 
 const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const DECIMAL_RE = /^-?\d{1,16}(\.\d{1,6})?$/;
+const RATING_INT_RE = /^\d{1,3}$/;
+
+/** PR-M8: stored-integer bounds per canvas rating scheme. WORD_LABELS
+ *  answers store the 1-based position in CHECKIN_RATING_WORD_LABELS —
+ *  the fixed four-label scale the canvas renders. */
+const RATING_SCHEME_BOUNDS: Record<string, { min: number; max: number }> = {
+  SCALE_1_10: { min: 1, max: 10 },
+  SCALE_1_5: { min: 1, max: 5 },
+  WORD_LABELS: { min: 1, max: CHECKIN_RATING_WORD_LABELS.length },
+};
 
 export type CanonicalCheckInAnswer = {
   fieldId: string;
@@ -249,6 +278,11 @@ export type CanonicalCheckInAnswer = {
   valueNumeric: string | null;
   valueDate: string | null;
   valueOptionIds: string[] | null;
+  /** RATING answers — the stored integer inside the scheme bounds. */
+  valueRating: number | null;
+  /** VISUAL answers — ordered media object ids for the
+   *  checkin_answer_media join rows (position = array index). */
+  mediaIds: string[] | null;
 };
 
 function hasAnswerValue(v: unknown): boolean {
@@ -349,6 +383,48 @@ export function canonicalizeCheckInAnswers(
           valueOptionIds: [...new Set(value as string[])].sort(),
         });
       }
+      case "rating": {
+        // A rating field without a scheme can never canonicalize — the
+        // definition validator requires it; fail closed here too.
+        const bounds =
+          field.ratingScheme !== undefined
+            ? RATING_SCHEME_BOUNDS[field.ratingScheme]
+            : undefined;
+        if (bounds === undefined)
+          throw new CheckInInstanceError("invalid_input");
+        if (!present) return base(field, { valueRating: null });
+        const v =
+          typeof value === "number"
+            ? value
+            : typeof value === "string" && RATING_INT_RE.test(value.trim())
+              ? Number(value.trim())
+              : NaN;
+        if (!Number.isInteger(v) || v < bounds.min || v > bounds.max)
+          throw new CheckInInstanceError("invalid_input");
+        return base(field, { answered: true, valueRating: v });
+      }
+      case "visual": {
+        // VISUAL carries no value columns; its attachments live in
+        // checkin_answer_media. Media-object existence/workspace scope is
+        // verified inside the submit transaction.
+        if (!present) return base(field, { mediaIds: null });
+        if (
+          !Array.isArray(value) ||
+          value.length === 0 ||
+          value.length > CHECKIN_INSTANCE_LIMITS.visualMediaIdsMax ||
+          value.some(
+            (v) =>
+              typeof v !== "string" ||
+              v.length === 0 ||
+              v.length > CHECKIN_INSTANCE_LIMITS.idMax,
+          )
+        )
+          throw new CheckInInstanceError("invalid_input");
+        return base(field, {
+          answered: true,
+          mediaIds: [...new Set(value as string[])],
+        });
+      }
       default:
         throw new CheckInInstanceError("invalid_input");
     }
@@ -367,6 +443,8 @@ function base(
     valueNumeric: null,
     valueDate: null,
     valueOptionIds: null,
+    valueRating: null,
+    mediaIds: null,
     ...patch,
   };
 }
@@ -434,6 +512,8 @@ export type PrismaLike = Pick<
   | "checkInFeedback"
   | "checkInForm"
   | "checkInFormVersion"
+  | "checkInAnswerMedia"
+  | "mediaObject"
   | "clientProfile"
   | "workspaceMember"
   | "clientAssignment"
@@ -647,6 +727,8 @@ export type ScheduleCheckInInstanceInput = {
   formVersionId: string;
   dueAt: string;
   dueTz?: string | null;
+  /** PR-M8: optional staff note on the instance (canvas `Extra.note`). */
+  coachNote?: string | null;
 };
 
 export type CancelCheckInInstanceInput = {
@@ -735,6 +817,7 @@ export async function scheduleCheckInInstance(
   const dueAt = parseCheckInDueAt(input.dueAt);
   if (!dueAt) throw new CheckInInstanceError("invalid_input");
   const dueTz = parseCheckInDueTz(input.dueTz);
+  const coachNote = parseCheckInCoachNote(input.coachNote);
 
   const attempt = (): Promise<ScheduleCheckInInstanceResult> =>
     withSerializedRetry(() =>
@@ -832,6 +915,7 @@ export async function scheduleCheckInInstance(
               formVersionId: input.formVersionId,
               dueAt,
               dueTz,
+              coachNote,
               scheduledByMemberId: member.id,
             },
             select: { id: true },
@@ -996,6 +1080,8 @@ export type StaffCheckInInstanceItem = {
   versionSeq: number;
   dueAt: string;
   dueTz: string | null;
+  /** PR-M8: staff-only note on the instance (canvas `Extra.note`). */
+  coachNote: string | null;
   state: CheckInInstanceState;
   late: boolean;
   submittedAt: string | null;
@@ -1061,6 +1147,7 @@ export async function listCheckInInstancesForClient(
         formId: true,
         dueAt: true,
         dueTz: true,
+        coachNote: true,
         cancelledAt: true,
         cancelledByMemberId: true,
         scheduledAt: true,
@@ -1107,6 +1194,7 @@ export async function listCheckInInstancesForClient(
         versionSeq: row.formVersion.versionSeq,
         dueAt: row.dueAt.toISOString(),
         dueTz: row.dueTz,
+        coachNote: row.coachNote,
         state: presentation.state,
         late: presentation.late,
         submittedAt: submission?.submittedAt.toISOString() ?? null,
@@ -1322,6 +1410,12 @@ export type OwnCheckInInstanceDetail = {
     valueNumeric: string | null;
     valueDate: string | null;
     valueOptionIds: string[] | null;
+    /** PR-M8: RATING answers — stored integer inside the field's
+     *  scheme bounds; null on every other kind. */
+    valueRating: number | null;
+    /** PR-M8: VISUAL answers — media object ids in submission order;
+     *  empty on every other kind. */
+    mediaIds: string[];
   }> | null;
   /** CHECK-IN-FEEDBACK-I1: bounded first page of staff feedback for this
    * instance's own submission — queried inside the SAME consent gate as
@@ -1426,6 +1520,8 @@ export async function getOwnCheckInInstance(
       valueNumeric: { toString(): string } | null;
       valueDate: Date | null;
       valueOptionIds: unknown;
+      valueRating: number | null;
+      media: { mediaObjectId: string }[];
     }> | null = null;
     let ownFeedback: CheckInFeedbackItem[] | null = null;
     let ownFeedbackNextCursor: string | null = null;
@@ -1460,6 +1556,11 @@ export async function getOwnCheckInInstance(
           valueNumeric: true,
           valueDate: true,
           valueOptionIds: true,
+          valueRating: true,
+          media: {
+            select: { mediaObjectId: true },
+            orderBy: { position: "asc" },
+          },
         },
         orderBy: { fieldId: "asc" },
       });
@@ -1509,6 +1610,8 @@ export async function getOwnCheckInInstance(
           valueOptionIds: Array.isArray(a.valueOptionIds)
             ? (a.valueOptionIds as string[])
             : null,
+          valueRating: a.valueRating,
+          mediaIds: a.media.map((m) => m.mediaObjectId),
         })) ?? null,
       feedback: ownFeedback,
       feedbackNextCursor: ownFeedbackNextCursor,
@@ -1651,6 +1754,31 @@ export async function submitCheckInInstance(
             rawAnswers,
           );
 
+          // 10b. VISUAL answers: every referenced media object must
+          // resolve to a live MediaObject INSIDE this workspace (PR-M8 —
+          // the raw composite FK makes a foreign-workspace reference
+          // impossible; the bounded re-check turns a stale or foreign id
+          // into the closed invalid_input, never a FK violation).
+          const mediaIds = [
+            ...new Set(
+              answers
+                .filter((a) => a.answered && a.mediaIds !== null)
+                .flatMap((a) => a.mediaIds!),
+            ),
+          ];
+          if (mediaIds.length > 0) {
+            const media = await tx.mediaObject.findMany({
+              where: {
+                id: { in: mediaIds },
+                workspaceId: input.workspaceId,
+                deletedAt: null,
+              },
+              select: { id: true },
+            });
+            if (media.length !== mediaIds.length)
+              throw new CheckInInstanceError("invalid_input");
+          }
+
           // 11. Insert — immutable submission + typed answer rows; the
           // composite coherence FKs + kind↔column CHECK enforce shape.
           const now = new Date();
@@ -1668,7 +1796,7 @@ export async function submitCheckInInstance(
             select: { id: true },
           });
           for (const answer of answers.filter((a) => a.answered)) {
-            await tx.checkInSubmissionAnswer.create({
+            const answerRow = await tx.checkInSubmissionAnswer.create({
               data: {
                 submissionId: submission.id,
                 workspaceId: input.workspaceId,
@@ -1685,8 +1813,27 @@ export async function submitCheckInInstance(
                   answer.valueOptionIds !== null
                     ? answer.valueOptionIds
                     : Prisma.DbNull,
+                valueRating: answer.valueRating,
               },
+              select: { id: true },
             });
+            // VISUAL attachments — ordered by submission position; the
+            // composite (answer, media, workspace) tuple is FK-anchored.
+            if (answer.mediaIds !== null) {
+              for (const [
+                position,
+                mediaObjectId,
+              ] of answer.mediaIds.entries()) {
+                await tx.checkInAnswerMedia.create({
+                  data: {
+                    answerId: answerRow.id,
+                    mediaObjectId,
+                    workspaceId: input.workspaceId,
+                    position,
+                  },
+                });
+              }
+            }
           }
 
           // 12. Audit LAST — a failed audit rolls the whole submission back.
@@ -1914,6 +2061,10 @@ export type StaffCheckInSubmissionFieldView = {
   required: boolean;
   /** Sanitized display value — never the raw option/field identifiers. */
   display: string;
+  /** PR-M8: VISUAL answer attachments in submission order — empty on
+   *  every other kind. Media bytes are served through the media route;
+   *  this view carries references only. */
+  mediaIds: string[];
 };
 
 export type StaffCheckInSubmissionDetail = {
@@ -1957,6 +2108,8 @@ function displayCheckInAnswer(
         valueNumeric: Prisma.Decimal | null;
         valueDate: Date | null;
         valueOptionIds: Prisma.JsonValue | null;
+        valueRating: number | null;
+        mediaIds: string[];
       }
     | undefined,
 ): string {
@@ -1987,6 +2140,25 @@ function displayCheckInAnswer(
         .filter((v): v is string => typeof v === "string");
       return labels.length > 0 ? labels.join(", ") : "—";
     }
+    case "RATING": {
+      if (answer.valueRating === null) return "—";
+      // PR-M8: numeric schemes render as the canvas select does
+      // ("8 / 10"); word labels render the fixed canvas label the
+      // stored position names.
+      if (field.ratingScheme === "WORD_LABELS")
+        return (
+          CHECKIN_RATING_WORD_LABELS[answer.valueRating - 1] ??
+          String(answer.valueRating)
+        );
+      const max = field.ratingScheme === "SCALE_1_5" ? 5 : 10;
+      return `${answer.valueRating} / ${max}`;
+    }
+    case "VISUAL":
+      // Attachment references live on the field view's mediaIds; the
+      // display column carries the honest count only.
+      return answer.mediaIds.length > 0
+        ? `${answer.mediaIds.length} visual${answer.mediaIds.length === 1 ? "" : "s"}`
+        : "—";
     default:
       return "—";
   }
@@ -2135,6 +2307,11 @@ export async function readCheckInSubmissionDetail(
             valueNumeric: true,
             valueDate: true,
             valueOptionIds: true,
+            valueRating: true,
+            media: {
+              select: { mediaObjectId: true },
+              orderBy: { position: "asc" },
+            },
           },
         });
         const byField = new Map(answers.map((a) => [a.fieldId, a]));
@@ -2279,13 +2456,21 @@ export async function readCheckInSubmissionDetail(
             sendWriteScope === "assigned" &&
             sendAssignment !== null &&
             review !== null,
-          fields: definition.fields.map((f) => ({
-            fieldId: f.fieldId,
-            label: f.label,
-            kind: f.kind,
-            required: f.required,
-            display: displayCheckInAnswer(f, byField.get(f.fieldId)),
-          })),
+          fields: definition.fields.map((f) => {
+            const a = byField.get(f.fieldId);
+            const mediaIds = (a?.media ?? []).map((m) => m.mediaObjectId);
+            return {
+              fieldId: f.fieldId,
+              label: f.label,
+              kind: f.kind,
+              required: f.required,
+              display: displayCheckInAnswer(
+                f,
+                a === undefined ? undefined : { ...a, mediaIds },
+              ),
+              mediaIds,
+            };
+          }),
         } satisfies StaffCheckInSubmissionDetail;
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
