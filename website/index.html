@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vari8 — one workspace for coaches and the people they coach</title>
+    <meta
+      name="description"
+      content="Vari8 brings plans, check-ins, habits and progress into one shared workspace for coaches and clients. Early access is not yet open."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='4' fill='%23070707'/%3E%3Ccircle cx='8' cy='8' r='4' fill='%23EB91B8'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <span class="wordmark">Vari8</span>
+      <nav aria-label="Page sections">
+        <a href="#product">Product</a>
+        <a href="#coaches">Coaches</a>
+        <a href="#clients">Clients</a>
+        <a href="#early-access" class="nav-cta">Request early access</a>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="hero-title">
+        <p class="eyebrow">In development</p>
+        <h1 id="hero-title">
+          One workspace for coaches and the people they coach.
+        </h1>
+        <p class="lede">
+          Vari8 brings plans, check-ins, habits and progress into one shared
+          place — so a coach sees the whole picture, and a client always knows
+          what today asks of them.
+        </p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#early-access"
+            >Request early access</a
+          >
+          <a class="button button-ghost" href="#product">See the product</a>
+        </div>
+      </section>
+
+      <section id="product" class="section" aria-labelledby="product-title">
+        <h2 id="product-title">The product</h2>
+        <p class="section-lede">
+          Real screens from the Vari8 preview build. All names, metrics and
+          plans shown are illustrative demo data.
+        </p>
+        <div class="showcase">
+          <figure>
+            <img
+              src="assets/shots/s01-roster.png"
+              alt="Coach workspace client roster: a list of athletes with their coaching focus, assigned template, next check-in date and attention status."
+              loading="lazy"
+            />
+            <figcaption>
+              The coach roster — every client’s plan, phase and next check-in at
+              a glance. <em>Product preview — illustrative demo data.</em>
+            </figcaption>
+          </figure>
+          <figure>
+            <img
+              src="assets/shots/s03-checkins-board.png"
+              alt="Coach workspace check-in board: a weekly grid of scheduled client check-ins with status labels such as scheduled, awaiting feedback and overdue."
+              loading="lazy"
+            />
+            <figcaption>
+              The check-in board — the week’s conversations, scheduled and
+              reviewed in one place.
+              <em>Product preview — illustrative demo data.</em>
+            </figcaption>
+          </figure>
+          <figure>
+            <img
+              src="assets/shots/s09-tracker-today.png"
+              alt="Client daily tracker view: a week strip, a daily check-in card and metric fields for bodyweight, sleep and energy with completion counts."
+              loading="lazy"
+            />
+            <figcaption>
+              The client’s daily tracker — today’s fields, filled in a minute.
+              <em>Product preview — illustrative demo data.</em>
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section
+        id="coaches"
+        class="section section-split"
+        aria-labelledby="coaches-title"
+      >
+        <h2 id="coaches-title">For coaches</h2>
+        <p>
+          Build nutrition and training plans from templates you control, assign
+          them to clients, and review check-ins from one board. Habits, notes
+          and to-dos live beside the plan — not in a spreadsheet, a chat thread
+          and a screenshot folder.
+        </p>
+      </section>
+
+      <section
+        id="clients"
+        class="section section-split"
+        aria-labelledby="clients-title"
+      >
+        <h2 id="clients-title">For clients</h2>
+        <p>
+          Your plan, your check-ins, your progress — in one clear daily view.
+          See what your coach set out for the week, record it in a minute, and
+          watch the trend build over time.
+        </p>
+      </section>
+
+      <section class="section" aria-labelledby="fit-title">
+        <h2 id="fit-title">How it fits together</h2>
+        <ol class="loop">
+          <li>
+            <strong>Coach plans.</strong> A coach shapes the template, assigns
+            the plan and schedules check-ins.
+          </li>
+          <li>
+            <strong>Client tracks.</strong> The client sees exactly what’s asked
+            and fills in the day’s fields.
+          </li>
+          <li>
+            <strong>Coach reviews.</strong> Check-ins land on the board; the
+            next week’s plan follows the real data.
+          </li>
+        </ol>
+      </section>
+
+      <section
+        id="early-access"
+        class="section early"
+        aria-labelledby="early-title"
+      >
+        <h2 id="early-title">Request early access</h2>
+        <p>
+          Early access isn’t open yet, and this preview can’t take requests —
+          the fields below are shown for layout only and nothing you enter is
+          sent or stored. When sign-up opens, this is where it will live.
+        </p>
+        <form
+          class="early-form"
+          aria-describedby="early-note"
+          aria-disabled="true"
+        >
+          <label>
+            Name
+            <input type="text" name="name" autocomplete="off" disabled />
+          </label>
+          <label>
+            Email
+            <input type="email" name="email" autocomplete="off" disabled />
+          </label>
+          <button type="button" disabled>Not connected yet</button>
+        </form>
+        <p id="early-note" class="fine">
+          No data is collected in this preview.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span class="wordmark">Vari8</span>
+      <p>Product preview — in development. Demo imagery only.</p>
+    </footer>
+  </body>
+</html>

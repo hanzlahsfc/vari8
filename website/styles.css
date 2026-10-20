@@ -1,0 +1,354 @@
+/* Vari8 product page — local prototype.
+   Visual tokens mirror the canvas preview (frontend/src/app/globals.css):
+   near-black surfaces, fine hairline borders, rose accent, Geist type. */
+
+@font-face {
+  font-family: "Infinity Geist";
+  src: url("assets/fonts/InfinityGeist.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+  --canvas: #070707;
+  --surface: #141414;
+  --surface-subtle: #1b1b1b;
+  --text: #f2f2f2;
+  --muted: #b6b6b6;
+  --border: rgb(220 220 220 / 13%);
+  --accent: #eb91b8;
+  --accent-ink: #f5c9db;
+  --accent-contrast: #17090f;
+  --radius: 0.9rem;
+  --max: 68rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--text);
+  font-family:
+    "Infinity Geist", "Geist", system-ui, "Helvetica Neue", Helvetica, Arial,
+    sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* faint grain, same asset the canvas uses */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("assets/grain.png");
+  background-size: 220px;
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  padding: 0.5rem 1rem;
+  border-radius: 0 0 var(--radius) 0;
+  z-index: 10;
+}
+.skip-link:focus {
+  left: 0;
+}
+
+.site-header,
+.site-footer {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.wordmark {
+  font-weight: 700;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+.wordmark::after {
+  content: ".";
+  color: var(--accent);
+}
+
+.site-header nav {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.site-header nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+.site-header nav a:hover {
+  color: var(--text);
+}
+.nav-cta {
+  color: var(--accent-ink);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.45rem 0.9rem;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+main {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.hero {
+  padding: clamp(3rem, 9vh, 6rem) 0 clamp(2.5rem, 7vh, 5rem);
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.78rem;
+  color: var(--accent-ink);
+  margin: 0 0 1rem;
+}
+
+h1 {
+  font-size: clamp(2.2rem, 5.4vw, 3.6rem);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  margin: 0 0 1.25rem;
+  max-width: 20ch;
+}
+
+.lede {
+  font-size: clamp(1.05rem, 1.8vw, 1.3rem);
+  color: var(--muted);
+  max-width: 56ch;
+  margin: 0 0 2rem;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.button {
+  display: inline-block;
+  border-radius: var(--radius);
+  padding: 0.8rem 1.4rem;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+.button-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+.button-primary:hover {
+  background: var(--accent-ink);
+  border-color: var(--accent-ink);
+}
+.button-ghost {
+  color: var(--text);
+  background: var(--surface-subtle);
+}
+.button-ghost:hover {
+  border-color: rgb(220 220 220 / 30%);
+}
+
+.section {
+  padding: clamp(2.5rem, 7vh, 4.5rem) 0;
+  border-top: 1px solid var(--border);
+}
+
+h2 {
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  letter-spacing: -0.02em;
+  margin: 0 0 1rem;
+}
+
+.section-lede {
+  color: var(--muted);
+  max-width: 60ch;
+  margin: 0 0 2rem;
+}
+
+.section-split {
+  max-width: 46rem;
+}
+.section-split p {
+  color: var(--muted);
+  font-size: 1.08rem;
+}
+
+.showcase {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.showcase figure {
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 22px 56px rgb(0 0 0 / 38%);
+}
+
+.showcase img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-bottom: 1px solid var(--border);
+}
+
+.showcase figcaption {
+  padding: 0.9rem 1.1rem;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+.showcase figcaption em {
+  color: var(--accent-ink);
+  font-style: normal;
+}
+
+.loop {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+  counter-reset: step;
+}
+.loop li {
+  counter-increment: step;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  color: var(--muted);
+}
+.loop li::before {
+  content: counter(step);
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-right: 0.7rem;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.85rem;
+}
+.loop strong {
+  color: var(--text);
+}
+
+.early {
+  margin-bottom: 3rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: clamp(1.8rem, 4vw, 3rem);
+}
+.early p {
+  color: var(--muted);
+  max-width: 58ch;
+}
+
+.early-form {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 26rem;
+  margin-top: 1.4rem;
+}
+.early-form label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.early-form input {
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  padding: 0.7rem 0.85rem;
+  color: var(--text);
+  font: inherit;
+}
+.early-form input:disabled {
+  opacity: 0.45;
+}
+.early-form button {
+  justify-self: start;
+  border-radius: var(--radius);
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  padding: 0.7rem 1.2rem;
+  cursor: not-allowed;
+}
+.fine {
+  font-size: 0.85rem;
+}
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.site-footer p {
+  margin: 0;
+}
+
+@media (min-width: 900px) {
+  .loop {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .loop li::before {
+    display: grid;
+    margin: 0 0 0.6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .button {
+    transition: none;
+  }
+}
