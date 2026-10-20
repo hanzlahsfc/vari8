@@ -15,11 +15,5 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/unit/**/*.test.ts", "tests/unit/**/*.test.tsx"],
-    env: {
-      // D19: the consent suites keep exercising the parked gates until
-      // PR-T2 removes them; the flag is unset (off) in every other
-      // environment.
-      ENABLE_CONSENT_GATES: "1",
-    },
   },
 });

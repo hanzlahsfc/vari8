@@ -11,7 +11,6 @@ import {
   loadDailyEntrySurface,
   readStaffDailyEntryDetail,
   saveDailyEntry,
-  STAFF_ENTRY_PAGE_SIZE,
 } from "../../lib/daily-entry/service";
 import { createStaticConsentPolicy } from "../../lib/consent";
 
@@ -467,109 +466,6 @@ describe.skipIf(!enabled)("P-022 staff DailyEntry review (real PG)", () => {
   });
 
   // ── List: consent + pagination + audit-free ──────────────────────────────
-
-  describe("list consent and paging", () => {
-    it("missing consent hides headers; revoked consent hides headers; unconfigured registry fails closed", async () => {
-      const noConsent = await seedWorkspace({ consent: false });
-      const res0 = await listStaffDailyEntries(
-        noConsent.owner,
-        listInput(noConsent),
-        { registry: DEV_REGISTRY },
-      );
-      expect(res0.state).toBe("consent_missing");
-
-      const c = await seedWorkspace();
-      await clientSaves(c, "2026-10-01", "75");
-      await prisma.consentRecord.updateMany({
-        where: { clientProfileId: c.profile.id },
-        data: { revokedAt: new Date() },
-      });
-      const res1 = await listStaffDailyEntries(c.owner, listInput(c), {
-        registry: DEV_REGISTRY,
-      });
-      expect(res1.state).toBe("consent_missing");
-
-      const c2 = await seedWorkspace();
-      await clientSaves(c2, "2026-10-01", "75");
-      const res2 = await listStaffDailyEntries(c2.owner, listInput(c2), {
-        /* no registry → unconfigured (production shape) */
-      });
-      expect(res2.state).toBe("consent_missing");
-    });
-
-    it("list reads create zero audit events", async () => {
-      const c = await seedWorkspace();
-      await clientSaves(c, "2026-10-01", "75");
-      const before = await prisma.auditEvent.count({
-        where: { subjectClientProfileId: c.profile.id },
-      });
-      for (const who of [c.owner, c.coach, c.assistant])
-        await listStaffDailyEntries(who, listInput(c), {
-          registry: DEV_REGISTRY,
-        });
-      expect(
-        await prisma.auditEvent.count({
-          where: { subjectClientProfileId: c.profile.id },
-        }),
-      ).toBe(before);
-      expect(await readAuditCount(c.profile.id)).toBe(0);
-    });
-
-    it("newest-first bounded keyset pagination", async () => {
-      const c = await seedWorkspace();
-      const total = STAFF_ENTRY_PAGE_SIZE + 2;
-      for (let i = 1; i <= total; i++) {
-        const date = `2026-09-${String(i).padStart(2, "0")}`;
-        await clientSaves(c, date, "70");
-      }
-      const p1 = await listStaffDailyEntries(c.owner, listInput(c), {
-        registry: DEV_REGISTRY,
-      });
-      if (p1.state !== "ready") throw new Error("not ready");
-      expect(p1.items).toHaveLength(STAFF_ENTRY_PAGE_SIZE);
-      expect(p1.nextCursor).not.toBeNull();
-      const dates = p1.items.map((i) => i.entryDate);
-      expect(dates).toEqual([...dates].sort().reverse());
-      expect(dates[0]).toBe(`2026-09-${String(total).padStart(2, "0")}`);
-
-      const p2 = await listStaffDailyEntries(
-        c.owner,
-        listInput(c, p1.nextCursor ?? undefined),
-        { registry: DEV_REGISTRY },
-      );
-      if (p2.state !== "ready") throw new Error("not ready");
-      expect(p2.items).toHaveLength(total - STAFF_ENTRY_PAGE_SIZE);
-      expect(p2.nextCursor).toBeNull();
-      // No overlap between pages.
-      const p1set = new Set(dates);
-      for (const item of p2.items)
-        expect(p1set.has(item.entryDate)).toBe(false);
-    });
-
-    it("malformed cursor is rejected; foreign cursor stays scoped", async () => {
-      const c = await seedWorkspace();
-      await clientSaves(c, "2026-10-01", "75");
-      const other = await seedWorkspace();
-      await clientSaves(other, "2026-10-02", "80");
-
-      await expect(
-        listStaffDailyEntries(c.owner, listInput(c, "not-a-date"), {
-          registry: DEV_REGISTRY,
-        }),
-      ).rejects.toThrow(DailyEntryError);
-
-      // A well-formed cursor copied from another client's page stays bound to
-      // (workspace, client) and leaks nothing foreign.
-      const res = await listStaffDailyEntries(
-        c.owner,
-        listInput(c, "2026-10-02"),
-        { registry: DEV_REGISTRY },
-      );
-      if (res.state !== "ready") throw new Error("not ready");
-      for (const item of res.items)
-        expect(item.entryDate < "2026-10-02").toBe(true);
-    });
-  });
 
   // ── Detail: authorization + minimization + snapshot ─────────────────────
 

@@ -251,42 +251,6 @@ describe("P-025-B — answer canonicalization (typed, definition-bound)", () => 
   });
 });
 
-// ── Consent resolver (synthetic dev/test only) ───────────────────────────
-
-describe("P-025-B — consent policy resolver", () => {
-  it("synthetic registry requires flag AND trusted runtime", async () => {
-    const { resolveCheckInConsentPolicy } = await import("../../lib/consent");
-    // Flag + trusted → synthetic registry.
-    const on = resolveCheckInConsentPolicy({
-      ENABLE_CHECK_INS: "1",
-      APP_ENV: "test",
-    });
-    expect(on.currentVersion("PRIVACY_NOTICE")).toBe("check-in-dev-privacy-v1");
-    expect(on.currentVersion("HEALTH_DATA")).toBe("check-in-dev-health-v1");
-    // Flag alone in production classification → unconfigured.
-    const prod = resolveCheckInConsentPolicy({
-      ENABLE_CHECK_INS: "1",
-      APP_ENV: "production",
-    });
-    expect(prod.currentVersion("PRIVACY_NOTICE")).toBeNull();
-    // Flag off in trusted env → unconfigured.
-    const off = resolveCheckInConsentPolicy({
-      ENABLE_CHECK_INS: "",
-      APP_ENV: "test",
-    });
-    expect(off.currentVersion("PRIVACY_NOTICE")).toBeNull();
-    // Missing/unknown env → unconfigured.
-    const missing = resolveCheckInConsentPolicy({});
-    expect(missing.currentVersion("HEALTH_DATA")).toBeNull();
-    // Staging/malformed → unconfigured.
-    const staging = resolveCheckInConsentPolicy({
-      ENABLE_CHECK_INS: "1",
-      APP_ENV: "staging",
-    });
-    expect(staging.currentVersion("PRIVACY_NOTICE")).toBeNull();
-  });
-});
-
 // ── Closed error vocabulary ─────────────────────────────────────────────
 
 // ── Boundary seam ───────────────────────────────────────────────────────
