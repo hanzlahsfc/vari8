@@ -7,6 +7,13 @@
 
 import { describe, expect, it } from "vitest";
 
+import { initialRecords } from "../../frontend/src/components/ethereal/builder/model";
+import { weeklyMuscleVolume as canvasWeeklyMuscleVolume } from "../../frontend/src/components/coach/muscle-volume";
+import {
+  demoProgramDraft,
+  START_DATE,
+  WEEK_COUNT,
+} from "../../scripts/seed/35-training.seed";
 import {
   MUSCLE_GROUPS,
   programMuscleVolume,
@@ -53,6 +60,47 @@ const DEMO_WEEK6 = [
     ],
   },
 ];
+
+describe("the seeded demo program reproduces the canvas volume panel", () => {
+  it("matches the canvas panel per muscle group on the demo week", () => {
+    // Canvas source of truth: the demo records the coach preview panel
+    // reads (frontend/src/components/coach/client-preview.tsx), measured
+    // through the canvas function itself, not a copy of its output.
+    const canvasWeek = initialRecords.coachingPlan?.currentWeek ?? 0;
+    const canvasPanel = canvasWeeklyMuscleVolume(
+      initialRecords.workoutSchedule,
+      canvasWeek,
+    );
+
+    // Backend: the program this card's seed writes, materialized as a
+    // publish does, then measured with the ported volume math.
+    const seeded = materializeWeeks(demoProgramDraft(), START_DATE, WEEK_COUNT);
+    const week = seeded.weeks.find((w) => w.week === canvasWeek);
+    const backendPanel = programMuscleVolume(week?.sessions ?? [], canvasWeek);
+
+    expect(canvasWeek).toBe(6);
+    expect(backendPanel.groups.map((g) => [g.id, g.sets])).toEqual(
+      canvasPanel.groups.map((g) => [g.id, g.sets]),
+    );
+    expect(backendPanel.totalSets).toBe(canvasPanel.totalSets);
+    expect(backendPanel.unassignedSets).toBe(0);
+    expect(backendPanel.totalSets).toBe(14);
+    expect(
+      Object.fromEntries(backendPanel.groups.map((g) => [g.id, g.sets])),
+    ).toEqual({
+      chest: 4,
+      back: 3,
+      shoulders: 0,
+      biceps: 0,
+      triceps: 0,
+      core: 0,
+      glutes: 3,
+      quadriceps: 0,
+      hamstrings: 4,
+      calves: 0,
+    });
+  });
+});
 
 describe("weeklyMuscleVolume — canvas demo program literals", () => {
   it("counts literal working sets per group for the demo week", () => {

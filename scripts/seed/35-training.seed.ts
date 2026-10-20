@@ -5,6 +5,7 @@ import {
   materializeWeeks,
   normalizeFieldConfig,
   normalizeTrainingDraft,
+  type TrainingDraft,
 } from "../../lib/trainingprogram/payload";
 
 /**
@@ -34,8 +35,8 @@ import {
 const WORKSPACE_SLUG = "canvas-demo";
 const DEMO_CLIENT_NAME = "Emma Anders"; // canvas client-001, the demo default
 const PROGRAM_TITLE = "Strength foundation";
-const START_DATE = "2026-09-14"; // week 6 of 8 on 2026-10-19
-const WEEK_COUNT = 8;
+export const START_DATE = "2026-09-14"; // week 6 of 8 on 2026-10-19
+export const WEEK_COUNT = 8;
 const ANCHOR_TZ = "Europe/Vienna";
 
 // Canvas `defaultExerciseLibrary()` — copied verbatim, in order.
@@ -145,49 +146,16 @@ const set = (
   ...extra,
 });
 
-export default async function seed(ctx: SeedContext): Promise<void> {
-  const { prisma } = ctx;
-
-  const workspace = await prisma.workspace.findUnique({
-    where: { slug: WORKSPACE_SLUG },
-  });
-  if (!workspace) return; // 00-workspace.seed.ts owns the demo workspace.
-  const member = await prisma.workspaceMember.findFirst({
-    where: { workspaceId: workspace.id, role: "WORKSPACE_OWNER" },
-    orderBy: { createdAt: "asc" },
-  });
-  const client = await prisma.clientProfile.findFirst({
-    where: { workspaceId: workspace.id, name: DEMO_CLIENT_NAME },
-  });
-  if (!member || !client) return;
-
-  // ── Coach-editable exercise library (canvas starter set) ─────────────
-  const libraryIds = new Map<string, string>();
-  let libraryCreated = 0;
-  for (const item of LIBRARY) {
-    const existing = await prisma.exerciseLibraryItem.findFirst({
-      where: { workspaceId: workspace.id, name: item.name, archivedAt: null },
-    });
-    if (existing) {
-      libraryIds.set(item.id, existing.id);
-      continue;
-    }
-    const row = await prisma.exerciseLibraryItem.create({
-      data: {
-        workspaceId: workspace.id,
-        name: item.name,
-        muscle: item.muscle,
-        secondaryMuscles: item.secondaryMuscles,
-        notes: item.notes,
-        createdByMemberId: member.id,
-      },
-    });
-    libraryIds.set(item.id, row.id);
-    libraryCreated += 1;
-  }
-
-  // ── The canvas sample program for the demo client ────────────────────
-  const draft = normalizeTrainingDraft({
+/**
+ * The canvas sample program as a training draft (canvas `workoutSchedule`,
+ * week 6). Exported so a test can compare the seeded program's volume with
+ * the canvas volume panel without a database. `libraryItemIds` maps the
+ * canvas library ids (`library-deadlift`, ...) to seeded row ids.
+ */
+export function demoProgramDraft(
+  libraryItemIds: ReadonlyMap<string, string> = new Map(),
+): TrainingDraft {
+  return normalizeTrainingDraft({
     programMode: "WEEK_BASED",
     sessions: [
       { id: "s-lower", name: "Lower strength" },
@@ -200,7 +168,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         name: "Deadlift",
         muscle: "hamstrings",
         secondaryMuscles: ["glutes", "back"],
-        libraryItemId: libraryIds.get("library-deadlift"),
+        libraryItemId: libraryItemIds.get("library-deadlift"),
       },
       {
         id: "e-split-squat",
@@ -214,7 +182,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         name: "Bench press",
         muscle: "chest",
         secondaryMuscles: ["triceps", "shoulders"],
-        libraryItemId: libraryIds.get("library-bench-press"),
+        libraryItemId: libraryItemIds.get("library-bench-press"),
       },
       {
         id: "e-row",
@@ -222,7 +190,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         name: "Chest-supported row",
         muscle: "back",
         secondaryMuscles: ["biceps"],
-        libraryItemId: libraryIds.get("library-row"),
+        libraryItemId: libraryItemIds.get("library-row"),
       },
     ],
     sessionOrder: { "1": ["s-lower", "s-upper"] },
@@ -270,6 +238,51 @@ export default async function seed(ctx: SeedContext): Promise<void> {
       },
     },
   });
+}
+
+export default async function seed(ctx: SeedContext): Promise<void> {
+  const { prisma } = ctx;
+
+  const workspace = await prisma.workspace.findUnique({
+    where: { slug: WORKSPACE_SLUG },
+  });
+  if (!workspace) return; // 00-workspace.seed.ts owns the demo workspace.
+  const member = await prisma.workspaceMember.findFirst({
+    where: { workspaceId: workspace.id, role: "WORKSPACE_OWNER" },
+    orderBy: { createdAt: "asc" },
+  });
+  const client = await prisma.clientProfile.findFirst({
+    where: { workspaceId: workspace.id, name: DEMO_CLIENT_NAME },
+  });
+  if (!member || !client) return;
+
+  // ── Coach-editable exercise library (canvas starter set) ─────────────
+  const libraryIds = new Map<string, string>();
+  let libraryCreated = 0;
+  for (const item of LIBRARY) {
+    const existing = await prisma.exerciseLibraryItem.findFirst({
+      where: { workspaceId: workspace.id, name: item.name, archivedAt: null },
+    });
+    if (existing) {
+      libraryIds.set(item.id, existing.id);
+      continue;
+    }
+    const row = await prisma.exerciseLibraryItem.create({
+      data: {
+        workspaceId: workspace.id,
+        name: item.name,
+        muscle: item.muscle,
+        secondaryMuscles: item.secondaryMuscles,
+        notes: item.notes,
+        createdByMemberId: member.id,
+      },
+    });
+    libraryIds.set(item.id, row.id);
+    libraryCreated += 1;
+  }
+
+  // The canvas sample program for the demo client (see demoProgramDraft).
+  const draft = demoProgramDraft(libraryIds);
   const fieldConfig = normalizeFieldConfig(FIELD_CONFIG);
   const payload = materializeWeeks(draft, START_DATE, WEEK_COUNT);
 

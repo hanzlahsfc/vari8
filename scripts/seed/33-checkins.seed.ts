@@ -281,19 +281,32 @@ export default async function seed(ctx: SeedContext): Promise<void> {
   //    throwaway lane databases). ──
 
   const demoClientUser = async (i: number, slug: string) => {
-    const user = await prisma.user.upsert({
-      where: { email: `${slug}@canvas-demo.test` },
-      update: {},
-      create: {
-        email: `${slug}@canvas-demo.test`,
-        name: clients[i]!.name,
-        status: "ACTIVE",
-      },
-    });
-    await prisma.clientProfile.update({
-      where: { id: clientId(i) },
-      data: { userId: user.id },
-    });
+    // A profile already linked to a user keeps it. That link is the SEED-FIX
+    // credential user `00-workspace.seed.ts` writes for the first roster
+    // client; re-pointing the profile at a credential-less demo user makes
+    // the seeded client unable to sign in as themselves.
+    const linkedUserId = (
+      await prisma.clientProfile.findUnique({
+        where: { id: clientId(i) },
+        select: { userId: true },
+      })
+    )?.userId;
+    const user = linkedUserId
+      ? await prisma.user.findUniqueOrThrow({ where: { id: linkedUserId } })
+      : await prisma.user.upsert({
+          where: { email: `${slug}@canvas-demo.test` },
+          update: {},
+          create: {
+            email: `${slug}@canvas-demo.test`,
+            name: clients[i]!.name,
+            status: "ACTIVE",
+          },
+        });
+    if (!linkedUserId)
+      await prisma.clientProfile.update({
+        where: { id: clientId(i) },
+        data: { userId: user.id },
+      });
     const member = await prisma.workspaceMember.findFirst({
       where: { workspaceId: ws, userId: user.id },
       select: { id: true },
