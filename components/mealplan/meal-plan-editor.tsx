@@ -399,8 +399,11 @@ export function MealPlanEditor({
     draft: MealPlanDraft;
   } | null;
   canWrite: boolean;
-  foods?: ReadonlyMap<string, Food>;
+  /** Catalog foods as a plain array — Map is built client-side
+   * (React Flight boundary). */
+  foods?: Food[];
 }) {
+  const foodMap = foods ? new Map(foods.map((f) => [f.id, f])) : undefined;
   const initial = toFields(plan?.draft ?? null);
   const [title, setTitle] = useState(plan?.title ?? "");
   const [timezone, setTimezone] = useState(plan?.timezone ?? "");
@@ -534,7 +537,7 @@ export function MealPlanEditor({
           <MealPlanVersionView
             payload={plan.draft}
             testidPrefix="mealplan-draft-view"
-            foods={foods}
+            foods={foodMap}
           />
         )}
       </div>

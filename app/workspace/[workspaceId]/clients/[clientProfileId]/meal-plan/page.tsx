@@ -95,7 +95,7 @@ export default async function StaffClientMealPlanPage({
             clientProfileId={clientProfileId}
             plan={result.value.plan}
             canWrite={result.value.canWrite}
-            foods={draftFoods}
+            foods={draftFoods ? [...draftFoods.values()] : undefined}
           />
           <MealPlanVersionHistory
             workspaceId={workspaceId}
