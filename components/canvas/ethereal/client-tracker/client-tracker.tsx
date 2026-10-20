@@ -2,6 +2,10 @@
 
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import {
+  readClientTrackerDraft,
+  writeClientTrackerDraft,
+} from "@/components/canvas/data/tracker";
 import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import {
   defaultConfig,
@@ -14,101 +18,35 @@ import { TrackerConfigurator } from "./tracker-configurator";
 import { TrackingView } from "./tracking-view";
 import "./client-tracker.css";
 
-const STORAGE_KEY = "coaching-client-tracker-maya-v1";
+/**
+ * PR-W1 (S11-18): the tracker pins to one client. The canvas default keeps the
+ * studio demo exactly as drawn ("Maya Chen", the maya-v1 storage key, the
+ * 2026-10-08 as-of bound); `/me` passes the viewer's own identity so the same
+ * screen binds to their `ClientProfile` — own name, own storage key, real
+ * today as the upper date bound.
+ */
+export type ClientTrackerIdentity = {
+  storageKey: string;
+  clientName: string;
+  clientInitials: string;
+  asOf: string;
+};
+
+const DEFAULT_IDENTITY: ClientTrackerIdentity = {
+  storageKey: "coaching-client-tracker-maya-v1",
+  clientName: "Maya Chen",
+  clientInitials: "MC",
+  asOf: "2026-10-08",
+};
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const allowedIds = new Set(parameters.map((parameter) => parameter.id));
 
-function readDraft(): {
-  config: TrackerConfig;
-  entries: TrackerEntry[];
-  comments: Record<string, string>;
-} | null {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    const config = data?.config;
-    if (!config || !Array.isArray(config.parameterIds)) return null;
-    const parameterIds = [
-      ...new Set(
-        config.parameterIds.filter(
-          (id: unknown) => typeof id === "string" && allowedIds.has(id),
-        ),
-      ),
-    ] as string[];
-    if (!parameterIds.length) return null;
-    const summaryParameterIds = Array.isArray(config.summaryParameterIds)
-      ? [
-          ...new Set(
-            (config.summaryParameterIds as unknown[]).filter(
-              (id): id is string =>
-                typeof id === "string" &&
-                parameterIds.includes(id) &&
-                parameters.some(
-                  (parameter) =>
-                    parameter.id === id &&
-                    (parameter.kind === "number" ||
-                      parameter.kind === "rating"),
-                ),
-            ),
-          ),
-        ].slice(0, 4)
-      : undefined;
-    const safeConfig: TrackerConfig = {
-      parameterIds,
-      ...(summaryParameterIds === undefined ? {} : { summaryParameterIds }),
-      weightUnit: config.weightUnit === "lb" ? "lb" : "kg",
-      lengthUnit: config.lengthUnit === "in" ? "in" : "cm",
-      waterUnit: config.waterUnit === "fl oz" ? "fl oz" : "L",
-      ratingScale: ["1-10", "1-5", "words"].includes(config.ratingScale)
-        ? config.ratingScale
-        : "1-10",
-    };
-    const entries: TrackerEntry[] = Array.isArray(data.entries)
-      ? data.entries.flatMap((entry: TrackerEntry) => {
-          if (
-            !entry ||
-            typeof entry.date !== "string" ||
-            !/^2026-\d{2}-\d{2}$/.test(entry.date) ||
-            entry.date > "2026-10-08" ||
-            !entry.values ||
-            typeof entry.values !== "object"
-          )
-            return [];
-          const values: Record<string, number | null> = {};
-          for (const parameter of parameters) {
-            const value = entry.values[parameter.id];
-            values[parameter.id] =
-              typeof value === "number" &&
-              Number.isFinite(value) &&
-              value >= parameter.min &&
-              value <= parameter.max
-                ? value
-                : null;
-          }
-          return [{ date: entry.date, values }];
-        })
-      : [];
-    const comments: Record<string, string> = {};
-    if (data.comments && typeof data.comments === "object") {
-      for (const [key, value] of Object.entries(data.comments)) {
-        const [date, id] = key.split(":");
-        if (
-          /^2026-\d{2}-\d{2}$/.test(date) &&
-          date <= "2026-10-08" &&
-          allowedIds.has(id) &&
-          typeof value === "string" &&
-          value.trim()
-        )
-          comments[key] = value.slice(0, 2000);
-      }
-    }
-    return { config: safeConfig, entries, comments };
-  } catch {
-    return null;
-  }
-}
-
-export function ClientTracker() {
+export function ClientTracker({
+  identity = DEFAULT_IDENTITY,
+}: {
+  identity?: ClientTrackerIdentity;
+}) {
   const [config, setConfig] = useState<TrackerConfig | null>(null);
   const [entries, setEntries] = useState<TrackerEntry[]>(sampleEntries);
   const [ready, setReady] = useState(false);
@@ -119,14 +57,14 @@ export function ClientTracker() {
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
-    const draft = readDraft();
+    const draft = readClientTrackerDraft(identity);
     if (draft) {
       setConfig(draft.config);
       setEntries(draft.entries);
       setComments(draft.comments);
     }
     setReady(true);
-  }, []);
+  }, [identity]);
 
   function save(
     nextConfig: TrackerConfig,
@@ -138,15 +76,11 @@ export function ClientTracker() {
     setEntries(nextEntries);
     setComments(nextComments);
     try {
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          version: 1,
-          config: nextConfig,
-          entries: nextEntries,
-          comments: nextComments,
-        }),
-      );
+      writeClientTrackerDraft(identity, {
+        config: nextConfig,
+        entries: nextEntries,
+        comments: nextComments,
+      });
       setStatus(message);
     } catch {
       setStatus(
@@ -195,6 +129,9 @@ export function ClientTracker() {
           <TrackingView
             config={config}
             entries={entries}
+            clientName={identity.clientName}
+            clientInitials={identity.clientInitials}
+            asOf={identity.asOf}
             onConfigure={() => {
               setStatus("");
               setConfiguring(true);
@@ -205,8 +142,8 @@ export function ClientTracker() {
               const parameter = parameters.find((item) => item.id === id);
               if (
                 !parameter ||
-                !/^2026-\d{2}-\d{2}$/.test(date) ||
-                date > "2026-10-08" ||
+                !DATE_RE.test(date) ||
+                date > identity.asOf ||
                 (value !== null &&
                   (!Number.isFinite(value) ||
                     value < parameter.min ||

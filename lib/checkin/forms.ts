@@ -57,8 +57,32 @@ export const CHECKIN_FIELD_KINDS = [
   "date",
   "singleChoice",
   "multiChoice",
+  // PR-M8: the canvas Rating and Visual upload question types
+  // (frontend/src/components/coach/model.ts:574-586).
+  "rating",
+  "visual",
 ] as const;
 export type CheckInFieldKind = (typeof CHECKIN_FIELD_KINDS)[number];
+
+/** Canvas rating scales (`templates.tsx:2011` "1–10" | "1–5" |
+ *  "Word labels") — the same three values the schema's RatingScheme
+ *  enum carries for daily-entry parameters. */
+export const CHECKIN_RATING_SCHEMES = [
+  "SCALE_1_10",
+  "SCALE_1_5",
+  "WORD_LABELS",
+] as const;
+export type CheckInRatingScheme = (typeof CHECKIN_RATING_SCHEMES)[number];
+
+/** The canvas's fixed word-labels scale (`templates.tsx:2241`). A
+ *  word-labels answer stores its 1-based position in
+ *  `checkin_submission_answer.value_rating`. */
+export const CHECKIN_RATING_WORD_LABELS = [
+  "Low",
+  "Okay",
+  "Good",
+  "Excellent",
+] as const;
 
 export const CHECKIN_FORM_LIMITS = {
   maxFields: 100,
@@ -82,6 +106,11 @@ export type CheckInField = {
   order: number;
   helpText?: string;
   options?: CheckInOption[];
+  /**
+   * `rating` kind only — the canvas scale select. Absent on every other
+   * kind; required on rating fields.
+   */
+  ratingScheme?: CheckInRatingScheme;
   /**
    * Optional bounded source/classification metadata — dev/test synthetic
    * values only. Production field classification for Check-In answers is
@@ -129,6 +158,7 @@ const FIELD_KEYS = new Set([
   "order",
   "helpText",
   "options",
+  "ratingScheme",
   "classification",
 ]);
 const OPTION_KEYS = new Set(["optionId", "label"]);
@@ -292,6 +322,21 @@ export function validateCheckInDefinition(
         return { optionId, label };
       });
     } else if (raw.options !== undefined && raw.options !== null) {
+      throw new CheckInFormError("invalid_input");
+    }
+
+    // The rating kind MUST declare its canvas scale; every other kind
+    // must not carry one — the stored integer bounds live on the scheme.
+    if (field.kind === "rating") {
+      if (
+        typeof raw.ratingScheme !== "string" ||
+        !(CHECKIN_RATING_SCHEMES as readonly string[]).includes(
+          raw.ratingScheme,
+        )
+      )
+        throw new CheckInFormError("invalid_input");
+      field.ratingScheme = raw.ratingScheme as CheckInRatingScheme;
+    } else if (raw.ratingScheme !== undefined && raw.ratingScheme !== null) {
       throw new CheckInFormError("invalid_input");
     }
     return field;

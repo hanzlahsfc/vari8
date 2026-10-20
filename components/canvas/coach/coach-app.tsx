@@ -43,6 +43,7 @@ export type CoachAccount = {
   role: CanvasRole;
   /** PR-MEDIA: workspace the media API anchors uploads to. */
   workspaceId?: string;
+  workspaceName: string;
 };
 export function CoachApp({ viewer }: { viewer: CoachAccount }) {
   return (
@@ -119,7 +120,18 @@ function Workspace({ viewer }: { viewer: CoachAccount }) {
             </>
           )}
         </div>
-        <div className="cd-workspace-label">COACH WORKSPACE</div>
+        <div
+          className="cd-workspace-label"
+          title={viewer.workspaceName}
+          aria-label={viewer.workspaceName}
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {viewer.workspaceName}
+        </div>
         <nav id="coach-navigation" aria-label="Coach workspace">
           {NAV.map(({ id, label, Icon }) => (
             <button

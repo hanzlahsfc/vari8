@@ -23,6 +23,12 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  loadDashboardDraft,
+  loadDashboardRecords,
+  saveDashboardDraft,
+  saveDashboardRecords,
+} from "@/components/canvas/data/dashboard";
 import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import { BuilderGallery } from "./gallery";
 import {
@@ -57,8 +63,6 @@ import {
 import { DetailContent, WidgetContent } from "./widget-content";
 import { widgetDetailKey } from "./widget-geometry";
 
-const DRAFT_KEY = "ethereal-dashboard-draft-v1";
-const RECORD_KEY = "ethereal-dashboard-records-v1";
 type Draft = {
   version: 1;
   name: string;
@@ -328,9 +332,8 @@ export function DashboardBuilder() {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(DRAFT_KEY);
-      if (raw) {
-        const saved: unknown = JSON.parse(raw);
+      const saved: unknown = loadDashboardDraft();
+      if (saved !== undefined) {
         if (!isValidDraft(saved))
           throw new Error("Unsupported or invalid draft");
         setDraft(saved);
@@ -346,9 +349,8 @@ export function DashboardBuilder() {
       );
     }
     try {
-      const sourceRaw = localStorage.getItem(RECORD_KEY);
-      if (sourceRaw) {
-        const savedRecords: unknown = JSON.parse(sourceRaw);
+      const savedRecords: unknown = loadDashboardRecords();
+      if (savedRecords !== undefined) {
         if (!isValidRecords(savedRecords))
           throw new Error("Invalid sample records");
         setRecords(upgradeAdditionalFixture(upgradeHabitFixture(savedRecords)));
@@ -378,7 +380,7 @@ export function DashboardBuilder() {
 
   const save = (next: Draft) => {
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(next));
+      saveDashboardDraft(next);
       setSaveState("Saved locally");
     } catch {
       setSaveState(
@@ -416,7 +418,7 @@ export function DashboardBuilder() {
     setRecords(next);
     setAnnouncement("Sample record updated. All bound widgets refreshed.");
     try {
-      localStorage.setItem(RECORD_KEY, JSON.stringify(next));
+      saveDashboardRecords(next);
       setSaveState("Saved locally");
     } catch {
       setSaveState("Sample record update could not save. Keep this tab open.");

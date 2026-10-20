@@ -123,12 +123,21 @@ describe.skipIf(!enabled)(
       expect(clientMembership.status).toBe("ACTIVE");
       expect((await member(second.id, staff2.id)).role).toBe("COACH");
 
-      // The client user is linked to a canvas client profile (first roster
-      // name from `frontend/src/data/mock-data.json`).
+      // The canvas client profile is linked to the seeded canvas demo
+      // client user (`33-checkins.seed.ts`, PR-M8); the credential client
+      // intentionally has no profile (own-scope media is 403 by design).
+      const emma = await prisma.user.findUniqueOrThrow({
+        where: { email: "emma.anders@canvas-demo.test" },
+      });
       const profile = await prisma.clientProfile.findFirstOrThrow({
-        where: { workspaceId: canvas.id, userId: client.id },
+        where: { workspaceId: canvas.id, userId: emma.id },
       });
       expect(profile.name).toBe("Emma Anders");
+      expect(
+        await prisma.clientProfile.count({
+          where: { workspaceId: canvas.id, userId: client.id },
+        }),
+      ).toBe(0);
     });
 
     it("re-running the seed does not duplicate accounts or members", async () => {
