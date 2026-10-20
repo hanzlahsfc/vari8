@@ -12,10 +12,18 @@
  * Never touches GUARD or CUT-AT-REPLACE blocks, whole-file CUT-AT-REPLACE
  * files, KEEP-ALL files, or files absent from the audit.
  *
+ * With --replace-pr PR-XX the tool instead executes the named replacement
+ * PR's share: whole files whose action is `CUT-AT-REPLACE in PR-XX` are
+ * deleted, and CUT-AT-REPLACE blocks whose Replacement PR column is PR-XX
+ * are cut from TRIM files. GUARD blocks and other PRs' CUT-AT-REPLACE
+ * blocks stay and are verified after the trim. VISIBLE and CUT pass
+ * blocks are neither deleted nor required in this mode.
+ *
  * Usage:
  *   node icm/05-build/tools/apply-test-audit.mjs            # list only
  *   node icm/05-build/tools/apply-test-audit.mjs --apply    # execute
  *   node icm/05-build/tools/apply-test-audit.mjs --json out.json
+ *   node icm/05-build/tools/apply-test-audit.mjs --replace-pr PR-04 [--apply]
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -28,6 +36,8 @@ const AUDIT = path.join(ROOT, "icm/03-plan/output/TEST-AUDIT.md");
 const APPLY = process.argv.includes("--apply");
 const jsonIdx = process.argv.indexOf("--json");
 const JSON_OUT = jsonIdx > -1 ? process.argv[jsonIdx + 1] : null;
+const rpIdx = process.argv.indexOf("--replace-pr");
+const REPLACE_PR = rpIdx > -1 ? process.argv[rpIdx + 1] : null;
 
 const CUT_TAGS = new Set(["VISIBLE", "CUT pass 1", "CUT pass 2"]);
 const KEEP_TAGS = new Set(["GUARD", "CUT-AT-REPLACE"]);
@@ -47,7 +57,13 @@ function parseAudit(md) {
   const files = new Map();
   const get = (p) => {
     if (!files.has(p))
-      files.set(p, { action: null, blocks: [], cuts: [], e2e: [] });
+      files.set(p, {
+        action: null,
+        replacePr: null,
+        blocks: [],
+        cuts: [],
+        e2e: [],
+      });
     return files.get(p);
   };
 
@@ -59,8 +75,10 @@ function parseAudit(md) {
     if (rest.startsWith("CUT-FILE")) f.action = "CUT-FILE";
     else if (rest.startsWith("KEEP-ALL")) f.action = "KEEP-ALL";
     else if (rest.startsWith("TRIM")) f.action = "TRIM";
-    else if (rest.startsWith("CUT-AT-REPLACE")) f.action = "CUT-AT-REPLACE";
-    else throw new Error(`unparsed action for ${p}: ${rest}`);
+    else if (rest.startsWith("CUT-AT-REPLACE")) {
+      f.action = "CUT-AT-REPLACE";
+      f.replacePr = / in (PR-[A-Za-z0-9]+)/.exec(rest)?.[1] ?? null;
+    } else throw new Error(`unparsed action for ${p}: ${rest}`);
   }
 
   // Pass-2 block tables. Cells split on the spaced separator; names may hold
@@ -487,7 +505,8 @@ function nameMatches(auditName, stmtName) {
 // rows: [{id?,name,s,e,templated?}]. Returns resolved spans + problems.
 function resolveSpans(rows, lines, stmts) {
   const resolved = [],
-    problems = [];
+    problems = [],
+    unresolved = [];
   const byStart = new Map();
   for (const st of stmts)
     if (!byStart.has(st.startLine)) byStart.set(st.startLine, st);
@@ -530,31 +549,56 @@ function resolveSpans(rows, lines, stmts) {
         via: "name-nearest",
       });
     } else {
+      unresolved.push(row);
       problems.push(
         `no statement for ${row.id ?? "-"} "${row.name}" @${row.s}-${row.e}`,
       );
     }
   }
-  return { resolved, problems };
+  return { resolved, problems, unresolved };
 }
 
 // ---------- plan ----------
 
 function buildPlan(audit) {
   const plan = [];
+  const isReplace = (b) =>
+    REPLACE_PR != null && b.tag === "CUT-AT-REPLACE" && b.pr === REPLACE_PR;
   for (const [p, f] of audit.files) {
     if (f.action === "CUT-FILE") {
       plan.push({ file: p, action: "CUT-FILE" });
+    } else if (
+      f.action === "CUT-AT-REPLACE" &&
+      REPLACE_PR != null &&
+      f.replacePr === REPLACE_PR
+    ) {
+      plan.push({ file: p, action: "CUT-FILE", replacePr: f.replacePr });
     } else if (f.action === "TRIM") {
-      const del = [
-        ...f.blocks.filter((b) => CUT_TAGS.has(b.tag)),
-        ...f.cuts,
-        ...f.e2e.filter((x) => CUT_TAGS.has(x.tag)),
-      ];
-      const keep = [
-        ...f.blocks.filter((b) => KEEP_TAGS.has(b.tag)),
-        ...f.e2e.filter((x) => KEEP_TAGS.has(x.tag)),
-      ];
+      const del = REPLACE_PR
+        ? f.blocks.filter(isReplace)
+        : [
+            ...f.blocks.filter((b) => CUT_TAGS.has(b.tag)),
+            ...f.cuts,
+            ...f.e2e.filter((x) => CUT_TAGS.has(x.tag)),
+          ];
+      const keep = REPLACE_PR
+        ? [
+            ...f.blocks
+              .filter(
+                (b) =>
+                  b.tag === "GUARD" ||
+                  (b.tag === "CUT-AT-REPLACE" && b.pr !== REPLACE_PR),
+              )
+              .map((b) =>
+                b.tag === "GUARD" ? b : { ...b, optional: true },
+              ),
+            ...f.e2e.filter((x) => x.tag === "GUARD"),
+          ]
+        : [
+            ...f.blocks.filter((b) => KEEP_TAGS.has(b.tag)),
+            ...f.e2e.filter((x) => KEEP_TAGS.has(x.tag)),
+          ];
+      if (REPLACE_PR && del.length === 0) continue;
       plan.push({ file: p, action: "TRIM", del, keep });
     }
   }
@@ -567,7 +611,11 @@ function analyze(item, lines, stmts) {
   const delRes = resolveSpans(item.del, lines, stmts);
   const keepRes = resolveSpans(item.keep, lines, stmts);
   const problems = [...delRes.problems];
-  for (const k of keepRes.problems) problems.push(`KEEP ${k}`);
+  for (const k of keepRes.unresolved)
+    if (!k.optional)
+      problems.push(
+        `KEEP no statement for ${k.id ?? "-"} "${k.name}" @${k.s}-${k.e}`,
+      );
 
   // overlap safety: a delete span may not fully contain a keep span
   for (const d of delRes.resolved) {
