@@ -118,7 +118,18 @@ function Workspace({ viewer }: { viewer: CoachAccount }) {
             </>
           )}
         </div>
-        <div className="cd-workspace-label">{viewer.workspaceName}</div>
+        <div
+          className="cd-workspace-label"
+          title={viewer.workspaceName}
+          aria-label={viewer.workspaceName}
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {viewer.workspaceName}
+        </div>
         <nav id="coach-navigation" aria-label="Coach workspace">
           {NAV.map(({ id, label, Icon }) => (
             <button
