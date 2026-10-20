@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 135 modules with exports, 1334 exported symbols.
+Counts: 135 modules with exports, 1336 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -182,8 +182,10 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export type CanvasRole = "Owner" | "Coach"`
 - `export type CanvasViewer = { name: string; initials: string; role: CanvasRole; workspace: { id: string; name: string }; }`
+- `export type ClientViewer = { name: string; initials: string; workspace: { id: string; name: string }; clientProfileId: string; }`
 - `export type Viewer = { id: string; email: string; name: string | null }`
 - `export async function getCanvasViewer(userId: string): Promise<CanvasViewer | null>`
+- `export async function getClientViewer(userId: string): Promise<ClientViewer | null>`
 - `export async function getViewer(): Promise<Viewer | null>`
 - `export async function getViewerFromHeaders(requestHeaders: Headers): Promise<Viewer | null>`
 - `export function initialsOf(name: string): string`

@@ -99,3 +99,59 @@ export async function getCanvasViewer(
     workspace: membership.workspace,
   };
 }
+
+/**
+ * PR-W1 client identity (S11-18): the signed-in client as `/me` shows them,
+ * bound to their own `ClientProfile`. A client viewer exists only when the
+ * user is ACTIVE AND holds an ACTIVE CLIENT membership in an ACTIVE workspace
+ * AND an unarchived profile in that workspace is linked to their user id — a
+ * membership without a profile (pre-onboarding, ruling O6) fails closed, as
+ * does an archived profile. With several client workspaces the first by
+ * workspace name is shown (no switcher, ruling O15). The session itself is
+ * never read here: callers pass the user id from the session gate
+ * (`requireSessionUser`, ruling O9).
+ */
+export type ClientViewer = {
+  name: string;
+  initials: string;
+  workspace: { id: string; name: string };
+  clientProfileId: string;
+};
+
+export async function getClientViewer(
+  userId: string,
+): Promise<ClientViewer | null> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      status: true,
+      clientProfiles: {
+        where: {
+          archivedAt: null,
+          workspace: {
+            status: "ACTIVE",
+            members: {
+              some: { userId, role: "CLIENT", status: "ACTIVE" },
+            },
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          workspace: { select: { id: true, name: true } },
+        },
+        orderBy: { workspace: { name: "asc" } },
+        take: 1,
+      },
+    },
+  });
+  const profile = user?.clientProfiles[0];
+  if (!user || user.status !== "ACTIVE" || !profile) return null;
+  const name = profile.name.trim() || "Client";
+  return {
+    name,
+    initials: initialsOf(name),
+    workspace: profile.workspace,
+    clientProfileId: profile.id,
+  };
+}

@@ -53,9 +53,16 @@ export const trackerSlice: CoachSlice = {
   },
 };
 
-// --- Ethereal client tracker draft (coaching-client-tracker-maya-v1) ---
+// --- Ethereal client tracker draft ---
 
-const CLIENT_TRACKER_KEY = "coaching-client-tracker-maya-v1";
+/**
+ * PR-W1 (S11-18): the draft key and the upper date bound come from the pinned
+ * client identity — the studio demo passes "coaching-client-tracker-maya-v1"
+ * with asOf 2026-10-08; `/me` passes the viewer's own profile key and today.
+ */
+export type ClientTrackerIdentityRef = { storageKey: string; asOf: string };
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const allowedIds = new Set(parameters.map((parameter) => parameter.id));
 
 export type ClientTrackerDraft = {
@@ -69,9 +76,11 @@ export type ClientTrackerDraft = {
  * stored, the JSON is unreadable, or the shape is unusable — the caller then
  * starts from the sample data, exactly like the inline read it replaces.
  */
-export function readClientTrackerDraft(): ClientTrackerDraft | null {
+export function readClientTrackerDraft(
+  identity: ClientTrackerIdentityRef,
+): ClientTrackerDraft | null {
   try {
-    const raw = readStorage(CLIENT_TRACKER_KEY);
+    const raw = readStorage(identity.storageKey);
     if (!raw) return null;
     const data = JSON.parse(raw) as {
       config?: TrackerConfig & { parameterIds?: unknown };
@@ -120,8 +129,8 @@ export function readClientTrackerDraft(): ClientTrackerDraft | null {
           if (
             !entry ||
             typeof entry.date !== "string" ||
-            !/^2026-\d{2}-\d{2}$/.test(entry.date) ||
-            entry.date > "2026-10-08" ||
+            !DATE_RE.test(entry.date) ||
+            entry.date > identity.asOf ||
             !entry.values ||
             typeof entry.values !== "object"
           )
@@ -145,8 +154,8 @@ export function readClientTrackerDraft(): ClientTrackerDraft | null {
       for (const [key, value] of Object.entries(data.comments)) {
         const [date, id] = key.split(":");
         if (
-          /^2026-\d{2}-\d{2}$/.test(date) &&
-          date <= "2026-10-08" &&
+          DATE_RE.test(date) &&
+          date <= identity.asOf &&
           allowedIds.has(id) &&
           typeof value === "string" &&
           value.trim()
@@ -160,8 +169,11 @@ export function readClientTrackerDraft(): ClientTrackerDraft | null {
   }
 }
 
-export function writeClientTrackerDraft(draft: ClientTrackerDraft): void {
-  writeJson(CLIENT_TRACKER_KEY, {
+export function writeClientTrackerDraft(
+  identity: ClientTrackerIdentityRef,
+  draft: ClientTrackerDraft,
+): void {
+  writeJson(identity.storageKey, {
     version: 1,
     config: draft.config,
     entries: draft.entries,

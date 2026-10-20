@@ -20,6 +20,7 @@ export default async function CoachPage() {
           name: viewer.name,
           initials: viewer.initials,
           role: viewer.role,
+          workspaceName: viewer.workspace.name,
         }}
       />
     </Suspense>
