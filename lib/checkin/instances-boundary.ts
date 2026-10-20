@@ -66,6 +66,7 @@ import {
   setCheckInScheduleRuleStatus,
   generateCheckInScheduleRuleInstances,
   listCheckInScheduleRules,
+  projectCheckInScheduleOccurrences,
   type CheckInScheduleDeps,
   type CreateCheckInScheduleRuleInput,
   type CreateCheckInScheduleRuleResult,
@@ -74,6 +75,8 @@ import {
   type GenerateCheckInScheduleRuleInput,
   type GenerateCheckInScheduleRuleResult,
   type CheckInScheduleRuleItem,
+  type ProjectCheckInScheduleOccurrencesInput,
+  type ProjectCheckInScheduleOccurrencesResult,
 } from "./schedules";
 
 export type CheckInSafeResult<T> =
@@ -453,6 +456,23 @@ export async function listCheckInScheduleRulesForClient(
 ): Promise<CheckInSafeResult<{ items: CheckInScheduleRuleItem[] }>> {
   return guard(process.env, () =>
     listCheckInScheduleRules(session as never, input, deps),
+  );
+}
+
+/**
+ * PR-M8 (D30) — the read-only occurrence projection for the calendar.
+ * Returns recurring dates the ACTIVE rules have NOT materialized inside
+ * a bounded local-date range (dates beyond the generated T+56 coverage
+ * included). Pure SELECTs behind the same read authorization as the
+ * rules list — a projection call never writes an instance.
+ */
+export async function projectStaffCheckInScheduleOccurrences(
+  session: Session,
+  input: ProjectCheckInScheduleOccurrencesInput,
+  deps: CheckInScheduleDeps = {},
+): Promise<CheckInSafeResult<ProjectCheckInScheduleOccurrencesResult>> {
+  return guard(process.env, () =>
+    projectCheckInScheduleOccurrences(session as never, input, deps),
   );
 }
 
