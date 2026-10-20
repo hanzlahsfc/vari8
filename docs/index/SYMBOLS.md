@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 122 modules with exports, 1188 exported symbols.
+Counts: 123 modules with exports, 1196 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -183,6 +183,15 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type Viewer = { id: string; email: string; name: string | null }`
 - `export async function getViewer(): Promise<Viewer | null>`
 - `export async function getViewerFromHeaders(requestHeaders: Headers): Promise<Viewer | null>`
+
+## `lib/boundary.ts`
+
+- `export type ClosedMessages<C extends string> = Record<C, string>`
+- `export type SafeResult<C extends string, T> = | { ok: true; value: T } | { ok: false; code: C; message: string; detail?: Record<string, unknown>; }`
+- `export function fail<C extends string, T = never>(messages: ClosedMessages<C>, code: C, detail?: Record<string, unknown>): SafeResult<C, T>`
+- `export function failMessage(message: string): { ok: false; message: string }`
+- `export async function guard<F, T>(options: { enabled: boolean; off: () => F; map: (error: unknown) => F; }, fn: () => Promise<T>): Promise<{ ok: true; value: T } | F>`
+- `export function mapError<F>(error: unknown, mapping: { denied: () => F; consent?: (error: ConsentError) => F; domain: (error: unknown) => F | null | undefined; serializationConflict?: () => F; fall...`
 
 ## `lib/catalog.ts`
 
@@ -824,8 +833,10 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/db.ts`
 
+- `export type SerializedRetryOptions = { maxAttempts: number; backoffBaseMs?: number; backoffCapMs?: number; isRetryable?: (error: unknown) => boolean; onExhausted?: (error: unknown) => unknown; onMi...`
 - `export function isSerializationConflict(error: unknown): boolean`
 - `export const prisma = globalForPrisma.prisma ?? new PrismaClient()`
+- `export async function withSerializedRetry<T>(fn: () => Promise<T>, options: SerializedRetryOptions): Promise<T>`
 
 ## `lib/email.ts`
 

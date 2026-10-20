@@ -2,9 +2,9 @@
 
 <!-- BEGIN GENERATED: scripts/index/generate.ts (npm run index) -->
 Purpose: Server-side domain services, authorization, consent and feature gates. No UI, no React.
-Top-level files: audit.ts, catalog.ts, consent.ts, daily-prototype.ts, daily-tracker.ts, db.ts, email.ts, gdpr.ts,
-  password-policy.ts, password.ts, runtime.ts, sheet-viewer.ts, spec-artifacts.ts, storage.ts,
-  tokens.ts
+Top-level files: audit.ts, boundary.ts, catalog.ts, consent.ts, daily-prototype.ts, daily-tracker.ts, db.ts,
+  email.ts, gdpr.ts, password-policy.ts, password.ts, runtime.ts, sheet-viewer.ts,
+  spec-artifacts.ts, storage.ts, tokens.ts
 Read next: docs/index/SYMBOLS.md while working in here. Repo-wide index: docs/index/README.md.
 Rules: see the repo-root AGENTS.md and CONTEXT.md.
 <!-- END GENERATED -->
