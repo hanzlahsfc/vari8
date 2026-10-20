@@ -44,3 +44,7 @@ frontend/
 icm/02-gap-matrix/
 icm/05-build/graph.json
 icm/05-build/graph-summary.json
+
+# PR-01: Lilly's canvas carried from frontend/ (Biome-formatted there); CSS stays byte for byte.
+components/canvas/
+lib/canvas/
