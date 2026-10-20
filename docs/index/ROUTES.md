@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 51 backend pages, 4 API routes, 9 layouts, 3 canvas pages.
+Counts: 52 backend pages, 4 API routes, 9 layouts, 3 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -16,7 +16,7 @@ Route groups (do not add a path segment): `(canvas)`, `(tracker)`.
 
 | Path | File | Rendered | Auth (detected) |
 |---|---|---|---|
-| `/` | `app/(canvas)/page.tsx` | server | none detected |
+| `/` | `app/(canvas)/page.tsx` | server | requireSessionUser |
 | `/coach` | `app/(canvas)/coach/page.tsx` | server | requireCanvasAccess |
 | `/daily` | `app/daily/page.tsx` | server | none detected |
 | `/ethereal` | `app/(canvas)/ethereal/page.tsx` | server | requireCanvasAccess |
@@ -24,6 +24,7 @@ Route groups (do not add a path segment): `(canvas)`, `(tracker)`.
 | `/library/exercises` | `app/library/exercises/page.tsx` | server | none detected |
 | `/library/foods` | `app/library/foods/page.tsx` | server | none detected |
 | `/login` | `app/login/page.tsx` | server | none detected |
+| `/me` | `app/(canvas)/me/page.tsx` | server | requireClientAccess |
 | `/reset` | `app/reset/page.tsx` | server | none detected |
 | `/reset-request` | `app/reset-request/page.tsx` | server | none detected |
 | `/sheets` | `app/sheets/page.tsx` | server | requireSheetViewer |
