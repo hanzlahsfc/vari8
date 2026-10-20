@@ -52,4 +52,3 @@ describe("MEAL-PLAN-I1 gate — enablement decision", () => {
       expect(isMealPlansEnabled(env)).toBe(false);
   });
 });
-

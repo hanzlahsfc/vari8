@@ -589,9 +589,7 @@ function buildPlan(audit) {
                   b.tag === "GUARD" ||
                   (b.tag === "CUT-AT-REPLACE" && b.pr !== REPLACE_PR),
               )
-              .map((b) =>
-                b.tag === "GUARD" ? b : { ...b, optional: true },
-              ),
+              .map((b) => (b.tag === "GUARD" ? b : { ...b, optional: true })),
             ...f.e2e.filter((x) => x.tag === "GUARD"),
           ]
         : [

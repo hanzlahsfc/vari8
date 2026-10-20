@@ -98,7 +98,6 @@ describe("P-023 gate", () => {
   });
 });
 
-
 describe("P-023 parseAnswersJson", () => {
   it("accepts the array-of-records wire format", () => {
     const out = parseAnswersJson(JSON.stringify(FULL));

@@ -467,7 +467,6 @@ describe.skipIf(!enabled)("P-022 staff DailyEntry review (real PG)", () => {
 
   // ── List: consent + pagination + audit-free ──────────────────────────────
 
-
   // ── Detail: authorization + minimization + snapshot ─────────────────────
 
   describe("detail authorization and minimization", () => {

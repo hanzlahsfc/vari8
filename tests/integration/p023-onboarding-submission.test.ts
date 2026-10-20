@@ -641,7 +641,6 @@ describe.skipIf(!enabled)("P-023 onboarding submission (real PG)", () => {
     });
   });
 
-
   describe("pinned-version integrity", () => {
     it("submits against the pinned version even after a later publication", async () => {
       const c = await seedAssignment([
@@ -803,8 +802,6 @@ describe.skipIf(!enabled)("P-023 onboarding submission (real PG)", () => {
       },
     });
   }
-
-
 
   describe("repair C — P2002 fully-authorized replay", () => {
     it("forced conflict → bounded re-entry returns already_submitted; one submission, zero audit", async () => {

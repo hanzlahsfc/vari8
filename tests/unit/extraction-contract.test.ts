@@ -34,4 +34,3 @@ describe("sheet slug mapping", () => {
     expect(slugifySheetFileName("A  B___C!.html")).toBe("a-b-c");
   });
 });
-
