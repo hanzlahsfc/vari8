@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 52 backend pages, 4 API routes, 9 layouts, 3 canvas pages.
+Counts: 52 backend pages, 7 API routes, 14 layouts, 3 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -74,6 +74,9 @@ Route groups (do not add a path segment): `(canvas)`, `(tracker)`.
 | Path | File | Methods | Auth (detected) |
 |---|---|---|---|
 | `/api/auth/[...all]` | `app/api/auth/[...all]/route.ts` | GET, POST | none detected |
+| `/api/v1/media/[workspaceId]` | `app/api/v1/media/[workspaceId]/route.ts` | - | none detected |
+| `/api/v1/media/[workspaceId]/[mediaObjectId]` | `app/api/v1/media/[workspaceId]/[mediaObjectId]/route.ts` | - | none detected |
+| `/api/v1/media/object` | `app/api/v1/media/object/route.ts` | GET, PUT | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients` | `app/api/v1/workspaces/[workspaceId]/clients/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/session` | `app/api/v1/workspaces/[workspaceId]/session/route.ts` | - | none detected |
 | `/logout` | `app/logout/route.ts` | POST | none detected |
@@ -86,6 +89,11 @@ Layouts enforce the guards below for every route beneath them.
 |---|---|---|---|
 | `/` | `app/(canvas)/layout.tsx` | server | none detected |
 | `/` | `app/layout.tsx` | server | none detected |
+| `/invite` | `app/invite/layout.tsx` | server | none detected |
+| `/login` | `app/login/layout.tsx` | server | none detected |
+| `/reset` | `app/reset/layout.tsx` | server | none detected |
+| `/reset-request` | `app/reset-request/layout.tsx` | server | none detected |
+| `/signup` | `app/signup/layout.tsx` | server | none detected |
 | `/workspace/[workspaceId]` | `app/workspace/[workspaceId]/layout.tsx` | server | requireSessionUser + requireWorkspaceAccess |
 | `/workspace/[workspaceId]/check-ins` | `app/(tracker)/workspace/[workspaceId]/check-ins/layout.tsx` | server | requireSessionUser |
 | `/workspace/[workspaceId]/daily` | `app/(tracker)/workspace/[workspaceId]/daily/layout.tsx` | server | requireSessionUser |
