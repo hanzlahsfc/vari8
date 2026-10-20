@@ -54,7 +54,30 @@ origin/Vari8-Beta) LANE_DB=app_sv4 LANE_PORT=3895 CARD=PR-SV4`, exit 0.
 
 ## Commands and exit codes
 
-(to be filled)
+Head at code-complete: `e167440`. Lane env per standing orders (secrets from
+root `.env`, never printed).
+
+| Command | Exit | Result |
+| --- | --- | --- |
+| `npm ci --no-audit --no-fund` | 0 | 518 pkgs |
+| `docker exec vari8-db-1 createdb app_sv4` + `npx prisma migrate deploy` | 0 | all migrations applied |
+| `npx vitest run tests/unit/invitations.test.ts` (pre-impl, gate test) | 1 | observed RED: gate threw unconditionally |
+| `npx tsc --noEmit` | 0 | clean |
+| `vitest run tests/unit/invitations.test.ts tests/unit/invite-acceptance.test.ts` | 0 | 16/16 |
+| `vitest run --config vitest.integration.config.ts s1-f2c + phase-3-1 + api-v1-invitations` | 1 then 0 | first run 44/45: `not-an-email` target was accepted (normalizeEmail only canonicalizes) — fixed by `z.email()` at the Zod boundary; rerun 7/7 |
+| `npx prettier --check` (changed files) | 1 then 0 | two files formatted |
+| `npx eslint` (changed files) | 0 | clean |
+| `npm run index` / `index:check` | 0 | ROUTES.md + SYMBOLS.md regenerated |
+| `verify-local.sh` run 1 (head 24aa27b) | 1 | FAIL clean tree — report file uncommitted (my miss, fixed) |
+| `verify-local.sh` run 2 (head e167440) | 1 | FAIL `build` os error 11 — worker threads cannot spawn; box at load ~30 with 3 lanes |
+| `verify-local.sh` run 3 (head e167440) | 1 | FAIL `typecheck` exit 143 — SIGTERM under the same contention |
+| `verify-local.sh` run 4 (head e167440) | 1 | FAIL `unit tests` — `system-index.test.ts` subtest timed out at vitest's 5s default under load; 1032/1033 passed, flake not mine |
+| `verify-local.sh` run 5 (head e167440) | running | in progress at report time |
+
+Passed at least once across runs: schema guard, program generator check,
+format, typecheck, lint, frontend everything, unit 1033/1033, integration
+(799 s, incl. the new api-v1-invitations suite and the O6-flipped s1-f2c),
+migrate deploy. The remaining failures are machine contention, not the diff.
 
 ## Live check
 
