@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 137 modules with exports, 1347 exported symbols.
+Counts: 141 modules with exports, 1377 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -180,9 +180,15 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/auth/viewer.ts`
 
+- `export type CanvasRole = "Owner" | "Coach"`
+- `export type CanvasViewer = { name: string; initials: string; role: CanvasRole; workspace: { id: string; name: string }; }`
+- `export type ClientViewer = { name: string; initials: string; workspace: { id: string; name: string }; clientProfileId: string; }`
 - `export type Viewer = { id: string; email: string; name: string | null }`
+- `export async function getCanvasViewer(userId: string): Promise<CanvasViewer | null>`
+- `export async function getClientViewer(userId: string): Promise<ClientViewer | null>`
 - `export async function getViewer(): Promise<Viewer | null>`
 - `export async function getViewerFromHeaders(requestHeaders: Headers): Promise<Viewer | null>`
+- `export function initialsOf(name: string): string`
 
 ## `lib/boundary.ts`
 
@@ -192,6 +198,42 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function failMessage(message: string): { ok: false; message: string }`
 - `export async function guard<F, T>(options: { enabled: boolean; off: () => F; map: (error: unknown) => F; }, fn: () => Promise<T>): Promise<{ ok: true; value: T } | F>`
 - `export function mapError<F>(error: unknown, mapping: { denied: () => F; consent?: (error: ConsentError) => F; domain: (error: unknown) => F | null | undefined; serializationConflict?: () => F; fall...`
+
+## `lib/canvas/coaching-data.ts`
+
+- `export type Client = (typeof seed.clients)[number]`
+- `export type Meal = (typeof seed.mealPlan.variants)[number]["meals"][number]`
+- `export type MealVariant = (typeof seed.mealPlan.variants)[number]`
+- `export type VariantId = "td" | "ntd"`
+- `export const clientProfile = seed.clientProfile`
+- `export const clients = seed.clients`
+- `export const dashboard = seed.dashboard`
+- `export function formatDate(value: string, withYear = false): string`
+- `export function getVariant(id: VariantId): MealVariant`
+- `export function isEmma(client: Client): boolean`
+- `export const mealVariants = seed.mealPlan.variants`
+- `export const seed = source`
+- `export function templateName(client: Client): string`
+
+## `lib/canvas/ethereal-appearance.tsx`
+
+- `export type Appearance = { mode: AppearanceMode; accent: string; font: AppearanceFont; }`
+- `export type AppearanceFont = | "sans" | "serif" | "condensed" | "mono" | "rounded"`
+- `export type AppearanceMode = "light" | "dark"`
+- `export function AppearanceProvider({ children }: { children: ReactNode })`
+- `export const defaultAppearance: Appearance`
+- `export const fontOptions: { id: AppearanceFont; label: string; name: string; family: string; }[]`
+- `export function normalizeHex(value: string): string | null`
+- `export function themeVariables(appearance: Appearance): CSSProperties`
+- `export function useAppearance(): AppearanceContextValue`
+
+## `lib/canvas/reduced-motion.ts`
+
+- `export function useReducedMotion(): boolean`
+
+## `lib/canvas/utils.ts`
+
+- `export { cn } from "cn"`
 
 ## `lib/catalog.ts`
 
