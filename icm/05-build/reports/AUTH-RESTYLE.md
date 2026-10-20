@@ -100,6 +100,11 @@ Dev server on :3959, Playwright (Chromium) against localhost, seeded users from 
 | invite invalid or expired | `/invite?workspace=x&token=y` | screenshot 1440 |
 | reset invalid token | `/reset?token=y` | screenshot 1440 |
 
+Sign-in end to end with a real seeded account (coach@vari8.test on `app_authrs`): submitting the
+form left `/login` for `/#dashboard`, page title "Coaching UI — Ethereal edition", 0 console
+errors. The canvas route rendered its own shell (`--canvas` background, `.appearance-root`
+present, no `.auth-card` leaking in), so the scoped stylesheet does not reach canvas screens.
+
 Screenshots: `$HOME/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/scratch/auth-restyle/shots/`
 (`v2-login-1440-dark.png`, `v2-login-1440-light.png`, `v2-login-390-light.png`,
 `login-390-dark.png`, `login-1440-error.png`, `login-1440-success.png`, `signup-1440-dark.png`,
