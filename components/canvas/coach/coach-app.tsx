@@ -41,10 +41,12 @@ export type CoachAccount = {
   name: string;
   initials: string;
   role: CanvasRole;
+  /** PR-MEDIA: workspace the media API anchors uploads to. */
+  workspaceId?: string;
 };
 export function CoachApp({ viewer }: { viewer: CoachAccount }) {
   return (
-    <CoachProvider>
+    <CoachProvider workspaceId={viewer.workspaceId}>
       <Workspace viewer={viewer} />
     </CoachProvider>
   );

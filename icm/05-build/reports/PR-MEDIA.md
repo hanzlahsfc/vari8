@@ -150,3 +150,63 @@ untouched by this card.
 ## Head
 
 `git rev-parse HEAD` at report time recorded in the PR body.
+
+## Repair round 1 (verifier FIX on 1602373)
+
+**Finding 1 (FIXED): local adapter secret chain missed AUTH_SECRET.**
+`localStorageConfig` signed only with `MEDIA_STORAGE_SIGNING_SECRET ??
+BETTER_AUTH_SECRET`, so the documented env (AUTH_SECRET only) failed closed:
+intents 503, mints 503, objects 404, seed died. Fix at
+`lib/storage/local.ts:47`: chain is now `MEDIA_STORAGE_SIGNING_SECRET ??
+BETTER_AUTH_SECRET ?? AUTH_SECRET`, matching `lib/auth/server.ts:145`.
+`.env.example` and a new unit test (`tests/unit/storage-local.test.ts`,
+asserts the full priority order) cover it. Proof: `npm run seed:dev` on a
+fresh app_media ran with `env -u BETTER_AUTH_SECRET`, AUTH_SECRET only, no
+MEDIA_STORAGE_SIGNING_SECRET: 2 media objects, exit 0.
+
+**Finding 2 (FIXED): canvas media components were unreachable.**
+The card's `media-card.tsx`/`demo-recorder.tsx` existed but nothing in the
+render chain used them; the canvas still ran the synthesized recorder.
+Wired the real path into `components/canvas/coach/media.tsx` (the file PR-01
+mounts via coach-app -> messages.tsx:20, check-ins.tsx:17):
+
+- `model.ts`: `Media.mediaObjectId?` marks items whose bytes reached
+  `/api/v1/media`.
+- `store.tsx`: `CoachProvider` takes `workspaceId`; context also exposes
+  `clientProfileIdFor(name)` (roster lookup, fetched once, name ->
+  clientProfileId for staff anchoring).
+- `coach-app.tsx` + `app/(canvas)/coach/page.tsx`: `viewer.workspace.id`
+  flows into the provider.
+- `media.tsx` `MediaCard`: unchanged markup; when the store has no blob URL
+  and `item.mediaObjectId` is set it mints a download URL via
+  `GET /api/v1/media/:ws/:id` and renders the same players.
+- `media.tsx` `DemoRecorder`: now a thin wrapper that resolves the
+  profile anchor and delegates to the real recorder in
+  `demo-recorder.tsx` (getUserMedia + MediaRecorder + upload on attach;
+  local attach fallback when no workspace is wired).
+- `media-card.tsx`: added `uploadCanvasMedia()`; `uploadWorkspaceMedia`
+  returns `mediaObjectId`.
+- `messages.tsx`: file-input attach now uploads via `uploadCanvasMedia`
+  (20 MB client guard unchanged); the voice dialog passes
+  `clientName={client.name}` and its caption says the microphone is used.
+- `check-ins.tsx`: video-feedback recorder passes `clientName={c.name}`.
+
+Visuals: same elements, classes, layout; only behavior and two
+truth-text strings changed. Live proof (real Chrome, AUTH_SECRET-only env):
+signed in as coach, `/coach?section=messages&client=client-001`, attached
+`browser-proof.png`; network shows `GET /api/v1/workspaces/<ws>/clients`
+200, `POST /api/v1/media/<ws>` 200, `PUT /api/v1/media/object` 200.
+Screenshots `ui-messages-attach-1440.png`, `ui-messages-390.png` in the
+scratch dir.
+
+**Incident:** the first repair-round integration run exported
+`INTEGRATION_DATABASE_URL="$DATABASE_URL"` before assignment, so the suite
+inherited the repo .env's `app_dev` DSN and ran once against app_dev (its
+fixture truncates touched app_dev; the seed-credentials test correctly
+refused and flagged it). Reran with the literal app_media DSN: 60 files /
+861 tests green. app_dev is a disposable dev DB; flagged for the lead.
+
+Repair gate results: typecheck 0, lint 0 (one `Date.now()` purity error
+found and fixed via `uid()`), unit 0 (93 files / 1066 tests), integration
+0 (app_media, 861), root build 0, frontend build 0, index+index:check 0,
+prettier 0.

@@ -44,6 +44,23 @@ describe("local storage adapter", () => {
     );
   });
 
+  it("falls back MEDIA_STORAGE_SIGNING_SECRET -> BETTER_AUTH_SECRET -> AUTH_SECRET", () => {
+    expect(localStorageConfig({ AUTH_SECRET: "only-auth-secret" }).secret).toBe(
+      "only-auth-secret",
+    );
+    expect(
+      localStorageConfig({ BETTER_AUTH_SECRET: "better", AUTH_SECRET: "auth" })
+        .secret,
+    ).toBe("better");
+    expect(
+      localStorageConfig({
+        MEDIA_STORAGE_SIGNING_SECRET: "media",
+        BETTER_AUTH_SECRET: "better",
+        AUTH_SECRET: "auth",
+      }).secret,
+    ).toBe("media");
+  });
+
   it("presigned PUT URL verifies for put and rejects other ops", async () => {
     const put = await localObjectStorage.presignPut(KEY, {
       contentType: "image/png",

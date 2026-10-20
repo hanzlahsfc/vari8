@@ -42,7 +42,11 @@ export type LocalStorageConfig = {
 export function localStorageConfig(
   env: Record<string, string | undefined> = process.env,
 ): LocalStorageConfig {
-  const secret = env.MEDIA_STORAGE_SIGNING_SECRET ?? env.BETTER_AUTH_SECRET;
+  // Same fallback chain as lib/auth/server.ts (BETTER_AUTH_SECRET ?? AUTH_SECRET).
+  const secret =
+    env.MEDIA_STORAGE_SIGNING_SECRET ??
+    env.BETTER_AUTH_SECRET ??
+    env.AUTH_SECRET;
   if (typeof secret !== "string" || secret.length === 0)
     throw new StorageError("storage_not_configured");
   const dir = env.MEDIA_STORAGE_DIR ?? join(process.cwd(), "var", "media");

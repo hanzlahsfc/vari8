@@ -4,7 +4,7 @@ import { Mic, Square, Video } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { uploadWorkspaceMedia } from "./media-card";
-import type { Media } from "./model";
+import { type Media, uid } from "./model";
 import { Button } from "./ui";
 
 /**
@@ -47,7 +47,7 @@ export function DemoRecorder({
   onAttach,
 }: {
   kind: "voice" | "video";
-  workspaceId: string;
+  workspaceId?: string;
   /** Staff uploads name the profile; a client's own profile is inferred. */
   clientProfileId?: string;
   onAttach: (item: Media) => void;
@@ -146,6 +146,19 @@ export function DemoRecorder({
 
   const attach = async () => {
     if (!preview) return;
+    // No workspace wired (pure demo embed): attach the local item as before.
+    if (!workspaceId) {
+      const contentType = preview.blob.type.split(";")[0];
+      const item: Media = {
+        id: uid("media"),
+        name: previewName,
+        type: contentType,
+        size: preview.blob.size,
+      };
+      discard();
+      onAttach(item);
+      return;
+    }
     setPhase("uploading");
     setError("");
     try {

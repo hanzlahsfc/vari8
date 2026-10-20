@@ -71,7 +71,35 @@ export async function uploadWorkspaceMedia(input: {
     name: body.mediaObject.fileName,
     type: body.mediaObject.contentType,
     size: body.mediaObject.byteSize,
+    mediaObjectId: body.mediaObject.id,
   };
+}
+
+/**
+ * Uploads a canvas `Media` item's bytes in the background and stamps
+ * `item.mediaObjectId` so `MediaCard` can mint playback URLs. Returns true
+ * when the object reached the server; on any failure the item simply stays
+ * local (the canvas preview path keeps working unchanged).
+ */
+export async function uploadCanvasMedia(
+  item: Media,
+  blob: Blob,
+  options: { workspaceId?: string; clientProfileId?: string },
+): Promise<boolean> {
+  if (!options.workspaceId) return false;
+  try {
+    const stored = await uploadWorkspaceMedia({
+      workspaceId: options.workspaceId,
+      clientProfileId: options.clientProfileId,
+      fileName: item.name,
+      contentType: blob.type.split(";")[0] || item.type,
+      blob,
+    });
+    item.mediaObjectId = stored.id;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function MediaCard({
