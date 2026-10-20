@@ -144,12 +144,12 @@ model User {
   // flag records whether the address was verified (invite acceptance counts).
   emailVerified  Boolean      @default(false) @map("email_verified")
   image          String?
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   // PR-05 (Better Auth): database sessions + credential/OAuth account records.
-  sessions   Session[]
-  accounts   Account[]
+  sessions Session[]
+  accounts Account[]
 
   memberships                    WorkspaceMember[]
   clientProfiles                 ClientProfile[]
@@ -163,14 +163,20 @@ model User {
   onboardingSubmissionsSubmitted OnboardingSubmission[] @relation("OnboardingSubmissionSubmittedByUser")
   checkInSubmissionsSubmitted    CheckInSubmission[]    @relation("CheckInSubmissionSubmittedByUser")
 
-  completedClientTasks ClientTask[]       @relation("ClientTaskCompleter")
+  completedClientTasks ClientTask[] @relation("ClientTaskCompleter")
 
   // HABITS-I1: best-effort provenance pointer for habit logs (SetNull —
   // mirrors ConsentRecord.grantedBy / ClientTask.completedBy).
   habitLogs HabitLog[] @relation("HabitLogLogger")
 
-  @@map("users")
+  // PR-M0: media uploader provenance (SetNull), message sender (SetNull),
+  // message drafts (Cascade) and read markers (Cascade).
+  mediaObjectsUploaded MediaObject[]  @relation("MediaObjectUploader")
+  messagesSent         Message[]      @relation("MessageSender")
+  messageDrafts        MessageDraft[] @relation("MessageDraftAuthor")
+  messageReads         MessageRead[]
 
+  @@map("users")
 }
 
 // PR-05 (Better Auth): session rows ARE the session — revocation is row
@@ -179,11 +185,11 @@ model Session {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
   token     String   @unique
-  expiresAt DateTime @map("expires_at")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
   ipAddress String?  @map("ip_address")
   userAgent String?  @map("user_agent")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -200,13 +206,13 @@ model Account {
   providerId            String    @map("provider_id")
   accessToken           String?   @map("access_token")
   refreshToken          String?   @map("refresh_token")
-  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
-  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at") @db.Timestamptz(6)
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at") @db.Timestamptz(6)
   scope                 String?
   idToken               String?   @map("id_token")
   password              String?
-  createdAt             DateTime  @default(now()) @map("created_at")
-  updatedAt             DateTime  @updatedAt @map("updated_at")
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -222,9 +228,9 @@ model Verification {
   id         String   @id @default(cuid())
   identifier String
   value      String
-  expiresAt  DateTime @map("expires_at")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@unique([identifier])
   @@map("verifications")
@@ -241,13 +247,27 @@ model RateLimit {
 }
 
 model Workspace {
-  id        String          @id @default(cuid())
-  name      String
-  slug      String          @unique
-  status    WorkspaceStatus @default(ACTIVE)
-  createdAt DateTime        @default(now()) @map("created_at")
-  updatedAt DateTime        @updatedAt @map("updated_at")
+  id                           String            @id @default(cuid())
+  name                         String
+  slug                         String            @unique
+  status                       WorkspaceStatus   @default(ACTIVE)
+  // PR-M0: retention + appearance + studio dashboard (D31) workspace
+  // settings. CHECKs live in the migration's raw SQL.
+  retentionDays                Int               @default(90) @map("retention_days")
+  appearanceMode               AppearanceMode    @default(DARK) @map("appearance_mode")
+  appearanceAccent             String            @default("#EB91B8") @map("appearance_accent") @db.VarChar(7)
+  appearanceFont               AppearanceFont    @default(SANS) @map("appearance_font")
+  appearanceDensity            AppearanceDensity @default(COMFORTABLE) @map("appearance_density")
+  logoMediaId                  String?           @map("logo_media_id")
+  availabilityText             String            @default("") @map("availability_text")
+  notificationsEnabled         Boolean           @default(true) @map("notifications_enabled")
+  priorityNotificationsEnabled Boolean           @default(true) @map("priority_notifications_enabled")
+  studioDashboardDraft         Json?             @map("studio_dashboard_draft")
+  studioDashboardDraftRevision Int               @default(1) @map("studio_dashboard_draft_revision")
+  createdAt                    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                    DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  logoMedia                     MediaObject?                       @relation("WorkspaceLogo", fields: [logoMediaId], references: [id], onDelete: Restrict)
   members                       WorkspaceMember[]
   clientProfiles                ClientProfile[]
   auditEvents                   AuditEvent[]
@@ -281,21 +301,41 @@ model Workspace {
   trainingProgramVersions       TrainingProgramVersion[]
   trainingSessionBookings       TrainingSessionBooking[]
 
+  // PR-M0 (schema v2) tenant tables.
+  mediaObjects            MediaObject[]
+  coachNotes              CoachNote[]
+  coachTasks              CoachTask[]
+  trackerComments         TrackerComment[]
+  clientGoals             ClientGoal[]
+  savedMeals              SavedMeal[]
+  exerciseLibraryItems    ExerciseLibraryItem[]
+  clientPlans             ClientPlan[]
+  iifymPlans              IifymPlan[]
+  iifymPlanVersions       IifymPlanVersion[]
+  conversations           Conversation[]
+  messages                Message[]
+  messageDrafts           MessageDraft[]
+  messageAttachments      MessageAttachment[]
+  messageDraftAttachments MessageDraftAttachment[]
+  checkinAnswerMedia      CheckInAnswerMedia[]
+
   @@map("workspace")
 }
 
 model WorkspaceMember {
-  id           String       @id @default(cuid())
-  workspaceId  String       @map("workspace_id")
-  userId       String       @map("user_id")
-  role         MemberRole
-  status       MemberStatus @default(INVITED)
+  id               String       @id @default(cuid())
+  workspaceId      String       @map("workspace_id")
+  userId           String       @map("user_id")
+  role             MemberRole
+  status           MemberStatus @default(INVITED)
   // S1-F2C repair: DB-owned membership-state generation. The raw trigger
   // (migration 20260930190000) sets it to 0 on insert and increments it iff
   // status/role change — callers must never write it directly.
-  stateVersion Int          @default(0) @map("state_version")
-  createdAt    DateTime     @default(now()) @map("created_at")
-  updatedAt    DateTime     @updatedAt @map("updated_at")
+  stateVersion     Int          @default(0) @map("state_version")
+  // PR-M0: per-member UI preference.
+  sidebarCollapsed Boolean      @default(false) @map("sidebar_collapsed")
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
@@ -351,13 +391,26 @@ model WorkspaceMember {
   trainingBookingsScheduled        TrainingSessionBooking[] @relation("TrainingBookingScheduler")
   trainingBookingsCancelled        TrainingSessionBooking[] @relation("TrainingBookingCanceller")
 
+  // PR-M0 (schema v2) member provenance relations.
+  coachNotesAuthored          CoachNote[]           @relation("CoachNoteAuthor")
+  coachTasksCreated           CoachTask[]           @relation("CoachTaskCreator")
+  coachTasksCompleted         CoachTask[]           @relation("CoachTaskCompleter")
+  trackerCommentsAuthored     TrackerComment[]      @relation("TrackerCommentAuthor")
+  clientGoalsCreated          ClientGoal[]          @relation("ClientGoalCreator")
+  savedMealsCreated           SavedMeal[]           @relation("SavedMealCreator")
+  exerciseLibraryItemsCreated ExerciseLibraryItem[] @relation("ExerciseLibraryItemCreator")
+  clientPlansUpdated          ClientPlan[]          @relation("ClientPlanUpdater")
+  iifymPlansCreated           IifymPlan[]           @relation("IifymPlanCreator")
+  iifymPlanDraftsSaved        IifymPlan[]           @relation("IifymPlanDraftSaver")
+  iifymPlanTimezonesSet       IifymPlan[]           @relation("IifymPlanTimezoneSetter")
+  iifymPlanVersionsPublished  IifymPlanVersion[]    @relation("IifymPlanVersionPublisher")
+
   @@unique([workspaceId, userId])
   // Composite target for the ClientAssignment same-workspace foreign key (raw SQL).
   @@unique([id, workspaceId])
   @@index([workspaceId, status])
   @@index([workspaceId, role])
   @@index([userId])
-
   @@map("workspace_member")
 }
 
@@ -365,8 +418,8 @@ model CoachProfile {
   id                String   @id @default(cuid())
   workspaceMemberId String   @unique @map("workspace_member_id")
   displayName       String   @map("display_name")
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   workspaceMember WorkspaceMember @relation(fields: [workspaceMemberId], references: [id], onDelete: Cascade)
 
@@ -374,12 +427,21 @@ model CoachProfile {
 }
 
 model ClientProfile {
-  id          String   @id @default(cuid())
-  workspaceId String   @map("workspace_id")
-  userId      String?  @map("user_id")
-  name        String
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id                      String    @id @default(cuid())
+  workspaceId             String    @map("workspace_id")
+  userId                  String?   @map("user_id")
+  name                    String
+  // PR-M0: canvas roster metadata + archive provenance (D20 priority flag).
+  // The archive pairing CHECK is raw migration SQL. No phase/week columns
+  // (D27: derived from the assigned plan).
+  label                   String?   @map("label")
+  coachingSince           DateTime? @map("coaching_since") @db.Date
+  heightCm                Decimal?  @map("height_cm") @db.Decimal(5, 1)
+  archivedAt              DateTime? @map("archived_at") @db.Timestamptz(6)
+  archiveReason           String?   @map("archive_reason")
+  priorityMessagesAllowed Boolean   @default(false) @map("priority_messages_allowed")
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -408,11 +470,22 @@ model ClientProfile {
   trainingProgramVersions     TrainingProgramVersion[]     @relation("TrainingProgramVersionClient")
   trainingBookings            TrainingSessionBooking[]     @relation("TrainingBookingClient")
 
+  // PR-M0 (schema v2) client-scoped records.
+  coachNotes        CoachNote[]        @relation("CoachNoteClient")
+  coachTasks        CoachTask[]        @relation("CoachTaskClient")
+  trackerComments   TrackerComment[]   @relation("TrackerCommentClient")
+  clientGoals       ClientGoal[]       @relation("ClientGoalClient")
+  clientPlan        ClientPlan?        @relation("ClientPlanClient")
+  iifymPlan         IifymPlan?         @relation("IifymPlanClient")
+  iifymPlanVersions IifymPlanVersion[] @relation("IifymPlanVersionClient")
+  conversations     Conversation[]     @relation("ConversationClient")
+
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
   @@unique([workspaceId, userId])
   // Composite target for the ClientAssignment same-workspace foreign key (raw SQL).
   @@unique([id, workspaceId])
   @@index([workspaceId])
+  @@index([workspaceId, archivedAt])
   @@map("client_profile")
 }
 
@@ -423,9 +496,9 @@ model ClientAssignment {
   coachMemberId   String           @map("coach_member_id")
   role            AssignmentRole
   status          AssignmentStatus @default(ACTIVE)
-  assignedAt      DateTime         @default(now()) @map("assigned_at")
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @updatedAt @map("updated_at")
+  assignedAt      DateTime         @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   clientProfile ClientProfile   @relation("ClientAssignmentClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
   coachMember   WorkspaceMember @relation("ClientAssignmentCoach", fields: [coachMemberId], references: [id], onDelete: Restrict)
@@ -653,6 +726,9 @@ model ExerciseCatalogItem {
   firstImportedAt   DateTime @default(now()) @map("first_imported_at") @db.Timestamptz(6)
   updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  // PR-M0: coach-editable library items can pin a catalog row (SetNull).
+  libraryItems ExerciseLibraryItem[] @relation("ExerciseLibraryCatalogItem")
+
   // Muscle-group and equipment filters (exact). The name substring-search
   // index is a pg_trgm GIN index created in raw SQL (Prisma cannot express
   // GIN) — see migration 20261001200000; keep `migrate deploy` (never let
@@ -828,6 +904,11 @@ enum ParameterKind {
   DURATION
   OPTION
   TEXT
+  // PR-M0: additional canvas input kinds.
+  BLOOD_PRESSURE
+  LOCATION_RATING
+  CONTEXT
+  MULTI_CHOICE
 }
 
 enum RatingScheme {
@@ -890,6 +971,9 @@ model ParameterDefinition {
   archivedByMember  WorkspaceMember?                   @relation("ParameterDefinitionArchiver", fields: [archivedByMemberId], references: [id], onDelete: Restrict)
   versionReferences CoachingTemplateVersionParameter[]
   dailyEntryValues  DailyEntryRevisionValue[]
+  // PR-M0: tracker comments and client goals reference parameters.
+  trackerComments   TrackerComment[]                   @relation("TrackerCommentParameter")
+  clientGoals       ClientGoal[]                       @relation("ClientGoalParameter")
 
   @@unique([workspaceId, key])
   // Composite target for same-workspace foreign keys (raw SQL).
@@ -903,6 +987,12 @@ model CoachingTemplate {
   workspaceId          String                 @map("workspace_id")
   // Duplicate display names are permitted (decision #46) — IDs authoritative.
   name                 String
+  // PR-M0: coach-facing description + D24 soft-delete restore window.
+  // The restore pairing/ordering CHECKs and the summaryParameterIds draft
+  // bound are raw migration SQL.
+  description          String                 @default("")
+  deletedAt            DateTime?              @map("deleted_at") @db.Timestamptz(6)
+  restoreUntil         DateTime?              @map("restore_until") @db.Timestamptz(6)
   status               CoachingTemplateStatus @default(ACTIVE)
   archivedAt           DateTime?              @map("archived_at") @db.Timestamptz(6)
   archivedByMemberId   String?                @map("archived_by_member_id")
@@ -1150,16 +1240,22 @@ model DailyEntryRevision {
 }
 
 model DailyEntryRevisionValue {
-  revisionId    String        @map("revision_id")
-  workspaceId   String        @map("workspace_id")
-  parameterId   String        @map("parameter_id")
+  revisionId     String        @map("revision_id")
+  workspaceId    String        @map("workspace_id")
+  parameterId    String        @map("parameter_id")
   // Closed ParameterKind — the exactly-one-column CHECK in raw SQL makes
   // unsupported kinds incapable of producing a row.
-  kind          ParameterKind
-  valueNumeric  Decimal?      @map("value_numeric") @db.Decimal(30, 8)
-  valueRating   Int?          @map("value_rating")
-  valueOptionId String?       @map("value_option_id")
-  valueText     String?       @map("value_text")
+  kind           ParameterKind
+  valueNumeric   Decimal?      @map("value_numeric") @db.Decimal(30, 8)
+  valueRating    Int?          @map("value_rating")
+  valueOptionId  String?       @map("value_option_id")
+  valueText      String?       @map("value_text")
+  // PR-M0 (D28): value columns for the added ParameterKinds. The ten-branch
+  // kind/column CHECK is raw migration SQL.
+  valueMinutes   Int?          @map("value_minutes")
+  valueSystolic  Int?          @map("value_systolic") @db.SmallInt
+  valueDiastolic Int?          @map("value_diastolic") @db.SmallInt
+  valueOptionIds Json?         @map("value_option_ids")
 
   revision  DailyEntryRevision  @relation(fields: [revisionId], references: [id], onDelete: Restrict)
   parameter ParameterDefinition @relation(fields: [parameterId], references: [id], onDelete: Restrict)
@@ -1294,6 +1390,9 @@ enum CheckInAnswerKind {
   DATE
   SINGLE_CHOICE
   MULTI_CHOICE
+  // PR-M0: rating and visual-upload answers.
+  RATING
+  VISUAL
 }
 
 model CheckInForm {
@@ -1314,12 +1413,12 @@ model CheckInForm {
   createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  workspace        Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  createdByMember  WorkspaceMember      @relation("CheckInFormCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
-  archivedByMember WorkspaceMember?     @relation("CheckInFormArchiver", fields: [archivedByMemberId], references: [id], onDelete: Restrict)
+  workspace        Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  createdByMember  WorkspaceMember       @relation("CheckInFormCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  archivedByMember WorkspaceMember?      @relation("CheckInFormArchiver", fields: [archivedByMemberId], references: [id], onDelete: Restrict)
   versions         CheckInFormVersion[]
-  instances        CheckInInstance[]    @relation("CheckInInstanceForm")
-  submissions      CheckInSubmission[]  @relation("CheckInSubmissionForm")
+  instances        CheckInInstance[]     @relation("CheckInInstanceForm")
+  submissions      CheckInSubmission[]   @relation("CheckInSubmissionForm")
   scheduleRules    CheckInScheduleRule[] @relation("CheckInScheduleRuleForm")
 
   // Composite target for the CheckInFormVersion form∈workspace foreign key (raw SQL).
@@ -1389,15 +1488,19 @@ model CheckInInstance {
   // A cancellation is the only permitted mutation on this row.
   cancelledByMemberId String?   @map("cancelled_by_member_id")
   cancelledAt         DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  // PR-M0: coach note on the instance + D24 additional-date removal undo
+  // window (pairing/order CHECK is raw migration SQL).
+  coachNote           String?   @map("coach_note")
+  cancelRestoreUntil  DateTime? @map("cancel_restore_until") @db.Timestamptz(6)
   createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  workspace         Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  clientProfile     ClientProfile       @relation("CheckInInstanceClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
-  form              CheckInForm         @relation("CheckInInstanceForm", fields: [formId], references: [id], onDelete: Restrict)
-  formVersion       CheckInFormVersion  @relation("CheckInInstanceFormVersion", fields: [formVersionId], references: [id], onDelete: Restrict)
-  scheduledByMember WorkspaceMember     @relation("CheckInInstanceScheduler", fields: [scheduledByMemberId], references: [id], onDelete: Restrict)
-  cancelledByMember WorkspaceMember?    @relation("CheckInInstanceCanceller", fields: [cancelledByMemberId], references: [id], onDelete: Restrict)
+  workspace         Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile     ClientProfile        @relation("CheckInInstanceClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  form              CheckInForm          @relation("CheckInInstanceForm", fields: [formId], references: [id], onDelete: Restrict)
+  formVersion       CheckInFormVersion   @relation("CheckInInstanceFormVersion", fields: [formVersionId], references: [id], onDelete: Restrict)
+  scheduledByMember WorkspaceMember      @relation("CheckInInstanceScheduler", fields: [scheduledByMemberId], references: [id], onDelete: Restrict)
+  cancelledByMember WorkspaceMember?     @relation("CheckInInstanceCanceller", fields: [cancelledByMemberId], references: [id], onDelete: Restrict)
   originRule        CheckInScheduleRule? @relation(fields: [originRuleId], references: [id], onDelete: Restrict)
   submissions       CheckInSubmission[]
 
@@ -1467,15 +1570,21 @@ model CheckInSubmissionAnswer {
   valueNumeric    Decimal?          @map("value_numeric") @db.Decimal(23, 6)
   valueDate       DateTime?         @map("value_date") @db.Date
   valueOptionIds  Json?             @map("value_option_ids")
+  // PR-M0: RATING answers; VISUAL answers carry no value columns (media in
+  // checkin_answer_media). The extended kind↔column CHECK is raw SQL.
+  valueRating     Int?              @map("value_rating")
 
-  submission    CheckInSubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
-  workspace     Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  clientProfile ClientProfile     @relation("CheckInAnswerClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  submission    CheckInSubmission    @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  workspace     Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile        @relation("CheckInAnswerClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  media         CheckInAnswerMedia[]
 
   // One answer per field per submission. kind↔column shape is a raw CHECK
   // in the migration (Prisma cannot express it); immutability is a service
   // contract — no write path ever updates these rows.
   @@unique([submissionId, fieldId])
+  // Composite target for the answer-media same-workspace FK (raw SQL).
+  @@unique([id, workspaceId])
   @@index([workspaceId])
   @@map("checkin_submission_answer")
 }
@@ -1523,10 +1632,10 @@ model CheckInFeedback {
   sentAt             DateTime @default(now()) @map("sent_at") @db.Timestamptz(6)
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  workspace    Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  clientProfile ClientProfile    @relation("CheckInFeedbackClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
-  submission   CheckInSubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
-  authoredBy   WorkspaceMember   @relation("CheckInFeedbackAuthor", fields: [authoredByMemberId], references: [id], onDelete: Restrict)
+  workspace     Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile     @relation("CheckInFeedbackClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  submission    CheckInSubmission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  authoredBy    WorkspaceMember   @relation("CheckInFeedbackAuthor", fields: [authoredByMemberId], references: [id], onDelete: Restrict)
 
   // Idempotency anchor — at most one durable row per (submission,
   // client-generated nonce); per-submission scoping means the same
@@ -1564,33 +1673,33 @@ enum CheckInWeekday {
 // Raw CHECKs (migration): local_time_minutes 0–1439; end_date >=
 // start_date; ended provenance paired non-null.
 model CheckInScheduleRule {
-  id                 String                    @id @default(cuid())
-  workspaceId        String                    @map("workspace_id")
-  clientProfileId    String                    @map("client_profile_id")
-  formId             String                    @map("form_id")
-  weekday            CheckInWeekday
+  id                String                    @id @default(cuid())
+  workspaceId       String                    @map("workspace_id")
+  clientProfileId   String                    @map("client_profile_id")
+  formId            String                    @map("form_id")
+  weekday           CheckInWeekday
   // Minute-of-day 0–1439 in `timezone` (raw CHECK bounds it).
-  localTimeMinutes   Int                       @map("local_time_minutes")
+  localTimeMinutes  Int                       @map("local_time_minutes")
   // IANA zone, app-validated (Intl) at create — never a browser guess.
-  timezone           String
+  timezone          String
   // Inclusive local-date bounds on generated occurrences.
-  startDate          DateTime                  @map("start_date") @db.Date
-  endDate            DateTime?                 @map("end_date") @db.Date
-  status             CheckInScheduleRuleStatus @default(ACTIVE)
-  createdByMemberId  String                    @map("created_by_member_id")
+  startDate         DateTime                  @map("start_date") @db.Date
+  endDate           DateTime?                 @map("end_date") @db.Date
+  status            CheckInScheduleRuleStatus @default(ACTIVE)
+  createdByMemberId String                    @map("created_by_member_id")
   // Latest-pause provenance (pause is reversible; not a paired CHECK —
   // a resumed rule keeps the record of its last pause).
-  pausedAt           DateTime?                 @map("paused_at") @db.Timestamptz(6)
-  pausedByMemberId   String?                   @map("paused_by_member_id")
+  pausedAt          DateTime?                 @map("paused_at") @db.Timestamptz(6)
+  pausedByMemberId  String?                   @map("paused_by_member_id")
   // Paired end provenance — both null or both non-null (raw CHECK);
   // ENDED is terminal.
-  endedAt            DateTime?                 @map("ended_at") @db.Timestamptz(6)
-  endedByMemberId    String?                   @map("ended_by_member_id")
+  endedAt           DateTime?                 @map("ended_at") @db.Timestamptz(6)
+  endedByMemberId   String?                   @map("ended_by_member_id")
   // The rule that replaced this one (end-and-replace writes it once;
   // unique — a rule has at most one replacement).
-  replacedByRuleId   String?                   @unique @map("replaced_by_rule_id")
-  createdAt          DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  replacedByRuleId  String?                   @unique @map("replaced_by_rule_id")
+  createdAt         DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   workspace       Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   clientProfile   ClientProfile        @relation("CheckInScheduleRuleClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
@@ -1635,7 +1744,6 @@ model ClientDashboardLayout {
   @@index([clientProfileId])
   @@map("client_dashboard_layout")
 }
-
 
 // CLIENT-TASKS-I1 (decision #109): staff-assigned client tasks — bounded
 // coach-authored title + declared due date + lifecycle/provenance. The
@@ -1690,14 +1798,16 @@ model Habit {
   // Staff-authored coaching metadata; trimmed non-empty <= 120 (raw CHECK).
   name            String    @db.VarChar(120)
   target          String    @db.VarChar(120)
+  // PR-M0: coach-visible reason text (canvas habit card).
+  reason          String    @default("")
   // CAS for every edit/archive.
   revision        Int       @default(1)
   archivedAt      DateTime? @map("archived_at") @db.Timestamptz(6)
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  clientProfile ClientProfile @relation("HabitClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  workspace     Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile   @relation("HabitClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
   schedules     HabitSchedule[]
   logs          HabitLog[]
 
@@ -1719,7 +1829,8 @@ model HabitSchedule {
   effectiveFrom DateTime  @map("effective_from") @db.Date
   weekdays      Int       @db.SmallInt
   endDate       DateTime? @map("end_date") @db.Date
-  habit   Habit @relation(fields: [habitId], references: [id], onDelete: Restrict)
+  habit         Habit     @relation(fields: [habitId], references: [id], onDelete: Restrict)
+
   // One boundary per habit per day — same-day edits upsert at tomorrow.
   @@unique([habitId, effectiveFrom])
   @@map("habit_schedules")
@@ -1729,14 +1840,15 @@ model HabitSchedule {
 // `loggedByUserId` is best-effort provenance (SetNull, mirrors the
 // ConsentRecord.grantedBy / ClientTask.completedBy precedent).
 model HabitLog {
-  id             String          @id @default(cuid())
-  habitId        String          @map("habit_id")
-  date           DateTime        @db.Date
+  id             String         @id @default(cuid())
+  habitId        String         @map("habit_id")
+  date           DateTime       @db.Date
   status         HabitLogStatus
-  loggedByUserId String?         @map("logged_by_user_id")
-  loggedAt       DateTime        @default(now()) @map("logged_at") @db.Timestamptz(6)
-  habit    Habit @relation(fields: [habitId], references: [id], onDelete: Restrict)
-  loggedBy User? @relation("HabitLogLogger", fields: [loggedByUserId], references: [id], onDelete: SetNull)
+  loggedByUserId String?        @map("logged_by_user_id")
+  loggedAt       DateTime       @default(now()) @map("logged_at") @db.Timestamptz(6)
+  habit          Habit          @relation(fields: [habitId], references: [id], onDelete: Restrict)
+  loggedBy       User?          @relation("HabitLogLogger", fields: [loggedByUserId], references: [id], onDelete: SetNull)
+
   @@unique([habitId, date])
   @@map("habit_logs")
 }
@@ -1772,11 +1884,11 @@ model MealPlan {
   createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  workspace           Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  clientProfile       ClientProfile    @relation("MealPlanClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
-  createdByMember     WorkspaceMember  @relation("MealPlanCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
-  draftSavedByMember  WorkspaceMember? @relation("MealPlanDraftSaver", fields: [draftSavedByMemberId], references: [id], onDelete: Restrict)
-  timezoneSetByMember WorkspaceMember? @relation("MealPlanTimezoneSetter", fields: [timezoneSetByMemberId], references: [id], onDelete: Restrict)
+  workspace           Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile       ClientProfile     @relation("MealPlanClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  createdByMember     WorkspaceMember   @relation("MealPlanCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  draftSavedByMember  WorkspaceMember?  @relation("MealPlanDraftSaver", fields: [draftSavedByMemberId], references: [id], onDelete: Restrict)
+  timezoneSetByMember WorkspaceMember?  @relation("MealPlanTimezoneSetter", fields: [timezoneSetByMemberId], references: [id], onDelete: Restrict)
   versions            MealPlanVersion[]
 
   // Composite coherence targets for raw version FKs.
@@ -1871,12 +1983,12 @@ model TrainingProgram {
   createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  workspace           Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  clientProfile       ClientProfile    @relation("TrainingProgramClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
-  createdByMember     WorkspaceMember  @relation("TrainingProgramCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
-  draftSavedByMember  WorkspaceMember? @relation("TrainingProgramDraftSaver", fields: [draftSavedByMemberId], references: [id], onDelete: Restrict)
-  timezoneSetByMember WorkspaceMember? @relation("TrainingProgramTimezoneSetter", fields: [timezoneSetByMemberId], references: [id], onDelete: Restrict)
-  cancelledByMember   WorkspaceMember? @relation("TrainingProgramCanceller", fields: [cancelledByMemberId], references: [id], onDelete: Restrict)
+  workspace           Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile       ClientProfile            @relation("TrainingProgramClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  createdByMember     WorkspaceMember          @relation("TrainingProgramCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  draftSavedByMember  WorkspaceMember?         @relation("TrainingProgramDraftSaver", fields: [draftSavedByMemberId], references: [id], onDelete: Restrict)
+  timezoneSetByMember WorkspaceMember?         @relation("TrainingProgramTimezoneSetter", fields: [timezoneSetByMemberId], references: [id], onDelete: Restrict)
+  cancelledByMember   WorkspaceMember?         @relation("TrainingProgramCanceller", fields: [cancelledByMemberId], references: [id], onDelete: Restrict)
   versions            TrainingProgramVersion[]
   bookings            TrainingSessionBooking[]
 
@@ -1910,10 +2022,10 @@ model TrainingProgramVersion {
   publishedAt           DateTime @default(now()) @map("published_at") @db.Timestamptz(6)
   publishedByMemberId   String   @map("published_by_member_id")
 
-  workspace         Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  program           TrainingProgram @relation(fields: [programId], references: [id], onDelete: Restrict)
-  clientProfile     ClientProfile   @relation("TrainingProgramVersionClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
-  publishedByMember WorkspaceMember @relation("TrainingProgramVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
+  workspace         Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  program           TrainingProgram          @relation(fields: [programId], references: [id], onDelete: Restrict)
+  clientProfile     ClientProfile            @relation("TrainingProgramVersionClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  publishedByMember WorkspaceMember          @relation("TrainingProgramVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
   bookings          TrainingSessionBooking[]
 
   @@unique([programId, versionSeq])
@@ -1924,25 +2036,25 @@ model TrainingProgramVersion {
 }
 
 model TrainingSessionBooking {
-  id                String  @id @default(cuid())
+  id                  String    @id @default(cuid())
   // Denormalized tenant/client stamps — part of the composite coherence
   // targets (raw-SQL FKs, established convention).
-  workspaceId       String  @map("workspace_id")
-  clientProfileId   String  @map("client_profile_id")
-  programId         String  @map("program_id")
+  workspaceId         String    @map("workspace_id")
+  clientProfileId     String    @map("client_profile_id")
+  programId           String    @map("program_id")
   // Immutable prescription pin: version + session + booked week, all
   // resolved ONCE at create. A move changes scheduledDate only.
-  pinnedVersionId   String  @map("pinned_version_id")
-  sessionId         String  @map("session_id")
-  bookedWeek        Int     @map("booked_week")
+  pinnedVersionId     String    @map("pinned_version_id")
+  sessionId           String    @map("session_id")
+  bookedWeek          Int       @map("booked_week")
   // Declared local calendar date in the program's immutable anchor
   // timezone — a date, never an instant.
-  scheduledDate     DateTime @map("scheduled_date") @db.Date
-  scheduledByMemberId String @map("scheduled_by_member_id")
+  scheduledDate       DateTime  @map("scheduled_date") @db.Date
+  scheduledByMemberId String    @map("scheduled_by_member_id")
   cancelledAt         DateTime? @map("cancelled_at") @db.Timestamptz(6)
   cancelledByMemberId String?   @map("cancelled_by_member_id")
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   workspace         Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   clientProfile     ClientProfile          @relation("TrainingBookingClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
@@ -1954,4 +2066,444 @@ model TrainingSessionBooking {
   @@index([programId, scheduledDate])
   @@index([workspaceId, clientProfileId, scheduledDate], map: "training_session_booking_client_scope_date_idx")
   @@map("training_session_booking")
+}
+
+// ── PR-M0 schema v2 (D20, D24, D26, D27, D28, D31, O13) ──────────────────
+// Workspace/product-wide settings, coach tools, messaging, media and plan
+// aggregates. Composite same-workspace coherence FKs, restore-window
+// pairing CHECKs, kind↔column CHECKs and content CHECKs are raw migration
+// SQL (the established convention — Prisma cannot express them).
+
+enum AppearanceMode {
+  LIGHT
+  DARK
+}
+
+enum AppearanceFont {
+  SANS
+  SERIF
+  CONDENSED
+  MONO
+  ROUNDED
+}
+
+enum AppearanceDensity {
+  COMFORTABLE
+  COMPACT
+}
+
+// O13: GENERAL notes are client-readable; PRIVATE stays staff-only.
+enum CoachNoteVisibility {
+  PRIVATE
+  GENERAL
+}
+
+enum MessageSenderKind {
+  CLIENT
+  STAFF
+}
+
+enum MediaKind {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+}
+
+enum PlanNutritionVariant {
+  TRAINING_DAY
+  REST_DAY
+}
+
+// D20: workspace media library — storage pointers only, bytes live in
+// object storage. 20 MB cap enforced by raw CHECK.
+model MediaObject {
+  id               String    @id @default(cuid())
+  workspaceId      String    @map("workspace_id")
+  kind             MediaKind
+  storageKey       String    @unique @map("storage_key")
+  fileName         String    @map("file_name")
+  contentType      String    @map("content_type")
+  byteSize         BigInt    @map("byte_size")
+  uploadedByUserId String?   @map("uploaded_by_user_id")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  deletedAt        DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  workspace               Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  uploadedBy              User?                    @relation("MediaObjectUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  logoForWorkspaces       Workspace[]              @relation("WorkspaceLogo")
+  exerciseDemos           ExerciseLibraryItem[]    @relation("ExerciseDemoMedia")
+  messageAttachments      MessageAttachment[]
+  messageDraftAttachments MessageDraftAttachment[]
+  checkinAnswerMedia      CheckInAnswerMedia[]
+
+  @@unique([id, workspaceId])
+  @@index([workspaceId, createdAt])
+  @@map("media_object")
+}
+
+// D26, O13: staff-authored note; null client = workspace-level note.
+// GENERAL requires a client (raw CHECK).
+model CoachNote {
+  id              String              @id @default(cuid())
+  workspaceId     String              @map("workspace_id")
+  clientProfileId String?             @map("client_profile_id")
+  visibility      CoachNoteVisibility @default(PRIVATE)
+  body            String
+  authorMemberId  String              @map("author_member_id")
+  revision        Int                 @default(1)
+  deletedAt       DateTime?           @map("deleted_at") @db.Timestamptz(6)
+  restoreUntil    DateTime?           @map("restore_until") @db.Timestamptz(6)
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace     Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile?  @relation("CoachNoteClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  authorMember  WorkspaceMember @relation("CoachNoteAuthor", fields: [authorMemberId], references: [id], onDelete: Restrict)
+
+  @@unique([id, workspaceId])
+  @@index([workspaceId, clientProfileId])
+  @@map("coach_note")
+}
+
+// D26: staff task; null client = workspace-level task. Completion
+// provenance pairing is a raw CHECK.
+model CoachTask {
+  id                  String    @id @default(cuid())
+  workspaceId         String    @map("workspace_id")
+  clientProfileId     String?   @map("client_profile_id")
+  title               String    @db.VarChar(120)
+  completedAt         DateTime? @map("completed_at") @db.Timestamptz(6)
+  completedByMemberId String?   @map("completed_by_member_id")
+  createdByMemberId   String    @map("created_by_member_id")
+  revision            Int       @default(1)
+  deletedAt           DateTime? @map("deleted_at") @db.Timestamptz(6)
+  restoreUntil        DateTime? @map("restore_until") @db.Timestamptz(6)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace         Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile     ClientProfile?   @relation("CoachTaskClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  createdByMember   WorkspaceMember  @relation("CoachTaskCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  completedByMember WorkspaceMember? @relation("CoachTaskCompleter", fields: [completedByMemberId], references: [id], onDelete: Restrict)
+
+  @@unique([id, workspaceId])
+  @@index([workspaceId, clientProfileId])
+  @@map("coach_task")
+}
+
+// Canvas keys one comment per (client, date, parameter).
+model TrackerComment {
+  id              String   @id @default(cuid())
+  workspaceId     String   @map("workspace_id")
+  clientProfileId String   @map("client_profile_id")
+  entryDate       DateTime @map("entry_date") @db.Date
+  parameterId     String   @map("parameter_id")
+  body            String
+  authorMemberId  String   @map("author_member_id")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace     Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile       @relation("TrackerCommentClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  parameter     ParameterDefinition @relation("TrackerCommentParameter", fields: [parameterId], references: [id], onDelete: Restrict)
+  authorMember  WorkspaceMember     @relation("TrackerCommentAuthor", fields: [authorMemberId], references: [id], onDelete: Restrict)
+
+  @@unique([clientProfileId, entryDate, parameterId])
+  @@unique([id, workspaceId])
+  @@map("tracker_comment")
+}
+
+// plans/types.ts ClientGoal — many goals per field allowed; the canvas
+// reads the latest.
+model ClientGoal {
+  id                String   @id @default(cuid())
+  workspaceId       String   @map("workspace_id")
+  clientProfileId   String   @map("client_profile_id")
+  parameterId       String   @map("parameter_id")
+  targetValue       Decimal  @map("target_value") @db.Decimal(30, 8)
+  unit              String
+  targetDate        DateTime @map("target_date") @db.Date
+  createdByMemberId String   @map("created_by_member_id")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace       Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile   ClientProfile       @relation("ClientGoalClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  parameter       ParameterDefinition @relation("ClientGoalParameter", fields: [parameterId], references: [id], onDelete: Restrict)
+  createdByMember WorkspaceMember     @relation("ClientGoalCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+
+  @@unique([id, workspaceId])
+  @@index([clientProfileId, parameterId, targetDate])
+  @@map("client_goal")
+}
+
+// N05/S06-10: workspace reusable-meal library. `meal` is the canvas Meal
+// payload (typed in lib/db-types).
+model SavedMeal {
+  id                String    @id @default(cuid())
+  workspaceId       String    @map("workspace_id")
+  name              String    @db.VarChar(120)
+  meal              Json
+  sortOrder         Int       @default(0) @map("sort_order")
+  createdByMemberId String    @map("created_by_member_id")
+  revision          Int       @default(1)
+  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
+  restoreUntil      DateTime? @map("restore_until") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace       Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  createdByMember WorkspaceMember @relation("SavedMealCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+
+  @@unique([id, workspaceId])
+  @@index([workspaceId, sortOrder])
+  @@map("saved_meal")
+}
+
+// Coach-editable exercise library (plans/types.ts ExerciseDefinition);
+// optional pin into the imported catalog row (SetNull) and optional demo
+// media.
+model ExerciseLibraryItem {
+  id                String    @id @default(cuid())
+  workspaceId       String    @map("workspace_id")
+  name              String    @db.VarChar(120)
+  muscle            String
+  secondaryMuscles  String[]  @default([]) @map("secondary_muscles")
+  notes             String    @default("")
+  catalogItemId     String?   @map("catalog_item_id")
+  demoMediaId       String?   @map("demo_media_id")
+  createdByMemberId String    @map("created_by_member_id")
+  revision          Int       @default(1)
+  archivedAt        DateTime? @map("archived_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace       Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  catalogItem     ExerciseCatalogItem? @relation("ExerciseLibraryCatalogItem", fields: [catalogItemId], references: [id], onDelete: SetNull)
+  demoMedia       MediaObject?         @relation("ExerciseDemoMedia", fields: [demoMediaId], references: [id], onDelete: Restrict)
+  createdByMember WorkspaceMember      @relation("ExerciseLibraryItemCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+
+  @@unique([id, workspaceId])
+  @@index([workspaceId, archivedAt])
+  @@map("exercise_library_item")
+}
+
+// V3-L1-Plan (coach/model.ts `Plan`): per-client plan summary — blank
+// stays missing (#36). Value bounds and program_mode membership are raw
+// CHECKs.
+model ClientPlan {
+  id                String                @id @default(cuid())
+  workspaceId       String                @map("workspace_id")
+  clientProfileId   String                @unique @map("client_profile_id")
+  calories          Int?
+  protein           Int?
+  sets              Int?
+  instructions      String                @default("")
+  nutritionVariant  PlanNutritionVariant? @map("nutrition_variant")
+  programMode       String                @default("WEEK_BASED") @map("program_mode")
+  weeks             Int                   @default(1)
+  revision          Int                   @default(1)
+  updatedByMemberId String?               @map("updated_by_member_id")
+  createdAt         DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile   ClientProfile    @relation("ClientPlanClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  updatedByMember WorkspaceMember? @relation("ClientPlanUpdater", fields: [updatedByMemberId], references: [id], onDelete: Restrict)
+
+  @@unique([id, workspaceId])
+  @@map("client_plan")
+}
+
+// V3-L1-IIFYM: mirrors meal_plan / meal_plan_version column for column —
+// same uniques, indexes, pairing CHECKs and raw coherence FKs, renamed.
+// Payload { options: IifymOption[], schedule: VariantSchedule } is typed
+// in lib/db-types.
+model IifymPlan {
+  id                    String    @id @default(cuid())
+  workspaceId           String    @map("workspace_id")
+  clientProfileId       String    @unique @map("client_profile_id")
+  title                 String
+  timezone              String?
+  timezoneSetByMemberId String?   @map("timezone_set_by_member_id")
+  timezoneSetAt         DateTime? @map("timezone_set_at") @db.Timestamptz(6)
+  draft                 Json?
+  draftRevision         Int       @default(1) @map("draft_revision")
+  draftSavedByMemberId  String?   @map("draft_saved_by_member_id")
+  draftUpdatedAt        DateTime? @map("draft_updated_at") @db.Timestamptz(6)
+  createdByMemberId     String    @map("created_by_member_id")
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace           Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile       ClientProfile      @relation("IifymPlanClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  createdByMember     WorkspaceMember    @relation("IifymPlanCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  draftSavedByMember  WorkspaceMember?   @relation("IifymPlanDraftSaver", fields: [draftSavedByMemberId], references: [id], onDelete: Restrict)
+  timezoneSetByMember WorkspaceMember?   @relation("IifymPlanTimezoneSetter", fields: [timezoneSetByMemberId], references: [id], onDelete: Restrict)
+  versions            IifymPlanVersion[]
+
+  @@unique([id, workspaceId])
+  @@unique([id, workspaceId, clientProfileId])
+  @@index([workspaceId])
+  @@map("iifym_plan")
+}
+
+model IifymPlanVersion {
+  id                    String   @id @default(cuid())
+  // Denormalized tenant + client stamps — immutable at publish; part of
+  // the (id, workspaceId, iifymPlanId) coherence target.
+  workspaceId           String   @map("workspace_id")
+  iifymPlanId           String   @map("iifym_plan_id")
+  clientProfileId       String   @map("client_profile_id")
+  versionSeq            Int      @map("version_seq")
+  // Declared calendar date + the IANA zone + resolved local-midnight
+  // instant — all immutable snapshots taken at publish.
+  effectiveDate         DateTime @map("effective_date") @db.Date
+  effectiveTimezone     String   @map("effective_timezone")
+  activationInstant     DateTime @map("activation_instant") @db.Timestamptz(6)
+  payload               Json
+  publishOriginRevision Int      @map("publish_origin_revision")
+  publishedAt           DateTime @default(now()) @map("published_at") @db.Timestamptz(6)
+  publishedByMemberId   String   @map("published_by_member_id")
+
+  workspace         Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  iifymPlan         IifymPlan       @relation(fields: [iifymPlanId], references: [id], onDelete: Restrict)
+  clientProfile     ClientProfile   @relation("IifymPlanVersionClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  publishedByMember WorkspaceMember @relation("IifymPlanVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
+
+  @@unique([iifymPlanId, versionSeq])
+  // Deterministic publish-replay authority (matches the raw index name).
+  @@unique([iifymPlanId, publishOriginRevision], map: "iifym_plan_version_publish_origin_key")
+  @@unique([id, workspaceId, iifymPlanId])
+  @@index([iifymPlanId, effectiveDate, versionSeq])
+  @@index([iifymPlanId, activationInstant])
+  @@map("iifym_plan_version")
+}
+
+// ── D20 messaging: one thread per client, idempotent sends, drafts and
+// read markers.
+
+model Conversation {
+  id              String    @id @default(cuid())
+  workspaceId     String    @map("workspace_id")
+  clientProfileId String    @map("client_profile_id")
+  lastMessageAt   DateTime? @map("last_message_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile  @relation("ConversationClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  messages      Message[]
+  drafts        MessageDraft[]
+
+  // One thread per client.
+  @@unique([workspaceId, clientProfileId])
+  @@unique([id, workspaceId])
+  @@index([workspaceId, lastMessageAt])
+  @@map("conversation")
+}
+
+model Message {
+  id              String            @id @default(cuid())
+  workspaceId     String            @map("workspace_id")
+  conversationId  String            @map("conversation_id")
+  senderKind      MessageSenderKind @map("sender_kind")
+  senderUserId    String?           @map("sender_user_id")
+  body            String            @default("")
+  priority        Boolean           @default(false)
+  links           Json?
+  clientRequestId String            @map("client_request_id")
+  sentAt          DateTime          @default(now()) @map("sent_at") @db.Timestamptz(6)
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  workspace    Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  conversation Conversation        @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  sender       User?               @relation("MessageSender", fields: [senderUserId], references: [id], onDelete: SetNull)
+  attachments  MessageAttachment[]
+  reads        MessageRead[]
+
+  // Send idempotency: one durable row per client-generated request id.
+  @@unique([conversationId, clientRequestId])
+  @@unique([id, workspaceId])
+  @@index([conversationId, sentAt, id])
+  @@map("message")
+}
+
+model MessageAttachment {
+  messageId     String @map("message_id")
+  mediaObjectId String @map("media_object_id")
+  workspaceId   String @map("workspace_id")
+  position      Int    @default(0)
+
+  message     Message     @relation(fields: [messageId], references: [id], onDelete: Restrict)
+  mediaObject MediaObject @relation(fields: [mediaObjectId], references: [id], onDelete: Restrict)
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  @@id([messageId, mediaObjectId])
+  @@map("message_attachment")
+}
+
+model MessageDraft {
+  id             String   @id @default(cuid())
+  workspaceId    String   @map("workspace_id")
+  conversationId String   @map("conversation_id")
+  authorUserId   String   @map("author_user_id")
+  body           String   @default("")
+  links          Json?
+  revision       Int      @default(1)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  workspace    Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  conversation Conversation             @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  author       User                     @relation("MessageDraftAuthor", fields: [authorUserId], references: [id], onDelete: Cascade)
+  attachments  MessageDraftAttachment[]
+
+  // One draft per author per conversation.
+  @@unique([conversationId, authorUserId])
+  @@unique([id, workspaceId])
+  @@map("message_draft")
+}
+
+model MessageDraftAttachment {
+  draftId       String @map("draft_id")
+  mediaObjectId String @map("media_object_id")
+  workspaceId   String @map("workspace_id")
+  position      Int    @default(0)
+
+  draft       MessageDraft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  mediaObject MediaObject  @relation(fields: [mediaObjectId], references: [id], onDelete: Restrict)
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  @@id([draftId, mediaObjectId])
+  @@map("message_draft_attachment")
+}
+
+model MessageRead {
+  messageId String   @map("message_id")
+  userId    String   @map("user_id")
+  readAt    DateTime @map("read_at") @db.Timestamptz(6)
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId])
+  @@index([userId])
+  @@map("message_read")
+}
+
+// VISUAL check-in answers: media attachments join table.
+model CheckInAnswerMedia {
+  answerId      String @map("answer_id")
+  mediaObjectId String @map("media_object_id")
+  workspaceId   String @map("workspace_id")
+  position      Int    @default(0)
+
+  answer      CheckInSubmissionAnswer @relation(fields: [answerId], references: [id], onDelete: Restrict)
+  mediaObject MediaObject             @relation(fields: [mediaObjectId], references: [id], onDelete: Restrict)
+  workspace   Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+
+  @@id([answerId, mediaObjectId])
+  @@map("checkin_answer_media")
 }
