@@ -558,7 +558,10 @@ describe.skipIf(!enabled)("PR-M0 schema v2 (real PG)", () => {
           ...extra,
         },
       });
-    await expectCheck(answer("RATING", {}), "checkin_submission_answer_kind_column_check");
+    await expectCheck(
+      answer("RATING", {}),
+      "checkin_submission_answer_kind_column_check",
+    );
     // Control: RATING with value_rating, and a VISUAL row with no values.
     await answer("RATING", { valueRating: 8 });
     await answer("VISUAL", {});
@@ -581,6 +584,8 @@ describe.skipIf(!enabled)("PR-M0 schema v2 (real PG)", () => {
         archiveReason: "left",
       },
     });
-    await prisma.clientProfile.create({ data: { workspaceId: w.id, name: "C" } });
+    await prisma.clientProfile.create({
+      data: { workspaceId: w.id, name: "C" },
+    });
   });
 });
