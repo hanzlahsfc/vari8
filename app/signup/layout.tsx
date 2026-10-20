@@ -1,17 +1,19 @@
 import type { ReactNode } from "react";
 
+import "@/components/canvas/coach/coach.css";
 import "@/app/auth.css";
 
 /**
  * O16: the auth routes keep their pages, fields, actions and copy, and stay
- * outside the canvas parity comparison, but wear the canvas look. auth.css
- * declares the canvas tokens on .auth-screen only and maps html[data-theme]
- * onto the canvas dark and light sets, so pro-dark and pro-white both work
- * and the app shell is untouched.
+ * outside the canvas parity comparison, but wear the canvas look. coach.css
+ * plus the coach-root class give them the coach studio shell that / sends
+ * every coach to, so tokens, type, inputs, focus ring and the page wash are
+ * the canvas's own rules. auth.css only lays out the card and maps
+ * html[data-theme] onto the canvas light set.
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="auth-screen">
+    <div className="auth-screen coach-root">
       <div className="auth-card">{children}</div>
     </div>
   );

@@ -1,72 +1,70 @@
 /*
  * Auth surfaces (owner ruling O16). Pages, fields, actions and copy are
- * unchanged; only the look moves, and the look is the canvas, not the app
- * shell's theme file.
+ * unchanged; only the look moves.
  *
- * The canvas vocabulary is declared on .auth-screen and nowhere else, so it
- * can never reach the app shell: the canvas stylesheets also define
- * --border/--input/--surface/--background at :root, which is exactly why they
- * are not imported (a global import would override themes/pro-white.css for
- * every route). Canvas switches on .appearance-root[data-mode]; this app
- * switches on html[data-theme], so the values below mirror the canvas :root
- * block and the pro-white block mirrors the canvas light block.
- * Source: frontend/src/app/globals.css, frontend/src/app/appearance.css.
+ * The look is the coach studio shell. / sends every coach to /coach, the card
+ * is measured against that screen, and components/canvas/coach/coach.css holds
+ * that shell: the @font-face, the .coach-root token set, the page wash, the
+ * inputs, the focus ring and the action colours. The five auth layouts import
+ * that stylesheet and put coach-root on the root element, so the root paints
+ * from the canvas's own rules rather than from copies of their values.
+ *
+ * Importing it is safe for the rest of the app: every selector in coach.css is
+ * .coach-root scoped (checked; the only unscoped rules are the @font-face name
+ * and the keyframes), so nothing reaches another route. A global import of
+ * components/canvas/app/globals.css would not be safe, because it redefines
+ * --surface/--border/--background at :root and would override
+ * themes/pro-white.css everywhere.
+ *
+ * The canvas switches light on .coach-root[data-mode="light"], which its own
+ * appearance store sets. The auth routes have no appearance store, and this
+ * app switches theme on html[data-theme] (app/layout.tsx), so the light block
+ * below mirrors the coach.css light block keyed on the app's own switch. That
+ * mirror is the only place values are repeated.
  */
 
 .auth-screen {
-  /* Canvas tokens, dark set (canvas globals.css :root). */
-  --canvas: #070707;
-  --surface: #141414;
-  --surface-subtle: #1b1b1b;
-  --text: #f2f2f2;
-  --muted-foreground: #b6b6b6;
-  --border: rgb(220 220 220 / 13%);
-  --input: rgb(220 220 220 / 20%);
-  --success: #8fd3ae;
-  --danger: #f0a09d;
-  --panel-shadow: 0 22px 56px rgb(0 0 0 / 38%);
-  --font-ui: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  /* The canvas derives --accent-ring from the accent to reach 3:1; here the
-     plain accent is used as-is and the light block mixes it down instead. */
-  --auth-ring: var(--accent, #eb91b8);
+  /* coach.css reads the accent from the canvas appearance store, which the
+     auth routes do not mount. This is the canvas default accent (#EB91B8);
+     the ink and action tokens reuse the contrast coach.css already declares. */
+  --cd-accent: #eb91b8;
+  --cd-accent-text: var(--cd-accent);
+  --cd-accent-ring: var(--cd-accent);
+  --cd-action-bg: var(--cd-accent);
+  --cd-action-text: var(--cd-accent-contrast);
 
-  box-sizing: border-box;
   display: grid;
   place-items: center;
-  min-height: 100vh;
   padding: clamp(16px, 4vw, 24px);
-  background-color: var(--canvas);
-  color: var(--text);
-  color-scheme: dark;
-  font-family: var(--font-ui);
-  font-size: 14px;
-  line-height: 1.45;
 }
 
-/* Canvas light set. The canvas's own switch is .appearance-root[data-mode]. */
+/* Mirror of .coach-root[data-mode="light"] in components/canvas/coach/coach.css. */
 html[data-theme="pro-white"] .auth-screen {
-  --canvas: #f4f4f4;
-  --surface: #ffffff;
-  --surface-subtle: #ebebeb;
-  --text: #1c1c1c;
-  --muted-foreground: #626262;
-  --border: rgb(40 40 40 / 14%);
-  --input: rgb(40 40 40 / 22%);
-  --success: #237247;
-  --danger: #a43c3d;
-  --panel-shadow: 0 16px 40px rgb(0 0 0 / 9%);
-  --auth-ring: color-mix(in srgb, var(--accent, #eb91b8) 55%, #1c1c1c);
+  --cd-bg: #f4f4f4;
+  --cd-surface: #ffffff;
+  --cd-raised: #ffffff;
+  --cd-field: #ffffff;
+  --cd-text: #1c1c1c;
+  --cd-muted: #626262;
+  --cd-line: rgb(35 25 35 / 12%);
+  --cd-wash: rgb(35 25 35 / 3%);
+  --cd-highlight: rgb(255 255 255 / 85%);
+  --cd-accent-ring: color-mix(in srgb, var(--cd-accent) 55%, #1c1c1c);
+  /* Plain #eb91b8 is 2.26:1 on white; the canvas mixes its accent down for the
+     light mode and text links need the same treatment. */
+  --cd-accent-text: color-mix(in srgb, var(--cd-accent) 55%, #1c1c1c);
+  background: var(--cd-bg);
   color-scheme: light;
 }
 
+/* Canvas panel: surface fill, hairline border, 12px radius, top highlight. */
 .auth-card {
-  box-sizing: border-box;
   width: min(100%, 26rem);
   padding: clamp(20px, 5vw, 28px);
-  border: 1px solid var(--border);
+  border: 1px solid var(--cd-line);
   border-radius: 12px;
-  background-color: var(--surface);
-  box-shadow: var(--panel-shadow);
+  background: var(--cd-surface);
+  box-shadow: inset 0 1px var(--cd-highlight);
 }
 
 /* The page's own <main class="app-main"> sits inside the card. */
@@ -75,23 +73,24 @@ html[data-theme="pro-white"] .auth-screen {
   padding: 0;
 }
 
+/* Canvas h1 treatment, one step down for a card. */
 .auth-screen .app-title {
-  margin: 0;
-  color: var(--text);
-  font-size: clamp(22px, 2.6vw, 26px);
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  margin: 0 0 10px;
+  color: var(--cd-text);
+  font-size: clamp(26px, 4vw, 32px);
+  font-weight: 550;
+  letter-spacing: -0.045em;
   line-height: 1.15;
 }
 
 .auth-screen .app-lede {
   margin: 10px 0 0;
-  color: var(--muted-foreground);
+  color: var(--cd-muted);
   font-size: 13px;
 }
 
 .auth-screen a {
-  color: var(--text);
+  color: var(--cd-accent-text);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -106,84 +105,74 @@ html[data-theme="pro-white"] .auth-screen {
 .auth-screen .auth-field {
   display: grid;
   gap: 6px;
-  color: var(--text);
+  color: var(--cd-text);
   font-size: 12px;
-  font-weight: 540;
+  font-weight: 500;
 }
 
+/* Inputs inside .coach-root are styled by coach.css: field fill, hairline
+   border, canvas placeholder and focus ring. The only thing to restate is the
+   type size, because the auth input sits inside its 12px label and inherits
+   from it, where a canvas input inherits the 15px root. */
 .auth-screen .auth-input {
-  box-sizing: border-box;
-  min-height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--input);
-  border-radius: 7px;
-  background-color: var(--surface-subtle);
-  color: var(--text);
-  font: inherit;
-  font-size: 13px;
+  font-size: 15px;
 }
 
-.auth-screen .auth-input::placeholder {
-  color: var(--muted-foreground);
-  opacity: 0.88;
-}
-
-.auth-screen .auth-input:focus-visible,
-.auth-screen .auth-button:focus-visible {
-  outline: 2px solid var(--auth-ring);
-  outline-offset: 2px;
-}
-
-/* Canvas primary action: accent fill, accent-contrast label, 9px, 40px. */
+/* Canvas primary action: cd-button geometry with the cd-primary fill. */
 .auth-screen .auth-button {
-  box-sizing: border-box;
-  min-height: 40px;
-  padding: 0 14px;
-  border: 1px solid color-mix(in srgb, var(--accent, #eb91b8) 82%, #fff 18%);
-  border-radius: 9px;
-  background-color: var(--accent, #eb91b8);
-  color: var(--accent-contrast, #0b0b0b);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 560;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  min-height: 44px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--cd-action-bg);
+  color: var(--cd-action-text);
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition:
-    filter 160ms ease,
-    transform 160ms ease;
+  box-shadow: inset 0 1px rgb(255 255 255 / 25%);
+  transition: background 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .auth-screen .auth-button:hover:not(:disabled) {
-  filter: brightness(1.08);
+  background: var(--cd-action-hover);
 }
 
 .auth-screen .auth-button:active:not(:disabled) {
-  transform: translateY(1px);
+  transform: scale(0.96);
 }
 
 .auth-screen .auth-button:disabled {
   cursor: progress;
-  opacity: 0.55;
 }
 
+/* coach.css paints .cd-error from literal colours it declares (the canvas has
+   no danger token) and lightens the text for the light mode. Same two values. */
 .auth-screen .auth-error {
   margin: 0;
-  color: var(--danger);
-  font-size: 12px;
+  color: #f2a4a8;
+  font-size: 13px;
+}
+
+html[data-theme="pro-white"] .auth-screen .auth-error {
+  color: #973d47;
 }
 
 .auth-screen .auth-success {
-  margin: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--success);
-  border-radius: 9px;
-  background-color: var(--surface-subtle);
-  color: var(--text);
+  margin: 0 0 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--cd-line);
+  border-radius: 10px;
+  background: var(--cd-wash);
+  color: var(--cd-text);
   font-size: 13px;
 }
 
 .auth-screen .auth-hint {
   margin: 0;
-  color: var(--muted-foreground);
+  color: var(--cd-muted);
   font-size: 12px;
   line-height: 1.45;
 }
@@ -191,5 +180,9 @@ html[data-theme="pro-white"] .auth-screen {
 @media (prefers-reduced-motion: reduce) {
   .auth-screen .auth-button {
     transition: none;
+  }
+
+  .auth-screen .auth-button:active:not(:disabled) {
+    transform: none;
   }
 }
