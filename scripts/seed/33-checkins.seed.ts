@@ -290,6 +290,13 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         status: "ACTIVE",
       },
     });
+    // Rerun safety: free the user from any profile it already owns —
+    // `clients` is createdAt-ordered and bulk rows share a timestamp, so a
+    // previous run may have linked this user to a different profile.
+    await prisma.clientProfile.updateMany({
+      where: { workspaceId: ws, userId: user.id },
+      data: { userId: null },
+    });
     await prisma.clientProfile.update({
       where: { id: clientId(i) },
       data: { userId: user.id },

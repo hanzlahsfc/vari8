@@ -1,8 +1,9 @@
 "use client";
-import { File, Mic, Play, Square, Trash2, Video } from "lucide-react";
+import { File, Mic, Play, Trash2, Video } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
-import { type Media, uid } from "./model";
+import { useEffect, useState } from "react";
+import { DemoRecorder as RealRecorder } from "./demo-recorder";
+import type { Media } from "./model";
 import { useCoach } from "./store";
 import { Button } from "./ui";
 
@@ -48,8 +49,27 @@ export function MediaCard({
   item: Media;
   onRemove?: () => void;
 }) {
-  const { media, attach } = useCoach();
+  const { media, attach, workspaceId } = useCoach();
   const url = media[item.id];
+  // PR-MEDIA: stored media (uploaded via /api/v1/media) resolves a fresh
+  // presigned URL instead of a local blob — same card, real bytes.
+  const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (url || !item.mediaObjectId || !workspaceId) return;
+    let live = true;
+    fetch(`/api/v1/media/${workspaceId}/${item.mediaObjectId}`)
+      .then(async (res) => (res.ok ? ((await res.json()) as {
+        download: { url: string };
+      }) : null))
+      .then((body) => {
+        if (live && body?.download?.url) setRemoteUrl(body.download.url);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [url, item.mediaObjectId, workspaceId]);
+  const src = url ?? remoteUrl;
   const image = item.type.startsWith("image/");
   const audio = item.type.startsWith("audio/");
   const video = item.type.startsWith("video/");
@@ -77,11 +97,11 @@ export function MediaCard({
           </Button>
         )}
       </div>
-      {url ? (
+      {src ? (
         image ? (
-          <a href={url} target="_blank" rel="noreferrer">
+          <a href={src} target="_blank" rel="noreferrer">
             <Image
-              src={url}
+              src={src}
               alt={item.name}
               width={640}
               height={360}
@@ -89,18 +109,18 @@ export function MediaCard({
             />
           </a>
         ) : audio ? (
-          <audio src={url} controls aria-label={item.name}>
+          <audio src={src} controls aria-label={item.name}>
             <track
               kind="captions"
               src="data:text/vtt,WEBVTT%0A%0A00%3A00.000%20--%3E%2000%3A03.000%0ALocal%20demo%20audio%20tones.%0A"
             />
           </audio>
         ) : video ? (
-          <video src={url} controls playsInline aria-label={item.name}>
+          <video src={src} controls playsInline aria-label={item.name}>
             <track kind="captions" />
           </video>
         ) : (
-          <a href={url} download={item.name}>
+          <a href={src} download={item.name}>
             Download attachment
           </a>
         )
@@ -126,184 +146,40 @@ export function MediaCard({
     </div>
   );
 }
+/**
+ * PR-MEDIA (S02-25): the same dialog, now on the real recorder —
+ * `components/canvas/coach/demo-recorder.tsx` records via
+ * `MediaRecorder`/`getUserMedia` and uploads through `/api/v1/media`.
+ * The wrapper resolves this conversation's clientProfileId from the roster.
+ */
 export function DemoRecorder({
   kind,
   onAttach,
+  clientName,
 }: {
   kind: "voice" | "video";
   onAttach: (item: Media) => void;
+  /** Canvas client name, used to resolve the upload's profile anchor. */
+  clientName?: string;
 }) {
-  const { attach } = useCoach();
-  const [phase, setPhase] = useState<"idle" | "recording" | "preview">("idle");
-  const [seconds, setSeconds] = useState(0);
-  const [item, setItem] = useState<Media | null>(null);
-  const [error, setError] = useState("");
-  const recorder = useRef<MediaRecorder | null>(null);
-  const stream = useRef<MediaStream | null>(null);
-  const frame = useRef(0);
-  const canvas = useRef<HTMLCanvasElement>(null);
-  const active = useRef(true);
+  const { workspaceId, clientProfileIdFor } = useCoach();
+  const [profileId, setProfileId] = useState<string | null>(null);
   useEffect(() => {
-    active.current = true;
+    let live = true;
+    if (clientName)
+      clientProfileIdFor(clientName).then((id) => {
+        if (live) setProfileId(id);
+      });
     return () => {
-      active.current = false;
-      cancelAnimationFrame(frame.current);
-      if (recorder.current?.state === "recording") recorder.current.stop();
-      stream.current?.getTracks().forEach((t) => {
-        t.stop();
-      });
+      live = false;
     };
-  }, []);
-  useEffect(() => {
-    if (phase !== "recording") return;
-    const timer = window.setInterval(() => setSeconds((n) => n + 1), 1000);
-    return () => window.clearInterval(timer);
-  }, [phase]);
-  const complete = (blob: Blob) => {
-    if (!active.current) return;
-    const item: Media = {
-      id: uid("media"),
-      name:
-        kind === "voice"
-          ? "Voice note · demo.wav"
-          : "Check-in video feedback · demo.webm",
-      type: blob.type,
-      size: blob.size,
-      demo: kind,
-    };
-    attach(item, blob);
-    setItem(item);
-    setPhase("preview");
-  };
-  const start = () => {
-    setError("");
-    setSeconds(0);
-    setPhase("recording");
-    if (kind === "voice") return;
-    try {
-      const c = canvas.current;
-      if (!c || typeof MediaRecorder === "undefined")
-        throw new Error("Canvas recording unavailable");
-      c.width = 640;
-      c.height = 360;
-      const ctx = c.getContext("2d");
-      if (!ctx) throw new Error("Canvas unavailable");
-      const draw = () => {
-        const t = Date.now() / 1000;
-        ctx.fillStyle = "#151216";
-        ctx.fillRect(0, 0, 640, 360);
-        ctx.fillStyle = "#eb91b8";
-        ctx.font = "24px sans-serif";
-        ctx.fillText("Your weekly check-in", 38, 58);
-        ctx.fillStyle = "#eee";
-        ctx.font = "17px sans-serif";
-        ctx.fillText("Review · progress · next steps", 38, 94);
-        ctx.strokeStyle = "#eb91b8";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        for (let i = 0; i < 18; i++) {
-          const x = 40 + i * 25,
-            y = 180 + i * 3 + Math.sin(i + t) * 6;
-          if (!i) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-        ctx.fillStyle = "#b5a9b0";
-        ctx.font = "14px sans-serif";
-        ctx.fillText("Local demo recording · no camera or microphone", 38, 325);
-        ctx.fillStyle = "#eb91b8";
-        ctx.beginPath();
-        ctx.arc(555, 95, 32, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#251820";
-        ctx.font = "17px sans-serif";
-        ctx.fillText("LM", 541, 101);
-        frame.current = requestAnimationFrame(draw);
-      };
-      draw();
-      const s = c.captureStream(15);
-      stream.current = s;
-      const r = new MediaRecorder(s, {
-        mimeType: MediaRecorder.isTypeSupported("video/webm;codecs=vp8")
-          ? "video/webm;codecs=vp8"
-          : "video/webm",
-      });
-      const chunks: BlobPart[] = [];
-      r.ondataavailable = (e) => {
-        if (e.data.size) chunks.push(e.data);
-      };
-      r.onstop = () => {
-        cancelAnimationFrame(frame.current);
-        s.getTracks().forEach((t) => {
-          t.stop();
-        });
-        complete(new Blob(chunks, { type: "video/webm" }));
-      };
-      recorder.current = r;
-      r.start();
-    } catch {
-      setPhase("idle");
-      setError(
-        "Demo video recording is unavailable in this browser. Text feedback still works.",
-      );
-    }
-  };
-  const stop = () => {
-    if (kind === "voice") complete(demoAudio());
-    else if (recorder.current?.state === "recording") recorder.current.stop();
-  };
+  }, [clientName, clientProfileIdFor]);
   return (
-    <div className="cd-recorder">
-      <canvas
-        ref={canvas}
-        hidden={kind === "voice" || phase !== "recording"}
-        aria-label="Demo video recording preview"
-      />
-      {phase === "idle" && (
-        <Button onClick={start}>
-          {kind === "voice" ? <Mic size={16} /> : <Video size={16} />}Record
-          demo {kind === "voice" ? "voice note" : "video feedback"}
-        </Button>
-      )}
-      {phase === "recording" && (
-        <div className="cd-recorder-active">
-          <span role="status">Recording local demo · {seconds}s</span>
-          <Button onClick={stop}>
-            <Square size={14} />
-            Stop & preview
-          </Button>
-        </div>
-      )}
-      {phase === "preview" && item && (
-        <>
-          <MediaCard item={item} />
-          <div className="cd-actions">
-            <Button
-              onClick={() => {
-                setItem(null);
-                setPhase("idle");
-              }}
-            >
-              Discard
-            </Button>
-            <Button
-              primary
-              onClick={() => {
-                onAttach(item);
-                setItem(null);
-                setPhase("idle");
-              }}
-            >
-              Attach {kind === "voice" ? "voice note" : "video"}
-            </Button>
-          </div>
-        </>
-      )}
-      {error && (
-        <p role="status" className="cd-muted">
-          {error}
-        </p>
-      )}
-    </div>
+    <RealRecorder
+      kind={kind}
+      workspaceId={workspaceId}
+      clientProfileId={profileId ?? undefined}
+      onAttach={onAttach}
+    />
   );
 }
