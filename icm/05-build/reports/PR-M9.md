@@ -37,6 +37,13 @@ Lane DB `app_m9`, port 3890. Base `origin/Vari8-Beta` at f00d37b.
   — one expression (`s.labels[f]` -> `s.labels?.[f]`) made
   optional-safe for the widened type; no markup/style/copy change.
 - `docs/index/SYMBOLS.md` — regenerated (`npm run index`, check exit 0).
+- `.prettierignore` — one line, `scratch/AGENTS.md`, in the existing
+  generated-router block (the file's own instruction: "A new top-level
+  directory adds one line here"). The system-index generator writes a
+  router for any top-level dir with files, so a lane's `scratch/` gets
+  `scratch/AGENTS.md`; without the ignore line prettier and the
+  generator disagree on its generated region (format check vs
+  `index:check` conflict, surfaced by `system-index.test.ts` pass 2).
 
 ## Decisions
 
@@ -94,7 +101,14 @@ icm/05-build/tools/verify-local.sh` — see below.
 
 ## Gate result
 
-(pending — filled after the run)
+- Round 1 at 32f5e40: FAIL at `format check` — untracked `scratch/`
+  files were not prettier-clean (exit 1). Fixed by formatting them.
+- Round 2 at 875cf96: FAIL at `unit tests` —
+  `system-index.test.ts > index:check reports a missing hand-written
+index doc`: `scratch/AGENTS.md` (written by `npm run index`) drifts
+  from generator output once prettier reformats it. Fixed by adding
+  `scratch/AGENTS.md` to `.prettierignore`'s generated-router block.
+- Round 3: see below.
 
 ## Matrix rows closed
 
