@@ -44,16 +44,16 @@ report is committed after that head and changes no product code.
 
 Gate log: `/home/nexuslink/vari8-worktrees/pr-m1-client-lifecycle.check.log`.
 
-| Command | Exit | Result |
-| ------- | ---- | ------ |
-| `npm run typecheck` | 0 | clean |
-| `npx eslint` (changed files) | 0 | clean |
-| `npx prettier --check` (changed files) | 0 | clean after format |
-| `npm run index` + `index:check` | 0 | regenerated SYMBOLS committed |
-| `vitest run tests/unit/clients-service.test.ts` | 0 | 6/6 |
-| `vitest run --config vitest.integration.config.ts tests/integration/m1-client-lifecycle.test.ts` | 0 | 10/10 |
-| `npm run db:fresh` on `app_m1` (skip-catalogs) | 0 | 15 profiles seeded with canvas fields |
-| `verify-local.sh` BASE_SHA=f00d37b LANE_DB=app_m1 LANE_PORT=3850 CARD=PR-M1 | TBD | see PR comment |
+| Command                                                                                          | Exit | Result                                |
+| ------------------------------------------------------------------------------------------------ | ---- | ------------------------------------- |
+| `npm run typecheck`                                                                              | 0    | clean                                 |
+| `npx eslint` (changed files)                                                                     | 0    | clean                                 |
+| `npx prettier --check` (changed files)                                                           | 0    | clean after format                    |
+| `npm run index` + `index:check`                                                                  | 0    | regenerated SYMBOLS committed         |
+| `vitest run tests/unit/clients-service.test.ts`                                                  | 0    | 6/6                                   |
+| `vitest run --config vitest.integration.config.ts tests/integration/m1-client-lifecycle.test.ts` | 0    | 10/10                                 |
+| `npm run db:fresh` on `app_m1` (skip-catalogs)                                                   | 0    | 15 profiles seeded with canvas fields |
+| `verify-local.sh` BASE_SHA=f00d37b LANE_DB=app_m1 LANE_PORT=3850 CARD=PR-M1                      | TBD  | see PR comment                        |
 
 ## Live check
 
