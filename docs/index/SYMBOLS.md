@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 131 modules with exports, 1296 exported symbols.
+Counts: 132 modules with exports, 1313 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1634,22 +1634,34 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type AssignmentSummary = { id: string; clientProfileId: string; coachMemberId: string; role: "PRIMARY" | "COACH"; status: "ACTIVE" | "REMOVED"; assignedAt: Date; }`
 - `export const CLIENT_LIST_DEFAULT_LIMIT = 25`
 - `export const CLIENT_LIST_MAX_LIMIT = 100`
+- `export type ClientLifecycleResult = { clientProfileId: string; changed: boolean; }`
+- `export type ClientProfileDetail = { id: string; workspaceId: string; userId: string | null; name: string; label: string | null; coachingSince: Date | null; heightCm: number | null; priorityMessages...`
+- `export type ClientProfileFieldPatch = { name?: unknown; label?: unknown; coachingSince?: unknown; heightCm?: unknown; priorityMessagesAllowed?: unknown; }`
 - `export type ClientProfileSummary = { id: string; workspaceId: string; name: string; createdAt: Date; updatedAt: Date; }`
-- `export type ServiceErrorCode = | "invalid_input" | "client_not_accessible" | "member_not_eligible" | "assignment_not_accessible" | "assignment_conflict" | "serialization_conflict" | "audit_not_wire...`
+- `export type ServiceErrorCode = | "invalid_input" | "client_not_accessible" | "client_not_archived" | "retention_not_elapsed" | "client_not_deletable" | "member_not_eligible" | "assignment_not_acces...`
 - `export class WorkspaceServiceError extends Error (1 members)`
+- `export async function archiveClientProfile(session: SessionLike, input: { workspaceId: string; clientProfileId: string; reason?: unknown }, client: PrismaClient = prisma): Promise<ClientLifecycleRe...`
 - `export async function assignCoach(session: SessionLike, input: { workspaceId: string; clientProfileId: string; coachMemberId: string; role?: "PRIMARY" | "COACH"; }, client: PrismaClient = prisma): ...`
-- `export function buildClientProfileWhere(scope: CollectionContext["grantedScope"], ctx: { workspaceId: string; userId: string; workspaceMemberId: string }): Prisma.ClientProfileWhereInput`
+- `export function buildClientProfileWhere(scope: CollectionContext["grantedScope"], ctx: { workspaceId: string; userId: string; workspaceMemberId: string }, opts: { includeArchived?: boolean } = {}):...`
 - `export function coachTargetRoleIsEligible(targetRole: WorkspaceRole, requestedRole: "PRIMARY" | "COACH"): boolean`
 - `export async function createClientProfile(session: SessionLike, input: { workspaceId: string; name: unknown }, client: PrismaClient = prisma): Promise<ClientProfileSummary>`
-- `export async function listAccessibleClientProfiles(session: SessionLike, input: { workspaceId: string; limit?: number; cursor?: string }, client: PrismaClient = prisma): Promise<{ items: ClientProf...`
+- `export async function listAccessibleClientProfiles(session: SessionLike, input: { workspaceId: string; limit?: number; cursor?: string; includeArchived?: boolean; }, client: PrismaClient = prisma):...`
 - `export async function listAssignableCoachMembers(session: SessionLike, input: { workspaceId: string }, client: PrismaClient = prisma): Promise<{ memberId: string; displayName: string; role: Workspa...`
 - `export async function listClientAssignments(session: SessionLike, input: { workspaceId: string; clientProfileId: string; limit?: number; cursor?: string; }, client: PrismaClient = prisma): Promise<...`
 - `export function normalizeLimit(limit?: number): number`
 - `export async function readClientProfile(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, client: PrismaClient = prisma): Promise<ClientProfileSummary>`
+- `export async function readClientProfileDetail(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, client: PrismaClient = prisma): Promise<ClientProfileDetail>`
 - `export async function removeClientAssignment(session: SessionLike, input: { workspaceId: string; clientProfileId: string; coachMemberId: string; }, client: PrismaClient = prisma): Promise<Assignmen...`
+- `export async function restoreClientProfile(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, client: PrismaClient = prisma): Promise<ClientLifecycleResult>`
 - `export async function setPrimaryCoach(session: SessionLike, input: { workspaceId: string; clientProfileId: string; coachMemberId: string; }, client: PrismaClient = prisma): Promise<AssignmentMutati...`
+- `export async function updateClientProfileFields(session: SessionLike, input: { workspaceId: string; clientProfileId: string; fields: ClientProfileFieldPatch; }, client: PrismaClient = prisma): Prom...`
 - `export async function updateClientProfileName(session: SessionLike, input: { workspaceId: string; clientProfileId: string; name: unknown }, client: PrismaClient = prisma): Promise<ClientProfileSumm...`
+- `export function validateArchiveReason(value: unknown): string | null`
+- `export function validateCoachingSince(value: unknown): Date | null`
+- `export function validateHeightCm(value: unknown): number | null`
+- `export function validateLabel(value: unknown): string | null`
 - `export function validateName(name: unknown): string`
+- `export function validatePriorityMessagesAllowed(value: unknown): boolean`
 
 ## `lib/workspace/invitations.ts`
 
@@ -1679,6 +1691,13 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function acceptInvitationMessage(error: unknown): string`
 - `export async function getInviteLinkState(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<InviteLinkState>`
 
+## `lib/workspace/retention.ts`
+
+- `export const DEFAULT_RETENTION_DAYS = 90`
+- `export async function deleteClientProfile(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, client: PrismaClient = prisma, now: Date = new Date()): Promise<ClientLifecy...`
+- `export function retentionCutoff(now: Date, retentionDays: number): Date`
+- `export function retentionElapsed(archivedAt: Date, retentionDays: number, now: Date): boolean`
+
 ## `lib/workspace/roster-query.ts`
 
 - `export const HISTORY_START = "-"`
@@ -1687,6 +1706,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function nextRosterHref(base: string, current: RosterQuery, nextCursor: string): string`
 - `export function parseRosterQuery(raw: { c?: string | string[]; p?: string | string[]; }): RosterQuery | null`
 - `export function prevRosterHref(base: string, history: string[]): string | null`
+- `export function rosterClientVisibility(includeArchived: boolean): Prisma.ClientProfileWhereInput`
 - `export function rosterPageNumber(history: string[]): number`
 
 ## `lib/workspace/roster.ts`
@@ -1696,5 +1716,5 @@ Imported type names are shown without their `import("...")` prefix.
 - `export const ROSTER_DEFAULT_LIMIT = 25`
 - `export const ROSTER_MAX_LIMIT = 100`
 - `export function encodeRosterCursor(createdAt: Date, id: string): string`
-- `export async function listWorkspaceClientRoster(viewer: ApiViewer, workspace: ApiWorkspaceContext, input: { limit?: number; cursor?: string }, client: PrismaLike = prisma): Promise<ClientRosterResult>`
+- `export async function listWorkspaceClientRoster(viewer: ApiViewer, workspace: ApiWorkspaceContext, input: { limit?: number; cursor?: string; includeArchived?: boolean }, client: PrismaLike = prisma...`
 - `export function parseRosterCursor(cursor: string): { createdAt: Date; id: string } | null`
