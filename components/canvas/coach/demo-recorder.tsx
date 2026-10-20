@@ -1,14 +1,11 @@
 "use client";
 
+import { Mic, Square, Video } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import {
-  MicIcon,
-  SquareIcon,
-  uploadWorkspaceMedia,
-  VideoIcon,
-  type StoredMedia,
-} from "./media-card";
+import { uploadWorkspaceMedia } from "./media-card";
+import type { Media } from "./model";
+import { Button } from "./ui";
 
 /**
  * PR-MEDIA real recorder (D20, S02-25): the canvas `DemoRecorder` dialog —
@@ -16,7 +13,8 @@ import {
  * synthesized demo sources replaced by a real `MediaRecorder` stream
  * (`getUserMedia` audio for voice notes, camera + microphone for video
  * feedback). "Attach" runs the real two-step upload through
- * `uploadWorkspaceMedia` and hands the stored media_object to the caller.
+ * `uploadWorkspaceMedia` and hands a canvas `Media` item (media_object id)
+ * to the caller.
  *
  * Canvas copy adjustments follow the D32 truth-text rule: strings that
  * described the demo source ("Record demo voice note", "Recording local
@@ -52,7 +50,7 @@ export function DemoRecorder({
   workspaceId: string;
   /** Staff uploads name the profile; a client's own profile is inferred. */
   clientProfileId?: string;
-  onAttach: (media: StoredMedia) => void;
+  onAttach: (item: Media) => void;
 }) {
   const [phase, setPhase] = useState<
     "idle" | "recording" | "preview" | "uploading"
@@ -155,7 +153,7 @@ export function DemoRecorder({
       const fileName = `${
         kind === "voice" ? "voice-note" : "video-feedback"
       }.${extensionFor(contentType)}`;
-      const media = await uploadWorkspaceMedia({
+      const item = await uploadWorkspaceMedia({
         workspaceId,
         clientProfileId,
         fileName,
@@ -163,24 +161,19 @@ export function DemoRecorder({
         blob: preview.blob,
       });
       discard();
-      onAttach(media);
+      onAttach(item);
     } catch {
       setPhase("preview");
       setError("Upload failed. Preview is kept — try again or discard it.");
     }
   };
 
-  const previewMedia: StoredMedia | null = preview
-    ? {
-        id: "preview",
-        fileName:
-          kind === "voice"
-            ? `Voice note · ${extensionFor(preview.blob.type)}`
-            : `Video feedback · ${extensionFor(preview.blob.type)}`,
-        contentType: preview.blob.type,
-        byteSize: preview.blob.size,
-      }
-    : null;
+  const previewName = preview
+    ? kind === "voice"
+      ? `Voice note · ${extensionFor(preview.blob.type)}`
+      : `Video feedback · ${extensionFor(preview.blob.type)}`
+    : "";
+  const previewVideo = preview?.blob.type.startsWith("video/") ?? false;
 
   return (
     <div className="cd-recorder">
@@ -192,86 +185,63 @@ export function DemoRecorder({
         aria-label="Video recording preview"
       />
       {phase === "idle" && (
-        <button type="button" className="cd-button" onClick={start}>
-          {kind === "voice" ? <MicIcon size={16} /> : <VideoIcon size={16} />}
+        <Button onClick={start}>
+          {kind === "voice" ? <Mic size={16} /> : <Video size={16} />}
           Record {kind === "voice" ? "voice note" : "video feedback"}
-        </button>
+        </Button>
       )}
       {phase === "recording" && (
         <div className="cd-recorder-active">
           <span role="status">Recording · {seconds}s</span>
-          <button type="button" className="cd-button" onClick={stop}>
-            <SquareIcon size={14} />
+          <Button onClick={stop}>
+            <Square size={14} />
             Stop & preview
-          </button>
+          </Button>
         </div>
       )}
-      {(phase === "preview" || phase === "uploading") &&
-        preview &&
-        previewMedia && (
-          <>
-            {preview.blob.type.startsWith("audio/") ? (
-              <div className="cd-media-card">
-                <div className="cd-media-heading">
-                  <MicIcon size={17} />
-                  <span>
-                    {previewMedia.fileName}
-                    <small>
-                      {`${Math.max(1, Math.round(preview.blob.size / 1024))} KB`}
-                    </small>
-                  </span>
-                </div>
-                <audio
-                  src={preview.url}
-                  controls
-                  aria-label={previewMedia.fileName}
-                >
-                  <track kind="captions" />
-                </audio>
-              </div>
-            ) : (
-              <div className="cd-media-card">
-                <div className="cd-media-heading">
-                  <VideoIcon size={17} />
-                  <span>
-                    {previewMedia.fileName}
-                    <small>
-                      {`${Math.max(1, Math.round(preview.blob.size / 1024))} KB`}
-                    </small>
-                  </span>
-                </div>
-                <video
-                  src={preview.url}
-                  controls
-                  playsInline
-                  aria-label={previewMedia.fileName}
-                >
-                  <track kind="captions" />
-                </video>
-              </div>
-            )}
-            <div className="cd-actions">
-              <button
-                type="button"
-                className="cd-button"
-                onClick={discard}
-                disabled={phase === "uploading"}
-              >
-                Discard
-              </button>
-              <button
-                type="button"
-                className="cd-button cd-primary"
-                onClick={attach}
-                disabled={phase === "uploading"}
-              >
-                {phase === "uploading"
-                  ? "Uploading…"
-                  : `Attach ${kind === "voice" ? "voice note" : "video"}`}
-              </button>
+      {(phase === "preview" || phase === "uploading") && preview && (
+        <>
+          <div className="cd-media-card">
+            <div className="cd-media-heading">
+              {previewVideo ? <Video size={17} /> : <Mic size={17} />}
+              <span>
+                {previewName}
+                <small>
+                  {`${Math.max(1, Math.round(preview.blob.size / 1024))} KB`}
+                </small>
+              </span>
             </div>
-          </>
-        )}
+            {previewVideo ? (
+              <video
+                src={preview.url}
+                controls
+                playsInline
+                aria-label={previewName}
+              >
+                <track kind="captions" />
+              </video>
+            ) : (
+              <audio src={preview.url} controls aria-label={previewName}>
+                <track kind="captions" />
+              </audio>
+            )}
+          </div>
+          <div className="cd-actions">
+            <Button onClick={discard} disabled={phase === "uploading"}>
+              Discard
+            </Button>
+            <Button
+              primary
+              onClick={attach}
+              disabled={phase === "uploading"}
+            >
+              {phase === "uploading"
+                ? "Uploading…"
+                : `Attach ${kind === "voice" ? "voice note" : "video"}`}
+            </Button>
+          </div>
+        </>
+      )}
       {error && (
         <p role="status" className="cd-muted">
           {error}
