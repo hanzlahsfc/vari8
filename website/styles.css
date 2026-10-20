@@ -1115,8 +1115,12 @@ select:focus-visible,
   border-radius: calc(var(--radius) - 0.25rem);
   padding: clamp(0.9rem, 2vw, 1.4rem);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: 0.9rem;
+}
+.fx > * {
+  min-width: 0;
 }
 .fx-head {
   display: flex;
@@ -1131,11 +1135,14 @@ select:focus-visible,
   font-size: 0.95rem;
 }
 .fx-tag {
+  min-width: 0;
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* resting placeholders overlay their panel; hidden by default so the
@@ -1203,20 +1210,39 @@ select:focus-visible,
 }
 .fx-ex {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 0.8rem;
   border-top: 1px solid var(--border);
   padding-top: 0.5rem;
   font-size: 0.85rem;
 }
-.fx-ex b {
+.fx-ex-main {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 0;
+}
+.fx-ex-main b {
   font-weight: 600;
 }
-.fx-ex span {
+.fx-ex-main i {
+  font-style: normal;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--muted);
+}
+.fx-ex-rx {
   font-size: 0.8rem;
+  font-weight: 500;
   white-space: nowrap;
+}
+.fx-note {
+  margin: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 0.55rem;
+  font-size: 0.74rem;
+  color: var(--muted);
 }
 
 /* --- nutrition: pick a day variant, its meals swap in --- */
@@ -1401,27 +1427,33 @@ select:focus-visible,
 .fx-reply {
   margin-top: auto;
   display: grid;
-  gap: 0.35rem;
+  gap: 0.5rem;
   border: 1px dashed var(--border-strong);
   border-radius: 0.6rem;
-  padding: 0.55rem;
+  padding: 0.6rem 0.7rem;
 }
-.fx-reply i {
-  height: 0.5rem;
-  border-radius: 99px;
-  background: var(--border);
-}
-.fx-reply i:nth-child(2) {
-  width: 55%;
+.fx-reply-copy {
+  margin: 0;
+  font-size: 0.79rem;
+  line-height: 1.45;
 }
 .fx-reply-btn {
   justify-self: end;
+  display: inline-grid;
   border: 1px solid var(--accent);
   color: var(--accent-ink);
   border-radius: 999px;
   padding: 0.15rem 0.65rem;
   font-size: 0.7rem;
   font-weight: 600;
+}
+.fx-reply-btn > span {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+}
+/* resting state is the submitted result; the animation rewinds it */
+.fx-btn-send {
+  opacity: 0;
 }
 
 /* --- progress: pick the metric, its recorded trend draws in --- */
@@ -1696,6 +1728,22 @@ select:focus-visible,
     opacity: 0;
   }
 }
+@keyframes tNote {
+  0%,
+  44% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  52%,
+  88% {
+    opacity: 1;
+    transform: none;
+  }
+  94%,
+  100% {
+    opacity: 0;
+  }
+}
 .js .fdemo.is-active .fx-sess-open {
   animation: tSess 8s ease-in-out infinite;
 }
@@ -1713,6 +1761,9 @@ select:focus-visible,
 }
 .js .fdemo.is-active .fx-ex-3 {
   animation: tEx3 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-note {
+  animation: tNote 8s ease-in-out infinite;
 }
 
 /* nutrition — the selected day variant swaps the matching meal plan */
@@ -2013,6 +2064,13 @@ select:focus-visible,
 }
 .js .fdemo.is-active .fx-reply {
   animation: cReply 8s ease-in-out infinite;
+}
+/* the button label flips with the board pill when feedback is sent */
+.js .fdemo.is-active .fx-btn-send {
+  animation: cAwait 8s ease-in-out infinite;
+}
+.js .fdemo.is-active .fx-btn-sent {
+  animation: cSent 8s ease-in-out infinite;
 }
 
 /* progress — picking the metric reveals its recorded 30-day trend, which
@@ -2422,9 +2480,42 @@ select:focus-visible,
   }
   .fx-ci {
     grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+  /* compact the check-in stack so the queue card and its review stay
+     together in one viewport */
+  .fx-ci-item {
+    padding: 0.6rem 0.75rem;
+  }
+  .fx-review {
+    padding: 0.65rem 0.8rem;
+  }
+  .fx-review-body {
+    gap: 0.4rem;
+  }
+  .fx-qa {
+    padding-top: 0.35rem;
+    gap: 0.05rem;
+  }
+  .fx-qa b {
+    font-size: 0.8rem;
+  }
+  .fx-reply {
+    padding: 0.45rem 0.6rem;
+    gap: 0.4rem;
+  }
+  .fx-reply-copy {
+    font-size: 0.76rem;
   }
   .fx-chart-svg {
     height: 7.5rem;
+  }
+  /* long prescriptions may wrap under the exercise name when narrow */
+  .fx-ex {
+    flex-wrap: wrap;
+  }
+  .fx-ex-rx {
+    white-space: normal;
   }
   /* the stats line below the chart carries the endpoint value instead */
   .fx-endlabel {
