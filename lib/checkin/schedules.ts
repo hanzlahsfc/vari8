@@ -66,6 +66,10 @@ export const CHECKIN_SCHEDULE_LIMITS = {
   /** Inclusive horizon: occurrences may exist through local T+56 —
    * up to NINE weekly dates (P3-R1 P3-1). Never "about eight rows." */
   horizonDays: 56,
+  /** PR-M8: the read-only calendar projection accepts a local-date
+   * range of at most this span — the same ~3-month window the staff
+   * calendar read allows (CALENDAR_RANGE_MAX_DAYS in instances.ts). */
+  projectionRangeMaxDays: 95,
 } as const;
 
 export const CHECKIN_SCHEDULE_HORIZON_DAYS =
@@ -145,6 +149,50 @@ export function enumerateRuleOccurrenceDates(input: {
     input.endDate !== null && input.endDate < hi0 ? input.endDate : hi0;
   if (lo > hi) return out;
   // First `weekday` ≥ lo — weekday of a local date is zone-independent.
+  const target = WEEKDAYS.indexOf(input.weekday);
+  const first = new Date(`${lo}T00:00:00Z`);
+  first.setUTCDate(first.getUTCDate() + ((target - first.getUTCDay() + 7) % 7));
+  for (
+    let d = first.toISOString().slice(0, 10);
+    d <= hi;
+    d = addDaysToLocalDate(d, 7)
+  )
+    out.push(d);
+  return out;
+}
+
+/** Whole days between two local dates (b - a). */
+function daysBetweenLocalDates(a: string, b: string): number {
+  return Math.round(
+    (new Date(`${b}T00:00:00Z`).getTime() -
+      new Date(`${a}T00:00:00Z`).getTime()) /
+      86400_000,
+  );
+}
+
+/**
+ * PR-M8 (D30) — read-only projection enumeration: every `weekday` date
+ * `d` with `max(startDate, rangeStart) ≤ d ≤ min(endDate ?? ∞,
+ * rangeEnd)`. NO horizon and NO today floor — the caller's bounded
+ * local-date range is the whole window, which is exactly why the
+ * calendar can render recurring dates BEYOND the generated T+56
+ * coverage without a write. Weekday of a local date is zone-independent.
+ */
+export function enumerateRuleOccurrenceDatesInRange(input: {
+  weekday: CheckInRuleWeekday;
+  startDate: string;
+  endDate: string | null;
+  rangeStart: string;
+  rangeEnd: string;
+}): string[] {
+  const out: string[] = [];
+  const lo =
+    input.startDate > input.rangeStart ? input.startDate : input.rangeStart;
+  const hi =
+    input.endDate !== null && input.endDate < input.rangeEnd
+      ? input.endDate
+      : input.rangeEnd;
+  if (lo > hi) return out;
   const target = WEEKDAYS.indexOf(input.weekday);
   const first = new Date(`${lo}T00:00:00Z`);
   first.setUTCDate(first.getUTCDate() + ((target - first.getUTCDay() + 7) % 7));
@@ -1159,5 +1207,175 @@ export async function listCheckInScheduleRules(
         replacesRuleId: r.replacedByRule?.id ?? null,
       })),
     };
+  });
+}
+
+// ── Staff: read-only occurrence projection for the calendar (PR-M8, D30)
+//
+// The calendar renders recurring dates BEYOND the generated T+56
+// coverage as a projection of the ACTIVE schedule rules — never by
+// writing more instances. This is the ONLY projection entry point: it
+// authorizes exactly like the rule list (checkinInstances/read,
+// workspace|assigned scope, same locked protocol) and performs pure
+// SELECTs — zero instances, zero audits written.
+
+export type ProjectCheckInScheduleOccurrencesInput = {
+  workspaceId: string;
+  clientProfileId: string;
+  /** Bounded local-date window (YYYY-MM-DD, inclusive). */
+  rangeStart: string;
+  rangeEnd: string;
+};
+
+export type ProjectedCheckInOccurrence = {
+  ruleId: string;
+  formId: string;
+  /** Rule-local calendar date — what the canvas event shows. */
+  occurrenceDate: string;
+  /** Resolved due instant (ISO 8601 UTC). */
+  dueAt: string;
+};
+
+export type ProjectCheckInScheduleOccurrencesResult = {
+  items: ProjectedCheckInOccurrence[];
+  /** (rule, date) pairs whose local time is unrepresentable because a
+   * zone transition skipped the whole local day — reported, never
+   * silently moved. */
+  unrepresentable: { ruleId: string; occurrenceDate: string }[];
+};
+
+export async function projectCheckInScheduleOccurrences(
+  session: SessionLike,
+  input: ProjectCheckInScheduleOccurrencesInput,
+  deps: CheckInScheduleDeps = {},
+): Promise<ProjectCheckInScheduleOccurrencesResult> {
+  const db = deps.db ?? defaultPrisma;
+  if (!validId(input.workspaceId) || !validId(input.clientProfileId))
+    throw new CheckInInstanceError("invalid_input");
+  const rangeStart = parseCheckInScheduleLocalDate(input.rangeStart);
+  const rangeEnd = parseCheckInScheduleLocalDate(input.rangeEnd);
+  if (
+    rangeStart === null ||
+    rangeEnd === null ||
+    rangeStart > rangeEnd ||
+    daysBetweenLocalDates(rangeStart, rangeEnd) >
+      CHECKIN_SCHEDULE_LIMITS.projectionRangeMaxDays
+  )
+    throw new CheckInInstanceError("invalid_input");
+
+  return db.$transaction(async (tx) => {
+    const { ctx, member } = await lockedAuthorize(
+      tx,
+      session,
+      {
+        resource: "checkinInstances",
+        action: "read",
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+      },
+      "*",
+    );
+    if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+      throw new AccessDeniedError("role_denied", "checkinInstances", "read");
+    if (ctx.grantedScope === "assigned")
+      await lockAssignmentForScope(
+        tx,
+        input.workspaceId,
+        input.clientProfileId,
+        member.id,
+      );
+    const profile = await lockProfile(
+      tx,
+      input.workspaceId,
+      input.clientProfileId,
+    );
+    if (!profile) throw new CheckInInstanceError("not_available");
+
+    // PAUSED and ENDED rules project nothing: pause blocks generation
+    // and end is terminal — only ACTIVE rules can still produce dates.
+    const rules = await tx.checkInScheduleRule.findMany({
+      where: {
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+        status: "ACTIVE",
+      },
+      select: {
+        id: true,
+        formId: true,
+        weekday: true,
+        localTimeMinutes: true,
+        timezone: true,
+        startDate: true,
+        endDate: true,
+      },
+      orderBy: { createdAt: "asc" },
+      take: 50,
+    });
+    if (rules.length === 0) return { items: [], unrepresentable: [] };
+
+    // Materialized occurrence identities — generated rows (including
+    // cancelled ones, which still occupy the identity) render from the
+    // instance list, never from the projection.
+    const materialized = await tx.checkInInstance.findMany({
+      where: {
+        originRuleId: { in: rules.map((r) => r.id) },
+        occurrenceDate: {
+          gte: new Date(`${rangeStart}T00:00:00Z`),
+          lte: new Date(`${rangeEnd}T00:00:00Z`),
+        },
+      },
+      select: { originRuleId: true, occurrenceDate: true },
+    });
+    const taken = new Set(
+      materialized.map(
+        (m) =>
+          `${m.originRuleId}:${m.occurrenceDate!.toISOString().slice(0, 10)}`,
+      ),
+    );
+
+    const items: ProjectedCheckInOccurrence[] = [];
+    const unrepresentable: { ruleId: string; occurrenceDate: string }[] = [];
+    for (const rule of rules) {
+      const dates = enumerateRuleOccurrenceDatesInRange({
+        weekday: rule.weekday,
+        startDate: rule.startDate.toISOString().slice(0, 10),
+        endDate:
+          rule.endDate === null
+            ? null
+            : rule.endDate.toISOString().slice(0, 10),
+        rangeStart,
+        rangeEnd,
+      });
+      for (const d of dates) {
+        if (taken.has(`${rule.id}:${d}`)) continue;
+        const resolved = resolveLocalInstant(
+          rule.timezone,
+          d,
+          rule.localTimeMinutes,
+        );
+        if (resolved.status === "unrepresentable") {
+          unrepresentable.push({ ruleId: rule.id, occurrenceDate: d });
+          continue;
+        }
+        if (resolved.status !== "ok")
+          throw new CheckInInstanceError("invalid_input");
+        items.push({
+          ruleId: rule.id,
+          formId: rule.formId,
+          occurrenceDate: d,
+          dueAt: resolved.instant.toISOString(),
+        });
+      }
+    }
+    items.sort((a, b) =>
+      a.occurrenceDate === b.occurrenceDate
+        ? a.ruleId < b.ruleId
+          ? -1
+          : 1
+        : a.occurrenceDate < b.occurrenceDate
+          ? -1
+          : 1,
+    );
+    return { items, unrepresentable };
   });
 }
