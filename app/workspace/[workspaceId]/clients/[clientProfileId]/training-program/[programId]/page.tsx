@@ -49,15 +49,19 @@ export default async function StaffTrainingProgramPage({
   )
     notFound();
 
-  const client = await prisma.clientProfile.findFirst({
-    where: { id: clientProfileId, workspaceId },
-    select: { name: true },
-  });
-
   const result = await readStaffTrainingProgramFromAction(
     { user: { id: userId } },
     { workspaceId, clientProfileId, programId },
   );
+
+  // The client name is tenant data: read it only after the authorizing
+  // boundary call, so a denied response cannot carry it (RSC-NAME-LEAK).
+  const client = result.ok
+    ? await prisma.clientProfile.findFirst({
+        where: { id: clientProfileId, workspaceId },
+        select: { name: true },
+      })
+    : null;
   // Predecessor candidates: published programs (the service enforces
   // tail-only claims — the list is display convenience only).
   const programs = await readStaffTrainingProgramsFromAction(

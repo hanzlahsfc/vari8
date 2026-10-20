@@ -1,0 +1,113 @@
+## F5 import closure (TypeScript compiler API, type-only imports included)
+closure from catalog importers, lib/extraction modules: lib/extraction/contracts.ts, lib/extraction/css.ts, lib/extraction/databases.ts, lib/extraction/normalize.ts, lib/extraction/parse.ts
+  lib/extraction/crosssheet.ts: in closure=false; importers=scripts/extract-sheets.ts:18 tests/unit/crosssheet.test.ts:4
+  lib/extraction/databases.ts: in closure=true; importers=lib/exercise/source.ts:4 lib/nutrition/source.ts:4 scripts/extract-sheets.ts:33 tests/unit/databases.test.ts:3
+  lib/extraction/redact.ts: in closure=false; importers=scripts/extract-sheets.ts:35 tests/unit/redact.test.ts:4
+  lib/extraction/source.ts: in closure=false; importers=scripts/extract-sheets.ts:36 tests/unit/source-config.test.ts:7
+  lib/extraction/summaries.ts: in closure=false; importers=lib/extraction/redact.ts:8 scripts/extract-sheets.ts:42 tests/unit/summaries.test.ts:4
+  lib/extraction/theme.ts: in closure=false; importers=scripts/extract-sheets.ts:43 tests/unit/theme-artifact.test.ts:5
+  lib/extraction/css.ts: in closure=true; importers=lib/extraction/parse.ts:5 lib/extraction/theme.ts:1 scripts/extract-sheets.ts:29 tests/unit/theme-artifact.test.ts:3
+
+## F8 withSerializedRetry copies
+files with withSerializedRetry: 18
+function nonblank lines: 304; MAX_ATTEMPTS+BACKOFF_BASE_MS const lines: 33; source total: 337
+MAX_ATTEMPTS values: {"3":3,"4":1,"8":14}; BACKOFF_BASE_MS values: {"10":12,"15":2,"25":1,"none":3}
+distinct behaviour groups (body + constants + cap): 16
+  group 7651a960 x2 max=8 backoff=15 cap=250: lib/checkin/instances.ts:425 lib/checkin/schedules.ts:189
+  group 5f9f26cb x2 max=8 backoff=10 cap=50: lib/onboarding/review.ts:89 lib/onboarding/submissions.ts:94
+  group 790e39b2 x1 max=8 backoff=10 cap=50: lib/checkin/forms.ts:334
+  group 7b81e881 x1 max=4 backoff=25 cap=250: lib/checkin/tracker-context.ts:107
+  group 790d61ee x1 max=8 backoff=10 cap=50: lib/coaching/client-setup-transition.ts:97
+  group 8870c884 x1 max=8 backoff=10 cap=50: lib/coaching/client-setup.ts:131
+  group d5be169e x1 max=8 backoff=10 cap=50: lib/coaching/parameters.ts:478
+  group 83c0c9c4 x1 max=8 backoff=10 cap=50: lib/coaching/templates.ts:318
+  group 2c4d0c80 x1 max=8 backoff=10 cap=50: lib/daily-entry/service.ts:101
+  group b005f05a x1 max=3 backoff=- cap=-: lib/dashboard/service.ts:53
+  group 6e17e45f x1 max=3 backoff=- cap=-: lib/habits/service.ts:111
+  group f979d235 x1 max=8 backoff=10 cap=50: lib/mealplan/service.ts:182
+  group 20bc92ad x1 max=8 backoff=10 cap=50: lib/onboarding/assignments.ts:90
+  group d424da69 x1 max=8 backoff=10 cap=50: lib/onboarding/forms.ts:410
+  group d970a89c x1 max=3 backoff=- cap=-: lib/tasks/service.ts:67
+  group d587e615 x1 max=8 backoff=10 cap=50: lib/trainingprogram/service.ts:233
+lines in identical copies beyond the first, per group (upper bound on removable lines before any helper is added): 36
+files defining isRetryableSerialization: 15
+
+## F9 boundary helpers
+boundary files (lib/*boundary*.ts): 17
+  mapError: files=16 nonblank=177 distinct bodies=15 identical-copy lines beyond first=6
+  fail: files=13 nonblank=49 distinct bodies=7 identical-copy lines beyond first=24
+  guard: files=6 nonblank=66 distinct bodies=6 identical-copy lines beyond first=0
+  CLOSED_MESSAGES: files=6 nonblank=107 distinct bodies=6 identical-copy lines beyond first=0
+  helper lines total: 399; identical-copy lines beyond first (upper bound before helper): 30
+
+## F3 action files
+action files: 19; gross nonblank: 3908; import a boundary: 17
+  without a boundary import: app/workspace/[workspaceId]/clients/[clientProfileId]/coaches/actions.ts, app/workspace/[workspaceId]/clients/[clientProfileId]/daily/actions.ts
+
+## F1/F2 parameter shell (kept by PLAN Q-R3-17)
+  app/workspace/[workspaceId]/layout.tsx: nonblank=63
+  app/workspace/[workspaceId]/parameters/actions.ts: nonblank=251
+  app/workspace/[workspaceId]/parameters/page.tsx: nonblank=95
+  app/workspace/[workspaceId]/parameters/parameter-manager.tsx: nonblank=433
+  app/workspace/[workspaceId]/layout.tsx imports: components/sign-out-button.tsx, components/theme-toggle.tsx, components/workspace-nav.tsx, lib/auth/route-guard.ts
+  components/theme-toggle.tsx: nonblank=80; in layout closure=true
+  components/workspace-nav.tsx: nonblank=173; in layout closure=true
+  components/sign-out-button.tsx: nonblank=12; in layout closure=true
+  components/ .ts/.tsx files: 31; nonblank: 6078
+
+## Prod totals (app, lib, components, scripts, auth.ts; non-blank)
+{"app":15885,"auth.ts":52,"components":6078,"lib":38114,"scripts":2120} total=62249 files=262
+tests: {"tests/e2e":{"files":5,"lines":816},"tests/integration":{"files":56,"lines":38826},"tests/unit":{"files":97,"lines":17731}} total files=158
+## F8 isRetryableSerialization variants
+isRetryableSerialization definitions: 15; distinct printer bodies: 2
+  body a4117c81 x14: lib/checkin/forms.ts lib/checkin/instances.ts lib/checkin/schedules.ts lib/coaching/client-setup-transition.ts lib/coaching/client-setup.ts lib/coaching/parameters.ts lib/coaching/templates.ts lib/daily-entry/service.ts lib/mealplan/service.ts lib/onboarding/assignments.ts lib/onboarding/forms.ts lib/onboarding/review.ts lib/onboarding/submissions.ts lib/trainingprogram/service.ts
+  body 9c36aa98 x1: lib/checkin/tracker-context.ts
+lib/db.ts isSerializationConflict at line 19
+
+## overlap: app/workspace/[workspaceId]/client-setups/transition-actions.ts nonblank=225 (in F3 gross and F4)
+
+## Section 1 rows (non-blank, .ts/.tsx/.js/.mjs/.cjs; auth.ts excluded as in the audit)
+app/workspace/**: 60 files, 10988 lines
+app/(tracker)/**: 25 files, 3747 lines
+app other: 25 files, 1150 lines
+lib/**: 116 files, 38114 lines
+components/**: 31 files, 6078 lines
+scripts/**: 4 files, 2120 lines
+scripts/index/** (generator, added after the audit): 1 files, 1532 lines
+prod total: 261 files, 62197 lines
+F5 delete list: lib/extraction/crosssheet.ts=179 lib/extraction/redact.ts=190 lib/extraction/source.ts=122 lib/extraction/summaries.ts=263 lib/extraction/theme.ts=78 scripts/extract-sheets.ts=430
+F5 databases (closure, must stay): lib/extraction/databases.ts=247
+F1 parameter kept set: app/workspace/[workspaceId]/parameters/page.tsx=95 app/workspace/[workspaceId]/parameters/parameter-manager.tsx=433 app/workspace/[workspaceId]/parameters/actions.ts=251 app/workspace/[workspaceId]/layout.tsx=63
+
+## F8 detail: distinct bodies, identical copies, removable lines
+distinct withSerializedRetry bodies (AST printer, comments removed): 15 of 18 copies
+  body eef72cea x3: lib/checkin/instances.ts:425 max=8 backoff=15 cap=250 errors=CheckInInstanceError | lib/checkin/schedules.ts:189 max=8 backoff=15 cap=250 errors=CheckInInstanceError | lib/checkin/tracker-context.ts:107 max=4 backoff=25 cap=250 errors=CheckInInstanceError
+  body c8493215 x2: lib/onboarding/review.ts:89 max=8 backoff=10 cap=50 errors=OnboardingSubmissionError | lib/onboarding/submissions.ts:94 max=8 backoff=10 cap=50 errors=OnboardingSubmissionError
+  body 36758300 x1: lib/checkin/forms.ts:334 max=8 backoff=10 cap=50 errors=CheckInFormError
+  body 7e6554ee x1: lib/coaching/client-setup-transition.ts:97 max=8 backoff=10 cap=50 errors=ClientSetupTransitionError
+  body a507f780 x1: lib/coaching/client-setup.ts:131 max=8 backoff=10 cap=50 errors=ClientSetupError
+  body 1c1e84e1 x1: lib/coaching/parameters.ts:478 max=8 backoff=10 cap=50 errors=ParameterError
+  body a79d13c0 x1: lib/coaching/templates.ts:318 max=8 backoff=10 cap=50 errors=CoachingTemplateError
+  body d0f432e6 x1: lib/daily-entry/service.ts:101 max=8 backoff=10 cap=50 errors=DailyEntryError
+  body bb1d6f9c x1: lib/dashboard/service.ts:53 max=3 backoff=- cap=- errors=PrismaClientKnownRequestError,DashboardError
+  body ee242f22 x1: lib/habits/service.ts:111 max=3 backoff=- cap=- errors=HabitError
+  body 3fa45085 x1: lib/mealplan/service.ts:182 max=8 backoff=10 cap=50 errors=MealPlanError
+  body cfa46fc2 x1: lib/onboarding/assignments.ts:90 max=8 backoff=10 cap=50 errors=OnboardingAssignmentError
+  body b2ad3833 x1: lib/onboarding/forms.ts:410 max=8 backoff=10 cap=50 errors=OnboardingFormError
+  body 7cad75d8 x1: lib/tasks/service.ts:67 max=3 backoff=- cap=- errors=TaskError
+  body 3afabbf1 x1: lib/trainingprogram/service.ts:233 max=8 backoff=10 cap=50 errors=TrainingError (publish or timeout mapping)
+isRetryableSerialization: 15 copies, 2 distinct bodies, 180 non-blank lines; one copy kept per body = 24; removable by dedupe = 156
+F8 removable lines: identical retry copies beyond the first 36 + redundant classifier copies 156 = 192 (upper bound; every call site keeps its attempts, backoff, cap and thrown error)
+
+## F10 classifiers
+classifyXRuntime definitions: 4; non-blank lines 48; keep one = 12; removable = 36
+F10 removable lines: strict flag lines 112 (census.sh) + redundant classifiers 36 = 148
+
+## Corrected ledger (AUD-REDUCTION-FIX)
+F1 kept parameter shell (page + manager + layout): 591; 11400 - 591 = 10809
+F2 kept with the parameter shell (theme-toggle + workspace-nav): 253; 6023 - 253 = 5770
+F3 kept parameters/actions.ts: 251; 3908 - 251 = 3657 gross; minus transition-actions overlap 225 = 3432 unique; half of that = 1716
+F5 corrected delete list total: 1262
+F8 corrected cut: 192; F9 corrected cut (identical copies beyond the first): 30; F10 corrected cut: 148
+ledger: certain 18553; conditional or estimate 4671; total 23224; percent of 60588 = 38.3; remaining prod 37364
+

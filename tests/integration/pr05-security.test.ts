@@ -15,10 +15,7 @@ import {
 } from "vitest";
 
 import { GET } from "../../app/api/v1/workspaces/[workspaceId]/session/route";
-import {
-  assertAuthSecretConfigured,
-  auth,
-} from "../../lib/auth/server";
+import { assertAuthSecretConfigured, auth } from "../../lib/auth/server";
 import { RateLimitExceededError } from "../../lib/auth/rate-limit";
 import { signUpCoachAccount } from "../../lib/auth/signup";
 import { prisma as sharedPrisma } from "../../lib/db";
@@ -192,9 +189,7 @@ describe.skipIf(!enabled)("PR-05 security fixes (real PG)", () => {
         body: { token, newPassword: "new-pass-1234" },
         headers: new Headers(),
       });
-      expect(
-        await prisma.verification.count({ where: { value: id } }),
-      ).toBe(0);
+      expect(await prisma.verification.count({ where: { value: id } })).toBe(0);
       // All sessions revoked, old password dead, new password live.
       await expect(signIn(email, PASSWORD)).resolves.toMatchObject({
         status: 401,
@@ -320,9 +315,9 @@ describe.skipIf(!enabled)("PR-05 security fixes (real PG)", () => {
       );
       expect(await res.text()).toBe("null");
 
-      await expect(
-        auth.api.listSessions({ headers }),
-      ).rejects.toMatchObject({ status: "UNAUTHORIZED" });
+      await expect(auth.api.listSessions({ headers })).rejects.toMatchObject({
+        status: "UNAUTHORIZED",
+      });
       await expect(
         auth.api.updateUser({ body: { name: "x" }, headers }),
       ).rejects.toMatchObject({ status: "UNAUTHORIZED" });
@@ -342,15 +337,18 @@ describe.skipIf(!enabled)("PR-05 security fixes (real PG)", () => {
       const { email } = await createUser();
       await requestReset(
         email,
-        new Request("https://evil.example.net/api/auth/request-password-reset", {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            host: "evil.example.net",
-            "x-forwarded-host": "evil.example.net",
-            "x-forwarded-proto": "https",
+        new Request(
+          "https://evil.example.net/api/auth/request-password-reset",
+          {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              host: "evil.example.net",
+              "x-forwarded-host": "evil.example.net",
+              "x-forwarded-proto": "https",
+            },
           },
-        }),
+        ),
       );
       const line = readFileSync(mailbox, "utf8").trim().split("\n").at(-1);
       const text = JSON.parse(line as string).text as string;

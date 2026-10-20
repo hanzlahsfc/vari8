@@ -25,7 +25,9 @@ export default defineConfig({
     environment: "node",
     // Inline better-auth so the next/headers + next/server aliases above apply
     // inside its packages (externalized deps would bypass vite aliasing).
-    server: { deps: { inline: [/^better-auth/, /^@better-auth/, /^better-call/] } },
+    server: {
+      deps: { inline: [/^better-auth/, /^@better-auth/, /^better-call/] },
+    },
     include: ["tests/integration/**/*.test.ts"],
     fileParallelism: false,
     testTimeout: 60_000,
@@ -39,6 +41,10 @@ export default defineConfig({
       // Test-only auth secret for the real Better Auth pipeline. Synthetic.
       BETTER_AUTH_SECRET: "integration-test-auth-secret-not-for-production",
       BETTER_AUTH_URL: "http://127.0.0.1:3000",
+      // D19: the consent suites keep exercising the parked gates until
+      // PR-T2 removes them; the flag is unset (off) in every other
+      // environment.
+      ENABLE_CONSENT_GATES: "1",
       // Mailbox output for reset flows lands under a disposable path when a
       // test sets DEV_MAILBOX_FILE; the dev-file adapter is the default
       // outside production.

@@ -38,10 +38,7 @@ const authMock = auth as unknown as {
   mockResolvedValue: (value: unknown) => void;
 };
 import { forbidden, redirect } from "next/navigation";
-import {
-  getAuthorizedWorkspaceSummary,
-} from "../../lib/auth/route-guard";
-
+import { getAuthorizedWorkspaceSummary } from "../../lib/auth/route-guard";
 
 beforeEach(() => {
   authMock.mockReset();

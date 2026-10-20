@@ -12,20 +12,19 @@ Persisted `MemberRole` values map as `WORKSPACE_OWNER→owner`, `COACH→coach`,
 until the owner assigns them D15 capabilities. Scopes: `workspace` (any client
 in the workspace), `own` (own records only), `deny`.
 
-| Capability          | owner     | coach     | client |
-| ------------------- | --------- | --------- | ------ |
-| roster.read         | workspace | workspace | deny   |
-| plan.read           | workspace | workspace | own    |
-| plan.write          | workspace | workspace | deny   |
-| clientData.read     | workspace | workspace | own    |
-| own.read / own.write| own       | own       | own    |
-| notes.write         | workspace | workspace | deny   |
-| tasks.manage        | workspace | workspace | deny   |
-| library.manage      | workspace | workspace | deny   |
-| message.write       | workspace | workspace | own    |
-| appearance.write    | workspace | workspace | deny   |
-| member.invite       | workspace | workspace | deny   |
-
+| Capability           | owner     | coach     | client |
+| -------------------- | --------- | --------- | ------ |
+| roster.read          | workspace | workspace | deny   |
+| plan.read            | workspace | workspace | own    |
+| plan.write           | workspace | workspace | deny   |
+| clientData.read      | workspace | workspace | own    |
+| own.read / own.write | own       | own       | own    |
+| notes.write          | workspace | workspace | deny   |
+| tasks.manage         | workspace | workspace | deny   |
+| library.manage       | workspace | workspace | deny   |
+| message.write        | workspace | workspace | own    |
+| appearance.write     | workspace | workspace | deny   |
+| member.invite        | workspace | workspace | deny   |
 
 Key owner rulings encoded here: a coach **can** edit a client's plan
 (`plan.write: workspace`), a client **cannot** (`deny`) — enforced at the

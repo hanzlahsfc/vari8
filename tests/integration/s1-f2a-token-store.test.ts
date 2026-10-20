@@ -5,10 +5,7 @@ import { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { assertTokenFlowsExternallyExposable } from "../../lib/tokens";
-import {
-  generateAccessToken,
-  hashAccessToken,
-} from "../../lib/tokens/crypto";
+import { generateAccessToken, hashAccessToken } from "../../lib/tokens/crypto";
 import {
   claimAccessToken,
   inspectAccessToken,

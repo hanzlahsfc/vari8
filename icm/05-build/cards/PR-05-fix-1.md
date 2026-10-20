@@ -73,6 +73,7 @@ Read that report in full and fix these in the same pass. Each fix needs a live p
 17. **Roster pagination** (`lib/workspace/roster.ts:44,47`): the cursor must match the sort order `(createdAt, id)`. Add a test with equal `createdAt`.
 
 Not in this PR (orchestrator ruling; list each in the report as follow-up):
+
 - F10 timing: the owner's 2026-09-30 ruling allows existence disclosure on reset. Note it only.
 - F12: plan writes move to the matrix in the training-plan wiring PR, which replaces `rbac.ts`.
 - F13: the leaking page is old root UI that PR-R1 deletes. The orchestrator files an issue.

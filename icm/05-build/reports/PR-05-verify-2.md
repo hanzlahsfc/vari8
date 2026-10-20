@@ -35,16 +35,16 @@ Inputs joined: the TEST-AUDIT per-file action list (lines 56 to 292), the audit 
 tables (from line 368), the producer pass-2 tables (`icm/03-plan/output/TA/TB[0-4].md`), the
 branch diff, and the reconciliation ledger.
 
-| Check | Result |
-|---|---|
-| Test files touched | 38: 31 modified, 7 added, **0 deleted** |
-| Audit KEEP / KEEP-ALL / GUARD blocks in those files | 51; **31 present verbatim** (0 titles missing), **20 rewritten**, 0 missing without an equivalent |
-| Whole-file `CUT-AT-REPLACE in PR-05` set (round-1 F1) | 28 of 28 files exist at HEAD; 453 base test/describe titles, **0 missing**; all restored verbatim |
-| Round-1 F2 KEEP-ALL deletions | 4 of 4 exist (`phase-3-2-password-reset`, `credentials`, `password-reset-delivery`, `password-reset-token-failure`); 1 test each added or rewired, none skipped |
-| Ledger reconciliation | 163 rows; 146 resolve to an audit block; per-row test count **0 mismatches**; row test total **1023 = audit block total 1023** |
-| Ledger rows pointing at `CUT pass 2` blocks | 17; those blocks are absent from the block tables (they are per-file "cut pass 2" entries), and all were restored, which is conservative, not a loss |
-| Audit rule at `TEST-AUDIT.md:11` (extract guards before deleting) | Satisfied: the mixed suites p013, p016, p020b, p021, p022, p023, p025d2, invitations, password-reset-boundary are present with their guard titles |
-| Audit rule at `TEST-AUDIT.md:323` (invariants passing before deleting the old mixed block) | Satisfied for CAS, stale writes, pinned versions, exact-one-winner, rollback on audit failure, date boundaries and tenant isolation; spot reads below |
+| Check                                                                                      | Result                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Test files touched                                                                         | 38: 31 modified, 7 added, **0 deleted**                                                                                                                         |
+| Audit KEEP / KEEP-ALL / GUARD blocks in those files                                        | 51; **31 present verbatim** (0 titles missing), **20 rewritten**, 0 missing without an equivalent                                                               |
+| Whole-file `CUT-AT-REPLACE in PR-05` set (round-1 F1)                                      | 28 of 28 files exist at HEAD; 453 base test/describe titles, **0 missing**; all restored verbatim                                                               |
+| Round-1 F2 KEEP-ALL deletions                                                              | 4 of 4 exist (`phase-3-2-password-reset`, `credentials`, `password-reset-delivery`, `password-reset-token-failure`); 1 test each added or rewired, none skipped |
+| Ledger reconciliation                                                                      | 163 rows; 146 resolve to an audit block; per-row test count **0 mismatches**; row test total **1023 = audit block total 1023**                                  |
+| Ledger rows pointing at `CUT pass 2` blocks                                                | 17; those blocks are absent from the block tables (they are per-file "cut pass 2" entries), and all were restored, which is conservative, not a loss            |
+| Audit rule at `TEST-AUDIT.md:11` (extract guards before deleting)                          | Satisfied: the mixed suites p013, p016, p020b, p021, p022, p023, p025d2, invitations, password-reset-boundary are present with their guard titles               |
+| Audit rule at `TEST-AUDIT.md:323` (invariants passing before deleting the old mixed block) | Satisfied for CAS, stale writes, pinned versions, exact-one-winner, rollback on audit failure, date boundaries and tenant isolation; spot reads below           |
 
 Spot reads (10 rewritten blocks, each compared against the base title it replaced):
 
@@ -83,11 +83,11 @@ Spot reads (10 rewritten blocks, each compared against the base title it replace
 
 Mutation checks (guarded code, red then restore, restored file byte-equal via `cmp`/`sha256sum`):
 
-| Guard | Mutation | Result |
-|---|---|---|
-| Concurrency: authorization under the advisory lock | `lib/workspace/invitations.ts:243` post-lock `authorize` deleted | `tests/unit/invitations.test.ts` exit 1, "authorize runs before AND after the advisory lock" failed; restored, 10 pass |
-| Tenant isolation | `lib/api/v1.ts:83` `workspaceId` dropped from the member lookup | `tests/integration/api-v1-session.test.ts` exit 1, "refuses a member of another workspace with 403" failed; restored byte-equal |
-| Expiry | `lib/tokens/store.ts:259` `row.expiresAt <= new Date()` replaced by `false` | `tests/unit/token-store.test.ts` exit 1, the expired variant of the indistinguishability test failed; restored, sha256 equal |
+| Guard                                              | Mutation                                                                    | Result                                                                                                                          |
+| -------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Concurrency: authorization under the advisory lock | `lib/workspace/invitations.ts:243` post-lock `authorize` deleted            | `tests/unit/invitations.test.ts` exit 1, "authorize runs before AND after the advisory lock" failed; restored, 10 pass          |
+| Tenant isolation                                   | `lib/api/v1.ts:83` `workspaceId` dropped from the member lookup             | `tests/integration/api-v1-session.test.ts` exit 1, "refuses a member of another workspace with 403" failed; restored byte-equal |
+| Expiry                                             | `lib/tokens/store.ts:259` `row.expiresAt <= new Date()` replaced by `false` | `tests/unit/token-store.test.ts` exit 1, the expired variant of the indistinguishability test failed; restored, sha256 equal    |
 
 ## 2. The four KEEP-ALL files
 
@@ -121,47 +121,47 @@ the replay returned 400 `INVALID_TOKEN`.
 
 ## 5. Roles
 
-| Check | Result |
-|---|---|
-| `member.remove` gone | Present only in a comment, `lib/auth/roles.ts:44`; no capability entry |
-| Capability count | 12 (`roles.ts:54-67`), asserted exhaustive for 3 roles |
-| owner == coach | Equal in all 12 rows |
-| `plan.write` client | `deny` (`roles.ts:57`) |
-| client own-only | `plan.read`, `clientData.read`, `own.read`, `own.write`, `message.write` = `own`; roster, notes, tasks, library, appearance, member.invite = `deny` |
-| Enforcement point | `capabilityScope` at `lib/api/v1.ts:91` (both `/api/v1` routes) and the session route (`:39`) |
-| Test | `tests/unit/roles.test.ts` 38 passed, exit 0 |
-| Mutation | `roles.ts:57` client `deny` to `own` gives 1 failed of 38 (the `plan.write` client case); restored byte-equal, 38 pass |
+| Check                | Result                                                                                                                                              |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `member.remove` gone | Present only in a comment, `lib/auth/roles.ts:44`; no capability entry                                                                              |
+| Capability count     | 12 (`roles.ts:54-67`), asserted exhaustive for 3 roles                                                                                              |
+| owner == coach       | Equal in all 12 rows                                                                                                                                |
+| `plan.write` client  | `deny` (`roles.ts:57`)                                                                                                                              |
+| client own-only      | `plan.read`, `clientData.read`, `own.read`, `own.write`, `message.write` = `own`; roster, notes, tasks, library, appearance, member.invite = `deny` |
+| Enforcement point    | `capabilityScope` at `lib/api/v1.ts:91` (both `/api/v1` routes) and the session route (`:39`)                                                       |
+| Test                 | `tests/unit/roles.test.ts` 38 passed, exit 0                                                                                                        |
+| Mutation             | `roles.ts:57` client `deny` to `own` gives 1 failed of 38 (the `plan.write` client case); restored byte-equal, 38 pass                              |
 
 ## 6. Live on a production build
 
 `npm run build` exit 0, `npx next start -p 3680` (APP_ENV=test, NODE_ENV=production,
 `MAIL_DELIVERY_ADAPTER=dev-file`), DB `app_pr05v2`.
 
-| Check | Result |
-|---|---|
-| Sign-in cookie and bearer | 200, `better-auth.session_token` cookie and `set-auth-token` bearer |
-| Wrong password | 401 `INVALID_EMAIL_OR_PASSWORD`, generic body |
-| Session export | cookie 200, bearer 200, anonymous 401 `unauthenticated`; body `{user, workspace{id,memberId}, role:"owner", capabilities{12}}` |
-| `/api/v1` clients | session 200 `{items:[],nextCursor:null}`, no session 401 |
-| Sign-out | 200, the session row deleted (2 to 1), same cookie then 401 |
-| Reset flow | request 200, mailbox line, digest-only row, consume 200, replay 400, superseded first 400 / second 200 |
-| Invite flow | invitation via the reviewed service, `/invite?workspace=&token=`, browser accept, membership `COACH` `ACTIVE` |
-| My independent matrix (`live-verify-2.ts`) | **15/15, exit 0** |
-| `node scripts/live-proof-pr05.mjs` | **14/14, exit 0** |
-| Kept e2e, dev-file mode (`npx playwright test invite-acceptance password-reset`) | **15 passed, 2 skipped, exit 0** |
-| Kept e2e, default mode | **10 passed, 7 skipped, exit 0** |
+| Check                                                                            | Result                                                                                                                         |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Sign-in cookie and bearer                                                        | 200, `better-auth.session_token` cookie and `set-auth-token` bearer                                                            |
+| Wrong password                                                                   | 401 `INVALID_EMAIL_OR_PASSWORD`, generic body                                                                                  |
+| Session export                                                                   | cookie 200, bearer 200, anonymous 401 `unauthenticated`; body `{user, workspace{id,memberId}, role:"owner", capabilities{12}}` |
+| `/api/v1` clients                                                                | session 200 `{items:[],nextCursor:null}`, no session 401                                                                       |
+| Sign-out                                                                         | 200, the session row deleted (2 to 1), same cookie then 401                                                                    |
+| Reset flow                                                                       | request 200, mailbox line, digest-only row, consume 200, replay 400, superseded first 400 / second 200                         |
+| Invite flow                                                                      | invitation via the reviewed service, `/invite?workspace=&token=`, browser accept, membership `COACH` `ACTIVE`                  |
+| My independent matrix (`live-verify-2.ts`)                                       | **15/15, exit 0**                                                                                                              |
+| `node scripts/live-proof-pr05.mjs`                                               | **14/14, exit 0**                                                                                                              |
+| Kept e2e, dev-file mode (`npx playwright test invite-acceptance password-reset`) | **15 passed, 2 skipped, exit 0**                                                                                               |
+| Kept e2e, default mode                                                           | **10 passed, 7 skipped, exit 0**                                                                                               |
 
 ## 7. Gates (exit codes)
 
-| Gate | Exit | Evidence |
-|---|---:|---|
-| `npx tsc --noEmit` (with the scratch exclude) | 0 | no output |
-| `npm run lint` | 0 | 0 errors, 3 warnings (unused `join`, `bp`, `fieldId`) |
-| `npm run index:check` | 0 | |
-| `npx vitest run` | 0 | 100 files, 1135 passed |
-| `npm run test:integration` (`app_pr05v2`) | 0 | 57 files, 874 passed |
-| `npm run build` | 0 | compiled |
-| `cd frontend && npm run build` | 0 | compiled |
+| Gate                                          | Exit | Evidence                                              |
+| --------------------------------------------- | ---: | ----------------------------------------------------- |
+| `npx tsc --noEmit` (with the scratch exclude) |    0 | no output                                             |
+| `npm run lint`                                |    0 | 0 errors, 3 warnings (unused `join`, `bp`, `fieldId`) |
+| `npm run index:check`                         |    0 |                                                       |
+| `npx vitest run`                              |    0 | 100 files, 1135 passed                                |
+| `npm run test:integration` (`app_pr05v2`)     |    0 | 57 files, 874 passed                                  |
+| `npm run build`                               |    0 | compiled                                              |
+| `cd frontend && npm run build`                |    0 | compiled                                              |
 
 Two first-run non-zero exits, both diagnosed and both re-run clean:
 

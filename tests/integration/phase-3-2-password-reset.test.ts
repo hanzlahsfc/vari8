@@ -5,14 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { PrismaClient } from "@prisma/client";
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { signIn as loginAction } from "../../auth";
 import { auth as authServer } from "../../lib/auth/server";
@@ -225,10 +218,7 @@ describe.skipIf(!enabled)("Phase 3.2 password-reset boundary (real PG)", () => {
     const u = await mkUser({ status: "DEACTIVATED" });
     const raw = await issueToken(u.email);
     await expect(
-      completePasswordReset(
-        { rawToken: raw, password: NEW_PASSWORD },
-        GATE,
-      ),
+      completePasswordReset({ rawToken: raw, password: NEW_PASSWORD }, GATE),
     ).resolves.toEqual({ ok: true });
     // The credential was rotated but the account status gate still applies —
     // identical generic denial, no session minted.
@@ -243,9 +233,7 @@ describe.skipIf(!enabled)("Phase 3.2 password-reset boundary (real PG)", () => {
       );
     expect(denial?.status).toBe("UNAUTHORIZED");
     expect(denial?.body?.message).toBe("Invalid email or password");
-    expect(
-      await prisma.session.count({ where: { userId: u.id } }),
-    ).toBe(0);
+    expect(await prisma.session.count({ where: { userId: u.id } })).toBe(0);
   });
 
   it("getResetLinkState is non-consuming and purpose-scoped", async () => {
@@ -357,10 +345,7 @@ describe.skipIf(!enabled)("Phase 3.2 password-reset boundary (real PG)", () => {
       ["short1", "at least 10 characters"],
       ["abcdefghij", "at least one digit"],
     ] as const) {
-      const r = await completePasswordReset(
-        { rawToken, password },
-        GATE,
-      );
+      const r = await completePasswordReset({ rawToken, password }, GATE);
       expect(r.ok).toBe(false);
       if (!r.ok) expect(r.message).toContain(fragment);
     }
@@ -481,7 +466,9 @@ describe.skipIf(!enabled)(
     let n = 0;
 
     beforeAll(async () => {
-      prisma = new PrismaClient({ datasources: { db: { url: url as string } } });
+      prisma = new PrismaClient({
+        datasources: { db: { url: url as string } },
+      });
     });
     afterAll(async () => {
       await prisma?.$disconnect();
@@ -578,14 +565,10 @@ describe.skipIf(!enabled)(
         () => null,
         (e) => e,
       );
-      const digest = String(
-        (err as { digest?: unknown })?.digest ?? err,
-      );
+      const digest = String((err as { digest?: unknown })?.digest ?? err);
       expect(digest).toContain("NEXT_REDIRECT");
       expect(digest).toContain("/settings");
-      expect(
-        await prisma.session.count({ where: { userId: u.id } }),
-      ).toBe(1);
+      expect(await prisma.session.count({ where: { userId: u.id } })).toBe(1);
     });
   },
 );

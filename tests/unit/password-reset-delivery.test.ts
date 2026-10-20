@@ -83,12 +83,7 @@ describe("dev-file adapter", () => {
       text: "body two",
     });
     for (const line of lines) {
-      expect(Object.keys(line).sort()).toEqual([
-        "at",
-        "subject",
-        "text",
-        "to",
-      ]);
+      expect(Object.keys(line).sort()).toEqual(["at", "subject", "text", "to"]);
     }
   });
 

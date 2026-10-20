@@ -12,7 +12,7 @@ import {
 import {
   MEALPLAN_DEV_CONSENT,
   resolveMealPlanConsentPolicy,
-} from "../../lib/mealplan/consent";
+} from "../../lib/consent";
 
 describe("MEAL-PLAN-I1 gate — runtime classification", () => {
   it("explicit APP_ENV wins and only development/test are trusted", () => {

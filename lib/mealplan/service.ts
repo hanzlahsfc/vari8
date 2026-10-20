@@ -42,7 +42,8 @@ import {
   type ConsentPolicyRegistry,
 } from "../consent";
 import { resolveLocalInstant } from "../checkin/timezone";
-import { resolveMealPlanConsentPolicy } from "./consent";
+import { resolveMealPlanConsentPolicy } from "../consent";
+import { consentGatesEnabled } from "../runtime";
 import { MEALPLAN_LIMITS } from "./limits";
 import {
   MealPlanError,
@@ -360,6 +361,9 @@ async function checkRequiredConsent(
   registry: ConsentPolicyRegistry,
   forUpdate: boolean,
 ): Promise<void> {
+  // D19: parked consent gate — allows (and skips the consent reads) when
+  // ENABLE_CONSENT_GATES is off.
+  if (!consentGatesEnabled()) return;
   const required = requiredConsentsFor("mealPlans") ?? [];
   for (const kind of required) {
     const version = registry.currentVersion(kind);

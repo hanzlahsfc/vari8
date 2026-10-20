@@ -11,12 +11,13 @@ all app code, guards, and services already consume is `session.user.id`; that
 shape is preserved so ~19 action/page call sites keep working unchanged.
 
 New modules:
+
 - `lib/auth/server.ts` - the `betterAuth` instance: Prisma adapter, email+password
   with the existing `lib/password.ts` scrypt hash/verify, `bearer()`,
   `nextCookies()` (last), DB-backed `rateLimit`, `hooks.before` for the
   inactive-account lockout and the >=1-digit password rule at the auth boundary,
   `sendResetPassword` -> `lib/mail` dev adapter, `resetPasswordTokenExpiresIn:
-  3600`, `revokeSessionsOnPasswordReset: true`.
+3600`, `revokeSessionsOnPasswordReset: true`.
 - `lib/auth/viewer.ts` - `getViewer()`: session + ACTIVE user check -> the
   `{user:{id,...}}` shape callers use.
 - `auth.ts` (root) - compat exports `auth()`, `signIn()` for the credentials
@@ -49,6 +50,7 @@ New modules:
 - `tests/` additions named below.
 
 Schema (`db/schema.prisma`, additive only):
+
 - `User` gains `emailVerified Boolean @default(false)`, `image String?`, and
   `sessions`/`accounts` relations.
 - New models `Session`, `Account`, `Verification`, `RateLimit` (snake-case
@@ -57,9 +59,10 @@ Schema (`db/schema.prisma`, additive only):
   compiling; both are dead post-cutover and flagged for PR-R2 in the report.
 - Migration `*_pr05_better_auth`: CREATE TABLEs + index + backfill `accounts`
   rows (`provider_id='credential'`, `account_id=user.id`, `password=
-  password_hash`) for every existing user -> seeded coach signs in unchanged.
+password_hash`) for every existing user -> seeded coach signs in unchanged.
 
 Deletions (after replacement tests pass):
+
 - `auth.config.ts`, `lib/credentials.ts`, `lib/auth/session.ts`,
   `lib/auth/password-reset.ts`, `lib/auth/password-reset-delivery.ts`,
   `app/api/auth/[...nextauth]/`; prune `issuePasswordResetToken` /
@@ -67,6 +70,7 @@ Deletions (after replacement tests pass):
 - `next-auth` dependency removed from package.json.
 
 Rewires:
+
 - `app/login/actions.ts` -> `auth.api.signInEmail`, generic failure message.
 - `app/logout/actions.ts` -> `auth.api.signOut` + redirect `/login`.
 - `app/reset*/` + `app/invite/page.tsx` unchanged except boundary internals.
@@ -88,7 +92,7 @@ acceptance holds (10 wrong tries refused, 11th -> 429).
 - `tests/unit/password-reset*.test.ts` (4 files): deleted or rewritten against
   the new boundary (they test deleted internals).
 - `tests/integration/{s1-f2b-session,s1-f2b-session-runtime,s1-f2d-password-reset,
-  phase-3-2-password-reset}.test.ts`: audit says KEEP+REWIRE or CUT when auth is
+phase-3-2-password-reset}.test.ts`: audit says KEEP+REWIRE or CUT when auth is
   replaced - auth IS replaced, so these are deleted and replaced by a new
   `auth-flow.test.ts` covering reset 60-min expiry, single-use consume, session
   revocation, inactive lockout, and rate limiting against the live API handler.

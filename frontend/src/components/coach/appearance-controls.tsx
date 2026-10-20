@@ -1,9 +1,10 @@
 "use client";
 import { Check, Moon, Sun } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { normalizeHex } from "@/lib/ethereal-appearance";
+import { useReducedMotion } from "@/lib/reduced-motion";
 import type { CoachState } from "./model";
 import { Button } from "./ui";
 

@@ -140,7 +140,9 @@ describe("passwordResetMessage (safe error mapping)", () => {
       undefined,
     ]) {
       const message = passwordResetMessage(error);
-      expect(message).toBe("Something went wrong. Please try again in a moment.");
+      expect(message).toBe(
+        "Something went wrong. Please try again in a moment.",
+      );
       expect(message).not.toContain("secret");
       expect(message).not.toContain("db");
     }
@@ -219,9 +221,7 @@ describe("getResetLinkState — verification lookup", () => {
       where: { identifier: string; expiresAt: { gt: Date } };
     };
     expect(where.identifier).toBe(
-      createHash("sha256")
-        .update(`reset-password:${raw}`)
-        .digest("base64url"),
+      createHash("sha256").update(`reset-password:${raw}`).digest("base64url"),
     );
     expect(where.identifier).not.toBe(raw);
     expect(where.expiresAt.gt).toBeInstanceOf(Date);

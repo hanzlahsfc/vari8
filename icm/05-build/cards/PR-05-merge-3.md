@@ -1,0 +1,17 @@
+# PR-05 round 3: merge current Vari8-Beta, fix the merge fallout, format
+
+PR #69, branch `beta/pr-05-auth-api`, worktree `/home/nexuslink/vari8-worktrees/pr-05-auth-api`, head `7949dd9`. Gate round 3 of 3 (last). Verify comment with full evidence: https://github.com/hanzlahsfc/The-great-tracker-/pull/69#issuecomment-6283347238 (read it first). All six fix-2 items PASSED; do not touch them.
+
+Do exactly these:
+
+1. `git fetch origin && git merge origin/Vari8-Beta` (base now `7259713`). Resolve the 5 conflicts at the root:
+   - `docs/index/SYMBOLS.md`, `lib/AGENTS.md`, `scripts/AGENTS.md`: generated. Take either side, then `npm run index` regenerates them.
+   - `lib/auth/password-reset-delivery.ts`: modify/delete. The PR moved the seam to `lib/mail/`. Keep the deletion, but read what Vari8-Beta changed in that file (`git log -p origin/Vari8-Beta -- lib/auth/password-reset-delivery.ts` since merge-base `6a0d605`) and carry any behaviour change into the `lib/mail/` seam if it is not already there. Say which in the report.
+   - `vitest.integration.config.ts`: env block. Keep the Better Auth names, keep base's `ENABLE_CONSENT_GATES: "1"`, drop the dead `AUTH_SECRET`/`AUTH_URL`/`AUTH_TRUST_HOST` names. Check that #88's call-time flag isolation still holds (the 14 `ENABLE_*` flags).
+2. `tests/integration/rsc-name-leak.test.ts:21` (added by PR #83 on the base) imports `encode` from `@auth/core/jwt`, which this PR removes with `next-auth`. Rewire it to a real Better Auth session the way `tests/integration/s1-f2b-session-runtime.test.ts` already does. The test must keep its meaning: 8 tests, 6 pages of workspace B never show B's name or id to a user of workspace A, plus the 2 positive controls. Prove it bites: temporarily revert one of the six page guards on the merged tree and show that page's test failing, then restore.
+3. Search the whole merged tree for any other `next-auth`, `@auth/core` or `AUTH_URL`/`AUTH_SECRET` reference that came in from the base (`git grep -nE "next-auth|@auth/core|\bAUTH_(URL|SECRET|TRUST_HOST)\b"`); fix each, or list why it is intentional (the O3 alias guard is intentional).
+4. Prettier: `npx prettier --write` on exactly the 37 offender files listed in the verify comment (and any file you touched), nothing else. `npx prettier --check .` must be 0 on the merged tree.
+5. Gates on the merged tree, each exit code in the report: `npm run index` then `npm run index:check` = 0, typecheck, lint, unit test, integration (own database `app_pr05m3` on 127.0.0.1:5433, created and dropped by you, never 5432, env exactly as `/home/nexuslink/.hermes/cache/scratch/pr69v3/env-minimal.sh`), build, frontend build, `git status --short` clean. Expected counts: unit about 1,147, integration about 883 (875 + the 8 rsc-name-leak tests); explain any difference.
+
+Rules: work only in this worktree. Commit with explicit pathspecs; never write `docs/STATUS.md`. Never print secrets. Long commands in the background with logs under `/home/nexuslink/.hermes/cache/scratch/pr05m3/`, invoke scripts with `bash <path>`, never /tmp, no tool call over 4 minutes. Ports 3810-3819 only, kill by PID. No GitHub Actions. Re-fetch before push; if Vari8-Beta moved, merge again and rerun the gates. Push to `beta/pr-05-auth-api`, comment on PR #69 with the conflict resolutions, the rsc-name-leak rewire and its bite proof, the grep result, and the gate table. Do not merge.
+Final report: head sha, each resolution, bite proof, grep result, gate exits and counts.

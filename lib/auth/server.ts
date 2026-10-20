@@ -14,15 +14,8 @@ import { prisma } from "../db";
 import { normalizeEmail } from "../email";
 import { mailDeliveryConfigured, sendMail } from "../mail";
 import { hashPassword, verifyPassword } from "../password";
-import {
-  PasswordPolicyError,
-  validatePasswordSetup,
-} from "../password-policy";
-import {
-  accountLimitKey,
-  consumeRateLimit,
-  userLimitKey,
-} from "./rate-limit";
+import { PasswordPolicyError, validatePasswordSetup } from "../password-policy";
+import { accountLimitKey, consumeRateLimit, userLimitKey } from "./rate-limit";
 
 /**
  * PR-05: Better Auth replaces Auth.js as the auth engine.
@@ -123,7 +116,10 @@ const TOO_MANY = () =>
     message: "Too many attempts. Please try again later.",
   });
 
-async function consumeOrThrow(key: string, rule: { window: number; max: number }) {
+async function consumeOrThrow(
+  key: string,
+  rule: { window: number; max: number },
+) {
   const outcome = await consumeRateLimit(key, rule);
   if (!outcome.allowed) throw TOO_MANY();
 }
@@ -285,18 +281,14 @@ export const auth = betterAuth({
       }
 
       if (SESSION_BOUND_PATHS.has(ctx.path)) {
-        let userId = (
-          await getSessionFromCtx(ctx).catch(() => null)
-        )?.user?.id;
+        let userId = (await getSessionFromCtx(ctx).catch(() => null))?.user?.id;
         // The bearer plugin injects its session after this hook runs, so a
         // bearer credential resolves to null here — resolve it directly. The
         // header carries the signed cookie value `<token>.<hmac>`; the raw
         // `sessions.token` is the segment before the first dot.
         if (!userId) {
           const authorization = ctx.headers?.get("authorization");
-          const bearerToken = authorization
-            ?.toLowerCase()
-            .startsWith("bearer ")
+          const bearerToken = authorization?.toLowerCase().startsWith("bearer ")
             ? authorization.slice(7).trim().split(".")[0]
             : null;
           if (bearerToken) {

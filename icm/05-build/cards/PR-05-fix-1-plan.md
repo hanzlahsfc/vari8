@@ -18,16 +18,16 @@ head `e68a2ef`. DB `app_pr05` @127.0.0.1:5433.
      else `disableIpTracking: true` (F2 — no spoofable bucket, no shared lockout).
    - `hooks.before`:
      a. `/request-password-reset` + `/reset-password`: refuse when mail delivery
-        unconfigured, before any token write (F9).
+     unconfigured, before any token write (F9).
      b. `/sign-in/email`: consume `acct:sign-in:<sha256(email)>` 10/60s plus
-        `ip:sign-in:<ip>` when resolvable → 429 (F1/F2, covers HTTP + auth.api).
+     `ip:sign-in:<ip>` when resolvable → 429 (F1/F2, covers HTTP + auth.api).
      c. `/request-password-reset`: consume `acct:reset-req:<sha256(email)>` 3/60s;
-        then delete outstanding reset rows for the resolved user (supersede, F7).
+     then delete outstanding reset rows for the resolved user (supersede, F7).
      d. `/change-password`: `ctx.body.revokeOtherSessions = true` (F3) +
-        `acct:change-pw:<userId>` 10/60s.
+     `acct:change-pw:<userId>` 10/60s.
      e. session-bearing paths set: `getSessionFromCtx` → user non-ACTIVE →
-        delete all user sessions + clear `ctx.context.session` so the endpoint
-        resolves null/401 naturally (F4).
+     delete all user sessions + clear `ctx.context.session` so the endpoint
+     resolves null/401 naturally (F4).
    - `emailAndPassword.onPasswordReset`: delete every remaining `verification`
      row with `value: user.id` (post-reset cleanup, F6; only reset rows exist).
    - `assertAuthSecretConfigured()` in production when secret missing/<32 (F11),

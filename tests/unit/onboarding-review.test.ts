@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-
 /**
  * P-024 (decisions #86–#91 + the R2 binding contract) — unit surface for
  * the staff onboarding-submission review resource. The role matrix is the

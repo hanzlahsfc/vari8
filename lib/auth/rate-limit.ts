@@ -20,8 +20,7 @@ import { prisma } from "../db";
 export type RateLimitRule = { window: number; max: number };
 
 export type RateLimitOutcome =
-  | { allowed: true }
-  | { allowed: false; retryAfter: number };
+  { allowed: true } | { allowed: false; retryAfter: number };
 
 export class RateLimitExceededError extends Error {
   constructor(readonly retryAfter: number) {
@@ -41,10 +40,7 @@ const MAX_ATTEMPTS = 8;
 export async function consumeRateLimit(
   key: string,
   rule: RateLimitRule,
-  client: Pick<
-    typeof prisma,
-    "rateLimit"
-  > = prisma,
+  client: Pick<typeof prisma, "rateLimit"> = prisma,
 ): Promise<RateLimitOutcome> {
   const windowMs = rule.window * 1000;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -93,7 +89,10 @@ export async function consumeRateLimit(
 }
 
 /** Stable, non-reversible key material for an account-scoped bucket. */
-export function accountLimitKey(purpose: string, normalizedEmail: string): string {
+export function accountLimitKey(
+  purpose: string,
+  normalizedEmail: string,
+): string {
   const digest = createHash("sha256").update(normalizedEmail).digest("hex");
   return `acct:${purpose}:${digest}`;
 }

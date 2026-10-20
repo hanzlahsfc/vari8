@@ -1795,3 +1795,12 @@ tracking, computed volume, formulas/recommendations, template
 integration, active-program end/cancel, production deployment, or
 real-client use. Production/privacy gates #102/#81/#38/#39/D-10/D-09
 remain separate and unresolved.
+
+**Decision #119 (APPROVED — bookings kept, flagged for possible removal):**
+the dated-session booking code (TRAINING-I1B-2, `TrainingSessionBooking`
+and its surfaces) stays in the codebase for now. It has no canvas
+(`frontend/`) surface — the canvas is adopted as is with no booking
+screen added — and it is not in the product owner's core brief. It is
+therefore flagged as possibly removed later; revisit when PR-W8 is
+planned. Until a ruling removes it, the code and its fail-closed gate
+stay maintained.

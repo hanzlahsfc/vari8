@@ -8,6 +8,8 @@ This is the new PRGRSS-derived product. Read these files completely before any w
 1. `docs/conductor-generic/SKILL.md` — the required orchestration loop.
 2. `docs/product-decisions.md` — locked product decisions.
 3. `docs/STATUS.md` and the task-specific plan/record — implementation state and next action.
+4. `icm/03-plan/output/WIRING-SPEC.md`: before any canvas wiring work, the screen to backend map,
+   model gaps, unowned items and open owner decisions.
 
 Do not rely on chat history. Do not invent formulas, permissions, thresholds, health-data
 policy, workflows, or layouts.
@@ -24,7 +26,9 @@ model, glossary). Regenerate it with `npm run index` and verify it with `npm run
    decision (`icm/03-plan/DECISIONS.md` D10). Server-side enforcement of whatever the owner
    decides stays mandatory. Consent, health-data storage and data-protection rules are parked
    for now (D12): do not let them block or shape canvas work (owner decision, Marcel,
-   2026-10-18).
+   2026-10-18). `spec/core-coaching-system-brief.html` is the product owner's core coaching
+   system brief (1 October 2026): the product-intent source alongside the canvas, carrying the
+   function ids W01-W11, D01-D05, T01-T04, R01-R04, N01-N08, P01-P08, C01-C07, M01-M05.
 1. Hanzlah's direct instructions and confirmed stakeholder decisions.
 2. Decisions recorded in `docs/product-decisions.md` and the relevant security/design docs.
 3. The approved requirements document.
@@ -66,3 +70,13 @@ model, glossary). Regenerate it with `npm run index` and verify it with `npm run
 - Do not implement client-visible PED/HRT/E2 underivable behavior; do not produce diagnoses or
   automatic program changes.
 - No push, PR, merge, deploy, or external-service changes without current authority.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

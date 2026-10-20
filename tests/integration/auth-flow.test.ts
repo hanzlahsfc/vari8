@@ -22,7 +22,11 @@ const enabled = typeof url === "string" && url.length > 0;
 
 const BASE = "http://127.0.0.1:3000";
 
-function post(path: string, body: unknown, headers: Record<string, string> = {}) {
+function post(
+  path: string,
+  body: unknown,
+  headers: Record<string, string> = {},
+) {
   return auth.handler(
     new Request(`${BASE}/api/auth${path}`, {
       method: "POST",
@@ -135,7 +139,10 @@ describe.skipIf(!enabled)("PR-05 auth flow (real PG + real handler)", () => {
   it("a deactivated user's existing session stops resolving", async () => {
     const { id, email } = await userFixture();
     const token = await signInToken(email);
-    await prisma.user.update({ where: { id }, data: { status: "DEACTIVATED" } });
+    await prisma.user.update({
+      where: { id },
+      data: { status: "DEACTIVATED" },
+    });
     // The auth endpoint still resolves the session row; the app-level viewer
     // (lib/auth/viewer.ts) is what denies it — assert that contract directly.
     const { getViewerFromHeaders } = await import("../../lib/auth/viewer");
@@ -162,7 +169,11 @@ describe.skipIf(!enabled)("PR-05 auth flow (real PG + real handler)", () => {
   it("the public sign-up endpoint is disabled", async () => {
     const res = await post(
       "/sign-up/email",
-      { name: "Nope", email: `nope${n}@example.test`, password: "fixture-pass-1" },
+      {
+        name: "Nope",
+        email: `nope${n}@example.test`,
+        password: "fixture-pass-1",
+      },
       { "x-forwarded-for": ip() },
     );
     expect(res.status).toBeGreaterThanOrEqual(400);
@@ -203,7 +214,11 @@ describe.skipIf(!enabled)("PR-05 auth flow (real PG + real handler)", () => {
       process.env.DEV_MAILBOX_FILE as string,
       "utf8",
     );
-    const line = mailbox.trim().split("\n").filter((l) => l.includes(email)).at(-1);
+    const line = mailbox
+      .trim()
+      .split("\n")
+      .filter((l) => l.includes(email))
+      .at(-1);
     expect(line).toBeTruthy();
     const token = /token=([^\s]+)/.exec(JSON.parse(line as string).text)?.[1];
     expect(token).toBeTruthy();
@@ -240,9 +255,9 @@ describe.skipIf(!enabled)("PR-05 auth flow (real PG + real handler)", () => {
 
     // no live sessions for the user predating the reset remain
     const sessions = await prisma.session.findMany({ where: { userId: id } });
-    expect(sessions.every((s) => s.createdAt > new Date(Date.now() - 60_000))).toBe(
-      true,
-    );
+    expect(
+      sessions.every((s) => s.createdAt > new Date(Date.now() - 60_000)),
+    ).toBe(true);
   });
 
   it("an expired reset token is refused", async () => {
@@ -281,8 +296,12 @@ describe.skipIf(!enabled)("PR-05 auth flow (real PG + real handler)", () => {
 
     // Every pre-existing session row is deleted — tokenA and tokenB are both
     // dead; the caller continues on the fresh session returned in the body.
-    expect(await (await get("/get-session", bearer(tokenB))).text()).toBe("null");
-    expect(await (await get("/get-session", bearer(tokenA))).text()).toBe("null");
+    expect(await (await get("/get-session", bearer(tokenB))).text()).toBe(
+      "null",
+    );
+    expect(await (await get("/get-session", bearer(tokenA))).text()).toBe(
+      "null",
+    );
     const fresh = (await res.json()).token ?? res.headers.get("set-auth-token");
     expect(fresh).toBeTruthy();
     const stillAlive = await get("/get-session", bearer(fresh));

@@ -12,9 +12,7 @@ export default function SignupPage() {
   return (
     <main className="app-main">
       <h1 className="app-title">Create your workspace</h1>
-      <p className="app-lede">
-        Coach sign-up. Clients join by invitation.
-      </p>
+      <p className="app-lede">Coach sign-up. Clients join by invitation.</p>
       <SignupForm />
       <p className="app-lede">
         Already have an account? <Link href="/login">Sign in</Link>

@@ -38,9 +38,7 @@ describe("credential password hashing (scrypt format)", () => {
 
   it("verifyPassword rejects a wrong password against a real hash", async () => {
     const stored = await hashPassword("right-password-1");
-    await expect(verifyPassword("wrong-password", stored)).resolves.toBe(
-      false,
-    );
+    await expect(verifyPassword("wrong-password", stored)).resolves.toBe(false);
     await expect(verifyPassword("right-password-2", stored)).resolves.toBe(
       false,
     );
@@ -60,9 +58,9 @@ describe("credential password hashing (scrypt format)", () => {
       `${prefix}$${n}$${r}$${p}$$${hash}`, // empty salt
     ];
     for (const tampered of variants) {
-      await expect(
-        verifyPassword("right-password-1", tampered),
-      ).resolves.toBe(false);
+      await expect(verifyPassword("right-password-1", tampered)).resolves.toBe(
+        false,
+      );
     }
   });
 

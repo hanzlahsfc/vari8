@@ -20,9 +20,7 @@ describe("S1-F2B session gate (Better Auth rewiring)", () => {
   it("missing credentials resolve to an anonymous viewer — no store read", async () => {
     await expect(getViewerFromHeaders(new Headers())).resolves.toBeNull();
     await expect(
-      getViewerFromHeaders(
-        new Headers({ cookie: "unrelated=1; other=2" }),
-      ),
+      getViewerFromHeaders(new Headers({ cookie: "unrelated=1; other=2" })),
     ).resolves.toBeNull();
   });
 

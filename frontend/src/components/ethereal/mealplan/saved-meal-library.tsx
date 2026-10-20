@@ -2,8 +2,9 @@
 
 import { Dialog } from "@base-ui/react/dialog";
 import { BookOpen, Copy, Pencil, Search, Trash2, Undo2, X } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { useEffect, useId, useRef, useState } from "react";
+import { useReducedMotion } from "@/lib/reduced-motion";
 import {
   calculateMealNutrients,
   calculatePortionNutrients,

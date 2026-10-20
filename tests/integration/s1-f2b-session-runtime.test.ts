@@ -1,14 +1,7 @@
 import { execFileSync } from "node:child_process";
 
 import { PrismaClient } from "@prisma/client";
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { auth as rootAuth } from "../../auth";
 import { auth as authServer } from "../../lib/auth/server";
@@ -89,9 +82,7 @@ describe.skipIf(!enabled)(
       setTestHeaders(new Headers());
     });
 
-    const mkUser = (
-      over: Partial<import("@prisma/client").User> = {},
-    ) =>
+    const mkUser = (over: Partial<import("@prisma/client").User> = {}) =>
       prisma.user.create({
         data: {
           email: `rt_${Date.now()}_${++n}_${Math.random()
@@ -191,9 +182,7 @@ describe.skipIf(!enabled)(
         data: { status: "DEACTIVATED" },
       });
       await expect(authForCookie(cookie)).resolves.toBeNull();
-      expect(await prisma.session.count({ where: { userId: u.id } })).toBe(
-        0,
-      );
+      expect(await prisma.session.count({ where: { userId: u.id } })).toBe(0);
 
       // Deleted user: session rows cascade away; the credential is dead.
       const u2 = await mkCredentialUser();
@@ -250,9 +239,7 @@ describe.skipIf(!enabled)(
       const u = await mkCredentialUser();
       const signin = await signIn(u.email, PASSWORD);
       const cookie = cookieOf(signin);
-      expect(await prisma.session.count({ where: { userId: u.id } })).toBe(
-        1,
-      );
+      expect(await prisma.session.count({ where: { userId: u.id } })).toBe(1);
 
       const res = await authServer.handler(
         new Request(`${BASE}/api/auth/sign-out`, {
@@ -271,9 +258,7 @@ describe.skipIf(!enabled)(
               /Max-Age=0/i.test(c),
           ),
       ).toBe(true);
-      expect(await prisma.session.count({ where: { userId: u.id } })).toBe(
-        0,
-      );
+      expect(await prisma.session.count({ where: { userId: u.id } })).toBe(0);
       await expect(authForCookie(cookie)).resolves.toBeNull();
     });
   },

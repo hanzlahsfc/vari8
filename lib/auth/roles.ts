@@ -51,24 +51,34 @@ export type CapabilityScope = "workspace" | "own" | "deny";
  * The decision matrix. Every cell is explicit — an unknown capability or role
  * never defaults to anything but a deny.
  */
-export const CAPABILITY_MATRIX: Record<Capability, Record<Role, CapabilityScope>> = {
-  "roster.read":      { owner: "workspace", coach: "workspace", client: "deny" },
-  "plan.read":        { owner: "workspace", coach: "workspace", client: "own" },
-  "plan.write":       { owner: "workspace", coach: "workspace", client: "deny" },
-  "clientData.read":  { owner: "workspace", coach: "workspace", client: "own" },
-  "own.read":         { owner: "own",       coach: "own",       client: "own" },
-  "own.write":        { owner: "own",       coach: "own",       client: "own" },
-  "notes.write":      { owner: "workspace", coach: "workspace", client: "deny" },
-  "tasks.manage":     { owner: "workspace", coach: "workspace", client: "deny" },
-  "library.manage":   { owner: "workspace", coach: "workspace", client: "deny" },
-  "message.write":    { owner: "workspace", coach: "workspace", client: "own" },
-  "appearance.write": { owner: "workspace", coach: "workspace", client: "deny" },
-  "member.invite":    { owner: "workspace", coach: "workspace", client: "deny" },
+export const CAPABILITY_MATRIX: Record<
+  Capability,
+  Record<Role, CapabilityScope>
+> = {
+  "roster.read": { owner: "workspace", coach: "workspace", client: "deny" },
+  "plan.read": { owner: "workspace", coach: "workspace", client: "own" },
+  "plan.write": { owner: "workspace", coach: "workspace", client: "deny" },
+  "clientData.read": { owner: "workspace", coach: "workspace", client: "own" },
+  "own.read": { owner: "own", coach: "own", client: "own" },
+  "own.write": { owner: "own", coach: "own", client: "own" },
+  "notes.write": { owner: "workspace", coach: "workspace", client: "deny" },
+  "tasks.manage": { owner: "workspace", coach: "workspace", client: "deny" },
+  "library.manage": { owner: "workspace", coach: "workspace", client: "deny" },
+  "message.write": { owner: "workspace", coach: "workspace", client: "own" },
+  "appearance.write": {
+    owner: "workspace",
+    coach: "workspace",
+    client: "deny",
+  },
+  "member.invite": { owner: "workspace", coach: "workspace", client: "deny" },
 };
 
 export const CAPABILITIES = Object.keys(CAPABILITY_MATRIX) as Capability[];
 
-export function capabilityScope(role: Role, capability: Capability): CapabilityScope {
+export function capabilityScope(
+  role: Role,
+  capability: Capability,
+): CapabilityScope {
   const row = CAPABILITY_MATRIX[capability];
   return row ? row[role] : "deny";
 }

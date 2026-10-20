@@ -18,7 +18,16 @@
 import { execFileSync } from "node:child_process";
 
 import { PrismaClient } from "@prisma/client";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import { AccessDeniedError } from "../../lib/auth/guard";
 import { createStaticConsentPolicy } from "../../lib/consent";
@@ -44,6 +53,17 @@ const NOW = new Date("2026-10-20T12:00:00Z");
 describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
   let prisma: PrismaClient;
   let n = 0;
+
+  // A deps.registry omission resolves the consent policy from
+  // process.env (ENABLE_MEAL_PLANS + runtime class) at call time. Pin
+  // the flag off so the unconfigured-policy assertions never inherit
+  // the developer shell's flags.
+  beforeEach(() => {
+    vi.stubEnv("ENABLE_MEAL_PLANS", "0");
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
 
   beforeAll(async () => {
     execFileSync("npx", ["prisma", "migrate", "deploy"], {

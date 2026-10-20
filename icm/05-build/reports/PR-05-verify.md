@@ -8,6 +8,7 @@ Scope: function, tests, scope. Security review is the separate Opus lane. No com
 Function works. Gates are green. Canvas is untouched. The role matrix matches owner Q3. The test-retention rules in TEST-AUDIT.md were not followed for the deletions below, and one token-storage invariant regressed (verified live).
 
 Blocking:
+
 1. 28 whole-file CUT-AT-REPLACE deletions remove 462 tests whose pass-2 verdict is KEEP. The audit requires the independent guards to be extracted first. They were not.
 2. Four KEEP-ALL files were deleted with no conditional and no replacement (21 tests).
 3. Reset tokens are stored raw in `verifications.identifier`. Verified live. The repo's digest-only invariant was dropped.
@@ -22,13 +23,13 @@ Non-blocking, but required before SHIP: items 4–10 below.
 
 39 test files deleted, 28 modified, 6 added. Reconciled by title (base `ea8f514` vs head) and by audit block IDs (`icm/03-plan/output/TA/TB*.md`, 366 pass-2 rows parsed).
 
-| Group | Files | Result |
-|---|---|---|
-| Whole-file `CUT-AT-REPLACE in PR-05.` | 28 (25 integration, 3 unit: `client-setup-rbac`, `guard`, `rbac`) | Tagged correctly. **But** their pass-2 blocks are KEEP and contain independent guards. See F1. |
-| TRIM, CAR-only blocks | `checkin-feedback.test.ts` (TB1.023/025 CAR, 024/026 CUT) | Ok. |
-| KEEP-ALL, no conditional | `phase-3-2-password-reset.test.ts`, `credentials.test.ts`, `password-reset-delivery.test.ts`, `password-reset-token-failure.test.ts` | **Violation.** See F2. |
-| KEEP-ALL with conditional (AUTH=Better Auth) | `s1-f2b-session.test.ts`, `s1-f2b-session-runtime.test.ts`, `s1-f2d-password-reset.test.ts`, `session-version.test.ts` (TB3.070) | Conditional met on the file tag. Guarantees only partly preserved. See F3, F7. |
-| TRIM, KEEP block deleted | `password-reset.test.ts` (TB2.088, TB2.089 KEEP, line 266), `checkin-review.test.ts` (TB2.053 KEEP, not in CAR list, line 192) | **Violation.** See F8. |
+| Group                                        | Files                                                                                                                                | Result                                                                                         |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Whole-file `CUT-AT-REPLACE in PR-05.`        | 28 (25 integration, 3 unit: `client-setup-rbac`, `guard`, `rbac`)                                                                    | Tagged correctly. **But** their pass-2 blocks are KEEP and contain independent guards. See F1. |
+| TRIM, CAR-only blocks                        | `checkin-feedback.test.ts` (TB1.023/025 CAR, 024/026 CUT)                                                                            | Ok.                                                                                            |
+| KEEP-ALL, no conditional                     | `phase-3-2-password-reset.test.ts`, `credentials.test.ts`, `password-reset-delivery.test.ts`, `password-reset-token-failure.test.ts` | **Violation.** See F2.                                                                         |
+| KEEP-ALL with conditional (AUTH=Better Auth) | `s1-f2b-session.test.ts`, `s1-f2b-session-runtime.test.ts`, `s1-f2d-password-reset.test.ts`, `session-version.test.ts` (TB3.070)     | Conditional met on the file tag. Guarantees only partly preserved. See F3, F7.                 |
+| TRIM, KEEP block deleted                     | `password-reset.test.ts` (TB2.088, TB2.089 KEEP, line 266), `checkin-review.test.ts` (TB2.053 KEEP, not in CAR list, line 192)       | **Violation.** See F8.                                                                         |
 
 Audit lines cited: rule "CUT-AT-REPLACE stays runnable... Do not delete its independent concurrency, transaction, date or token guarantees without first extracting" at `TEST-AUDIT.md:11`. Mixed-suite rule "PR-05 must preserve... The replacement PR must show these invariants passing before deleting the old mixed block" at `TEST-AUDIT.md:323`. Replacement row at `:329`.
 
@@ -66,6 +67,7 @@ Q3 (verbatim): "The coach can edit a client's training plan, but the client can'
 - Only three roles (`roles.ts:18`). `ASSISTANT_COACH` and `SUPPORT` map to deny (`roles.ts` `memberRoleToRole`). Pass (not built).
 
 Findings (scope, medium):
+
 - **F9a.** The matrix capabilities that have no canvas evidence beyond the owner's answers: `member.remove` (`roles.ts:44–45`). Grep of `frontend/src` finds no member-removal UI. `member.invite` has only the canvas "invitations" state (ethereal clients). Owner said "Any extra role or capability not on the canvas is a finding." Flagged. Other capabilities have canvas hits (notes, tasks, library, appearance, message, roster, plans).
 - **F9b.** "Server-enforced" overstates. The matrix is consulted by exactly two GET routes (`lib/api/v1.ts:91`, session route `:39`). No plan-write route exists in `/api/v1`. The ~69 existing `auth()` consumers and the legacy RBAC (9 files in `lib/` and `app/` still reference `ASSISTANT_COACH`) are unchanged. So Q3 is implemented as data and tested, but the write paths the owner cares about are not enforced by the new check.
 
@@ -75,21 +77,21 @@ Findings (scope, medium):
 
 Server: `next dev` on 127.0.0.1:3663, DB `app_pr05v` (37 migrations applied), dev-file mailbox. Run from the scratch copy of e68a2ef. Full output: `logs/functional.json`.
 
-| Check | Result |
-|---|---|
-| Sign in, form (Chromium) | PASS (live proof) |
-| Sign in, `POST /api/auth/sign-in/email` | 200, `better-auth.session_token` cookie + bearer token |
-| Wrong password | 401 `INVALID_EMAIL_OR_PASSWORD` (generic) |
-| Rate limit | 10×401 then 429 |
-| Sign out | `POST /api/auth/sign-out` → 200 `{"success":true}`; same cookie then 401 `unauthenticated` |
-| Session export, cookie | 200 `{user:{id,email,name}, workspace:{id,memberId}, role:"owner", capabilities:{13 keys}}` |
-| Session export, no creds | 401 `unauthenticated` |
-| Session export, bearer | 200, same body |
-| `/api/v1/…/clients`, cookie | 200 `{"items":[],"nextCursor":null}` |
-| `/api/v1/…/clients`, no creds | 401 `unauthenticated` |
-| Invite acceptance | e2e `invite-acceptance.spec.ts`: part of 14 passed (dev-file posture) |
-| Password reset request, consume, single use, expiry, password change revokes sessions | Live proof 14/14 PASS; e2e reset cases pass (dev-file) |
-| Reset token storage | **FAIL (see F4):** `verifications.identifier` = `reset-password:<token>` and the token equals the token in the mailed link |
+| Check                                                                                 | Result                                                                                                                     |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Sign in, form (Chromium)                                                              | PASS (live proof)                                                                                                          |
+| Sign in, `POST /api/auth/sign-in/email`                                               | 200, `better-auth.session_token` cookie + bearer token                                                                     |
+| Wrong password                                                                        | 401 `INVALID_EMAIL_OR_PASSWORD` (generic)                                                                                  |
+| Rate limit                                                                            | 10×401 then 429                                                                                                            |
+| Sign out                                                                              | `POST /api/auth/sign-out` → 200 `{"success":true}`; same cookie then 401 `unauthenticated`                                 |
+| Session export, cookie                                                                | 200 `{user:{id,email,name}, workspace:{id,memberId}, role:"owner", capabilities:{13 keys}}`                                |
+| Session export, no creds                                                              | 401 `unauthenticated`                                                                                                      |
+| Session export, bearer                                                                | 200, same body                                                                                                             |
+| `/api/v1/…/clients`, cookie                                                           | 200 `{"items":[],"nextCursor":null}`                                                                                       |
+| `/api/v1/…/clients`, no creds                                                         | 401 `unauthenticated`                                                                                                      |
+| Invite acceptance                                                                     | e2e `invite-acceptance.spec.ts`: part of 14 passed (dev-file posture)                                                      |
+| Password reset request, consume, single use, expiry, password change revokes sessions | Live proof 14/14 PASS; e2e reset cases pass (dev-file)                                                                     |
+| Reset token storage                                                                   | **FAIL (see F4):** `verifications.identifier` = `reset-password:<token>` and the token equals the token in the mailed link |
 
 ---
 
@@ -103,24 +105,24 @@ Server: `next dev` on 127.0.0.1:3663, DB `app_pr05v` (37 migrations applied), de
 
 ## 5. Gates (fresh, scratch copy of e68a2ef, Node v26.7.0 — the repo targets Node 24, so this is not target-runtime certification)
 
-| Command | Exit | Result |
-|---|---|---|
-| `npm ci` (root) | not captured (background) | Completed; `node_modules` usable; gates ran against it |
-| `npx prisma generate` | 0 | |
-| `npx prisma migrate deploy` (app_pr05v) | 0 | 37 migrations applied |
-| `npm run typecheck` | 0 | |
-| `npm run lint` | 0 | 0 errors, 13 warnings |
-| `npm test` | 0 | 89 files, 1021 passed, 0 failed |
-| `npm run test:integration` | 0 | 27 files, 265 passed, 0 failed (INTEGRATION_DATABASE_URL = app_pr05v) |
-| `npm run build` | 0 | |
-| `cd frontend && npm ci` | not captured (background) | Completed |
-| `cd frontend && npm run build` | 0 | |
-| `npx playwright test invite-acceptance password-reset` (MAIL_DELIVERY_ADAPTER=dev-file) | 0 | 14 passed, 2 skipped (404 pair) |
-| same, default posture (no mail adapter) | 0 | 10 passed, 6 skipped (flow cases) |
-| `node scripts/live-proof-pr05.mjs` (BASE=127.0.0.1:3663) | not captured (background) | Log: "14/14 checks passed" |
-| `npx vitest run tests/unit/roles.test.ts` | 0 | 41 passed |
-| Mutant (`roles.ts:57`) | 1 | 1 failed (expected) |
-| Restored | 0 | 41 passed, byte-equal |
+| Command                                                                                 | Exit                      | Result                                                                |
+| --------------------------------------------------------------------------------------- | ------------------------- | --------------------------------------------------------------------- |
+| `npm ci` (root)                                                                         | not captured (background) | Completed; `node_modules` usable; gates ran against it                |
+| `npx prisma generate`                                                                   | 0                         |                                                                       |
+| `npx prisma migrate deploy` (app_pr05v)                                                 | 0                         | 37 migrations applied                                                 |
+| `npm run typecheck`                                                                     | 0                         |                                                                       |
+| `npm run lint`                                                                          | 0                         | 0 errors, 13 warnings                                                 |
+| `npm test`                                                                              | 0                         | 89 files, 1021 passed, 0 failed                                       |
+| `npm run test:integration`                                                              | 0                         | 27 files, 265 passed, 0 failed (INTEGRATION_DATABASE_URL = app_pr05v) |
+| `npm run build`                                                                         | 0                         |                                                                       |
+| `cd frontend && npm ci`                                                                 | not captured (background) | Completed                                                             |
+| `cd frontend && npm run build`                                                          | 0                         |                                                                       |
+| `npx playwright test invite-acceptance password-reset` (MAIL_DELIVERY_ADAPTER=dev-file) | 0                         | 14 passed, 2 skipped (404 pair)                                       |
+| same, default posture (no mail adapter)                                                 | 0                         | 10 passed, 6 skipped (flow cases)                                     |
+| `node scripts/live-proof-pr05.mjs` (BASE=127.0.0.1:3663)                                | not captured (background) | Log: "14/14 checks passed"                                            |
+| `npx vitest run tests/unit/roles.test.ts`                                               | 0                         | 41 passed                                                             |
+| Mutant (`roles.ts:57`)                                                                  | 1                         | 1 failed (expected)                                                   |
+| Restored                                                                                | 0                         | 41 passed, byte-equal                                                 |
 
 The PR report `icm/05-build/reports/PR-05.md` has two gate tables. The first (1190 unit / 284 integration, line 119) is pre-merge and not labelled as such. The second (1021 / 265, line 252) matches this run.
 

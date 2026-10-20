@@ -50,7 +50,9 @@ describe.skipIf(!enabled)(
       return token as string;
     }
 
-    async function memberWorkspace(role: "WORKSPACE_OWNER" | "COACH" | "CLIENT") {
+    async function memberWorkspace(
+      role: "WORKSPACE_OWNER" | "COACH" | "CLIENT",
+    ) {
       const tag = `s${++n}_${Date.now()}`;
       const ws = await prisma.workspace.create({
         data: { name: tag, slug: tag, status: "ACTIVE" },
@@ -88,7 +90,9 @@ describe.skipIf(!enabled)(
         stdio: "pipe",
         env: { ...process.env, DATABASE_URL: url as string },
       });
-      prisma = new PrismaClient({ datasources: { db: { url: url as string } } });
+      prisma = new PrismaClient({
+        datasources: { db: { url: url as string } },
+      });
       await prisma.$executeRawUnsafe(
         'TRUNCATE "rate_limit","verifications","sessions","accounts","audit_event","client_profile","client_assignment","access_token","workspace_member","workspace","users" RESTART IDENTITY CASCADE',
       );
@@ -142,7 +146,11 @@ describe.skipIf(!enabled)(
     it("refuses a member of another workspace with 403", async () => {
       const { email } = await memberWorkspace("WORKSPACE_OWNER");
       const other = await prisma.workspace.create({
-        data: { name: `other-${Date.now()}`, slug: `other-${Date.now()}`, status: "ACTIVE" },
+        data: {
+          name: `other-${Date.now()}`,
+          slug: `other-${Date.now()}`,
+          status: "ACTIVE",
+        },
       });
       const token = await signInToken(email);
       const res = await call(other.id, { authorization: `Bearer ${token}` });

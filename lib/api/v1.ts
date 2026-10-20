@@ -113,7 +113,13 @@ export function defineApiV1Route<P extends { workspaceId: string }, Q, R>(
         params.workspaceId,
         def.capability,
       );
-      const result = await def.handler({ viewer, workspace, params, query, request });
+      const result = await def.handler({
+        viewer,
+        workspace,
+        params,
+        query,
+        request,
+      });
       return Response.json(result);
     } catch (error) {
       if (error instanceof ApiError) {
@@ -136,10 +142,7 @@ export function defineApiV1Route<P extends { workspaceId: string }, Q, R>(
           { status: 400 },
         );
       }
-      return Response.json(
-        { error: { code: "internal" } },
-        { status: 500 },
-      );
+      return Response.json({ error: { code: "internal" } }, { status: 500 });
     }
   };
 }

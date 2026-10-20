@@ -17,10 +17,13 @@
 import { FORM_LIMITS } from "./forms";
 import { ASSIGNMENT_LIMITS } from "./assignments-gate";
 
+import { devFlagEnabled, type RuntimeEnv } from "../runtime";
+
 export function isOnboardingSubmissionEnabled(
-  env: string | undefined,
+  flag: string | undefined,
+  env: RuntimeEnv = process.env,
 ): boolean {
-  return env === "1";
+  return devFlagEnabled(flag, env);
 }
 
 export const SUBMISSION_LIMITS = {

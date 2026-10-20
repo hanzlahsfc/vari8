@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 124 modules with exports, 1179 exported symbols.
+Counts: 122 modules with exports, 1188 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -37,6 +37,10 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function normalizeHex(value: string): string | null`
 - `export function themeVariables(appearance: Appearance): CSSProperties`
 - `export function useAppearance(): AppearanceContextValue`
+
+## `frontend/src/lib/reduced-motion.ts`
+
+- `export function useReducedMotion(): boolean`
 
 ## `frontend/src/lib/utils.ts`
 
@@ -97,10 +101,10 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/auth/password-reset-boundary.ts`
 
-- `export type ResetCompletionResult = | { ok: true } | { ok: false; message: string }`
+- `export type ResetCompletionResult = { ok: true } | { ok: false; message: string }`
 - `export type ResetGate = { deliveryAvailable?: boolean }`
 - `export type ResetLinkState = { state: "ready" | "invalid" }`
-- `export type ResetRequestResult = | { ok: true; message: string } | { ok: false; message: string }`
+- `export type ResetRequestResult = { ok: true; message: string } | { ok: false; message: string }`
 - `export interface VerificationLookup (1 members)`
 - `export async function completePasswordReset(input: { rawToken: unknown; password: unknown }, gate?: ResetGate): Promise<ResetCompletionResult>`
 - `export async function getResetLinkState(rawToken: unknown, client: VerificationLookup = prisma, gate?: ResetGate): Promise<ResetLinkState>`
@@ -111,10 +115,10 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/auth/rate-limit.ts`
 
 - `export class RateLimitExceededError extends Error (1 members)`
-- `export type RateLimitOutcome = | { allowed: true } | { allowed: false; retryAfter: number }`
+- `export type RateLimitOutcome = { allowed: true } | { allowed: false; retryAfter: number }`
 - `export type RateLimitRule = { window: number; max: number }`
 - `export function accountLimitKey(purpose: string, normalizedEmail: string): string`
-- `export async function consumeRateLimit(key: string, rule: RateLimitRule, client: Pick< typeof prisma, "rateLimit" > = prisma): Promise<RateLimitOutcome>`
+- `export async function consumeRateLimit(key: string, rule: RateLimitRule, client: Pick<typeof prisma, "rateLimit"> = prisma): Promise<RateLimitOutcome>`
 - `export function resolveTrustedClientIp(requestHeaders: Headers): string | null`
 - `export function userLimitKey(purpose: string, userId: string): string`
 
@@ -138,7 +142,7 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/auth/roles.ts`
 
 - `export const CAPABILITIES = Object.keys(CAPABILITY_MATRIX) as Capability[]`
-- `export const CAPABILITY_MATRIX: Record<Capability, Record<Role, CapabilityScope>>`
+- `export const CAPABILITY_MATRIX: Record< Capability, Record<Role, CapabilityScope> >`
 - `export type Capability = | "roster.read" | "plan.read" | "plan.write" | "clientData.read" | "own.read" | "own.write" | "notes.write" | "tasks.manage" | "library.manage" | "message.write" | "appeara...`
 - `export type CapabilityScope = "workspace" | "own" | "deny"`
 - `export const ROLES = ["owner", "coach", "client"] as const`
@@ -214,9 +218,9 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/checkin/forms-gate.ts`
 
-- `export type CheckInRuntimeClass = "development" | "test" | "production"`
+- `export type CheckInRuntimeClass = RuntimeClass`
 - `export type CheckInsEnv = RuntimeEnv & { ENABLE_CHECK_INS?: string }`
-- `export function classifyCheckInRuntime(env: RuntimeEnv = process.env): CheckInRuntimeClass`
+- `export const classifyCheckInRuntime: (env?: RuntimeEnv) => CheckInRuntimeClass`
 - `export function isCheckInsEnabled(env: CheckInsEnv = process.env): boolean`
 
 ## `lib/checkin/forms.ts`
@@ -270,11 +274,6 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function sendCheckInFeedbackFromAction(session: Session, input: SendCheckInFeedbackInput, deps: CheckInInstanceDeps = {}): Promise<CheckInSafeResult<SendCheckInFeedbackResult>>`
 - `export async function setCheckInScheduleRuleStatusFromAction(session: Session, input: SetCheckInScheduleRuleStatusInput, deps: CheckInScheduleDeps = {}): Promise<CheckInSafeResult<SetCheckInSchedul...`
 - `export async function submitCheckInInstanceFromAction(session: Session, input: SubmitCheckInInstanceInput, deps: CheckInInstanceDeps = {}): Promise<CheckInSafeResult<SubmitCheckInInstanceResult>>`
-
-## `lib/checkin/instances-consent.ts`
-
-- `export const CHECKIN_DEV_CONSENT = { PRIVACY_NOTICE: "check-in-dev-privacy-v1", HEALTH_DATA: "check-in-dev-health-v1", } as const`
-- `export function resolveCheckInConsentPolicy(env: ResolverEnv = process.env): ConsentPolicyRegistry`
 
 ## `lib/checkin/instances.ts`
 
@@ -410,7 +409,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export const CLIENT_SETUP_LIMITS = { idMax: 128, listDefaultLimit: 25, listMaxLimit: 100, indexMax: 100_000, } as const`
 - `export class ClientSetupError extends Error (1 members)`
 - `export type ClientSetupErrorCode = | "invalid_input" | "assignment_not_accessible" | "assignment_not_active" | "client_not_eligible" | "template_not_eligible" | "assignment_conflict" | "serializati...`
-- `export function isClientSetupEnabled(env: string | undefined): boolean`
+- `export function isClientSetupEnabled(flag: string | undefined, env: RuntimeEnv = process.env): boolean`
 
 ## `lib/coaching/client-setup-transition-boundary.ts`
 
@@ -428,7 +427,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export class ClientSetupTransitionError extends Error (1 members)`
 - `export type ClientSetupTransitionErrorCode = | "invalid_input" | "assignment_not_accessible" | "assignment_not_active" | "transition_not_available" | "no_upgrade_available" | "incoherent_definition...`
-- `export function isClientSetupTransitionsEnabled(transitionsEnv: string | undefined, clientSetupEnv: string | undefined): boolean`
+- `export function isClientSetupTransitionsEnabled(transitionsEnv: string | undefined, clientSetupEnv: string | undefined, env: RuntimeEnv = process.env): boolean`
 
 ## `lib/coaching/client-setup-transition.ts`
 
@@ -470,7 +469,7 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/coaching/gate.ts`
 
 - `export const COACHING_LIMITS = { definitionMaxBytes: 64 * 1024, maxDepth: 4, maxSections: 32, maxItemsPerSection: 64, maxItemsPerTemplate: 128, maxOptions: 64, labelMax: 120, helpTextMax: 500, keyM...`
-- `export function isCoachingTemplatesEnabled(env: string | undefined): boolean`
+- `export function isCoachingTemplatesEnabled(flag: string | undefined, env: RuntimeEnv = process.env): boolean`
 
 ## `lib/coaching/impact-consumers.ts`
 
@@ -482,7 +481,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/coaching/parameter-classification-gate.ts`
 
-- `export function isParameterClassificationEnabled(env: string | undefined): boolean`
+- `export function isParameterClassificationEnabled(flag: string | undefined, env: RuntimeEnv = process.env): boolean`
 
 ## `lib/coaching/parameters-boundary.ts`
 
@@ -611,6 +610,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export type AuthorizedHealthOperation = { userId: string; workspaceId: string; clientProfileId: string; grantedScope: string; }`
 - `export const BASE_CONSENTS: readonly ConsentKind[]`
+- `export const CHECKIN_DEV_CONSENT = { PRIVACY_NOTICE: "check-in-dev-privacy-v1", HEALTH_DATA: "check-in-dev-health-v1", } as const`
 - `export const CONSENT_KINDS: readonly ConsentKind[]`
 - `export class ConsentError extends Error (1 members)`
 - `export type ConsentErrorCode = | "invalid_input" | "policy_not_configured" | "coach_attested_unsupported" | "ped_hrt_not_approved" | "consent_missing" | "consent_conflict" | "audit_not_wired_for_ex...`
@@ -624,14 +624,24 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type ConsentStatusRow = { id: string; kind: ConsentKind; version: string; grantedAt: Date; revokedAt: Date | null; }`
 - `export type ConsentVersionPair = { kind: ConsentKind; version: string }`
 - `export type HealthOperationDeps = { client?: PrismaLike; registry?: ConsentPolicyRegistry; }`
-- `export function assertConsentMutationsExternallyExposable(): never`
+- `export const MEALPLAN_DEV_CONSENT = { PRIVACY_NOTICE: "meal-plan-dev-privacy-v1", HEALTH_DATA: "meal-plan-dev-health-v1", } as const`
+- `export const ONBOARDING_SUBMISSION_DEV_CONSENT = { PRIVACY_NOTICE: "onboarding-submission-dev-privacy-v1", HEALTH_DATA: "onboarding-submission-dev-health-v1", } as const`
+- `export type OnboardingSubmissionConsentEnv = RuntimeEnv & { ENABLE_ONBOARDING_SUBMISSION?: string; }`
+- `export type SubmissionRuntimeClass = RuntimeClass`
+- `export const TRAINING_DEV_CONSENT = { PRIVACY_NOTICE: "training-plan-dev-privacy-v1", HEALTH_DATA: "training-plan-dev-health-v1", } as const`
+- `export function assertConsentMutationsExternallyExposable(env: ConsentGateEnv = process.env): void`
 - `export async function authorizeHealthOperation(session: SessionLike, input: { resource: Resource; action: "read" | "write"; workspaceId?: string; clientProfileId?: string; }, deps: HealthOperationD...`
+- `export const classifySubmissionRuntime: ( env?: RuntimeEnv, ) => SubmissionRuntimeClass`
 - `export function createStaticConsentPolicy(versions: Partial<Record<ConsentKind, string>>): ConsentPolicyRegistry`
 - `export async function grantOwnConsent(session: SessionLike, input: { workspaceId: string; clientProfileId: string; kind: ConsentKind }, deps: ConsentServiceDeps = {}): Promise<ConsentMutationResult>`
 - `export function hasExactActiveConsent(rows: readonly ConsentRow[], kind: ConsentKind, version: string): boolean`
 - `export function isConsentKind(value: unknown): value is ConsentKind`
 - `export async function readOwnConsentStatus(session: SessionLike, input: { workspaceId: string; clientProfileId: string; limit?: number; cursor?: string; }, deps: ConsentServiceDeps = {}): Promise<C...`
 - `export function requiredConsentsFor(resource: Resource): readonly ConsentKind[] | undefined`
+- `export function resolveCheckInConsentPolicy(env: { ENABLE_CHECK_INS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
+- `export function resolveMealPlanConsentPolicy(env: { ENABLE_MEAL_PLANS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
+- `export function resolveOnboardingSubmissionConsentPolicy(env: OnboardingSubmissionConsentEnv = process.env): ConsentPolicyRegistry`
+- `export function resolveTrainingConsentPolicy(env: { ENABLE_TRAINING_PLANS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
 - `export async function revokeOwnConsent(session: SessionLike, input: { workspaceId: string; clientProfileId: string; kind: ConsentKind }, deps: ConsentServiceDeps = {}): Promise<ConsentMutationResult>`
 - `export const unconfiguredConsentPolicy: ConsentPolicyRegistry`
 
@@ -655,10 +665,10 @@ Imported type names are shown without their `import("...")` prefix.
 - `export class DailyEntryError extends Error (1 members)`
 - `export type DailyEntryErrorCode = | "invalid_input" | "not_available" | "stale_form" | "consent_missing" | "policy_not_configured" | "ineligible" | "no_active_setup" | "serialization_conflict"`
 - `export type DailyEntryMode = "off" | "persistent" | "conflict"`
-- `export function isDailyEntryEnabled(env: string | undefined): boolean`
-- `export function isDailyEntryPersistenceUsable(entryEnv: string | undefined, prototypeEnv: string | undefined): boolean`
+- `export function isDailyEntryEnabled(flag: string | undefined, env: RuntimeEnv = process.env): boolean`
+- `export function isDailyEntryPersistenceUsable(entryEnv: string | undefined, prototypeEnv: string | undefined, env: RuntimeEnv = process.env): boolean`
 - `export { isDailyPrototypeEnabled } from "../daily-prototype"`
-- `export function resolveDailyEntryMode(entryEnv: string | undefined, prototypeEnv: string | undefined): DailyEntryMode`
+- `export function resolveDailyEntryMode(entryEnv: string | undefined, prototypeEnv: string | undefined, env: RuntimeEnv = process.env): DailyEntryMode`
 
 ## `lib/daily-entry/service.ts`
 
@@ -708,7 +718,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export const EXCLUDED_FIELD_KEYS = [ "e2", "prog", "coachNote", "calories", "targets", "averages", ] as const`
 - `export const TODO_MARKER = "TODO(product)"`
 - `export type ValidationError = { field: string; message: string }`
-- `export function isDailyPrototypeEnabled(env: string | undefined): boolean`
+- `export function isDailyPrototypeEnabled(flag: string | undefined, env: RuntimeEnv = process.env): boolean`
 - `export function validateDailyEntry(values: Record<string, string>): ValidationError[]`
 
 ## `lib/daily-tracker.ts`
@@ -789,7 +799,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/dashboard/gate.ts`
 
-- `export type DashboardEnv = { APP_ENV?: string; NODE_ENV?: string; ENABLE_CLIENT_DASHBOARD?: string; }`
+- `export type DashboardEnv = RuntimeEnv & { ENABLE_CLIENT_DASHBOARD?: string; }`
 - `export function isClientDashboardEnabled(env: DashboardEnv = process.env): boolean`
 
 ## `lib/dashboard/navigation-guard.ts`
@@ -946,7 +956,7 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/gdpr.ts`
 
 - `export class GdprNotExposableError extends Error (1 members)`
-- `export function assertGdprExternallyExposable(): never`
+- `export function assertGdprExternallyExposable(env: ConsentGateEnv = process.env): void`
 
 ## `lib/gdpr/export.ts`
 
@@ -973,7 +983,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type RetentionFamily = (typeof RETENTION_FAMILIES)[number]`
 - `export type RetentionPolicy = Readonly< Record<RetentionFamily, RetentionPolicyEntry> >`
 - `export type RetentionPolicyEntry = { retainForMs: number | null }`
-- `export function assertAutomaticRetentionConfigured(): never`
+- `export function assertAutomaticRetentionConfigured(env: ConsentGateEnv = process.env): void`
 - `export function evaluateRetention(now: Date = new Date(), policy: RetentionPolicy = RETENTION_POLICY): { family: RetentionFamily; cutoff: Date }[]`
 - `export function retentionFamilies(): readonly RetentionFamily[]`
 
@@ -1041,16 +1051,11 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function saveMealPlanDraftFromAction(session: Session, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; title?: string; draft: unknown; timezone?: strin...`
 - `export async function setMealPlanTimezoneFromAction(session: Session, input: { workspaceId: string; clientProfileId: string; timezone: string }, deps: MealPlanDeps = {}): Promise<MealPlanSafeResult...`
 
-## `lib/mealplan/consent.ts`
-
-- `export const MEALPLAN_DEV_CONSENT = { PRIVACY_NOTICE: "meal-plan-dev-privacy-v1", HEALTH_DATA: "meal-plan-dev-health-v1", } as const`
-- `export function resolveMealPlanConsentPolicy(env: ResolverEnv = process.env): ConsentPolicyRegistry`
-
 ## `lib/mealplan/gate.ts`
 
-- `export type MealPlanRuntimeClass = "development" | "test" | "production"`
+- `export type MealPlanRuntimeClass = RuntimeClass`
 - `export type MealPlansEnv = RuntimeEnv & { ENABLE_MEAL_PLANS?: string }`
-- `export function classifyMealPlanRuntime(env: RuntimeEnv = process.env): MealPlanRuntimeClass`
+- `export const classifyMealPlanRuntime: ( env?: RuntimeEnv, ) => MealPlanRuntimeClass`
 - `export function isMealPlansEnabled(env: MealPlansEnv = process.env): boolean`
 
 ## `lib/mealplan/limits.ts`
@@ -1140,7 +1145,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export const ASSIGNMENT_LIMITS = { idMax: 128, listDefaultLimit: 25, listMaxLimit: 100, } as const`
 - `export class OnboardingAssignmentError extends Error (1 members)`
 - `export type OnboardingAssignmentErrorCode = | "invalid_input" | "assignment_not_accessible" | "assignment_not_active" | "client_not_eligible" | "form_not_eligible" | "assignment_conflict" | "serial...`
-- `export function isOnboardingAssignmentsEnabled(env: string | undefined): boolean`
+- `export function isOnboardingAssignmentsEnabled(flag: string | undefined, env: RuntimeEnv = process.env): boolean`
 
 ## `lib/onboarding/assignments.ts`
 
@@ -1212,19 +1217,12 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function markSubmissionReviewed(session: SessionLike, input: MarkSubmissionReviewedInput, deps: OnboardingReviewDeps = {}): Promise<MarkSubmissionReviewedResult>`
 - `export async function readSubmissionReviewDetail(session: SessionLike, input: { workspaceId: string; clientProfileId: string; submissionId: string; }, deps: OnboardingReviewDeps = {}): Promise<Staf...`
 
-## `lib/onboarding/submission-consent.ts`
-
-- `export const ONBOARDING_SUBMISSION_DEV_CONSENT = { PRIVACY_NOTICE: "onboarding-submission-dev-privacy-v1", HEALTH_DATA: "onboarding-submission-dev-health-v1", } as const`
-- `export type SubmissionRuntimeClass = "development" | "test" | "production"`
-- `export function classifySubmissionRuntime(env: RuntimeEnv = process.env): SubmissionRuntimeClass`
-- `export function resolveOnboardingSubmissionConsentPolicy(env: ResolverEnv = process.env): ConsentPolicyRegistry`
-
 ## `lib/onboarding/submission-gate.ts`
 
 - `export class OnboardingSubmissionError extends Error (1 members)`
 - `export type OnboardingSubmissionErrorCode = | "invalid_input" | "not_available" | "consent_missing" | "policy_not_configured" | "serialization_conflict"`
 - `export const SUBMISSION_LIMITS = { idMax: ASSIGNMENT_LIMITS.idMax, answersJsonMaxBytes: FORM_LIMITS.definitionMaxBytes, maxAnswers: FORM_LIMITS.maxFields, shortTextMaxChars: 1000, shortTextMaxBytes...`
-- `export function isOnboardingSubmissionEnabled(env: string | undefined): boolean`
+- `export function isOnboardingSubmissionEnabled(flag: string | undefined, env: RuntimeEnv = process.env): boolean`
 
 ## `lib/onboarding/submissions-boundary.ts`
 
@@ -1241,7 +1239,7 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/onboarding/submissions.ts`
 
 - `export type CanonicalAnswer = { fieldId: string; kind: | "SHORT_TEXT" | "LONG_TEXT" | "NUMBER" | "DATE" | "SINGLE_CHOICE" | "MULTI_CHOICE"; valueText: string | null; valueNumeric: string | null; va...`
-- `export { ONBOARDING_SUBMISSION_DEV_CONSENT } from "./submission-consent"`
+- `export { ONBOARDING_SUBMISSION_DEV_CONSENT } from "../consent"`
 - `export type OnboardingSubmissionDeps = { db?: PrismaClient; registry?: ConsentPolicyRegistry; }`
 - `export { OnboardingSubmissionError } from "./submission-gate"`
 - `export type OwnAssignmentItem = { assignmentId: string; formName: string; status: "ACTIVE" | "SUPERSEDED" | "CANCELLED" | "COMPLETED"; assignedAt: string; submittedAt: string | null; }`
@@ -1271,10 +1269,20 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function hashPassword(password: string): Promise<string>`
 - `export async function verifyPassword(password: string, stored: string): Promise<boolean>`
 
+## `lib/runtime.ts`
+
+- `export type ConsentGateEnv = RuntimeEnv & { ENABLE_CONSENT_GATES?: string }`
+- `export type RuntimeClass = "development" | "test" | "production"`
+- `export type RuntimeEnv = { APP_ENV?: string; NODE_ENV?: string }`
+- `export function classifyRuntime(env: RuntimeEnv = process.env): RuntimeClass`
+- `export function consentGatesEnabled(env: ConsentGateEnv = process.env): boolean`
+- `export function devFlagEnabled(flag: string | undefined, env: RuntimeEnv = process.env): boolean`
+- `export function isDevRuntime(env: RuntimeEnv = process.env): boolean`
+
 ## `lib/sheet-viewer.ts`
 
-- `export function isSheetViewerEnabled(env: string | undefined): boolean`
-- `export function requireSheetViewer(env: string | undefined): void`
+- `export function isSheetViewerEnabled(flag: string | undefined, env: RuntimeEnv = process.env): boolean`
+- `export function requireSheetViewer(flag: string | undefined, env: RuntimeEnv = process.env): void`
 
 ## `lib/spec-artifacts.ts`
 
@@ -1382,16 +1390,11 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function saveTrainingProgramDraftFromAction(session: Session, input: Parameters<typeof saveTrainingProgramDraft>[1], deps: TrainingDeps = {}): Promise<TrainingSafeResult<{ programId: s...`
 - `export async function setTrainingProgramTimezoneFromAction(session: Session, input: Parameters<typeof setTrainingProgramTimezone>[1], deps: TrainingDeps = {}): Promise<TrainingSafeResult<{ programI...`
 
-## `lib/trainingprogram/consent.ts`
-
-- `export const TRAINING_DEV_CONSENT = { PRIVACY_NOTICE: "training-plan-dev-privacy-v1", HEALTH_DATA: "training-plan-dev-health-v1", } as const`
-- `export function resolveTrainingConsentPolicy(env: ResolverEnv = process.env): ConsentPolicyRegistry`
-
 ## `lib/trainingprogram/gate.ts`
 
 - `export type TrainingPlansEnv = RuntimeEnv & { ENABLE_TRAINING_PLANS?: string }`
-- `export type TrainingRuntimeClass = "development" | "test" | "production"`
-- `export function classifyTrainingRuntime(env: RuntimeEnv = process.env): TrainingRuntimeClass`
+- `export type TrainingRuntimeClass = RuntimeClass`
+- `export const classifyTrainingRuntime: ( env?: RuntimeEnv, ) => TrainingRuntimeClass`
 - `export function isTrainingPlansEnabled(env: TrainingPlansEnv = process.env): boolean`
 
 ## `lib/trainingprogram/limits.ts`

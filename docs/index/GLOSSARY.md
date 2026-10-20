@@ -78,14 +78,15 @@ see `icm/03-plan/DECISIONS.md` and the `gate.ts` file in each domain.
 | `ENABLE_CLIENT_SETUP` | `app/workspace/[workspaceId]/client-setups/actions.ts` | flag only, read the resolver |
 | `ENABLE_CLIENT_SETUP_TRANSITIONS` | `app/workspace/[workspaceId]/client-setups/page.tsx` | flag only, read the resolver |
 | `ENABLE_COACHING_TEMPLATES` | `app/workspace/[workspaceId]/parameters/actions.ts` | flag only, read the resolver |
+| `ENABLE_CONSENT_GATES` | `lib/checkin/instances.ts` | flag only, read the resolver |
 | `ENABLE_DAILY_ENTRY` | `app/(tracker)/workspace/[workspaceId]/daily/entry-actions.ts` | flag only, read the resolver |
 | `ENABLE_DAILY_PROTOTYPE` | `app/(tracker)/workspace/[workspaceId]/daily/entry-actions.ts` | flag only, read the resolver |
-| `ENABLE_MEAL_PLANS` | `lib/mealplan/consent.ts` | flag + trusted APP_ENV, fails closed |
+| `ENABLE_MEAL_PLANS` | `lib/consent.ts` | flag + trusted APP_ENV, fails closed |
 | `ENABLE_ONBOARDING_ASSIGNMENTS` | `app/workspace/[workspaceId]/onboarding/assignments/actions.ts` | flag only, read the resolver |
 | `ENABLE_ONBOARDING_SUBMISSION` | `app/(tracker)/workspace/[workspaceId]/check-ins/layout.tsx` | flag only, read the resolver |
 | `ENABLE_PARAMETER_CLASSIFICATION` | `app/workspace/[workspaceId]/parameters/actions.ts` | flag only, read the resolver |
 | `ENABLE_SHEET_VIEWER` | `app/page.tsx` | flag only, read the resolver |
-| `ENABLE_TRAINING_PLANS` | `lib/trainingprogram/consent.ts` | flag + trusted APP_ENV, fails closed |
+| `ENABLE_TRAINING_PLANS` | `lib/consent.ts` | flag + trusted APP_ENV, fails closed |
 
 ## Where more detail lives
 

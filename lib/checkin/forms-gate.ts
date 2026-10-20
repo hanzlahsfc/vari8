@@ -14,9 +14,15 @@
  * directly and is never exported to the client bundle.
  */
 
-export type CheckInRuntimeClass = "development" | "test" | "production";
+import {
+  classifyRuntime,
+  devFlagEnabled,
+  type RuntimeClass,
+  type RuntimeEnv,
+} from "../runtime";
 
-type RuntimeEnv = { APP_ENV?: string; NODE_ENV?: string };
+export type CheckInRuntimeClass = RuntimeClass;
+
 export type CheckInsEnv = RuntimeEnv & { ENABLE_CHECK_INS?: string };
 
 /**
@@ -26,23 +32,13 @@ export type CheckInsEnv = RuntimeEnv & { ENABLE_CHECK_INS?: string };
  * `APP_ENV` unset the baked-in `NODE_ENV` signal applies the same
  * allowlist — `next start` is always `NODE_ENV=production`, so a
  * disposable test/proof server must set `APP_ENV=test`. Missing or
- * unknown values resolve production-safe.
+ * unknown values resolve production-safe. Shared implementation lives in
+ * `lib/runtime.ts` (PR-04).
  */
-export function classifyCheckInRuntime(
-  env: RuntimeEnv = process.env,
-): CheckInRuntimeClass {
-  const explicit = env.APP_ENV;
-  if (explicit !== undefined)
-    return explicit === "development" || explicit === "test"
-      ? explicit
-      : "production";
-  const nodeEnv = env.NODE_ENV;
-  if (nodeEnv === "development" || nodeEnv === "test") return nodeEnv;
-  return "production";
-}
+export const classifyCheckInRuntime: (env?: RuntimeEnv) => CheckInRuntimeClass =
+  classifyRuntime;
 
 /** The shared enablement decision — flag AND trusted runtime, else closed. */
 export function isCheckInsEnabled(env: CheckInsEnv = process.env): boolean {
-  if (env.ENABLE_CHECK_INS !== "1") return false;
-  return classifyCheckInRuntime(env) !== "production";
+  return devFlagEnabled(env.ENABLE_CHECK_INS, env);
 }

@@ -11,8 +11,9 @@ import {
   Rows3,
   Search,
 } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
 import { useMemo, useState } from "react";
+import { useReducedMotion } from "@/lib/reduced-motion";
 import {
   attentionCount,
   formatClientDate,

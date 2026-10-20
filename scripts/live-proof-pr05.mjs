@@ -21,7 +21,9 @@ const prisma = new PrismaClient();
 const results = [];
 function record(name, ok, detail = "") {
   results.push({ name, ok, detail });
-  console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`);
+  console.log(
+    `${ok ? "PASS" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`,
+  );
 }
 const eq = (a, b) => a === b;
 
@@ -126,7 +128,11 @@ const bearer = (t) => ({ authorization: `Bearer ${t}` });
 async function apiSteps() {
   // 4. HTTP sign-in -> 200 + bearer token.
   const { res: in1, token: t1 } = await signIn(coach.email, coach.password);
-  record("sign-in: /api/auth/sign-in/email 200 + bearer token", eq(in1.status, 200) && !!t1, `${in1.status} token=${!!t1}`);
+  record(
+    "sign-in: /api/auth/sign-in/email 200 + bearer token",
+    eq(in1.status, 200) && !!t1,
+    `${in1.status} token=${!!t1}`,
+  );
 
   // 5. Wrong password -> 401 generic.
   const wrong = await api("/api/auth/sign-in/email", {
@@ -134,7 +140,11 @@ async function apiSteps() {
     body: { email: coach.email, password: "nope-12345" },
     headers: { "x-forwarded-for": ip() },
   });
-  record("wrong password: 401 INVALID_EMAIL_OR_PASSWORD", eq(wrong.status, 401), `${wrong.status} ${wrong.text.slice(0, 80)}`);
+  record(
+    "wrong password: 401 INVALID_EMAIL_OR_PASSWORD",
+    eq(wrong.status, 401),
+    `${wrong.status} ${wrong.text.slice(0, 80)}`,
+  );
 
   // 6. 11 rapid wrong-password attempts -> the 11th is refused (429). The
   // account limiter counts every sign-in attempt for an address, including
@@ -170,7 +180,11 @@ async function apiSteps() {
     .filter((m) => m.to === coach.email)
     .at(-1);
   const resetToken = /token=([^\s]+)/.exec(msg?.text ?? "")?.[1];
-  record("reset request: 200 + reset link delivered to dev mailbox", eq(req.status, 200) && !!resetToken, `200 token=${!!resetToken}`);
+  record(
+    "reset request: 200 + reset link delivered to dev mailbox",
+    eq(req.status, 200) && !!resetToken,
+    `200 token=${!!resetToken}`,
+  );
 
   const reset = await api("/api/auth/reset-password", {
     method: "POST",
@@ -203,7 +217,11 @@ async function apiSteps() {
     body: { newPassword: "proof-reset-9", token: "expired-proof-token" },
     headers: { "x-forwarded-for": ip() },
   });
-  record("reset expiry: 400 INVALID_TOKEN", eq(expired.status, 400), `${expired.status}`);
+  record(
+    "reset expiry: 400 INVALID_TOKEN",
+    eq(expired.status, 400),
+    `${expired.status}`,
+  );
 
   // 9. Session revocation on password change: t1 + t2 die, fresh token lives.
   const { token: s1 } = await signIn(coach.email, "proof-reset-9");
@@ -220,10 +238,15 @@ async function apiSteps() {
   const s1After = await api("/api/auth/get-session", { headers: bearer(s1) });
   const s2After = await api("/api/auth/get-session", { headers: bearer(s2) });
   const freshTok = change.json?.token ?? change.headers.get("set-auth-token");
-  const fresh = await api("/api/auth/get-session", { headers: bearer(freshTok) });
+  const fresh = await api("/api/auth/get-session", {
+    headers: bearer(freshTok),
+  });
   record(
     "password change: prior sessions revoked, fresh session works",
-    eq(change.status, 200) && eq(s1After.text, "null") && eq(s2After.text, "null") && fresh.json?.user?.email === coach.email,
+    eq(change.status, 200) &&
+      eq(s1After.text, "null") &&
+      eq(s2After.text, "null") &&
+      fresh.json?.user?.email === coach.email,
     `old=${s1After.text === "null"},${s2After.text === "null"} new=${fresh.json?.user?.email ?? "none"}`,
   );
 
@@ -246,7 +269,13 @@ async function apiSteps() {
   // writes (lib/password.ts: scrypt$N$r$p$salt$hash).
   const salt = randomBytes(16);
   const derived = await new Promise((res, rej) =>
-    scrypt(other.password.normalize("NFC"), salt, 64, { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 }, (e, k) => (e ? rej(e) : res(k))),
+    scrypt(
+      other.password.normalize("NFC"),
+      salt,
+      64,
+      { N: 16384, r: 8, p: 1, maxmem: 64 * 1024 * 1024 },
+      (e, k) => (e ? rej(e) : res(k)),
+    ),
   );
   const otherUser = await prisma.user.create({
     data: { email: other.email, name: "Other", status: "ACTIVE" },
@@ -256,7 +285,14 @@ async function apiSteps() {
       userId: otherUser.id,
       accountId: otherUser.id,
       providerId: "credential",
-      password: ["scrypt", 16384, 8, 1, salt.toString("base64"), derived.toString("base64")].join("$"),
+      password: [
+        "scrypt",
+        16384,
+        8,
+        1,
+        salt.toString("base64"),
+        derived.toString("base64"),
+      ].join("$"),
     },
   });
   const otherWs = await prisma.workspace.create({
@@ -275,10 +311,20 @@ async function apiSteps() {
     `/api/v1/workspaces/${membership.workspaceId}/clients`,
     { headers: bearer(otherTok) },
   );
-  record("roster foreign-workspace member 403", eq(foreign.status, 403), `${foreign.status} ${foreign.text.slice(0, 80)}`);
+  record(
+    "roster foreign-workspace member 403",
+    eq(foreign.status, 403),
+    `${foreign.status} ${foreign.text.slice(0, 80)}`,
+  );
 
-  const anon = await api(`/api/v1/workspaces/${membership.workspaceId}/clients`);
-  record("roster no credentials 401", eq(anon.status, 401), `${anon.status} ${anon.text.slice(0, 80)}`);
+  const anon = await api(
+    `/api/v1/workspaces/${membership.workspaceId}/clients`,
+  );
+  record(
+    "roster no credentials 401",
+    eq(anon.status, 401),
+    `${anon.status} ${anon.text.slice(0, 80)}`,
+  );
 }
 
 try {
@@ -291,5 +337,7 @@ try {
 }
 
 const failed = results.filter((r) => !r.ok);
-console.log(`\n${results.length - failed.length}/${results.length} checks passed`);
+console.log(
+  `\n${results.length - failed.length}/${results.length} checks passed`,
+);
 process.exit(failed.length ? 1 : 0);

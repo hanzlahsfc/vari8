@@ -82,8 +82,7 @@ export async function getResetLinkState(
 }
 
 export type ResetRequestResult =
-  | { ok: true; message: string }
-  | { ok: false; message: string };
+  { ok: true; message: string } | { ok: false; message: string };
 
 const REQUEST_SUCCESS =
   "If an account exists for that email, we've sent a password reset link. " +
@@ -117,8 +116,7 @@ export async function requestPasswordResetFromForm(
 }
 
 export type ResetCompletionResult =
-  | { ok: true }
-  | { ok: false; message: string };
+  { ok: true } | { ok: false; message: string };
 
 export async function completePasswordReset(
   input: { rawToken: unknown; password: unknown },
@@ -176,9 +174,11 @@ export function passwordResetMessage(error: unknown): string {
       typeof error.body?.message === "string" &&
       error.body.message.startsWith("password_")
     ) {
-      return passwordResetMessage(new PasswordPolicyError(
-        error.body.message as PasswordPolicyError["code"],
-      ));
+      return passwordResetMessage(
+        new PasswordPolicyError(
+          error.body.message as PasswordPolicyError["code"],
+        ),
+      );
     }
   }
   return GENERIC_FAILURE_MESSAGE;

@@ -16,11 +16,17 @@ import { isClientSetupEnabled } from "./client-setup-gate";
  * Error codes are structural vocabulary only — they never carry client
  * data, template content, provider output, or internals.
  */
+import { devFlagEnabled, type RuntimeEnv } from "../runtime";
+
 export function isClientSetupTransitionsEnabled(
   transitionsEnv: string | undefined,
   clientSetupEnv: string | undefined,
+  env: RuntimeEnv = process.env,
 ): boolean {
-  return transitionsEnv === "1" && isClientSetupEnabled(clientSetupEnv);
+  return (
+    devFlagEnabled(transitionsEnv, env) &&
+    isClientSetupEnabled(clientSetupEnv, env)
+  );
 }
 
 export type ClientSetupTransitionErrorCode =

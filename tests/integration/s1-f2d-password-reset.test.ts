@@ -5,14 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { PrismaClient } from "@prisma/client";
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { auth as authServer } from "../../lib/auth/server";
 import {
@@ -172,10 +165,7 @@ describe.skipIf(!enabled)(
     }
 
     const consume = (rawToken: unknown, password: unknown = NEW_PASSWORD) =>
-      completePasswordReset(
-        { rawToken, password },
-        GATE,
-      );
+      completePasswordReset({ rawToken, password }, GATE);
 
     async function signInHttp(email: string, password: string) {
       const res = await authServer.handler(
@@ -253,9 +243,7 @@ describe.skipIf(!enabled)(
           );
         expect(denial?.status).toBe("UNAUTHORIZED");
         expect(denial?.body?.message).toBe("Invalid email or password");
-        expect(
-          await prisma.session.count({ where: { userId: u.id } }),
-        ).toBe(0);
+        expect(await prisma.session.count({ where: { userId: u.id } })).toBe(0);
       }
     });
 
@@ -267,16 +255,16 @@ describe.skipIf(!enabled)(
       const a2 = await issueToken(a.email);
 
       expect(await verificationsFor(a.id)).toHaveLength(1);
-      await expect(
-        getResetLinkState(a1, prisma, GATE),
-      ).resolves.toEqual({ state: "invalid" });
-      await expect(
-        getResetLinkState(a2, prisma, GATE),
-      ).resolves.toEqual({ state: "ready" });
+      await expect(getResetLinkState(a1, prisma, GATE)).resolves.toEqual({
+        state: "invalid",
+      });
+      await expect(getResetLinkState(a2, prisma, GATE)).resolves.toEqual({
+        state: "ready",
+      });
       // The sibling account's token is untouched and still consumes.
-      await expect(
-        getResetLinkState(bTok, prisma, GATE),
-      ).resolves.toEqual({ state: "ready" });
+      await expect(getResetLinkState(bTok, prisma, GATE)).resolves.toEqual({
+        state: "ready",
+      });
       const a1Result = await consume(a1);
       expect(a1Result).toEqual({ ok: false, message: INVALID_LINK });
       expect((await consume(bTok)).ok).toBe(true);
@@ -300,9 +288,7 @@ describe.skipIf(!enabled)(
       const s1 = await signInHttp(u.email, OLD_PASSWORD);
       const s2 = await signInHttp(u.email, OLD_PASSWORD);
       expect(s1.res.status).toBe(200);
-      expect(await prisma.session.count({ where: { userId: u.id } })).toBe(
-        2,
-      );
+      expect(await prisma.session.count({ where: { userId: u.id } })).toBe(2);
 
       const raw = await issueToken(u.email);
       await expect(consume(raw)).resolves.toEqual({ ok: true });
@@ -313,9 +299,7 @@ describe.skipIf(!enabled)(
       expect(await verifyPassword(NEW_PASSWORD, acct.password!)).toBe(true);
       expect(await verifyPassword(OLD_PASSWORD, acct.password!)).toBe(false);
       // Revocation-by-deletion — every session row gone, both credentials dead.
-      expect(await prisma.session.count({ where: { userId: u.id } })).toBe(
-        0,
-      );
+      expect(await prisma.session.count({ where: { userId: u.id } })).toBe(0);
       for (const s of [s1, s2]) {
         await expect(
           authServer.api.getSession({
@@ -337,10 +321,7 @@ describe.skipIf(!enabled)(
     it("expired, wrong-purpose, malformed, and unknown tokens share the invalid outcome", async () => {
       const u = await mkUser();
       // Expired planted row (60-minute window closed).
-      const expRaw = await plantToken(
-        u.id,
-        new Date(Date.now() - 60_000),
-      );
+      const expRaw = await plantToken(u.id, new Date(Date.now() - 60_000));
       // Unknown but well-formed; malformed; non-string.
       const cases: unknown[] = [
         expRaw,

@@ -261,7 +261,10 @@ export async function inspectAccessToken(
   }
   // A token minted for one workspace never peeks valid under another — the
   // workspace id is checked inside the store, never exposed to the caller.
-  if (binding?.workspaceId !== undefined && row.workspaceId !== binding.workspaceId) {
+  if (
+    binding?.workspaceId !== undefined &&
+    row.workspaceId !== binding.workspaceId
+  ) {
     return { valid: false };
   }
   return { valid: true, purpose: row.purpose, expiresAt: row.expiresAt };
