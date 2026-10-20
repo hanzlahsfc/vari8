@@ -2,6 +2,11 @@
 
 import { ArrowLeft, ClipboardList, NotebookPen } from "lucide-react";
 import { useEffect, useState } from "react";
+import {
+  type Invitation,
+  loadClientsWorkspace,
+  saveClientsWorkspace,
+} from "@/components/canvas/data/clients";
 import { ClientProfile } from "./client-profile";
 import { ClientRoster } from "./client-roster";
 import {
@@ -10,48 +15,6 @@ import {
   type WorkspaceClient,
 } from "./model";
 import "./clients-workspace.css";
-
-const STORAGE_KEY = "coaching-clients-workspace-v1";
-type Invitation = { name: string; email: string };
-
-function validClient(value: unknown): value is WorkspaceClient {
-  if (!value || typeof value !== "object") return false;
-  const item = value as Record<string, unknown>;
-  return (
-    [
-      "id",
-      "name",
-      "initials",
-      "email",
-      "label",
-      "phase",
-      "coachingSince",
-      "recurringCheckIn",
-      "template",
-      "checkInStatus",
-    ].every((key) => typeof item[key] === "string") &&
-    [
-      "week",
-      "unreadCount",
-      "overdueTaskCount",
-      "heightCm",
-      "bodyweightKg",
-      "trainingFlags",
-    ].every((key) => typeof item[key] === "number") &&
-    [
-      "additionalCheckInDates",
-      "clientTasks",
-      "coachTasks",
-      "internalNotes",
-      "generalNotes",
-      "checkIns",
-      "messages",
-      "onboarding",
-      "weightTrend",
-    ].every((key) => Array.isArray(item[key])) &&
-    typeof item.priorityMessages === "boolean"
-  );
-}
 
 export function ClientsWorkspace({
   clientId,
@@ -74,21 +37,9 @@ export function ClientsWorkspace({
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const saved = JSON.parse(raw);
-        if (Array.isArray(saved.clients) && saved.clients.every(validClient))
-          setClients(saved.clients);
-        if (Array.isArray(saved.invitations))
-          setInvitations(
-            saved.invitations.filter(
-              (item: Invitation) =>
-                item &&
-                typeof item.name === "string" &&
-                typeof item.email === "string",
-            ),
-          );
-      }
+      const saved = loadClientsWorkspace();
+      if (saved?.clients) setClients(saved.clients);
+      if (saved?.invitations) setInvitations(saved.invitations);
     } catch {
       setNotice(
         "Saved demo could not be opened. The example roster is ready to use.",
@@ -100,10 +51,7 @@ export function ClientsWorkspace({
   useEffect(() => {
     if (!ready) return;
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ version: 1, clients, invitations }),
-      );
+      saveClientsWorkspace({ clients, invitations });
     } catch {
       setNotice(
         "Browser storage is unavailable. Changes will last for this session.",

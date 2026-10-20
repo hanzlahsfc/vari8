@@ -19,6 +19,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { loadMealPlans, saveMealPlans } from "@/components/canvas/data/nutrition";
 import foodSource from "@/lib/canvas/data/food-database.json";
 import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import { createInitialClients } from "../clients/model";
@@ -33,7 +34,6 @@ import {
   createInitialMealPlan,
   createReusableMeal,
   type Food,
-  isMealPlan,
   type Meal,
   type MealPlan,
   type MealPlanVariant,
@@ -45,7 +45,6 @@ import { SwapFoodPicker } from "./swap-food-picker";
 import { VariantSchedule } from "./variant-schedule";
 import "./mealplan-workspace.css";
 
-const STORAGE_KEY = "coaching-mealplans-v1";
 const WEEK = [
   "Monday",
   "Tuesday",
@@ -58,7 +57,6 @@ const WEEK = [
 const foods = foodSource as { foods?: Food[] } | Food[];
 const catalog: Food[] = Array.isArray(foods) ? foods : (foods.foods ?? []);
 const foodMap = new Map(catalog.map((food) => [food.id, food]));
-type SavedState = { plans: Record<string, MealPlan> };
 
 function format(value: number, digits = 0) {
   return new Intl.NumberFormat("en", { maximumFractionDigits: digits }).format(
@@ -153,25 +151,13 @@ export function MealplanWorkspace() {
   const plan = plans[clientId];
 
   useEffect(() => {
-    let saved: SavedState = { plans: {} };
+    let saved: Record<string, MealPlan> = {};
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<SavedState>;
-        if (parsed.plans && typeof parsed.plans === "object") {
-          saved = {
-            plans: Object.fromEntries(
-              Object.entries(parsed.plans).filter(
-                (entry): entry is [string, MealPlan] => isMealPlan(entry[1]),
-              ),
-            ),
-          };
-        }
-      }
+      saved = loadMealPlans() ?? {};
     } catch {
       setNotice("Saved plans could not be opened. A fresh demo plan is ready.");
     }
-    const loaded = { ...saved.plans };
+    const loaded = { ...saved };
     clients.forEach((client) => {
       if (!loaded[client.id])
         loaded[client.id] = createInitialMealPlan(client.id, catalog);
@@ -183,7 +169,7 @@ export function MealplanWorkspace() {
   useEffect(() => {
     if (!ready) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ plans }));
+      saveMealPlans(plans);
     } catch {
       setNotice(
         "Browser storage is unavailable. Changes will last for this session.",
@@ -419,10 +405,7 @@ export function MealplanWorkspace() {
                   return;
                 }
                 try {
-                  localStorage.setItem(
-                    STORAGE_KEY,
-                    JSON.stringify({ plans: { ...plans, [clientId]: plan } }),
-                  );
+                  saveMealPlans({ ...plans, [clientId]: plan });
                   setNotice("Meal plan saved in this browser.");
                 } catch {
                   setNotice(
