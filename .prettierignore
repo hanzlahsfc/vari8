@@ -35,6 +35,7 @@ spec/AGENTS.md
 tests/AGENTS.md
 themes/AGENTS.md
 tools/AGENTS.md
+public/AGENTS.md
 
 # Written by the parity harness on every baseline capture (tools/parity/capture.mjs).
 tools/parity/baseline/manifest.json

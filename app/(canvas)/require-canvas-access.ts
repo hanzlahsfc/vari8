@@ -8,7 +8,7 @@ import { type CanvasViewer, getCanvasViewer } from "@/lib/auth/viewer";
  * coach membership gets the 403 page. Every canvas page calls it, so a soft
  * navigation cannot skip the check that a shared layout would only run once.
  */
-export async function requireCanvasViewer(): Promise<CanvasViewer> {
+export async function requireCanvasAccess(): Promise<CanvasViewer> {
   const { userId } = await requireSessionUser();
   const viewer = await getCanvasViewer(userId);
   if (!viewer) forbidden();

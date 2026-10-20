@@ -3,7 +3,7 @@ import { Suspense } from "react";
 
 import { CoachApp } from "@/components/canvas/coach/coach-app";
 
-import { requireCanvasViewer } from "../require-canvas-viewer";
+import { requireCanvasAccess } from "../require-canvas-access";
 
 export const metadata: Metadata = {
   title: "Coach — Ethereal workspace",
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function CoachPage() {
-  const viewer = await requireCanvasViewer();
+  const viewer = await requireCanvasAccess();
   return (
     <Suspense>
       <CoachApp

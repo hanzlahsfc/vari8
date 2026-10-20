@@ -8,7 +8,7 @@ import "@/components/canvas/ethereal/builder/builder.css";
 import "@/components/canvas/ethereal/builder/gallery.css";
 import "@/components/canvas/ethereal/builder/widgets.css";
 
-import { requireCanvasViewer } from "../require-canvas-viewer";
+import { requireCanvasAccess } from "../require-canvas-access";
 
 export const metadata: Metadata = {
   title: "Coaching UI — Ethereal edition",
@@ -17,6 +17,6 @@ export const metadata: Metadata = {
 };
 
 export default async function EtherealPage() {
-  await requireCanvasViewer();
+  await requireCanvasAccess();
   return <EtherealApp />;
 }
