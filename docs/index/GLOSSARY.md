@@ -85,7 +85,7 @@ see `icm/03-plan/DECISIONS.md` and the `gate.ts` file in each domain.
 | `ENABLE_ONBOARDING_ASSIGNMENTS` | `app/workspace/[workspaceId]/onboarding/assignments/actions.ts` | flag only, read the resolver |
 | `ENABLE_ONBOARDING_SUBMISSION` | `app/(tracker)/workspace/[workspaceId]/check-ins/layout.tsx` | flag only, read the resolver |
 | `ENABLE_PARAMETER_CLASSIFICATION` | `app/workspace/[workspaceId]/parameters/actions.ts` | flag only, read the resolver |
-| `ENABLE_SHEET_VIEWER` | `app/page.tsx` | flag only, read the resolver |
+| `ENABLE_SHEET_VIEWER` | `app/sheets/[slug]/page.tsx` | flag only, read the resolver |
 | `ENABLE_TRAINING_PLANS` | `lib/consent.ts` | flag + trusted APP_ENV, fails closed |
 
 ## Where more detail lives

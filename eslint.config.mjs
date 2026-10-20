@@ -17,6 +17,20 @@ const eslintConfig = [
     },
   },
   {
+    // PR-01: the canvas trees are Lilly's frontend carried unchanged (the D32
+    // parity source; Biome gates the original in frontend/). The React
+    // Compiler hook rules flag 65 pre-existing findings there; they report as
+    // warnings in these two trees only, until a canvas cleanup lane fixes them.
+    files: ["components/canvas/**", "lib/canvas/**"],
+    rules: {
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/refs": "warn",
+      "react-hooks/immutability": "warn",
+      "react-hooks/preserve-manual-memoization": "warn",
+      "react-hooks/use-memo": "warn",
+    },
+  },
+  {
     ignores: [
       "node_modules/**",
       "frontend/**",

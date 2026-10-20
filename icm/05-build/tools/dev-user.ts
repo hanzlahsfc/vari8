@@ -23,6 +23,25 @@ async function main() {
     update: { passwordHash, status: "ACTIVE" },
     create: { email, passwordHash, name: "Liliana Mansfeld", status: "ACTIVE" },
   });
+  // PR-05: Better Auth's credential sign-in reads the `accounts` row.
+  const credential = await prisma.account.findFirst({
+    where: { userId: user.id, providerId: "credential" },
+  });
+  if (credential) {
+    await prisma.account.update({
+      where: { id: credential.id },
+      data: { password: passwordHash },
+    });
+  } else {
+    await prisma.account.create({
+      data: {
+        userId: user.id,
+        accountId: user.id,
+        providerId: "credential",
+        password: passwordHash,
+      },
+    });
+  }
   const workspace = await prisma.workspace.upsert({
     where: { slug: "canvas-demo" },
     update: {},

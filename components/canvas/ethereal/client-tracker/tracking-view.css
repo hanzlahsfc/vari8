@@ -1,0 +1,682 @@
+/* biome-ignore-all lint/style/noDescendingSpecificity: Ledger table selectors are scoped by row role. */
+/* The week ledger borrows the Ethereal system's quiet glass and berry accent. */
+.eg-root .ct-tracking {
+  --ct-rule: color-mix(in srgb, var(--text) 10%, transparent);
+  --ct-rule-soft: color-mix(in srgb, var(--text) 6%, transparent);
+  --ct-quiet: color-mix(in srgb, var(--text) 64%, transparent);
+  --ct-accent: var(--accent, #eb91b8);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 0 48px;
+  color: var(--text);
+}
+
+.eg-root .ct-tracking .ct-page-head,
+.eg-root .ct-tracking .ct-actions,
+.eg-root .ct-tracking .ct-client-line,
+.eg-root .ct-tracking .ct-ledger-intro,
+.eg-root .ct-tracking .ct-mode-switch,
+.eg-root .ct-tracking .ct-week-toggle {
+  display: flex;
+  align-items: center;
+}
+
+.eg-root .ct-tracking .ct-page-head {
+  justify-content: space-between;
+  gap: 28px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--ct-rule);
+}
+
+.eg-root .ct-tracking .ct-heading-copy {
+  min-width: 0;
+}
+
+.eg-root .ct-tracking .ct-breadcrumb {
+  margin: 0 0 12px;
+  color: var(--ct-quiet);
+  font-size: 12px;
+}
+
+.eg-root .ct-tracking .ct-breadcrumb span {
+  margin: 0 7px;
+  color: color-mix(in srgb, var(--text) 38%, transparent);
+}
+
+.eg-root .ct-tracking .ct-heading-copy h1 {
+  margin: 0;
+  font-size: clamp(28px, 3.2vw, 38px);
+  font-weight: 540;
+  line-height: 1.08;
+  letter-spacing: -0.055em;
+}
+
+.eg-root .ct-tracking .ct-client-line {
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.eg-root .ct-tracking .ct-avatar {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--ct-rule);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--surface-subtle) 68%, transparent);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.eg-root .ct-tracking .ct-client-line strong,
+.eg-root .ct-tracking .ct-client-line small {
+  display: block;
+}
+
+.eg-root .ct-tracking .ct-client-line strong {
+  font-size: 13px;
+  font-weight: 570;
+}
+
+.eg-root .ct-tracking .ct-client-line small {
+  margin-top: 2px;
+  color: var(--ct-quiet);
+  font-size: 11px;
+}
+
+.eg-root .ct-tracking .ct-actions {
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.eg-root .ct-tracking .ct-mode-switch {
+  min-height: 39px;
+  min-width: 0;
+  margin: 0;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--ct-rule-soft);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-subtle) 50%, transparent);
+}
+
+.eg-root .ct-tracking .ct-mode-switch button {
+  min-width: 70px;
+  min-height: 31px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ct-quiet);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 560;
+  cursor: pointer;
+  transition:
+    background-color 180ms cubic-bezier(0.32, 0.72, 0, 1),
+    color 180ms cubic-bezier(0.32, 0.72, 0, 1),
+    transform 180ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.eg-root .ct-tracking .ct-mode-switch button.is-active {
+  background: color-mix(in srgb, var(--text) 10%, var(--surface));
+  color: var(--text);
+  box-shadow: inset 0 1px color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.eg-root .ct-tracking .ct-mode-switch button:hover:not(.is-active) {
+  color: var(--text);
+}
+
+.eg-root .ct-tracking .ct-mode-switch button:active,
+.eg-root .ct-tracking .ct-week-toggle:active,
+.eg-root .ct-tracking .ct-button:active {
+  transform: scale(0.98);
+}
+
+.eg-root .ct-tracking .ct-mode-switch button:focus-visible,
+.eg-root .ct-tracking .ct-week-toggle:focus-visible,
+.eg-root .ct-tracking .ct-button:focus-visible {
+  outline: 2px solid var(--accent-ring, var(--ct-accent));
+  outline-offset: 2px;
+}
+
+.eg-root .ct-tracking .ct-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.eg-root .ct-tracking .ct-button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--ct-rule);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 560;
+  cursor: pointer;
+  transition:
+    background-color 180ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 180ms cubic-bezier(0.32, 0.72, 0, 1),
+    color 180ms cubic-bezier(0.32, 0.72, 0, 1),
+    transform 180ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.eg-root .ct-tracking .ct-button:hover {
+  border-color: color-mix(in srgb, var(--text) 25%, transparent);
+  background: color-mix(in srgb, var(--text) 6%, var(--surface));
+}
+
+.eg-root .ct-tracking .ct-ledger-section {
+  padding-top: 26px;
+}
+
+.eg-root .ct-tracking .ct-ledger-intro {
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.eg-root .ct-tracking .ct-ledger-intro h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 590;
+  letter-spacing: -0.025em;
+}
+
+.eg-root .ct-tracking .ct-ledger-intro p {
+  margin: 5px 0 0;
+  color: var(--ct-quiet);
+  font-size: 11px;
+}
+
+.eg-root .ct-tracking .ct-ledger-count {
+  color: var(--ct-quiet);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.eg-root .ct-tracking .ct-table-shell {
+  max-height: calc(100dvh - 250px);
+  min-height: 440px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 2px 0;
+  background: transparent;
+}
+
+.eg-root .ct-tracking .ct-table {
+  width: max-content;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+}
+
+.eg-root .ct-tracking .ct-date-column {
+  width: var(--ct-date-width, 180px);
+}
+
+.eg-root .ct-tracking .ct-parameter-column {
+  width: var(--ct-parameter-width, 120px);
+}
+
+.eg-root .ct-tracking .ct-table th,
+.eg-root .ct-tracking .ct-table td {
+  min-width: 0;
+  padding: 9px 8px;
+  vertical-align: middle;
+}
+
+.eg-root .ct-tracking .ct-table .ct-date-cell {
+  position: sticky;
+  z-index: 2;
+  left: 0;
+  background: color-mix(in srgb, var(--surface-subtle) 92%, var(--surface));
+  text-align: left;
+}
+
+.eg-root .ct-tracking .ct-table thead th {
+  position: sticky;
+  z-index: 5;
+  top: 0;
+  height: 72px;
+  padding: 11px 8px;
+  background: color-mix(in srgb, var(--surface-subtle) 88%, var(--surface));
+  color: var(--text);
+  font-weight: 540;
+  text-align: center;
+  border-top: 1px solid var(--ct-rule-soft);
+  border-bottom: 1px solid var(--ct-rule-soft);
+  background-clip: padding-box;
+  box-shadow:
+    inset 0 1px color-mix(in srgb, var(--text) 10%, transparent),
+    0 10px 18px color-mix(in srgb, var(--canvas) 18%, transparent);
+  backdrop-filter: blur(18px) saturate(125%);
+}
+
+.eg-root .ct-tracking .ct-table thead th:first-child {
+  z-index: 7;
+  border-radius: 13px 0 0 13px;
+  padding-left: 44px;
+  background: color-mix(in srgb, var(--surface-subtle) 98%, var(--surface));
+  text-align: left;
+  border-left: 1px solid var(--ct-rule-soft);
+}
+
+.eg-root .ct-tracking .ct-table thead th:last-child {
+  border-radius: 0 13px 13px 0;
+  border-right: 1px solid var(--ct-rule-soft);
+}
+
+.eg-root .ct-tracking .ct-table thead th > span,
+.eg-root .ct-tracking .ct-table thead th > small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eg-root .ct-tracking .ct-table thead th > span {
+  font-size: 14px;
+  font-weight: 590;
+  letter-spacing: -0.02em;
+}
+
+.eg-root .ct-tracking .ct-table thead th > small {
+  margin-top: 3px;
+  color: var(--ct-quiet);
+  font-size: 11px;
+  font-weight: 450;
+}
+
+.eg-root .ct-tracking .ct-week-summary th,
+.eg-root .ct-tracking .ct-week-summary td {
+  height: 56px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  background: color-mix(in srgb, var(--surface-subtle) 65%, var(--surface));
+  border-top: 1px solid var(--ct-rule-soft);
+  border-bottom: 1px solid var(--ct-rule-soft);
+  text-align: center;
+}
+
+.eg-root .ct-tracking .ct-week-summary .ct-date-cell {
+  z-index: 3;
+  background: color-mix(in srgb, var(--surface-subtle) 93%, var(--surface));
+  text-align: left;
+}
+
+.eg-root .ct-tracking .ct-day-row .ct-date-cell {
+  z-index: 2;
+  background: color-mix(in srgb, var(--surface) 97%, transparent);
+}
+
+.eg-root .ct-tracking .ct-week-summary th:first-child {
+  border-radius: 12px 0 0 12px;
+  border-left: 1px solid var(--ct-rule-soft);
+}
+
+.eg-root .ct-tracking .ct-week-summary td:last-child {
+  border-radius: 0 12px 12px 0;
+  border-right: 1px solid var(--ct-rule-soft);
+}
+
+.eg-root .ct-tracking .ct-week-summary td {
+  border-left: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.eg-root .ct-tracking .ct-week-summary {
+  cursor: pointer;
+}
+
+.eg-root .ct-tracking .ct-week-summary:focus-within {
+  outline: 2px solid var(--accent-ring, var(--ct-accent));
+  outline-offset: 1px;
+}
+
+.eg-root .ct-tracking .ct-week-summary:hover th,
+.eg-root .ct-tracking .ct-week-summary:hover td {
+  background: color-mix(in srgb, var(--text) 5%, var(--surface-subtle));
+}
+
+.eg-root .ct-tracking .ct-week-toggle {
+  width: auto;
+  gap: 9px;
+  padding: 3px 0 3px 3px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: inherit;
+  font: inherit;
+}
+
+.eg-root .ct-tracking .ct-week-date-action {
+  width: 100%;
+  justify-content: flex-start;
+  padding-left: 10px;
+}
+
+.eg-root .ct-tracking .ct-week-average-action {
+  width: 100%;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  text-align: center;
+}
+
+.eg-root .ct-tracking .ct-week-toggle > svg {
+  flex: 0 0 auto;
+  color: var(--ct-quiet);
+  transform: rotate(-90deg);
+  transition: transform 240ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.eg-root .ct-tracking .ct-week-toggle > svg.is-expanded {
+  transform: rotate(0);
+}
+
+.eg-root .ct-tracking .ct-day-collapse {
+  display: inline-flex;
+  width: 18px;
+  min-height: 26px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.eg-root .ct-tracking .ct-day-collapse > svg {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+  color: var(--ct-quiet);
+  transform: rotate(0);
+  transition: transform 220ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.eg-root .ct-tracking .ct-day-collapse:focus-visible {
+  outline: 2px solid var(--accent-ring, var(--ct-accent));
+  outline-offset: 2px;
+  border-radius: 7px;
+}
+
+.eg-root .ct-tracking .ct-week-label {
+  min-width: 0;
+}
+
+.eg-root .ct-tracking .ct-week-label strong,
+.eg-root .ct-tracking .ct-week-label small,
+.eg-root .ct-tracking .ct-week-average strong,
+.eg-root .ct-tracking .ct-week-average small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eg-root .ct-tracking .ct-week-label strong {
+  font-size: 14px;
+  font-weight: 590;
+  letter-spacing: -0.015em;
+}
+
+.eg-root .ct-tracking .ct-week-label small,
+.eg-root .ct-tracking .ct-week-average small {
+  margin-top: 4px;
+  color: var(--ct-quiet);
+  font-size: 11px;
+  font-weight: 450;
+}
+
+.eg-root .ct-tracking .ct-week-average strong {
+  font-size: 13px;
+  font-weight: 560;
+  letter-spacing: -0.02em;
+}
+
+.eg-root .ct-tracking .ct-week-trend {
+  display: block;
+  margin-top: 2px;
+  color: var(--ct-quiet);
+  font-size: 10px;
+  font-weight: 450;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.eg-root .ct-tracking .ct-table-pager {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  margin: 0 1px 7px;
+  color: var(--ct-quiet);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.eg-root .ct-tracking .ct-table-page-status {
+  min-width: 78px;
+  text-align: center;
+}
+
+.eg-root .ct-tracking .ct-table-page-button {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--ct-rule-soft);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface) 74%, transparent);
+  color: color-mix(in srgb, var(--text) 80%, transparent);
+  cursor: pointer;
+  transition:
+    background-color 160ms cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 160ms cubic-bezier(0.32, 0.72, 0, 1),
+    color 160ms cubic-bezier(0.32, 0.72, 0, 1),
+    transform 160ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.eg-root .ct-tracking .ct-table-page-button:hover:not(:disabled) {
+  border-color: var(--ct-rule);
+  background: color-mix(in srgb, var(--text) 7%, var(--surface));
+  color: var(--text);
+}
+
+.eg-root .ct-tracking .ct-table-page-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.eg-root .ct-tracking .ct-table-page-button:focus-visible {
+  outline: 2px solid var(--accent-ring, var(--ct-accent));
+  outline-offset: 2px;
+}
+
+.eg-root .ct-tracking .ct-table-page-button:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.eg-root .ct-tracking .ct-week-trend[data-direction="up"] {
+  color: var(--ct-quiet);
+}
+
+.eg-root .ct-tracking .ct-week-trend[data-direction="down"] {
+  color: var(--ct-quiet);
+}
+
+.eg-root .ct-tracking .ct-day-row th,
+.eg-root .ct-tracking .ct-day-row td {
+  height: 62px;
+  background: color-mix(in srgb, var(--surface) 76%, transparent);
+  text-align: center;
+}
+
+.eg-root .ct-tracking .ct-week .ct-day-row td + td {
+  border-left: 1px solid color-mix(in srgb, var(--text) 7%, transparent);
+}
+
+.eg-root .ct-tracking .ct-week .ct-day-row:first-child th,
+.eg-root .ct-tracking .ct-week .ct-day-row:first-child td {
+  border-top: 1px solid var(--ct-rule-soft);
+}
+
+.eg-root .ct-tracking .ct-week .ct-day-row.is-last-day th,
+.eg-root .ct-tracking .ct-week .ct-day-row.is-last-day td {
+  border-bottom: 1px solid var(--ct-rule-soft);
+}
+
+.eg-root .ct-tracking .ct-week .ct-day-row th:first-child {
+  border-left: 1px solid var(--ct-rule-soft);
+}
+
+.eg-root .ct-tracking .ct-week .ct-day-row.is-first-day th:first-child {
+  border-top-left-radius: 13px;
+}
+
+.eg-root .ct-tracking .ct-week .ct-day-row.is-last-day th:first-child {
+  border-bottom-left-radius: 13px;
+}
+
+.eg-root .ct-tracking .ct-week .ct-day-row td:last-child {
+  border-right: 1px solid var(--ct-rule-soft);
+}
+
+.eg-root .ct-tracking .ct-week .ct-day-row:first-child td:last-child {
+  border-top-right-radius: 13px;
+}
+
+.eg-root .ct-tracking .ct-week .ct-day-row.is-last-day td:last-child {
+  border-bottom-right-radius: 13px;
+}
+
+.eg-root .ct-tracking .ct-week-spacer td {
+  height: 9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.eg-root .ct-tracking .ct-day-row th:first-child {
+  padding-left: 18px;
+  text-align: left;
+}
+
+.eg-root .ct-tracking .ct-day-date {
+  display: grid;
+  grid-template-columns: 18px 42px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 8px;
+}
+
+.eg-root .ct-tracking .ct-day-collapse {
+  grid-column: 1;
+}
+
+.eg-root .ct-tracking .ct-day-date > .ct-day-name {
+  grid-column: 2;
+}
+
+.eg-root .ct-tracking .ct-day-row th > span,
+.eg-root .ct-tracking .ct-day-row th > small {
+  display: inline-block;
+}
+
+.eg-root .ct-tracking .ct-day-name {
+  min-width: 40px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 590;
+}
+
+.eg-root .ct-tracking .ct-day-date > small {
+  grid-column: 3;
+  color: var(--ct-quiet);
+  font-size: 13px;
+  font-weight: 450;
+}
+
+.eg-root .ct-tracking .ct-day-row:hover td,
+.eg-root .ct-tracking .ct-day-row:hover th {
+  background: color-mix(in srgb, var(--text) 4%, var(--surface));
+}
+
+.eg-root .ct-tracking .ct-empty-table {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 25px 4px;
+  border-bottom: 1px solid var(--ct-rule);
+}
+
+.eg-root .ct-tracking .ct-empty-table p {
+  margin: 0;
+  color: var(--ct-quiet);
+  font-size: 13px;
+}
+
+.eg-root .ct-tracking .ct-empty-table button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ct-accent);
+  color: var(--accent-contrast, #1d1017);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 580;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eg-root .ct-tracking .ct-mode-switch button,
+  .eg-root .ct-tracking .ct-week-toggle > svg,
+  .eg-root .ct-tracking .ct-day-collapse > svg,
+  .eg-root .ct-tracking .ct-button {
+    transition-duration: 0.01ms;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eg-root .ct-tracking .ct-table-page-button {
+    transition: none;
+  }
+}
+
+.eg-root .ct-tracking .ct-table .ct-header-gap td {
+  height: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.eg-root .ct-tracking .ct-week .ct-day-row td:first-of-type {
+  border-left: 1px solid var(--ct-rule);
+}

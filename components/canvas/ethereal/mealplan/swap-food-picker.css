@@ -1,0 +1,158 @@
+.mp-workspace .mp-swap-picker-positioner {
+  z-index: 80;
+  width: min(360px, calc(100vw - 24px));
+  outline: none;
+}
+
+.mp-workspace .mp-swap-picker {
+  overflow: hidden;
+  border: 1px solid var(--mp-edge);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 22%);
+  color: var(--mp-text);
+  backdrop-filter: blur(18px) saturate(140%);
+}
+
+.mp-workspace .mp-swap-picker-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 14px 11px;
+}
+
+.mp-workspace .mp-swap-picker-heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.mp-workspace .mp-swap-picker-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 620;
+}
+
+.mp-workspace .mp-swap-picker-description {
+  margin: 0;
+  color: var(--mp-muted);
+  font-size: 11px;
+}
+
+.mp-workspace .mp-swap-picker-close {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  min-width: 30px;
+  padding: 0;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--mp-edge);
+  border-radius: 50%;
+  color: var(--mp-muted);
+}
+
+.mp-workspace .mp-swap-picker-close:hover {
+  color: var(--mp-text);
+  background: var(--surface-subtle);
+}
+
+.mp-workspace .mp-swap-picker-search {
+  display: flex;
+  height: 38px;
+  align-items: center;
+  gap: 9px;
+  margin: 0 12px 8px;
+  padding: 0 11px;
+  border: 1px solid var(--mp-edge);
+  border-radius: 8px;
+  color: var(--mp-muted);
+}
+
+.mp-workspace .mp-swap-picker-search input {
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0;
+  box-shadow: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--mp-text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.mp-workspace .mp-swap-picker-results {
+  max-height: min(260px, calc(var(--available-height, 420px) - 140px));
+  overflow: auto;
+  padding: 0 6px 7px;
+}
+
+.mp-workspace .mp-swap-picker-results button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 9px;
+  border-radius: 7px;
+  color: var(--mp-text);
+  text-align: left;
+}
+
+.mp-workspace .mp-swap-picker-results button:hover,
+.mp-workspace .mp-swap-picker-results button:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--mp-accent) 9%, var(--surface-subtle));
+}
+
+.mp-workspace .mp-swap-picker-results button > span {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.mp-workspace .mp-swap-picker-results strong {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 560;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mp-workspace .mp-swap-picker-results small,
+.mp-workspace .mp-swap-picker-results p {
+  color: var(--mp-muted);
+  font-size: 10px;
+}
+
+.mp-workspace .mp-swap-picker-results p {
+  margin: 0;
+  padding: 13px 10px;
+}
+
+.mp-workspace .mp-swap-picker :focus-visible {
+  outline: 2px solid var(--mp-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .mp-workspace .mp-swap-picker {
+    background: var(--surface);
+    backdrop-filter: none;
+  }
+}
+
+.mp-workspace .mp-swap-picker-search:focus-within {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent-ring, var(--accent));
+  outline-offset: 2px;
+}
+
+.mp-workspace .mp-swap-picker-search input:focus-visible {
+  outline: none;
+  border: 0;
+  box-shadow: none;
+}

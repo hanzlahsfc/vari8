@@ -276,7 +276,8 @@ test.describe("signed-in acceptance", () => {
     // Signed-in path: no account-creation fields, one confirm action.
     await expect(page.getByLabel("Password")).toHaveCount(0);
     await page.getByRole("button", { name: "Accept invitation" }).click();
-    await expect(page).toHaveURL("/");
+    // `/` is the canvas studio (PR-01), whose hash router adds `#dashboard`.
+    await expect(page).toHaveURL((url) => url.pathname === "/");
 
     const m = await prisma.workspaceMember.findUniqueOrThrow({
       where: {
