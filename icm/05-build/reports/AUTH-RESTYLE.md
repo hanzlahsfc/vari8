@@ -40,13 +40,13 @@ Design decisions, with reasons:
 
 Grep over the six changed files:
 
-| Check | Result |
-|---|---|
-| hex colours (`#[0-9a-f]{3,8}`) | none |
-| `rgb()` / `hsl()` literals | none |
-| `font-size` in px | none |
-| `box-shadow` | none |
-| `font-family` | none |
+| Check                          | Result |
+| ------------------------------ | ------ |
+| hex colours (`#[0-9a-f]{3,8}`) | none   |
+| `rgb()` / `hsl()` literals     | none   |
+| `font-size` in px              | none   |
+| `box-shadow`                   | none   |
+| `font-family`                  | none   |
 
 Remaining literal values, all deliberate and all matching existing app code:
 
@@ -60,19 +60,19 @@ Remaining literal values, all deliberate and all matching existing app code:
 
 Run in the worktree, `DATABASE_URL` on `app_authrs`, `BETTER_AUTH_URL` on the lane port.
 
-| Command | Exit |
-|---|---|
-| `npm ci` (root) | 0 |
-| `npm ci` (frontend) | 0 |
-| `npx prisma migrate deploy` | 0 |
-| `npm run seed:dev` | 0 |
-| `npx prettier --check .` | 0 |
-| `npm run typecheck` | 0 |
-| `npm run lint` | 0 |
-| `npm run index` | 0 |
-| `npm run index:check` | 0 |
-| `npm run test` | 0 (91 files, 1033 tests) |
-| `npm run build` | 0 |
+| Command                     | Exit                     |
+| --------------------------- | ------------------------ |
+| `npm ci` (root)             | 0                        |
+| `npm ci` (frontend)         | 0                        |
+| `npx prisma migrate deploy` | 0                        |
+| `npm run seed:dev`          | 0                        |
+| `npx prettier --check .`    | 0                        |
+| `npm run typecheck`         | 0                        |
+| `npm run lint`              | 0                        |
+| `npm run index`             | 0                        |
+| `npm run index:check`       | 0                        |
+| `npm run test`              | 0 (91 files, 1033 tests) |
+| `npm run build`             | 0                        |
 
 Build history, recorded because the first attempt failed and the cause matters:
 
@@ -89,16 +89,16 @@ Build history, recorded because the first attempt failed and the cause matters:
 
 Dev server on :3959, Playwright (Chromium) against localhost, seeded users from `app_authrs`.
 
-| State | Route | Proof |
-|---|---|---|
-| idle, dark, 1440 and 390 | `/login` | screenshots, computed styles |
-| idle, light (pro-white), 1440 and 390 | `/login` | screenshots, computed styles |
-| server error | `/login` wrong password | `.auth-error` "Invalid email or password." |
-| success banner | `/login?reset=1` | `.auth-success` with `--color-success` border |
-| sign-up form | `/signup` | screenshot 1440 |
-| reset request | `/reset-request` | screenshot 1440 |
-| invite invalid or expired | `/invite?workspace=x&token=y` | screenshot 1440 |
-| reset invalid token | `/reset?token=y` | screenshot 1440 |
+| State                                 | Route                         | Proof                                         |
+| ------------------------------------- | ----------------------------- | --------------------------------------------- |
+| idle, dark, 1440 and 390              | `/login`                      | screenshots, computed styles                  |
+| idle, light (pro-white), 1440 and 390 | `/login`                      | screenshots, computed styles                  |
+| server error                          | `/login` wrong password       | `.auth-error` "Invalid email or password."    |
+| success banner                        | `/login?reset=1`              | `.auth-success` with `--color-success` border |
+| sign-up form                          | `/signup`                     | screenshot 1440                               |
+| reset request                         | `/reset-request`              | screenshot 1440                               |
+| invite invalid or expired             | `/invite?workspace=x&token=y` | screenshot 1440                               |
+| reset invalid token                   | `/reset?token=y`              | screenshot 1440                               |
 
 Sign-in end to end with a real seeded account (coach@vari8.test on `app_authrs`): submitting the
 form left `/login` for `/#dashboard`, page title "Coaching UI — Ethereal edition", 0 console
