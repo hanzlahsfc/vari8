@@ -8,6 +8,15 @@
  * (gallery.tsx:1152–1190), per-kind defaults (model.ts:465–685).
  * Fixture source ids (e.g. "exercise:deadlift") validate as shape only —
  * unconnected widgets render honest placeholders, never record queries.
+ *
+ * PR-M9 (D31): settings keep the current canvas optionality verbatim —
+ * `labels` and `historyPeriod` are optional on the canvas WidgetSettings
+ * (frontend/src/components/ethereal/builder/model.ts:25-37) and are
+ * validated only when present, so a canvas DashboardDraft round-trips
+ * unchanged through `lib/dashboard/adapter.ts`. `visibility` remains
+ * required: it is the backend-only provenance the canvas has no field
+ * for. The widget-id alphabet widened to accept canvas seed ids
+ * (`seed-BN01`) alongside generated UUIDs.
  */
 
 export type BreakpointName = "desktop" | "tablet" | "mobile";
@@ -18,11 +27,11 @@ export type WidgetSettings = {
   source: string;
   summary: string;
   period: string;
-  historyPeriod: "auto" | "3m" | "6m" | "1y";
+  historyPeriod?: "auto" | "3m" | "6m" | "1y";
   target: boolean;
   size: SizeName;
   fields: string[];
-  labels: Record<string, string>;
+  labels?: Record<string, string>;
   option: string;
   unit: string;
   visibility: WidgetVisibility;
@@ -262,7 +271,7 @@ const TOP_KEYS = new Set(["version", "name", "widgets", "layouts", "widths"]);
 const LIMITS = {
   payloadBytes: 24 * 1024,
   widgets: 24,
-  idPattern: /^[a-z0-9-]{1,40}$/,
+  idPattern: /^[A-Za-z0-9-]{1,40}$/,
   string: 80,
   unit: 16,
   period: 40,
@@ -336,7 +345,10 @@ export function validateDashboardConfig(value: unknown): ValidationResult {
     const source = str("source");
     const summary = str("summary");
     const period = str("period");
-    const historyPeriod = str("historyPeriod");
+    // Optional per the canvas WidgetSettings — absent stays absent; when
+    // present it is a bounded string checked against the enum below.
+    const historyPeriod =
+      s.historyPeriod === undefined ? undefined : str("historyPeriod");
     const option = str("option");
     const unit = str("unit");
     const visibility = str("visibility");
@@ -353,7 +365,10 @@ export function validateDashboardConfig(value: unknown): ValidationResult {
       return { ok: false, reason: "settings_strings" };
     if (unit.length > LIMITS.unit || period.length > LIMITS.period)
       return { ok: false, reason: "settings_strings" };
-    if (!["auto", "3m", "6m", "1y"].includes(historyPeriod))
+    if (
+      historyPeriod !== undefined &&
+      !["auto", "3m", "6m", "1y"].includes(historyPeriod)
+    )
       return { ok: false, reason: "history_period" };
     if (!SOURCE[kind].includes(source)) return { ok: false, reason: "source" };
     if (!summaryOptions(kind, source).includes(summary))
@@ -375,12 +390,15 @@ export function validateDashboardConfig(value: unknown): ValidationResult {
       if (allowed && !allowed.includes(f))
         return { ok: false, reason: "field_allowlist" };
     }
-    if (!isObj(s.labels) || Object.keys(s.labels).length > LIMITS.labels)
+    if (
+      s.labels !== undefined &&
+      (!isObj(s.labels) || Object.keys(s.labels).length > LIMITS.labels)
+    )
       return { ok: false, reason: "labels" };
     const fieldSet = new Set(s.fields as string[]);
-    for (const k2 of Object.keys(s.labels))
+    for (const k2 of Object.keys(s.labels ?? {}))
       if (!fieldSet.has(k2)) return { ok: false, reason: "labels" };
-    for (const [k2, v2] of Object.entries(s.labels))
+    for (const [k2, v2] of Object.entries(s.labels ?? {}))
       if (
         typeof k2 !== "string" ||
         k2.length > 40 ||
@@ -388,23 +406,28 @@ export function validateDashboardConfig(value: unknown): ValidationResult {
         v2.length > LIMITS.string
       )
         return { ok: false, reason: "label_value" };
+    const settings: WidgetSettings = {
+      title,
+      source,
+      summary,
+      period,
+      target: s.target as boolean,
+      size: s.size as SizeName,
+      fields: s.fields as string[],
+      option,
+      unit,
+      visibility: visibility as WidgetVisibility,
+    };
+    // Optional canvas settings are preserved verbatim — absent stays
+    // absent so a draft converts back unchanged.
+    if (historyPeriod !== undefined)
+      settings.historyPeriod = historyPeriod as WidgetSettings["historyPeriod"];
+    if (s.labels !== undefined)
+      settings.labels = s.labels as Record<string, string>;
     out.push({
       id: w.id,
       kind,
-      settings: {
-        title,
-        source,
-        summary,
-        period,
-        historyPeriod: historyPeriod as WidgetSettings["historyPeriod"],
-        target: s.target as boolean,
-        size: s.size as SizeName,
-        fields: s.fields as string[],
-        labels: s.labels as Record<string, string>,
-        option,
-        unit,
-        visibility: visibility as WidgetVisibility,
-      },
+      settings,
     });
   }
 
