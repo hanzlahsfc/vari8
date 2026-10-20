@@ -10,7 +10,9 @@
 
 ## Process
 
-One PR, one branch off `TRACKER`, one worktree. The canvas is the visual and functional reference. Match it. Keep every backend security gate (RBAC, consent, audit). No secrets, no real client data.
+The workflow every change follows, gates included, is `icm/05-build/TEAM-WORKFLOW.md`.
+
+One PR, one `beta/<slug>` branch off `Vari8-Beta`, one worktree. The canvas is the visual and functional reference. Match it. Keep every backend security gate (RBAC, consent, audit). No secrets, no real client data.
 
 ## Outputs
 
