@@ -7,12 +7,28 @@
 // imports — so the seam is unit-testable without a DOM harness.
 
 export type CheckInDraftFieldKind =
-  "shortText" | "longText" | "number" | "date" | "singleChoice" | "multiChoice";
+  | "shortText"
+  | "longText"
+  | "number"
+  | "date"
+  | "singleChoice"
+  | "multiChoice"
+  // PR-M8: the lib definition gained the canvas Rating and Visual upload
+  // kinds. The editor offers no add-buttons for them (KINDS in
+  // draft-editor.tsx) but MUST round-trip them untouched when a draft
+  // already carries such fields.
+  | "rating"
+  | "visual";
 
 export type CheckInDraftOption = {
   optionId?: string;
   label: string;
 };
+
+/** PR-M8 canvas rating scales — mirrors lib/checkin/forms.ts
+ *  CHECKIN_RATING_SCHEMES (kept import-free: this seam is pure). */
+export type CheckInDraftRatingScheme =
+  "SCALE_1_10" | "SCALE_1_5" | "WORD_LABELS";
 
 export type CheckInDraftField = {
   fieldId?: string;
@@ -25,6 +41,8 @@ export type CheckInDraftField = {
    * never edited or shown in this slice's UI. */
   classification?: string;
   options?: CheckInDraftOption[];
+  /** rating kind only — round-tripped verbatim, never edited here. */
+  ratingScheme?: CheckInDraftRatingScheme;
 };
 
 export type CheckInDraftState = {
