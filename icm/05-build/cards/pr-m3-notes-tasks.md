@@ -25,6 +25,9 @@ Load `/home/nexuslink/.hermes/profiles/gowther/SOUL.md` as your working persona 
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-M3` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
+Owner ruling O7 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): the coach's tracker write path is comments only (TrackerComment); there is no coach entry logging.
+Owner ruling O13 (owner, 2026-10-20, same source): general coaching notes are client-visible while private coach notes and coach to-dos stay staff-only (D26); the note model carries the two kinds.
+
 ## Matrix rows this PR closes
 
 - none (foundation or tooling PR)

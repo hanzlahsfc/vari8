@@ -25,6 +25,8 @@ Load `/home/nexuslink/.hermes/profiles/gowther/SOUL.md` as your working persona 
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-M8` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
+Owner ruling O4 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): clients may not start a custom check-in; the server keeps CLIENT create denied on `checkinInstances` (`lib/auth/rbac.ts:169-176`).
+
 ## Matrix rows this PR closes
 
 - none (foundation or tooling PR)

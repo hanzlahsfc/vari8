@@ -25,6 +25,8 @@ Load `/home/nexuslink/.hermes/profiles/gowther/SOUL.md` as your working persona 
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-M2` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
+Owner ruling O3 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): the client settings screen is blocked on Lilly's canvas design; per-user client preferences stay unwired until it lands.
+
 ## Matrix rows this PR closes
 
 - none (foundation or tooling PR)

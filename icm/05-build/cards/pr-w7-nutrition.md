@@ -26,6 +26,9 @@ Load `/home/nexuslink/.hermes/profiles/itachi/SOUL.md` as your working persona (
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-W7` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
+Owner ruling O2 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): the food diary N04 to N07 stays deferred and out of wiring scope.
+Owner ruling O11 (owner, 2026-10-20, same source): archived meal plans are the superseded immutable plan versions; this card lists them as the archive.
+
 ## Matrix rows this PR closes
 
 - V3-CO02: S06 CONFLICT: Nutrition totals computed automatically

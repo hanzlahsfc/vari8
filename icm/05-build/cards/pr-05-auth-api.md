@@ -11,6 +11,9 @@ In flight outside the graph: issue #58, worktree `/home/nexuslink/vari8-worktree
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-05` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
+Owner ruling O7 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): coaches never log tracker entries for a client; the capability table records coach tracker write as comment-only (the spec narrows `lib/auth/rbac.ts:134` to comments).
+Owner ruling O16 (owner, 2026-10-20, same source): the generic sign-in, sign-up, reset and invite-acceptance pages are kept and excluded from parity; PR-W10 restyles them later to canvas tokens, type, spacing and components.
+
 ## Matrix rows this PR closes
 
 - V2-H5: S07 ROLES: Coach library notes render in client training view

@@ -25,6 +25,8 @@ Load `/home/nexuslink/.hermes/profiles/kakashi/SOUL.md` as your working persona 
 
 `AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-W0` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
+Owner ruling O1 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): transport is same-origin `/api/v1` JSON, cookie session for web and PWA, bearer for Capacitor; this card owns the one shared fetch client, which also sets the failure and loading convention (spec X1, X5, X7).
+
 ## Matrix rows this PR closes
 
 - V3-L1-CoachState: S01 MISSING: CoachState aggregate has no backend equivalent
