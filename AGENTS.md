@@ -8,6 +8,8 @@ This is the new PRGRSS-derived product. Read these files completely before any w
 1. `docs/conductor-generic/SKILL.md` — the required orchestration loop.
 2. `docs/product-decisions.md` — locked product decisions.
 3. `docs/STATUS.md` and the task-specific plan/record — implementation state and next action.
+4. `icm/03-plan/output/WIRING-SPEC.md`: before any canvas wiring work, the screen to backend map,
+   model gaps, unowned items and open owner decisions.
 
 Do not rely on chat history. Do not invent formulas, permissions, thresholds, health-data
 policy, workflows, or layouts.
