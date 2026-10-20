@@ -6,8 +6,11 @@
  * program" (A1 §4 E12 contract).
  */
 
-import { AccessDeniedError } from "../auth/guard";
-import { ConsentError } from "../consent";
+import {
+  fail as sharedFail,
+  guard as sharedGuard,
+  mapError as sharedMapError,
+} from "../boundary";
 import { isTrainingPlansEnabled, type TrainingPlansEnv } from "./gate";
 import {
   bookTrainingSession,
@@ -131,30 +134,33 @@ function fail<T>(
   code: keyof typeof CLOSED_MESSAGES,
   detail?: Record<string, unknown>,
 ): TrainingSafeResult<T> {
-  return { ok: false, code, message: CLOSED_MESSAGES[code], detail };
+  return sharedFail(CLOSED_MESSAGES, code, detail);
 }
 
 function mapError<T>(error: unknown): TrainingSafeResult<T> {
-  if (error instanceof AccessDeniedError) return fail("denied");
-  if (error instanceof ConsentError) {
-    if (error.code === "consent_missing") return fail("consent_missing");
-    return fail("policy_not_configured");
-  }
-  if (error instanceof TrainingError) {
-    switch (error.code) {
-      case "not_found":
-        return fail("not_found");
-      case "stale_revision":
-        return fail("conflict", error.detail);
-      case "service_unavailable":
-        return fail("service_unavailable");
-      case "internal_error":
-        return fail("internal_error");
-      default:
-        return fail(error.code as keyof typeof CLOSED_MESSAGES, error.detail);
-    }
-  }
-  return fail("service_unavailable");
+  return sharedMapError(error, {
+    denied: () => fail("denied"),
+    consent: (e) =>
+      e.code === "consent_missing"
+        ? fail("consent_missing")
+        : fail("policy_not_configured"),
+    domain: (e) => {
+      if (!(e instanceof TrainingError)) return null;
+      switch (e.code) {
+        case "not_found":
+          return fail("not_found");
+        case "stale_revision":
+          return fail("conflict", e.detail);
+        case "service_unavailable":
+          return fail("service_unavailable");
+        case "internal_error":
+          return fail("internal_error");
+        default:
+          return fail(e.code as keyof typeof CLOSED_MESSAGES, e.detail);
+      }
+    },
+    fallback: () => fail("service_unavailable"),
+  });
 }
 
 /** Feature boundary FIRST — flag + trusted runtime before any session
@@ -163,12 +169,14 @@ async function guard<T>(
   env: TrainingPlansEnv,
   fn: () => Promise<T>,
 ): Promise<TrainingSafeResult<T>> {
-  if (!isTrainingPlansEnabled(env)) return fail("not_found");
-  try {
-    return { ok: true, value: await fn() };
-  } catch (error) {
-    return mapError(error);
-  }
+  return sharedGuard(
+    {
+      enabled: isTrainingPlansEnabled(env),
+      off: () => fail<T>("not_found"),
+      map: (e) => mapError<T>(e),
+    },
+    fn,
+  );
 }
 
 type Session = { user?: { id?: string } } | null | undefined;

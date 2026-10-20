@@ -563,3 +563,81 @@ PARKED = [
     ("G6-102", "PARKED-D12", "Sensitive consent kinds and grant sources stay in the schema, unextended.", "PR-04"),
     ("G6-504", "PARKED-D12", "Export, erasure and audit-log cells: no canvas surface, denied by D15.", "PR-05"),
 ]
+
+# Owner rulings O1-O16 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md`
+# "Owner rulings") recorded on the build cards by the rulings merge (D37).
+# They live here so generated output stays the committed card text. Build
+# cards only; verify and merge bodies never carry them.
+CARD_RULINGS = {
+    "PR-01": [
+        'Owner ruling O9 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): the server parent passes the viewer down; `getViewer()` stays server-side for the session gate (spec X9).',
+    ],
+    "PR-05": [
+        'Owner ruling O7 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): coaches never log tracker entries for a client; the capability table records coach tracker write as comment-only (the spec narrows `lib/auth/rbac.ts:134` to comments).',
+        'Owner ruling O16 (owner, 2026-10-20, same source): the generic sign-in, sign-up, reset and invite-acceptance pages are kept and excluded from parity; PR-W10 restyles them later to canvas tokens, type, spacing and components.',
+    ],
+    "PR-31": [
+        'Owner ruling O1 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): cookie session for web and PWA, bearer token for Capacitor apps (spec X3); token storage and refresh rotation stay in this card\'s scope.',
+    ],
+    "PR-M2": [
+        'Owner ruling O3 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): the client settings screen is blocked on Lilly\'s canvas design; per-user client preferences stay unwired until it lands.',
+    ],
+    "PR-M3": [
+        'Owner ruling O7 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): the coach\'s tracker write path is comments only (TrackerComment); there is no coach entry logging.',
+        'Owner ruling O13 (owner, 2026-10-20, same source): general coaching notes are client-visible while private coach notes and coach to-dos stay staff-only (D26); the note model carries the two kinds.',
+    ],
+    "PR-M6": [
+        'Owner ruling O5 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): this card adds the set-logging model with the per-set shape (actual reps, load, RPE, set note, flags); PR-W8 wires it.',
+        'Owner ruling O12 (owner, 2026-10-20, same source): no prescribed load per set; the canvas does not show it.',
+    ],
+    "PR-M8": [
+        'Owner ruling O4 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): clients may not start a custom check-in; the server keeps CLIENT create denied on `checkinInstances` (`lib/auth/rbac.ts:169-176`).',
+    ],
+    "PR-SV4": [
+        'Owner ruling O6 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): the submitted onboarding form creates the client record; this card owns the backend change so invite acceptance no longer creates the `ClientProfile` (`lib/workspace/invitations.ts:657-661`) while the invitation still creates the account and membership.',
+        'Owner ruling O8 (owner, 2026-10-20, same source): the roster gets exactly one Add or invite control under a D32 parity exception; it calls this card\'s invitation API.',
+    ],
+    "PR-W0": [
+        'Owner ruling O1 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): transport is same-origin `/api/v1` JSON, cookie session for web and PWA, bearer for Capacitor; this card owns the one shared fetch client, which also sets the failure and loading convention (spec X1, X5, X7).',
+    ],
+    "PR-W1": [
+        'Owner ruling O9 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): the server parent passes the viewer down; `getViewer()` stays server-side and the client shell does not fetch the session route for first paint.',
+        'Owner ruling O15 (owner, 2026-10-20, same source): no multi-workspace switcher; the shell keeps one workspace label showing the real workspace name.',
+    ],
+    "PR-W10": [
+        'Owner ruling O3 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): no client settings screen is wired until Lilly\'s canvas design lands; this card keeps the coach-side settings only.',
+        'Owner ruling O13 (owner, 2026-10-20, same source): general coaching notes render to the client; private coach notes and coach to-dos stay staff-only (D26).',
+        'Owner ruling O16 (owner, 2026-10-20, same source): the generic sign-in, sign-up, reset and invite-acceptance pages are kept, excluded from parity, and this card owns their restyle to canvas tokens, type, spacing and components.',
+    ],
+    "PR-W2": [
+        'Owner ruling O6 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): the submitted onboarding form creates the client record, replacing invite-first profile creation; PR-SV4 owns the backend change and this card wires the roster/profile side.',
+        'Owner ruling O8 (owner, 2026-10-20, same source): a narrow D32 parity exception grants exactly one Add or invite-client control in the coach roster; no other new chrome.',
+        'Owner ruling O14 (owner, 2026-10-20, same source): the assigned coach may complete a client task (supersedes the staff bar in decision #109); "overdue" derives from the due date (`taskDueState`).',
+    ],
+    "PR-W4": [
+        'Owner ruling O2 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): the food diary N04 to N07 stays deferred and out of wiring scope; only generic tracker intake is wired.',
+        'Owner ruling O7 (owner, 2026-10-20, same source): the tracker mode switch is view versus comment, not entry mode; coaches never log entries for a client and the `dailyTracking` coach write grant (`lib/auth/rbac.ts:134`) is narrowed to comments.',
+        'Owner ruling O10 (owner, 2026-10-20, same source): calories are an ordinary tracked daily parameter (gap row R3-13); the old exclusion is superseded.',
+    ],
+    "PR-W6": [
+        'Owner ruling O4 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): clients may not start a custom check-in; the client-side custom-start control is not wired and the server keeps CLIENT create denied on `checkinInstances`.',
+    ],
+    "PR-W7": [
+        'Owner ruling O2 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): the food diary N04 to N07 stays deferred and out of wiring scope.',
+        'Owner ruling O11 (owner, 2026-10-20, same source): archived meal plans are the superseded immutable plan versions; this card lists them as the archive.',
+    ],
+    "PR-W8": [
+        'Owner ruling O5 (owner, 2026-10-20, `icm/03-plan/output/WIRING-SPEC.md` "Owner rulings"): set logging P04 to P06 is in scope: PR-M6 adds the model (actual reps, load, RPE, set note, flags) and this card wires it.',
+        'Owner ruling O12 (owner, 2026-10-20, same source): no prescribed load per set; the canvas does not show it.',
+    ],
+}
+CARD_BUILD_EXTRA = {
+    "PR-W8": [
+        "Booking code (TRAINING-I1B-2, `TrainingSessionBooking`) stays and is flagged as possibly removed later (docs/product-decisions.md #119); PR-W8 must not delete booking code without a ruling.",
+    ],
+}
+for _p in PRS:
+    if _p["id"] in CARD_RULINGS:
+        _p["rulings"] = CARD_RULINGS[_p["id"]]
+    if _p["id"] in CARD_BUILD_EXTRA:
+        _p["build"].extend(CARD_BUILD_EXTRA[_p["id"]])

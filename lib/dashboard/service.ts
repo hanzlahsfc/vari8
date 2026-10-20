@@ -10,7 +10,10 @@
  */
 
 import { Prisma, type PrismaClient } from "@prisma/client";
-import { prisma } from "../db";
+import {
+  prisma,
+  withSerializedRetry as sharedWithSerializedRetry,
+} from "../db";
 import { AccessDeniedError, authorize } from "../auth/guard";
 import { createPrismaAuthorizationRepo } from "../workspace/access";
 import { writeAuditEvent } from "../audit";
@@ -51,20 +54,12 @@ type PrismaLike = Pick<
 const MAX_ATTEMPTS = 3;
 
 async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2034" &&
-        attempt < MAX_ATTEMPTS
-      )
-        continue;
-      throw error;
-    }
-  }
-  throw new DashboardError("serialization_conflict");
+  return sharedWithSerializedRetry(fn, {
+    maxAttempts: MAX_ATTEMPTS,
+    isRetryable: (error) =>
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2034",
+  });
 }
 
 async function advisoryLock(

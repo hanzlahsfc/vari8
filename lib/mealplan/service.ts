@@ -32,7 +32,11 @@
 
 import { Prisma, type PrismaClient } from "@prisma/client";
 
-import { prisma as defaultPrisma } from "../db";
+import {
+  isSerializationConflict,
+  prisma as defaultPrisma,
+  withSerializedRetry as sharedWithSerializedRetry,
+} from "../db";
 import { AccessDeniedError, authorize, type SessionLike } from "../auth/guard";
 import { createPrismaAuthorizationRepo } from "../workspace/access";
 import { writeAuditEvent } from "../audit";
@@ -126,26 +130,6 @@ export function resolveMealPlanActivation(
 
 // ── Concurrency protocol (reviewed convention) ───────────────────────────
 
-const RAW_SERIALIZATION_SQLSTATES = new Set(["40001", "40P01"]);
-const MAX_ATTEMPTS = 8;
-const BACKOFF_BASE_MS = 10;
-const BACKOFF_CAP_MS = 50;
-
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
-function isRetryableSerialization(error: unknown): boolean {
-  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
-  if (error.code === "P2034") return true;
-  if (error.code === "P2010") {
-    const meta = error.meta as { code?: unknown } | undefined;
-    return (
-      typeof meta?.code === "string" &&
-      RAW_SERIALIZATION_SQLSTATES.has(meta.code)
-    );
-  }
-  return false;
-}
-
 /**
  * Unique-violation targets that are safe to retry inside `publish`: under
  * SERIALIZABLE a concurrent publish can pass the plan-row lock yet insert
@@ -184,23 +168,16 @@ async function withSerializedRetry<T>(
   fn: () => Promise<T>,
   retryUniqueTargets?: readonly (readonly string[])[],
 ): Promise<T> {
-  let attempt = 0;
-  for (;;) {
-    try {
-      return await fn();
-    } catch (error) {
-      const retryable =
-        isRetryableSerialization(error) ||
-        (retryUniqueTargets !== undefined &&
-          isRetryableUniqueConflict(error, retryUniqueTargets));
-      if (retryable && ++attempt < MAX_ATTEMPTS) {
-        await sleep(Math.min(BACKOFF_BASE_MS * attempt, BACKOFF_CAP_MS));
-        continue;
-      }
-      if (retryable) throw new MealPlanError("serialization_conflict");
-      throw error;
-    }
-  }
+  return sharedWithSerializedRetry(fn, {
+    maxAttempts: 8,
+    backoffBaseMs: 10,
+    backoffCapMs: 50,
+    isRetryable: (error) =>
+      isSerializationConflict(error) ||
+      (retryUniqueTargets !== undefined &&
+        isRetryableUniqueConflict(error, retryUniqueTargets)),
+    onExhausted: () => new MealPlanError("serialization_conflict"),
+  });
 }
 
 async function advisoryLock(

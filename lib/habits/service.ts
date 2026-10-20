@@ -21,7 +21,10 @@
  * force on each date, never from current mutable fields.
  */
 import { Prisma, type PrismaClient } from "@prisma/client";
-import { isSerializationConflict, prisma } from "../db";
+import {
+  prisma,
+  withSerializedRetry as sharedWithSerializedRetry,
+} from "../db";
 import { AccessDeniedError, authorize } from "../auth/guard";
 import { createPrismaAuthorizationRepo } from "../workspace/access";
 import { writeAuditEvent } from "../audit";
@@ -109,18 +112,10 @@ export type HabitConsistencyResult = {
 };
 
 async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (isSerializationConflict(error)) {
-        if (attempt < MAX_ATTEMPTS) continue;
-        throw new HabitError("serialization_conflict");
-      }
-      throw error;
-    }
-  }
-  throw new HabitError("serialization_conflict");
+  return sharedWithSerializedRetry(fn, {
+    maxAttempts: MAX_ATTEMPTS,
+    onExhausted: () => new HabitError("serialization_conflict"),
+  });
 }
 
 async function advisoryLock(

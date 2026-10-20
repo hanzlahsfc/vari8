@@ -3,8 +3,11 @@
  * feature gate (dashboard gate, decision 110) is checked FIRST; every
  * service-domain error maps to a closed, non-disclosing vocabulary.
  */
-import { AccessDeniedError } from "../auth/guard";
-import { isSerializationConflict } from "../db";
+import {
+  fail as sharedFail,
+  guard as sharedGuard,
+  mapError as sharedMapError,
+} from "../boundary";
 import { isClientDashboardEnabled } from "../dashboard/gate";
 import {
   HabitError,
@@ -47,33 +50,39 @@ const CLOSED_MESSAGES: Record<
 };
 
 function fail<T>(code: keyof typeof CLOSED_MESSAGES): HabitSafeResult<T> {
-  return { ok: false, code, message: CLOSED_MESSAGES[code] };
+  return sharedFail(CLOSED_MESSAGES, code);
 }
 
+// Raw serialization failures can still reach here from unwrapped
+// paths (e.g. a FOR UPDATE conflict under RepeatableRead — P2034 for
+// typed ops, P2010/40001 for raw statements) — the serializationConflict
+// backstop maps them to the honest retry vocabulary, never a
+// misleading not_available.
 function mapError<T>(error: unknown): HabitSafeResult<T> {
-  if (error instanceof AccessDeniedError) return fail("denied");
-  if (error instanceof HabitError) {
-    if (error.code === "conflict") return fail("conflict");
-    if (error.code === "serialization_conflict")
-      return fail("serialization_conflict");
-    if (error.code === "invalid_input") return fail("invalid_input");
-    return fail("not_available");
-  }
-  // Raw serialization failures can still reach here from unwrapped
-  // paths (e.g. a FOR UPDATE conflict under RepeatableRead — P2034 for
-  // typed ops, P2010/40001 for raw statements) — map to the honest
-  // retry vocabulary, never a misleading not_available.
-  if (isSerializationConflict(error)) return fail("serialization_conflict");
-  return fail("not_available");
+  return sharedMapError(error, {
+    denied: () => fail("denied"),
+    domain: (e) => {
+      if (!(e instanceof HabitError)) return null;
+      if (e.code === "conflict") return fail("conflict");
+      if (e.code === "serialization_conflict")
+        return fail("serialization_conflict");
+      if (e.code === "invalid_input") return fail("invalid_input");
+      return fail("not_available");
+    },
+    serializationConflict: () => fail("serialization_conflict"),
+    fallback: () => fail("not_available"),
+  });
 }
 
 async function guard<T>(fn: () => Promise<T>): Promise<HabitSafeResult<T>> {
-  if (!isClientDashboardEnabled(process.env)) return fail("not_available");
-  try {
-    return { ok: true, value: await fn() };
-  } catch (error) {
-    return mapError(error);
-  }
+  return sharedGuard(
+    {
+      enabled: isClientDashboardEnabled(process.env),
+      off: () => fail<T>("not_available"),
+      map: (e) => mapError<T>(e),
+    },
+    fn,
+  );
 }
 
 type Session = { user?: { id?: string } } | null | undefined;

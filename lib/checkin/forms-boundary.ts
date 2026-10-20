@@ -1,7 +1,8 @@
 import type { PrismaClient } from "@prisma/client";
 
 import { prisma as defaultPrisma } from "../db";
-import { AccessDeniedError, type SessionLike } from "../auth/guard";
+import { type SessionLike } from "../auth/guard";
+import { failMessage as fail, mapError as sharedMapError } from "../boundary";
 import {
   CHECKIN_FORM_LIMITS,
   CheckInFormError,
@@ -51,10 +52,14 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 function mapError(error: unknown): { ok: false; message: string } {
-  if (error instanceof AccessDeniedError) return fail(DENIED_ERROR);
-  if (error instanceof CheckInFormError)
-    return fail(ERROR_MESSAGES[error.code] ?? GENERIC_ERROR);
-  return fail(GENERIC_ERROR);
+  return sharedMapError(error, {
+    denied: () => fail(DENIED_ERROR),
+    domain: (e) =>
+      e instanceof CheckInFormError
+        ? fail(ERROR_MESSAGES[e.code] ?? GENERIC_ERROR)
+        : null,
+    fallback: () => fail(GENERIC_ERROR),
+  });
 }
 
 // Contract-derived bounds: draftJson is UTF-8 byte-bounded BEFORE parse
@@ -64,11 +69,6 @@ function mapError(error: unknown): { ok: false; message: string } {
 const MAX_DRAFT_JSON_BYTES = 128 * 1024;
 const MAX_ID_LEN = 128;
 const MAX_NAME_LEN = CHECKIN_FORM_LIMITS.nameMax;
-
-const fail = (message: string): { ok: false; message: string } => ({
-  ok: false,
-  message,
-});
 
 function boundedId(value: unknown): string | null {
   return typeof value === "string" &&

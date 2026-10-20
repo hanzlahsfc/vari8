@@ -416,16 +416,23 @@ describe.skipIf(!enabled)(
     });
 
     it("access_token accepts rows after the incremental apply", async () => {
-      const ws = await scratch.workspace.create({
-        data: { name: "w", slug: unique("w") },
-      });
+      // The scratch DB is pinned at stage-1 migrations; the generated client
+      // references columns added by later migrations, so seed the workspace
+      // with raw SQL (columns as they exist at that point).
+      const wsId = unique("ws");
+      await scratch.$executeRawUnsafe(
+        'INSERT INTO "workspace" ("id","name","slug","updated_at") VALUES ($1,$2,$3,NOW())',
+        wsId,
+        "w",
+        unique("w"),
+      );
       await scratch.$executeRawUnsafe(
         `INSERT INTO "access_token"
           ("id","purpose","token_hash","workspace_id","target_email","intended_role","created_by_user_id","expires_at")
          VALUES ($1,'WORKSPACE_INVITE'::"AccessTokenPurpose",$2,$3,$4,'CLIENT'::"MemberRole",$5,NOW() + INTERVAL '12 hours')`,
         unique("tok"),
         SYNTHETIC_HASH,
-        ws.id,
+        wsId,
         `${unique("i")}@example.test`,
         "pre-existing-user",
       );

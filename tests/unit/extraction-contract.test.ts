@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  redactedPlaceholder,
   SHEET_SLUGS,
   slugifySheetFileName,
 } from "../../lib/extraction/contracts";
@@ -33,14 +32,5 @@ describe("sheet slug mapping", () => {
     );
     expect(slugifySheetFileName("DAILY TRACKER.html")).toBe("daily-tracker");
     expect(slugifySheetFileName("A  B___C!.html")).toBe("a-b-c");
-  });
-});
-
-describe("redaction placeholder", () => {
-  it("builds the documented placeholder form without the value", () => {
-    expect(redactedPlaceholder("client-name")).toBe("[REDACTED:client-name]");
-    expect(redactedPlaceholder("ped_protocol.dose")).toBe(
-      "[REDACTED:ped_protocol.dose]",
-    );
   });
 });

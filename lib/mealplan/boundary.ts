@@ -4,8 +4,11 @@
  * non-disclosing safe vocabulary; nothing raw escapes to the client.
  */
 
-import { AccessDeniedError } from "../auth/guard";
-import { ConsentError } from "../consent";
+import {
+  fail as sharedFail,
+  guard as sharedGuard,
+  mapError as sharedMapError,
+} from "../boundary";
 import { isMealPlansEnabled, type MealPlansEnv } from "./gate";
 import {
   MealPlanError,
@@ -56,32 +59,35 @@ const CLOSED_MESSAGES: Record<
 };
 
 function fail<T>(code: keyof typeof CLOSED_MESSAGES): MealPlanSafeResult<T> {
-  return { ok: false, code, message: CLOSED_MESSAGES[code] };
+  return sharedFail(CLOSED_MESSAGES, code);
 }
 
 function mapError<T>(error: unknown): MealPlanSafeResult<T> {
-  if (error instanceof AccessDeniedError) return fail("denied");
-  if (error instanceof ConsentError) {
-    if (error.code === "consent_missing") return fail("consent_missing");
-    return fail("policy_not_configured");
-  }
-  if (error instanceof MealPlanError) {
-    switch (error.code) {
-      case "plan_not_accessible":
-        return fail("not_available");
-      case "stale_revision":
-        return fail("conflict");
-      case "timezone_required":
-      case "unrepresentable_date":
-      case "publish_incomplete":
-      case "consent_missing":
-      case "policy_not_configured":
-      case "serialization_conflict":
-      case "invalid_input":
-        return fail(error.code);
-    }
-  }
-  return fail("not_available");
+  return sharedMapError(error, {
+    denied: () => fail("denied"),
+    consent: (e) =>
+      e.code === "consent_missing"
+        ? fail("consent_missing")
+        : fail("policy_not_configured"),
+    domain: (e) => {
+      if (!(e instanceof MealPlanError)) return null;
+      switch (e.code) {
+        case "plan_not_accessible":
+          return fail("not_available");
+        case "stale_revision":
+          return fail("conflict");
+        case "timezone_required":
+        case "unrepresentable_date":
+        case "publish_incomplete":
+        case "consent_missing":
+        case "policy_not_configured":
+        case "serialization_conflict":
+        case "invalid_input":
+          return fail(e.code);
+      }
+    },
+    fallback: () => fail("not_available"),
+  });
 }
 
 /**
@@ -92,12 +98,14 @@ async function guard<T>(
   env: MealPlansEnv,
   fn: () => Promise<T>,
 ): Promise<MealPlanSafeResult<T>> {
-  if (!isMealPlansEnabled(env)) return fail("not_available");
-  try {
-    return { ok: true, value: await fn() };
-  } catch (error) {
-    return mapError(error);
-  }
+  return sharedGuard(
+    {
+      enabled: isMealPlansEnabled(env),
+      off: () => fail<T>("not_available"),
+      map: (e) => mapError<T>(e),
+    },
+    fn,
+  );
 }
 
 type Session = { user?: { id?: string } } | null | undefined;

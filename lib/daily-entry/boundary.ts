@@ -1,7 +1,8 @@
 import type { PrismaClient } from "@prisma/client";
 
 import { prisma } from "../db";
-import { AccessDeniedError, type SessionLike } from "../auth/guard";
+import { type SessionLike } from "../auth/guard";
+import { mapError as sharedMapError } from "../boundary";
 import type { ConsentPolicyRegistry } from "../consent";
 import { DailyEntryError, isDailyEntryEnabled } from "./gate";
 import { saveDailyEntry } from "./service";
@@ -75,24 +76,27 @@ function parseInput(input: unknown): ParsedInput {
 }
 
 function mapError(error: unknown): string {
-  if (error instanceof AccessDeniedError) return DENIED;
-  if (error instanceof DailyEntryError) {
-    switch (error.code) {
-      case "stale_form":
-        return STALE;
-      case "invalid_input":
-        return INVALID;
-      case "not_available":
-      case "no_active_setup":
-      case "ineligible":
-      case "consent_missing":
-      case "policy_not_configured":
-        return OFF;
-      default:
-        return GENERIC;
-    }
-  }
-  return GENERIC;
+  return sharedMapError(error, {
+    denied: () => DENIED,
+    domain: (e) => {
+      if (!(e instanceof DailyEntryError)) return null;
+      switch (e.code) {
+        case "stale_form":
+          return STALE;
+        case "invalid_input":
+          return INVALID;
+        case "not_available":
+        case "no_active_setup":
+        case "ineligible":
+        case "consent_missing":
+        case "policy_not_configured":
+          return OFF;
+        default:
+          return GENERIC;
+      }
+    },
+    fallback: () => GENERIC,
+  });
 }
 
 export async function saveDailyEntryFromAction(

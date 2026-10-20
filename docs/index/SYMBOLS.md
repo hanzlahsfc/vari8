@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 126 modules with exports, 1216 exported symbols.
+Counts: 135 modules with exports, 1324 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -187,6 +187,15 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function getViewer(): Promise<Viewer | null>`
 - `export async function getViewerFromHeaders(requestHeaders: Headers): Promise<Viewer | null>`
 - `export function initialsOf(name: string): string`
+
+## `lib/boundary.ts`
+
+- `export type ClosedMessages<C extends string> = Record<C, string>`
+- `export type SafeResult<C extends string, T> = | { ok: true; value: T } | { ok: false; code: C; message: string; detail?: Record<string, unknown>; }`
+- `export function fail<C extends string, T = never>(messages: ClosedMessages<C>, code: C, detail?: Record<string, unknown>): SafeResult<C, T>`
+- `export function failMessage(message: string): { ok: false; message: string }`
+- `export async function guard<F, T>(options: { enabled: boolean; off: () => F; map: (error: unknown) => F; }, fn: () => Promise<T>): Promise<{ ok: true; value: T } | F>`
+- `export function mapError<F>(error: unknown, mapping: { denied: () => F; consent?: (error: ConsentError) => F; domain: (error: unknown) => F | null | undefined; serializationConflict?: () => F; fall...`
 
 ## `lib/canvas/coaching-data.ts`
 
@@ -862,10 +871,136 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function readStaffDashboardLayout(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: DashboardDeps = {}): Promise<{ layout: StaffDashboardLayout | nul...`
 - `export async function updateClientDashboardLayout(session: SessionLike, input: UpdateDashboardInput, deps: DashboardDeps = {}): Promise<{ revision: number; config: DashboardConfig }>`
 
+## `lib/db-types/client-plans.ts`
+
+- `export type ClientPlansRows = { mealPlan: MealPlan | null; iifym: IifymPlan | null; training: TrainingProgram[]; goals: ClientGoal[]; plan: ClientPlan | null; }`
+
+## `lib/db-types/dashboard-draft.ts`
+
+- `export type DashboardBreakpoint = z.infer<typeof dashboardBreakpoint>`
+- `export type DashboardDraft = z.infer<typeof dashboardDraft>`
+- `export type DashboardLayout = z.infer<typeof dashboardLayout>`
+- `export type DashboardRect = z.infer<typeof dashboardRect>`
+- `export type DashboardSizeName = z.infer<typeof dashboardSizeName>`
+- `export type DashboardWidgetInstance = z.infer<typeof dashboardWidgetInstance>`
+- `export type DashboardWidgetKind = z.infer<typeof dashboardWidgetKind>`
+- `export type DashboardWidgetSettings = z.infer<typeof dashboardWidgetSettings>`
+- `export const dashboardBreakpoint = z.enum(["desktop", "tablet", "mobile"])`
+- `export const dashboardDraft = z.object({ version: z.literal(1), name: z.string().max(80), widgets: z.array(dashboardWidgetInstance), layouts: z.partialRecord(dashboardBreakpoint, dashboardLayout), ...`
+- `export const dashboardLayout = z.record(z.string(), dashboardRect)`
+- `export const dashboardRect = z.object({ x: z.number().int(), y: z.number().int(), w: z.number().int(), h: z.number().int(), size: dashboardSizeName, })`
+- `export const dashboardSizeName = z.enum([ "Compact", "Regular", "Wide", "Tall", "Expanded", ])`
+- `export const dashboardWidgetInstance = z.object({ id: z.string(), kind: dashboardWidgetKind, settings: dashboardWidgetSettings, })`
+- `export const dashboardWidgetKind = z.enum([ "BN21", "BN01", "BN08", "BN15", "BN19", "TL26", "TL28", "TL06", "TL11", "TL14", "TL21", "TL22", "CU01", "CU02", "CU03", "CU04", "CU06", "CU09", "CU10", "...`
+- `export const dashboardWidgetSettings = z.object({ title: z.string(), source: z.string(), summary: z.string(), period: z.string(), target: z.boolean(), size: dashboardSizeName, fields: z.array(z.str...`
+
+## `lib/db-types/iifym.ts`
+
+- `export type IifymOption = z.infer<typeof iifymOption>`
+- `export type IifymPayload = z.infer<typeof iifymPayload>`
+- `export type VariantSchedule = z.infer<typeof variantSchedule>`
+- `export const iifymOption = z.object({ id: z.string(), label: z.string(), targets: mealTargets, })`
+- `export const iifymPayload = z.object({ options: z.array(iifymOption), schedule: variantSchedule, })`
+- `export const variantSchedule = z.discriminatedUnion("mode", [ z.object({ mode: z.literal("manual"), selectedVariantId: z.string() }), z.object({ mode: z.literal("weekly"), days: z.partialRecord(wee...`
+- `export const weekdayKey = z.enum(["1", "2", "3", "4", "5", "6", "7"])`
+
+## `lib/db-types/index.ts`
+
+- `export { ClientPlansRows } from "./client-plans"`
+- `export { DashboardBreakpoint } from "./dashboard-draft"`
+- `export { DashboardDraft } from "./dashboard-draft"`
+- `export { DashboardLayout } from "./dashboard-draft"`
+- `export { DashboardRect } from "./dashboard-draft"`
+- `export { DashboardSizeName } from "./dashboard-draft"`
+- `export { DashboardWidgetInstance } from "./dashboard-draft"`
+- `export { DashboardWidgetKind } from "./dashboard-draft"`
+- `export { DashboardWidgetSettings } from "./dashboard-draft"`
+- `export { IifymOption } from "./iifym"`
+- `export { IifymPayload } from "./iifym"`
+- `export { MealTargets } from "./meal-targets"`
+- `export { MessageLink } from "./message-links"`
+- `export { MessageLinkRoute } from "./message-links"`
+- `export { MessageLinks } from "./message-links"`
+- `export { SavedMealFoodPortion } from "./saved-meal"`
+- `export { SavedMealFoodSwap } from "./saved-meal"`
+- `export { SavedMealPayload } from "./saved-meal"`
+- `export { TargetStyle } from "./meal-targets"`
+- `export { TargetValue } from "./meal-targets"`
+- `export { TemplateDefinitionSlots } from "./template-slots"`
+- `export { TemplateFieldOverride } from "./template-slots"`
+- `export { TemplateModules } from "./template-slots"`
+- `export { TemplateRoadmapRow } from "./template-slots"`
+- `export { VariantSchedule } from "./iifym"`
+- `export { dashboardBreakpoint } from "./dashboard-draft"`
+- `export { dashboardDraft } from "./dashboard-draft"`
+- `export { dashboardLayout } from "./dashboard-draft"`
+- `export { dashboardRect } from "./dashboard-draft"`
+- `export { dashboardSizeName } from "./dashboard-draft"`
+- `export { dashboardWidgetInstance } from "./dashboard-draft"`
+- `export { dashboardWidgetKind } from "./dashboard-draft"`
+- `export { dashboardWidgetSettings } from "./dashboard-draft"`
+- `export { iifymOption } from "./iifym"`
+- `export { iifymPayload } from "./iifym"`
+- `export { mealTargets } from "./meal-targets"`
+- `export { messageLink } from "./message-links"`
+- `export { messageLinkRoute } from "./message-links"`
+- `export { messageLinks } from "./message-links"`
+- `export { savedMealFoodPortion } from "./saved-meal"`
+- `export { savedMealFoodSwap } from "./saved-meal"`
+- `export { savedMealPayload } from "./saved-meal"`
+- `export { targetStyle } from "./meal-targets"`
+- `export { targetValue } from "./meal-targets"`
+- `export { templateDefinitionSlots } from "./template-slots"`
+- `export { templateFieldOverride } from "./template-slots"`
+- `export { templateModules } from "./template-slots"`
+- `export { templateRoadmapRow } from "./template-slots"`
+- `export { variantSchedule } from "./iifym"`
+- `export { weekdayKey } from "./iifym"`
+
+## `lib/db-types/meal-targets.ts`
+
+- `export type MealTargets = z.infer<typeof mealTargets>`
+- `export type TargetStyle = z.infer<typeof targetStyle>`
+- `export type TargetValue = z.infer<typeof targetValue>`
+- `export const mealTargets = z.object({ style: targetStyle, calories: targetValue.optional(), protein: targetValue.optional(), carbs: targetValue.optional(), fat: targetValue.optional(), })`
+- `export const targetStyle = z.enum(["calories", "macros"])`
+- `export const targetValue = z.discriminatedUnion("kind", [ z.object({ kind: z.literal("fixed"), value: z.number() }), z.object({ kind: z.literal("range"), min: z.number(), max: z.number() }), z.obje...`
+
+## `lib/db-types/message-links.ts`
+
+- `export type MessageLink = z.infer<typeof messageLink>`
+- `export type MessageLinkRoute = z.infer<typeof messageLinkRoute>`
+- `export type MessageLinks = z.infer<typeof messageLinks>`
+- `export const messageLink = z.object({ label: z.string(), route: messageLinkRoute, })`
+- `export const messageLinkRoute = z.object({ section: z.enum(["clients", "templates", "check-ins", "messages", "notes"]), client: z.string().optional(), editor: z.string().optional(), review: z.strin...`
+- `export const messageLinks = z.array(messageLink)`
+
+## `lib/db-types/saved-meal.ts`
+
+- `export type SavedMealFoodPortion = z.infer<typeof savedMealFoodPortion>`
+- `export type SavedMealFoodSwap = z.infer<typeof savedMealFoodSwap>`
+- `export type SavedMealPayload = z.infer<typeof savedMealPayload>`
+- `export const savedMealFoodPortion = z.object({ foodId: z.string(), quantity: z.number(), swaps: z.array(savedMealFoodSwap).optional(), })`
+- `export const savedMealFoodSwap = z.object({ foodId: z.string(), quantity: z.number(), note: z.string().optional(), })`
+- `export const savedMealPayload = z.object({ id: z.string(), label: z.string(), time: z.string(), frequency: z.string().optional(), portions: z.array(savedMealFoodPortion), target: mealTargets.option...`
+
+## `lib/db-types/template-slots.ts`
+
+- `export type TemplateDefinitionSlots = z.infer<typeof templateDefinitionSlots>`
+- `export type TemplateFieldOverride = z.infer<typeof templateFieldOverride>`
+- `export type TemplateModules = z.infer<typeof templateModules>`
+- `export type TemplateRoadmapRow = z.infer<typeof templateRoadmapRow>`
+- `export const templateDefinitionSlots = z.object({ modules: templateModules.optional(), summaryParameterIds: z.array(z.string()).max(4).optional(), nutritionMode: z.enum(["MEAL_PLAN", "IIFYM"]).opti...`
+- `export const templateFieldOverride = z.object({ parameterId: z.string(), unit: z.string(), options: z.array(z.string()).optional(), })`
+- `export const templateModules = z.object({ views: z.array(z.string()), habits: z.boolean(), })`
+- `export const templateRoadmapRow = z.object({ source: z.string(), calculation: z.string(), comparison: z.boolean(), })`
+
 ## `lib/db.ts`
 
+- `export type SerializedRetryOptions = { maxAttempts: number; backoffBaseMs?: number; backoffCapMs?: number; isRetryable?: (error: unknown) => boolean; onExhausted?: (error: unknown) => unknown; onMi...`
 - `export function isSerializationConflict(error: unknown): boolean`
 - `export const prisma = globalForPrisma.prisma ?? new PrismaClient()`
+- `export async function withSerializedRetry<T>(fn: () => Promise<T>, options: SerializedRetryOptions): Promise<T>`
 
 ## `lib/email.ts`
 
