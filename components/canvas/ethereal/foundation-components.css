@@ -1,0 +1,350 @@
+.foundation-components {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--glass-surface, var(--surface));
+  box-shadow: inset 0 1px 0
+    color-mix(in srgb, var(--panel-highlight) 54%, transparent);
+}
+
+.foundation-type,
+.foundation-section {
+  min-width: 0;
+  padding: 18px 20px;
+}
+
+.foundation-type {
+  border-bottom: 1px solid var(--border);
+}
+
+.foundation-sample-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 13px;
+}
+
+.foundation-sample-heading h3 {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.foundation-sample-heading p,
+.foundation-type-examples span,
+.foundation-tab-state {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.foundation-type-examples {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 26px;
+}
+
+.foundation-type-examples > div {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+}
+
+.foundation-type-examples strong {
+  font-size: 19px;
+  line-height: 1.1;
+  font-weight: 550;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+.foundation-type-examples strong i {
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 450;
+  letter-spacing: 0;
+}
+
+.foundation-type-examples p {
+  font-size: 12px;
+}
+
+.foundation-type-examples > .foundation-avatar-example {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.foundation-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.foundation-section {
+  border-bottom: 1px solid var(--border);
+}
+
+.foundation-columns > .foundation-section:nth-child(odd) {
+  border-right: 1px solid var(--border);
+}
+
+.foundation-actions,
+.foundation-statuses,
+.foundation-choices {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.foundation-actions .app-button,
+.foundation-empty .app-button {
+  min-height: 36px;
+  padding-inline: var(--control-padding-x, 16px);
+  font-size: 11px;
+}
+
+.foundation-statuses {
+  gap: 14px;
+  margin-top: 16px;
+  padding: 0;
+  border: 0;
+}
+
+.foundation-statuses .status-label {
+  font-size: 10px;
+}
+
+.foundation-validation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.foundation-label,
+.foundation-numeric-field {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.foundation-label .form-input,
+.foundation-label .form-select {
+  min-height: 40px;
+  padding: 6px var(--control-padding-x, 16px);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.foundation-label .form-select {
+  padding-right: var(--control-arrow-space, 40px);
+}
+
+.foundation-label [aria-invalid="true"] {
+  border-color: color-mix(in srgb, var(--danger) 75%, var(--border));
+}
+
+.foundation-error,
+.foundation-valid,
+.foundation-reading-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.foundation-error {
+  color: var(--danger);
+}
+
+.foundation-valid,
+.foundation-reading-hint {
+  color: var(--muted);
+}
+
+.foundation-choices {
+  margin: 3px 0 16px;
+  gap: 18px;
+}
+
+.foundation-choices .checkbox-control,
+.foundation-choices .switch-label {
+  font-size: 11px;
+}
+
+.foundation-section > .tabs {
+  gap: 18px;
+  padding: 0 3px;
+}
+
+.foundation-section > .tabs .tab {
+  padding: 8px 0;
+  font-size: 11px;
+}
+
+.foundation-tab-state {
+  margin-top: 9px;
+}
+
+.foundation-numeric-fields {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 18px 22px;
+}
+
+.foundation-numeric-field > span:first-child {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.foundation-numeric-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.foundation-number.form-input {
+  box-sizing: border-box;
+  width: var(--numeric-control-width, 148px);
+  min-width: var(--numeric-control-width, 148px);
+  height: var(--numeric-control-height, 44px);
+  min-height: var(--numeric-control-height, 44px);
+  padding: 0 var(--control-padding-x, 16px);
+  border-radius: 999px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.foundation-unit {
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.foundation-numeric-field > .foundation-reading-hint {
+  max-width: 24ch;
+}
+
+.foundation-feedback {
+  border-bottom: 0;
+}
+
+.foundation-feedback-examples {
+  display: grid;
+  gap: 10px;
+}
+
+.foundation-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface-subtle) 54%, var(--surface));
+}
+
+.foundation-confirm > svg {
+  flex: 0 0 auto;
+  color: var(--success);
+}
+
+.foundation-confirm > div {
+  display: grid;
+  gap: 3px;
+}
+
+.foundation-confirm strong,
+.foundation-empty strong {
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 550;
+}
+
+.foundation-confirm span,
+.foundation-empty span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.foundation-confirm button {
+  display: grid;
+  place-items: center;
+  margin: -3px -3px 0 auto;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.foundation-empty {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 7px;
+  color: var(--muted);
+}
+
+.foundation-empty > svg {
+  flex: 0 0 auto;
+}
+
+.foundation-quiet-action {
+  width: fit-content;
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.foundation-components :where(button, input, select):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .foundation-type,
+  .foundation-section {
+    padding: 16px;
+  }
+
+  .foundation-columns,
+  .foundation-validation-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .foundation-columns > .foundation-section:nth-child(odd) {
+    border-right: 0;
+  }
+
+  .foundation-sample-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .foundation-type-examples {
+    gap: 18px;
+  }
+
+  .foundation-avatar-example {
+    margin-left: 0;
+  }
+}

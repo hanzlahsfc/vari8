@@ -1,0 +1,524 @@
+/* biome-ignore-all lint/style/noDescendingSpecificity: Week ledger selectors share the scoped table base. */
+.coach-root .ct-tracking .ct-week-view {
+  min-width: 0;
+  max-width: 1040px;
+  color: var(--ct-text, var(--text));
+}
+
+.coach-root .ct-tracking .ct-week-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 14px;
+}
+
+.coach-root .ct-tracking .ct-week-heading h2 {
+  margin: 0;
+  color: var(--ct-text, var(--text));
+  font-size: 16px;
+  font-weight: 620;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+.coach-root .ct-tracking .ct-week-heading p {
+  margin: 4px 0 0;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+.coach-root .ct-tracking .ct-week-hint {
+  padding-bottom: 1px;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 10px;
+  line-height: 1.3;
+  text-align: right;
+}
+
+.coach-root .ct-tracking .ct-week-tray {
+  min-width: 0;
+  overflow: hidden;
+  border-top: 1px solid
+    color-mix(in srgb, var(--ct-edge, var(--ct-rule)) 78%, transparent);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--ct-edge, var(--ct-rule)) 78%, transparent);
+  background: var(--ct-panel, var(--surface));
+}
+
+.coach-root .ct-tracking .ct-week-core {
+  min-width: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: var(--ct-panel, var(--surface));
+  box-shadow: none;
+}
+
+.coach-root .ct-tracking .ct-week-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  scrollbar-color: color-mix(
+      in srgb,
+      var(--ct-text-secondary, var(--ct-quiet)) 30%,
+      transparent
+    )
+    transparent;
+  scrollbar-width: thin;
+}
+
+.coach-root .ct-tracking .ct-week-table {
+  width: 100%;
+  min-width: 890px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--ct-text, var(--text));
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-root .ct-tracking .ct-week-label-column {
+  width: 202px;
+}
+.coach-root .ct-tracking .ct-week-day-column {
+  width: 82px;
+}
+.coach-root .ct-tracking .ct-week-summary-column {
+  width: 86px;
+}
+
+.coach-root .ct-tracking .ct-week-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.coach-root .ct-tracking .ct-week-table th,
+.coach-root .ct-tracking .ct-week-table td {
+  box-sizing: border-box;
+  padding: 0;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--ct-edge, var(--ct-rule)) 44%, transparent);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.coach-root .ct-tracking .ct-week-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  height: 58px;
+  background: color-mix(
+    in srgb,
+    var(--ct-panel-raised, var(--surface)) 82%,
+    var(--ct-panel, var(--surface)) 18%
+  );
+  font-weight: 540;
+}
+
+.coach-root .ct-tracking .ct-week-table .ct-week-corner,
+.coach-root .ct-tracking .ct-week-table .ct-week-metric-label {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  padding: 0 14px;
+  background: var(--ct-panel, var(--surface));
+  text-align: left;
+}
+
+.coach-root .ct-tracking .ct-week-table .ct-week-corner {
+  z-index: 5;
+  background: var(--ct-panel-raised, var(--surface));
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 11px;
+  font-weight: 580;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.coach-root .ct-tracking .ct-week-table .ct-week-summary-head,
+.coach-root .ct-tracking .ct-week-table .ct-week-summary-cell {
+  background: color-mix(
+    in srgb,
+    var(--ct-panel-raised, var(--surface)) 60%,
+    var(--ct-panel, var(--surface)) 40%
+  );
+}
+
+.coach-root .ct-tracking .ct-week-date {
+  display: flex;
+  width: 100%;
+  min-height: 57px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  color: var(--ct-text, var(--text));
+  cursor: pointer;
+  font: inherit;
+}
+
+.coach-root .ct-tracking .ct-week-date span {
+  font-size: 13px;
+  font-weight: 620;
+  line-height: 1.15;
+}
+.coach-root .ct-tracking .ct-week-date small,
+.coach-root .ct-tracking .ct-week-summary-head small {
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 11px;
+  font-weight: 450;
+  line-height: 1.2;
+}
+.coach-root .ct-tracking .ct-week-summary-head span,
+.coach-root .ct-tracking .ct-week-summary-head small {
+  display: block;
+}
+.coach-root .ct-tracking .ct-week-table .is-selected-day {
+  background-color: color-mix(
+    in srgb,
+    var(--ct-accent) 5%,
+    var(--ct-panel, var(--surface))
+  );
+}
+.coach-root .ct-tracking .ct-week-table thead .is-today {
+  box-shadow: inset 0 2px 0
+    color-mix(in srgb, var(--ct-accent) 58%, transparent);
+}
+
+.coach-root .ct-tracking .ct-week-group-row th {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  width: 202px;
+  height: 36px;
+  padding: 0 10px;
+  background: color-mix(
+    in srgb,
+    var(--ct-panel-raised, var(--surface)) 55%,
+    var(--ct-panel, var(--surface)) 45%
+  );
+  text-align: left;
+}
+
+.coach-root .ct-tracking .ct-week-group-row td {
+  height: 36px;
+  background: color-mix(
+    in srgb,
+    var(--ct-panel-raised, var(--surface)) 55%,
+    var(--ct-panel, var(--surface)) 45%
+  );
+}
+
+.coach-root .ct-tracking .ct-week-group-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 35px;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ct-text, var(--text));
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 590;
+  letter-spacing: 0.015em;
+  text-align: left;
+}
+
+.coach-root .ct-tracking .ct-week-chevron {
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  place-items: center;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  transition: transform 180ms var(--ct-ease, cubic-bezier(0.32, 0.72, 0, 1));
+}
+
+.coach-root .ct-tracking .ct-week-chevron.is-collapsed {
+  transform: rotate(-90deg);
+}
+
+.coach-root .ct-tracking .ct-week-group-toggle small {
+  margin-left: auto;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 10px;
+  font-weight: 450;
+}
+
+.coach-root .ct-tracking .ct-week-metric-row th,
+.coach-root .ct-tracking .ct-week-metric-row td {
+  height: 44px;
+}
+.coach-root .ct-tracking .ct-week-metric-row:hover td,
+.coach-root .ct-tracking .ct-week-metric-row:hover .ct-week-metric-label {
+  background-color: color-mix(
+    in srgb,
+    var(--ct-panel-raised, var(--surface)) 56%,
+    var(--ct-panel, var(--surface)) 44%
+  );
+}
+
+.coach-root .ct-tracking .ct-week-metric-label > span {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  font-weight: 560;
+  line-height: 1.2;
+}
+
+.coach-root .ct-tracking .ct-week-metric-label > small {
+  display: block;
+  margin-top: 2px;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 11px;
+  font-weight: 430;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.coach-root .ct-tracking .ct-week-value {
+  display: grid;
+  width: 100%;
+  min-height: 43px;
+  place-items: center;
+  padding: 4px 3px;
+  border: 0;
+  background: transparent;
+  color: var(--ct-text, var(--text));
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 560;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.coach-root .ct-tracking .ct-week-metric-row .is-empty .ct-week-value {
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-weight: 430;
+}
+.coach-root .ct-tracking .ct-week-summary-cell > span,
+.coach-root .ct-tracking .ct-week-summary-cell > small {
+  display: block;
+}
+.coach-root .ct-tracking .ct-week-summary-cell > span {
+  font-size: 12px;
+  font-weight: 610;
+  line-height: 1.15;
+}
+.coach-root .ct-tracking .ct-week-summary-cell > small {
+  margin-top: 3px;
+  color: var(--ct-text-secondary, var(--ct-quiet));
+  font-size: 11px;
+  line-height: 1.15;
+}
+
+.coach-root .ct-tracking .ct-week-date:hover:not(:disabled),
+.coach-root .ct-tracking .ct-week-value:hover:not(:disabled) {
+  color: var(--ct-accent);
+}
+
+.coach-root .ct-tracking .ct-week-date:focus-visible,
+.coach-root .ct-tracking .ct-week-value:focus-visible,
+.coach-root .ct-tracking .ct-week-group-toggle:focus-visible,
+.coach-root .ct-tracking .ct-week-scroll:focus-visible {
+  outline: 2px solid var(--ct-accent);
+  outline-offset: -2px;
+}
+
+.coach-root .ct-tracking .ct-week-date:disabled,
+.coach-root .ct-tracking .ct-week-value:disabled {
+  color: color-mix(
+    in srgb,
+    var(--ct-text-secondary, var(--ct-quiet)) 76%,
+    transparent
+  );
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .coach-root .ct-tracking .ct-week-heading {
+    align-items: start;
+  }
+  .coach-root .ct-tracking .ct-week-hint {
+    max-width: 154px;
+    padding-top: 2px;
+  }
+  .coach-root .ct-tracking .ct-week-group-toggle small {
+    display: none;
+  }
+
+  /* On phones, keep the same metric-first order but show each day's label
+     alongside its value instead of forcing a clipped nine-column ledger. */
+  .coach-root .ct-tracking .ct-week-scroll {
+    overflow: visible;
+  }
+  .coach-root .ct-tracking .ct-week-table {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    table-layout: auto;
+  }
+  .coach-root .ct-tracking .ct-week-table colgroup,
+  .coach-root .ct-tracking .ct-week-table thead {
+    display: none;
+  }
+  .coach-root .ct-tracking .ct-week-table tbody {
+    display: block;
+  }
+  .coach-root .ct-tracking .ct-week-table tbody + tbody {
+    border-top: 1px solid
+      color-mix(in srgb, var(--ct-edge, var(--ct-rule)) 55%, transparent);
+  }
+  .coach-root .ct-tracking .ct-week-group-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    background: color-mix(
+      in srgb,
+      var(--ct-panel-raised, var(--surface)) 55%,
+      var(--ct-panel, var(--surface)) 45%
+    );
+  }
+  .coach-root .ct-tracking .ct-week-group-row th {
+    position: static;
+    width: auto;
+    height: 40px;
+    padding: 0 12px;
+    background: transparent;
+  }
+  .coach-root .ct-tracking .ct-week-group-row td {
+    display: none;
+  }
+  .coach-root .ct-tracking .ct-week-group-toggle {
+    min-height: 40px;
+  }
+  .coach-root .ct-tracking .ct-week-metric-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
+    padding: 10px 10px 12px;
+    background: color-mix(
+      in srgb,
+      var(--ct-edge, var(--ct-rule)) 34%,
+      var(--ct-panel, var(--surface)) 66%
+    );
+  }
+  .coach-root .ct-tracking .ct-week-metric-row th,
+  .coach-root .ct-tracking .ct-week-metric-row td {
+    height: auto;
+    min-width: 0;
+    border: 0;
+  }
+  .coach-root .ct-tracking .ct-week-table .ct-week-metric-label {
+    position: static;
+    grid-column: 1 / -1;
+    padding: 1px 2px 8px;
+    background: transparent;
+  }
+  .coach-root .ct-tracking .ct-week-metric-label > span {
+    font-size: 13px;
+  }
+  .coach-root .ct-tracking .ct-week-metric-label > small {
+    display: inline;
+    margin: 0 0 0 6px;
+  }
+  .coach-root .ct-tracking .ct-week-metric-row td:not(.ct-week-summary-cell) {
+    display: flex;
+    min-height: 58px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    padding: 4px 2px;
+    background: var(--ct-panel, var(--surface));
+    text-align: center;
+  }
+  .coach-root
+    .ct-tracking
+    .ct-week-metric-row
+    td:not(.ct-week-summary-cell)::before {
+    content: attr(data-day);
+    display: block;
+    margin-bottom: 2px;
+    color: var(--ct-text-secondary, var(--ct-quiet));
+    font-size: 9px;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  .coach-root .ct-tracking .ct-week-metric-row td.is-today {
+    box-shadow: inset 0 2px 0
+      color-mix(in srgb, var(--ct-accent) 55%, transparent);
+  }
+  .coach-root .ct-tracking .ct-week-metric-row td.is-selected-day {
+    background: color-mix(
+      in srgb,
+      var(--ct-accent) 7%,
+      var(--ct-panel, var(--surface))
+    );
+  }
+  .coach-root .ct-tracking .ct-week-value {
+    min-height: 28px;
+    padding: 2px 1px;
+    font-size: 11px;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+  .coach-root .ct-tracking .ct-week-metric-row td.ct-week-summary-cell {
+    display: flex;
+    grid-column: 1 / -1;
+    min-height: 38px;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 5px;
+    margin-top: 4px;
+    padding: 5px 8px;
+    background: color-mix(
+      in srgb,
+      var(--ct-panel-raised, var(--surface)) 64%,
+      var(--ct-panel, var(--surface)) 36%
+    );
+    text-align: right;
+  }
+  .coach-root .ct-tracking .ct-week-summary-cell::before {
+    content: "This week";
+    margin-right: auto;
+    color: var(--ct-text-secondary, var(--ct-quiet));
+    font-size: 10px;
+  }
+  .coach-root .ct-tracking .ct-week-summary-cell > span,
+  .coach-root .ct-tracking .ct-week-summary-cell > small {
+    display: inline;
+    margin: 0;
+  }
+  .coach-root .ct-tracking .ct-week-summary-cell > span {
+    font-size: 11px;
+  }
+  .coach-root .ct-tracking .ct-week-summary-cell > small {
+    font-size: 10px;
+  }
+  .coach-root .ct-tracking .ct-week-metric-row:hover td,
+  .coach-root .ct-tracking .ct-week-metric-row:hover .ct-week-metric-label {
+    background-color: inherit;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-root .ct-tracking .ct-week-chevron {
+    transition: none;
+  }
+}

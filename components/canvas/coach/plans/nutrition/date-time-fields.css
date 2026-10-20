@@ -1,0 +1,425 @@
+.coach-root .cn-dt-root {
+  display: inline-flex;
+  min-width: 0;
+  color: var(--cd-text, #25231f);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-root .cn-dt-trigger {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 14px;
+  border: 1px solid
+    var(--cd-line, color-mix(in srgb, currentColor 16%, transparent));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cd-surface, white) 92%, transparent);
+  color: var(--cd-text, inherit);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.coach-root .cn-dt-trigger:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--cd-muted, var(--cd-accent, #a58a5a)) 44%,
+    var(--cd-line, #ddd)
+  );
+  background: var(--cd-wash, color-mix(in srgb, currentColor 4%, white));
+}
+
+.coach-root .cn-dt-trigger:focus-visible,
+.coach-root .cn-dt-icon:focus-visible,
+.coach-root .cn-dt-day:focus-visible,
+.coach-root .cn-dt-quick:focus-visible,
+.coach-root .cn-dt-text-action:focus-visible,
+.coach-root .cn-dt-cancel:focus-visible,
+.coach-root .cn-dt-apply:focus-visible {
+  outline: 2px solid var(--cd-accent-ring, var(--cd-accent, #9a7c48));
+  outline-offset: 2px;
+}
+
+.coach-root .cn-dt-trigger > svg:last-child {
+  color: var(--cd-muted, #817c73);
+}
+
+.coach-root .cn-dt-positioner {
+  z-index: 100;
+  max-width: calc(100vw - 24px);
+}
+
+.coach-root .cn-dt-popup {
+  width: min(304px, calc(100vw - 24px));
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--cd-line, #d9d5cc) 82%, transparent);
+  border-radius: 19px;
+  background: color-mix(in srgb, var(--cd-surface, #fff) 96%, transparent);
+  color: var(--cd-text, #25231f);
+  box-shadow:
+    0 14px 38px color-mix(in srgb, #201a10 15%, transparent),
+    inset 0 1px color-mix(in srgb, var(--cd-text) 7%, transparent);
+  backdrop-filter: blur(18px) saturate(125%);
+  transform-origin: var(--transform-origin);
+  animation: cn-dt-arrive 170ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.coach-root .cn-dt-popup[data-ending-style] {
+  animation: cn-dt-leave 120ms ease both;
+}
+
+@keyframes cn-dt-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-3px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cn-dt-leave {
+  to {
+    opacity: 0;
+    transform: scale(0.99);
+  }
+}
+
+.coach-root .cn-dt-monthbar,
+.coach-root .cn-dt-time-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 12px 9px;
+}
+
+.coach-root .cn-dt-month-title,
+.coach-root .cn-dt-section-title {
+  margin: 0;
+  color: var(--cd-text, #25231f);
+  font-size: 13px;
+  font-weight: 620;
+  letter-spacing: -0.01em;
+}
+
+.coach-root .cn-dt-icon {
+  display: inline-grid;
+  width: 32px;
+  min-height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--cd-muted, #777268);
+  cursor: pointer;
+}
+
+.coach-root .cn-dt-icon:hover {
+  background: color-mix(in srgb, var(--cd-text, #222) 6%, transparent);
+  color: var(--cd-text, #222);
+}
+
+.coach-root .cn-dt-weekdays,
+.coach-root .cn-dt-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  padding: 0 12px;
+}
+
+.coach-root .cn-dt-weekdays {
+  padding-bottom: 4px;
+}
+.coach-root .cn-dt-weekdays span {
+  display: grid;
+  height: 27px;
+  place-items: center;
+  color: var(--cd-muted, #817c73);
+  font-size: 10px;
+  font-weight: 600;
+}
+.coach-root .cn-dt-days {
+  row-gap: 2px;
+}
+
+.coach-root .cn-dt-day {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  justify-self: center;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--cd-text, #25231f);
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease,
+    border-color 120ms ease;
+}
+
+.coach-root .cn-dt-day:hover {
+  background: color-mix(in srgb, var(--cd-accent, #9a7c48) 10%, transparent);
+}
+.coach-root .cn-dt-day.is-outside {
+  color: color-mix(in srgb, var(--cd-muted, #817c73) 54%, transparent);
+}
+.coach-root .cn-dt-day.is-today:not(.is-selected) {
+  border-color: color-mix(in srgb, var(--cd-accent, #9a7c48) 50%, transparent);
+}
+.coach-root .cn-dt-day.is-selected {
+  border-color: var(--cd-accent, #947747);
+  background: var(--cd-accent, #947747);
+  color: var(--cd-accent-foreground, white);
+  font-weight: 650;
+}
+
+.coach-root .cn-dt-calendar-foot,
+.coach-root .cn-dt-time-actions {
+  display: flex;
+  min-height: 43px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 6px 14px;
+  border-top: 1px solid
+    color-mix(in srgb, var(--cd-line, #d9d5cc) 70%, transparent);
+  color: var(--cd-muted, #817c73);
+  font-size: 10px;
+}
+
+.coach-root .cn-dt-text-action {
+  min-height: 30px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--cd-accent, #876a3d);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 590;
+  cursor: pointer;
+}
+.coach-root .cn-dt-text-action:hover {
+  background: color-mix(in srgb, var(--cd-accent, #9a7c48) 9%, transparent);
+}
+
+.coach-root .cn-dt-time {
+  width: min(292px, calc(100vw - 24px));
+  padding: 0;
+}
+.coach-root .cn-dt-time-head {
+  padding-bottom: 11px;
+}
+.coach-root .cn-dt-time-head > div {
+  display: grid;
+  gap: 2px;
+}
+.coach-root .cn-dt-time-head > div > span {
+  color: var(--cd-muted, #817c73);
+  font-size: 10px;
+}
+.coach-root .cn-dt-time-fields {
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 9px;
+  padding: 4px 18px 14px;
+}
+.coach-root .cn-dt-time-fields label {
+  display: grid;
+  width: 85px;
+  gap: 5px;
+  color: var(--cd-muted, #817c73);
+  text-align: center;
+  font-size: 10px;
+}
+.coach-root .cn-dt-time-fields input {
+  width: 100%;
+  height: 52px;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--cd-line, #d9d5cc) 86%, transparent);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--cd-wash, #f6f4ef) 72%, transparent);
+  color: var(--cd-text, #25231f);
+  text-align: center;
+  font: inherit;
+  font-size: 25px;
+  font-weight: 560;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+.coach-root .cn-dt-time-fields input:focus-visible {
+  border-color: var(--cd-accent, #947747);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--cd-accent, #947747) 15%, transparent);
+}
+.coach-root .cn-dt-time-fields input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+.coach-root .cn-dt-time-colon {
+  padding-bottom: 8px;
+  color: var(--cd-muted, #817c73);
+  font-size: 22px;
+}
+.coach-root .cn-dt-quick-label {
+  padding: 0 16px 7px;
+  color: var(--cd-muted, #817c73);
+  font-size: 10px;
+}
+.coach-root .cn-dt-quick-times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 14px 14px;
+}
+.coach-root .cn-dt-quick {
+  min-width: 46px;
+  min-height: 29px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--cd-line, #d9d5cc) 75%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cd-wash, #f6f4ef) 72%, transparent);
+  color: var(--cd-text, #25231f);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.coach-root .cn-dt-quick:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--cd-accent, #947747) 45%,
+    var(--cd-line, #d9d5cc)
+  );
+}
+.coach-root .cn-dt-quick.is-active {
+  border-color: var(--cd-accent, #947747);
+  background: color-mix(
+    in srgb,
+    var(--cd-accent, #947747) 12%,
+    var(--cd-surface, white)
+  );
+  color: var(--cd-accent, #775b31);
+}
+.coach-root .cn-dt-time-actions {
+  margin-top: 0;
+}
+.coach-root .cn-dt-time-actions > div {
+  display: flex;
+  gap: 6px;
+}
+.coach-root .cn-dt-cancel,
+.coach-root .cn-dt-apply {
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.coach-root .cn-dt-cancel {
+  background: transparent;
+  color: var(--cd-muted, #817c73);
+}
+.coach-root .cn-dt-cancel:hover {
+  background: color-mix(in srgb, var(--cd-text, #222) 5%, transparent);
+}
+.coach-root .cn-dt-apply {
+  border-color: color-mix(in srgb, var(--cd-accent, #947747) 75%, transparent);
+  background: var(--cd-accent, #947747);
+  color: var(--cd-accent-foreground, white);
+  font-weight: 600;
+}
+.coach-root .cn-dt-apply:hover {
+  filter: brightness(0.96);
+}
+
+@media (max-width: 420px) {
+  .coach-root .cn-dt-popup {
+    max-height: min(80dvh, 440px);
+    overflow-y: auto;
+  }
+  .coach-root .cn-dt-day {
+    width: 32px;
+    height: 32px;
+    min-height: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coach-root .cn-dt-popup,
+  .coach-root .cn-dt-popup[data-ending-style] {
+    animation: none;
+  }
+  .coach-root .cn-dt-trigger,
+  .coach-root .cn-dt-day {
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .coach-root .cn-dt-popup {
+    background: var(--cd-surface, #fff);
+    backdrop-filter: none;
+  }
+}
+
+.coach-root .cn-dt-trigger {
+  border: 1px solid var(--cd-line);
+  background: color-mix(in srgb, var(--cd-surface) 92%, transparent);
+}
+
+.coach-root .cn-dt-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.coach-root .cn-dt-day {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.mp-meal-time-picker {
+  width: 120px;
+  flex: none;
+}
+
+.mp-meal-time-picker .cn-dt-trigger {
+  width: 100%;
+  gap: 7px;
+  padding-inline: 10px;
+}
+
+.mp-date-field .cn-dt-trigger {
+  width: 100%;
+}
+
+@media (max-width: 420px) {
+  .coach-root .cn-dt-day {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+}
