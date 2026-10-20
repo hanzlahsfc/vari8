@@ -22,7 +22,9 @@
     var status = demo.querySelector("[data-demo-status]");
     var progress = demo.querySelector(".demo-progress i");
 
-    var STEP_MS = 4000;
+    // Per-phase durations; the completed review holds longer before the
+    // story loops back to Prepare.
+    var PHASE_MS = [4200, 4200, 4200, 5600];
     var current = 0;
     var playing = false;
     var inView = false;
@@ -63,40 +65,45 @@
       if (progress && playing) {
         progress.style.animation = "none";
         void progress.offsetWidth; // restart fill for the new phase
-        progress.style.animation = "progFill " + STEP_MS + "ms linear forwards";
+        progress.style.animation =
+          "progFill " + PHASE_MS[current] + "ms linear forwards";
       }
       updateMotion();
     }
 
     function stopTimer() {
       if (timer) {
-        clearInterval(timer);
+        clearTimeout(timer);
         timer = null;
       }
     }
 
+    // Single chained timeout per phase — never two timers at once. The
+    // story loops continuously while the visitor intends playback;
+    // the review phase's longer duration gives the hold before restart.
     function startTimer() {
       stopTimer();
       if (playing && inView && !document.hidden) {
-        timer = setInterval(function () {
+        timer = setTimeout(function () {
+          timer = null;
           showStep(current + 1);
-          // One short demonstration, not an endless carousel.
-          if (current === captions.length - 1) setPlaying(false);
-        }, STEP_MS);
+          startTimer();
+        }, PHASE_MS[current]);
       }
       updateMotion();
     }
 
     function setPlaying(next) {
       playing = next;
-      if (playing) holdFrame = false;
-      if (playing && current === captions.length - 1) {
-        showStep(0);
-      } else if (playing && progress) {
-        // resume restarts this phase's progress fill
-        progress.style.animation = "none";
-        void progress.offsetWidth;
-        progress.style.animation = "progFill " + STEP_MS + "ms linear forwards";
+      if (playing) {
+        holdFrame = false;
+        if (progress) {
+          // resume restarts this phase's progress fill
+          progress.style.animation = "none";
+          void progress.offsetWidth;
+          progress.style.animation =
+            "progFill " + PHASE_MS[current] + "ms linear forwards";
+        }
       }
       if (status) status.setAttribute("aria-live", playing ? "off" : "polite");
       if (toggle) {
