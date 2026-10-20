@@ -42,7 +42,11 @@
 
 import { Prisma, type PrismaClient } from "@prisma/client";
 
-import { prisma as defaultPrisma } from "../db";
+import {
+  isSerializationConflict,
+  prisma as defaultPrisma,
+  withSerializedRetry as sharedWithSerializedRetry,
+} from "../db";
 import { AccessDeniedError, authorize, type SessionLike } from "../auth/guard";
 import { createPrismaAuthorizationRepo } from "../workspace/access";
 import { writeAuditEvent } from "../audit";
@@ -145,26 +149,7 @@ function validTimezone(zone: string): boolean {
 
 // ── Concurrency protocol (reviewed convention) ───────────────────────────
 
-const RAW_SERIALIZATION_SQLSTATES = new Set(["40001", "40P01"]);
 const READ_UNAVAILABLE_SQLSTATES = new Set(["57014", "55P03"]);
-const MAX_ATTEMPTS = 8;
-const BACKOFF_BASE_MS = 10;
-const BACKOFF_CAP_MS = 50;
-
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
-function isRetryableSerialization(error: unknown): boolean {
-  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
-  if (error.code === "P2034") return true;
-  if (error.code === "P2010") {
-    const meta = error.meta as { code?: unknown } | undefined;
-    return (
-      typeof meta?.code === "string" &&
-      RAW_SERIALIZATION_SQLSTATES.has(meta.code)
-    );
-  }
-  return false;
-}
 
 /**
  * Timeout/pool errors mapped to retryable `service_unavailable` OUTSIDE
@@ -235,31 +220,21 @@ async function withSerializedRetry<T>(
   fn: () => Promise<T>,
   retryPublishUniques = false,
 ): Promise<T> {
-  let attempt = 0;
-  for (;;) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (retryPublishUniques) {
-        const cls = classifyPublishP2002(error);
-        if (cls === "state_conflict") throw new TrainingError("state_conflict");
-        if (cls === "retryable" && ++attempt < MAX_ATTEMPTS) {
-          await sleep(Math.min(BACKOFF_BASE_MS * attempt, BACKOFF_CAP_MS));
-          continue;
+  return sharedWithSerializedRetry(fn, {
+    maxAttempts: 8,
+    backoffBaseMs: 10,
+    backoffCapMs: 50,
+    isRetryable: retryPublishUniques
+      ? (error) => {
+          const cls = classifyPublishP2002(error);
+          if (cls === "state_conflict")
+            throw new TrainingError("state_conflict");
+          return cls === "retryable" || isSerializationConflict(error);
         }
-        if (cls === "retryable")
-          throw new TrainingError("serialization_conflict");
-      }
-      if (isRetryableSerialization(error) && ++attempt < MAX_ATTEMPTS) {
-        await sleep(Math.min(BACKOFF_BASE_MS * attempt, BACKOFF_CAP_MS));
-        continue;
-      }
-      if (isRetryableSerialization(error))
-        throw new TrainingError("serialization_conflict");
-      mapTimeoutPoolError(error);
-      throw error;
-    }
-  }
+      : isSerializationConflict,
+    onExhausted: () => new TrainingError("serialization_conflict"),
+    onMiss: mapTimeoutPoolError,
+  });
 }
 
 async function advisoryLock(
