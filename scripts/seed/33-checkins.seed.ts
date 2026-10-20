@@ -290,8 +290,11 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         status: "ACTIVE",
       },
     });
-    await prisma.clientProfile.update({
-      where: { id: clientId(i) },
+    // Only bind the demo user when the profile has no owner yet: a
+    // profile already linked to a sign-in client (00-workspace.seed.ts
+    // binds SEED_CLIENT_EMAIL to the first roster client) keeps its owner.
+    await prisma.clientProfile.updateMany({
+      where: { id: clientId(i), userId: null },
       data: { userId: user.id },
     });
     const member = await prisma.workspaceMember.findFirst({
