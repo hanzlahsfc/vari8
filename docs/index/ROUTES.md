@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 49 backend pages, 3 API routes, 8 layouts, 3 canvas pages.
+Counts: 49 backend pages, 5 API routes, 8 layouts, 3 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -72,6 +72,8 @@ Route groups (do not add a path segment): `(tracker)`.
 |---|---|---|---|
 | `/api/auth/[...all]` | `app/api/auth/[...all]/route.ts` | GET, POST | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients` | `app/api/v1/workspaces/[workspaceId]/clients/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/invitations` | `app/api/v1/workspaces/[workspaceId]/invitations/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/invitations/[invitationId]` | `app/api/v1/workspaces/[workspaceId]/invitations/[invitationId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/session` | `app/api/v1/workspaces/[workspaceId]/session/route.ts` | - | none detected |
 
 ## Backend layouts (`app/`)
