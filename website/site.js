@@ -12,37 +12,60 @@
 
   var demo = document.querySelector("[data-demo]");
   if (demo) {
-    var steps = Array.prototype.slice.call(demo.querySelectorAll(".demo-step"));
+    var scene = demo.querySelector("[data-scene]");
+    var captions = Array.prototype.slice.call(
+      demo.querySelectorAll(".demo-caption"),
+    );
     var dots = Array.prototype.slice.call(demo.querySelectorAll(".demo-dot"));
     var toggle = demo.querySelector("[data-demo-toggle]");
     var replay = demo.querySelector("[data-demo-replay]");
     var status = demo.querySelector("[data-demo-status]");
+    var progress = demo.querySelector(".demo-progress i");
 
-    var STEP_MS = 3800;
+    var STEP_MS = 4000;
     var current = 0;
     var playing = false;
     var inView = false;
+    var holdFrame = false; // user paused mid-flight: freeze, don't snap
     var timer = null;
 
+    function updateMotion() {
+      var blocked = playing && (!inView || document.hidden);
+      var frozen = blocked || holdFrame;
+      var snap = (!playing && !frozen) || (reducedMotion.matches && !frozen);
+      demo.classList.toggle("is-frozen", frozen);
+      demo.classList.toggle("is-snap", snap);
+      if (progress && (!playing || snap)) {
+        progress.style.animation = "none";
+      }
+    }
+
     function showStep(index) {
-      current = ((index % steps.length) + steps.length) % steps.length;
-      steps.forEach(function (step, i) {
-        step.classList.toggle("is-active", i === current);
+      current = ((index % captions.length) + captions.length) % captions.length;
+      if (scene) scene.setAttribute("data-phase", String(current));
+      captions.forEach(function (cap, i) {
+        cap.classList.toggle("is-active", i === current);
+        cap.setAttribute("aria-hidden", i === current ? "false" : "true");
       });
       dots.forEach(function (dot, i) {
         dot.classList.toggle("is-active", i === current);
         dot.setAttribute("aria-pressed", i === current ? "true" : "false");
       });
       if (status) {
-        var caption = steps[current].querySelector("figcaption");
         status.textContent =
           "Step " +
           (current + 1) +
           " of " +
-          steps.length +
+          captions.length +
           ": " +
-          (caption ? caption.textContent.trim() : "");
+          captions[current].textContent.trim();
       }
+      if (progress && playing) {
+        progress.style.animation = "none";
+        void progress.offsetWidth; // restart fill for the new phase
+        progress.style.animation = "progFill " + STEP_MS + "ms linear forwards";
+      }
+      updateMotion();
     }
 
     function stopTimer() {
@@ -54,15 +77,28 @@
 
     function startTimer() {
       stopTimer();
-      if (playing && inView && !reducedMotion.matches && !document.hidden) {
+      if (playing && inView && !document.hidden) {
         timer = setInterval(function () {
           showStep(current + 1);
+          // One short demonstration, not an endless carousel.
+          if (current === captions.length - 1) setPlaying(false);
         }, STEP_MS);
       }
+      updateMotion();
     }
 
     function setPlaying(next) {
       playing = next;
+      if (playing) holdFrame = false;
+      if (playing && current === captions.length - 1) {
+        showStep(0);
+      } else if (playing && progress) {
+        // resume restarts this phase's progress fill
+        progress.style.animation = "none";
+        void progress.offsetWidth;
+        progress.style.animation = "progFill " + STEP_MS + "ms linear forwards";
+      }
+      if (status) status.setAttribute("aria-live", playing ? "off" : "polite");
       if (toggle) {
         toggle.textContent = playing ? "Pause" : "Play";
         toggle.setAttribute("aria-pressed", playing ? "true" : "false");
@@ -72,18 +108,21 @@
 
     dots.forEach(function (dot) {
       dot.addEventListener("click", function () {
+        holdFrame = false;
+        setPlaying(false); // manual selection pauses so visitors can read
         showStep(Number(dot.getAttribute("data-goto")) || 0);
-        startTimer(); // reset the clock so the new step gets a full slot
       });
     });
 
     if (toggle) {
       toggle.addEventListener("click", function () {
+        if (playing) holdFrame = true; // pause freezes the scene mid-motion
         setPlaying(!playing);
       });
     }
     if (replay) {
       replay.addEventListener("click", function () {
+        holdFrame = false;
         showStep(0);
         setPlaying(true);
       });
@@ -103,7 +142,12 @@
 
     document.addEventListener("visibilitychange", startTimer);
     if (reducedMotion.addEventListener) {
-      reducedMotion.addEventListener("change", startTimer);
+      reducedMotion.addEventListener("change", function () {
+        // Switching to reduced motion stops existing playback. Explicit
+        // Play/Replay still works, with visual transitions disabled in CSS.
+        if (reducedMotion.matches) setPlaying(false);
+        updateMotion();
+      });
     }
 
     // Autoplay only when motion is welcome; reduced-motion users get
@@ -119,6 +163,7 @@
     var stageImg = showcase.querySelector("[data-showcase-img]");
     var stageTitle = showcase.querySelector("[data-showcase-title]");
     var stageText = showcase.querySelector("[data-showcase-text]");
+    var panel = showcase.querySelector("[role='tabpanel']");
     var tabs = Array.prototype.slice.call(
       showcase.querySelectorAll(".feature-tab"),
     );
@@ -136,6 +181,7 @@
       }
       if (stageTitle) stageTitle.textContent = tab.getAttribute("data-title");
       if (stageText) stageText.textContent = tab.getAttribute("data-text");
+      if (panel) panel.setAttribute("aria-labelledby", tab.id);
       if (focus) tab.focus();
     }
 

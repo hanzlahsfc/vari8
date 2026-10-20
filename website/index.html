@@ -90,50 +90,125 @@
 
           <div class="demo" data-demo>
             <div class="demo-stage">
-              <figure class="demo-step is-active" data-step="0">
-                <img
-                  src="assets/shots/s07-training-editor.png"
-                  alt="Coach training program editor with draft controls and a Review and activate action"
-                />
-                <figcaption>
-                  <strong>1 · Coach prepares a plan.</strong> Training is
-                  drafted and activated for the client — saved drafts stay
-                  separate from what the client sees.
-                </figcaption>
-              </figure>
-              <figure class="demo-step" data-step="1">
-                <img
-                  src="assets/shots/s09-tracker-today.png"
-                  alt="Client tracker today view listing the day's metrics and habits"
-                />
-                <figcaption>
-                  <strong>2 · The client sees it.</strong> The same plan arrives
-                  as a clear daily view — today's training, nutrition targets
-                  and habits in one place.
-                </figcaption>
-              </figure>
-              <figure class="demo-step" data-step="2">
-                <img
-                  src="assets/shots/s03-checkins-board.png"
-                  alt="Coach check-in board showing a submitted check-in marked awaiting feedback"
-                />
-                <figcaption>
-                  <strong>3 · The check-in comes back.</strong> The client
-                  submits their update; it lands on the coach's board as
-                  awaiting feedback.
-                </figcaption>
-              </figure>
-              <figure class="demo-step" data-step="3">
-                <img
-                  src="assets/shots/s03-checkin-review.png"
-                  alt="Coach reviewing a client check-in with questionnaire answers and a respond panel"
-                />
-                <figcaption>
-                  <strong>4 · The coach reviews.</strong> Answers, metrics and
-                  context in one screen — the coach replies and decides what
-                  happens next. The client decides nothing automatically.
-                </figcaption>
-              </figure>
+              <p class="scene-label">
+                Illustrative workflow — not connected to live data.
+              </p>
+              <div
+                class="scene phase-0"
+                data-scene
+                data-phase="0"
+                aria-hidden="true"
+              >
+                <div class="pane pane-coach">
+                  <div class="pane-head">
+                    <span class="pane-role">Coach</span>
+                    <span class="pane-name">Liliana</span>
+                  </div>
+                  <div class="card plan-card">
+                    <p class="card-title">Training plan · Week of 13 Oct</p>
+                    <ul class="plan-rows">
+                      <li class="prow prow-1">
+                        <i></i>Lower body — 4 exercises
+                      </li>
+                      <li class="prow prow-2">
+                        <i></i>Upper body — 3 exercises
+                      </li>
+                      <li class="prow prow-3">
+                        <i></i>Conditioning — intervals
+                      </li>
+                    </ul>
+                    <div class="pub-row">
+                      <span class="pub-btn">
+                        <span class="pub-idle" data-in="0"
+                          >Publish to client</span
+                        >
+                        <span class="pub-done" data-in="1 2 3"
+                          >Published&nbsp;✓</span
+                        >
+                      </span>
+                    </div>
+                  </div>
+                  <div class="card inbox-card">
+                    <p class="card-title">Check-ins</p>
+                    <p class="inbox-empty" data-in="0 1">No updates waiting</p>
+                    <div class="inbox-item" data-in="2 3">
+                      <span class="avatar">EA</span>
+                      <div class="inbox-lines">
+                        <b>Emma’s check-in</b>
+                        <i></i>
+                        <i></i>
+                      </div>
+                      <span class="pill pill-await" data-in="2"
+                        >Awaiting feedback</span
+                      >
+                      <span class="pill pill-done" data-in="3"
+                        >Reviewed&nbsp;✓</span
+                      >
+                    </div>
+                    <div class="reply-box" data-in="3">
+                      <i></i>
+                      <i></i>
+                      <span class="reply-btn">Send reply</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="connector"><span class="conn-line"></span></div>
+
+                <div class="pane pane-client">
+                  <div class="pane-head">
+                    <span class="pane-role">Client</span>
+                    <span class="pane-name">Emma</span>
+                  </div>
+                  <p class="client-wait" data-in="0">
+                    Plan coming from your coach…
+                  </p>
+                  <div class="card client-plan" data-in="1 2 3">
+                    <p class="card-title">Today</p>
+                    <ul class="plan-rows">
+                      <li class="prow"><i></i>Lower body — 4 exercises</li>
+                      <li class="prow"><i></i>Log breakfast &amp; lunch</li>
+                      <li class="prow"><i></i>Morning weigh-in</li>
+                    </ul>
+                  </div>
+                  <div class="card client-checkin" data-in="2 3">
+                    <p class="card-title">Weekly check-in</p>
+                    <div class="ci-lines"><i></i><i></i><i></i></div>
+                    <span class="ci-btn" data-in="2">Send check-in</span>
+                    <span class="pill pill-sent" data-in="3">Sent&nbsp;✓</span>
+                  </div>
+                </div>
+
+                <div class="travel travel-plan" data-in="1">
+                  <span>Training plan</span>
+                </div>
+                <div class="travel travel-ci" data-in="2">
+                  <span>Check-in</span>
+                </div>
+              </div>
+              <div class="demo-progress" aria-hidden="true"><i></i></div>
+              <div class="demo-captions">
+                <p class="demo-caption is-active" data-caption="0">
+                  <strong>1 · Coach prepares a plan.</strong> Sessions are
+                  drafted in the coach’s workspace — the client sees nothing
+                  until it’s published.
+                </p>
+                <p class="demo-caption" data-caption="1">
+                  <strong>2 · Coach publishes.</strong> One deliberate action
+                  sends the plan across — it lands in the client’s daily view
+                  for the week.
+                </p>
+                <p class="demo-caption" data-caption="2">
+                  <strong>3 · Client sends a check-in.</strong> The week’s
+                  update travels back to the coach and arrives as awaiting
+                  feedback.
+                </p>
+                <p class="demo-caption" data-caption="3">
+                  <strong>4 · Coach reviews.</strong> The check-in opens with
+                  context; the coach replies and decides what happens next.
+                  Changes remain the coach’s decision.
+                </p>
+              </div>
             </div>
 
             <div class="demo-controls">
@@ -152,7 +227,7 @@
                   data-goto="1"
                   aria-pressed="false"
                 >
-                  <span class="dot-num">2</span> Client sees
+                  <span class="dot-num">2</span> Publish
                 </button>
                 <button
                   type="button"
@@ -205,20 +280,6 @@
           </p>
 
           <div class="showcase" data-showcase>
-            <div class="showcase-stage">
-              <img
-                data-showcase-img
-                src="assets/shots/s07-training-editor.png"
-                alt="Coach training program editor with draft controls and a Review and activate action"
-              />
-            </div>
-            <div class="showcase-caption">
-              <h3 data-showcase-title>Training</h3>
-              <p data-showcase-text>
-                Coaches build training programs with drafts kept separate from
-                what the client sees — review and activate when ready.
-              </p>
-            </div>
             <div
               class="showcase-tabs"
               role="tablist"
@@ -227,7 +288,9 @@
               <button
                 type="button"
                 class="feature-tab is-active"
+                id="feature-training"
                 role="tab"
+                aria-controls="feature-preview"
                 aria-selected="true"
                 data-feature="training"
                 data-img="assets/shots/s07-training-editor.png"
@@ -245,7 +308,9 @@
               <button
                 type="button"
                 class="feature-tab"
+                id="feature-nutrition"
                 role="tab"
+                aria-controls="feature-preview"
                 aria-selected="false"
                 data-feature="nutrition"
                 data-img="assets/shots/s06-mealplan-editor.png"
@@ -263,7 +328,9 @@
               <button
                 type="button"
                 class="feature-tab"
+                id="feature-checkins"
                 role="tab"
+                aria-controls="feature-preview"
                 aria-selected="false"
                 data-feature="checkins"
                 data-img="assets/shots/s03-checkin-review.png"
@@ -281,7 +348,9 @@
               <button
                 type="button"
                 class="feature-tab"
+                id="feature-progress"
                 role="tab"
+                aria-controls="feature-preview"
                 aria-selected="false"
                 data-feature="progress"
                 data-img="assets/shots/s09-tracker-trends.png"
@@ -296,6 +365,28 @@
                 />
                 <span>Progress</span>
               </button>
+            </div>
+            <div
+              class="showcase-panel"
+              id="feature-preview"
+              role="tabpanel"
+              aria-labelledby="feature-training"
+              tabindex="0"
+            >
+              <div class="showcase-stage">
+                <img
+                  data-showcase-img
+                  src="assets/shots/s07-training-editor.png"
+                  alt="Coach training program editor with draft controls and a Review and activate action"
+                />
+              </div>
+              <div class="showcase-caption">
+                <h3 data-showcase-title>Training</h3>
+                <p data-showcase-text>
+                  Coaches build training programs with drafts kept separate from
+                  what the client sees — review and activate when ready.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -394,8 +485,8 @@
           <p class="kicker">Early access</p>
           <h2 class="section-title" id="early-title">Request early access</h2>
           <p class="section-sub">
-            Vari8 is in active development and being shared with a small group
-            first. Leave your details to hear when a place opens.
+            Vari8 is in active development. This section previews the intended
+            early-access signup; requests are not being collected here yet.
           </p>
 
           <div class="honesty-box" role="note">

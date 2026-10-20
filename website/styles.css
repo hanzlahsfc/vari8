@@ -32,6 +32,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 8rem;
 }
 
 body {
@@ -184,7 +185,8 @@ body::before {
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
-select:focus-visible {
+select:focus-visible,
+[role="tabpanel"]:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
@@ -307,54 +309,578 @@ select:focus-visible {
 
 .demo-stage {
   display: grid;
-  gap: 1.8rem;
+  gap: 1.1rem;
 }
-.demo-step {
+
+.scene-label {
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-  transition: opacity 220ms ease;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
 }
-.demo-step img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  object-fit: cover;
-  object-position: top center;
+
+/* ---------- illustrated workflow scene ---------- */
+
+.scene {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 3.5rem 1fr;
+  gap: 0;
+  min-height: 24rem;
+  background: var(--canvas);
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) - 0.25rem);
-  background: var(--canvas);
+  padding: clamp(0.9rem, 2vw, 1.4rem);
 }
-.demo-step figcaption {
-  color: var(--muted);
-  font-size: 0.97rem;
-  min-height: 3.2em;
+
+.pane {
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  display: grid;
+  align-content: start;
+  gap: 0.8rem;
 }
-.demo-step figcaption strong {
+.pane-coach {
+  grid-column: 1;
+}
+.pane-client {
+  grid-column: 3;
+  grid-template-rows: auto 1fr auto;
+}
+.pane-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.6rem;
+}
+.pane-role {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.68rem;
+  color: var(--accent-ink);
+}
+.pane-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 0.2rem);
+  padding: 0.8rem 0.9rem;
+}
+.card-title {
+  margin: 0 0 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 600;
   color: var(--text);
 }
 
-/* JS on: steps share one grid cell; only the active step shows.
-   JS off: steps auto-place into rows and all remain visible. */
-.js .demo-stage {
+.plan-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+.prow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.prow i {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 0.3rem;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-subtle);
+  flex: none;
+}
+
+.pub-row {
+  margin-top: 0.7rem;
+  display: grid;
+}
+.pub-btn {
+  grid-area: 1 / 1;
+  justify-self: start;
+  display: grid;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.pub-btn > span {
+  grid-area: 1 / 1;
+  padding: 0.35rem 0.85rem;
+}
+.pub-idle {
+  color: var(--accent-ink);
+}
+.pub-done {
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+.inbox-card {
+  display: grid;
+}
+.inbox-empty {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-style: italic;
+  grid-area: 2 / 1;
+}
+.inbox-item {
+  grid-area: 2 / 1;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  position: relative;
+  padding-right: 8.6rem;
+}
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 0.68rem;
+  font-weight: 700;
+  flex: none;
+}
+.inbox-lines {
+  flex: 1;
+  display: grid;
+  gap: 0.3rem;
+}
+.inbox-lines b {
+  font-size: 0.82rem;
+}
+.inbox-lines i {
+  height: 0.5rem;
+  border-radius: 99px;
+  background: var(--border);
+}
+.inbox-lines i:last-child {
+  width: 70%;
+}
+.inbox-item .pill {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.pill-await {
+  border: 1px solid var(--accent);
+  color: var(--accent-ink);
+}
+.pill-done,
+.pill-sent {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+.reply-box {
+  margin-top: 0.7rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: 0.6rem;
+  padding: 0.6rem;
+  display: grid;
+  gap: 0.35rem;
+}
+.reply-box i {
+  height: 0.5rem;
+  border-radius: 99px;
+  background: var(--border);
+}
+.reply-box i:nth-child(2) {
+  width: 55%;
+}
+.reply-btn {
+  justify-self: end;
+  margin-top: 0.25rem;
+  border: 1px solid var(--accent);
+  color: var(--accent-ink);
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+/* overlapping same-slot pairs keep pane heights identical across phases */
+.client-wait,
+.client-plan {
+  grid-area: 2 / 1;
+}
+.client-wait {
+  margin: 0;
+  border: 1px dashed var(--border);
+  border-radius: calc(var(--radius) - 0.2rem);
+  padding: 0.8rem 0.9rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.client-checkin {
+  grid-area: 3 / 1;
+  display: grid;
+  gap: 0.5rem;
+}
+.ci-lines {
+  display: grid;
+  gap: 0.35rem;
+}
+.ci-lines i {
+  height: 0.55rem;
+  border-radius: 99px;
+  background: var(--border);
+}
+.ci-lines i:nth-child(2) {
+  width: 82%;
+}
+.ci-lines i:nth-child(3) {
+  width: 58%;
+}
+.ci-btn {
+  justify-self: start;
+  grid-area: 4 / 1;
+  border: 1px solid var(--accent);
+  color: var(--accent-ink);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.pill-sent {
+  grid-area: 4 / 1;
+  justify-self: start;
+}
+
+.connector {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.conn-line {
+  width: 100%;
+  border-top: 1px dashed var(--border-strong);
+}
+
+.travel {
+  position: absolute;
+  top: 38%;
+  left: 6%;
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-ink);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 55%);
+  pointer-events: none;
+}
+.travel-ci {
+  left: auto;
+  right: 6%;
+  top: 62%;
+}
+
+/* phase visibility — base hides the "earlier state" variants so the
+   no-JS fallback reads as the completed workflow; JS re-shows the right
+   state per phase via data-in tokens (visibility keeps pane heights
+   constant, so switching phases never causes layout jumps) */
+.pub-idle,
+.inbox-empty,
+.client-wait,
+.pill-await,
+.ci-btn,
+.travel {
+  visibility: hidden;
+}
+.js .scene [data-in] {
+  visibility: hidden;
+}
+.js .scene[data-phase="0"] [data-in~="0"],
+.js .scene[data-phase="1"] [data-in~="1"],
+.js .scene[data-phase="2"] [data-in~="2"],
+.js .scene[data-phase="3"] [data-in~="3"] {
+  visibility: visible;
+}
+
+/* ---------- in-scene motion ---------- */
+
+@keyframes rowIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes pressIn {
+  0%,
+  55% {
+    transform: scale(1);
+    background: transparent;
+  }
+  70% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+    background: var(--accent);
+  }
+}
+@keyframes flyPlanX {
+  0% {
+    left: 6%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+    left: 82%;
+  }
+  100% {
+    left: 82%;
+    opacity: 0;
+  }
+}
+@keyframes flyCiX {
+  0% {
+    right: 6%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+    right: 82%;
+  }
+  100% {
+    right: 82%;
+    opacity: 0;
+  }
+}
+@keyframes flyPlanY {
+  0% {
+    top: 30%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+    top: 62%;
+  }
+  100% {
+    top: 62%;
+    opacity: 0;
+  }
+}
+@keyframes flyCiY {
+  0% {
+    top: 66%;
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+    top: 34%;
+  }
+  100% {
+    top: 34%;
+    opacity: 0;
+  }
+}
+@keyframes revealUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+}
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+@keyframes pillIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+@keyframes glowPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(235 145 184 / 0%);
+  }
+  40% {
+    box-shadow: 0 0 0 4px rgb(235 145 184 / 35%);
+  }
+}
+@keyframes waitPulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes progFill {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* phase 0 — coach rows populate one by one; client waits */
+.js .scene[data-phase="0"] .plan-card .prow-1 {
+  animation: rowIn 0.5s ease 0.4s both;
+}
+.js .scene[data-phase="0"] .plan-card .prow-2 {
+  animation: rowIn 0.5s ease 1s both;
+}
+.js .scene[data-phase="0"] .plan-card .prow-3 {
+  animation: rowIn 0.5s ease 1.6s both;
+}
+.js .scene[data-phase="0"] .pub-btn {
+  animation: revealUp 0.5s ease 2.1s both;
+}
+.js .scene[data-phase="0"] .client-wait {
+  animation: waitPulse 2.2s ease-in-out 0.4s infinite;
+}
+
+/* phase 1 — publish presses, plan travels right, client card reveals */
+.js .scene[data-phase="1"] .pub-btn {
+  animation: pressIn 0.7s ease 0.3s both;
+}
+.js .scene[data-phase="1"] .travel-plan {
+  animation: flyPlanX 1.1s ease 0.9s both;
+}
+.js .scene[data-phase="1"] .client-plan {
+  animation: revealUp 0.55s ease 1.9s both;
+}
+.js .scene[data-phase="1"] .pub-done {
+  animation: popIn 0.3s ease 0.8s both;
+}
+
+/* phase 2 — check-in fills, sends, travels back to coach */
+.js .scene[data-phase="2"] .ci-lines i {
+  transform-origin: left;
+  animation: rowIn 0.45s ease both;
+}
+.js .scene[data-phase="2"] .ci-lines i:nth-child(1) {
+  animation-delay: 0.3s;
+}
+.js .scene[data-phase="2"] .ci-lines i:nth-child(2) {
+  animation-delay: 0.75s;
+}
+.js .scene[data-phase="2"] .ci-lines i:nth-child(3) {
+  animation-delay: 1.2s;
+}
+.js .scene[data-phase="2"] .ci-btn {
+  animation: pressIn 0.6s ease 1.7s both;
+}
+.js .scene[data-phase="2"] .travel-ci {
+  animation: flyCiX 1.1s ease 2.1s both;
+}
+.js .scene[data-phase="2"] .inbox-item {
+  animation: revealUp 0.5s ease 3s both;
+}
+
+/* phase 3 — review opens and highlights on the coach side */
+.js .scene[data-phase="3"] .inbox-card {
+  animation: glowPulse 1.6s ease 0.3s 2 both;
+}
+.js .scene[data-phase="3"] .reply-box {
+  animation: revealUp 0.55s ease 0.7s both;
+}
+.js .scene[data-phase="3"] .pill-done {
+  animation: pillIn 0.35s ease 0.35s both;
+}
+
+/* paused mid-flight or blocked (offscreen/hidden): freeze everything */
+.demo.is-frozen .scene *,
+.demo.is-frozen .demo-progress i {
+  animation-play-state: paused !important;
+}
+/* paused by user / manual browsing / reduced motion: instant end state */
+.demo.is-snap .scene *,
+.demo.is-snap .demo-progress i {
+  animation: none !important;
+}
+
+.demo-progress {
+  height: 3px;
+  border-radius: 99px;
+  background: var(--surface-subtle);
+  overflow: hidden;
+  display: none;
+}
+.js .demo-progress {
+  display: block;
+}
+.demo-progress i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.demo-captions {
+  display: grid;
+  gap: 0.4rem;
+}
+.demo-caption {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.97rem;
+}
+.demo-caption strong {
+  color: var(--text);
+}
+/* JS on: only the active caption shows. JS off: all captions readable. */
+.js .demo-captions {
   gap: 0;
 }
-.js .demo-step {
+.js .demo-caption {
   grid-area: 1 / 1;
   opacity: 0;
-  pointer-events: none;
-  position: relative;
-  z-index: 0;
+  visibility: hidden;
+  transition: opacity 200ms ease;
 }
-.js .demo-step.is-active {
+.js .demo-caption.is-active {
   opacity: 1;
-  pointer-events: auto;
-  z-index: 1;
+  visibility: visible;
 }
 
 .demo-controls {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -362,6 +888,9 @@ select:focus-visible {
   margin-top: 1.2rem;
   border-top: 1px solid var(--border);
   padding-top: 1.1rem;
+}
+.js .demo-controls {
+  display: flex;
 }
 
 .demo-steps {
@@ -414,6 +943,13 @@ select:focus-visible {
 .showcase {
   display: grid;
   gap: 1.4rem;
+}
+.showcase-panel {
+  order: -1;
+  display: grid;
+  gap: 1.4rem;
+  min-width: 0;
+  border-radius: var(--radius);
 }
 
 .showcase-stage {
@@ -705,6 +1241,41 @@ select:focus-visible {
   }
   .two-col {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .scene {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+  .pane-coach {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .connector {
+    grid-column: 1;
+    grid-row: 2;
+    height: 2.4rem;
+  }
+  .pane-client {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  /* cards travel vertically between stacked panes */
+  .travel-plan {
+    top: 30%;
+    left: 8%;
+  }
+  .travel-ci {
+    top: 66%;
+    right: 8%;
+  }
+  .js .scene[data-phase="1"] .travel-plan {
+    animation-name: flyPlanY;
+  }
+  .js .scene[data-phase="2"] .travel-ci {
+    animation-name: flyCiY;
   }
 }
 

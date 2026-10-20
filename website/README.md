@@ -19,8 +19,9 @@ python3 -m http.server 8420
 - `index.html` — single product page
 - `styles.css` — scoped styles; visual tokens mirror the canvas preview
 - `site.js` — small dependency-free script for the two local interactions
-  (workflow demo stepper, feature showcase). The page stays fully readable
-  with JavaScript disabled.
+  (animated workflow scene, feature showcase). The page stays fully
+  readable with JavaScript disabled: the workflow shows its completed
+  end state with all four steps described.
 - `assets/fonts/` — `InfinityGeist.woff2` + `StudioGaramond-Regular.ttf`,
   copied from `frontend/public/fonts/` (in-repo canvas assets)
 - `assets/grain.png` — copied from `frontend/public/grain.png`
