@@ -63,7 +63,7 @@ describe("system index generator", () => {
     );
     expect(routes).toContain("## Backend API routes (`app/api/`)");
     expect(routes).toContain(
-      "| `/api/auth/[...nextauth]` | `app/api/auth/[...nextauth]/route.ts` | GET, POST |",
+      "| `/api/auth/[...all]` | `app/api/auth/[...all]/route.ts` | GET, POST |",
     );
   });
 
@@ -124,7 +124,7 @@ describe("system index generator", () => {
     expect(routes).toContain(
       "| `/sheets/[slug]` | `app/sheets/[slug]/page.tsx` |",
     );
-    expect(routes).toContain("Counts: 48 backend pages");
+    expect(routes).toContain("Counts: 49 backend pages");
     // The same name collides inside spec/, which must be inventoried too: a
     // managed router exists for spec/ and its region carries no file counts.
     expect(

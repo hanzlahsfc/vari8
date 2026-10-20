@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveScope } from "../../lib/auth/rbac";
 import {
-  FIELD_KINDS,
   FORM_LIMITS,
   type FieldKind,
   validateDefinition,
@@ -303,39 +301,5 @@ describe("P-008 validation — field ID trust", () => {
         { forPublish: false },
       ).fields[0].options![0].optionId,
     ).toBe(optionId);
-  });
-});
-
-describe("P-008 RBAC — onboardingFormTemplates", () => {
-  it("owner and coach have workspace read/write; others denied", () => {
-    expect(
-      resolveScope("onboardingFormTemplates", "read", "WORKSPACE_OWNER"),
-    ).toBe("workspace");
-    expect(
-      resolveScope("onboardingFormTemplates", "write", "WORKSPACE_OWNER"),
-    ).toBe("workspace");
-    expect(resolveScope("onboardingFormTemplates", "read", "COACH")).toBe(
-      "workspace",
-    );
-    expect(resolveScope("onboardingFormTemplates", "write", "COACH")).toBe(
-      "workspace",
-    );
-    for (const role of [
-      "ASSISTANT_COACH",
-      "SUPPORT",
-      "CLIENT",
-      "PLATFORM_ADMIN",
-    ] as const) {
-      expect(resolveScope("onboardingFormTemplates", "read", role)).toBe(
-        "denied",
-      );
-      expect(resolveScope("onboardingFormTemplates", "write", role)).toBe(
-        "denied",
-      );
-    }
-  });
-
-  it("field kind union is closed", () => {
-    expect(FIELD_KINDS).toHaveLength(6);
   });
 });

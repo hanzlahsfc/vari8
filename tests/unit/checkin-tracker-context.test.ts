@@ -1,48 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { parseDeclaredDate } from "../../lib/daily-entry/service";
-import { reconcileTrackerContextScopes } from "../../lib/checkin/tracker-context";
 
 /**
  * P-025-D6 — DailyEntry tracker-context contract (decision #103 + the
  * binding D6 engineering contract): strict authorization-scope
  * reconciliation and the exact declared-date contract.
  */
-
-describe("reconcileTrackerContextScopes", () => {
-  it.each([
-    ["workspace", "workspace", "workspace"],
-    ["workspace", "assigned", "assigned"],
-    ["assigned", "workspace", "assigned"],
-    ["assigned", "assigned", "assigned"],
-    ["assigned", "own", "denied"],
-    ["own", "assigned", "denied"],
-    ["own", "own", "denied"],
-    ["workspace", "own", "denied"],
-    ["denied", "workspace", "denied"],
-    ["workspace", "denied", "denied"],
-    ["assigned", "denied", "denied"],
-    ["denied", "denied", "denied"],
-    [null, "workspace", "denied"],
-    ["workspace", null, "denied"],
-    [undefined, "assigned", "denied"],
-    ["platform", "workspace", "denied"],
-    ["bogus", "bogus", "denied"],
-  ] as const)("checkin=%s daily=%s → %s", (chk, daily, expected) => {
-    expect(reconcileTrackerContextScopes(chk as never, daily as never)).toBe(
-      expected,
-    );
-  });
-
-  it("never widens assigned to workspace", () => {
-    expect(reconcileTrackerContextScopes("assigned", "assigned")).toBe(
-      "assigned",
-    );
-    expect(reconcileTrackerContextScopes("workspace", "assigned")).toBe(
-      "assigned",
-    );
-  });
-});
 
 describe("declared-date contract (shared parser)", () => {
   it("accepts canonical YYYY-MM-DD within bounds", () => {

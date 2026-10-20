@@ -1,7 +1,37 @@
 # Authorization model (Stage 1)
 
 Default-deny, server-enforced role/resource/action matrix. UI visibility is **never**
-authorization. This is a plan; nothing is implemented here.
+authorization.
+
+## Shipped surface (PR-05, `lib/auth/roles.ts`)
+
+The code-level source of truth is `CAPABILITY_MATRIX` in `lib/auth/roles.ts`.
+Public roles per the owner's D10/D15 decision: **owner**, **coach**, **client**.
+Persisted `MemberRole` values map as `WORKSPACE_OWNER→owner`, `COACH→coach`,
+`CLIENT→client`; `ASSISTANT_COACH` and `SUPPORT` map to **no role → deny**
+until the owner assigns them D15 capabilities. Scopes: `workspace` (any client
+in the workspace), `own` (own records only), `deny`.
+
+| Capability           | owner     | coach     | client |
+| -------------------- | --------- | --------- | ------ |
+| roster.read          | workspace | workspace | deny   |
+| plan.read            | workspace | workspace | own    |
+| plan.write           | workspace | workspace | deny   |
+| clientData.read      | workspace | workspace | own    |
+| own.read / own.write | own       | own       | own    |
+| notes.write          | workspace | workspace | deny   |
+| tasks.manage         | workspace | workspace | deny   |
+| library.manage       | workspace | workspace | deny   |
+| message.write        | workspace | workspace | own    |
+| appearance.write     | workspace | workspace | deny   |
+| member.invite        | workspace | workspace | deny   |
+
+Key owner rulings encoded here: a coach **can** edit a client's plan
+(`plan.write: workspace`), a client **cannot** (`deny`) — enforced at the
+`/api/v1` route helper, which resolves viewer → ACTIVE workspace membership →
+role → non-deny scope before the single service call runs.
+
+## Target model (below is the plan; only the shipped surface above is code)
 
 ## Scope vocabulary
 

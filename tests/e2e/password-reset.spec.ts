@@ -1,32 +1,35 @@
+import { createHash } from "node:crypto";
+
 import { expect, test, type Page } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
 
 import { hashPassword } from "../../lib/password";
-import { requestPasswordReset } from "../../lib/auth/password-reset";
-import { passwordResetDeliveryAvailable } from "../../lib/auth/password-reset-delivery";
+import { generateAccessToken } from "../../lib/tokens/crypto";
 import { createWorkspaceInvitation } from "../../lib/workspace/invitations";
 import { E2E, e2eDatabaseUrl } from "./global-setup";
 
 /**
- * Phase 3.2 — user-facing password reset E2E.
+ * Phase 3.2 — user-facing password reset E2E (PR-05 rewiring).
  *
- * Reset tokens are issued through the reviewed service (delivery seam
- * captured), then the browser exercises `/reset-request` and
- * `/reset?token=…`. Created rows are namespaced (`p32-*@s1h-e2e.test`) and
- * removed in afterAll so teardown's reserved-row cleanup stays intact.
+ * Reset links are Better Auth `verification` rows
+ * (`identifier = "reset-password:<token>"`, `value = userId`, 60-minute TTL,
+ * consumed atomically on use). The spec mints the row directly — exactly the
+ * shape `request-password-reset` writes — then the browser exercises
+ * `/reset-request` and `/reset?token=…`. Created rows are namespaced
+ * (`p32-*@s1h-e2e.test`) and removed in afterAll.
  *
- * The routes are capability-gated: every flow test skips while no real
- * delivery adapter is registered (the documented activation path). The
- * gated-off assertions at the bottom always run.
+ * The routes are capability-gated: every flow test skips while mail delivery
+ * is unconfigured (the documented activation path). The gated-off assertions
+ * at the bottom always run.
  */
 
-// True only when a REAL adapter is registered AND selected — an env value
-// alone can never enable this (the registry is empty until a provider lands).
-const DELIVERY_UP = passwordResetDeliveryAvailable(
-  process.env.PASSWORD_RESET_DELIVERY_ADAPTER,
-);
+// PR-05: the e2e webServer is always `next start` (NODE_ENV=production), so
+// the implicit dev-file default never applies there — delivery exists only
+// when MAIL_DELIVERY_ADAPTER names a registered adapter. Gate on the server's
+// condition, not this (non-production) test process's default.
+const DELIVERY_UP = process.env.MAIL_DELIVERY_ADAPTER === "dev-file";
 const GATED = !DELIVERY_UP;
-const GATE_REASON = "password-reset delivery adapter not configured";
+const GATE_REASON = "mail delivery adapter not configured";
 
 const prisma = new PrismaClient({
   datasources: { db: { url: e2eDatabaseUrl() } },
@@ -45,7 +48,7 @@ function resetEmail(tag: string) {
 
 async function mkResettableUser(tag: string) {
   const email = resetEmail(tag);
-  return prisma.user.create({
+  const user = await prisma.user.create({
     data: {
       email,
       passwordHash: await hashPassword(E2E.password),
@@ -53,21 +56,40 @@ async function mkResettableUser(tag: string) {
       status: "ACTIVE",
     },
   });
+  // PR-05: credential sign-in reads the `accounts` row.
+  await prisma.account.create({
+    data: {
+      userId: user.id,
+      accountId: user.id,
+      providerId: "credential",
+      password: await hashPassword(E2E.password),
+    },
+  });
+  return user;
 }
 
-/** Issue a real reset token via the service, capturing the delivery seam. */
+// PR-05: `verification.storeIdentifier: "hashed"` — rows key the SHA-256
+// digest (base64url, unpadded) of `reset-password:<rawToken>`; the raw token
+// is never stored.
+const resetIdentifier = (rawToken: string) =>
+  createHash("sha256").update(`reset-password:${rawToken}`).digest("base64url");
+
+/** Mint a real reset token: the same verification row the auth flow writes. */
 async function resetToken(email: string): Promise<string> {
-  const payloads: { rawToken: string }[] = [];
-  await requestPasswordReset(
-    { email },
-    { deliver: (p) => void payloads.push(p) },
-    prisma,
-  );
-  return payloads[0].rawToken;
+  const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+  const { rawToken } = generateAccessToken();
+  await prisma.verification.create({
+    data: {
+      identifier: resetIdentifier(rawToken),
+      value: user.id,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    },
+  });
+  return rawToken;
 }
 
 function trackToken(rawToken: string) {
-  myRawTokens.push(rawToken); // resolved to row ids in afterAll
+  myRawTokens.push(rawToken);
 }
 
 test.beforeAll(async () => {
@@ -82,30 +104,22 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  const hashes = await Promise.all(
-    myRawTokens.map(async (raw) => {
-      const { hashAccessToken } = await import("../../lib/tokens/crypto");
-      return hashAccessToken(raw);
-    }),
-  );
-  const tokenIds = (
-    await prisma.accessToken.findMany({
-      where: { tokenHash: { in: hashes } },
-      select: { id: true },
-    })
-  ).map((t) => t.id);
-  await prisma.auditEvent.deleteMany({
-    where: { resourceId: { in: tokenIds } },
+  await prisma.verification.deleteMany({
+    where: {
+      identifier: { in: myRawTokens.map(resetIdentifier) },
+    },
   });
-  await prisma.accessToken.deleteMany({ where: { id: { in: tokenIds } } });
   const users = await prisma.user.findMany({
     where: { email: { in: myEmails } },
     select: { id: true },
   });
   const userIds = users.map((u) => u.id);
+  await prisma.verification.deleteMany({ where: { value: { in: userIds } } });
   await prisma.auditEvent.deleteMany({
     where: { subjectUserId: { in: userIds } },
   });
+  await prisma.account.deleteMany({ where: { userId: { in: userIds } } });
+  await prisma.session.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.accessToken.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
   await prisma.$disconnect();
@@ -175,16 +189,12 @@ test.describe("reset completion (/reset)", () => {
     await page.getByLabel("New password").fill("abcdefghij");
     await page.getByRole("button", { name: "Set new password" }).click();
     await expect(page.locator(".auth-error")).toContainText(
-      "at least one digit (0–9)",
+      "at least one digit",
     );
-    const stillLive = await prisma.accessToken.findUnique({
-      where: {
-        tokenHash:
-          // token still unclaimed after the rejections
-          (await import("../../lib/tokens/crypto")).hashAccessToken(rawToken),
-      },
+    const stillLive = await prisma.verification.findUnique({
+      where: { identifier: resetIdentifier(rawToken) },
     });
-    expect(stillLive?.consumedAt).toBeNull();
+    expect(stillLive).not.toBeNull();
 
     const newPassword = `reset-${Date.now()}-pw1`;
     await page.getByLabel("New password").fill(newPassword);
@@ -221,28 +231,30 @@ test.describe("reset completion (/reset)", () => {
     ).toHaveAttribute("href", "/reset-request");
   });
 
-  test("revoked (superseded) and expired links fail safely", async ({
-    page,
-  }) => {
-    const u = await mkResettableUser("revoked");
+  test("superseded links fail safely", async ({ page }) => {
+    // A newer request revokes the earlier token — simulate the supersede the
+    // real endpoint performs by deleting the first row the way the
+    // request-password-reset hook does.
+    const u = await mkResettableUser("superseded");
     const first = await resetToken(u.email);
     trackToken(first);
-    const second = await resetToken(u.email); // sibling rule revokes `first`
+    const second = await resetToken(u.email);
     trackToken(second);
+    await prisma.verification.deleteMany({
+      where: { identifier: resetIdentifier(first) },
+    });
     await page.goto(`/reset?token=${first}`);
     await expect(page.getByLabel("New password")).toHaveCount(0);
     await expect(page.locator("main")).toContainText("invalid");
+  });
 
+  test("expired links fail safely", async ({ page }) => {
     const u2 = await mkResettableUser("expired");
     const exp = await resetToken(u2.email);
     trackToken(exp);
-    const { hashAccessToken } = await import("../../lib/tokens/crypto");
-    await prisma.accessToken.update({
-      where: { tokenHash: hashAccessToken(exp) },
-      data: {
-        createdAt: new Date(Date.now() - 48 * 3600_000),
-        expiresAt: new Date(Date.now() - 36 * 3600_000),
-      },
+    await prisma.verification.update({
+      where: { identifier: resetIdentifier(exp) },
+      data: { expiresAt: new Date(Date.now() - 36 * 3600_000) },
     });
     await page.goto(`/reset?token=${exp}`);
     await expect(page.getByLabel("New password")).toHaveCount(0);
@@ -294,7 +306,7 @@ test.describe("session invalidation", () => {
     await page.getByRole("button", { name: "Set new password" }).click();
     await expect(page).toHaveURL(/\/login\?reset=1/);
 
-    // sessionVersion++ must invalidate the previously-issued JWT cookie.
+    // The reset deleted this user's session rows — the old cookie is dead.
     await page.goto("/workspace");
     await expect(page).toHaveURL(/\/login/);
   });
@@ -305,6 +317,9 @@ test.describe("responsive + a11y", () => {
 });
 
 test.describe("delivery gated off (current default)", () => {
+  // Mutually exclusive with the flow cases: when MAIL_DELIVERY_ADAPTER is
+  // set for the suite these routes render instead of 404ing.
+  test.skip(DELIVERY_UP, "mail delivery adapter configured");
   test("/reset-request returns 404", async ({ page }) => {
     const resp = await page.goto("/reset-request");
     expect(resp?.status()).toBe(404);

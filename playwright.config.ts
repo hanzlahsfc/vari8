@@ -25,9 +25,12 @@ export default defineConfig({
         // consent-boundary checks rely on this classification.
         APP_ENV: "test",
         // Deterministic test-only secret (NOT a real credential). CI/local may
-        // override AUTH_SECRET; the fallback keeps the suite self-contained.
-        AUTH_SECRET:
-          process.env.AUTH_SECRET ?? "test-only-auth-secret-not-for-production",
+        // override via BETTER_AUTH_SECRET (the legacy AUTH_SECRET value is
+        // honored as a fallback); the default keeps the suite self-contained.
+        BETTER_AUTH_SECRET:
+          process.env.BETTER_AUTH_SECRET ??
+          process.env.AUTH_SECRET ??
+          "test-only-auth-secret-not-for-production",
         DATABASE_URL:
           process.env.DATABASE_URL ??
           "postgresql://app:app_dev_password@127.0.0.1:5433/app_dev?schema=public",

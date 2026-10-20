@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { authorizeCredentials } from "../../lib/credentials";
+import { verifyPassword } from "../../lib/password";
 
 /**
  * S1-A identity/tenancy tests. These run against the REAL migrated PostgreSQL
@@ -313,31 +313,26 @@ describe.skipIf(!enabled)(
       expect(rows[0].status).toBe("ACTIVE");
     });
 
-    it("still authorizes the existing credentials", async () => {
-      // Scratch has only the initial + S1-A migrations — no session_version
-      // column yet. A pre-S1-F1 row maps to version 0, exactly what a
-      // migrated table stores for it.
-      const legacyLookup = async (lookupEmail: string) => {
-        const row = await scratch.user.findUnique({
-          where: { email: lookupEmail },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            passwordHash: true,
-            status: true,
-          },
-        });
-        return row && { ...row, sessionVersion: 0 };
-      };
-      const result = await authorizeCredentials(
-        { email, password },
-        legacyLookup,
-      );
-      expect(result?.email).toBe(email);
-      expect(
-        await authorizeCredentials({ email, password: "wrong" }, legacyLookup),
-      ).toBeNull();
+    it("still authenticates the existing credentials via the account backfill", async () => {
+      // PR-05: apply the Better Auth migration on top — it must backfill a
+      // credential account carrying the same scrypt hash, so the pre-existing
+      // user still signs in.
+      const PR05_MIGRATION =
+        "db/migrations/20261020000000_pr05_better_auth/migration.sql";
+      runPrisma([
+        "db",
+        "execute",
+        "--url",
+        scratchUrl,
+        "--file",
+        PR05_MIGRATION,
+      ]);
+      const account = await scratch.account.findFirst({
+        where: { providerId: "credential", accountId: "existing-user-1" },
+      });
+      expect(account).not.toBeNull();
+      expect(await verifyPassword(password, account!.password!)).toBe(true);
+      expect(await verifyPassword("wrong", account!.password!)).toBe(false);
     });
   },
 );

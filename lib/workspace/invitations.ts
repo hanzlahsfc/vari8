@@ -7,7 +7,7 @@ import {
   authorizeCollection,
   type SessionLike,
 } from "../auth/guard";
-import { normalizeEmail } from "../credentials";
+import { normalizeEmail } from "../email";
 import { hashPassword } from "../password";
 import { validatePasswordSetup } from "../password-policy";
 import type { RawAccessToken } from "../tokens/crypto";
@@ -559,8 +559,22 @@ export async function acceptWorkspaceInvitation(
                 passwordHash,
                 name,
                 status: "ACTIVE",
+                // PR-05: invite acceptance counts as email verification (#20) —
+                // the link reached the invited mailbox.
+                emailVerified: true,
               },
               select: { id: true, name: true, platformRole: true },
+            });
+            // PR-05: Better Auth authenticates against the credential account
+            // row (providerId "credential", accountId = user id), carrying the
+            // same scrypt hash.
+            await tx.account.create({
+              data: {
+                userId: user.id,
+                accountId: user.id,
+                providerId: "credential",
+                password: passwordHash,
+              },
             });
           }
 

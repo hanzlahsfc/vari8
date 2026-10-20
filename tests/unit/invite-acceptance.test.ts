@@ -29,6 +29,7 @@ function fakeDb(row: unknown) {
 describe("getInviteLinkState (non-consuming peek)", () => {
   const active = {
     purpose: "WORKSPACE_INVITE",
+    workspaceId: VALID_WS,
     expiresAt: new Date(Date.now() + 60_000),
     consumedAt: null,
     revokedAt: null,
@@ -50,6 +51,7 @@ describe("getInviteLinkState (non-consuming peek)", () => {
       { ...active, consumedAt: new Date() }, // consumed
       { ...active, revokedAt: new Date() }, // revoked
       { ...active, expiresAt: new Date(Date.now() - 1) }, // expired
+      { ...active, workspaceId: "ws_other" }, // minted for another workspace
     ];
     for (const row of variants) {
       await expect(

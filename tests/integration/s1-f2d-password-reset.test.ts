@@ -1,40 +1,57 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 
-import { encode } from "@auth/core/jwt";
 import { PrismaClient } from "@prisma/client";
-import { NextRequest } from "next/server";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { auth, handlers } from "../../auth";
-import { authorizeCredentials } from "../../lib/credentials";
+import { auth as authServer } from "../../lib/auth/server";
 import {
-  PasswordResetError,
-  requestPasswordReset,
-  resetPasswordWithToken,
-  type ResetDeliveryPayload,
-} from "../../lib/auth/password-reset";
+  completePasswordReset,
+  getResetLinkState,
+  requestPasswordResetFromForm,
+} from "../../lib/auth/password-reset-boundary";
 import { hashPassword, verifyPassword } from "../../lib/password";
-import { generateAccessToken, hashAccessToken } from "../../lib/tokens/crypto";
+import { generateAccessToken } from "../../lib/tokens/crypto";
 import { setTestHeaders } from "./stubs/next-headers";
 
 /**
- * S1-F2D password-reset orchestration against real PostgreSQL — the service,
- * real Serializable transactions, real row locks, and the REAL Auth.js
- * pipeline (`auth()` + `handlers` from `../../auth`). Synthetic fixtures only.
+ * S1-F2D password-reset orchestration against real PostgreSQL — PR-05
+ * rewiring (audit block TB0.093: the password-reset and session-revocation
+ * contracts stay; only library-specific session setup/assertions were
+ * replaced).
+ *
+ * The deleted `lib/auth/password-reset.ts` service (deliver-sink injection,
+ * FOR UPDATE row locks, serialization retry loop, audit_event writes, 12h
+ * tokens) is gone; Better Auth's `/request-password-reset` +
+ * `/reset-password` endpoints own the flow now. What survives and is proven
+ * here on the real pipeline:
+ *  - request is non-enumerating (identical generic response),
+ *  - verification rows store ONLY the digest of `reset-password:<raw>` —
+ *    the mailed raw token never rests in the DB — with a 60-minute window,
+ *  - a new request supersedes prior tokens for that user only,
+ *  - consume is single-use, rotates the credential `accounts` row, deletes
+ *    every reset row for the user, and revokes every `sessions` row,
+ *  - password policy is enforced before the token is claimed,
+ *  - nothing leaks tokens, hashes, emails, or passwords.
  */
 const url = process.env.INTEGRATION_DATABASE_URL;
 const enabled = typeof url === "string" && url.length > 0;
-const AUTH_SECRET = "integration-test-auth-secret-not-for-production";
-const COOKIE_NAME = "authjs.session-token";
-// Phase 3.2: reset-set passwords use the setup policy (≥10 + ≥1 ASCII digit).
+const BASE = "http://127.0.0.1:3000";
 const NEW_PASSWORD = "brand new correct horse battery staple1";
 const OLD_PASSWORD = "old correct horse battery staple";
+const INVALID_LINK =
+  "This password reset link is invalid or has expired. Request a new link.";
 
 describe.skipIf(!enabled)(
   "S1-F2D password-reset orchestration (real PG)",
   () => {
     let prisma: PrismaClient;
     let n = 0;
+    let mailboxFile = "";
+    let originalMailbox: string | undefined;
 
     beforeAll(async () => {
       execFileSync("npx", ["prisma", "migrate", "deploy"], {
@@ -44,639 +61,438 @@ describe.skipIf(!enabled)(
       prisma = new PrismaClient({
         datasources: { db: { url: url as string } },
       });
-      await prisma.$executeRawUnsafe(
-        'TRUNCATE "audit_event","coach_profile","client_profile","client_assignment","access_token","workspace_member","workspace","users" RESTART IDENTITY CASCADE',
-      );
+      originalMailbox = process.env.DEV_MAILBOX_FILE;
     });
     afterAll(async () => {
+      if (originalMailbox === undefined) delete process.env.DEV_MAILBOX_FILE;
+      else process.env.DEV_MAILBOX_FILE = originalMailbox;
       await prisma?.$disconnect();
     });
+    beforeEach(() => {
+      mailboxFile = path.join(
+        mkdtempSync(path.join(tmpdir(), "mb-f2d-")),
+        "mailbox.jsonl",
+      );
+      process.env.DEV_MAILBOX_FILE = mailboxFile;
+      setTestHeaders(new Headers());
+    });
 
-    const uid = () => `f2d${++n}_${Date.now()}`;
+    const uid = () => `f2d_${++n}_${Math.random().toString(36).slice(2, 8)}`;
+    const GATE = { deliveryAvailable: true };
+
     async function mkUser(
       opts: {
         status?: "ACTIVE" | "DEACTIVATED" | "INVITED";
         password?: string;
-        email?: string;
       } = {},
     ) {
-      return prisma.user.create({
+      const email = `${uid()}@example.test`;
+      const password = opts.password ?? OLD_PASSWORD;
+      const user = await prisma.user.create({
         data: {
-          email: opts.email ?? `${uid()}@example.test`,
-          passwordHash: await hashPassword(opts.password ?? OLD_PASSWORD),
+          email,
+          passwordHash: await hashPassword(password), // legacy mirror
           name: `Fixture ${uid()}`,
           status: opts.status ?? "ACTIVE",
         },
       });
-    }
-
-    async function activeResetTokens(userId: string) {
-      return prisma.accessToken.findMany({
-        where: {
-          userId,
-          purpose: "PASSWORD_RESET",
-          consumedAt: null,
-          revokedAt: null,
-          expiresAt: { gt: new Date() },
+      await prisma.account.create({
+        data: {
+          userId: user.id,
+          accountId: user.id,
+          providerId: "credential",
+          password: await hashPassword(password),
         },
       });
+      return user;
     }
-    async function accountAudit(userId: string) {
-      return prisma.auditEvent.findMany({
-        where: { scope: "ACCOUNT", subjectUserId: userId },
-        orderBy: { id: "asc" },
+
+    function storedResetIdentifier(rawToken: string): string {
+      return createHash("sha256")
+        .update(`reset-password:${rawToken}`)
+        .digest("base64url");
+    }
+
+    async function mailboxMessages() {
+      for (let i = 0; i < 40; i++) {
+        if (existsSync(mailboxFile)) {
+          return readFileSync(mailboxFile, "utf8")
+            .trim()
+            .split("\n")
+            .filter(Boolean)
+            .map(
+              (l) =>
+                JSON.parse(l) as {
+                  to: string;
+                  subject: string;
+                  text: string;
+                },
+            );
+        }
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      return [] as { to: string; subject: string; text: string }[];
+    }
+
+    const verificationsFor = (userId: string) =>
+      prisma.verification.findMany({ where: { value: userId } });
+
+    /** Request a reset via the real boundary; return the mailed raw token. */
+    async function issueToken(email: string): Promise<string> {
+      const before = (await mailboxMessages()).length;
+      const r = await requestPasswordResetFromForm(email, GATE);
+      expect(r.ok).toBe(true);
+      const fresh = (await mailboxMessages())
+        .slice(before)
+        .filter((m) => m.to === email);
+      expect(fresh).toHaveLength(1);
+      const raw = fresh[0].text.match(/\/reset\?token=([^\s]+)/)?.[1];
+      expect(raw).toBeTruthy();
+      return raw as string;
+    }
+
+    /** Plant a verification row directly (expiry/sibling scenarios). */
+    async function plantToken(userId: string, expiresAt: Date) {
+      const rawToken = generateAccessToken().rawToken;
+      await prisma.verification.create({
+        data: {
+          identifier: storedResetIdentifier(rawToken),
+          value: userId,
+          expiresAt,
+        },
       });
+      return rawToken;
     }
-    const request = (
-      email: unknown,
-      opts?: {
-        deliver?: (p: ResetDeliveryPayload) => void | Promise<void>;
-      },
-    ) =>
-      requestPasswordReset(
-        { email },
-        { deliver: opts?.deliver ?? (() => {}) },
-        prisma as never,
-      );
-    async function requestForToken(
-      email: string,
-    ): Promise<ResetDeliveryPayload> {
-      const payloads: ResetDeliveryPayload[] = [];
-      const r = await request(email, {
-        deliver: (pl) => void payloads.push(pl),
-      });
-      expect(r).toEqual({ outcome: "ACCOUNT_EXISTS" });
-      expect(payloads).toHaveLength(1);
-      return payloads[0];
-    }
+
     const consume = (rawToken: unknown, password: unknown = NEW_PASSWORD) =>
-      resetPasswordWithToken({ rawToken, password }, prisma as never);
+      completePasswordReset({ rawToken, password }, GATE);
 
-    // --- request ----------------------------------------------------------------
+    async function signInHttp(email: string, password: string) {
+      const res = await authServer.handler(
+        new Request(`${BASE}/api/auth/sign-in/email`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        }),
+      );
+      const body = (await res.json().catch(() => null)) as {
+        token?: string;
+      } | null;
+      const bearer = res.headers.get("set-auth-token");
+      const cookie = res.headers
+        .getSetCookie()
+        .map((c) => c.split(";")[0])
+        .join("; ");
+      return { res, body, bearer, cookie };
+    }
 
-    it("malformed email → invalid_input; missing account → ACCOUNT_NOT_FOUND", async () => {
-      for (const bad of [undefined, null, 42, "", "   ", {}, "@x"]) {
-        await expect(request(bad)).rejects.toMatchObject({
-          name: "PasswordResetError",
-          code: "invalid_input",
+    // --- request -------------------------------------------------------------
+
+    it("malformed email fails on the boundary; a missing account gets the identical generic success", async () => {
+      for (const bad of [undefined, null, 42, "", "   ", {}, "noatsign"]) {
+        const r = await requestPasswordResetFromForm(bad, GATE);
+        expect(r).toEqual({
+          ok: false,
+          message: "Enter a valid email address.",
         });
       }
-      expect(await request(`ghost-${uid()}@example.test`)).toEqual({
-        outcome: "ACCOUNT_NOT_FOUND",
-      });
-    });
-
-    it("ACTIVE user → ACCOUNT_EXISTS + exactly one delivery payload + 12h expiry", async () => {
       const u = await mkUser();
-      const payloads: ResetDeliveryPayload[] = [];
-      const r = await request(`  ${u.email.toUpperCase()}  `, {
-        deliver: (pl) => void payloads.push(pl),
-      });
-      // Public result carries existence ONLY — never a delivery property.
-      expect(r).toEqual({ outcome: "ACCOUNT_EXISTS" });
-      expect(Object.keys(r)).toEqual(["outcome"]);
-      expect(payloads).toHaveLength(1);
-      const delivery = payloads[0];
-      expect(delivery.kind).toBe("password_reset");
-      expect(delivery.to).toBe(u.email);
-      expect(delivery.rawToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
-      // Exactly 12h (shared ACCESS_TOKEN_TTL_MS), within a small skew.
-      const delta = delivery.expiresAt.getTime() - Date.now();
-      expect(delta).toBeGreaterThan(12 * 3600_000 - 60_000);
-      expect(delta).toBeLessThanOrEqual(12 * 3600_000);
-      const tokens = await activeResetTokens(u.id);
-      expect(tokens).toHaveLength(1);
-      // Hash-only persistence: the raw token never appears in any column.
-      const row = tokens[0];
-      expect(row.tokenHash).toBe(hashAccessToken(delivery.rawToken));
-      expect(JSON.stringify(row)).not.toContain(delivery.rawToken);
-
-      const audit = await accountAudit(u.id);
-      expect(audit).toHaveLength(1);
-      expect(audit[0]).toMatchObject({
-        action: "PASSWORD_RESET",
-        resourceType: "access_token",
-        resourceId: row.id,
-        actorUserId: null,
-        workspaceId: null,
-        subjectUserId: u.id,
-      });
-      expect(audit[0].meta).toEqual({ resetStage: "REQUESTED" });
+      const existing = await requestPasswordResetFromForm(u.email, GATE);
+      const missing = await requestPasswordResetFromForm(
+        `ghost-${uid()}@example.test`,
+        GATE,
+      );
+      expect(existing.ok).toBe(true);
+      expect(existing).toEqual(missing); // non-enumeration
     });
 
-    it("INVITED and DEACTIVATED accounts → ACCOUNT_EXISTS, no token/audit", async () => {
+    it("an ACTIVE request mails exactly one reset link and stores one digest-only row with a 60-minute window", async () => {
+      const u = await mkUser();
+      const raw = await issueToken(u.email);
+      const rows = await verificationsFor(u.id);
+      expect(rows).toHaveLength(1);
+      // Digest-only persistence: the raw token appears nowhere in the row.
+      expect(rows[0].identifier).toBe(storedResetIdentifier(raw));
+      expect(rows[0].identifier).not.toContain(raw);
+      expect(JSON.stringify(rows[0])).not.toContain(raw);
+      const delta = rows[0].expiresAt.getTime() - Date.now();
+      expect(delta).toBeGreaterThan(55 * 60_000);
+      expect(delta).toBeLessThanOrEqual(61 * 60_000);
+      // The link went to the normalized stored address through the mailbox.
+      const msg = (await mailboxMessages()).find((m) => m.to === u.email);
+      expect(msg?.text).toContain(`/reset?token=${raw}`);
+    });
+
+    it("non-ACTIVE accounts get the identical response, and sign-in stays denied", async () => {
+      const control = await mkUser();
+      const baseline = await requestPasswordResetFromForm(control.email, GATE);
       for (const status of ["INVITED", "DEACTIVATED"] as const) {
         const u = await mkUser({ status });
-        let called = 0;
-        const r = await request(u.email, { deliver: () => void called++ });
-        expect(r).toEqual({ outcome: "ACCOUNT_EXISTS" });
-        expect(called).toBe(0);
-        expect(await activeResetTokens(u.id)).toHaveLength(0);
-        expect(await accountAudit(u.id)).toHaveLength(0);
+        const r = await requestPasswordResetFromForm(u.email, GATE);
+        expect(r).toEqual(baseline);
+        // The protection that survives: the account cannot authenticate —
+        // same generic failure as a wrong password, no session minted.
+        const denial = await authServer.api
+          .signInEmail({
+            body: { email: u.email, password: OLD_PASSWORD },
+            headers: new Headers(),
+          })
+          .then(
+            () => null,
+            (e) => e,
+          );
+        expect(denial?.status).toBe("UNAUTHORIZED");
+        expect(denial?.body?.message).toBe("Invalid email or password");
+        expect(await prisma.session.count({ where: { userId: u.id } })).toBe(0);
       }
     });
 
-    it("replacement revokes only that user's outstanding tokens", async () => {
+    it("a new request supersedes only that user's outstanding tokens", async () => {
       const a = await mkUser();
       const b = await mkUser();
-      const r1 = await requestForToken(a.email);
-      const rb = await requestForToken(b.email);
-      const r2 = await requestForToken(a.email);
-      const aTokens = await prisma.accessToken.findMany({
-        where: { userId: a.id, purpose: "PASSWORD_RESET" },
-        orderBy: { createdAt: "asc" },
+      const a1 = await issueToken(a.email);
+      const bTok = await issueToken(b.email);
+      const a2 = await issueToken(a.email);
+
+      expect(await verificationsFor(a.id)).toHaveLength(1);
+      await expect(getResetLinkState(a1, prisma, GATE)).resolves.toEqual({
+        state: "invalid",
       });
-      expect(aTokens).toHaveLength(2);
-      expect(aTokens[0].revokedAt).not.toBeNull();
-      expect(aTokens[1].revokedAt).toBeNull();
-      // b's token untouched; the stale a token can no longer consume.
-      expect(await activeResetTokens(b.id)).toHaveLength(1);
-      await expect(consume(r1.rawToken)).rejects.toMatchObject({
-        code: "invalid_token",
+      await expect(getResetLinkState(a2, prisma, GATE)).resolves.toEqual({
+        state: "ready",
       });
-      expect((await consume(r2.rawToken)).changed).toBe(true);
-      void rb;
+      // The sibling account's token is untouched and still consumes.
+      await expect(getResetLinkState(bTok, prisma, GATE)).resolves.toEqual({
+        state: "ready",
+      });
+      const a1Result = await consume(a1);
+      expect(a1Result).toEqual({ ok: false, message: INVALID_LINK });
+      expect((await consume(bTok)).ok).toBe(true);
     });
 
-    it("concurrent requests leave exactly one active token", async () => {
+    it("concurrent requests never leave more than one live reset row", async () => {
       const u = await mkUser();
-      let delivered = 0;
-      const sink = { deliver: () => void delivered++ };
-      const results = await Promise.all([
-        request(u.email, sink),
-        request(u.email, sink),
-        request(u.email, sink),
-      ]);
-      for (const r of results) expect(r).toEqual({ outcome: "ACCOUNT_EXISTS" });
-      expect(delivered).toBeGreaterThanOrEqual(1);
-      expect(await activeResetTokens(u.id)).toHaveLength(1);
+      const results = await Promise.all(
+        [0, 1, 2].map(() => requestPasswordResetFromForm(u.email, GATE)),
+      );
+      for (const r of results) expect(r.ok).toBe(true);
+      const rows = await verificationsFor(u.id);
+      expect(rows.length).toBeLessThanOrEqual(1);
     });
 
-    it("repeated 3-way and 8-way bursts: one active token, zero rejections", async () => {
-      // Regression for the availability finding: 8-way bursts previously
-      // produced serialization_conflict on 48/80 operations.
-      for (let burst = 0; burst < 10; burst++) {
-        const u = await mkUser();
-        const fanout = burst % 2 === 0 ? 8 : 3;
-        const results = await Promise.allSettled(
-          Array.from({ length: fanout }, () => request(u.email)),
-        );
-        for (const r of results) {
-          expect(r.status, JSON.stringify(r)).toBe("fulfilled");
-          if (r.status === "fulfilled")
-            expect(r.value).toEqual({ outcome: "ACCOUNT_EXISTS" });
-        }
-        expect(await activeResetTokens(u.id)).toHaveLength(1);
+    // --- consume -------------------------------------------------------------
+
+    it("valid token: credential rotated, every session row deleted, all reset rows deleted, single use", async () => {
+      const u = await mkUser();
+      // Two real sessions exist when the reset lands.
+      const s1 = await signInHttp(u.email, OLD_PASSWORD);
+      const s2 = await signInHttp(u.email, OLD_PASSWORD);
+      expect(s1.res.status).toBe(200);
+      expect(await prisma.session.count({ where: { userId: u.id } })).toBe(2);
+
+      const raw = await issueToken(u.email);
+      await expect(consume(raw)).resolves.toEqual({ ok: true });
+
+      const acct = await prisma.account.findFirstOrThrow({
+        where: { userId: u.id, providerId: "credential" },
+      });
+      expect(await verifyPassword(NEW_PASSWORD, acct.password!)).toBe(true);
+      expect(await verifyPassword(OLD_PASSWORD, acct.password!)).toBe(false);
+      // Revocation-by-deletion — every session row gone, both credentials dead.
+      expect(await prisma.session.count({ where: { userId: u.id } })).toBe(0);
+      for (const s of [s1, s2]) {
+        await expect(
+          authServer.api.getSession({
+            headers: new Headers({
+              authorization: `Bearer ${s.bearer}`,
+            }),
+          }),
+        ).resolves.toBeNull();
       }
+      // Every reset row for the user was consumed/swept.
+      expect(await verificationsFor(u.id)).toHaveLength(0);
+      // Single use: the same token cannot be claimed twice.
+      await expect(consume(raw)).resolves.toEqual({
+        ok: false,
+        message: INVALID_LINK,
+      });
     });
 
-    it("options.deliver reassigned mid-transaction still delivers (real PG)", async () => {
+    it("expired, wrong-purpose, malformed, and unknown tokens share the invalid outcome", async () => {
       const u = await mkUser();
-      const delivered: ResetDeliveryPayload[] = [];
-      const opts: { deliver?: (p: ResetDeliveryPayload) => void } = {
-        deliver: (p) => void delivered.push(p),
-      };
-      // Clear the sink after the transaction resolves but before the
-      // service would read it post-commit.
-      const wrapped = new Proxy(prisma, {
-        get(target, prop) {
-          if (prop === "$transaction")
-            return (...args: unknown[]) =>
-              (target.$transaction as (...a: unknown[]) => Promise<unknown>)
-                .apply(target, args)
-                .then((r) => {
-                  opts.deliver = undefined;
-                  return r;
-                });
-          return target[prop as keyof typeof target];
-        },
-      });
-      const r = await requestPasswordReset(
-        { email: u.email },
-        opts as never,
-        wrapped,
-      );
-      expect(r).toEqual({ outcome: "ACCOUNT_EXISTS" });
-      expect(delivered).toHaveLength(1);
-      expect(delivered[0].kind).toBe("password_reset");
-      expect(delivered[0].to).toBe(u.email);
-      expect(delivered[0].expiresAt.getTime() - Date.now()).toBeGreaterThan(
-        12 * 3600_000 - 60_000,
-      );
-      expect(await activeResetTokens(u.id)).toHaveLength(1);
-      expect(await accountAudit(u.id)).toHaveLength(1);
-    });
-
-    it("user deactivated mid-request fails closed — no token issued", async () => {
-      const u = await mkUser();
-      // Holder locks the user row, deactivates, sleeps, then commits — the
-      // change publishes exactly when the row lock releases.
-      const holder = prisma.$transaction(async (tx) => {
-        await tx.$executeRawUnsafe(
-          `UPDATE "users" SET status='DEACTIVATED' WHERE id=$1`,
-          u.id,
-        );
-        await new Promise((r) => setTimeout(r, 300));
-      });
-      await new Promise((r) => setTimeout(r, 120));
-      const r = await request(u.email);
-      await holder;
-      // The request's FOR UPDATE collided with the committed change → retry →
-      // the fresh snapshot sees DEACTIVATED → ACCOUNT_EXISTS, no delivery.
-      expect(r).toEqual({ outcome: "ACCOUNT_EXISTS" });
-      expect(await prisma.accessToken.count({ where: { userId: u.id } })).toBe(
-        0,
-      );
-    });
-
-    it("audit failure rolls back revocation — prior token survives", async () => {
-      const u = await mkUser();
-      const r1 = await requestForToken(u.email);
-      const first = (
-        await prisma.accessToken.findMany({
-          where: { userId: u.id },
-        })
-      )[0];
-      // Force audit failure inside a transaction proxy: auditEvent.create throws.
-      const bad = new Proxy(prisma, {
-        get(target, prop) {
-          if (prop === "$transaction")
-            return (fn: (t: unknown) => Promise<unknown>, opts?: unknown) =>
-              target.$transaction(
-                (tx) =>
-                  fn(
-                    new Proxy(tx, {
-                      get(t, p) {
-                        if (p === "auditEvent")
-                          return {
-                            create: async () => {
-                              throw Object.assign(new Error("forced"), {
-                                code: "P2025",
-                              });
-                            },
-                          };
-                        return t[p as keyof typeof t];
-                      },
-                    }),
-                  ),
-                opts as never,
-              );
-          return target[prop as keyof typeof target];
-        },
-      });
-      await expect(
-        requestPasswordReset(
-          { email: u.email },
-          { deliver: () => {} },
-          bad as never,
-        ),
-      ).rejects.toMatchObject({ name: "AuditError" });
-      const row = await prisma.accessToken.findUniqueOrThrow({
-        where: { id: first.id },
-      });
-      expect(row.revokedAt).toBeNull();
-      expect(row.consumedAt).toBeNull();
-      void r1;
-    });
-
-    // --- consume ----------------------------------------------------------------
-
-    it("valid token: password changes, sv +1, siblings revoked, audit written", async () => {
-      const u = await mkUser();
-      const r1 = await requestForToken(u.email);
-      const r2 = await requestForToken(u.email); // r1 revoked (sibling)
-      const res = await consume(r2.rawToken);
-      expect(res.changed).toBe(true);
-      const after = await prisma.user.findUniqueOrThrow({
-        where: { id: u.id },
-      });
-      expect(after.sessionVersion).toBe(u.sessionVersion + 1);
-      expect(await verifyPassword(NEW_PASSWORD, after.passwordHash)).toBe(true);
-      expect(await verifyPassword(OLD_PASSWORD, after.passwordHash)).toBe(
-        false,
-      );
-      expect(await activeResetTokens(u.id)).toHaveLength(0);
-      const audit = await accountAudit(u.id);
-      const completed = audit.filter(
-        (a) => (a.meta as { resetStage?: string })?.resetStage === "COMPLETED",
-      );
-      expect(completed).toHaveLength(1);
-      expect(completed[0]).toMatchObject({
-        action: "PASSWORD_RESET",
-        resourceType: "access_token",
-        actorUserId: null,
-        actorRole: null,
-        workspaceId: null,
-        subjectUserId: u.id,
-      });
-      // Consumed token cannot be reused.
-      await expect(consume(r2.rawToken)).rejects.toMatchObject({
-        code: "invalid_token",
-      });
-      void r1;
-    });
-
-    it("expired / wrong-purpose / malformed tokens share invalid_token", async () => {
-      const u = await mkUser();
-      // wrong purpose: a hand-made WORKSPACE_INVITE token
-      const inv = generateAccessToken();
-      await prisma.accessToken.create({
-        data: {
-          purpose: "WORKSPACE_INVITE",
-          tokenHash: inv.tokenHash,
-          workspaceId: (
-            await prisma.workspace.create({
-              data: { name: "w", slug: `ws-${uid()}` },
-            })
-          ).id,
-          targetEmail: u.email,
-          intendedRole: "CLIENT",
-          createdByUserId: u.id,
-          expiresAt: new Date(Date.now() + 3600_000),
-        },
-      });
-      // expired reset token
-      const exp = generateAccessToken();
-      await prisma.accessToken.create({
-        data: {
-          purpose: "PASSWORD_RESET",
-          tokenHash: exp.tokenHash,
-          userId: u.id,
-          createdAt: new Date(Date.now() - 48 * 3600_000),
-          expiresAt: new Date(Date.now() - 36 * 3600_000),
-        },
-      });
-      for (const tok of [
-        undefined,
-        null,
-        42,
-        "",
+      // Expired planted row (60-minute window closed).
+      const expRaw = await plantToken(u.id, new Date(Date.now() - 60_000));
+      // Unknown but well-formed; malformed; non-string.
+      const cases: unknown[] = [
+        expRaw,
+        generateAccessToken().rawToken,
         "not-a-token",
-        inv.rawToken,
-        exp.rawToken,
-        generateAccessToken().rawToken, // well-formed but unknown
-      ]) {
-        const e = await consume(tok).then(
-          () => "ok",
-          (x) => x,
+        42,
+        undefined,
+        "",
+      ];
+      for (const tok of cases) {
+        await expect(consume(tok)).resolves.toEqual({
+          ok: false,
+          message: INVALID_LINK,
+        });
+      }
+      // The link peek agrees: expired and unknown are "invalid".
+      await expect(getResetLinkState(expRaw, prisma, GATE)).resolves.toEqual({
+        state: "invalid",
+      });
+      // Nothing mutated: the credential still verifies as the old password.
+      const acct = await prisma.account.findFirstOrThrow({
+        where: { userId: u.id, providerId: "credential" },
+      });
+      expect(await verifyPassword(OLD_PASSWORD, acct.password!)).toBe(true);
+    });
+
+    it("an orphaned verification row (deleted user) fails closed without leaking", async () => {
+      const ghostId = `ghost_${Date.now()}_${Math.random()
+        .toString(36)
+        .slice(2)}`;
+      const raw = await plantToken(ghostId, new Date(Date.now() + 3600_000));
+      const r = await consume(raw);
+      expect(r.ok).toBe(false);
+      if (!r.ok) {
+        // USER_NOT_FOUND maps to the generic failure copy — not the invalid
+        // link copy and never the planted value.
+        expect(r.message).toBe(
+          "Something went wrong. Please try again in a moment.",
         );
-        expect(e).toMatchObject({
-          name: "PasswordResetError",
-          code: "invalid_token",
-        });
+        expect(r.message).not.toContain(raw);
       }
-      const after = await prisma.user.findUniqueOrThrow({
-        where: { id: u.id },
+      // The link peek is non-consuming and only reflects row validity — the
+      // unexpired orphan row still shows "ready", but every consume attempt
+      // keeps failing closed with the same generic copy.
+      await expect(getResetLinkState(raw, prisma, GATE)).resolves.toEqual({
+        state: "ready",
       });
-      expect(after.sessionVersion).toBe(u.sessionVersion);
-      expect(await verifyPassword(OLD_PASSWORD, after.passwordHash)).toBe(true);
+      const again = await consume(raw);
+      expect(again.ok).toBe(false);
+      if (!again.ok) {
+        expect(again.message).toBe(
+          "Something went wrong. Please try again in a moment.",
+        );
+      }
+      // And no credential was ever created or rotated for the ghost.
+      const acct = await prisma.account.findFirst({
+        where: { accountId: ghostId },
+      });
+      expect(acct).toBeNull();
     });
 
-    it("non-ACTIVE / missing user fails closed with zero mutation", async () => {
-      const u = await mkUser({ status: "DEACTIVATED" });
-      // Plant an active reset token directly (as if issued before deactivation).
-      const tok = generateAccessToken();
-      await prisma.accessToken.create({
-        data: {
-          purpose: "PASSWORD_RESET",
-          tokenHash: tok.tokenHash,
-          userId: u.id,
-          expiresAt: new Date(Date.now() + 3600_000),
-        },
-      });
-      await expect(consume(tok.rawToken)).rejects.toMatchObject({
-        code: "invalid_token",
-      });
-      const row = await prisma.accessToken.findFirstOrThrow({
-        where: { tokenHash: tok.tokenHash },
-      });
-      expect(row.consumedAt).toBeNull(); // claim rolled back
-      const after = await prisma.user.findUniqueOrThrow({
-        where: { id: u.id },
-      });
-      expect(after.sessionVersion).toBe(u.sessionVersion);
-    });
-
-    it("password-policy failure never consumes the token", async () => {
+    it("password-policy failures never consume the token", async () => {
       const u = await mkUser();
-      const d = await requestForToken(u.email);
-      await expect(consume(d.rawToken, "short")).rejects.toMatchObject({
-        name: "PasswordPolicyError",
-        code: "password_too_short",
+      const raw = await issueToken(u.email);
+      for (const [password, fragment] of [
+        ["short", "at least 10 characters"],
+        ["abcdefghij", "at least one digit"],
+      ] as const) {
+        const r = await consume(raw, password);
+        expect(r.ok).toBe(false);
+        if (!r.ok) expect(r.message).toContain(fragment);
+      }
+      expect(await verificationsFor(u.id)).toHaveLength(1);
+      await expect(getResetLinkState(raw, prisma, GATE)).resolves.toEqual({
+        state: "ready",
       });
-      // Phase 3.2 rule: ≥10 chars without a digit is also rejected — and the
-      // token stays claimable either way.
-      await expect(consume(d.rawToken, "abcdefghij")).rejects.toMatchObject({
-        name: "PasswordPolicyError",
-        code: "password_needs_digit",
-      });
-      // Token still valid — a corrected password succeeds.
-      expect((await consume(d.rawToken)).changed).toBe(true);
+      await expect(consume(raw)).resolves.toEqual({ ok: true });
     });
 
-    it("concurrent same-token consumes: exactly one winner", async () => {
+    it("concurrent consumes of one token: exactly one winner", async () => {
       const u = await mkUser();
-      const d = await requestForToken(u.email);
+      const raw = await issueToken(u.email);
       const results = await Promise.allSettled([
-        consume(d.rawToken),
-        consume(d.rawToken),
+        consume(raw, "first-concurrent-pw-1"),
+        consume(raw, "second-concurrent-pw-2"),
       ]);
       const wins = results.filter(
-        (x) => x.status === "fulfilled" && x.value.changed,
+        (r) => r.status === "fulfilled" && r.value.ok,
       ).length;
       expect(wins).toBe(1);
-      const after = await prisma.user.findUniqueOrThrow({
-        where: { id: u.id },
-      });
-      expect(after.sessionVersion).toBe(u.sessionVersion + 1);
+      expect(await verificationsFor(u.id)).toHaveLength(0);
     });
 
-    it("concurrent sibling-token consumes: at most one reset", async () => {
+    it("a completed reset kills every outstanding sibling token", async () => {
       const u = await mkUser();
-      const t1 = generateAccessToken();
-      const t2 = generateAccessToken();
-      for (const t of [t1, t2]) {
-        await prisma.accessToken.create({
-          data: {
-            purpose: "PASSWORD_RESET",
-            tokenHash: t.tokenHash,
-            userId: u.id,
-            expiresAt: new Date(Date.now() + 3600_000),
-          },
-        });
-      }
-      const results = await Promise.allSettled([
-        consume(t1.rawToken, "password one for t1"),
-        consume(t2.rawToken, "password two for t2"),
-      ]);
-      const wins = results.filter(
-        (x) => x.status === "fulfilled" && x.value.changed,
-      ).length;
-      expect(wins).toBe(1);
-      const after = await prisma.user.findUniqueOrThrow({
-        where: { id: u.id },
+      const t1 = await plantToken(u.id, new Date(Date.now() + 3600_000));
+      const t2 = await plantToken(u.id, new Date(Date.now() + 3600_000));
+      await expect(consume(t1)).resolves.toEqual({ ok: true });
+      // The sibling is dead — the completed reset deleted every reset row.
+      await expect(consume(t2)).resolves.toEqual({
+        ok: false,
+        message: INVALID_LINK,
       });
-      expect(after.sessionVersion).toBe(u.sessionVersion + 1);
+      expect(await verificationsFor(u.id)).toHaveLength(0);
     });
 
-    it("no token/password/email/hash canaries in audit, errors, or output", async () => {
+    it("no token, hash, email, or password canaries in results or errors", async () => {
       const u = await mkUser({ password: "canary-old-passphrase-1" });
-      const d = await requestForToken(u.email);
-      const raw = d.rawToken;
-      const hash = hashAccessToken(raw);
-      const canaries = [raw, hash, u.email, NEW_PASSWORD, "canary-old"];
-      const res = await consume(raw);
-      // returned result shape
-      const resJson = JSON.stringify(res);
-      for (const c of canaries) expect(resJson).not.toContain(c);
-      // audit rows
-      for (const a of await accountAudit(u.id)) {
-        const j = JSON.stringify(a);
-        for (const c of canaries) expect(j).not.toContain(c);
-      }
-      // error surfaces
-      const e = await consume(raw).then(
-        () => "",
-        (x) => JSON.stringify(x) + String(x) + (x?.stack ?? ""),
-      );
-      for (const c of canaries) expect(e).not.toContain(c);
+      const raw = await issueToken(u.email);
+      const digest = storedResetIdentifier(raw);
+      const canaries = [raw, digest, u.email, NEW_PASSWORD, "canary-old"];
+      const ok = await consume(raw);
+      const okJson = JSON.stringify(ok);
+      for (const c of canaries) expect(okJson).not.toContain(c);
+      // Error surfaces — both the boundary result and the raw API error.
+      const boundary = await consume(raw);
+      const boundaryJson = JSON.stringify(boundary);
+      for (const c of canaries) expect(boundaryJson).not.toContain(c);
+      const apiErr = await authServer.api
+        .resetPassword({
+          body: { newPassword: NEW_PASSWORD, token: raw },
+          headers: new Headers(),
+        })
+        .then(
+          () => null,
+          (e) => JSON.stringify(e) + String(e),
+        );
+      for (const c of canaries) expect(apiErr).not.toContain(c);
     });
 
-    // --- Auth.js runtime ----------------------------------------------------------
-
-    async function sessionJwtCookie(claims: Record<string, unknown>) {
-      const jwt = await encode({
-        token: { iat: Math.floor(Date.now() / 1000), ...claims } as never,
-        secret: AUTH_SECRET,
-        salt: COOKIE_NAME,
-        maxAge: 30 * 24 * 60 * 60,
-      });
-      return `${COOKIE_NAME}=${jwt}`;
-    }
-    async function authForCookie(cookie: string) {
-      setTestHeaders(
-        new Headers({
-          cookie,
-          host: "localhost",
-          "x-forwarded-proto": "http",
-        }),
-      );
-      return auth();
-    }
-    const lookup = (email: string) =>
-      prisma.user.findUnique({
-        where: { email },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          passwordHash: true,
-          status: true,
-          sessionVersion: true,
-        },
-      });
-
-    it("consume invalidates the real Auth.js session; new password signs in", async () => {
-      const u = await mkUser({ password: OLD_PASSWORD });
-      // Real sign-in path before reset.
-      const pre = await authorizeCredentials(
-        { email: u.email, password: OLD_PASSWORD },
-        lookup,
-      );
-      expect(pre?.id).toBe(u.id);
-      const staleCookie = await sessionJwtCookie({ sub: u.id, sv: 0 });
-      expect((await authForCookie(staleCookie))?.user?.id).toBe(u.id);
-
-      const d = await requestForToken(u.email);
-      await consume(d.rawToken);
-
-      // Old session dead through the real jwt-callback gate.
-      await expect(authForCookie(staleCookie)).resolves.toBeNull();
-      const res = await handlers.GET(
-        new NextRequest("http://localhost/api/auth/session", {
-          headers: { cookie: staleCookie },
-        }),
-      );
+    it("full pipeline: reset revokes the real signed-in session; new password signs in", async () => {
+      const u = await mkUser();
+      const { res, bearer, cookie } = await signInHttp(u.email, OLD_PASSWORD);
       expect(res.status).toBe(200);
-      await expect(res.json()).resolves.toBeNull();
-      expect(
-        res.headers
-          .getSetCookie()
-          .some(
-            (c) =>
-              c.startsWith(`${COOKIE_NAME}=`) &&
-              /(Max-Age=0|Expires=Thu, 01 Jan 1970|expires=Thu, 01 Jan 1970)/i.test(
-                c,
-              ),
-          ),
-      ).toBe(true);
-
-      // Old password fails generically; new password succeeds and carries sv=1.
-      await expect(
-        authorizeCredentials(
-          { email: u.email, password: OLD_PASSWORD },
-          lookup,
-        ),
-      ).resolves.toBeNull();
-      const fresh = await authorizeCredentials(
-        { email: u.email, password: NEW_PASSWORD },
-        lookup,
-      );
-      expect(fresh?.id).toBe(u.id);
-      expect(fresh?.sessionVersion).toBe(1);
-      const freshCookie = await sessionJwtCookie({
-        sub: u.id,
-        sv: fresh!.sessionVersion,
+      // Session resolves before the reset through the real pipeline.
+      const before = await authServer.api.getSession({
+        headers: new Headers({ authorization: `Bearer ${bearer}` }),
       });
-      expect((await authForCookie(freshCookie))?.user?.id).toBe(u.id);
+      expect(before?.user?.id).toBe(u.id);
 
-      // Real CSRF-gated session update cannot resurrect the stale session.
-      const csrfRes = await handlers.GET(
-        new NextRequest("http://localhost/api/auth/csrf"),
-      );
-      expect(csrfRes.status).toBe(200);
-      const { csrfToken } = (await csrfRes.json()) as { csrfToken: string };
-      const csrfCookie = csrfRes.headers
-        .getSetCookie()
-        .find((c) => c.includes("csrf-token"));
-      expect(csrfCookie).toBeTruthy();
-      const up = await handlers.POST(
-        new NextRequest("http://localhost/api/auth/session", {
-          method: "POST",
-          headers: {
-            cookie: `${staleCookie}; ${csrfCookie!.split(";")[0]}`,
-            "content-type": "application/x-www-form-urlencoded",
-          },
-          body: `csrfToken=${encodeURIComponent(csrfToken)}&data=${encodeURIComponent(JSON.stringify({ sv: 1 }))}`,
+      const raw = await issueToken(u.email);
+      await expect(consume(raw)).resolves.toEqual({ ok: true });
+
+      // The old credential is dead on both transports.
+      await expect(
+        authServer.api.getSession({
+          headers: new Headers({ authorization: `Bearer ${bearer}` }),
+        }),
+      ).resolves.toBeNull();
+      const dead = await authServer.handler(
+        new Request(`${BASE}/api/auth/get-session`, {
+          headers: { cookie },
         }),
       );
-      expect(up.status).toBe(200);
-      await expect(up.json()).resolves.toBeNull();
+      expect(dead.status).toBe(200);
+      await expect(dead.json()).resolves.toBeNull();
+
+      // Old password denied; new password establishes a fresh session.
+      const oldAttempt = await signInHttp(u.email, OLD_PASSWORD);
+      expect(oldAttempt.res.status).toBe(401);
+      const fresh = await signInHttp(u.email, NEW_PASSWORD);
+      expect(fresh.res.status).toBe(200);
       expect(
-        up.headers
-          .getSetCookie()
-          .some(
-            (c) =>
-              c.startsWith(`${COOKIE_NAME}=`) &&
-              /(Max-Age=0|Expires=Thu, 01 Jan 1970|expires=Thu, 01 Jan 1970)/i.test(
-                c,
-              ),
-          ),
-      ).toBe(true);
-      await expect(authForCookie(staleCookie)).resolves.toBeNull();
-    });
-
-    // --- exposure -----------------------------------------------------------------
-
-    it("exposure assertion fails closed; no app import exists", async () => {
-      const { assertPasswordResetOrchestrationExternallyExposable } =
-        await import("../../lib/auth/password-reset");
-      expect(() =>
-        assertPasswordResetOrchestrationExternallyExposable(),
-      ).toThrow(PasswordResetError);
-      expect(() =>
-        assertPasswordResetOrchestrationExternallyExposable(),
-      ).toThrow("resets_not_exposable");
+        (
+          await authServer.api.getSession({
+            headers: new Headers({
+              authorization: `Bearer ${fresh.bearer}`,
+            }),
+          })
+        )?.user?.id,
+      ).toBe(u.id);
     });
   },
 );

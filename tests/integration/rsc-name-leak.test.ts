@@ -8,7 +8,7 @@
 // client's name was serialized into the RSC payload.
 //
 // This suite renders the REAL page components in-process against disposable
-// PostgreSQL with a real Auth.js session cookie (the same pipeline
+// PostgreSQL with a real Better Auth session (the same sign-in pipeline
 // s1-f2b-session-runtime drives). For every denied path it asserts three
 // things: the denial copy is present (proving the denied branch rendered),
 // the foreign client name is absent from the produced element tree (the RSC
@@ -18,7 +18,6 @@
 
 import { execFileSync } from "node:child_process";
 
-import { encode } from "@auth/core/jwt";
 import { PrismaClient } from "@prisma/client";
 import {
   afterAll,
@@ -45,7 +44,9 @@ vi.mock("next/navigation", () => ({
   useRouter: vi.fn(() => ({ push: vi.fn(), refresh: vi.fn() })),
 }));
 
+import { auth as authServer } from "../../lib/auth/server";
 import { prisma } from "../../lib/db";
+import { hashPassword } from "../../lib/password";
 import { setTestHeaders } from "./stubs/next-headers";
 import StaffClientCheckInsPage from "../../app/workspace/[workspaceId]/clients/[clientProfileId]/checkins/page";
 import ClientCoachesPage from "../../app/workspace/[workspaceId]/clients/[clientProfileId]/coaches/page";
@@ -56,8 +57,8 @@ import StaffTrainingProgramPage from "../../app/workspace/[workspaceId]/clients/
 
 const url = process.env.INTEGRATION_DATABASE_URL;
 const enabled = typeof url === "string" && url.length > 0;
-const AUTH_SECRET = "integration-test-auth-secret-not-for-production";
-const COOKIE_NAME = "authjs.session-token";
+const BASE = "http://127.0.0.1:3000";
+const PASSWORD = "rsc-leak-pw-1";
 const CLIENT_B_NAME = "Client B1 LEAK-MARKER-7431";
 
 type AnyElement = unknown;
@@ -93,6 +94,8 @@ describe.skipIf(!enabled)("RSC-NAME-LEAK (real PG)", () => {
     coachB: string;
     clientB: string;
   };
+  // Sign-in identities: userId -> credential email (userA, ownerB, coachB only).
+  let emails: Map<string, string>;
 
   // The page's own name lookup is the only caller that selects `name` —
   // internal authorization reads select id/workspaceId/userId only.
@@ -114,9 +117,10 @@ describe.skipIf(!enabled)("RSC-NAME-LEAK (real PG)", () => {
     process.env.ENABLE_CLIENT_DASHBOARD = "1";
     process.env.APP_ENV = "test";
 
+    const emailA = `leak-a-${Date.now()}@example.test`;
     const userA = await fixture.user.create({
       data: {
-        email: `leak-a-${Date.now()}@example.test`,
+        email: emailA,
         passwordHash: "scrypt$fixture",
         name: "User A",
         status: "ACTIVE",
@@ -138,17 +142,19 @@ describe.skipIf(!enabled)("RSC-NAME-LEAK (real PG)", () => {
       },
     });
 
+    const emailOwnerB = `leak-ownerb-${Date.now()}@example.test`;
     const ownerB = await fixture.user.create({
       data: {
-        email: `leak-ownerb-${Date.now()}@example.test`,
+        email: emailOwnerB,
         passwordHash: "scrypt$fixture",
         name: "Owner B",
         status: "ACTIVE",
       },
     });
+    const emailCoachB = `leak-coachb-${Date.now()}@example.test`;
     const coachB = await fixture.user.create({
       data: {
-        email: `leak-coachb-${Date.now()}@example.test`,
+        email: emailCoachB,
         passwordHash: "scrypt$fixture",
         name: "Coach B",
         status: "ACTIVE",
@@ -203,6 +209,25 @@ describe.skipIf(!enabled)("RSC-NAME-LEAK (real PG)", () => {
       clientB: clientB.id,
     };
 
+    // Credential accounts so `asUser` signs in through the real Better Auth
+    // handler — no forged JWT; the session row it mints is what `auth()`
+    // resolves below.
+    emails = new Map([
+      [userA.id, emailA],
+      [ownerB.id, emailOwnerB],
+      [coachB.id, emailCoachB],
+    ]);
+    for (const userId of emails.keys()) {
+      await fixture.account.create({
+        data: {
+          userId,
+          accountId: userId,
+          providerId: "credential",
+          password: await hashPassword(PASSWORD),
+        },
+      });
+    }
+
     clientFind = vi.spyOn(prisma.clientProfile, "findFirst");
   });
 
@@ -220,25 +245,25 @@ describe.skipIf(!enabled)("RSC-NAME-LEAK (real PG)", () => {
     await fixture?.$disconnect();
   });
 
-  /** Real Auth.js session cookie through the stubbed headers hook. */
+  /** Real Better Auth session through the stubbed headers hook: sign in via
+   * `auth.handler` (mints a `session` row + Set-Cookie), then replay the
+   * `better-auth.session_token` cookie exactly as a browser would. */
   async function asUser(userId: string) {
-    const jwt = await encode({
-      token: {
-        iat: Math.floor(Date.now() / 1000),
-        sub: userId,
-        sv: 0,
-      } as never,
-      secret: AUTH_SECRET,
-      salt: COOKIE_NAME,
-      maxAge: 30 * 24 * 60 * 60,
-    });
-    setTestHeaders(
-      new Headers({
-        cookie: `${COOKIE_NAME}=${jwt}`,
-        host: "localhost",
-        "x-forwarded-proto": "http",
+    const email = emails.get(userId);
+    if (!email) throw new Error("no credential for user");
+    const res = await authServer.handler(
+      new Request(`${BASE}/api/auth/sign-in/email`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email, password: PASSWORD }),
       }),
     );
+    if (res.status !== 200) throw new Error(`sign-in failed: ${res.status}`);
+    const cookie = res.headers
+      .getSetCookie()
+      .map((c) => c.split(";")[0])
+      .join("; ");
+    setTestHeaders(new Headers({ cookie, host: "127.0.0.1" }));
   }
 
   /** Count page-level name lookups — the select: { name: true } shape only the

@@ -9,8 +9,8 @@ export default defineConfig({
     alias: {
       // "@/*" tsconfig path — needed for tests importing app/* entrypoints.
       "@": path.resolve(import.meta.dirname),
-      // next-auth's index imports these Next server-only modules; stub them so
-      // the real exported `auth()`/`handlers` pipeline runs under vitest.
+      // PR-05: better-auth's Next integration reads next/headers (+ next/server
+      // in route helpers); stub them so the real auth pipeline runs under vitest.
       "next/headers": path.resolve(
         import.meta.dirname,
         "tests/integration/stubs/next-headers.ts",
@@ -23,28 +23,31 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    // Inline next-auth so the next/headers + next/server aliases above apply
-    // inside its package (externalized deps would bypass vite aliasing).
-    server: { deps: { inline: ["next-auth"] } },
+    // Inline better-auth so the next/headers + next/server aliases above apply
+    // inside its packages (externalized deps would bypass vite aliasing).
+    server: {
+      deps: { inline: [/^better-auth/, /^@better-auth/, /^better-call/] },
+    },
     include: ["tests/integration/**/*.test.ts"],
     fileParallelism: false,
     testTimeout: 60_000,
     hookTimeout: 120_000,
     env: {
-      // Global `lib/db` Prisma and the wired `authNodeCallbacks` must target
-      // the disposable integration database, not the app database.
+      // Global `lib/db` Prisma and the wired auth instance must target the
+      // disposable integration database, not the app database.
       ...(process.env.INTEGRATION_DATABASE_URL
         ? { DATABASE_URL: process.env.INTEGRATION_DATABASE_URL }
         : {}),
-      // Test-only JWT secret for the real Auth.js cookie pipeline. Synthetic.
-      AUTH_SECRET: "integration-test-auth-secret-not-for-production",
-      // Keep local integration runs on the same request-rewrite path as CI.
-      AUTH_URL: "http://127.0.0.1:3000",
-      AUTH_TRUST_HOST: "true",
+      // Test-only auth secret for the real Better Auth pipeline. Synthetic.
+      BETTER_AUTH_SECRET: "integration-test-auth-secret-not-for-production",
+      BETTER_AUTH_URL: "http://127.0.0.1:3000",
       // D19: the consent suites keep exercising the parked gates until
       // PR-T2 removes them; the flag is unset (off) in every other
       // environment.
       ENABLE_CONSENT_GATES: "1",
+      // Mailbox output for reset flows lands under a disposable path when a
+      // test sets DEV_MAILBOX_FILE; the dev-file adapter is the default
+      // outside production.
     },
   },
 });

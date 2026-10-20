@@ -1,54 +1,54 @@
-import NextAuth from "next-auth";
-import Credentials from "next-auth/providers/credentials";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
-import { authConfig } from "./auth.config";
-import { authNodeCallbacks } from "./lib/auth/session";
-import { authorizeCredentials } from "./lib/credentials";
-import { prisma } from "./lib/db";
+import { auth as authServer } from "./lib/auth/server";
+import { getViewer } from "./lib/auth/viewer";
+import { normalizeEmail } from "./lib/email";
 
 /**
- * Auth.js v5 with the Credentials provider, for **existing database users only**
- * (there is no registration, password reset, seeded account, or default
- * credential in this phase).
+ * PR-05: Auth.js is gone; this module keeps the existing call-site contract
+ * (`auth()` -> `{ user: { id, ... } } | null`, `signIn`/`signOut` from server
+ * actions) backed by the Better Auth instance in `lib/auth/server.ts`.
  *
- * Session strategy is JWT (see `auth.config.ts`). Passwords are compared using
- * scrypt-based hashing in `lib/password.ts`; plaintext is never stored or
- * logged.
- *
- * S1-F2B: the Node-side callbacks in `lib/auth/session.ts` (Prisma is allowed
- * there) COMPOSE with the edge-safe base callbacks — `...authConfig` plus a
- * callbacks object that preserves every base key and overrides only `jwt`/
- * `session`. `jwt` stamps `token.sv` from the database `sessionVersion` at
- * sign-in and returns `null` (the supported Auth.js invalidation: null body +
- * cleared cookie) whenever the token's `sv` does not match the user's CURRENT
- * database status+version on every later request. Returning null from the
- * `session` callback is NOT used — `auth()`/`getSession` would coalesce it
- * back to a default authenticated session. auth.config.ts stays Prisma-free.
+ * The session supplies identity ONLY — authorization still re-reads user,
+ * workspace, and membership state on every call through `lib/auth/guard.ts`.
  */
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  ...authConfig,
-  providers: [
-    Credentials({
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      authorize(credentials) {
-        return authorizeCredentials(credentials, (email) =>
-          prisma.user.findUnique({
-            where: { email },
-            select: {
-              id: true,
-              email: true,
-              name: true,
-              passwordHash: true,
-              status: true,
-              sessionVersion: true,
-            },
-          }),
-        );
-      },
-    }),
-  ],
-  callbacks: authNodeCallbacks,
-});
+
+export type AppSession = {
+  user: { id: string; email: string; name: string | null };
+};
+
+export async function auth(): Promise<AppSession | null> {
+  const viewer = await getViewer();
+  if (!viewer) return null;
+  return { user: viewer };
+}
+
+/**
+ * Credentials sign-in for the login server action. Throws `APIError`
+ * (better-auth/api) on failure — callers map it to the generic message.
+ * Redirects on success, mirroring the old Auth.js signature.
+ */
+export async function signIn(
+  provider: "credentials",
+  options: { email: unknown; password: unknown; redirectTo?: string },
+): Promise<void> {
+  await authServer.api.signInEmail({
+    body: {
+      email: normalizeEmail(options.email),
+      password: typeof options.password === "string" ? options.password : "",
+    },
+    headers: await headers(),
+  });
+  redirect(options.redirectTo ?? "/");
+}
+
+export async function signOut(options?: {
+  redirectTo?: string;
+}): Promise<void> {
+  try {
+    await authServer.api.signOut({ headers: await headers() });
+  } finally {
+    redirect(options?.redirectTo ?? "/login");
+  }
+}

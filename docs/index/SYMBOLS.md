@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 117 modules with exports, 1170 exported symbols.
+Counts: 122 modules with exports, 1188 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -45,6 +45,15 @@ Imported type names are shown without their `import("...")` prefix.
 ## `frontend/src/lib/utils.ts`
 
 - `export { cn } from "cn"`
+
+## `lib/api/v1.ts`
+
+- `export class ApiError extends Error (1 members)`
+- `export type ApiViewer = { userId: string; email: string; name: string | null; }`
+- `export type ApiWorkspaceContext = { workspaceId: string; memberId: string; role: Role; scope: Exclude<CapabilityScope, "deny">; }`
+- `export type V1RouteContext<P, Q> = { viewer: ApiViewer; workspace: ApiWorkspaceContext; params: P; query: Q; request: Request; }`
+- `export type V1RouteDefinition<P, Q, R> = { capability: Capability; params: ZodType<P>; query?: ZodType<Q>; handler: (ctx: V1RouteContext<P, Q>) => Promise<R>; }`
+- `export function defineApiV1Route<P extends { workspaceId: string }, Q, R>(def: V1RouteDefinition<P, Q, R>)`
 
 ## `lib/audit.ts`
 
@@ -96,30 +105,22 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type ResetGate = { deliveryAvailable?: boolean }`
 - `export type ResetLinkState = { state: "ready" | "invalid" }`
 - `export type ResetRequestResult = { ok: true; message: string } | { ok: false; message: string }`
-- `export async function completePasswordReset(input: { rawToken: unknown; password: unknown }, client: PrismaClient = prisma, gate?: ResetGate): Promise<ResetCompletionResult>`
-- `export async function getResetLinkState(rawToken: unknown, client: PrismaClient = prisma, gate?: ResetGate): Promise<ResetLinkState>`
-- `export function passwordResetMessage(error: unknown): string`
-- `export async function requestPasswordResetFromForm(email: unknown, client: PrismaClient = prisma, gate?: ResetGate): Promise<ResetRequestResult>`
-
-## `lib/auth/password-reset-delivery.ts`
-
-- `export const RESET_DELIVERY_ADAPTER_ENV = "PASSWORD_RESET_DELIVERY_ADAPTER"`
-- `export type ResetDeliveryAdapter = ( payload: ResetDeliveryPayload, ) => void | Promise<void>`
-- `export async function deliverPasswordResetToken(payload: ResetDeliveryPayload): Promise<void>`
-- `export function passwordResetDeliveryAvailable(env: string | undefined): boolean`
+- `export interface VerificationLookup (1 members)`
+- `export async function completePasswordReset(input: { rawToken: unknown; password: unknown }, gate?: ResetGate): Promise<ResetCompletionResult>`
+- `export async function getResetLinkState(rawToken: unknown, client: VerificationLookup = prisma, gate?: ResetGate): Promise<ResetLinkState>`
 - `export function passwordResetDeliveryConfigured(): boolean`
+- `export function passwordResetMessage(error: unknown): string`
+- `export async function requestPasswordResetFromForm(email: unknown, gate?: ResetGate): Promise<ResetRequestResult>`
 
-## `lib/auth/password-reset.ts`
+## `lib/auth/rate-limit.ts`
 
-- `export type PasswordResetConsumeResult = { changed: true; }`
-- `export class PasswordResetError extends Error (1 members)`
-- `export type PasswordResetErrorCode = | "invalid_input" | "invalid_token" | "account_ineligible" | "serialization_conflict" | "reset_failed" | "resets_not_exposable"`
-- `export type PasswordResetRequestResult = { outcome: "ACCOUNT_EXISTS" | "ACCOUNT_NOT_FOUND"; }`
-- `export type ResetDeliveryPayload = { kind: "password_reset"; to: string; rawToken: RawAccessToken; expiresAt: Date; }`
-- `export type ResetDeliverySink = ( payload: ResetDeliveryPayload, ) => void | Promise<void>`
-- `export function assertPasswordResetOrchestrationExternallyExposable(): never`
-- `export async function requestPasswordReset(input: { email: unknown }, options: { deliver: ResetDeliverySink }, client: PrismaClient = prisma): Promise<PasswordResetRequestResult>`
-- `export async function resetPasswordWithToken(input: { rawToken: unknown; password: unknown }, client: PrismaClient = prisma): Promise<PasswordResetConsumeResult>`
+- `export class RateLimitExceededError extends Error (1 members)`
+- `export type RateLimitOutcome = { allowed: true } | { allowed: false; retryAfter: number }`
+- `export type RateLimitRule = { window: number; max: number }`
+- `export function accountLimitKey(purpose: string, normalizedEmail: string): string`
+- `export async function consumeRateLimit(key: string, rule: RateLimitRule, client: Pick<typeof prisma, "rateLimit"> = prisma): Promise<RateLimitOutcome>`
+- `export function resolveTrustedClientIp(requestHeaders: Headers): string | null`
+- `export function userLimitKey(purpose: string, userId: string): string`
 
 ## `lib/auth/rbac.ts`
 
@@ -138,6 +139,17 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function isResource(value: unknown): value is Resource`
 - `export function resolveScope(resource: Resource, action: Action, role: PrincipalRole): Scope | undefined`
 
+## `lib/auth/roles.ts`
+
+- `export const CAPABILITIES = Object.keys(CAPABILITY_MATRIX) as Capability[]`
+- `export const CAPABILITY_MATRIX: Record< Capability, Record<Role, CapabilityScope> >`
+- `export type Capability = | "roster.read" | "plan.read" | "plan.write" | "clientData.read" | "own.read" | "own.write" | "notes.write" | "tasks.manage" | "library.manage" | "message.write" | "appeara...`
+- `export type CapabilityScope = "workspace" | "own" | "deny"`
+- `export const ROLES = ["owner", "coach", "client"] as const`
+- `export type Role = "owner" | "coach" | "client"`
+- `export function capabilityScope(role: Role, capability: Capability): CapabilityScope`
+- `export function memberRoleToRole(role: MemberRole): Role | null`
+
 ## `lib/auth/route-guard.ts`
 
 - `export type SessionWorkspaceSummary = { id: string; name: string; role: WorkspaceRole; }`
@@ -152,17 +164,25 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function requireWorkspaceAccess(session: SessionLike, request: WorkspaceAccessRequest, client: PrismaLike = prisma): Promise<AuthorizationContext>`
 - `export async function resolveWorkspaceAccess(session: SessionLike, request: WorkspaceAccessRequest, client: PrismaLike = prisma): Promise<AuthorizationContext | null>`
 
-## `lib/auth/session.ts`
+## `lib/auth/server.ts`
 
-- `export type BaseCallbacks = { jwt(params: JwtCallbackParams): JWT | null | Promise<JWT | null>; session(params: { session: Session; token: JWT }): Session | Promise<Session>; [key: string]: unknown; }`
-- `export type JwtCallbackParams = { token: JWT; user?: User; trigger?: string; session?: unknown; }`
-- `export type SessionUserGateLookup = ( id: string, ) => Promise<SessionUserGateRecord | null>`
-- `export type SessionUserGateRecord = { id: string; status: string; sessionVersion: number; }`
-- `export const authNodeCallbacks = createSessionCallbacks( authConfig.callbacks as unknown as BaseCallbacks, prismaSessionUserLookup, )`
-- `export function createSessionCallbacks(base: BaseCallbacks, lookup: SessionUserGateLookup)`
-- `export function isValidSessionVersionClaim(sv: unknown): sv is number`
-- `export const prismaSessionUserLookup: SessionUserGateLookup`
-- `export async function sessionVersionAllowed(sub: unknown, sv: unknown, lookup: SessionUserGateLookup): Promise<boolean>`
+- `export type AuthServer = typeof auth`
+- `export function assertAuthSecretConfigured(): void`
+- `export const auth = betterAuth({ appName: "Vari8", secret: process.env.BETTER_AUTH_SECRET ?? process.env.AUTH_SECRET, baseURL: process.env.BETTER_AUTH_URL ?? process.env.AUTH_URL, database: prismaA...`
+
+## `lib/auth/signup.ts`
+
+- `export class SignupError extends Error (1 members)`
+- `export type SignupErrorCode = "invalid_input" | "email_taken"`
+- `export type SignupInput = { name: unknown; email: unknown; password: unknown; workspaceName: unknown; }`
+- `export type SignupResult = { userId: string; workspaceId: string }`
+- `export async function signUpCoachAccount(input: SignupInput, client: PrismaClient = prisma): Promise<SignupResult>`
+
+## `lib/auth/viewer.ts`
+
+- `export type Viewer = { id: string; email: string; name: string | null }`
+- `export async function getViewer(): Promise<Viewer | null>`
+- `export async function getViewerFromHeaders(requestHeaders: Headers): Promise<Viewer | null>`
 
 ## `lib/catalog.ts`
 
@@ -625,14 +645,6 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function revokeOwnConsent(session: SessionLike, input: { workspaceId: string; clientProfileId: string; kind: ConsentKind }, deps: ConsentServiceDeps = {}): Promise<ConsentMutationResult>`
 - `export const unconfiguredConsentPolicy: ConsentPolicyRegistry`
 
-## `lib/credentials.ts`
-
-- `export type AuthorizedUser = { id: string; email: string; name: string | null; sessionVersion: number; }`
-- `export type CredentialRecord = { id: string; email: string; name: string | null; passwordHash: string; status: string; sessionVersion: number; }`
-- `export type UserLookup = (email: string) => Promise<CredentialRecord | null>`
-- `export async function authorizeCredentials(credentials: Partial<Record<"email" | "password", unknown>> | undefined, lookup: UserLookup): Promise<AuthorizedUser | null>`
-- `export function normalizeEmail(value: unknown): string`
-
 ## `lib/daily-entry/boundary.ts`
 
 - `export type DailyEntryActionResult<T> = { ok: true; value: T } | { ok: false; message: string }`
@@ -814,6 +826,10 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export function isSerializationConflict(error: unknown): boolean`
 - `export const prisma = globalForPrisma.prisma ?? new PrismaClient()`
+
+## `lib/email.ts`
+
+- `export function normalizeEmail(value: unknown): string`
 
 ## `lib/exercise/import.ts`
 
@@ -1015,6 +1031,15 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function listStaffHabits(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: HabitDeps = {}): Promise<{ habits: HabitView[]; hasMore: boolean }>`
 - `export async function listTodayHabits(session: SessionLike, input: { workspaceId: string; fields?: unknown }, deps: HabitDeps = {}): Promise<{ habits: TodayHabitView[]; hasMore: boolean; date: stri...`
 - `export async function setHabitLog(session: SessionLike, input: { workspaceId: string; clientProfileId: string; habitId: string; date: unknown; desired: "DONE" | "CLEARED"; }, deps: HabitDeps = {}):...`
+
+## `lib/mail/index.ts`
+
+- `export const DEV_MAILBOX_FILE_ENV = "DEV_MAILBOX_FILE"`
+- `export const MAIL_DELIVERY_ADAPTER_ENV = "MAIL_DELIVERY_ADAPTER"`
+- `export type MailAdapter = (message: MailMessage) => Promise<void>`
+- `export type MailMessage = { to: string; subject: string; text: string }`
+- `export function mailDeliveryConfigured(): boolean`
+- `export async function sendMail(message: MailMessage): Promise<void>`
 
 ## `lib/mealplan/boundary.ts`
 
@@ -1341,11 +1366,9 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type TokenStoreErrorCode = "invalid_input" | "token_store_failed"`
 - `export async function claimAccessToken(tx: Prisma.TransactionClient, input: { rawToken: unknown; purpose: AccessTokenPurpose; workspaceId?: string; userId?: string; }): Promise<{ ok: true; token: A...`
 - `export async function cleanupTerminalAccessTokens(db: PrismaClient | Prisma.TransactionClient, options?: { now?: Date; retentionMs?: number }): Promise<{ deletedCount: number }>`
-- `export async function inspectAccessToken(db: | Prisma.TransactionClient | PrismaClient | { accessToken: Pick< Prisma.TransactionClient["accessToken"], "findUnique" >; }, rawToken: unknown): Promise...`
-- `export async function issuePasswordResetToken(tx: Prisma.TransactionClient, input: { userId: string }): Promise<{ tokenId: string; rawToken: RawAccessToken; expiresAt: Date }>`
+- `export async function inspectAccessToken(db: | Prisma.TransactionClient | PrismaClient | { accessToken: Pick< Prisma.TransactionClient["accessToken"], "findUnique" >; }, rawToken: unknown, binding?...`
 - `export async function issueWorkspaceInviteToken(tx: Prisma.TransactionClient, input: { workspaceId: string; targetEmail: string; intendedRole: MemberRole; createdByUserId: string; targetMemberState...`
 - `export async function revokeMatchingInviteTokens(tx: Prisma.TransactionClient, input: { workspaceId: string; targetEmail: string; intendedRole: MemberRole; }): Promise<{ revokedCount: number }>`
-- `export async function revokeUserResetTokens(tx: Prisma.TransactionClient, input: { userId: string }): Promise<{ revokedCount: number }>`
 
 ## `lib/trainingprogram/boundary.ts`
 
@@ -1530,3 +1553,13 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function parseRosterQuery(raw: { c?: string | string[]; p?: string | string[]; }): RosterQuery | null`
 - `export function prevRosterHref(base: string, history: string[]): string | null`
 - `export function rosterPageNumber(history: string[]): number`
+
+## `lib/workspace/roster.ts`
+
+- `export type ClientRosterEntry = { clientProfileId: string; name: string; }`
+- `export type ClientRosterResult = { items: ClientRosterEntry[]; nextCursor: string | null; }`
+- `export const ROSTER_DEFAULT_LIMIT = 25`
+- `export const ROSTER_MAX_LIMIT = 100`
+- `export function encodeRosterCursor(createdAt: Date, id: string): string`
+- `export async function listWorkspaceClientRoster(viewer: ApiViewer, workspace: ApiWorkspaceContext, input: { limit?: number; cursor?: string }, client: PrismaLike = prisma): Promise<ClientRosterResult>`
+- `export function parseRosterCursor(cursor: string): { createdAt: Date; id: string } | null`

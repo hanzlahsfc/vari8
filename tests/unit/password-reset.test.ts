@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -7,401 +6,124 @@ import {
   sanitizeAuditMeta,
 } from "../../lib/audit";
 import {
-  PasswordResetError,
-  requestPasswordReset,
-  resetPasswordWithToken,
-  assertPasswordResetOrchestrationExternallyExposable,
-} from "../../lib/auth/password-reset";
+  completePasswordReset,
+  getResetLinkState,
+  requestPasswordResetFromForm,
+} from "../../lib/auth/password-reset-boundary";
 
 /**
  * S1-F2D unit tests — pure/structural surface. DB behavior lives in
  * tests/integration/s1-f2d-password-reset.test.ts (real PostgreSQL).
+ *
+ * PR-05 rewiring — block TB2.088 kept; the cases that asserted deleted
+ * machinery (`lib/auth/password-reset.ts`: the deliver-sink contract, the
+ * serialization-retry loop, the exposure assertion) are gone with it. The
+ * survivors rewire to the form boundary (`lib/auth/password-reset-boundary.ts`)
+ * and the unchanged account-audit metadata rules in `lib/audit.ts`.
  */
-
-const knReq = (
-  code: string,
-  meta?: { modelName?: string; target?: string[]; code?: string },
-) =>
-  new Prisma.PrismaClientKnownRequestError("x", {
-    code,
-    clientVersion: "test",
-    meta,
-  });
-
 describe("S1-F2D password-reset — unit surface", () => {
-  it("exposure assertion fails closed with a structural code", () => {
-    expect(() => assertPasswordResetOrchestrationExternallyExposable()).toThrow(
-      PasswordResetError,
-    );
-    try {
-      assertPasswordResetOrchestrationExternallyExposable();
-      expect.unreachable();
-    } catch (e) {
-      expect(e).toBeInstanceOf(PasswordResetError);
-      expect((e as PasswordResetError).code).toBe("resets_not_exposable");
-      expect(String(e)).toContain("resets_not_exposable");
-    }
-  });
-
-  it("invalid inputs fail structurally without touching a database", async () => {
-    for (const email of [undefined, null, 42, "", "   ", {}, "@x", "a@"]) {
+  it("invalid request inputs fail structurally without reaching the auth pipeline", async () => {
+    // The field-format failure copy is distinct from the generic API failure —
+    // proof the call short-circuited before `auth.api.requestPasswordReset`
+    // (which cannot run without the request scope + DB).
+    for (const email of [undefined, null, 42, "", "   ", {}, "noatsign"]) {
       await expect(
-        requestPasswordReset({ email }, { deliver: () => {} }, {} as never),
-      ).rejects.toMatchObject({
-        name: "PasswordResetError",
-        code: "invalid_input",
+        requestPasswordResetFromForm(email, { deliveryAvailable: true }),
+      ).resolves.toEqual({
+        ok: false,
+        message: "Enter a valid email address.",
       });
     }
-    for (const rawToken of [undefined, null, 42, "", "nope"]) {
-      await expect(
-        resetPasswordWithToken(
-          { rawToken, password: "long enough passphrase" },
-          {} as never,
-        ),
-      ).rejects.toMatchObject({
-        name: "PasswordResetError",
-        code: "invalid_token",
-      });
-    }
-  });
-
-  it("malformed token short-circuits before password-policy validation", async () => {
-    // Both bad: token validation wins — invalid_token, not the policy code.
-    for (const password of ["short", "x".repeat(500)]) {
-      await expect(
-        resetPasswordWithToken({ rawToken: "nope", password }, {} as never),
-      ).rejects.toMatchObject({ code: "invalid_token" });
-    }
-    // A structurally VALID token + bad password still fails policy first
-    // — without any database access.
-    const { generateAccessToken } = await import("../../lib/tokens/crypto");
-    const { rawToken } = generateAccessToken();
-    await expect(
-      resetPasswordWithToken({ rawToken, password: "short" }, {} as never),
-    ).rejects.toMatchObject({
-      name: "PasswordPolicyError",
-      code: "password_too_short",
+    // A syntactically email-shaped but unreachable input still fails closed —
+    // never ok, never an echo.
+    const deepFailure = await requestPasswordResetFromForm("@x", {
+      deliveryAvailable: true,
     });
+    expect(deepFailure.ok).toBe(false);
   });
 
-  it("non-serialization failures map to reset_failed / never retry", async () => {
-    let attempts = 0;
-    const client = {
-      $transaction: async () => {
-        attempts++;
-        throw knReq("P2002", {
-          modelName: "AccessToken",
-          target: ["token_hash"],
-        });
-      },
-    };
-    await expect(
-      requestPasswordReset({ email: "x@example.test" }, { deliver: () => {} }, {
-        ...client,
-        user: {
-          findUnique: async () => ({ id: "u", status: "ACTIVE" }),
-        },
-      } as never),
-    ).rejects.toMatchObject({ code: "reset_failed" });
-    expect(attempts).toBe(1);
-  });
-
-  it("genuine serialization failures retry boundedly, then conflict", async () => {
-    let attempts = 0;
-    const p2034 = () => {
-      attempts++;
-      return Promise.reject(knReq("P2034"));
-    };
-    const client = {
-      $transaction: p2034,
-      user: {
-        findUnique: async () => ({ id: "u", status: "ACTIVE" }),
-      },
-    };
-    await expect(
-      requestPasswordReset(
-        { email: "x@example.test" },
-        { deliver: () => {} },
-        client as never,
-      ),
-    ).rejects.toMatchObject({ code: "serialization_conflict" });
-    expect(attempts).toBe(8); // bounded MAX_ATTEMPTS
-  });
-
-  it("delivery sink runs post-commit, once, outside the retry loop", async () => {
-    const { generateAccessToken } = await import("../../lib/tokens/crypto");
-    let txCalls = 0;
-    const delivered: unknown[] = [];
-    const fake = {
-      user: {
-        findUnique: async () => ({ id: "u1", status: "ACTIVE" }),
-      },
-      $transaction: async (fn: (tx: unknown) => Promise<unknown>) => {
-        txCalls++;
-        // Minimal tx surface used by the request path.
-        const tx = {
-          $queryRawUnsafe: async (q: string) =>
-            q.includes("FOR UPDATE") && q.includes('"users"')
-              ? [{ id: "u1", status: "ACTIVE" }]
-              : [],
-          accessToken: {
-            updateMany: async () => ({ count: 0 }),
-            create: async () => ({
-              id: "tok1",
-              expiresAt: new Date(Date.now() + 12 * 3600_000),
-            }),
-          },
-          auditEvent: { create: async () => ({}) },
-        };
-        return fn(tx);
-      },
-    };
-    const { rawToken } = generateAccessToken();
-    void rawToken;
-    const r = await requestPasswordReset(
-      { email: "u@example.test" },
-      { deliver: async (p) => void delivered.push(p) },
-      fake as never,
-    );
-    expect(r).toEqual({ outcome: "ACCOUNT_EXISTS" });
-    expect(r).not.toHaveProperty("delivery");
-    expect(delivered).toHaveLength(1);
-    const payload = delivered[0] as {
-      kind: string;
-      to: string;
-      rawToken: string;
-      expiresAt: Date;
-    };
-    expect(payload.kind).toBe("password_reset");
-    expect(payload.to).toBe("u@example.test");
-    expect(typeof payload.rawToken).toBe("string");
-    expect(txCalls).toBe(1);
-
-    // Delivery failure → reset_failed, no replay of the mutation.
-    txCalls = 0;
-    await expect(
-      requestPasswordReset(
-        { email: "u@example.test" },
-        {
-          deliver: async () => {
-            throw new Error("smtp offline");
-          },
-        },
-        fake as never,
-      ),
-    ).rejects.toMatchObject({ code: "reset_failed" });
-    expect(txCalls).toBe(1);
-  });
-
-  it("deliver sink is mandatory — rejected before any database access", async () => {
-    let lookups = 0;
-    let txCalls = 0;
-    const probe = {
-      user: {
-        findUnique: async () => {
-          lookups++;
-          return { id: "u", status: "ACTIVE" };
-        },
-      },
-      $transaction: async () => {
-        txCalls++;
-        throw new Error("should never run");
-      },
-    };
-    for (const options of [
-      undefined,
-      {},
-      { deliver: undefined },
-      { deliver: null },
-      { deliver: 42 },
-      { deliver: "x" },
-    ]) {
+  it("password-policy violations surface before the token is ever claimed", async () => {
+    // The boundary checks the fixable problem first: even on an unusable
+    // token the user sees the policy copy, and the check runs before any
+    // `auth.api.*` call (this suite has no request scope or DB).
+    for (const [password, message] of [
+      ["short", "Password must be at least 10 characters."],
+      ["abcdefghij", "Password must contain at least one digit."],
+      ["x".repeat(500), "Enter a valid password."],
+    ] as const) {
       await expect(
-        requestPasswordReset(
-          { email: "u@example.test" },
-          options as never,
-          probe as never,
+        completePasswordReset(
+          { rawToken: "nope", password },
+          { deliveryAvailable: true },
         ),
-      ).rejects.toMatchObject({
-        name: "PasswordResetError",
-        code: "invalid_input",
-      });
+      ).resolves.toEqual({ ok: false, message });
     }
-    expect(lookups).toBe(0);
-    expect(txCalls).toBe(0);
   });
 
-  it("options.deliver is captured once — mid-flight reassignment cannot suppress delivery", async () => {
-    let releaseTx!: () => void;
-    const gate = new Promise<void>((r) => (releaseTx = r));
-    let txCalls = 0;
-    const fake = {
-      user: {
-        findUnique: async () => ({ id: "u1", status: "ACTIVE" }),
-      },
-      $transaction: async (fn: (tx: unknown) => Promise<unknown>) => {
-        txCalls++;
-        const tx = {
-          $queryRawUnsafe: async (q: string) =>
-            q.includes("FOR UPDATE") && q.includes('"users"')
-              ? [{ id: "u1", status: "ACTIVE" }]
-              : [],
-          accessToken: {
-            updateMany: async () => ({ count: 0 }),
-            create: async () => ({
-              id: "tok1",
-              expiresAt: new Date(Date.now() + 12 * 3600_000),
-            }),
-          },
-          auditEvent: { create: async () => ({}) },
-        };
-        const inner = fn(tx);
-        await gate; // hold the commit pending while the caller mutates
-        return inner;
-      },
-    };
-    const delivered: unknown[] = [];
-    const options: { deliver?: ((p: never) => void) | undefined } = {
-      deliver: (p) => void delivered.push(p),
-    };
-    const pending = requestPasswordReset(
-      { email: "u@example.test" },
-      options as never,
-      fake as never,
-    );
-    await new Promise((r) => setTimeout(r, 20));
-    // Mutate the sink while the transaction is still pending.
-    options.deliver = undefined;
-    releaseTx();
-    const res = await pending;
-    expect(res).toEqual({ outcome: "ACCOUNT_EXISTS" });
-    expect(delivered).toHaveLength(1);
-    expect(txCalls).toBe(1);
-  });
-
-  it("deliver getter returning undefined on second read still delivers", async () => {
-    // Getter yields a function once, then undefined — the captured first
-    // read must be the only consultation.
-    let reads = 0;
-    const delivered: unknown[] = [];
-    const options = {
-      get deliver() {
-        reads++;
-        return reads === 1 ? (p: unknown) => void delivered.push(p) : undefined;
-      },
-    };
-    const fake = {
-      user: { findUnique: async () => ({ id: "u1", status: "ACTIVE" }) },
-      $transaction: async (fn: (tx: unknown) => Promise<unknown>) =>
-        fn({
-          $queryRawUnsafe: async (q: string) =>
-            q.includes("FOR UPDATE") && q.includes('"users"')
-              ? [{ id: "u1", status: "ACTIVE" }]
-              : [],
-          accessToken: {
-            updateMany: async () => ({ count: 0 }),
-            create: async () => ({
-              id: "tok1",
-              expiresAt: new Date(Date.now() + 12 * 3600_000),
-            }),
-          },
-          auditEvent: { create: async () => ({}) },
-        }),
-    };
-    const res = await requestPasswordReset(
-      { email: "u@example.test" },
-      options as never,
-      fake as never,
-    );
-    expect(res).toEqual({ outcome: "ACCOUNT_EXISTS" });
-    expect(delivered).toHaveLength(1);
-    expect(reads).toBe(1); // exactly one read of options.deliver
-  });
-
-  it("throwing input/option getters → invalid_input before any DB access", async () => {
-    let lookups = 0;
-    let txCalls = 0;
-    const probe = {
-      user: {
-        findUnique: async () => {
-          lookups++;
-          return { id: "u", status: "ACTIVE" };
-        },
-      },
-      $transaction: async () => {
-        txCalls++;
-        throw new Error("must not run");
-      },
-    };
-    const trappedOptions = {
-      get deliver(): never {
-        throw new Error("getter-secret-message");
-      },
-    };
+  it("the delivery gate fails closed before any auth call", async () => {
+    const gate = { deliveryAvailable: false };
     await expect(
-      requestPasswordReset(
-        { email: "u@example.test" },
-        trappedOptions,
-        probe as never,
+      requestPasswordResetFromForm("u@example.test", gate),
+    ).resolves.toEqual({
+      ok: false,
+      message: "Password reset is not currently available.",
+    });
+    await expect(
+      completePasswordReset(
+        { rawToken: "any", password: "valid-pass-1" },
+        gate,
       ),
-    ).rejects.toMatchObject({ code: "invalid_input" });
-    const trappedInput = {
-      get email(): never {
-        throw new Error("email-getter-secret");
-      },
-    };
-    const err = await requestPasswordReset(
-      trappedInput,
-      { deliver: () => {} },
-      probe as never,
-    ).then(
-      () => null,
-      (e) => e,
-    );
-    expect(err).toMatchObject({ code: "invalid_input" });
-    // Never leak the underlying message or input value.
-    expect(String(err)).not.toContain("secret");
-    expect(lookups).toBe(0);
-    expect(txCalls).toBe(0);
-  });
-
-  it("throwing deliver fn → reset_failed, one commit, no replay", async () => {
-    let txCalls = 0;
-    const fake = {
-      user: { findUnique: async () => ({ id: "u1", status: "ACTIVE" }) },
-      $transaction: async (fn: (tx: unknown) => Promise<unknown>) => {
-        txCalls++;
-        return fn({
-          $queryRawUnsafe: async (q: string) =>
-            q.includes("FOR UPDATE") && q.includes('"users"')
-              ? [{ id: "u1", status: "ACTIVE" }]
-              : [],
-          accessToken: {
-            updateMany: async () => ({ count: 0 }),
-            create: async () => ({
-              id: "tok1",
-              expiresAt: new Date(Date.now() + 12 * 3600_000),
-            }),
-          },
-          auditEvent: { create: async () => ({}) },
-        });
-      },
-    };
-    const err = await requestPasswordReset(
-      { email: "u@example.test" },
-      {
-        deliver: () => {
-          throw new Error("provider exploded with token-details");
+    ).resolves.toEqual({
+      ok: false,
+      message: "Password reset is not currently available.",
+    });
+    let reads = 0;
+    const counting = {
+      verification: {
+        findFirst: async () => {
+          reads += 1;
+          return { id: "v1" };
         },
       },
-      fake as never,
-    ).then(
-      () => null,
-      (e) => e,
-    );
-    expect(err).toMatchObject({ code: "reset_failed" });
-    expect(String(err)).not.toContain("exploded");
-    expect(txCalls).toBe(1); // committed once, never replayed
+    };
+    await expect(getResetLinkState("any", counting, gate)).resolves.toEqual({
+      state: "invalid",
+    });
+    expect(reads).toBe(0);
+  });
+
+  it("throwing input getters fail closed without leaking internals", async () => {
+    const trapped = {
+      get rawToken(): never {
+        throw new Error("raw-token-secret");
+      },
+      get password(): never {
+        throw new Error("password-secret");
+      },
+    };
+    const r = await completePasswordReset(trapped, {
+      deliveryAvailable: true,
+    });
+    expect(r).toEqual({
+      ok: false,
+      message: "Something went wrong. Please try again in a moment.",
+    });
+    expect(JSON.stringify(r)).not.toContain("secret");
+    // The request surface treats getter-trapped input as ordinary invalid
+    // input — same field error, no leak, no auth call.
+    await expect(
+      requestPasswordResetFromForm(
+        {
+          get length(): never {
+            throw new Error("email-getter-secret");
+          },
+        } as never,
+        { deliveryAvailable: true },
+      ),
+    ).resolves.toEqual({
+      ok: false,
+      message: "Enter a valid email address.",
+    });
   });
 
   it("resetStage is scoped to account PASSWORD_RESET audit only", () => {

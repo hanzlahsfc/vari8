@@ -1,30 +1,27 @@
 import { execFileSync } from "node:child_process";
 
-import { encode } from "@auth/core/jwt";
 import { PrismaClient } from "@prisma/client";
-import { NextRequest } from "next/server";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { auth, handlers } from "../../auth";
+import { auth as rootAuth } from "../../auth";
+import { auth as authServer } from "../../lib/auth/server";
+import { hashPassword } from "../../lib/password";
 import { setTestHeaders } from "./stubs/next-headers";
 
 /**
- * S1-F2B runtime regression — the REAL exported NextAuth pipeline.
+ * S1-F2B runtime regression — the REAL exported auth pipeline.
  *
- * These tests exercise `auth()` (the RSC/`getSession` path) and `handlers`
- * (`/api/auth/session`) from `../../auth` end-to-end: real JWT decode, real
- * `authNodeCallbacks` (the exact object `auth.ts` wires into NextAuth — bound
- * to this disposable DB via `DATABASE_URL`), real cookie cleaning.
- *
- * RED history: on the original `null as unknown as Session` implementation,
- * `auth()` returned a token-derived default session even when the session
- * callback returned null — because `getSession` wraps the callback with
- * `?? { ...args[0].session, expires }`. These tests reproduced that bypass.
+ * PR-05 rewiring: the old file forged Auth.js JWT session cookies through
+ * `@auth/core/jwt` to hit `auth()`/`handlers`. That machinery is gone. These
+ * tests exercise the live contract end-to-end: real sign-in through
+ * `auth.handler` (minting a `sessions` row + Set-Cookie), `auth()` from the
+ * repo-root seam resolving through the stubbed `next/headers`, revocation by
+ * row deletion, expiry sweeps, deactivation, fail-closed store errors, and
+ * cookie clearing on sign-out.
  */
 const baseUrl = process.env.INTEGRATION_DATABASE_URL;
 const enabled = typeof baseUrl === "string" && baseUrl.length > 0;
-const AUTH_SECRET = "integration-test-auth-secret-not-for-production";
-const COOKIE_NAME = "authjs.session-token";
+const BASE = "http://127.0.0.1:3000";
 
 function runPrisma(args: string[], env: Record<string, string> = {}): void {
   execFileSync("npx", ["prisma", ...args], {
@@ -33,171 +30,236 @@ function runPrisma(args: string[], env: Record<string, string> = {}): void {
   });
 }
 
-async function sessionJwtCookie(claims: Record<string, unknown>) {
-  const jwt = await encode({
-    token: { iat: Math.floor(Date.now() / 1000), ...claims } as never,
-    secret: AUTH_SECRET,
-    salt: COOKIE_NAME,
-    maxAge: 30 * 24 * 60 * 60,
-  });
-  return `${COOKIE_NAME}=${jwt}`;
+async function signIn(email: string, password: string) {
+  return authServer.handler(
+    new Request(`${BASE}/api/auth/sign-in/email`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    }),
+  );
 }
 
 async function authForCookie(cookie: string) {
   setTestHeaders(
     new Headers({
       cookie,
-      host: "localhost",
-      "x-forwarded-proto": "http",
+      host: "127.0.0.1",
     }),
   );
-  return auth();
+  return rootAuth();
 }
 
-async function sessionEndpoint(cookie: string) {
-  return handlers.GET(
-    new NextRequest("http://localhost/api/auth/session", {
-      headers: { cookie },
-    }),
+async function authForBearer(bearer: string) {
+  setTestHeaders(
+    new Headers({ authorization: `Bearer ${bearer}`, host: "127.0.0.1" }),
   );
+  return rootAuth();
 }
+
+const cookieOf = (res: Response) =>
+  res.headers
+    .getSetCookie()
+    .map((c) => c.split(";")[0])
+    .join("; ");
 
 describe.skipIf(!enabled)(
-  "S1-F2B session revocation through the real Auth.js pipeline",
+  "S1-F2B session revocation through the real auth pipeline",
   () => {
     const url = baseUrl as string;
     let prisma: PrismaClient;
+    let n = 0;
+    const PASSWORD = "runtime-session-pw-1";
 
     beforeAll(async () => {
       runPrisma(["migrate", "deploy"], { DATABASE_URL: url });
       prisma = new PrismaClient({ datasources: { db: { url } } });
-      await prisma.$executeRawUnsafe(
-        'TRUNCATE "users" RESTART IDENTITY CASCADE',
-      );
     });
     afterAll(async () => {
       await prisma?.$disconnect();
+    });
+    beforeEach(() => {
+      setTestHeaders(new Headers());
     });
 
     const mkUser = (over: Partial<import("@prisma/client").User> = {}) =>
       prisma.user.create({
         data: {
-          email: `rt-${Date.now()}-${Math.random()}@example.test`,
-          passwordHash: "scrypt$x",
+          email: `rt_${Date.now()}_${++n}_${Math.random()
+            .toString(36)
+            .slice(2, 8)}@example.test`,
+          passwordHash: "fixture",
           status: "ACTIVE",
           ...over,
         },
       });
+    async function mkCredentialUser(
+      status: "ACTIVE" | "DEACTIVATED" | "INVITED" = "ACTIVE",
+    ) {
+      const u = await mkUser({ status });
+      await prisma.account.create({
+        data: {
+          userId: u.id,
+          accountId: u.id,
+          providerId: "credential",
+          password: await hashPassword(PASSWORD),
+        },
+      });
+      return u;
+    }
 
-    it("valid current session authenticates through real auth()", async () => {
-      const u = await mkUser();
-      const cookie = await sessionJwtCookie({ sub: u.id, sv: 0 });
+    it("a live session authenticates through real auth() — cookie and bearer", async () => {
+      const u = await mkCredentialUser();
+      const res = await signIn(u.email, PASSWORD);
+      expect(res.status).toBe(200);
+      const cookie = cookieOf(res);
+      const bearer = res.headers.get("set-auth-token")!;
+
       const session = await authForCookie(cookie);
       expect(session?.user?.id).toBe(u.id);
+      const viaBearer = await authForBearer(bearer);
+      expect(viaBearer?.user?.id).toBe(u.id);
     });
 
-    it("sessionVersion bump makes real auth() unauthenticated", async () => {
-      const u = await mkUser();
-      const cookie = await sessionJwtCookie({ sub: u.id, sv: 0 });
-      await prisma.user.update({
-        where: { id: u.id },
-        data: { sessionVersion: { increment: 1 } },
-      });
+    it("deleting the session row makes real auth() unauthenticated; a fresh sign-in works", async () => {
+      const u = await mkCredentialUser();
+      const res = await signIn(u.email, PASSWORD);
+      const cookie = cookieOf(res);
+      expect((await authForCookie(cookie))?.user?.id).toBe(u.id);
+
+      // Row deletion is the revocation primitive (was: sessionVersion bump).
+      await prisma.session.deleteMany({ where: { userId: u.id } });
       await expect(authForCookie(cookie)).resolves.toBeNull();
-      // Fresh sign-in level claim (sv=1) works again.
-      const fresh = await sessionJwtCookie({ sub: u.id, sv: 1 });
-      const session = await authForCookie(fresh);
-      expect(session?.user?.id).toBe(u.id);
+
+      const fresh = await signIn(u.email, PASSWORD);
+      expect(fresh.status).toBe(200);
+      expect((await authForCookie(cookieOf(fresh)))?.user?.id).toBe(u.id);
     });
 
-    it("missing, malformed, non-integer, negative sv all fail closed", async () => {
-      const u = await mkUser();
-      for (const sv of [undefined, "0", 0.5, -1, NaN, null, true, {}]) {
-        const cookie = await sessionJwtCookie({ sub: u.id, sv });
+    it("forged, malformed, and expired credentials all fail closed through auth()", async () => {
+      const u = await mkCredentialUser();
+      for (const cookie of [
+        "better-auth.session_token=forged-value",
+        "better-auth.session_token=",
+        "authjs.session-token=forged-authjs-legacy",
+        "unrelated=1",
+        "",
+      ]) {
         await expect(
           authForCookie(cookie),
-          `sv=${JSON.stringify(sv)}`,
+          `cookie=${cookie}`,
         ).resolves.toBeNull();
       }
-    });
-
-    it("non-ACTIVE and unknown/deleted users are unauthenticated", async () => {
-      const invited = await mkUser({ status: "INVITED" });
-      const deactivated = await mkUser({ status: "DEACTIVATED" });
-      for (const u of [invited, deactivated]) {
-        const cookie = await sessionJwtCookie({ sub: u.id, sv: 0 });
-        await expect(authForCookie(cookie)).resolves.toBeNull();
+      for (const bearer of ["deadbeef", "Bearer", "x.y.z"]) {
+        await expect(authForBearer(bearer)).resolves.toBeNull();
       }
-      const ghost = await sessionJwtCookie({
-        sub: "user-does-not-exist",
-        sv: 0,
+      // A planted expired session row resolves anonymous (and is swept).
+      const staleToken = `expired_${Date.now()}_${Math.random()
+        .toString(36)
+        .slice(2)}`;
+      const staleRow = await prisma.session.create({
+        data: {
+          userId: u.id,
+          token: staleToken,
+          expiresAt: new Date(Date.now() - 60_000),
+        },
       });
-      await expect(authForCookie(ghost)).resolves.toBeNull();
+      await expect(authForBearer(staleToken)).resolves.toBeNull();
+      expect(
+        await prisma.session.findUnique({ where: { id: staleRow.id } }),
+      ).toBeNull();
     });
 
-    it("malformed/missing subject fails closed; DB failure fails closed", async () => {
-      const u = await mkUser();
-      for (const sub of [undefined, null, 42, "", {}]) {
-        const cookie = await sessionJwtCookie({ sub, sv: 0 });
-        await expect(authForCookie(cookie)).resolves.toBeNull();
-      }
-      // DB failure: rename users table → lookup throws → gate must fail closed.
-      const cookie = await sessionJwtCookie({ sub: u.id, sv: 0 });
+    it("non-ACTIVE and deleted users are unauthenticated through real auth()", async () => {
+      // Deactivated mid-session: the hook deletes the rows and the session
+      // endpoint resolves anonymous.
+      const u = await mkCredentialUser();
+      const res = await signIn(u.email, PASSWORD);
+      const cookie = cookieOf(res);
+      expect((await authForCookie(cookie))?.user?.id).toBe(u.id);
+      await prisma.user.update({
+        where: { id: u.id },
+        data: { status: "DEACTIVATED" },
+      });
+      await expect(authForCookie(cookie)).resolves.toBeNull();
+      expect(await prisma.session.count({ where: { userId: u.id } })).toBe(0);
+
+      // Deleted user: session rows cascade away; the credential is dead.
+      const u2 = await mkCredentialUser();
+      const res2 = await signIn(u2.email, PASSWORD);
+      const cookie2 = cookieOf(res2);
+      await prisma.user.delete({ where: { id: u2.id } });
+      await expect(authForCookie(cookie2)).resolves.toBeNull();
+    });
+
+    it("a session-store failure fails closed to anonymous", async () => {
+      const u = await mkCredentialUser();
+      const res = await signIn(u.email, PASSWORD);
+      const cookie = cookieOf(res);
+      expect((await authForCookie(cookie))?.user?.id).toBe(u.id);
+      // The viewer seam must fail closed when the user lookup cannot run.
       await prisma.$executeRawUnsafe(
-        'ALTER TABLE "users" RENAME TO "users_off"',
+        'ALTER TABLE "users" RENAME TO "users_off_rt"',
       );
       try {
         await expect(authForCookie(cookie)).resolves.toBeNull();
       } finally {
         await prisma.$executeRawUnsafe(
-          'ALTER TABLE "users_off" RENAME TO "users"',
+          'ALTER TABLE "users_off_rt" RENAME TO "users"',
         );
       }
+      // Sanity: restored, the same cookie resolves again.
+      expect((await authForCookie(cookie))?.user?.id).toBe(u.id);
     });
 
-    it("/api/auth/session returns null and clears the cookie on invalidation", async () => {
-      const u = await mkUser();
-      const cookie = await sessionJwtCookie({ sub: u.id, sv: 0 });
-      await prisma.user.update({
-        where: { id: u.id },
-        data: { sessionVersion: { increment: 1 } },
-      });
-      const res = await sessionEndpoint(cookie);
-      expect(res.status).toBe(200);
-      await expect(res.json()).resolves.toBeNull();
-      const setCookies = res.headers.getSetCookie();
-      expect(
-        setCookies.some(
-          (c) =>
-            c.startsWith(`${COOKIE_NAME}=`) &&
-            /(Max-Age=0|Expires=Thu, 01 Jan 1970|expires=Thu, 01 Jan 1970)/i.test(
-              c,
-            ),
-        ),
-      ).toBe(true);
-    });
-
-    it("update payloads cannot inject or refresh sv through the real pipeline", async () => {
-      const u = await mkUser();
-      const cookie = await sessionJwtCookie({ sub: u.id, sv: 0 });
-      await prisma.user.update({
-        where: { id: u.id },
-        data: { sessionVersion: { increment: 1 } },
-      });
-      // Client sends {data:{sv:1}} — the update path must NOT trust it.
-      const res = await handlers.POST(
-        new NextRequest("http://localhost/api/auth/session", {
-          method: "POST",
-          headers: { cookie, "content-type": "application/json" },
-          body: JSON.stringify({ data: { sv: 1 } }),
+    it("GET /api/auth/get-session returns JSON null for invalid credentials", async () => {
+      const res = await authServer.handler(
+        new Request(`${BASE}/api/auth/get-session`, {
+          headers: { cookie: "better-auth.session_token=zzz" },
         }),
       );
-      const body = await res.json().catch(() => null);
-      // Either the update is rejected or the session stays unauthenticated —
-      // never a session whose sv was resurrected from client input.
-      expect(body === null || res.status !== 200).toBe(true);
-      const after = await authForCookie(cookie);
-      expect(after).toBeNull();
+      expect(res.status).toBe(200);
+      await expect(res.json()).resolves.toBeNull();
+
+      // And for a formerly-valid session whose row was revoked.
+      const u = await mkCredentialUser();
+      const signin = await signIn(u.email, PASSWORD);
+      const cookie = cookieOf(signin);
+      await prisma.session.deleteMany({ where: { userId: u.id } });
+      const dead = await authServer.handler(
+        new Request(`${BASE}/api/auth/get-session`, {
+          headers: { cookie },
+        }),
+      );
+      expect(dead.status).toBe(200);
+      await expect(dead.json()).resolves.toBeNull();
+    });
+
+    it("POST /api/auth/sign-out clears the session cookie and deletes the row", async () => {
+      const u = await mkCredentialUser();
+      const signin = await signIn(u.email, PASSWORD);
+      const cookie = cookieOf(signin);
+      expect(await prisma.session.count({ where: { userId: u.id } })).toBe(1);
+
+      const res = await authServer.handler(
+        new Request(`${BASE}/api/auth/sign-out`, {
+          method: "POST",
+          headers: { cookie, origin: BASE },
+        }),
+      );
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ success: true });
+      expect(
+        res.headers
+          .getSetCookie()
+          .some(
+            (c) =>
+              c.startsWith("better-auth.session_token=") &&
+              /Max-Age=0/i.test(c),
+          ),
+      ).toBe(true);
+      expect(await prisma.session.count({ where: { userId: u.id } })).toBe(0);
+      await expect(authForCookie(cookie)).resolves.toBeNull();
     });
   },
 );

@@ -5,13 +5,12 @@ import { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { assertTokenFlowsExternallyExposable } from "../../lib/tokens";
+import { generateAccessToken, hashAccessToken } from "../../lib/tokens/crypto";
 import {
   claimAccessToken,
   inspectAccessToken,
-  issuePasswordResetToken,
   issueWorkspaceInviteToken,
   revokeMatchingInviteTokens,
-  revokeUserResetTokens,
 } from "../../lib/tokens/store";
 
 /**
@@ -112,8 +111,20 @@ describe.skipIf(!enabled)("S1-F2A token store (real PostgreSQL)", () => {
     );
   }
 
+  // PR-05: password-reset issuance moved to Better Auth (verification rows).
+  // Tests that only need a PASSWORD_RESET row to exercise the generic
+  // token-claim surface write it directly.
   async function issueReset(userId: string) {
-    return prisma.$transaction((tx) => issuePasswordResetToken(tx, { userId }));
+    const generated = generateAccessToken();
+    const row = await prisma.accessToken.create({
+      data: {
+        userId,
+        purpose: "PASSWORD_RESET",
+        tokenHash: hashAccessToken(generated.rawToken),
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
+    return { tokenId: row.id, rawToken: generated.rawToken };
   }
 
   it("invite issue stores only the 64-hex digest, never the raw token", async () => {
@@ -141,19 +152,6 @@ describe.skipIf(!enabled)("S1-F2A token store (real PostgreSQL)", () => {
       `%${issued.rawToken}%`,
     );
     expect(leaked[0].n).toBe(0);
-  });
-
-  it("reset issue stores only the digest with user-owned shape", async () => {
-    const user = await makeUser("reset");
-    const issued = await issueReset(user.id);
-    const row = (await tokenById(issued.tokenId))!;
-    expect(row.purpose).toBe("PASSWORD_RESET");
-    expect(row.token_hash).toBe(sha256(issued.rawToken));
-    expect(row.user_id).toBe(user.id);
-    expect(row.workspace_id).toBeNull();
-    expect(row.target_email).toBeNull();
-    expect(row.intended_role).toBeNull();
-    expect(row.created_by_user_id).toBeNull();
   });
 
   it("sets expiry to exactly 12 hours from issuance", async () => {
@@ -273,19 +271,6 @@ describe.skipIf(!enabled)("S1-F2A token store (real PostgreSQL)", () => {
     expect(byId.get(resetForUser.tokenId)!.revoked_at).toBeNull();
     expect(byId.get(consumedMatch.tokenId)!.consumed_at).not.toBeNull();
     expect(byId.get(alreadyRevoked.tokenId)!.revoked_at).toEqual(revokedStamp);
-  });
-
-  it("reset replacement revocation affects only the intended user", async () => {
-    const u1 = await makeUser("u1");
-    const u2 = await makeUser("u2");
-    const r1 = await issueReset(u1.id);
-    const r2 = await issueReset(u2.id);
-    const result = await prisma.$transaction((tx) =>
-      revokeUserResetTokens(tx, { userId: u1.id }),
-    );
-    expect(result.revokedCount).toBe(1);
-    expect((await tokenById(r1.tokenId))!.revoked_at).not.toBeNull();
-    expect((await tokenById(r2.tokenId))!.revoked_at).toBeNull();
   });
 
   it("claims an active token exactly once; second claim fails structurally", async () => {
@@ -504,9 +489,6 @@ describe.skipIf(!enabled)("S1-F2A token store (real PostgreSQL)", () => {
         targetEmail: "x@x.test",
         intendedRole: "CLIENT",
       }),
-    );
-    await prisma.$transaction((tx) =>
-      revokeUserResetTokens(tx, { userId: issuer.id }),
     );
     await prisma.$transaction((tx) =>
       claimAccessToken(tx, {

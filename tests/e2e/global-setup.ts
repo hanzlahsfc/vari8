@@ -42,12 +42,31 @@ export default async function globalSetup(): Promise<void> {
   const prisma = new PrismaClient({ datasources: { db: { url } } });
   try {
     const passwordHash = await hashPassword(E2E.password);
-    const upsertUser = (email: string) =>
-      prisma.user.upsert({
+    const upsertUser = async (email: string) => {
+      const user = await prisma.user.upsert({
         where: { email },
         update: { passwordHash, status: "ACTIVE", name: email },
         create: { email, passwordHash, status: "ACTIVE", name: email },
       });
+      // PR-05: Better Auth verifies against the credential `accounts` row —
+      // `users.passwordHash` stays as the legacy mirror only.
+      await prisma.account.upsert({
+        where: {
+          providerId_accountId: {
+            providerId: "credential",
+            accountId: user.id,
+          },
+        },
+        update: { password: passwordHash },
+        create: {
+          userId: user.id,
+          accountId: user.id,
+          providerId: "credential",
+          password: passwordHash,
+        },
+      });
+      return user;
+    };
 
     const owner = await upsertUser(E2E.owner);
     const coach = await upsertUser(E2E.coach);
