@@ -11,6 +11,11 @@ import {
   useState,
 } from "react";
 
+import {
+  loadEtherealAppearance,
+  saveEtherealAppearance,
+} from "@/components/canvas/data/appearance";
+
 export type AppearanceMode = "light" | "dark";
 export type AppearanceFont =
   | "sans"
@@ -69,7 +74,6 @@ export const defaultAppearance: Appearance = {
   font: "sans",
 };
 
-const STORAGE_KEY = "coaching-ethereal-appearance-v1";
 const fontIds = new Set<AppearanceFont>(fontOptions.map(({ id }) => id));
 const modes = new Set<AppearanceMode>(["light", "dark"]);
 
@@ -92,9 +96,7 @@ export function useAppearance(): AppearanceContextValue {
 
 function readStoredAppearance(): Appearance | null {
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (!stored) return null;
-    const value: unknown = JSON.parse(stored);
+    const value = loadEtherealAppearance();
     if (!value || typeof value !== "object") return null;
 
     const record = value as Record<string, unknown>;
@@ -127,7 +129,7 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!hydrated) return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(appearance));
+      saveEtherealAppearance(appearance);
     } catch {
       // Keep appearance usable when browser storage is unavailable.
     }
