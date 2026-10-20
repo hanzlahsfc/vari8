@@ -41,6 +41,7 @@ export type CoachAccount = {
   name: string;
   initials: string;
   role: CanvasRole;
+  workspaceName: string;
 };
 export function CoachApp({ viewer }: { viewer: CoachAccount }) {
   return (
@@ -117,7 +118,7 @@ function Workspace({ viewer }: { viewer: CoachAccount }) {
             </>
           )}
         </div>
-        <div className="cd-workspace-label">COACH WORKSPACE</div>
+        <div className="cd-workspace-label">{viewer.workspaceName}</div>
         <nav id="coach-navigation" aria-label="Coach workspace">
           {NAV.map(({ id, label, Icon }) => (
             <button
