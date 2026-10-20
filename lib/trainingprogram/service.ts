@@ -642,6 +642,9 @@ function boundaryEntriesUpTo(
     collect(`sessionNames/${k}`, bm);
   for (const [k, bm] of Object.entries(draft.fieldCells))
     collect(`fieldCells/${k}`, bm);
+  // PR-M6: ordered set-row boundaries are locked weeks like every other node.
+  for (const [k, bm] of Object.entries(draft.setRows ?? {}))
+    collect(`setRows/${k}`, bm);
   return out;
 }
 
