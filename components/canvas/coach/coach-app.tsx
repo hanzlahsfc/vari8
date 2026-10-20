@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { type CSSProperties, useState } from "react";
+import type { CanvasRole } from "@/lib/auth/viewer";
 import { themeVariables } from "@/lib/canvas/ethereal-appearance";
 import { accentControlColors } from "./accent-contrast";
 import { AppearanceControls } from "./appearance-controls";
@@ -36,14 +37,19 @@ const NAV = [
   { id: "messages", label: "Messages", Icon: MessageCircle },
   { id: "notes", label: "Notes & to-dos", Icon: NotebookPen },
 ] as const;
-export function CoachApp() {
+export type CoachAccount = {
+  name: string;
+  initials: string;
+  role: CanvasRole;
+};
+export function CoachApp({ viewer }: { viewer: CoachAccount }) {
   return (
     <CoachProvider>
-      <Workspace />
+      <Workspace viewer={viewer} />
     </CoachProvider>
   );
 }
-function Workspace() {
+function Workspace({ viewer }: { viewer: CoachAccount }) {
   const {
     state,
     setState,
@@ -133,14 +139,14 @@ function Workspace() {
           <button
             type="button"
             className="cd-account"
-            aria-label="Workspace preferences for Liliana Mansfeld"
-            title="Workspace preferences for Liliana Mansfeld"
+            aria-label={`Workspace preferences for ${viewer.name}`}
+            title={`Workspace preferences for ${viewer.name}`}
             onClick={() => setSettings(true)}
           >
-            <span className="cd-account-avatar">LM</span>
+            <span className="cd-account-avatar">{viewer.initials}</span>
             <span className="cd-account-copy">
-              <strong>Liliana Mansfeld</strong>
-              <small>Coach</small>
+              <strong>{viewer.name}</strong>
+              <small>{viewer.role}</small>
             </span>
             <Settings2 size={17} />
           </button>
@@ -363,6 +369,9 @@ function Workspace() {
             <Button primary onClick={() => setSettings(false)}>
               Done
             </Button>
+            <form action="/logout" method="post" style={{ order: -1 }}>
+              <Button type="submit">Sign out</Button>
+            </form>
           </div>
         </Dialog>
       )}
