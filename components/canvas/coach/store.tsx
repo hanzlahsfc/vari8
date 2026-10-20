@@ -11,12 +11,12 @@ import {
   useRef,
   useState,
 } from "react";
+import { readCoachState, writeCoachState } from "../data";
 import {
   type CoachState,
   isCoachState,
   type Media,
   type Route,
-  STORAGE_KEY,
   seedState,
 } from "./model";
 import { migrateCoachState } from "./plans/domain";
@@ -78,9 +78,9 @@ export function CoachProvider({ children }: { children: ReactNode }) {
   };
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed: unknown = migrateCoachState(JSON.parse(raw));
+      const stored = readCoachState();
+      if (stored !== undefined) {
+        const parsed: unknown = migrateCoachState(stored);
         if (isCoachState(parsed)) setState(normalizeTemplateSetups(parsed));
         else {
           preserveRaw.current = true;
@@ -102,7 +102,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!hydrated || preserveRaw.current) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      writeCoachState(state);
       setStorageOk(true);
     } catch {
       setStorageOk(false);

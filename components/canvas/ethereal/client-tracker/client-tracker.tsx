@@ -2,6 +2,10 @@
 
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import {
+  readClientTrackerDraft,
+  writeClientTrackerDraft,
+} from "@/components/canvas/data/tracker";
 import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import {
   defaultConfig,
@@ -38,97 +42,6 @@ const DEFAULT_IDENTITY: ClientTrackerIdentity = {
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const allowedIds = new Set(parameters.map((parameter) => parameter.id));
 
-function readDraft(identity: ClientTrackerIdentity): {
-  config: TrackerConfig;
-  entries: TrackerEntry[];
-  comments: Record<string, string>;
-} | null {
-  try {
-    const raw = window.localStorage.getItem(identity.storageKey);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    const config = data?.config;
-    if (!config || !Array.isArray(config.parameterIds)) return null;
-    const parameterIds = [
-      ...new Set(
-        config.parameterIds.filter(
-          (id: unknown) => typeof id === "string" && allowedIds.has(id),
-        ),
-      ),
-    ] as string[];
-    if (!parameterIds.length) return null;
-    const summaryParameterIds = Array.isArray(config.summaryParameterIds)
-      ? [
-          ...new Set(
-            (config.summaryParameterIds as unknown[]).filter(
-              (id): id is string =>
-                typeof id === "string" &&
-                parameterIds.includes(id) &&
-                parameters.some(
-                  (parameter) =>
-                    parameter.id === id &&
-                    (parameter.kind === "number" ||
-                      parameter.kind === "rating"),
-                ),
-            ),
-          ),
-        ].slice(0, 4)
-      : undefined;
-    const safeConfig: TrackerConfig = {
-      parameterIds,
-      ...(summaryParameterIds === undefined ? {} : { summaryParameterIds }),
-      weightUnit: config.weightUnit === "lb" ? "lb" : "kg",
-      lengthUnit: config.lengthUnit === "in" ? "in" : "cm",
-      waterUnit: config.waterUnit === "fl oz" ? "fl oz" : "L",
-      ratingScale: ["1-10", "1-5", "words"].includes(config.ratingScale)
-        ? config.ratingScale
-        : "1-10",
-    };
-    const entries: TrackerEntry[] = Array.isArray(data.entries)
-      ? data.entries.flatMap((entry: TrackerEntry) => {
-          if (
-            !entry ||
-            typeof entry.date !== "string" ||
-            !DATE_RE.test(entry.date) ||
-            entry.date > identity.asOf ||
-            !entry.values ||
-            typeof entry.values !== "object"
-          )
-            return [];
-          const values: Record<string, number | null> = {};
-          for (const parameter of parameters) {
-            const value = entry.values[parameter.id];
-            values[parameter.id] =
-              typeof value === "number" &&
-              Number.isFinite(value) &&
-              value >= parameter.min &&
-              value <= parameter.max
-                ? value
-                : null;
-          }
-          return [{ date: entry.date, values }];
-        })
-      : [];
-    const comments: Record<string, string> = {};
-    if (data.comments && typeof data.comments === "object") {
-      for (const [key, value] of Object.entries(data.comments)) {
-        const [date, id] = key.split(":");
-        if (
-          DATE_RE.test(date) &&
-          date <= identity.asOf &&
-          allowedIds.has(id) &&
-          typeof value === "string" &&
-          value.trim()
-        )
-          comments[key] = value.slice(0, 2000);
-      }
-    }
-    return { config: safeConfig, entries, comments };
-  } catch {
-    return null;
-  }
-}
-
 export function ClientTracker({
   identity = DEFAULT_IDENTITY,
 }: {
@@ -144,7 +57,7 @@ export function ClientTracker({
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
-    const draft = readDraft(identity);
+    const draft = readClientTrackerDraft(identity);
     if (draft) {
       setConfig(draft.config);
       setEntries(draft.entries);
@@ -163,15 +76,11 @@ export function ClientTracker({
     setEntries(nextEntries);
     setComments(nextComments);
     try {
-      window.localStorage.setItem(
-        identity.storageKey,
-        JSON.stringify({
-          version: 1,
-          config: nextConfig,
-          entries: nextEntries,
-          comments: nextComments,
-        }),
-      );
+      writeClientTrackerDraft(identity, {
+        config: nextConfig,
+        entries: nextEntries,
+        comments: nextComments,
+      });
       setStatus(message);
     } catch {
       setStatus(
