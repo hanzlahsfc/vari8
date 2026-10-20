@@ -1,7 +1,8 @@
 import type { PrismaClient } from "@prisma/client";
 
 import { prisma } from "../db";
-import { AccessDeniedError, type SessionLike } from "../auth/guard";
+import { type SessionLike } from "../auth/guard";
+import { failMessage, mapError as sharedMapError } from "../boundary";
 import {
   CLIENT_SETUP_LIMITS,
   ClientSetupError,
@@ -94,13 +95,14 @@ function boundedIndex(value: unknown): number | null {
 }
 
 function mapError(error: unknown): { ok: false; message: string } {
-  if (error instanceof ClientSetupError) {
-    return { ok: false, message: CODE_TO_MESSAGE[error.code] ?? GENERIC };
-  }
-  if (error instanceof AccessDeniedError) {
-    return { ok: false, message: DENIED };
-  }
-  return { ok: false, message: GENERIC };
+  return sharedMapError(error, {
+    denied: () => failMessage(DENIED),
+    domain: (e) =>
+      e instanceof ClientSetupError
+        ? failMessage(CODE_TO_MESSAGE[e.code] ?? GENERIC)
+        : null,
+    fallback: () => failMessage(GENERIC),
+  });
 }
 
 function enabled(): boolean {

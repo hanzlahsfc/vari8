@@ -4,7 +4,11 @@
  * service-domain error maps to a closed, non-disclosing vocabulary.
  */
 
-import { AccessDeniedError } from "../auth/guard";
+import {
+  fail as sharedFail,
+  guard as sharedGuard,
+  mapError as sharedMapError,
+} from "../boundary";
 import { isClientDashboardEnabled } from "./gate";
 import {
   DashboardError,
@@ -42,19 +46,22 @@ const CLOSED_MESSAGES: Record<
 };
 
 function fail<T>(code: keyof typeof CLOSED_MESSAGES): DashboardSafeResult<T> {
-  return { ok: false, code, message: CLOSED_MESSAGES[code] };
+  return sharedFail(CLOSED_MESSAGES, code);
 }
 
 function mapError<T>(error: unknown): DashboardSafeResult<T> {
-  if (error instanceof AccessDeniedError) return fail("denied");
-  if (error instanceof DashboardError) {
-    if (error.code === "conflict") return fail("conflict");
-    if (error.code === "serialization_conflict")
-      return fail("serialization_conflict");
-    if (error.code === "invalid_input") return fail("invalid_input");
-    return fail("not_available");
-  }
-  return fail("not_available");
+  return sharedMapError(error, {
+    denied: () => fail("denied"),
+    domain: (e) => {
+      if (!(e instanceof DashboardError)) return null;
+      if (e.code === "conflict") return fail("conflict");
+      if (e.code === "serialization_conflict")
+        return fail("serialization_conflict");
+      if (e.code === "invalid_input") return fail("invalid_input");
+      return fail("not_available");
+    },
+    fallback: () => fail("not_available"),
+  });
 }
 
 async function guard<T>(
@@ -65,12 +72,14 @@ async function guard<T>(
   },
   fn: () => Promise<T>,
 ): Promise<DashboardSafeResult<T>> {
-  if (!isClientDashboardEnabled(env)) return fail("not_available");
-  try {
-    return { ok: true, value: await fn() };
-  } catch (error) {
-    return mapError(error);
-  }
+  return sharedGuard(
+    {
+      enabled: isClientDashboardEnabled(env),
+      off: () => fail<T>("not_available"),
+      map: (e) => mapError<T>(e),
+    },
+    fn,
+  );
 }
 
 type Session = { user?: { id?: string } } | null | undefined;

@@ -13,7 +13,8 @@
 import type { PrismaClient } from "@prisma/client";
 
 import { prisma as defaultPrisma } from "../db";
-import { AccessDeniedError, type SessionLike } from "../auth/guard";
+import { type SessionLike } from "../auth/guard";
+import { failMessage as fail, mapError as sharedMapError } from "../boundary";
 import {
   cancelOnboardingAssignment,
   createOnboardingAssignment,
@@ -63,16 +64,15 @@ const ERROR_MESSAGES: Record<OnboardingAssignmentErrorCode, string> = {
   serialization_conflict: "A conflict occurred. Please try again.",
 };
 
-const fail = (message: string): { ok: false; message: string } => ({
-  ok: false,
-  message,
-});
-
 function mapError(error: unknown): { ok: false; message: string } {
-  if (error instanceof AccessDeniedError) return fail(DENIED_ERROR);
-  if (error instanceof OnboardingAssignmentError)
-    return fail(ERROR_MESSAGES[error.code] ?? GENERIC_ERROR);
-  return fail(GENERIC_ERROR);
+  return sharedMapError(error, {
+    denied: () => fail(DENIED_ERROR),
+    domain: (e) =>
+      e instanceof OnboardingAssignmentError
+        ? fail(ERROR_MESSAGES[e.code] ?? GENERIC_ERROR)
+        : null,
+    fallback: () => fail(GENERIC_ERROR),
+  });
 }
 
 function gated(): boolean {
