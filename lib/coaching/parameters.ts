@@ -18,7 +18,10 @@
 
 import { Prisma, type PrismaClient } from "@prisma/client";
 
-import { prisma as defaultPrisma } from "../db";
+import {
+  prisma as defaultPrisma,
+  withSerializedRetry as sharedWithSerializedRetry,
+} from "../db";
 import { authorize, type SessionLike } from "../auth/guard";
 import { computeSelectionFingerprint } from "./selection-fingerprint";
 import { createPrismaAuthorizationRepo } from "../workspace/access";
@@ -455,41 +458,13 @@ function rowToState(row: {
 // Serializable transactions + workspace-scoped FOR UPDATE row locks; genuine
 // serialization failures retry a bounded number of times.
 
-const RAW_SERIALIZATION_SQLSTATES = new Set(["40001", "40P01"]);
-const MAX_ATTEMPTS = 8;
-const BACKOFF_BASE_MS = 10;
-const BACKOFF_CAP_MS = 50;
-
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
-function isRetryableSerialization(error: unknown): boolean {
-  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
-  if (error.code === "P2034") return true;
-  if (error.code === "P2010") {
-    const meta = error.meta as { code?: unknown } | undefined;
-    return (
-      typeof meta?.code === "string" &&
-      RAW_SERIALIZATION_SQLSTATES.has(meta.code)
-    );
-  }
-  return false;
-}
-
 async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
-  let attempt = 0;
-  for (;;) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (isRetryableSerialization(error) && ++attempt < MAX_ATTEMPTS) {
-        await sleep(Math.min(BACKOFF_BASE_MS * attempt, BACKOFF_CAP_MS));
-        continue;
-      }
-      if (isRetryableSerialization(error))
-        throw new ParameterError("serialization_conflict");
-      throw error;
-    }
-  }
+  return sharedWithSerializedRetry(fn, {
+    maxAttempts: 8,
+    backoffBaseMs: 10,
+    backoffCapMs: 50,
+    onExhausted: () => new ParameterError("serialization_conflict"),
+  });
 }
 
 type LockedParameterRow = {

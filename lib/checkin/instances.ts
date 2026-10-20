@@ -30,7 +30,10 @@
 
 import { Prisma, type PrismaClient } from "@prisma/client";
 
-import { prisma as defaultPrisma } from "../db";
+import {
+  prisma as defaultPrisma,
+  withSerializedRetry as sharedWithSerializedRetry,
+} from "../db";
 import {
   AccessDeniedError,
   authorize,
@@ -370,28 +373,6 @@ function base(
 
 // ── Serialization helpers (same reviewed conventions as forms.ts) ────────
 
-const MAX_ATTEMPTS = 8;
-const BACKOFF_BASE_MS = 15;
-const BACKOFF_CAP_MS = 250;
-const RAW_SERIALIZATION_SQLSTATES = new Set(["40001", "40P01"]);
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function isRetryableSerialization(error: unknown): boolean {
-  if (!(error instanceof Prisma.PrismaClientKnownRequestError)) return false;
-  if (error.code === "P2034") return true;
-  if (error.code === "P2010") {
-    const meta = error.meta as { code?: unknown } | undefined;
-    return (
-      typeof meta?.code === "string" &&
-      RAW_SERIALIZATION_SQLSTATES.has(meta.code)
-    );
-  }
-  return false;
-}
-
 function isUniqueViolation(error: unknown): boolean {
   return (
     error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -424,20 +405,12 @@ function isFeedbackNonceViolation(error: unknown): boolean {
 }
 
 async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
-  let attempt = 0;
-  for (;;) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (isRetryableSerialization(error) && ++attempt < MAX_ATTEMPTS) {
-        await sleep(Math.min(BACKOFF_BASE_MS * attempt, BACKOFF_CAP_MS));
-        continue;
-      }
-      if (isRetryableSerialization(error))
-        throw new CheckInInstanceError("serialization_conflict");
-      throw error;
-    }
-  }
+  return sharedWithSerializedRetry(fn, {
+    maxAttempts: 8,
+    backoffBaseMs: 15,
+    backoffCapMs: 250,
+    onExhausted: () => new CheckInInstanceError("serialization_conflict"),
+  });
 }
 
 async function advisoryLock(
