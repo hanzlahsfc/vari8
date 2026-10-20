@@ -46,6 +46,7 @@ export function MealPlanVersionHistory({
         activationInstant: string;
         publishedAt: string;
         payload: Parameters<typeof MealPlanVersionView>[0]["payload"];
+        foods: Parameters<typeof MealPlanVersionView>[0]["foods"];
       }
   >({ status: "idle" });
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +61,11 @@ export function MealPlanVersionHistory({
       });
       setDetail(
         r.status === "ok"
-          ? { status: "ok", ...r.detail }
+          ? {
+              status: "ok",
+              ...r.detail,
+              foods: new Map(r.foods.map((f) => [f.id, f])),
+            }
           : {
               status: "error",
               message: r.status === "error" ? r.message : "Load failed.",
@@ -160,6 +165,7 @@ export function MealPlanVersionHistory({
           <MealPlanVersionView
             payload={detail.payload}
             testidPrefix="mealplan-version-detail"
+            foods={detail.foods}
           />
         </div>
       ) : null}
