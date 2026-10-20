@@ -365,6 +365,8 @@ export async function captureAll({
   outDir,
   log = console.log,
   serverMine = null,
+  // Session cookies for every capture context (run.mjs signs in to the root app); none for the frontend/ baseline.
+  cookies = [],
 }) {
   const index = JSON.parse(await readFile(INDEX_PATH, "utf8"));
   // --disable-partial-raster: partial raster re-rasters only the invalidated part of a tile, so the anti-aliased
@@ -428,6 +430,7 @@ export async function captureAll({
             reducedMotion: "reduce",
             serviceWorkers: "block",
           });
+          if (cookies?.length) await ctx.addCookies(cookies);
           await ctx.addInitScript(initScript(STORAGE_SEED));
           const page = await ctx.newPage();
           const pageErrors = [];
