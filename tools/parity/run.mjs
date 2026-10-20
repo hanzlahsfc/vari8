@@ -1,11 +1,15 @@
-// npm run parity: builds the canvas for production (next build), serves it with next start on a free port this run
-// picks, captures every screen at 1440x900 and 390x844, compares with tools/parity/baseline, writes
-// tools/parity/out/report.html, then stops the server. Exit code: 0 match, 1 change or capture failure,
+// npm run parity: builds the root app for production (next build), serves it with next start on a free port this run
+// picks, signs in as the dev user, captures every screen at 1440x900 and 390x844, compares with tools/parity/baseline
+// (captured from frontend/), writes tools/parity/out/report.html, then stops the server. Exit code: 0 match, 1 change or capture failure,
 // 2 refused (bad env, port taken, or the listener is not the server this run started). Nothing is compared on 2.
 // PARITY_PORT pins the port (refused if taken). PARITY_URL compares a server you run yourself (not checked).
 // PARITY_DEV=1 uses next dev instead (debugging only; dev timing noise makes the gate flaky).
-// npm run parity -- --update-baseline   recaptures the baseline instead of comparing.
+// npm run parity -- --update-baseline   recaptures the baseline instead of comparing (needs PARITY_APP=frontend).
+// PARITY_APP=frontend serves frontend/ (no session) instead of the root app; the baseline comes from there.
+// Sign-in (root app): PARITY_USER_EMAIL and PARITY_USER_PASSWORD name an existing account. Without a password the
+// run upserts the dev user (icm/05-build/tools/dev-user.ts) with a fresh password on DATABASE_URL, a lane database.
 import { spawn, spawnSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { openSync } from "node:fs";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
@@ -17,6 +21,8 @@ import { compareRuns, ConfigError, envThresholds } from "./compare.mjs";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../..");
 const FE = path.join(ROOT, "frontend");
+const ROOT_APP = process.env.PARITY_APP !== "frontend";
+const APP = ROOT_APP ? ROOT : FE;
 const OUT = path.join(HERE, "out");
 const CUR = path.join(OUT, "current");
 const BASE = path.join(HERE, "baseline");
@@ -25,6 +31,53 @@ const update = process.argv.includes("--update-baseline");
 const DEV = process.env.PARITY_DEV === "1";
 
 class Refuse extends Error {}
+
+// Signs in to the root app through Better Auth and returns the session cookies for the capture contexts.
+async function signInCookies(baseUrl) {
+  const email = process.env.PARITY_USER_EMAIL ?? "owner@vari8.test";
+  let password = process.env.PARITY_USER_PASSWORD;
+  if (!password) {
+    password = `Parity${randomBytes(12).toString("hex")}7`;
+    const seed = spawnSync(
+      "npx",
+      ["tsx", path.join(ROOT, "icm/05-build/tools/dev-user.ts")],
+      {
+        cwd: ROOT,
+        env: {
+          ...process.env,
+          DEV_USER_EMAIL: email,
+          DEV_USER_PASSWORD: password,
+        },
+        encoding: "utf8",
+      },
+    );
+    if (seed.status !== 0)
+      throw new Refuse(
+        `dev user upsert failed (exit ${seed.status}): ${(seed.stderr || seed.stdout).trim().split("\n").pop()}`,
+      );
+  }
+  const res = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: baseUrl },
+    body: JSON.stringify({ email, password }),
+  });
+  const set = res.headers.getSetCookie();
+  if (!res.ok || set.length === 0)
+    throw new Refuse(`sign-in as ${email} failed (HTTP ${res.status})`);
+  const domain = new URL(baseUrl).hostname;
+  return set.map((line) => {
+    const [pair] = line.split(";");
+    const i = pair.indexOf("=");
+    return {
+      name: pair.slice(0, i).trim(),
+      value: pair.slice(i + 1).trim(),
+      domain,
+      path: "/",
+      httpOnly: true,
+      sameSite: "Lax",
+    };
+  });
+}
 
 // Binds 127.0.0.1:port (0 = any free port) and reports the port, or rejects if it is taken.
 const bind = (port) =>
@@ -98,11 +151,15 @@ await mkdir(OUT, { recursive: true });
 let baseUrl = process.env.PARITY_URL;
 let server = null;
 let port = null;
-// Next dev and build append to frontend/AGENTS.md. Snapshot and restore so the canvas tree stays untouched.
-const agentsPath = path.join(FE, "AGENTS.md");
+// Next dev and build append to AGENTS.md in the app they run in. Snapshot and restore so the tree stays untouched.
+const agentsPath = path.join(APP, "AGENTS.md");
 const agentsBefore = await readFile(agentsPath, "utf8");
 let code = 1;
 try {
+  if (update && ROOT_APP)
+    throw new Refuse(
+      "--update-baseline captures the frontend/ canvas; set PARITY_APP=frontend",
+    );
   if (!baseUrl) {
     if (
       pinned !== null &&
@@ -120,6 +177,10 @@ try {
     // PARITY_DEV=1 falls back to next dev for debugging only.
     const logFd = openSync(LOG, "w");
     const stdio = ["ignore", logFd, logFd];
+    // Better Auth trusts its own base URL only, so the root app must be told the address this run serves.
+    const env = ROOT_APP
+      ? { ...process.env, BETTER_AUTH_URL: baseUrl, AUTH_URL: baseUrl }
+      : process.env;
     if (DEV) {
       server = spawn(
         "npx",
@@ -132,11 +193,12 @@ try {
           "--port",
           String(port),
         ],
-        { cwd: FE, detached: true, stdio },
+        { cwd: APP, env, detached: true, stdio },
       );
     } else {
       const build = spawnSync("npx", ["next", "build", "--webpack"], {
-        cwd: FE,
+        cwd: APP,
+        env,
         stdio,
       });
       if (build.status !== 0)
@@ -146,7 +208,7 @@ try {
       server = spawn(
         "npx",
         ["next", "start", "--hostname", "127.0.0.1", "--port", String(port)],
-        { cwd: FE, detached: true, stdio },
+        { cwd: APP, env, detached: true, stdio },
       );
     }
     await waitForHttp(`${baseUrl}/coach`, server);
@@ -159,11 +221,12 @@ try {
   // capture: a port that answers means nothing if this run's server died and another process
   // took it. null for PARITY_URL runs, where no spawned server exists to own the port.
   const serverMine = server ? () => ownsPort(port, server.pid) : null;
+  const cookies = ROOT_APP ? await signInCookies(baseUrl) : [];
   if (update) {
     // Capture into a temp dir; the committed baseline is replaced only when every shot captured.
     const tmp = path.join(OUT, "baseline.tmp");
     await rm(tmp, { recursive: true, force: true });
-    const m = await captureAll({ baseUrl, outDir: tmp, serverMine });
+    const m = await captureAll({ baseUrl, outDir: tmp, serverMine, cookies });
     const expected =
       JSON.parse(await readFile(INDEX_PATH, "utf8")).shots.length * 2;
     if (m.failures.length || m.screens.length !== expected) {
@@ -179,7 +242,7 @@ try {
     }
   } else {
     await rm(CUR, { recursive: true, force: true });
-    const m = await captureAll({ baseUrl, outDir: CUR, serverMine });
+    const m = await captureAll({ baseUrl, outDir: CUR, serverMine, cookies });
     if (m.failures.length) {
       console.log(
         `capture: ${m.failures.length} failure(s), retried=${m.retried ?? 0}; see ${path.join(CUR, "manifest.json")}`,

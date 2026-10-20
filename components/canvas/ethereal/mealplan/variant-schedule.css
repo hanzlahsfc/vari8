@@ -1,0 +1,379 @@
+.mp-schedule-modes {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin-inline: 0;
+  padding: 3px;
+  border: 1px solid var(--mp-edge);
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  min-width: 0;
+  margin-block: 0;
+  border-style: solid;
+}
+
+.mp-schedule-modes legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.mp-workspace .mp-schedule-mode-pill {
+  min-height: 30px;
+  padding: 5px 11px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--mp-muted);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    background-color 140ms ease;
+}
+
+.mp-schedule-mode-pill:hover {
+  color: var(--mp-text);
+}
+
+.mp-schedule-mode-pill.is-active {
+  background: var(--mp-core);
+  color: var(--mp-text);
+  box-shadow: inset 0 0 0 1px var(--mp-edge);
+}
+
+.mp-schedule-mode-pill:focus-visible,
+.mp-cycle-add:focus-visible,
+.mp-cycle-remove:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.mp-cycle-editor {
+  margin-top: 18px;
+}
+
+.mp-cycle-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-bottom: 20px;
+}
+
+.mp-cycle-anchor {
+  display: grid;
+  gap: 7px;
+}
+
+.mp-cycle-anchor > span,
+.mp-cycle-toolbar-actions > span,
+.mp-cycle-steps label > span:first-child,
+.mp-cycle-duration-control > span {
+  color: var(--mp-muted);
+  font-size: 12px;
+}
+
+.mp-cycle-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.mp-cycle-steps,
+.mp-cycle-instructions ol {
+  display: grid;
+  gap: 16px 28px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mp-cycle-steps {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+}
+
+.mp-cycle-steps > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 124px;
+  align-items: start;
+  gap: 12px 16px;
+  padding: 16px 0 20px;
+  border-top: 1px solid var(--mp-edge);
+}
+
+.mp-cycle-step-heading {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mp-cycle-step-number {
+  color: var(--mp-text);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.mp-cycle-steps label {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.mp-cycle-steps label > span:first-child {
+  padding-left: 12px;
+}
+
+.mp-cycle-duration-control {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 8px;
+}
+
+.mp-cycle-duration-control > input {
+  width: 72px;
+  min-height: 40px;
+  padding: 6px 8px;
+  text-align: center;
+}
+
+.mp-cycle-remove,
+.mp-cycle-add {
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--mp-edge);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--mp-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    background-color 140ms ease;
+}
+
+.mp-cycle-remove:hover:not(:disabled),
+.mp-cycle-add:hover:not(:disabled) {
+  background: var(--surface-subtle);
+  color: var(--mp-text);
+}
+
+.mp-cycle-remove:disabled,
+.mp-cycle-add:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.mp-cycle-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--mp-edge);
+}
+
+.mp-cycle-summary strong {
+  color: var(--mp-text);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.mp-cycle-summary > span {
+  color: var(--mp-muted);
+  font-size: 12px;
+}
+
+.mp-cycle-instructions > p {
+  margin: 0 0 12px;
+  color: var(--mp-text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.mp-cycle-instructions li {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-top: 1px solid var(--mp-edge);
+}
+
+.mp-cycle-instructions span {
+  color: var(--mp-muted);
+  font-size: 12px;
+}
+
+.mp-cycle-instructions strong {
+  color: var(--mp-text);
+  font-size: 14px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+
+.mp-schedule-date {
+  max-width: 190px;
+}
+
+.mp-schedule-everyday {
+  margin-top: 18px;
+}
+
+.mp-schedule-assignment {
+  display: grid;
+  width: min(240px, 100%);
+  gap: 8px;
+  font-size: 12px;
+}
+
+.mp-schedule-assignment > span {
+  color: var(--mp-muted);
+}
+
+.mp-schedule-instruction {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+  padding: 10px 0;
+}
+
+.mp-schedule-instruction > span {
+  color: var(--mp-muted);
+  font-size: 12px;
+}
+
+.mp-schedule-instruction > strong {
+  color: var(--mp-text);
+  font-size: 16px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 540px) {
+  .mp-section-heading:has(.mp-schedule-modes) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .mp-schedule-modes {
+    width: fit-content;
+    max-width: 100%;
+    margin-inline: 0;
+  }
+
+  .mp-schedule-mode-pill {
+    padding-inline: 8px;
+    font-size: 11px;
+  }
+
+  .mp-cycle-toolbar-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .mp-cycle-instructions li {
+    grid-template-columns: 56px minmax(0, 1fr);
+    gap: 4px 10px;
+  }
+
+  .mp-cycle-instructions li > span:last-child {
+    grid-column: 2;
+  }
+}
+
+.mp-client-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px 32px;
+  padding: 24px 4px;
+}
+
+.mp-client-meta > div {
+  display: grid;
+  gap: 6px;
+}
+
+.mp-client-meta span {
+  color: var(--mp-muted);
+  font-size: 12px;
+}
+
+.mp-client-meta h2 {
+  margin: 0;
+  color: var(--mp-text);
+  font-size: 22px;
+  font-weight: 560;
+  line-height: 1.3;
+}
+
+.mp-client-meta time {
+  color: var(--mp-text);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.mp-schedule-assignment select {
+  text-align: center;
+  text-align-last: center;
+}
+
+.mp-workspace.is-preview .mp-variants {
+  margin-bottom: 0;
+  padding-bottom: 12px;
+  border-bottom: 0;
+}
+
+.mp-cycle-duration input {
+  appearance: textfield;
+}
+
+.mp-cycle-duration input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.mp-cycle-steps select {
+  text-align: center;
+  text-align-last: center;
+}
+
+.mp-workspace .mp-cycle-remove {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-color: transparent;
+  border-radius: 50%;
+}
+
+.mp-workspace .mp-cycle-add {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 15px;
+  border: 1px solid var(--mp-edge);
+  border-radius: 999px;
+  font-size: 12px;
+}

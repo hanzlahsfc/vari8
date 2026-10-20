@@ -1,0 +1,5846 @@
+{
+  "source": "food database.xlsx",
+  "basis": "as listed in source",
+  "foods": [
+    {
+      "id": "food-001",
+      "name": "Chicken Breast (Cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 32,
+      "carbs": 0,
+      "fat": 1.9,
+      "calories": 145
+    },
+    {
+      "id": "food-002",
+      "name": "Chicken Breast (Raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 24,
+      "carbs": 0,
+      "fat": 1.1,
+      "calories": 106
+    },
+    {
+      "id": "food-003",
+      "name": "Lean Beef Mince (Cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 24.7,
+      "carbs": 0,
+      "fat": 4.2,
+      "calories": 137
+    },
+    {
+      "id": "food-004",
+      "name": "Lean Beef Mince (Raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 21.9,
+      "carbs": 0,
+      "fat": 4.2,
+      "calories": 125
+    },
+    {
+      "id": "food-005",
+      "name": "Salmon (Cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 24.6,
+      "carbs": 0,
+      "fat": 15.6,
+      "calories": 239
+    },
+    {
+      "id": "food-006",
+      "name": "Salmon (Raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 22.1,
+      "carbs": 0,
+      "fat": 10.1,
+      "calories": 179
+    },
+    {
+      "id": "food-007",
+      "name": "Fillet Steak (Cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 29.1,
+      "carbs": 0,
+      "fat": 8,
+      "calories": 188
+    },
+    {
+      "id": "food-008",
+      "name": "Fillet Steak (Raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 21.2,
+      "carbs": 0,
+      "fat": 6.1,
+      "calories": 140
+    },
+    {
+      "id": "food-009",
+      "name": "Cod (Cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 24.6,
+      "carbs": 0,
+      "fat": 0.8,
+      "calories": 106
+    },
+    {
+      "id": "food-010",
+      "name": "Cod (Raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 17.5,
+      "carbs": 0,
+      "fat": 0.6,
+      "calories": 75
+    },
+    {
+      "id": "food-011",
+      "name": "Haddock (Cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 23.9,
+      "carbs": 0,
+      "fat": 0.3,
+      "calories": 98
+    },
+    {
+      "id": "food-012",
+      "name": "Haddock (Raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 17.8,
+      "carbs": 0,
+      "fat": 0.4,
+      "calories": 75
+    },
+    {
+      "id": "food-013",
+      "name": "Prawns (Cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 15.4,
+      "carbs": 0,
+      "fat": 0.9,
+      "calories": 70
+    },
+    {
+      "id": "food-014",
+      "name": "Prawns (Raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 14.1,
+      "carbs": 0,
+      "fat": 0.5,
+      "calories": 62
+    },
+    {
+      "id": "food-015",
+      "name": "Tuna",
+      "amount": 100,
+      "unit": "g",
+      "protein": 25,
+      "carbs": 0,
+      "fat": 1,
+      "calories": 109
+    },
+    {
+      "id": "food-016",
+      "name": "Eggs Whole",
+      "amount": 1,
+      "unit": "egg",
+      "protein": 6,
+      "carbs": 0.4,
+      "fat": 4.8,
+      "calories": 72
+    },
+    {
+      "id": "food-017",
+      "name": "Egg Whites",
+      "amount": 100,
+      "unit": "g",
+      "protein": 10.8,
+      "carbs": 0,
+      "fat": 0,
+      "calories": 43
+    },
+    {
+      "id": "food-018",
+      "name": "Greek Yoghurt (0%)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 10.6,
+      "carbs": 3.9,
+      "fat": 0,
+      "calories": 58
+    },
+    {
+      "id": "food-019",
+      "name": "Greek Yoghurt (Whole)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 9.8,
+      "carbs": 3.8,
+      "fat": 7,
+      "calories": 117
+    },
+    {
+      "id": "food-020",
+      "name": "Soy Yoghurt",
+      "amount": 100,
+      "unit": "g",
+      "protein": 4.1,
+      "carbs": 2.4,
+      "fat": 2.3,
+      "calories": 47
+    },
+    {
+      "id": "food-021",
+      "name": "Whey Protein",
+      "amount": 100,
+      "unit": "g",
+      "protein": 90,
+      "carbs": 1.4,
+      "fat": 1.5,
+      "calories": 379
+    },
+    {
+      "id": "food-022",
+      "name": "Vegan Protein",
+      "amount": 100,
+      "unit": "g",
+      "protein": 66,
+      "carbs": 10.3,
+      "fat": 6.1,
+      "calories": 358
+    },
+    {
+      "id": "food-023",
+      "name": "Soy Protein",
+      "amount": 100,
+      "unit": "g",
+      "protein": 88,
+      "carbs": 1.4,
+      "fat": 3.3,
+      "calories": 387
+    },
+    {
+      "id": "food-024",
+      "name": "Casein Protein",
+      "amount": 100,
+      "unit": "g",
+      "protein": 90,
+      "carbs": 1.4,
+      "fat": 1.3,
+      "calories": 377
+    },
+    {
+      "id": "food-025",
+      "name": "Lentils",
+      "amount": 100,
+      "unit": "g",
+      "protein": 8.8,
+      "carbs": 15.4,
+      "fat": 0.7,
+      "calories": 103
+    },
+    {
+      "id": "food-026",
+      "name": "Chickpeas",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7.2,
+      "carbs": 14.7,
+      "fat": 2.9,
+      "calories": 114
+    },
+    {
+      "id": "food-027",
+      "name": "Mixed Beans",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7.3,
+      "carbs": 16.2,
+      "fat": 1.1,
+      "calories": 104
+    },
+    {
+      "id": "food-028",
+      "name": "Cannellini Beans",
+      "amount": 100,
+      "unit": "g",
+      "protein": 5.2,
+      "carbs": 13.3,
+      "fat": 0.6,
+      "calories": 79
+    },
+    {
+      "id": "food-029",
+      "name": "Butter Beans",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7.4,
+      "carbs": 14.4,
+      "fat": 0.6,
+      "calories": 93
+    },
+    {
+      "id": "food-030",
+      "name": "Kidney Beans",
+      "amount": 100,
+      "unit": "g",
+      "protein": 8.4,
+      "carbs": 16,
+      "fat": 0.5,
+      "calories": 102
+    },
+    {
+      "id": "food-031",
+      "name": "Tofu",
+      "amount": 100,
+      "unit": "g",
+      "protein": 8.1,
+      "carbs": 2,
+      "fat": 4.8,
+      "calories": 83
+    },
+    {
+      "id": "food-032",
+      "name": "Turkey Rasher",
+      "amount": 1,
+      "unit": "rasher",
+      "protein": 5.1,
+      "carbs": 0.5,
+      "fat": 0.7,
+      "calories": 29
+    },
+    {
+      "id": "food-033",
+      "name": "Turkey Breast (Cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 35,
+      "carbs": 0,
+      "fat": 1.7,
+      "calories": 155
+    },
+    {
+      "id": "food-034",
+      "name": "Turkey Breast (Raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 22.6,
+      "carbs": 0,
+      "fat": 1.6,
+      "calories": 105
+    },
+    {
+      "id": "food-035",
+      "name": "Vanilla Protein Milk",
+      "amount": 100,
+      "unit": "mL",
+      "protein": 5.4,
+      "carbs": 4.8,
+      "fat": 1,
+      "calories": 50
+    },
+    {
+      "id": "food-036",
+      "name": "Chocolate Protein Milk",
+      "amount": 100,
+      "unit": "mL",
+      "protein": 5.4,
+      "carbs": 5.7,
+      "fat": 1,
+      "calories": 53
+    },
+    {
+      "id": "food-037",
+      "name": "Gold Protein Milk",
+      "amount": 100,
+      "unit": "mL",
+      "protein": 6.6,
+      "carbs": 5.8,
+      "fat": 1,
+      "calories": 59
+    },
+    {
+      "id": "food-038",
+      "name": "Blueberry Protein MIlk",
+      "amount": 100,
+      "unit": "mL",
+      "protein": 5.4,
+      "carbs": 5.1,
+      "fat": 1,
+      "calories": 51
+    },
+    {
+      "id": "food-039",
+      "name": "Protein Milk",
+      "amount": 100,
+      "unit": "mL",
+      "protein": 5.1,
+      "carbs": 4.8,
+      "fat": 1,
+      "calories": 49
+    },
+    {
+      "id": "food-040",
+      "name": "Slimline Milk",
+      "amount": 100,
+      "unit": "mL",
+      "protein": 3.8,
+      "carbs": 5.3,
+      "fat": 0.3,
+      "calories": 39
+    },
+    {
+      "id": "food-041",
+      "name": "Low Fat Milk",
+      "amount": 100,
+      "unit": "mL",
+      "protein": 3.3,
+      "carbs": 5,
+      "fat": 1,
+      "calories": 42
+    },
+    {
+      "id": "food-042",
+      "name": "Whole Milk",
+      "amount": 100,
+      "unit": "mL",
+      "protein": 3.4,
+      "carbs": 4.9,
+      "fat": 3.5,
+      "calories": 64
+    },
+    {
+      "id": "food-043",
+      "name": "Oat Milk",
+      "amount": 100,
+      "unit": "mL",
+      "protein": 1,
+      "carbs": 6.6,
+      "fat": 1.5,
+      "calories": 44
+    },
+    {
+      "id": "food-044",
+      "name": "Oat Milk (Unsweetened)",
+      "amount": 100,
+      "unit": "mL",
+      "protein": 1,
+      "carbs": 6.3,
+      "fat": 0.7,
+      "calories": 36
+    },
+    {
+      "id": "food-045",
+      "name": "Soya Milk",
+      "amount": 100,
+      "unit": "mL",
+      "protein": 2.4,
+      "carbs": 0.5,
+      "fat": 1.6,
+      "calories": 26
+    },
+    {
+      "id": "food-046",
+      "name": "Soya Milk (Sweetened)",
+      "amount": 100,
+      "unit": "mL",
+      "protein": 3.1,
+      "carbs": 2.5,
+      "fat": 2.4,
+      "calories": 44
+    },
+    {
+      "id": "food-047",
+      "name": "Almond Milk",
+      "amount": 100,
+      "unit": "mL",
+      "protein": 0.5,
+      "carbs": 2.4,
+      "fat": 1.1,
+      "calories": 21
+    },
+    {
+      "id": "food-048",
+      "name": "Almond Milk (Unsweetened)",
+      "amount": 100,
+      "unit": "mL",
+      "protein": 0.4,
+      "carbs": 0,
+      "fat": 1.1,
+      "calories": 12
+    },
+    {
+      "id": "food-049",
+      "name": "Cashew Milk",
+      "amount": 100,
+      "unit": "mL",
+      "protein": 0.5,
+      "carbs": 2.6,
+      "fat": 1.1,
+      "calories": 22
+    },
+    {
+      "id": "food-050",
+      "name": "Hazelnut Milk",
+      "amount": 100,
+      "unit": "mL",
+      "protein": 0.6,
+      "carbs": 0.3,
+      "fat": 2.9,
+      "calories": 30
+    },
+    {
+      "id": "food-051",
+      "name": "Jasmine Rice (dry)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7.5,
+      "carbs": 78,
+      "fat": 0.7,
+      "calories": 349
+    },
+    {
+      "id": "food-052",
+      "name": "Brown Rice (dry)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 10,
+      "carbs": 70,
+      "fat": 2.5,
+      "calories": 343
+    },
+    {
+      "id": "food-053",
+      "name": "Pasta",
+      "amount": 100,
+      "unit": "g",
+      "protein": 11.9,
+      "carbs": 68,
+      "fat": 2,
+      "calories": 338
+    },
+    {
+      "id": "food-054",
+      "name": "Wholemeal Pasta (dry)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 13.3,
+      "carbs": 61,
+      "fat": 2.8,
+      "calories": 322
+    },
+    {
+      "id": "food-055",
+      "name": "White Potato (raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.9,
+      "carbs": 17.9,
+      "fat": 0.1,
+      "calories": 80
+    },
+    {
+      "id": "food-056",
+      "name": "Sweet Potato (raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.2,
+      "carbs": 19.7,
+      "fat": 0.3,
+      "calories": 86
+    },
+    {
+      "id": "food-057",
+      "name": "Oats",
+      "amount": 100,
+      "unit": "g",
+      "protein": 10.9,
+      "carbs": 64,
+      "fat": 8.1,
+      "calories": 374
+    },
+    {
+      "id": "food-058",
+      "name": "Plain Bagel",
+      "amount": 1,
+      "unit": "bagel",
+      "protein": 8.5,
+      "carbs": 43.8,
+      "fat": 1.2,
+      "calories": 224
+    },
+    {
+      "id": "food-059",
+      "name": "English Muffin",
+      "amount": 1,
+      "unit": "muffin",
+      "protein": 6,
+      "carbs": 30,
+      "fat": 1.1,
+      "calories": 158
+    },
+    {
+      "id": "food-060",
+      "name": "Crumpets",
+      "amount": 1,
+      "unit": "crumpet",
+      "protein": 3.3,
+      "carbs": 19.4,
+      "fat": 0.4,
+      "calories": 97
+    },
+    {
+      "id": "food-061",
+      "name": "Date Syrup",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.2,
+      "carbs": 70,
+      "fat": 0.2,
+      "calories": 285
+    },
+    {
+      "id": "food-062",
+      "name": "Cream of Rice",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7.9,
+      "carbs": 80.5,
+      "fat": 0.1,
+      "calories": 362
+    },
+    {
+      "id": "food-063",
+      "name": "Baby Rice",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7.7,
+      "carbs": 86,
+      "fat": 1.2,
+      "calories": 384
+    },
+    {
+      "id": "food-064",
+      "name": "Coco Pops",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6.3,
+      "carbs": 84,
+      "fat": 1.9,
+      "calories": 378
+    },
+    {
+      "id": "food-065",
+      "name": "Rice Krispies",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7,
+      "carbs": 86,
+      "fat": 1.2,
+      "calories": 383
+    },
+    {
+      "id": "food-066",
+      "name": "Weetabix",
+      "amount": 1,
+      "unit": "weetabix",
+      "protein": 2.3,
+      "carbs": 13,
+      "fat": 0.4,
+      "calories": 68
+    },
+    {
+      "id": "food-067",
+      "name": "Rice Cakes",
+      "amount": 1,
+      "unit": "rice cake",
+      "protein": 0.6,
+      "carbs": 6.3,
+      "fat": 0.2,
+      "calories": 30
+    },
+    {
+      "id": "food-068",
+      "name": "Corn Cakes",
+      "amount": 1,
+      "unit": "corn cake",
+      "protein": 0.5,
+      "carbs": 6,
+      "fat": 0,
+      "calories": 26
+    },
+    {
+      "id": "food-069",
+      "name": "Rice Krispies Squares",
+      "amount": 1,
+      "unit": "bar",
+      "protein": 0.8,
+      "carbs": 21,
+      "fat": 3.4,
+      "calories": 119
+    },
+    {
+      "id": "food-070",
+      "name": "Jam",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.3,
+      "carbs": 66,
+      "fat": 0,
+      "calories": 274
+    },
+    {
+      "id": "food-071",
+      "name": "Maple Syrup",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 65,
+      "fat": 0.2,
+      "calories": 260
+    },
+    {
+      "id": "food-072",
+      "name": "Honey",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.4,
+      "carbs": 76,
+      "fat": 0,
+      "calories": 307
+    },
+    {
+      "id": "food-073",
+      "name": "Scotch Pancakes",
+      "amount": 1,
+      "unit": "pancake",
+      "protein": 1.8,
+      "carbs": 14.1,
+      "fat": 1,
+      "calories": 74
+    },
+    {
+      "id": "food-074",
+      "name": "White Sourdough Bread",
+      "amount": 100,
+      "unit": "g",
+      "protein": 11.8,
+      "carbs": 54,
+      "fat": 1.8,
+      "calories": 279
+    },
+    {
+      "id": "food-075",
+      "name": "Brown Soda Bread",
+      "amount": 100,
+      "unit": "g",
+      "protein": 8.9,
+      "carbs": 37,
+      "fat": 3.5,
+      "calories": 215
+    },
+    {
+      "id": "food-076",
+      "name": "Tortilla Wrap",
+      "amount": 1,
+      "unit": "wrap",
+      "protein": 4.7,
+      "carbs": 29.5,
+      "fat": 3.4,
+      "calories": 167.4
+    },
+    {
+      "id": "food-077",
+      "name": "Egg Noodles",
+      "amount": 100,
+      "unit": "g",
+      "protein": 12,
+      "carbs": 66,
+      "fat": 2,
+      "calories": 330
+    },
+    {
+      "id": "food-078",
+      "name": "Brioche Buns",
+      "amount": 1,
+      "unit": "bun",
+      "protein": 5.9,
+      "carbs": 32,
+      "fat": 4.3,
+      "calories": 194
+    },
+    {
+      "id": "food-079",
+      "name": "Dark Chocolate (85%)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 10,
+      "carbs": 24,
+      "fat": 50,
+      "calories": 586
+    },
+    {
+      "id": "food-080",
+      "name": "Dark Chocolate (70%)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 9.1,
+      "carbs": 36,
+      "fat": 42,
+      "calories": 558
+    },
+    {
+      "id": "food-081",
+      "name": "Almond Butter",
+      "amount": 100,
+      "unit": "g",
+      "protein": 20.7,
+      "carbs": 7,
+      "fat": 52,
+      "calories": 579
+    },
+    {
+      "id": "food-082",
+      "name": "Peanut Butter",
+      "amount": 100,
+      "unit": "g",
+      "protein": 22.8,
+      "carbs": 12.2,
+      "fat": 52,
+      "calories": 606
+    },
+    {
+      "id": "food-083",
+      "name": "Olive Oil",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 0,
+      "fat": 100,
+      "calories": 899
+    },
+    {
+      "id": "food-084",
+      "name": "Coconut Oil",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 0,
+      "fat": 100,
+      "calories": 899
+    },
+    {
+      "id": "food-085",
+      "name": "Macadamia Nut Oil",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 0,
+      "fat": 93.3,
+      "calories": 867
+    },
+    {
+      "id": "food-086",
+      "name": "Peanuts",
+      "amount": 100,
+      "unit": "g",
+      "protein": 24.7,
+      "carbs": 15.5,
+      "fat": 49,
+      "calories": 602
+    },
+    {
+      "id": "food-087",
+      "name": "Pecan",
+      "amount": 100,
+      "unit": "g",
+      "protein": 10.1,
+      "carbs": 5.2,
+      "fat": 72,
+      "calories": 731
+    },
+    {
+      "id": "food-088",
+      "name": "Pistachio",
+      "amount": 100,
+      "unit": "g",
+      "protein": 17.9,
+      "carbs": 7.7,
+      "fat": 55,
+      "calories": 601
+    },
+    {
+      "id": "food-089",
+      "name": "Walnuts",
+      "amount": 100,
+      "unit": "g",
+      "protein": 14.7,
+      "carbs": 3.1,
+      "fat": 69,
+      "calories": 688
+    },
+    {
+      "id": "food-090",
+      "name": "Almonds",
+      "amount": 100,
+      "unit": "g",
+      "protein": 20.9,
+      "carbs": 7,
+      "fat": 53,
+      "calories": 584
+    },
+    {
+      "id": "food-091",
+      "name": "Granola",
+      "amount": 100,
+      "unit": "g",
+      "protein": 8.7,
+      "carbs": 60,
+      "fat": 15.1,
+      "calories": 431
+    },
+    {
+      "id": "food-092",
+      "name": "Cashews",
+      "amount": 100,
+      "unit": "g",
+      "protein": 17.7,
+      "carbs": 16.7,
+      "fat": 48,
+      "calories": 571
+    },
+    {
+      "id": "food-093",
+      "name": "Organic Butter",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.6,
+      "carbs": 0.6,
+      "fat": 82,
+      "calories": 745
+    },
+    {
+      "id": "food-094",
+      "name": "Cheese",
+      "amount": 100,
+      "unit": "g",
+      "protein": 25.4,
+      "carbs": 0.1,
+      "fat": 34.9,
+      "calories": 416
+    },
+    {
+      "id": "food-095",
+      "name": "Avocado",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.9,
+      "carbs": 1.9,
+      "fat": 19.5,
+      "calories": 191
+    },
+    {
+      "id": "food-096",
+      "name": "Frozen Mixed Berries",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1,
+      "carbs": 6.5,
+      "fat": 0.3,
+      "calories": 33
+    },
+    {
+      "id": "food-097",
+      "name": "Pineapple",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.4,
+      "carbs": 9.9,
+      "fat": 0.2,
+      "calories": 43
+    },
+    {
+      "id": "food-098",
+      "name": "Kiwi",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.1,
+      "carbs": 10.5,
+      "fat": 0.5,
+      "calories": 51
+    },
+    {
+      "id": "food-099",
+      "name": "Apple",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.6,
+      "carbs": 11.5,
+      "fat": 0.5,
+      "calories": 53
+    },
+    {
+      "id": "food-100",
+      "name": "Banana",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.1,
+      "carbs": 20.2,
+      "fat": 0.3,
+      "calories": 89
+    },
+    {
+      "id": "food-101",
+      "name": "Passion Fruit",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.6,
+      "carbs": 5.7,
+      "fat": 0.4,
+      "calories": 37
+    },
+    {
+      "id": "food-102",
+      "name": "Grapes",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.7,
+      "carbs": 16.1,
+      "fat": 0.2,
+      "calories": 69
+    },
+    {
+      "id": "food-103",
+      "name": "Dates",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.3,
+      "carbs": 68,
+      "fat": 0.2,
+      "calories": 287
+    },
+    {
+      "id": "food-104",
+      "name": "Orange",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.8,
+      "carbs": 8,
+      "fat": 0.2,
+      "calories": 37
+    },
+    {
+      "id": "food-105",
+      "name": "Pear",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.3,
+      "carbs": 10.8,
+      "fat": 0.1,
+      "calories": 45
+    },
+    {
+      "id": "food-106",
+      "name": "Raspberries",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.2,
+      "carbs": 5.4,
+      "fat": 0.7,
+      "calories": 52
+    },
+    {
+      "id": "food-108",
+      "name": "Blueberries",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.7,
+      "carbs": 12.1,
+      "fat": 0.3,
+      "calories": 57
+    },
+    {
+      "id": "food-109",
+      "name": "Country Mix Vegetables",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.7,
+      "carbs": 4.9,
+      "fat": 0.6,
+      "calories": 36
+    },
+    {
+      "id": "food-110",
+      "name": "Peppers",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1,
+      "carbs": 4.8,
+      "fat": 0.3,
+      "calories": 26
+    },
+    {
+      "id": "food-111",
+      "name": "Broccoli",
+      "amount": 100,
+      "unit": "g",
+      "protein": 4.3,
+      "carbs": 3.1,
+      "fat": 0.6,
+      "calories": 35
+    },
+    {
+      "id": "food-112",
+      "name": "Tender Stem Broccoli",
+      "amount": 100,
+      "unit": "g",
+      "protein": 4.4,
+      "carbs": 1.8,
+      "fat": 0.9,
+      "calories": 33
+    },
+    {
+      "id": "food-113",
+      "name": "Cauliflower",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.5,
+      "carbs": 4.4,
+      "fat": 0.4,
+      "calories": 31
+    },
+    {
+      "id": "food-114",
+      "name": "Green Beans",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.1,
+      "carbs": 3,
+      "fat": 0.4,
+      "calories": 24
+    },
+    {
+      "id": "food-115",
+      "name": "Asparagus",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.9,
+      "carbs": 2,
+      "fat": 0.6,
+      "calories": 25
+    },
+    {
+      "id": "food-116",
+      "name": "Brussel Sprouts",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.5,
+      "carbs": 4,
+      "fat": 1.4,
+      "calories": 43
+    },
+    {
+      "id": "food-117",
+      "name": "Carrots",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.5,
+      "carbs": 7.7,
+      "fat": 0.4,
+      "calories": 34
+    },
+    {
+      "id": "food-118",
+      "name": "Peas",
+      "amount": 100,
+      "unit": "g",
+      "protein": 5.3,
+      "carbs": 10,
+      "fat": 0.7,
+      "calories": 68
+    },
+    {
+      "id": "food-119",
+      "name": "Courgette",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.8,
+      "carbs": 1.8,
+      "fat": 0.4,
+      "calories": 18
+    },
+    {
+      "id": "food-120",
+      "name": "Onion",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1,
+      "carbs": 7.9,
+      "fat": 0.1,
+      "calories": 37
+    },
+    {
+      "id": "food-121",
+      "name": "Tomato",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.5,
+      "carbs": 3,
+      "fat": 0.1,
+      "calories": 15
+    },
+    {
+      "id": "food-122",
+      "name": "Tomato Passata",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.7,
+      "carbs": 4.3,
+      "fat": 0.2,
+      "calories": 26
+    },
+    {
+      "id": "food-123",
+      "name": "Butternut Squash",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.1,
+      "carbs": 7.9,
+      "fat": 0.1,
+      "calories": 37
+    },
+    {
+      "id": "food-124",
+      "name": "Parsnips",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.8,
+      "carbs": 11.7,
+      "fat": 1.1,
+      "calories": 64
+    },
+    {
+      "id": "food-125",
+      "name": "Beetroot",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.7,
+      "carbs": 7.2,
+      "fat": 0.1,
+      "calories": 37
+    },
+    {
+      "id": "food-126",
+      "name": "Mushrooms",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.1,
+      "carbs": 2.6,
+      "fat": 0.4,
+      "calories": 22
+    },
+    {
+      "id": "food-127",
+      "name": "Stir Fry Mix",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.2,
+      "carbs": 10.6,
+      "fat": 4.2,
+      "calories": 89
+    },
+    {
+      "id": "food-128",
+      "name": "Bean Sprouts",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.9,
+      "carbs": 3.8,
+      "fat": 0.5,
+      "calories": 31
+    },
+    {
+      "id": "food-129",
+      "name": "Creatine Monohydrate",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 0,
+      "fat": 0,
+      "calories": 0
+    },
+    {
+      "id": "food-130",
+      "name": "Highly Branched Cyclic Dextrin",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 97,
+      "fat": 0,
+      "calories": 381
+    },
+    {
+      "id": "food-131",
+      "name": "Essential Amino Acids",
+      "amount": 100,
+      "unit": "g",
+      "protein": 42,
+      "carbs": 0,
+      "fat": 0,
+      "calories": 168
+    },
+    {
+      "id": "food-132",
+      "name": "Bagel Thin",
+      "amount": 1,
+      "unit": "bagel",
+      "protein": 5,
+      "carbs": 25,
+      "fat": 0.7,
+      "calories": 130
+    },
+    {
+      "id": "food-133",
+      "name": "Spinach",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.6,
+      "carbs": 0.2,
+      "fat": 0.6,
+      "calories": 19
+    },
+    {
+      "id": "food-134",
+      "name": "Rapeseed Oil",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 0,
+      "fat": 92,
+      "calories": 828
+    },
+    {
+      "id": "food-135",
+      "name": "Low Fat Dolmio",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.3,
+      "carbs": 6.3,
+      "fat": 0.5,
+      "calories": 34
+    },
+    {
+      "id": "food-136",
+      "name": "Pomegranate Juice",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.3,
+      "carbs": 16,
+      "fat": 0,
+      "calories": 65
+    },
+    {
+      "id": "food-137",
+      "name": "50% Cheese",
+      "amount": 100,
+      "unit": "g",
+      "protein": 29.1,
+      "carbs": 0.1,
+      "fat": 21.5,
+      "calories": 310
+    },
+    {
+      "id": "food-138",
+      "name": "Venison Steak",
+      "amount": 100,
+      "unit": "g",
+      "protein": 23.9,
+      "carbs": 1.2,
+      "fat": 1.2,
+      "calories": 112
+    },
+    {
+      "id": "food-140",
+      "name": "Sustain",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.6,
+      "carbs": 84,
+      "fat": 4.2,
+      "calories": 384
+    },
+    {
+      "id": "food-141",
+      "name": "Performance Fuel",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.5,
+      "carbs": 93.9,
+      "fat": 0.6,
+      "calories": 383
+    },
+    {
+      "id": "food-142",
+      "name": "Coconut Water",
+      "amount": 100,
+      "unit": "ml",
+      "protein": 0,
+      "carbs": 4.5,
+      "fat": 0,
+      "calories": 18
+    },
+    {
+      "id": "food-143",
+      "name": "Rice Flakes",
+      "amount": 100,
+      "unit": "g",
+      "protein": 8,
+      "carbs": 77.3,
+      "fat": 3,
+      "calories": 370
+    },
+    {
+      "id": "food-144",
+      "name": "Orange Juice",
+      "amount": 100,
+      "unit": "ml",
+      "protein": 0.7,
+      "carbs": 10.4,
+      "fat": 0.2,
+      "calories": 45
+    },
+    {
+      "id": "food-148",
+      "name": "Omega",
+      "amount": 1,
+      "unit": "tab",
+      "protein": 0,
+      "carbs": 0,
+      "fat": 1,
+      "calories": 9
+    },
+    {
+      "id": "food-149",
+      "name": "TBJP Iso Pro",
+      "amount": 100,
+      "unit": "g",
+      "protein": 83,
+      "carbs": 6.5,
+      "fat": 1.8,
+      "calories": 352
+    },
+    {
+      "id": "food-150",
+      "name": "Natures Sourdough",
+      "amount": 42,
+      "unit": "g",
+      "protein": 4,
+      "carbs": 19,
+      "fat": 1,
+      "calories": 100
+    },
+    {
+      "id": "food-151",
+      "name": "JP COR",
+      "amount": 100,
+      "unit": "G",
+      "protein": 6.7,
+      "carbs": 76.9,
+      "fat": 0.6,
+      "calories": 340
+    },
+    {
+      "id": "food-152",
+      "name": "Pride COR",
+      "amount": 42,
+      "unit": "G",
+      "protein": 3,
+      "carbs": 34,
+      "fat": 0,
+      "calories": 150
+    },
+    {
+      "id": "food-153",
+      "name": "Baby rice  gerber",
+      "amount": 15,
+      "unit": "G",
+      "protein": 1,
+      "carbs": 12,
+      "fat": 0.5,
+      "calories": 60
+    },
+    {
+      "id": "food-154",
+      "name": "Quaker Rice Cakes",
+      "amount": 13,
+      "unit": "G",
+      "protein": 0.5,
+      "carbs": 11,
+      "fat": 0,
+      "calories": 50
+    },
+    {
+      "id": "food-155",
+      "name": "Sushi rice",
+      "amount": 100,
+      "unit": "G",
+      "protein": 6.7,
+      "carbs": 80.4,
+      "fat": 0.4,
+      "calories": 354
+    },
+    {
+      "id": "food-156",
+      "name": "Blueberry Muffin",
+      "amount": 1,
+      "unit": "Muffin",
+      "protein": 5,
+      "carbs": 47,
+      "fat": 14,
+      "calories": 330
+    },
+    {
+      "id": "food-158",
+      "name": "Hip baby rice",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7.3,
+      "carbs": 85.1,
+      "fat": 0.7,
+      "calories": 369
+    },
+    {
+      "id": "food-159",
+      "name": "Whey Iso JP",
+      "amount": 30,
+      "unit": "g",
+      "protein": 25,
+      "carbs": 1.9,
+      "fat": 0.5,
+      "calories": 106
+    },
+    {
+      "id": "food-160",
+      "name": "Raspberries",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.4,
+      "carbs": 4.6,
+      "fat": 0.3,
+      "calories": 27
+    },
+    {
+      "id": "food-161",
+      "name": "Smoked Salmon",
+      "amount": 100,
+      "unit": "g",
+      "protein": 18,
+      "carbs": 0,
+      "fat": 4.3,
+      "calories": 117
+    },
+    {
+      "id": "food-162",
+      "name": "Pumpkin Seeds",
+      "amount": 100,
+      "unit": "g",
+      "protein": 24.4,
+      "carbs": 15.2,
+      "fat": 45.6,
+      "calories": 586
+    },
+    {
+      "id": "food-163",
+      "name": "Mango",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.7,
+      "carbs": 12.8,
+      "fat": 0.4,
+      "calories": 61
+    },
+    {
+      "id": "food-164",
+      "name": "5% Fage Greek Yoghurt",
+      "amount": 100,
+      "unit": "g",
+      "protein": 9,
+      "carbs": 3,
+      "fat": 5,
+      "calories": 93
+    },
+    {
+      "id": "food-165",
+      "name": "Watermelon",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.5,
+      "carbs": 7.1,
+      "fat": 0.3,
+      "calories": 33
+    },
+    {
+      "id": "food-166",
+      "name": "Bacon Medallions",
+      "amount": 1,
+      "unit": "medallion",
+      "protein": 6,
+      "carbs": 0.5,
+      "fat": 1.3,
+      "calories": 33
+    },
+    {
+      "id": "food-167",
+      "name": "Caramel Snack a Jacks",
+      "amount": 1,
+      "unit": "rice cake",
+      "protein": 0.7,
+      "carbs": 11.3,
+      "fat": 0.3,
+      "calories": 51
+    },
+    {
+      "id": "food-168",
+      "name": "Pepper & Salt Snack a Jacks",
+      "amount": 1,
+      "unit": "rice cake",
+      "protein": 0.8,
+      "carbs": 8,
+      "fat": 0.3,
+      "calories": 38
+    },
+    {
+      "id": "food-169",
+      "name": "Peas Maker pieces",
+      "amount": 100,
+      "unit": "g",
+      "protein": 53,
+      "carbs": 15,
+      "fat": 4.1,
+      "calories": 339
+    },
+    {
+      "id": "food-170",
+      "name": "Vivera Plant Mince",
+      "amount": 100,
+      "unit": "g",
+      "protein": 20,
+      "carbs": 1.9,
+      "fat": 0.6,
+      "calories": 105
+    },
+    {
+      "id": "food-172",
+      "name": "Glutamine",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 0,
+      "fat": 0,
+      "calories": 0
+    },
+    {
+      "id": "food-173",
+      "name": "Rhubarb",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.9,
+      "carbs": 1.4,
+      "fat": 0.1,
+      "calories": 10
+    },
+    {
+      "id": "food-174",
+      "name": "Basa (raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 18,
+      "carbs": 0.6,
+      "fat": 1.2,
+      "calories": 85.2
+    },
+    {
+      "id": "food-175",
+      "name": "Seabass",
+      "amount": 100,
+      "unit": "g",
+      "protein": 14,
+      "carbs": 0,
+      "fat": 6.6,
+      "calories": 115.4
+    },
+    {
+      "id": "food-176",
+      "name": "Kale",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.4,
+      "carbs": 1.4,
+      "fat": 1.6,
+      "calories": 40
+    },
+    {
+      "id": "food-177",
+      "name": "Rice pudding",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7.4,
+      "carbs": 79.8,
+      "fat": 0.5,
+      "calories": 353.3
+    },
+    {
+      "id": "food-178",
+      "name": "Light Mayo",
+      "amount": 15,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 0.9,
+      "fat": 4.1,
+      "calories": 40.5
+    },
+    {
+      "id": "food-179",
+      "name": "Sriracha",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2,
+      "carbs": 30,
+      "fat": 1,
+      "calories": 137
+    },
+    {
+      "id": "food-180",
+      "name": "Gluten Free Bread",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.8,
+      "carbs": 42.1,
+      "fat": 6.2,
+      "calories": 253
+    },
+    {
+      "id": "food-181",
+      "name": "Gluten Free Oats",
+      "amount": 100,
+      "unit": "g",
+      "protein": 11.5,
+      "carbs": 63.6,
+      "fat": 4.6,
+      "calories": 357
+    },
+    {
+      "id": "food-182",
+      "name": "Gluten Free Weetabix",
+      "amount": 100,
+      "unit": "g",
+      "protein": 11,
+      "carbs": 70,
+      "fat": 3.1,
+      "calories": 370
+    },
+    {
+      "id": "food-183",
+      "name": "Gluten Free Pasta",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.3,
+      "carbs": 36.2,
+      "fat": 1.2,
+      "calories": 170
+    },
+    {
+      "id": "food-184",
+      "name": "Microwavable Rice",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.1,
+      "carbs": 30.7,
+      "fat": 1,
+      "calories": 148
+    },
+    {
+      "id": "food-185",
+      "name": "Strawberries",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.7,
+      "carbs": 7.7,
+      "fat": 0.3,
+      "calories": 32
+    },
+    {
+      "id": "food-186",
+      "name": "Jordans Granola (Fruit and Nut)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7.9,
+      "carbs": 67.5,
+      "fat": 11,
+      "calories": 411
+    },
+    {
+      "id": "food-187",
+      "name": "Kellogg's Granola (Nut and Choc)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 8,
+      "carbs": 57,
+      "fat": 25,
+      "calories": 497
+    },
+    {
+      "id": "food-188",
+      "name": "Kodiak Cake",
+      "amount": 53,
+      "unit": "G",
+      "protein": 14,
+      "carbs": 31,
+      "fat": 2,
+      "calories": 190
+    },
+    {
+      "id": "food-189",
+      "name": "omega",
+      "amount": 1,
+      "unit": "tab",
+      "protein": 0,
+      "carbs": 0,
+      "fat": 1,
+      "calories": 9
+    },
+    {
+      "id": "food-195",
+      "name": "Quaker Rice Cakes",
+      "amount": 1,
+      "unit": "rice cake",
+      "protein": 1,
+      "carbs": 11,
+      "fat": 0,
+      "calories": 50
+    },
+    {
+      "id": "food-197",
+      "name": "Blueberry Muffin",
+      "amount": 1,
+      "unit": "Muffins",
+      "protein": 5,
+      "carbs": 47,
+      "fat": 14,
+      "calories": 330
+    },
+    {
+      "id": "food-198",
+      "name": "Rasins",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.1,
+      "carbs": 79,
+      "fat": 0.5,
+      "calories": 299
+    },
+    {
+      "id": "food-199",
+      "name": "Hip baby rice",
+      "amount": 100,
+      "unit": "G",
+      "protein": 7.3,
+      "carbs": 85.1,
+      "fat": 0.7,
+      "calories": 369
+    },
+    {
+      "id": "food-201",
+      "name": "ISO Muta",
+      "amount": 27.7,
+      "unit": "g",
+      "protein": 25,
+      "carbs": 2,
+      "fat": 1,
+      "calories": 120
+    },
+    {
+      "id": "food-202",
+      "name": "BOG COR",
+      "amount": 32,
+      "unit": "g",
+      "protein": 2,
+      "carbs": 25,
+      "fat": 0,
+      "calories": 110
+    },
+    {
+      "id": "food-203",
+      "name": "SOCKEYE",
+      "amount": 100,
+      "unit": "g",
+      "protein": 21.9,
+      "carbs": 0,
+      "fat": 7.3,
+      "calories": 150
+    },
+    {
+      "id": "food-204",
+      "name": "Cbum itholate",
+      "amount": 36,
+      "unit": "G",
+      "protein": 26,
+      "carbs": 7,
+      "fat": 1,
+      "calories": 130
+    },
+    {
+      "id": "food-205",
+      "name": "Bio tech",
+      "amount": 25,
+      "unit": "G",
+      "protein": 21,
+      "carbs": 1.3,
+      "fat": 0.5,
+      "calories": 93
+    },
+    {
+      "id": "food-206",
+      "name": "bobs mill oats",
+      "amount": 45,
+      "unit": "g",
+      "protein": 5,
+      "carbs": 31,
+      "fat": 3,
+      "calories": 170
+    },
+    {
+      "id": "food-207",
+      "name": "quaker oats",
+      "amount": 40,
+      "unit": "g",
+      "protein": 5,
+      "carbs": 27,
+      "fat": 3,
+      "calories": 150
+    },
+    {
+      "id": "food-208",
+      "name": "ghee",
+      "amount": 13,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 0,
+      "fat": 3,
+      "calories": 120
+    },
+    {
+      "id": "food-209",
+      "name": "Micro rice",
+      "amount": 227,
+      "unit": "g",
+      "protein": 8,
+      "carbs": 91,
+      "fat": 0.5,
+      "calories": 450
+    },
+    {
+      "id": "food-210",
+      "name": "Strawberries",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.4,
+      "carbs": 4.6,
+      "fat": 0.3,
+      "calories": 27
+    },
+    {
+      "id": "food-211",
+      "name": "Fage",
+      "amount": 100,
+      "unit": "G",
+      "protein": 10.3,
+      "carbs": 3,
+      "fat": 0,
+      "calories": 54
+    },
+    {
+      "id": "food-212",
+      "name": "Sanck A Jacks",
+      "amount": 1,
+      "unit": "rie cake",
+      "protein": 0.2,
+      "carbs": 11.3,
+      "fat": 0.3,
+      "calories": 51
+    },
+    {
+      "id": "food-213",
+      "name": "Warřior",
+      "amount": 1,
+      "unit": "Bar",
+      "protein": 20,
+      "carbs": 24,
+      "fat": 11,
+      "calories": 239
+    },
+    {
+      "id": "food-214",
+      "name": "Holie Granola chocolate crunch",
+      "amount": 100,
+      "unit": "g",
+      "protein": 11,
+      "carbs": 51,
+      "fat": 6,
+      "calories": 333
+    },
+    {
+      "id": "food-215",
+      "name": "Wild sockeye salmon",
+      "amount": 100,
+      "unit": "g",
+      "protein": 25.7,
+      "carbs": 0.16,
+      "fat": 6.5,
+      "calories": 162
+    },
+    {
+      "id": "food-216",
+      "name": "Wild smoked sockeye salmon",
+      "amount": 100,
+      "unit": "g",
+      "protein": 24.4,
+      "carbs": 0.37,
+      "fat": 3.6,
+      "calories": 133
+    },
+    {
+      "id": "food-217",
+      "name": "Venison Ternderloin",
+      "amount": 100,
+      "unit": "g",
+      "protein": 22.7,
+      "carbs": 0,
+      "fat": 1.6,
+      "calories": 105
+    },
+    {
+      "id": "food-218",
+      "name": "Per4m Whey NORMAL",
+      "amount": 100,
+      "unit": "g",
+      "protein": 70,
+      "carbs": 12,
+      "fat": 5.1,
+      "calories": 375
+    },
+    {
+      "id": "food-219",
+      "name": "Mozzerella",
+      "amount": 100,
+      "unit": "g",
+      "protein": 22.7,
+      "carbs": 3,
+      "fat": 21.5,
+      "calories": 296
+    },
+    {
+      "id": "food-220",
+      "name": "Hoisin Stir Fry",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1,
+      "carbs": 18.5,
+      "fat": 0.3,
+      "calories": 82
+    },
+    {
+      "id": "food-221",
+      "name": "Dragon Fruit",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.3,
+      "carbs": 15,
+      "fat": 0.14,
+      "calories": 57
+    },
+    {
+      "id": "food-222",
+      "name": "Manuka Honey",
+      "amount": 5,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 4,
+      "fat": 0,
+      "calories": 17
+    },
+    {
+      "id": "food-223",
+      "name": "Sweet & Sour Low Sugar Sauce",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.5,
+      "carbs": 5.4,
+      "fat": 0.5,
+      "calories": 28
+    },
+    {
+      "id": "food-224",
+      "name": "Sourdough Slice",
+      "amount": 1,
+      "unit": "slice",
+      "protein": 4.9,
+      "carbs": 27.4,
+      "fat": 0.5,
+      "calories": 136
+    },
+    {
+      "id": "food-225",
+      "name": "Rocket",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.5,
+      "carbs": 1,
+      "fat": 0,
+      "calories": 22
+    },
+    {
+      "id": "food-226",
+      "name": "Cucumber",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1,
+      "carbs": 1,
+      "fat": 0,
+      "calories": 16
+    },
+    {
+      "id": "food-227",
+      "name": "Chopped Tomatoes",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.1,
+      "carbs": 4,
+      "fat": 1.6,
+      "calories": 39
+    },
+    {
+      "id": "food-228",
+      "name": "HECK Chicken Sausages",
+      "amount": 1,
+      "unit": "sausage",
+      "protein": 5,
+      "carbs": 0.7,
+      "fat": 1,
+      "calories": 30
+    },
+    {
+      "id": "food-229",
+      "name": "Light Flora",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 1,
+      "fat": 30,
+      "calories": 267
+    },
+    {
+      "id": "food-230",
+      "name": "Naked Noodles COOKED HALF PACK",
+      "amount": 155,
+      "unit": "g",
+      "protein": 6.4,
+      "carbs": 32.8,
+      "fat": 0.9,
+      "calories": 170
+    },
+    {
+      "id": "food-231",
+      "name": "Lighter than Light Mayo",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 7,
+      "fat": 7,
+      "calories": 67
+    },
+    {
+      "id": "food-232",
+      "name": "Tesco's Fiery Beetroot",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1,
+      "carbs": 20,
+      "fat": 0,
+      "calories": 93
+    },
+    {
+      "id": "food-233",
+      "name": "Tangerine",
+      "amount": 1,
+      "unit": "tangerine",
+      "protein": 1,
+      "carbs": 10,
+      "fat": 0,
+      "calories": 40
+    },
+    {
+      "id": "food-235",
+      "name": "Sainsbury's Dark Chocolate Corn Thins",
+      "amount": 1,
+      "unit": "1 Pack (2 Thins)",
+      "protein": 2.3,
+      "carbs": 22,
+      "fat": 5.8,
+      "calories": 151
+    },
+    {
+      "id": "food-236",
+      "name": "Grits",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6,
+      "carbs": 63,
+      "fat": 4.5,
+      "calories": 300
+    },
+    {
+      "id": "food-237",
+      "name": "Tilapia",
+      "amount": 100,
+      "unit": "g",
+      "protein": 20,
+      "carbs": 0,
+      "fat": 1.5,
+      "calories": 96
+    },
+    {
+      "id": "food-238",
+      "name": "Ezekiel Bread",
+      "amount": 1,
+      "unit": "slice",
+      "protein": 5,
+      "carbs": 15,
+      "fat": 0.05,
+      "calories": 80
+    },
+    {
+      "id": "food-239",
+      "name": "Vegan Mayo",
+      "amount": 15,
+      "unit": "g",
+      "protein": 0.5,
+      "carbs": 0.6,
+      "fat": 11,
+      "calories": 98
+    },
+    {
+      "id": "food-240",
+      "name": "Squeaky Bean Vegan Chicken",
+      "amount": 100,
+      "unit": "g",
+      "protein": 21,
+      "carbs": 9.4,
+      "fat": 7.3,
+      "calories": 194
+    },
+    {
+      "id": "food-241",
+      "name": "Vegan Quorn Pieces",
+      "amount": 100,
+      "unit": "g",
+      "protein": 15,
+      "carbs": 3.9,
+      "fat": 2.8,
+      "calories": 113
+    },
+    {
+      "id": "food-242",
+      "name": "Vegan Almond Yoghurt",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.9,
+      "carbs": 2.3,
+      "fat": 2.8,
+      "calories": 54
+    },
+    {
+      "id": "food-243",
+      "name": "Vegan Steak",
+      "amount": 100,
+      "unit": "g",
+      "protein": 19,
+      "carbs": 6.6,
+      "fat": 10,
+      "calories": 200
+    },
+    {
+      "id": "food-245",
+      "name": "Vegan Cereal (Choc)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6.7,
+      "carbs": 81.7,
+      "fat": 4.5,
+      "calories": 400
+    },
+    {
+      "id": "food-246",
+      "name": "Rice Flakes",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6.5,
+      "carbs": 77.3,
+      "fat": 1.3,
+      "calories": 345
+    },
+    {
+      "id": "food-247",
+      "name": "Vegan Cereal",
+      "amount": 100,
+      "unit": "g",
+      "protein": 35.6,
+      "carbs": 29.1,
+      "fat": 9.4,
+      "calories": 377
+    },
+    {
+      "id": "food-248",
+      "name": "Vegan Grated Cheese",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 21,
+      "fat": 24,
+      "calories": 298
+    },
+    {
+      "id": "food-249",
+      "name": "Gluten Free Bagel Thin",
+      "amount": 1,
+      "unit": "bagel",
+      "protein": 6,
+      "carbs": 19.4,
+      "fat": 3.2,
+      "calories": 124
+    },
+    {
+      "id": "food-250",
+      "name": "Vegan Burger",
+      "amount": 1,
+      "unit": "burger",
+      "protein": 12.6,
+      "carbs": 10.2,
+      "fat": 12.1,
+      "calories": 212
+    },
+    {
+      "id": "food-251",
+      "name": "Low Fat Cooking Sauce",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.2,
+      "carbs": 8.3,
+      "fat": 0.4,
+      "calories": 39
+    },
+    {
+      "id": "food-252",
+      "name": "Meatless meal balls",
+      "amount": 100,
+      "unit": "g",
+      "protein": 18,
+      "carbs": 8,
+      "fat": 5.9,
+      "calories": 163
+    },
+    {
+      "id": "food-253",
+      "name": "Basmati Rice (cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.8,
+      "carbs": 30.7,
+      "fat": 0.5,
+      "calories": 137
+    },
+    {
+      "id": "food-254",
+      "name": "Maris Piper potatoes",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.5,
+      "carbs": 23,
+      "fat": 0.5,
+      "calories": 107
+    },
+    {
+      "id": "food-255",
+      "name": "Vegan Dark Chocolate",
+      "amount": 100,
+      "unit": "g",
+      "protein": 5.5,
+      "carbs": 56,
+      "fat": 30.9,
+      "calories": 535
+    },
+    {
+      "id": "food-256",
+      "name": "Vegan Chicken Pieces",
+      "amount": 100,
+      "unit": "g",
+      "protein": 15,
+      "carbs": 2.1,
+      "fat": 1.4,
+      "calories": 94
+    },
+    {
+      "id": "food-257",
+      "name": "Vegan Mince",
+      "amount": 100,
+      "unit": "g",
+      "protein": 18,
+      "carbs": 4,
+      "fat": 12,
+      "calories": 187
+    },
+    {
+      "id": "food-258",
+      "name": "Alpro Yoghurt",
+      "amount": 100,
+      "unit": "g",
+      "protein": 4,
+      "carbs": 0,
+      "fat": 2.3,
+      "calories": 42
+    },
+    {
+      "id": "food-259",
+      "name": "Eat Planted Chicken",
+      "amount": 100,
+      "unit": "g",
+      "protein": 24,
+      "carbs": 1.8,
+      "fat": 3.4,
+      "calories": 144
+    },
+    {
+      "id": "food-260",
+      "name": "Rice Pouch - Egg Fried",
+      "amount": 250,
+      "unit": "g",
+      "protein": 10.2,
+      "carbs": 69.6,
+      "fat": 5,
+      "calories": 376
+    },
+    {
+      "id": "food-261",
+      "name": "Rice Pouch - Mexican",
+      "amount": 250,
+      "unit": "g",
+      "protein": 8.2,
+      "carbs": 62.6,
+      "fat": 4.9,
+      "calories": 336
+    },
+    {
+      "id": "food-262",
+      "name": "Raisins",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.4,
+      "carbs": 69.4,
+      "fat": 0.4,
+      "calories": 305
+    },
+    {
+      "id": "food-263",
+      "name": "Tilda jasmine rice",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.2,
+      "carbs": 35.3,
+      "fat": 2.3,
+      "calories": 175
+    },
+    {
+      "id": "food-264",
+      "name": "Basmati rice (raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 9,
+      "carbs": 77,
+      "fat": 1.3,
+      "calories": 360
+    },
+    {
+      "id": "food-265",
+      "name": "Spinach",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.9,
+      "carbs": 3.6,
+      "fat": 0.4,
+      "calories": 23
+    },
+    {
+      "id": "food-266",
+      "name": "Strawberries",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.8,
+      "carbs": 6.5,
+      "fat": 0.4,
+      "calories": 33
+    },
+    {
+      "id": "food-267",
+      "name": "Zucchini",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.2,
+      "carbs": 3.1,
+      "fat": 0.3,
+      "calories": 17
+    },
+    {
+      "id": "food-268",
+      "name": "Dark Chocolate (90%)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 11,
+      "carbs": 16.2,
+      "fat": 51.9,
+      "calories": 605
+    },
+    {
+      "id": "food-269",
+      "name": "Warburtons Cinnamon & Raisin Bagel",
+      "amount": 1,
+      "unit": "bagel",
+      "protein": 8.1,
+      "carbs": 40.8,
+      "fat": 1.2,
+      "calories": 212
+    },
+    {
+      "id": "food-270",
+      "name": "Napa Cabbage",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.2,
+      "carbs": 3.2,
+      "fat": 0.3,
+      "calories": 16
+    },
+    {
+      "id": "food-271",
+      "name": "Beef Chuck (Raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 32,
+      "carbs": 0,
+      "fat": 10,
+      "calories": 215
+    },
+    {
+      "id": "food-272",
+      "name": "Corn Flakes",
+      "amount": 100,
+      "unit": "g",
+      "protein": 8,
+      "carbs": 84,
+      "fat": 0.4,
+      "calories": 357
+    },
+    {
+      "id": "food-273",
+      "name": "Lean Beef Mince 3% (raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 22.6,
+      "carbs": 0.1,
+      "fat": 2.6,
+      "calories": 115
+    },
+    {
+      "id": "food-274",
+      "name": "Chocolate Chip Muffin",
+      "amount": 1,
+      "unit": "muffin",
+      "protein": 3.2,
+      "carbs": 40.5,
+      "fat": 16.1,
+      "calories": 318
+    },
+    {
+      "id": "food-275",
+      "name": "White Toast (small slice)",
+      "amount": 1,
+      "unit": "slice",
+      "protein": 2.6,
+      "carbs": 13.1,
+      "fat": 0.6,
+      "calories": 70
+    },
+    {
+      "id": "food-276",
+      "name": "Cheerios",
+      "amount": 100,
+      "unit": "g",
+      "protein": 8.7,
+      "carbs": 73.4,
+      "fat": 3.8,
+      "calories": 380
+    },
+    {
+      "id": "food-277",
+      "name": "HECK Burger",
+      "amount": 1,
+      "unit": "burger",
+      "protein": 22,
+      "carbs": 4.9,
+      "fat": 2.7,
+      "calories": 131
+    },
+    {
+      "id": "food-278",
+      "name": "Pepto Pro",
+      "amount": 100,
+      "unit": "g",
+      "protein": 81,
+      "carbs": 0,
+      "fat": 0,
+      "calories": 320
+    },
+    {
+      "id": "food-279",
+      "name": "Kwark",
+      "amount": 100,
+      "unit": "g",
+      "protein": 10,
+      "carbs": 7.4,
+      "fat": 0,
+      "calories": 79
+    },
+    {
+      "id": "food-280",
+      "name": "Organic Kimchi",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.1,
+      "carbs": 4.7,
+      "fat": 0.9,
+      "calories": 28
+    },
+    {
+      "id": "food-281",
+      "name": "Low Fat Yogurt",
+      "amount": 100,
+      "unit": "g",
+      "protein": 8.5,
+      "carbs": 3,
+      "fat": 5.5,
+      "calories": 99
+    },
+    {
+      "id": "food-282",
+      "name": "Mango",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.8,
+      "carbs": 15,
+      "fat": 0.4,
+      "calories": 60
+    },
+    {
+      "id": "food-283",
+      "name": "Egg whites (From whole eggs)",
+      "amount": 1,
+      "unit": "Large egg",
+      "protein": 4,
+      "carbs": 0,
+      "fat": 0,
+      "calories": 17
+    },
+    {
+      "id": "food-284",
+      "name": "Sourdough Rye Bloomer",
+      "amount": 100,
+      "unit": "g",
+      "protein": 9,
+      "carbs": 43,
+      "fat": 1,
+      "calories": 231
+    },
+    {
+      "id": "food-285",
+      "name": "Whey Isolate",
+      "amount": 100,
+      "unit": "g",
+      "protein": 86,
+      "carbs": 2.4,
+      "fat": 3.4,
+      "calories": 386
+    },
+    {
+      "id": "food-286",
+      "name": "Rice milk",
+      "amount": 200,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 19,
+      "fat": 2,
+      "calories": 96
+    },
+    {
+      "id": "food-287",
+      "name": "Bottom Round Steak for Stir Fry",
+      "amount": 100,
+      "unit": "g",
+      "protein": 22.3,
+      "carbs": 0,
+      "fat": 2.7,
+      "calories": 116
+    },
+    {
+      "id": "food-288",
+      "name": "Beef Top Round, London Broil",
+      "amount": 100,
+      "unit": "g",
+      "protein": 23.2,
+      "carbs": 0,
+      "fat": 3.6,
+      "calories": 125
+    },
+    {
+      "id": "food-289",
+      "name": "Pepper & Onion Blend",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.2,
+      "carbs": 5.9,
+      "fat": 0,
+      "calories": 29
+    },
+    {
+      "id": "food-290",
+      "name": "Eggplant, Zucchini, Peppers, Onion",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.2,
+      "carbs": 8.2,
+      "fat": 0,
+      "calories": 41
+    },
+    {
+      "id": "food-291",
+      "name": "Beef Sirloin Steak (Raw, Lean)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 23.5,
+      "carbs": 0,
+      "fat": 4.5,
+      "calories": 135
+    },
+    {
+      "id": "food-292",
+      "name": "Sourdough Crumpets",
+      "amount": 100,
+      "unit": "g",
+      "protein": 5.2,
+      "carbs": 37.6,
+      "fat": 0.5,
+      "calories": 180
+    },
+    {
+      "id": "food-293",
+      "name": "Yopro Mango",
+      "amount": 100,
+      "unit": "g",
+      "protein": 8.3,
+      "carbs": 5.4,
+      "fat": 0.4,
+      "calories": 58.4
+    },
+    {
+      "id": "food-294",
+      "name": "Bagel Clasico Bimbo",
+      "amount": 100,
+      "unit": "g",
+      "protein": 11,
+      "carbs": 53,
+      "fat": 2.7,
+      "calories": 280.3
+    },
+    {
+      "id": "food-295",
+      "name": "Nutella",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6.3,
+      "carbs": 57.5,
+      "fat": 30.9,
+      "calories": 533.3
+    },
+    {
+      "id": "food-296",
+      "name": "Bagel Cristak",
+      "amount": 1,
+      "unit": "bagel",
+      "protein": 6,
+      "carbs": 27,
+      "fat": 1,
+      "calories": 141
+    },
+    {
+      "id": "food-297",
+      "name": "Pastoret",
+      "amount": 100,
+      "unit": "g",
+      "protein": 4.9,
+      "carbs": 4.7,
+      "fat": 0.2,
+      "calories": 40.2
+    },
+    {
+      "id": "food-298",
+      "name": "Fine Beans",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.1,
+      "carbs": 3,
+      "fat": 0.5,
+      "calories": 32
+    },
+    {
+      "id": "food-299",
+      "name": "Gluten Free Tiger Bread",
+      "amount": 100,
+      "unit": "g",
+      "protein": 4,
+      "carbs": 40,
+      "fat": 5.9,
+      "calories": 242
+    },
+    {
+      "id": "food-300",
+      "name": "Coconut yogurt",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.8,
+      "carbs": 4.5,
+      "fat": 11.9,
+      "calories": 128
+    },
+    {
+      "id": "food-301",
+      "name": "JP Cream of rice",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6.7,
+      "carbs": 76.9,
+      "fat": 0.6,
+      "calories": 340
+    },
+    {
+      "id": "food-302",
+      "name": "Almond butter - Urtekram",
+      "amount": 100,
+      "unit": "g",
+      "protein": 17,
+      "carbs": 4,
+      "fat": 63,
+      "calories": 600
+    },
+    {
+      "id": "food-303",
+      "name": "Frozen Bluberries",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.4,
+      "carbs": 9.5,
+      "fat": 0.6,
+      "calories": 48
+    },
+    {
+      "id": "food-304",
+      "name": "Vegan Chicken",
+      "amount": 100,
+      "unit": "g",
+      "protein": 20,
+      "carbs": 3,
+      "fat": 4.6,
+      "calories": 143
+    },
+    {
+      "id": "food-305",
+      "name": "Alpro Yoghurt",
+      "amount": 100,
+      "unit": "g",
+      "protein": 4,
+      "carbs": 2.1,
+      "fat": 2.3,
+      "calories": 50
+    },
+    {
+      "id": "food-306",
+      "name": "Water",
+      "amount": 100,
+      "unit": "ml",
+      "protein": 0,
+      "carbs": 0,
+      "fat": 0,
+      "calories": 0
+    },
+    {
+      "id": "food-307",
+      "name": "Microwave Rice",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3,
+      "carbs": 29.5,
+      "fat": 1.2,
+      "calories": 143
+    },
+    {
+      "id": "food-308",
+      "name": "Haribos",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6.6,
+      "carbs": 80,
+      "fat": 0.1,
+      "calories": 346
+    },
+    {
+      "id": "food-309",
+      "name": "Euromix (muscle meat)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2,
+      "carbs": 4,
+      "fat": 0.3,
+      "calories": 34
+    },
+    {
+      "id": "food-310",
+      "name": "Mexicomix",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.4,
+      "carbs": 8.5,
+      "fat": 0.7,
+      "calories": 55
+    },
+    {
+      "id": "food-311",
+      "name": "Fat Free Cottage Cheese",
+      "amount": 100,
+      "unit": "g",
+      "protein": 10.8,
+      "carbs": 3.9,
+      "fat": 0.3,
+      "calories": 63
+    },
+    {
+      "id": "food-312",
+      "name": "Iceberg Salad (with tomato and cucumber)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.98,
+      "carbs": 2.42,
+      "fat": 0.25,
+      "calories": 20
+    },
+    {
+      "id": "food-313",
+      "name": "Pitta Bread",
+      "amount": 1,
+      "unit": "pita",
+      "protein": 5.5,
+      "carbs": 27.8,
+      "fat": 0.7,
+      "calories": 145
+    },
+    {
+      "id": "food-314",
+      "name": "Greek Feta cheese",
+      "amount": 100,
+      "unit": "g",
+      "protein": 17,
+      "carbs": 0.7,
+      "fat": 23,
+      "calories": 278
+    },
+    {
+      "id": "food-315",
+      "name": "Salsa",
+      "amount": 50,
+      "unit": "g",
+      "protein": 1.3,
+      "carbs": 0.2,
+      "fat": 1.3,
+      "calories": 36
+    },
+    {
+      "id": "food-316",
+      "name": "Long Grain Rice Packet",
+      "amount": 125,
+      "unit": "g",
+      "protein": 3.4,
+      "carbs": 36,
+      "fat": 2,
+      "calories": 179
+    },
+    {
+      "id": "food-317",
+      "name": "5% Mince Burger",
+      "amount": 120,
+      "unit": "g",
+      "protein": 27.6,
+      "carbs": 4.8,
+      "fat": 5,
+      "calories": 173
+    },
+    {
+      "id": "food-318",
+      "name": "Semolina",
+      "amount": 100,
+      "unit": "g",
+      "protein": 13,
+      "carbs": 73,
+      "fat": 1.1,
+      "calories": 360
+    },
+    {
+      "id": "food-319",
+      "name": "Biscoff Spread",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.2,
+      "carbs": 58,
+      "fat": 35.7,
+      "calories": 571
+    },
+    {
+      "id": "food-320",
+      "name": "Vegan Designer Whey (ESN)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 71.1,
+      "carbs": 8,
+      "fat": 6.8,
+      "calories": 388
+    },
+    {
+      "id": "food-321",
+      "name": "Maltodextrin (ESN)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 97,
+      "fat": 0,
+      "calories": 398
+    },
+    {
+      "id": "food-322",
+      "name": "Meta+",
+      "amount": 100,
+      "unit": "g",
+      "protein": 5,
+      "carbs": 14.5,
+      "fat": 0.5,
+      "calories": 221
+    },
+    {
+      "id": "food-323",
+      "name": "Prozi Pancake Mix",
+      "amount": 100,
+      "unit": "g",
+      "protein": 28,
+      "carbs": 45,
+      "fat": 6.3,
+      "calories": 363.9
+    },
+    {
+      "id": "food-324",
+      "name": "Prozi Granola",
+      "amount": 100,
+      "unit": "g",
+      "protein": 23,
+      "carbs": 34,
+      "fat": 22,
+      "calories": 462.5
+    },
+    {
+      "id": "food-325",
+      "name": "Vanilla Alpro Yogurt",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.7,
+      "carbs": 7.5,
+      "fat": 2.2,
+      "calories": 66
+    },
+    {
+      "id": "food-326",
+      "name": "Toast Bread",
+      "amount": 100,
+      "unit": "g",
+      "protein": 8.2,
+      "carbs": 47,
+      "fat": 4.4,
+      "calories": 266
+    },
+    {
+      "id": "food-327",
+      "name": "Pumpkin Puree",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.1,
+      "carbs": 8.09,
+      "fat": 0.28,
+      "calories": 34
+    },
+    {
+      "id": "food-328",
+      "name": "Vegan Beef",
+      "amount": 100,
+      "unit": "g",
+      "protein": 25.5,
+      "carbs": 3.6,
+      "fat": 5.5,
+      "calories": 100
+    },
+    {
+      "id": "food-329",
+      "name": "Granola (Kind)",
+      "amount": 30,
+      "unit": "g",
+      "protein": 2,
+      "carbs": 19,
+      "fat": 4,
+      "calories": 120
+    },
+    {
+      "id": "food-330",
+      "name": "Cream Cheese Low Fat",
+      "amount": 31,
+      "unit": "g",
+      "protein": 3,
+      "carbs": 2,
+      "fat": 5,
+      "calories": 60
+    },
+    {
+      "id": "food-331",
+      "name": "Turkey Sausages",
+      "amount": 1,
+      "unit": "sausage",
+      "protein": 9,
+      "carbs": 5,
+      "fat": 2.45,
+      "calories": 80
+    },
+    {
+      "id": "food-332",
+      "name": "Dopsu Chicken Style Pieces",
+      "amount": 100,
+      "unit": "g",
+      "protein": 22,
+      "carbs": 9.5,
+      "fat": 8.6,
+      "calories": 208
+    },
+    {
+      "id": "food-333",
+      "name": "Dopsu No Beef Pieces",
+      "amount": 100,
+      "unit": "g",
+      "protein": 22.9,
+      "carbs": 8.9,
+      "fat": 8.3,
+      "calories": 210
+    },
+    {
+      "id": "food-334",
+      "name": "Violife Vegan Cheese",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 21,
+      "fat": 24,
+      "calories": 298
+    },
+    {
+      "id": "food-335",
+      "name": "Richmon Meat-Free Chargrilled Chicken",
+      "amount": 100,
+      "unit": "g",
+      "protein": 20,
+      "carbs": 3,
+      "fat": 4.6,
+      "calories": 143
+    },
+    {
+      "id": "food-336",
+      "name": "Quaker Apple Cinnamon Rice Cakes",
+      "amount": 1,
+      "unit": "rice cake",
+      "protein": 1,
+      "carbs": 11,
+      "fat": 0,
+      "calories": 50
+    },
+    {
+      "id": "food-337",
+      "name": "Thomas' Cinnamon Swirl Bagels",
+      "amount": 1,
+      "unit": "bagel",
+      "protein": 10,
+      "carbs": 55,
+      "fat": 2,
+      "calories": 280
+    },
+    {
+      "id": "food-338",
+      "name": "Nairns Oat Cake",
+      "amount": 1,
+      "unit": "cake",
+      "protein": 1,
+      "carbs": 4.7,
+      "fat": 2.1,
+      "calories": 43
+    },
+    {
+      "id": "food-339",
+      "name": "Homemade Rice Pudding (with no sugar almond milk)",
+      "amount": 100,
+      "unit": "g \n(dry rice - 1:5 rice:milk ratio)",
+      "protein": 8.3,
+      "carbs": 79.5,
+      "fat": 7.1,
+      "calories": 425
+    },
+    {
+      "id": "food-340",
+      "name": "Jack Link's Beef Jerky (Original)",
+      "amount": 1,
+      "unit": "packet (25g)",
+      "protein": 8.8,
+      "carbs": 5,
+      "fat": 0.9,
+      "calories": 63
+    },
+    {
+      "id": "food-341",
+      "name": "Salt and Vinegar Snack-A-Jacks Rice Cake Crisps",
+      "amount": 1,
+      "unit": "packet (23g)",
+      "protein": 1.5,
+      "carbs": 17,
+      "fat": 2.3,
+      "calories": 97
+    },
+    {
+      "id": "food-342",
+      "name": "Gatorade",
+      "amount": 500,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 29.5,
+      "fat": 0,
+      "calories": 115
+    },
+    {
+      "id": "food-343",
+      "name": "Abe's Bagels",
+      "amount": 1,
+      "unit": "bagel",
+      "protein": 9.5,
+      "carbs": 31,
+      "fat": 1.5,
+      "calories": 210
+    },
+    {
+      "id": "food-344",
+      "name": "Rice Krispies Treats",
+      "amount": 1,
+      "unit": "bar",
+      "protein": 1,
+      "carbs": 17,
+      "fat": 2,
+      "calories": 90
+    },
+    {
+      "id": "food-345",
+      "name": "Halloumi Cheese",
+      "amount": 100,
+      "unit": "g",
+      "protein": 20.7,
+      "carbs": 3.6,
+      "fat": 22.5,
+      "calories": 300
+    },
+    {
+      "id": "food-346",
+      "name": "GF Pasta",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.3,
+      "carbs": 36.2,
+      "fat": 1.2,
+      "calories": 170
+    },
+    {
+      "id": "food-347",
+      "name": "Rice Noodles",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6,
+      "carbs": 82,
+      "fat": 0,
+      "calories": 358
+    },
+    {
+      "id": "food-348",
+      "name": "Barney Powder Butter",
+      "amount": 12,
+      "unit": "g",
+      "protein": 6,
+      "carbs": 4,
+      "fat": 1,
+      "calories": 45
+    },
+    {
+      "id": "food-349",
+      "name": "Cottage Cheese (low fat)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 11,
+      "carbs": 3.9,
+      "fat": 0.3,
+      "calories": 63
+    },
+    {
+      "id": "food-350",
+      "name": "Jasons Sourdough",
+      "amount": 100,
+      "unit": "g",
+      "protein": 10.1,
+      "carbs": 44.1,
+      "fat": 0.8,
+      "calories": 230
+    },
+    {
+      "id": "food-351",
+      "name": "ESN Rice Pudding",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7.7,
+      "carbs": 83,
+      "fat": 0.7,
+      "calories": 373
+    },
+    {
+      "id": "food-352",
+      "name": "TBJP COR",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6.7,
+      "carbs": 76.9,
+      "fat": 0.6,
+      "calories": 340
+    },
+    {
+      "id": "food-353",
+      "name": "Swordfish",
+      "amount": 100,
+      "unit": "g",
+      "protein": 23,
+      "carbs": 0,
+      "fat": 8,
+      "calories": 172
+    },
+    {
+      "id": "food-354",
+      "name": "Octopus",
+      "amount": 100,
+      "unit": "g",
+      "protein": 30,
+      "carbs": 4.4,
+      "fat": 2.1,
+      "calories": 164
+    },
+    {
+      "id": "food-355",
+      "name": "Lentils",
+      "amount": 100,
+      "unit": "g",
+      "protein": 9,
+      "carbs": 20,
+      "fat": 0.5,
+      "calories": 116
+    },
+    {
+      "id": "food-356",
+      "name": "Couscous (Cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.8,
+      "carbs": 23,
+      "fat": 0.2,
+      "calories": 112
+    },
+    {
+      "id": "food-357",
+      "name": "Sea Bream (Raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 17.5,
+      "carbs": 0,
+      "fat": 2.9,
+      "calories": 96
+    },
+    {
+      "id": "food-358",
+      "name": "Swordfish (Raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 19.7,
+      "carbs": 0,
+      "fat": 6.7,
+      "calories": 144
+    },
+    {
+      "id": "food-359",
+      "name": "Octopus (Raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 15,
+      "carbs": 2,
+      "fat": 1,
+      "calories": 82
+    },
+    {
+      "id": "food-360",
+      "name": "Couscous (Dry)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 12,
+      "carbs": 79.2,
+      "fat": 2.1,
+      "calories": 364
+    },
+    {
+      "id": "food-361",
+      "name": "Chia Seeds",
+      "amount": 100,
+      "unit": "g",
+      "protein": 16.5,
+      "carbs": 42.1,
+      "fat": 30.7,
+      "calories": 486
+    },
+    {
+      "id": "food-362",
+      "name": "Red Lentils (Dry)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 25.6,
+      "carbs": 51.2,
+      "fat": 1.8,
+      "calories": 311
+    },
+    {
+      "id": "food-363",
+      "name": "Grano Saraceno Rice Cakes",
+      "amount": 100,
+      "unit": "g",
+      "protein": 13,
+      "carbs": 63,
+      "fat": 3.7,
+      "calories": 353
+    },
+    {
+      "id": "food-364",
+      "name": "Dark Chocolate (100%)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 13,
+      "carbs": 8,
+      "fat": 54,
+      "calories": 601
+    },
+    {
+      "id": "food-365",
+      "name": "Stragghisto",
+      "amount": 100,
+      "unit": "g",
+      "protein": 9.5,
+      "carbs": 4,
+      "fat": 0,
+      "calories": 54
+    },
+    {
+      "id": "food-366",
+      "name": "BFree Avocado Wrap",
+      "amount": 1,
+      "unit": "wrap",
+      "protein": 8.1,
+      "carbs": 13,
+      "fat": 3.5,
+      "calories": 128
+    },
+    {
+      "id": "food-367",
+      "name": "Philadelphia Lightest",
+      "amount": 100,
+      "unit": "g",
+      "protein": 11,
+      "carbs": 5.9,
+      "fat": 2.5,
+      "calories": 80
+    },
+    {
+      "id": "food-368",
+      "name": "Corn Starch",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.3,
+      "carbs": 91,
+      "fat": 0.1,
+      "calories": 381
+    },
+    {
+      "id": "food-369",
+      "name": "EvoJet Iso",
+      "amount": 33,
+      "unit": "g",
+      "protein": 25,
+      "carbs": 4,
+      "fat": 1,
+      "calories": 120
+    },
+    {
+      "id": "food-370",
+      "name": "Vegetable Mix",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.7,
+      "carbs": 4.9,
+      "fat": 0.6,
+      "calories": 36
+    },
+    {
+      "id": "food-371",
+      "name": "Unsweetened Coconut Milk",
+      "amount": 100,
+      "unit": "ml",
+      "protein": 0.1,
+      "carbs": 0,
+      "fat": 1.2,
+      "calories": 14
+    },
+    {
+      "id": "food-372",
+      "name": "Spring Onion",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2,
+      "carbs": 3,
+      "fat": 0.5,
+      "calories": 23
+    },
+    {
+      "id": "food-373",
+      "name": "Pickled Ginger",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 2.1,
+      "fat": 0,
+      "calories": 9
+    },
+    {
+      "id": "food-374",
+      "name": "Less Salt Teriyaki Marinade (Kikkoman)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6.4,
+      "carbs": 12,
+      "fat": 0,
+      "calories": 100
+    },
+    {
+      "id": "food-375",
+      "name": "Buckwheat Pasta (Italian)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 11,
+      "carbs": 67,
+      "fat": 2.9,
+      "calories": 347
+    },
+    {
+      "id": "food-376",
+      "name": "Wholegrain Bread (Italian)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 8,
+      "carbs": 50,
+      "fat": 5,
+      "calories": 250
+    },
+    {
+      "id": "food-377",
+      "name": "Buckwheat Cakes (Italian)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 13,
+      "carbs": 63,
+      "fat": 3.7,
+      "calories": 353
+    },
+    {
+      "id": "food-378",
+      "name": "Corn and Rice Pasta (Italian)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6,
+      "carbs": 73,
+      "fat": 2,
+      "calories": 340
+    },
+    {
+      "id": "food-379",
+      "name": "Tuna (in brine - drained)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 23.5,
+      "carbs": 0.1,
+      "fat": 0.5,
+      "calories": 99
+    },
+    {
+      "id": "food-380",
+      "name": "Fairlife Protein Shake (Chocolate)",
+      "amount": 1,
+      "unit": "bottle",
+      "protein": 30,
+      "carbs": 4,
+      "fat": 2.5,
+      "calories": 150
+    },
+    {
+      "id": "food-381",
+      "name": "Aloe Vera Drink",
+      "amount": 240,
+      "unit": "ml",
+      "protein": 0,
+      "carbs": 0,
+      "fat": 0,
+      "calories": 0
+    },
+    {
+      "id": "food-382",
+      "name": "Beef Stir Fry Strips",
+      "amount": 100,
+      "unit": "g",
+      "protein": 21.6,
+      "carbs": 0,
+      "fat": 3.5,
+      "calories": 118
+    },
+    {
+      "id": "food-383",
+      "name": "Turnip",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.7,
+      "carbs": 5.1,
+      "fat": 0.1,
+      "calories": 22
+    },
+    {
+      "id": "food-384",
+      "name": "Swede",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.1,
+      "carbs": 8.6,
+      "fat": 0.2,
+      "calories": 37
+    },
+    {
+      "id": "food-385",
+      "name": "Flax Seed Oil",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 0,
+      "fat": 100,
+      "calories": 900
+    },
+    {
+      "id": "food-386",
+      "name": "Dried Figs",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.1,
+      "carbs": 53,
+      "fat": 1.2,
+      "calories": 239
+    },
+    {
+      "id": "food-387",
+      "name": "Ors-Cocolytes",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.2,
+      "carbs": 63,
+      "fat": 0.2,
+      "calories": 258
+    },
+    {
+      "id": "food-388",
+      "name": "Lean Beef Minute Steak",
+      "amount": 100,
+      "unit": "g",
+      "protein": 22,
+      "carbs": 0,
+      "fat": 3,
+      "calories": 115
+    },
+    {
+      "id": "food-389",
+      "name": "Dried Cranberries",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.2,
+      "carbs": 83,
+      "fat": 1.1,
+      "calories": 308
+    },
+    {
+      "id": "food-390",
+      "name": "Arla BOB Skimmed Milk",
+      "amount": 100,
+      "unit": "g",
+      "protein": 4.6,
+      "carbs": 4.9,
+      "fat": 0.4,
+      "calories": 41
+    },
+    {
+      "id": "food-391",
+      "name": "Sardines (in brine)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 22.1,
+      "carbs": 0,
+      "fat": 9.1,
+      "calories": 170
+    },
+    {
+      "id": "food-392",
+      "name": "Pickled Baby Beetroot",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.7,
+      "carbs": 8.8,
+      "fat": 0.4,
+      "calories": 43
+    },
+    {
+      "id": "food-393",
+      "name": "McCain Jacket Potato",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2,
+      "carbs": 18,
+      "fat": 0.4,
+      "calories": 84
+    },
+    {
+      "id": "food-394",
+      "name": "Bisto Reduced Salt Gravy Granules",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.5,
+      "carbs": 64.9,
+      "fat": 15.8,
+      "calories": 411
+    },
+    {
+      "id": "food-395",
+      "name": "Psyllium Husk",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 83,
+      "fat": 0,
+      "calories": 294
+    },
+    {
+      "id": "food-396",
+      "name": "Cocoa Powder",
+      "amount": 100,
+      "unit": "g",
+      "protein": 20,
+      "carbs": 8.9,
+      "fat": 21,
+      "calories": 368
+    },
+    {
+      "id": "food-397",
+      "name": "Aldi Protein Pancakes",
+      "amount": 100,
+      "unit": "g",
+      "protein": 13,
+      "carbs": 28,
+      "fat": 7.6,
+      "calories": 240
+    },
+    {
+      "id": "food-398",
+      "name": "Smoked Mackerel",
+      "amount": 100,
+      "unit": "g",
+      "protein": 22.7,
+      "carbs": 0.6,
+      "fat": 23.1,
+      "calories": 301
+    },
+    {
+      "id": "food-399",
+      "name": "Sourdough Crumpet",
+      "amount": 100,
+      "unit": "g",
+      "protein": 5.6,
+      "carbs": 34.9,
+      "fat": 0.7,
+      "calories": 172
+    },
+    {
+      "id": "food-400",
+      "name": "Muller Vanilla Protein Yoghurt",
+      "amount": 100,
+      "unit": "g",
+      "protein": 12.5,
+      "carbs": 6.8,
+      "fat": 0,
+      "calories": 68
+    },
+    {
+      "id": "food-401",
+      "name": "Bulgaria 0% Yoghurt",
+      "amount": 110,
+      "unit": "g",
+      "protein": 5,
+      "carbs": 9,
+      "fat": 0,
+      "calories": 60
+    },
+    {
+      "id": "food-402",
+      "name": "Black Olives (Pitted)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.3,
+      "carbs": 2.5,
+      "fat": 12.6,
+      "calories": 133
+    },
+    {
+      "id": "food-403",
+      "name": "Sourdough Crumpets (Tesco)",
+      "amount": 1,
+      "unit": "crumpet",
+      "protein": 3.3,
+      "carbs": 20.1,
+      "fat": 0.4,
+      "calories": 99
+    },
+    {
+      "id": "food-404",
+      "name": "Polenta (dry)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6.6,
+      "carbs": 74,
+      "fat": 1,
+      "calories": 340
+    },
+    {
+      "id": "food-405",
+      "name": "Powdered Almond Butter",
+      "amount": 13,
+      "unit": "g",
+      "protein": 5,
+      "carbs": 5,
+      "fat": 1.5,
+      "calories": 50
+    },
+    {
+      "id": "food-406",
+      "name": "Ice Cream (B&J)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.6,
+      "carbs": 35,
+      "fat": 13,
+      "calories": 273
+    },
+    {
+      "id": "food-407",
+      "name": "Low Fat Curd Cheese",
+      "amount": 100,
+      "unit": "g",
+      "protein": 19,
+      "carbs": 3.3,
+      "fat": 0,
+      "calories": 89
+    },
+    {
+      "id": "food-408",
+      "name": "American Turkey Rasher",
+      "amount": 1,
+      "unit": "rasher",
+      "protein": 5,
+      "carbs": 1,
+      "fat": 2.5,
+      "calories": 45
+    },
+    {
+      "id": "food-409",
+      "name": "American Ground Beef (90%)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 27,
+      "carbs": 0,
+      "fat": 11,
+      "calories": 214
+    },
+    {
+      "id": "food-410",
+      "name": "Dried Mango",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.3,
+      "carbs": 73.5,
+      "fat": 1.4,
+      "calories": 331
+    },
+    {
+      "id": "food-411",
+      "name": "Paulina's Havregrot (Muesli)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6.8,
+      "carbs": 25,
+      "fat": 7,
+      "calories": 202
+    },
+    {
+      "id": "food-412",
+      "name": "Quinoa (dry)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 14,
+      "carbs": 64,
+      "fat": 6.1,
+      "calories": 368
+    },
+    {
+      "id": "food-413",
+      "name": "Protein Drink (Zohar)",
+      "amount": 100,
+      "unit": "ml",
+      "protein": 7.2,
+      "carbs": 2.1,
+      "fat": 0,
+      "calories": 37
+    },
+    {
+      "id": "food-414",
+      "name": "Chocolate Chip Snack a Jacks",
+      "amount": 1,
+      "unit": "rice cake",
+      "protein": 0.9,
+      "carbs": 11,
+      "fat": 0.9,
+      "calories": 58
+    },
+    {
+      "id": "food-415",
+      "name": "Toasted Seasame Oil",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 0,
+      "fat": 100,
+      "calories": 900
+    },
+    {
+      "id": "food-416",
+      "name": "White Plain Pitta Bread (Tesco)",
+      "amount": 1,
+      "unit": "pitta",
+      "protein": 5.4,
+      "carbs": 28.8,
+      "fat": 0.4,
+      "calories": 145
+    },
+    {
+      "id": "food-417",
+      "name": "American Scotch Pancakes",
+      "amount": 3,
+      "unit": "pancake",
+      "protein": 5,
+      "carbs": 47,
+      "fat": 5,
+      "calories": 260
+    },
+    {
+      "id": "food-418",
+      "name": "Australian Pikelet",
+      "amount": 1,
+      "unit": "pikelet",
+      "protein": 1.4,
+      "carbs": 9.6,
+      "fat": 1.5,
+      "calories": 59
+    },
+    {
+      "id": "food-419",
+      "name": "Alpro Plain Yoghurt (No Sugars)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 4,
+      "carbs": 0,
+      "fat": 2.3,
+      "calories": 42
+    },
+    {
+      "id": "food-420",
+      "name": "Kallo Beetroot & Balsamic Veggie Cakes",
+      "amount": 1,
+      "unit": "veggie cake",
+      "protein": 2.4,
+      "carbs": 4.8,
+      "fat": 1.1,
+      "calories": 40
+    },
+    {
+      "id": "food-421",
+      "name": "Mangetout",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.6,
+      "carbs": 4.1,
+      "fat": 0.2,
+      "calories": 38
+    },
+    {
+      "id": "food-422",
+      "name": "Extra Firm Tofu",
+      "amount": 84,
+      "unit": "g",
+      "protein": 9,
+      "carbs": 3,
+      "fat": 4,
+      "calories": 80
+    },
+    {
+      "id": "food-423",
+      "name": "Soy-Free Fava Tofu",
+      "amount": 85,
+      "unit": "g",
+      "protein": 16,
+      "carbs": 0,
+      "fat": 0,
+      "calories": 70
+    },
+    {
+      "id": "food-424",
+      "name": "Buckwheat (dry)",
+      "amount": 50,
+      "unit": "g",
+      "protein": 3.9,
+      "carbs": 21,
+      "fat": 1.5,
+      "calories": 117
+    },
+    {
+      "id": "food-425",
+      "name": "Coco Pops Snack Bar",
+      "amount": 1,
+      "unit": "bar",
+      "protein": 1.1,
+      "carbs": 14,
+      "fat": 2.2,
+      "calories": 82
+    },
+    {
+      "id": "food-426",
+      "name": "Rice Krispies Snack Bar",
+      "amount": 1,
+      "unit": "bar",
+      "protein": 1,
+      "carbs": 15,
+      "fat": 2.2,
+      "calories": 83
+    },
+    {
+      "id": "food-427",
+      "name": "Jasmine Rice (cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3,
+      "carbs": 28,
+      "fat": 0,
+      "calories": 130
+    },
+    {
+      "id": "food-428",
+      "name": "Rice Cakes (DM Bio)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 8.9,
+      "carbs": 77,
+      "fat": 3.7,
+      "calories": 383
+    },
+    {
+      "id": "food-429",
+      "name": "Blueberry Muffin (in grams)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.8,
+      "carbs": 53.3,
+      "fat": 18.8,
+      "calories": 400
+    },
+    {
+      "id": "food-430",
+      "name": "Pea Protein Source",
+      "amount": 26,
+      "unit": "g",
+      "protein": 21,
+      "carbs": 1,
+      "fat": 1.5,
+      "calories": 100
+    },
+    {
+      "id": "food-431",
+      "name": "Woolworths Soft White Wraps",
+      "amount": 1,
+      "unit": "wrap",
+      "protein": 3.5,
+      "carbs": 15.1,
+      "fat": 3,
+      "calories": 109
+    },
+    {
+      "id": "food-432",
+      "name": "Thai Green Curry Paste",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.5,
+      "carbs": 19,
+      "fat": 12,
+      "calories": 196
+    },
+    {
+      "id": "food-433",
+      "name": "Nature Valley Oats & Honey Crunchy Bar",
+      "amount": 2,
+      "unit": "bars",
+      "protein": 3.6,
+      "carbs": 27,
+      "fat": 7.6,
+      "calories": 196
+    },
+    {
+      "id": "food-434",
+      "name": "ESN Clear Whey Isolate",
+      "amount": 100,
+      "unit": "g",
+      "protein": 80,
+      "carbs": 3.9,
+      "fat": 0,
+      "calories": 348
+    },
+    {
+      "id": "food-435",
+      "name": "Chicken Thigh (Raw, Skinless)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 18,
+      "carbs": 0,
+      "fat": 9,
+      "calories": 158
+    },
+    {
+      "id": "food-436",
+      "name": "Chicken Thigh (Cooked, Skinless)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 25.94,
+      "carbs": 0,
+      "fat": 10.88,
+      "calories": 209
+    },
+    {
+      "id": "food-437",
+      "name": "Kabocha Squash (cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1,
+      "carbs": 9,
+      "fat": 0.2,
+      "calories": 37
+    },
+    {
+      "id": "food-438",
+      "name": "Yambean (jicama) (cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.7,
+      "carbs": 8.8,
+      "fat": 0.1,
+      "calories": 38
+    },
+    {
+      "id": "food-439",
+      "name": "Hungarian yoghurt",
+      "amount": 100,
+      "unit": "g",
+      "protein": 10,
+      "carbs": 6.2,
+      "fat": 2.3,
+      "calories": 87
+    },
+    {
+      "id": "food-440",
+      "name": "Hungarian cottage bar",
+      "amount": 1,
+      "unit": "bar",
+      "protein": 4.4,
+      "carbs": 8.9,
+      "fat": 6.8,
+      "calories": 103
+    },
+    {
+      "id": "food-441",
+      "name": "Avocado Oil",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0,
+      "carbs": 0,
+      "fat": 100,
+      "calories": 884
+    },
+    {
+      "id": "food-442",
+      "name": "Collagen Powder",
+      "amount": 10.71,
+      "unit": "g",
+      "protein": 9,
+      "carbs": 0,
+      "fat": 0,
+      "calories": 35
+    },
+    {
+      "id": "food-443",
+      "name": "Cocoa Nibs",
+      "amount": 100,
+      "unit": "g",
+      "protein": 12.4,
+      "carbs": 6,
+      "fat": 51.6,
+      "calories": 585
+    },
+    {
+      "id": "food-444",
+      "name": "Wild Keta Salmon (raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 25.4,
+      "carbs": 0.4,
+      "fat": 6.7,
+      "calories": 164
+    },
+    {
+      "id": "food-445",
+      "name": "Gabriela Alpro Yog",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.7,
+      "carbs": 6,
+      "fat": 2.1,
+      "calories": 62
+    },
+    {
+      "id": "food-446",
+      "name": "American Ground Turkey Breast",
+      "amount": 100,
+      "unit": "g",
+      "protein": 22.6,
+      "carbs": 0,
+      "fat": 1.6,
+      "calories": 105
+    },
+    {
+      "id": "food-447",
+      "name": "Olvarit Baby Rice",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7.7,
+      "carbs": 85.6,
+      "fat": 1.2,
+      "calories": 385
+    },
+    {
+      "id": "food-448",
+      "name": "Warburtons Gluten Free Rolls",
+      "amount": 1,
+      "unit": "roll",
+      "protein": 3.4,
+      "carbs": 21.6,
+      "fat": 3.5,
+      "calories": 135
+    },
+    {
+      "id": "food-449",
+      "name": "Guerrero Jalapeno High Fiber Tortilla Wrap",
+      "amount": 1,
+      "unit": "wrap",
+      "protein": 2,
+      "carbs": 7,
+      "fat": 1.5,
+      "calories": 30
+    },
+    {
+      "id": "food-450",
+      "name": "Yeo Valley Kefir",
+      "amount": 100,
+      "unit": "g",
+      "protein": 4.7,
+      "carbs": 5.4,
+      "fat": 2.1,
+      "calories": 64
+    },
+    {
+      "id": "food-451",
+      "name": "Arla 0% Fat Vanilla Skyr",
+      "amount": 100,
+      "unit": "g",
+      "protein": 8.6,
+      "carbs": 8.3,
+      "fat": 0.2,
+      "calories": 72
+    },
+    {
+      "id": "food-452",
+      "name": "Alpro Coconut Barista Milk",
+      "amount": 100,
+      "unit": "ml",
+      "protein": 1.5,
+      "carbs": 3.4,
+      "fat": 1.4,
+      "calories": 33
+    },
+    {
+      "id": "food-453",
+      "name": "Gluten Free Brown Bread",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.3,
+      "carbs": 32.3,
+      "fat": 5.3,
+      "calories": 219
+    },
+    {
+      "id": "food-454",
+      "name": "Mixed Salad",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.3,
+      "carbs": 1.9,
+      "fat": 0,
+      "calories": 16
+    },
+    {
+      "id": "food-455",
+      "name": "Kellogg's Sultana Bran",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7.6,
+      "carbs": 70.5,
+      "fat": 4.1,
+      "calories": 373
+    },
+    {
+      "id": "food-456",
+      "name": "Light Soy Sauce",
+      "amount": 100,
+      "unit": "ml",
+      "protein": 1.7,
+      "carbs": 11.8,
+      "fat": 0,
+      "calories": 54
+    },
+    {
+      "id": "food-457",
+      "name": "Hake Italy",
+      "amount": 100,
+      "unit": "g",
+      "protein": 15.8,
+      "carbs": 0,
+      "fat": 1.5,
+      "calories": 77
+    },
+    {
+      "id": "food-458",
+      "name": "Frozen sweet cherries",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.3,
+      "carbs": 14.6,
+      "fat": 0.1,
+      "calories": 71
+    },
+    {
+      "id": "food-459",
+      "name": "Beef Stock Cube",
+      "amount": 1,
+      "unit": "stock cube",
+      "protein": 1,
+      "carbs": 2.1,
+      "fat": 0.7,
+      "calories": 15
+    },
+    {
+      "id": "food-460",
+      "name": "Cathedral City 50% Less Fat Mature Cheddar",
+      "amount": 100,
+      "unit": "g",
+      "protein": 29.1,
+      "carbs": 0.1,
+      "fat": 21.5,
+      "calories": 310
+    },
+    {
+      "id": "food-461",
+      "name": "Almond butter (in tsp)",
+      "amount": 1,
+      "unit": "teaspoon",
+      "protein": 1,
+      "carbs": 0.35,
+      "fat": 2.6,
+      "calories": 28.95
+    },
+    {
+      "id": "food-462",
+      "name": "Gluten Free Strawberry & Almond Granola (Deliciously Ella)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 11.3,
+      "carbs": 54,
+      "fat": 15,
+      "calories": 427
+    },
+    {
+      "id": "food-463",
+      "name": "Ramona's Heavenly Houmous - Jalapeno",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6.2,
+      "carbs": 10.3,
+      "fat": 20.7,
+      "calories": 262
+    },
+    {
+      "id": "food-464",
+      "name": "Organic Brown Rice Cakes",
+      "amount": 1,
+      "unit": "rice cake",
+      "protein": 1,
+      "carbs": 7.9,
+      "fat": 0.3,
+      "calories": 38.7
+    },
+    {
+      "id": "food-465",
+      "name": "Sweet Potato (cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.1,
+      "carbs": 20.4,
+      "fat": 0.3,
+      "calories": 84
+    },
+    {
+      "id": "food-466",
+      "name": "Country Bread (Bauern-Brot)",
+      "amount": 1,
+      "unit": "slice",
+      "protein": 3,
+      "carbs": 19,
+      "fat": 1,
+      "calories": 96
+    },
+    {
+      "id": "food-467",
+      "name": "Heavenly Blush Greek Yog",
+      "amount": 80,
+      "unit": "g",
+      "protein": 4,
+      "carbs": 5,
+      "fat": 6,
+      "calories": 90
+    },
+    {
+      "id": "food-468",
+      "name": "Apple Granola",
+      "amount": 100,
+      "unit": "g",
+      "protein": 13.7,
+      "carbs": 47.6,
+      "fat": 26.4,
+      "calories": 456.1
+    },
+    {
+      "id": "food-469",
+      "name": "Almond Milk (Almond Breeze, full sugar)",
+      "amount": 180,
+      "unit": "ml",
+      "protein": 1,
+      "carbs": 10,
+      "fat": 1.5,
+      "calories": 60
+    },
+    {
+      "id": "food-470",
+      "name": "Yummy Greek Style Yoghurt",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7,
+      "carbs": 17,
+      "fat": 4,
+      "calories": 140
+    },
+    {
+      "id": "food-471",
+      "name": "Vital Proteins Collagen Peptides",
+      "amount": 20,
+      "unit": "g",
+      "protein": 18,
+      "carbs": 0,
+      "fat": 0,
+      "calories": 72
+    },
+    {
+      "id": "food-472",
+      "name": "Radish",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.7,
+      "carbs": 1.4,
+      "fat": 0.4,
+      "calories": 14
+    },
+    {
+      "id": "food-473",
+      "name": "Artichoke",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.9,
+      "carbs": 12,
+      "fat": 0.3,
+      "calories": 53
+    },
+    {
+      "id": "food-474",
+      "name": "Arla Lactofree Natural Yoghurt",
+      "amount": 100,
+      "unit": "g",
+      "protein": 5.3,
+      "carbs": 2.4,
+      "fat": 4,
+      "calories": 53
+    },
+    {
+      "id": "food-475",
+      "name": "Sweetcorn",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.4,
+      "carbs": 21,
+      "fat": 1.5,
+      "calories": 96
+    },
+    {
+      "id": "food-476",
+      "name": "Homemade Flatbread",
+      "amount": 1,
+      "unit": "flatbread",
+      "protein": 9,
+      "carbs": 60,
+      "fat": 5,
+      "calories": 328
+    },
+    {
+      "id": "food-477",
+      "name": "Buckwheat Flour",
+      "amount": 100,
+      "unit": "g",
+      "protein": 14.3,
+      "carbs": 65.2,
+      "fat": 2.4,
+      "calories": 340
+    },
+    {
+      "id": "food-478",
+      "name": "De Cecco Gnocchi",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.3,
+      "carbs": 32,
+      "fat": 1,
+      "calories": 155
+    },
+    {
+      "id": "food-479",
+      "name": "Serrano Ham (Tesco)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 30.1,
+      "carbs": 0.9,
+      "fat": 13.7,
+      "calories": 250
+    },
+    {
+      "id": "food-480",
+      "name": "Chicken Mince (raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 18.9,
+      "carbs": 0.5,
+      "fat": 4.4,
+      "calories": 117
+    },
+    {
+      "id": "food-481",
+      "name": "German Vegan Protein Chunks",
+      "amount": 100,
+      "unit": "g",
+      "protein": 30.4,
+      "carbs": 1.2,
+      "fat": 7.9,
+      "calories": 200
+    },
+    {
+      "id": "food-482",
+      "name": "Green Valley Lactose Free Lowfat Yoghurt",
+      "amount": 170,
+      "unit": "g",
+      "protein": 8,
+      "carbs": 9,
+      "fat": 1.5,
+      "calories": 70
+    },
+    {
+      "id": "food-483",
+      "name": "Rump Steak (raw)",
+      "amount": 227,
+      "unit": "g",
+      "protein": 46.5,
+      "carbs": 3.4,
+      "fat": 23.7,
+      "calories": 416
+    },
+    {
+      "id": "food-484",
+      "name": "Dai's rice cakes",
+      "amount": 1,
+      "unit": "rice cake",
+      "protein": 1.2,
+      "carbs": 11.4,
+      "fat": 3.4,
+      "calories": 82
+    },
+    {
+      "id": "food-485",
+      "name": "Dai's Protein",
+      "amount": 100,
+      "unit": "g",
+      "protein": 73,
+      "carbs": 11,
+      "fat": 4,
+      "calories": 377
+    },
+    {
+      "id": "food-486",
+      "name": "Snakehead Fish (raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 15,
+      "carbs": 0,
+      "fat": 1.4,
+      "calories": 76
+    },
+    {
+      "id": "food-487",
+      "name": "Lundberg Brown Rice Cakes",
+      "amount": 1,
+      "unit": "rice cake",
+      "protein": 1,
+      "carbs": 16,
+      "fat": 0.5,
+      "calories": 70
+    },
+    {
+      "id": "food-488",
+      "name": "Cave Nut almond Butter",
+      "amount": 100,
+      "unit": "g",
+      "protein": 17.5,
+      "carbs": 26.1,
+      "fat": 50.6,
+      "calories": 630
+    },
+    {
+      "id": "food-489",
+      "name": "Borough Broth Chicken Bone Broth",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.6,
+      "carbs": 0.6,
+      "fat": 0.5,
+      "calories": 18
+    },
+    {
+      "id": "food-490",
+      "name": "Wholemeal Sourdough Bread",
+      "amount": 100,
+      "unit": "g",
+      "protein": 11.7,
+      "carbs": 37.3,
+      "fat": 1.2,
+      "calories": 220
+    },
+    {
+      "id": "food-491",
+      "name": "Mandarins",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.7,
+      "carbs": 9.6,
+      "fat": 0.2,
+      "calories": 41
+    },
+    {
+      "id": "food-492",
+      "name": "Tesco Flamegrilled Roast Chicken Slices (160g pack)",
+      "amount": 1,
+      "unit": "pack",
+      "protein": 42,
+      "carbs": 1.8,
+      "fat": 4,
+      "calories": 212
+    },
+    {
+      "id": "food-493",
+      "name": "Tune in brine (undrained, 145g tin)",
+      "amount": 1,
+      "unit": "tin",
+      "protein": 24,
+      "carbs": 0.1,
+      "fat": 0.51,
+      "calories": 101
+    },
+    {
+      "id": "food-494",
+      "name": "Tesco Microwave Jasmine Rice",
+      "amount": 1,
+      "unit": "packet",
+      "protein": 8.4,
+      "carbs": 86,
+      "fat": 3.2,
+      "calories": 412
+    },
+    {
+      "id": "food-495",
+      "name": "Quaker Oat So Simple Original Porridge Pot (45g)",
+      "amount": 1,
+      "unit": "pot",
+      "protein": 7.8,
+      "carbs": 26,
+      "fat": 2.5,
+      "calories": 164
+    },
+    {
+      "id": "food-496",
+      "name": "Charl's macro meal",
+      "amount": 1,
+      "unit": "meal",
+      "protein": 35.81,
+      "carbs": 59.15,
+      "fat": 24.28,
+      "calories": 587
+    },
+    {
+      "id": "food-497",
+      "name": "Tesco Free From Choco-Nut Pillows",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6.5,
+      "carbs": 72.7,
+      "fat": 13.5,
+      "calories": 444
+    },
+    {
+      "id": "food-498",
+      "name": "Sola Everything Bagel",
+      "amount": 1,
+      "unit": "bagel",
+      "protein": 15,
+      "carbs": 36,
+      "fat": 5,
+      "calories": 140
+    },
+    {
+      "id": "food-499",
+      "name": "Sola Cinnamon & Raisin Bagel",
+      "amount": 1,
+      "unit": "bagel",
+      "protein": 14,
+      "carbs": 37,
+      "fat": 3,
+      "calories": 110
+    },
+    {
+      "id": "food-500",
+      "name": "Hartley's 10 Cal Jelly",
+      "amount": 1,
+      "unit": "pot",
+      "protein": 0.4,
+      "carbs": 0.4,
+      "fat": 0,
+      "calories": 10
+    },
+    {
+      "id": "food-501",
+      "name": "Buckwheat Flakes",
+      "amount": 100,
+      "unit": "g",
+      "protein": 15,
+      "carbs": 67,
+      "fat": 2.5,
+      "calories": 340
+    },
+    {
+      "id": "food-502",
+      "name": "Cantaloupe Melon",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.84,
+      "carbs": 8.16,
+      "fat": 0.19,
+      "calories": 34
+    },
+    {
+      "id": "food-503",
+      "name": "Kallo Lightly Salted Corn Cakes (GF)",
+      "amount": 1,
+      "unit": "corn cake",
+      "protein": 0.5,
+      "carbs": 5.9,
+      "fat": 0.1,
+      "calories": 24
+    },
+    {
+      "id": "food-504",
+      "name": "Prunces",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.7,
+      "carbs": 49,
+      "fat": 0.6,
+      "calories": 277
+    },
+    {
+      "id": "food-505",
+      "name": "Rice Krispie Treat 130 kcal",
+      "amount": 1,
+      "unit": "treat",
+      "protein": 1,
+      "carbs": 25,
+      "fat": 3,
+      "calories": 130
+    },
+    {
+      "id": "food-506",
+      "name": "Thomas' Cranberry Bagels",
+      "amount": 1,
+      "unit": "bagel",
+      "protein": 9,
+      "carbs": 52,
+      "fat": 1.5,
+      "calories": 260
+    },
+    {
+      "id": "food-507",
+      "name": "Kimberlin Mass Gain 1 (Scitec)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 73,
+      "carbs": 9.4,
+      "fat": 5.6,
+      "calories": 380
+    },
+    {
+      "id": "food-508",
+      "name": "Kimberlin Mass Gain 2 (Gold Standard)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 15,
+      "carbs": 75,
+      "fat": 1.8,
+      "calories": 376
+    },
+    {
+      "id": "food-509",
+      "name": "Flax Seeds",
+      "amount": 100,
+      "unit": "g",
+      "protein": 18.3,
+      "carbs": 28.9,
+      "fat": 42.2,
+      "calories": 534
+    },
+    {
+      "id": "food-510",
+      "name": "Hummus",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6,
+      "carbs": 11,
+      "fat": 25.4,
+      "calories": 303
+    },
+    {
+      "id": "food-511",
+      "name": "Quinoa (cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 5,
+      "carbs": 26.4,
+      "fat": 2.2,
+      "calories": 143
+    },
+    {
+      "id": "food-512",
+      "name": "Lizi's Low Sugar Granola",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7,
+      "carbs": 28.4,
+      "fat": 8,
+      "calories": 447
+    },
+    {
+      "id": "food-513",
+      "name": "Asia Green Garden Satay Noodles",
+      "amount": 100,
+      "unit": "g",
+      "protein": 4.3,
+      "carbs": 25.4,
+      "fat": 6.1,
+      "calories": 178
+    },
+    {
+      "id": "food-514",
+      "name": "GSN Ready Cooked Chicken Breast",
+      "amount": 120,
+      "unit": "g",
+      "protein": 34,
+      "carbs": 1,
+      "fat": 1,
+      "calories": 148
+    },
+    {
+      "id": "food-515",
+      "name": "Pesto (Classic Basil)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 4.9,
+      "carbs": 8,
+      "fat": 36,
+      "calories": 380
+    },
+    {
+      "id": "food-516",
+      "name": "Celery",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.69,
+      "carbs": 2.97,
+      "fat": 0.17,
+      "calories": 14
+    },
+    {
+      "id": "food-517",
+      "name": "Pork (cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 22,
+      "carbs": 0,
+      "fat": 18,
+      "calories": 252
+    },
+    {
+      "id": "food-518",
+      "name": "NL Green Beans",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2.4,
+      "carbs": 5.1,
+      "fat": 0.2,
+      "calories": 36
+    },
+    {
+      "id": "food-519",
+      "name": "NL Blueberries",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.4,
+      "carbs": 10.4,
+      "fat": 0.3,
+      "calories": 56
+    },
+    {
+      "id": "food-520",
+      "name": "NL Peppers",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.9,
+      "carbs": 3.8,
+      "fat": 0.1,
+      "calories": 23
+    },
+    {
+      "id": "food-521",
+      "name": "NL Kiwi",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.9,
+      "carbs": 11,
+      "fat": 0.8,
+      "calories": 59
+    },
+    {
+      "id": "food-522",
+      "name": "NL Banana",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.1,
+      "carbs": 20,
+      "fat": 0.3,
+      "calories": 91
+    },
+    {
+      "id": "food-523",
+      "name": "NL Berry Mix",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.1,
+      "carbs": 5.6,
+      "fat": 0.5,
+      "calories": 41
+    },
+    {
+      "id": "food-524",
+      "name": "TFG Bowl O' Gainz Brownie Batter",
+      "amount": 34,
+      "unit": "g",
+      "protein": 3,
+      "carbs": 25,
+      "fat": 0.5,
+      "calories": 120
+    },
+    {
+      "id": "food-525",
+      "name": "HF Grilled Flank Steak",
+      "amount": 113,
+      "unit": "g",
+      "protein": 32,
+      "carbs": 0,
+      "fat": 9.3,
+      "calories": 217.3
+    },
+    {
+      "id": "food-526",
+      "name": "Squid (Raw)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 15.4,
+      "carbs": 1.2,
+      "fat": 1.7,
+      "calories": 81
+    },
+    {
+      "id": "food-527",
+      "name": "Sockeye Salmon (Butcher Box)",
+      "amount": 112,
+      "unit": "g",
+      "protein": 25,
+      "carbs": 0,
+      "fat": 5,
+      "calories": 150
+    },
+    {
+      "id": "food-528",
+      "name": "Smoked Salmon (Butcher Box)",
+      "amount": 56,
+      "unit": "g",
+      "protein": 13,
+      "carbs": 0,
+      "fat": 1.5,
+      "calories": 60
+    },
+    {
+      "id": "food-529",
+      "name": "Filet Mignon (Butcher Box)",
+      "amount": 112,
+      "unit": "g",
+      "protein": 24,
+      "carbs": 0,
+      "fat": 7,
+      "calories": 160
+    },
+    {
+      "id": "food-530",
+      "name": "Sirloin Tips (Butcher Box)",
+      "amount": 112,
+      "unit": "g",
+      "protein": 24,
+      "carbs": 0,
+      "fat": 6,
+      "calories": 150
+    },
+    {
+      "id": "food-531",
+      "name": "Turkey Burgers (Butcher Box)",
+      "amount": 151,
+      "unit": "g",
+      "protein": 32,
+      "carbs": 4,
+      "fat": 3.5,
+      "calories": 180
+    },
+    {
+      "id": "food-532",
+      "name": "Atlantic Smoked Salmon",
+      "amount": 100,
+      "unit": "g",
+      "protein": 19.3,
+      "carbs": 0.9,
+      "fat": 15.8,
+      "calories": 228
+    },
+    {
+      "id": "food-533",
+      "name": "Tiba Tempeh",
+      "amount": 100,
+      "unit": "g",
+      "protein": 22,
+      "carbs": 4.4,
+      "fat": 8,
+      "calories": 191
+    },
+    {
+      "id": "food-534",
+      "name": "Juicy Marbles Plant Based Steak",
+      "amount": 100,
+      "unit": "g",
+      "protein": 18,
+      "carbs": 2.4,
+      "fat": 7,
+      "calories": 156
+    },
+    {
+      "id": "food-535",
+      "name": "Squeaky Bean Tuna Style Flakes",
+      "amount": 100,
+      "unit": "g",
+      "protein": 21,
+      "carbs": 9.6,
+      "fat": 7.5,
+      "calories": 194
+    },
+    {
+      "id": "food-536",
+      "name": "Squeaky Bean Steak Strips",
+      "amount": 100,
+      "unit": "g",
+      "protein": 25,
+      "carbs": 15,
+      "fat": 11,
+      "calories": 265
+    },
+    {
+      "id": "food-537",
+      "name": "Tofoo Seitan",
+      "amount": 100,
+      "unit": "g",
+      "protein": 22.5,
+      "carbs": 2.7,
+      "fat": 6.9,
+      "calories": 162
+    },
+    {
+      "id": "food-538",
+      "name": "Hummus (Zohara)",
+      "amount": 40,
+      "unit": "g",
+      "protein": 3,
+      "carbs": 9,
+      "fat": 7,
+      "calories": 105
+    },
+    {
+      "id": "food-539",
+      "name": "Pita (Zohara)",
+      "amount": 70,
+      "unit": "g",
+      "protein": 8,
+      "carbs": 34,
+      "fat": 2,
+      "calories": 180
+    },
+    {
+      "id": "food-540",
+      "name": "Sauerkraut",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.9,
+      "carbs": 1.4,
+      "fat": 0.1,
+      "calories": 16
+    },
+    {
+      "id": "food-541",
+      "name": "Vegan Protein Extreme (PW)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 84,
+      "carbs": 5.6,
+      "fat": 2.3,
+      "calories": 381
+    },
+    {
+      "id": "food-542",
+      "name": "Jordans Honey and Nut Country Crisp",
+      "amount": 100,
+      "unit": "g",
+      "protein": 9.4,
+      "carbs": 61.1,
+      "fat": 18,
+      "calories": 455
+    },
+    {
+      "id": "food-543",
+      "name": "Persimmon",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.58,
+      "carbs": 18.59,
+      "fat": 0.19,
+      "calories": 70
+    },
+    {
+      "id": "food-544",
+      "name": "Linda McCartney Vegemince",
+      "amount": 100,
+      "unit": "g",
+      "protein": 19,
+      "carbs": 9.9,
+      "fat": 4.7,
+      "calories": 164
+    },
+    {
+      "id": "food-545",
+      "name": "Tofoo Naked Tofu",
+      "amount": 100,
+      "unit": "g",
+      "protein": 16.5,
+      "carbs": 1.1,
+      "fat": 7.8,
+      "calories": 145
+    },
+    {
+      "id": "food-546",
+      "name": "PW Vegan Protein 360 - Chcocolate",
+      "amount": 100,
+      "unit": "g",
+      "protein": 69,
+      "carbs": 19,
+      "fat": 2.8,
+      "calories": 376
+    },
+    {
+      "id": "food-547",
+      "name": "Alpro Greek Style Plain Yoghurt",
+      "amount": 100,
+      "unit": "g",
+      "protein": 5.6,
+      "carbs": 2.2,
+      "fat": 3.3,
+      "calories": 65
+    },
+    {
+      "id": "food-548",
+      "name": "Alpro High Protein Red Berries Yoghurt",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7.5,
+      "carbs": 7,
+      "fat": 2.2,
+      "calories": 81
+    },
+    {
+      "id": "food-549",
+      "name": "Fruvita Skyr (naturalny)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 12,
+      "carbs": 3.8,
+      "fat": 0,
+      "calories": 66
+    },
+    {
+      "id": "food-550",
+      "name": "Fruvita Skyr (flavoured)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 9.6,
+      "carbs": 12,
+      "fat": 0,
+      "calories": 90
+    },
+    {
+      "id": "food-551",
+      "name": "Gluten Free Bagel",
+      "amount": 1,
+      "unit": "bagel",
+      "protein": 2.9,
+      "carbs": 33.8,
+      "fat": 1.9,
+      "calories": 174
+    },
+    {
+      "id": "food-552",
+      "name": "White Potato (cooked - boiled)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.8,
+      "carbs": 17.5,
+      "fat": 0.1,
+      "calories": 74
+    },
+    {
+      "id": "food-553",
+      "name": "American Gluten Free Bread",
+      "amount": 49,
+      "unit": "g",
+      "protein": 1,
+      "carbs": 26,
+      "fat": 2.5,
+      "calories": 130
+    },
+    {
+      "id": "food-554",
+      "name": "American Gluten Free English Muffins",
+      "amount": 1,
+      "unit": "muffin",
+      "protein": 4,
+      "carbs": 30,
+      "fat": 1,
+      "calories": 150
+    },
+    {
+      "id": "food-555",
+      "name": "American Gluten Free Pasta",
+      "amount": 56,
+      "unit": "g",
+      "protein": 4,
+      "carbs": 44,
+      "fat": 1,
+      "calories": 200
+    },
+    {
+      "id": "food-556",
+      "name": "American Gluten Free Puffed Rice",
+      "amount": 14,
+      "unit": "g",
+      "protein": 1,
+      "carbs": 12,
+      "fat": 0,
+      "calories": 50
+    },
+    {
+      "id": "food-557",
+      "name": "American Gluten Free Pancake mix",
+      "amount": 41,
+      "unit": "g",
+      "protein": 2,
+      "carbs": 32,
+      "fat": 0.5,
+      "calories": 140
+    },
+    {
+      "id": "food-558",
+      "name": "Wild Salmon Fillets",
+      "amount": 100,
+      "unit": "g",
+      "protein": 20,
+      "carbs": 1.2,
+      "fat": 1.9,
+      "calories": 102
+    },
+    {
+      "id": "food-559",
+      "name": "Rice Noodles (cooked)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 2,
+      "carbs": 21,
+      "fat": 0,
+      "calories": 89
+    },
+    {
+      "id": "food-560",
+      "name": "Tostadas",
+      "amount": 100,
+      "unit": "g",
+      "protein": 5,
+      "carbs": 31.2,
+      "fat": 0,
+      "calories": 164.6
+    },
+    {
+      "id": "food-561",
+      "name": "Alpen Muesli",
+      "amount": 100,
+      "unit": "g",
+      "protein": 11,
+      "carbs": 66,
+      "fat": 5.5,
+      "calories": 373
+    },
+    {
+      "id": "food-562",
+      "name": "Supplement Needs Vegan Iso+",
+      "amount": 40,
+      "unit": "g",
+      "protein": 24.17,
+      "carbs": 1.4,
+      "fat": 3.79,
+      "calories": 136
+    },
+    {
+      "id": "food-563",
+      "name": "Organic Bran Flakes",
+      "amount": 100,
+      "unit": "g",
+      "protein": 12,
+      "carbs": 63,
+      "fat": 2.4,
+      "calories": 353.72
+    },
+    {
+      "id": "food-564",
+      "name": "Cacao Powder",
+      "amount": 100,
+      "unit": "g",
+      "protein": 26,
+      "carbs": 24,
+      "fat": 9.6,
+      "calories": 341
+    },
+    {
+      "id": "food-565",
+      "name": "Cocobella Natural Coconut Yoghurt",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.9,
+      "carbs": 6.5,
+      "fat": 9.7,
+      "calories": 129.3
+    },
+    {
+      "id": "food-566",
+      "name": "Egelykke Skyr",
+      "amount": 100,
+      "unit": "g",
+      "protein": 10,
+      "carbs": 3.5,
+      "fat": 0.2,
+      "calories": 56
+    },
+    {
+      "id": "food-567",
+      "name": "Pasta (Cooked)",
+      "amount": 120,
+      "unit": "g",
+      "protein": 5.3,
+      "carbs": 37.8,
+      "fat": 0.7,
+      "calories": 169
+    },
+    {
+      "id": "food-568",
+      "name": "Ready Brek",
+      "amount": 100,
+      "unit": "g",
+      "protein": 12,
+      "carbs": 58,
+      "fat": 8.7,
+      "calories": 374
+    },
+    {
+      "id": "food-569",
+      "name": "Mission Tortillas",
+      "amount": 1,
+      "unit": "tortilla",
+      "protein": 4,
+      "carbs": 24,
+      "fat": 3,
+      "calories": 140
+    },
+    {
+      "id": "food-570",
+      "name": "Fage 2% (Lactose Free)",
+      "amount": 170,
+      "unit": "g",
+      "protein": 17,
+      "carbs": 6,
+      "fat": 3.5,
+      "calories": 120
+    },
+    {
+      "id": "food-571",
+      "name": "Turkey Bacon",
+      "amount": 100,
+      "unit": "g",
+      "protein": 19,
+      "carbs": 1,
+      "fat": 12,
+      "calories": 188
+    },
+    {
+      "id": "food-572",
+      "name": "Udon Noodles",
+      "amount": 100,
+      "unit": "g",
+      "protein": 4.9,
+      "carbs": 26,
+      "fat": 0.1,
+      "calories": 127
+    },
+    {
+      "id": "food-573",
+      "name": "Kerry Baby Rice",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7.7,
+      "carbs": 86,
+      "fat": 1.2,
+      "calories": 385
+    },
+    {
+      "id": "food-574",
+      "name": "Gluten Free Sliced Bread",
+      "amount": 1,
+      "unit": "slice",
+      "protein": 1.5,
+      "carbs": 12,
+      "fat": 1.5,
+      "calories": 75
+    },
+    {
+      "id": "food-575",
+      "name": "Joseph's Pita",
+      "amount": 1,
+      "unit": "pita",
+      "protein": 6,
+      "carbs": 9,
+      "fat": 1.5,
+      "calories": 60
+    },
+    {
+      "id": "food-576",
+      "name": "Keto Bread",
+      "amount": 1,
+      "unit": "slice",
+      "protein": 6,
+      "carbs": 10,
+      "fat": 1,
+      "calories": 35
+    },
+    {
+      "id": "food-577",
+      "name": "Grits (dry)",
+      "amount": 100,
+      "unit": "g",
+      "protein": 9,
+      "carbs": 80,
+      "fat": 1,
+      "calories": 371
+    },
+    {
+      "id": "food-578",
+      "name": "TIlda Jasmine Microwave Rice",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3.2,
+      "carbs": 35.3,
+      "fat": 2.3,
+      "calories": 175
+    },
+    {
+      "id": "food-579",
+      "name": "Quaker Tomato & Basil Rice Cakes",
+      "amount": 1,
+      "unit": "rice cake",
+      "protein": 1,
+      "carbs": 9,
+      "fat": 1.5,
+      "calories": 50
+    },
+    {
+      "id": "food-580",
+      "name": "Heat & Eat Tomato & Basil Fusili Pasta",
+      "amount": 100,
+      "unit": "g",
+      "protein": 3,
+      "carbs": 16.9,
+      "fat": 2.7,
+      "calories": 109
+    },
+    {
+      "id": "food-581",
+      "name": "Kroger English Muffin",
+      "amount": 1,
+      "unit": "muffin",
+      "protein": 3,
+      "carbs": 28,
+      "fat": 0.5,
+      "calories": 130
+    },
+    {
+      "id": "food-582",
+      "name": "Thomas' English Muffin",
+      "amount": 1,
+      "unit": "muffin",
+      "protein": 4,
+      "carbs": 18,
+      "fat": 1,
+      "calories": 100
+    },
+    {
+      "id": "food-583",
+      "name": "Lindahl's Kvarg Yoghurt Pot",
+      "amount": 1,
+      "unit": "pot",
+      "protein": 15,
+      "carbs": 5.1,
+      "fat": 0.9,
+      "calories": 89
+    },
+    {
+      "id": "food-584",
+      "name": "GetPRO Yoghurt",
+      "amount": 1,
+      "unit": "pot",
+      "protein": 15,
+      "carbs": 6.2,
+      "fat": 0.2,
+      "calories": 88
+    },
+    {
+      "id": "food-585",
+      "name": "Tonik Protein Drink",
+      "amount": 1,
+      "unit": "shake",
+      "protein": 20,
+      "carbs": 11.7,
+      "fat": 4.2,
+      "calories": 172
+    },
+    {
+      "id": "food-586",
+      "name": "Chobani Light Greeek Yoghurt",
+      "amount": 100,
+      "unit": "g",
+      "protein": 9.3,
+      "carbs": 4,
+      "fat": 0.2,
+      "calories": 56
+    },
+    {
+      "id": "food-587",
+      "name": "Ghost Vegan Whey Protein",
+      "amount": 44.5,
+      "unit": "g",
+      "protein": 26,
+      "carbs": 6,
+      "fat": 3.5,
+      "calories": 160
+    },
+    {
+      "id": "food-588",
+      "name": "Core Nutritionals Vegan Protein",
+      "amount": 30.5,
+      "unit": "g",
+      "protein": 21,
+      "carbs": 2,
+      "fat": 3,
+      "calories": 120
+    },
+    {
+      "id": "food-589",
+      "name": "Rice Flour",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6.7,
+      "carbs": 78.2,
+      "fat": 1.2,
+      "calories": 356
+    },
+    {
+      "id": "food-590",
+      "name": "Bulk Nutrients Protein Matrix +",
+      "amount": 100,
+      "unit": "g",
+      "protein": 78.1,
+      "carbs": 9.9,
+      "fat": 4.3,
+      "calories": 393
+    },
+    {
+      "id": "food-591",
+      "name": "Cinnamon Almond Nut Butter",
+      "amount": 100,
+      "unit": "g",
+      "protein": 30.4,
+      "carbs": 7.3,
+      "fat": 51.4,
+      "calories": 617
+    },
+    {
+      "id": "food-592",
+      "name": "97% Choc Baking Chips",
+      "amount": 100,
+      "unit": "g",
+      "protein": 11.8,
+      "carbs": 5.3,
+      "fat": 28.7,
+      "calories": 511
+    },
+    {
+      "id": "food-593",
+      "name": "Parmesan Caesar Dressing",
+      "amount": 100,
+      "unit": "g",
+      "protein": 1.5,
+      "carbs": 17,
+      "fat": 19.4,
+      "calories": 246
+    },
+    {
+      "id": "food-594",
+      "name": "Perinaise",
+      "amount": 100,
+      "unit": "g",
+      "protein": 0.6,
+      "carbs": 12.7,
+      "fat": 26.8,
+      "calories": 292
+    },
+    {
+      "id": "food-595",
+      "name": "TBJP Oats So Creamy",
+      "amount": 100,
+      "unit": "g",
+      "protein": 9.7,
+      "carbs": 68,
+      "fat": 6.7,
+      "calories": 379
+    },
+    {
+      "id": "food-596",
+      "name": "Powdered Peanut Butter",
+      "amount": 100,
+      "unit": "g",
+      "protein": 57,
+      "carbs": 32,
+      "fat": 13,
+      "calories": 439
+    },
+    {
+      "id": "food-597",
+      "name": "Sun-Dried Tomato Halves",
+      "amount": 100,
+      "unit": "g",
+      "protein": 7.6,
+      "carbs": 15.9,
+      "fat": 0.3,
+      "calories": 95.8
+    },
+    {
+      "id": "food-598",
+      "name": "Sonoma Sourdough",
+      "amount": 100,
+      "unit": "g",
+      "protein": 6.9,
+      "carbs": 35.4,
+      "fat": 2.7,
+      "calories": 202.4
+    },
+    {
+      "id": "food-599",
+      "name": "Buckwheat Australia",
+      "amount": 100,
+      "unit": "g",
+      "protein": 12.8,
+      "carbs": 58,
+      "fat": 3.2,
+      "calories": 326
+    },
+    {
+      "id": "food-600",
+      "name": "Rice (cooked, fist size)",
+      "amount": 1,
+      "unit": "fists",
+      "protein": 4.2,
+      "carbs": 44.1,
+      "fat": 0.4,
+      "calories": 204
+    }
+  ]
+}
