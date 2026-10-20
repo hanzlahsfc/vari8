@@ -66,7 +66,10 @@ function signingKey(config: S3Config, dateStamp: string): Buffer {
   return hmac(kService, "aws4_request");
 }
 
-function objectUrl(config: S3Config, key: string): { host: string; path: string } {
+function objectUrl(
+  config: S3Config,
+  key: string,
+): { host: string; path: string } {
   const { host } = new URL(config.endpoint);
   if (config.pathStyle) return { host, path: `/${config.bucket}/${key}` };
   return { host: `${config.bucket}.${host}`, path: `/${key}` };
@@ -244,9 +247,7 @@ export const s3ObjectStorage: ObjectStorageBackend = {
       url,
       method: "PUT",
       headers,
-      expiresAt: new Date(
-        Date.now() + options.ttlSeconds * 1000,
-      ).toISOString(),
+      expiresAt: new Date(Date.now() + options.ttlSeconds * 1000).toISOString(),
     };
   },
 
@@ -272,8 +273,7 @@ export const s3ObjectStorage: ObjectStorageBackend = {
       };
       if (continuationToken) query["continuation-token"] = continuationToken;
       const res = await signedFetch(listConfig, "GET", listPath, query, "");
-      if (!res.ok)
-        throw new StorageError("storage_not_configured");
+      if (!res.ok) throw new StorageError("storage_not_configured");
       const xml = await res.text();
       const keys = [...xml.matchAll(/<Key>([^<]+)<\/Key>/g)].map(
         (match) => match[1],
@@ -293,9 +293,8 @@ export const s3ObjectStorage: ObjectStorageBackend = {
         if (!del.ok) throw new StorageError("storage_not_configured");
         deleted += keys.length;
       }
-      const token = /<NextContinuationToken>([^<]+)<\/NextContinuationToken>/.exec(
-        xml,
-      );
+      const token =
+        /<NextContinuationToken>([^<]+)<\/NextContinuationToken>/.exec(xml);
       continuationToken = token ? decodeURIComponent(token[1]) : undefined;
     } while (continuationToken);
     return { deleted };

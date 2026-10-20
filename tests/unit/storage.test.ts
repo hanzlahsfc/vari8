@@ -110,9 +110,9 @@ describe("S1-G storage port", () => {
   });
 
   it("parseClientObjectKey returns the key's three segments", () => {
-    expect(
-      parseClientObjectKey("workspace/ws1/client/cp1/obj_01.jpg"),
-    ).toEqual({ workspaceId: "ws1", clientProfileId: "cp1", objectId: "obj_01.jpg" });
+    expect(parseClientObjectKey("workspace/ws1/client/cp1/obj_01.jpg")).toEqual(
+      { workspaceId: "ws1", clientProfileId: "cp1", objectId: "obj_01.jpg" },
+    );
   });
 
   it.each([

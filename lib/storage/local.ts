@@ -1,5 +1,12 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { dirname, join, normalize, sep } from "node:path";
 
 import {
@@ -117,9 +124,7 @@ export async function writeLocalObject(
 }
 
 /** Object bytes, or null when no file exists at the key. */
-export async function readLocalObject(
-  key: string,
-): Promise<Uint8Array | null> {
+export async function readLocalObject(key: string): Promise<Uint8Array | null> {
   const { dir } = localStorageConfig();
   try {
     return await readFile(localObjectPath(dir, key));

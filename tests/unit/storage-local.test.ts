@@ -39,9 +39,7 @@ afterAll(() => {
 
 describe("local storage adapter", () => {
   it("requires a signing secret", () => {
-    expect(() =>
-      localStorageConfig({ MEDIA_STORAGE_DIR: "/x" }),
-    ).toThrowError(
+    expect(() => localStorageConfig({ MEDIA_STORAGE_DIR: "/x" })).toThrowError(
       expect.objectContaining({ code: "storage_not_configured" }),
     );
   });
@@ -90,15 +88,15 @@ describe("local storage adapter", () => {
       }),
     ).toBe(false);
     // Forged signature shape and wrong secret both fail closed.
-    expect(verifyLocalObjectSignature({ ...base, signature: "0".repeat(64) })).toBe(
-      false,
-    );
+    expect(
+      verifyLocalObjectSignature({ ...base, signature: "0".repeat(64) }),
+    ).toBe(false);
     expect(
       verifyLocalObjectSignature({ ...base, secret: "other-secret" }),
     ).toBe(false);
-    expect(
-      verifyLocalObjectSignature({ ...base, signature: "not-hex" }),
-    ).toBe(false);
+    expect(verifyLocalObjectSignature({ ...base, signature: "not-hex" })).toBe(
+      false,
+    );
   });
 
   it("presign enforces the TTL bound", async () => {
@@ -131,7 +129,9 @@ describe("local storage adapter", () => {
     const bytes = new Uint8Array([1, 2, 3, 4]);
     await writeLocalObject(KEY, bytes);
     expect(await readLocalObject(KEY)).toEqual(Buffer.from(bytes));
-    expect(await readLocalObject("workspace/ws1/client/cp1/missing")).toBeNull();
+    expect(
+      await readLocalObject("workspace/ws1/client/cp1/missing"),
+    ).toBeNull();
 
     const result = await localObjectStorage.deletePrefix(
       "workspace/ws1/client/cp1/",

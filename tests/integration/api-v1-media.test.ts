@@ -29,11 +29,7 @@ const SECRET = "media-integration-signing-secret";
 
 let mediaDir = "";
 
-function postIntent(
-  workspaceId: string,
-  token: string | null,
-  body: unknown,
-) {
+function postIntent(workspaceId: string, token: string | null, body: unknown) {
   return POST(
     new Request(`${BASE}/api/v1/media/${workspaceId}`, {
       method: "POST",
@@ -64,8 +60,7 @@ const putObject = (path: string, bytes: Uint8Array) =>
     }),
   );
 
-const getObject = (path: string) =>
-  GET_OBJECT(new Request(`${BASE}${path}`));
+const getObject = (path: string) => GET_OBJECT(new Request(`${BASE}${path}`));
 
 function signedPath(
   op: "get" | "put",
@@ -162,7 +157,9 @@ describe.skipIf(!enabled)(
         stdio: "pipe",
         env: { ...process.env, DATABASE_URL: url as string },
       });
-      prisma = new PrismaClient({ datasources: { db: { url: url as string } } });
+      prisma = new PrismaClient({
+        datasources: { db: { url: url as string } },
+      });
       await prisma.$executeRawUnsafe(
         'TRUNCATE "media_object","rate_limit","verifications","sessions","accounts","audit_event","client_profile","client_assignment","access_token","workspace_member","workspace","users" RESTART IDENTITY CASCADE',
       );
@@ -254,10 +251,7 @@ describe.skipIf(!enabled)(
       });
       expect(res.status).toBe(403);
       // And cannot mint a download URL for another client's object.
-      const { intent } = await uploadAsCoach(
-        ws.id,
-        other.id,
-      );
+      const { intent } = await uploadAsCoach(ws.id, other.id);
       const created = (await intent.json()).mediaObject;
       const mint = await getMedia(ws.id, created.id, token);
       expect(mint.status).toBe(403);
@@ -333,7 +327,9 @@ describe.skipIf(!enabled)(
       const expired = Math.floor(Date.now() / 1000) - 10;
       const old = await putObject(signedPath("put", key, expired), bytes);
       expect(old.status).toBe(403);
-      expect(await old.json()).toEqual({ error: { code: "invalid_signature" } });
+      expect(await old.json()).toEqual({
+        error: { code: "invalid_signature" },
+      });
 
       // Tampered: valid signature for this key, but the key param swapped.
       const future = Math.floor(Date.now() / 1000) + 600;

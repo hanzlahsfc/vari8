@@ -104,7 +104,12 @@ export default async function seed(ctx: SeedContext): Promise<void> {
   }
 
   const prefix = clientObjectPrefix(workspace.id, client.id);
-  const items: { objectId: string; fileName: string; contentType: string; bytes: Uint8Array }[] = [
+  const items: {
+    objectId: string;
+    fileName: string;
+    contentType: string;
+    bytes: Uint8Array;
+  }[] = [
     {
       objectId: "seed-voice-note",
       fileName: "Voice note · seed.wav",
@@ -122,7 +127,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
   for (const item of items) {
     const storageKey = prefix + item.objectId;
     const kind = mediaKindForContentType(item.contentType);
-    if (!kind) throw new Error(`seed media type not allowlisted: ${item.contentType}`);
+    if (!kind)
+      throw new Error(`seed media type not allowlisted: ${item.contentType}`);
     await writeLocalObject(storageKey, item.bytes);
     await prisma.mediaObject.upsert({
       where: { storageKey },

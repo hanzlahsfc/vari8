@@ -1,10 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import type {
-  ButtonHTMLAttributes,
-  ReactNode,
-} from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { useEffect, useState } from "react";
 
 /**
@@ -29,13 +26,7 @@ export type StoredMedia = {
   byteSize: number;
 };
 
-function Icon({
-  size,
-  children,
-}: {
-  size: number;
-  children: ReactNode;
-}) {
+function Icon({ size, children }: { size: number; children: ReactNode }) {
   return (
     <svg
       width={size}
