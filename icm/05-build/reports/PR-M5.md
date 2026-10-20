@@ -16,17 +16,17 @@ Card `icm/05-build/cards/pr-m5-mealplan-payload.md`, issue #113, PR #114. Branch
 
 ## Commands and exit codes
 
-| Command | Exit | Result |
-|---|---|---|
-| `npx vitest run tests/unit/nutrition-math.test.ts` | 0 | 12/12 (demo-meal literals, 4/4/9 ring, blank-not-zero) |
-| `npx vitest run tests/unit/mealplan-payload.test.ts` + math | 0 | 31/31 |
-| `npx tsc --noEmit` | 0 | clean |
-| `npx eslint <changed files>` | 0 | clean |
-| `INTEGRATION_DATABASE_URL=... npx vitest run --config vitest.integration.config.ts tests/integration/mealplan-i1.test.ts` | 0 | 19/19 on real PG |
-| `npm run db:fresh` (app_m5, skip catalogs, env creds) | 0 | 584 foods, 30 assignments, plan+version 1 for Emma Anders |
-| `npm run index` / `npm run index:check` | 0 / 0 | SYMBOLS.md regenerated |
-| `npm run build` (dev box, 3 attempts) | 1 | `SIGABRT` "OS can't spawn worker thread" under parallel-lane thread starvation; TypeScript step itself finished clean |
-| `verify-local.sh` | see PR | gate log `pr-m5-mealplan-payload.check.log` |
+| Command                                                                                                                   | Exit   | Result                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------- |
+| `npx vitest run tests/unit/nutrition-math.test.ts`                                                                        | 0      | 12/12 (demo-meal literals, 4/4/9 ring, blank-not-zero)                                                                |
+| `npx vitest run tests/unit/mealplan-payload.test.ts` + math                                                               | 0      | 31/31                                                                                                                 |
+| `npx tsc --noEmit`                                                                                                        | 0      | clean                                                                                                                 |
+| `npx eslint <changed files>`                                                                                              | 0      | clean                                                                                                                 |
+| `INTEGRATION_DATABASE_URL=... npx vitest run --config vitest.integration.config.ts tests/integration/mealplan-i1.test.ts` | 0      | 19/19 on real PG                                                                                                      |
+| `npm run db:fresh` (app_m5, skip catalogs, env creds)                                                                     | 0      | 584 foods, 30 assignments, plan+version 1 for Emma Anders                                                             |
+| `npm run index` / `npm run index:check`                                                                                   | 0 / 0  | SYMBOLS.md regenerated                                                                                                |
+| `npm run build` (dev box, 3 attempts)                                                                                     | 1      | `SIGABRT` "OS can't spawn worker thread" under parallel-lane thread starvation; TypeScript step itself finished clean |
+| `verify-local.sh`                                                                                                         | see PR | gate log `pr-m5-mealplan-payload.check.log`                                                                           |
 
 ## Live check (lane DB `app_m5`, dev server :3870)
 
