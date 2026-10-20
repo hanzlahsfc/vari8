@@ -31,6 +31,16 @@ canvas volume panel" feeds two things into the same week:
 
 Both give the same numbers for week 6 of the demo program:
 
+Measured transcript (`npx tsx`, same imports as the test):
+
+```
+week=6
+canvas : chest=4 back=3 shoulders=0 biceps=0 triceps=0 core=0 glutes=3 quadriceps=0 hamstrings=4 calves=0 | total=14 unassigned=0
+backend: chest=4 back=3 shoulders=0 biceps=0 triceps=0 core=0 glutes=3 quadriceps=0 hamstrings=4 calves=0 | total=14 unassigned=0
+EQUAL_CANVAS_PANEL=true
+week6_sets=Deadlift:4 rows=d1,d2,d3,d4 | Split squat:3 rows=ss1,ss2,ss3 | Bench press:4 rows=b1,b2,b3,b4 | Chest-supported row:3 rows=r1,r2,r3
+```
+
 | Group                                                | Sets |
 | ---------------------------------------------------- | ---- |
 | chest                                                | 4    |
