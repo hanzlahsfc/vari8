@@ -669,6 +669,8 @@ export type Media = {
   type: string;
   size: number;
   demo?: "voice" | "video";
+  /** PR-MEDIA: set once the bytes are stored via /api/v1/media. */
+  mediaObjectId?: string;
 };
 export type Message = {
   id: string;

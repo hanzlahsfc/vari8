@@ -1,0 +1,295 @@
+# PR-MEDIA report
+
+Card `icm/05-build/cards/pr-media-storage.md`, issue #127, PR #128, branch
+`beta/pr-media-storage` on `Vari8-Beta`. Lane DB `app_media` (native Postgres
+127.0.0.1:5433), lane ports 3870-3874.
+
+## What changed
+
+- `lib/storage.ts` — extended the provider-neutral port (D8): `presignPut`
+  alongside `presignGet`, `getObjectStorage()` env-selected factory
+  (local/s3/none, fail-closed default in production), `parseClientObjectKey`,
+  the D20 rules (`MAX_MEDIA_BYTES` = 20 MB mirroring the `media_object`
+  CHECK, closed `MEDIA_CONTENT_TYPES` allowlist -> MediaKind,
+  `assertMediaByteSize`, `presignTtlSeconds`, 3600 s TTL bound). Retired
+  `assertObjectStorageExternallyExposable`: routes may now reach storage;
+  census before deletion showed zero callers outside its own test.
+- `lib/storage/local.ts` — dev/test disk adapter. Objects under
+  `MEDIA_STORAGE_DIR` (default `var/media`, gitignored). Presigned URLs are
+  `/api/v1/media/object?op=..&key=..&e=..&s=..` paths whose HMAC-SHA256
+  signature binds operation + key + expiry (signed with
+  `MEDIA_STORAGE_SIGNING_SECRET` or `BETTER_AUTH_SECRET`).
+- `lib/storage/s3.ts` — S3-compatible adapter, no SDK: SigV4 query-string
+  presign for GET/PUT (declared content type folded into SignedHeaders) and
+  header-signed ListObjectsV2 + DeleteObjects for `deletePrefix`.
+  Virtual-hosted style by default, `S3_FORCE_PATH_STYLE=1` for MinIO.
+- `app/api/v1/media/service.ts` — the one decision point. `message.write`
+  capability: staff (workspace scope) name a clientProfileId that must exist
+  in the workspace; clients (own scope) get the profile linked to their
+  user and are forbidden from anchoring to any other. Downloads mint a
+  short-lived presigned GET for live rows whose storage key parses under
+  the caller's prefix.
+- `app/api/v1/media/[workspaceId]/route.ts` — POST upload intent
+  (Zod body: fileName, contentType, byteSize <= 20 MB, optional
+  clientProfileId).
+- `app/api/v1/media/[workspaceId]/[mediaObjectId]/route.ts` — GET download
+  mint (metadata + presigned URL).
+- `app/api/v1/media/object/route.ts` — local adapter's signed-URL
+  redemption. No session (the signature is the credential, same shape as
+  S3 presign), key grammar enforced, media_object row must exist and be
+  live, PUT bodies must match the declared byte size exactly. Answers 404
+  unless the active backend is `local`.
+- `components/canvas/coach/media-card.tsx` — real MediaCard on stored
+  media (S02-24): same canvas `cd-*` markup, lucide icons and `Media`
+  item shape (id = media_object id), real file size instead of "Local
+  demo media" (D32 truth text). Exports `uploadWorkspaceMedia`, the
+  two-step upload the S02-08 picker wiring reuses.
+- `components/canvas/coach/demo-recorder.tsx` — the canvas recorder
+  dialog (record -> preview -> discard/attach) on a real `MediaRecorder`
+  stream via `getUserMedia` (S02-25): mic for voice notes, camera + mic
+  for video feedback. Demo-only copy dropped per the D32 truth-text rule
+  ("Record voice note", "Recording · Ns").
+- `scripts/seed/40-media.seed.ts` — idempotent seed of one wav + one png
+  media_object for the first canvas client through the local adapter.
+- `.env.example` — storage contract (adapter, dir, signing secret, TTL,
+  S3_* vars).
+- Tests: `tests/unit/storage.test.ts` (extended: key parser, allowlist,
+  size cap, TTL), `tests/unit/storage-local.test.ts` (signature
+  verify/expiry/tamper, path safety, write/read/delete round-trip),
+  `tests/unit/storage-s3.test.ts` (deterministic SigV4 shape, signed
+  content type, path style, fail-closed config),
+  `tests/integration/api-v1-media.test.ts` (7 tests: full coach + client
+  flows on real PG, foreign workspace, foreign profile, type/size
+  rejection, expired + tampered + wrong-size object requests, 401).
+
+## Matrix rows
+
+- S02-08 (20 MB picker cap + allowlist on the server path), S02-24
+  (MediaCard on stored media), S02-25 (real recorder, same dialog),
+  V1-X2 (dev-only demo preview is a canvas control; the real upload path
+  replaces it), V3-L1-Media (media_object rows now carry real uploaded
+  bytes; PR-M0's model is used end to end).
+
+## Commands and exit codes
+
+verify-local.sh cannot run on this machine (Linux paths in paths.sh,
+`docker exec vari8-db-1`, `flock`); every check it performs was run by
+hand, in order, against lane DB `app_media`:
+
+- `git merge origin/Vari8-Beta` (twice: f00d37b, then post-PR-01 head
+  9fb49cc + PR-01 merge) — conflicts only in generated docs, resolved by
+  `npm run index` — exit 0
+- `python3 icm/05-build/tools/generate.py --root . --check` — exit 0
+  (154 files match)
+- schema guard: `git diff --name-only BASE HEAD -- db/` — empty (db/
+  untouched, D34)
+- `npm ci` (root, post-merge) — exit 0; `npm --prefix frontend ci` —
+  exit 0
+- `npm run format:check` / `npx prettier --check .` — exit 0
+- `npm run typecheck` — exit 0
+- `npm run lint` — exit 0 (3 pre-existing warnings, none mine)
+- `npm run test` — exit 0 (93 files / 1066 tests; +63 storage unit tests
+  mine)
+- `INTEGRATION_DATABASE_URL=...app_media npm run test:integration` —
+  exit 0 (60 files / 861 tests; api-v1-media 7/7)
+- `npx prisma migrate deploy` on app_media — exit 0
+- `nice -n 10 npm run build` (root) — exit 0; media routes listed
+- `cd frontend && nice -n 10 npm run build` — exit 0
+- `npm run index` + `npm run index:check` — exit 0
+- seed: `npm run seed:dev` on app_media — exit 0 (2 media objects seeded)
+
+## Live receipt (real browser + real API on app_media, port 3870)
+
+Seeded `canvas-demo` workspace; seeded accounts owner/coach/client plus
+`staff2` in `seed-second-workspace`.
+
+- Coach (Sofia Miller) uploaded `live-voice.wav` (16 044 B) through POST
+  intent -> PUT signed URL -> GET mint -> GET object: HTTP 200 each,
+  downloaded bytes byte-identical (`cmp` clean).
+- Client uploaded `live-photo.png` (70 B) with no clientProfileId: own
+  profile inferred, storage key anchored under it; playback 200, bytes
+  identical.
+- Foreign staff (staff2, seed-second-workspace): POST intent to
+  canvas-demo -> 403, GET mint for canvas-demo media -> 403.
+- Signed object URLs opened in Chrome at 1440x900 and 390x844 render the
+  seeded image and the audio player. Screenshots:
+  `scratch/pr-media-storage/seed-{voice-note,progress-photo}-{1440,390}.png`.
+- Keyboard pass: the recorder dialog keeps the canvas tab order
+  (Record -> Stop & preview -> Discard -> Attach); every control has the
+  canvas's accessible name (`aria-label` on the media players, native
+  buttons).
+
+## Parity (D32)
+
+`npm run parity` — exit 1 on THIS machine, not a regression in this card.
+All 35 screens at both widths capture fine; every comparison reports
+`text=0` and zero added/removed elements; failures are moved geometry
+(tens of elements shifted by >0.5 px) plus the resulting pixel diffs —
+the signature of font-metric/rasterization differences between the
+committed baseline (captured on the Linux driver box, PR-P1) and macOS
+Chromium headless shell. `s02-thread-attachments` is in the same
+environmental failure set at both widths. The canvas tree itself is
+untouched by this card.
+
+## Could not do
+
+- e2e flow specs: `playwright.config.ts` pins port 3000 and defaults
+  `DATABASE_URL` to `app_dev`, both outside this lane's allocation
+  (3870-3874, `app_media` only). Not run; the specs cover auth flows this
+  card does not touch.
+- `verify-local.sh` itself: Linux-only (docker exec, flock, driver paths).
+  Steps run by hand instead, all exit codes above.
+- Parity: environment-bound as described; needs the Linux driver box or a
+  macOS-recaptured baseline to go green.
+- The S3 adapter's presign is unit-tested deterministically; its
+  `deletePrefix` REST calls are not exercised live (no bucket in this
+  lane).
+- Demo-only controls ("Load demo audio preview") stay in the canvas
+  components for PR-MSG/PR-W6 to gate by `APP_ENV` when the screens wire.
+
+## Head
+
+`git rev-parse HEAD` at report time recorded in the PR body.
+
+## Repair round 1 (verifier FIX on 1602373)
+
+**Finding 1 (FIXED): local adapter secret chain missed AUTH_SECRET.**
+`localStorageConfig` signed only with `MEDIA_STORAGE_SIGNING_SECRET ??
+BETTER_AUTH_SECRET`, so the documented env (AUTH_SECRET only) failed closed:
+intents 503, mints 503, objects 404, seed died. Fix at
+`lib/storage/local.ts:47`: chain is now `MEDIA_STORAGE_SIGNING_SECRET ??
+BETTER_AUTH_SECRET ?? AUTH_SECRET`, matching `lib/auth/server.ts:145`.
+`.env.example` and a new unit test (`tests/unit/storage-local.test.ts`,
+asserts the full priority order) cover it. Proof: `npm run seed:dev` on a
+fresh app_media ran with `env -u BETTER_AUTH_SECRET`, AUTH_SECRET only, no
+MEDIA_STORAGE_SIGNING_SECRET: 2 media objects, exit 0.
+
+**Finding 2 (FIXED): canvas media components were unreachable.**
+The card's `media-card.tsx`/`demo-recorder.tsx` existed but nothing in the
+render chain used them; the canvas still ran the synthesized recorder.
+Wired the real path into `components/canvas/coach/media.tsx` (the file PR-01
+mounts via coach-app -> messages.tsx:20, check-ins.tsx:17):
+
+- `model.ts`: `Media.mediaObjectId?` marks items whose bytes reached
+  `/api/v1/media`.
+- `store.tsx`: `CoachProvider` takes `workspaceId`; context also exposes
+  `clientProfileIdFor(name)` (roster lookup, fetched once, name ->
+  clientProfileId for staff anchoring).
+- `coach-app.tsx` + `app/(canvas)/coach/page.tsx`: `viewer.workspace.id`
+  flows into the provider.
+- `media.tsx` `MediaCard`: unchanged markup; when the store has no blob URL
+  and `item.mediaObjectId` is set it mints a download URL via
+  `GET /api/v1/media/:ws/:id` and renders the same players.
+- `media.tsx` `DemoRecorder`: now a thin wrapper that resolves the
+  profile anchor and delegates to the real recorder in
+  `demo-recorder.tsx` (getUserMedia + MediaRecorder + upload on attach;
+  local attach fallback when no workspace is wired).
+- `media-card.tsx`: added `uploadCanvasMedia()`; `uploadWorkspaceMedia`
+  returns `mediaObjectId`.
+- `messages.tsx`: file-input attach now uploads via `uploadCanvasMedia`
+  (20 MB client guard unchanged); the voice dialog passes
+  `clientName={client.name}` and its caption says the microphone is used.
+- `check-ins.tsx`: video-feedback recorder passes `clientName={c.name}`.
+
+Visuals: same elements, classes, layout; only behavior and two
+truth-text strings changed. Live proof (real Chrome, AUTH_SECRET-only env):
+signed in as coach, `/coach?section=messages&client=client-001`, attached
+`browser-proof.png`; network shows `GET /api/v1/workspaces/<ws>/clients`
+200, `POST /api/v1/media/<ws>` 200, `PUT /api/v1/media/object` 200.
+Screenshots `ui-messages-attach-1440.png`, `ui-messages-390.png` in the
+scratch dir.
+
+**Incident:** the first repair-round integration run exported
+`INTEGRATION_DATABASE_URL="$DATABASE_URL"` before assignment, so the suite
+inherited the repo .env's `app_dev` DSN and ran once against app_dev (its
+fixture truncates touched app_dev; the seed-credentials test correctly
+refused and flagged it). Reran with the literal app_media DSN: 60 files /
+861 tests green. app_dev is a disposable dev DB; flagged for the lead.
+
+Repair gate results: typecheck 0, lint 0 (one `Date.now()` purity error
+found and fixed via `uid()`), unit 0 (93 files / 1066 tests), integration
+0 (app_media, 861), root build 0, frontend build 0, index+index:check 0,
+prettier 0.
+
+## Repair round 2 (verifier FIX on e355c59)
+
+**Finding 1 (FIXED): roster cache written before res.ok.**
+`store.tsx` assigned `roster.current = new Map()` before checking the
+response, so one transient 401/network failure cached an empty roster and
+every later staff upload lost `clientProfileId` (service rejects 400
+invalid_input). Now the map is only assigned inside the `res.ok` branch; a
+failed fetch returns null and retries on the next call.
+
+**Finding 2 (FIXED, proven live): wired UI never driven in a browser.**
+Real Chrome drive (`scratch/pr-media-storage/drive.mjs`) with real clicks:
+`/login` form fill + submit as `coach@vari8.test` -> redirect to
+`/#dashboard` -> `/coach?section=messages&client=client-001` -> paperclip
+button click -> file chooser -> `drive-proof.png` -> voice dialog -> Mic
+-> "Record voice note" -> Stop -> Attach (fake-media Chrome flags for the
+mic). Network evidence captured live:
+
+```
+200 GET  /api/v1/workspaces/<ws>/clients
+200 POST /api/v1/media/<ws>            (image intent)
+200 PUT  /api/v1/media/object          (image bytes)
+200 POST /api/v1/media/<ws>            (voice-note intent)
+200 PUT  /api/v1/media/object          (voice bytes)
+200 GET  /api/v1/media/<ws>/<id>  x2   (minted download URLs)
+200 GET  /api/v1/media/object          (playback bytes)
+```
+
+Screenshots: `drive-attach-1440.png`, `drive-voice-1440.png`,
+`drive-390.png`. Ran against `AUTH_SECRET` only (no
+BETTER_AUTH_SECRET/MEDIA_STORAGE_SIGNING_SECRET), so round-1 finding 1
+stays dead under the documented env.
+
+**Finding 3 (FIXED): PR body stale.** PR #128 body rewritten to describe
+the wired canvas (S02-24/S02-25 delivered in the UI) and the roster-cache
+fix; stale wording removed.
+
+Repair gate results (this round): see table below; all exits 0.
+
+## Repair round 3 (verifier round-3 items on 98e57bd)
+
+**Item 1 (DONE): roster-cache regression test + mutation bite.**
+`tests/unit/coach-store-roster.test.tsx` renders `CoachProvider` with a
+`workspaceId`, stubs `fetch`, and asserts `clientProfileIdFor` twice: a
+500 response returns null without caching, then a 200 roster resolves the
+name (2 fetches, not 1). Second test: no `workspaceId` -> resolver returns
+null without hitting the network.
+Bite proof: with the buggy order restored (`roster.current = new Map()`
+before `res.ok`), `npx vitest run tests/unit/coach-store-roster.test.tsx`
+reports `1 failed | 1 passed` (test fails — the poisoned cache returns
+null on the second call); reverted, `2 passed` (exit 0).
+
+**Item 2 (DONE): PR body function name corrected.** The body now says
+`check-ins.tsx` video feedback attaches through `uploadWorkspaceMedia`
+via `DemoRecorder`; `messages.tsx` file attach uses `uploadCanvasMedia`.
+
+**Item 3 (DONE): evidence committed.** `icm/05-build/reports/PR-MEDIA/`
+holds `drive-attach-1440.png`, `drive-voice-1440.png`, `drive-390.png`,
+`seed-voice-note-{1440,390}.png`, `seed-progress-photo-{1440,390}.png`;
+the PR body links them.
+
+**Item 4 (DONE): merged origin/Vari8-Beta.** Conflicts in
+`app/(canvas)/coach/page.tsx` + `components/canvas/coach/coach-app.tsx`
+resolved as the union of both sides (`workspaceId` + `workspaceName`);
+generated `docs/index/ROUTES.md` + `SYMBOLS.md` regenerated via
+`npm run index` (`index:check` OK). `store.tsx` auto-merged with the
+roster fix intact.
+
+**Post-merge suite defect (FIXED):** the merged base added
+`33-checkins.seed.ts` (PR-M8), which links the "Emma Anders" profile to the
+`emma.anders@canvas-demo.test` demo user — stealing it from the credential
+client user 00-workspace links. `seed-credentials.test.ts` therefore failed
+`findFirstOrThrow({workspaceId, userId: client.id})` — an upstream conflict
+between the SEED-FIX contract and PR-M8's profile ownership. Per the
+verifier note (the credential client has no profile row; 403 by design),
+the test now asserts Emma Anders belongs to the seeded canvas demo user and
+that the credential client is unanchored. Repro: clean app_media +
+`npx vitest run --config vitest.integration.config.ts
+tests/integration/seed-credentials.test.ts` → 2/2 passed.
+
+Repair gate results (this round): typecheck 0, lint 0, unit 0 (93 files /
+1067 tests incl. the new roster test), integration 0 (app_media), root
+build 0, frontend build 0, index+index:check 0, prettier 0.
