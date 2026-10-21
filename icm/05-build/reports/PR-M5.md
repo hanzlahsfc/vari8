@@ -1,6 +1,8 @@
 # PR-M5 report
 
-Card `icm/05-build/cards/pr-m5-mealplan-payload.md`, issue #113, PR #114. Branch `beta/pr-m5-mealplan-payload`. Head `7b5ac314b7bae292718f7f0a28855cc419b2866c`, base `5553b471e2be1e1f8ea4f3dbadfd50c65f162281` (merge base with `origin/Vari8-Beta`, which was `5553b47` when the gate ran). Lane: database `app_wb_m5` on 127.0.0.1:5433, port 3920, native PG17 on macOS.
+Card `icm/05-build/cards/pr-m5-mealplan-payload.md`, issue #113, PR #114. Branch `beta/pr-m5-mealplan-payload`. Gated head `43654db326dbbadbab0212fa991325d81c4e14e4`, base `5553b471e2be1e1f8ea4f3dbadfd50c65f162281` (merge base with `origin/Vari8-Beta`). Lane: database `app_wb_m5` on 127.0.0.1:5433, port 3920, native PG17 on macOS.
+
+The commit that carries this report sits directly on the gated head and changes only this file; the gate below therefore covers the whole tree except this document, and `npx prettier --check icm/05-build/reports/PR-M5.md` covers the document (it runs before the commit and is the same check the gate's format step applies).
 
 ## What changed
 
@@ -49,7 +51,7 @@ Log: `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/WAVEB-LEAD/p
 
 ```
 == verify-local summary
-head=7b5ac314b7bae292718f7f0a28855cc419b2866c base=5553b471e2be1e1f8ea4f3dbadfd50c65f162281 node=v26.12.0 card=PR-M5 db=app_wb_m5 port=3920
+head=43654db326dbbadbab0212fa991325d81c4e14e4 base=5553b471e2be1e1f8ea4f3dbadfd50c65f162281 node=v26.12.0 card=PR-M5 db=app_wb_m5 port=3920
 PASS clean tree (0s)
 WARN node: target 24 (D5), running v26.12.0; recorded, not certified
 PASS schema guard (D34) (0s)
@@ -73,7 +75,7 @@ SKIP parity regression (D32): SKIP_PARITY=1, card contract gates no screens
 VERIFY-LOCAL PASS
 ```
 
-`EXIT=0` at 22:24:08. The earlier red run at head `9e64d54` (base `fb5c387`) failed only on parity, before the base carried the skip knob; the card's parity line is "none" and this run skipped it, so that finding is closed by the base rather than by a weakened check.
+`EXIT=0` at 23:05:45. Two green runs preceded this one at the same base: head `7b5ac31` (22:24) and head `43654db` (22:42). The earlier red run at head `9e64d54` (base `fb5c387`) failed only on parity, before the base carried the skip knob; the card's parity line is "none" and this run skipped it, so that finding is closed by the base rather than by a weakened check.
 
 ## Acceptance
 
@@ -93,7 +95,7 @@ Re-measured on this head. Commands and exits:
 The acceptance script (`pr-m5-accept.ts`, kept in the wave evidence directory, outside the branch) computes the canvas side with the canvas's own code (`createInitialMealPlan`, `calculateVariantNutrients`, `macroEnergyShares` from `frontend/src/components/ethereal/mealplan/{model,overview-model}.ts` over `frontend/src/data/food-database.json`) and the backend side from the seeded `meal_plan.draft` row through `normalizeMealPlanPayload`, `loadNutritionFoodMap` and `lib/nutrition/math.ts`. It then saves that same draft through `saveMealPlanDraft` as the seeded coach (CAS on the revision), reads the row back and recomputes. Output, `pr-m5-acceptance.log`:
 
 ```
-plan row: cmvikc6po003w8okwii409h62 title: Nutrition plan draftRevision: 1
+plan row: cmvilstsa003w8o5qccqw0u4l title: Nutrition plan draftRevision: 1
 canvas  portions: Breakfast:food-057x50, Lunch:food-001x150, Afternoon:food-451x200, Dinner:food-005x150
 backend portions: Breakfast:food-057x50, Lunch:food-001x150, Afternoon:food-451x200, Dinner:food-005x150
 canvas  totals: kcal 907 protein 107.55 carbs 48.6 fat 30.7
@@ -106,11 +108,13 @@ ROUND TRIP: saved revision 2 db draftRevision 2 | payload identical: true | tota
 ACCEPTANCE: EQUAL
 ```
 
+This run is the one on the gated head: the database was recreated by `npm run db:fresh` after the gate, which is why the plan row id differs from earlier runs. The earlier run at `7b5ac31` produced the same numbers with plan row `cmvikc6po003w8okwii409h62`.
+
 So a draft persists (revision 1 to 2, the stored payload normalizes to the identical object) and the totals from `lib/nutrition/math.ts` equal the canvas totals on the demo plan: 907 kcal, 107.55 g protein, 48.6 g carbs, 30.7 g fat, ring 48/22/31.
 
 ### Live, both widths
 
-Production build from the gate, served with `npm start -- -p 3920` (`APP_ENV=test`, `ENABLE_MEAL_PLANS=1`, lane `DATABASE_URL`), coach session from the repo seed. Page `/workspace/cmvikc68n00008okwv0ew7reb/clients/cmvikc6bj000h8okwjnazgnp2/meal-plan`, status 200.
+Production build from the gate, served with `npm start -- -p 3920` (`APP_ENV=test`, `ENABLE_MEAL_PLANS=1`, lane `DATABASE_URL`), coach session from the repo seed. Page `/workspace/cmvilst9v00008o5qasbqreua/clients/cmvilstcz000h8o5qydj3y09i/meal-plan`, status 200. Those ids come from the seed run on this head; pass them to the driver as `WS_ID` and `CLIENT_ID`.
 
 The draft editor rendered the round-tripped draft at both widths: `draft revision 2`, plan name `Nutrition plan`, start `2026-10-19`, variant `v_td_demo` / `TD`, and the four canvas portions in the form fields (`food-057` 50, `food-001` 150, `food-451` 200, `food-005` 150).
 
@@ -146,6 +150,8 @@ The per-meal kcal sum to 907 and the protein values sum to 107.55, which the vie
 
 ## What I could not do or chose
 
+- `origin/Vari8-Beta` advanced to `6d06cf8` (merge of PR #140, auth-client) after this gate started. Merging it into this branch cannot go green, and the reason is in the base, not in this card: at `6d06cf8`, `docs/index/ROUTES.md` says "Counts: 55 backend pages, 7 API routes, 14 layouts, 3 canvas pages" while `tests/unit/system-index.test.ts` asserts "Counts: 52 backend pages", so `npm run test` is red on the base itself. This branch touches neither file (`git diff 6d06cf8 HEAD -- tests/unit/system-index.test.ts docs/index/ROUTES.md` is empty). Merge-up is therefore parked until #140's count literal is updated; the merge attempt is recorded in `pr-m5-check-6cf9417.log`, where typecheck also failed once on stale `.next` types for the deleted `app/invite/layout.tsx` before `.next` was cleared.
+- The mandated evidence directory `_evidence/PR-M5/build/` makes the repo's index generator demand `_evidence/AGENTS.md` (`routerTargets()` walks every top-level directory with files, and `_evidence` is not in `TOP_LEVEL_SKIP`). The generated router then fails `npm run format:check`, and formatting it makes `npm run index:check` report drift, so no consistent local state exists. The gate was therefore run with `_evidence/` outside the worktree and moved back afterwards; it is git-excluded either way, so the gated tree is unchanged. The shared fix is one line: add `_evidence` to `TOP_LEVEL_SKIP` in `scripts/index/generate.ts` and to `.prettierignore`, the way `var` is already handled.
 - The seeded client login is not Emma Anders, and the demo client profile Emma Anders links to a user with no credential account, so the client-facing `/workspace/<id>/meal-plan` page answers "You don't have access to this meal plan" for both seeded accounts. The client surface is therefore not covered live here; the numbers above come from the coach surfaces that render the same payload through the same `lib/nutrition/math.ts`.
 - `npm run db:fresh` needs the sheet exports (`Nutrition Database.html`, `Exercise Database.html`) or `DB_FRESH_SKIP_CATALOGS=1`. Neither export exists on this Mac, so the catalog import step was skipped; the 584 canvas foods and the demo plan still seed through `scripts/seed/34-nutrition.seed.ts`.
 - `next dev` on this host never hydrates: no React client tree, no server action POST, a dead theme toggle, and the only console output is a failing HMR websocket. The production build hydrates and runs the `View` action normally, which is what the screenshots and numbers above use. This is a host/dev-server condition visible on every page, not this card's code.
