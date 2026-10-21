@@ -30,7 +30,9 @@ const DAY_MS = 86_400_000;
 
 /** Instant at and before which an archived client leaves retention. */
 export function retentionCutoff(now: Date, retentionDays: number): Date {
-  return new Date(now.getTime() - retentionDays * DAY_MS);
+  // A non-positive setting would future-date the cutoff and make every archived
+  // client deletable at once; the column has no DB bound, so clamp here.
+  return new Date(now.getTime() - Math.max(0, retentionDays) * DAY_MS);
 }
 
 /**
