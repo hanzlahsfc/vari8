@@ -13,9 +13,12 @@
 :root {
   color-scheme: dark;
   /* Vari8 brand pack v2 (brand-reference/vari8-brand-concept-v2.png):
-     near-black canvas, indigo > purple > blush ramp, off-white ink.
-     --accent carries the pale blush for fills; --accent-ink the magenta
-     for accent text and icons; deep/mid hold the cool end of the ramp. */
+     near-black canvas, off-white ink, and the logo's blue > purple ramp
+     (#3c41e3 > #6f62f1 > #b790fb sampled from the supplied gradient V).
+     Per Lilly's direction light blue and purple lead: --accent carries
+     the light blue for fills and visible accents on dark, --accent-ink
+     the sampled light purple for accent text and icons; deep indigo and
+     mid purple hold the cool end. Blush appears only inside the logo. */
   --canvas: #07070c;
   --surface: #101017;
   --surface-subtle: #181820;
@@ -23,8 +26,8 @@
   --muted: #b6b1c2;
   --border: rgb(245 241 246 / 13%);
   --border-strong: rgb(245 241 246 / 30%);
-  --accent: #f5c8e7;
-  --accent-ink: #d875b8;
+  --accent: #93a2f4;
+  --accent-ink: #b790fb;
   --accent-contrast: #07070c;
   --accent-deep: #343f98;
   --accent-mid: #7950a8;
@@ -270,25 +273,8 @@ select:focus-visible,
 
 /* ---------- hero ---------- */
 
-/* the pack's own v2 mesh carries the launch page: bright sweeps live at
-   the edges, the centre stays near-black for copy */
 .hero {
-  position: relative;
   padding: clamp(3rem, 8vh, 5.5rem) 0 clamp(3rem, 7vh, 5rem);
-  background: url("assets/brand/mesh-blue-purple-blush-v2.png") center / cover
-    no-repeat;
-}
-.hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    rgb(7 7 12 / 76%),
-    rgb(7 7 12 / 34%) 55%,
-    rgb(7 7 12 / 42%)
-  );
 }
 
 .hero-inner {
@@ -305,9 +291,20 @@ select:focus-visible,
   margin: 0 0 1.4rem;
   max-width: 15ch;
 }
-.hero-title em {
+.hero-title em,
+.split-line-2 em {
   font-style: normal;
-  color: var(--accent);
+  color: var(--accent-ink);
+}
+/* the emphasis slides along the logo's own ramp: blue into light purple */
+@supports (-webkit-background-clip: text) {
+  .hero-title em,
+  .split-line-2 em {
+    background: linear-gradient(92deg, #6f62f1, #b790fb);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 }
 
 .hero-sub {
@@ -358,11 +355,15 @@ select:focus-visible,
   position: relative;
   padding: clamp(0.9rem, 2.6vw, 1.8rem);
   padding-bottom: clamp(3.4rem, 10.5%, 7.2rem);
+  /* the pack's mesh is localized behind the product pair: a canvas veil
+     and a deep inset fade sink it into the surrounding near-black, so the
+     sweeps support the shots instead of competing with the whole hero */
   background:
-    radial-gradient(62% 55% at 66% 28%, rgb(121 80 168 / 16%), transparent 72%),
-    linear-gradient(158deg, var(--surface-subtle), var(--surface) 72%);
+    linear-gradient(rgb(7 7 12 / 50%), rgb(7 7 12 / 58%)),
+    url("assets/brand/mesh-blue-purple-blush-v2.png") 58% 42% / cover no-repeat;
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) + 0.6rem);
+  box-shadow: inset 0 0 72px rgb(7 7 12 / 72%);
 }
 .hero-shot {
   position: relative;
@@ -2468,7 +2469,6 @@ select:focus-visible,
 }
 .split-line-2 em {
   font-style: normal;
-  color: var(--accent);
 }
 @media (min-width: 901px) {
   /* each phrase holds one line where the column allows; narrower
