@@ -56,28 +56,44 @@ card.
 
 ### Bearer token contract for the shell
 
-- Acquire: the shell signs in against the Better Auth endpoints
-  (`/api/auth/sign-in/email`), captures the session token from the response,
-  and stores it as a credential. Cookies are never used or persisted by the
-  shell.
+Existing behavior (installed Better Auth 1.7.10, `lib/auth/server.ts`):
+
+- Acquire: sign-in responses that set the session cookie also carry the
+  session token in the `set-auth-token` response header (the bearer plugin
+  emits it on any auth response that sets the cookie: sign-in, sign-up and
+  rolling session refreshes, and adds it to `Access-Control-Expose-Headers`
+  for browser callers). The shell reads that header and stores the value.
+  Cookies are never used or persisted by the shell.
 - Use: every `/api/v1` request carries `Authorization: Bearer <token>`. The
+  bearer plugin verifies the HMAC signature, injects the token as the
+  session cookie, and the same session resolution runs as for web. The
   server side of this contract is already shipped (above); the shell needs
   no new auth API to consume it.
+- Expiry and refresh: sessions are rolling. When a session is older than
+  `updateAge` (1 day), `updateSession` extends `expiresAt` and `updatedAt`
+  on the same row (`expiresIn` 7 days). `session.token` does not change:
+  the bearer value is stable for the session lifetime and keeps resolving
+  until the row expires or is deleted. No token rotation exists today, and
+  none is introduced by this card.
+- Expiry and revocation: an expired row is deleted on next resolution, so
+  the bearer credential simply stops resolving. Sign-out deletes the row
+  server side; `/api/auth/revoke-session` and `/api/auth/revoke-sessions`
+  do the same for targeted or all sessions, and a deactivated account's
+  sessions are deleted on any session-bearing path.
+- Failure: a 401 means the token is expired, revoked or malformed; the
+  shell clears the stored value and returns to sign-in. A 403 means
+  authenticated but unauthorized and must not trigger re-sign-in.
+
+Requirements a future native card must satisfy (not existing behavior):
+
 - Store: the token lives in OS-protected storage only, iOS Keychain and
   Android Keystore (for example `@capacitor/preferences` is not sufficient;
   a secure-enclave plugin such as `capacitor-secure-storage` is the shape to
   evaluate). Never `localStorage`, never WebView cookie storage, never the
   app sandbox filesystem.
-- Refresh: the session rotates on the server's `updateAge` cadence
-  (currently daily within a 7-day expiry). The shell must read the fresh
-  session (`/api/auth/get-session` or the bearer plugin's returned token)
-  after each use window and persist the rotated token, because an old token
-  segment stops resolving once the row is updated.
-- Revoke: sign-out calls `/api/auth/sign-out`, then the shell deletes the
-  stored token. A lost or wiped device is covered by session-row deletion
-  server side; the shell adds no local revocation list.
-- Failure: any 401 clears the stored token and returns to sign-in. A 403
-  means authenticated but unauthorized and must not trigger re-sign-in.
+- Sign-out: call `/api/auth/sign-out`, then delete the stored token. A lost
+  or wiped device is covered by session-row deletion server side; the shell
+  adds no local revocation list.
 
 ### Gates before any native build
 
@@ -85,7 +101,7 @@ card.
    on which platforms first. This card only prepares that decision.
 2. Accounts and signing: Apple Developer and Google Play accounts, bundle
    ids, signing credentials and who holds them. None exist in this repo.
-3. Security review of token storage and rotation (above) on real devices,
+3. Security review of token storage and lifecycle (above) on real devices,
    plus deep link and universal link handling for invite and reset URLs.
 4. Data protection review: consent and health-data rules are parked (D12)
    for the web app; a store submission forces that review, including what
@@ -100,7 +116,7 @@ card.
 ### Explicitly out of scope for PR-31
 
 - No Capacitor dependency, config, or project scaffolding lands here.
-- No token issuance, storage or rotation code; this document is the design
+- No token issuance, storage or lifecycle code; this document is the design
   the future card implements.
 - No service worker, offline mode, push, or native APIs.
 - No release, deployment, or store listing of any kind.
