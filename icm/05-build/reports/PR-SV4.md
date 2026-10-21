@@ -273,3 +273,136 @@ Diagnosis, and why it is not this diff:
   the acceptance path under test is the server action's seam
   (`acceptInvitationFromLink`) and the browser flow is covered by the gate's
   `tests/e2e/invite-acceptance.spec.ts`.
+
+## Acceptance round at head `508f306` (macOS lane, 2026-10-21)
+
+This round is the acceptance round of `ACCEPT-ONLY.md`: the gate is not run,
+the contract is measured live on this head.
+
+Merge state. The branch is merged up to `origin/Vari8-Beta` `6d06cf8` through
+merge commit `81d05c3`. That merge resolved the `scripts/index/generate.ts`
+conflict by taking the base side (base PR #138 fixed the same `var/` walk), and
+the file is now byte-identical to the base:
+
+| Check                                                                               | Result                                     |
+| ----------------------------------------------------------------------------------- | ------------------------------------------ |
+| `git hash-object scripts/index/generate.ts`                                         | `e064e5c1e805719876509904ad5015f63a7c43dd` |
+| `git rev-parse origin/Vari8-Beta:scripts/index/generate.ts`                         | `e064e5c1e805719876509904ad5015f63a7c43dd` |
+| `git diff --stat origin/Vari8-Beta..HEAD -- scripts/index/generate.ts` (line count) | 0                                          |
+
+Gate. Not run this round, per `ACCEPT-ONLY.md`. The base `origin/Vari8-Beta`
+`6d06cf8` fails `tests/unit/system-index.test.ts:127` on its own with no card
+code involved, and `verify-local.sh` aborts at the unit step, so a run now would
+produce a red receipt that says nothing about this diff. The gate is therefore
+pending on base PR #145. No READY line was written.
+
+### Environment facts measured on this host
+
+| Fact                                                                                              | Evidence                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| An inherited `NODE_ENV=development` breaks `next build`                                           | `next build --webpack` prints `non-standard "NODE_ENV"` and dies prerendering `/_not-found` (first attempt) then `/_global-error` (second) with `TypeError: Cannot read properties of null (reading 'useContext')` |
+| With `NODE_ENV` unset the same build exits 0                                                      | `pr-sv4-build4.log`, `EXIT=0`, `✓ Generating static pages using 11 workers (13/13)`                                                                                                                                |
+| `next start` needs `MAIL_DELIVERY_ADAPTER=dev-file` in production or invite creation fails closed | `lib/mail/index.ts:40` returns no adapter under `NODE_ENV=production` without an explicit name                                                                                                                     |
+
+### Commands and exit codes (this round)
+
+| Command                                                                                    | Exit | Result                                                                   |
+| ------------------------------------------------------------------------------------------ | ---- | ------------------------------------------------------------------------ |
+| `npm run db:fresh` (lane DB `app_wb_sv4`, docker shim on PATH, `DB_FRESH_SKIP_CATALOGS=1`) | 0    | migrations applied, seed wrote 3 modules                                 |
+| `npm run build` with `NODE_ENV` inherited                                                  | 1    | prerender `/_global-error`, `useContext` null (see table above)          |
+| `npm run build` with `NODE_ENV` unset                                                      | 0    | 13/13 static pages, log `pr-sv4-build4.log`                              |
+| `npx next start -p 3940` (`NODE_ENV=production`, dev-file mailbox)                         | 0    | ready in 67 ms, `GET /login` HTTP 200, `GET /invite` HTTP 200            |
+| `pr-sv4-acceptance.sh` (owner sign-in, two invitations through the real route)             | 0    | sign-in HTTP 200, 1 session cookie, both POSTs HTTP 200 `delivered:true` |
+| `pr-sv4-browser.cjs` (Playwright, sequential 1440 and parallel 390)                        | 0    | results below, `pr-sv4-browser.json`                                     |
+| `npx tsx _evidence/PR-SV4/build/pr-sv4-service-race.ts` (service-level parallel probe)     | 0    | results below                                                            |
+| `pr-sv4-counts.sh` (row counts after all submissions)                                      | 0    | tables below                                                             |
+| `npm run index:check`                                                                      | 1    | `missing: _evidence/AGENTS.md` (see the caveat below)                    |
+
+### The contract, measured
+
+Card line: "Invite acceptance creates one client profile even when submitted
+twice." Card unit line: "Token guard and exactly-once acceptance under
+concurrency."
+
+Every number below comes from the production server on `127.0.0.1:3940` against
+`app_wb_sv4`, a real owner session, and invitations minted through
+`POST /api/v1/workspaces/<ws>/invitations` whose raw token only ever left inside
+the mailed link (read back from the dev-file mailbox).
+
+Sequential double submission at 1440. Two browser pages held the same
+`/invite` form (both `GET /invite` HTTP 200, form visible on both) before either
+submitted. Page 1 submitted first: HTTP 200, then the post-accept redirect to
+`/me/login?inviteAccepted=1`. Page 2 submitted the same token next: HTTP 200,
+the form stayed up and rendered the inline alert
+"This invitation link is invalid or has already been used. Ask the workspace owner for a new invitation."
+That copy is the literal `invalid_token` message
+(`lib/workspace/invite-acceptance.ts:174`), the only code that produces it.
+
+Parallel double submission at 390. Two browser pages held the same `/invite`
+form and both submitted at the same instant (`Promise.allSettled` on the two
+clicks). One page redirected to `/me/login?inviteAccepted=1`; the other stayed on
+`/invite` with the same `invalid_token` copy. Exactly one winner, one loser.
+
+Service-boundary parallel probe (literal structural codes, independent of the UI
+copy): two `acceptWorkspaceInvitation` calls on one token through
+`Promise.allSettled` gave `[{status:"fulfilled",outcome:"accepted"},{status:"rejected",code:"InvitationError:invalid_token"}]`,
+and a third, sequential replay of the same consumed token gave
+`InvitationError:invalid_token`.
+
+Row counts after all of the above (`pr-sv4-counts.sh`):
+
+| Invited email                      | `users` | `workspace_member` | `client_profile` | consumed invite tokens | active invite tokens | `INVITE` audit events |
+| ---------------------------------- | ------- | ------------------ | ---------------- | ---------------------- | -------------------- | --------------------- |
+| `sv4-seq-1792619792@example.test`  | 1       | 1                  | 0                | 1                      | 0                    | 1                     |
+| `sv4-race-1792619792@example.test` | 1       | 1                  | 0                | 1                      | 0                    | 1                     |
+
+The service probe's own counts, same shape: `users 1`, `memberships 1`,
+`clientProfiles 0`, `consumedInviteTokens 1`, `activeInviteTokensForEmail 0`.
+
+Reading against the card line, with owner ruling O6 in force (see the section
+above): the second submission changes nothing and the client ends with exactly
+one account and one membership. The literal `ClientProfile` count created by
+acceptance is 0, by ruling, not by omission; the workspace's 15 pre-existing
+seed profiles are untouched.
+
+Reloading a consumed link renders the single safe invalid state at both widths
+(`data-testid="invite-invalid"`, HTTP 200, text "This invitation link is
+invalid, expired, or has already been used. Ask the workspace owner for a new
+invitation."), so a third visit leaks nothing about why the token died.
+
+### Screenshots (absolute paths, gitignored `_evidence/`)
+
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-sv4-invitations/_evidence/PR-SV4/build/PR-SV4-invite-form-1440.png` (1440x900)
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-sv4-invitations/_evidence/PR-SV4/build/PR-SV4-first-submit-accepted-1440.png` (1440x900, post-accept sign-in notice)
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-sv4-invitations/_evidence/PR-SV4/build/PR-SV4-second-submit-rejected-1440.png` (1440x900, inline `invalid_token` alert)
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-sv4-invitations/_evidence/PR-SV4/build/PR-SV4-invite-form-390.png` (390x844)
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-sv4-invitations/_evidence/PR-SV4/build/PR-SV4-parallel-390-a.png`, `...-b.png` (390x844, winner and loser of the parallel pair)
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-sv4-invitations/_evidence/PR-SV4/build/PR-SV4-consumed-link-1440.png`, `...-390.png` (consumed-link invalid state at both widths)
+
+Machine-readable copies: `_evidence/PR-SV4/build/pr-sv4-browser.json` (page URLs,
+HTTP statuses, error texts), `mailbox.jsonl` (delivered links, tokens redacted
+after use), `_evidence/PR-SV4/build/pr-sv4-service-race.ts` (the probe source).
+Tokens are single-use and were consumed before the files were redacted; no token
+appears in this report, in the commits, or in any command output above.
+
+### `index:check` caveat for the next gate
+
+`npm run index:check` exits 1 now, and the only problem is
+`missing: _evidence/AGENTS.md`. The screenshot directory the child brief mandates
+lives at the worktree root, `_evidence/` is excluded through `.git/info/exclude`
+(not `.gitignore`), and `routerTargets()` in `scripts/index/generate.ts` walks
+the filesystem, so a gitignored runtime directory is indexed anyway. This is the
+same defect class the branch's own `var/` fix addressed (now carried by the base
+side), with a second name. Every lane in this wave that ran a live acceptance has
+the same `_evidence/` directory, so the next gate run will fail at
+`tests/unit/system-index.test.ts` for the same reason unless `_evidence` is added
+to `TOP_LEVEL_SKIP` (or the walk consults git-ignore status) in shared code.
+Shared fix, not this card's file list, so it was not made here. Workaround for a
+gate run: move `_evidence/` aside before the run.
+
+### What I could not do this round
+
+- The gate itself: blocked on base PR #145, so this branch has no green receipt
+  and no READY line.
+- A `docs/STATUS.md` update: forbidden for this lane.
+- The shared `_evidence` index-walk fix above, deliberately left to shared code.
