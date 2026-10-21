@@ -1,250 +1,197 @@
 # PR-M6 report
 
 Card `icm/05-build/cards/pr-m6-training-payload.md`, issue #115, PR #116.
-Branch `beta/pr-m6-training-payload`, base `origin/Vari8-Beta` `bb31401`.
-Gate receipt head `ed0c776` (this report adds docs only). Lane `app_wb_m6`,
-port 3925. Host: macOS, node 26.12.0, native PG17 at 127.0.0.1:5433.
+Branch `beta/pr-m6-training-payload`, base `origin/Vari8-Beta` `6d06cf8`,
+head `f14df1a` (this report adds docs only). Lane `app_wb_m6`, port 3925.
+Host macOS, node 26.12.1 (gate target 24, WARN only), native PG17 on
+127.0.0.1:5433.
 
 ## Acceptance
 
-"A draft round-trips ordered sets; volume per muscle group equals the canvas
-panel on the demo program."
+The card's contract, verbatim:
 
-**Round-trip (real PG).**
-`tests/integration/training-m6-roundtrip.test.ts` saves a draft, publishes
-it, then reads it back as staff and as the client. It asserts literal row
-order and values, not shape: `d1, d2, d3, d4` for the deadlift (with
-`coachNote` "Keep the brace"), `b1` to `b4` for the bench, the derived
-scalar `sets` 4, and `reps` "4-5" on the client read.
+> A draft round-trips ordered sets; volume per muscle group equals the
+> canvas panel on the demo program.
 
-**Volume per muscle group (measured, both sides).**
-`tests/unit/training-m6.test.ts` "the seeded demo program reproduces the
-canvas volume panel" feeds two things into the same week:
+Measured on this head, both sides, against the running production server
+and the lane database. Nothing below is copied from an earlier run.
 
-- the canvas panel: `weeklyMuscleVolume(initialRecords.workoutSchedule, 6)`
-  from `frontend/src/components/coach/muscle-volume.ts`, over the demo
-  records the coach preview reads
-  (`frontend/src/components/ethereal/builder/model.ts`);
-- the backend: `programMuscleVolume` over the week-6 sessions of
-  `demoProgramDraft()`, the program `scripts/seed/35-training.seed.ts`
-  seeds, materialized by `materializeWeeks` exactly as a publish does.
+### Canvas panel, live in the browser (1440 and 390)
 
-Both give the same numbers for week 6 of the demo program:
+Server: `npm run build` (exit 0) then `npx next start -p 3925`, production
+build, `APP_ENV=test`, `ENABLE_TRAINING_PLANS=1`, real sign-in as the
+seeded coach (`coach@vari8.test`, HTTP 200 on `/login`).
 
-Measured transcript (`npx tsx`, same imports as the test):
+Panel: `/coach`, Clients, Emma Anders, Edit plans, Training, the canvas
+plan editor's `section.te-volume` (`aria-label="Prescribed weekly
+volume"`), which renders `prescribedMuscleVolume` from
+`components/canvas/coach/plans/training/training-model.ts`.
+
+The demo plan was entered in that editor: Deadlift (hamstrings) 4 sets,
+Bench press (chest) 4 sets, Chest-supported row (back) 3 sets, Hip thrust
+(glutes) 3 sets, 14 ordered set rows. Literal DOM text read at both
+widths:
 
 ```
-week=6
-canvas : chest=4 back=3 shoulders=0 biceps=0 triceps=0 core=0 glutes=3 quadriceps=0 hamstrings=4 calves=0 | total=14 unassigned=0
-backend: chest=4 back=3 shoulders=0 biceps=0 triceps=0 core=0 glutes=3 quadriceps=0 hamstrings=4 calves=0 | total=14 unassigned=0
-EQUAL_CANVAS_PANEL=true
-week6_sets=Deadlift:4 rows=d1,d2,d3,d4 | Split squat:3 rows=ss1,ss2,ss3 | Bench press:4 rows=b1,b2,b3,b4 | Chest-supported row:3 rows=r1,r2,r3
+Weekly volume / 14 prescribed sets
+Muscle group   Working sets
+Chest          4
+Back           3
+Glutes         3
+Hamstrings     4
 ```
 
-| Group                                                | Sets |
-| ---------------------------------------------------- | ---- |
-| chest                                                | 4    |
-| back                                                 | 3    |
-| glutes                                               | 3    |
-| hamstrings                                           | 4    |
-| shoulders, biceps, triceps, core, quadriceps, calves | 0    |
-| total                                                | 14   |
-| unassigned                                           | 0    |
+Read at 1440x900 and again at 390x844 (`scrollWidth == innerWidth == 390`,
+no horizontal overflow, panel still visible and readable). The draft also
+survives a full page reload with the panel unchanged, which is the
+canvas-side round trip of the ordered rows.
 
-The test asserts group-by-group equality between the two panels, the total
-in both, and the literal table above. Mutation check (D14): making
-`workingSetCount` drop one set row (`length - 1`) fails this test and the
-older literal test (2 failed, 14 passed), and reverting restores it, so the
-guard is live and not tautological.
+Screenshots (absolute paths):
 
-## What changed
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m6-training-payload/_evidence/PR-M6/build/training-plan-editor-1440.png`
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m6-training-payload/_evidence/PR-M6/build/volume-panel-1440.png`
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m6-training-payload/_evidence/PR-M6/build/training-plan-editor-390.png`
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m6-training-payload/_evidence/PR-M6/build/volume-panel-390.png`
 
-- `lib/training/volume.ts` (new): verbatim port of the canvas
-  `muscle-volume.ts` (`MUSCLE_GROUPS`, `PRIMARY_MUSCLE`, `ScheduledWorkout`,
-  `weeklyMuscleVolume`) and of the canvas
-  `prescribedMuscleVolume`/`volumeExerciseId` adapters, plus
-  `programMuscleVolume`/`workingSetCount` reading materialized sessions
-  (ordered `setRows` or the scalar `sets`, warm-up rows filtered like the
-  canvas). `frontend/` untouched.
-- `lib/trainingprogram/validators.ts` (new): `prescribedSetSchema` (canvas
-  TrainingSet, no prescribed load per O12, optional `coachNote`),
-  `setLogEntrySchema`, `loggedExerciseSchema`, `sessionSetLogSchema`
-  (owner ruling O5: actual reps, load and unit, RPE, set note, flags,
-  session `completedAt`), `exerciseLibraryItemInputSchema`.
-- `lib/trainingprogram/payload.ts`: `setRows` boundary section
-  (`"sid/eid"` to week to ordered `PrescribedSet[]`), exercise metadata
-  (`muscle`, `secondaryMuscles`, `libraryItemId`, `generalNotes`),
-  materialization emits ordered rows and derives the scalar `sets`,
-  `projectForClient` gates `setRows` on the Sets toggle and strips per-set
-  fields per toggle (`coachNote` always kept), `validatePublishCompleteness`
-  accepts setRows, and pre-M6 stored drafts without `setRows` still load.
-- `lib/trainingprogram/limits.ts`: `generalNotesMax`, `maxSecondaryMuscles`.
-- `lib/trainingprogram/service.ts`: one line, `setRows` joins the
-  locked-week boundary equality. Outside the card file list, required for
-  the invariant to cover the new section.
-- `scripts/seed/35-training.seed.ts` (new): seeds the `canvas-demo`
-  workspace with the 10-item canvas starter library as
-  `ExerciseLibraryItem` rows and the canvas sample program for Emma Anders
-  ("Strength foundation", WEEK_BASED, 8 weeks from 2026-09-14, week 6 on the
-  2026-10-19 demo date, published version 1, Europe/Vienna). The draft is
-  built by `demoProgramDraft()` so the test above measures the seeded
-  program itself instead of a copy of its numbers.
-- `scripts/seed/33-checkins.seed.ts`: one block, outside this card. See
-  "Base defect found and fixed" below.
-- Tests: `tests/unit/training-m6.test.ts` (16 tests),
-  `tests/integration/training-m6-roundtrip.test.ts` (1 test, real PG),
-  `tests/unit/training-payload.test.ts` (+`setRows: {}` fixture key).
-- `docs/index/SYMBOLS.md`: regenerated after the merge (`npm run index`).
+The canvas library in the coach demo has no `Split squat` entry, so the
+glutes slot of the demo program (Split squat, 3 sets) is entered as Hip
+thrust, 3 sets. Per muscle group the numbers are the demo program's.
 
-## The build failure, diagnosed
+### Backend, from the lane database
 
-The handoff said `npm run build` exited 1 on the Linux host with the cause
-unknown. On this Mac it does not reproduce. Two runs, both exit 0: a
-standalone `npm run build` on the merged tree (18s) and the gate's build
-step, plus `frontend` build, both PASS.
+`_evidence/PR-M6/build/probe.ts` (read only, `npx tsx`, exit 0) reads the
+published program `Strength foundation` for Emma Anders in `app_wb_m6`
+(version 1, 8 weeks from 2026-09-14, payload as the publish materialized
+it) and feeds the stored sessions through `programMuscleVolume` from
+`lib/training/volume.ts`:
 
-What I did find is an environment defect that fakes npm results on this
-host. Two 17-byte shims, `npm` and `npx` at
-`/Users/marcelspatz/.hermes/cache/scratch/flagproof/`, each `#!/bin/sh` and
-`exit 0`, sat earlier in `PATH` than the real npm. With them in front of the
-real binary, `npm ci` exits 0 and installs nothing (`node_modules` absent,
-empty log) and every npm script becomes a hollow pass. The first two
-`npm ci` runs in this session were exactly that. I removed that directory
-from this shell's `PATH` (I did not delete it, it is another lane's scratch
-directory) and the same commands then installed 767 root and 383 frontend
-packages and did real work.
+```
+program="Strength foundation" weeks=8 start=2026-09-14 versionSeq=1
+week=1 chest=4 back=3 shoulders=0 biceps=0 triceps=0 core=0 glutes=3 quadriceps=0 hamstrings=4 calves=0 | total=14 unassigned=0
+week=2 chest=4 back=3 shoulders=0 biceps=0 triceps=0 core=0 glutes=3 quadriceps=0 hamstrings=4 calves=0 | total=14 unassigned=0
+week=3 chest=4 back=3 shoulders=0 biceps=0 triceps=0 core=0 glutes=3 quadriceps=0 hamstrings=4 calves=0 | total=14 unassigned=0
+week=4 chest=4 back=3 shoulders=0 biceps=0 triceps=0 core=0 glutes=3 quadriceps=0 hamstrings=4 calves=0 | total=14 unassigned=0
+week=5 chest=4 back=3 shoulders=0 biceps=0 triceps=0 core=0 glutes=3 quadriceps=0 hamstrings=4 calves=0 | total=14 unassigned=0
+week=6 chest=4 back=3 shoulders=0 biceps=0 triceps=0 core=0 glutes=3 quadriceps=0 hamstrings=4 calves=0 | total=14 unassigned=0
+week=7 chest=4 back=3 shoulders=0 biceps=0 triceps=0 core=0 glutes=3 quadriceps=0 hamstrings=4 calves=0 | total=14 unassigned=0
+week=8 chest=4 back=3 shoulders=0 biceps=0 triceps=0 core=0 glutes=3 quadriceps=0 hamstrings=4 calves=0 | total=14 unassigned=0
+week6 detail:
+  session="Lower strength" exercise="Deadlift" muscle=hamstrings setRows=[d1,d2,d3,d4] working=4
+  session="Lower strength" exercise="Split squat" muscle=glutes setRows=[ss1,ss2,ss3] working=3
+  session="Upper strength" exercise="Bench press" muscle=chest setRows=[b1,b2,b3,b4] working=4
+  session="Upper strength" exercise="Chest-supported row" muscle=back setRows=[r1,r2,r3] working=3
+```
 
-That shim cannot itself produce exit 1, since it swallows the command. So
-the Linux exit 1 is not explained by it. The Linux run left no log in the
-shared evidence directory, so its error text cannot be inspected from here.
-What I can rule out from evidence: this branch's code. The same tree with a
-clean install builds twice, and every other gate step that ran on the same
-tree passes. The residual likely causes are host-side, a stale or absent
-`node_modules` at build time or memory pressure with three lanes building at
-once; I could not confirm either, so this stays an inference, not a finding.
+Every one of the eight weeks reads 4 / 3 / 3 / 4 with `total=14
+unassigned=0`.
+
+Card unit line, literal working set counts per group for the demo program:
+
+| Group                                                | Working sets |
+| ---------------------------------------------------- | ------------ |
+| chest                                                | 4            |
+| back                                                 | 3            |
+| glutes                                               | 3            |
+| hamstrings                                           | 4            |
+| shoulders, biceps, triceps, core, quadriceps, calves | 0            |
+| total                                                | 14           |
+| unassigned                                           | 0            |
+
+Canvas panel and backend payload agree group by group at both widths and
+in the database read.
+
+### Ordered sets round trip (real PG)
+
+`npx vitest run --config vitest.integration.config.ts
+tests/integration/training-m6-roundtrip.test.ts` on a fresh probe
+database `app_wb_m6_rt`, exit 0, 1 test passed. It saves a draft, publishes
+it, then reads the version back as staff and as the client and asserts
+literal rows, not shape: `d1, d2, d3, d4` with `coachNote` "Keep the
+brace", `b1` to `b4`, `ss1` to `ss3`, `r1` to `r3`, the derived scalar
+`sets` 4 and `reps` "4–5".
+
+`npx vitest run tests/unit/training-m6.test.ts` (the canvas parity guard
+plus the volume literal), exit 0, 16 tests passed. That suite compares
+`weeklyMuscleVolume` from the canvas module against `programMuscleVolume`
+over the seeded draft week 6 and asserts the table above literally.
 
 ## Commands and exit codes
 
-Lane setup: `POSTGRES_PASSWORD` read from the repo `.env` (never printed),
-`PATH` with the wave shims, `VARI8_WORKTREES`, `AUTH_TRUST_HOST=1`,
-`PRETTIER` pointed at the root checkout's prettier.
+| Command                                                                                                | Exit                   |
+| ------------------------------------------------------------------------------------------------------ | ---------------------- |
+| `git status --short --branch`, `git log --oneline -3` at start                                         | 0                      |
+| `which -a npm npx node` (no `flagproof` shim on PATH this round)                                       | 0                      |
+| `dropdb` / `createdb app_wb_m6`                                                                        | 0 / 0                  |
+| `npx prisma migrate deploy` (lane)                                                                     | 0                      |
+| `npx tsx scripts/seed/index.ts` (10 library items, program published)                                  | 0                      |
+| `npm run build` (production, real node_modules)                                                        | 0                      |
+| `npx next start -p 3925`, `GET /login`                                                                 | 200                    |
+| browser sign-in as `coach@vari8.test`, then `/coach`                                                   | 200                    |
+| `curl /coach` without a session (redirect to sign-in)                                                  | 307                    |
+| `npx tsx _evidence/PR-M6/build/probe.ts` (lane read)                                                   | 0                      |
+| `npx vitest run tests/unit/training-m6.test.ts`                                                        | 0, 16 passed           |
+| `npx vitest run --config vitest.integration.config.ts tests/integration/training-m6-roundtrip.test.ts` | 0, 1 passed            |
+| `npx vitest run tests/unit/system-index.test.ts` (evidence dir present)                                | 1, 2 failed            |
+| same test with `_evidence/` moved out of the tree                                                      | 1, 1 failed, 17 passed |
 
-| Command                                                                                                                 | Exit                          |
-| ----------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| `git merge --ff-only origin/beta/pr-m6-training-payload` (already at remote head)                                       | 0                             |
-| `git merge origin/Vari8-Beta` (one conflict, `docs/index/SYMBOLS.md`)                                                   | 1                             |
-| `npm run index` / `npm run index:check` after the merge                                                                 | 0 / 0                         |
-| `npm ci` (root, 767 packages) / `npm ci` (frontend, 383)                                                                | 0 / 0                         |
-| `npm run format:check`                                                                                                  | 0                             |
-| `npm run typecheck` / `npm --prefix frontend run typecheck`                                                             | 0 / 0                         |
-| `npm run lint` (81 warnings, 0 errors) / `npm --prefix frontend run lint`                                               | 0 / 0                         |
-| `npm run test` (95 files, 1091 tests)                                                                                   | 0                             |
-| `npm --prefix frontend run test` (76 tests)                                                                             | 0                             |
-| `npx prisma migrate deploy` on `app_wb_m6`                                                                              | 0                             |
-| `npm run test:integration` (61 files, 859 tests)                                                                        | 0                             |
-| `npm run build` (standalone, pre-gate)                                                                                  | 0                             |
-| `npx tsx scripts/seed/index.ts` on a fresh probe DB                                                                     | 0                             |
-| `npx vitest run --config vitest.integration.config.ts tests/integration/seed-credentials.test.ts` (before the base fix) | 1                             |
-| same test after the base fix                                                                                            | 0                             |
-| `npx vitest run tests/unit/training-m6.test.ts` (mutation applied)                                                      | 1, 2 tests failed as intended |
-| gate `verify-local.sh`, log `Vari8-evidence/WAVEB-LEAD/pr-m6-training-payload.check.log`                                | 1                             |
+## Gate status
 
-Gate summary verbatim (19 PASS, 1 WARN, 1 FAIL):
+No gate ran this round, by instruction: the wave gate is blocked by PR
+#145, and `origin/Vari8-Beta` `6d06cf8` is red on its own at
+`tests/unit/system-index.test.ts`. I reproduced that on this head: 1
+failed, 17 passed, exit 1, `F1: indexes a route-segment directory such as
+app/sheets`, `expected 'Counts: 52 backend pages'`. A missing gate receipt
+here is not a green gate.
 
-```
-head=ed0c7762fcc0a2192c1506154bd3f123e7f6fe4d base=bb3140111d9f02ab0fd7e2ecdf16a1732536c66e node=v26.12.0 card=PR-M6 db=app_wb_m6 port=3925
-PASS clean tree (0s)
-WARN node: target 24 (D5), running v26.12.0; recorded, not certified
-PASS schema guard (D34) (0s)
-PASS program generator check (2s)
-PASS npm ci (13s)
-PASS prisma generate (1s)
-PASS frontend npm ci (6s)
-PASS format check (10s)
-PASS typecheck (2s)
-PASS frontend typecheck (3s)
-PASS lint (16s)
-PASS frontend lint (3s)
-PASS unit tests (18s)
-PASS frontend tests (1s)
-PASS integration tests (133s)
-PASS migrate deploy (1s)
-PASS build (18s)
-PASS frontend build (18s)
-PASS e2e flow specs (serialized) (22s)
-FAIL parity regression (D32) exit=1 (226s)
-VERIFY-LOCAL FAIL
-EXIT=1
-```
+One thing the wave lead should know before gating: with this card's
+`_evidence/` directory present in the worktree, the same test fails a
+second time with `missing: _evidence/AGENTS.md`, because the index
+generator walks the filesystem, not the git tree. The evidence directory
+must be moved out (or the gate run after it is archived) or the unit step
+goes red for a reason that has nothing to do with the code.
 
-Parity is the only failing step and the card file excludes it: "Parity
-(D32) on: none." `verify-local.sh:135` runs `npm run parity` unconditionally
-and this branch's copy has no `SKIP_PARITY` (`grep -c SKIP_PARITY` on
-`origin/Vari8-Beta:icm/05-build/tools/verify-local.sh` is 0; PR #137 adds it
-and is still open). The failure signature is the reference-host font metric
-one the lead measured: 70 screens, `geom=0/0/91`, `text=0` on the samples,
-that is no element added or removed and no text changed, only sub-pixel
-geometry moves. It is not this branch's code and cannot pass on macOS with
-the Linux baseline.
+## What changed
 
-## Base defect found and fixed (outside the card)
+Reports only this round. Branch diff against `origin/Vari8-Beta` is the
+card's own files from the earlier build round: `lib/training/volume.ts`,
+`lib/trainingprogram/validators.ts`, `lib/trainingprogram/payload.ts`,
+`lib/trainingprogram/limits.ts`, `lib/trainingprogram/service.ts` (one
+line, `setRows` joins the locked-week boundary equality),
+`scripts/seed/35-training.seed.ts`, two new tests, one fixture key in
+`tests/unit/training-payload.test.ts`, `docs/index/SYMBOLS.md`
+(regenerated), and this report. No `db/` changes.
 
-`npm run test:integration` failed once on the merged base:
-`tests/integration/seed-credentials.test.ts` could not find a client profile
-owned by the seeded client user.
-
-Root cause, reproduced on a fresh DB: `scripts/seed/33-checkins.seed.ts`
-(merged with PR #120) re-pointed every client profile it touches at a
-credential-less `<slug>@canvas-demo.test` user. For the first roster client
-that overwrote the link `scripts/seed/00-workspace.seed.ts` writes for the
-SEED-FIX credential user, so the seeded client signed in as a user with no
-`accounts` row and no profile. Both files are identical to `origin/Vari8-Beta`,
-so the base is red for every lane that merges #120, not just this one.
-
-Fix, one block in `demoClientUser`: a profile that already has a user keeps
-it, and only a profile with no user gets the demo user. That is what the
-function's own comment already intends ("no credentials, the SEED-FIX
-credential path owns sign-in"). After the change the full suite is 859 of
-859 and the check-in seed still writes its three submissions.
-
-This file belongs to PR-M8, so it needs the lead's sign-off, and PR-M8's
-author should see it. It is one block and reverts cleanly if the lead
-prefers to fix it on the integration branch instead.
-
-## Matrix rows closed
-
-- V3-L1-TrainingSet: ordered per-set shape (`setRows`) in the draft and the
-  materialized payload, canvas TrainingSet fields carried verbatim.
-- V3-L1-Exercise: coach-editable `ExerciseLibraryItem` write shape plus the
-  seeded workspace library; the catalog stays read-only.
-- V3-L1-TrainingPlan: the program payload carries per-set rows and exercise
-  metadata; override semantics unchanged.
+The earlier `scripts/seed/33-checkins.seed.ts` change is no longer in the
+branch: the merge to `6d06cf8` dropped it, so the branch carries nothing
+outside the card. The base seed defect it addressed (client profiles
+re-pointed at credential-less `<slug>@canvas-demo.test` users) is visible
+again on this lane and blocks the client-facing render below.
 
 ## Could not do
 
-- **Parity (D32)**: not runnable on this host against the Linux baseline,
-  and out of contract for this card. The gate therefore exits 1 on that
-  single step. `SKIP_PARITY` is not on `origin/Vari8-Beta` yet (PR #137).
-- **Live browser pass at 1440 and 390**: not run in this session. The
-  acceptance above is measured at the data layer against the canvas
-  function itself, plus a real-Postgres round-trip; no screen changed, so
-  the canvas rule (Lilly's frontend looks exactly as today) holds by
-  construction. The prior Linux run's screenshots are under
-  `_evidence/PR-M6/build` on the Linux host and were not re-verified here.
-- **O5 set-log shape is a contract only** (validators), no storage or routes
-  by design; PR-W8 wires it. No `db/` edits.
-- **Coach-editable exercise library** ships as the validated write shape
-  plus seeded rows. No CRUD service: the capability table lands in PR-05
-  (D15) and the card file list names no service module.
-- **Exercise goals**: the canvas demo state has no goals (`seedState` leaves
-  `plans.goals` empty) and `ClientGoal` needs a `ParameterDefinition` from
-  PR-M4, so none were seeded.
-- Node 26.12.0 against target 24: the gate WARNs, it does not fail (D5).
+- **Gate**: pending on PR #145, not run, no READY line written.
+- **Live client-facing render of the seeded program**: not reachable on
+  this lane. `scripts/seed/00-workspace.seed.ts` and
+  `scripts/seed/33-checkins.seed.ts` create no `client_assignment` rows,
+  so the staff program page authorizes to 200 with "You don't have access
+  to this training program", and the profile named Emma Anders is owned by
+  the credential-less `emma.anders@canvas-demo.test` user while the
+  credential user `emma.anders@vari8.test` owns no profile. Both are seed
+  fixture behaviour outside this card's file list; the backend numbers
+  above were read through the same payload the page consumes.
+- **Parity (D32)**: out of contract for this card ("Parity (D32) on:
+  none") and not run.
+- **O5 set-log shape** ships as validators only, no storage or routes
+  (PR-W8 wires it). **Coach-editable exercise library** ships as the
+  validated write shape plus seeded rows, no CRUD service. **Exercise
+  goals** were not seeded: the canvas demo state has no goals and
+  `ClientGoal` needs a `ParameterDefinition` from PR-M4.
 
-## Environment note for the wave lead
+## Matrix rows closed
 
-`/Users/marcelspatz/.hermes/cache/scratch/flagproof/{npm,npx}` are `exit 0`
-shims and any lane that inherits that directory in `PATH` gets hollow npm
-passes and an empty `node_modules`. I left them in place (not mine to
-delete) and cleared them from this lane's `PATH`. Worth removing before the
-next wave of gates.
+- V3-L1-TrainingSet: ordered per-set shape (`setRows`) in the draft and
+  the materialized payload, canvas TrainingSet fields carried verbatim.
+- V3-L1-Exercise: coach-editable `ExerciseLibraryItem` write shape plus
+  the seeded workspace library; the catalog stays read-only.
+- V3-L1-TrainingPlan: the program payload carries per-set rows and
+  exercise metadata; override semantics unchanged.
