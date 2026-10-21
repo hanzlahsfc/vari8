@@ -5,6 +5,9 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "App",
+  // iOS does not read the web manifest; the tile below is the same PR-31
+  // brand mark the manifest icons use.
+  icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

@@ -4,13 +4,13 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 52 backend pages, 7 API routes, 14 layouts, 3 canvas pages.
+Counts: 55 backend pages, 7 API routes, 14 layouts, 3 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
 treat a missing guard as unverified, and read `lib/auth/route-guard.ts` for real enforcement.
 
-Route groups (do not add a path segment): `(canvas)`, `(tracker)`.
+Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 
 ## Backend pages (`app/`)
 
@@ -25,6 +25,9 @@ Route groups (do not add a path segment): `(canvas)`, `(tracker)`.
 | `/library/foods` | `app/library/foods/page.tsx` | server | none detected |
 | `/login` | `app/login/page.tsx` | server | none detected |
 | `/me` | `app/(canvas)/me/page.tsx` | server | requireClientAccess |
+| `/me/login` | `app/(canvas)/me/(auth)/login/page.tsx` | server | none detected |
+| `/me/reset` | `app/(canvas)/me/(auth)/reset/page.tsx` | server | none detected |
+| `/me/reset-request` | `app/(canvas)/me/(auth)/reset-request/page.tsx` | server | none detected |
 | `/reset` | `app/reset/page.tsx` | server | none detected |
 | `/reset-request` | `app/reset-request/page.tsx` | server | none detected |
 | `/sheets` | `app/sheets/page.tsx` | server | requireSheetViewer |
@@ -79,7 +82,7 @@ Route groups (do not add a path segment): `(canvas)`, `(tracker)`.
 | `/api/v1/media/object` | `app/api/v1/media/object/route.ts` | GET, PUT | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients` | `app/api/v1/workspaces/[workspaceId]/clients/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/session` | `app/api/v1/workspaces/[workspaceId]/session/route.ts` | - | none detected |
-| `/logout` | `app/logout/route.ts` | POST | none detected |
+| `/logout` | `app/logout/route.ts` | POST | getSession |
 
 ## Backend layouts (`app/`)
 
@@ -89,8 +92,8 @@ Layouts enforce the guards below for every route beneath them.
 |---|---|---|---|
 | `/` | `app/(canvas)/layout.tsx` | server | none detected |
 | `/` | `app/layout.tsx` | server | none detected |
-| `/invite` | `app/invite/layout.tsx` | server | none detected |
 | `/login` | `app/login/layout.tsx` | server | none detected |
+| `/me` | `app/(canvas)/me/(auth)/layout.tsx` | server | none detected |
 | `/reset` | `app/reset/layout.tsx` | server | none detected |
 | `/reset-request` | `app/reset-request/layout.tsx` | server | none detected |
 | `/signup` | `app/signup/layout.tsx` | server | none detected |
