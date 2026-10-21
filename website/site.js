@@ -21,9 +21,10 @@
     var replay = demo.querySelector("[data-demo-replay]");
     var status = demo.querySelector("[data-demo-status]");
 
-    // Per-phase durations; the completed review holds longer before the
-    // story loops back to Prepare.
-    var PHASE_MS = [4200, 4200, 4200, 5600];
+    // Per-phase durations at 1.25× playback (the CSS phase animations are
+    // scaled by the same factor so actions stay in step); the completed
+    // review still holds longer before the story loops back to Prepare.
+    var PHASE_MS = [3360, 3360, 3360, 4480];
     var current = 0;
     var playing = false;
     var inView = false;

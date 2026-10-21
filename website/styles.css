@@ -124,17 +124,39 @@ body::before {
 
 .site-nav {
   display: flex;
-  gap: 1.3rem;
+  gap: 0.4rem;
   align-items: center;
   margin-left: auto;
 }
 .site-nav a {
+  position: relative;
   color: var(--muted);
   text-decoration: none;
   font-size: 0.92rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.55rem;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
+}
+/* decorative hairline centred in the flex gap — pseudo-element content is
+   not exposed to assistive technology */
+.site-nav a + a::before {
+  content: "";
+  position: absolute;
+  left: calc(-0.2rem - 0.5px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 0.95em;
+  background: var(--border-strong);
+}
+.site-nav a:hover,
+.site-nav a:focus-visible {
+  color: var(--text);
 }
 .site-nav a:hover {
-  color: var(--text);
+  background: var(--surface-subtle);
 }
 
 /* ---------- shared bits ---------- */
@@ -172,6 +194,19 @@ body::before {
 }
 .btn-quiet:hover {
   border-color: var(--border-strong);
+}
+/* header CTA — same destination as the hero button, deliberately quieter
+   and smaller so the hero keeps the primary emphasis */
+.btn-nav {
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--text);
+  padding: 0.5rem 1rem;
+  font-size: 0.86rem;
+}
+.btn-nav:hover {
+  border-color: var(--accent);
+  color: var(--accent-ink);
 }
 .btn[disabled] {
   cursor: not-allowed;
@@ -261,6 +296,30 @@ select:focus-visible,
   gap: 0.9rem;
   flex-wrap: wrap;
   align-items: center;
+}
+
+/* restrained one-shot entrance — settles inside a second, the copy is
+   readable throughout; disabled entirely under reduced motion */
+@keyframes heroRise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+.hero-copy > * {
+  animation: heroRise 0.6s ease-out both;
+}
+.hero-copy > *:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.hero-copy > *:nth-child(3) {
+  animation-delay: 0.16s;
+}
+.hero-copy > *:nth-child(4) {
+  animation-delay: 0.24s;
+}
+.hero-stage {
+  animation: heroRise 0.7s ease-out 0.15s both;
 }
 
 .hero-stage {
@@ -911,68 +970,70 @@ select:focus-visible,
     box-shadow: 0 0 0 1.5px rgb(235 145 184 / 22%);
   }
 }
-/* phase 0 — coach rows populate one by one; client waits */
+/* phase 0 — coach rows populate one by one; client waits.
+   All durations and delays are the original values ÷ 1.25 (the scene runs
+   at 1.25× and stays in step with the JS phase timer) */
 .js .scene[data-phase="0"] .plan-card .prow-1 {
-  animation: rowIn 0.5s ease 0.4s both;
+  animation: rowIn 0.4s ease 0.32s both;
 }
 .js .scene[data-phase="0"] .plan-card .prow-2 {
-  animation: rowIn 0.5s ease 1s both;
+  animation: rowIn 0.4s ease 0.8s both;
 }
 .js .scene[data-phase="0"] .plan-card .prow-3 {
-  animation: rowIn 0.5s ease 1.6s both;
+  animation: rowIn 0.4s ease 1.28s both;
 }
 .js .scene[data-phase="0"] .pub-btn {
-  animation: revealUp 0.5s ease 2.1s both;
+  animation: revealUp 0.4s ease 1.68s both;
 }
 
 /* phase 1 — publish presses, plan travels right, client card reveals */
 .js .scene[data-phase="1"] .pub-btn {
-  animation: pressIn 0.7s ease 0.3s both;
+  animation: pressIn 0.56s ease 0.24s both;
 }
 .js .scene[data-phase="1"] .travel-plan {
-  animation: flyPlanX 1.1s ease 0.9s both;
+  animation: flyPlanX 0.88s ease 0.72s both;
 }
 .js .scene[data-phase="1"] .client-plan {
-  animation: revealUp 0.55s ease 1.9s both;
+  animation: revealUp 0.44s ease 1.52s both;
 }
 .js .scene[data-phase="1"] .pub-done {
-  animation: popIn 0.3s ease 0.8s both;
+  animation: popIn 0.24s ease 0.64s both;
 }
 
 /* phase 2 — check-in fills, sends, travels back to coach */
 .js .scene[data-phase="2"] .ci-lines i {
   transform-origin: left;
-  animation: rowIn 0.45s ease both;
+  animation: rowIn 0.36s ease both;
 }
 .js .scene[data-phase="2"] .ci-lines i:nth-child(1) {
-  animation-delay: 0.3s;
+  animation-delay: 0.24s;
 }
 .js .scene[data-phase="2"] .ci-lines i:nth-child(2) {
-  animation-delay: 0.75s;
+  animation-delay: 0.6s;
 }
 .js .scene[data-phase="2"] .ci-lines i:nth-child(3) {
-  animation-delay: 1.2s;
+  animation-delay: 0.96s;
 }
 .js .scene[data-phase="2"] .ci-btn {
-  animation: pressIn 0.6s ease 1.7s both;
+  animation: pressIn 0.48s ease 1.36s both;
 }
 .js .scene[data-phase="2"] .travel-ci {
-  animation: flyCiX 1.1s ease 2.1s both;
+  animation: flyCiX 0.88s ease 1.68s both;
 }
 .js .scene[data-phase="2"] .inbox-item {
-  animation: revealUp 0.5s ease 3s both;
+  animation: revealUp 0.4s ease 2.4s both;
 }
 
 /* phase 3 — review opens: a single ring lands on the card and stays as a
    quiet highlight for the rest of the phase */
 .js .scene[data-phase="3"] .inbox-card {
-  animation: reviewRing 0.9s ease 0.3s both;
+  animation: reviewRing 0.72s ease 0.24s both;
 }
 .js .scene[data-phase="3"] .reply-box {
-  animation: revealUp 0.55s ease 0.7s both;
+  animation: revealUp 0.44s ease 0.56s both;
 }
 .js .scene[data-phase="3"] .pill-done {
-  animation: pillIn 0.35s ease 0.35s both;
+  animation: pillIn 0.28s ease 0.28s both;
 }
 
 /* paused mid-flight or blocked (offscreen/hidden): freeze everything */
@@ -1033,6 +1094,13 @@ select:focus-visible,
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  align-items: center;
+}
+/* direction cue between the numbered steps — decorative only */
+.step-arrow {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1;
 }
 .demo-dot {
   display: inline-flex;
@@ -1586,6 +1654,14 @@ select:focus-visible,
   max-width: 62ch;
 }
 
+.showcase-label {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
 .showcase-tabs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1594,13 +1670,16 @@ select:focus-visible,
 .feature-tab {
   font: inherit;
   text-align: left;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius);
   padding: 0.55rem;
   cursor: pointer;
   color: var(--text);
-  transition: border-color 160ms ease;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
 }
 .feature-tab img {
   display: block;
@@ -1620,11 +1699,18 @@ select:focus-visible,
   padding: 0 0.3rem 0.3rem;
 }
 .feature-tab:hover {
-  border-color: var(--border-strong);
+  border-color: var(--accent);
+  background: var(--surface);
+  transform: translateY(-2px);
 }
+/* selected reads through shape and weight, not colour alone: a heavier
+   bottom band sits inside the card edge */
 .feature-tab.is-active {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
+  background: var(--surface);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    inset 0 -3px 0 var(--accent);
 }
 .feature-tab.is-active span {
   color: var(--accent-ink);
@@ -2214,12 +2300,19 @@ select:focus-visible,
   margin: 0 0 2.2rem;
 }
 
+/* one bordered pill around arrow and label reads as a single control */
 .split-cta {
   display: inline-flex;
   align-items: center;
-  gap: 0.9rem;
+  gap: 0.75rem;
   text-decoration: none;
   font-weight: 600;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  padding: 0.35rem;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
 }
 .split-cta-arrow {
   display: inline-grid;
@@ -2230,15 +2323,19 @@ select:focus-visible,
   background: var(--accent);
   color: var(--accent-contrast);
   font-size: 1.25rem;
+  transition: transform 160ms ease;
 }
 .split-cta-label {
   color: var(--text);
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  padding: 0.7rem 1.3rem;
+  padding: 0.7rem 1.1rem 0.7rem 0.3rem;
 }
-.split-cta:hover .split-cta-label {
+.split-cta:hover {
   border-color: var(--accent);
+  background: var(--surface-subtle);
+}
+.split-cta:hover .split-cta-arrow,
+.split-cta:focus-visible .split-cta-arrow {
+  transform: translateX(0.25rem);
 }
 
 .split-visual {
@@ -2304,6 +2401,29 @@ select:focus-visible,
   padding: 1.05rem 1.2rem;
   color: var(--muted);
   font-size: 0.97rem;
+  display: grid;
+  grid-template-columns: 2.1rem 1fr;
+  gap: 0.85rem;
+  align-items: start;
+}
+/* small icon chip marks each point; the icon echoes the list item's
+   meaning (checklist, draft, person, calendar, folder, trend) */
+.cl-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.6rem;
+  color: var(--accent);
+  background: var(--surface-subtle);
+}
+.cl-icon svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.cl-text {
+  min-width: 0;
 }
 /* contrasting warm-light section — same palette family, light surface */
 .section-light {
@@ -2322,14 +2442,10 @@ select:focus-visible,
   color: #574c41;
   box-shadow: 0 1px 0 rgb(27 22 17 / 5%);
 }
-
-.concrete-list li::before {
-  content: "";
-  display: block;
-  width: 1.6rem;
-  height: 2px;
-  background: var(--accent);
-  margin-bottom: 0.6rem;
+.section-light .cl-icon {
+  color: #a5336a;
+  background: rgb(165 51 106 / 8%);
+  border-color: rgb(165 51 106 / 22%);
 }
 
 /* ---------- early access ---------- */
@@ -2345,12 +2461,33 @@ select:focus-visible,
 }
 
 .honesty-box {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius);
   padding: 1rem 1.2rem;
   color: var(--muted);
   font-size: 0.95rem;
   max-width: 60ch;
+}
+.hb-icon {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  margin-top: 0.05rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.55rem;
+  color: var(--accent);
+}
+.hb-icon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+.hb-text {
+  margin: 0;
 }
 .honesty-box strong {
   color: var(--text);
@@ -2580,8 +2717,16 @@ select:focus-visible,
   }
   .btn,
   .demo-step,
-  .feature-tab {
+  .feature-tab,
+  .site-nav a,
+  .split-cta,
+  .split-cta-arrow {
     transition: none;
+  }
+  /* the hero entrance is a motion preference: everything rests immediately */
+  .hero-copy > *,
+  .hero-stage {
+    animation: none;
   }
   /* feature scenes rest on their completed static state — nothing to
      pause, so the transport button hides rather than lying */
