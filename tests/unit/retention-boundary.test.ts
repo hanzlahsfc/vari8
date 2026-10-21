@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { retentionCutoff, retentionElapsed } from "../../lib/workspace/retention";
+import {
+  retentionCutoff,
+  retentionElapsed,
+} from "../../lib/workspace/retention";
 
 const now = new Date("2026-12-31T00:00:00.000Z");
 
@@ -12,12 +15,12 @@ describe("retention boundary", () => {
   });
 
   it("is inclusive: archived exactly on the cutoff is elapsed", () => {
-    expect(retentionElapsed(new Date("2026-10-02T00:00:00.000Z"), 90, now)).toBe(
-      true,
-    );
-    expect(retentionElapsed(new Date("2026-10-02T00:00:00.001Z"), 90, now)).toBe(
-      false,
-    );
+    expect(
+      retentionElapsed(new Date("2026-10-02T00:00:00.000Z"), 90, now),
+    ).toBe(true);
+    expect(
+      retentionElapsed(new Date("2026-10-02T00:00:00.001Z"), 90, now),
+    ).toBe(false);
   });
 
   it("clamps a non-positive workspace setting to zero instead of future-dating the cutoff", () => {
