@@ -260,7 +260,25 @@ harness to compare, which is why the card declares parity off.
 | `npm run seed:dev` (with `BETTER_AUTH_SECRET`)                       | 0    | `done: 4 module(s) on app_wb_m1`, 15 client profiles                                                |
 | `pr-m1-live-server.sh 3900` + `/login` probe                         | 0    | server up, `/login` HTTP 200                                                                        |
 | `pr-m1-acceptance.sh`                                                | 0    | the seven steps in the table above                                                                  |
-| `node _evidence/PR-M1/build/shots.cjs before` / `after`              | 0    | 4 screenshots, HTTP 200 at 1440x900 and 390x844                                                     |
+| `node Vari8-evidence/WAVEB-LEAD/shots.cjs before` / `after`          | 0    | 4 screenshots, HTTP 200 at 1440x900 and 390x844                                                     |
+
+The acceptance helpers (`pr-m1-acceptance.sh`, `pr-m1-live-server.sh`,
+`shots.cjs`, `step.ts`) live in `Vari8-evidence/WAVEB-LEAD/`, not in
+`_evidence/` inside the worktree. Reason: a `.cjs` file anywhere under the
+worktree root makes `npm run lint` fail with
+`A configuration object specifies rule "react-hooks/set-state-in-effect", but
+could not find plugin "react-hooks"`. `eslint.config.mjs` sets react-hooks
+rules in an unscoped object while `eslint-config-next` registers the plugin
+only for the extensions its own globs match, so a stray `.cjs` breaks the
+whole config. That is a shared toolchain detail, not this card's code: no
+product file changes it. Removing the stray file restored
+`eslint` to `0 errors, 81 warnings`.
+
+Gate runs on this head history: `EXIT=0` at `b1270da` (product head). A second
+run at `6bdbb76` (this report's first commit, docs only) returned `EXIT=1` on
+`FAIL lint exit=2` for exactly that stray `.cjs` helper, which was then moved
+out of the worktree; the final gate run on the head that carries this text is
+in the gate log with the same clean tree and no product change.
 
 Not done or not possible on this run: the roster page does not exist on this
 branch, so the screenshots show the JSON the roster query returns rather than
