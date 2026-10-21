@@ -12,16 +12,22 @@
 
 :root {
   color-scheme: dark;
-  --canvas: #070707;
-  --surface: #141414;
-  --surface-subtle: #1b1b1b;
-  --text: #f2f2f2;
-  --muted: #b6b6b6;
-  --border: rgb(220 220 220 / 13%);
-  --border-strong: rgb(220 220 220 / 30%);
-  --accent: #eb91b8;
-  --accent-ink: #f5c9db;
-  --accent-contrast: #17090f;
+  /* Vari8 brand pack v2 (brand-reference/vari8-brand-concept-v2.png):
+     near-black canvas, indigo > purple > blush ramp, off-white ink.
+     --accent carries the pale blush for fills; --accent-ink the magenta
+     for accent text and icons; deep/mid hold the cool end of the ramp. */
+  --canvas: #07070c;
+  --surface: #101017;
+  --surface-subtle: #181820;
+  --text: #f5f1f6;
+  --muted: #b6b1c2;
+  --border: rgb(245 241 246 / 13%);
+  --border-strong: rgb(245 241 246 / 30%);
+  --accent: #f5c8e7;
+  --accent-ink: #d875b8;
+  --accent-contrast: #07070c;
+  --accent-deep: #343f98;
+  --accent-mid: #7950a8;
   --radius: 0.9rem;
   --max: 72rem;
 }
@@ -111,15 +117,18 @@ body::before {
 }
 
 .wordmark {
-  font-weight: 700;
-  font-size: 1.3rem;
-  letter-spacing: -0.02em;
-  color: var(--text);
+  display: inline-flex;
+  align-items: center;
   text-decoration: none;
   margin: 0;
 }
-.wordmark > span {
-  color: var(--accent);
+.wordmark img {
+  display: block;
+  height: 1.55rem;
+  width: auto;
+}
+.footer-inner .wordmark img {
+  height: 1.05rem;
 }
 
 .site-nav {
@@ -261,8 +270,25 @@ select:focus-visible,
 
 /* ---------- hero ---------- */
 
+/* the pack's own v2 mesh carries the launch page: bright sweeps live at
+   the edges, the centre stays near-black for copy */
 .hero {
+  position: relative;
   padding: clamp(3rem, 8vh, 5.5rem) 0 clamp(3rem, 7vh, 5rem);
+  background: url("assets/brand/mesh-blue-purple-blush-v2.png") center / cover
+    no-repeat;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgb(7 7 12 / 76%),
+    rgb(7 7 12 / 34%) 55%,
+    rgb(7 7 12 / 42%)
+  );
 }
 
 .hero-inner {
@@ -333,11 +359,7 @@ select:focus-visible,
   padding: clamp(0.9rem, 2.6vw, 1.8rem);
   padding-bottom: clamp(3.4rem, 10.5%, 7.2rem);
   background:
-    radial-gradient(
-      62% 55% at 66% 28%,
-      rgb(235 145 184 / 11%),
-      transparent 72%
-    ),
+    radial-gradient(62% 55% at 66% 28%, rgb(121 80 168 / 16%), transparent 72%),
     linear-gradient(158deg, var(--surface-subtle), var(--surface) 72%);
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) + 0.6rem);
@@ -2420,7 +2442,7 @@ select:focus-visible,
 .split {
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
-  background: linear-gradient(180deg, #0b0b0b, #070707);
+  background: linear-gradient(180deg, #0d0d15, #07070c);
   overflow: hidden;
 }
 .split-inner {
@@ -2530,8 +2552,8 @@ select:focus-visible,
   line-height: 1;
   letter-spacing: -0.045em;
   color: transparent;
-  -webkit-text-stroke: 1px rgb(235 145 184 / 55%);
-  text-stroke: 1px rgb(235 145 184 / 55%);
+  -webkit-text-stroke: 1px rgb(121 80 168 / 60%);
+  text-stroke: 1px rgb(121 80 168 / 60%);
   white-space: nowrap;
   user-select: none;
 }
@@ -2606,27 +2628,27 @@ select:focus-visible,
 .cl-text {
   min-width: 0;
 }
-/* contrasting warm-light section — same palette family, light surface */
+/* contrasting light section — the pack's off-white with purple accents */
 .section-light {
-  background: #f2ece3;
-  color: #1b1611;
+  background: #f5f1f6;
+  color: #17151f;
 }
 .section-light .kicker {
-  color: #a5336a;
+  color: #7950a8;
 }
 .section-light .section-title {
-  color: #1b1611;
+  color: #07070c;
 }
 .section-light .concrete-list li {
-  background: #fbf8f2;
-  border-color: rgb(27 22 17 / 10%);
-  color: #574c41;
-  box-shadow: 0 1px 0 rgb(27 22 17 / 5%);
+  background: #fbf9fc;
+  border-color: rgb(7 7 12 / 10%);
+  color: #4c4757;
+  box-shadow: 0 1px 0 rgb(7 7 12 / 5%);
 }
 .section-light .cl-icon {
-  color: #a5336a;
-  background: rgb(165 51 106 / 8%);
-  border-color: rgb(165 51 106 / 22%);
+  color: #7950a8;
+  background: rgb(121 80 168 / 8%);
+  border-color: rgb(121 80 168 / 24%);
 }
 
 /* ---------- early access ---------- */
