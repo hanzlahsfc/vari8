@@ -268,15 +268,16 @@
 
   /* ================= local font lab (?fontlab) ================= */
 
-  // Owner-only review tool: a small fixed switcher that applies body-copy
-  // treatments (A baseline, B editorial condensed, C humanist open) to the
-  // real page. Nothing is injected unless the query flag is present, so the
-  // public page is untouched. Candidates are preloaded first so switching
-  // has no missing-font flash.
+  // Team review tool: a small fixed switcher that applies heading/body
+  // font pairings to the real page. Nothing is injected unless the query
+  // flag is present, so the public page is untouched. Candidates are
+  // preloaded first so switching has no missing-font flash. These are
+  // review presets, not approved choices.
   if (new URLSearchParams(window.location.search).has("fontlab")) {
     [
-      "assets/fonts/ibm-plex-sans-condensed-latin-400-normal.woff2",
-      "assets/fonts/fira-sans-latin-400-normal.woff2",
+      "assets/fonts/satoshi-400.woff2",
+      "assets/fonts/satoshi-700.woff2",
+      "assets/fonts/satoshi-900.woff2",
     ].forEach(function (href) {
       var link = document.createElement("link");
       link.rel = "preload";
@@ -290,30 +291,26 @@
     var lab = document.createElement("div");
     lab.className = "fontlab";
     lab.setAttribute("role", "group");
-    lab.setAttribute("aria-label", "Body font treatments, local review only");
+    lab.setAttribute("aria-label", "Font pairings, local review only");
     var labLabel = document.createElement("span");
     labLabel.className = "fontlab-label";
     labLabel.textContent = "Font lab";
     lab.appendChild(labLabel);
 
-    var treatments = [
-      ["", "A — Geist"],
-      ["treat-b", "B — Editorial"],
-      ["treat-c", "C — Humanist"],
+    var pairings = [
+      ["", "A · Geist + Geist", "Current: Geist headings, Geist body"],
+      ["pair-b", "B · Geist + Satoshi", "Geist headings, Satoshi body"],
+      ["pair-c", "C · Satoshi + Satoshi", "Satoshi headings, Satoshi body"],
     ];
-    var labButtons = treatments.map(function (t, i) {
+    var labButtons = pairings.map(function (t, i) {
       var btn = document.createElement("button");
       btn.type = "button";
       btn.textContent = t[1];
       btn.setAttribute("aria-pressed", i === 0 ? "true" : "false");
-      btn.title =
-        i === 0
-          ? "Current baseline"
-          : i === 1
-            ? "IBM Plex Sans Condensed, tighter and firmer"
-            : "Fira Sans, more open and conversational";
+      btn.setAttribute("aria-label", t[2]);
+      btn.title = t[2];
       btn.addEventListener("click", function () {
-        document.body.classList.remove("treat-b", "treat-c");
+        document.body.classList.remove("pair-b", "pair-c");
         if (t[0]) document.body.classList.add(t[0]);
         labButtons.forEach(function (b, j) {
           b.setAttribute("aria-pressed", j === i ? "true" : "false");

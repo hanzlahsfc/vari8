@@ -9,37 +9,35 @@
   font-weight: 100 900;
   font-display: swap;
 }
-/* lab candidates — only fetched when a .treat-* class uses them
-   (IBM Plex Sans Condensed + Fira Sans: SIL OFL 1.1, licences beside
-   the files in assets/fonts/) */
+/* lab candidate — only fetched when a .pair-* class uses it
+   (Satoshi: ITF Free Font License, licence in
+   assets/fonts/LICENSE-Satoshi.txt) */
 @font-face {
-  font-family: "IBM Plex Sans Condensed";
-  src: url("assets/fonts/ibm-plex-sans-condensed-latin-400-normal.woff2")
-    format("woff2");
+  font-family: "Satoshi";
+  src: url("assets/fonts/satoshi-400.woff2") format("woff2");
   font-style: normal;
   font-weight: 400;
   font-display: swap;
 }
 @font-face {
-  font-family: "IBM Plex Sans Condensed";
-  src: url("assets/fonts/ibm-plex-sans-condensed-latin-700-normal.woff2")
-    format("woff2");
+  font-family: "Satoshi";
+  src: url("assets/fonts/satoshi-500.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Satoshi";
+  src: url("assets/fonts/satoshi-700.woff2") format("woff2");
   font-style: normal;
   font-weight: 700;
   font-display: swap;
 }
 @font-face {
-  font-family: "Fira Sans";
-  src: url("assets/fonts/fira-sans-latin-400-normal.woff2") format("woff2");
+  font-family: "Satoshi";
+  src: url("assets/fonts/satoshi-900.woff2") format("woff2");
   font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Fira Sans";
-  src: url("assets/fonts/fira-sans-latin-700-normal.woff2") format("woff2");
-  font-style: normal;
-  font-weight: 700;
+  font-weight: 900;
   font-display: swap;
 }
 
@@ -66,9 +64,12 @@
   --accent-mid: #7950a8;
   --radius: 0.9rem;
   --max: 72rem;
-  /* body-copy family, swappable once the owner picks a face
-     (see font-compare.html); headings, nav, buttons and labels keep
-     the Geist stack declared on body */
+  /* heading and body-copy families, swappable once the owner picks a
+     pairing (review tool: ?fontlab); nav, buttons and labels keep the
+     Geist stack declared on body */
+  --font-head:
+    "Infinity Geist", "Geist", system-ui, "Helvetica Neue", Helvetica, Arial,
+    sans-serif;
   --font-body:
     "Infinity Geist", "Geist", system-ui, "Helvetica Neue", Helvetica, Arial,
     sans-serif;
@@ -303,8 +304,15 @@ select:focus-visible,
   margin: 0 0 2.4rem;
 }
 
-/* descriptive reading copy uses the body token — UI labels, headings,
-   buttons and the animated product text stay on the Geist stack */
+/* headings ride the head token; descriptive reading copy the body
+   token — nav, buttons, labels and the animated product text keep the
+   Geist stack declared on body */
+.hero-title,
+.section-title,
+.split-title,
+.showcase-caption-text h3 {
+  font-family: var(--font-head);
+}
 .hero-sub,
 .section-sub,
 .shot-caption,
@@ -3132,39 +3140,47 @@ select:focus-visible,
 
 /* ---------- local font lab (?fontlab) ---------- */
 
-/* three coherent body-copy treatments, toggled on <body> by the lab
-   control site.js injects only when ?fontlab is present. Headings,
-   nav, buttons, labels and product text never change. */
-body.treat-b {
-  --font-body:
-    "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial,
-    sans-serif;
+/* heading/body pairing presets, toggled on <body> by the lab control
+   site.js injects only when ?fontlab is present. Nav, buttons, labels
+   and the animated product text never change. */
+body.pair-b,
+body.pair-c {
+  --font-body: "Satoshi", "Helvetica Neue", Arial, sans-serif;
 }
-body.treat-c {
-  --font-body:
-    "Fira Sans", "Trebuchet MS", Verdana, "Helvetica Neue", sans-serif;
+body.pair-c {
+  --font-head: "Satoshi", "Helvetica Neue", Arial, sans-serif;
 }
-body.treat-b .hero-sub,
-body.treat-b .section-sub,
-body.treat-b .shot-caption,
-body.treat-b .demo-caption,
-body.treat-b .showcase-caption-text p,
-body.treat-b .relate-note,
-body.treat-b .split-note,
-body.treat-b .honesty-box {
-  letter-spacing: 0.004em;
-  line-height: 1.5;
+/* Satoshi body: even rhythm, slightly open tracking */
+body.pair-b .hero-sub,
+body.pair-b .section-sub,
+body.pair-b .shot-caption,
+body.pair-b .demo-caption,
+body.pair-b .showcase-caption-text p,
+body.pair-b .relate-note,
+body.pair-b .split-note,
+body.pair-b .honesty-box,
+body.pair-c .hero-sub,
+body.pair-c .section-sub,
+body.pair-c .shot-caption,
+body.pair-c .demo-caption,
+body.pair-c .showcase-caption-text p,
+body.pair-c .relate-note,
+body.pair-c .split-note,
+body.pair-c .honesty-box {
+  letter-spacing: 0.002em;
+  line-height: 1.62;
 }
-body.treat-c .hero-sub,
-body.treat-c .section-sub,
-body.treat-c .shot-caption,
-body.treat-c .demo-caption,
-body.treat-c .showcase-caption-text p,
-body.treat-c .relate-note,
-body.treat-c .split-note,
-body.treat-c .honesty-box {
-  letter-spacing: 0.008em;
-  line-height: 1.72;
+/* C: deliberate display/body contrast — black hero weight, bold
+   section titles, tightened spacing against a 400 body */
+body.pair-c .hero-title {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+body.pair-c .section-title,
+body.pair-c .split-title,
+body.pair-c .showcase-caption-text h3 {
+  font-weight: 700;
+  letter-spacing: -0.015em;
 }
 
 /* the switcher itself — exists only while the lab is open */
