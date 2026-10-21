@@ -2696,29 +2696,10 @@ select:focus-visible,
   color: var(--text);
 }
 
-.early-form {
-  margin-top: 1.6rem;
-}
-.early-compact {
-  display: flex;
-  gap: 0.6rem;
-  max-width: 28rem;
-}
-.early-compact input {
-  flex: 1;
-  min-width: 0;
-  background: var(--surface-subtle);
-  border: 1px solid var(--border);
-  border-radius: 0.6rem;
-  padding: 0.7rem 0.85rem;
-  color: var(--text);
-  font: inherit;
-}
-.early-compact input:disabled {
-  opacity: 0.45;
-}
-.early-compact .btn {
-  flex-shrink: 0;
+/* the single control sits below the availability note; disabled styling
+   comes from .btn[disabled] */
+.early-cta {
+  margin-top: 1.4rem;
 }
 
 /* ---------- footer ---------- */
