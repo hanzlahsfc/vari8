@@ -246,4 +246,23 @@
       });
     });
   }
+
+  /* ================= coach / client exchanges ================= */
+
+  // One-shot entrance: rows rise in and a dot travels each connector once
+  // when the section scrolls into view. Arming happens only when IO exists
+  // and motion is welcome — everyone else simply sees the finished rows.
+  var relate = document.querySelector(".relate");
+  if (relate && "IntersectionObserver" in window && !reducedMotion.matches) {
+    relate.classList.add("relate-arm");
+    new IntersectionObserver(
+      function (entries, observer) {
+        if (entries[0].isIntersecting) {
+          relate.classList.add("in-view");
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.35 },
+    ).observe(relate);
+  }
 })();

@@ -2584,50 +2584,156 @@ select:focus-visible,
 
 /* ---------- coach / client ---------- */
 
-.two-col {
+/* three exchanges between the two roles; the dashed connector carries the
+   direction of each handoff, with a single travelling dot on entry */
+.relate {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(2rem, 5vw, 4rem);
+  gap: 1.3rem;
+  margin-top: clamp(1.7rem, 3.2vw, 2.5rem);
 }
-
-.concrete-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.relate-row {
   display: grid;
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(0.9rem, 2.4vw, 1.6rem);
+  max-width: 56rem;
+  margin: 0 auto;
 }
-.concrete-list li {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.05rem 1.2rem;
-  color: var(--muted);
-  font-size: 0.97rem;
-  display: grid;
-  grid-template-columns: 2.1rem 1fr;
-  gap: 0.85rem;
-  align-items: start;
-}
-/* small icon chip marks each point; the icon echoes the list item's
-   meaning (checklist, draft, person, calendar, folder, trend) */
-.cl-icon {
-  display: inline-grid;
-  place-items: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  border: 1px solid var(--border-strong);
-  border-radius: 0.6rem;
-  color: var(--accent);
-  background: var(--surface-subtle);
-}
-.cl-icon svg {
-  width: 1.1rem;
-  height: 1.1rem;
-}
-.cl-text {
+.relate-item {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
   min-width: 0;
 }
+.relate-ic {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid rgb(121 80 168 / 26%);
+  border-radius: 0.7rem;
+  color: #7950a8;
+  background: rgb(121 80 168 / 8%);
+}
+.relate-ic svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+.relate-copy {
+  min-width: 0;
+}
+.relate-role {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #7950a8;
+}
+.relate-act {
+  display: block;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #07070c;
+}
+.relate-note {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.88rem;
+  color: #4c4757;
+}
+.relate-link {
+  position: relative;
+  width: clamp(2.6rem, 6vw, 6rem);
+  height: 0;
+  border-top: 2px dashed rgb(121 80 168 / 45%);
+}
+.relate-link::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-left: 7px solid #7950a8;
+}
+.relate-dot {
+  position: absolute;
+  top: -5px;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #7950a8;
+  opacity: 0;
+}
+/* hidden until armed by JS; no-JS / no-IO visitors see the full rows */
+.relate-arm .relate-row {
+  opacity: 0;
+  transform: translateY(12px);
+}
+.relate-arm.in-view .relate-row {
+  animation: relateIn 0.5s ease both;
+}
+.relate-arm.in-view .relate-row:nth-child(2) {
+  animation-delay: 0.18s;
+}
+.relate-arm.in-view .relate-row:nth-child(3) {
+  animation-delay: 0.36s;
+}
+.relate-arm.in-view .relate-dot {
+  animation: relFlyX 0.85s ease 0.55s both;
+}
+.relate-arm.in-view .relate-row:nth-child(2) .relate-dot {
+  animation-delay: 1.05s;
+}
+.relate-arm.in-view .relate-row:nth-child(3) .relate-dot {
+  animation-delay: 1.55s;
+}
+@keyframes relateIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes relFlyX {
+  0% {
+    left: 0;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    left: calc(100% - 12px);
+    opacity: 0;
+  }
+}
+@keyframes relFlyY {
+  0% {
+    top: 0;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    top: calc(100% - 12px);
+    opacity: 0;
+  }
+}
+
 /* contrasting light section — the pack's off-white with purple accents */
 .section-light {
   background: #f5f1f6;
@@ -2639,16 +2745,8 @@ select:focus-visible,
 .section-light .section-title {
   color: #07070c;
 }
-.section-light .concrete-list li {
-  background: #fbf9fc;
-  border-color: rgb(7 7 12 / 10%);
+.section-light .section-sub {
   color: #4c4757;
-  box-shadow: 0 1px 0 rgb(7 7 12 / 5%);
-}
-.section-light .cl-icon {
-  color: #7950a8;
-  background: rgb(121 80 168 / 8%);
-  border-color: rgb(121 80 168 / 24%);
 }
 
 /* ---------- early access ---------- */
@@ -2657,10 +2755,22 @@ select:focus-visible,
   margin-bottom: 4rem;
 }
 .early-inner {
+  position: relative;
+  overflow: hidden;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: clamp(1.8rem, 4vw, 3rem);
+  padding: clamp(2.2rem, 5vw, 4rem);
+}
+/* the supplied V submark as a quiet closing texture */
+.early-mark {
+  position: absolute;
+  right: clamp(-3rem, -1vw, -1rem);
+  bottom: clamp(-3rem, -2vw, -1.5rem);
+  width: min(42%, 24rem);
+  height: auto;
+  opacity: 0.08;
+  pointer-events: none;
 }
 
 .honesty-box {
@@ -2749,8 +2859,33 @@ select:focus-visible,
   .split-visual {
     min-height: 19rem;
   }
-  .two-col {
+  /* each exchange stacks; the connector turns vertical between the pair */
+  .relate-row {
     grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+  .relate-link {
+    width: 0;
+    height: 1.7rem;
+    margin-left: 1.15rem;
+    border-top: 0;
+    border-left: 2px dashed rgb(121 80 168 / 45%);
+  }
+  .relate-link::after {
+    right: auto;
+    left: 50%;
+    top: auto;
+    bottom: -2px;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top: 7px solid #7950a8;
+  }
+  .relate-dot {
+    top: 0;
+    left: -5px;
+  }
+  .relate-arm.in-view .relate-dot {
+    animation-name: relFlyY;
   }
 }
 
@@ -2922,6 +3057,16 @@ select:focus-visible,
   .hero-link-dot,
   .shot-chip-client {
     animation: none;
+  }
+  /* the relationship rows rest fully visible; the connectors stay static */
+  .relate-arm .relate-row {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+  .relate-dot {
+    animation: none;
+    opacity: 0;
   }
   /* feature scenes rest on their completed static state — nothing to
      pause, so the transport button hides rather than lying */
