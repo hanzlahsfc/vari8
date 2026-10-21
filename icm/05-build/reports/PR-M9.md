@@ -3,7 +3,8 @@
 Card `icm/05-build/cards/pr-m9-dashboard-config.md`, issue #121, PR #122.
 Lane database `app_wb_m9`, lane port 3935. Base `origin/Vari8-Beta` at
 `6d06cf8`. Code head in this report:
-`6d4c0479e385195942576ab666b219915af7d331` (`6d4c047`).
+`6d4c0479e385195942576ab666b219915af7d331` (`6d4c047`). The report is
+the only change after that head, committed as `63d7030`.
 
 This round changed the report only. The code, the seed and the test
 below are the ones already on the branch; no file under `db/` changed
