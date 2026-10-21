@@ -1,5 +1,6 @@
 import { forbidden, redirect } from "next/navigation";
 
+import { auth } from "@/auth";
 import { requireSessionUser } from "@/lib/auth/route-guard";
 import {
   type CanvasViewer,
@@ -29,9 +30,16 @@ export async function requireCanvasAccess(): Promise<CanvasViewer> {
  * PR-W1 `/me` gate (S11-18): only a client bound to their own `ClientProfile`
  * reaches the client home. Staff, unlinked clients (no profile yet) and any
  * other principal fail closed with the 403 page.
+ *
+ * O17: a signed-out visitor to `/me` is sent to the client sign-in
+ * (`/me/login`), not the staff `/login`. requireSessionUser keeps its own
+ * `/login` target for every staff surface, so this gate resolves the session
+ * itself.
  */
 export async function requireClientAccess(): Promise<ClientViewer> {
-  const { userId } = await requireSessionUser();
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0) redirect("/me/login");
   const viewer = await getClientViewer(userId);
   if (!viewer) forbidden();
   return viewer;

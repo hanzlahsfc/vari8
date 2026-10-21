@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 138 modules with exports, 1374 exported symbols.
+Counts: 138 modules with exports, 1376 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -189,6 +189,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function getViewer(): Promise<Viewer | null>`
 - `export async function getViewerFromHeaders(requestHeaders: Headers): Promise<Viewer | null>`
 - `export function initialsOf(name: string): string`
+- `export async function signOutPath(userId: string | undefined | null): Promise<string>`
 
 ## `lib/boundary.ts`
 
@@ -1769,6 +1770,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function acceptInvitationFromLink(session: SessionLike, input: { workspaceId: unknown; rawToken: unknown; name?: unknown; password?: unknown; }, client: PrismaClient = prisma): Promise...`
 - `export function acceptInvitationMessage(error: unknown): string`
 - `export async function getInviteLinkState(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<InviteLinkState>`
+- `export async function getInviteShellRole(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<"client" | "staff" | null>`
 
 ## `lib/workspace/retention.ts`
 
