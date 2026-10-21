@@ -1,9 +1,12 @@
 # PR-M2 build report
 
 Card `pr-m2-preferences` (issue #107), PR #108, branch `beta/pr-m2-preferences`, lane DB `app_wb_m2` on 127.0.0.1:5433, lane port 3905.
-Gate head `ce7db700a711db139742bb86f09b1dc20798dfac` (merge of `origin/Vari8-Beta` at `fb5c38780b729679b11b4d2a32d7ce14d3f65ab9`). The report commit follows it and changes only this file.
-Matrix rows closed: none (foundation PR, per the card).
-Parity (D32): none, this card gates no screens.
+
+This report is regenerated on head `fcf4c4a47efc0244408e1a2e5c3c033f4158e7e4` (merge of `origin/Vari8-Beta` at `6d06cf828d1165139959bf1720b217dac790182f`, short `6d06cf8`). The report commit follows that head and changes only this file.
+
+Gate: **pending on PR #145, not green**. `origin/Vari8-Beta` at `6d06cf8` fails `tests/unit/system-index.test.ts:127` on its own (`expect(routes).toContain("Counts: 52 backend pages")`, generator now emits 55 after #140). `verify-local.sh` aborts at the unit step, so no card in this wave can produce a gate receipt on this base. No gate was run for this report; a missing receipt here is not a pass.
+
+Matrix rows closed: none (foundation PR, per the card). Parity (D32): none, this card gates no screens.
 
 ## What changed
 
@@ -16,103 +19,112 @@ Parity (D32): none, this card gates no screens.
 | `tests/unit/workspace-preferences.test.ts`                         | Boundary validation, exact Prisma write shape, workspace isolation, sidebar member scoping.                                     |
 | `tests/integration/api-v1-preferences.test.ts`                     | Real route handlers, real bearer sign-in, real PostgreSQL: contract, persistence, two-workspace acceptance, roles, 401/403/400. |
 
-No `db/` changes (`git diff --name-only fb5c387 HEAD -- db/` printed nothing), so the D34 schema guard has nothing to check.
+No `db/` changes (`git diff --name-only 6d06cf8 HEAD -- db/` printed nothing), so the D34 schema guard has nothing to check.
 
-`tests/integration/seed-credentials.test.ts` is the base version, untouched by this lane.
+## Commands and exit codes (this head)
 
-## Commands and exit codes
+| Command                                                                                                                                                                     | Exit                                 |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `psql ... postgres -c "create database app_wb_m2"`                                                                                                                          | 0                                    |
+| `npx prisma migrate deploy` (against `app_wb_m2`)                                                                                                                           | 0 (all applied)                      |
+| `npx tsx scripts/seed/index.ts` (4 modules: 00, 21, 33, 40)                                                                                                                 | 0                                    |
+| `npm run build`                                                                                                                                                             | 0                                    |
+| `env -u AUTH_URL -u AUTH_SECRET npx vitest run tests/unit/workspace-preferences.test.ts`                                                                                    | 0 (27 tests)                         |
+| `INTEGRATION_DATABASE_URL=...app_wb_m2_it env -u AUTH_URL -u AUTH_SECRET npx vitest run --config vitest.integration.config.ts tests/integration/api-v1-preferences.test.ts` | 0 (15 tests)                         |
+| `npx next start -p 3905`                                                                                                                                                    | served the runs below, stopped after |
+| `./pr-m2-acceptance2.sh` (HTTP acceptance, output `pr-m2-acceptance2.log`)                                                                                                  | 0                                    |
+| `node pr-m2-browser.cjs` (Chromium, workspace A, 1440 and 390, output `pr-m2-browser.log`)                                                                                  | 0                                    |
+| `node pr-m2-browser-b.cjs` (Chromium, workspace B, 1440 and 390, output `pr-m2-browser-b.log`)                                                                              | 0                                    |
+| `icm/05-build/tools/verify-local.sh`                                                                                                                                        | not run: blocked by PR #145          |
 
-| Command                                                                                                                            | Exit                                                                  |
-| ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `git fetch origin && git merge --ff-only origin/beta/pr-m2-preferences`                                                            | 0 (already up to date)                                                |
-| `git merge origin/Vari8-Beta`                                                                                                      | 0 (conflicts in `docs/index/ROUTES.md`, `docs/index/SYMBOLS.md` only) |
-| `npm run index` (regenerates the two conflicted generated docs)                                                                    | 0                                                                     |
-| `npm run index:check`                                                                                                              | 0                                                                     |
-| `npm run format:check`                                                                                                             | 0                                                                     |
-| `npx vitest run tests/unit/workspace-preferences.test.ts`                                                                          | 0 (27 tests)                                                          |
-| `npx vitest run --config vitest.integration.config.ts tests/integration/api-v1-preferences.test.ts`                                | 0 (15 tests)                                                          |
-| `BASE_SHA=$(git merge-base HEAD origin/Vari8-Beta) LANE_DB=app_wb_m2 LANE_PORT=3905 CARD=PR-M2 icm/05-build/tools/verify-local.sh` | 1 (parity only)                                                       |
-
-Gate summary, verbatim from `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/WAVEB-LEAD/pr-m2-preferences.check.log`:
-
-```
-head=ce7db700a711db139742bb86f09b1dc20798dfac base=fb5c38780b729679b11b4d2a32d7ce14d3f65ab9 node=v26.12.0 card=PR-M2 db=app_wb_m2 port=3905
-PASS clean tree (0s)
-WARN node: target 24 (D5), running v26.12.0; recorded, not certified
-PASS schema guard (D34) (0s)
-PASS program generator check (1s)
-PASS npm ci (12s)
-PASS prisma generate (1s)
-PASS frontend npm ci (6s)
-PASS format check (11s)
-PASS typecheck (22s)
-PASS frontend typecheck (4s)
-PASS lint (16s)
-PASS frontend lint (2s)
-PASS unit tests (14s)
-PASS frontend tests (1s)
-PASS integration tests (138s)
-PASS migrate deploy (0s)
-PASS build (40s)
-PASS frontend build (9s)
-PASS e2e flow specs (serialized) (20s)
-FAIL parity regression (D32) exit=1 (230s)
-VERIFY-LOCAL FAIL
-```
-
-The gate script on this branch, and the one on `origin/Vari8-Beta` at `fb5c387`, has no `SKIP_PARITY` switch (`git show origin/Vari8-Beta:icm/05-build/tools/verify-local.sh | grep -c SKIP_PARITY` printed `0`), so the documented escape hatch for cards that gate no screens is not available yet. The parity step is therefore the only failing step.
-
-### Parity failure, classified
-
-`parity FAIL: 70 problem(s), retried=0; report tools/parity/out/report.html`. Of the 70 screen failures, 68 are pixel-only with identical geometry and identical text (`geom=0/0/<n> text=0`), which is the baseline captured on Linux compared against this Mac's font rasterization. The remaining two are `s03-checkin-review@390` and `s03-checkin-review@1440` with `text=1`, on the check-in review screen, which comes from `origin/Vari8-Beta` (PR-M8) and is not touched by this lane. Example lines:
-
-```
-FAIL s10-appearance@1440 px=1734522 geom=0/0/138 text=0
-FAIL s11-preferences@1440 px=788646 geom=0/0/98 text=0 ruled=3
-FAIL s03-checkin-review@390 px=210510 geom=0/0/132 text=1
-```
-
-This is the known harness defect tracked as PR #137 ("verify-local: SKIP_PARITY=1 for cards whose contract gates no screens"). Parity is not this card's contract and was not modified.
+Two environment notes for whoever re-runs this on the Mac. The shell here exports `AUTH_URL` and `AUTH_SECRET`, and `lib/auth/server.ts` refuses to start when both the `BETTER_AUTH_*` and the legacy names are set to different values (`Refusing to start: BETTER_AUTH_URL and AUTH_URL are both set to different values`), so every test and server command above runs with `env -u AUTH_URL -u AUTH_SECRET`. The server also needs `BETTER_AUTH_SECRET` from the repo `.env` in production mode. This is harness configuration, not card code, and it is why the commands are written out literally.
 
 ## Acceptance: accent and mode persist per workspace and differ between two workspaces
 
-Proven against a running server, not client state. `npx next start -p 3905` on `app_wb_m2`, seeded with `npm run seed:dev` (two workspaces: `canvas-demo` with an owner, `seed-second-workspace` with a coach), then real HTTP with bearer tokens from real sign-ins. Script: `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/WAVEB-LEAD/pr-m2-acceptance.sh`, output: `pr-m2-acceptance.log`.
+Measured on this head against the production server on 3905 and `app_wb_m2`. Values are new for this run, nothing is copied from the earlier report. Workspace A is `canvas-demo` (`cmvimim5400008ox3qnseuau0`), workspace B is `seed-second-workspace` (`cmvimim8k000i8ox3dfp0nmv3`). Both start from the seed state (DARK, `#EB91B8`), so the difference below is produced by the writes, not by the seed.
+
+HTTP, from `pr-m2-acceptance2.log` (each workspace written and read by a member of that workspace, session cookie from a real sign-in, token never printed):
 
 ```
-workspace A (canvas-demo)      id=cmvh0hfmm00008oi5zgdi3w9r
-workspace B (seed-second-ws)   id=cmvh0hfq5000i8oi5m0x3xcva
+== 1. write A {mode:light, accent:#0E5A7A, font:serif}
+{"mode":"light","accent":"#0E5A7A","font":"serif","density":"comfortable",...}   HTTP 200
+== 2. write B {mode:dark, accent:#C2410C, font:mono}
+{"mode":"dark","accent":"#C2410C","font":"mono","density":"comfortable",...}     HTTP 200
 
-== PATCH A {mode:light, accent:#2b7157}
-{"mode":"light","accent":"#2B7157",...}   HTTP 200
-== PATCH B {accent:#3565b7} (mode left untouched)
-{"mode":"dark","accent":"#3565B7",...}    HTTP 200
+== 3. read-back through the server, B then A (B's session)
+B: {"mode":"dark","accent":"#C2410C","font":"mono",...}    HTTP 200
+A: {"mode":"light","accent":"#0E5A7A","font":"serif",...}  HTTP 200
 
-== GET A (server read-back)
-{"mode":"light","accent":"#2B7157","font":"sans","density":"comfortable","logoMediaId":null,"availability":"Weekdays · 09:00-18:00","notifications":true,"priorityNotifications":true}   HTTP 200
-== GET B (server read-back)
-{"mode":"dark","accent":"#3565B7","font":"sans","density":"comfortable","logoMediaId":null,"availability":"","notifications":true,"priorityNotifications":true}   HTTP 200
+== 5. workspace isolation: A's session against B
+GET B    -> {"error":{"code":"forbidden"}}  HTTP 403
+PATCH B  -> {"error":{"code":"forbidden"}}  HTTP 403
 
-== cross-workspace isolation: A's token reading B
-{"error":{"code":"forbidden"}}   HTTP 403
+== 6. unsigned request
+GET A without a session -> {"error":{"code":"unauthenticated"}}  HTTP 401
 ```
 
-Database rows behind those two reads:
+Database rows after the browser sessions (server-side truth, `select slug, appearance_mode, appearance_accent, appearance_font, appearance_density from workspace`):
 
 ```
  slug                  | appearance_mode | appearance_accent | appearance_font | appearance_density
 -----------------------+-----------------+-------------------+-----------------+--------------------
- canvas-demo           | LIGHT           | #2B7157           | SANS            | COMFORTABLE
- seed-second-workspace | DARK            | #3565B7           | SANS            | COMFORTABLE
+ canvas-demo           | LIGHT           | #0E5A7A           | SERIF           | COMPACT
+ seed-second-workspace | DARK            | #C2410C           | MONO            | COMFORTABLE
 (2 rows)
 ```
 
-Both rows differ in mode and in accent, each read back through the API by its own workspace member, and a member of A gets 403 on B. The same assertion runs in the integration suite as `acceptance: accent and mode persist per workspace and differ`.
+Mode differs (`LIGHT` vs `DARK`), accent differs (`#0E5A7A` vs `#C2410C`), font differs (`SERIF` vs `MONO`). Each row is read back through the API by its own member, and each member gets 403 on the other workspace. `COMPACT` on A is the density write issued from the 390 browser session below, which also shows a write from the narrow width persists.
 
-Boundary behaviour proven in the same integration file: client role 403 on read and write, outsider 403 with `{"error":{"code":"forbidden"}}`, signed-out 401, bad accent, bad font enum, bad mode enum, non-boolean toggle and malformed JSON all 400 `invalid_input` with the stored accent unchanged, sidebar flag isolated per member (a client may toggle their own).
+### Browser, 1440 and 390
+
+Real Chromium, session cookies from a real sign-in, page served by `next start`:
+
+```
+[1440] GET /coach -> HTTP 200, title=Coach
+[1440] GET A -> HTTP 200 {"mode":"light","accent":"#0E5A7A","font":"serif",...}
+[1440] GET B -> HTTP 403 {"error":{"code":"forbidden"}}
+[390]  GET /coach -> HTTP 200, title=Coach
+[390]  GET A -> HTTP 200 {"mode":"light","accent":"#0E5A7A","font":"serif",...}
+[390]  GET B -> HTTP 403 {"error":{"code":"forbidden"}}
+[390]  PATCH A {density:compact} -> HTTP 200
+[390]  GET A again -> HTTP 200 {"mode":"light","accent":"#0E5A7A",...,"density":"compact"}
+
+[1440/B] GET /coach -> HTTP 200
+[1440/B] GET B -> HTTP 200 {"mode":"dark","accent":"#C2410C","font":"mono",...}
+[1440/B] GET A -> HTTP 403 {"error":{"code":"forbidden"}}
+[390/B]  GET /coach -> HTTP 200
+[390/B]  GET B -> HTTP 200 {"mode":"dark","accent":"#C2410C","font":"mono",...}
+[390/B]  GET A -> HTTP 403 {"error":{"code":"forbidden"}}
+```
+
+Screenshots (absolute paths):
+
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m2-preferences/_evidence/PR-M2/build/PR-M2-coach-1440.png`
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m2-preferences/_evidence/PR-M2/build/PR-M2-coach-390.png`
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m2-preferences/_evidence/PR-M2/build/PR-M2-coach-B-1440.png`
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m2-preferences/_evidence/PR-M2/build/PR-M2-coach-B-390.png`
+
+What the screenshots show and do not show: they are the signed-in coach surface at each width, not a rendered accent. No screen in this app reads the stored workspace appearance on this head (`grep -rln appearanceAccent app lib frontend/src` matches only `lib/workspace/preferences.ts`), because owner ruling O3 parks the client settings screen and PR-W10 does the wiring. The visual surface for this contract does not exist yet; the live proof is the HTTP contract from a real baked-in browser session at both widths.
+
+The B session is a synthetic coach `prm2.browser@example.test` created on the lane DB only (`pr-m2-browser-fixture.ts`), because the seeded staff2 credential belongs to a different dataset and its password was not available to this run.
+
+## Unit line: trust-boundary validation and workspace isolation
+
+`npx vitest run tests/unit/workspace-preferences.test.ts` exit 0, 27 tests. The cases that carry the card's unit line:
+
+- `rejects accent missing hash / short hex / non-hex / word before any write` (`EB91B8`, `#EB91B`, `#ZZZZZZ`, `rose`): throws before `workspace.update`, write count 0.
+- `rejects {"font":"comic-sans"} / {"mode":"auto"} / {"density":"roomy"} / {"notifications":"yes"} / {"theme":"x"} / availability over 500 chars before any write`: same, write count 0.
+- `rejects a non-object body null, "rose", 42, ["mode","dark"] before any write`.
+- `reads only the caller's workspace`: the Prisma call is keyed on the context workspace id, never a body id.
+- `maps a full canvas patch to the exact Prisma write, normalizing accent`: `#c5457c` lands as `#C5457C`, the DB enum and the wire vocabulary stay one to one.
+
+Same boundary over the wire, measured live (`pr-m2-acceptance2.log`, section 4): `#12345` and `red` return 400 `invalid_format` on `accent`, `comic` returns 400 `invalid_value` on `font`, `dim` returns 400 `invalid_value` on `mode`, and the read after all four rejections still returns `{"mode":"light","accent":"#0E5A7A","font":"serif"}` HTTP 200, so a rejected patch writes nothing.
+
+Integration suite on the real routes and real PostgreSQL (`app_wb_m2_it`), 15 tests, exit 0, including `acceptance: accent and mode persist per workspace and differ`, `a member of another workspace gets 403, not the data`, `signed-out requests get 401 on both routes`, `client role is denied read and write (D15)`, `sidebar flag persists per member inside one workspace`.
 
 ## What I could not do
 
-1. Gate exit 0. Every step passes except parity, which fails for the reason above and cannot be skipped by this branch's or the base's `verify-local.sh`. Fixing it belongs to PR #137, not to this card.
-2. Browser screenshots of the preferences screen at 1440 and 390. Owner ruling O3: the client settings screen is blocked on Lilly's canvas design, and no canvas screen is wired to these routes yet (that is PR-W10). There is no UI surface for this card to photograph, so the live proof is HTTP against the running server. The canvas screens that do exist are unchanged and covered by the parity capture.
-3. A full `npm run seed:dev`. `scripts/seed/40-media.seed.ts` aborts with `StorageError: storage_not_configured` because no storage adapter is configured on this machine. Modules `00`, `21` and `33` had already run, so `21-appearance.seed.ts` did write the canvas demo appearance, which is what the acceptance needed. That seed belongs to PR-MEDIA.
-4. Node 24 certification. This machine runs v26.12.0; the gate records the D5 warning and does not certify it.
+1. A gate receipt on this base. PR #145 fixes `tests/unit/system-index.test.ts` (canary 52 to 55, `_evidence` skip); until it lands no card can produce `EXIT=0`. One gate run per card after it lands closes this.
+2. A screenshot of an accent rendering. No screen consumes the stored appearance on this head (O3 parks the client settings screen, PR-W10 wires it). Changing that is outside this card.
+3. Node 24 certification. This host runs v26.12.1, which the gate records as a D5 warning.
+4. `npm run db:fresh` as written. It drives the Docker container `vari8-db-1`; this host runs native PG17 with no Docker daemon, so the lane database was created with `psql -c "create database app_wb_m2"` and then migrated and seeded directly, both exit 0.
