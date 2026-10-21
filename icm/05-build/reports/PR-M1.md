@@ -180,3 +180,92 @@ Not done on this machine: the live browser receipt in
 `/home/nexuslink/vari8-worktrees/_evidence/PR-M1/build/` is from the Linux
 run and was not re-captured here, and the report's gate table row for the
 Linux run still reads `TBD` because that log is on the other machine.
+
+## macOS run, 2026-10-21 (gate exit 0, acceptance proven)
+
+This section supersedes the gate status above. Base
+`5553b471e2be1e1f8ea4f3dbadfd50c65f162281` (`git rev-parse origin/Vari8-Beta`
+at the moment the log was read), gate-verified head
+`b1270da6decdcb8a66be9ddae7768416087be5b3`. The branch already carried the
+merge of `origin/Vari8-Beta`; this run changed no product code, only this
+report.
+
+Gate command: `run-gate.sh pr-m1-client-lifecycle M1 app_wb_m1 3900`
+(`SKIP_PARITY=1`, `BASE_SHA` = merge base with `origin/Vari8-Beta`).
+Log: `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/WAVEB-LEAD/pr-m1-client-lifecycle.check.log`.
+Final line of the gate: `EXIT=0` after `VERIFY-LOCAL PASS`. It is the first
+gate on this card that ends green on this machine; the earlier run recorded
+above failed only on parity, which is skipped here.
+
+| Step                            | Result                                   |
+| ------------------------------- | ---------------------------------------- |
+| clean tree                      | PASS                                     |
+| schema guard (D34)              | PASS (no `db/` change)                   |
+| program generator check         | PASS                                     |
+| npm ci / prisma generate        | PASS / PASS                              |
+| frontend npm ci                 | PASS                                     |
+| format check / typecheck / lint | PASS / PASS / PASS                       |
+| frontend typecheck / lint/tests | PASS / PASS / PASS                       |
+| unit tests                      | PASS 97 files, 1111 tests                |
+| integration tests               | PASS 62 files, 875 tests (real Postgres) |
+| migrate deploy                  | PASS                                     |
+| build / frontend build          | PASS / PASS                              |
+| e2e flow specs (serialized)     | PASS 10 passed, 7 skipped                |
+| parity regression (D32)         | SKIP (`SKIP_PARITY=1`, card gates none)  |
+| `EXIT`                          | 0                                        |
+
+### Acceptance (you see), measured on the lane DB and a live server
+
+Card contract: "Archiving hides a client from the roster query; delete before
+retention is refused." Lane database `app_wb_m1` on native PG17
+`127.0.0.1:5433`, dev server `npm run dev -- -p 3900`, signed in as the seeded
+owner through the real login form. Every roster number below is the response
+body of `GET /api/v1/workspaces/cmvik6shb00008opl07msr5cs/clients` with that
+session, not a client-side count. Full transcript:
+`Vari8-evidence/WAVEB-LEAD/pr-m1-acceptance.out`.
+
+| Step | Query or call                                     | Literal result                                                                                                           |
+| ---- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 1    | roster before archive                             | HTTP 200, `items.length` 15, contains "Oliver Stone" true                                                                |
+| 2    | `archiveClientProfile` on "Oliver Stone"          | `{"clientProfileId":"cmvik6slu000t8oplxbdvq14q","changed":true}`                                                         |
+| 3    | roster after archive                              | HTTP 200, `items.length` 14, contains "Oliver Stone" false                                                               |
+| 4    | `client_profile` row of the archived client       | `archived_at` set, `archive_reason` "acceptance proof", row present                                                      |
+| 5    | `deleteClientProfile` on the just-archived client | refused `WorkspaceServiceError code=retention_not_elapsed`, workspace `retention_days` 90, row count after the refusal 1 |
+| 6    | `audit_event` for that client id                  | `UPDATE / client_profile / ARCHIVED` on every archive transition                                                         |
+| 7    | same roster call with no session                  | HTTP 401                                                                                                                 |
+
+So the roster query drops a client the moment it is archived, and a delete
+inside the retention window is refused with no row removed.
+
+Screenshots, both widths, same browser session, roster endpoint opened after
+the real sign-in:
+
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m1-client-lifecycle/_evidence/PR-M1/build/roster-before-1440.png` (15 items)
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m1-client-lifecycle/_evidence/PR-M1/build/roster-before-390.png` (15 items)
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m1-client-lifecycle/_evidence/PR-M1/build/roster-after-1440.png` (14 items, "Oliver Stone" absent)
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m1-client-lifecycle/_evidence/PR-M1/build/roster-after-390.png` (14 items, "Oliver Stone" absent)
+
+The browser-visible surface is still the `/api/v1` roster JSON: this branch
+ships no roster page (that is PR-W2), so there is no screen for the parity
+harness to compare, which is why the card declares parity off.
+
+### Commands on this run
+
+| Command                                                              | Exit | Result                                                                                              |
+| -------------------------------------------------------------------- | ---- | --------------------------------------------------------------------------------------------------- |
+| `run-gate.sh pr-m1-client-lifecycle M1 app_wb_m1 3900`               | 0    | `VERIFY-LOCAL PASS`, `EXIT=0`                                                                       |
+| `docker exec vari8-db-1 dropdb/createdb -U app app_wb_m1` (Mac shim) | 0    | lane DB recreated                                                                                   |
+| `npx prisma migrate deploy` on `app_wb_m1`                           | 0    | all migrations applied                                                                              |
+| `npm run seed:dev` (first attempt, no `BETTER_AUTH_SECRET`)          | 1    | `storage_not_configured` in `40-media.seed.ts`; workspace, clients and check-ins had already seeded |
+| `npm run seed:dev` (with `BETTER_AUTH_SECRET`)                       | 0    | `done: 4 module(s) on app_wb_m1`, 15 client profiles                                                |
+| `pr-m1-live-server.sh 3900` + `/login` probe                         | 0    | server up, `/login` HTTP 200                                                                        |
+| `pr-m1-acceptance.sh`                                                | 0    | the seven steps in the table above                                                                  |
+| `node _evidence/PR-M1/build/shots.cjs before` / `after`              | 0    | 4 screenshots, HTTP 200 at 1440x900 and 390x844                                                     |
+
+Not done or not possible on this run: the roster page does not exist on this
+branch, so the screenshots show the JSON the roster query returns rather than
+a rendered list. Delete-after-retention success is not re-measured here; it is
+covered by `tests/integration/m1-client-lifecycle.test.ts` (10 tests, green in
+the gate above), and this run proves only the refusal the card asks for. The
+lane DB was left seeded and stopped: the dev server was killed after the
+screenshots.
