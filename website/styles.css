@@ -33,6 +33,12 @@
   --accent-mid: #7950a8;
   --radius: 0.9rem;
   --max: 72rem;
+  /* body-copy family, swappable once the owner picks a face
+     (see font-compare.html); headings, nav, buttons and labels keep
+     the Geist stack declared on body */
+  --font-body:
+    "Infinity Geist", "Geist", system-ui, "Helvetica Neue", Helvetica, Arial,
+    sans-serif;
 }
 
 * {
@@ -262,6 +268,19 @@ select:focus-visible,
   max-width: 58ch;
   font-size: 1.05rem;
   margin: 0 0 2.4rem;
+}
+
+/* descriptive reading copy uses the body token — UI labels, headings,
+   buttons and the animated product text stay on the Geist stack */
+.hero-sub,
+.section-sub,
+.shot-caption,
+.demo-caption,
+.showcase-caption-text p,
+.relate-note,
+.split-note,
+.honesty-box {
+  font-family: var(--font-body);
 }
 
 .shot-caption {
