@@ -2425,21 +2425,35 @@ select:focus-visible,
 }
 .split-inner {
   display: grid;
-  grid-template-columns: 5fr 7fr;
+  grid-template-columns: 6fr 7fr;
   gap: clamp(1.5rem, 4vw, 3rem);
   align-items: center;
   padding-top: clamp(3rem, 8vh, 5.5rem);
   padding-bottom: clamp(3rem, 8vh, 5.5rem);
 }
 
+/* two left-aligned statements; the answering phrase sits a breath below
+   and hands its emphasis to “as one” */
 .split-title {
-  font-size: clamp(2.4rem, 5vw, 4rem);
-  line-height: 0.98;
+  font-size: clamp(2.35rem, 4.6vw, 4rem);
+  line-height: 1.04;
   letter-spacing: -0.03em;
   margin: 0 0 1.6rem;
 }
-.split-title-indent {
-  padding-left: 1.2em;
+.split-line-2 {
+  display: inline-block;
+  margin-top: 0.14em;
+}
+.split-line-2 em {
+  font-style: normal;
+  color: var(--accent);
+}
+@media (min-width: 901px) {
+  /* each phrase holds one line where the column allows; narrower
+     layouts wrap naturally with no forced indentation */
+  .split-line {
+    white-space: nowrap;
+  }
 }
 
 .split-mono {
