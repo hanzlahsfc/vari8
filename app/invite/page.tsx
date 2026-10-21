@@ -1,7 +1,11 @@
 import Link from "next/link";
 
 import { auth } from "@/auth";
-import { getInviteLinkState } from "@/lib/workspace/invite-acceptance";
+import { CoachAuthShell, ClientAuthShell } from "@/components/auth/auth-shells";
+import {
+  getInviteLinkState,
+  getInviteShellRole,
+} from "@/lib/workspace/invite-acceptance";
 
 import { InviteForm } from "./invite-form";
 
@@ -14,6 +18,11 @@ export const metadata = { title: "Invitation" };
  * non-consuming peek — every unusable link (missing, malformed, expired,
  * revoked, consumed, wrong purpose) renders one identical safe state. The
  * atomic claim itself still happens inside the reviewed service on submit.
+ *
+ * O17: the page wears the shell the invitation was issued for. A client
+ * invitation opens on the client look (`/me`'s root) and keeps its sign-in
+ * links on `/me`; a staff invitation, and every unusable link, keep the coach
+ * look and `/login`.
  */
 export default async function InvitePage({
   searchParams,
@@ -32,18 +41,30 @@ export default async function InvitePage({
     }),
   ]);
 
+  const role =
+    state.state === "ready"
+      ? await getInviteShellRole({
+          workspaceId: params.workspace,
+          rawToken: params.token,
+        })
+      : null;
+  const Shell = role === "client" ? ClientAuthShell : CoachAuthShell;
+  const signInHref = role === "client" ? "/me/login" : "/login";
+
   if (state.state !== "ready") {
     return (
-      <main className="app-main" data-testid="invite-invalid">
-        <h1 className="app-title">Invitation</h1>
-        <p className="app-lede">
-          This invitation link is invalid, expired, or has already been used.
-          Ask the workspace owner for a new invitation.
-        </p>
-        <p className="app-lede">
-          <Link href="/login">Go to sign in</Link>
-        </p>
-      </main>
+      <Shell>
+        <main className="app-main" data-testid="invite-invalid">
+          <h1 className="app-title">Invitation</h1>
+          <p className="app-lede">
+            This invitation link is invalid, expired, or has already been used.
+            Ask the workspace owner for a new invitation.
+          </p>
+          <p className="app-lede">
+            <Link href={signInHref}>Go to sign in</Link>
+          </p>
+        </main>
+      </Shell>
     );
   }
 
@@ -52,24 +73,26 @@ export default async function InvitePage({
   const signedIn = typeof session?.user?.id === "string";
 
   return (
-    <main className="app-main" data-testid="invite-page">
-      <h1 className="app-title">Accept your invitation</h1>
-      <p className="app-lede">
-        {signedIn
-          ? "Confirm to join the workspace with your signed-in account."
-          : "Set your name and a password to create your account."}
-      </p>
-      <InviteForm
-        workspaceId={workspaceId}
-        token={rawToken}
-        needsAccount={!signedIn}
-      />
-      {signedIn ? null : (
+    <Shell>
+      <main className="app-main" data-testid="invite-page">
+        <h1 className="app-title">Accept your invitation</h1>
         <p className="app-lede">
-          Already have an account? <Link href="/login">Sign in</Link> first,
-          then open this link again.
+          {signedIn
+            ? "Confirm to join the workspace with your signed-in account."
+            : "Set your name and a password to create your account."}
         </p>
-      )}
-    </main>
+        <InviteForm
+          workspaceId={workspaceId}
+          token={rawToken}
+          needsAccount={!signedIn}
+        />
+        {signedIn ? null : (
+          <p className="app-lede">
+            Already have an account? <Link href={signInHref}>Sign in</Link>{" "}
+            first, then open this link again.
+          </p>
+        )}
+      </main>
+    </Shell>
   );
 }

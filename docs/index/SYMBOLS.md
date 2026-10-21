@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 138 modules with exports, 1360 exported symbols.
+Counts: 137 modules with exports, 1359 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -189,6 +189,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function getViewer(): Promise<Viewer | null>`
 - `export async function getViewerFromHeaders(requestHeaders: Headers): Promise<Viewer | null>`
 - `export function initialsOf(name: string): string`
+- `export async function signOutPath(userId: string | undefined | null): Promise<string>`
 
 ## `lib/boundary.ts`
 
@@ -797,12 +798,6 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function getSectionById(id: string): TrackerSection | undefined`
 - `export function validateDailyTrackerValues(values: TrackerValues): TrackerValidationError[]`
 
-## `lib/dashboard/adapter.ts`
-
-- `export type DraftResult = { ok: true; draft: DashboardDraft } | { ok: false; reason: string }`
-- `export function configToDraft(config: unknown): DraftResult`
-- `export function draftToConfig(draft: unknown, visibility: WidgetVisibility = "client"): ValidationResult`
-
 ## `lib/dashboard/autosave-coordinator.ts`
 
 - `export type AutosaveActions = { save(input: { workspaceId: string; clientProfileId: string; config: DashboardConfig; expectedRevision: number; }): Promise<AutosaveSaveResult>; reload(input: { works...`
@@ -848,7 +843,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export const WIDGET_KINDS = [ "BN21", "BN01", "BN08", "BN15", "BN19", "TL26", "TL28", "TL06", "TL11", "TL14", "TL21", "TL22", "CU01", "CU02", "CU03", "CU04", "CU06", "CU09", "CU10", "CU16", ] as const`
 - `export type WidgetInstance = { id: string; kind: WidgetKind; settings: WidgetSettings; }`
 - `export type WidgetKind = (typeof WIDGET_KINDS)[number]`
-- `export type WidgetSettings = { title: string; source: string; summary: string; period: string; historyPeriod?: "auto" | "3m" | "6m" | "1y"; target: boolean; size: SizeName; fields: string[]; labels...`
+- `export type WidgetSettings = { title: string; source: string; summary: string; period: string; historyPeriod: "auto" | "3m" | "6m" | "1y"; target: boolean; size: SizeName; fields: string[]; labels:...`
 - `export type WidgetVisibility = "staff" | "client"`
 - `export function canonicalizeDashboardConfig(config: DashboardConfig): string`
 - `export function compactRects(rects: Record<string, Rect>): Record<string, Rect>`
@@ -1763,6 +1758,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function acceptInvitationFromLink(session: SessionLike, input: { workspaceId: unknown; rawToken: unknown; name?: unknown; password?: unknown; }, client: PrismaClient = prisma): Promise...`
 - `export function acceptInvitationMessage(error: unknown): string`
 - `export async function getInviteLinkState(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<InviteLinkState>`
+- `export async function getInviteShellRole(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<"client" | "staff" | null>`
 
 ## `lib/workspace/roster-query.ts`
 
