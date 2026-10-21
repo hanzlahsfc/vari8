@@ -325,19 +325,125 @@ select:focus-visible,
 .hero-stage {
   min-width: 0;
 }
-/* positioning context for the layered shots; bottom padding reserves the
-   space the floating shot protrudes into, so the caption below clears it */
+/* the shots sit on a framed stage — a quiet accent wash and bordered
+   surface make the pair read as one deliberate composition, and the
+   bottom padding reserves the space the floating shot protrudes into */
 .hero-shots {
   position: relative;
-  padding-bottom: clamp(2.5rem, 8%, 6rem);
+  padding: clamp(0.9rem, 2.6vw, 1.8rem);
+  padding-bottom: clamp(3.4rem, 10.5%, 7.2rem);
+  background:
+    radial-gradient(
+      62% 55% at 66% 28%,
+      rgb(235 145 184 / 11%),
+      transparent 72%
+    ),
+    linear-gradient(158deg, var(--surface-subtle), var(--surface) 72%);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 0.6rem);
 }
 .hero-shot {
+  position: relative;
   margin: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
   box-shadow: 0 30px 70px rgb(0 0 0 / 45%);
+}
+/* role chips make the coach/client relationship readable at a glance */
+.shot-chip {
+  position: absolute;
+  z-index: 2;
+  padding: 0.28rem 0.65rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  background: rgb(7 7 7 / 68%);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+}
+.shot-chip-coach {
+  top: 0.7rem;
+  left: 0.7rem;
+}
+.shot-chip-client {
+  top: 0.7rem;
+  right: 0.7rem;
+}
+/* dashed link between the two views; a packet travels it once on load,
+   then rests — the coach's week lands on the client's screen */
+.hero-link {
+  position: absolute;
+  z-index: 3;
+  right: 3%;
+  bottom: 24%;
+  width: 31%;
+  height: auto;
+  overflow: visible;
+  pointer-events: none;
+}
+.hero-link-path {
+  fill: none;
+  stroke: var(--accent-ink);
+  stroke-width: 1.5;
+  stroke-dasharray: 3.5 4.5;
+  opacity: 0.9;
+}
+.hero-link-head {
+  fill: none;
+  stroke: var(--accent-ink);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}
+.hero-link-dot {
+  fill: var(--accent);
+  opacity: 0;
+  offset-path: path("M8 8 C 46 4, 82 40, 108 48");
+  animation: linkFly 1.5s ease-in-out 1s both;
+}
+@keyframes linkFly {
+  0% {
+    offset-distance: 0%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  82% {
+    offset-distance: 100%;
+    opacity: 1;
+  }
+  100% {
+    offset-distance: 100%;
+    opacity: 0;
+  }
+}
+/* the receiving chip answers the packet once, then settles back */
+@keyframes chipGot {
+  0%,
+  100% {
+    background: rgb(7 7 7 / 68%);
+    color: var(--accent-ink);
+    border-color: var(--border-strong);
+  }
+  45% {
+    background: var(--accent);
+    color: var(--accent-contrast);
+    border-color: var(--accent);
+  }
+}
+.shot-chip-client {
+  animation: chipGot 0.85s ease 2.45s both;
+}
+@media (min-width: 560px) {
+  /* “More coaching” stays one phrase where the width allows */
+  .hero-title em {
+    white-space: nowrap;
+  }
 }
 .hero-shot img {
   display: block;
@@ -1144,16 +1250,28 @@ select:focus-visible,
 
 /* ---------- feature showcase ---------- */
 
+/* console layout: the selector rail sits beside the demonstration it
+   drives, so “pick here, watch there” reads without instructions */
 .showcase {
   display: grid;
-  gap: 1.4rem;
+  grid-template-columns: minmax(14.5rem, 16.5rem) minmax(0, 1fr);
+  gap: clamp(1rem, 2.5vw, 1.8rem);
+  align-items: start;
+}
+.feature-rail {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
 }
 .showcase-panel {
-  order: -1;
   display: grid;
-  gap: 1.4rem;
+  gap: 0;
   min-width: 0;
-  border-radius: var(--radius);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 0.4rem);
+  padding: clamp(0.7rem, 1.6vw, 1.1rem);
 }
 
 /* ---------- animated feature scenes ---------- */
@@ -1624,11 +1742,16 @@ select:focus-visible,
   grid-area: 1 / 1;
 }
 
+/* caption footer attached inside the console frame — the selected
+   feature's explanation lives with its demo, not below the section */
 .showcase-caption {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
+  padding: 0.9rem 0.4rem 0.15rem;
+  border-top: 1px solid var(--border);
+  margin-top: 0.9rem;
 }
 .showcase-caption-text {
   min-width: 0;
@@ -1662,18 +1785,24 @@ select:focus-visible,
   text-transform: uppercase;
   color: var(--accent-ink);
 }
+/* vertical rail of feature cards — icon, name and a one-line purpose,
+   with the selected card's arrow pointing into the demo it controls */
 .showcase-tabs {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
 }
 .feature-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
   font: inherit;
   text-align: left;
   background: var(--surface-subtle);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
-  padding: 0.55rem;
+  padding: 0.6rem 0.75rem;
   cursor: pointer;
   color: var(--text);
   transition:
@@ -1681,39 +1810,68 @@ select:focus-visible,
     background-color 160ms ease,
     transform 160ms ease;
 }
-.feature-tab img {
-  display: block;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 16 / 10;
-  object-fit: cover;
-  object-position: top center;
-  border-radius: calc(var(--radius) - 0.4rem);
+.ft-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 0.6rem;
+  background: var(--surface);
   border: 1px solid var(--border);
-  margin-bottom: 0.55rem;
+  color: var(--accent-ink);
 }
-.feature-tab span {
-  display: block;
-  font-size: 0.9rem;
+.ft-icon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+.ft-body {
+  display: grid;
+  min-width: 0;
+}
+.ft-label {
+  font-size: 0.94rem;
   font-weight: 600;
-  padding: 0 0.3rem 0.3rem;
+}
+.ft-sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+/* the arrow stays quiet until selected, then points into the stage */
+.ft-go {
+  margin-left: auto;
+  font-weight: 700;
+  color: var(--muted);
+  opacity: 0;
+  transform: translateX(-3px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease,
+    color 160ms ease;
 }
 .feature-tab:hover {
   border-color: var(--accent);
   background: var(--surface);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
-/* selected reads through shape and weight, not colour alone: a heavier
-   bottom band sits inside the card edge */
+/* selected reads through shape and iconography, not colour alone: a
+   heavier leading band plus the lit arrow toward the demo */
 .feature-tab.is-active {
   border-color: var(--accent);
   background: var(--surface);
-  box-shadow:
-    0 0 0 1px var(--accent),
-    inset 0 -3px 0 var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
-.feature-tab.is-active span {
+.feature-tab.is-active .ft-label {
   color: var(--accent-ink);
+}
+.feature-tab.is-active .ft-icon {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.feature-tab.is-active .ft-go {
+  opacity: 1;
+  transform: none;
+  color: var(--accent);
 }
 
 /* ---------- feature scene motion ----------
@@ -2300,38 +2458,47 @@ select:focus-visible,
   margin: 0 0 2.2rem;
 }
 
-/* one bordered pill around arrow and label reads as a single control */
+/* filled accent control with the arrow in a dark inset chip — one
+   unified surface carrying the page's loud ask */
 .split-cta {
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1.1rem;
   text-decoration: none;
-  font-weight: 600;
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  padding: 0.35rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.5rem 0.5rem 1.35rem;
   transition:
-    border-color 160ms ease,
-    background-color 160ms ease;
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+.split-cta-label {
+  color: var(--accent-contrast);
+  padding: 0.6rem 0;
 }
 .split-cta-arrow {
   display: inline-grid;
   place-items: center;
-  width: 2.9rem;
-  height: 2.9rem;
-  border-radius: 50%;
-  background: var(--accent);
-  color: var(--accent-contrast);
-  font-size: 1.25rem;
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: calc(var(--radius) - 0.3rem);
+  background: var(--accent-contrast);
+  color: var(--accent);
+  font-size: 1.3rem;
   transition: transform 160ms ease;
 }
-.split-cta-label {
-  color: var(--text);
-  padding: 0.7rem 1.1rem 0.7rem 0.3rem;
-}
 .split-cta:hover {
-  border-color: var(--accent);
-  background: var(--surface-subtle);
+  background: var(--accent-ink);
+  border-color: var(--accent-ink);
+  transform: translateY(-1px);
+}
+/* the accent outline would vanish on the filled surface — use the
+   page text colour for a focus ring that still reads */
+.split-cta:focus-visible {
+  outline-color: var(--text);
 }
 .split-cta:hover .split-cta-arrow,
 .split-cta:focus-visible .split-cta-arrow {
@@ -2545,9 +2712,16 @@ select:focus-visible,
     grid-template-columns: 1fr;
     gap: 2.2rem;
   }
-  /* selectors read (and are tabbed) before the preview they update */
-  .showcase-panel {
-    order: 0;
+  /* rail stacks above the preview; cards go two-up, arrow points down */
+  .showcase {
+    grid-template-columns: 1fr;
+  }
+  .showcase-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .feature-tab.is-active .ft-go {
+    transform: rotate(90deg);
   }
   .hero {
     padding-top: clamp(2.2rem, 6vh, 3.5rem);
@@ -2664,30 +2838,26 @@ select:focus-visible,
   .site-nav {
     display: none;
   }
-  .showcase-tabs {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.55rem;
-  }
   .feature-tab {
-    padding: 0.45rem;
+    padding: 0.55rem 0.6rem;
   }
-  .feature-tab img {
+  .ft-sub {
     display: none;
-  }
-  .feature-tab span {
-    text-align: center;
-    padding: 0.4rem 0.2rem;
-    font-size: 0.82rem;
   }
   .hero-shot-main {
     width: 100%;
   }
-  /* float shot flows under the main one — no protrusion to reserve */
+  /* float shot flows under the main one — the connector has no geometry */
   .hero-shots {
-    padding-bottom: 0;
+    padding-bottom: clamp(0.9rem, 2.6vw, 1.8rem);
+  }
+  .hero-link {
+    display: none;
   }
   .hero-shot-float {
-    position: static;
+    /* relative (not static) so it stays the containing block for its
+       chip while still flowing below the main shot */
+    position: relative;
     width: 78%;
     margin: -2.4rem 0 0 auto;
   }
@@ -2707,6 +2877,11 @@ select:focus-visible,
   .showcase-tabs {
     grid-template-columns: repeat(2, 1fr);
   }
+  /* two-up cards leave no room for the direction cue — the rail's
+     position above the stage carries the relationship instead */
+  .ft-go {
+    display: none;
+  }
 }
 
 /* ---------- reduced motion ---------- */
@@ -2723,9 +2898,12 @@ select:focus-visible,
   .split-cta-arrow {
     transition: none;
   }
-  /* the hero entrance is a motion preference: everything rests immediately */
+  /* the hero entrance and the one-shot packet beat are a motion
+     preference: the composition rests in its finished state */
   .hero-copy > *,
-  .hero-stage {
+  .hero-stage,
+  .hero-link-dot,
+  .shot-chip-client {
     animation: none;
   }
   /* feature scenes rest on their completed static state — nothing to
