@@ -9,6 +9,39 @@
   font-weight: 100 900;
   font-display: swap;
 }
+/* lab candidates — only fetched when a .treat-* class uses them
+   (IBM Plex Sans Condensed + Fira Sans: SIL OFL 1.1, licences beside
+   the files in assets/fonts/) */
+@font-face {
+  font-family: "IBM Plex Sans Condensed";
+  src: url("assets/fonts/ibm-plex-sans-condensed-latin-400-normal.woff2")
+    format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans Condensed";
+  src: url("assets/fonts/ibm-plex-sans-condensed-latin-700-normal.woff2")
+    format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fira Sans";
+  src: url("assets/fonts/fira-sans-latin-400-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fira Sans";
+  src: url("assets/fonts/fira-sans-latin-700-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
 
 :root {
   color-scheme: dark;
@@ -3095,4 +3128,86 @@ select:focus-visible,
   .fdemo-toggle {
     display: none;
   }
+}
+
+/* ---------- local font lab (?fontlab) ---------- */
+
+/* three coherent body-copy treatments, toggled on <body> by the lab
+   control site.js injects only when ?fontlab is present. Headings,
+   nav, buttons, labels and product text never change. */
+body.treat-b {
+  --font-body:
+    "IBM Plex Sans Condensed", "Arial Narrow", "Helvetica Neue", Arial,
+    sans-serif;
+}
+body.treat-c {
+  --font-body:
+    "Fira Sans", "Trebuchet MS", Verdana, "Helvetica Neue", sans-serif;
+}
+body.treat-b .hero-sub,
+body.treat-b .section-sub,
+body.treat-b .shot-caption,
+body.treat-b .demo-caption,
+body.treat-b .showcase-caption-text p,
+body.treat-b .relate-note,
+body.treat-b .split-note,
+body.treat-b .honesty-box {
+  letter-spacing: 0.004em;
+  line-height: 1.5;
+}
+body.treat-c .hero-sub,
+body.treat-c .section-sub,
+body.treat-c .shot-caption,
+body.treat-c .demo-caption,
+body.treat-c .showcase-caption-text p,
+body.treat-c .relate-note,
+body.treat-c .split-note,
+body.treat-c .honesty-box {
+  letter-spacing: 0.008em;
+  line-height: 1.72;
+}
+
+/* the switcher itself — exists only while the lab is open */
+.fontlab {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.55rem;
+  background: rgb(16 16 23 / 92%);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.8rem;
+  backdrop-filter: blur(8px);
+}
+.fontlab-label {
+  margin-right: 0.3rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.fontlab button {
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.fontlab button:hover {
+  color: var(--text);
+}
+.fontlab button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+.fontlab button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

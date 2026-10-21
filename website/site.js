@@ -265,4 +265,63 @@
       { threshold: 0.35 },
     ).observe(relate);
   }
+
+  /* ================= local font lab (?fontlab) ================= */
+
+  // Owner-only review tool: a small fixed switcher that applies body-copy
+  // treatments (A baseline, B editorial condensed, C humanist open) to the
+  // real page. Nothing is injected unless the query flag is present, so the
+  // public page is untouched. Candidates are preloaded first so switching
+  // has no missing-font flash.
+  if (new URLSearchParams(window.location.search).has("fontlab")) {
+    [
+      "assets/fonts/ibm-plex-sans-condensed-latin-400-normal.woff2",
+      "assets/fonts/fira-sans-latin-400-normal.woff2",
+    ].forEach(function (href) {
+      var link = document.createElement("link");
+      link.rel = "preload";
+      link.as = "font";
+      link.type = "font/woff2";
+      link.crossOrigin = "anonymous";
+      link.href = href;
+      document.head.appendChild(link);
+    });
+
+    var lab = document.createElement("div");
+    lab.className = "fontlab";
+    lab.setAttribute("role", "group");
+    lab.setAttribute("aria-label", "Body font treatments, local review only");
+    var labLabel = document.createElement("span");
+    labLabel.className = "fontlab-label";
+    labLabel.textContent = "Font lab";
+    lab.appendChild(labLabel);
+
+    var treatments = [
+      ["", "A — Geist"],
+      ["treat-b", "B — Editorial"],
+      ["treat-c", "C — Humanist"],
+    ];
+    var labButtons = treatments.map(function (t, i) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = t[1];
+      btn.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+      btn.title =
+        i === 0
+          ? "Current baseline"
+          : i === 1
+            ? "IBM Plex Sans Condensed, tighter and firmer"
+            : "Fira Sans, more open and conversational";
+      btn.addEventListener("click", function () {
+        document.body.classList.remove("treat-b", "treat-c");
+        if (t[0]) document.body.classList.add(t[0]);
+        labButtons.forEach(function (b, j) {
+          b.setAttribute("aria-pressed", j === i ? "true" : "false");
+        });
+      });
+      lab.appendChild(btn);
+      return btn;
+    });
+    document.body.appendChild(lab);
+  }
 })();
