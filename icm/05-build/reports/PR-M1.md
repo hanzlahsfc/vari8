@@ -318,8 +318,10 @@ lint and the frontend steps.
 Not fixed here: the repair is one line in `tests/unit/system-index.test.ts`
 (`52` to `55`, or derive the number from the generated doc), which is shared
 test code owned by the auth-client lane, and this card only edits its own
-files. Until that lands the gate cannot be green at the current base, so no
-READY line was written for `4139cf9`.
+files. Measured, not inferred: with that literal set to `55` the file passes
+18/18; the probe was reverted and the tree left clean. Until that lands the
+gate cannot be green at the current base, so no READY line was written for
+`4139cf9`.
 
 Not done or not possible on this run: the roster page does not exist on this
 branch, so the screenshots show the JSON the roster query returns rather than
