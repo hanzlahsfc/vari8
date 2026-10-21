@@ -6,11 +6,13 @@ import {
   AccessDeniedError,
   authorize,
   authorizeCollection,
+  type AuthorizationContext,
   type CollectionContext,
   type SessionLike,
 } from "../auth/guard";
 import type { WorkspaceRole } from "../auth/rbac";
 import { createPrismaAuthorizationRepo, type PrismaLike } from "./access";
+import { rosterClientVisibility } from "./roster-query";
 
 /**
  * S1-C guarded client-ownership and assignment services.
@@ -28,6 +30,9 @@ export const CLIENT_LIST_MAX_LIMIT = 100;
 export type ServiceErrorCode =
   | "invalid_input"
   | "client_not_accessible"
+  | "client_not_archived"
+  | "retention_not_elapsed"
+  | "client_not_deletable"
   | "member_not_eligible"
   | "assignment_not_accessible"
   | "assignment_conflict"
@@ -47,6 +52,34 @@ export type ClientProfileSummary = {
   name: string;
   createdAt: Date;
   updatedAt: Date;
+};
+
+/**
+ * PR-M1: the full canvas client-profile field set (D1, D27): roster metadata
+ * (`label`, `coachingSince`, `heightCm`), the priority-message permission
+ * (D20) and the archive pair (`archivedAt`, `archiveReason`). `heightCm`
+ * arrives as a Prisma `Decimal`; the service boundary returns it as a number
+ * (Decimal(5,1) fits a double exactly).
+ */
+export type ClientProfileDetail = {
+  id: string;
+  workspaceId: string;
+  userId: string | null;
+  name: string;
+  label: string | null;
+  coachingSince: Date | null;
+  heightCm: number | null;
+  priorityMessagesAllowed: boolean;
+  archivedAt: Date | null;
+  archiveReason: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+/** Idempotent lifecycle-mutation result (archive, restore, delete). */
+export type ClientLifecycleResult = {
+  clientProfileId: string;
+  changed: boolean;
 };
 
 export type AssignmentSummary = {
@@ -70,6 +103,21 @@ const PROFILE_SELECT = {
   id: true,
   workspaceId: true,
   name: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+const PROFILE_DETAIL_SELECT = {
+  id: true,
+  workspaceId: true,
+  userId: true,
+  name: true,
+  label: true,
+  coachingSince: true,
+  heightCm: true,
+  priorityMessagesAllowed: true,
+  archivedAt: true,
+  archiveReason: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -100,12 +148,76 @@ export function validateName(name: unknown): string {
   return name.trim();
 }
 
+// PR-M1 canvas profile fields (D1). Every validator accepts `null` as
+// "clear the column" and rejects anything else that is not the field's shape;
+// `undefined` is never passed in (the service checks key presence).
+
+/** Roster label ("Lifestyle", "Prep" in the canvas demo): bounded short text. */
+export function validateLabel(value: unknown): string | null {
+  if (value === null) return null;
+  if (typeof value !== "string")
+    throw new WorkspaceServiceError("invalid_input");
+  const label = value.trim();
+  if (label.length === 0) return null;
+  if (label.length > 80) throw new WorkspaceServiceError("invalid_input");
+  return label;
+}
+
+/** Calendar date the coaching relationship started (`@db.Date`). */
+export function validateCoachingSince(value: unknown): Date | null {
+  if (value === null) return null;
+  const date =
+    value instanceof Date
+      ? value
+      : typeof value === "string"
+        ? new Date(value)
+        : null;
+  if (!date || Number.isNaN(date.getTime()))
+    throw new WorkspaceServiceError("invalid_input");
+  return date;
+}
+
+/** Canvas height field: centimetres, one decimal, plausible human bound. */
+export function validateHeightCm(value: unknown): number | null {
+  if (value === null) return null;
+  if (typeof value !== "number" || !Number.isFinite(value))
+    throw new WorkspaceServiceError("invalid_input");
+  const rounded = Math.round(value * 10) / 10;
+  if (rounded <= 0 || rounded > 300)
+    throw new WorkspaceServiceError("invalid_input");
+  return rounded;
+}
+
+/** Per-client permission for priority messages (D20). */
+export function validatePriorityMessagesAllowed(value: unknown): boolean {
+  if (typeof value !== "boolean")
+    throw new WorkspaceServiceError("invalid_input");
+  return value;
+}
+
+/** Optional staff-supplied archive provenance: bounded short text. */
+export function validateArchiveReason(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "string")
+    throw new WorkspaceServiceError("invalid_input");
+  const reason = value.trim();
+  if (reason.length === 0) return null;
+  if (reason.length > 200) throw new WorkspaceServiceError("invalid_input");
+  return reason;
+}
+
 /** Builds the client-profile `where` from the resolved collection scope. */
 export function buildClientProfileWhere(
   scope: CollectionContext["grantedScope"],
   ctx: { workspaceId: string; userId: string; workspaceMemberId: string },
+  opts: { includeArchived?: boolean } = {},
 ): Prisma.ClientProfileWhereInput {
-  const base: Prisma.ClientProfileWhereInput = { workspaceId: ctx.workspaceId };
+  // Callers that predate D27 keep seeing archived rows unless they opt into
+  // the roster visibility predicate; the roster opts out explicitly.
+  const base: Prisma.ClientProfileWhereInput = {
+    workspaceId: ctx.workspaceId,
+    ...rosterClientVisibility(opts.includeArchived ?? true),
+  };
   if (scope === "workspace") return base;
   if (scope === "own") return { ...base, userId: ctx.userId };
   return {
@@ -214,7 +326,12 @@ async function assertNoOtherActivePrimary(
 
 export async function listAccessibleClientProfiles(
   session: SessionLike,
-  input: { workspaceId: string; limit?: number; cursor?: string },
+  input: {
+    workspaceId: string;
+    limit?: number;
+    cursor?: string;
+    includeArchived?: boolean;
+  },
   client: PrismaClient = prisma,
 ): Promise<{ items: ClientProfileSummary[]; nextCursor: string | null }> {
   const ctx = await authorizeCollection(
@@ -234,6 +351,8 @@ export async function listAccessibleClientProfiles(
       userId: ctx.userId,
       workspaceMemberId: ctx.workspaceMemberId,
     },
+    // D27: the roster hides archived clients unless a caller asks for them.
+    { includeArchived: input.includeArchived === true },
   );
   if (input.cursor) where.id = { gt: input.cursor };
   const rows = await client.clientProfile.findMany({
@@ -332,6 +451,251 @@ export async function updateClientProfileName(
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
   );
+}
+
+// --- PR-M1: canvas profile fields + archive/restore lifecycle (D27, D15) ---
+
+type ProfileDetailRow = {
+  id: string;
+  workspaceId: string;
+  userId: string | null;
+  name: string;
+  label: string | null;
+  coachingSince: Date | null;
+  heightCm: Prisma.Decimal | null;
+  priorityMessagesAllowed: boolean;
+  archivedAt: Date | null;
+  archiveReason: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+function toProfileDetail(row: ProfileDetailRow): ClientProfileDetail {
+  return {
+    id: row.id,
+    workspaceId: row.workspaceId,
+    userId: row.userId,
+    name: row.name,
+    label: row.label,
+    coachingSince: row.coachingSince,
+    heightCm: row.heightCm === null ? null : Number(row.heightCm),
+    priorityMessagesAllowed: row.priorityMessagesAllowed,
+    archivedAt: row.archivedAt,
+    archiveReason: row.archiveReason,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+/** Read the full canvas profile field set; every granted read scope may read. */
+export async function readClientProfileDetail(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string },
+  client: PrismaClient = prisma,
+): Promise<ClientProfileDetail> {
+  await authorize(
+    session,
+    {
+      resource: "clientProfiles",
+      action: "read",
+      workspaceId: input.workspaceId,
+      clientProfileId: input.clientProfileId,
+    },
+    createPrismaAuthorizationRepo(client),
+  );
+  const row = await client.clientProfile.findFirst({
+    where: { id: input.clientProfileId, workspaceId: input.workspaceId },
+    select: PROFILE_DETAIL_SELECT,
+  });
+  if (!row) throw new WorkspaceServiceError("client_not_accessible");
+  return toProfileDetail(row);
+}
+
+export type ClientProfileFieldPatch = {
+  name?: unknown;
+  label?: unknown;
+  coachingSince?: unknown;
+  heightCm?: unknown;
+  priorityMessagesAllowed?: unknown;
+};
+
+/**
+ * Staff write of the canvas profile fields (S01-21 client edit). Only keys
+ * present on `fields` are written; `null` clears a nullable column. CLIENT
+ * callers resolve to `own` scope here and are refused — profile editing is a
+ * staff surface (D15); a client's self-edit stays with `updateClientProfileName`.
+ */
+export async function updateClientProfileFields(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    fields: ClientProfileFieldPatch;
+  },
+  client: PrismaClient = prisma,
+): Promise<ClientProfileDetail> {
+  const fields = input.fields;
+  if (fields === null || typeof fields !== "object" || Array.isArray(fields))
+    throw new WorkspaceServiceError("invalid_input");
+  const data: Prisma.ClientProfileUpdateManyMutationInput = {};
+  if ("name" in fields) data.name = validateName(fields.name);
+  if ("label" in fields) data.label = validateLabel(fields.label);
+  if ("coachingSince" in fields)
+    data.coachingSince = validateCoachingSince(fields.coachingSince);
+  if ("heightCm" in fields) data.heightCm = validateHeightCm(fields.heightCm);
+  if ("priorityMessagesAllowed" in fields)
+    data.priorityMessagesAllowed = validatePriorityMessagesAllowed(
+      fields.priorityMessagesAllowed,
+    );
+  if (Object.keys(data).length === 0)
+    throw new WorkspaceServiceError("invalid_input");
+  return client.$transaction(
+    async (tx) => {
+      const context = await authorize(
+        session,
+        {
+          resource: "clientProfiles",
+          action: "write",
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+        },
+        createPrismaAuthorizationRepo(tx),
+      );
+      denyOwnScope(context.grantedScope, "clientProfiles", "write");
+      const result = await tx.clientProfile.updateMany({
+        where: { id: input.clientProfileId, workspaceId: input.workspaceId },
+        data,
+      });
+      if (result.count === 0)
+        throw new WorkspaceServiceError("client_not_accessible");
+      const row = await tx.clientProfile.findFirst({
+        where: { id: input.clientProfileId, workspaceId: input.workspaceId },
+        select: PROFILE_DETAIL_SELECT,
+      });
+      if (!row) throw new WorkspaceServiceError("client_not_accessible");
+      return toProfileDetail(row);
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+}
+
+/**
+ * Archive is a soft archive (D27): `archivedAt` is set, the client leaves the
+ * roster, and every other record stays. Idempotent: an already-archived
+ * profile returns `changed: false` and writes no second audit event.
+ * Staff only — the CLIENT `own` write scope can never archive itself (D15).
+ */
+export async function archiveClientProfile(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string; reason?: unknown },
+  client: PrismaClient = prisma,
+): Promise<ClientLifecycleResult> {
+  const reason = validateArchiveReason(input.reason);
+  return client.$transaction(
+    async (tx) => {
+      const context = await authorize(
+        session,
+        {
+          resource: "clientProfiles",
+          action: "write",
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+        },
+        createPrismaAuthorizationRepo(tx),
+      );
+      denyOwnScope(context.grantedScope, "clientProfiles", "write");
+      const result = await tx.clientProfile.updateMany({
+        where: {
+          id: input.clientProfileId,
+          workspaceId: input.workspaceId,
+          archivedAt: null,
+        },
+        data: { archivedAt: new Date(), archiveReason: reason },
+      });
+      if (result.count === 0) {
+        const row = await tx.clientProfile.findFirst({
+          where: { id: input.clientProfileId, workspaceId: input.workspaceId },
+          select: { id: true },
+        });
+        if (!row) throw new WorkspaceServiceError("client_not_accessible");
+        return { clientProfileId: input.clientProfileId, changed: false };
+      }
+      await writeAuditEvent(tx, context, {
+        action: "UPDATE",
+        resourceType: "client_profile",
+        resourceId: input.clientProfileId,
+        subjectClientProfileId: input.clientProfileId,
+        meta: { status: "ARCHIVED" },
+      });
+      return { clientProfileId: input.clientProfileId, changed: true };
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+}
+
+/**
+ * Restore clears the archive pair (D27); the client re-enters the roster.
+ * Idempotent like archive. Staff only.
+ */
+export async function restoreClientProfile(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string },
+  client: PrismaClient = prisma,
+): Promise<ClientLifecycleResult> {
+  return client.$transaction(
+    async (tx) => {
+      const context = await authorize(
+        session,
+        {
+          resource: "clientProfiles",
+          action: "write",
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+        },
+        createPrismaAuthorizationRepo(tx),
+      );
+      denyOwnScope(context.grantedScope, "clientProfiles", "write");
+      const result = await tx.clientProfile.updateMany({
+        where: {
+          id: input.clientProfileId,
+          workspaceId: input.workspaceId,
+          archivedAt: { not: null },
+        },
+        data: { archivedAt: null, archiveReason: null },
+      });
+      if (result.count === 0) {
+        const row = await tx.clientProfile.findFirst({
+          where: { id: input.clientProfileId, workspaceId: input.workspaceId },
+          select: { id: true },
+        });
+        if (!row) throw new WorkspaceServiceError("client_not_accessible");
+        return { clientProfileId: input.clientProfileId, changed: false };
+      }
+      await writeAuditEvent(tx, context, {
+        action: "UPDATE",
+        resourceType: "client_profile",
+        resourceId: input.clientProfileId,
+        subjectClientProfileId: input.clientProfileId,
+        meta: { status: "ACTIVE" },
+      });
+      return { clientProfileId: input.clientProfileId, changed: true };
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
+}
+
+/**
+ * Lifecycle mutations archive and delete are staff capabilities (D15); the
+ * CLIENT role's `own` write scope on `clientProfiles` exists for the client's
+ * own name field only, so any lifecycle call resolved to `own` scope denies.
+ */
+function denyOwnScope(
+  scope: AuthorizationContext["grantedScope"],
+  resource: string,
+  action: string,
+): void {
+  if (scope === "own")
+    throw new AccessDeniedError("role_denied", resource, action);
 }
 
 // --- assignment services ----------------------------------------------------

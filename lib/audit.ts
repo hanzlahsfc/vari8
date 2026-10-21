@@ -166,6 +166,11 @@ export const AUDIT_RESOURCE_TYPES = [
   // date, pinned version seq, booked week) — never prescription text,
   // session content, or timezone strings.
   "training_session_booking",
+  // PR-M1 (D27): client-profile lifecycle — archive and restore as UPDATE
+  // with an ARCHIVED/ACTIVE status marker, retention-gated delete as DELETE
+  // with a REMOVED marker. IDs + structural markers only — never names,
+  // labels, archive reasons, or profile values.
+  "client_profile",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 
