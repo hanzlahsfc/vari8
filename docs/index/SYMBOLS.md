@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 143 modules with exports, 1408 exported symbols.
+Counts: 137 modules with exports, 1359 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -189,6 +189,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function getViewer(): Promise<Viewer | null>`
 - `export async function getViewerFromHeaders(requestHeaders: Headers): Promise<Viewer | null>`
 - `export function initialsOf(name: string): string`
+- `export async function signOutPath(userId: string | undefined | null): Promise<string>`
 
 ## `lib/boundary.ts`
 
@@ -451,31 +452,6 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type CheckInTrackerContextResult = StaffDailyEntryDetail`
 - `export async function readCheckInReviewTrackerContext(session: SessionLike, input: CheckInTrackerContextInput, deps: CheckInTrackerContextDeps = {}): Promise<StaffDailyEntryDetail>`
 - `export function reconcileTrackerContextScopes(checkinScope: string | null | undefined, dailyScope: string | null | undefined): "workspace" | "assigned" | "denied"`
-
-## `lib/coach-tasks/boundary.ts`
-
-- `export type CoachTaskSafeResult<T> = | { ok: true; value: T } | { ok: false; code: | "denied" | "invalid_input" | "not_available" | "conflict" | "serialization_conflict"; message: string; }`
-- `export const createCoachTaskFromRoute = (caller: CoachTaskCaller, input: { clientProfileId?: string | null; title: unknown }, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<{ id: string; re...`
-- `export const deleteCoachTaskFromRoute = (caller: CoachTaskCaller, input: { taskId: string; expectedRevision: number }, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<{ revision: number; cha...`
-- `export const readCoachTasks = (caller: CoachTaskCaller, input: { clientProfileId?: string | null } = {}, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<{ tasks: CoachTaskView[]; hasMore: bo...`
-- `export const restoreCoachTaskFromRoute = (caller: CoachTaskCaller, input: { taskId: string }, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<{ revision: number; changed: boolean }>> =>`
-- `export const setCoachTaskCompletionFromRoute = (caller: CoachTaskCaller, input: { taskId: string; complete: boolean; expectedRevision: number }, deps: CoachTaskDeps = {}): Promise< CoachTaskSafeRes...`
-- `export const updateCoachTaskTitleFromRoute = (caller: CoachTaskCaller, input: { taskId: string; title: unknown; expectedRevision: number }, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<{ ...`
-
-## `lib/coach-tasks/service.ts`
-
-- `export type CoachTaskCaller = { userId: string; workspaceId: string; scope: "workspace" | "own"; }`
-- `export type CoachTaskDeps = { db?: PrismaLike }`
-- `export class CoachTaskError extends Error (1 members)`
-- `export type CoachTaskView = { id: string; clientProfileId: string | null; title: string; complete: boolean; completedAt: string | null; createdByMemberId: string; revision: number; createdAt: strin...`
-- `export const RESTORE_WINDOW_MS = 30_000`
-- `export async function createCoachTask(caller: CoachTaskCaller, input: { clientProfileId?: string | null; title: unknown }, deps: CoachTaskDeps = {}): Promise<{ id: string; revision: number }>`
-- `export async function deleteCoachTask(caller: CoachTaskCaller, input: { taskId: string; expectedRevision: number }, deps: CoachTaskDeps = {}): Promise<{ revision: number; changed: boolean }>`
-- `export async function listCoachTasks(caller: CoachTaskCaller, input: { clientProfileId?: string | null } = {}, deps: CoachTaskDeps = {}): Promise<{ tasks: CoachTaskView[]; hasMore: boolean }>`
-- `export function normalizeTaskTitle(input: unknown): string`
-- `export async function restoreCoachTask(caller: CoachTaskCaller, input: { taskId: string }, deps: CoachTaskDeps = {}): Promise<{ revision: number; changed: boolean }>`
-- `export async function setCoachTaskCompletion(caller: CoachTaskCaller, input: { taskId: string; complete: boolean; expectedRevision: number; }, deps: CoachTaskDeps = {}): Promise<{ revision: number;...`
-- `export async function updateCoachTaskTitle(caller: CoachTaskCaller, input: { taskId: string; title: unknown; expectedRevision: number }, deps: CoachTaskDeps = {}): Promise<{ revision: number; chang...`
 
 ## `lib/coaching/client-setup-boundary.ts`
 
@@ -1311,32 +1287,6 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function saveMealPlanDraft(session: SessionLike, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; title?: string; draft: unknown; timezone?: string; }, ...`
 - `export async function setMealPlanTimezone(session: SessionLike, input: { workspaceId: string; clientProfileId: string; timezone: string }, deps: MealPlanDeps = {}): Promise<{ planId: string }>`
 
-## `lib/notes/boundary.ts`
-
-- `export type NoteSafeResult<T> = | { ok: true; value: T } | { ok: false; code: | "denied" | "invalid_input" | "not_available" | "conflict" | "serialization_conflict"; message: string; }`
-- `export const createCoachNoteFromRoute = (caller: NoteCaller, input: { clientProfileId?: string | null; visibility: unknown; body: unknown; }, deps: NoteDeps = {}): Promise<NoteSafeResult<{ id: stri...`
-- `export const deleteCoachNoteFromRoute = (caller: NoteCaller, input: { noteId: string; expectedRevision: number }, deps: NoteDeps = {}): Promise<NoteSafeResult<{ revision: number; changed: boolean }...`
-- `export const readClientVisibleNotes = (caller: NoteCaller, input: { clientProfileId?: string | null } = {}, deps: NoteDeps = {}): Promise<NoteSafeResult<{ notes: NoteView[]; hasMore: boolean }>> =>`
-- `export const readCoachNotes = (caller: NoteCaller, input: { clientProfileId?: string | null } = {}, deps: NoteDeps = {}): Promise<NoteSafeResult<{ notes: NoteView[]; hasMore: boolean }>> =>`
-- `export const restoreCoachNoteFromRoute = (caller: NoteCaller, input: { noteId: string }, deps: NoteDeps = {}): Promise<NoteSafeResult<{ revision: number; changed: boolean }>> =>`
-- `export const updateCoachNoteBodyFromRoute = (caller: NoteCaller, input: { noteId: string; body: unknown; expectedRevision: number }, deps: NoteDeps = {}): Promise<NoteSafeResult<{ revision: number;...`
-
-## `lib/notes/service.ts`
-
-- `export type NoteCaller = { userId: string; workspaceId: string; scope: "workspace" | "own"; }`
-- `export type NoteDeps = { db?: PrismaLike }`
-- `export class NoteError extends Error (1 members)`
-- `export type NoteView = { id: string; clientProfileId: string | null; visibility: "PRIVATE" | "GENERAL"; body: string; authorMemberId: string; revision: number; createdAt: string; updatedAt: string; }`
-- `export const RESTORE_WINDOW_MS = 30_000`
-- `export async function createCoachNote(caller: NoteCaller, input: { clientProfileId?: string | null; visibility: unknown; body: unknown; }, deps: NoteDeps = {}): Promise<{ id: string; revision: numb...`
-- `export async function deleteCoachNote(caller: NoteCaller, input: { noteId: string; expectedRevision: number }, deps: NoteDeps = {}): Promise<{ revision: number; changed: boolean }>`
-- `export async function listClientVisibleNotes(caller: NoteCaller, input: { clientProfileId?: string | null } = {}, deps: NoteDeps = {}): Promise<{ notes: NoteView[]; hasMore: boolean }>`
-- `export async function listCoachNotes(caller: NoteCaller, input: { clientProfileId?: string | null } = {}, deps: NoteDeps = {}): Promise<{ notes: NoteView[]; hasMore: boolean }>`
-- `export function normalizeNoteBody(input: unknown): string`
-- `export function normalizeVisibility(input: unknown): "PRIVATE" | "GENERAL"`
-- `export async function restoreCoachNote(caller: NoteCaller, input: { noteId: string }, deps: NoteDeps = {}): Promise<{ revision: number; changed: boolean }>`
-- `export async function updateCoachNoteBody(caller: NoteCaller, input: { noteId: string; body: unknown; expectedRevision: number }, deps: NoteDeps = {}): Promise<{ revision: number; changed: boolean }>`
-
 ## `lib/nutrition/import.ts`
 
 - `export class NutritionImportError extends Error (1 members)`
@@ -1635,24 +1585,6 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function issueWorkspaceInviteToken(tx: Prisma.TransactionClient, input: { workspaceId: string; targetEmail: string; intendedRole: MemberRole; createdByUserId: string; targetMemberState...`
 - `export async function revokeMatchingInviteTokens(tx: Prisma.TransactionClient, input: { workspaceId: string; targetEmail: string; intendedRole: MemberRole; }): Promise<{ revokedCount: number }>`
 
-## `lib/tracker-comments/boundary.ts`
-
-- `export type TrackerCommentSafeResult<T> = | { ok: true; value: T } | { ok: false; code: | "denied" | "invalid_input" | "not_available" | "conflict" | "serialization_conflict"; message: string; }`
-- `export const readOwnTrackerComments = (caller: TrackerCommentCaller, input: { from?: string; to?: string } = {}, deps: TrackerCommentDeps = {}): Promise< TrackerCommentSafeResult<{ comments: Tracke...`
-- `export const readTrackerComments = (caller: TrackerCommentCaller, input: { clientProfileId: string; from?: string; to?: string }, deps: TrackerCommentDeps = {}): Promise< TrackerCommentSafeResult<{...`
-- `export const saveTrackerCommentFromRoute = (caller: TrackerCommentCaller, input: { clientProfileId: string; entryDate: unknown; parameterId: string; body: unknown; }, deps: TrackerCommentDeps = {})...`
-
-## `lib/tracker-comments/service.ts`
-
-- `export type TrackerCommentCaller = { userId: string; workspaceId: string; scope: "workspace" | "own"; }`
-- `export type TrackerCommentDeps = { db?: PrismaLike }`
-- `export class TrackerCommentError extends Error (1 members)`
-- `export type TrackerCommentView = { id: string; clientProfileId: string; entryDate: string; parameterId: string; body: string; authorMemberId: string; createdAt: string; updatedAt: string; }`
-- `export async function listOwnTrackerComments(caller: TrackerCommentCaller, input: { from?: string; to?: string } = {}, deps: TrackerCommentDeps = {}): Promise<{ comments: TrackerCommentView[]; hasM...`
-- `export async function listTrackerComments(caller: TrackerCommentCaller, input: { clientProfileId: string; from?: string; to?: string; }, deps: TrackerCommentDeps = {}): Promise<{ comments: TrackerC...`
-- `export function parseCommentDate(input: unknown): string | null`
-- `export async function saveTrackerComment(caller: TrackerCommentCaller, input: { clientProfileId: string; entryDate: unknown; parameterId: string; body: unknown; }, deps: TrackerCommentDeps = {}): P...`
-
 ## `lib/trainingprogram/boundary.ts`
 
 - `export type TrainingSafeResult<T> = | { ok: true; value: T } | { ok: false; code: | "denied" | "invalid_input" | "not_found" | "conflict" | "consent_missing" | "policy_not_configured" | "service_un...`
@@ -1826,6 +1758,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function acceptInvitationFromLink(session: SessionLike, input: { workspaceId: unknown; rawToken: unknown; name?: unknown; password?: unknown; }, client: PrismaClient = prisma): Promise...`
 - `export function acceptInvitationMessage(error: unknown): string`
 - `export async function getInviteLinkState(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<InviteLinkState>`
+- `export async function getInviteShellRole(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<"client" | "staff" | null>`
 
 ## `lib/workspace/roster-query.ts`
 

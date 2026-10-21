@@ -1,0 +1,529 @@
+{
+  "pages": {
+    "login/1440/pro-dark": {
+      "theme": "pro-dark",
+      "body": {
+        "cls": "",
+        "background": "rgb(25, 25, 25)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": {
+        "cls": "",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "button": {
+        "cls": "auth-button",
+        "background": "rgb(227, 67, 50)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      }
+    },
+    "signup/1440/pro-dark": {
+      "theme": "pro-dark",
+      "body": {
+        "cls": "",
+        "background": "rgb(25, 25, 25)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": {
+        "cls": "",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "button": {
+        "cls": "auth-button",
+        "background": "rgb(227, 67, 50)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      }
+    },
+    "reset-request/1440/pro-dark": {
+      "theme": "pro-dark",
+      "body": {
+        "cls": "",
+        "background": "rgb(25, 25, 25)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": {
+        "cls": "",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "button": {
+        "cls": "auth-button reset-form__submit",
+        "background": "rgb(227, 67, 50)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      }
+    },
+    "reset/1440/pro-dark": {
+      "theme": "pro-dark",
+      "body": {
+        "cls": "",
+        "background": "rgb(25, 25, 25)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": null,
+      "button": null
+    },
+    "invite/1440/pro-dark": {
+      "theme": "pro-dark",
+      "body": {
+        "cls": "",
+        "background": "rgb(25, 25, 25)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": null,
+      "button": null
+    },
+    "login/390/pro-dark": {
+      "theme": "pro-dark",
+      "body": {
+        "cls": "",
+        "background": "rgb(25, 25, 25)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": {
+        "cls": "",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "button": {
+        "cls": "auth-button",
+        "background": "rgb(227, 67, 50)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      }
+    },
+    "signup/390/pro-dark": {
+      "theme": "pro-dark",
+      "body": {
+        "cls": "",
+        "background": "rgb(25, 25, 25)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": {
+        "cls": "",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "button": {
+        "cls": "auth-button",
+        "background": "rgb(227, 67, 50)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      }
+    },
+    "reset-request/390/pro-dark": {
+      "theme": "pro-dark",
+      "body": {
+        "cls": "",
+        "background": "rgb(25, 25, 25)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": {
+        "cls": "",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "button": {
+        "cls": "auth-button reset-form__submit",
+        "background": "rgb(227, 67, 50)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      }
+    },
+    "reset/390/pro-dark": {
+      "theme": "pro-dark",
+      "body": {
+        "cls": "",
+        "background": "rgb(25, 25, 25)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": null,
+      "button": null
+    },
+    "invite/390/pro-dark": {
+      "theme": "pro-dark",
+      "body": {
+        "cls": "",
+        "background": "rgb(25, 25, 25)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(255, 255, 255)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": null,
+      "button": null
+    },
+    "login/1440/pro-white": {
+      "theme": "pro-white",
+      "body": {
+        "cls": "",
+        "background": "rgb(247, 247, 245)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": {
+        "cls": "",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "button": {
+        "cls": "auth-button",
+        "background": "rgb(178, 51, 37)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      }
+    },
+    "signup/1440/pro-white": {
+      "theme": "pro-white",
+      "body": {
+        "cls": "",
+        "background": "rgb(247, 247, 245)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": {
+        "cls": "",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "button": {
+        "cls": "auth-button",
+        "background": "rgb(178, 51, 37)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      }
+    },
+    "reset-request/1440/pro-white": {
+      "theme": "pro-white",
+      "body": {
+        "cls": "",
+        "background": "rgb(247, 247, 245)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": {
+        "cls": "",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "button": {
+        "cls": "auth-button reset-form__submit",
+        "background": "rgb(178, 51, 37)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      }
+    },
+    "reset/1440/pro-white": {
+      "theme": "pro-white",
+      "body": {
+        "cls": "",
+        "background": "rgb(247, 247, 245)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": null,
+      "button": null
+    },
+    "invite/1440/pro-white": {
+      "theme": "pro-white",
+      "body": {
+        "cls": "",
+        "background": "rgb(247, 247, 245)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": null,
+      "button": null
+    },
+    "login/390/pro-white": {
+      "theme": "pro-white",
+      "body": {
+        "cls": "",
+        "background": "rgb(247, 247, 245)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": {
+        "cls": "",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "button": {
+        "cls": "auth-button",
+        "background": "rgb(178, 51, 37)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      }
+    },
+    "signup/390/pro-white": {
+      "theme": "pro-white",
+      "body": {
+        "cls": "",
+        "background": "rgb(247, 247, 245)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": {
+        "cls": "",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "button": {
+        "cls": "auth-button",
+        "background": "rgb(178, 51, 37)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      }
+    },
+    "reset-request/390/pro-white": {
+      "theme": "pro-white",
+      "body": {
+        "cls": "",
+        "background": "rgb(247, 247, 245)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": {
+        "cls": "",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "button": {
+        "cls": "auth-button reset-form__submit",
+        "background": "rgb(178, 51, 37)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      }
+    },
+    "reset/390/pro-white": {
+      "theme": "pro-white",
+      "body": {
+        "cls": "",
+        "background": "rgb(247, 247, 245)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": null,
+      "button": null
+    },
+    "invite/390/pro-white": {
+      "theme": "pro-white",
+      "body": {
+        "cls": "",
+        "background": "rgb(247, 247, 245)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "main": {
+        "cls": "app-main",
+        "background": "rgba(0, 0, 0, 0)",
+        "color": "rgb(25, 25, 25)",
+        "font": "\"Golos Text\", system-ui, -apple-system, \"Segoe UI\", sans-serif 16px",
+        "shadow": "none"
+      },
+      "input": null,
+      "button": null
+    }
+  },
+  "errors": []
+}
