@@ -2,17 +2,21 @@ import { describe, expect, it } from "vitest";
 
 import {
   assertClientObjectKey,
-  assertObjectStorageExternallyExposable,
+  assertMediaByteSize,
   assertPresignGetTtl,
   clientObjectPrefix,
+  MAX_MEDIA_BYTES,
+  mediaKindForContentType,
   nullObjectStorage,
-  ObjectStorageNotExposableError,
+  parseClientObjectKey,
+  presignTtlSeconds,
   StorageError,
 } from "../../lib/storage";
 
 /**
- * S1-G provider-neutral storage port: fail-closed key/TTL validation and a
- * null backend that can never mint a URL. No real backend exists.
+ * S1-G provider-neutral storage port (extended by PR-MEDIA, D20): fail-closed
+ * key/TTL validation, the media type allowlist and 20 MB cap, and a null
+ * backend that can never mint a URL.
  */
 describe("S1-G storage port", () => {
   it("derives the workspace+client object prefix", () => {
@@ -91,16 +95,87 @@ describe("S1-G storage port", () => {
       code: "storage_not_configured",
     });
     await expect(
+      nullObjectStorage.presignPut("workspace/ws1/client/cp1/x", {
+        contentType: "image/png",
+        byteSize: 10,
+        ttlSeconds: 60,
+      }),
+    ).rejects.toMatchObject({
+      name: "StorageError",
+      code: "storage_not_configured",
+    });
+    await expect(
       nullObjectStorage.deletePrefix("workspace/ws1/client/cp1/"),
     ).resolves.toEqual({ deleted: 0 });
   });
 
-  it("external exposure assertion fails closed", () => {
-    expect(() => assertObjectStorageExternallyExposable()).toThrow(
-      ObjectStorageNotExposableError,
+  it("parseClientObjectKey returns the key's three segments", () => {
+    expect(parseClientObjectKey("workspace/ws1/client/cp1/obj_01.jpg")).toEqual(
+      { workspaceId: "ws1", clientProfileId: "cp1", objectId: "obj_01.jpg" },
     );
-    expect(() => assertObjectStorageExternallyExposable()).toThrowError(
-      "object_storage_not_exposable",
+  });
+
+  it.each([
+    "workspace/ws1/client/cp1",
+    "workspace/ws1/client/cp1/",
+    "workspace/ws1/client/cp1/a/b",
+    "workspace/ws1/client/../x",
+    "workspace/ws 1/client/cp1/x",
+    "workspace/ws1/client/cp1/.hidden",
+    "other/ws1/client/cp1/x",
+    "",
+    42,
+    null,
+    undefined,
+  ])("parseClientObjectKey rejects %j", (key) => {
+    expect(() => parseClientObjectKey(key)).toThrowError(
+      expect.objectContaining({ code: "invalid_key" }),
     );
+  });
+
+  it("maps allowlisted content types to media kinds", () => {
+    expect(mediaKindForContentType("image/png")).toBe("IMAGE");
+    expect(mediaKindForContentType("audio/webm")).toBe("AUDIO");
+    expect(mediaKindForContentType("video/quicktime")).toBe("VIDEO");
+    expect(mediaKindForContentType("application/pdf")).toBe("DOCUMENT");
+    expect(mediaKindForContentType("IMAGE/JPEG")).toBe("IMAGE");
+  });
+
+  it.each([
+    "application/octet-stream",
+    "text/html",
+    "image/svg+xml",
+    "application/zip",
+    "",
+    12,
+    null,
+    undefined,
+  ])("rejects non-allowlisted content type %j", (type) => {
+    expect(mediaKindForContentType(type)).toBeNull();
+  });
+
+  it("assertMediaByteSize enforces the D20 20 MB cap", () => {
+    expect(assertMediaByteSize(1)).toBe(1);
+    expect(assertMediaByteSize(MAX_MEDIA_BYTES)).toBe(MAX_MEDIA_BYTES);
+    for (const bad of [0, -1, 1.5, "100", null]) {
+      expect(() => assertMediaByteSize(bad)).toThrowError(
+        expect.objectContaining({ code: "invalid_input" }),
+      );
+    }
+    for (const over of [MAX_MEDIA_BYTES + 1, Number.MAX_SAFE_INTEGER]) {
+      expect(() => assertMediaByteSize(over)).toThrowError(
+        expect.objectContaining({ code: "payload_too_large" }),
+      );
+    }
+  });
+
+  it("presignTtlSeconds defaults, honors env, and rejects out-of-bound", () => {
+    expect(presignTtlSeconds({})).toBe(300);
+    expect(presignTtlSeconds({ MEDIA_URL_TTL_SECONDS: "120" })).toBe(120);
+    for (const bad of ["0", "3601", "abc", "-5"]) {
+      expect(() =>
+        presignTtlSeconds({ MEDIA_URL_TTL_SECONDS: bad }),
+      ).toThrowError(expect.objectContaining({ code: "invalid_ttl" }));
+    }
   });
 });

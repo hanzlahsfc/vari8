@@ -17,9 +17,9 @@ import type { SeedContext } from "./index";
  * WORKSPACE_OWNER), one staff coach (Sofia Miller, the canvas brand coach
  * name), one sign-in client linked to the first canvas demo client profile,
  * and the fifteen canvas demo clients as ClientProfile rows whose synthetic
- * names come from the frontend roster data
- * (`frontend/src/data/mock-data.json`, surfaced by
- * `frontend/src/components/coach/model.ts`). A second workspace
+ * names come from the canvas roster data
+ * (`lib/canvas/data/mock-data.json`, surfaced by
+ * `components/canvas/coach/model.ts`). A second workspace
  * (`seed-second-workspace`) carries one staff coach, so seeded sign-in also
  * covers a membership outside `canvas-demo`.
  *
@@ -52,7 +52,7 @@ type CanvasClient = { id: string; name: string };
 function canvasClientNames(): string[] {
   const dataPath = join(
     dirname(fileURLToPath(import.meta.url)),
-    "../../frontend/src/data/mock-data.json",
+    "../../lib/canvas/data/mock-data.json",
   );
   const data = JSON.parse(readFileSync(dataPath, "utf8")) as {
     clients?: CanvasClient[];

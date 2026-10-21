@@ -35,6 +35,10 @@ type Store = {
   dismiss: () => void;
   media: Record<string, string>;
   attach: (media: Media, blob: Blob) => void;
+  /** PR-MEDIA: the server workspace this canvas renders for (uploads). */
+  workspaceId?: string;
+  /** PR-MEDIA: canvas client name -> media anchor clientProfileId (roster). */
+  clientProfileIdFor: (clientName: string) => Promise<string | null>;
 };
 const Context = createContext<Store | null>(null);
 export function useCoach() {
@@ -48,7 +52,13 @@ export function routeUrl(route: Route) {
     if (route[key]) q.set(key, route[key]);
   return `/coach?${q.toString()}`;
 }
-export function CoachProvider({ children }: { children: ReactNode }) {
+export function CoachProvider({
+  workspaceId,
+  children,
+}: {
+  workspaceId?: string;
+  children: ReactNode;
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const [state, setState] = useState<CoachState>(() =>
@@ -136,6 +146,37 @@ export function CoachProvider({ children }: { children: ReactNode }) {
       return { ...old, [item.id]: url };
     });
   }, []);
+  // PR-MEDIA: name -> clientProfileId map, fetched once per workspace.
+  const roster = useRef<Map<string, string> | null>(null);
+  const clientProfileIdFor = useCallback(
+    async (clientName: string): Promise<string | null> => {
+      if (!workspaceId) return null;
+      if (!roster.current) {
+        try {
+          const res = await fetch(
+            `/api/v1/workspaces/${workspaceId}/clients?limit=100`,
+          );
+          // Cache only a successful response: a transient 401/network error
+          // must not poison the roster for the rest of the session.
+          if (res.ok) {
+            const body = (await res.json()) as {
+              items?: { clientProfileId: string; name: string }[];
+            };
+            const map = new Map<string, string>();
+            for (const item of body.items ?? [])
+              map.set(item.name, item.clientProfileId);
+            roster.current = map;
+          } else {
+            return null;
+          }
+        } catch {
+          return null;
+        }
+      }
+      return roster.current.get(clientName) ?? null;
+    },
+    [workspaceId],
+  );
   return (
     <Context.Provider
       value={{
@@ -151,6 +192,8 @@ export function CoachProvider({ children }: { children: ReactNode }) {
         dismiss: () => setNotice(null),
         media,
         attach,
+        workspaceId,
+        clientProfileIdFor,
       }}
     >
       {children}
