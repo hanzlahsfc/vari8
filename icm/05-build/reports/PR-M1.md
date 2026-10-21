@@ -279,12 +279,47 @@ but could not find plugin "react-hooks"`. `eslint.config.mjs` sets
   index doc in every directory.
 
 Gate history on this card's macOS runs: `EXIT=0` at `b1270da` (the product
-head, before any report commit). `EXIT=1` at `6bdbb76` on `FAIL lint exit=2`
-for the stray `.cjs`. `EXIT=1` at `cffd2ca` on `FAIL unit tests exit=1` for
-the `_evidence/` directory. With both artifacts moved out, `eslint` reports
-`0 errors, 81 warnings` and `tests/unit/system-index.test.ts` passes 18/18.
-The gate run on the head that carries this text is the one that decides the
-READY line.
+head, before any report commit, base `5553b47`). `EXIT=1` at `6bdbb76` on
+`FAIL lint exit=2` for the stray `.cjs`. `EXIT=1` at `cffd2ca` on
+`FAIL unit tests exit=1` for the `_evidence/` directory. With both artifacts
+moved out, `eslint` reports `0 errors, 81 warnings` and
+`tests/unit/system-index.test.ts` passes 18/18. `EXIT=0` at `2de93ce`, base
+`5553b47`, all steps PASS.
+
+### Base regression after `origin/Vari8-Beta` advanced to `6d06cf8`
+
+`origin/Vari8-Beta` moved from `5553b47` to `6d06cf8` (merge of PR #140,
+auth-client) while this card was finishing, so the branch was merged up to it
+and re-gated at merge commit `4139cf9` with `base=6d06cf8`. That gate returns
+`EXIT=1` on one step, and the step is not this card's:
+
+```
+FAIL unit tests exit=1
+ FAIL tests/unit/system-index.test.ts > system index generator >
+      F1: indexes a route-segment directory such as app/sheets
+ AssertionError: expected '# ROUTES.md - Next route index ...'
+   to contain 'Counts: 52 backend pages'
+```
+
+Cause: PR #140 added three backend pages
+(`app/(canvas)/me/(auth)/login`, `reset`, `reset-request`), so the generator
+counts 55 backend pages. The committed `docs/index/ROUTES.md` at `6d06cf8`
+already reads `Counts: 55 backend pages`, while
+`tests/unit/system-index.test.ts` at the same commit still asserts
+`Counts: 52 backend pages`. The base branch fails its own unit suite before
+this card touches anything: `git diff --name-only 6d06cf8..HEAD -- app/` is
+empty, so this branch adds no route.
+
+A first gate run at `4139cf9` also failed `typecheck` from a stale `.next`
+tree that still referenced `app/invite/layout`, deleted by that same merge.
+`rm -rf .next` cleared it (environment class) and the re-run passed typecheck,
+lint and the frontend steps.
+
+Not fixed here: the repair is one line in `tests/unit/system-index.test.ts`
+(`52` to `55`, or derive the number from the generated doc), which is shared
+test code owned by the auth-client lane, and this card only edits its own
+files. Until that lands the gate cannot be green at the current base, so no
+READY line was written for `4139cf9`.
 
 Not done or not possible on this run: the roster page does not exist on this
 branch, so the screenshots show the JSON the roster query returns rather than
