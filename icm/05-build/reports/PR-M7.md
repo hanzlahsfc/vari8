@@ -253,3 +253,157 @@ Sunday to Monday week boundary guard is covered by
   `reason` or `completed` yet; that is the wiring PR. Parity's own
   captures cover the canvas at 1440 and 390, and the acceptance is
   measured through the service the wiring will call.
+
+## Mac gate run, 2026-10-21 (Wave B, gate exit 0)
+
+Card `pr-m7-habits`, PR #118, lane DB `app_wb_m7` on 127.0.0.1:5433,
+lane port 3930, worktree `.worktrees/pr-m7-habits`.
+
+- Head: `b4bbdb3b1054310c0ca76d4633682b97a9cc0560`
+- Base: `5553b471e2be1e1f8ea4f3dbadfd50c65f162281`
+  (`git rev-parse --short origin/Vari8-Beta` at read time: `5553b47`,
+  so the gate ran against the current base and the log is valid)
+- Working tree at gate start: clean (`git status --porcelain` empty)
+
+### Gate
+
+Started detached through the wave runner, which sets PATH, the
+Postgres secret, `SKIP_PARITY=1` and writes the whole run to
+`Vari8-evidence/WAVEB-LEAD/pr-m7-habits.check.log`:
+
+```
+./run-gate.sh pr-m7-habits PR-M7 app_wb_m7 3930   # exit 0
+```
+
+Result block, verbatim from the log tail:
+
+```
+head=b4bbdb3b1054310c0ca76d4633682b97a9cc0560 base=5553b471e2be1e1f8ea4f3dbadfd50c65f162281 node=v26.12.0 card=PR-M7 db=app_wb_m7 port=3930
+PASS clean tree (0s)
+WARN node: target 24 (D5), running v26.12.0; recorded, not certified
+PASS schema guard (D34) (0s)
+PASS program generator check (1s)
+PASS npm ci (19s)
+PASS prisma generate (1s)
+PASS frontend npm ci (8s)
+PASS format check (11s)
+PASS typecheck (28s)
+PASS frontend typecheck (3s)
+PASS lint (18s)
+PASS frontend lint (2s)
+PASS unit tests (16s)
+PASS frontend tests (1s)
+PASS integration tests (135s)
+PASS migrate deploy (1s)
+PASS build (21s)
+PASS frontend build (10s)
+PASS e2e flow specs (serialized) (21s)
+SKIP parity regression (D32): SKIP_PARITY=1, card contract gates no screens
+VERIFY-LOCAL PASS
+EXIT=0
+```
+
+`npm run build` exits 0 in this run. The earlier "build exit 1" on
+Linux was the stub `npm` on `PATH` (no `node_modules`), not code; it
+does not reproduce here and nothing was changed for it.
+
+### Live acceptance on app_wb_m7
+
+Lane DB recreated from scratch (the previous gate dropped it on exit),
+`prisma migrate deploy` exit 0, `npx tsx scripts/seed/index.ts` exit 0
+with:
+
+```
+[seed] 32-habits: 15 client(s), 15 habit(s) created, 75 log row(s) upserted
+[seed] done: 4 module(s) on app_wb_m7
+```
+
+Query 1, scheduled habits with reason and all-time count
+(`psql ... app_wb_m7`, first rows of 15 identical canvas rows):
+
+```
+client      | habit        | target     | reason                                   | weekdays | effective_from | done_all_time
+Amara Lewis | Evening walk | 20 minutes | Create a calm transition into the evening. | 127    | 2026-09-21     | 5
+Chloe Park  | Evening walk | 20 minutes | Create a calm transition into the evening. | 127    | 2026-09-21     | 5
+Emma Anders | Evening walk | 20 minutes | Create a calm transition into the evening. | 127    | 2026-09-21     | 5
+Ethan Cole  | Evening walk | 20 minutes | Create a calm transition into the evening. | 127    | 2026-09-21     | 5
+```
+
+Query 2, totals: `habits 15`, `schedules_current 15`, `logs_done 75`,
+`logs_total 75`.
+
+Query 3, week boundary in Europe/Vienna on Emma Anders' habit:
+
+```
+log_date          | status | iso_weekday_1_mon_7_sun
+2026-10-16 Fri    | DONE   | 5
+2026-10-17 Sat    | DONE   | 6
+2026-10-18 Sun    | DONE   | 7
+2026-10-19 Mon    | DONE   | 1
+2026-10-20 Tue    | DONE   | 2
+done_before_or_on_sunday_2026_10_18 = 3
+done_on_or_after_monday_2026_10_19  = 2
+```
+
+The five DONE rows straddle the Sunday to Monday boundary and the
+service reports one all-time count of 5, so the count does not reset at
+the week edge. Both probes ran with `TZ=Europe/Vienna`.
+
+Service receipt (the read the wiring layer calls,
+`_evidence/PR-M7/build/acceptance.ts`, throwaway), exit 0 on the same
+DB:
+
+```
+STAFF view (owner) client=Emma Anders habits=1
+{"name":"Evening walk","target":"20 minutes","frequency":"Daily","completed":5,"reason":"Create a calm transition into the evening.","archived":false}
+CLIENT own view habits=1
+BOUNDARY Sun 2026-10-18 and earlier=3 Mon 2026-10-19 and later=2 raw_done_rows=5 service_completed=5
+[["Evening walk",5,"Create a calm transition into the evening."]]
+```
+
+### Screenshots, real browser, 1440 and 390
+
+Server `npm run dev -- -p 3930` against `app_wb_m7` with
+`ENABLE_CLIENT_DASHBOARD=1`; Playwright signed in as the seeded owner
+through `/login` (form action) and loaded
+`/workspace/cmvikblf400008o2vxnn5wwap/clients/cmvikbli8000h8o2vcfcxhaxu/dashboard`,
+HTTP 200. Panel text, read from the live DOM:
+
+```
+Client habits
+5 of 7 done this week
+Mon Tue Wed Thu Fri Sat Sun
+Add habit
+Evening walk
+20 minutes
+Active / Edit / Archive
+```
+
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m7-habits/_evidence/PR-M7/build/staff-habits-1440.png`
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m7-habits/_evidence/PR-M7/build/staff-habits-390.png`
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m7-habits/_evidence/PR-M7/build/panel-text-1440.txt`
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m7-habits/_evidence/PR-M7/build/completions-transcript.txt`
+
+The weekly count "5 of 7" is computed from the 5 DONE rows of
+2026-10-16..2026-10-20 against the 7 day window, so the screen and the
+DB agree on the same number the all-time field returns for this habit.
+
+### What is still not rendered
+
+No shipped screen prints the `reason` text or the all-time `completed`
+field. The staff panel renders the scheduled habit and the weekly
+consistency count; `listHabitCompletions` is the payload the wiring PR
+will bind. Both fields are proven above through that read on the real
+lane DB, not through a UI element that does not exist yet.
+
+Parity (D32): none, the card declares no screens and the gate skipped
+the step.
+
+### Could not do
+
+- Node 24 certification: this host runs v26.12.0, so the gate records
+  `WARN node` and does not certify.
+- Environment note for the next verifier: this host's root `.env` holds
+  a placeholder for `POSTGRES_PASSWORD` and the lane DB accepts that
+  literal string; `.env.bak-waveb` holds a different value and is
+  rejected. Nothing secret was printed or committed.
