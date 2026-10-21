@@ -240,10 +240,10 @@ inside the retention window is refused with no row removed.
 Screenshots, both widths, same browser session, roster endpoint opened after
 the real sign-in:
 
-- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m1-client-lifecycle/_evidence/PR-M1/build/roster-before-1440.png` (15 items)
-- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m1-client-lifecycle/_evidence/PR-M1/build/roster-before-390.png` (15 items)
-- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m1-client-lifecycle/_evidence/PR-M1/build/roster-after-1440.png` (14 items, "Oliver Stone" absent)
-- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.worktrees/pr-m1-client-lifecycle/_evidence/PR-M1/build/roster-after-390.png` (14 items, "Oliver Stone" absent)
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/WAVEB-LEAD/PR-M1/build/roster-before-1440.png` (15 items)
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/WAVEB-LEAD/PR-M1/build/roster-before-390.png` (15 items)
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/WAVEB-LEAD/PR-M1/build/roster-after-1440.png` (14 items, "Oliver Stone" absent)
+- `/Users/marcelspatz/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/WAVEB-LEAD/PR-M1/build/roster-after-390.png` (14 items, "Oliver Stone" absent)
 
 The browser-visible surface is still the `/api/v1` roster JSON: this branch
 ships no roster page (that is PR-W2), so there is no screen for the parity
@@ -263,22 +263,28 @@ harness to compare, which is why the card declares parity off.
 | `node Vari8-evidence/WAVEB-LEAD/shots.cjs before` / `after`          | 0    | 4 screenshots, HTTP 200 at 1440x900 and 390x844                                                     |
 
 The acceptance helpers (`pr-m1-acceptance.sh`, `pr-m1-live-server.sh`,
-`shots.cjs`, `step.ts`) live in `Vari8-evidence/WAVEB-LEAD/`, not in
-`_evidence/` inside the worktree. Reason: a `.cjs` file anywhere under the
-worktree root makes `npm run lint` fail with
-`A configuration object specifies rule "react-hooks/set-state-in-effect", but
-could not find plugin "react-hooks"`. `eslint.config.mjs` sets react-hooks
-rules in an unscoped object while `eslint-config-next` registers the plugin
-only for the extensions its own globs match, so a stray `.cjs` breaks the
-whole config. That is a shared toolchain detail, not this card's code: no
-product file changes it. Removing the stray file restored
-`eslint` to `0 errors, 81 warnings`.
+`shots.cjs`, `step.ts`) and the raw artifacts live in
+`Vari8-evidence/WAVEB-LEAD/` and `Vari8-evidence/WAVEB-LEAD/PR-M1/build/`, not
+inside the worktree. Two worktree-side artifacts broke the gate while they
+existed and both are gone now:
 
-Gate runs on this head history: `EXIT=0` at `b1270da` (product head). A second
-run at `6bdbb76` (this report's first commit, docs only) returned `EXIT=1` on
-`FAIL lint exit=2` for exactly that stray `.cjs` helper, which was then moved
-out of the worktree; the final gate run on the head that carries this text is
-in the gate log with the same clean tree and no product change.
+- A `.cjs` file under the worktree root makes `npm run lint` fail with
+  `A configuration object specifies rule "react-hooks/set-state-in-effect",
+but could not find plugin "react-hooks"`. `eslint.config.mjs` sets
+  react-hooks rules in an unscoped object while `eslint-config-next`
+  registers the plugin only for the extensions its own globs match, so one
+  stray `.cjs` breaks the whole config.
+- A `_evidence/` directory makes `tests/unit/system-index.test.ts` fail with
+  `["missing: _evidence/AGENTS.md"]`, because the index generator expects an
+  index doc in every directory.
+
+Gate history on this card's macOS runs: `EXIT=0` at `b1270da` (the product
+head, before any report commit). `EXIT=1` at `6bdbb76` on `FAIL lint exit=2`
+for the stray `.cjs`. `EXIT=1` at `cffd2ca` on `FAIL unit tests exit=1` for
+the `_evidence/` directory. With both artifacts moved out, `eslint` reports
+`0 errors, 81 warnings` and `tests/unit/system-index.test.ts` passes 18/18.
+The gate run on the head that carries this text is the one that decides the
+READY line.
 
 Not done or not possible on this run: the roster page does not exist on this
 branch, so the screenshots show the JSON the roster query returns rather than
