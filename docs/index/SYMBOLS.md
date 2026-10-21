@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 137 modules with exports, 1359 exported symbols.
+Counts: 138 modules with exports, 1363 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1731,6 +1731,13 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function updateClientProfileName(session: SessionLike, input: { workspaceId: string; clientProfileId: string; name: unknown }, client: PrismaClient = prisma): Promise<ClientProfileSumm...`
 - `export function validateName(name: unknown): string`
 
+## `lib/workspace/invitation-api.ts`
+
+- `export type CreatedInvitationResult = { invitationId: string; expiresAt: Date; delivered: true; }`
+- `export async function createInvitationFromApi(viewer: ApiViewer, workspace: ApiWorkspaceContext, input: { targetEmail: unknown; intendedRole: unknown }): Promise<CreatedInvitationResult>`
+- `export async function listInvitationsFromApi(viewer: ApiViewer, workspace: ApiWorkspaceContext, input: { limit?: number; cursor?: string }): Promise<{ items: InvitationSummary[]; nextCursor: string...`
+- `export async function revokeInvitationFromApi(viewer: ApiViewer, workspace: ApiWorkspaceContext, input: { invitationId: unknown }): Promise<{ changed: boolean }>`
+
 ## `lib/workspace/invitations.ts`
 
 - `export type AcceptanceOutcome = "accepted" | "already_member"`
@@ -1743,7 +1750,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type InvitationStatus = "active" | "consumed" | "revoked" | "expired"`
 - `export type InvitationSummary = { id: string; targetEmail: string; intendedRole: InvitableRole; expiresAt: Date; status: InvitationStatus; }`
 - `export async function acceptWorkspaceInvitation(session: SessionLike, input: { workspaceId: string; rawToken: unknown; name?: unknown; password?: unknown; }, client: PrismaClient = prisma): Promise...`
-- `export function assertInvitationOrchestrationExternallyExposable(): never`
+- `export function assertInvitationOrchestrationExternallyExposable(): void`
 - `export async function createWorkspaceInvitation(session: SessionLike, input: { workspaceId: string; targetEmail: unknown; intendedRole: unknown }, client: PrismaClient = prisma): Promise<CreatedInv...`
 - `export function invitationResource(intendedRole: InvitableRole): "membersInvitations" | "clientInvitations"`
 - `export function isExpectedUniqueRace(error: Prisma.PrismaClientKnownRequestError)`
