@@ -271,3 +271,18 @@ The 30 CONFLICT rows of the gap matrix were blocked by product rules the owner a
 ## D37. Owner rulings O1 to O16 recorded
 
 Owner decision (Marcel, 2026-10-20). The sixteen open items of the wiring spec are ruled. `icm/03-plan/output/WIRING-SPEC.md` section "Owner rulings" records each ruling with the options considered and the owning wave it lands on, and `docs/product-decisions.md` records the product-behaviour rulings as decisions #120 to #132. The wiring waves apply them; they are not reopened.
+
+## D38. O17: clients sign in on the client look, and client links stay on /me
+
+Owner decision (Marcel, 2026-10-20), ruling O17, card `auth-client`.
+
+The auth routes #130 restyled (`/login`, `/reset-request`, `/reset`, `/invite`) wear the coach shell (O16). Clients sign in at their own address, so they get the same forms inside the client shell:
+
+- `/me/login`, `/me/reset-request` and `/me/reset` render the forms, server actions and copy of #130 inside the root `/me` mounts (`appearance-root eg-root`, `data-mode`, the theme variables from `lib/canvas/ethereal-appearance.tsx`), with `Ethereal Geist` loaded. The CSS is layout only: `.auth-screen.eg-auth` in `app/auth.css` bridges the card's `--cd-*` tokens onto the `.eg-root` variables, so no colour is restated and both modes follow the shell's own `data-mode`.
+- `/invite` picks its shell from the invitation's `intended_role`: a client invitation opens on the client look, a staff invitation on the coach look. An unusable link keeps the coach look.
+- A signed-out visit to `/me` redirects to `/me/login`, not `/login`. Staff surfaces keep `/login`. Sign-in from `/me/login` runs the same action as `/login` (redirect to `/`, which sends staff to `/coach` and a client to `/me`), so a coach who signs in there is not locked out.
+- Client-facing links stay on `/me`: the client password reset mail links to `/me/reset`, a client sign-out lands on `/me/login`, and a client invitation acceptance keeps its sign-in link on `/me/login`.
+
+No new auth logic: the only new server-side reads are the invitation role for shell selection and the profile lookup that decides the reset link path.
+
+The client screen `frontend/` is untouched.

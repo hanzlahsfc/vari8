@@ -190,10 +190,17 @@ export const auth = betterAuth({
         process.env.AUTH_URL ??
         ""
       ).replace(/\/+$/, "");
+      // O17: a client's reset link stays on /me. The role is read here, at
+      // send time, from a live unarchived ClientProfile; staff keep /reset.
+      const clientProfile = await prisma.clientProfile.findFirst({
+        where: { userId: user.id, archivedAt: null },
+        select: { id: true },
+      });
+      const resetPath = clientProfile ? "/me/reset" : "/reset";
       await sendMail({
         to: user.email,
         subject: "Reset your password",
-        text: `Reset your password: ${origin}/reset?token=${token}`,
+        text: `Reset your password: ${origin}${resetPath}?token=${token}`,
       });
     },
     onPasswordReset: async ({ user }) => {
