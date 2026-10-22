@@ -292,6 +292,44 @@ describe.skipIf(!enabled)(
       });
     });
 
+    it("returns a literal RATING series from the current revisions", async () => {
+      const fx = await seed();
+      await mkEntry(fx, fx.profile.id, "2026-10-04", [
+        { parameterId: fx.mood.id, kind: "RATING", rating: 6 },
+      ]);
+      await mkEntry(fx, fx.profile.id, "2026-10-02", [], {
+        revs: [
+          [{ parameterId: fx.mood.id, kind: "RATING", rating: 4 }],
+          [{ parameterId: fx.mood.id, kind: "RATING", rating: 7 }],
+        ],
+      });
+      const token = await signInToken(fx.owner.email);
+      const res = await call(
+        fx.ws.id,
+        fx.profile.id,
+        `?parameterId=${fx.mood.id}&from=2026-10-01&to=2026-10-31`,
+        { authorization: `Bearer ${token}` },
+      );
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body).toEqual({
+        state: "ready",
+        parameter: {
+          parameterId: fx.mood.id,
+          key: fx.mood.key,
+          label: fx.mood.label,
+          unit: null,
+          kind: "RATING",
+        },
+        from: "2026-10-01",
+        to: "2026-10-31",
+        points: [
+          { date: "2026-10-02", value: 7 },
+          { date: "2026-10-04", value: 6 },
+        ],
+      });
+    });
+
     it("reads the latest revision only", async () => {
       const fx = await seed();
       await mkEntry(fx, fx.profile.id, "2026-10-02", [], {

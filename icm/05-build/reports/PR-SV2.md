@@ -59,34 +59,45 @@ during this card; origin updated accordingly.
   denial.
 - Consent: parked gates (D19) are checked with the same unlocked
   `checkRequiredConsent` and the dev policy registry the app callers
-  use; under gates a missing policy returns `{ state: "consent_missing" }`
-  (fail closed), matching `listStaffDailyEntries`.
-- No READ audit event: the api/v1 read surface has no
-  `AuthorizationContext` to audit through and follows the roster
-  reference read; the P-022 detail action's audited protocol stays
-  unique to it. Flagged for review if a series audit is wanted.
+  use. Contract: with `ENABLE_CONSENT_GATES=1` set in a dev/test runtime,
+  a client profile missing required consents returns HTTP 200
+  `{ state: "consent_missing" }` — a state payload, not an api/v1 error
+  code — matching the `listStaffDailyEntries` read the app consumes.
+  Reachability today: consent gates are parked off everywhere (D19), so
+  this state is unreachable in the current lane and production builds;
+  this PR changes nothing about consent policy and the state stays as
+  the app list read defines it.
+- No READ audit event: product decision #80
+  (`docs/product-decisions.md`) records one structural `READ` audit per
+  explicitly submitted "View details" Server Action and states that list
+  loads and GETs create none. The series is a bounded GET collection
+  read — like `listStaffDailyEntries` and the api/v1 roster read it
+  writes no audit; the audited detail action stays unique to P-022.
 
 ## Commands and exit codes
 
 Runtime: Node v24.22.1 (`~/.local/node24`, project-local install from
 nodejs.org; machine runtime untouched). `REQUIRE_NODE24=1` passed.
 
-| Command | Exit |
-| --- | --- |
-| `npx vitest run tests/unit/daily-entry-series.test.ts` (RED before implementation: import failure on missing exports) | 1 |
-| same, after implementation | 0 (6/6) |
-| `INTEGRATION_DATABASE_URL=...app_prsv2 npx vitest run --config vitest.integration.config.ts tests/integration/api-v1-daily-entry-series.test.ts` | 0 (11/11) |
-| Mutation: own-scope check removed -> "denies a client reading another client's series" fails | 1 (expected) |
-| Mutation: `orderBy desc` -> "literal ascending series" fails | 1 (expected) |
-| Mutation: missing values emitted as `0` -> "keeps a recorded zero and omits dates without a value" fails | 1 (expected) |
-| `npm run index` + `npm run index:check` | 0 |
-| `npm run typecheck` | 0 |
-| `BASE_SHA=$(git merge-base HEAD origin/Vari8-Beta) LANE_DB=app_prsv2 LANE_PORT=3767 CARD=PR-SV2 REQUIRE_NODE24=1 SKIP_PARITY=1 KEEP_DB=1 icm/05-build/tools/verify-local.sh` | 0 (PASS) |
-| `npm run db:fresh` on `app_prsv2` (`DB_FRESH_SKIP_CATALOGS=1`, seeded creds owner/coach/client/staff2@vari8.test) | 0 |
-| `PORT=3767 npm run dev` against `app_prsv2`, real-browser sign-in per role and `GET` of the series URL | see receipts |
-| Re-verification at head `c07a113` (same code as gate-verified `a4b2dcb`): `npx vitest run tests/unit/daily-entry-series.test.ts` | 0 (6/6) |
-| `INTEGRATION_DATABASE_URL=...app_prsv2 npx vitest run --config vitest.integration.config.ts tests/integration/api-v1-daily-entry-series.test.ts` | 0 (11/11) |
-| `npm run index:check` | 0 |
+| Command                                                                                                                                                                      | Exit                                             |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `npx vitest run tests/unit/daily-entry-series.test.ts` (RED before implementation: import failure on missing exports)                                                        | 1                                                |
+| same, after implementation                                                                                                                                                   | 0 (6/6)                                          |
+| `INTEGRATION_DATABASE_URL=...app_prsv2 npx vitest run --config vitest.integration.config.ts tests/integration/api-v1-daily-entry-series.test.ts`                             | 0 (11/11)                                        |
+| Mutation: own-scope check removed -> "denies a client reading another client's series" fails                                                                                 | 1 (expected)                                     |
+| Mutation: `orderBy desc` -> "literal ascending series" fails                                                                                                                 | 1 (expected)                                     |
+| Mutation: missing values emitted as `0` -> "keeps a recorded zero and omits dates without a value" fails                                                                     | 1 (expected)                                     |
+| `npm run index` + `npm run index:check`                                                                                                                                      | 0                                                |
+| `npm run typecheck`                                                                                                                                                          | 0                                                |
+| `BASE_SHA=$(git merge-base HEAD origin/Vari8-Beta) LANE_DB=app_prsv2 LANE_PORT=3767 CARD=PR-SV2 REQUIRE_NODE24=1 SKIP_PARITY=1 KEEP_DB=1 icm/05-build/tools/verify-local.sh` | 0 (PASS)                                         |
+| `npm run db:fresh` on `app_prsv2` (`DB_FRESH_SKIP_CATALOGS=1`, seeded creds owner/coach/client/staff2@vari8.test)                                                            | 0                                                |
+| `PORT=3767 npm run dev` against `app_prsv2`, real-browser sign-in per role and `GET` of the series URL                                                                       | see receipts                                     |
+| Re-verification at head `c07a113` (same code as gate-verified `a4b2dcb`): `npx vitest run tests/unit/daily-entry-series.test.ts`                                             | 0 (6/6)                                          |
+| `INTEGRATION_DATABASE_URL=...app_prsv2 npx vitest run --config vitest.integration.config.ts tests/integration/api-v1-daily-entry-series.test.ts`                             | 0 (11/11)                                        |
+| `npm run index:check`                                                                                                                                                        | 0                                                |
+| Review repair (advisory: RATING emission untested): added literal RATING test, same integration file                                                                         | 0 (12/12)                                        |
+| Review mutation: `seriesPointValue` RATING -> `0` -> the new RATING test fails                                                                                               | 1 (expected); restored byte-identically (sha256) |
+| Review repair (finding: report fails format gate): `npx prettier --write` then `npm run format:check`                                                                        | 0                                                |
 
 ## verify-local summary (head a4b2dcb)
 
@@ -123,14 +134,14 @@ lane-env footgun PR-31's report already flags.
 
 Evidence under `~/Devin/vari8-worktrees/_evidence/PR-SV2/build/`:
 
-| Role | Result | Screenshot |
-| --- | --- | --- |
-| owner (staff, workspace) 1440 | 200 `state:"ready"`, 6 literal points | `owner-1440.png` |
-| coach (staff, workspace) 1440 | 200 same series | `coach-1440.png` |
-| client (own scope) 390 | 200 same series | `client-390.png` |
-| client -> another client's profile 390 | 403 `forbidden` | `client-foreign-390.png` |
-| staff of foreign workspace 1440 | 403 `forbidden` | `foreign-staff-1440.png` |
-| signed out 1440 | 401 `unauthenticated` | `signed-out-1440.png` |
+| Role                                   | Result                                | Screenshot               |
+| -------------------------------------- | ------------------------------------- | ------------------------ |
+| owner (staff, workspace) 1440          | 200 `state:"ready"`, 6 literal points | `owner-1440.png`         |
+| coach (staff, workspace) 1440          | 200 same series                       | `coach-1440.png`         |
+| client (own scope) 390                 | 200 same series                       | `client-390.png`         |
+| client -> another client's profile 390 | 403 `forbidden`                       | `client-foreign-390.png` |
+| staff of foreign workspace 1440        | 403 `forbidden`                       | `foreign-staff-1440.png` |
+| signed out 1440                        | 401 `unauthenticated`                 | `signed-out-1440.png`    |
 
 Series on the seeded client (`canvas-demo`, profile `cmvje3x2a…w2zfv`,
 parameter `p_sv2_bodyweight` kg, GENERAL_HEALTH MEASUREMENT):
