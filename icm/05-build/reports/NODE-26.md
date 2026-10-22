@@ -67,18 +67,26 @@ which is dev-only and not in the production tree). This is recorded as not done 
 
 ## What could not be done
 
-1. **`icm/05-build/tools/verify-local.sh` does not run on this Mac.** It drives `docker exec
-vari8-db-1` to drop and create the lane database while this machine runs native PostgreSQL 17 on
-   127.0.0.1:5433. That is unchanged by this card and unrelated to Node. Every gate above was run as
-   the individual command the script wraps, which is the same set it executes in order. Fixing the
-   script for a native cluster is a separate card and would break the Linux lane, where Docker works.
-2. **The two `REQUIRE_NODE26` refusals are not demonstrable through the script for the same reason**:
-   the script's clean-tree step and then its Docker step gate the run, and the Docker step fails on
-   this machine. The node check itself is a semver comparison, `printf '%s\n%s\n' "$NODE_TARGET"
-"$NODE_CURRENT" | sort -V | head -1`, which returns `26.12.0` for a 26.12.0 runtime and `24.x` for
-   a 24 runtime, so both compare unequal to the target and take the FAIL branch when
-   `REQUIRE_NODE26=1`. Verified by direct comparison, not by a script run. A script-level receipt
-   needs the native-cluster card above.
+1. **`icm/05-build/tools/verify-local.sh` cannot run on this Mac, for three independent reasons.**
+   (a) `icm/05-build/program-config.json:7` hardcodes `root_checkout` as
+   `/home/nexuslink/NEXUS_AI_CENTER/04_PROJECTS/Vari8`; `paths.sh:13` loads it and `verify-local.sh:26`
+   `realpath`s it, which dies with `realpath: ... No such file or directory` and then
+   `mkdir: /home/nexuslink: Operation not supported` before any gate runs. (b) Lines 100 to 102 drive
+   `docker exec vari8-db-1` to drop and create the lane database, while this machine runs native
+   PostgreSQL 17 on 127.0.0.1:5433 with no Docker. (c) It requires `POSTGRES_PASSWORD`, which `.env`
+   resolves to empty (see item 3). None of that is caused by this card and none of it is Node. Every
+   gate above was therefore run as the individual command the script wraps, in the script's own order.
+   Making the script host-agnostic is a separate card and must not change the Linux lane, where all
+   three assumptions hold.
+2. **The two `REQUIRE_NODE26` refusals cannot be demonstrated through the script for the reason in
+   item 1**: it aborts at the `realpath` of the hardcoded Linux root before reaching the node check.
+   The check itself is a semver comparison,
+   `printf '%s\n%s\n' "$NODE_TARGET" "$NODE_CURRENT" | sort -V | head -1`, which yields `26.12.0` for a
+   26.12.0 runtime and `24.19.1` for a 24 runtime, so both compare unequal to the 26.12.1 target and
+   take the FAIL branch when `REQUIRE_NODE26=1`. Shims that report `v26.12.0` and `v24.19.1` were built
+   at `Vari8-evidence/scratch/node-26/shim-26120` and `shim-24` and both runs stopped at the hardcoded
+   root path, which is the finding, not a passing refusal. A script-level receipt needs the
+   host-agnostic card.
 3. **Environment defect found, not repaired here, reported to the lead:** the shared PostgreSQL role
    `app` has an _empty_ password (`psql postgresql://app:@127.0.0.1:5433/...` succeeds, any non-empty
    password fails), and `.env` line 2 `POSTGRES_PASSWORD=${...}` references an undefined variable so
