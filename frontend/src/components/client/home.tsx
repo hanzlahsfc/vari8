@@ -5,6 +5,7 @@ import { Card } from "@/components/vari8/components";
 import { CompetitionLine } from "./competition";
 import type { ParsedDemo } from "./demo/state";
 import { useDemoSlice, useDemoStore } from "./demo/store";
+import { LegacySheetDemo } from "./legacy-sheet/dialog";
 import { ClientScreen, clientNavItems, DemoGate } from "./shell";
 
 export function ClientHome({ demo }: { demo: ParsedDemo }) {
@@ -56,6 +57,7 @@ export function ClientHome({ demo }: { demo: ParsedDemo }) {
                 ))}
             </div>
             <CompetitionLine />
+            <LegacySheetDemo />
           </>
         )}
       </DemoGate>

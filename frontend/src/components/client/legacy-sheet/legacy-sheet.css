@@ -1,0 +1,241 @@
+/* Legacy sheets dialog chrome. Sizes inside the grid come from the
+   transcribed workbook structure via custom properties; everything here
+   stays on tokens. */
+
+.ls-frame {
+  --ls-gutter: 2rem;
+  --ls-head: 1.4rem;
+  --ls-frame-h: min(74vh, 46rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-2);
+  height: var(--ls-frame-h);
+  min-height: 0;
+}
+
+.ls-menu {
+  display: flex;
+  gap: var(--v8-space-3);
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-xs);
+}
+
+.ls-banner {
+  margin: 0;
+  padding: var(--v8-space-2) var(--v8-space-3);
+  border: var(--v8-border-width-hairline) solid var(--v8-border);
+  border-radius: var(--v8-radius-compact);
+  background: var(--v8-surface-inset);
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-xs);
+  line-height: var(--v8-line-height-supporting);
+}
+
+.ls-mergestat {
+  color: var(--v8-text);
+  border-bottom: var(--v8-border-width-hairline) dotted var(--v8-text-secondary);
+}
+
+.ls-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--v8-space-2);
+}
+
+.ls-namebox {
+  width: 5.5rem;
+  flex: none;
+}
+
+.ls-fx-mark {
+  color: var(--v8-text-secondary);
+  font-style: italic;
+  flex: none;
+}
+
+.ls-fx-readout {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--v8-font-size-xs);
+  color: var(--v8-text);
+}
+
+.ls-badges {
+  display: flex;
+  gap: var(--v8-space-1);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex: none;
+  max-width: 60%;
+}
+
+.ls-tabs {
+  display: flex;
+  flex-direction: column-reverse;
+  flex: 1 1 0;
+  overflow: hidden;
+}
+
+.ls-tabs [role="tabpanel"]:not([hidden]) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  padding: 0;
+}
+
+.ls-tabs [role="tablist"] {
+  overflow-x: auto;
+  flex: none;
+}
+
+.ls-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border: var(--v8-border-width-hairline) solid var(--v8-border);
+  background: var(--v8-canvas);
+}
+
+.ls-grid {
+  display: grid;
+  width: max-content;
+}
+
+.ls-head {
+  position: sticky;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--v8-surface-inset);
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-xs);
+  border-right: var(--v8-border-width-hairline) solid var(--v8-border);
+  border-bottom: var(--v8-border-width-hairline) solid var(--v8-border);
+  user-select: none;
+}
+
+.ls-corner {
+  top: 0;
+  left: 0;
+  z-index: 5;
+}
+
+.ls-colhead {
+  top: 0;
+  z-index: 3;
+}
+
+.ls-colhead.ls-frozen {
+  left: var(--ls-l, 0);
+  z-index: 4;
+}
+
+.ls-rowhead {
+  left: 0;
+  z-index: 3;
+}
+
+.ls-rowhead.ls-frozen {
+  top: var(--ls-t, 0);
+  z-index: 4;
+}
+
+.ls-cell {
+  position: relative;
+  overflow: hidden;
+  padding: 0 var(--v8-space-1);
+  font-size: var(--v8-font-size-xs);
+  color: var(--v8-text);
+  background: var(--v8-canvas);
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  outline: none;
+}
+
+.ls-grid--lines .ls-cell {
+  border-right: var(--v8-border-width-hairline) solid var(--v8-border);
+  border-bottom: var(--v8-border-width-hairline) solid var(--v8-border);
+}
+
+.ls-cell.ls-frozen {
+  position: sticky;
+  top: var(--ls-t, auto);
+  left: var(--ls-l, auto);
+  z-index: 2;
+  background: var(--v8-surface);
+}
+
+.ls-cell.ls-split-row {
+  box-shadow: inset 0 calc(-1 * var(--v8-border-width-emphasis)) 0 0
+    var(--v8-accent);
+}
+
+.ls-cell.ls-split-col {
+  box-shadow: inset calc(-1 * var(--v8-border-width-emphasis)) 0 0 0
+    var(--v8-accent);
+}
+
+.ls-cell.ls-split-row.ls-split-col {
+  box-shadow:
+    inset 0 calc(-1 * var(--v8-border-width-emphasis)) 0 0 var(--v8-accent),
+    inset calc(-1 * var(--v8-border-width-emphasis)) 0 0 0 var(--v8-accent);
+}
+
+.ls-cell--sel {
+  background: var(--v8-surface-selected);
+}
+
+.ls-cell--active {
+  box-shadow: inset 0 0 0 var(--v8-border-width-emphasis)
+    var(--v8-accent-primary);
+  z-index: 2;
+}
+
+.ls-cell--v {
+  justify-content: center;
+}
+
+.ls-cell-text {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ls-cell--v .ls-cell-text {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.ls-cell--fx .ls-cell-text {
+  font-style: italic;
+}
+
+.ls-status {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--v8-space-2);
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-xs);
+}
+
+.ls-status-synth {
+  flex: none;
+}
+
+.ls-demo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-2);
+  align-items: flex-start;
+}
+
+.ls-demo-copy {
+  margin: 0;
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-sm);
+}
