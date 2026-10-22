@@ -174,15 +174,16 @@ Every image was captured this round from a running server; none is reused from r
 
 ## States exercised live
 
-| State                                    | How it was reached                                                                      | Result                                                                                  |
-| ---------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| idle, 5 routes, both themes, both widths | plain navigation                                                                        | 20 captures, no horizontal overflow (`scrollWidth` equals `innerWidth` at 390 and 1440) |
-| submitting                               | `POST /login` held for 4s by request interception                                       | button disabled, canvas action colours                                                  |
-| field error                              | sign-up with a 5 character password                                                     | `Password must be at least 10 characters.`                                              |
-| server error                             | sign-in with an unknown account                                                         | `Invalid email or password.`                                                            |
-| success                                  | `/login?reset=1` and `/login?inviteAccepted=1`                                          | both banners                                                                            |
-| rate limited                             | 11 wrong attempts on one email                                                          | `Too many attempts. Please try again later.`                                            |
-| invalid or expired token                 | `/reset?token=not-a-real-token`, `/invite?workspace=canvas-demo&token=not-a-real-token` | both render the safe state                                                              |
+| State                                    | How it was reached                                                                                                                                           | Result                                                                                                                                                                                                                                                                                  |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| idle, 5 routes, both themes, both widths | plain navigation                                                                                                                                             | 20 captures, no horizontal overflow (`scrollWidth` equals `innerWidth` at 390 and 1440)                                                                                                                                                                                                 |
+| submitting                               | `POST /login` held for 4s by request interception                                                                                                            | button disabled, canvas action colours                                                                                                                                                                                                                                                  |
+| field error                              | `/login` and `/me/login`: `not-an-email` typed into the email field, focus moved on, so the native `type="email"` constraint makes the field `:user-invalid` | border recoloured, no message: `rgb(242, 164, 168)` dark and `rgb(151, 61, 71)` light on the coach shell, `rgb(244, 244, 244)` dark and `rgb(179, 61, 75)` light on the client shell. Captures in `icm/05-build/reports/AUTH-RESTYLE/after/`, values in `field-error-measurements.json` |
+| server validation message                | sign-up with a 5 character password                                                                                                                          | `Password must be at least 10 characters.` in `.auth-error`, which is the server action's message (`app/signup/actions.ts:45`), not the `:user-invalid` state                                                                                                                           |
+| server error                             | sign-in with an unknown account                                                                                                                              | `Invalid email or password.`                                                                                                                                                                                                                                                            |
+| success                                  | `/login?reset=1` and `/login?inviteAccepted=1`                                                                                                               | both banners                                                                                                                                                                                                                                                                            |
+| rate limited                             | 11 wrong attempts on one email                                                                                                                               | `Too many attempts. Please try again later.`                                                                                                                                                                                                                                            |
+| invalid or expired token                 | `/reset?token=not-a-real-token`, `/invite?workspace=canvas-demo&token=not-a-real-token`                                                                      | both render the safe state                                                                                                                                                                                                                                                              |
 
 Sign-in over HTTP still lands on `/coach` with `.coach-root` present and no `.auth-card` leaking into
 the canvas.
@@ -215,7 +216,7 @@ No `:invalid`, `:user-invalid` or `[aria-invalid]` rule existed anywhere in `app
 form set `aria-invalid`. The five forms validate with the browser's own constraint attributes
 (`required`, `type="email"`), so the styled surface is the native `:user-invalid` state: it fires only
 after the person has left the field or tried to submit, where a bare `:invalid` would paint a field red
-on first paint. Added at `app/auth.css:153-169`: `.auth-screen .auth-input:user-invalid`, the
+on first paint. Added at `app/auth.css:159-171` (`:159-161` coach dark, `:163-167` coach light mirror, `:169-171` client shell): `.auth-screen .auth-input:user-invalid`, the
 `html[data-theme="pro-white"] .auth-screen:not(.eg-auth)` mirror at `#973d47`, and
 `.auth-screen.eg-auth` at `var(--danger)`. The two literals are the pair `.auth-error` already uses ten
 lines below, which in turn is copied from `coach.css:1184`.
@@ -227,13 +228,13 @@ before submit, so the native state is the state a person actually reaches.
 
 ### 2. Submitting was cursor-only
 
-`app/auth.css:196-199` set `cursor: progress` on `.auth-button:disabled` and nothing else, so the only
+`app/auth.css:199-202` set `cursor: progress` on `.auth-button:disabled` and nothing else, so the only
 visible change while the action was in flight was the pointer. Added `opacity: 0.72`.
 
 ### 3. The focus ring on `/invite` and `/reset*` was the legacy red, not the canvas accent
 
-`app/globals.css:87-96` carried four pre-canvas rules (`.invite-form .auth-input:focus-visible` and its
-three siblings) at specificity 0,3,0 painting `outline: 2px solid var(--color-accent)`. That beat
+`app/globals.css:87-93` carried one pre-canvas rule with four selectors (`.invite-form
+.auth-input:focus-visible` and its three siblings) at specificity 0,3,0 painting `outline: 2px solid var(--color-accent)`. That beat
 `.coach-root :focus-visible` (0,2,0) at `components/canvas/coach/coach.css:88-90`, so those two routes
 rang in the app's legacy accent (`#e34332` dark, `#b23325` light, `themes/pro-dark.css:14` and
 `themes/pro-white.css:16`) while every other auth route rang in `--cd-accent-ring`. Deleted the four
@@ -268,7 +269,9 @@ total 24 tests: 22 passed, 2 skipped, 0 failed
 ```
 
 Screenshots at 1440 and 390 px for idle, field error, submitting, server error, the focused reset
-field and the `/coach` reference: `Vari8-evidence/scratch/auth-restyle-r1/screens/` (12 files).
+field and the `/coach` reference: `Vari8-evidence/scratch/auth-restyle-r1/screens/` (12 files, dark).
+Round 2 added the light and client-shell field-error captures that set was missing, committed in
+`icm/05-build/reports/AUTH-RESTYLE/after/` (8 files, both themes, both widths).
 
 ### Gates
 
@@ -313,3 +316,119 @@ this commit, which is what makes `index:check` exit 0.
   than from the appearance store (`components/canvas/coach/coach-app.tsx:83-86`), because the auth
   shell does not mount that provider. Retargeting it is a behaviour-adjacent change and needs the
   owner.
+
+## Repair round 2 (run 53, head `a9aec27`, base `09b1424`)
+
+Run 52's pre-verify (`PREVERIFY-RUN52-auth-restyle.md`) reported that two of the three new
+`:user-invalid` branches had no capture, and that the "field error" evidence row described a server
+message instead of the native state. Both are closed in this round. No CSS, route, action, field name
+or copy string changed: the diff is eight captures, one measurements file and this report.
+
+### Every branch, rendered and measured
+
+`app/auth.css:159-171` holds three branches: coach dark (`:159-161`), the light mirror keyed on
+`html[data-theme="pro-white"]` (`:163-167`), and the client shell (`.auth-screen.eg-auth`, `:169-171`).
+Round 1 captured only the first, and only in dark.
+
+Each file below is the real state, not a forced one: `input[name="email"]` is filled with
+`not-an-email`, which fails the form's own native `type="email"` constraint, then focus moves to the
+password field so the browser marks it `:user-invalid`. No class, attribute or stylesheet is injected.
+The capture script records `input.matches(":user-invalid") === true` before writing each file.
+
+| Route       | Theme (how set)                                   | Width | Invalid border       | Card behind it       | Contrast | File                                      |
+| ----------- | ------------------------------------------------- | ----- | -------------------- | -------------------- | -------- | ----------------------------------------- |
+| `/login`    | `pro-dark` (default `html[data-theme]`)           | 1440  | `rgb(242, 164, 168)` | `rgb(15, 15, 15)`    | 9.72:1   | `login-field-error-1440-pro-dark.png`     |
+| `/login`    | `pro-dark`                                        | 390   | `rgb(242, 164, 168)` | `rgb(15, 15, 15)`    | 9.72:1   | `login-field-error-390-pro-dark.png`      |
+| `/login`    | `pro-white` (`appearance` key, read before paint) | 1440  | `rgb(151, 61, 71)`   | `rgb(255, 255, 255)` | 6.83:1   | `login-field-error-1440-pro-white.png`    |
+| `/login`    | `pro-white`                                       | 390   | `rgb(151, 61, 71)`   | `rgb(255, 255, 255)` | 6.83:1   | `login-field-error-390-pro-white.png`     |
+| `/me/login` | dark (`.eg-root[data-mode]`, appearance provider) | 1440  | `rgb(244, 244, 244)` | `rgb(16, 16, 16)`    | 17.3:1   | `me-login-field-error-1440-pro-dark.png`  |
+| `/me/login` | dark                                              | 390   | `rgb(244, 244, 244)` | `rgb(16, 16, 16)`    | 17.3:1   | `me-login-field-error-390-pro-dark.png`   |
+| `/me/login` | light                                             | 1440  | `rgb(179, 61, 75)`   | `rgb(255, 255, 255)` | 5.7:1    | `me-login-field-error-1440-pro-white.png` |
+| `/me/login` | light                                             | 390   | `rgb(179, 61, 75)`   | `rgb(255, 255, 255)` | 5.7:1    | `me-login-field-error-390-pro-white.png`  |
+
+All eight are committed in `icm/05-build/reports/AUTH-RESTYLE/after/`, the directory the 45 earlier
+captures already live in, and follow its `route-state-width-theme.png` naming. Numbers, idle borders
+and the idle-to-invalid delta are machine-readable in
+`icm/05-build/reports/AUTH-RESTYLE/after/field-error-measurements.json`.
+
+Two checks say the colour in the table is on the screen, not only in the CSSOM:
+
+- The border pixel sampled at each input's top edge in the PNG equals the computed `border-color`
+  (PIL, 1:1 device scale).
+- At 390 px `document.documentElement.scrollWidth` equals `innerWidth` in all eight.
+
+### The client shell in dark: measured, not changed
+
+`--danger` on `.eg-root` is `#f4f4f4` in dark (`components/canvas/ethereal/ethereal-shell.css:38`) and
+`#b33d4b` in light (`:81`). Measured on `/me/login` with the appearance provider in dark mode:
+
+```
+input[name=email]:user-invalid  border-color    rgb(244, 244, 244)   (#f4f4f4, --danger)
+.auth-card                      background      rgb(16, 16, 16)      (--surface #101010)
+.auth-input                     background      rgb(40, 40, 40)      (globals.css .auth-input)
+.auth-input                     idle border     rgb(45, 45, 45)      (globals.css .auth-input)
+```
+
+So the invalid border is **not** invisible: 17.3:1 against the card and 13.4:1 against the field fill,
+up from an idle border at 1.38:1 against the card. What it lacks is hue. The border is the same
+near-white as the card's body ink, so the state reads as "emphasised", never as "wrong".
+
+Left unchanged, deliberately. The client dark palette has no red to borrow: `--danger` is `#f4f4f4` by
+the shell's own design (`ethereal-shell.css:38`, the same value its error text uses), `--warning` is
+`#bcbcbc`, `--success` tracks the accent. Putting the coach pair (`#f2a4a8` / `#973d47`, the two
+documented literals above) or the light shell's `#b33d4b` on this card would add a colour the dark
+shell does not declare, which is a canvas decision, not an auth one. `#b33d4b` on `#101010` measures
+3.34:1, so it would clear the 3:1 graphical-object threshold if the canvas owner wants it.
+
+Owner decision, one of:
+
+1. Keep `var(--danger)`. The client card's invalid border matches the client card's own error text
+   (`app/auth.css:246-248`), which is what O17 asked for. Cost: no red in client dark.
+2. Add a red to the eg dark palette in `ethereal-shell.css` (canvas contract, needs the canvas owner),
+   then point `app/auth.css:170` at it.
+3. Point the client branch at the coach literals. Smallest diff, but it contradicts O17's "follow the
+   shell" rule and leaves the card's border and its error text in two different colour systems.
+
+### One more thing the light client capture shows, not fixed here
+
+On `/me/login` in light mode the field keeps a dark fill: `background rgb(40, 40, 40)`, text
+`rgb(255, 255, 255)` on a white card. Cause: `.auth-input` in `app/globals.css:49-56` paints
+`--color-surface` / `--color-text-primary` from the app theme, and the client auth route deliberately
+keeps `html[data-theme="pro-dark"]` (O17). Pre-existing since #130/#140; it was simply never captured in
+light before. Fixing it means giving the eg shell its own field rule, which is canvas work and a fourth
+visible state change, both outside this card's repair scope.
+
+### Gates (round 2)
+
+Same lane as round 1: worktree `.worktrees/auth-restyle-r1`, lane database `app_authrs` on
+`127.0.0.1:5433`, `NODE_ENV` unset.
+
+| Command                                          | Exit | Note                                                    |
+| ------------------------------------------------ | ---- | ------------------------------------------------------- |
+| `npm run build`                                  | 0    | served the captures from `next start` on 127.0.0.1:3991 |
+| `npm run index`                                  | 0    | no index drift this round                               |
+| `npm run index:check`                            | 0    |                                                         |
+| `npx prettier --check .`                         | 0    |                                                         |
+| `npm run typecheck`                              | 0    |                                                         |
+| `npm run lint`                                   | 0    |                                                         |
+| `npx vitest run tests/unit/system-index.test.ts` | 0    | the index unit test the gate names                      |
+
+`tools/parity/run.mjs` was not run because this round changes no CSS: the auth routes are outside the
+parity index by O16 and the only changed files are PNGs, one JSON and this report.
+
+### Corrections to the round 1 rows
+
+- "field error" in the states table was a server message (`Password must be at least 10 characters.`,
+  `app/signup/actions.ts:45`, rendered in `.auth-error`). It is now its own row, and "field error" names
+  the native `:user-invalid` state with the captures that show it.
+- "Added at `app/auth.css:153-169`" is `:159-171`; the three branches are now listed with their lines.
+- "`app/auth.css:196-199` set `cursor: progress`" is `:199-202`.
+- "`app/globals.css:87-96` carried four pre-canvas rules" is `:87-93`, one rule with four selectors;
+  the `min-height: 44px` rules at `:95-98` were kept, which the old range implied were deleted.
+
+Still open from run 52: MAJOR-2, no automated guard. `tests/e2e/auth-card.spec.ts` and
+`me-auth-look.spec.ts` compare root background, font, shadow and radius only, so deleting
+`app/auth.css:159-171` or the `opacity` at `:201` leaves every suite green. This round adds rendered
+evidence and measurements, not a test. The smallest guard is one assertion each for `border-color` on
+`input:user-invalid`, `opacity` on the disabled `.auth-button`, and `outline-color` on a focused
+`/reset-request` input; it was not added here because this repair was scoped to the evidence gaps.
