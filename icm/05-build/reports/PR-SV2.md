@@ -1,11 +1,12 @@
 # PR-SV2 report
 
 Card `icm/05-build/cards/pr-sv2-daily-series.md`, issue
-[#150](https://github.com/hanzlahsfc/vari8/issues/150), draft PR
-[#152](https://github.com/hanzlahsfc/vari8/pull/152). Branch
-`beta/pr-sv2-daily-series`, base `69c74c3` (merge base with
-`origin/Vari8-Beta`). Gate-verified head `a4b2dcb`; the report commit on
-top changes no product code. Repository renamed to `hanzlahsfc/vari8`
+[#150](https://github.com/hanzlahsfc/vari8/issues/150), PR
+[#152](https://github.com/hanzlahsfc/vari8/pull/152) (marked ready for
+review). Branch `beta/pr-sv2-daily-series`, base `69c74c3` (merge base
+with `origin/Vari8-Beta`; branch is already at the current beta tip, no
+merge needed). Gate-verified head `a4b2dcb`; commits on top add the
+report only, no product code. Repository renamed to `hanzlahsfc/vari8`
 during this card; origin updated accordingly.
 
 ## What changed
@@ -83,6 +84,9 @@ nodejs.org; machine runtime untouched). `REQUIRE_NODE24=1` passed.
 | `BASE_SHA=$(git merge-base HEAD origin/Vari8-Beta) LANE_DB=app_prsv2 LANE_PORT=3767 CARD=PR-SV2 REQUIRE_NODE24=1 SKIP_PARITY=1 KEEP_DB=1 icm/05-build/tools/verify-local.sh` | 0 (PASS) |
 | `npm run db:fresh` on `app_prsv2` (`DB_FRESH_SKIP_CATALOGS=1`, seeded creds owner/coach/client/staff2@vari8.test) | 0 |
 | `PORT=3767 npm run dev` against `app_prsv2`, real-browser sign-in per role and `GET` of the series URL | see receipts |
+| Re-verification at head `c07a113` (same code as gate-verified `a4b2dcb`): `npx vitest run tests/unit/daily-entry-series.test.ts` | 0 (6/6) |
+| `INTEGRATION_DATABASE_URL=...app_prsv2 npx vitest run --config vitest.integration.config.ts tests/integration/api-v1-daily-entry-series.test.ts` | 0 (11/11) |
+| `npm run index:check` | 0 |
 
 ## verify-local summary (head a4b2dcb)
 
