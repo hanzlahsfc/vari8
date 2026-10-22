@@ -1534,7 +1534,7 @@ export async function readDailyEntryNumericSeries(
       "read",
     );
   if (workspace.scope === "own" && profile.userId !== viewer.userId)
-    throw new AccessDeniedError("not_own_client", "dailyTracking", "read");
+    throw new AccessDeniedError("role_denied", "dailyTracking", "read");
 
   const parameter = await db.parameterDefinition.findFirst({
     where: { id: input.parameterId, workspaceId: workspace.workspaceId },
