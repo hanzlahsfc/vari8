@@ -47,10 +47,10 @@
   position: relative;
   height: 180px;
   min-height: 180px;
-  padding: 13px;
+  padding: var(--v8-card-padding-sm);
   min-width: 0;
-  border-radius: 17px;
-  background: var(--cd-raised);
+  border-radius: var(--v8-radius-card);
+  background: var(--v8-surface);
 }
 .coach-root .cd-original-preview-widgets .cb-db-card-header {
   display: flex;
@@ -58,10 +58,10 @@
   justify-content: space-between;
   height: 22px;
   margin-bottom: 6px;
-  font-size: 11px;
+  font-size: var(--v8-font-size-card-heading);
 }
 .coach-root .cd-original-preview-widgets .cb-db-card-header strong {
-  font-size: 11px;
+  font-size: var(--v8-font-size-card-heading);
 }
 .coach-root .cd-draft-resume {
   display: flex;

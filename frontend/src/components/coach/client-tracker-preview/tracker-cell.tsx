@@ -3,6 +3,12 @@
 import { Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import {
+  Checkbox as SharedCheckbox,
+  Input as SharedInput,
+  Select as SharedSelect,
+} from "@/components/vari8/components";
+import { TextArea as SharedTextArea } from "@/components/vari8/inputs";
 import { useTrackerEditor } from "./editor-context";
 import {
   canonicalValue,
@@ -204,10 +210,10 @@ export function TrackerCell({
   const [panelPoint, setPanelPoint] = useState<PanelPoint>({ left: 0, top: 0 });
   const anchorRef = useRef<HTMLButtonElement>(null);
   const numberRef = useRef<HTMLInputElement>(null);
-  const ratingRef = useRef<HTMLSelectElement>(null);
   const commentRef = useRef<HTMLTextAreaElement>(null);
   const cancelledRef = useRef(false);
   const returnFocusRef = useRef(true);
+  const ratingSelectOpenRef = useRef(false);
   const editingScopeRef = useRef("");
   const scopeRef = useRef("");
   scopeRef.current = `${mode}:${date}:${parameter.id}`;
@@ -219,18 +225,22 @@ export function TrackerCell({
     setEditingValue(false);
     setCommentOpen(false);
     setValueError("");
+    ratingSelectOpenRef.current = false;
   }, [mode, date, parameter.id]);
 
   useEffect(() => {
     if (editingValue && mode === "client") {
       wasEditingRef.current = true;
-      (isRating ? ratingRef.current : numberRef.current)?.focus();
+      (isRating
+        ? document.getElementById(`tc-rating-${date}-${parameter.id}`)
+        : numberRef.current
+      )?.focus();
     } else if (wasEditingRef.current) {
       wasEditingRef.current = false;
       if (returnFocusRef.current) anchorRef.current?.focus();
       returnFocusRef.current = true;
     }
-  }, [editingValue, isRating, mode]);
+  }, [editingValue, isRating, mode, date, parameter.id]);
 
   useEffect(() => {
     if (!commentOpen) return;
@@ -263,6 +273,7 @@ export function TrackerCell({
     if (disabled || mode !== "client") return;
     cancelledRef.current = false;
     returnFocusRef.current = true;
+    ratingSelectOpenRef.current = false;
     editingScopeRef.current = scopeRef.current;
     setValueError("");
     setNumberDraft(recorded ? displayNumber(parameter, value, config) : "");
@@ -337,9 +348,9 @@ export function TrackerCell({
     setValueError("");
   };
 
-  const cancelValueEdit = () => {
+  const cancelValueEdit = (restoreFocus = true) => {
     cancelledRef.current = true;
-    returnFocusRef.current = true;
+    returnFocusRef.current = restoreFocus;
     setEditingValue(false);
     setValueError("");
   };
@@ -391,35 +402,63 @@ export function TrackerCell({
       : undefined;
 
   return (
-    <div className={`tc-cell${disabled ? " tc-disabled" : ""}`}>
+    <div
+      className={`tc-cell${disabled ? " tc-disabled" : ""}`}
+      onBlurCapture={(event) => {
+        if (
+          !editingValue ||
+          mode !== "client" ||
+          !isRating ||
+          ratingSelectOpenRef.current
+        )
+          return;
+        const next = event.relatedTarget;
+        if (next instanceof Node && event.currentTarget.contains(next)) return;
+        cancelValueEdit(false);
+      }}
+      onKeyDownCapture={(event) => {
+        if (
+          editingValue &&
+          mode === "client" &&
+          isRating &&
+          event.key === "Escape" &&
+          !ratingSelectOpenRef.current
+        ) {
+          event.preventDefault();
+          cancelValueEdit();
+        }
+      }}
+    >
       {editingValue && mode === "client" && isRating ? (
-        <select
-          ref={ratingRef}
+        <SharedSelect
+          id={`tc-rating-${date}-${parameter.id}`}
+          label={`${parameter.label} for ${date}`}
           className="tc-rating-select"
-          aria-label={`${parameter.label} for ${date}`}
-          value={currentRating ?? ""}
-          onChange={(event) => handleRatingChange(event.currentTarget.value)}
-          onBlur={() => setEditingValue(false)}
-          onKeyDown={(event) => {
-            if (event.key === "Tab") returnFocusRef.current = false;
-            if (event.key === "Escape") {
-              event.preventDefault();
-              setEditingValue(false);
-            }
+          value={
+            currentRating === undefined ? "__clear" : String(currentRating)
+          }
+          onValueChange={(next) =>
+            handleRatingChange(next === "__clear" ? "" : next)
+          }
+          onOpenChange={(open) => {
+            ratingSelectOpenRef.current = open;
+            if (!open) cancelValueEdit();
           }}
           disabled={disabled}
-        >
-          <option value="">—</option>
-          {ratingOptions(parameter, config).map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: "__clear", label: "Clear rating" },
+            ...ratingOptions(parameter, config).map((option) => ({
+              value: String(option.value),
+              label: option.label,
+            })),
+          ]}
+          size="sm"
+        />
       ) : editingValue && mode === "client" ? (
         <div className="tc-number-edit-wrap">
-          <input
+          <SharedInput
             ref={numberRef}
+            label={`${parameter.label} (${unitFor(parameter, config)}) for ${date}`}
             className="tc-number-input"
             type="number"
             inputMode="decimal"
@@ -436,6 +475,7 @@ export function TrackerCell({
               setNumberDraft(event.currentTarget.value);
               if (valueError) setValueError("");
             }}
+            size="sm"
             onBlur={(event) => {
               const nextTarget = event.relatedTarget;
               if (
@@ -597,12 +637,14 @@ export function TrackerCell({
                 <label htmlFor={`tc-comment-${date}-${parameter.id}`}>
                   Coach note
                 </label>
-                <textarea
+                <SharedTextArea
                   ref={commentRef}
+                  label="Coach note"
                   id={`tc-comment-${date}-${parameter.id}`}
                   value={commentDraft}
                   maxLength={500}
                   placeholder="Add context to this value…"
+                  className="tc-comment-input"
                   onChange={(event) =>
                     setCommentDraft(event.currentTarget.value)
                   }
@@ -707,7 +749,6 @@ export function TextTrackerCell({
   const inputRef = useRef<HTMLInputElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
   const anchorRef = useRef<HTMLButtonElement>(null);
-  const periodRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLFieldSetElement>(null);
   const portalTargetRef = useRef<HTMLElement | null>(null);
   const wasEditingRef = useRef(false);
@@ -919,19 +960,20 @@ export function TextTrackerCell({
     if (inputType === "choice") {
       const options = choices;
       return (
-        <select
+        <SharedSelect
+          label={`${parameter.label} for ${date}`}
           className="tc-text-select"
-          aria-label={`${parameter.label} for ${date}`}
           value={draft}
-          onChange={(event) => setDraft(event.currentTarget.value)}
-        >
-          <option value="">Choose…</option>
-          {options.map((option) => (
-            <option key={option} value={option}>
-              {option === "yes" ? "Yes" : option === "no" ? "No" : option}
-            </option>
-          ))}
-        </select>
+          onValueChange={setDraft}
+          options={[
+            { value: "", label: "Choose…" },
+            ...options.map((option) => ({
+              value: option,
+              label: option === "yes" ? "Yes" : option === "no" ? "No" : option,
+            })),
+          ]}
+          size="sm"
+        />
       );
     }
     if (inputType === "multi-choice") {
@@ -942,31 +984,29 @@ export function TextTrackerCell({
             {parameter.label} for {date}
           </legend>
           {(choices.length ? choices : []).map((option) => (
-            <label key={option}>
-              <input
-                type="checkbox"
-                checked={selected.includes(option)}
-                onChange={(event) => {
-                  const next = event.currentTarget.checked
-                    ? [...selected, option]
-                    : selected.filter((item) => item !== option);
-                  setDraft(JSON.stringify(next));
-                }}
-              />
-              {option}
-            </label>
+            <SharedCheckbox
+              key={option}
+              label={option}
+              checked={selected.includes(option)}
+              onCheckedChange={(checked) => {
+                const next = checked
+                  ? [...selected, option]
+                  : selected.filter((item) => item !== option);
+                setDraft(JSON.stringify(next));
+              }}
+            />
           ))}
           {!choices.length && <span>Add options in the tracker setup.</span>}
-          <label className="tc-choice-note-label">
-            Note
-            <textarea
+          <div className="tc-choice-note-label">
+            <SharedTextArea
+              label={`${parameter.label} note for ${date}`}
               className="tc-text-area"
-              aria-label={`${parameter.label} note for ${date}`}
               placeholder="Optional note"
               value={secondaryDraft}
               onChange={(event) => setSecondaryDraft(event.currentTarget.value)}
+              size="sm"
             />
-          </label>
+          </div>
         </fieldset>
       );
     }
@@ -974,68 +1014,58 @@ export function TextTrackerCell({
       return (
         <div className="tc-structured-fields">
           {inputType === "context" ? (
-            <label className="tc-field-label">
-              Response
-              <select
-                className="tc-text-select"
-                aria-label={`${parameter.label} response for ${date}`}
-                value={draft}
-                onChange={(event) => setDraft(event.currentTarget.value)}
-              >
-                <option value="">Choose…</option>
-                {(choices.length ? choices : ["No", "Yes"]).map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <SharedSelect
+              label={`${parameter.label} response for ${date}`}
+              className="tc-text-select"
+              value={draft}
+              onValueChange={setDraft}
+              options={[
+                { value: "", label: "Choose…" },
+                ...(choices.length ? choices : ["No", "Yes"]).map((option) => ({
+                  value: option,
+                  label: option,
+                })),
+              ]}
+              size="sm"
+            />
           ) : (
-            <label className="tc-field-label">
-              Location
-              <input
+            <div className="tc-field-label">
+              <SharedInput
+                label={`${parameter.label} location for ${date}`}
                 className="tc-text-input"
-                aria-label={`${parameter.label} location for ${date}`}
                 placeholder="Location"
                 value={draft}
                 onChange={(event) => setDraft(event.currentTarget.value)}
+                size="sm"
               />
-            </label>
+            </div>
           )}
           {inputType === "context" ? (
-            <label className="tc-field-label">
-              Context
-              <textarea
-                className="tc-text-area"
-                aria-label={`${parameter.label} context for ${date}`}
-                placeholder="Add context"
-                value={secondaryDraft}
-                onChange={(event) =>
-                  setSecondaryDraft(event.currentTarget.value)
-                }
-              />
-            </label>
+            <SharedTextArea
+              label={`${parameter.label} context for ${date}`}
+              className="tc-text-area"
+              placeholder="Add context"
+              value={secondaryDraft}
+              onChange={(event) => setSecondaryDraft(event.currentTarget.value)}
+              size="sm"
+            />
           ) : (
-            <label className="tc-field-label">
-              Rating
-              <select
-                className="tc-text-select"
-                aria-label={`${parameter.label} rating for ${date}`}
-                value={secondaryDraft}
-                onChange={(event) =>
-                  setSecondaryDraft(event.currentTarget.value)
-                }
-              >
-                <option value="">None</option>
-                {Array.from({ length: 10 }, (_, index) => index + 1).map(
-                  (rating) => (
-                    <option key={rating} value={rating}>
-                      {rating} / 10
-                    </option>
-                  ),
-                )}
-              </select>
-            </label>
+            <SharedSelect
+              label={`${parameter.label} rating for ${date}`}
+              className="tc-text-select"
+              value={secondaryDraft}
+              onValueChange={setSecondaryDraft}
+              options={[
+                { value: "", label: "None" },
+                ...Array.from({ length: 10 }, (_, index) => index + 1).map(
+                  (rating) => ({
+                    value: String(rating),
+                    label: `${rating} / 10`,
+                  }),
+                ),
+              ]}
+              size="sm"
+            />
           )}
         </div>
       );
@@ -1054,25 +1084,28 @@ export function TextTrackerCell({
     };
     if (inputType === "text") {
       return (
-        <textarea
+        <SharedTextArea
           ref={textAreaRef}
+          label={`${parameter.label} note for ${date}`}
           className="tc-text-area"
           placeholder="Add a note"
-          aria-label={`${parameter.label} note for ${date}`}
           value={draft}
           onChange={(event) => {
             setDraft(event.currentTarget.value);
             if (error) setError("");
           }}
+          size="sm"
         />
       );
     }
     return (
-      <input
+      <SharedInput
         ref={inputRef}
+        label={`${parameter.label} (${label}) for ${date}`}
         type="text"
         inputMode={inputType === "blood-pressure" ? "text" : undefined}
         {...commonProps}
+        size="sm"
         onKeyDown={(event) => {
           if (event.key === "Enter") {
             event.preventDefault();
@@ -1086,25 +1119,15 @@ export function TextTrackerCell({
   return (
     <div className={`tc-cell${disabled ? " tc-disabled" : ""}`}>
       {isPeriodStart ? (
-        <label className="tc-period-start">
-          <input
-            ref={periodRef}
-            type="checkbox"
-            checked={periodChecked}
-            disabled={disabled}
-            aria-label={`${parameter.label} for ${date}`}
-            onChange={(event) =>
-              onUpdateText(
-                date,
-                parameter.id,
-                event.currentTarget.checked ? "yes" : "",
-              )
-            }
-          />
-          <span className="tc-visually-hidden">
-            {parameter.label} for {date}
-          </span>
-        </label>
+        <SharedCheckbox
+          className="tc-period-start"
+          label={`${parameter.label} for ${date}`}
+          checked={periodChecked}
+          disabled={disabled}
+          onCheckedChange={(checked) =>
+            onUpdateText(date, parameter.id, checked ? "yes" : "")
+          }
+        />
       ) : (
         <>
           {editing &&
