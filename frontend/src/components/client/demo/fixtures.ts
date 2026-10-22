@@ -97,6 +97,34 @@ export type DemoThread = {
   messages: DemoMessage[];
 };
 
+export type DemoTask = {
+  id: string;
+  title: string;
+  due: string;
+  done: boolean;
+};
+
+export const demoTasks: DemoTask[] = [
+  {
+    id: "task-1",
+    title: "Send week-8 progress photos",
+    due: "2026-02-27",
+    done: false,
+  },
+  {
+    id: "task-2",
+    title: "Fill in Friday check-in",
+    due: demoAsOf,
+    done: false,
+  },
+  {
+    id: "task-3",
+    title: "Read the new deload notes",
+    due: "2026-03-09",
+    done: true,
+  },
+];
+
 export const messageThreads: DemoThread[] = [
   {
     id: "thread-coach",

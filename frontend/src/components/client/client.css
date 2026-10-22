@@ -251,6 +251,14 @@ body:has(.client-root) {
   gap: var(--v8-space-2);
 }
 
+.client-task[data-overdue] {
+  border-color: var(--v8-danger);
+}
+
+.client-task[data-overdue] .client-kv > :last-child {
+  color: var(--v8-danger);
+}
+
 @media (max-width: 720px) {
   .client-root {
     grid-template-columns: 1fr;

@@ -8,6 +8,7 @@ import { NutritionScreen } from "@/components/client/nutrition";
 import { PhotosScreen } from "@/components/client/photos";
 import { ClientShell } from "@/components/client/shell";
 import { SupplementsScreen } from "@/components/client/supplements";
+import { TasksScreen } from "@/components/client/tasks";
 import { TrackerScreen } from "@/components/client/tracker";
 import { TrainingScreen } from "@/components/client/training";
 
@@ -15,6 +16,7 @@ const screens: Record<string, ComponentType<{ demo: ParsedDemo }>> = {
   tracker: TrackerScreen,
   logbook: LogbookScreen,
   messages: MessagesScreen,
+  tasks: TasksScreen,
   training: TrainingScreen,
   nutrition: NutritionScreen,
   photos: PhotosScreen,
