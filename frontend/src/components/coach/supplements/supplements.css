@@ -1,0 +1,174 @@
+.coach-root .supp-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.coach-root .supp-row {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.coach-root .supp-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.coach-root .supp-row-head strong {
+  font-size: var(--v8-font-size-supporting);
+  font-weight: 600;
+  color: var(--v8-text-secondary);
+}
+.coach-root .supp-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.coach-root .supp-main-row,
+.coach-root .supp-secondary-row {
+  display: grid;
+  gap: 6px 10px;
+  align-items: end;
+}
+.coach-root .supp-main-row {
+  grid-template-columns: 140px minmax(220px, 1fr) 72px 100px 80px 32px;
+  grid-template-areas: "brand product qty dose unit link";
+}
+.coach-root .supp-secondary-row {
+  margin-top: 6px;
+  grid-template-columns: 180px 150px minmax(0, 1fr);
+  grid-template-areas: "timing status notes";
+}
+.coach-root .supp-brand {
+  grid-area: brand;
+}
+.coach-root .supp-product {
+  grid-area: product;
+}
+.coach-root .supp-qty {
+  grid-area: qty;
+}
+.coach-root .supp-dose {
+  grid-area: dose;
+}
+.coach-root .supp-unit {
+  grid-area: unit;
+}
+.coach-root .supp-link {
+  grid-area: link;
+  align-self: end;
+  display: flex;
+  align-items: center;
+  block-size: var(--v8-control-height-sm);
+}
+.coach-root .supp-timing {
+  grid-area: timing;
+}
+.coach-root .supp-status {
+  grid-area: status;
+}
+.coach-root .supp-notes {
+  grid-area: notes;
+}
+.coach-root .supp-readout .supp-readout-value {
+  display: inline-flex;
+  align-items: center;
+  block-size: var(--v8-control-height-sm);
+  font-size: var(--v8-font-size-control);
+}
+.coach-root .supp-meta {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  font-size: var(--v8-font-size-supporting);
+  color: var(--v8-text-secondary);
+}
+.coach-root .supp-error {
+  margin: 0;
+  font-size: var(--v8-font-size-supporting);
+  color: var(--v8-danger-text);
+}
+.coach-root .supp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+@container (max-width: 760px) {
+  .coach-root .supp-main-row {
+    grid-template-columns: minmax(56px, 1fr) minmax(64px, 1fr) minmax(64px, 1fr) auto;
+    grid-template-areas:
+      "brand brand brand brand"
+      "product product product product"
+      "qty dose unit link";
+  }
+  .coach-root .supp-secondary-row {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "timing status"
+      "notes notes";
+  }
+}
+.coach-root .supp-view {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.coach-root .supp-view-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.coach-root .supp-view-head small,
+.coach-root .supp-empty {
+  color: var(--v8-text-secondary);
+}
+.coach-root .supp-empty {
+  margin: 0;
+}
+.coach-root .supp-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.coach-root .supp-item {
+  border: 1px solid var(--v8-border);
+  border-radius: var(--v8-radius-card);
+  padding: 10px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.coach-root .supp-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.coach-root .supp-item-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.coach-root .supp-item-main small {
+  color: var(--v8-text-secondary);
+}
+.coach-root .supp-item-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+  font-size: var(--v8-font-size-supporting);
+}
+.coach-root .supp-item-meta small {
+  color: var(--v8-text-secondary);
+}
+@media (max-width: 640px) {
+  .coach-root .supp-item-meta {
+    text-align: left;
+  }
+}

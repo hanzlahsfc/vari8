@@ -1,7 +1,8 @@
 "use client";
 
-import { ChevronDown, Plus, Utensils, Weight } from "lucide-react";
+import { Plus, Utensils, Weight } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Select } from "@/components/vari8/components";
 import {
   type Client,
   clients,
@@ -188,22 +189,22 @@ export function BodyweightTrend({
   }, [displayVariant]);
 
   const periodControl = (
-    <label className="bw-chart-select">
-      <span className="bw-visually-hidden">Bodyweight trend period</span>
-      <select
-        value={period}
-        onChange={(event) => {
-          setPeriod(Number(event.target.value) as Period);
+    <div className="bw-chart-select">
+      <Select
+        label="Bodyweight trend period"
+        size="sm"
+        value={String(period)}
+        onValueChange={(value) => {
+          setPeriod(value === "7" ? 7 : value === "14" ? 14 : 30);
           setActiveIndex(null);
         }}
-        aria-label="Chart timeframe"
-      >
-        <option value={7}>7 days</option>
-        <option value={14}>14 days</option>
-        <option value={30}>30 days</option>
-      </select>
-      <ChevronDown size={13} aria-hidden="true" />
-    </label>
+        options={[
+          { value: "7", label: "7 days" },
+          { value: "14", label: "14 days" },
+          { value: "30", label: "30 days" },
+        ]}
+      />
+    </div>
   );
 
   return (
@@ -540,17 +541,20 @@ export function NutritionTargets({
             <p>Consumed against daily target</p>
           </div>
         </div>
-        <label className="tl-chart-select">
-          <span className="tl-sr-only">Nutrition day type</span>
-          <select
+        <div className="tl-chart-select">
+          <Select
+            label="Nutrition day type"
+            size="sm"
             value={variant}
-            onChange={(event) => changeVariant(event.target.value as VariantId)}
-          >
-            <option value="td">TD · Training day</option>
-            <option value="ntd">NTD · Rest day</option>
-          </select>
-          <ChevronDown size={13} aria-hidden="true" />
-        </label>
+            onValueChange={(value) =>
+              changeVariant(value === "td" ? "td" : "ntd")
+            }
+            options={[
+              { value: "td", label: "TD · Training day" },
+              { value: "ntd", label: "NTD · Rest day" },
+            ]}
+          />
+        </div>
       </div>
       <div className="tl-calories">
         <strong>{logged.kcal.toLocaleString()}</strong>
