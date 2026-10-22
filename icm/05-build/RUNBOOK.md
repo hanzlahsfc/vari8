@@ -60,7 +60,7 @@ It upserts "Liliana Mansfeld", status ACTIVE, role WORKSPACE_OWNER of one worksp
 | Parity harness (PR-P1)                          | `npm run parity` (`PARITY_PORT`, or `PARITY_URL` for a running app); `-- --update-baseline` recaptures | report at `tools/parity/out/report.html`                        |
 | System index (PR-X1)                            | `npm run index`, `npm run index:check`                                                                 | deterministic; check fails on drift                             |
 
-Node: `/usr/bin/node` is v26.7.0; `frontend/.nvmrc` says 24. TEST-AUDIT ran green on 26. `REQUIRE_NODE24=1` makes the gate refuse other versions once `mise install node@24` has run.
+Node: `frontend/.nvmrc` says 26.12.1 and `engines.node` requires 26.12.1 or newer in both `package.json` files (D5, owner ruling O18). `REQUIRE_NODE26=1` makes the gate refuse anything below 26.12.1.
 
 ## Local check (D13)
 

@@ -22,7 +22,7 @@ Biome 2 lints and formats TypeScript, TSX, JSON and CSS in one tool, with the `n
 
 | Layer     | Choice                                                                                              |
 | --------- | --------------------------------------------------------------------------------------------------- |
-| Runtime   | Node 24 LTS (root CI moves from 22 to match `frontend/.nvmrc`)                                      |
+| Runtime   | Node 26 LTS (26.12.1 or newer; owner ruling O18, 2026-10-21)                                        |
 | Framework | Next.js 16, App Router, React 19.3, TypeScript strict                                               |
 | UI        | Tailwind CSS 4.3, Base UI primitives, CVA and `cn`, Lucide icons, Motion, the canvas CSS and themes |
 | Data      | PostgreSQL 16, Prisma 6 (a Prisma major upgrade is a separate later PR)                             |

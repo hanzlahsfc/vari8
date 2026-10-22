@@ -26,13 +26,13 @@ Live state of the Vari8-Beta program. The state sections are rewritten by the pr
 
 ## Blockers and open calls
 
-| Id  | Blocker                                                                                           | Unblocks with                                                                                               | Owner        |
-| --- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------ |
-| B1  | W0 program PR not merged: card worktrees must start from a base that has `icm/05-build/tools/`    | re-review of PR #67, merge, then `prep-worktrees.sh`, then `board.py --release --watch`                     | orchestrator |
-| B2  | Node 24 not installed (mise has 22 and 26); TEST-AUDIT ran green on 26                            | `mise install node@24`, then `REQUIRE_NODE24=1`                                                             | orchestrator |
-| B3  | D23 parameter catalog for production, and Q-R3-17 parameter manager (kept as an active orphan)    | Marcel answers in PLAN v2 "Open calls"                                                                      | Marcel       |
-| B4  | 11 POST-BETA-INFRA items need hosting, backup, TLS, mail-domain, monitoring and ownership choices | `icm/05-build/POST-BETA-INFRA.md`; the orchestrator opens one issue per row                                 | Marcel       |
-| B5  | PR-01 has no buffer before 05:00                                                                  | release the board as soon as PR #67 merges; if late, the checkpoint shows PR-01 open with its verify report | orchestrator |
+| Id  | Blocker                                                                                                                   | Unblocks with                                                                                               | Owner        |
+| --- | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------ |
+| B1  | W0 program PR not merged: card worktrees must start from a base that has `icm/05-build/tools/`                            | re-review of PR #67, merge, then `prep-worktrees.sh`, then `board.py --release --watch`                     | orchestrator |
+| B2  | RESOLVED by NODE-26: runtime floor is Node 26.12.1 (O18); `engines.node`, both `.nvmrc` files and the gate all require it | `mise install node@26.12.1` or newer, then `REQUIRE_NODE26=1`                                               | done         |
+| B3  | D23 parameter catalog for production, and Q-R3-17 parameter manager (kept as an active orphan)                            | Marcel answers in PLAN v2 "Open calls"                                                                      | Marcel       |
+| B4  | 11 POST-BETA-INFRA items need hosting, backup, TLS, mail-domain, monitoring and ownership choices                         | `icm/05-build/POST-BETA-INFRA.md`; the orchestrator opens one issue per row                                 | Marcel       |
+| B5  | PR-01 has no buffer before 05:00                                                                                          | release the board as soon as PR #67 merges; if late, the checkpoint shows PR-01 open with its verify report | orchestrator |
 
 ## Log
 
