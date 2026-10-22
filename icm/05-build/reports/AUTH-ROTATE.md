@@ -154,9 +154,10 @@ Output: `AssertionError: expected 200 to be 401` (`Tests 1 failed`).
 | `/me` reset link only for CLIENT members                        | `picks the /me reset link only for an ACTIVE CLIENT member`                      |
 | all gates 0                                                     | the gate table above                                                             |
 
-Log grep, measured on the full-suite run (`integration.log`, 63 files / 884 tests): the test wrote
-the 36 tokens it minted to `tokens-final.txt` (outside the test log on purpose), then
-`grep -c -F -f tokens-final.txt integration.log` printed `0` (grep exit 1, no match).
+Log grep, measured on the literal gate run (`npm run test:integration`, 63 files / 884 tests): the
+test wrote the 36 tokens it minted to `tokens-script.txt` (outside the test log on purpose), then
+`grep -c -F -f tokens-script.txt integration-script.log` printed `0` (grep exit 1, no match). An
+earlier identical run (`tokens-final.txt` / `integration.log`) gave the same result.
 
 Post-merge state: `origin/Vari8-Beta` was merged into this branch (69c74c3, already up to date, no
 conflicts) and the affected gates were re-run on the merged tree: `npm run index` 0,
