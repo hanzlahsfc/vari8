@@ -10,11 +10,11 @@ import {
   useRef,
   useState,
 } from "react";
-import { useReducedMotion } from "@/lib/reduced-motion";
 import {
   Checkbox as SharedCheckbox,
   Input as SharedInput,
 } from "@/components/vari8/components";
+import { useReducedMotion } from "@/lib/reduced-motion";
 import {
   configuredDecimals,
   configuredUnit,

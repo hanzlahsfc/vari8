@@ -29,6 +29,7 @@ import {
   Input,
   Select,
 } from "@/components/vari8/components";
+import { useReducedMotion } from "@/lib/reduced-motion";
 import { BuilderGallery } from "./gallery";
 import {
   addToLayout,
@@ -62,7 +63,6 @@ import {
 } from "./model";
 import { DetailContent, WidgetContent } from "./widget-content";
 import { widgetDetailKey } from "./widget-geometry";
-import { useReducedMotion } from "@/lib/reduced-motion";
 
 const DRAFT_KEY = "ethereal-dashboard-draft-v1";
 const RECORD_KEY = "ethereal-dashboard-records-v1";

@@ -7,6 +7,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { useReducedMotion } from "@/lib/reduced-motion";
 import {
   type ButtonVariant,
   type ControlSize,
@@ -31,7 +32,6 @@ import {
   type Variant,
 } from "./model";
 import { planTargets } from "./plans/domain";
-import { useReducedMotion } from "@/lib/reduced-motion";
 export function Button({
   children,
   className = "",

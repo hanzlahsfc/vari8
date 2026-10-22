@@ -4,10 +4,10 @@ import { motion } from "motion/react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { normalizeHex } from "@/lib/ethereal-appearance";
+import { useReducedMotion } from "@/lib/reduced-motion";
 import { Input as Vari8Input } from "../vari8/components";
 import type { CoachState } from "./model";
 import { Button } from "./ui";
-import { useReducedMotion } from "@/lib/reduced-motion";
 
 type Preferences = CoachState["preferences"];
 
