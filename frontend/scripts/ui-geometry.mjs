@@ -27,7 +27,12 @@ const previewBase = `http://127.0.0.1:${
 const viewportWidths = [1440, 390];
 
 const routes = [
-  { id: "gallery", path: "/gallery", waitFor: "[data-v8-cell]" },
+  {
+    id: "gallery",
+    path: "/gallery",
+    waitFor: "[data-v8-cell]",
+    interactionCheck: "menu-clip",
+  },
   { id: "coach/default", path: "/coach", waitFor: ".coach-root" },
   {
     id: "coach/client-preview",
@@ -112,6 +117,51 @@ const measureSource = `(() => {
     out[id] = { ...readRect(control), labelOffset, elements };
   }
   return out;
+})()`;
+
+// Opens the dropdown inside the matrix cell wrapped in `overflow: hidden` and
+// a border, then asserts the portalled popup lands inside the viewport and is
+// not a DOM descendant of the clipping wrapper.
+const menuClipCheckSource = `(async () => {
+  const wrapper = document.querySelector(".v8-matrix-clip");
+  if (!wrapper) return { ok: false, detail: "no .v8-matrix-clip cell found" };
+  const trigger = wrapper.querySelector(".v8-dropdown__trigger");
+  if (!trigger)
+    return { ok: false, detail: "no .v8-dropdown__trigger in clip cell" };
+  wrapper.scrollIntoView({ block: "center" });
+  trigger.click();
+  await new Promise((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  await new Promise((resolve) => setTimeout(resolve, 120));
+  const popupId = trigger.getAttribute("aria-controls");
+  const popup =
+    (popupId && document.getElementById(popupId)) ||
+    document.querySelector(
+      ".v8-dropdown__positioner:not([hidden]) .v8-dropdown__menu",
+    );
+  if (!popup) return { ok: false, detail: "menu popup did not open" };
+  const r = popup.getBoundingClientRect();
+  const insideViewport =
+    r.width > 0 &&
+    r.height > 0 &&
+    r.left >= -0.5 &&
+    r.top >= -0.5 &&
+    r.right <= window.innerWidth + 0.5 &&
+    r.bottom <= window.innerHeight + 0.5;
+  const outsideWrapper = !wrapper.contains(popup);
+  return {
+    ok: insideViewport && outsideWrapper,
+    insideViewport,
+    outsideWrapper,
+    detail:
+      "popup " + Math.round(r.width) + "x" + Math.round(r.height) +
+      " at (" + Math.round(r.x) + "," + Math.round(r.y) + ")" +
+      " viewport " + window.innerWidth + "x" + window.innerHeight +
+      (insideViewport ? " inside viewport" : " OUTSIDE viewport") +
+      (outsideWrapper
+        ? ", outside clipping wrapper"
+        : ", STILL INSIDE clipping wrapper"),
+  };
 })()`;
 
 function findBrowser() {
@@ -262,6 +312,7 @@ async function measure() {
     await cdp.send("Runtime.enable", {}, sessionId);
 
     const snapshot = {};
+    const checkResults = [];
     for (const width of viewportWidths) {
       await cdp.send(
         "Emulation.setDeviceMetricsOverride",
@@ -301,9 +352,16 @@ async function measure() {
         for (const [cellId, entry] of Object.entries(cells)) {
           snapshot[`${route.id}/${cellId}@${width}`] = entry;
         }
+        if (route.interactionCheck === "menu-clip") {
+          const result = await cdp.evaluate(sessionId, menuClipCheckSource);
+          checkResults.push({
+            id: `menu-clip@${width}`,
+            ...(result ?? { ok: false, detail: "check produced no result" }),
+          });
+        }
       }
     }
-    return snapshot;
+    return { snapshot, checkResults };
   } finally {
     cdp?.close();
     await cleanup();
@@ -344,11 +402,19 @@ const main = async () => {
     console.error("PREVIEW DOWN, run npm run preview:up");
     process.exit(1);
   }
-  const snapshot = await measure();
+  const { snapshot, checkResults } = await measure();
   const cellCount = Object.keys(snapshot).length;
+  for (const check of checkResults) {
+    console.log(`menu-clip: ${check.id} ${check.detail}`);
+  }
+  const checkFailures = checkResults.filter((check) => !check.ok);
   if (update) {
     await writeFile(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`);
     console.log(`ui-geometry: wrote ${cellCount} cell(s) to ${snapshotPath}`);
+    if (checkFailures.length > 0) {
+      console.error(`ui-geometry: ${checkFailures.length} check(s) failed.`);
+      process.exit(1);
+    }
     return;
   }
   let before;
@@ -361,13 +427,16 @@ const main = async () => {
     process.exit(1);
   }
   const problems = [...diffs(before, snapshot)];
-  if (problems.length === 0) {
+  if (problems.length === 0 && checkFailures.length === 0) {
     console.log(`ui-geometry: ${cellCount} cell(s) match the snapshot.`);
     return;
   }
   for (const problem of problems.slice(0, 200)) console.error(problem);
+  for (const failure of checkFailures) {
+    console.error(`menu-clip ${failure.id}: ${failure.detail}`);
+  }
   console.error(
-    `ui-geometry: ${problems.length} difference(s) across ${cellCount} cell(s).`,
+    `ui-geometry: ${problems.length + checkFailures.length} difference(s) across ${cellCount} cell(s).`,
   );
   process.exit(1);
 };

@@ -435,6 +435,23 @@ export const matrixSpecs: MatrixSpec[] = [
     ),
   },
   {
+    id: "dropdown-menu-clip",
+    exportName: "DropdownMenu",
+    section: "overlays",
+    render: () => (
+      <div className="v8-matrix-clip">
+        <DropdownMenu
+          label="Clipped actions"
+          items={[
+            { id: "edit", label: "Edit", onSelect: noop },
+            { id: "archive", label: "Archive", onSelect: noop },
+            { id: "delete", label: "Delete", disabled: true },
+          ]}
+        />
+      </div>
+    ),
+  },
+  {
     id: "navigation",
     exportName: "Navigation",
     section: "navigation",

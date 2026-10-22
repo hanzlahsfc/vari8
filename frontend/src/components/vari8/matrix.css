@@ -75,6 +75,14 @@
   align-items: center;
 }
 
+.v8-matrix-clip {
+  border: 1px solid var(--v8-border);
+  border-radius: var(--v8-radius-field);
+  max-width: 100%;
+  overflow: hidden;
+  padding: 8px;
+}
+
 @media (max-width: 720px) {
   .v8-matrix-modes {
     grid-template-columns: minmax(0, 1fr);
