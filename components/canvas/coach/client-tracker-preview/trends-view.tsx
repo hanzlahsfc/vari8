@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown, Search, X } from "lucide-react";
+import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import { AnimatePresence, motion } from "motion/react";
 import {
   type CSSProperties,
@@ -10,7 +11,10 @@ import {
   useRef,
   useState,
 } from "react";
-import { useReducedMotion } from "@/lib/canvas/reduced-motion";
+import {
+  Checkbox as SharedCheckbox,
+  Input as SharedInput,
+} from "@/components/canvas/vari8/components";
 import {
   configuredDecimals,
   configuredUnit,
@@ -776,17 +780,16 @@ export function TrendsView(props: TrackerViewProps) {
                     : { type: "spring", duration: 0.24, bounce: 0 }
                 }
               >
-                <label
-                  className="ct-trends-search-label"
-                  htmlFor="ct-trends-search"
-                >
+                <div className="ct-trends-search-label">
                   <Search
                     className="ct-trends-search-icon"
                     size={16}
                     strokeWidth={1.35}
                     aria-hidden="true"
                   />
-                  <input
+                  <SharedInput
+                    label="Search metrics"
+                    className="ct-trends-search-input"
                     ref={searchInputRef}
                     id="ct-trends-search"
                     type="search"
@@ -794,29 +797,24 @@ export function TrendsView(props: TrackerViewProps) {
                     onChange={(event) => setSearch(event.target.value)}
                     onKeyDown={closePickerOnEscape}
                     placeholder="Find a metric"
-                    aria-label="Search metrics"
+                    size="sm"
                   />
-                </label>
+                </div>
                 <div className="ct-trends-options-groups">
                   {filteredGroups.map((group) => (
-                    <fieldset key={group.label}>
+                    <fieldset key={group.label} onKeyDown={closePickerOnEscape}>
                       <legend>{group.label}</legend>
                       {group.parameters.map((parameter) => {
                         const checked = selected.includes(parameter.id);
                         return (
-                          <label
+                          <SharedCheckbox
                             key={parameter.id}
                             className={checked ? "is-selected" : undefined}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              disabled={!checked && selected.length >= 3}
-                              onChange={() => toggleMetric(parameter.id)}
-                              onKeyDown={closePickerOnEscape}
-                            />
-                            <span>{parameter.label}</span>
-                          </label>
+                            label={parameter.label}
+                            checked={checked}
+                            disabled={!checked && selected.length >= 3}
+                            onCheckedChange={() => toggleMetric(parameter.id)}
+                          />
                         );
                       })}
                     </fieldset>

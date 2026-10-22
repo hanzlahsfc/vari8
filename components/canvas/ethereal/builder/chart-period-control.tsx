@@ -1,4 +1,5 @@
 "use client";
+import { Select } from "@/components/canvas/vari8/components";
 import "./chart-period-control.css";
 
 const ranges = [
@@ -22,27 +23,29 @@ export function ChartPeriodControl({
   };
   const value = aliases[period] ?? period;
   return (
-    <select
+    <Select
+      label={label}
       className="dw-chart-range"
-      aria-label={label}
       value={value}
-      onChange={(event) => onChange?.(event.target.value)}
+      onValueChange={(next) => onChange?.(next)}
       disabled={!onChange}
-    >
-      {!ranges.some((range) => range.value === value) && (
-        <option value={value}>
-          {period === "today"
-            ? "Today"
-            : period
-                .replace(/^(\d+)w$/, "$1 weeks")
-                .replace(/^(\d+)d$/, "$1 days")}
-        </option>
-      )}
-      {ranges.map((range) => (
-        <option key={range.value} value={range.value}>
-          {range.label}
-        </option>
-      ))}
-    </select>
+      size="sm"
+      options={[
+        ...(!ranges.some((range) => range.value === value)
+          ? [
+              {
+                value,
+                label:
+                  period === "today"
+                    ? "Today"
+                    : period
+                        .replace(/^(\d+)w$/, "$1 weeks")
+                        .replace(/^(\d+)d$/, "$1 days"),
+              },
+            ]
+          : []),
+        ...ranges,
+      ]}
+    />
   );
 }

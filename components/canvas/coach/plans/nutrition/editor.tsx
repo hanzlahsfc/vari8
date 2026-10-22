@@ -6,7 +6,9 @@ import {
   ArrowDown,
   ArrowUp,
   BookOpen,
+  Check,
   Copy,
+  GripVertical,
   Plus,
   Search,
   Trash2,
@@ -14,6 +16,14 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import {
+  Input as SharedInput,
+  Select as ThemedSelect,
+} from "@/components/canvas/vari8/components";
+import {
+  DatePicker as SharedDatePicker,
+  TimePicker as SharedTimePicker,
+} from "@/components/canvas/vari8/inputs";
 import foodData from "@/lib/canvas/data/food-database.json";
 import {
   addMealToVariant,
@@ -37,15 +47,16 @@ import { macroEnergyShares } from "../../../ethereal/mealplan/overview-model";
 import { ClientPlanPreview } from "../../client-plan-preview";
 import type { IifymOption, IifymPlan } from "../types";
 import {
-  DatePicker as ReferenceDatePicker,
-  TimePicker as ReferenceTimePicker,
-} from "./date-time-fields";
-import {
-  type CoachWeeklySchedule,
+  addFoodAlternative,
+  alternativeQuantity,
   duplicateIifymOption,
   duplicateMealOption,
+  mealDropTargetIndex,
+  moveMeal,
   removeIifymOption,
   removeMealOption,
+  replacementQuantity,
+  replacePortionFood,
 } from "./model";
 import "./editor.css";
 
@@ -103,6 +114,7 @@ function FoodPicker({ onAdd }: { onAdd: (foods: Food[]) => void }) {
       <Popover.Trigger
         ref={setAnchor}
         className="cn-text-button cn-food-picker-trigger"
+        aria-label="Add food"
         type="button"
       >
         <Plus size={14} /> Add food
@@ -132,39 +144,50 @@ function FoodPicker({ onAdd }: { onAdd: (foods: Food[]) => void }) {
                 <X size={15} />
               </Popover.Close>
             </div>
-            <label className="cn-search cn-food-picker-search">
+            <div className="cn-search cn-food-picker-search">
               <Search size={15} />
-              <input
+              <SharedInput
                 ref={searchInputRef}
-                aria-label="Search food database"
+                label="Search food database"
                 placeholder="Search foods…"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
+                size="sm"
               />
-            </label>
+            </div>
             <fieldset className="cn-food-picker-list" aria-label="Food results">
-              {results.map((food) => (
-                <label className="cn-food-picker-row" key={food.id}>
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.has(food.id)}
-                    onChange={(event) =>
+              {results.map((food) => {
+                const selected = selectedIds.has(food.id);
+                return (
+                  <button
+                    className="cn-food-picker-row"
+                    key={food.id}
+                    type="button"
+                    aria-pressed={selected}
+                    aria-label={`${selected ? "Remove" : "Select"} ${food.name}`}
+                    onClick={() => {
                       setSelectedIds((current) => {
                         const next = new Set(current);
-                        if (event.target.checked) next.add(food.id);
-                        else next.delete(food.id);
+                        if (selected) next.delete(food.id);
+                        else next.add(food.id);
                         return next;
-                      })
-                    }
-                  />
-                  <span>
-                    <strong>{food.name}</strong>
-                    <small>
-                      {food.calories} kcal per {food.amount} {food.unit}
-                    </small>
-                  </span>
-                </label>
-              ))}
+                      });
+                      requestAnimationFrame(() => {
+                        searchInputRef.current?.focus();
+                        searchInputRef.current?.select();
+                      });
+                    }}
+                  >
+                    <span>
+                      <strong>{food.name}</strong>
+                      <small>
+                        {food.calories} kcal per {food.amount} {food.unit}
+                      </small>
+                    </span>
+                    {selected ? <Check size={15} /> : <Plus size={15} />}
+                  </button>
+                );
+              })}
               {!results.length && (
                 <p className="cn-food-picker-empty">No matching foods.</p>
               )}
@@ -204,25 +227,53 @@ function FoodPicker({ onAdd }: { onAdd: (foods: Food[]) => void }) {
   );
 }
 
-function SwapPicker({
+function FoodChoicePicker({
   food,
   quantity,
-  onAdd,
+  triggerLabel,
+  excludedIds,
+  replaceFood,
+  onSelect,
 }: {
   food: Food;
   quantity: number;
-  onAdd: (swap: { foodId: string; quantity: number }) => void;
+  triggerLabel: "Add alternative" | "Swap food";
+  excludedIds: string[];
+  replaceFood: boolean;
+  onSelect: (choice: Food, quantity: number) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [query, setQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const results = catalog
-    .filter((f) => f.name.toLowerCase().includes(query.toLowerCase()))
+    .filter(
+      (item) =>
+        (!excludedIds.includes(item.id) || selectedIds.has(item.id)) &&
+        item.name.toLowerCase().includes(query.trim().toLowerCase()),
+    )
     .slice(0, 25);
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Trigger ref={setAnchor} className="cn-text-button" type="button">
-        Swap
+    <Popover.Root
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (nextOpen) {
+          setQuery("");
+          setSelectedIds(new Set());
+        }
+      }}
+    >
+      <Popover.Trigger
+        ref={setAnchor}
+        className="cn-text-button"
+        aria-label={triggerLabel}
+        type="button"
+      >
+        <span className="cn-food-choice-label" aria-hidden="true">
+          {triggerLabel}
+        </span>
       </Popover.Trigger>
       <Popover.Portal container={anchor?.closest<HTMLElement>(".coach-root")}>
         <Popover.Positioner
@@ -231,49 +282,85 @@ function SwapPicker({
           align="end"
           sideOffset={6}
         >
-          <Popover.Popup className="cn-popover">
-            <strong>Alternative for {food.name}</strong>
+          <Popover.Popup
+            className="cn-popover cn-swap-popover"
+            aria-label={`${triggerLabel} for ${food.name}`}
+            initialFocus={searchInputRef}
+          >
+            <div className="cn-food-picker-head">
+              <div>
+                <strong>{triggerLabel}</strong>
+                <span>
+                  {replaceFood
+                    ? `Replace ${food.name}`
+                    : `Alternative to ${food.name}`}
+                </span>
+              </div>
+              <Popover.Close
+                className="cn-remove"
+                aria-label="Close food picker"
+                type="button"
+              >
+                <X size={15} />
+              </Popover.Close>
+            </div>
             <div className="cn-search cn-swap-search">
               <Search size={14} />
-              <input
-                aria-label="Search approved alternatives"
+              <SharedInput
+                ref={searchInputRef}
+                label="Search approved alternatives"
                 placeholder="Search foods…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                size="sm"
               />
             </div>
-            <div className="cn-results">
+            <ul className="cn-results" aria-label="Food alternatives">
               {results.map((item) => (
-                <button
-                  type="button"
-                  key={item.id}
-                  onClick={() => {
-                    const sourceCalories = calculatePortionNutrients(
-                      food,
-                      quantity,
-                    ).calories;
-                    const equivalent =
-                      sourceCalories > 0 && item.calories > 0
-                        ? (sourceCalories / item.calories) * item.amount
-                        : item.amount;
-                    onAdd({
-                      foodId: item.id,
-                      quantity: Math.max(1, Math.round(equivalent)),
-                    });
-                    setOpen(false);
-                    setQuery("");
-                  }}
-                >
-                  <span>
-                    <strong>{item.name}</strong>
-                    <small>
-                      {item.calories} kcal per {item.amount} {item.unit}
-                    </small>
-                  </span>
-                  <Plus size={14} />
-                </button>
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    aria-label={`${selectedIds.has(item.id) ? "Selected" : triggerLabel}: ${item.name}`}
+                    aria-pressed={selectedIds.has(item.id)}
+                    onClick={() => {
+                      if (selectedIds.has(item.id)) return;
+                      setSelectedIds(
+                        replaceFood
+                          ? new Set([item.id])
+                          : new Set([...selectedIds, item.id]),
+                      );
+                      const equivalent = replaceFood
+                        ? replacementQuantity(food, quantity, item)
+                        : alternativeQuantity(food, quantity, item);
+                      onSelect(item, equivalent);
+                      if (replaceFood) {
+                        setOpen(false);
+                        return;
+                      }
+                      requestAnimationFrame(() => {
+                        searchInputRef.current?.focus();
+                        searchInputRef.current?.select();
+                      });
+                    }}
+                  >
+                    <span>
+                      <strong>{item.name}</strong>
+                      <small>
+                        {item.calories} kcal per {item.amount} {item.unit}
+                      </small>
+                    </span>
+                    {selectedIds.has(item.id) ? (
+                      <Check size={14} />
+                    ) : (
+                      <Plus size={14} />
+                    )}
+                  </button>
+                </li>
               ))}
-            </div>
+              {!results.length && (
+                <li className="cn-swap-empty">No matching foods.</li>
+              )}
+            </ul>
           </Popover.Popup>
         </Popover.Positioner>
       </Popover.Portal>
@@ -291,14 +378,12 @@ export function CoachPlanDatePicker({
   label: string;
 }) {
   return (
-    <div className="cn-date">
-      <span>{label}</span>
-      <ReferenceDatePicker
-        value={value}
-        onChange={onChange}
-        ariaLabel={label}
-      />
-    </div>
+    <SharedDatePicker
+      label={label}
+      value={value}
+      onValueChange={onChange}
+      size="md"
+    />
   );
 }
 function TimePicker({
@@ -311,12 +396,14 @@ function TimePicker({
   label: string;
 }) {
   return (
-    <ReferenceTimePicker
-      value={value}
-      onChange={onChange}
-      ariaLabel={label}
-      className="cn-time"
-    />
+    <div className="cn-time">
+      <SharedTimePicker
+        label={label}
+        value={value}
+        onValueChange={onChange}
+        size="md"
+      />
+    </div>
   );
 }
 
@@ -324,59 +411,22 @@ function Schedule({
   schedule,
   variants,
   startDate,
+  activeVariantId,
   onChange,
 }: {
   schedule: VariantSchedule;
   variants: MealPlanVariant[];
   startDate?: string;
+  activeVariantId: string;
   onChange: (v: VariantSchedule) => void;
 }) {
+  const [enabled, setEnabled] = useState(() => schedule.mode !== "manual");
   const fallback = variants[0]?.id ?? "";
-  const namedTraining = variants.find((variant) =>
-    /training|workout|\btd\b/i.test(variant.label),
+  const manualSelection = useRef(
+    schedule.mode === "manual" ? schedule.selectedVariantId : activeVariantId,
   );
   const weekdayKey = (index: number) =>
     (index + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7;
-  const savedWeeklyIds =
-    schedule.mode === "weekly"
-      ? [
-          ...new Set(
-            weekdays
-              .map((_, index) => schedule.days[weekdayKey(index)])
-              .filter((id): id is string =>
-                Boolean(id && variants.some((variant) => variant.id === id)),
-              ),
-          ),
-        ]
-      : [];
-  const savedRoles =
-    schedule.mode === "weekly"
-      ? (schedule as CoachWeeklySchedule).roles
-      : undefined;
-  const hasSavedRoles =
-    Boolean(savedRoles) &&
-    variants.some((variant) => variant.id === savedRoles?.training) &&
-    variants.some((variant) => variant.id === savedRoles?.rest) &&
-    savedRoles?.training !== savedRoles?.rest;
-  const inferredTraining =
-    (hasSavedRoles ? savedRoles?.training : undefined) ??
-    (savedWeeklyIds.length === 2 && !namedTraining
-      ? savedWeeklyIds[0]
-      : (namedTraining?.id ?? variants[0]?.id ?? fallback));
-  const inferredRest =
-    (hasSavedRoles ? savedRoles?.rest : undefined) ??
-    (savedWeeklyIds.length === 2 &&
-    !variants.some((variant) => /rest|\bntd\b/i.test(variant.label))
-      ? savedWeeklyIds[1]
-      : (variants.find(
-          (variant) =>
-            variant.id !== inferredTraining &&
-            /rest|\bntd\b/i.test(variant.label),
-        )?.id ??
-        variants.find((variant) => variant.id !== inferredTraining)?.id ??
-        inferredTraining));
-  const trainingDefault = inferredTraining;
-  const restDefault = inferredRest;
   const validId = (id?: string) =>
     id && variants.some((variant) => variant.id === id) ? id : fallback;
   const label = (id?: string) =>
@@ -387,413 +437,288 @@ function Schedule({
       : schedule.mode === "cycle"
         ? validId(schedule.steps[0]?.variantId)
         : validId(schedule.days[1]);
-  const currentDays =
+  const weeklyDays =
     schedule.mode === "weekly"
       ? schedule.days
-      : Object.fromEntries(weekdays.map((_, index) => [index + 1, everydayId]));
-  const normalizedDays = Object.fromEntries(
-    weekdays.map((_, index) => [
-      index + 1,
-      validId(currentDays[weekdayKey(index)]),
-    ]),
-  ) as Record<1 | 2 | 3 | 4 | 5 | 6 | 7, string>;
-  const uniqueWeeklyIds = new Set(Object.values(normalizedDays));
-  const roleIds = new Set([trainingDefault, restDefault]);
-  const isRoleSchedule =
-    schedule.mode === "weekly" &&
-    uniqueWeeklyIds.size <= 2 &&
-    [...uniqueWeeklyIds].every((id) => roleIds.has(id));
-  const cycleDays =
-    schedule.mode === "cycle"
-      ? schedule.steps.reduce((total, step) => total + step.days, 0)
-      : 0;
-
-  const writeWeekly = (
-    days: Record<1 | 2 | 3 | 4 | 5 | 6 | 7, string>,
-    roles = { training: trainingDefault, rest: restDefault },
-  ) => {
-    const next: CoachWeeklySchedule = {
-      mode: "weekly",
-      days: Object.fromEntries(
-        weekdays.map((_, index) => [
-          weekdayKey(index),
-          validId(days[weekdayKey(index)]),
-        ]),
-      ) as Record<1 | 2 | 3 | 4 | 5 | 6 | 7, string>,
-      roles: {
-        training: validId(roles.training),
-        rest: validId(roles.rest),
-      },
-    };
-    onChange(next);
-  };
-  const choosePattern = (mode: "manual" | "weekly") => {
-    if (mode === "manual") {
-      onChange({ mode, selectedVariantId: everydayId });
+      : Object.fromEntries(
+          weekdays.map((_, index) => [weekdayKey(index), everydayId]),
+        );
+  const changePattern = (mode: "weekly" | "cycle") => {
+    if (schedule.mode === mode) return;
+    if (mode === "weekly") {
+      const days =
+        schedule.mode === "weekly"
+          ? schedule.days
+          : Object.fromEntries(
+              weekdays.map((_, index) => [weekdayKey(index), everydayId]),
+            );
+      onChange({ mode: "weekly", days });
       return;
     }
-    if (schedule.mode === "weekly") return;
-    writeWeekly(
-      Object.fromEntries(
-        weekdays.map((_, index) => [weekdayKey(index), everydayId]),
-      ) as Record<1 | 2 | 3 | 4 | 5 | 6 | 7, string>,
-    );
-  };
-  const setRoleVariant = (role: "training" | "rest", id: string) => {
-    if (
-      schedule.mode !== "weekly" ||
-      !variants.some((variant) => variant.id === id)
-    )
-      return;
-    if (id === (role === "training" ? restDefault : trainingDefault)) return;
-    const previous = role === "training" ? trainingDefault : restDefault;
-    const nextRoles =
-      role === "training"
-        ? { training: id, rest: restDefault }
-        : { training: trainingDefault, rest: id };
-    const nextDays = { ...normalizedDays };
-    for (const day of weekdays.keys()) {
-      const key = weekdayKey(day);
-      if (nextDays[key] === previous) nextDays[key] = id;
-    }
-    writeWeekly(nextDays, nextRoles);
-  };
-  const toggleDayRole = (index: number) => {
-    if (schedule.mode !== "weekly" || !trainingDefault || !restDefault) return;
-    const key = weekdayKey(index);
-    const assigned = normalizedDays[key];
-    const next = assigned === trainingDefault ? restDefault : trainingDefault;
-    writeWeekly({ ...normalizedDays, [key]: next });
-  };
-  const startCycle = () => {
     const today = new Date();
     const anchorDate =
       startDate ||
       `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const second =
+      variants.find((variant) => variant.id !== everydayId)?.id ?? everydayId;
     onChange({
       mode: "cycle",
       anchorDate,
       steps: [
-        { variantId: trainingDefault, days: 1 },
-        { variantId: restDefault, days: 1 },
+        { variantId: everydayId, days: 1 },
+        { variantId: second, days: 1 },
       ],
     });
   };
+  const enableSchedule = () => {
+    const selected =
+      schedule.mode === "manual"
+        ? validId(schedule.selectedVariantId)
+        : validId(activeVariantId);
+    manualSelection.current = selected;
+    onChange({
+      mode: "weekly",
+      days: Object.fromEntries(
+        weekdays.map((_, index) => [weekdayKey(index), selected]),
+      ),
+    });
+    setEnabled(true);
+  };
 
+  if (!enabled) {
+    return (
+      <section className="cn-schedule cn-schedule-off">
+        <div className="cn-section-title">
+          <div>
+            <h3>Variant schedule</h3>
+            <p>Use one option every day.</p>
+          </div>
+          <button type="button" aria-pressed="false" onClick={enableSchedule}>
+            Set a schedule
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  const cycleDays =
+    schedule.mode === "cycle"
+      ? schedule.steps.reduce((total, step) => total + step.days, 0)
+      : 0;
   return (
     <section className="cn-schedule">
       <div className="cn-section-title">
-        <h3>Variant schedule</h3>
-        <label className="cn-schedule-pattern">
-          <span>Pattern</span>
-          <select
-            aria-label="Schedule pattern"
-            value={schedule.mode}
-            onChange={(event) => {
-              if (
-                event.target.value === "manual" ||
-                event.target.value === "weekly"
-              ) {
-                choosePattern(event.target.value);
-              }
+        <div>
+          <h3>Variant schedule</h3>
+          <p>Choose how options change over time.</p>
+        </div>
+        <button
+          className="cn-schedule-toggle"
+          type="button"
+          aria-pressed="true"
+          onClick={() => {
+            onChange({
+              mode: "manual",
+              selectedVariantId: validId(manualSelection.current),
+            });
+            setEnabled(false);
+          }}
+        >
+          Turn off
+        </button>
+      </div>
+      <div
+        className="cn-option-tabs cn-schedule-modes"
+        role="tablist"
+        aria-label="Meal plan schedule type"
+      >
+        {(
+          [
+            ["weekly", "Custom weekdays"],
+            ["cycle", "Repeating cycle"],
+          ] as const
+        ).map(([mode, modeLabel]) => (
+          <button
+            key={mode}
+            id={`nutrition-schedule-${mode}`}
+            type="button"
+            role="tab"
+            aria-selected={schedule.mode === mode}
+            aria-controls="nutrition-schedule-configuration"
+            tabIndex={schedule.mode === mode ? 0 : -1}
+            onClick={() => changePattern(mode)}
+            onKeyDown={(event) => {
+              const target =
+                event.key === "ArrowRight" || event.key === "ArrowLeft"
+                  ? schedule.mode === "weekly"
+                    ? "cycle"
+                    : "weekly"
+                  : event.key === "Home"
+                    ? "weekly"
+                    : event.key === "End"
+                      ? "cycle"
+                      : undefined;
+              if (!target) return;
+              event.preventDefault();
+              changePattern(target);
+              event.currentTarget.parentElement
+                ?.querySelector<HTMLButtonElement>(
+                  `#nutrition-schedule-${target}`,
+                )
+                ?.focus();
             }}
           >
-            <option value="manual">Every day</option>
-            <option value="weekly">Weekly</option>
-            {schedule.mode === "cycle" && (
-              <option value="cycle" disabled>
-                Repeating cycle · Advanced
-              </option>
-            )}
-          </select>
-        </label>
+            {modeLabel}
+          </button>
+        ))}
       </div>
-      {schedule.mode === "manual" ? (
-        <label className="cn-assignment">
-          <span>Plan for every day</span>
-          <select
-            value={everydayId}
-            onChange={(event) =>
-              onChange({
-                mode: "manual",
-                selectedVariantId: validId(event.target.value),
-              })
-            }
-          >
-            {variants.map((variant) => (
-              <option key={variant.id} value={variant.id}>
-                {variant.label || "Untitled"}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : schedule.mode === "weekly" ? (
-        <>
-          <div className="cn-schedule-roles">
-            <label>
-              <span>Training day</span>
-              <select
-                aria-label="Training day variant"
-                value={trainingDefault}
-                onChange={(event) =>
-                  setRoleVariant("training", event.target.value)
-                }
-              >
-                {variants.map((variant) => (
-                  <option
-                    key={variant.id}
-                    value={variant.id}
-                    disabled={
-                      variant.id === restDefault &&
-                      variant.id !== trainingDefault
-                    }
-                  >
-                    {variant.label || "Untitled"}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>Rest day</span>
-              <select
-                aria-label="Rest day variant"
-                value={restDefault}
-                onChange={(event) => setRoleVariant("rest", event.target.value)}
-              >
-                {variants.map((variant) => (
-                  <option
-                    key={variant.id}
-                    value={variant.id}
-                    disabled={
-                      variant.id === trainingDefault &&
-                      variant.id !== restDefault
-                    }
-                  >
-                    {variant.label || "Untitled"}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <fieldset
-            className={`cn-week-strip ${isRoleSchedule ? "is-role-schedule" : "is-custom-schedule"}`}
-            aria-label={`Weekly assignments${isRoleSchedule ? "" : ", custom weekday assignments"}`}
-          >
-            <legend className="sr-only">Weekly assignments</legend>
-            {weekdays.map((day, index) => {
-              const assigned = normalizedDays[weekdayKey(index)];
-              const isTraining = assigned === trainingDefault;
-              return (
-                <button
-                  className={`cn-week-day ${assigned ? "is-assigned" : "is-empty"}`}
-                  type="button"
-                  key={weekdayKey(index)}
-                  aria-pressed={isTraining}
-                  disabled={
-                    variants.length < 2 || trainingDefault === restDefault
-                  }
-                  aria-label={`${day}: ${label(assigned)}. ${isTraining ? "Training day" : "Rest or custom day"}. Tap to assign ${isTraining ? label(restDefault) : label(trainingDefault)}.`}
-                  onClick={() => toggleDayRole(index)}
-                >
-                  <span className="cn-week-day-name">{day.slice(0, 3)}</span>
-                  <span className="cn-week-day-variant" title={label(assigned)}>
-                    {label(assigned)}
-                  </span>
-                </button>
-              );
-            })}
-          </fieldset>
-          <details className="cn-schedule-advanced">
-            <summary>Advanced</summary>
-            <div className="cn-schedule-advanced-content">
-              <strong className="cn-schedule-custom-label">
-                Custom weekdays
-              </strong>
-              <div className="cn-week">
-                {weekdays.map((day, index) => (
-                  <label key={weekdayKey(index)}>
-                    <span>{day}</span>
-                    <select
-                      aria-label={`${day} plan`}
-                      value={normalizedDays[weekdayKey(index)]}
-                      onChange={(event) =>
-                        writeWeekly({
-                          ...normalizedDays,
-                          [weekdayKey(index)]: event.target.value,
-                        })
-                      }
-                    >
-                      {variants.map((variant) => (
-                        <option key={variant.id} value={variant.id}>
-                          {variant.label || "Untitled"}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ))}
-              </div>
-              <button
-                className="cn-text-button"
-                type="button"
-                onClick={startCycle}
-              >
-                Repeating cycle
-              </button>
-            </div>
-          </details>
-        </>
-      ) : (
-        <details className="cn-schedule-advanced" open>
-          <summary>Advanced · Repeating cycle</summary>
-          <div className="cn-schedule-advanced-content">
-            <div className="cn-cycle">
-              <CoachPlanDatePicker
-                label="Rhythm starts"
-                value={schedule.anchorDate}
-                onChange={(anchorDate) => onChange({ ...schedule, anchorDate })}
-              />
-              <span>Repeats every {cycleDays} days</span>
-              <button
-                type="button"
-                disabled={
-                  schedule.steps.length >= MAX_CYCLE_DAYS ||
-                  cycleDays >= MAX_CYCLE_DAYS
-                }
-                onClick={() =>
+      {schedule.mode === "weekly" ? (
+        <div
+          id="nutrition-schedule-configuration"
+          className="cn-week cn-week-custom"
+          role="tabpanel"
+          aria-labelledby="nutrition-schedule-weekly"
+        >
+          {weekdays.map((day, index) => (
+            <div key={weekdayKey(index)} className="cn-weekday-select">
+              <ThemedSelect
+                label={day}
+                value={validId(weeklyDays[weekdayKey(index)])}
+                options={variants.map((variant) => ({
+                  value: variant.id,
+                  label: variant.label || "Untitled",
+                }))}
+                onValueChange={(value) =>
                   onChange({
-                    ...schedule,
-                    steps: [
-                      ...schedule.steps,
-                      { variantId: fallback, days: 1 },
-                    ],
+                    mode: "weekly",
+                    days: {
+                      ...weeklyDays,
+                      [weekdayKey(index)]: validId(value),
+                    },
                   })
                 }
-              >
-                <Plus size={14} /> Add step
-              </button>
-              {schedule.steps.map((step, index) => (
-                <div
-                  className="cn-cycle-step"
-                  // biome-ignore lint/suspicious/noArrayIndexKey: Cycle steps have positional meaning and no reorder action; keep inputs mounted while their variant changes.
-                  key={index}
-                >
-                  <b>Step {index + 1}</b>
-                  <label>
-                    <span className="sr-only">Step {index + 1} variant</span>
-                    <select
-                      aria-label={`Step ${index + 1} variant`}
-                      value={validId(step.variantId)}
-                      onChange={(event) =>
-                        onChange({
-                          ...schedule,
-                          steps: schedule.steps.map((current, stepIndex) =>
-                            stepIndex === index
-                              ? {
-                                  ...current,
-                                  variantId: validId(event.target.value),
-                                }
-                              : current,
-                          ),
-                        })
-                      }
-                    >
-                      {variants.map((variant) => (
-                        <option key={variant.id} value={variant.id}>
-                          {variant.label || "Untitled"}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <input
-                    aria-label={`Step ${index + 1} duration in days`}
-                    type="number"
-                    min="1"
-                    max={Math.min(
-                      28,
-                      MAX_CYCLE_DAYS -
-                        schedule.steps.reduce(
-                          (total, current, stepIndex) =>
-                            stepIndex === index ? total : total + current.days,
-                          0,
-                        ),
-                    )}
-                    value={step.days}
-                    onChange={(event) =>
-                      onChange({
-                        ...schedule,
-                        steps: schedule.steps.map((current, stepIndex) =>
-                          stepIndex === index
-                            ? {
-                                ...current,
-                                days: Math.min(
-                                  28,
-                                  MAX_CYCLE_DAYS -
-                                    schedule.steps.reduce(
-                                      (total, item, itemIndex) =>
-                                        itemIndex === index
-                                          ? total
-                                          : total + item.days,
-                                      0,
-                                    ),
-                                  Math.max(1, Number(event.target.value) || 1),
-                                ),
-                              }
-                            : current,
-                        ),
-                      })
-                    }
-                  />
-                  <span>days</span>
-                  <button
-                    type="button"
-                    aria-label={`Remove step ${index + 1}`}
-                    disabled={schedule.steps.length === 1}
-                    onClick={() =>
-                      onChange({
-                        ...schedule,
-                        steps: schedule.steps.filter(
-                          (_, stepIndex) => stepIndex !== index,
-                        ),
-                      })
-                    }
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
-              <button
-                className="cn-text-button"
-                type="button"
-                onClick={() => choosePattern("weekly")}
-              >
-                Use weekly schedule
-              </button>
+                className="cn-weekday-select-trigger"
+              />
             </div>
-          </div>
-        </details>
-      )}
-      {schedule.mode === "manual" && (
-        <details className="cn-schedule-advanced">
-          <summary>Advanced</summary>
-          <div className="cn-schedule-advanced-content">
+          ))}
+        </div>
+      ) : schedule.mode === "cycle" ? (
+        <div
+          id="nutrition-schedule-configuration"
+          className="cn-cycle"
+          role="tabpanel"
+          aria-labelledby="nutrition-schedule-cycle"
+        >
+          <div className="cn-cycle-header">
+            <CoachPlanDatePicker
+              label="Cycle starts"
+              value={schedule.anchorDate}
+              onChange={(anchorDate) => onChange({ ...schedule, anchorDate })}
+            />
             <button
-              className="cn-text-button"
               type="button"
-              onClick={startCycle}
+              disabled={
+                schedule.steps.length >= MAX_CYCLE_DAYS ||
+                cycleDays >= MAX_CYCLE_DAYS
+              }
+              onClick={() =>
+                onChange({
+                  ...schedule,
+                  steps: [...schedule.steps, { variantId: fallback, days: 1 }],
+                })
+              }
             >
-              Repeating cycle
+              <Plus size={14} /> Add step
             </button>
           </div>
-        </details>
+          <div className="cn-cycle-steps">
+            {schedule.steps.map((step, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: Cycle steps are positional and keep their inputs mounted when a variant changes.
+              <div className="cn-cycle-step" key={index}>
+                <b>Step {index + 1}</b>
+                <ThemedSelect
+                  label={`Step ${index + 1} plan option`}
+                  value={validId(step.variantId)}
+                  options={variants.map((variant) => ({
+                    value: variant.id,
+                    label: variant.label || "Untitled",
+                  }))}
+                  onValueChange={(value) =>
+                    onChange({
+                      ...schedule,
+                      steps: schedule.steps.map((current, at) =>
+                        at === index
+                          ? {
+                              ...current,
+                              variantId: validId(value),
+                            }
+                          : current,
+                      ),
+                    })
+                  }
+                  className="cn-cycle-option-select"
+                />
+                <SharedInput
+                  label={`Step ${index + 1} duration in days`}
+                  type="number"
+                  min="1"
+                  max={Math.min(
+                    28,
+                    MAX_CYCLE_DAYS -
+                      schedule.steps.reduce(
+                        (sum, current, at) =>
+                          at === index ? sum : sum + current.days,
+                        0,
+                      ),
+                  )}
+                  value={step.days}
+                  size="sm"
+                  onChange={(event) =>
+                    onChange({
+                      ...schedule,
+                      steps: schedule.steps.map((current, at) =>
+                        at === index
+                          ? {
+                              ...current,
+                              days: Math.max(
+                                1,
+                                Number(event.target.value) || 1,
+                              ),
+                            }
+                          : current,
+                      ),
+                    })
+                  }
+                />
+                <span>days</span>
+                <button
+                  type="button"
+                  aria-label={`Remove step ${index + 1}`}
+                  disabled={schedule.steps.length === 1}
+                  onClick={() =>
+                    onChange({
+                      ...schedule,
+                      steps: schedule.steps.filter((_, at) => at !== index),
+                    })
+                  }
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="cn-schedule-enable-choice">
+          <p>Choose a schedule type above to assign options.</p>
+        </div>
       )}
       <p className="cn-schedule-note">
-        {schedule.mode === "manual"
-          ? `Every day · ${label(everydayId)}`
-          : schedule.mode === "weekly"
-            ? isRoleSchedule
-              ? "Tap a weekday to switch between its training and rest plan."
-              : "Custom weekdays · assignments are preserved individually."
-            : `Starts ${schedule.anchorDate} · ${schedule.steps.map((step) => `${label(validId(step.variantId))} for ${step.days} ${step.days === 1 ? "day" : "days"}`).join(" → ")}`}
+        {schedule.mode === "weekly"
+          ? "Each weekday has its own plan assignment."
+          : schedule.mode === "cycle"
+            ? `Repeats every ${cycleDays} ${cycleDays === 1 ? "day" : "days"} · ${schedule.steps.map((step) => `${label(validId(step.variantId))} for ${step.days} ${step.days === 1 ? "day" : "days"}`).join(" → ")}`
+            : "Every day · one plan option"}
       </p>
     </section>
   );
@@ -908,6 +833,11 @@ function MealEditor({
   onSave,
   onDuplicate,
   onMove,
+  onMoveTo,
+  onDragTarget,
+  dropTarget,
+  dropEdge,
+  mealIds,
 }: {
   meal: Meal;
   index: number;
@@ -918,8 +848,27 @@ function MealEditor({
   onSave: () => void;
   onDuplicate: () => void;
   onMove: (direction: -1 | 1) => void;
+  onMoveTo: (mealId: string, targetIndex: number) => void;
+  onDragTarget: (sourceMealId: string, targetMealId: string | null) => void;
+  dropTarget: boolean;
+  dropEdge?: "before" | "after";
+  mealIds: string[];
 }) {
+  const dragRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    moved: boolean;
+  } | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
   const total = calculateMealNutrients(meal, foodMap);
+  const clearDrag = () => {
+    dragRef.current = null;
+    setDragging(false);
+    setDragOffset({ x: 0, y: 0 });
+    onDragTarget(meal.id, null);
+  };
   const patchPortion = (at: number, patch: Partial<FoodPortion>) =>
     onChange({
       ...meal,
@@ -928,14 +877,88 @@ function MealEditor({
       ),
     });
   return (
-    <section className="cn-meal">
+    <fieldset
+      className={`cn-meal${dragging ? " cn-meal--dragging" : ""}`}
+      data-meal-id={meal.id}
+      data-drop-target={dropTarget || undefined}
+      data-drop-edge={dropTarget ? dropEdge : undefined}
+      data-drop-label={
+        dropTarget
+          ? `Drop ${dropEdge} meal ${index + 1}: ${meal.label}`
+          : undefined
+      }
+      style={{
+        transform: dragging
+          ? `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0)`
+          : undefined,
+      }}
+      aria-label={`${meal.label || "Meal"} contents`}
+    >
       <header>
+        <button
+          className="cn-meal-drag"
+          type="button"
+          aria-label={`Drag ${meal.label} to reorder`}
+          title="Drag to reorder meals"
+          style={{
+            touchAction: "none",
+          }}
+          onPointerDown={(event) => {
+            if (!event.isPrimary || event.button !== 0) return;
+            event.preventDefault();
+            event.currentTarget.setPointerCapture(event.pointerId);
+            dragRef.current = {
+              pointerId: event.pointerId,
+              startX: event.clientX,
+              startY: event.clientY,
+              moved: false,
+            };
+          }}
+          onPointerMove={(event) => {
+            const drag = dragRef.current;
+            if (!drag || drag.pointerId !== event.pointerId) return;
+            const x = event.clientX - drag.startX;
+            const y = event.clientY - drag.startY;
+            if (!drag.moved && Math.hypot(x, y) < 5) return;
+            drag.moved = true;
+            setDragging(true);
+            setDragOffset({ x, y });
+            const target = document
+              .elementFromPoint(event.clientX, event.clientY)
+              ?.closest<HTMLElement>("[data-meal-id]");
+            onDragTarget(meal.id, target?.dataset.mealId ?? null);
+          }}
+          onPointerUp={(event) => {
+            const drag = dragRef.current;
+            if (!drag || drag.pointerId !== event.pointerId) return;
+            if (drag.moved) {
+              const target = document
+                .elementFromPoint(event.clientX, event.clientY)
+                ?.closest<HTMLElement>("[data-meal-id]");
+              const targetIndex = target?.dataset.mealId
+                ? mealDropTargetIndex(mealIds, meal.id, target.dataset.mealId)
+                : undefined;
+              if (targetIndex !== undefined) onMoveTo(meal.id, targetIndex);
+            }
+            clearDrag();
+          }}
+          onPointerCancel={clearDrag}
+          onLostPointerCapture={clearDrag}
+        >
+          <GripVertical size={14} />
+        </button>
         <span className="cn-meal-number">
           {String(index + 1).padStart(2, "0")}
         </span>
-        <input
-          aria-label="Meal name"
+        {dragging && (
+          <span className="cn-meal-drag-preview" aria-live="polite">
+            Moving meal {index + 1}: {meal.label}
+          </span>
+        )}
+        <SharedInput
+          label="Meal name"
           value={meal.label}
+          size="sm"
           onChange={(e) => onChange({ ...meal, label: e.target.value })}
         />
         <TimePicker
@@ -999,12 +1022,13 @@ function MealEditor({
               <div className="cn-food-main">
                 <strong>{food.name}</strong>
               </div>
-              <input
-                aria-label={`${food.name} quantity`}
+              <SharedInput
+                label={`${food.name} quantity`}
                 type="number"
                 min="0"
                 step="any"
                 value={portion.quantity}
+                size="sm"
                 onChange={(e) =>
                   patchPortion(i, { quantity: Number(e.target.value) || 0 })
                 }
@@ -1016,13 +1040,34 @@ function MealEditor({
                 <span>C {n(nutrients.carbs)} g</span>
                 <span>F {n(nutrients.fat)} g</span>
               </span>
-              <SwapPicker
-                food={food}
-                quantity={portion.quantity}
-                onAdd={(swap) =>
-                  patchPortion(i, { swaps: [...(portion.swaps ?? []), swap] })
-                }
-              />
+              <div className="cn-food-actions">
+                <FoodChoicePicker
+                  food={food}
+                  quantity={portion.quantity}
+                  triggerLabel="Add alternative"
+                  replaceFood={false}
+                  excludedIds={[
+                    food.id,
+                    ...(portion.swaps ?? []).map((swap) => swap.foodId),
+                  ]}
+                  onSelect={(choice, quantity) =>
+                    patchPortion(
+                      i,
+                      addFoodAlternative(portion, choice.id, quantity),
+                    )
+                  }
+                />
+                <FoodChoicePicker
+                  food={food}
+                  quantity={portion.quantity}
+                  triggerLabel="Swap food"
+                  replaceFood
+                  excludedIds={[food.id]}
+                  onSelect={(choice) =>
+                    patchPortion(i, replacePortionFood(portion, food, choice))
+                  }
+                />
+              </div>
               <button
                 className="cn-remove"
                 type="button"
@@ -1044,12 +1089,13 @@ function MealEditor({
                   // biome-ignore lint/suspicious/noArrayIndexKey: duplicate swap foods are valid and swaps have no persistent identifier.
                   <div className="cn-swap" key={`${swap.foodId}-${j}`}>
                     <span>Or&nbsp; {alt.name}</span>
-                    <input
-                      aria-label={`${alt.name} equivalent portion`}
+                    <SharedInput
+                      label={`${alt.name} equivalent portion`}
                       type="number"
                       min="0"
                       step="1"
                       value={Math.round(swap.quantity)}
+                      size="sm"
                       onChange={(e) =>
                         patchPortion(i, {
                           swaps: portion.swaps?.map((s, k) =>
@@ -1114,12 +1160,20 @@ function MealEditor({
             }
           />
           {reusable.length > 0 && (
-            <label className="cn-load">
-              Use saved meal
-              <select
+            <div className="cn-load">
+              <span>Use saved meal</span>
+              <ThemedSelect
+                label="Saved meal"
                 value=""
-                onChange={(e) => {
-                  const saved = reusable.find((s) => s.id === e.target.value);
+                options={[
+                  { value: "", label: "Select…", disabled: true },
+                  ...reusable.map((meal) => ({
+                    value: meal.id,
+                    label: meal.name,
+                  })),
+                ]}
+                onValueChange={(value) => {
+                  const saved = reusable.find((meal) => meal.id === value);
                   if (saved)
                     onChange({
                       ...meal,
@@ -1129,17 +1183,9 @@ function MealEditor({
                       })),
                     });
                 }}
-              >
-                <option value="" disabled>
-                  Select…
-                </option>
-                {reusable.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+                className="cn-load-select"
+              />
+            </div>
           )}
         </div>
         <footer>
@@ -1150,7 +1196,7 @@ function MealEditor({
           </span>
         </footer>
       </div>
-    </section>
+    </fieldset>
   );
 }
 
@@ -1162,6 +1208,8 @@ export function NutritionEditor({
   onChange: (value: MealPlan) => void;
 }) {
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [dropTargetMealId, setDropTargetMealId] = useState<string | null>(null);
+  const [draggedMealId, setDraggedMealId] = useState<string | null>(null);
   const [libraryQuery, setLibraryQuery] = useState("");
   const [deletedSaved, setDeletedSaved] = useState<{
     meal: ReusableMeal;
@@ -1292,6 +1340,7 @@ export function NutritionEditor({
         schedule={value.schedule}
         variants={value.variants}
         startDate={value.startDate}
+        activeVariantId={active.id}
         onChange={(schedule) => onChange({ ...value, schedule })}
       />
       <div className="cn-options">
@@ -1346,14 +1395,12 @@ export function NutritionEditor({
           </button>
         </div>
         <div className="cn-option-tools">
-          <label>
-            Option label
-            <input
-              aria-label="Option label"
-              value={active.label}
-              onChange={(e) => renameOption(active.id, e.target.value)}
-            />
-          </label>
+          <SharedInput
+            label="Option label"
+            value={active.label}
+            onChange={(e) => renameOption(active.id, e.target.value)}
+            size="sm"
+          />
           <button type="button" onClick={duplicateOption}>
             <Copy size={14} /> Duplicate option
           </button>
@@ -1384,15 +1431,15 @@ export function NutritionEditor({
         </div>
         {libraryOpen && (
           <div className="cn-library-body">
-            <label className="cn-library-search">
-              Search saved meals or foods
-              <input
-                aria-label="Search saved meals or foods"
+            <div className="cn-library-search">
+              <SharedInput
+                label="Search saved meals or foods"
                 value={libraryQuery}
                 onChange={(e) => setLibraryQuery(e.target.value)}
                 placeholder="Search meals or foods…"
+                size="sm"
               />
-            </label>
+            </div>
             {!filteredSaved.length ? (
               <p>
                 {value.reusableMeals.length
@@ -1405,9 +1452,10 @@ export function NutritionEditor({
                 return (
                   <article className="cn-saved-row" key={saved.id}>
                     <div className="cn-saved-title">
-                      <input
-                        aria-label="Saved meal name"
+                      <SharedInput
+                        label="Saved meal name"
                         value={saved.name}
+                        size="sm"
                         onChange={(e) =>
                           updateSaved(saved.id, (current) => ({
                             ...current,
@@ -1485,6 +1533,22 @@ export function NutritionEditor({
             meal={meal}
             index={index}
             count={active.meals.length}
+            mealIds={active.meals.map((item) => item.id)}
+            dropTarget={
+              dropTargetMealId === meal.id && draggedMealId !== meal.id
+            }
+            dropEdge={
+              dropTargetMealId === meal.id && draggedMealId
+                ? active.meals.findIndex((item) => item.id === draggedMealId) <
+                  index
+                  ? "after"
+                  : "before"
+                : undefined
+            }
+            onDragTarget={(sourceMealId, targetMealId) => {
+              setDraggedMealId(targetMealId ? sourceMealId : null);
+              setDropTargetMealId(targetMealId);
+            }}
             reusable={value.reusableMeals}
             onChange={(m) =>
               updateVariant(active.id, (v) => ({
@@ -1510,13 +1574,14 @@ export function NutritionEditor({
               }))
             }
             onMove={(direction) =>
-              updateVariant(active.id, (v) => {
-                const meals = [...v.meals];
-                const target = index + direction;
-                if (target < 0 || target >= meals.length) return v;
-                [meals[index], meals[target]] = [meals[target], meals[index]];
-                return { ...v, meals };
-              })
+              updateVariant(active.id, (v) =>
+                moveMeal(v, meal.id, index + direction),
+              )
+            }
+            onMoveTo={(draggedMealId, targetIndex) =>
+              updateVariant(active.id, (v) =>
+                moveMeal(v, draggedMealId, targetIndex),
+              )
             }
           />
         ))}
@@ -1548,27 +1613,31 @@ function TargetField({
   return (
     <div className="cn-target-field">
       <strong>{name}</strong>
-      <select
-        aria-label={`${name} target type`}
+      <ThemedSelect
+        label={`${name} target type`}
         value={kind}
-        onChange={(e) => {
-          const k = e.target.value as TargetValue["kind"];
+        options={[
+          { value: "fixed", label: "Fixed" },
+          { value: "range", label: "Range" },
+          { value: "minimum", label: "Minimum" },
+        ]}
+        onValueChange={(value) => {
+          const k: TargetValue["kind"] =
+            value === "range" || value === "minimum" ? value : "fixed";
           onChange(
             k === "range" ? { kind: k, min: 0, max: 0 } : { kind: k, value: 0 },
           );
         }}
-      >
-        <option value="fixed">Fixed</option>
-        <option value="range">Range</option>
-        <option value="minimum">Minimum</option>
-      </select>
+        className="cn-target-type-select"
+      />
       {kind === "range" ? (
         <>
-          <input
-            aria-label={`${name} minimum`}
+          <SharedInput
+            label={`${name} minimum`}
             type="number"
             min="0"
             value={value?.kind === "range" ? value.min : 0}
+            size="sm"
             onChange={(e) =>
               onChange({
                 kind: "range",
@@ -1578,11 +1647,12 @@ function TargetField({
             }
           />
           <span>to</span>
-          <input
-            aria-label={`${name} maximum`}
+          <SharedInput
+            label={`${name} maximum`}
             type="number"
             min="0"
             value={value?.kind === "range" ? value.max : 0}
+            size="sm"
             onChange={(e) =>
               onChange({
                 kind: "range",
@@ -1593,11 +1663,12 @@ function TargetField({
           />
         </>
       ) : (
-        <input
-          aria-label={`${name} ${kind} value`}
+        <SharedInput
+          label={`${name} ${kind} value`}
           type="number"
           min="0"
           value={value?.kind !== "range" ? (value?.value ?? 0) : 0}
+          size="sm"
           onChange={(e) =>
             onChange({ kind, value: Number(e.target.value) || 0 })
           }
@@ -1625,9 +1696,10 @@ function OptionTargets({
   return (
     <section className="cn-target-option">
       <header>
-        <input
-          aria-label="Target option name"
+        <SharedInput
+          label="Target option name"
           value={option.label}
+          size="sm"
           onChange={(e) => onChange({ ...option, label: e.target.value })}
         />
         <button type="button" title="Duplicate option" onClick={onDuplicate}>
@@ -1704,6 +1776,15 @@ export function IifymEditor({
       <Schedule
         schedule={value.schedule}
         startDate={value.startDate}
+        activeVariantId={
+          value.schedule.mode === "manual"
+            ? value.schedule.selectedVariantId
+            : value.schedule.mode === "cycle"
+              ? (value.schedule.steps[0]?.variantId ??
+                value.options[0]?.id ??
+                "")
+              : (value.schedule.days[1] ?? value.options[0]?.id ?? "")
+        }
         variants={value.options.map((o) => ({
           id: o.id,
           label: o.label,
@@ -1758,26 +1839,38 @@ export function NutritionPlanPreview({
   value,
   variantId,
   clientName,
+  allOptions = false,
 }: {
   value: MealPlan;
   variantId?: string;
   clientName?: string;
+  allOptions?: boolean;
 }) {
-  const variant =
+  const selectedVariant =
     value.variants.find(
       (item) => item.id === (variantId ?? value.activeVariantId),
     ) ?? value.variants[0];
-  if (!variant) return null;
+  if (!selectedVariant) return null;
+  const variants = allOptions ? value.variants : [selectedVariant];
   return (
     <div className="cn-preview">
+      {allOptions && (
+        <p className="cn-preview-options">
+          <strong>{variants.length} plan options</strong>
+          <span>{variants.map((variant) => variant.label).join(" · ")}</span>
+        </p>
+      )}
       <p className="cn-preview-schedule">
         {scheduleInstruction(value.schedule, value.variants)}
       </p>
-      <ClientPlanPreview
-        variant={variant}
-        foodMap={foodMap}
-        clientName={clientName}
-      />
+      {variants.map((variant, index) => (
+        <ClientPlanPreview
+          key={variant.id}
+          variant={variant}
+          foodMap={foodMap}
+          clientName={allOptions && index > 0 ? undefined : clientName}
+        />
+      ))}
     </div>
   );
 }
@@ -1797,19 +1890,41 @@ function targetAmount(target?: TargetValue) {
 export function IifymPlanPreview({
   value,
   optionId,
+  allOptions = false,
 }: {
   value: IifymPlan;
   optionId?: string;
+  allOptions?: boolean;
 }) {
   const id =
     optionId ??
     (value.schedule.mode === "manual"
       ? value.schedule.selectedVariantId
       : value.options[0]?.id);
-  const option =
+  const selectedOption =
     value.options.find((item) => item.id === id) ?? value.options[0];
-  if (!option) return null;
-  const targets = option.targets;
+  if (!selectedOption) return null;
+  const options = allOptions ? value.options : [selectedOption];
+  return (
+    <div className="cn-preview cn-iifym-preview">
+      {allOptions && (
+        <p className="cn-preview-options">
+          <strong>{options.length} plan options</strong>
+          <span>{options.map((option) => option.label).join(" · ")}</span>
+        </p>
+      )}
+      <p className="cn-preview-schedule">
+        {scheduleInstruction(value.schedule, value.options)}
+      </p>
+      {options.map((option) => (
+        <IifymOptionPreview key={option.id} option={option} />
+      ))}
+    </div>
+  );
+}
+
+function IifymOptionPreview({ option }: { option: IifymOption }) {
+  const { targets } = option;
   const protein = targetAmount(targets.protein);
   const carbs = targetAmount(targets.carbs);
   const fat = targetAmount(targets.fat);
@@ -1821,82 +1936,77 @@ export function IifymPlanPreview({
     fat,
   });
   return (
-    <div className="cn-preview cn-iifym-preview">
-      <p className="cn-preview-schedule">
-        {scheduleInstruction(value.schedule, value.options)}
-      </p>
-      <section>
-        <h3>{option.label}</h3>
-        {targets.style === "calories" ? (
-          <p>
-            <strong>{targetText(targets.calories, "kcal")}</strong>
-          </p>
-        ) : (
-          <>
-            <div className="cn-iifym-derived">
-              <strong>~{n(macroCalories, 0)} kcal</strong>
-              <span>derived from macro targets at 4/4/9 kcal per gram</span>
-              <div className="cn-energy">
-                <svg
-                  viewBox="0 0 56 56"
-                  role="img"
-                  aria-label={`Macro energy distribution: protein ${n(macroShares.protein * 100, 0)}%, carbs ${n(macroShares.carbs * 100, 0)}%, fat ${n(macroShares.fat * 100, 0)}%`}
-                >
-                  <circle className="cn-ring-track" cx="28" cy="28" r="22" />
-                  {(
-                    [
-                      ["protein", macroShares.protein],
-                      ["carbs", macroShares.carbs],
-                      ["fat", macroShares.fat],
-                    ] as const
-                  ).reduce<React.ReactNode[]>(
-                    (nodes, [key, share], index, all) => {
-                      const before = all
-                        .slice(0, index)
-                        .reduce((total, item) => total + item[1], 0);
-                      if (share > 0)
-                        nodes.push(
-                          <circle
-                            key={key}
-                            className={`cn-ring-${key}`}
-                            cx="28"
-                            cy="28"
-                            r="22"
-                            pathLength="100"
-                            strokeDasharray={`${Math.max(0, share * 100 - 0.8)} ${100 - Math.max(0, share * 100 - 0.8)}`}
-                            strokeDashoffset={-before * 100}
-                            transform="rotate(-90 28 28)"
-                          />,
-                        );
-                      return nodes;
-                    },
-                    [],
-                  )}
-                </svg>
-                <div className="cn-energy-key">
-                  <span>P {n(macroShares.protein * 100, 0)}%</span>
-                  <span>C {n(macroShares.carbs * 100, 0)}%</span>
-                  <span>F {n(macroShares.fat * 100, 0)}%</span>
-                </div>
+    <section>
+      <h3>{option.label}</h3>
+      {targets.style === "calories" ? (
+        <p>
+          <strong>{targetText(targets.calories, "kcal")}</strong>
+        </p>
+      ) : (
+        <>
+          <div className="cn-iifym-derived">
+            <strong>~{n(macroCalories, 0)} kcal</strong>
+            <span>derived from macro targets at 4/4/9 kcal per gram</span>
+            <div className="cn-energy">
+              <svg
+                viewBox="0 0 56 56"
+                role="img"
+                aria-label={`Macro energy distribution: protein ${n(macroShares.protein * 100, 0)}%, carbs ${n(macroShares.carbs * 100, 0)}%, fat ${n(macroShares.fat * 100, 0)}%`}
+              >
+                <circle className="cn-ring-track" cx="28" cy="28" r="22" />
+                {(
+                  [
+                    ["protein", macroShares.protein],
+                    ["carbs", macroShares.carbs],
+                    ["fat", macroShares.fat],
+                  ] as const
+                ).reduce<React.ReactNode[]>(
+                  (nodes, [key, share], index, all) => {
+                    const before = all
+                      .slice(0, index)
+                      .reduce((total, item) => total + item[1], 0);
+                    if (share > 0)
+                      nodes.push(
+                        <circle
+                          key={key}
+                          className={`cn-ring-${key}`}
+                          cx="28"
+                          cy="28"
+                          r="22"
+                          pathLength="100"
+                          strokeDasharray={`${Math.max(0, share * 100 - 0.8)} ${100 - Math.max(0, share * 100 - 0.8)}`}
+                          strokeDashoffset={-before * 100}
+                          transform="rotate(-90 28 28)"
+                        />,
+                      );
+                    return nodes;
+                  },
+                  [],
+                )}
+              </svg>
+              <div className="cn-energy-key">
+                <span>P {n(macroShares.protein * 100, 0)}%</span>
+                <span>C {n(macroShares.carbs * 100, 0)}%</span>
+                <span>F {n(macroShares.fat * 100, 0)}%</span>
               </div>
             </div>
-            <dl>
-              <div>
-                <dt>Protein</dt>
-                <dd>{targetText(targets.protein)}</dd>
-              </div>
-              <div>
-                <dt>Carbs</dt>
-                <dd>{targetText(targets.carbs)}</dd>
-              </div>
-              <div>
-                <dt>Fat</dt>
-                <dd>{targetText(targets.fat)}</dd>
-              </div>
-            </dl>
-          </>
-        )}
-      </section>
-    </div>
+          </div>
+          <dl>
+            <div>
+              <dt>Protein</dt>
+              <dd>{targetText(targets.protein)}</dd>
+            </div>
+            <div>
+              <dt>Carbs</dt>
+              <dd>{targetText(targets.carbs)}</dd>
+            </div>
+            <div>
+              <dt>Fat</dt>
+              <dd>{targetText(targets.fat)}</dd>
+            </div>
+          </dl>
+        </>
+      )}
+    </section>
   );
 }

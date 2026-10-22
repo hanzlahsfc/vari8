@@ -3,14 +3,15 @@ import {
   ArrowUpRight,
   CalendarDays,
   ClipboardCheck,
-  LayoutGrid,
-  List,
   MessageCircle,
   Plus,
   Trash2,
   Users,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { Checkbox, SegmentedControl, Tabs } from "../vari8/components";
+import { TextArea } from "../vari8/inputs";
+import { FormGrid, Toolbar } from "../vari8/layouts";
 import {
   addDays,
   assignTemplate,
@@ -30,6 +31,7 @@ import "./workspace-polish.css";
 import {
   Avatar,
   Button,
+  DateField,
   Dialog,
   Empty,
   IconButton,
@@ -111,7 +113,7 @@ export function ClientsWorkspace() {
         title="Clients"
         description="The people behind the progress."
       />
-      <div className="cd-roster-toolbar">
+      <Toolbar className="cd-roster-toolbar">
         <SearchBox
           value={search}
           onChange={setSearch}
@@ -129,23 +131,17 @@ export function ClientsWorkspace() {
           options={["Name", "Attention", "Next check-in"]}
           onChange={setSort}
         />
-        <div className="cd-tabs">
-          <IconButton
-            label="Table view"
-            aria-pressed={view === "Table"}
-            onClick={() => setView("Table")}
-          >
-            <List size={17} />
-          </IconButton>
-          <IconButton
-            label="Card view"
-            aria-pressed={view === "Cards"}
-            onClick={() => setView("Cards")}
-          >
-            <LayoutGrid size={17} />
-          </IconButton>
-        </div>
-      </div>
+        <SegmentedControl
+          label="Athlete display"
+          value={view}
+          onValueChange={setView}
+          className="cd-roster-view-control"
+          options={[
+            { value: "Table", label: "Table" },
+            { value: "Cards", label: "Cards" },
+          ]}
+        />
+      </Toolbar>
       {list.length === 0 ? (
         <Surface>
           <Empty
@@ -323,72 +319,12 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
           c.plans.nutrition.iifym.active ||
           c.plans.training.draft ||
           c.plans.training.active ||
+          (c.plans.activityTargets?.length ?? 0) > 0 ||
+          c.plans.supplements !== undefined ||
           c.plans.goals.length > 0),
     ) || c.habits.length > 0;
-  return (
+  const profilePanel = (
     <>
-      <PageTitle
-        title={c.name}
-        description={`${c.label} · ${c.phase} · Week ${c.week}`}
-        back={() => navigate({ section: "clients" })}
-        actions={
-          <>
-            <Button
-              onClick={() => navigate({ section: "check-ins", client: c.id })}
-            >
-              <CalendarDays size={16} />
-              Check-in calendar
-            </Button>
-            <Button
-              onClick={() => navigate({ section: "messages", client: c.id })}
-            >
-              <MessageCircle size={16} />
-              Open chat
-              {unreadCount(state, c.id) > 0 && (
-                <span>{unreadCount(state, c.id)}</span>
-              )}
-            </Button>
-          </>
-        }
-      />
-      <div className="cd-profile-summary">
-        <Avatar client={c} />
-        <div>
-          <strong>{c.email}</strong>
-          <small>
-            Coaching since {formatDate(c.coachingSince, { year: "numeric" })} ·{" "}
-            {c.heightCm} cm
-          </small>
-        </div>
-        <div className="cd-profile-next">
-          <span>Next check-in</span>
-          <strong>
-            {next
-              ? formatDate(next.date, { weekday: "short" })
-              : "Not scheduled"}
-          </strong>
-        </div>
-      </div>
-      <div className="cd-tabs cd-profile-tabs">
-        {["Overview", "Plans", "Check-ins", "Notes & tasks", "Onboarding"].map(
-          (t) => (
-            <Button
-              key={t}
-              aria-pressed={tab === t}
-              onClick={() =>
-                navigate({
-                  ...route,
-                  section: "clients",
-                  client: c.id,
-                  tab: t === "Overview" ? undefined : t,
-                })
-              }
-            >
-              {t}
-            </Button>
-          ),
-        )}
-      </div>
       {tab === "Overview" && (
         <div className="cd-profile-grid">
           <Surface>
@@ -612,23 +548,20 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
             ))}
             <h3>Your to-dos</h3>
             {c.coachTasks.map((t) => (
-              <label className="cd-task" key={t.id}>
-                <input
-                  type="checkbox"
-                  checked={t.complete}
-                  onChange={(e) =>
-                    update((c) => ({
-                      ...c,
-                      coachTasks: c.coachTasks.map((x) =>
-                        x.id === t.id
-                          ? { ...x, complete: e.target.checked }
-                          : x,
-                      ),
-                    }))
-                  }
-                />
-                <span>{t.title}</span>
-              </label>
+              <Checkbox
+                className="cd-task"
+                key={t.id}
+                label={t.title}
+                checked={t.complete}
+                onCheckedChange={(checked) =>
+                  update((c) => ({
+                    ...c,
+                    coachTasks: c.coachTasks.map((x) =>
+                      x.id === t.id ? { ...x, complete: checked } : x,
+                    ),
+                  }))
+                }
+              />
             ))}
             <Select
               label="Add to"
@@ -640,14 +573,12 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
                 "Client-assigned task",
               ]}
             />
-            <label className="cd-field">
-              {newKind}
-              <textarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                rows={3}
-              />
-            </label>
+            <TextArea
+              label={newKind}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={3}
+            />
             <Button
               primary
               disabled={!text.trim()}
@@ -699,30 +630,27 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
             </p>
             {c.clientTasks.map((t) => (
               <div className="cd-client-task" key={t.id}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={t.status === "complete"}
-                    onChange={(e) =>
-                      update((c) => ({
-                        ...c,
-                        clientTasks: c.clientTasks.map((x) =>
-                          x.id === t.id
-                            ? {
-                                ...x,
-                                status: e.target.checked
-                                  ? "complete"
-                                  : x.dueDate < TODAY
-                                    ? "overdue"
-                                    : "open",
-                              }
-                            : x,
-                        ),
-                      }))
-                    }
-                  />
-                  {t.title}
-                </label>
+                <Checkbox
+                  label={t.title}
+                  checked={t.status === "complete"}
+                  onCheckedChange={(checked) =>
+                    update((c) => ({
+                      ...c,
+                      clientTasks: c.clientTasks.map((x) =>
+                        x.id === t.id
+                          ? {
+                              ...x,
+                              status: checked
+                                ? "complete"
+                                : x.dueDate < TODAY
+                                  ? "overdue"
+                                  : "open",
+                            }
+                          : x,
+                      ),
+                    }))
+                  }
+                />
                 <small>
                   {formatDate(t.dueDate)} · {t.status}
                 </small>
@@ -745,6 +673,76 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
           ))}
         </Surface>
       )}
+    </>
+  );
+  return (
+    <>
+      <PageTitle
+        title={c.name}
+        description={`${c.label} · ${c.phase} · Week ${c.week}`}
+        back={() => navigate({ section: "clients" })}
+        actions={
+          <>
+            <Button
+              onClick={() => navigate({ section: "check-ins", client: c.id })}
+            >
+              <CalendarDays size={16} />
+              Check-in calendar
+            </Button>
+            <Button
+              onClick={() => navigate({ section: "messages", client: c.id })}
+            >
+              <MessageCircle size={16} />
+              Open chat
+              {unreadCount(state, c.id) > 0 && (
+                <span>{unreadCount(state, c.id)}</span>
+              )}
+            </Button>
+          </>
+        }
+      />
+      <div className="cd-profile-summary">
+        <Avatar client={c} />
+        <div>
+          <strong>{c.email}</strong>
+          <small>
+            Coaching since {formatDate(c.coachingSince, { year: "numeric" })} ·{" "}
+            {c.heightCm} cm
+          </small>
+        </div>
+        <div className="cd-profile-next">
+          <span>Next check-in</span>
+          <strong>
+            {next
+              ? formatDate(next.date, { weekday: "short" })
+              : "Not scheduled"}
+          </strong>
+        </div>
+      </div>
+      <Tabs
+        label="Client profile"
+        value={tab}
+        onValueChange={(value) =>
+          navigate({
+            ...route,
+            section: "clients",
+            client: c.id,
+            tab: value === "Overview" ? undefined : value,
+          })
+        }
+        className="cd-profile-tabs"
+        items={[
+          "Overview",
+          "Plans",
+          "Check-ins",
+          "Notes & tasks",
+          "Onboarding",
+        ].map((value) => ({
+          value,
+          label: value,
+          content: value === tab ? profilePanel : null,
+        }))}
+      />
       {preview && c.assignment && (
         <PreviewDialog
           template={c.assignment.snapshot}
@@ -912,36 +910,34 @@ export function ExtraDateDialog({
       }
       onClose={onClose}
     >
-      <Select
-        label="Athlete"
-        value={client}
-        options={state.clients.map((c) => ({ value: c.id, label: c.name }))}
-        onChange={setClient}
-      />
-      <label className="cd-field">
-        Date · Europe/Vienna
-        <input
-          type="date"
+      <FormGrid columns={2} className="cd-extra-date-grid">
+        <Select
+          label="Athlete"
+          value={client}
+          options={state.clients.map((c) => ({ value: c.id, label: c.name }))}
+          onChange={setClient}
+        />
+        <DateField
+          label="Date · Europe/Vienna"
           min={TODAY}
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={setDate}
         />
-      </label>
-      <Select
-        label="Requested update"
-        value={type}
-        options={["Custom", "Full"]}
-        onChange={(v) => setType(v as "Full" | "Custom")}
-      />
-      <label className="cd-field">
-        Note to athlete
-        <textarea
+        <Select
+          label="Requested update"
+          value={type}
+          options={["Custom", "Full"]}
+          onChange={(v) => setType(v as "Full" | "Custom")}
+        />
+        <TextArea
+          label="Note to athlete"
+          className="cd-dialog-note"
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="What would you like to follow up on?"
         />
-      </label>
+      </FormGrid>
       {duplicate && (
         <p role="alert" className="cd-error">
           This athlete already has an additional request on this date.

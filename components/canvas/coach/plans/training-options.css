@@ -85,19 +85,6 @@
   text-transform: uppercase;
 }
 
-.coach-root .cd-training-default select {
-  width: 100%;
-  min-height: 36px;
-  padding: 6px 26px 6px 9px;
-  border: 1px solid var(--cd-line);
-  border-radius: 9px;
-  background: var(--cd-field);
-  color: var(--cd-text);
-  font: inherit;
-  font-size: 12px;
-  text-transform: none;
-}
-
 .coach-root .cd-training-option-rows {
   display: grid;
   gap: 7px;
@@ -107,28 +94,6 @@
   display: flex;
   align-items: center;
   gap: 7px;
-}
-
-.coach-root .cd-training-option-row input {
-  width: 100%;
-  min-width: 0;
-  min-height: 38px;
-  padding: 8px 10px;
-  border: 1px solid var(--cd-line);
-  border-radius: 9px;
-  background: var(--cd-field);
-  color: var(--cd-text);
-  font: inherit;
-  font-size: 13px;
-  transition:
-    border-color 160ms var(--cd-ease-out),
-    background-color 160ms var(--cd-ease-out);
-}
-
-.coach-root .cd-training-option-row input:focus-visible,
-.coach-root .cd-training-default select:focus-visible {
-  outline: 2px solid var(--cd-accent-ring);
-  outline-offset: 2px;
 }
 
 .coach-root .cd-training-option-remove {
@@ -168,9 +133,6 @@
 
 .coach-root .cd-training-option-add {
   justify-self: start;
-  min-height: 38px;
-  padding: 7px 11px;
-  font-size: 12px;
 }
 
 .coach-root .cd-training-options > .cd-caption {
@@ -189,4 +151,49 @@
   .coach-root .cd-training-option-group {
     padding: 13px;
   }
+}
+
+.coach-root .cd-training-options {
+  gap: 8px;
+  margin-top: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.coach-root .cd-training-option-compact-list {
+  display: grid;
+  gap: 6px;
+}
+.coach-root .cd-training-option-compact-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--cd-line);
+  border-radius: 10px;
+  background: var(--cd-surface);
+}
+.coach-root .cd-training-option-compact-row > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.coach-root .cd-training-option-compact-row strong {
+  font-size: 12px;
+  font-weight: 560;
+}
+.coach-root .cd-training-option-compact-row small {
+  color: var(--cd-muted);
+  font-size: 10px;
+}
+.coach-root .cd-training-option-compact-row button {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: 11px;
+}
+.coach-root .cd-training-options .cd-caption {
+  margin: 0;
 }
