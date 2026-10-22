@@ -133,6 +133,7 @@ export function Card({
 
 type FieldMessages = {
   label: string;
+  labelHidden?: boolean;
   hint?: string;
   error?: string;
 };
@@ -147,6 +148,7 @@ function useFieldIds(id: string | undefined, hint?: string, error?: string) {
 
 function FieldMessagesView({
   label,
+  labelHidden,
   hint,
   error,
   controlId,
@@ -159,7 +161,13 @@ function FieldMessagesView({
 }) {
   return (
     <>
-      <label className="v8-field__label" htmlFor={controlId}>
+      <label
+        className={joinClasses(
+          "v8-field__label",
+          labelHidden && "visually-hidden",
+        )}
+        htmlFor={controlId}
+      >
         {label}
       </label>
       {hint && (
@@ -196,6 +204,7 @@ export type InputProps = FieldMessages &
 
 export function Input({
   label,
+  labelHidden,
   hint,
   error,
   id,
@@ -210,7 +219,13 @@ export function Input({
   const ids = useFieldIds(id, hint, error);
   return (
     <div className="v8-field">
-      <FieldMessagesView label={label} hint={hint} error={error} {...ids} />
+      <FieldMessagesView
+        label={label}
+        labelHidden={labelHidden}
+        hint={hint}
+        error={error}
+        {...ids}
+      />
       <input
         {...props}
         ref={ref}
@@ -249,6 +264,7 @@ export type SelectProps = FieldMessages & {
 
 export function Select({
   label,
+  labelHidden,
   hint,
   error,
   id,
@@ -280,7 +296,13 @@ export function Select({
           );
       }}
     >
-      <FieldMessagesView label={label} hint={hint} error={error} {...ids} />
+      <FieldMessagesView
+        label={label}
+        labelHidden={labelHidden}
+        hint={hint}
+        error={error}
+        {...ids}
+      />
       <BaseSelect.Root
         name={name}
         required={required}

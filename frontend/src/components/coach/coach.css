@@ -415,16 +415,6 @@
   width: 110px;
   min-width: 0;
 }
-.coach-root .cd-accent-hex-field .v8-field__label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-}
 .coach-root .cd-accent-hash {
   color: var(--cd-muted);
   font-size: 14px;
@@ -574,16 +564,6 @@
 .coach-root .cd-search > .v8-field {
   flex: 1 1 auto;
   min-width: 0;
-}
-.coach-root .cd-search .v8-field__label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
 }
 .coach-root .cd-library-toolbar {
   display: flex;

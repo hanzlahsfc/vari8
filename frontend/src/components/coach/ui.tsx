@@ -115,6 +115,7 @@ export function SearchBox({
       <Search size={17} aria-hidden="true" />
       <Vari8Input
         label={label ?? placeholder}
+        labelHidden
         type="search"
         className="cd-search-input"
         value={value}
