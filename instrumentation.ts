@@ -6,8 +6,12 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     try {
-      const { assertAuthSecretConfigured } = await import("./lib/auth/server");
+      const [{ assertAuthSecretConfigured }, { assertMailDeliveryConfigured }] =
+        await Promise.all([import("./lib/auth/server"), import("./lib/mail")]);
       assertAuthSecretConfigured();
+      // O22: production plus the emaillabs adapter plus a missing key refuses
+      // boot rather than serving reset and invitation forms that send nothing.
+      assertMailDeliveryConfigured();
     } catch (error) {
       // Next 16 catches instrumentation failures and keeps the process alive
       // serving 500s with the port open; in production a refused auth-env

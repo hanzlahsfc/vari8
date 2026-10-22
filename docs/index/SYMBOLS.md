@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 138 modules with exports, 1376 exported symbols.
+Counts: 139 modules with exports, 1385 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1223,11 +1223,23 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/mail/index.ts`
 
 - `export const DEV_MAILBOX_FILE_ENV = "DEV_MAILBOX_FILE"`
+- `export const EMAILLABS_API_URL_ENV = "EMAILLABS_API_URL"`
+- `export const EMAILLABS_APP_KEY_ENV = "EMAILLABS_APP_KEY"`
+- `export const EMAILLABS_SECRET_KEY_ENV = "EMAILLABS_SECRET_KEY"`
+- `export const EMAILLABS_SMTP_ACCOUNT_ENV = "EMAILLABS_SMTP_ACCOUNT"`
 - `export const MAIL_DELIVERY_ADAPTER_ENV = "MAIL_DELIVERY_ADAPTER"`
+- `export const MAIL_FROM_ENV = "MAIL_FROM"`
 - `export type MailAdapter = (message: MailMessage) => Promise<void>`
 - `export type MailMessage = { to: string; subject: string; text: string }`
+- `export function assertMailDeliveryConfigured(): void`
 - `export function mailDeliveryConfigured(): boolean`
 - `export async function sendMail(message: MailMessage): Promise<void>`
+
+## `lib/mail/invitation.ts`
+
+- `export type InvitationMailInput = { to: string; workspaceId: string; rawToken: string; intendedRole: "CLIENT" | "COACH" | "ASSISTANT_COACH"; }`
+- `export function invitationLink(input: Pick<InvitationMailInput, "workspaceId" | "rawToken">): string`
+- `export async function sendInvitationMail(input: InvitationMailInput): Promise<void>`
 
 ## `lib/mealplan/boundary.ts`
 
