@@ -118,6 +118,12 @@ const namesAllowlistPath = path.join(
 );
 const baselineFilePath = path.join(root, "scripts/ui-baseline.json");
 const baselineRaiseReason = process.env.V8_BASELINE_RAISE;
+const designRulesPath = path.join(root, "docs/DESIGN-RULES.md");
+const designRuleStatuses = new Set([
+  "live in check",
+  "live manual (reviewer runs)",
+  "planned",
+]);
 
 function filesUnder(directory, extensions) {
   if (!existsSync(directory)) return [];
@@ -636,6 +642,114 @@ export function scanPiiSource(
   return findings;
 }
 
+export function scanDesignRules(
+  source,
+  scriptNames,
+  filename = "docs/DESIGN-RULES.md",
+) {
+  const findings = [];
+  const push = (line, ruleId, property, value) =>
+    findings.push({
+      rule: "design-rules",
+      file: filename,
+      line,
+      property,
+      selector: ruleId,
+      value,
+    });
+  const lines = source.split("\n");
+  const headings = [];
+  lines.forEach((text, index) => {
+    const match = /^###\s+(R\d+)\./.exec(text);
+    if (match) headings.push({ id: match[1], line: index + 1 });
+  });
+  if (headings.length === 0) {
+    push(1, "DESIGN-RULES", "design-rules", "no rules found");
+    return findings;
+  }
+  const fieldValue = (text, label) => {
+    const backticked = /`([^`]+)`/.exec(text);
+    if (backticked) return backticked[1].trim();
+    return text.replace(new RegExp(`^.*?${label}:\\s*`), "").trim();
+  };
+  headings.forEach((heading, index) => {
+    const end =
+      index + 1 < headings.length ? headings[index + 1].line - 1 : lines.length;
+    const checkLines = [];
+    const statusLines = [];
+    lines.slice(heading.line, end).forEach((text, offset) => {
+      const lineNo = heading.line + offset + 1;
+      if (/^\s*-?\s*Check:/.test(text)) checkLines.push({ text, line: lineNo });
+      if (/^\s*-?\s*Status:/.test(text))
+        statusLines.push({ text, line: lineNo });
+    });
+    if (checkLines.length !== 1) {
+      push(
+        heading.line,
+        heading.id,
+        "check",
+        checkLines.length === 0
+          ? "no Check line"
+          : `${checkLines.length} Check lines`,
+      );
+    } else {
+      const named = fieldValue(checkLines[0].text, "Check")
+        .replace(/^npm\s+(?:run\s+)?/, "")
+        .split(/\s/, 1)[0];
+      if (!scriptNames.has(named)) {
+        push(
+          checkLines[0].line,
+          heading.id,
+          "check",
+          `unknown script ${named || "(none)"}`,
+        );
+      }
+    }
+    if (statusLines.length !== 1) {
+      push(
+        heading.line,
+        heading.id,
+        "status",
+        statusLines.length === 0
+          ? "no Status line"
+          : `${statusLines.length} Status lines`,
+      );
+    } else {
+      const status = fieldValue(statusLines[0].text, "Status");
+      if (!designRuleStatuses.has(status)) {
+        push(statusLines[0].line, heading.id, "status", `invalid ${status}`);
+      }
+    }
+  });
+  return findings;
+}
+
+function loadPackageScriptNames() {
+  const manifest = JSON.parse(
+    readFileSync(path.join(root, "package.json"), "utf8"),
+  );
+  return new Set(Object.keys(manifest.scripts ?? {}));
+}
+
+function checkDesignRules() {
+  if (!existsSync(designRulesPath)) {
+    return [
+      {
+        rule: "design-rules",
+        file: "docs/DESIGN-RULES.md",
+        line: 1,
+        property: "design-rules",
+        selector: "DESIGN-RULES.md",
+        value: "file missing",
+      },
+    ];
+  }
+  return scanDesignRules(
+    readFileSync(designRulesPath, "utf8"),
+    loadPackageScriptNames(),
+  );
+}
+
 export function reconFileFindings(stagedPathsList) {
   return stagedPathsList
     .filter((stagedPath) => reconFilePattern.test(stagedPath.split("/").pop()))
@@ -1142,6 +1256,56 @@ function runSelfTests() {
     1,
     "Additions to the exceptions file are detected.",
   );
+
+  const knownScripts = new Set(["ui:check", "ui:geometry", "test"]);
+  const ruleDoc = [
+    "### R1. Keep colours on tokens.",
+    "- Check: `ui:check`",
+    "- Status: `live in check`",
+    "### R2. Measure every control.",
+    "- Check: `ui:geometry`",
+    "- Status: `live manual (reviewer runs)`",
+  ].join("\n");
+  assert.equal(
+    scanDesignRules(ruleDoc, knownScripts).length,
+    0,
+    "A valid rule sheet passes.",
+  );
+  assert.deepEqual(
+    scanDesignRules(
+      ruleDoc.replace("`ui:geometry`", "`ui:geometr`"),
+      knownScripts,
+    ).map((finding) => finding.selector),
+    ["R2"],
+    "A Check naming a missing script fails and names the rule.",
+  );
+  assert.equal(
+    scanDesignRules("### R3. No check.\n- Status: `planned`\n", knownScripts)
+      .length,
+    1,
+    "A rule with no Check line is a violation.",
+  );
+  assert.equal(
+    scanDesignRules(
+      "### R3. Bad status.\n- Check: `test`\n- Status: `maybe`\n",
+      knownScripts,
+    ).length,
+    1,
+    "A Status outside the three values is a violation.",
+  );
+  assert.equal(
+    scanDesignRules(
+      "### R3. Two checks.\n- Check: `test`\n- Check: `ui:check`\n- Status: `planned`\n",
+      knownScripts,
+    ).length,
+    1,
+    "A rule with two Check lines is a violation.",
+  );
+  assert.equal(
+    scanDesignRules("no rules here\n", knownScripts).length,
+    1,
+    "A sheet with no rules fails.",
+  );
   console.log("UI system drift checks: self-tests passed.");
 }
 
@@ -1241,6 +1405,7 @@ if (process.argv.includes("--self-test")) {
 
   const binaryFindings = checkBinaryAssets(ancestry);
   const stagedFindings = reconFileFindings(stagedPaths());
+  const designRuleFindings = checkDesignRules();
 
   for (const finding of overAllowance) {
     console.error(
@@ -1257,6 +1422,11 @@ if (process.argv.includes("--self-test")) {
   }
   for (const finding of stagedFindings) {
     console.error(`${finding.file}: staged recon-named file`);
+  }
+  for (const finding of designRuleFindings) {
+    console.error(
+      `${finding.file}:${finding.line} ${finding.selector} { ${finding.property}: ${finding.value} }`,
+    );
   }
   for (const entry of slack) {
     if (baselineRaiseReason) continue;
@@ -1285,6 +1455,7 @@ if (process.argv.includes("--self-test")) {
     hardFindings.length +
     binaryFindings.length +
     stagedFindings.length +
+    designRuleFindings.length +
     ancestryFindings.length +
     (baselineRaiseReason ? 0 : slack.length) +
     (exceptions.length !== matched.length ? 1 : 0);

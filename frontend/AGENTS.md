@@ -12,7 +12,7 @@ Before browser work, run `npm run preview:up` and confirm `npm run preview:statu
 
 These instructions apply to Codex, Luna, Devin, and other agents whenever this context is loaded. Provider entrypoints should point here rather than carry their own copy of project rules. For Devin CLI, pass the generated handoff as the initial prompt as described in `PROJECT_CONTEXT.md`; do not assume `DEVIN.md` is automatically discovered.
 
-For shared UI roles, primitive APIs, reuse rules, and visual exceptions, read [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) before changing migrated components. Keep fixed surfaces achromatic, derive lighting from the custom accent, and verify shared changes in both modes with pale and dark accents. Verify open field popups, keyboard selection and narrow layouts as well as their closed triggers.
+For shared UI roles, primitive APIs, reuse rules, and visual exceptions, read [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) before changing migrated components. The enforced and planned rules live in [docs/DESIGN-RULES.md](docs/DESIGN-RULES.md); run `npm run ui:check` before committing UI work. Keep fixed surfaces achromatic, derive lighting from the custom accent, and verify shared changes in both modes with pale and dark accents. Verify open field popups, keyboard selection and narrow layouts as well as their closed triggers.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
