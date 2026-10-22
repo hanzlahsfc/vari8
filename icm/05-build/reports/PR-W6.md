@@ -15,20 +15,20 @@ check-in screens; the canvas keeps Lilly's structure.
 
 ### New REST surface (`app/api/v1/workspaces/[workspaceId]/checkins/`)
 
-| Route | Methods | Boundary function |
-|---|---|---|
-| `_result.ts` | - | closed code -> HTTP status, `sessionOf(viewer)`, `readBody` |
-| `schedule-rules` | GET, POST | `listCheckInScheduleRulesForClient`, `createCheckInScheduleRuleFromAction` |
-| `schedule-rules/[ruleId]/status` | POST | `setCheckInScheduleRuleStatusFromAction` |
-| `schedule-rules/[ruleId]/generate` | POST | `generateCheckInScheduleRuleInstancesFromAction` |
-| `schedule-versions` | GET | `listSchedulableVersionsForClient` (Q10: restore needs a version id) |
-| `instances` | GET, POST | `readStaffCheckInCalendar`, `scheduleCheckInInstanceFromAction` |
-| `instances/[instanceId]/cancel` | POST | `cancelCheckInInstanceFromAction` |
-| `submissions` | GET | `listStaffCheckInSubmissions` |
-| `submissions/[submissionId]` | GET | `readStaffCheckInSubmissionDetail` |
-| `submissions/[submissionId]/tracker-context` | GET | `readCheckInReviewTrackerContextFromAction` |
-| `submissions/[submissionId]/review` | POST | `markCheckInSubmissionReviewedFromAction` |
-| `submissions/[submissionId]/feedback` | POST | `sendCheckInFeedbackFromAction` |
+| Route                                        | Methods   | Boundary function                                                          |
+| -------------------------------------------- | --------- | -------------------------------------------------------------------------- |
+| `_result.ts`                                 | -         | closed code -> HTTP status, `sessionOf(viewer)`, `readBody`                |
+| `schedule-rules`                             | GET, POST | `listCheckInScheduleRulesForClient`, `createCheckInScheduleRuleFromAction` |
+| `schedule-rules/[ruleId]/status`             | POST      | `setCheckInScheduleRuleStatusFromAction`                                   |
+| `schedule-rules/[ruleId]/generate`           | POST      | `generateCheckInScheduleRuleInstancesFromAction`                           |
+| `schedule-versions`                          | GET       | `listSchedulableVersionsForClient` (Q10: restore needs a version id)       |
+| `instances`                                  | GET, POST | `readStaffCheckInCalendar`, `scheduleCheckInInstanceFromAction`            |
+| `instances/[instanceId]/cancel`              | POST      | `cancelCheckInInstanceFromAction`                                          |
+| `submissions`                                | GET       | `listStaffCheckInSubmissions`                                              |
+| `submissions/[submissionId]`                 | GET       | `readStaffCheckInSubmissionDetail`                                         |
+| `submissions/[submissionId]/tracker-context` | GET       | `readCheckInReviewTrackerContextFromAction`                                |
+| `submissions/[submissionId]/review`          | POST      | `markCheckInSubmissionReviewedFromAction`                                  |
+| `submissions/[submissionId]/feedback`        | POST      | `sendCheckInFeedbackFromAction`                                            |
 
 Every route is `defineApiV1Route` with a Zod params/query/body schema and one
 boundary call. `_result.ts` maps `denied`/`not_available` to 403,
@@ -62,6 +62,7 @@ does not move. Added on top:
   `weekdayIndex`, `viennaDate`, `recurringEventId`.
 
 Mapping decisions that are inferences, not measured columns:
+
 - origin: the staff instance DTO carries no origin column, so an instance is a
   recurring occurrence when its Europe/Vienna date matches the latest schedule
   segment in force, else Additional.
@@ -82,20 +83,20 @@ Mapping decisions that are inferences, not measured columns:
 
 Run from the worktree, `nice` on the heavy ones.
 
-| Command | Exit |
-|---|---|
-| `npm ci` (root) | 0 |
-| `npm ci` (frontend) | 0 |
-| `npm run index` | 0 |
-| `npm run index:check` | 0 |
-| `npx prettier --check .` | 0 |
-| `npm run typecheck` | 0 |
-| `npm run lint` | 0 (0 errors, 80 pre-existing warnings) |
-| `npm run test` | 0 (99 files, 1122 tests) |
-| `npm run test:integration` (app_w6_it) | 0 (63 files, 879 tests) |
-| `npm run build` (root, NODE_ENV unset) | 0 |
-| `npm --prefix frontend run build` | 0 |
-| `APP_ENV=test ENABLE_CHECK_INS=1 PARITY_PORT=3971 npm run parity` | 1 |
+| Command                                                           | Exit                                   |
+| ----------------------------------------------------------------- | -------------------------------------- |
+| `npm ci` (root)                                                   | 0                                      |
+| `npm ci` (frontend)                                               | 0                                      |
+| `npm run index`                                                   | 0                                      |
+| `npm run index:check`                                             | 0                                      |
+| `npx prettier --check .`                                          | 0                                      |
+| `npm run typecheck`                                               | 0                                      |
+| `npm run lint`                                                    | 0 (0 errors, 80 pre-existing warnings) |
+| `npm run test`                                                    | 0 (99 files, 1122 tests)               |
+| `npm run test:integration` (app_w6_it)                            | 0 (63 files, 879 tests)                |
+| `npm run build` (root, NODE_ENV unset)                            | 0                                      |
+| `npm --prefix frontend run build`                                 | 0                                      |
+| `APP_ENV=test ENABLE_CHECK_INS=1 PARITY_PORT=3971 npm run parity` | 1                                      |
 
 Integration runs against a disposable `app_w6_it`, not the lane `app_w6`: every
 existing integration file starts with a `TRUNCATE`, so running the suite on the
@@ -115,11 +116,11 @@ than this Mac produces today.
 
 The check-in screens, measured in the same run:
 
-| Screen | Changed px @1440 | Geometry @1440 |
-|---|---|---|
-| `s03-checkins-board` | 231082 | 0 added, 0 removed, 64 moved, 2 text |
-| `s03-add-extra` | 956757 | 0 added, 0 removed, 67 moved, 2 text |
-| `s03-checkin-review` | 985920 | 63 added, 79 removed, 57 moved, 4 text; page 2159 -> 1922 |
+| Screen               | Changed px @1440 | Geometry @1440                                            |
+| -------------------- | ---------------- | --------------------------------------------------------- |
+| `s03-checkins-board` | 231082           | 0 added, 0 removed, 64 moved, 2 text                      |
+| `s03-add-extra`      | 956757           | 0 added, 0 removed, 67 moved, 2 text                      |
+| `s03-checkin-review` | 985920           | 63 added, 79 removed, 57 moved, 4 text; page 2159 -> 1922 |
 
 The board and the add-extra dialog show the same pure translation as untouched
 screens, so those two carry no content delta of their own. The review screen is a
@@ -165,14 +166,14 @@ instances and two parallel `generate` calls never double-create.
 
 Bites run and observed red:
 
-| Mutation | Red test | Observed |
-|---|---|---|
-| `WEEKDAY_INDEX.MONDAY` 0 -> 1 | projects a Mon+Wed rule | `expected [1] to deeply equal [0]` |
-| drop `status !== "ACTIVE"` guard | drops paused and ended rules | fold returned the paused weekday |
-| `STATUS.denied` 403 -> 200 | closed-code mapping | `expected 200 to be 403` |
-| POST capability `plan.write` -> `own.write` | CLIENT denied with closed 403 | body `not_available`, not `forbidden` |
-| GET calendar returns `{items: []}` | instance round-trip | `expected undefined to be '2026-10-26T09:00:00.000Z'` |
-| create route also calls generate (D30) | create generates zero | `expected 8 to be +0` |
+| Mutation                                    | Red test                      | Observed                                              |
+| ------------------------------------------- | ----------------------------- | ----------------------------------------------------- |
+| `WEEKDAY_INDEX.MONDAY` 0 -> 1               | projects a Mon+Wed rule       | `expected [1] to deeply equal [0]`                    |
+| drop `status !== "ACTIVE"` guard            | drops paused and ended rules  | fold returned the paused weekday                      |
+| `STATUS.denied` 403 -> 200                  | closed-code mapping           | `expected 200 to be 403`                              |
+| POST capability `plan.write` -> `own.write` | CLIENT denied with closed 403 | body `not_available`, not `forbidden`                 |
+| GET calendar returns `{items: []}`          | instance round-trip           | `expected undefined to be '2026-10-26T09:00:00.000Z'` |
+| create route also calls generate (D30)      | create generates zero         | `expected 8 to be +0`                                 |
 
 All six mutations were reverted and the suites re-run green.
 
