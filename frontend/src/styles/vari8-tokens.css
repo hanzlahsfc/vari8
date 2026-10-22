@@ -1,0 +1,183 @@
+@font-face {
+  font-family: "VARI8 Geist";
+  src: url("/fonts/InfinityGeist.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+.v8-theme {
+  --v8-font-family-ui: "VARI8 Geist", system-ui, sans-serif;
+  --v8-material-app:
+    radial-gradient(
+      480px 180px at 0% 0%,
+      color-mix(in srgb, var(--v8-accent-glow) 55%, transparent),
+      transparent 78%
+    ),
+    var(--v8-canvas);
+  --v8-font-size-xs: 0.75rem;
+  --v8-font-size-sm: 0.875rem;
+  --v8-font-size-md: 0.9375rem;
+  --v8-font-size-lg: 1.25rem;
+  --v8-font-size-xl: 1.75rem;
+  --v8-font-size-page-title: 1.75rem;
+  --v8-font-size-section-title: 1.25rem;
+  --v8-font-size-subsection-title: 1rem;
+  --v8-font-size-body: 0.9375rem;
+  --v8-font-size-body-mobile: 1rem;
+  --v8-font-size-control: 0.875rem;
+  --v8-font-size-supporting: 0.75rem;
+  --v8-font-size-card-heading: 1rem;
+  --v8-font-size-label: 0.875rem;
+  --v8-font-size-table: 0.875rem;
+  --v8-line-height-card-heading: 1.375rem;
+  --v8-line-height-label: 1.25rem;
+  --v8-line-height-table: 1.25rem;
+  --v8-font-size-metric: 2rem;
+  --v8-font-size-metric-large: 2.5rem;
+  --v8-line-height-page-title: 2.125rem;
+  --v8-line-height-section-title: 1.75rem;
+  --v8-line-height-subsection-title: 1.5rem;
+  --v8-line-height-body: 1.375rem;
+  --v8-line-height-body-mobile: 1.5rem;
+  --v8-line-height-control: 1.25rem;
+  --v8-line-height-supporting: 1.125rem;
+  --v8-line-height-metric: 2.25rem;
+  --v8-line-height-metric-large: 2.75rem;
+  --v8-line-height-tight: 1.2;
+  --v8-line-height-heading: 1.35;
+  --v8-line-height-compact: 1.4;
+  --v8-font-weight-regular: 400;
+  --v8-font-weight-medium: 500;
+  --v8-font-weight-semibold: 600;
+  --v8-font-weight-page-title: 550;
+  --v8-font-weight-section-title: 550;
+  --v8-font-weight-metric: 450;
+  --v8-letter-spacing-tight: -0.02em;
+  --v8-letter-spacing-ui: -0.01em;
+
+  --v8-space-1: 0.25rem;
+  --v8-space-2: 0.5rem;
+  --v8-space-3: 0.75rem;
+  --v8-space-4: 1rem;
+  --v8-space-5: 1.25rem;
+  --v8-space-6: 1.5rem;
+  --v8-space-8: 2rem;
+  --v8-space-10: 2.5rem;
+  --v8-space-12: 3rem;
+  --v8-space-0: 0;
+  --v8-space-16: 4rem;
+  --v8-page-inset-sm: 1rem;
+  --v8-page-inset-md: 1.5rem;
+  --v8-page-inset-lg: 2rem;
+  --v8-section-gap: 1.5rem;
+  --v8-card-gap: 1rem;
+  --v8-field-gap: 0.75rem;
+  --v8-data-row-height: 3rem;
+  --v8-data-row-height-compact: 2.5rem;
+
+  --v8-radius-dense: 0.5rem;
+  --v8-radius-compact: 0.5rem;
+  --v8-radius-field: 0.75rem;
+  --v8-radius-control: 0.75rem;
+  --v8-radius-panel: 1rem;
+  --v8-radius-card: 1rem;
+  --v8-radius-overlay: 1.5rem;
+  --v8-radius-pill: 999px;
+  --v8-border-width-hairline: 1px;
+  --v8-border-width-control: 1px;
+  --v8-border-width-emphasis: 2px;
+
+  --v8-size-touch-min: 2.75rem;
+  --v8-control-height-sm: 2rem;
+  --v8-control-height-md: 2.5rem;
+  --v8-control-height-lg: 3rem;
+  --v8-modal-width-compact: 30rem;
+  --v8-modal-width-standard: 40rem;
+  --v8-modal-width-wide: 60rem;
+  --v8-icon-button-size-sm: 2rem;
+  --v8-icon-button-size-md: 2.5rem;
+  --v8-icon-button-size-lg: 3rem;
+  --v8-control-padding-x-sm: 0.625rem;
+  --v8-control-padding-x-md: 0.875rem;
+  --v8-control-padding-x-lg: 1rem;
+  --v8-icon-size-sm: 0.875rem;
+  --v8-icon-size-md: 1rem;
+  --v8-icon-size-lg: 1.25rem;
+  --v8-card-padding-sm: 1rem;
+  --v8-card-padding-md: 1.25rem;
+  --v8-card-padding-lg: 1.5rem;
+
+  --v8-elevation-1: 0 1px 2px rgb(0 0 0 / 8%);
+  --v8-elevation-2: 0 8px 24px rgb(0 0 0 / 12%);
+  --v8-elevation-3: 0 20px 48px rgb(0 0 0 / 18%);
+  --v8-elevation-card: 0 1px 2px rgb(0 0 0 / 5%);
+  --v8-elevation-control:
+    inset 0 1px 0 rgb(255 255 255 / 70%), 0 1px 2px rgb(0 0 0 / 8%);
+  --v8-chart-area-opacity: 0.2;
+  --v8-z-base: 0;
+  --v8-z-raised: 10;
+  --v8-z-popover: 100;
+  --v8-z-modal: 1000;
+  --v8-z-tooltip: 1100;
+
+  --v8-motion-fast: 120ms;
+  --v8-motion-normal: 180ms;
+  --v8-motion-slow: 240ms;
+  --v8-motion-reduced: 80ms;
+  --v8-motion-ease-standard: cubic-bezier(0.23, 1, 0.32, 1);
+  --v8-motion-ease-enter: cubic-bezier(0.32, 0.72, 0, 1);
+  --v8-motion-ease-exit: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.v8-theme[data-mode="light"] {
+  --v8-material-highlight: rgb(255 255 255 / 72%);
+  --v8-material-shade: rgb(0 0 0 / 7%);
+  --v8-material-edge-highlight: rgb(255 255 255 / 84%);
+  --v8-material-neutral-gloss: rgb(255 255 255 / 38%);
+  --v8-elevation-1: 0 1px 2px rgb(0 0 0 / 8%);
+  --v8-elevation-2: 0 8px 24px rgb(0 0 0 / 12%);
+  --v8-elevation-3: 0 20px 48px rgb(0 0 0 / 18%);
+  --v8-elevation-card: 0 1px 2px rgb(0 0 0 / 5%);
+  --v8-elevation-control:
+    inset 0 1px 0 rgb(255 255 255 / 70%), 0 1px 2px rgb(0 0 0 / 8%);
+  --v8-elevation-overlay: 0 20px 48px rgb(0 0 0 / 18%);
+}
+
+.v8-theme[data-mode="dark"] {
+  --v8-material-highlight: rgb(255 255 255 / 8%);
+  --v8-material-shade: rgb(0 0 0 / 28%);
+  --v8-material-edge-highlight: rgb(255 255 255 / 9%);
+  --v8-material-neutral-gloss: rgb(255 255 255 / 3%);
+  --v8-elevation-1: 0 1px 2px rgb(0 0 0 / 20%);
+  --v8-elevation-2: 0 8px 24px rgb(0 0 0 / 32%);
+  --v8-elevation-3: 0 20px 48px rgb(0 0 0 / 48%);
+  --v8-elevation-card: 0 1px 2px rgb(0 0 0 / 18%);
+  --v8-elevation-control:
+    inset 0 1px 0 rgb(255 255 255 / 3%), 0 1px 2px rgb(0 0 0 / 20%);
+  --v8-elevation-overlay: 0 20px 48px rgb(0 0 0 / 48%);
+}
+
+.v8-scope {
+  min-height: 100%;
+  background: var(--v8-canvas);
+  color: var(--v8-text);
+  font-family: var(--v8-font-family-ui);
+  line-height: var(--v8-line-height-body);
+}
+
+.v8-scope[data-mode="light"] {
+  color-scheme: light;
+}
+
+.v8-scope[data-mode="dark"] {
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v8-scope {
+    --v8-motion-fast: 1ms;
+    --v8-motion-normal: 1ms;
+    --v8-motion-slow: 1ms;
+  }
+}

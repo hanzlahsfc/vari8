@@ -1,13 +1,25 @@
 "use client";
-import { ArrowLeft, Check, ChevronDown, Search, X } from "lucide-react";
+import { ArrowLeft, Check, Search } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import {
   type ButtonHTMLAttributes,
   type ReactNode,
   useEffect,
-  useId,
-  useRef,
+  useState,
 } from "react";
+import {
+  type ButtonVariant,
+  type ControlSize,
+  Button as Vari8Button,
+  Card as Vari8Card,
+  IconButton as Vari8IconButton,
+  Input as Vari8Input,
+  Modal as Vari8Modal,
+  Select as Vari8Select,
+  Toggle as Vari8Toggle,
+} from "../vari8/components";
+import { DatePicker, TimePicker } from "../vari8/inputs";
+import { PageHeader } from "../vari8/layouts";
 import { CoachDashboardPreview } from "./builder/coach-dashboard";
 import {
   ALL_PARAMETERS,
@@ -23,33 +35,47 @@ export function Button({
   children,
   className = "",
   primary = false,
+  variant,
+  size = "md",
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { primary?: boolean }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  primary?: boolean;
+  variant?: ButtonVariant;
+  size?: ControlSize;
+}) {
   return (
-    <button
-      type="button"
+    <Vari8Button
+      variant={variant ?? (primary ? "primary" : "secondary")}
+      size={size}
       className={`cd-button ${primary ? "cd-primary" : ""} ${className}`}
       {...props}
     >
       {children}
-    </button>
+    </Vari8Button>
   );
 }
 export function IconButton({
   label,
   children,
+  className,
+  size = "md",
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  label: string;
+  size?: ControlSize;
+}) {
   return (
-    <button
+    <Vari8IconButton
+      label={label}
+      size={size}
       type="button"
-      className="cd-icon-button"
+      className={["cd-icon-button", className].filter(Boolean).join(" ")}
       title={label}
       aria-label={label}
       {...props}
     >
       {children}
-    </button>
+    </Vari8IconButton>
   );
 }
 export function Avatar({
@@ -85,18 +111,74 @@ export function SearchBox({
   label?: string;
 }) {
   return (
-    <label className="cd-search">
-      <Search size={17} />
-      <input
+    <div className="cd-search">
+      <Search size={17} aria-hidden="true" />
+      <Vari8Input
+        label={label ?? placeholder}
         type="search"
-        aria-label={label ?? placeholder}
+        className="cd-search-input"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(event) => onChange(event.currentTarget.value)}
         placeholder={placeholder}
       />
-    </label>
+    </div>
   );
 }
+
+type DateFieldProps = {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  min?: string;
+};
+
+export function DateField({ label, value, onChange, min }: DateFieldProps) {
+  return (
+    <DatePicker
+      label={label}
+      value={value}
+      onValueChange={(next) => {
+        if (!min || !next || next >= min) onChange(next);
+      }}
+    />
+  );
+}
+
+export function DateTimeField({ label, value, onChange, min }: DateFieldProps) {
+  const [date, setDate] = useState(value.slice(0, 10));
+  const [time, setTime] = useState(
+    value.length >= 16 ? value.slice(11, 16) : "",
+  );
+
+  useEffect(() => {
+    setDate(value.slice(0, 10));
+    setTime(value.length >= 16 ? value.slice(11, 16) : "");
+  }, [value]);
+
+  const update = (nextDate: string, nextTime: string) => {
+    setDate(nextDate);
+    setTime(nextTime);
+    onChange(nextDate && nextTime ? `${nextDate}T${nextTime}` : "");
+  };
+
+  return (
+    <div className="cd-date-time-fields">
+      <DatePicker
+        label={`${label} date`}
+        value={date}
+        onValueChange={(nextDate) => {
+          if (!min || !nextDate || nextDate >= min) update(nextDate, time);
+        }}
+      />
+      <TimePicker
+        label={`${label} time`}
+        value={time}
+        onValueChange={(nextTime) => update(date, nextTime)}
+      />
+    </div>
+  );
+}
+
 export function Select({
   label,
   value,
@@ -111,27 +193,15 @@ export function Select({
   disabled?: boolean;
 }) {
   return (
-    <label className="cd-field">
-      <span>{label}</span>
-      <span className="cd-select-wrap">
-        <select
-          aria-label={label}
-          value={value}
-          disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
-        >
-          {options.map((o) => (
-            <option
-              key={typeof o === "string" ? o : o.value}
-              value={typeof o === "string" ? o : o.value}
-            >
-              {typeof o === "string" ? o : o.label}
-            </option>
-          ))}
-        </select>
-        <ChevronDown size={14} />
-      </span>
-    </label>
+    <Vari8Select
+      label={label}
+      value={value}
+      disabled={disabled}
+      onValueChange={onChange}
+      options={options.map((option) =>
+        typeof option === "string" ? { value: option, label: option } : option,
+      )}
+    />
   );
 }
 export function Toggle({
@@ -148,22 +218,14 @@ export function Toggle({
   disabled?: boolean;
 }) {
   return (
-    <label className="cd-toggle-row">
-      <span>
-        <strong>{label}</strong>
-        {detail && <small>{detail}</small>}
-      </span>
-      <input
-        type="checkbox"
-        role="switch"
-        aria-checked={checked}
-        aria-label={label}
-        checked={checked}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-      <span className="cd-switch" aria-hidden="true" />
-    </label>
+    <Vari8Toggle
+      className="cd-toggle-row"
+      label={label}
+      description={detail}
+      checked={checked}
+      disabled={disabled}
+      onCheckedChange={onChange}
+    />
   );
 }
 export function Empty({
@@ -197,51 +259,17 @@ export function Dialog({
   wide?: boolean;
   full?: boolean;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const titleId = useId();
-  const close = useRef(onClose);
-  const reduced = useReducedMotion();
-  close.current = onClose;
-  useEffect(() => {
-    const d = ref.current;
-    const previous = document.activeElement as HTMLElement | null;
-    d?.showModal();
-    return () => {
-      d?.close();
-      previous?.focus({ preventScroll: true });
-    };
-  }, []);
   return (
-    <motion.dialog
-      className={`cd-dialog ${wide ? "cd-dialog-wide" : ""} ${full ? "cd-dialog-full" : ""}`}
-      ref={ref}
-      aria-labelledby={titleId}
-      initial={
-        reduced ? { opacity: 0 } : { opacity: 0, transform: "scale(.97)" }
-      }
-      animate={
-        reduced
-          ? { opacity: 1 }
-          : {
-              opacity: 1,
-              transform: "scale(1)",
-              transitionEnd: { transform: "none" },
-            }
-      }
-      transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
-      onCancel={(e) => {
-        e.preventDefault();
-        close.current();
+    <Vari8Modal
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
       }}
+      title={title}
+      size={full ? "full" : wide ? "wide" : "standard"}
     >
-      <header>
-        <h2 id={titleId}>{title}</h2>
-        <IconButton label="Close dialog" onClick={onClose}>
-          <X size={20} />
-        </IconButton>
-      </header>
-      <div className="cd-dialog-content">{children}</div>
-    </motion.dialog>
+      {children}
+    </Vari8Modal>
   );
 }
 export function PageTitle({
@@ -256,19 +284,22 @@ export function PageTitle({
   back?: () => void;
 }) {
   return (
-    <div className="cd-page-heading">
-      <div>
-        {back && (
-          <Button className="cd-back" onClick={back}>
-            <ArrowLeft size={15} />
-            Back
-          </Button>
-        )}
-        <h1>{title}</h1>
-        {description && <p>{description}</p>}
-      </div>
-      <div className="cd-actions">{actions}</div>
-    </div>
+    <PageHeader
+      className="cd-page-heading"
+      title={title}
+      description={description}
+      actions={
+        <>
+          {back && (
+            <Button variant="ghost" className="cd-back" onClick={back}>
+              <ArrowLeft size={15} />
+              Back
+            </Button>
+          )}
+          {actions}
+        </>
+      }
+    />
   );
 }
 export function Surface({
@@ -279,9 +310,9 @@ export function Surface({
   className?: string;
 }) {
   return (
-    <div className={`cd-shell ${className}`}>
-      <div className="cd-core">{children}</div>
-    </div>
+    <Vari8Card className={`cd-core ${className}`} size="md">
+      {children}
+    </Vari8Card>
   );
 }
 export function Transition({ children }: { children: ReactNode }) {

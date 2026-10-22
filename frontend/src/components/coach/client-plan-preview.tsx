@@ -5,6 +5,7 @@ import {
   type Food,
   type MealPlanVariant,
 } from "@/components/ethereal/mealplan/model";
+import { PageHeader } from "@/components/vari8/layouts";
 import "./client-plan-preview.css";
 
 const quantityFormat = new Intl.NumberFormat("en", {
@@ -67,12 +68,12 @@ export function ClientPlanPreview({
 }) {
   return (
     <div className="mp-client-plan">
-      <header className="mp-client-plan-heading">
-        <div>
-          {clientName ? <p>Prepared for {clientName}</p> : null}
-          <h2>{variant.label || "Meal plan"}</h2>
-        </div>
-      </header>
+      <PageHeader
+        className="mp-client-plan-heading"
+        width="wide"
+        title={variant.label || "Meal plan"}
+        description={clientName ? `Prepared for ${clientName}` : undefined}
+      />
 
       {variant.meals.length ? (
         <div className="mp-client-meals">

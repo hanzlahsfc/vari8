@@ -3,6 +3,8 @@ import type {
   MealTargets,
   VariantSchedule,
 } from "../../ethereal/mealplan/model";
+import type { SupplementPlan } from "../supplements/model";
+import type { ActivityTargetVersion } from "../targets/model";
 export type PlanVersion<T> = {
   id: string;
   content: T;
@@ -55,6 +57,9 @@ export type TrainingSession = {
   name: string;
   exercises: TrainingExercise[];
 };
+export type TrainingRotation =
+  | { mode: "weekly"; weekdays: Record<string, string[]> }
+  | { mode: "cycle"; sessionIds: (string | null)[] };
 export type TrainingPlan = {
   id: string;
   clientId: string;
@@ -63,6 +68,7 @@ export type TrainingPlan = {
   program: "Evergreen" | "Week-based";
   weeks: number;
   overrides: Record<string, TrainingSession[]>;
+  rotation?: TrainingRotation;
 };
 export type ClientGoal = {
   id: string;
@@ -78,12 +84,15 @@ export type ClientPlans = {
   };
   training: PlanLifecycle<TrainingPlan>;
   goals: ClientGoal[];
+  activityTargets?: ActivityTargetVersion[];
+  supplements?: SupplementPlan;
 };
 export type ModuleKind = "mealPlan" | "iifym" | "training";
 export const emptyClientPlans = (): ClientPlans => ({
   nutrition: { mealPlan: { history: [] }, iifym: { history: [] } },
   training: { history: [] },
   goals: [],
+  activityTargets: [],
 });
 export function resolveTrainingWeek(
   plan: TrainingPlan,

@@ -11,29 +11,29 @@
 }
 .coach-root .cd-notes-columns {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 24px;
 }
-.coach-root .cd-notes-heading,
+.coach-root .cd-notes-tabs {
+  grid-template-columns: minmax(0, 1fr);
+}
+.coach-root .cd-notes-tabs .v8-tabs__list {
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 16px;
+}
 .coach-root .cd-notes-item-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
-.coach-root .cd-notes-heading {
-  margin-bottom: 20px;
-}
-.coach-root .cd-notes-heading h2 {
-  margin: 0;
-}
-.coach-root .cd-notes-heading > span {
+.coach-root .cd-notes-section .v8-section__actions {
   color: var(--cd-muted);
   font-size: 13px;
 }
 .coach-root .cd-notes-status {
-  width: fit-content;
   margin-bottom: 12px;
 }
 .coach-root .cd-notes-list {
@@ -70,26 +70,37 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.coach-root .cd-notes-todo > label {
+.coach-root .cd-notes-todo-checkbox {
   display: flex;
   align-items: flex-start;
   gap: 12px;
   overflow-wrap: anywhere;
 }
-.coach-root .cd-notes-todo input {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  margin-top: 3px;
-  accent-color: var(--cd-action-bg);
-}
-.coach-root .cd-notes-todo .is-complete {
+.coach-root .cd-notes-todo-checkbox.is-complete {
   text-decoration: line-through;
-  color: var(--cd-muted);
 }
 .coach-root .cd-notes-todo .cd-notes-item-footer {
   padding-left: 30px;
   margin-top: 8px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .cd-notes-todo .cd-notes-item-footer > span:not(.cd-todo-priority) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.coach-root .cd-todo-priority {
+  text-transform: capitalize;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--cd-wash);
+}
+.coach-root .cd-todo-priority.is-high {
+  color: var(--cd-accent-text);
+  background: color-mix(in srgb, var(--cd-accent) 14%, var(--cd-surface));
 }
 .coach-root .cd-notes-form {
   display: grid;

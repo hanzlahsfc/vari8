@@ -8,11 +8,22 @@ import {
   isValidDashboardDraft,
 } from "./builder/schema";
 import { isClientPlans, plansOwnedBy, planTargets } from "./plans/domain";
+import {
+  type ClientPhasePlan,
+  isClientPhasePlan,
+} from "./plans/phase-planning";
+import { adoptAmaraTrainingExample } from "./plans/training/amara-example";
 import type {
   TrainingOptionKey,
   TrainingOptions,
 } from "./plans/training-options";
 import type { ClientPlans, ExerciseDefinition } from "./plans/types";
+import {
+  type ActivityMetric,
+  formatActivityTarget,
+  localToday,
+  resolveActivityTarget,
+} from "./targets/model";
 
 export const STORAGE_KEY = "coach-desktop-mockup-v1";
 export const TODAY = "2026-10-13";
@@ -599,6 +610,8 @@ export type Variant = {
   roadmap: { source: string; calculation: string; comparison: boolean }[];
   roadmapPhases?: boolean;
   phaseOptions?: string[];
+  /** Coach-selected activity planning columns for the weekly timeline. */
+  roadmapActivityTargets?: ActivityMetric[];
   training: {
     options?: TrainingOptions;
     defaults?: Record<TrainingOptionKey, string>;
@@ -643,6 +656,7 @@ export type Plan = {
 };
 export type CoachClient = WorkspaceClient & {
   assignment?: Assignment;
+  phasePlan?: ClientPhasePlan;
   schedules: Schedule[];
   plan: Plan;
   plans?: ClientPlans;
@@ -713,9 +727,19 @@ export type ReviewDraft = {
 };
 export type CoachState = {
   version: 1;
+  demoSeeds?: { amaraTraining?: 1 };
   exerciseLibrary?: ExerciseDefinition[];
   coachNotes?: { id: string; text: string }[];
-  coachTodos?: { id: string; title: string; complete: boolean }[];
+  coachTodos?: {
+    id: string;
+    title: string;
+    complete: boolean;
+    deadline?: string;
+    reminderAt?: string;
+    notes?: string;
+    priority?: "low" | "normal" | "high";
+    clientId?: string;
+  }[];
   templates: Template[];
   clients: CoachClient[];
   extras: Extra[];
@@ -788,10 +812,16 @@ export function sampleValue(field: FieldConfig, client?: CoachClient) {
   if (field.unit === "12-hour") return "7:15 am";
   return `${v}${["1–10", "1–5"].includes(field.unit) ? ` / ${field.unit.slice(2)}` : ` ${field.unit === "24-hour" ? "" : field.unit}`}`;
 }
+const ACTIVITY_SUMMARY_METRICS: Record<string, ActivityMetric> = {
+  steps: "steps",
+  "cardio-duration": "cardio",
+  "cardio-sessions": "cardio",
+};
 export function summaryPreview(
   field: FieldConfig,
   calculation: string,
   client?: CoachClient,
+  options?: { asOf?: string },
 ) {
   const parameter = getParameter(field.id);
   if (parameter?.inputType || typeof parameter?.sample !== "number") {
@@ -822,20 +852,30 @@ export function summaryPreview(
           );
   const mean = values.reduce((a, b) => a + b, 0) / (values.length || 1);
   const nutrition = client ? planTargets(client, TODAY) : undefined;
-  const target = client
-    ? field.id === "calories" || field.id === "protein"
-      ? nutrition?.[field.id]
-      : client.plans?.goals.filter((goal) => goal.fieldId === field.id).at(-1)
-          ?.value
-    : (
-        {
-          weight: 64,
-          steps: 8000,
-          calories: 2200,
-          protein: 140,
-          sleep: 8,
-        } as Record<string, number>
-      )[field.id];
+  const activityMetric = ACTIVITY_SUMMARY_METRICS[field.id];
+  const activityVersions =
+    client && activityMetric
+      ? (client.plans?.activityTargets ?? []).filter(
+          (version) => version.metric === activityMetric,
+        )
+      : [];
+  const structured = activityVersions.length > 0;
+  const target = structured
+    ? undefined
+    : client
+      ? field.id === "calories" || field.id === "protein"
+        ? nutrition?.[field.id]
+        : client.plans?.goals.filter((goal) => goal.fieldId === field.id).at(-1)
+            ?.value
+      : (
+          {
+            weight: 64,
+            steps: 8000,
+            calories: 2200,
+            protein: 140,
+            sleep: 8,
+          } as Record<string, number>
+        )[field.id];
   const convert = (value: number) =>
     field.unit === "lb"
       ? value * 2.20462
@@ -852,14 +892,27 @@ export function summaryPreview(
     `${Number(convert(value).toFixed(["steps", "calories", "protein"].includes(field.id) ? 0 : 1))} ${field.unit}`;
   const value = !values.length
     ? "Not recorded"
-    : calculation === "Adherence"
-      ? `${Math.round((values.filter((v) => target !== undefined && v >= target).length / (values.length || 1)) * 100)}%`
-      : calculation === "Trend"
-        ? format((values.at(-1) ?? 0) - (values[0] ?? 0))
-        : format(mean);
+    : calculation === "Adherence" && structured
+      ? "—"
+      : calculation === "Adherence"
+        ? `${Math.round((values.filter((v) => target !== undefined && v >= target).length / (values.length || 1)) * 100)}%`
+        : calculation === "Trend"
+          ? format((values.at(-1) ?? 0) - (values[0] ?? 0))
+          : format(mean);
   return {
     value,
-    target: target === undefined ? "No target defined" : format(target),
+    target:
+      structured && client && activityMetric
+        ? formatActivityTarget(
+            resolveActivityTarget({
+              versions: client.plans?.activityTargets ?? [],
+              metric: activityMetric,
+              date: options?.asOf ?? localToday(),
+            }),
+          )
+        : target === undefined
+          ? "No target defined"
+          : format(target),
     count: values.length,
   };
 }
@@ -1366,7 +1419,7 @@ export function seedState(): CoachState {
       attachments: [],
     },
   ]);
-  return {
+  const seeded: CoachState = {
     version: 1,
     templates: [strength, performance, simple],
     clients,
@@ -1384,6 +1437,7 @@ export function seedState(): CoachState {
       priorityNotifications: true,
     },
   };
+  return adoptAmaraTrainingExample(seeded);
 }
 
 // Validate the complete nested envelope before any UI uses persisted content.
@@ -1472,6 +1526,7 @@ const variantGuard = obj({
   ),
   roadmapPhases: opt(bool),
   phaseOptions: opt(arr(str)),
+  roadmapActivityTargets: opt(arr(one(["steps", "cardio"]))),
   training: obj({
     options: opt(
       obj({
@@ -1569,7 +1624,17 @@ const clientGuard = obj({
   archived: bool,
   internalNotes: arr(obj({ id: str, text: str })),
   generalNotes: arr(obj({ id: str, text: str })),
-  coachTasks: arr(obj({ id: str, title: str, complete: bool })),
+  coachTasks: arr(
+    obj({
+      id: str,
+      title: str,
+      complete: bool,
+      deadline: opt(str),
+      reminderAt: opt(str),
+      notes: opt(str),
+      priority: opt(one(["low", "normal", "high"])),
+    }),
+  ),
   clientTasks: arr(
     obj({
       id: str,
@@ -1613,11 +1678,13 @@ const clientGuard = obj({
   assignment: opt(
     obj({ templateId: str, variantId: str, snapshot: templateGuard }),
   ),
+  phasePlan: opt(isClientPhasePlan),
 });
 export function isCoachState(v: unknown): v is CoachState {
   return (
     obj({
       version: one([1]),
+      demoSeeds: opt(obj({ amaraTraining: opt(one([1])) })),
       exerciseLibrary: opt(
         arr(
           obj({
@@ -1630,7 +1697,20 @@ export function isCoachState(v: unknown): v is CoachState {
         ),
       ),
       coachNotes: opt(arr(obj({ id: str, text: str }))),
-      coachTodos: opt(arr(obj({ id: str, title: str, complete: bool }))),
+      coachTodos: opt(
+        arr(
+          obj({
+            id: str,
+            title: str,
+            complete: bool,
+            deadline: opt(str),
+            reminderAt: opt(str),
+            notes: opt(str),
+            priority: opt(one(["low", "normal", "high"])),
+            clientId: opt(str),
+          }),
+        ),
+      ),
       templates: arr(templateGuard),
       clients: arr(clientGuard),
       extras: arr(

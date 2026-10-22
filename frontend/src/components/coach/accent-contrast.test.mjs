@@ -12,13 +12,13 @@ const { accentControlColors, contrastRatio } = await import(
   `data:text/javascript;base64,${Buffer.from(executable).toString("base64")}`
 );
 
-test("the screenshot pink prefers white with a minimal accessible action fill", () => {
+test("the screenshot pink keeps its fill with a dark label", () => {
   assert.ok(contrastRatio("#D93A7F", "#FFFFFF") < 4.5);
   const colors = accentControlColors("#D93A7F");
   assert.deepEqual(colors, {
-    background: "#D3397C",
-    hoverBackground: "#C63675",
-    foreground: "#FFFFFF",
+    background: "#D93A7F",
+    hoverBackground: "#DB4284",
+    foreground: "#000000",
   });
   assert.ok(contrastRatio(colors.background, colors.foreground) >= 4.5);
   assert.ok(contrastRatio(colors.hoverBackground, colors.foreground) >= 4.5);
@@ -38,14 +38,16 @@ test("pastels and bright accents retain their exact fill and dark labels", () =>
   }
 });
 
-test("dark accents use white without changing a fill that already passes", () => {
+test("dark accents keep passing fills; mid-gray prefers a dark label", () => {
   for (const accent of ["#000000", "#123ABC", "#333333"]) {
     const colors = accentControlColors(accent);
     assert.equal(colors.background, accent);
     assert.equal(colors.foreground, "#FFFFFF");
   }
-  assert.equal(accentControlColors("#777777").background, "#767676");
-  assert.equal(accentControlColors("#777777").foreground, "#FFFFFF");
+  const gray = accentControlColors("#777777");
+  assert.equal(gray.background, "#777777");
+  assert.equal(gray.foreground, "#000000");
+  assert.ok(contrastRatio(gray.background, gray.foreground) >= 4.5);
 });
 
 test("white preference never requires excessive darkening or lowers text contrast", () => {

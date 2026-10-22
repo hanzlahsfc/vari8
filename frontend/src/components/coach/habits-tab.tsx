@@ -3,6 +3,7 @@
 import { Check } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useMemo, useState } from "react";
+import { Section } from "@/components/vari8/layouts";
 import { type CoachClient, formatDate, TODAY } from "./model";
 import { Empty } from "./ui";
 import "./habits-tab.css";
@@ -53,25 +54,23 @@ export function HabitsTab({
     );
 
   return (
-    <section
+    <Section
       className="cd-preview-section cd-habits"
-      aria-label="Habit tracker"
-    >
-      <header className="cd-habits-head">
-        <div>
-          <h2>Habits</h2>
-          <p className="cd-muted">
-            <time dateTime={TODAY}>
-              {formatDate(TODAY, {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-              })}
-            </time>
-            {" · "}
-            {doneCount} of {client.habits.length} checked today
-          </p>
-        </div>
+      title="Habits"
+      description={
+        <>
+          <time dateTime={TODAY}>
+            {formatDate(TODAY, {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+            })}
+          </time>
+          {" · "}
+          {doneCount} of {client.habits.length} checked today
+        </>
+      }
+      actions={
         <ol className="cd-habits-week" aria-label="This week">
           {week.map((date) => (
             <li
@@ -91,8 +90,8 @@ export function HabitsTab({
             </li>
           ))}
         </ol>
-      </header>
-
+      }
+    >
       <div className="cd-habits-filters">
         {FILTERS.map((option) => (
           <button
@@ -200,6 +199,6 @@ export function HabitsTab({
           </p>
         </aside>
       </div>
-    </section>
+    </Section>
   );
 }

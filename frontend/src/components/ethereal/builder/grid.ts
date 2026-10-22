@@ -51,6 +51,7 @@ const MAX_SPANS: Partial<Record<WidgetKind, { w: number; h: number }>> = {
   CU09: { w: 8, h: 5 },
   CU10: { w: 6, h: 4 },
   CU16: { w: 6, h: 3 },
+  CU17: { w: 12, h: 5 },
 };
 export function maximumFootprint(kind: WidgetKind, breakpoint: Breakpoint) {
   const max = MAX_SPANS[kind] ?? { w: 8, h: 5 };
@@ -97,7 +98,11 @@ export function minimumWidthSpan(columns: number, width: number): number {
   );
 }
 
-export function minimumHeight(breakpoint: Breakpoint): number {
+export function minimumHeight(
+  breakpoint: Breakpoint,
+  kind?: WidgetKind,
+): number {
+  if (kind === "CU17" && breakpoint !== "mobile") return 1;
   return breakpoint === "mobile" ? 3 : 2;
 }
 
@@ -121,7 +126,15 @@ export function footprint(
   size: SizeName,
   breakpoint: Breakpoint,
   width: number,
+  kind?: WidgetKind,
 ): Pick<Rect, "w" | "h" | "size"> {
+  if (kind === "CU17" && size === "Compact") {
+    return {
+      w: columnsFor(breakpoint),
+      h: breakpoint === "mobile" ? 3 : 1,
+      size,
+    };
+  }
   if (breakpoint === "mobile") {
     const height = size === "Tall" || size === "Expanded" ? 6 : 3;
     return { w: 2, h: height, size };
@@ -230,7 +243,7 @@ export function arrangeInReadingOrder(
           h: oldRect.h,
           size: classifyFootprint(oldRect.w, oldRect.h, breakpoint, width),
         }
-      : footprint(widget.settings.size, breakpoint, width);
+      : footprint(widget.settings.size, breakpoint, width, widget.kind);
     let placement: Rect | null = null;
     for (let y = startY; !placement; y += 1) {
       const firstX = y === startY ? startX : 0;
@@ -258,7 +271,7 @@ export function addToLayout(
   columns = columnsFor(breakpoint),
 ): Layout {
   const next = { ...layout };
-  const shape = footprint(widget.settings.size, breakpoint, width);
+  const shape = footprint(widget.settings.size, breakpoint, width, widget.kind);
   const vacancy = firstVacancy({ ...shape, x: 0, y: 0 }, next, columns);
   if (vacancy) next[widget.id] = vacancy;
   return next;
@@ -329,7 +342,7 @@ export function reconcileLayout(
             breakpoint === "desktop" ? Math.min(max.w, oldRect.w) : oldRect.w,
           );
     const normalizedHeight = Math.max(
-      minimumHeight(breakpoint),
+      minimumHeight(breakpoint, widget.kind),
       breakpoint === "desktop" ? Math.min(max.h, oldRect.h) : oldRect.h,
     );
     const size = classifyFootprint(
