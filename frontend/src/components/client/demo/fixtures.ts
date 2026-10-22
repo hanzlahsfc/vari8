@@ -365,6 +365,16 @@ export const trainingPlan: TrainingPlan = {
 
 export const photoDates = ["2026-01-05", "2026-02-02", "2026-03-02"];
 
+// One dated competition record, the inherited sheet block: show name,
+// division as free text, show date, peak week as a phase label (R2 defaults
+// 1, 3, 4 and 8). T-minus is computed at render time, never stored.
+export const competition = {
+  show: "Summit Open",
+  division: "Fitmodel",
+  showDate: "2026-03-07",
+  phase: "PEAK WEEK",
+};
+
 // Version 1 of session A, superseded by the current prescription. Kept so a
 // logged session still renders the prescription it was performed against.
 export const logbookSessionV1: TrainingSession = {

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { ComponentType } from "react";
 import { CheckInScreen } from "@/components/client/check-in";
+import { CompetitionScreen } from "@/components/client/competition";
 import { type ParsedDemo, parseDemo } from "@/components/client/demo/state";
 import { LogbookScreen } from "@/components/client/logbook";
 import { MessagesScreen } from "@/components/client/messages";
@@ -24,6 +25,7 @@ const screens: Record<string, ComponentType<{ demo: ParsedDemo }>> = {
   supplements: SupplementsScreen,
   settings: SettingsScreen,
   "check-in": CheckInScreen,
+  competition: CompetitionScreen,
 };
 
 export default async function ClientScreenPage({

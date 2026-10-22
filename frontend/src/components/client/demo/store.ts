@@ -24,6 +24,7 @@ import {
   clientPerson,
   clientSettings,
   coachPerson,
+  competition,
   demoAsOf,
   demoTasks,
   homeSummary,
@@ -60,6 +61,7 @@ export type DemoSlices = {
   settings: { saved: ClientSettings };
   supplements: { plan: typeof supplementPlan | null };
   checkIn: { form: typeof checkInForm; submittedAt: string | null };
+  competition: { record: typeof competition | null };
 };
 
 export type DemoStore = {
@@ -84,6 +86,7 @@ function buildSlices(mode: DemoMode): DemoSlices {
       settings: { saved: clientSettings },
       supplements: { plan: null },
       checkIn: { form: checkInForm, submittedAt: null },
+      competition: { record: null },
     };
   }
   const history = buildTrackerHistory();
@@ -103,6 +106,7 @@ function buildSlices(mode: DemoMode): DemoSlices {
     settings: { saved: clientSettings },
     supplements: { plan: supplementPlan },
     checkIn: { form: checkInForm, submittedAt: null },
+    competition: { record: competition },
   };
 }
 

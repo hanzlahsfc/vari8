@@ -73,6 +73,17 @@ body:has(.client-root) {
   gap: var(--v8-card-gap);
 }
 
+.client-comp {
+  display: block;
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-supporting);
+  text-decoration: none;
+}
+
+.client-comp:hover {
+  color: var(--v8-text);
+}
+
 .client-kv {
   display: flex;
   align-items: baseline;

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Card } from "@/components/vari8/components";
+import { CompetitionLine } from "./competition";
 import type { ParsedDemo } from "./demo/state";
 import { useDemoSlice, useDemoStore } from "./demo/store";
 import { ClientScreen, clientNavItems, DemoGate } from "./shell";
@@ -54,6 +55,7 @@ export function ClientHome({ demo }: { demo: ParsedDemo }) {
                   </Link>
                 ))}
             </div>
+            <CompetitionLine />
           </>
         )}
       </DemoGate>
