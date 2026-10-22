@@ -203,14 +203,19 @@ Owner overriding rule. Every screen in `icm/04-briefing/shots/index.json` (35) p
 - Pass: DOM geometry (every visible element's role, accessible name, text and bounding box within 1 CSS pixel) and a pixel diff of at most 0.1 percent of pixels (pixelmatch threshold 0.1), with masks only for the truth-text exceptions below.
 - PR-01 gates all 35 screens. Each wiring PR gates the screens it wires. The harness and baselines come from PR-P1. Evidence goes to `icm/05-build/evidence/<card>/parity/`.
 
-Truth-text exceptions (copy that names browser-local storage would become false once data lives on the server; same position, style and size, new words). Reverse with `keep-demo-copy`.
+Truth-text exceptions (copy that names browser-local storage or the demo source would become false once data lives on the server and the recorder records for real; same position, style and size, new words). Reverse with `keep-demo-copy`.
 
-| Row    | Today                                | After                                             |
-| ------ | ------------------------------------ | ------------------------------------------------- |
-| S01-09 | "Local demo" / "Session only"        | "Saved" / "Saving"                                |
-| S10-09 | "Saved automatically on this device" | "Saved automatically for this workspace"          |
-| S03-17 | "Sent locally"                       | "Sent"                                            |
-| S02-24 | "Local demo media"                   | the file size, as the canvas shows for real files |
+| Row    | Today                                                   | After                                             |
+| ------ | ------------------------------------------------------- | ------------------------------------------------- |
+| S01-09 | "Local demo" / "Session only"                           | "Saved" / "Saving"                                |
+| S10-09 | "Saved automatically on this device"                    | "Saved automatically for this workspace"          |
+| S03-17 | "Sent locally"                                          | "Sent"                                            |
+| S02-24 | "Local demo media"                                      | the file size, as the canvas shows for real files |
+| S02-25 | "Record demo voice note" / "Record demo video feedback" | "Record voice note" / "Record video feedback"     |
+
+The S02-25 row carries D36's recorder rule into the gate: PR-MEDIA wires the recorder to a real stream, so its labels drop the demo prefix. `tools/parity/compare.mjs` masks exactly that button text, nothing else.
+
+The pass rule is applied per screen as a changed-pixel budget of 0.1 percent of that screen's captured area (`tools/parity/compare.mjs`, `d32Budget`), with `PARITY_MAX_DIFF_PIXELS` available as an absolute override for other hosts. DOM geometry, text and page size stay bit-exact at every budget.
 
 Demo-only controls ("Reset this mockup", "Load demo audio preview") render only when `APP_ENV` is development, which is the mode the parity gate runs in.
 

@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 139 modules with exports, 1382 exported symbols.
+Counts: 140 modules with exports, 1388 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -45,6 +45,15 @@ Imported type names are shown without their `import("...")` prefix.
 ## `frontend/src/lib/utils.ts`
 
 - `export { cn } from "cn"`
+
+## `frontend/src/lib/vari8-theme.ts`
+
+- `export const VARI8_SURFACES = [ "canvas", "surface-navigation", "surface", "surface-subtle", "surface-raised", "surface-inset", "surface-interactive", "surface-selected", "surface-featured", "surfa...`
+- `export type Vari8Mode = "light" | "dark"`
+- `export type Vari8Theme = Record<`--v8-${Vari8Role}`, string>`
+- `export function contrastRatio(first: string, second: string): number`
+- `export function normalizeAccent(value: string): string | null`
+- `export function vari8Theme({ mode, accent, }: { mode: Vari8Mode; accent: string; }): Vari8Theme`
 
 ## `lib/api/v1.ts`
 

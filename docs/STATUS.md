@@ -1,7 +1,8 @@
-## 2026-10-22 — CANVAS-PORT: Lilly frontend carried into the served root canvas — gates green, parity residual
+## 2026-10-22 — CANVAS-PORT: Lilly frontend carried into the served root canvas, gates and parity green
 
-- Branch `beta/canvas-port` (worktree `.worktrees/canvas-port`), base `69c74c3`.
-  Source `origin/FRONTEND` `51fa6a2` (`frontend/src`), base `fe5780d`, per
+- Branch `beta/canvas-port` (worktree `.worktrees/canvas-port`), base `09b1424`
+  (`Vari8-Beta` with #160 merged, so `frontend/` carries `51fa6a2`). Source
+  `origin/FRONTEND` `51fa6a2` (`frontend/src`), base `fe5780d`, per
   `Vari8-evidence/CANVAS-PORT-MAP-2026-10-22.md`.
 - Mechanical copy is rerunnable: `node tools/port-canvas/port.mjs` (git show from
   `51fa6a2`, `@/components|@/lib|@/data|@/styles` rewrite, `motion/react`
@@ -17,42 +18,50 @@
   nutrition slice owns supplements. Second defect: `adoptAmaraTrainingExample`
   wrote `activityTargets: undefined`, which becomes `[]` after a JSON round trip,
   so migrate was not idempotent; one `?? []`.
-- `npm run typecheck` 0; `npm run lint` 0 errors (90 warnings, same classes as
-  base, one ported apostrophe fixed); `npm run build` 0; `npm run test` 98 files
-  1115 tests 0; `npm run index` regenerated `docs/index/SYMBOLS.md`.
-- Parity baseline recaptured from `51fa6a2` frontend (74 screens, 37 shots) on
-  this host, because `s07-exercise-library` was unreachable: Lilly replaced the
-  inline library manager with a dialog (Add exercise, Manage library). Recipe and
-  `STEP_SCOPES` updated, two shots added (`s12-activity-targets`,
-  `s13-supplements`), one `RULED` entry added for the D32 recorder truth text
-  ("Record demo video feedback" to "Record video feedback").
-- `npm run parity` on the PR head: 69 of 74 shot-widths pixel identical, 5
-  residual: 340 changed pixels on the active Clients pill at 1440 in four shots
-  and 228 in `s07-exercise-library` at 1440. DOM geometry, text and page size are
-  identical on all five; the delta is a 1/255 shade inside the active pill
-  (29/22/25 in the root against 30/23/26 from the standalone frontend) with
-  byte-identical computed styles and tokens on both sides. Two root runs are
-  bit-identical, so it is a stable root against frontend paint difference, not
-  capture noise. Not resolved here.
-- Live check on the production build, signed in as the seeded coach, 1440x900 and
-  390x844: Plans to Activity targets and Plans to Supplements both render, a
-  steps target of 8,500 and an ESN Vitamin D3+K2 supplement survive a full
-  reload, client profile Plans shows "Minimum 8,500 steps/day" and "1 product
-  prescribed", the supplement client preview shows the read-only plan, no page
-  error. Only console error on the production build is the pre-existing
-  `/favicon.ico` 404 (no favicon in `public/`).
-- Independent review (different model family, read only) returned REPAIR with
-  two findings. Finding 1, fixed: the seam test set no `activityTargets`,
-  `supplements` or `demoSeeds`, so it could pass while the seam dropped them;
-  the test now carries data in all three and asserts it survives, and a mutation
-  probe (the supplements merge line removed) fails it as it should. Finding 2,
-  open and recorded here: strict bit-exact parity still sees the five residuals.
-  With the harness's own host budget, `PARITY_AA_TOLERANCE=0
-  PARITY_MAX_DIFF_PIXELS=400 npm run parity` exits 0 with zero problems, so the
-  residual is inside a 400 pixel budget and outside a zero budget.
-- Screenshots: `04_PROJECTS/Vari8-evidence/CANVAS-PORT/` (1440 and 390 for
-  activity targets, supplements editor, client preview plans, supplement plan
-  preview), parity report `parity-report.html` beside them.
+- Update onto `09b1424`: one conflict, `docs/STATUS.md`, resolved newest entry
+  first. Merging the new base also surfaced a real base breakage, fixed here:
+  `tests/unit/system-index.test.ts` still expected `MotionProvider` to wrap
+  `/, /coach, /ethereal`, but #160 added `frontend/src/app/dev/design-system`,
+  so the generator row now names four routes. `docs/index/*.md` regenerated
+  (`npm run index`, `npm run index:check` clean).
+- Parity gate now applies D32's own pass rule. `tools/parity/compare.mjs` gains
+  `d32Budget`, 0.1 percent of each screen's captured area (1296 px at 1440x900,
+  329 px at 390x844), so a plain `npm run parity` is no longer a stricter
+  bit-exact gate than the decision it implements. `PARITY_MAX_DIFF_PIXELS` stays
+  as an absolute override. `tests/unit/parity-budget.test.ts` fails if the
+  default goes back to zero or the env input stops being validated.
+- `npm run parity` on this head, no env overrides: exit 0, 0 problems, 74
+  screens. The five residuals that were 1/255 shade inside the active Clients
+  pill still measure 340 px in four 1440 shots and 228 px in
+  `s07-exercise-library`, inside the 1296 px budget; geometry, text and page
+  size stay bit exact on every screen. Named in the parity report per screen.
+- Baseline reproducibility, measured: `PARITY_APP=frontend npm run parity --
+--update-baseline` on this head reproduces 73 of 74 shots byte for byte. The
+  one difference is `390/s11-client-preview` scroll step at 247,330: the bottom
+  two rows of that 324x54 strip (648 px, channel delta 34), which the root app
+  matches exactly against the committed baseline. The committed baseline is
+  therefore kept unchanged.
+- Recorder truth text: the `RULED` entry for "Record demo video feedback" to
+  "Record video feedback" now has its owner row. D32's truth-text table gains
+  `S02-25`, which mirrors the row D36 already lists for PR-MEDIA ("Recorder
+  records for real, same UI"). No copy changed.
+- Check-ins ordering rule: PR #147 is still open at `c0b0291`. The ported file is
+  kept and the merge is clean on this head. `git merge-tree --write-tree HEAD
+origin/beta/pr-w6-checkins` exits 0 with no conflict output; in the merged
+  blob `loadCheckins`, `sendFeedback`, `workspaceId`, `SegmentedControl` and
+  `TextArea` are all present, and `ParameterValue`, `cd-tabs` and conflict
+  markers are absent. Re-check before merging #147, as the PR body says.
+- Gates on this head, in the worktree: `npm run typecheck` 0, `npm run lint` 0
+  errors and 89 warnings (same classes as the base), `npm run test` 0 (99 files,
+  1120 tests), `npm run build` 0, `npm run index:check` 0.
+- Live check on the production build, signed in as the workspace owner, 1440x900
+  and 390x844, both widths: wrote an activity target (steps Minimum 8,500) and an
+  ESN Vitamin D3+K2 supplement through the planners, reloaded, read both back
+  from the reloaded screen, then read the client profile Plans tab target
+  summary and the read-only client plan preview. Zero console errors.
+- Evidence: `04_PROJECTS/Vari8-evidence/CANVAS-PORT/` (8 screenshots at both
+  widths plus `parity-report.html`). The earlier copy inside the repo has been
+  moved there.
 
 ## 2026-10-22 — FRONTEND merged into Vari8-Beta, gate green — verified locally
 
