@@ -201,6 +201,23 @@ body:has(.client-root) {
   align-items: end;
 }
 
+.client-day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-2);
+  padding: var(--v8-space-3) 0;
+  border-top: var(--v8-border-width-hairline) solid var(--v8-border);
+}
+
+.client-day:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.client-day[data-over] .client-kv > :last-child {
+  color: var(--v8-danger);
+}
+
 @media (max-width: 720px) {
   .client-root {
     grid-template-columns: 1fr;

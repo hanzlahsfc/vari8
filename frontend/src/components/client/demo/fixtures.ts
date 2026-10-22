@@ -6,6 +6,7 @@ import type {
 import type { SupplementPlan } from "@/components/coach/supplements/model";
 import type { TrackerConfig } from "@/components/ethereal/client-tracker/model";
 import type { LogSession, PrescriptionVersion } from "../logbook-model";
+import type { Macro } from "../nutrition-model";
 
 // Synthetic demo data only. No persistence, no network, no real people.
 export const demoAsOf = "2026-03-02";
@@ -57,6 +58,30 @@ export const nutritionTargets: NutritionTargets = {
   carbs: 250,
   fat: 60,
 };
+
+export type NutritionDay = {
+  date: string;
+  macros: Macro;
+  calorieOnly: boolean;
+};
+
+export const nutritionDays: NutritionDay[] = [
+  {
+    date: demoAsOf,
+    macros: { protein: null, carbs: null, fat: null },
+    calorieOnly: false,
+  },
+  {
+    date: "2026-03-01",
+    macros: { protein: 300, carbs: 400, fat: null },
+    calorieOnly: false,
+  },
+  {
+    date: "2026-02-28",
+    macros: { protein: null, carbs: null, fat: null },
+    calorieOnly: true,
+  },
+];
 
 export const supplementPlan: SupplementPlan = {
   id: "demo-supplement-plan",

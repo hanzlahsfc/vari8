@@ -44,6 +44,11 @@ const routes = [
   { id: "ethereal", path: "/ethereal", waitFor: "body" },
   { id: "client/default", path: "/client", waitFor: ".client-root" },
   { id: "client/logbook", path: "/client/logbook", waitFor: ".client-root" },
+  {
+    id: "client/nutrition",
+    path: "/client/nutrition",
+    waitFor: ".client-root",
+  },
 ];
 
 const controlSelector = [
