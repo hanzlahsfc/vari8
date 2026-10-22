@@ -12,11 +12,17 @@ import {
 } from "react";
 import type { TrackerEntry } from "@/components/ethereal/client-tracker/model";
 import type { LogSession } from "../logbook-model";
-import type { DemoTask, DemoThread, NutritionDay } from "./fixtures";
+import type {
+  ClientSettings,
+  DemoTask,
+  DemoThread,
+  NutritionDay,
+} from "./fixtures";
 import {
   buildTrackerHistory,
   checkInForm,
   clientPerson,
+  clientSettings,
   coachPerson,
   demoAsOf,
   demoTasks,
@@ -51,6 +57,7 @@ export type DemoSlices = {
   photos: { dates: string[] };
   messages: { threads: DemoThread[] };
   tasks: { items: DemoTask[] };
+  settings: { saved: ClientSettings };
   supplements: { plan: typeof supplementPlan | null };
   checkIn: { form: typeof checkInForm; submittedAt: string | null };
 };
@@ -74,6 +81,7 @@ function buildSlices(mode: DemoMode): DemoSlices {
       photos: { dates: [] },
       messages: { threads: [] },
       tasks: { items: [] },
+      settings: { saved: clientSettings },
       supplements: { plan: null },
       checkIn: { form: checkInForm, submittedAt: null },
     };
@@ -92,6 +100,7 @@ function buildSlices(mode: DemoMode): DemoSlices {
     photos: { dates: photoDates },
     messages: { threads: messageThreads },
     tasks: { items: demoTasks },
+    settings: { saved: clientSettings },
     supplements: { plan: supplementPlan },
     checkIn: { form: checkInForm, submittedAt: null },
   };

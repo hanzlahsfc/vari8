@@ -6,6 +6,7 @@ import { LogbookScreen } from "@/components/client/logbook";
 import { MessagesScreen } from "@/components/client/messages";
 import { NutritionScreen } from "@/components/client/nutrition";
 import { PhotosScreen } from "@/components/client/photos";
+import { SettingsScreen } from "@/components/client/settings";
 import { ClientShell } from "@/components/client/shell";
 import { SupplementsScreen } from "@/components/client/supplements";
 import { TasksScreen } from "@/components/client/tasks";
@@ -21,6 +22,7 @@ const screens: Record<string, ComponentType<{ demo: ParsedDemo }>> = {
   nutrition: NutritionScreen,
   photos: PhotosScreen,
   supplements: SupplementsScreen,
+  settings: SettingsScreen,
   "check-in": CheckInScreen,
 };
 

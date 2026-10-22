@@ -159,6 +159,18 @@ export const messageThreads: DemoThread[] = [
   },
 ];
 
+export type ClientSettings = {
+  displayName: string;
+  units: { weight: "kg" | "lb"; distance: "km" | "mi" };
+  notifications: { sessions: boolean; nutrition: boolean; messages: boolean };
+};
+
+export const clientSettings: ClientSettings = {
+  displayName: clientPerson.name,
+  units: { weight: "kg", distance: "km" },
+  notifications: { sessions: true, nutrition: true, messages: false },
+};
+
 export const supplementPlan: SupplementPlan = {
   id: "demo-supplement-plan",
   clientId: "demo-client",

@@ -29,6 +29,7 @@ export const clientNavItems = [
   { id: "photos", label: "Photos", href: "/client/photos" },
   { id: "supplements", label: "Supplements", href: "/client/supplements" },
   { id: "check-in", label: "Check-in", href: "/client/check-in" },
+  { id: "settings", label: "Settings", href: "/client/settings" },
 ];
 
 export function ClientShell({
