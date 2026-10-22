@@ -6,7 +6,7 @@ import { getViewerFromHeaders } from "@/lib/auth/viewer";
 import { capabilityScope, memberRoleToRole } from "@/lib/auth/roles";
 import type { Capability, CapabilityScope, Role } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db";
-import { logError } from "@/lib/log";
+import { logError, trustedId } from "@/lib/log";
 
 /**
  * PR-05 /api/v1 route helper (D6): every operation goes through this boundary.
@@ -104,9 +104,35 @@ async function resolveWorkspaceContext(
  */
 const REQUEST_ID_SHAPE = /^[A-Za-z0-9-]{1,64}$/;
 
-function requestIdFor(request: Request): string {
+export function requestIdFor(request: Request): string {
   const inbound = request.headers.get("x-request-id");
   return inbound && REQUEST_ID_SHAPE.test(inbound) ? inbound : randomUUID();
+}
+
+/**
+ * The one structured failure reporter for /api/v1 — used by the
+ * defineApiV1Route funnel for every unhandled handler error and by routes
+ * that cannot go through the wrapper (`media/object` redeems an HMAC
+ * signature instead of a session). One redacted line on stdout, then the
+ * safe `{ error: { code: "internal" } }` body with the correlation id the
+ * line used — logged and returned ids are identical by construction.
+ */
+export function reportV1Failure(
+  request: Request,
+  requestId: string,
+  error: unknown,
+): Response {
+  logError("api_v1_request_failed", {
+    requestId: trustedId(requestId),
+    method: request.method,
+    route: new URL(request.url).pathname,
+    status: 500,
+    error,
+  });
+  return Response.json(
+    { error: { code: "internal" } },
+    { status: 500, headers: { "x-request-id": requestId } },
+  );
 }
 
 export function defineApiV1Route<P extends { workspaceId: string }, Q, R>(
@@ -165,17 +191,7 @@ export function defineApiV1Route<P extends { workspaceId: string }, Q, R>(
       // One error line per unhandled 500 — request id, route and status,
       // redacted error. Typed ApiError/ZodError responses are expected
       // traffic and never reach the log.
-      logError("api_v1_request_failed", {
-        requestId,
-        method: request.method,
-        route: new URL(request.url).pathname,
-        status: 500,
-        error,
-      });
-      return Response.json(
-        { error: { code: "internal" } },
-        { status: 500, headers: { "x-request-id": requestId } },
-      );
+      return reportV1Failure(request, requestId, error);
     }
   };
 }

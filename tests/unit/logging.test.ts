@@ -4,13 +4,16 @@
 // raw body. Mocked viewer/membership drives the real defineApiV1Route
 // boundary; register() drives the real boot-refusal path.
 
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
 import { ApiError, defineApiV1Route } from "../../lib/api/v1";
 import { logError, redactString, REDACTED } from "../../lib/log";
+
+/** Set per test — the mocked mediaObject lookup throws it when present. */
+const mediaFault = vi.hoisted(() => ({ current: null as Error | null }));
 
 vi.mock("../../lib/auth/viewer", () => ({
   getViewerFromHeaders: async () => ({
@@ -24,6 +27,12 @@ vi.mock("../../lib/db", () => ({
   prisma: {
     workspaceMember: {
       findFirst: async () => ({ id: "m1", role: "WORKSPACE_OWNER" }),
+    },
+    mediaObject: {
+      findFirst: async () => {
+        if (mediaFault.current) throw mediaFault.current;
+        return null;
+      },
     },
   },
 }));
@@ -141,6 +150,66 @@ describe("logger — one JSON line, redacted", () => {
     const parsed = JSON.parse(String(spy.mock.calls[0][0]));
     expect(parsed.secret).toBe(REDACTED);
   });
+
+  it("error name and code are scrubbed, not just message and cause", () => {
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    const error = new Error("boom");
+    error.name = "LeakError for admin@x.test";
+    (error as { code?: string }).code =
+      "tok_" + "z".repeat(40) + " for victim@x.test";
+    logError("test_event", { error });
+    const line = String(spy.mock.calls[0][0]);
+    expect(line).not.toContain("admin@x.test");
+    expect(line).not.toContain("victim@x.test");
+    expect(line).not.toContain("z".repeat(40));
+    const parsed = JSON.parse(line);
+    expect(parsed.error.name).toContain("[email]");
+    expect(parsed.error.code).toContain("[email]");
+  });
+
+  it("caps object key counts and the total serialized line", () => {
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    const wide: Record<string, unknown> = {};
+    for (let i = 0; i < 100; i += 1) wide[`k${i}`] = i;
+    logError("test_event", { wide });
+    const parsed = JSON.parse(String(spy.mock.calls[0][0]));
+    expect(parsed.wide.__keys_omitted).toBe(36);
+    spy.mockClear();
+
+    const big = new Error("fat");
+    big.stack = "Error: fat\n" + "at frame (x.js:1:1)\n".repeat(5000);
+    logError("test_event", { error: big });
+    const line = String(spy.mock.calls[0][0]);
+    expect(line.length).toBeLessThanOrEqual(32_769);
+    const shrunk = JSON.parse(line);
+    expect(shrunk.error.stack).toBe("[truncated]");
+  });
+
+  it("a dead stdout sink never throws and never loses the response", async () => {
+    const spy = vi.spyOn(process.stdout, "write").mockImplementation(() => {
+      throw new Error("EPIPE");
+    });
+    expect(() => logError("test_event", { requestId: "r1" })).not.toThrow();
+    // through the funnel: the 500 response must still be produced
+    const GET = defineApiV1Route({
+      capability: "own.read",
+      params: z.object({ workspaceId: z.string().min(1) }),
+      handler: async () => {
+        throw new Error("still exploding");
+      },
+    });
+    const res = await GET(
+      new Request("http://app.test/api/v1/workspaces/ws-1/session"),
+      { params: Promise.resolve({ workspaceId: "ws-1" }) },
+    );
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: { code: "internal" } });
+    spy.mockRestore();
+  });
 });
 
 describe("api_v1_request_failed — the v1 500 line", () => {
@@ -198,35 +267,41 @@ describe("api_v1_request_failed — the v1 500 line", () => {
     expect(parsed.error.message).toContain("db://db.internal");
   });
 
-  it("honors a well-formed inbound x-request-id and rejects a hostile one", async () => {
-    const GET = route();
-    let spy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
-    const res = await GET(
-      new Request("http://app.test/api/v1/workspaces/ws-1/session", {
-        headers: { "x-request-id": "proxy-req-001" },
-      }),
-      { params: Promise.resolve({ workspaceId: "ws-1" }) },
-    );
-    expect(res.status).toBe(500);
-    expect(JSON.parse(String(spy.mock.calls[0][0])).requestId).toBe(
-      "proxy-req-001",
-    );
-    spy.mockRestore();
-
-    spy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
-    // A header-legal but unsafe id (spaces/markup) must not reach the log
-    // verbatim — newline forging is already impossible at the Headers layer.
-    const res2 = await GET(
-      new Request("http://app.test/api/v1/workspaces/ws-1/session", {
-        headers: { "x-request-id": 'forged {"level":"info"} a=b' },
-      }),
-      { params: Promise.resolve({ workspaceId: "ws-1" }) },
-    );
-    expect(res2.status).toBe(500);
-    const line2 = String(spy.mock.calls[0][0]);
-    expect(line2).not.toContain("forged");
-    expect(JSON.parse(line2).requestId).toMatch(/^[0-9a-f-]{36}$/);
-  });
+  it.each([
+    ["short proxy id", "proxy-req-001", "proxy-req-001"],
+    ["uuid", "7f4c9b12-3e54-4ab8-9d2f-1a2b3c4d5e6f", "same"],
+    ["32-char token", "a".repeat(32), "same"],
+    ["64-char token", "b".repeat(64), "same"],
+    ["oversized (65)", "c".repeat(65), "minted"],
+    ["unsafe shape", 'forged {"level":"info"} a=b', "minted"],
+  ])(
+    "request id %s: logged correlation id equals the returned one",
+    async (_label, inbound, expected) => {
+      const GET = route();
+      const spy = vi
+        .spyOn(process.stdout, "write")
+        .mockImplementation(() => true);
+      const res = await GET(
+        new Request("http://app.test/api/v1/workspaces/ws-1/session", {
+          headers: { "x-request-id": inbound },
+        }),
+        { params: Promise.resolve({ workspaceId: "ws-1" }) },
+      );
+      expect(res.status).toBe(500);
+      const line = String(spy.mock.calls[0][0]);
+      const parsed = JSON.parse(line);
+      const echoed = res.headers.get("x-request-id");
+      // The client always gets exactly the id that was logged.
+      expect(parsed.requestId).toBe(echoed);
+      if (expected === "same") {
+        expect(parsed.requestId).toBe(inbound);
+      } else if (expected === "minted") {
+        expect(parsed.requestId).toMatch(/^[0-9a-f-]{36}$/);
+        expect(line).not.toContain(inbound);
+      }
+      spy.mockRestore();
+    },
+  );
 
   it("expected traffic (typed errors, bad input) writes no log line", async () => {
     const GET_403 = defineApiV1Route({
@@ -331,6 +406,113 @@ describe("boot_refused — the instrumentation refusal line", () => {
     const { register } = await import("../../instrumentation");
     // NODE_ENV=test short-circuits the auth gate — register just resolves
     await expect(register()).resolves.toBeUndefined();
+    expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+describe("api_v1_request_failed — media/object (signature, not session)", () => {
+  const SECRET = "synthetic-logging-signing-secret-00000000";
+  const KEY = "workspace/ws-log/client/cp-log/obj-log";
+
+  function signedUrl(op: "get" | "put") {
+    const e = Math.floor(Date.now() / 1000) + 600;
+    const signature = createHmac("sha256", SECRET)
+      .update(`${op}\n${KEY}\n${e}`)
+      .digest("hex");
+    const url =
+      `http://app.test/api/v1/media/object?op=${op}` +
+      `&key=${encodeURIComponent(KEY)}&e=${e}&s=${signature}`;
+    return { url, signature };
+  }
+
+  function stubLocal() {
+    vi.stubEnv("MEDIA_STORAGE_ADAPTER", "local");
+    vi.stubEnv("BETTER_AUTH_SECRET", SECRET);
+  }
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+    mediaFault.current = null;
+  });
+
+  it("an unhandled GET fault logs one redacted line and returns the safe body", async () => {
+    stubLocal();
+    mediaFault.current = new Error(
+      "pg://u:hunter2@db.internal:5432/app refused contact ops@x.test",
+    );
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { GET } = await import("../../app/api/v1/media/object/route");
+    const { url, signature } = signedUrl("get");
+    const res = await GET(
+      new Request(url, { headers: { "x-request-id": "media-req-42" } }),
+    );
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: { code: "internal" } });
+    expect(res.headers.get("x-request-id")).toBe("media-req-42");
+    // exactly one structured event — the app path emits nothing else
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(errSpy).not.toHaveBeenCalled();
+    const line = String(spy.mock.calls[0][0]);
+    const parsed = JSON.parse(line);
+    expect(parsed.event).toBe("api_v1_request_failed");
+    expect(parsed.requestId).toBe("media-req-42");
+    expect(parsed.method).toBe("GET");
+    expect(parsed.route).toBe("/api/v1/media/object");
+    expect(parsed.status).toBe(500);
+    // no signed query, signature, secret or email reaches the line
+    expect(line).not.toContain(signature);
+    expect(line).not.toContain(SECRET);
+    expect(line).not.toContain("hunter2");
+    expect(line).not.toContain("ops@x.test");
+    expect(line).not.toContain(KEY);
+  });
+
+  it("an unhandled PUT fault takes the same path", async () => {
+    stubLocal();
+    mediaFault.current = new Error("disk sentinel media-secret-99");
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    const { PUT } = await import("../../app/api/v1/media/object/route");
+    const { url } = signedUrl("put");
+    const res = await PUT(new Request(url, { method: "PUT", body: "abcd" }));
+    expect(res.status).toBe(500);
+    expect(await res.json()).toEqual({ error: { code: "internal" } });
+    expect(spy).toHaveBeenCalledTimes(1);
+    const parsed = JSON.parse(String(spy.mock.calls[0][0]));
+    expect(parsed.event).toBe("api_v1_request_failed");
+    expect(parsed.method).toBe("PUT");
+    expect(parsed.route).toBe("/api/v1/media/object");
+    // request ids are still correlation-consistent on this route
+    expect(parsed.requestId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(String(spy.mock.calls[0][0])).toContain("media-secret-99");
+  });
+
+  it("expected responses (invalid signature, non-local backend) stay silent", async () => {
+    stubLocal();
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    const { GET } = await import("../../app/api/v1/media/object/route");
+    const e = Math.floor(Date.now() / 1000) + 600;
+    const bad =
+      `http://app.test/api/v1/media/object?op=get` +
+      `&key=${encodeURIComponent(KEY)}&e=${e}&s=${"0".repeat(64)}`;
+    const r403 = await GET(new Request(bad));
+    expect(r403.status).toBe(403);
+    expect(await r403.json()).toEqual({
+      error: { code: "invalid_signature" },
+    });
+    expect(spy).not.toHaveBeenCalled();
+
+    vi.stubEnv("MEDIA_STORAGE_ADAPTER", "none");
+    const { url } = signedUrl("get");
+    const r404 = await GET(new Request(url));
+    expect(r404.status).toBe(404);
     expect(spy).not.toHaveBeenCalled();
   });
 });

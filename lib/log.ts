@@ -78,18 +78,38 @@ export function redactString(value: string): string {
 const MAX_DEPTH = 4;
 const MAX_ITEMS = 20;
 const MAX_STRING = 2000;
+const MAX_KEYS = 64;
+/** Total serialized line budget — a degraded but always-valid JSON line. */
+const MAX_LINE = 32_768;
+
+/**
+ * Marker for a value the caller has already validated to a safe shape —
+ * used for the v1 request id, whose `^[A-Za-z0-9-]{1,64}$` grammar cannot
+ * carry secrets or forge a line. `trustedId` preserves it verbatim so the
+ * logged correlation id always equals the one returned to the client; it
+ * does NOT weaken the long-token scrub for any other field.
+ */
+class TrustedId {
+  constructor(readonly value: string) {}
+}
+
+export function trustedId(value: string): TrustedId {
+  return new TrustedId(value);
+}
 
 function formatError(
   error: Error,
   depth: number,
   seen: WeakSet<object>,
 ): Record<string, unknown> {
+  // name and code are caller-controlled strings on custom error classes —
+  // they go through the same scrub as message, stack and cause.
   const out: Record<string, unknown> = {
-    name: error.name,
+    name: redactString(error.name),
     message: redactString(error.message),
   };
   const code = (error as { code?: unknown }).code;
-  if (typeof code === "string") out.code = code;
+  if (typeof code === "string") out.code = redactString(code);
   if (typeof error.stack === "string") out.stack = redactString(error.stack);
   if ("cause" in error && error.cause !== undefined) {
     out.cause =
@@ -127,6 +147,7 @@ export function redact(
       : scrubbed;
   }
   if (typeof value === "bigint") return Number(value);
+  if (value instanceof TrustedId) return value.value;
   if (value instanceof Error) return formatError(value, depth, seen);
   if (seen.has(value)) return "[circular]";
   if (depth >= MAX_DEPTH) return "[depth-capped]";
@@ -139,11 +160,14 @@ export function redact(
   if (typeof value === "object") {
     seen.add(value);
     const out: Record<string, unknown> = {};
-    for (const [key, entry] of Object.entries(value)) {
+    const entries = Object.entries(value);
+    for (const [key, entry] of entries.slice(0, MAX_KEYS)) {
       out[key] = SENSITIVE_KEY.test(key)
         ? REDACTED
         : redact(entry, depth + 1, seen);
     }
+    if (entries.length > MAX_KEYS)
+      out.__keys_omitted = entries.length - MAX_KEYS;
     return out;
   }
   return `[${typeof value}]`;
@@ -171,11 +195,40 @@ export function log(
     for (const [key, value] of Object.entries(fields)) {
       entry[key] = SENSITIVE_KEY.test(key) ? REDACTED : redact(value);
     }
-    process.stdout.write(`${JSON.stringify(entry)}\n`);
+    let line = JSON.stringify(entry);
+    // Bounded line size: degrade the biggest serializations first, never
+    // truncate raw JSON mid-line.
+    if (line.length > MAX_LINE && entry.error instanceof Object) {
+      (entry.error as Record<string, unknown>).stack = "[truncated]";
+      line = JSON.stringify(entry);
+    }
+    if (line.length > MAX_LINE && entry.error instanceof Object) {
+      (entry.error as Record<string, unknown>).cause = "[truncated]";
+      line = JSON.stringify(entry);
+    }
+    if (line.length > MAX_LINE) {
+      line = JSON.stringify({
+        level,
+        event,
+        ts: entry.ts,
+        truncated: "[event-exceeded-size-limit]",
+      });
+    }
+    try {
+      process.stdout.write(`${line}\n`);
+    } catch {
+      // The sink itself failed (EPIPE, destroyed stream): logging must
+      // never replace an API response or block the boot exit — the line
+      // is lost, silently.
+    }
   } catch {
-    process.stdout.write(
-      `${JSON.stringify({ level: "error", event: "log_write_failed", ts: new Date().toISOString() })}\n`,
-    );
+    try {
+      process.stdout.write(
+        `${JSON.stringify({ level: "error", event: "log_write_failed", ts: new Date().toISOString() })}\n`,
+      );
+    } catch {
+      // same guard — a dead sink must not throw into the application
+    }
   }
 }
 

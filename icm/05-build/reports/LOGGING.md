@@ -43,8 +43,9 @@ x-amz` → `[redacted]`;
 - structure: depth cap 4 (`[depth-capped]`), array cap 20, string cap 2000,
   circularity guard; logging itself can never throw.
 
-**`lib/api/v1.ts`.** The `defineApiV1Route` funnel is the one place every
-v1 500 is produced. It now mints a request id per request — an inbound
+**`lib/api/v1.ts`.** The `defineApiV1Route` funnel produces every v1 500
+for the session-bound routes (the signature-bound `media/object` route was
+missed here and is covered in Fix pass 1 below). It now mints a request id per request — an inbound
 `x-request-id` is honored only when it matches `^[A-Za-z0-9-]{1,64}$`
 (caller-controlled ids must not forge log lines; anything else mints a
 UUID) — and on the unhandled-error branch writes one
@@ -140,3 +141,107 @@ vitest.integration.config.ts tests/integration/pr05-security.test.ts` —
 
 Head: `04861b6` (plus this report's head line update). PR #195. Not
 merged, not approved — ready for independent review.
+
+---
+
+## Fix pass 1 — independent review (head `b618599`, verdict FIX)
+
+Review: PR #195 issuecomment-6352146690. Confirmed defects and repairs,
+all re-verified on Node v24.22.1:
+
+### Repaired findings
+
+1. **Request-id correlation (finding 1).** `requestId` now flows through
+   `trustedId()` — a marker for the shape-validated id
+   (`^[A-Za-z0-9-]{1,64}$`) that skips the long-token scrub _for that field
+   only_. The logged id and the `x-request-id` response header are
+   identical by construction for every accepted input — verified through
+   the real funnel for `proxy-req-001`, a UUID, 32-char and 64-char tokens
+   (previously scrubbed to `[redacted]` in the line while echoed raw in
+   the header), plus 65-char and unsafe-shape inputs (both mint a UUID and
+   stay consistent). General token redaction is unchanged — a bare 32+
+   urlsafe string in any other field still redacts.
+2. **Logger never throws (finding 2).** Both the primary and the fallback
+   `process.stdout.write` calls are now guarded; a dead sink (EPIPE,
+   destroyed stream) loses the line silently. Proven: mocked-throwing
+   `write` — `logError` returns normally, the funnel still returns the
+   500 response, and the boot path still reaches `process.exit(1)`. No
+   global handlers; unrelated failures are not concealed.
+3. **media/object coverage (finding 3) — acknowledged.** The route
+   redeems an HMAC signature, not a session, so it cannot go through
+   `defineApiV1Route`; its unhandled GET/PUT faults went straight to Next
+   with an unstructured stderr stack. Both handlers now wrap their bodies
+   and report through the shared `reportV1Failure` (same event fields:
+   `trustedId` request id, method, pathname-only route, status, redacted
+   error) plus the standard `{error:{code:"internal"}}` body +
+   `x-request-id` header. Signature validation, 404/403/400 responses,
+   streaming and headers are unchanged. Live proof at the repaired head:
+   `next start` with `MEDIA_STORAGE_ADAPTER=local` + dead `DATABASE_URL`,
+   a real minted signature → **500 + exactly one** `api_v1_request_failed`
+   JSON line carrying the 32-char inbound `x-request-id` verbatim (the
+   exact reviewer probe); a bad signature → 403 `invalid_signature` and
+   no line; stderr carries no application-stack output.
+4. **error.name/error.code scrubbed (finding 4)** — both now pass
+   `redactString`; a `LeakError admin@x.test`/`tok_zzz…` sentinel test
+   proves it.
+5. **Bounds (finding 5).** Objects cap at 64 keys (`__keys_omitted`
+   marker); the serialized line caps at 32 KiB by degrading `error.stack`
+   → `error.cause` → a minimal `{truncated}` event — always valid JSON,
+   never a mid-line cut.
+
+INFO items recorded, not code: per-event field lists are a documented
+convention at the two call sites, not enforced in the type; regex
+redaction is not semantic — callers must not route request-derived free
+text into error fields (none currently do); the UUID exemption assumes
+ids, not secrets, are UUID-shaped (reset/invite tokens are 43-char
+base64url, session ids 64-hex — both redact).
+
+### Corrected record
+
+- The earlier report's "the one place every v1 500 is produced" was wrong:
+  `media/object` bypassed the funnel entirely. After this pass every
+  `/api/v1/*` handler reports through one path — funnel: workspaces
+  session GET + clients GET, media `[workspaceId]` POST +
+  `[mediaObjectId]` GET; direct `reportV1Failure` wrap: media/object
+  GET+PUT. No other v1 route file exists.
+- "One stdout line" for boot means **one JSON `boot_refused` event**;
+  Next's own startup banner/Ready text is separate process output.
+- Mutation-count correction: the original `redact` bypass produced **6**
+  failures, not 5. This pass's mutations (all restored byte-identically):
+  `trustedId` unwrap removed → 9 fail; media/object catch reporting
+  removed → 1 fail; name/code unredacted → 1 fail; unguarded fallback
+  write → 1 fail.
+- Finding 3's scope note confirmed: with the `s3`/`none` adapter the
+  route 404s before the DB; the fault path is reachable on `local` or any
+  throw after the gate — both proven.
+
+### Fresh results (repaired candidate)
+
+- `npx vitest run tests/unit/logging.test.ts` — **exit 0, 23/23**.
+- `npm run test` (verbatim, standard command, no override) — **exit 1,
+  1136/1138**: the inherited stale `MotionProvider` expectation
+  (base `09b1424`; repair lives on unmerged #194 `e4e6bb9`, not
+  duplicated here) + `prints one-line signatures…` at 5.84s vs the 5s
+  default under 99-worker load on this host (pre-existing environmental;
+  passes isolated at ~2.5s). Logging file: 23/23 in this same run.
+- `INTEGRATION_DATABASE_URL=…app_plogging_it vitest run --config
+vitest.integration.config.ts tests/integration/pr05-security.test.ts` —
+  **exit 0, 16/16** real PG.
+- `npm run build` 0 · `npm run typecheck` 0 · `npm run format:check` 0 ·
+  `npm run lint` 0 errors (81 pre-existing warnings) · `npm run index` +
+  `index:check` OK.
+- Live `next start`: media/object probe as above; boot refusal still one
+  JSON `boot_refused` line + exit 1.
+
+### Remaining gate
+
+- **#194 merge is the outstanding integration gate** (still OPEN at
+  `e4e6bb9`, SHIP-reviewed). Required order per review: land #194 →
+  rebase `beta/logging` (keep auth + storage assertions and
+  `logError("boot_refused")`; a mail assertion joins if #156 lands first)
+  → `npm run index` → re-run the standard suite, where the stale
+  MotionProvider failure resolves via #194's repair. The 5s compiler-test
+  flake is pre-existing; a timeout/worker change would be a separate
+  tracked decision.
+
+Head: this pass's commits on `beta/logging` — ready for re-review.
