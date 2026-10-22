@@ -8,9 +8,9 @@
 - Five stale test assertions were updated to deliberate current behavior
   (test files only, no product changes):
   - `accent-contrast.test.mjs`: the screenshot pink `#D93A7F` now keeps its
-    fill with a dark label `{ background: "#D93A7F", hoverBackground:
-    "#DB4284", foreground: "#000000" }`; the surface-aware accent algorithm
-    replaced the previous minimal-darkened fill plus white label.
+    fill (hover `#DB4284`) with a black `#000000` label; the surface-aware
+    accent algorithm replaced the previous minimal-darkened fill plus white
+    label.
   - `accent-contrast.test.mjs`: mid-gray `#777777` keeps its fill
     (`#777777`) with a black label instead of darkening to `#767676` with a
     white label; `contrastRatio(bg, fg) >= 4.5` is asserted.
