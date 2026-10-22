@@ -104,6 +104,9 @@ export const STEP_SCOPES = {
   "s06-mealplan-editor": {
     Create: { within: ".cd-plan-module", containing: "Nutrition" },
   },
+  "s07-exercise-library": {
+    Create: { within: ".cd-plan-module", containing: "Training" },
+  },
   "s06-template-nutrition": { "02 Dashboard": TEMPLATE_NAV },
   "s08-template-dashboard": { "02 Dashboard": TEMPLATE_NAV },
   "s09-tracker-today": { Preview: TEMPLATE_CARD },

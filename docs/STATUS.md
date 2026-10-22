@@ -1,3 +1,50 @@
+## 2026-10-22 — CANVAS-PORT: Lilly frontend carried into the served root canvas — gates green, parity residual
+
+- Branch `beta/canvas-port` (worktree `.worktrees/canvas-port`), base `69c74c3`.
+  Source `origin/FRONTEND` `51fa6a2` (`frontend/src`), base `fe5780d`, per
+  `Vari8-evidence/CANVAS-PORT-MAP-2026-10-22.md`.
+- Mechanical copy is rerunnable: `node tools/port-canvas/port.mjs` (git show from
+  `51fa6a2`, `@/components|@/lib|@/data|@/styles` rewrite, `motion/react`
+  `useReducedMotion` to `@/lib/canvas/reduced-motion`, relative `../lib` to
+  `@/lib/canvas`, hand-merge files excluded). 121 files written, 8 hand merges
+  produced by `port.mjs --merge` (git merge-file, three conflicts resolved by
+  hand: store data seam, coach-app viewer plumbing, mealplan and dashboard
+  import blocks), `app/(canvas)/layout.tsx` keeps the scoped root layout plus the
+  one `vari8-tokens.css` line.
+- Data seam defect the map did not predict, found by the seam test and fixed:
+  `plans.activityTargets`, `plans.supplements` and `demoSeeds` were dropped
+  between save and reload. Training slice now owns activityTargets and demoSeeds,
+  nutrition slice owns supplements. Second defect: `adoptAmaraTrainingExample`
+  wrote `activityTargets: undefined`, which becomes `[]` after a JSON round trip,
+  so migrate was not idempotent; one `?? []`.
+- `npm run typecheck` 0; `npm run lint` 0 errors (90 warnings, same classes as
+  base, one ported apostrophe fixed); `npm run build` 0; `npm run test` 98 files
+  1115 tests 0; `npm run index` regenerated `docs/index/SYMBOLS.md`.
+- Parity baseline recaptured from `51fa6a2` frontend (74 screens, 37 shots) on
+  this host, because `s07-exercise-library` was unreachable: Lilly replaced the
+  inline library manager with a dialog (Add exercise, Manage library). Recipe and
+  `STEP_SCOPES` updated, two shots added (`s12-activity-targets`,
+  `s13-supplements`), one `RULED` entry added for the D32 recorder truth text
+  ("Record demo video feedback" to "Record video feedback").
+- `npm run parity` on the PR head: 69 of 74 shot-widths pixel identical, 5
+  residual: 340 changed pixels on the active Clients pill at 1440 in four shots
+  and 228 in `s07-exercise-library` at 1440. DOM geometry, text and page size are
+  identical on all five; the delta is a 1/255 shade inside the active pill
+  (29/22/25 in the root against 30/23/26 from the standalone frontend) with
+  byte-identical computed styles and tokens on both sides. Two root runs are
+  bit-identical, so it is a stable root against frontend paint difference, not
+  capture noise. Not resolved here.
+- Live check on the production build, signed in as the seeded coach, 1440x900 and
+  390x844: Plans to Activity targets and Plans to Supplements both render, a
+  steps target of 8,500 and an ESN Vitamin D3+K2 supplement survive a full
+  reload, client profile Plans shows "Minimum 8,500 steps/day" and "1 product
+  prescribed", the supplement client preview shows the read-only plan, no page
+  error. Only console error on the production build is the pre-existing
+  `/favicon.ico` 404 (no favicon in `public/`).
+- Screenshots: `04_PROJECTS/Vari8-evidence/CANVAS-PORT/` (1440 and 390 for
+  activity targets, supplements editor, client preview plans, supplement plan
+  preview), parity report `parity-report.html` beside them.
+
 ## 2026-10-19 — PR-02: root app on Next.js 16.3.8 + React 19.3.0 — verified locally
 
 - Branch `beta/pr-02-next16` (worktree `vari8-worktrees/pr-02-next16`), base

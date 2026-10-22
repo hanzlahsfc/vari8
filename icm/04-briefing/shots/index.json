@@ -30,7 +30,9 @@
       "surfaceName": "Coach shell, navigation, client roster, client profile",
       "screen": "Clients roster",
       "route": "/coach",
-      "clicks": ["Clients"],
+      "clicks": [
+        "Clients"
+      ],
       "rowsTotal": 45,
       "rowsMatched": 16,
       "matchedRows": [
@@ -123,7 +125,10 @@
       "surfaceName": "Coach shell, navigation, client roster, client profile",
       "screen": "Client profile, Overview tab",
       "route": "/coach",
-      "clicks": ["Clients", "CP Chloe Park Lifestyle"],
+      "clicks": [
+        "Clients",
+        "CP Chloe Park Lifestyle"
+      ],
       "rowsTotal": 45,
       "rowsMatched": 23,
       "matchedRows": [
@@ -251,7 +256,11 @@
       "surfaceName": "Coach shell, navigation, client roster, client profile",
       "screen": "Client profile, Plans tab",
       "route": "/coach",
-      "clicks": ["Clients", "CP Chloe Park Lifestyle", "Plans"],
+      "clicks": [
+        "Clients",
+        "CP Chloe Park Lifestyle",
+        "Plans"
+      ],
       "rowsTotal": 45,
       "rowsMatched": 18,
       "matchedRows": [
@@ -354,7 +363,11 @@
       "surfaceName": "Coach shell, navigation, client roster, client profile",
       "screen": "Client profile, Check-ins tab",
       "route": "/coach",
-      "clicks": ["Clients", "CP Chloe Park Lifestyle", "Check-ins"],
+      "clicks": [
+        "Clients",
+        "CP Chloe Park Lifestyle",
+        "Check-ins"
+      ],
       "rowsTotal": 45,
       "rowsMatched": 17,
       "matchedRows": [
@@ -452,7 +465,11 @@
       "surfaceName": "Coach shell, navigation, client roster, client profile",
       "screen": "Client profile, Notes & tasks tab",
       "route": "/coach",
-      "clicks": ["Clients", "CP Chloe Park Lifestyle", "Notes & tasks"],
+      "clicks": [
+        "Clients",
+        "CP Chloe Park Lifestyle",
+        "Notes & tasks"
+      ],
       "rowsTotal": 45,
       "rowsMatched": 19,
       "matchedRows": [
@@ -560,7 +577,11 @@
       "surfaceName": "Coach shell, navigation, client roster, client profile",
       "screen": "Client profile, Onboarding tab",
       "route": "/coach",
-      "clicks": ["Clients", "CP Chloe Park Lifestyle", "Onboarding"],
+      "clicks": [
+        "Clients",
+        "CP Chloe Park Lifestyle",
+        "Onboarding"
+      ],
       "rowsTotal": 45,
       "rowsMatched": 17,
       "matchedRows": [
@@ -658,7 +679,9 @@
       "surfaceName": "Messages, notes, media",
       "screen": "Messages section, conversations",
       "route": "/coach",
-      "clicks": ["Messages"],
+      "clicks": [
+        "Messages"
+      ],
       "rowsTotal": 31,
       "rowsMatched": 5,
       "matchedRows": [
@@ -696,7 +719,11 @@
       "surfaceName": "Messages, notes, media",
       "screen": "Message thread open",
       "route": "/coach",
-      "clicks": ["Clients", "CP Chloe Park Lifestyle", "Open chat"],
+      "clicks": [
+        "Clients",
+        "CP Chloe Park Lifestyle",
+        "Open chat"
+      ],
       "rowsTotal": 31,
       "rowsMatched": 8,
       "matchedRows": [
@@ -817,7 +844,9 @@
       "surfaceName": "Messages, notes, media",
       "screen": "Notes & to-dos section",
       "route": "/coach",
-      "clicks": ["Notes & to-dos"],
+      "clicks": [
+        "Notes & to-dos"
+      ],
       "rowsTotal": 31,
       "rowsMatched": 6,
       "matchedRows": [
@@ -860,7 +889,9 @@
       "surfaceName": "Check-ins",
       "screen": "Check-ins board, week view",
       "route": "/coach",
-      "clicks": ["Check-ins"],
+      "clicks": [
+        "Check-ins"
+      ],
       "rowsTotal": 28,
       "rowsMatched": 6,
       "matchedRows": [
@@ -903,7 +934,10 @@
       "surfaceName": "Check-ins",
       "screen": "Add extra check-in date dialog",
       "route": "/coach",
-      "clicks": ["Check-ins", "Add extra date"],
+      "clicks": [
+        "Check-ins",
+        "Add extra date"
+      ],
       "rowsTotal": 28,
       "rowsMatched": 3,
       "matchedRows": [
@@ -1116,7 +1150,9 @@
       "surfaceName": "Templates, template setup, tracker setup and config",
       "screen": "Template setup editor",
       "route": "/coach",
-      "clicks": ["Add template"],
+      "clicks": [
+        "Add template"
+      ],
       "rowsTotal": 29,
       "rowsMatched": 4,
       "matchedRows": [
@@ -1182,7 +1218,11 @@
       "surfaceName": "Templates, template setup, tracker setup and config",
       "screen": "Client setup, assign template",
       "route": "/coach",
-      "clicks": ["Clients", "EF Eva Fischer Lifestyle", "Assign template"],
+      "clicks": [
+        "Clients",
+        "EF Eva Fischer Lifestyle",
+        "Assign template"
+      ],
       "rowsTotal": 29,
       "rowsMatched": 6,
       "matchedRows": [
@@ -1225,7 +1265,12 @@
       "surfaceName": "Nutrition plan, food database, client plan preview",
       "screen": "Meal plan editor",
       "route": "/coach",
-      "clicks": ["Clients", "CP Chloe Park Lifestyle", "Plans", "Create"],
+      "clicks": [
+        "Clients",
+        "CP Chloe Park Lifestyle",
+        "Plans",
+        "Create"
+      ],
       "rowsTotal": 29,
       "rowsMatched": 3,
       "matchedRows": [
@@ -1309,8 +1354,10 @@
       "clicks": [
         "Clients",
         "EA Emma Anders Lifestyle",
-        "Open chat 1",
-        "Training program",
+        "Edit plans",
+        "Create",
+        "Add session",
+        "Add exercise",
         "Manage library"
       ],
       "rowsTotal": 31,
@@ -1363,7 +1410,9 @@
       "surfaceName": "Coach dashboard builder and widgets",
       "screen": "Widget gallery",
       "route": "/ethereal",
-      "clicks": ["Add widget"],
+      "clicks": [
+        "Add widget"
+      ],
       "rowsTotal": 43,
       "rowsMatched": 1,
       "matchedRows": [
@@ -1381,7 +1430,10 @@
       "surfaceName": "Coach dashboard builder and widgets",
       "screen": "Template dashboard editor",
       "route": "/coach",
-      "clicks": ["Add template", "02 Dashboard"],
+      "clicks": [
+        "Add template",
+        "02 Dashboard"
+      ],
       "rowsTotal": 43,
       "rowsMatched": 4,
       "matchedRows": [
@@ -1414,7 +1466,11 @@
       "surfaceName": "Client tracker (today, tracking, trends, week) and client preview",
       "screen": "Client tracker, Today view",
       "route": "/coach",
-      "clicks": ["More actions for Strength & balance", "Preview", "Tracker"],
+      "clicks": [
+        "More actions for Strength & balance",
+        "Preview",
+        "Tracker"
+      ],
       "rowsTotal": 35,
       "rowsMatched": 9,
       "matchedRows": [
@@ -1593,7 +1649,9 @@
       "surfaceName": "Client tracker (today, tracking, trends, week) and client preview",
       "screen": "Tracker configurator (Ethereal studio)",
       "route": "/ethereal",
-      "clicks": ["Tracker"],
+      "clicks": [
+        "Tracker"
+      ],
       "rowsTotal": 35,
       "rowsMatched": 6,
       "matchedRows": [
@@ -1636,7 +1694,9 @@
       "surfaceName": "Appearance, theme, accent, the Ethereal studio",
       "screen": "Appearance studio (Make it yours)",
       "route": "/ethereal",
-      "clicks": ["Coaching UI"],
+      "clicks": [
+        "Coaching UI"
+      ],
       "rowsTotal": 21,
       "rowsMatched": 8,
       "matchedRows": [
@@ -1745,7 +1805,9 @@
       "surfaceName": "Identity and access: the canvas has no auth; map its implied users and views (coach vs client, which client is \"me\") to backend auth, roles, invites, onboarding, consent",
       "screen": "Workspace preferences (coach identity)",
       "route": "/coach",
-      "clicks": ["Workspace preferences for Liliana Mansfeld"],
+      "clicks": [
+        "Workspace preferences for Liliana Mansfeld"
+      ],
       "rowsTotal": 30,
       "rowsMatched": 1,
       "matchedRows": [
@@ -1781,6 +1843,28 @@
           "word": "switch on",
           "elements": 1
         }
+      ]
+    },
+    {
+      "file": "s13-supplements.png",
+      "screen": "Supplement plan editor",
+      "route": "/coach",
+      "clicks": [
+        "Clients",
+        "EA Emma Anders Lifestyle",
+        "Edit plans",
+        "Set up plan"
+      ]
+    },
+    {
+      "file": "s12-activity-targets.png",
+      "screen": "Activity targets editor",
+      "route": "/coach",
+      "clicks": [
+        "Clients",
+        "EA Emma Anders Lifestyle",
+        "Edit plans",
+        "Set targets"
       ]
     }
   ],
