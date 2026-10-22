@@ -45,7 +45,9 @@ describe("safeProductUrl", () => {
     );
     expect(safeProductUrl("javascript:alert(1)")).toBeUndefined();
     expect(safeProductUrl("data:text/html,x")).toBeUndefined();
-    expect(safeProductUrl("https://user:pw@shop.example.test/p")).toBeUndefined();
+    expect(
+      safeProductUrl("https://user:pw@shop.example.test/p"),
+    ).toBeUndefined();
     expect(safeProductUrl("not a url")).toBeUndefined();
     expect(safeProductUrl("")).toBeUndefined();
     expect(safeProductUrl(null)).toBeUndefined();
@@ -88,7 +90,9 @@ describe("parseSupplementItems", () => {
 
   it("accepts the full closed status set", () => {
     for (const status of ["must-have", "optional", "none"])
-      expect(parseSupplementItems([{ ...item, status }])[0].status).toBe(status);
+      expect(parseSupplementItems([{ ...item, status }])[0].status).toBe(
+        status,
+      );
   });
 
   it("accepts the same product twice and preserves the missing-composition null", () => {
@@ -113,9 +117,9 @@ describe("parseSupplementItems", () => {
 
   it("rejects non-positive and non-finite quantities", () => {
     for (const quantity of [0, -1, NaN, Infinity, "2"])
-      expect(() =>
-        parseSupplementItems([{ ...item, quantity }]),
-      ).toThrow(SupplementValidationError);
+      expect(() => parseSupplementItems([{ ...item, quantity }])).toThrow(
+        SupplementValidationError,
+      );
   });
 
   it("rejects a dose unit that disagrees with a catalogue-known unit", () => {
@@ -150,9 +154,8 @@ describe("parseSupplementItems", () => {
         parseSupplementItems([{ ...item, product: { ...product, url } }]),
       ).toThrow(SupplementValidationError);
     expect(
-      parseSupplementItems([
-        { ...item, product: { ...product, url: null } },
-      ])[0].product.url,
+      parseSupplementItems([{ ...item, product: { ...product, url: null } }])[0]
+        .product.url,
     ).toBeNull();
   });
 
@@ -169,25 +172,23 @@ describe("parseSupplementItems", () => {
     ];
     for (const patch of bad)
       expect(() =>
-        parseSupplementItems([
-          { ...item, product: { ...product, ...patch } },
-        ]),
+        parseSupplementItems([{ ...item, product: { ...product, ...patch } }]),
       ).toThrow(SupplementValidationError);
   });
 
   it("rejects missing product, non-string fields and unknown item keys", () => {
-    expect(() =>
-      parseSupplementItems([{ ...item, product: null }]),
-    ).toThrow(SupplementValidationError);
-    expect(() =>
-      parseSupplementItems([{ ...item, timing: 3 }]),
-    ).toThrow(SupplementValidationError);
-    expect(() =>
-      parseSupplementItems([{ ...item, notes: [] }]),
-    ).toThrow(SupplementValidationError);
-    expect(() =>
-      parseSupplementItems([{ ...item, taken: true }]),
-    ).toThrow(SupplementValidationError);
+    expect(() => parseSupplementItems([{ ...item, product: null }])).toThrow(
+      SupplementValidationError,
+    );
+    expect(() => parseSupplementItems([{ ...item, timing: 3 }])).toThrow(
+      SupplementValidationError,
+    );
+    expect(() => parseSupplementItems([{ ...item, notes: [] }])).toThrow(
+      SupplementValidationError,
+    );
+    expect(() => parseSupplementItems([{ ...item, taken: true }])).toThrow(
+      SupplementValidationError,
+    );
     expect(() => parseSupplementItems("nope")).toThrow(
       SupplementValidationError,
     );

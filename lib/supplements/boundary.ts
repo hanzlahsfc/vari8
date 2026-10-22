@@ -48,9 +48,7 @@ const CLOSED_MESSAGES: Record<
   serialization_conflict: "The supplement plan changed — please try again.",
 };
 
-function fail<T>(
-  code: keyof typeof CLOSED_MESSAGES,
-): SupplementSafeResult<T> {
+function fail<T>(code: keyof typeof CLOSED_MESSAGES): SupplementSafeResult<T> {
   return sharedFail(CLOSED_MESSAGES, code);
 }
 
@@ -131,7 +129,5 @@ export async function readOwnSupplementPlanFromAction(
   input: { workspaceId: string },
   deps: SupplementsDeps = {},
 ): Promise<SupplementSafeResult<OwnSupplementPlanView>> {
-  return guard(process.env, () =>
-    readOwnSupplementPlan(session, input, deps),
-  );
+  return guard(process.env, () => readOwnSupplementPlan(session, input, deps));
 }

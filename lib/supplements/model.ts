@@ -161,9 +161,13 @@ function parseProduct(value: unknown): SupplementProductSnapshot {
       MAX_UNIT_LENGTH,
       { required: false },
     ),
-    declaredAmount: nullableAmount(value.declaredAmount, "product.declaredAmount", {
-      allowZero: true,
-    }),
+    declaredAmount: nullableAmount(
+      value.declaredAmount,
+      "product.declaredAmount",
+      {
+        allowZero: true,
+      },
+    ),
     declaredUnit: boundedString(
       value.declaredUnit,
       "product.declaredUnit",
@@ -190,12 +194,9 @@ export function parseSupplementItems(
       raw.quantity <= 0
     )
       throw new SupplementValidationError("quantity");
-    const doseUnit = boundedString(
-      raw.doseUnit,
-      "doseUnit",
-      MAX_UNIT_LENGTH,
-      { required: true },
-    ) as string;
+    const doseUnit = boundedString(raw.doseUnit, "doseUnit", MAX_UNIT_LENGTH, {
+      required: true,
+    }) as string;
     // A catalogue-known administration unit must match the saved dose
     // unit; unknown units are whatever the coach confirmed. No
     // conversions.

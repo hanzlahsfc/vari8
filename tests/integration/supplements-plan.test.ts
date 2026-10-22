@@ -8,7 +8,15 @@
 import { execFileSync } from "node:child_process";
 
 import { PrismaClient } from "@prisma/client";
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import { AccessDeniedError } from "../../lib/auth/guard";
 import { createStaticConsentPolicy } from "../../lib/consent";
@@ -83,11 +91,7 @@ describe.skipIf(!enabled)("PR-SUPP supplement plan (real PG)", () => {
     workspaceId: string,
     userId: string,
     role:
-      | "WORKSPACE_OWNER"
-      | "COACH"
-      | "ASSISTANT_COACH"
-      | "SUPPORT"
-      | "CLIENT",
+      "WORKSPACE_OWNER" | "COACH" | "ASSISTANT_COACH" | "SUPPORT" | "CLIENT",
   ) {
     return prisma.workspaceMember.create({
       data: { workspaceId, userId, role, status: "ACTIVE" },
@@ -138,7 +142,18 @@ describe.skipIf(!enabled)("PR-SUPP supplement plan (real PG)", () => {
     const cp = await profile(w.id, clientU.id);
     await consent(cp.id);
     await assignment(w.id, cp.id, coachMember.id);
-    return { w, ownerU, ownerMember, coachU, coachMember, asstU, asstMember, supportU, clientU, cp };
+    return {
+      w,
+      ownerU,
+      ownerMember,
+      coachU,
+      coachMember,
+      asstU,
+      asstMember,
+      supportU,
+      clientU,
+      cp,
+    };
   }
 
   const product = {
@@ -313,7 +328,9 @@ describe.skipIf(!enabled)("PR-SUPP supplement plan (real PG)", () => {
           deps(),
         ),
       ).rejects.toMatchObject({ code: "invalid_input" });
-    expect(await prisma.supplementPlan.count({ where: { workspaceId: w.id } })).toBe(0);
+    expect(
+      await prisma.supplementPlan.count({ where: { workspaceId: w.id } }),
+    ).toBe(0);
   });
 
   // ── Authorization matrix ────────────────────────────────────────────
@@ -483,11 +500,7 @@ describe.skipIf(!enabled)("PR-SUPP supplement plan (real PG)", () => {
       deps(),
     );
     await expect(
-      readOwnSupplementPlan(
-        session(otherU.id),
-        { workspaceId: w.id },
-        deps(),
-      ),
+      readOwnSupplementPlan(session(otherU.id), { workspaceId: w.id }, deps()),
     ).resolves.toMatchObject({ plan: null });
   });
 

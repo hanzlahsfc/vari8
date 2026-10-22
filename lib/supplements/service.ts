@@ -415,9 +415,7 @@ export async function saveSupplementPlan(
   // refuses before any lock/audit work — the in-transaction write still
   // re-validates its own normalized rows.
   const name =
-    input.name === undefined
-      ? undefined
-      : parseSupplementPlanName(input.name);
+    input.name === undefined ? undefined : parseSupplementPlanName(input.name);
   let items: ValidatedSupplementItem[];
   try {
     items = parseSupplementItems(input.items);
@@ -582,11 +580,7 @@ export async function readStaffSupplementPlan(
             "read",
           );
         else if (ctx.grantedScope !== "workspace")
-          throw new AccessDeniedError(
-            "role_denied",
-            "supplementPlans",
-            "read",
-          );
+          throw new AccessDeniedError("role_denied", "supplementPlans", "read");
         const profile = await lockProfile(
           tx,
           input.workspaceId,
@@ -661,22 +655,14 @@ export async function readOwnSupplementPlan(
           select: { id: true },
         });
         if (!profile)
-          throw new AccessDeniedError(
-            "not_owner",
-            "supplementPlans",
-            "read",
-          );
+          throw new AccessDeniedError("not_owner", "supplementPlans", "read");
         const { ctx } = await lockedAuthorize(tx, session, {
           action: "read",
           workspaceId: input.workspaceId,
           clientProfileId: profile.id,
         });
         if (ctx.grantedScope !== "own")
-          throw new AccessDeniedError(
-            "role_denied",
-            "supplementPlans",
-            "read",
-          );
+          throw new AccessDeniedError("role_denied", "supplementPlans", "read");
         await lockProfile(tx, input.workspaceId, profile.id);
         await checkRequiredConsent(tx, profile.id, registry, true);
 
