@@ -332,7 +332,7 @@ const PRINCIPAL_ROLES: PrincipalRole[] = [
 
 describe("RBAC matrix", () => {
   it("covers every resource × principal role × action", () => {
-    expect(RESOURCES).toHaveLength(32);
+    expect(RESOURCES).toHaveLength(33);
     for (const resource of RESOURCES) {
       for (const role of PRINCIPAL_ROLES) {
         const cell = RBAC_MATRIX[resource]?.[role];
