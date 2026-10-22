@@ -19,15 +19,15 @@ Backend only. No screen, no component, no style, no visible copy was touched: th
 `app/api`, `lib/auth`, `db`, `docs/mobile`, `.env.example` and one integration test. Nothing in
 `frontend/` changed, so no before/after capture applies.
 
-| file                                                                     | change                                                                                   |
-| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| `app/api/v1/auth/refresh/route.ts`                                        | new. `POST /api/v1/auth/refresh`, bearer only.                                            |
-| `db/schema.prisma`                                                        | `Session.familyId` (nullable, indexed) and the `SpentRefreshToken` model.                  |
-| `db/migrations/20261022090000_auth_rotate/migration.sql`                   | the column, the index and the `spent_refresh_tokens` table.                                |
-| `lib/auth/server.ts`                                                      | reset link now also requires an ACTIVE CLIENT membership in an ACTIVE workspace.           |
-| `.env.example`                                                            | `AUTH_TRUSTED_IP_HEADER` also documents the IP recorded on a refreshed app session.        |
-| `docs/mobile/PWA-CAPACITOR-SCOPE.md`                                      | rotation exists: the contract the shell must follow.                                      |
-| `tests/integration/auth-rotate.test.ts`                                    | nine cases, one per acceptance bullet a click cannot prove.                                |
+| file                                                     | change                                                                              |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `app/api/v1/auth/refresh/route.ts`                       | new. `POST /api/v1/auth/refresh`, bearer only.                                      |
+| `db/schema.prisma`                                       | `Session.familyId` (nullable, indexed) and the `SpentRefreshToken` model.           |
+| `db/migrations/20261022090000_auth_rotate/migration.sql` | the column, the index and the `spent_refresh_tokens` table.                         |
+| `lib/auth/server.ts`                                     | reset link now also requires an ACTIVE CLIENT membership in an ACTIVE workspace.    |
+| `.env.example`                                           | `AUTH_TRUSTED_IP_HEADER` also documents the IP recorded on a refreshed app session. |
+| `docs/mobile/PWA-CAPACITOR-SCOPE.md`                     | rotation exists: the contract the shell must follow.                                |
+| `tests/integration/auth-rotate.test.ts`                  | nine cases, one per acceptance bullet a click cannot prove.                         |
 
 ### The nine build items
 
@@ -70,7 +70,7 @@ Backend only. No screen, no component, no style, no visible copy was touched: th
    `.env.example` documents that.
 8. **AUTH-CLIENT fix.** The reset-link choice in `lib/auth/server.ts` now queries the client profile
    with `workspace: { status: ACTIVE, members: { some: { userId, role: CLIENT, status: ACTIVE } }
-   }`. A profile alone no longer routes a staff member or a removed member to `/me`.
+}`. A profile alone no longer routes a staff member or a removed member to `/me`.
 9. **Docs.** `docs/mobile/PWA-CAPACITOR-SCOPE.md`: the "no rotation exists" paragraph is replaced
    with the contract (rotate on schedule, 401 means sign out and never retry, 429 means back off, a
    replayed token revokes the family, a cookie session is never accepted here).
@@ -79,19 +79,19 @@ Backend only. No screen, no component, no style, no visible copy was touched: th
 
 All run from the worktree on node v26.12.1.
 
-| gate                          | command                                                          | exit |
-| ----------------------------- | ---------------------------------------------------------------- | ---- |
-| install (root)                | `npm ci`                                                         | 0    |
-| install (frontend)            | `cd frontend && npm ci`                                          | 0    |
-| index generate                | `npm run index`                                                  | 0    |
-| index verify                  | `npm run index:check`                                            | 0    |
-| format                        | `npx prettier --check .`                                         | 0    |
-| types                         | `npm run typecheck`                                              | 0    |
-| lint                          | `npm run lint`                                                   | 0    |
-| unit                          | `npm run test`                                                   | 0    |
-| integration                   | `INTEGRATION_DATABASE_URL=$DATABASE_URL npm run test:integration` | 0    |
-| build (root, `NODE_ENV` unset) | `unset NODE_ENV; npm run build`                                  | 0    |
-| build (frontend)              | `cd frontend && npm run build`                                   | 0    |
+| gate                           | command                                                           | exit |
+| ------------------------------ | ----------------------------------------------------------------- | ---- |
+| install (root)                 | `npm ci`                                                          | 0    |
+| install (frontend)             | `cd frontend && npm ci`                                           | 0    |
+| index generate                 | `npm run index`                                                   | 0    |
+| index verify                   | `npm run index:check`                                             | 0    |
+| format                         | `npx prettier --check .`                                          | 0    |
+| types                          | `npm run typecheck`                                               | 0    |
+| lint                           | `npm run lint`                                                    | 0    |
+| unit                           | `npm run test`                                                    | 0    |
+| integration                    | `INTEGRATION_DATABASE_URL=$DATABASE_URL npm run test:integration` | 0    |
+| build (root, `NODE_ENV` unset) | `unset NODE_ENV; npm run build`                                   | 0    |
+| build (frontend)               | `cd frontend && npm run build`                                    | 0    |
 
 ## Bite and restore
 
@@ -142,20 +142,25 @@ Output: `AssertionError: expected 200 to be 401` (`Tests 1 failed`).
 
 ## Acceptance
 
-| bullet                                                              | proven by                                                                                                  |
-| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| rotate returns a new token, the old one dead server side (401)       | `mints a new token and kills the old one server side`                                                       |
-| two concurrent refreshes: exactly one succeeds                       | `lets exactly one of two concurrent refreshes with the same token win`                                      |
-| replaying a rotated-out token kills the family, newest included      | `replaying a rotated-out token kills the whole family`                                                      |
-| deactivated account or removed membership cannot refresh             | `refuses a deactivated account`, `refuses when the workspace membership is gone`                            |
-| rate limit trips at the threshold                                    | `trips the account throttle at 20 refreshes per 10 minutes`                                                 |
-| web cookie session unaffected                                        | `never accepts a cookie credential and never touches another session`                                       |
-| no token string in any log line                                      | `writes no token into any log line` plus the log grep below                                                 |
-| `/me` reset link only for CLIENT members                             | `picks the /me reset link only for an ACTIVE CLIENT member`                                                 |
-| all gates 0                                                          | the gate table above                                                                                        |
+| bullet                                                          | proven by                                                                        |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| rotate returns a new token, the old one dead server side (401)  | `mints a new token and kills the old one server side`                            |
+| two concurrent refreshes: exactly one succeeds                  | `lets exactly one of two concurrent refreshes with the same token win`           |
+| replaying a rotated-out token kills the family, newest included | `replaying a rotated-out token kills the whole family`                           |
+| deactivated account or removed membership cannot refresh        | `refuses a deactivated account`, `refuses when the workspace membership is gone` |
+| rate limit trips at the threshold                               | `trips the account throttle at 20 refreshes per 10 minutes`                      |
+| web cookie session unaffected                                   | `never accepts a cookie credential and never touches another session`            |
+| no token string in any log line                                 | `writes no token into any log line` plus the log grep below                      |
+| `/me` reset link only for CLIENT members                        | `picks the /me reset link only for an ACTIVE CLIENT member`                      |
+| all gates 0                                                     | the gate table above                                                             |
 
-Log grep: the test writes the raw tokens it minted to `AUTH_ROTATE_TOKEN_FILE` (outside the test
-log on purpose), then `grep -F -f <that file> <vitest log>` finds nothing.
+Log grep, measured on the full-suite run (`integration.log`, 63 files / 884 tests): the test wrote
+the 36 tokens it minted to `tokens-final.txt` (outside the test log on purpose), then
+`grep -c -F -f tokens-final.txt integration.log` printed `0` (grep exit 1, no match).
+
+Post-merge state: `origin/Vari8-Beta` was merged into this branch (69c74c3, already up to date, no
+conflicts) and the affected gates were re-run on the merged tree: `npm run index` 0,
+`npm run index:check` 0, `npx prettier --check .` 0, `npm run typecheck` 0, `npm run lint` 0.
 
 ## Not done / residual
 
