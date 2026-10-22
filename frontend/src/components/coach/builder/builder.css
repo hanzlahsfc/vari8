@@ -1,6 +1,6 @@
 /* biome-ignore-all lint/style/noDescendingSpecificity: Builder selectors address distinct scoped controls and surfaces. */
 .coach-root .cb-db-builder {
-  width: min(100%, 1360px);
+  width: min(100%, 1760px);
   margin: 0 auto;
   padding: 24px 0 40px;
   color: var(--text);
@@ -13,23 +13,16 @@
   gap: 24px;
   margin-bottom: 24px;
 }
-.coach-root .cb-db-name-label {
-  display: block;
-  color: var(--muted);
-  font-size: 12px;
-  margin-bottom: 5px;
+.coach-root .cb-db-name-input {
+  width: min(600px, 100%);
 }
-.coach-root .cb-db-heading input,
 .coach-root .cb-db-heading h2 {
   display: block;
   width: min(600px, 100%);
-  padding: 0;
-  border: 0;
   margin: 0;
-  background: transparent;
-  color: var(--text);
-  font: 520 clamp(24px, 3vw, 34px) / 1.2 var(--font-ui);
-  letter-spacing: -0.035em;
+  font-size: 28px;
+  font-weight: 550;
+  line-height: 34px;
 }
 .coach-root .cb-db-heading p {
   margin: 8px 0 0;
@@ -134,18 +127,14 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  border: 1px dashed color-mix(in srgb, var(--text) 18%, transparent);
-  border-radius: 18px;
-  background: linear-gradient(
-    155deg,
-    color-mix(in srgb, var(--text) 3%, transparent),
-    transparent 65%
-  );
+  border: 1px dashed var(--v8-border);
+  border-radius: var(--v8-radius-card);
+  background: var(--v8-surface);
 }
 .coach-root .cb-db-empty-symbol {
   height: 58px;
   width: 58px;
-  border-radius: 15px;
+  border-radius: var(--v8-radius-control);
   display: grid;
   place-items: center;
   background: var(--cb-eg-wash);
@@ -162,7 +151,7 @@
 .coach-root .cb-db-empty p {
   margin: 12px 20px 24px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--v8-font-size-supporting);
   line-height: 1.6;
 }
 .coach-root .cb-db-empty .cb-db-example {
@@ -175,17 +164,11 @@
 }
 .coach-root .cb-db-card {
   position: absolute;
-  padding: 14px 16px;
-  border: 1px solid color-mix(in srgb, var(--text) 11%, transparent);
-  border-radius: 14px;
-  background:
-    linear-gradient(
-      160deg,
-      color-mix(in srgb, var(--text) 3%, transparent),
-      transparent 55%
-    ),
-    color-mix(in srgb, var(--surface) 97%, transparent);
-  box-shadow: inset 0 1px color-mix(in srgb, var(--text) 5%, transparent);
+  padding: var(--v8-card-padding-sm);
+  border: 1px solid var(--v8-border);
+  border-radius: var(--v8-radius-card);
+  background: var(--v8-surface);
+  box-shadow: var(--v8-elevation-card);
   font-variant-numeric: tabular-nums;
   transition: border-color 0.16s;
 }
@@ -210,9 +193,10 @@
 }
 .coach-root .cb-db-card-header h2 {
   margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.015em;
+  font-size: var(--v8-font-size-card-heading);
+  font-weight: var(--v8-font-weight-medium);
+  line-height: var(--v8-line-height-card-heading);
+  letter-spacing: var(--v8-letter-spacing-ui);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -324,16 +308,6 @@
   min-height: 44px;
   font-size: 14px;
 }
-.coach-root .cb-db-card-menu select {
-  flex: 1;
-  min-width: 0;
-  padding: 7px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface-subtle);
-  color: var(--text);
-  font: inherit;
-}
 .coach-root .cb-db-step-buttons {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -364,8 +338,8 @@
   top: -25px;
   left: 0;
   padding: 4px 9px;
-  background: var(--accent);
-  color: var(--accent-contrast);
+  background: var(--accent-action, var(--accent));
+  color: var(--accent-action-text, var(--accent-contrast));
   border-radius: 5px;
   font-size: 11px;
   white-space: nowrap;
@@ -393,21 +367,14 @@
   align-items: end;
   gap: 8px;
 }
-.coach-root .cb-db-size-fields label {
+.coach-root .cb-db-size-fields > div {
   display: grid;
   gap: 4px;
   color: var(--muted);
   font-size: 11px;
 }
-.coach-root .cb-db-size-fields input {
+.coach-root .cb-db-size-fields > div input {
   width: 82px;
-  min-height: 34px;
-  padding: 5px 8px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--surface-subtle);
-  color: var(--text);
-  font: inherit;
   font-variant-numeric: tabular-nums;
 }
 .coach-root .cb-db-footnote {
@@ -472,20 +439,9 @@
   gap: 12px;
   margin-top: 24px;
 }
-.coach-root .cb-db-detail-dialog :where(select, input) {
-  font: inherit;
-  color: var(--text);
-  background: var(--surface-subtle);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 10px;
-}
 .coach-root .cb-db-builder ::selection {
   background: var(--cd-action-bg);
   color: var(--cd-action-text);
-}
-.coach-root .cb-db-builder input {
-  caret-color: var(--accent-ink);
 }
 @media (min-width: 1100px) {
   .coach-root .cb-eg-content:has(.cb-db-builder) {
@@ -518,7 +474,7 @@
     min-height: 44px;
   }
   .coach-root .cb-db-card {
-    padding: 14px;
+    padding: var(--v8-card-padding-sm);
   }
   .coach-root .cb-db-card-tools .cb-db-move,
   .coach-root .cb-db-card-menu summary {
@@ -597,9 +553,6 @@
   }
   .coach-root .cb-db-empty {
     height: 400px;
-  }
-  .coach-root .cb-db-card-header h2 {
-    font-size: 12px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -5,6 +5,37 @@ import test from "node:test";
 
 // Compile the local TS/TSX modules in this test process; no extra test dependency.
 const require = createRequire(import.meta.url);
+// Map `@/` specifiers to `src/` like the app's tsconfig paths so required TS
+// modules resolve identically to the bundler.
+const Module = require("node:module");
+const nodePath = require("node:path");
+const nodeUrl = require("node:url");
+const srcRoot = nodePath.resolve(
+  nodePath.dirname(nodeUrl.fileURLToPath(import.meta.url)),
+  "../../..",
+);
+const resolveFilename = Module._resolveFilename;
+Module._resolveFilename = function (specifier, ...rest) {
+  if (specifier.startsWith("@/")) {
+    const base = nodePath.join(srcRoot, specifier.slice(2));
+    for (const candidate of [
+      `${base}.ts`,
+      `${base}.tsx`,
+      `${base}.js`,
+      `${base}.mjs`,
+      `${base}/index.ts`,
+      `${base}/index.tsx`,
+      base,
+    ]) {
+      try {
+        return resolveFilename.call(this, candidate, ...rest);
+      } catch {
+        // Try the next candidate.
+      }
+    }
+  }
+  return resolveFilename.call(this, specifier, ...rest);
+};
 const ts = require("typescript");
 for (const extension of [".ts", ".tsx"]) {
   require.extensions[extension] = (module, filename) => {
@@ -110,9 +141,14 @@ test("every widget's title opens its corresponding local source record detail", 
       kind: entry.id,
       settings: defaultSettings(entry.id),
     };
+    const detail = widgetDetailKey(widget);
+    if (detail === null) {
+      assert.ok(["CU17", "CU18"].includes(entry.id), entry.id);
+      continue;
+    }
     const output = renderToStaticMarkup(
       React.createElement(DetailContent, {
-        detail: widgetDetailKey(widget),
+        detail,
         records: initialRecords,
         onRecordsChange: () => {},
         onDetail: () => {},
@@ -123,8 +159,8 @@ test("every widget's title opens its corresponding local source record detail", 
   }
 });
 
-test("all twenty catalogue entries render all five measured content states", () => {
-  assert.equal(catalogue.length, 20);
+test("all twenty-two catalogue entries render all five measured content states", () => {
+  assert.equal(catalogue.length, 22);
   assert.deepEqual(
     new Set(catalogue.map((entry) => entry.category)),
     new Set([

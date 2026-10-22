@@ -95,5 +95,27 @@ After review and passing local gates:
 
 ## State
 
-Plan recorded before overlay. No product files have been copied, committed
-or pushed at this point.
+Overlay applied and publication gates verified locally; commit, push, PR and
+merge remain pending.
+
+### Verification
+
+- `npm test` in `frontend/`: 252 tests, 252 pass, 0 fail (exit 0).
+- `npm run check` in `frontend/`: exit 0 — tests, agent-context check,
+  `tsc --noEmit`, Biome (`check . --error-on-warnings`, 260 files, no
+  findings) and `next build --webpack` all green. Build routes: `/`,
+  `/_not-found`, `/coach`, `/dev/design-system`, `/ethereal`.
+- Five stale test assertions were updated to deliberate current behavior
+  (test files only): accent-contrast screenshot pink now keeps its fill with
+  a dark label; mid-gray `#777777` keeps its fill with a black label; the
+  widget catalogue count is 22 after CU17/CU18; CU17/CU18 intentionally have
+  no source-record detail and are skipped by allowlist; `ChartPeriodControl`
+  asserts the shared VARI8 `Select` trigger label and hidden input value
+  instead of native `<option selected>`.
+- Browser smoke on a dedicated dev server (port 3100, headless Chrome CDP):
+  1440×900 and 390×844 screenshots of the Supplements plan, the Activity
+  targets plan (`plan=activity-targets`) and the client preview dialog for
+  `client-001`. Zero console errors; one `/favicon.ico` 404 in dev.
+- `/dev/design-system` is listed in the production build but fails closed:
+  built HTML renders the 404 page and the production webpack alias replaces
+  the playground module with a throwing stub.

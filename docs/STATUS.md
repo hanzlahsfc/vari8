@@ -1,3 +1,39 @@
+## 2026-10-22 — current frontend publication gates green — verified locally
+
+- `npm test` in `frontend/`: 252 tests, 252 pass, 0 fail (exit 0).
+- `npm run check` in `frontend/` (test → agent-context:check → typecheck →
+  lint → build): exit 0. Biome checked 260 files with `--error-on-warnings`,
+  no findings; `tsc --noEmit` clean; `next build --webpack` produced routes
+  `/`, `/_not-found`, `/coach`, `/dev/design-system`, `/ethereal`.
+- Five stale test assertions were updated to deliberate current behavior
+  (test files only, no product changes):
+  - `accent-contrast.test.mjs`: the screenshot pink `#D93A7F` now keeps its
+    fill with a dark label `{ background: "#D93A7F", hoverBackground:
+    "#DB4284", foreground: "#000000" }`; the surface-aware accent algorithm
+    replaced the previous minimal-darkened fill plus white label.
+  - `accent-contrast.test.mjs`: mid-gray `#777777` keeps its fill
+    (`#777777`) with a black label instead of darkening to `#767676` with a
+    white label; `contrastRatio(bg, fg) >= 4.5` is asserted.
+  - `widgets.test.mjs`: catalogue count is 22 after CU17 "Section heading"
+    and CU18 "Coach announcement" joined the Coaching category.
+  - `widgets.test.mjs`: CU17/CU18 intentionally return no source-record
+    detail (`widgetDetailKey` → `null`); the detail loop skips them behind
+    an ID allowlist assertion.
+  - `refinement.test.mjs`: `ChartPeriodControl` renders the shared VARI8
+    `Select` (`v8-select dw-chart-range`, Base UI trigger + hidden input)
+    instead of a native `<select>` with `<option selected>`.
+- Browser smoke on a dedicated dev server (port 3100, headless Chrome via
+  CDP): screenshots at 1440×900 and 390×844 for the Supplements plan
+  (`plan=supplements`), the Activity targets plan (`plan=activity-targets`)
+  and the client "Preview assigned tool" dialog, all for `client-001`.
+  Zero console errors; one network 404 for `/favicon.ico` in dev.
+  Artifacts kept outside Git under the local `.agent-runs` archive.
+- `/dev` boundary confirmed fail-closed: the production build lists the
+  `/dev/design-system` route but its built HTML renders the 404 page
+  (`notFound()` outside development) and `next.config.ts` aliases the
+  playground module to a throwing stub in production webpack builds.
+- Commit, push, PR and merge remain pending under the publication plan.
+
 ## 2026-10-22 — current frontend PR and clean integration — planned
 
 - Owner authorized publication of the current local frontend, direct review

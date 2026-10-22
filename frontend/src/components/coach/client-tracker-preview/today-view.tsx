@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Select as SharedSelect } from "@/components/vari8/components";
 import {
   configuredUnit,
   fieldTrackerConfig,
@@ -201,33 +202,30 @@ export function TodayView(props: TodayViewProps) {
           </nav>
 
           <div className="ct-entry-content">
-            <label
-              className="ct-category-mobile-label"
-              htmlFor="ct-category-select"
-            >
-              Category
-            </label>
-            <select
+            <SharedSelect
               id="ct-category-select"
+              label="Category"
               className="ct-category-select"
               value={effectiveGroup}
               disabled={editing}
-              onChange={(event) => selectGroup(event.currentTarget.value)}
-            >
-              <option value="all">
-                All fields ({recorded}/{all.length})
-              </option>
-              {groups.map((group) => {
-                const count = group.parameters.filter((parameter) =>
-                  hasValue(parameter, selectedDate, props),
-                ).length;
-                return (
-                  <option key={group.label} value={group.label}>
-                    {group.label} ({count}/{group.parameters.length})
-                  </option>
-                );
-              })}
-            </select>
+              onValueChange={selectGroup}
+              size="sm"
+              options={[
+                {
+                  value: "all",
+                  label: `All fields (${recorded}/${all.length})`,
+                },
+                ...groups.map((group) => {
+                  const count = group.parameters.filter((parameter) =>
+                    hasValue(parameter, selectedDate, props),
+                  ).length;
+                  return {
+                    value: group.label,
+                    label: `${group.label} (${count}/${group.parameters.length})`,
+                  };
+                }),
+              ]}
+            />
 
             <div className="ct-daily-groups">
               {visibleGroups.map((group) => {

@@ -5,6 +5,37 @@ import test from "node:test";
 
 // Compile the local TS/TSX modules in this test process; no extra test dependency.
 const require = createRequire(import.meta.url);
+// Map `@/` specifiers to `src/` like the app's tsconfig paths so required TS
+// modules resolve identically to the bundler.
+const Module = require("node:module");
+const nodePath = require("node:path");
+const nodeUrl = require("node:url");
+const srcRoot = nodePath.resolve(
+  nodePath.dirname(nodeUrl.fileURLToPath(import.meta.url)),
+  "../../..",
+);
+const resolveFilename = Module._resolveFilename;
+Module._resolveFilename = function (specifier, ...rest) {
+  if (specifier.startsWith("@/")) {
+    const base = nodePath.join(srcRoot, specifier.slice(2));
+    for (const candidate of [
+      `${base}.ts`,
+      `${base}.tsx`,
+      `${base}.js`,
+      `${base}.mjs`,
+      `${base}/index.ts`,
+      `${base}/index.tsx`,
+      base,
+    ]) {
+      try {
+        return resolveFilename.call(this, candidate, ...rest);
+      } catch {
+        // Try the next candidate.
+      }
+    }
+  }
+  return resolveFilename.call(this, specifier, ...rest);
+};
 const ts = require("typescript");
 for (const extension of [".ts", ".tsx"]) {
   require.extensions[extension] = (module, filename) => {
@@ -70,14 +101,29 @@ test("denser histories retain gaps, zero and latest values without replacing edi
   assert.deepEqual(upgraded.macroIntake, []);
 });
 test("all line-chart families expose per-instance ranges and year changes data coverage", () => {
+  const labels = {
+    week: "Week",
+    month: "Month",
+    "6month": "6 months",
+    year: "Year",
+  };
   for (const kind of ["BN01", "BN08", "BN21", "TL28", "CU09", "BN19"]) {
-    assert.match(render(kind), /class="dw-chart-range"/, kind);
-    for (const period of ["week", "month", "6month", "year"])
+    assert.match(render(kind), /class="[^"]*\bdw-chart-range\b[^"]*"/, kind);
+    for (const period of ["week", "month", "6month", "year"]) {
+      const html = render(kind, { period });
       assert.match(
-        render(kind, { period }),
-        new RegExp(`value="${period}" selected`),
+        html,
+        new RegExp(
+          `class="[^"]*\\bdw-chart-range\\b[^"]*"[^>]*><span>${labels[period]}</span>`,
+        ),
         kind + period,
       );
+      assert.match(
+        html,
+        new RegExp(`<input id="[^"]*-hidden-input"[^>]*\\bvalue="${period}"`),
+        kind + period,
+      );
+    }
   }
   const week = render("BN01", { period: "week" }),
     year = render("BN01", { period: "year" });
