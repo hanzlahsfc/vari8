@@ -12,7 +12,7 @@ import {
 } from "react";
 import type { TrackerEntry } from "@/components/ethereal/client-tracker/model";
 import type { LogSession } from "../logbook-model";
-import type { NutritionDay } from "./fixtures";
+import type { DemoThread, NutritionDay } from "./fixtures";
 import {
   buildTrackerHistory,
   checkInForm,
@@ -21,6 +21,7 @@ import {
   demoAsOf,
   homeSummary,
   logbookSessions,
+  messageThreads,
   nutritionDays,
   nutritionTargets,
   photoDates,
@@ -47,6 +48,7 @@ export type DemoSlices = {
     days: NutritionDay[];
   };
   photos: { dates: string[] };
+  messages: { threads: DemoThread[] };
   supplements: { plan: typeof supplementPlan | null };
   checkIn: { form: typeof checkInForm; submittedAt: string | null };
 };
@@ -68,6 +70,7 @@ function buildSlices(mode: DemoMode): DemoSlices {
       logbook: { sessions: [] },
       nutrition: { targets: null, days: [] },
       photos: { dates: [] },
+      messages: { threads: [] },
       supplements: { plan: null },
       checkIn: { form: checkInForm, submittedAt: null },
     };
@@ -84,6 +87,7 @@ function buildSlices(mode: DemoMode): DemoSlices {
     logbook: { sessions: logbookSessions },
     nutrition: { targets: nutritionTargets, days: nutritionDays },
     photos: { dates: photoDates },
+    messages: { threads: messageThreads },
     supplements: { plan: supplementPlan },
     checkIn: { form: checkInForm, submittedAt: null },
   };

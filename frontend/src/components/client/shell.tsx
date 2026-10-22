@@ -24,6 +24,7 @@ export const clientNavItems = [
   { id: "training", label: "Training", href: "/client/training" },
   { id: "logbook", label: "Logbook", href: "/client/logbook" },
   { id: "nutrition", label: "Nutrition", href: "/client/nutrition" },
+  { id: "messages", label: "Messages", href: "/client/messages" },
   { id: "photos", label: "Photos", href: "/client/photos" },
   { id: "supplements", label: "Supplements", href: "/client/supplements" },
   { id: "check-in", label: "Check-in", href: "/client/check-in" },

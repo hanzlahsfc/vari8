@@ -83,6 +83,54 @@ export const nutritionDays: NutritionDay[] = [
   },
 ];
 
+export type DemoMessage = {
+  id: string;
+  from: "client" | "coach";
+  text: string;
+  at: string;
+};
+
+export type DemoThread = {
+  id: string;
+  subject: string;
+  unread: number;
+  messages: DemoMessage[];
+};
+
+export const messageThreads: DemoThread[] = [
+  {
+    id: "thread-coach",
+    subject: "Jonas Weber",
+    unread: 1,
+    messages: [
+      {
+        id: "m1",
+        from: "coach",
+        text: "How did the new squat prescription feel this week?",
+        at: "2026-03-01 18:20",
+      },
+      {
+        id: "m2",
+        from: "client",
+        text: "Solid. Bar speed stayed up on the back-off set.",
+        at: "2026-03-01 19:02",
+      },
+      {
+        id: "m3",
+        from: "coach",
+        text: "Good. Keep the rest honest and we add load next week.",
+        at: "2026-03-02 08:41",
+      },
+    ],
+  },
+  {
+    id: "thread-checkins",
+    subject: "Check-in notes",
+    unread: 0,
+    messages: [],
+  },
+];
+
 export const supplementPlan: SupplementPlan = {
   id: "demo-supplement-plan",
   clientId: "demo-client",

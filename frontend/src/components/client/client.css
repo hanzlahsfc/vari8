@@ -218,6 +218,39 @@ body:has(.client-root) {
   color: var(--v8-danger);
 }
 
+.client-msg {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-1);
+  max-width: 70%;
+  padding: var(--v8-space-3);
+  border-radius: var(--v8-radius-control);
+  background: var(--v8-surface-inset);
+}
+
+.client-msg[data-mine] {
+  align-self: flex-end;
+  background: var(--v8-surface-selected);
+}
+
+.client-msg p {
+  margin: 0;
+}
+
+.client-unread {
+  display: inline-block;
+  inline-size: var(--v8-space-2);
+  block-size: var(--v8-space-2);
+  border-radius: var(--v8-radius-pill);
+  background: var(--v8-accent-primary);
+}
+
+.client-composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-2);
+}
+
 @media (max-width: 720px) {
   .client-root {
     grid-template-columns: 1fr;
