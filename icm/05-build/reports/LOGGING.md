@@ -138,5 +138,5 @@ vitest.integration.config.ts tests/integration/pr05-security.test.ts` —
   (`[redacted].next/…`) — file names and line numbers survive; absolute
   prefixes are not operationally needed and the safe side won.
 
-Head: pending commit. Not merged, not approved — ready for independent
-review.
+Head: `04861b6` (plus this report's head line update). PR #195. Not
+merged, not approved — ready for independent review.
