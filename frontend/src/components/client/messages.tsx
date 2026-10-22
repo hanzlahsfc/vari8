@@ -1,13 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Button,
-  Card,
-  Status,
-  TextArea,
-  Toggle,
-} from "@/components/vari8/components";
+import { Button, Card, Status, Toggle } from "@/components/vari8/components";
+import { TextArea } from "@/components/vari8/inputs";
 import type { DemoThread } from "./demo/fixtures";
 import type { ParsedDemo } from "./demo/state";
 import { useDemoSlice, useDemoStore } from "./demo/store";
@@ -118,7 +113,9 @@ function ThreadView({
             label="Message"
             placeholder="Write a message"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+              setText(e.target.value)
+            }
           />
           <div className="client-set-row">
             <Button

@@ -49,7 +49,7 @@ export function TasksScreen({ demo }: { demo: ParsedDemo }) {
                   </span>
                   <span className="client-set-row">
                     {overdue && <Status tone="danger">Overdue</Status>}
-                    {task.done && <Status tone="success">Done</Status>}
+                    {task.done && <Status tone="positive">Done</Status>}
                     <span>{task.due}</span>
                   </span>
                 </div>
