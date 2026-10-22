@@ -12,7 +12,7 @@
     "agent-context:test": "node --test scripts/agent-context.test.mjs",
     "format": "biome format . --write",
     "test": "node scripts/test-frontend.mjs",
-    "check": "npm run test && npm run agent-context:check && npm run typecheck && npm run lint && npm run build",
+    "check": "npm run test && npm run agent-context:check && npm run typecheck && npm run lint && npm run ui:check && npm run build",
     "typecheck": "next typegen && tsc --noEmit",
     "ui:add": "shadcn add",
     "preview:up": "node scripts/local-preview.mjs up",
@@ -42,6 +42,7 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "postcss": "8.5.29",
+    "postcss-selector-parser": "7.1.6",
     "shadcn": "4.21.1",
     "tailwindcss": "4.3.3",
     "typescript": "6.0.3"

@@ -15,6 +15,7 @@ Classify the request, then use the smallest path that can complete it:
 | Simple explanation or read-only lookup | `01-intake` → `02-scout` |
 | Documentation or context work | `01-intake` → `02-scout` → `03-plan` when multi-step → `04-build` → `05-validate` → `06-review` |
 | Product behavior or bug fix | `01-intake` → `02-scout` → `03-plan` → `04-build` → `05-validate` → `06-review` |
+| Feature styling or shared-control change | `01-intake` → `02-scout` → `03-plan` → `04-build` → `05-validate` (`npm run check` now runs `ui:check`, the drift scanner) → `06-review` |
 | Publication or external action | Run the relevant implementation/review path first; use `06-review` to check the exact authority before any external action. |
 
 The stages follow the Conductor reference. ICM supplies the file-based context boundaries and human-reviewable handoffs. Do not load all stages, prior chat history, or archive folders by default. A task may use an explicitly authorized independent worker, but the workflow itself is sequential and the lead owns integration and Git writes.
