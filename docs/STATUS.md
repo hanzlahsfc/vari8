@@ -1,3 +1,15 @@
+## 2026-10-22 — current frontend PR and clean integration — planned
+
+- Owner authorized publication of the current local frontend, direct review
+  and a clean PR merge into `FRONTEND`. `main` remains out of scope.
+- Clean publication checkout starts from `great-tracker/FRONTEND` at
+  `fe5780dd5b759823b98f5adb4495530923cf4beb`.
+- Feature branch: `devin/vari8-frontend-current-20261022`.
+- Plan: `docs/tasks/frontend-current-2026-10-22.md`.
+- Preserve target-only tests/configuration and the source workspace. The
+  additive overlay, publication gates, direct review and PR are pending.
+- Root runtime, backend, database and CI workflows are not part of this work.
+
 ## 2026-10-18 — FRONTEND refresh and contributor PR route correction — in progress
 
 - Publication branch `FRONTEND` retains its published history and merged target
