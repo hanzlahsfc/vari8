@@ -73,6 +73,9 @@ export const RESOURCES = [
   // CHECK-IN-FEEDBACK-I1: append-only staff text feedback on a reviewed
   // Check-In submission.
   "checkinFeedback",
+  // PR-SUPP: saved supplement plan per client (schedule-only; staff
+  // author for assigned clients, clients read their own saved plan).
+  "supplementPlans",
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
 
@@ -414,6 +417,17 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
   // writes; client reads its own feedback only, never writes;
   // SUPPORT/PLATFORM_ADMIN denied outright (deny-set enforces dual-role).
   checkinFeedback: {
+    PLATFORM_ADMIN: D,
+    WORKSPACE_OWNER: c("workspace", "assigned"),
+    COACH: c("assigned", "assigned"),
+    ASSISTANT_COACH: c("assigned", "denied"),
+    SUPPORT: D,
+    CLIENT: c("own", "denied"),
+  },
+  // PR-SUPP: same posture as mealPlans — staff author only for clients
+  // they hold an ACTIVE assignment to; owners keep workspace-wide read;
+  // assistants read-only; clients read their own saved plan.
+  supplementPlans: {
     PLATFORM_ADMIN: D,
     WORKSPACE_OWNER: c("workspace", "assigned"),
     COACH: c("assigned", "assigned"),

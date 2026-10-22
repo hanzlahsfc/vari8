@@ -171,6 +171,12 @@ export const AUDIT_RESOURCE_TYPES = [
   // with a REMOVED marker. IDs + structural markers only — never names,
   // labels, archive reasons, or profile values.
   "client_profile",
+  // PR-SUPP: saved supplement-plan lifecycle (CREATE on first save,
+  // UPDATE on each whole-plan re-save, READ on detail views). IDs +
+  // structural markers only (versionSeq = revision, count = item count)
+  // — never plan names, product names, brands, timing, notes, statuses,
+  // or URLs.
+  "supplement_plan",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 
