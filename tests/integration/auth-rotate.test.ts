@@ -55,7 +55,10 @@ describe.skipIf(!enabled)("POST /api/v1/auth/refresh (real PG)", () => {
 
   async function fixture(
     role: "WORKSPACE_OWNER" | "COACH" | "CLIENT" | null,
-    options: { status?: "ACTIVE" | "DEACTIVATED"; clientProfile?: boolean } = {},
+    options: {
+      status?: "ACTIVE" | "DEACTIVATED";
+      clientProfile?: boolean;
+    } = {},
   ) {
     const t = tag();
     const email = `${t}@example.test`;
@@ -118,7 +121,10 @@ describe.skipIf(!enabled)("POST /api/v1/auth/refresh (real PG)", () => {
     const all: Record<string, string> = { ...headers };
     if (token !== null) all.authorization = `Bearer ${token}`;
     return POST(
-      new Request(`${BASE}/api/v1/auth/refresh`, { method: "POST", headers: all }),
+      new Request(`${BASE}/api/v1/auth/refresh`, {
+        method: "POST",
+        headers: all,
+      }),
     );
   }
 
@@ -269,9 +275,7 @@ describe.skipIf(!enabled)("POST /api/v1/auth/refresh (real PG)", () => {
     expect(blocked.status).toBe(429);
     expect(await blocked.json()).toEqual({ error: { code: "rate_limited" } });
     // The refused request spent nothing.
-    expect(
-      await prisma.session.count({ where: { token } }),
-    ).toBe(1);
+    expect(await prisma.session.count({ where: { token } })).toBe(1);
   });
 
   it("never accepts a cookie credential and never touches another session", async () => {

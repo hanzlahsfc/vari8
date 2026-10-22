@@ -96,7 +96,10 @@ export async function POST(request: Request): Promise<Response> {
       REFRESH_RULE,
     );
     if (!tokenBudget.allowed) {
-      return Response.json({ error: { code: "rate_limited" } }, { status: 429 });
+      return Response.json(
+        { error: { code: "rate_limited" } },
+        { status: 429 },
+      );
     }
 
     const session = await prisma.session.findUnique({
@@ -113,7 +116,10 @@ export async function POST(request: Request): Promise<Response> {
       REFRESH_RULE,
     );
     if (!accountBudget.allowed) {
-      return Response.json({ error: { code: "rate_limited" } }, { status: 429 });
+      return Response.json(
+        { error: { code: "rate_limited" } },
+        { status: 429 },
+      );
     }
 
     const membership = await prisma.workspaceMember.findFirst({
