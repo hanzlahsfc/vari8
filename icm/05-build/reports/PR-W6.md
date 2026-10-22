@@ -4,9 +4,31 @@ Card `pr-w6-checkins`, issue #146. Branch `beta/pr-w6-checkins`, base `3148df3`
 (Vari8-Beta). Worktree `.worktrees/pr-w6-checkins`. Lane DB `app_w6` (native
 Postgres on 127.0.0.1:5433), dev port 3970, parity port 3971.
 
-Status: **PARTIAL**. Every local mechanism gate passes; parity does not (analysis
-below, and it is not a check-ins regression). 18 free rows and 2 partials are
-wired; the 12 `clients.tsx` rows are untouched by design.
+Status: **PARTIAL**. Every local mechanism gate passes. Parity is structurally clean on
+the check-in screens: `s03-checkin-review` is back to `0 added, 0 removed` at both
+widths, so every screen in the run shows only the stale-baseline translation. 18 free
+rows and 2 partials are wired; the 12 `clients.tsx` rows are untouched by design.
+
+## Repair: the review panel drew no parameter rows
+
+The first build left the review screen 79 elements and 237 px short of base
+(`63 added, 79 removed`, page 2159 -> 1922). Cause was data, not markup: the board's
+server mapping built each submission with `metrics: []` and `flags: []`, so
+"Tracker & progress" lost its four stat rows and the flagged-notes panel fell back to
+its empty line. Base drew both from the canvas seed.
+
+Fixed in `components/canvas/data/checkins.ts`, no markup change:
+
+- `samplePanels(type)` reads the same samples base rendered (`seedState()` submissions)
+  and the server mapping fills `metrics` and `flags` from it. S03-15 stays PARTIAL by
+  owner ruling Q11: the values are canvas samples, not client data, because the audited
+  detail DTO carries no parameter values. Q5 has no flags column either, so the demo
+  card stands in; the row stays MISSING. **Owner note:** Q5 as written ("panel empty")
+  drops 7 elements from base and makes `0 added, 0 removed` unreachable; this build
+  draws base's card instead of moving the screen.
+- `loadSubmissionAnswers` no longer maps a `kind: "visual"` field into `answers`. The
+  media field was drawing a second, empty Q&A ("Progress visuals / 2 visuals") above the
+  visuals grid that already renders those media. `SubmissionField` now carries `kind`.
 
 ## What changed
 
@@ -116,19 +138,34 @@ than this Mac produces today.
 
 The check-in screens, measured in the same run:
 
-| Screen               | Changed px @1440 | Geometry @1440                                            |
-| -------------------- | ---------------- | --------------------------------------------------------- |
-| `s03-checkins-board` | 231082           | 0 added, 0 removed, 64 moved, 2 text                      |
-| `s03-add-extra`      | 956757           | 0 added, 0 removed, 67 moved, 2 text                      |
-| `s03-checkin-review` | 985920           | 63 added, 79 removed, 57 moved, 4 text; page 2159 -> 1922 |
+| Screen               | Changed px @1440 | Geometry @1440                                           |
+| -------------------- | ---------------- | -------------------------------------------------------- |
+| `s03-checkins-board` | 232005           | 0 added, 0 removed, 62 moved, 2 text                     |
+| `s03-add-extra`      | 958770           | 0 added, 0 removed, 66 moved, 2 text                     |
+| `s03-checkin-review` | 587699           | 0 added, 0 removed, 127 moved, 6 text; page 2159 -> 2182 |
 
-The board and the add-extra dialog show the same pure translation as untouched
-screens, so those two carry no content delta of their own. The review screen is a
-real content delta: the seeded form has three questions plus the athlete note, and
-the tracker panel has no parameter list because the server detail DTO carries no
-`metrics` (Q11 keeps those values demo). Matching the demo baseline there needs
-the check-in seed to carry the canvas question set and a metrics selection, which
-is a seed change plus a baseline recapture, not a transport change.
+Before the repair the review row read, verbatim:
+
+```text
+s03-checkin-review@1440 /coach 985920 63/79 page size 1440,2159 -> 1440,1922; 985920 changed pixels; geometry: 63 added, 79 removed, 57 moved; text: 4 changed
+s03-checkin-review@390 /coach 548946 63/79 page size 390,3103 -> 390,2836; 548946 changed pixels; geometry: 63 added, 79 removed, 69 moved; text: 4 changed
+```
+
+After:
+
+```text
+s03-checkin-review@1440 /coach 587699 0/0/127 page size 1440,2159 -> 1440,2182; 587699 changed pixels; geometry: 0 added, 0 removed, 127 moved; text: 6 changed
+s03-checkin-review@390 /coach 266822 0/0/139 page size 390,3103 -> 390,3120; 266822 changed pixels; geometry: 0 added, 0 removed, 139 moved; text: 6 changed
+```
+
+What is left on that screen is content, not structure: the 6 text changes are the two
+owner-ruled shell strings, the pending count (`2` -> `3`, the server has one more waiting
+feedback), the rating display (`8 / 10 — feeling stronger` -> `8 / 10`), the note heading
+(`Athlete note` -> `Your note`, the server field label) and the video button caption. The
+22.5 px taller page comes from the visuals captions: the server carries media ids
+(`seed-m8-media-emma-1`), which wrap to two lines where base's `Front · 12 October` fit
+on one. Both are honest server values; inventing captions to match the baseline would be
+the guess Q11 forbids.
 
 To reproduce: `APP_ENV=test ENABLE_CHECK_INS=1 PARITY_PORT=3971 npm run parity`
 (check-ins fails closed in production, so without `APP_ENV=test` every route
@@ -187,8 +224,11 @@ All six mutations were reverted and the suites re-run green.
   S03-23 (no client UI, O4), S03-25 (no variant column, Q4), V3-CP15.
 - S01-29 stays partial: list and remove are wired, the reschedule dialog writes
   from `clients.tsx` (D1).
-- S03-15 stays partial by ruling Q11: the tracker panel keeps sample values and
-  the server detail carries no `metrics` list.
+- S03-15 stays PARTIAL by ruling Q11: the tracker panel draws bodyweight, energy
+  intake, sleep and habit consistency from the canvas samples, because the server
+  detail carries no parameter values. The numbers are demo values, not client data.
+- S03-16 stays MISSING: there is no flagged-note column, so the panel draws base's
+  demo card rather than an empty one (see the repair note above for the Q5 conflict).
 - S03-21 (draft auto-kept per submission) still keeps the draft in canvas storage;
   the server has no draft column.
 

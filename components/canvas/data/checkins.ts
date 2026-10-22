@@ -17,6 +17,7 @@
 //   an additional date renders Custom and a recurring occurrence Full; the
 //   seed labels its two cases the same way.
 
+import { seedState } from "../coach/model";
 import type {
   Extra,
   ReviewDraft,
@@ -95,6 +96,7 @@ type SubmissionItem = {
 };
 
 type SubmissionField = {
+  kind: string;
   label: string;
   display: string;
   mediaIds: string[];
@@ -217,6 +219,22 @@ export type CheckinLoad = {
 };
 
 /**
+ * The panel samples the review screen draws when the server carries no value
+ * for them: parameter rows (S03-15, owner ruling Q11 keeps the samples) and
+ * flagged notes (no flags column, Q5). Base drew them, so the wired screen must
+ * draw them too; the rows stay PARTIAL in the ledger, they are not real data.
+ */
+let sampleSubmissions: Submission[] | null = null;
+function samplePanels(
+  type: Submission["type"],
+): Pick<Submission, "metrics" | "flags"> {
+  sampleSubmissions ??= seedState().submissions;
+  const demo =
+    sampleSubmissions.find((s) => s.type === type) ?? sampleSubmissions[0];
+  return { metrics: demo?.metrics ?? [], flags: demo?.flags ?? [] };
+}
+
+/**
  * One bounded read per client for the calendar range, plus the answer-free
  * submission list and the schedule rules. Reads are per client because the
  * server scopes every check-in read to one `clientProfileId`; a client the
@@ -269,6 +287,7 @@ export async function loadCheckins(
       for (const item of subs.items) {
         const date = viennaDate(item.dueAt);
         const recurring = isRuleOccurrence(folded, date);
+        const type = recurring ? "Full" : "Custom";
         submissions.push({
           id: item.submissionId,
           clientId: client.id,
@@ -276,12 +295,14 @@ export async function loadCheckins(
           eventId: recurring
             ? recurringEventId(client.id, date)
             : item.instanceId,
-          type: recurring ? "Full" : "Custom",
+          type,
           answers: [],
-          metrics: [],
           visuals: [],
           note: "",
-          flags: [],
+          // S03-15 keeps the canvas samples by owner ruling Q11, and the detail
+          // DTO has no flags column (Q5). Draw base's sample panel, not an empty
+          // one: a missing panel reads as a change to the screen.
+          ...samplePanels(type),
         });
       }
     } catch {
@@ -312,10 +333,14 @@ export async function loadSubmissionAnswers(
   const sent = detail.feedback?.[detail.feedback.length - 1];
   return {
     ...submission,
-    answers: detail.fields.map((field) => ({
-      question: field.label,
-      answer: field.display,
-    })),
+    // A media field is not a text answer: base rendered its media in the
+    // visuals grid below, so mapping it here would draw a second, empty Q&A.
+    answers: detail.fields
+      .filter((field) => field.kind !== "visual")
+      .map((field) => ({
+        question: field.label,
+        answer: field.display,
+      })),
     visuals: detail.fields.flatMap((field) => field.mediaIds),
     response: sent
       ? {
