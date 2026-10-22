@@ -181,6 +181,26 @@ body:has(.client-root) {
   font-size: var(--v8-font-size-supporting);
 }
 
+.client-set-edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-2);
+  padding: var(--v8-space-3);
+  border: var(--v8-border-width-hairline) solid var(--v8-border);
+  border-radius: var(--v8-radius-compact);
+}
+
+.client-set-edit[data-current] {
+  border-color: var(--v8-accent-border);
+}
+
+.client-set-fields {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--v8-space-2);
+  align-items: end;
+}
+
 @media (max-width: 720px) {
   .client-root {
     grid-template-columns: 1fr;

@@ -11,6 +11,7 @@ import {
   useState,
 } from "react";
 import type { TrackerEntry } from "@/components/ethereal/client-tracker/model";
+import type { LogSession } from "../logbook-model";
 import {
   buildTrackerHistory,
   checkInForm,
@@ -18,6 +19,7 @@ import {
   coachPerson,
   demoAsOf,
   homeSummary,
+  logbookSessions,
   nutritionTargets,
   photoDates,
   supplementPlan,
@@ -37,6 +39,7 @@ export type DemoSlices = {
     plan: typeof trainingPlan | null;
     sessions: typeof trainingSessions;
   };
+  logbook: { sessions: LogSession[] };
   nutrition: { targets: typeof nutritionTargets | null };
   photos: { dates: string[] };
   supplements: { plan: typeof supplementPlan | null };
@@ -57,6 +60,7 @@ function buildSlices(mode: DemoMode): DemoSlices {
       home: { summary: null },
       tracker: { entries: [], textValues: {}, comments: {} },
       training: { plan: null, sessions: [] },
+      logbook: { sessions: [] },
       nutrition: { targets: null },
       photos: { dates: [] },
       supplements: { plan: null },
@@ -72,6 +76,7 @@ function buildSlices(mode: DemoMode): DemoSlices {
       comments: {},
     },
     training: { plan: trainingPlan, sessions: trainingSessions },
+    logbook: { sessions: logbookSessions },
     nutrition: { targets: nutritionTargets },
     photos: { dates: photoDates },
     supplements: { plan: supplementPlan },

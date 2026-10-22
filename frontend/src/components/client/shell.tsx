@@ -22,6 +22,7 @@ export const clientNavItems = [
   { id: "home", label: "Home", href: "/client" },
   { id: "tracker", label: "Tracker", href: "/client/tracker" },
   { id: "training", label: "Training", href: "/client/training" },
+  { id: "logbook", label: "Logbook", href: "/client/logbook" },
   { id: "nutrition", label: "Nutrition", href: "/client/nutrition" },
   { id: "photos", label: "Photos", href: "/client/photos" },
   { id: "supplements", label: "Supplements", href: "/client/supplements" },

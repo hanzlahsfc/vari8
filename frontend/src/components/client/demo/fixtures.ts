@@ -5,6 +5,7 @@ import type {
 } from "@/components/coach/plans/types";
 import type { SupplementPlan } from "@/components/coach/supplements/model";
 import type { TrackerConfig } from "@/components/ethereal/client-tracker/model";
+import type { LogSession, PrescriptionVersion } from "../logbook-model";
 
 // Synthetic demo data only. No persistence, no network, no real people.
 export const demoAsOf = "2026-03-02";
@@ -250,6 +251,139 @@ export const trainingPlan: TrainingPlan = {
 };
 
 export const photoDates = ["2026-01-05", "2026-02-02", "2026-03-02"];
+
+// Version 1 of session A, superseded by the current prescription. Kept so a
+// logged session still renders the prescription it was performed against.
+export const logbookSessionV1: TrainingSession = {
+  id: "demo-session-a",
+  name: "Session A - Lower body",
+  exercises: [
+    {
+      id: "demo-ex-squat",
+      name: "Back squat",
+      muscle: "Quadriceps",
+      instructions: "Brace hard, knees track over toes.",
+      progression: "Add 2.5 kg when all sets hit the top of the range.",
+      sets: [
+        {
+          id: "v1-sq-1",
+          reps: 5,
+          tempo: "3010",
+          type: "Work",
+          rest: "3:00",
+          instructions: "",
+        },
+        {
+          id: "v1-sq-2",
+          reps: 5,
+          tempo: "3010",
+          type: "Work",
+          rest: "3:00",
+          instructions: "",
+        },
+        {
+          id: "v1-sq-3",
+          reps: 5,
+          tempo: "3010",
+          type: "Work",
+          rest: "3:00",
+          instructions: "",
+        },
+      ],
+    },
+    {
+      id: "demo-ex-rdl",
+      name: "Romanian deadlift",
+      muscle: "Hamstrings",
+      instructions: "Soft knees, hips back.",
+      progression: "Add a rep per set each week.",
+      sets: [
+        {
+          id: "v1-rdl-1",
+          reps: 6,
+          tempo: "3010",
+          type: "Work",
+          rest: "2:30",
+          instructions: "",
+        },
+        {
+          id: "v1-rdl-2",
+          reps: 6,
+          tempo: "3010",
+          type: "Work",
+          rest: "2:30",
+          instructions: "",
+        },
+      ],
+    },
+  ],
+};
+
+export const prescriptionVersions: PrescriptionVersion[] = [
+  { version: 1, session: logbookSessionV1 },
+  { version: 2, session: trainingSessions[0] },
+];
+
+const logged = (reps: number, load: number, rpe: number) => ({
+  reps,
+  load,
+  rpe,
+});
+
+export const logbookSessions: LogSession[] = [
+  {
+    id: "log-1",
+    planId: "demo-training-plan",
+    version: 1,
+    sessionId: "demo-session-a",
+    status: "done",
+    result: "complete",
+    setIds: ["v1-sq-1", "v1-sq-2", "v1-sq-3", "v1-rdl-1", "v1-rdl-2"],
+    sets: {
+      "v1-sq-1": logged(5, 100, 8),
+      "v1-sq-2": logged(5, 100, 8),
+      "v1-sq-3": logged(5, 100, 9),
+      "v1-rdl-1": logged(6, 120, 8),
+      "v1-rdl-2": logged(6, 120, 8),
+    },
+  },
+  {
+    id: "log-2",
+    planId: "demo-training-plan",
+    version: 2,
+    sessionId: "demo-session-a",
+    status: "in-progress",
+    result: null,
+    setIds: ["sq-1", "sq-2", "sq-3", "rdl-1", "rdl-2"],
+    sets: {
+      "sq-1": logged(6, 102.5, 8),
+      "sq-2": { reps: 6, load: 102.5, rpe: null },
+      "sq-3": { reps: null, load: null, rpe: null },
+      "rdl-1": { reps: null, load: null, rpe: null },
+      "rdl-2": { reps: null, load: null, rpe: null },
+    },
+  },
+  {
+    id: "log-3",
+    planId: "demo-training-plan",
+    version: 2,
+    sessionId: "demo-session-b",
+    status: "planned",
+    result: null,
+    setIds: ["bp-1", "bp-2", "bp-3", "row-1", "row-2"],
+    sets: {},
+  },
+  {
+    id: "log-0",
+    planId: "demo-training-plan",
+    version: 1,
+    sessionId: "demo-session-b",
+    status: "skipped",
+    result: "skipped",
+    setIds: [],
+    sets: {},
+  },
+];
 
 // Check-in form definition handed to the shared FormPreview component.
 export const checkInForm = {
