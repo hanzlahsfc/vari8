@@ -1,98 +1,68 @@
-# PR-SUPP build: Supplement plan backend (schedule only)
+# PR-SUPP build: Supplement plan per client
 
-Card slug `pr-supp-plan` (proposed — board assigns the PROGRAM.md slot). Board `vari8`. Track Service/Model. Depends on PR-M1 (client profile lifecycle), PR-05 (capability table — closed set, do not extend). Builder: Hanz's lane per huddle brief 2026-10-22. Repo `hanzlahsfc/vari8`. Worktree `vari8-worktrees/pr-supp-plan`, branch `beta/pr-supp-plan` off latest `origin/Vari8-Beta`. Lane database `app_prsupp` on 127.0.0.1:5433; dev port 3771. **May touch `db/`: YES — this card introduces the first post-M0 schema objects; it must hold the D34 single-writer slot (no other schema-writing lane active) and the card name must be added to the `verify-local.sh` `db/` allowlist.**
+Card slug `pr-supp-plan`. Board `vari8`. Track Service. Depends on PR-M1. Builder: Devin swe-2-max driven by yamato (driver deepseek-v4.1-flash). Issue #161.
+Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-supp-plan`, branch `beta/pr-supp-plan` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_prsupp` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3833. May touch `db/`: yes (D34 schema writer).
 
-## Source of truth
+## Driver steps (yamato only; Devin skips this section)
 
-The approved contract is Lilly's frontend on `origin/FRONTEND` (`51fa6a2`, merged via #151, pending FRONTEND-SYNC #160):
+1. `cd /home/nexuslink/vari8-worktrees/pr-supp-plan && git fetch origin && git merge --ff-only origin/Vari8-Beta`. Stop and block the card if it is not a fast-forward.
+2. Issue first (idempotent): `gh issue list -R hanzlahsfc/The-great-tracker- --label vari8-beta --search "[PR-SUPP] in:title" --state all` ; if none, `gh issue create -R hanzlahsfc/The-great-tracker- --label vari8-beta --title "[PR-SUPP] Supplement plan per client" --body-file icm/05-build/cards/pr-supp-plan.md`. Record the number on the card (`hermes kanban comment`).
+3. Push the branch and open a draft PR at once: `git push -u origin HEAD` and `gh pr create -R hanzlahsfc/The-great-tracker- --draft --base Vari8-Beta --head beta/pr-supp-plan --title "[PR-SUPP] Supplement plan per client" --body "Closes #<issue>. Card pr-supp-plan. Plan section PR-SUPP in icm/03-plan/output/PLAN.md."`.
+4. Launch Devin and block until it exits: `cd /home/nexuslink/vari8-worktrees/pr-supp-plan && icm/05-build/tools/devin-slot.sh -- env CAP=10G /home/nexuslink/.local/bin/jobcap devin -p --model swe-2-max --permission-mode dangerous --prompt-file icm/05-build/cards/pr-supp-plan.md > /home/nexuslink/vari8-worktrees/pr-supp-plan.devin.log 2>&1`
+5. Run the local gate: `BASE_SHA=$(git merge-base HEAD origin/Vari8-Beta) LANE_DB=app_prsupp LANE_PORT=3833 CARD=PR-SUPP icm/05-build/tools/verify-local.sh > /home/nexuslink/vari8-worktrees/pr-supp-plan.check.log 2>&1; echo EXIT=$?`. Paste the summary block into the PR (`gh pr comment`).
+6. Push, mark the PR ready (`gh pr ready`), attach `pr-supp-plan.devin.log` and `pr-supp-plan.check.log` to the card (`hermes kanban attach`), and complete the card with the PR URL, head SHA and gate exit code. If the gate failed, give Devin one repair round with the failing output; if it still fails, block the card with the failing step.
 
-- `frontend/docs/supplements-frontend-execution-brief.md` — owner-approved behavior brief ("the owner approved this compact layout revision").
-- `frontend/src/components/coach/supplements/model.ts` — saved-shape types, status enum, `safeProductUrl`, `declaredTotal`, `dosageForQuantity`, structural guards.
-- `frontend/src/components/coach/supplements/draft.ts` — save semantics: the row's stored product snapshot is authoritative; saving never re-reads the catalogue.
-- `frontend/src/components/coach/supplements/editor.tsx` — reorder (move ±1), remove with toast+undo, explicit Save/Cancel, unsaved-changes guard.
-- `frontend/src/components/coach/supplements/plan-view.tsx` — shared read-only client/preview view.
-- `frontend/src/components/coach/plans/types.ts` + `domain.ts` — `client.plans.supplements?: SupplementPlan`, single saved plan per client, NOT a lifecycle (no draft/active/history).
-- `frontend/src/data/supplement-database.json` + `scripts/import-supplement-database.py` — the catalogue is a bundled static JSON generated from `supplement.xlsx`.
+## Gear (Devin loads this first)
 
-Backend conventions to mirror: `lib/mealplan/{service,boundary,gate}.ts`, `lib/mealplan` audit usage, `app/workspace/[workspaceId]/clients/[clientProfileId]/meal-plan/actions.ts`, `lib/auth/roles.ts` capability matrix, `lib/audit.ts` closed resource-type set, `lib/runtime.ts` `devFlagEnabled`, `db/migrations/` conventions (hand-authored `migration.sql` + `down.sql`, TIMESTAMPTZ(6), RESTRICT/CASCADE per schema-v2 header, composite same-workspace FKs in raw SQL).
+Load `/home/nexuslink/.hermes/profiles/kakashi/SOUL.md` as your working persona (drop the persona voice in files you write) and read these skills:
 
-## Confirmed product behavior (from the UI)
+- `/home/nexuslink/.hermes/profiles/kakashi/skills/systematic-debugging/SKILL.md`
+- `/home/nexuslink/.hermes/profiles/kakashi/skills/codebase-design/SKILL.md`
+- `/home/nexuslink/.hermes/profiles/kakashi/skills/domain-modeling/SKILL.md`
+- `/home/nexuslink/.hermes/profiles/kakashi/skills/verification-before-completion/SKILL.md`
 
-- One supplement plan per client. The coach edits the whole plan (name + ordered items) and saves it in one explicit action; Cancel discards. The client sees only the last saved plan — never an unsaved draft.
-- Item fields: product snapshot `{id, brand, name, referenceQuantity, quantityUnit, declaredAmount, declaredUnit, url}`, `quantity` (> 0), `doseUnit` (must equal snapshot `quantityUnit` when the catalogue knows it; otherwise coach-confirmed text, fallback "reference units"), `timing` (free text, e.g. "with breakfast"), `status` ∈ {`must-have` | `optional` | `none`} (labels: Must have / Optional / No status), `notes` (free text).
-- Status carries coach-instruction meaning only. There is NO active/paused/taken state, no dates, no weekday schedule, no cycles. "Schedule" = the coach-ordered item list with per-item timing text.
-- Items are reorderable; the same product may appear multiple times; removal is soft-undone client-side (server sees only whole-plan saves).
-- Product URL is displayed only when `safeProductUrl` passes: http/https, hostname present, no credentials. Store and re-validate server-side.
-- Dosage is a derived display value (`declaredAmount × quantity / referenceQuantity`, or quantity in product units, or "Not provided"). The backend stores inputs, never the derived value, and never substitutes 0 for missing composition.
-- The catalogue stays frontend-bundled; the backend stores the embedded product snapshot per item so later catalogue changes never alter a saved row. No catalogue CRUD in this task.
-- Empty states: no plan yet ("No supplement plan saved yet") and saved plan with zero items ("no products prescribed") are both valid.
+## Read first
 
-## Explicit non-scope (do not add)
+`AGENTS.md`, `icm/03-plan/DECISIONS.md` (D11, D13, D14, D15 to D36), the `PR-SUPP` section of `icm/03-plan/output/PLAN.md`, `icm/05-build/RUNBOOK.md`.
 
-- Taken/not-taken check-offs, adherence logs, scores, streaks.
-- Active/paused semantics, date ranges, per-weekday schedules, cycling protocols.
-- Dose recommendations, interaction checks, PED/HRT content (hard-denied per AGENTS), any medical logic.
-- Server-side catalogue management, spreadsheet import endpoint, live Sheets connection.
-- UI wiring (canvas/editor fetch calls) — that is a later W-card; this task ends at the service/boundary/action surface.
-- Nutrition/IIFYM/meal-plan work — separate queue items.
+## Matrix rows this PR closes
 
-## Backend contract
+- none (foundation or tooling PR)
 
-### Schema (one hand-authored migration + down.sql)
+## Files
 
-- `SupplementItemStatus` enum: `MUST_HAVE` | `OPTIONAL` | `NONE`.
-- `supplement_plan`: `id`, `workspace_id`, `client_profile_id` UNIQUE (one current plan per client), `name`, `revision` INT default 1 (CAS guard), `saved_by_member_id`, `saved_at` TIMESTAMPTZ(6), `created_at`, `updated_at`; composite uniques `(id, workspace_id)`, `(id, workspace_id, client_profile_id)`; `@@index([workspaceId])`.
-- `supplement_plan_item`: `id`, `plan_id` FK CASCADE, `position` INT, snapshot columns (`product_ref_id`, `brand`, `product_name`, `reference_quantity` numeric nullable, `quantity_unit` nullable, `declared_amount` numeric nullable, `declared_unit` nullable, `product_url` nullable), `quantity` numeric > 0 (CHECK), `dose_unit`, `timing`, `status` enum, `notes`; unique `(plan_id, position)`.
-- Workspace-coherence composite FKs and CHECKs in raw SQL per schema-v2 conventions. No history/version table — the UI contract is latest-saved only.
+- `db/schema.prisma`
+- `db/migrations/<timestamp>_supplement_plan/**`
+- `lib/supplements/{model,gate,service,boundary}.ts`
+- lib/audit.ts (resource type)
+- lib/auth/rbac.ts (resource cell)
+- lib/consent.ts (parked registry)
+- `app/workspace/[workspaceId]/clients/[clientProfileId]/supplements/actions.ts`
+- `.env.example`
+- `tests/unit/supplements-plan.test.ts`
+- `tests/integration/supplements-plan.test.ts`
 
-### Service `lib/supplements/`
+## Build
 
-- `gate.ts`: `isSupplementsEnabled` = `devFlagEnabled(env.ENABLE_SUPPLEMENTS, env)` — dev/test runtime only, fails closed.
-- `service.ts`:
-  - `saveSupplementPlan(ctx, {workspaceId, clientProfileId, name, items, expectedRevision?})` — staff `plan.write` workspace scope; validates the whole plan against the ported `isSupplementPlan` rules (URL re-validation via `safeProductUrl` semantics, doseUnit↔quantityUnit match, quantity > 0, closed status set, length caps on name/timing/notes, item-count cap); upserts the one plan per client and replaces its items in one transaction; CAS conflict on `expectedRevision` → `stale_revision`; archived client → `plan_not_accessible` per PR-M1.
-  - `readStaffSupplementPlan(ctx, {workspaceId, clientProfileId})` — staff `plan.read` workspace scope.
-  - `readOwnSupplementPlan(ctx, {workspaceId})` — client `plan.read` own scope (profile.userId match, same pattern as SV2).
-  - Consent: parked registry `dailyEntryConsentRegistry(true)`-equivalent call pattern per D19 — no consent gate blocks the surface.
-- `boundary.ts`: closed safe-result vocabulary mirroring meal-plan (`denied`, `invalid_input`, `not_available`, `conflict`, `consent_missing`, `policy_not_configured`, `serialization_conflict`) with non-disclosing messages.
-- `lib/audit.ts`: add `"supplement_plan"` to `AUDIT_RESOURCE_TYPES` (structural markers only — plan id, revision, item count; never names, notes, timing, URLs, brands).
+- Contract source: `frontend/docs/supplements-frontend-execution-brief.md` and `frontend/src/components/coach/supplements/{model,draft,editor,plan-view}.ts(x)` on FRONTEND 51fa6a2 (PR #151; beta sync is PR #160, unmerged at card creation).
+- One saved supplement plan per client; the coach edits name and ordered items with explicit Save/Cancel; the client reads the saved plan only. No draft/active/history lifecycle, no dates, weekdays, cycles or pause states.
+- Each item embeds the product snapshot (brand, name, reference quantity/unit, declared amount/unit, URL) plus quantity, dose unit, free-text timing and notes, and status in {must-have, optional, none}. Snapshots stay readable when the catalogue later changes; there is no backend-managed catalogue.
+- Validation mirrors the frontend model: positive finite quantity, catalogue-compatible dose unit, safe http(s) product URL (hostname, no credentials), exact status union, unknown keys rejected. Missing composition stays null; never persist derived dosage; no check-off, adherence, dose logic or PED/HRT behavior.
+- One `supplement_plan` + `supplement_plan_item` migration pair with hand-authored down.sql, composite same-workspace coherence FKs in raw SQL (Prisma cannot express them), expected-revision CAS under advisory lock and serializable transaction, re-resolved authorization inside the transaction.
+- Access reuses the closed `plan.read`/`plan.write` capability cells exactly as `mealPlans`; no new capability, no broadened permission. Client reads own; unassigned staff and foreign workspace/client are non-disclosing.
+- Actions follow the established order: feature gate `ENABLE_SUPPLEMENT_PLAN`, session, bounded input validation, service boundary, `revalidatePath`. Closed safe errors; `supplement_plan` audit resource with structural metadata only (no payload bodies).
 
-### App surface
+## Acceptance (you see)
 
-- `app/workspace/[workspaceId]/clients/[clientProfileId]/supplements/actions.ts` — `"use server"`: `saveSupplementPlanAction`, `viewSupplementPlanAction` (one structural READ audit per explicit view, decision #80; the plain page GET writes none).
-- Page-level reads call the boundary directly (RSC), matching meal-plan wiring. No new api/v1 route — per-client plan surfaces use actions+reads, not api/v1.
-- `.env.example`: commented `# ENABLE_SUPPLEMENTS=1` entry mirroring `ENABLE_CHECK_INS`/`ENABLE_MEAL_PLANS`.
+- A coach saves a named plan with ordered items and the client reads exactly the saved data; a second stale save fails without writes; a foreign workspace or client sees the same not-found as an absent plan.
 
-### Authorization
+## Verification you run before handing over
 
-- `plan.write`: owner/coach workspace-scope save; client deny.
-- `plan.read`: owner/coach workspace-scope; client own-scope only.
-- Foreign workspace/client → 403 (non-disclosing), unauthenticated → 401, flag off → not_available/404 before any DB read.
+- `icm/05-build/tools/verify-local.sh` with `BASE_SHA` = merge base with `origin/Vari8-Beta`, exit 0 (format, typecheck, lint, unit, integration when `db/`, `lib/` or `app/api/` changed, build, schema guard, e2e flow specs, parity regression once PR-P1 and PR-01 are on the branch).
+- Live: start the app on port 3833 against `app_prsupp` (`npm run db:fresh` once PR-04 has landed, RUNBOOK otherwise), drive the acceptance flow in a real browser at 1440 and 390, save screenshots under `/home/nexuslink/vari8-worktrees/_evidence/PR-SUPP/build/`.
+- Parity (D32) on: none.
+- Unit (D11, D14): Literal validation cases (quantities, units, URLs, statuses, unknown keys, null versus zero composition) and integration cases for ordering, CAS, role matrix, audit and flag-off, each failing when the guard breaks.
 
-## Acceptance
+## Report
 
-1. Coach saves a plan; a second save with the current revision replaces items and preserves nothing stale; stale-revision save returns conflict.
-2. Saved rows return literal snapshot fields; dosage is never persisted or recomputed server-side.
-3. Item order round-trips exactly; duplicate product ids allowed.
-4. `status` outside the closed set, `quantity <= 0`, `doseUnit` mismatch vs known `quantityUnit`, or a URL failing `safeProductUrl` rules → `invalid_input`, nothing written.
-5. Client reads own plan; foreign client/workspace and signed-out callers denied; flag off fails closed pre-DB.
-6. Archived client's plan remains readable by authorized staff (D27).
-7. Save writes exactly one structural audit event per mutation; list/read GETs write none; explicit view action writes one READ.
-8. Migration applies on a fresh DB and `down.sql` reverses it; `prisma migrate diff` reviewed.
-
-## Verification
-
-- RED first: unit tests for plan validation (literal rejections) + integration tests over real actions (role matrix, CAS, ordering, snapshot retention, audit counts) on `app_prsupp`.
-- Mutations that must fail: reorder ignored (positions dropped), missing-values-to-zero substitution, status enum bypass, snapshot re-read from catalogue, CAS check removed.
-- `verify-local.sh` full gate on Node 24 (`REQUIRE_NODE24=1`) unless superseded by NODE-26 (#154 open).
-- No screens owned → SKIP_PARITY=1 per card contract; live proof = real action calls against the running app, same receipt style as PR-SV2.
-
-## Owned paths
-
-`db/schema.prisma`, `db/migrations/<ts>_supplement_plan/`, `lib/supplements/{model,gate,service,boundary}.ts`, `lib/audit.ts` (one resource-type line), `app/workspace/[workspaceId]/clients/[clientProfileId]/supplements/actions.ts`, `.env.example` (one line), `tests/unit/supplements-*.test.ts`, `tests/integration/*supplements*.test.ts`, `icm/05-build/reports/PR-SUPP.md`, regenerated `docs/index/*`.
-
-## Open questions for the owner/board (blocking flagged)
-
-1. **PROGRAM slot + card slug**: not in PROGRAM.md; needs a number/name and PROGRAM.md row (not mine to assign — flag, don't guess).
-2. **`db/` allowlist**: verify-local fails non-allowlisted `db/` writes; card must be added to the allowlist when the slot is assigned.
-3. Not blocking — resolved by the source: no pause/inactive state exists in the approved UI; removal (with undo) is the only deactivation. If the huddle's "pause" wording was intended as a product state, that is a new product decision, not a default.
-4. Not blocking — catalogue remains frontend-bundled per the brief; a server-managed catalogue would be a separate card if wanted.
+Write `icm/05-build/reports/PR-SUPP.md` in the branch: head SHA, changed paths, every command with its exit code, screenshots (paths), parity result per screen and width, matrix rows closed, what you could not do. Commit in small commits with explicit pathspecs. Tests follow the keep rule: a new test calls the code the way users do, asserts a literal, fails when the code breaks, and guards something a browser cannot see (D14).

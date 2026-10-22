@@ -27,6 +27,7 @@
 | PR-W0    | yamato                       | kakashi   | 19 07:35     | 19 09:10  |
 | PR-M4    | yamato                       | gowther   | 19 07:50     | 19 09:20  |
 | PR-SV2   | yamato                       | kakashi   | 19 07:50     | 19 09:30  |
+| PR-SUPP  | yamato                       | kakashi   | 19 07:55     | 19 09:40  |
 | PR-SV1   | yamato                       | kakashi   | 19 09:20     | 19 10:35  |
 | PR-W10   | yamato                       | itachi    | 19 09:10     | 19 10:45  |
 | PR-W5    | yamato                       | itachi    | 19 09:20     | 19 10:55  |

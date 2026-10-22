@@ -49,7 +49,6 @@ Every PR is three cards: build, verify (plus a security verify for auth, schema 
 | PR-SV2   | PR-M1                                                                  | Devin via yamato, gear kakashi          | neji                     |
 | PR-SV3   | PR-SV2, PR-M5, PR-M6, PR-M7                                            | Devin via yamato, gear kakashi          | neji                     |
 | PR-SV4   | PR-05                                                                  | Devin via yamato, gear kakashi          | neji, shinobu (security) |
-| PR-SUPP  | PR-M1                                                                  | Devin (Hanz lane)                       | neji                     |
 | PR-MEDIA | PR-M0, PR-05, PR-P1                                                    | Devin via yamato, gear kakashi          | neji, shinobu (security) |
 | PR-MSG   | PR-MEDIA, PR-M2, PR-W0, PR-SV1                                         | Devin via yamato, gear itachi           | neji, shinobu (security) |
 | PR-W0    | PR-01, PR-03, PR-05, PR-P1                                             | Devin via yamato, gear kakashi          | neji                     |
@@ -69,6 +68,7 @@ Every PR is three cards: build, verify (plus a security verify for auth, schema 
 | PR-X2    | PR-X1, PR-R2, PR-R3                                                    | shikamaru                               | neji                     |
 | PR-D1    | PR-R3, PR-X1                                                           | Devin via yamato, gear jiraiya          | neji                     |
 | PR-31    | PR-05, PR-W1                                                           | Devin via yamato, gear kakashi          | neji                     |
+| PR-SUPP  | PR-M1                                                                  | Devin via yamato, gear kakashi          | neji, shinobu (security) |
 
 ## Routing
 
@@ -123,6 +123,7 @@ Simulated by the generator: graph cards start at 03:00 once the orchestrator rel
 | PR-W0    | yamato                       | kakashi   | 19 07:35     | 19 09:10  |
 | PR-M4    | yamato                       | gowther   | 19 07:50     | 19 09:20  |
 | PR-SV2   | yamato                       | kakashi   | 19 07:50     | 19 09:30  |
+| PR-SUPP  | yamato                       | kakashi   | 19 07:55     | 19 09:40  |
 | PR-SV1   | yamato                       | kakashi   | 19 09:20     | 19 10:35  |
 | PR-W10   | yamato                       | itachi    | 19 09:10     | 19 10:45  |
 | PR-W5    | yamato                       | itachi    | 19 09:20     | 19 10:55  |
@@ -151,10 +152,10 @@ What the checkpoint shows: PR-02 merged; the parity harness, the test cuts, the 
 
 | Check                                         | Result                                                                                                                                      |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Every PLAN v2 PR has a card                   | 44 PR sections, 44 build cards, 44 merge cards                                                                                              |
-| Every card has a verifier card                | 44 of 44 PRs have a verify card; 50 verify cards in total (security verifies included)                                                      |
+| Every PLAN v2 PR has a card                   | 45 PR sections, 45 build cards, 45 merge cards                                                                                              |
+| Every card has a verifier card                | 45 of 45 PRs have a verify card; 52 verify cards in total (security verifies included)                                                      |
 | Verifier model differs from the builder model | yes for every PR                                                                                                                            |
-| Coverage ledger has zero unmapped rows        | 0 unmapped of 812 rows (matrix 338, orphan 82, parked 6, screen 35, test-audit 232, test-rewire 29, plan-pr 44, program 8, readiness-p0 38) |
-| Dependency graph has no cycles                | 0 cycles in 146 cards (topological sort in `program.py`)                                                                                    |
+| Coverage ledger has zero unmapped rows        | 0 unmapped of 813 rows (matrix 338, orphan 82, parked 6, screen 35, test-audit 232, test-rewire 29, plan-pr 45, program 8, readiness-p0 38) |
+| Dependency graph has no cycles                | 0 cycles in 150 cards (topological sort in `program.py`)                                                                                    |
 | Timeline fits 05:00                           | 05:00 is a checkpoint, not the end: 31 cards done by 05:00, PR-01 merged at 05:35; the full program finishes Mon 19:40                      |
 | Generator gate                                | `python3 icm/05-build/tools/program.py` problems: 0 (exit 0)                                                                                |
