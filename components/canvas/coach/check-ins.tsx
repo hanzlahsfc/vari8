@@ -38,6 +38,7 @@ import {
   loadCheckins,
   loadSubmissionAnswers,
   loadTrackerContext,
+  mergeCheckinLoad,
   sendFeedback,
   type TrackerContextValue,
 } from "../data/checkins";
@@ -96,7 +97,6 @@ export function CheckInsWorkspace() {
     const [from, to] = calendarRange(mode, anchor);
     const key = `${workspaceId}:${from}:${to}`;
     if (loadedRange.current === key) return;
-    loadedRange.current = key;
     let live = true;
     loadCheckins({
       workspaceId,
@@ -108,16 +108,30 @@ export function CheckInsWorkspace() {
       .then((loaded) => {
         if (!live) return;
         instances.current = loaded.instances;
-        setState((s) => ({
-          ...s,
-          extras: loaded.extras,
-          submissions: mergeLoadedSubmissions(s.submissions, loaded.submissions),
-          clients: s.clients.map((c) =>
-            loaded.schedules[c.id]
-              ? { ...c, schedules: loaded.schedules[c.id] }
-              : c,
-          ),
-        }));
+        // Mark the range read only once it landed: a mount that unmounts its
+        // own effect (React's double-invoked dev effects) drops the first
+        // result, and the guard must not then block the retry.
+        loadedRange.current = key;
+        setState((s) => {
+          const failedIds = s.clients
+            .filter((c) => loaded.failed.includes(c.name))
+            .map((c) => c.id);
+          const merged = mergeCheckinLoad(
+            { extras: s.extras, submissions: s.submissions },
+            { extras: loaded.extras, submissions: loaded.submissions },
+            failedIds,
+          );
+          return {
+            ...s,
+            extras: merged.extras,
+            submissions: merged.submissions,
+            clients: s.clients.map((c) =>
+              loaded.schedules[c.id]
+                ? { ...c, schedules: loaded.schedules[c.id] }
+                : c,
+            ),
+          };
+        });
         if (loaded.failed.length)
           toast(`Check-ins did not load for ${loaded.failed.join(", ")}`);
       })
@@ -998,23 +1012,3 @@ function calendarRange(mode: string, anchor: string): [string, string] {
   return [start, end];
 }
 
-/**
- * Fold a server submission list into state without dropping an open review's
- * answers: a header refresh must not blank the workspace the coach is reading.
- */
-function mergeLoadedSubmissions(
-  current: Submission[],
-  next: Submission[],
-): Submission[] {
-  return next.map((item) => {
-    const previous = current.find((s) => s.id === item.id);
-    return previous && previous.answers.length > 0
-      ? {
-          ...item,
-          answers: previous.answers,
-          visuals: previous.visuals,
-          response: previous.response,
-        }
-      : item;
-  });
-}

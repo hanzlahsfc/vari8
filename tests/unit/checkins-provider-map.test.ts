@@ -1,14 +1,23 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("../../components/canvas/data/http", () => ({ apiFetch: vi.fn() }));
+
+import { apiFetch } from "../../components/canvas/data/http";
 import {
   foldScheduleHistory,
   foldScheduleRules,
   isRuleOccurrence,
+  loadCheckins,
+  mergeCheckinLoad,
   recurringEventId,
   scheduleOn,
   viennaDate,
   weekdayIndex,
 } from "../../components/canvas/data/checkins";
+import {
+  eventsBetween,
+  type CoachState,
+} from "../../components/canvas/coach/model";
 import { unwrap } from "../../app/api/v1/workspaces/[workspaceId]/checkins/_result";
 
 /**
@@ -131,5 +140,219 @@ describe("check-in closed-code mapping (PR-W6)", () => {
     expect(unwrap({ ok: true, value: { status: "paused" } })).toEqual({
       status: "paused",
     });
+  });
+});
+
+/**
+ * The board read: three rules a browser cannot see until the data is wrong.
+ *
+ * 1. A cancelled instance is not an additional date. The calendar read returns
+ *    CANCELLED rows, and the remove handler reloads the range it just cancelled
+ *    in, so a pushed CANCELLED row puts the removed chip straight back.
+ * 2. A reviewed submission is "Feedback sent". The header DTO carries
+ *    `reviewedAt`, and the board's status derives from `response`, so a reload
+ *    turns every answered check-in back into "Awaiting feedback" unless the
+ *    provider maps the field.
+ * 3. The range is a Vienna day range. `from=T00:00:00Z` is 02:00 local in
+ *    summer, so a check-in due in the first hours of the first visible day is
+ *    never read.
+ * 4. A partial read failure keeps that client's rows. Replacing the slice
+ *    wholesale reads as "this athlete has no check-ins".
+ */
+describe("check-in board read (PR-W6)", () => {
+  const workspaceId = "ws-1";
+  const client = { id: "client-001", name: "Emma Anders" };
+
+  const rules = {
+    items: [
+      {
+        ruleId: "r1",
+        formId: "f1",
+        weekday: "MONDAY",
+        startDate: "2026-10-01",
+        endDate: null,
+        status: "ACTIVE",
+      },
+    ],
+  };
+
+  function stub(routes: {
+    calendar: unknown[];
+    submissions?: unknown[];
+    rules?: unknown;
+  }) {
+    const calls: string[] = [];
+    vi.mocked(apiFetch).mockImplementation((async (url: string) => {
+      calls.push(url);
+      if (url.includes("/schedule-rules?")) return routes.rules ?? rules;
+      if (url.includes("/instances?")) return { items: routes.calendar };
+      if (url.includes("/submissions?"))
+        return { items: routes.submissions ?? [] };
+      throw new Error(`unexpected ${url}`);
+    }) as never);
+    return calls;
+  }
+
+  beforeEach(() => {
+    vi.mocked(apiFetch).mockReset();
+  });
+
+  it("does not re-materialise a cancelled instance as an additional date", async () => {
+    stub({
+      calendar: [
+        {
+          instanceId: "seed-extra-cancelled",
+          formId: "f2",
+          formName: "Custom update",
+          versionSeq: 1,
+          dueAt: "2026-10-14T07:00:00.000Z",
+          dueTz: "Europe/Vienna",
+          coachNote: "Removed",
+          state: "CANCELLED",
+          submittedAt: null,
+        },
+        {
+          instanceId: "seed-extra-live",
+          formId: "f2",
+          formName: "Custom update",
+          versionSeq: 1,
+          dueAt: "2026-10-15T07:00:00.000Z",
+          dueTz: "Europe/Vienna",
+          coachNote: "Kept",
+          state: "SCHEDULED",
+          submittedAt: null,
+        },
+      ],
+    });
+
+    const loaded = await loadCheckins({
+      workspaceId,
+      from: "2026-10-12",
+      to: "2026-10-18",
+      clients: [client],
+      profileIdFor: async () => "cp-1",
+    });
+
+    expect(loaded.extras.map((extra) => extra.id)).toEqual(["seed-extra-live"]);
+    expect(Object.keys(loaded.instances)).toEqual(["seed-extra-live"]);
+  });
+
+  it("reads a reviewed submission as feedback sent", async () => {
+    stub({
+      calendar: [],
+      submissions: [
+        {
+          instanceId: "seed-occ-2026-10-08",
+          submissionId: "sub-1",
+          formName: "Weekly check-in",
+          dueAt: "2026-10-08T07:00:00.000Z",
+          submittedAt: "2026-10-08T17:00:00.000Z",
+          reviewedAt: "2026-10-09T08:30:00.000Z",
+        },
+      ],
+    });
+
+    const loaded = await loadCheckins({
+      workspaceId,
+      from: "2026-10-05",
+      to: "2026-10-11",
+      clients: [client],
+      profileIdFor: async () => "cp-1",
+    });
+
+    expect(loaded.submissions[0].response).toEqual({
+      text: "",
+      changes: [],
+      date: "2026-10-09",
+    });
+    // The board's status rule, called the way the screen calls it.
+    const state = {
+      clients: [],
+      extras: [],
+      submissions: loaded.submissions,
+      messages: [],
+      templates: [],
+      reviewDrafts: {},
+    } as unknown as CoachState;
+    const events = eventsBetween(state, "2026-10-08", "2026-10-08");
+    expect(events.map((event) => event.status)).toEqual(["Feedback sent"]);
+  });
+
+  it("sends the range as Vienna midnights, not UTC midnights", async () => {
+    const calls = stub({ calendar: [] });
+    await loadCheckins({
+      workspaceId,
+      from: "2026-10-12",
+      to: "2026-10-18",
+      clients: [client],
+      profileIdFor: async () => "cp-1",
+    });
+    const instancesUrl = calls.find((url) => url.includes("/instances?")) ?? "";
+    const query = new URLSearchParams(instancesUrl.split("?")[1]);
+    // CEST: 00:00 Vienna is 22:00Z the day before.
+    expect(query.get("from")).toBe("2026-10-11T22:00:00.000Z");
+    expect(query.get("to")).toBe("2026-10-18T22:00:00.000Z");
+
+    // CET: the same local day starts an hour later in UTC.
+    const winter = stub({ calendar: [] });
+    await loadCheckins({
+      workspaceId,
+      from: "2026-12-01",
+      to: "2026-12-07",
+      clients: [client],
+      profileIdFor: async () => "cp-1",
+    });
+    const winterUrl = winter.find((url) => url.includes("/instances?")) ?? "";
+    const winterQuery = new URLSearchParams(winterUrl.split("?")[1]);
+    expect(winterQuery.get("from")).toBe("2026-11-30T23:00:00.000Z");
+  });
+
+  it("keeps a failed client's rows and replaces the rest", () => {
+    const extras = (id: string, clientId: string) => ({
+      id,
+      clientId,
+      date: "2026-10-14",
+      type: "Custom" as const,
+      note: "",
+    });
+    const submission = (id: string, clientId: string) => ({
+      id,
+      clientId,
+      date: "2026-10-12",
+      eventId: `recurring:${clientId}:2026-10-12`,
+      type: "Full" as const,
+      answers: [],
+      metrics: [],
+      visuals: [],
+      note: "",
+      flags: [],
+    });
+
+    const merged = mergeCheckinLoad(
+      {
+        extras: [
+          extras("old-failed", "client-002"),
+          extras("old-stale", "client-001"),
+        ],
+        submissions: [
+          submission("sub-failed", "client-002"),
+          submission("sub-stale", "client-001"),
+        ],
+      },
+      {
+        extras: [extras("new-ok", "client-001")],
+        submissions: [submission("sub-new", "client-001")],
+      },
+      ["client-002"],
+    );
+
+    expect(merged.extras.map((extra) => extra.id)).toEqual([
+      "new-ok",
+      "old-failed",
+    ]);
+    expect(merged.submissions.map((item) => item.id)).toEqual([
+      "sub-new",
+      "sub-failed",
+    ]);
   });
 });

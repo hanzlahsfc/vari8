@@ -29,6 +29,7 @@ import type {
 } from "../coach/model";
 import type { CoachSlice } from "./provider";
 import { apiFetch } from "./http";
+import { resolveLocalInstant } from "@/lib/checkin/timezone";
 
 export const CHECKINS_KEY = "coach-data-checkins-v1";
 
@@ -230,6 +231,64 @@ function plusDays(date: string, n: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Europe/Vienna local midnight for `date`, as the strict ISO-8601 UTC instant
+ * the calendar read requires. `resolveLocalInstant` is the repo's DST-aware
+ * wall-clock resolver, so the range starts at 00:00 local rather than 00:00Z
+ * (which is 02:00 local in summer, 01:00 in winter, and silently drops the
+ * first hours of the visible day).
+ */
+function viennaMidnight(date: string): string {
+  const local = resolveLocalInstant("Europe/Vienna", date, 0);
+  if (local.status !== "ok")
+    throw new Error(`Invalid check-in range date: ${date}`);
+  return local.instant.toISOString();
+}
+
+/** A board patch: the rows a read returned, merged with what it kept. */
+export type CheckinMerge = {
+  extras: Extra[];
+  submissions: Submission[];
+};
+
+/**
+ * Merge a load into what the board already shows. A client whose read failed
+ * keeps its previous rows: replacing the slice wholesale would read as "this
+ * athlete has no check-ins" while the toast only says the read failed.
+ */
+export function mergeCheckinLoad(
+  current: CheckinMerge,
+  loaded: CheckinMerge,
+  failedClientIds: string[],
+): CheckinMerge {
+  const keep = new Set(failedClientIds);
+  const loadedSubmissionIds = new Set(loaded.submissions.map((s) => s.id));
+  return {
+    extras: [
+      ...loaded.extras,
+      ...current.extras.filter((extra) => keep.has(extra.clientId)),
+    ],
+    submissions: [
+      ...loaded.submissions.map((item) => {
+        // The header list is answer-free; a detail read already in memory is
+        // richer than what a reload returns, so keep it.
+        const previous = current.submissions.find((s) => s.id === item.id);
+        return previous && previous.answers.length > 0
+          ? {
+              ...item,
+              answers: previous.answers,
+              visuals: previous.visuals,
+              response: previous.response,
+            }
+          : item;
+      }),
+      ...current.submissions.filter(
+        (s) => keep.has(s.clientId) && !loadedSubmissionIds.has(s.id),
+      ),
+    ],
+  };
+}
+
 export type CheckinLoad = {
   extras: Extra[];
   submissions: Submission[];
@@ -254,9 +313,10 @@ export async function loadCheckins(
   const instances: Record<string, InstanceItem> = {};
   const schedules: Record<string, Schedule[]> = {};
   const failed: string[] = [];
-  // The calendar service takes strict ISO-8601 UTC instants.
-  const from = `${input.from}T00:00:00Z`;
-  const to = `${plusDays(input.to, 1)}T00:00:00Z`;
+  // The calendar service takes strict ISO-8601 UTC instants; the board's range
+  // is a local day range, so both bounds are Vienna midnights.
+  const from = viennaMidnight(input.from);
+  const to = viennaMidnight(plusDays(input.to, 1));
 
   for (const client of input.clients) {
     const clientProfileId = await input.profileIdFor(client.name);
@@ -282,6 +342,11 @@ export async function loadCheckins(
       const history = foldScheduleHistory(rules.items);
       schedules[client.id] = folded;
       for (const item of calendar.items) {
+        // A cancelled instance is not an additional date any more. The calendar
+        // read returns CANCELLED rows on purpose (the board may need them for
+        // history), so the board must not re-materialise one as an extra: the
+        // cancel path reloads the range, and the chip would come straight back.
+        if (item.state === "CANCELLED") continue;
         const date = viennaDate(item.dueAt);
         if (isRuleOccurrence(history, date)) continue;
         instances[item.instanceId] = item;
@@ -314,6 +379,20 @@ export async function loadCheckins(
           // check-in date; the flagged-notes panel draws its empty branch.
           metrics: [],
           flags: [],
+          // A reviewed submission has its feedback sent; the header DTO carries
+          // `reviewedAt` and never the body, so the board marks it sent from
+          // the server field and the detail read fills the text on open.
+          // Without this every answered check-in reads as awaiting feedback
+          // after a reload, because the status derives from `response`.
+          ...(item.reviewedAt
+            ? {
+                response: {
+                  text: "",
+                  changes: [],
+                  date: viennaDate(item.reviewedAt),
+                },
+              }
+            : {}),
         });
       }
     } catch {
