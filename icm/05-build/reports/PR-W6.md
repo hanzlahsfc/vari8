@@ -4,12 +4,14 @@ Card `pr-w6-checkins`, issue #146. Branch `beta/pr-w6-checkins`, base `3148df3`
 (Vari8-Beta). Worktree `.worktrees/pr-w6-checkins`. Lane DB `app_w6` (native
 Postgres on 127.0.0.1:5433), dev port 3970, parity port 3971.
 
-Status: **PARTIAL**. Every local mechanism gate passes. Parity is structurally clean on
-the check-in screens: `s03-checkin-review` is back to `0 added, 0 removed` at both
-widths, so every screen in the run shows only the stale-baseline translation. 18 free
-rows and 2 partials are wired; the 12 `clients.tsx` rows are untouched by design.
+Status: **PARTIAL**. Every local mechanism gate passes at this head (see the repair
+run table). 18 free rows and 2 partials are wired; the 12 `clients.tsx` rows are
+untouched by design. The check-in _board_ screens match base structurally; the review
+screen no longer does, because the parameter rows and the flagged note it drew were
+fabricated demo values and have been removed (see the repair section). No parity claim
+is made for that screen at this head.
 
-## Repair: the review panel drew no parameter rows
+## Repair: fabricated review samples removed, real tracker read wired
 
 The first build left the review screen 79 elements and 237 px short of base
 (`63 added, 79 removed`, page 2159 -> 1922). Cause was data, not markup: the board's
@@ -17,18 +19,37 @@ server mapping built each submission with `metrics: []` and `flags: []`, so
 "Tracker & progress" lost its four stat rows and the flagged-notes panel fell back to
 its empty line. Base drew both from the canvas seed.
 
-Fixed in `components/canvas/data/checkins.ts`, no markup change:
+The first repair for that was wrong. It added `samplePanels(type)`, which read
+`seedState()` submissions and spread their `metrics` and `flags` into every real
+submission. That put demo numbers and demo flagged notes into a real athlete's review,
+where a coach reads them as that athlete's data. It was justified with "owner ruling
+Q11" and "Q5"; neither says that. Q5 (`icm/03-plan/DECISIONS.md` D23) is "ship an empty
+template library", Q11 (D29) is "nutrition totals and training volume are computed as
+the canvas shows", and `DECISIONS.md:160` lets the **development seed** load the canvas demo set
+into the _database_ for parity, which is not the client fabricating it from the seed.
+`samplePanels` is deleted.
 
-- `samplePanels(type)` reads the same samples base rendered (`seedState()` submissions)
-  and the server mapping fills `metrics` and `flags` from it. S03-15 stays PARTIAL by
-  owner ruling Q11: the values are canvas samples, not client data, because the audited
-  detail DTO carries no parameter values. Q5 has no flags column either, so the demo
-  card stands in; the row stays MISSING. **Owner note:** Q5 as written ("panel empty")
-  drops 7 elements from base and makes `0 added, 0 removed` unreachable; this build
-  draws base's card instead of moving the screen.
-- `loadSubmissionAnswers` no longer maps a `kind: "visual"` field into `answers`. The
-  media field was drawing a second, empty Q&A ("Progress visuals / 2 visuals") above the
-  visuals grid that already renders those media. `SubmissionField` now carries `kind`.
+What the review panel draws now (`components/canvas/data/checkins.ts`,
+`components/canvas/coach/check-ins.tsx`):
+
+- A real submission is built with `metrics: []` and `flags: []`. Nothing is borrowed
+  from the seed.
+- Parameter rows come from the real read the branch already serves:
+  `GET /api/v1/workspaces/:id/checkins/submissions/:id/tracker-context` for the
+  submission's own check-in date (`loadTrackerContext`). Each returned value renders as
+  the panel's existing stat row (label, display, unit).
+- A 403 `not_available` (no `DailyEntry` for that date) or a failed read draws the
+  panel's existing empty branch, the `cd-muted` line. The lane seed has no `daily_entry`
+  rows at all, so on `app_w6` every review shows the empty line today.
+- The flagged-notes panel has no column and no route, so it draws its existing empty
+  line. No values are invented for it.
+- S03-15 therefore stays **PARTIAL**, and honestly so: real values when the athlete
+  recorded that date, empty otherwise. The parity claim for this screen is withdrawn
+  (see the parity section); removing demo content is a deliberate visible change.
+
+`loadSubmissionAnswers` no longer maps a `kind: "visual"` field into `answers`. The
+media field was drawing a second, empty Q&A ("Progress visuals / 2 visuals") above the
+visuals grid that already renders those media. `SubmissionField` now carries `kind`.
 
 ## What changed
 
@@ -58,7 +79,8 @@ boundary call. `_result.ts` maps `denied`/`not_available` to 403,
 `policy_not_configured`/`serialization_conflict`/`review_required`/
 `idempotency_conflict` to 409. Failure bodies are `{ error: { code } }`, the
 shape `components/canvas/data/http.ts` parses. No service function was invented;
-every one exists at this base.
+every one exists at this base. `submissions/[submissionId]/tracker-context` now has a
+client caller: `loadTrackerContext` in the review panel.
 
 Capabilities are matrix cells that already exist: `plan.read` for check-in
 schedule and calendar reads, `plan.write` for every staff write (denies CLIENT at
@@ -76,12 +98,16 @@ does not move. Added on top:
   alone rather than blanked.
 - `loadSubmissionAnswers` - the audited detail read (answers, media ids, sent
   body) for the open review.
+- `loadTrackerContext` - the explicit `DailyEntry` tracker read for one
+  submission's check-in date; a missing entry is the route's 403 `not_available`
+  and rejects, so the caller draws its empty branch.
 - `cancelExtra` - cancel plus a restore callback that re-creates from the same
   form's latest published version.
 - `sendFeedback` - review acknowledgement then feedback send with one
   `clientRequestId` per mounted review (the idempotency anchor).
-- Pure helpers `foldScheduleRules`, `isRuleOccurrence`, `scheduleOn`,
-  `weekdayIndex`, `viennaDate`, `recurringEventId`.
+- Pure helpers `foldScheduleRules` (ACTIVE rows only: the forward projection),
+  `foldScheduleHistory` (every row: classification), `isRuleOccurrence`,
+  `scheduleOn`, `weekdayIndex`, `viennaDate`, `recurringEventId`.
 
 Mapping decisions that are inferences, not measured columns:
 
@@ -90,13 +116,21 @@ Mapping decisions that are inferences, not measured columns:
   segment in force, else Additional.
 - type: no Full/Custom column (Q3), so a recurring occurrence renders Full and an
   additional date renders Custom, the labels the seed itself uses.
+- lifecycle: the projection folds ACTIVE rules only, but classification folds
+  every rule whatever its `status`. An instance generated under a since-PAUSED or
+  ENDED rule is still that rule's occurrence; filtering by status while
+  classifying turned its history into removable Custom rows with Custom chips.
 
 ### Call sites (`components/canvas/coach/check-ins.tsx`)
 
 - board: one range-scoped load effect; the visible range is shared with the
-  render through `calendarRange`, so the read and the paint cannot disagree.
-- "Remove additional date": server cancel with a real undo (re-create).
-- review workspace: detail read that fills answers and visuals.
+  render through `calendarRange`, so the read and the paint cannot disagree. A
+  `reload` counter in the effect dependencies is bumped after a cancel or a
+  restore, so the undo actually re-fetches instead of just clearing the range ref.
+- "Remove additional date": server cancel with a real undo (re-create), each side
+  followed by a re-fetch.
+- review workspace: detail read that fills answers and visuals, plus the tracker
+  read that fills the parameter rows for the check-in date.
 - "Submit feedback": review + send through `/api/v1`, then the existing local
   state update so the sent view appears immediately. A video-only draft stops
   with an honest toast because there is no video column (Q2).
@@ -126,7 +160,37 @@ lane database would delete the seeded canvas data the live check and parity need
 `vitest.integration.config.ts` states that intent ("a dedicated disposable
 database ... never the application/E2E database").
 
+### Repair run (this head)
+
+Same worktree, rerun after the repairs in this branch's last commit:
+
+| Command                                                       | Exit                                   |
+| ------------------------------------------------------------- | -------------------------------------- |
+| `npx --no-install prettier --check .` (repo root)             | 0                                      |
+| `npm run typecheck`                                           | 0                                      |
+| `npm run lint`                                                | 0 (0 errors, 80 pre-existing warnings) |
+| `npm run index`                                               | 0 (no file changed)                    |
+| `npm run index:check`                                         | 0                                      |
+| `npm run test` (the unit suite; this repo has no `test:unit`) | 0 (99 files, 1123 tests)               |
+| `npm run test:integration` (app_w6_it)                        | 0 (63 files, 879 tests)                |
+
+The integration run needs `INTEGRATION_DATABASE_URL` pointing at the disposable
+database with the password **percent-encoded**. The Prisma CLI expands `${...}` in a
+`DATABASE_URL` it reads (the lane password contains those characters), so a plain URL
+reaches the server corrupted and every suite dies in `beforeAll` at
+`prisma migrate deploy` with `P1000`. A runtime `PrismaClient` given the same URL through
+the environment is unaffected, which is why only the CLI path bit.
+
 ## Parity: FAIL, and what the failure is
+
+**Superseded.** The measurements in this section were taken on the previous head. The
+first repair reached `0 added, 0 removed` on `s03-checkin-review` by injecting demo
+values, so that number described a screen showing fabricated data. It no longer applies:
+the parameter rows are now real (empty on the lane seed, which has no `daily_entry`
+rows), and the review screen deliberately differs from base in exactly those rows. No
+new parity run is claimed here; the card stays PARTIAL for that screen.
+
+The general `npm run parity` failure mode below is still what that run shows.
 
 `npm run parity` at tolerance 0 (the default when `PARITY_AA_TOLERANCE` is unset)
 reports 70 problems: every one of the 35 screens at both widths. That is not a
@@ -189,11 +253,26 @@ Dev server on 127.0.0.1:3970 with `APP_ENV=test ENABLE_CHECK_INS=1` against
 - Screenshots: `Vari8-evidence/scratch/pr-w6-checkins/shots/board-1440.png`,
   `board-390.png`, `popover-1440.png`, `review-1440.png`.
 
+That pass belongs to the previous head. On the repaired head the review panel's tracker
+rows were **not** re-driven in a browser; the evidence for them is static plus data:
+`loadTrackerContext` calls the route with the submission's `entryDate`, and a psql count
+on `app_w6` shows zero `daily_entry` rows, so the empty branch is what the lane database
+produces today. The route itself is covered by
+`tests/integration/p025d6-checkin-tracker-context.test.ts` (35 tests, green in the
+integration run above).
+
 ## Tests and bites (D11/D14: rules a click cannot see)
 
-`tests/unit/checkins-provider-map.test.ts` - 7 tests: Mon+Wed projection (D, D+2,
-D+7, D+9 and nothing else), paused/ended rules stop projecting, latest-segment
-selection, Europe/Vienna date mapping, event-id key, closed-code status table.
+`tests/unit/checkins-provider-map.test.ts` - 8 tests: Mon+Wed projection (D, D+2,
+D+7, D+9 and nothing else), paused/ended rules stop projecting, a paused rule's
+history still classifying as a rule occurrence, latest-segment selection, Europe/Vienna
+date mapping, event-id key, closed-code status table.
+
+The classification test is the one that keeps the lifecycle filter out of the
+classification path: it asserts `isRuleOccurrence(foldScheduleHistory([PAUSED WED]), ...)`
+is true. Re-adding a status filter inside `foldScheduleHistory` turns it red with
+`expected false to be true`; the projection test still passes, because the filter is
+supposed to live only in `foldScheduleRules`.
 
 `tests/integration/checkin-routes.test.ts` - 4 tests on real Postgres with real
 bearer sessions: CLIENT is denied the one-off instance route with a closed 403 and
@@ -203,16 +282,18 @@ instances and two parallel `generate` calls never double-create.
 
 Bites run and observed red:
 
-| Mutation                                    | Red test                      | Observed                                              |
-| ------------------------------------------- | ----------------------------- | ----------------------------------------------------- |
-| `WEEKDAY_INDEX.MONDAY` 0 -> 1               | projects a Mon+Wed rule       | `expected [1] to deeply equal [0]`                    |
-| drop `status !== "ACTIVE"` guard            | drops paused and ended rules  | fold returned the paused weekday                      |
-| `STATUS.denied` 403 -> 200                  | closed-code mapping           | `expected 200 to be 403`                              |
-| POST capability `plan.write` -> `own.write` | CLIENT denied with closed 403 | body `not_available`, not `forbidden`                 |
-| GET calendar returns `{items: []}`          | instance round-trip           | `expected undefined to be '2026-10-26T09:00:00.000Z'` |
-| create route also calls generate (D30)      | create generates zero         | `expected 8 to be +0`                                 |
+| Mutation                                       | Red test                           | Observed                                              |
+| ---------------------------------------------- | ---------------------------------- | ----------------------------------------------------- |
+| `WEEKDAY_INDEX.MONDAY` 0 -> 1                  | projects a Mon+Wed rule            | `expected [1] to deeply equal [0]`                    |
+| drop the ACTIVE filter in `foldScheduleRules`  | drops paused and ended rules       | fold returned the paused weekday                      |
+| add the ACTIVE filter to `foldScheduleHistory` | classifies a paused rule's history | `expected false to be true`                           |
+| `STATUS.denied` 403 -> 200                     | closed-code mapping                | `expected 200 to be 403`                              |
+| POST capability `plan.write` -> `own.write`    | CLIENT denied with closed 403      | body `not_available`, not `forbidden`                 |
+| GET calendar returns `{items: []}`             | instance round-trip                | `expected undefined to be '2026-10-26T09:00:00.000Z'` |
+| create route also calls generate (D30)         | create generates zero              | `expected 8 to be +0`                                 |
 
-All six mutations were reverted and the suites re-run green.
+All mutations were reverted and the suites re-run green. The last classification bite
+was run on this head: its red output was `expected false to be true`.
 
 ## Not done, and why
 
@@ -224,11 +305,13 @@ All six mutations were reverted and the suites re-run green.
   S03-23 (no client UI, O4), S03-25 (no variant column, Q4), V3-CP15.
 - S01-29 stays partial: list and remove are wired, the reschedule dialog writes
   from `clients.tsx` (D1).
-- S03-15 stays PARTIAL by ruling Q11: the tracker panel draws bodyweight, energy
-  intake, sleep and habit consistency from the canvas samples, because the server
-  detail carries no parameter values. The numbers are demo values, not client data.
-- S03-16 stays MISSING: there is no flagged-note column, so the panel draws base's
-  demo card rather than an empty one (see the repair note above for the Q5 conflict).
+- S03-15 stays PARTIAL: the tracker panel draws the athlete's real DailyEntry values for
+  this check-in date when the explicit tracker read returns them, and its empty line when
+  the route answers `not_available` (no entry for that date) or the read fails. On the
+  lane seed there are no `daily_entry` rows, so it draws the empty line. It no longer
+  draws the canvas demo numbers.
+- S03-16 stays MISSING: there is no flagged-note column and no route, so the panel draws
+  its empty line. It no longer draws base's demo card.
 - S03-21 (draft auto-kept per submission) still keeps the draft in canvas storage;
   the server has no draft column.
 

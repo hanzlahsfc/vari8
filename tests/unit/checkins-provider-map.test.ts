@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  foldScheduleHistory,
   foldScheduleRules,
   isRuleOccurrence,
   recurringEventId,
@@ -19,7 +20,8 @@ import { unwrap } from "../../app/api/v1/workspaces/[workspaceId]/checkins/_resu
  *    calendar still looks plausible.
  * 2. Lifecycle. A PAUSED or ENDED rule stops projecting from the fold while the
  *    instances it already materialized stay on the calendar (those arrive as
- *    rows, not as projections).
+ *    rows, not as projections). Classification folds every rule regardless of
+ *    status, so such a row keeps its rule type instead of becoming Custom.
  * 3. Closed-code mapping. `denied`/`not_available` are 403, `invalid_input` is
  *    400, state conflicts are 409. A browser cannot see the difference between
  *    403 and 200 on a denied write; a test can.
@@ -57,6 +59,17 @@ describe("check-in schedule projection (PR-W6)", () => {
     expect(isRuleOccurrence(schedules, "2026-10-14")).toBe(false);
     expect(isRuleOccurrence(schedules, "2026-10-16")).toBe(false);
     expect(isRuleOccurrence(schedules, "2026-10-12")).toBe(true);
+  });
+
+  it("classifies a paused rule's history as a rule occurrence", () => {
+    expect(
+      isRuleOccurrence(
+        foldScheduleHistory([
+          { weekday: "WEDNESDAY", startDate: MONDAY, status: "PAUSED" },
+        ]),
+        "2026-10-14",
+      ),
+    ).toBe(true);
   });
 
   it("uses the latest segment not after the date (schedule change keeps history)", () => {

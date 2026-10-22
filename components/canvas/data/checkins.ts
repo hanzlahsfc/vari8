@@ -6,18 +6,21 @@
 // localStorage-only state.
 //
 // Mapping rules, all derived from measured server fields:
-// - `Schedule` folds ACTIVE `CheckInScheduleRule` rows by `startDate`; one rule
-//   per weekday becomes one `weekdays` entry, exactly what `eventsBetween`
-//   expects, and paused/ended rules stop projecting (history stays on the
-//   calendar as instances).
+// - `Schedule` (the projection the board paints forward) folds ACTIVE
+//   `CheckInScheduleRule` rows by `startDate`; one rule per weekday becomes one
+//   `weekdays` entry, exactly what `eventsBetween` expects, and paused/ended
+//   rules stop projecting future dates.
+// - Classification folds every rule whatever its `status`: an instance or
+//   submission generated under a since-paused/ended rule is still a rule
+//   occurrence and keeps its real type, instead of decaying into a removable
+//   Custom row.
 // - An instance is a recurring occurrence when its Europe/Vienna date matches
-//   the latest schedule segment in force, the same rule the canvas applies.
-//   Everything else is an Additional date (`Extra`).
+//   the latest segment in force, the same rule the canvas applies. Everything
+//   else is an Additional date (`Extra`).
 // - `CheckInInstance` has no `origin` column and no Full/Custom column (Q3), so
 //   an additional date renders Custom and a recurring occurrence Full; the
 //   seed labels its two cases the same way.
 
-import { seedState } from "../coach/model";
 import type {
   Extra,
   ReviewDraft,
@@ -133,15 +136,34 @@ export function viennaDate(instant: string): string {
 }
 
 /**
- * Fold ACTIVE rules into canvas `Schedule` segments: one segment per distinct
- * `startDate`, carrying every weekday requested from that date on.
+ * Fold rules into canvas `Schedule` segments: one segment per distinct
+ * `startDate`, carrying every weekday requested from that date on. Segments are
+ * the forward projection, so this one keeps the ACTIVE filter; classification
+ * uses `foldScheduleHistory`.
  */
 export function foldScheduleRules(
   rules: { weekday: string; startDate: string; status: string }[],
 ): Schedule[] {
+  return foldSegments(rules.filter((rule) => rule.status === "ACTIVE"));
+}
+
+/**
+ * Fold every rule regardless of `status`. An instance materialized under a rule
+ * that has since been paused or ended is still that rule's occurrence, so
+ * classifying it (rule occurrence vs additional date) must not look at the
+ * lifecycle column; only the projection does.
+ */
+export function foldScheduleHistory(
+  rules: { weekday: string; startDate: string; status: string }[],
+): Schedule[] {
+  return foldSegments(rules);
+}
+
+function foldSegments(
+  rules: { weekday: string; startDate: string }[],
+): Schedule[] {
   const byStart = new Map<string, Set<number>>();
   for (const rule of rules) {
-    if (rule.status !== "ACTIVE") continue;
     const day = WEEKDAY_INDEX[rule.weekday];
     if (day === undefined) continue;
     const days = byStart.get(rule.startDate) ?? new Set<number>();
@@ -219,22 +241,6 @@ export type CheckinLoad = {
 };
 
 /**
- * The panel samples the review screen draws when the server carries no value
- * for them: parameter rows (S03-15, owner ruling Q11 keeps the samples) and
- * flagged notes (no flags column, Q5). Base drew them, so the wired screen must
- * draw them too; the rows stay PARTIAL in the ledger, they are not real data.
- */
-let sampleSubmissions: Submission[] | null = null;
-function samplePanels(
-  type: Submission["type"],
-): Pick<Submission, "metrics" | "flags"> {
-  sampleSubmissions ??= seedState().submissions;
-  const demo =
-    sampleSubmissions.find((s) => s.type === type) ?? sampleSubmissions[0];
-  return { metrics: demo?.metrics ?? [], flags: demo?.flags ?? [] };
-}
-
-/**
  * One bounded read per client for the calendar range, plus the answer-free
  * submission list and the schedule rules. Reads are per client because the
  * server scopes every check-in read to one `clientProfileId`; a client the
@@ -271,10 +277,13 @@ export async function loadCheckins(
         apiFetch<{ items: SubmissionItem[] }>(`${base}/submissions?${query}`),
       ]);
       const folded = foldScheduleRules(rules.items);
+      // Classification looks at every rule, not only the ACTIVE ones: history
+      // under a paused or ended rule stays a rule occurrence.
+      const history = foldScheduleHistory(rules.items);
       schedules[client.id] = folded;
       for (const item of calendar.items) {
         const date = viennaDate(item.dueAt);
-        if (isRuleOccurrence(folded, date)) continue;
+        if (isRuleOccurrence(history, date)) continue;
         instances[item.instanceId] = item;
         extras.push({
           id: item.instanceId,
@@ -286,7 +295,7 @@ export async function loadCheckins(
       }
       for (const item of subs.items) {
         const date = viennaDate(item.dueAt);
-        const recurring = isRuleOccurrence(folded, date);
+        const recurring = isRuleOccurrence(history, date);
         const type = recurring ? "Full" : "Custom";
         submissions.push({
           id: item.submissionId,
@@ -299,10 +308,12 @@ export async function loadCheckins(
           answers: [],
           visuals: [],
           note: "",
-          // S03-15 keeps the canvas samples by owner ruling Q11, and the detail
-          // DTO has no flags column (Q5). Draw base's sample panel, not an empty
-          // one: a missing panel reads as a change to the screen.
-          ...samplePanels(type),
+          // The server carries no parameter values in this DTO and no flags
+          // column at all, so a real submission starts empty here. The review
+          // screen fills the parameter rows from `loadTrackerContext` for the
+          // check-in date; the flagged-notes panel draws its empty branch.
+          metrics: [],
+          flags: [],
         });
       }
     } catch {
@@ -350,6 +361,31 @@ export async function loadSubmissionAnswers(
         }
       : submission.response,
   };
+}
+
+/** One tracker value for the check-in date, display-ready (server-rendered). */
+export type TrackerContextValue = {
+  parameterKey: string;
+  label: string;
+  unit: string | null;
+  display: string;
+};
+
+/**
+ * The explicit DailyEntry tracker read for one submission's check-in date. A
+ * missing entry is `not_available` (403), which rejects like any other failed
+ * read; the caller draws its empty branch rather than another date's values.
+ */
+export async function loadTrackerContext(input: {
+  workspaceId: string;
+  clientProfileId: string;
+  submissionId: string;
+  entryDate: string;
+}): Promise<TrackerContextValue[]> {
+  const detail = await apiFetch<{ values: TrackerContextValue[] }>(
+    `/workspaces/${input.workspaceId}/checkins/submissions/${input.submissionId}/tracker-context?clientProfileId=${encodeURIComponent(input.clientProfileId)}&entryDate=${encodeURIComponent(input.entryDate)}`,
+  );
+  return detail.values;
 }
 
 /* -------------------------------------------------------------------------

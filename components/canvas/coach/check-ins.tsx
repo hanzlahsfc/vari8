@@ -37,7 +37,9 @@ import {
   type CheckinInstanceRow,
   loadCheckins,
   loadSubmissionAnswers,
+  loadTrackerContext,
   sendFeedback,
+  type TrackerContextValue,
 } from "../data/checkins";
 import {
   Avatar,
@@ -46,7 +48,6 @@ import {
   Empty,
   IconButton,
   PageTitle,
-  ParameterValue,
   Select,
   Status,
   Surface,
@@ -83,6 +84,13 @@ export function CheckInsWorkspace() {
   // only when it actually moves, so a state merge cannot re-trigger the read.
   const instances = useRef<Record<string, CheckinInstanceRow>>({});
   const loadedRange = useRef("");
+  // Bumped after a server write (cancel/restore) so the range effect re-fetches
+  // even though the range key did not move.
+  const [reload, setReload] = useState(0);
+  const reloadRange = () => {
+    loadedRange.current = "";
+    setReload((n) => n + 1);
+  };
   useEffect(() => {
     if (!workspaceId) return;
     const [from, to] = calendarRange(mode, anchor);
@@ -124,6 +132,7 @@ export function CheckInsWorkspace() {
     workspaceId,
     mode,
     anchor,
+    reload,
     clientProfileIdFor,
     setState,
     toast,
@@ -233,10 +242,10 @@ export function CheckInsWorkspace() {
                   extras: s.extras.filter((extra) => extra.id !== x.id),
                 }));
                 setSelected(null);
-                loadedRange.current = "";
+                reloadRange();
                 toast("Additional date removed", async () => {
                   await restore();
-                  loadedRange.current = "";
+                  reloadRange();
                 });
               } catch {
                 toast("This additional date could not be removed");
@@ -562,12 +571,44 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
         }));
       })
       .catch(() => {
+        // Let a later mount/render of this review try the read again; the
+        // empty answers stay until it succeeds.
+        answersRequested.current = false;
         if (live) toast("This submission’s answers could not be loaded");
       });
     return () => {
       live = false;
     };
   }, [workspaceId, c, clientProfileIdFor, setState, sub, toast]);
+  // PR-W6/R1: parameter rows come from the explicit DailyEntry tracker read for
+  // this check-in date. `null` is "not read yet", `[]` is "nothing real to
+  // draw" (a 403 `not_available` or a failed read), and the panel then shows its
+  // empty line instead of borrowed numbers.
+  const [tracker, setTracker] = useState<TrackerContextValue[] | null>(null);
+  useEffect(() => {
+    if (!workspaceId || !c) return;
+    let live = true;
+    clientProfileIdFor(c.name)
+      .then((id) =>
+        id
+          ? loadTrackerContext({
+              workspaceId,
+              clientProfileId: id,
+              submissionId: sub.id,
+              entryDate: sub.date,
+            })
+          : [],
+      )
+      .then((values) => {
+        if (live) setTracker(values);
+      })
+      .catch(() => {
+        if (live) setTracker([]);
+      });
+    return () => {
+      live = false;
+    };
+  }, [workspaceId, c, clientProfileIdFor, sub.id, sub.date]);
   if (!c) return <Empty title="Athlete not found" />;
   const variant = c.assignment
     ? templateSetup(c.assignment.snapshot, c.assignment.variantId)
@@ -644,16 +685,25 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
                 <ArrowUpRight size={14} />
               </Button>
             </div>
-            {sub.metrics
-              .filter((id) => id !== "habits")
-              .map((id) => (
-                <ParameterValue key={id} field={unit(id)} client={c} />
-              ))}
-            {sub.metrics.includes("habits") && (
-              <div className="cd-stat-row">
-                <span>Habit consistency</span>
-                <strong>{c.habits[0]?.completed ?? 0} / 7 days</strong>
-              </div>
+            {tracker === null ? null : tracker.length > 0 ? (
+              tracker.map((value) => (
+                <div className="cd-stat-row" key={value.parameterKey}>
+                  <span>
+                    {value.label ||
+                      ALL_PARAMETERS.find((p) => p.id === value.parameterKey)
+                        ?.name ||
+                      value.parameterKey}
+                  </span>
+                  <strong>
+                    {value.display}
+                    {value.unit ? ` ${value.unit}` : ""}
+                  </strong>
+                </div>
+              ))
+            ) : (
+              <p className="cd-muted">
+                No tracker values recorded for this check-in date.
+              </p>
             )}
             <div className="cd-table-scroll">
               <table className="cd-table">
