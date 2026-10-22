@@ -17,6 +17,7 @@ import {
   STORAGE_KEY as LEGACY_KEY,
 } from "@/components/canvas/coach/model";
 import { migrateCoachState } from "@/components/canvas/coach/plans/domain";
+import { emptyClientPlans } from "@/components/canvas/coach/plans/types";
 import { normalizeTemplateSetups } from "@/components/canvas/coach/template-setup";
 
 class MemoryStorage {
@@ -103,11 +104,56 @@ describe("coach data seam", () => {
     ];
     state.coachNotes = [{ id: "n1", text: "note" }];
     state.coachTodos = [{ id: "t1", title: "todo", complete: false }];
+    // The new domains the port added: a target version, a supplement plan and
+    // the one shot demo seed. Empty values would pass this test while the seam
+    // still dropped them, so each one carries data.
+    client.plans ??= emptyClientPlans();
+    client.plans.activityTargets = [
+      {
+        id: "at1",
+        effectiveFrom: "2026-10-01",
+        metric: "steps",
+        target: { kind: "minimum", value: 8500 },
+      },
+    ];
+    client.plans.supplements = {
+      id: "sp1",
+      clientId: client.id,
+      name: "Supplement plan",
+      savedAt: "2026-10-01T09:00:00.000Z",
+      items: [
+        {
+          id: "si1",
+          product: {
+            id: "supplement-010",
+            brand: "ESN",
+            name: "Vitamin D3+K2",
+            referenceQuantity: 1,
+            quantityUnit: null,
+            declaredAmount: 5600,
+            declaredUnit: "i. E",
+            url: null,
+          },
+          quantity: 1,
+          doseUnit: "reference unit",
+          timing: "morning",
+          status: "must-have",
+          notes: "",
+        },
+      ],
+    };
+    state.demoSeeds = { amaraTraining: 1 };
     writeCoachState(state);
 
     const read = migrateCoachState(readCoachState());
     expect(isCoachState(read)).toBe(true);
     expect(read).toEqual(state);
+    const roundTripped = read as CoachState;
+    expect(roundTripped.clients[0].plans?.activityTargets).toHaveLength(1);
+    expect(roundTripped.clients[0].plans?.supplements?.items[0].product.name).toBe(
+      "Vitamin D3+K2",
+    );
+    expect(roundTripped.demoSeeds).toEqual({ amaraTraining: 1 });
   });
 
   it("adopts the legacy envelope once, then serves the slices", () => {

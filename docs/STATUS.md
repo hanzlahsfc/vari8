@@ -41,6 +41,15 @@
   prescribed", the supplement client preview shows the read-only plan, no page
   error. Only console error on the production build is the pre-existing
   `/favicon.ico` 404 (no favicon in `public/`).
+- Independent review (different model family, read only) returned REPAIR with
+  two findings. Finding 1, fixed: the seam test set no `activityTargets`,
+  `supplements` or `demoSeeds`, so it could pass while the seam dropped them;
+  the test now carries data in all three and asserts it survives, and a mutation
+  probe (the supplements merge line removed) fails it as it should. Finding 2,
+  open and recorded here: strict bit-exact parity still sees the five residuals.
+  With the harness's own host budget, `PARITY_AA_TOLERANCE=0
+  PARITY_MAX_DIFF_PIXELS=400 npm run parity` exits 0 with zero problems, so the
+  residual is inside a 400 pixel budget and outside a zero budget.
 - Screenshots: `04_PROJECTS/Vari8-evidence/CANVAS-PORT/` (1440 and 390 for
   activity targets, supplements editor, client preview plans, supplement plan
   preview), parity report `parity-report.html` beside them.
