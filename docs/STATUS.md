@@ -1,3 +1,13 @@
+## 2026-10-22 — FRONTEND merged into Vari8-Beta, gate green — verified locally
+
+- Branch `beta/frontend-sync-2026-10-22`, merge of `origin/FRONTEND` `51fa6a2`
+  (#151) into `origin/Vari8-Beta` `69c74c3`. `frontend/` takes FRONTEND; the
+  #70 hydration fix (`useReducedMotion` from `@/lib/reduced-motion`, not
+  `motion/react`) is preserved.
+- `npm run check` in `frontend/` exit 0 after Biome sorted imports in five
+  files (import order only, no product change). Log kept outside Git.
+- Root `npx prettier --check docs/STATUS.md docs/tasks/frontend-current-2026-10-22.md` exit 0.
+
 ## 2026-10-22 — current frontend publication gates green — verified locally
 
 - `npm test` in `frontend/`: 252 tests, 252 pass, 0 fail (exit 0).
