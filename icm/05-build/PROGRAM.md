@@ -49,6 +49,7 @@ Every PR is three cards: build, verify (plus a security verify for auth, schema 
 | PR-SV2   | PR-M1                                                                  | Devin via yamato, gear kakashi          | neji                     |
 | PR-SV3   | PR-SV2, PR-M5, PR-M6, PR-M7                                            | Devin via yamato, gear kakashi          | neji                     |
 | PR-SV4   | PR-05                                                                  | Devin via yamato, gear kakashi          | neji, shinobu (security) |
+| PR-SUPP  | PR-M1                                                                  | Devin (Hanz lane)                       | neji                     |
 | PR-MEDIA | PR-M0, PR-05, PR-P1                                                    | Devin via yamato, gear kakashi          | neji, shinobu (security) |
 | PR-MSG   | PR-MEDIA, PR-M2, PR-W0, PR-SV1                                         | Devin via yamato, gear itachi           | neji, shinobu (security) |
 | PR-W0    | PR-01, PR-03, PR-05, PR-P1                                             | Devin via yamato, gear kakashi          | neji                     |
