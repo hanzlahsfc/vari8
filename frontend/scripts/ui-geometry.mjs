@@ -42,6 +42,7 @@ const routes = [
     settleAfter: 600,
   },
   { id: "ethereal", path: "/ethereal", waitFor: "body" },
+  { id: "client/default", path: "/client", waitFor: ".client-root" },
 ];
 
 const controlSelector = [

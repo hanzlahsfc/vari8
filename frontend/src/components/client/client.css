@@ -1,0 +1,227 @@
+html:has(.client-root),
+body:has(.client-root) {
+  height: 100%;
+}
+
+.client-root {
+  min-height: 100%;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  background: var(--v8-material-app);
+  color: var(--v8-text);
+  font-family: var(--v8-font-family-ui);
+  font-size: var(--v8-font-size-body);
+  line-height: var(--v8-line-height-body);
+}
+
+.client-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-4);
+  padding: var(--v8-page-inset-lg);
+  border-right: var(--v8-border-width-hairline) solid var(--v8-border);
+  background: var(--v8-surface-navigation);
+}
+
+.client-brand {
+  color: var(--v8-text);
+  font-size: var(--v8-font-size-lg);
+  font-weight: var(--v8-font-weight-semibold);
+  text-decoration: none;
+  letter-spacing: var(--v8-letter-spacing-tight);
+}
+
+.client-brand span {
+  display: block;
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-supporting);
+  font-weight: var(--v8-font-weight-regular);
+}
+
+.client-state-line {
+  margin: 0;
+  margin-top: auto;
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-supporting);
+}
+
+.client-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-section-gap);
+  padding: var(--v8-page-inset-lg);
+  min-width: 0;
+}
+
+.client-screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-5);
+  max-width: 1080px;
+  width: 100%;
+}
+
+.client-grid {
+  display: grid;
+  gap: var(--v8-card-gap);
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 40%), 1fr));
+}
+
+.client-card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-card-gap);
+}
+
+.client-kv {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v8-space-3);
+}
+
+.client-kv > :first-child {
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-supporting);
+}
+
+.client-kv > :last-child {
+  margin: 0;
+  font-weight: var(--v8-font-weight-medium);
+}
+
+.client-figure {
+  font-size: var(--v8-font-size-metric-large);
+  font-weight: var(--v8-font-weight-metric);
+  line-height: var(--v8-line-height-metric-large);
+  font-variant-numeric: tabular-nums;
+}
+
+.client-hint {
+  margin: 0;
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-supporting);
+}
+
+.client-gate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-3);
+  max-width: 420px;
+}
+
+.client-gate p {
+  margin: 0;
+}
+
+.client-loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-3);
+  max-width: 640px;
+}
+
+.client-loading-bar {
+  height: var(--v8-space-6);
+  border-radius: var(--v8-radius-compact);
+  background: var(--v8-surface-inset);
+}
+
+.client-loading-bar--short {
+  width: 60%;
+}
+
+.client-photo-grid {
+  display: grid;
+  gap: var(--v8-card-gap);
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+
+.client-photo {
+  aspect-ratio: 3 / 4;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--v8-space-3);
+  border: var(--v8-border-width-hairline) solid var(--v8-border);
+  border-radius: var(--v8-radius-card);
+  background: var(--v8-surface-inset);
+  color: var(--v8-text-secondary);
+}
+
+.client-photo svg {
+  width: 55%;
+  height: auto;
+  margin: auto;
+}
+
+.client-photo figcaption,
+.client-photo-frame {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-2);
+}
+
+.client-photo-caption {
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-supporting);
+}
+
+.client-compare {
+  display: grid;
+  gap: var(--v8-card-gap);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.client-set-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--v8-space-2) var(--v8-space-4);
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-supporting);
+}
+
+@media (max-width: 720px) {
+  .client-root {
+    grid-template-columns: 1fr;
+  }
+
+  .client-side {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--v8-space-3);
+    min-width: 0;
+    padding: var(--v8-page-inset-sm);
+    border-right: 0;
+    border-bottom: var(--v8-border-width-hairline) solid var(--v8-border);
+  }
+
+  .client-brand {
+    order: 1;
+    white-space: nowrap;
+  }
+
+  .client-brand span {
+    display: none;
+  }
+
+  .client-side .v8-navigation {
+    order: 3;
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    min-width: 0;
+  }
+
+  .client-state-line {
+    order: 2;
+    margin-top: 0;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .client-main {
+    padding: var(--v8-page-inset-sm);
+  }
+}

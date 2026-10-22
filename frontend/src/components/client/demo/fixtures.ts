@@ -1,0 +1,277 @@
+import { createExampleHistory } from "@/components/coach/client-tracker-preview/example-history";
+import type {
+  TrainingPlan,
+  TrainingSession,
+} from "@/components/coach/plans/types";
+import type { SupplementPlan } from "@/components/coach/supplements/model";
+import type { TrackerConfig } from "@/components/ethereal/client-tracker/model";
+
+// Synthetic demo data only. No persistence, no network, no real people.
+export const demoAsOf = "2026-03-02";
+
+export const clientPerson = { name: "Maya Chen", initials: "MC" };
+export const coachPerson = { name: "Jonas Weber", initials: "JW" };
+
+export const homeSummary = {
+  sessionsDone: 3,
+  sessionsPlanned: 4,
+  nextCheckIn: "6 Mar",
+  unreadMessages: 1,
+  openTasks: 2,
+};
+
+export const trackerConfig: TrackerConfig = {
+  parameterIds: [
+    "weight",
+    "waist",
+    "calories",
+    "protein",
+    "water",
+    "sleep",
+    "sleep-quality",
+    "stress",
+    "steps",
+    "active-minutes",
+  ],
+  summaryParameterIds: ["weight", "sleep", "steps"],
+  weightUnit: "kg",
+  lengthUnit: "cm",
+  waterUnit: "L",
+  ratingScale: "1-10",
+};
+
+export const buildTrackerHistory = () =>
+  createExampleHistory(trackerConfig, demoAsOf);
+
+export type NutritionTargets = {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+};
+
+export const nutritionTargets: NutritionTargets = {
+  calories: 2200,
+  protein: 165,
+  carbs: 250,
+  fat: 60,
+};
+
+export const supplementPlan: SupplementPlan = {
+  id: "demo-supplement-plan",
+  clientId: "demo-client",
+  name: "Foundation stack",
+  savedAt: "2026-02-24T09:00:00.000Z",
+  items: [
+    {
+      id: "demo-supp-1",
+      product: {
+        id: "demo-product-1",
+        brand: "Creavitalis",
+        name: "Creatine monohydrate",
+        referenceQuantity: 5,
+        quantityUnit: "g",
+        declaredAmount: 5,
+        declaredUnit: "g",
+        url: "https://supplements.example.com/creatine-monohydrate",
+      },
+      quantity: 1,
+      doseUnit: "g",
+      timing: "Post training",
+      status: "must-have",
+      notes: "",
+    },
+    {
+      id: "demo-supp-2",
+      product: {
+        id: "demo-product-2",
+        brand: "VitaLabs",
+        name: "Vitamin D3 4000 IU",
+        referenceQuantity: 1,
+        quantityUnit: "capsule",
+        declaredAmount: 4000,
+        declaredUnit: "IU",
+        url: null,
+      },
+      quantity: 1,
+      doseUnit: "capsule",
+      timing: "With breakfast",
+      status: "optional",
+      notes: "Take with a fat-containing meal.",
+    },
+  ],
+};
+
+export const trainingSessions: TrainingSession[] = [
+  {
+    id: "demo-session-a",
+    name: "Session A - Lower body",
+    exercises: [
+      {
+        id: "demo-ex-squat",
+        name: "Back squat",
+        muscle: "Quadriceps",
+        instructions: "Brace hard, knees track over toes.",
+        progression: "Add 2.5 kg when all sets hit the top of the range.",
+        sets: [
+          {
+            id: "sq-1",
+            reps: 6,
+            tempo: "3010",
+            type: "Work",
+            rest: "3:00",
+            instructions: "",
+          },
+          {
+            id: "sq-2",
+            reps: 6,
+            tempo: "3010",
+            type: "Work",
+            rest: "3:00",
+            instructions: "",
+          },
+          {
+            id: "sq-3",
+            reps: 8,
+            repsMax: 10,
+            tempo: "2010",
+            type: "Back-off",
+            rest: "2:00",
+            instructions: "",
+          },
+        ],
+      },
+      {
+        id: "demo-ex-rdl",
+        name: "Romanian deadlift",
+        muscle: "Hamstrings",
+        instructions: "Soft knees, hips back.",
+        progression: "Add a rep per set each week.",
+        sets: [
+          {
+            id: "rdl-1",
+            reps: 8,
+            tempo: "3010",
+            type: "Work",
+            rest: "2:30",
+            instructions: "",
+          },
+          {
+            id: "rdl-2",
+            reps: 8,
+            tempo: "3010",
+            type: "Work",
+            rest: "2:30",
+            instructions: "",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "demo-session-b",
+    name: "Session B - Upper body",
+    exercises: [
+      {
+        id: "demo-ex-bench",
+        name: "Bench press",
+        muscle: "Chest",
+        instructions: "Shoulder blades pinned, touch the chest.",
+        progression: "Add 1.25 kg after two clean sessions.",
+        sets: [
+          {
+            id: "bp-1",
+            reps: 8,
+            tempo: "2010",
+            type: "Work",
+            rest: "2:30",
+            instructions: "",
+          },
+          {
+            id: "bp-2",
+            reps: 8,
+            tempo: "2010",
+            type: "Work",
+            rest: "2:30",
+            instructions: "",
+          },
+          {
+            id: "bp-3",
+            reps: 10,
+            repsMax: 12,
+            tempo: "2010",
+            type: "Back-off",
+            rest: "2:00",
+            instructions: "",
+          },
+        ],
+      },
+      {
+        id: "demo-ex-row",
+        name: "Chest supported row",
+        muscle: "Upper back",
+        instructions: "Pull to the lower chest.",
+        progression: "Add a rep per set each week.",
+        sets: [
+          {
+            id: "row-1",
+            reps: 10,
+            tempo: "2011",
+            type: "Work",
+            rest: "2:00",
+            instructions: "",
+          },
+          {
+            id: "row-2",
+            reps: 10,
+            tempo: "2011",
+            type: "Work",
+            rest: "2:00",
+            instructions: "",
+          },
+        ],
+      },
+    ],
+  },
+];
+
+export const trainingPlan: TrainingPlan = {
+  id: "demo-training-plan",
+  clientId: "demo-client",
+  name: "Hypertrophy block A",
+  startDate: "2026-02-16",
+  program: "Week-based",
+  weeks: 4,
+  overrides: {},
+  rotation: {
+    mode: "cycle",
+    sessionIds: ["demo-session-a", "demo-session-b", null],
+  },
+};
+
+export const photoDates = ["2026-01-05", "2026-02-02", "2026-03-02"];
+
+// Check-in form definition handed to the shared FormPreview component.
+export const checkInForm = {
+  id: "demo-check-in",
+  name: "Weekly check-in",
+  nutrition: "IIFYM" as const,
+  views: ["Check-In"],
+  habits: false,
+  widgets: [],
+  fields: [
+    { id: "weight", unit: "kg" },
+    { id: "sleep", unit: "h" },
+    { id: "stress", unit: "/10" },
+    { id: "steps", unit: "steps" },
+  ],
+  roadmap: [],
+  questions: [],
+  summaries: [],
+  training: {
+    fields: [],
+    volume: false,
+    breakdown: "None",
+    presentation: "Compact",
+  },
+};
