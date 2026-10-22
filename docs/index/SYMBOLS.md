@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 138 modules with exports, 1376 exported symbols.
+Counts: 138 modules with exports, 1382 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -710,6 +710,7 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/daily-entry/boundary.ts`
 
 - `export type DailyEntryActionResult<T> = { ok: true; value: T } | { ok: false; message: string }`
+- `export async function readDailyEntryNumericSeriesFromApi(viewer: ApiViewer, workspace: ApiWorkspaceContext, input: { clientProfileId: unknown; parameterId: unknown; from: unknown; to: unknown; }, d...`
 - `export async function saveDailyEntryFromAction(session: SessionLike, input: unknown, deps: { entryEnabled?: boolean; db?: PrismaClient; registry?: ConsentPolicyRegistry; } = {}): Promise<DailyEntry...`
 
 ## `lib/daily-entry/canonical.ts`
@@ -739,9 +740,12 @@ Imported type names are shown without their `import("...")` prefix.
 - `export { DailyEntryError } from "./gate"`
 - `export type DailyEntryHistoryEntry = { entryDate: string; declaredAt: string; revisionCount: number; values: DailyEntryHistoryRow[]; }`
 - `export type DailyEntryHistoryRow = { parameterKey: string; label: string; unit: string | null; display: string; }`
+- `export type DailyEntryNumericSeriesPoint = { date: string; value: number; }`
+- `export type DailyEntryNumericSeriesResult = | { state: "ready"; parameter: { parameterId: string; key: string; label: string; unit: string | null; kind: string; }; from: string; to: string; points:...`
 - `export type DailyEntrySurface = | { state: "ready"; formToken: string; entryDate: string; sections: DailyEntrySurfaceSection[]; history: DailyEntryHistoryEntry[]; } | { state: "not_applicable" } | ...`
 - `export type DailyEntrySurfaceItem = { ordinal: number; parameterKey: string; label: string; helpText: string | null; unit: string | null; kind: string; required: boolean; ratingScheme: string | nul...`
 - `export type DailyEntrySurfaceSection = { sectionKey: string; label: string; items: DailyEntrySurfaceItem[]; }`
+- `export const SERIES_MAX_SPAN_DAYS = 372`
 - `export const STAFF_ENTRY_PAGE_SIZE = 25`
 - `export type SaveDailyEntryInput = { workspaceId: string; entryDate: string; formToken: string; values: OrdinalValue[]; }`
 - `export type SaveDailyEntryResult = { status: "saved"; revisionSeq: number } | { status: "no_op" }`
@@ -751,8 +755,10 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function dailyEntryConsentRegistry(entryFlagEnabled: boolean): ConsentPolicyRegistry`
 - `export async function listStaffDailyEntries(session: SessionLike, input: { workspaceId: string; clientProfileId: string; cursor?: string }, deps: DailyEntryDeps = {}): Promise<StaffDailyEntryListRe...`
 - `export async function loadDailyEntrySurface(session: SessionLike, input: { workspaceId: string; entryDate?: string }, deps: DailyEntryDeps = {}): Promise<DailyEntrySurface>`
+- `export function parseDailyEntrySeriesRange(rawFrom: unknown, rawTo: unknown): { from: string; to: string }`
 - `export function parseDeclaredDate(raw: unknown): string`
 - `export function parseStaffEntryCursor(raw: unknown): string | null`
+- `export async function readDailyEntryNumericSeries(viewer: { userId: string }, workspace: { workspaceId: string; scope: "workspace" | "own" }, input: { clientProfileId: unknown; parameterId: unknown...`
 - `export async function readStaffDailyEntryDetail(session: SessionLike, input: { workspaceId: string; clientProfileId: string; entryDate: string }, deps: DailyEntryDeps = {}): Promise<StaffDailyEntry...`
 - `export async function readStaffDailyEntryDetailTx(tx: Prisma.TransactionClient, input: { workspaceId: string; clientProfileId: string; entryDate: string; ctx: Awaited<ReturnType<typeof authorize>>;...`
 - `export async function saveDailyEntry(session: SessionLike, input: SaveDailyEntryInput, deps: DailyEntryDeps = {}): Promise<SaveDailyEntryResult>`
