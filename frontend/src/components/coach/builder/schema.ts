@@ -9,6 +9,7 @@ import {
   catalogue,
   defaultSettings,
   type SizeName,
+  safeResourceUrl,
   type WidgetInstance,
   type WidgetKind,
 } from "./model";
@@ -48,6 +49,7 @@ export function isValidDashboardDraft(value: unknown): value is DashboardDraft {
   )
     return false;
   const ids = new Set<string>();
+  const kindById = new Map<string, WidgetKind>();
   for (const widget of value.widgets) {
     if (
       !isObject(widget) ||
@@ -59,7 +61,10 @@ export function isValidDashboardDraft(value: unknown): value is DashboardDraft {
     )
       return false;
     ids.add(widget.id);
+    kindById.set(widget.id, widget.kind as WidgetKind);
     const settings = widget.settings;
+    const contentKind = widget.kind === "CU17" || widget.kind === "CU18";
+    const content = settings.content;
     if (
       typeof settings.title !== "string" ||
       typeof settings.source !== "string" ||
@@ -78,6 +83,22 @@ export function isValidDashboardDraft(value: unknown): value is DashboardDraft {
           Object.values(settings.labels).some(
             (label) => typeof label !== "string",
           ))) ||
+      (contentKind && !isObject(content)) ||
+      (content !== undefined &&
+        (!isObject(content) ||
+          typeof content.body !== "string" ||
+          content.body.length > 2000 ||
+          !["neutral", "accent", "important"].includes(
+            content.tone as string,
+          ) ||
+          typeof content.actionLabel !== "string" ||
+          content.actionLabel.length > 64 ||
+          typeof content.actionUrl !== "string" ||
+          content.actionUrl.length > 2048 ||
+          (content.actionLabel.trim() !== "") !==
+            (content.actionUrl.trim() !== "") ||
+          (content.actionUrl.trim() !== "" &&
+            !safeResourceUrl(content.actionUrl)))) ||
       typeof settings.option !== "string" ||
       typeof settings.unit !== "string"
     )
@@ -90,7 +111,7 @@ export function isValidDashboardDraft(value: unknown): value is DashboardDraft {
     )
       return false;
     const columns = columnsFor(key as Breakpoint);
-    for (const rect of Object.values(
+    for (const [id, rect] of Object.entries(
       value.layouts[key] as Record<string, unknown>,
     )) {
       if (
@@ -101,7 +122,8 @@ export function isValidDashboardDraft(value: unknown): value is DashboardDraft {
         (rect.w as number) < 1 ||
         (rect.h as number) < 1 ||
         (rect.x as number) + (rect.w as number) > columns ||
-        (rect.h as number) < minimumHeight(key as Breakpoint) ||
+        (rect.h as number) <
+          minimumHeight(key as Breakpoint, kindById.get(id)) ||
         (key === "mobile" && rect.w !== columns) ||
         !sizeNames.includes(rect.size as SizeName)
       )

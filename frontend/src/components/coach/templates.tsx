@@ -2,7 +2,6 @@
 import { Popover } from "@base-ui/react/popover";
 import {
   ArrowDown,
-  ArrowLeft,
   ArrowUp,
   Check,
   ChevronDown,
@@ -25,6 +24,13 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  Checkbox,
+  SegmentedControl,
+  Input as Vari8Input,
+  Select as Vari8Select,
+} from "../vari8/components";
+import { TextArea } from "../vari8/inputs";
 import {
   bindDashboardUnits,
   CoachDashboardEditor,
@@ -59,6 +65,7 @@ import { useCoach } from "./store";
 import { trackerOverviewIds } from "./tracker-setup";
 import "./tracker-config.css";
 import "./plans/training-options.css";
+import { EditorHeader, Section } from "../vari8/layouts";
 import {
   DEFAULT_PHASE_OPTIONS,
   templateSetup,
@@ -400,14 +407,12 @@ export function TemplateLibrary() {
       )}
       {rename && (
         <Dialog title="Rename template" onClose={() => setRename(null)}>
-          <label className="cd-field">
-            Template name
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={80}
-            />
-          </label>
+          <Vari8Input
+            label="Template name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={80}
+          />
           <div className="cd-dialog-actions">
             <Button onClick={() => setRename(null)}>Cancel</Button>
             <Button
@@ -558,45 +563,46 @@ export function TemplateEditor({ id }: { id: string }) {
   };
   return (
     <div className="cd-editor">
-      <div className="cd-editor-header">
-        <div>
-          <Button
-            className="cd-back"
-            onClick={() =>
-              navigate(
-                route.client
-                  ? { section: "clients", client: route.client, tab: "Plans" }
-                  : { section: "templates" },
-              )
-            }
-          >
-            <ArrowLeft size={15} />
-            Templates
-          </Button>
-          <input
-            className="cd-name-input"
-            aria-label="Template name"
-            value={draft.name}
-            maxLength={80}
-            onChange={(e) => update((t) => ({ ...t, name: e.target.value }))}
-          />
+      <EditorHeader
+        className="cd-template-editor-header"
+        onBack={() =>
+          navigate(
+            route.client
+              ? { section: "clients", client: route.client, tab: "Plans" }
+              : { section: "templates" },
+          )
+        }
+        backLabel="Templates"
+        context="Template editor"
+        title={draft.name || "Untitled template"}
+        status={
           <span className="cd-save-state">
             {dirty
               ? "Unsaved draft · kept on this device"
               : "All changes saved"}
           </span>
-        </div>
-        <div className="cd-actions">
-          <Button onClick={() => setPreview(true)}>
-            <Eye size={16} />
-            Preview
-          </Button>
-          <Button primary onClick={save}>
-            <Save size={16} />
-            Save template
-          </Button>
-        </div>
-      </div>
+        }
+        actions={
+          <div className="cd-template-editor-actions">
+            <Vari8Input
+              label="Template name"
+              value={draft.name}
+              maxLength={80}
+              onChange={(e) => update((t) => ({ ...t, name: e.target.value }))}
+            />
+            <div className="cd-actions">
+              <Button onClick={() => setPreview(true)}>
+                <Eye size={16} />
+                Preview
+              </Button>
+              <Button primary onClick={save}>
+                <Save size={16} />
+                Save template
+              </Button>
+            </div>
+          </div>
+        }
+      />
       {error && (
         <p role="alert" className="cd-error">
           {error}
@@ -646,15 +652,15 @@ export function TemplateEditor({ id }: { id: string }) {
           </div>
         </aside>
         <Surface className="cd-config-surface">
-          <div className="cd-section-title">
-            <SlidersHorizontal size={19} />
-            <h2>{section}</h2>
-          </div>
-          {section === "Tabs" && (
-            <>
-              <label className="cd-field">
-                Description
-                <textarea
+          <Section
+            className="cd-config-section"
+            title={section}
+            actions={<SlidersHorizontal size={19} aria-hidden="true" />}
+          >
+            {section === "Tabs" && (
+              <>
+                <TextArea
+                  label="Description"
                   value={draft.description}
                   rows={2}
                   onChange={(e) =>
@@ -662,122 +668,123 @@ export function TemplateEditor({ id }: { id: string }) {
                   }
                   placeholder="Who is this template for?"
                 />
-              </label>
-              <h3>Client tabs</h3>
-              <div className="cd-view-settings">
-                {CORE_VIEWS.map((v) => (
+                <h3>Client tabs</h3>
+                <div className="cd-view-settings">
+                  {CORE_VIEWS.map((v) => (
+                    <Toggle
+                      key={v}
+                      label={v}
+                      checked={variant.views.includes(v)}
+                      onChange={(checked) =>
+                        updateVariant((vr) => ({
+                          ...vr,
+                          views: checked
+                            ? [...vr.views, v]
+                            : vr.views.filter((x) => x !== v),
+                        }))
+                      }
+                    />
+                  ))}
                   <Toggle
-                    key={v}
-                    label={v}
-                    checked={variant.views.includes(v)}
-                    onChange={(checked) =>
-                      updateVariant((vr) => ({
-                        ...vr,
-                        views: checked
-                          ? [...vr.views, v]
-                          : vr.views.filter((x) => x !== v),
-                      }))
+                    label="Habits"
+                    checked={variant.habits}
+                    onChange={(habits) =>
+                      updateVariant((v) => ({ ...v, habits }))
                     }
                   />
-                ))}
+                </div>
+              </>
+            )}
+            {section === "Dashboard" && (
+              <DashboardConfig variant={variant} update={updateVariant} />
+            )}
+            {section === "Tracker" && (
+              <TrackerConfig variant={variant} update={updateVariant} />
+            )}
+            {section === "Timeline / Roadmap" && (
+              <RoadmapConfig variant={variant} update={updateVariant} />
+            )}
+            {section === "Nutrition" && (
+              <>
+                <p className="cd-muted">
+                  Choose the nutrition experience. Meal count, labels, times,
+                  foods, swaps, targets and training/rest-day schedules are
+                  personalized in each athlete’s client setup.
+                </p>
+                <SegmentedControl
+                  label="Nutrition mode"
+                  value={variant.nutrition}
+                  onValueChange={(nutrition) =>
+                    updateVariant((x) => ({
+                      ...x,
+                      nutrition: nutrition as typeof x.nutrition,
+                    }))
+                  }
+                  options={[
+                    { value: "Meal plan", label: "Meal plan" },
+                    { value: "IIFYM", label: "IIFYM · macro targets" },
+                  ]}
+                />
+                <div className="cd-info-line">
+                  Client setup owns the prescription. This template controls its
+                  presentation.
+                </div>
+              </>
+            )}
+            {section === "Training" && (
+              <TrainingConfig variant={variant} update={updateVariant} />
+            )}
+            {section === "Check-In" && (
+              <QuestionnaireConfig variant={variant} update={updateVariant} />
+            )}
+            {section === "Habits" && (
+              <>
                 <Toggle
-                  label="Habits"
+                  label="Include Habit Tracker"
                   checked={variant.habits}
                   onChange={(habits) =>
                     updateVariant((v) => ({ ...v, habits }))
                   }
                 />
-              </div>
-            </>
-          )}
-          {section === "Dashboard" && (
-            <DashboardConfig variant={variant} update={updateVariant} />
-          )}
-          {section === "Tracker" && (
-            <TrackerConfig variant={variant} update={updateVariant} />
-          )}
-          {section === "Timeline / Roadmap" && (
-            <RoadmapConfig variant={variant} update={updateVariant} />
-          )}
-          {section === "Nutrition" && (
-            <>
-              <p className="cd-muted">
-                Choose the nutrition experience. Meal count, labels, times,
-                foods, swaps, targets and training/rest-day schedules are
-                personalized in each athlete’s client setup.
-              </p>
-              <fieldset className="cd-segmented" aria-label="Nutrition mode">
-                {(["Meal plan", "IIFYM"] as const).map((option) => (
-                  <button
-                    type="button"
-                    key={option}
-                    className={variant.nutrition === option ? "active" : ""}
-                    aria-pressed={variant.nutrition === option}
-                    onClick={() =>
-                      updateVariant((x) => ({ ...x, nutrition: option }))
-                    }
-                  >
-                    {option === "Meal plan"
-                      ? "Meal plan"
-                      : "IIFYM · macro targets"}
-                  </button>
-                ))}
-              </fieldset>
-              <div className="cd-info-line">
-                Client setup owns the prescription. This template controls its
-                presentation.
-              </div>
-            </>
-          )}
-          {section === "Training" && (
-            <TrainingConfig variant={variant} update={updateVariant} />
-          )}
-          {section === "Check-In" && (
-            <QuestionnaireConfig variant={variant} update={updateVariant} />
-          )}
-          {section === "Habits" && (
-            <>
-              <Toggle
-                label="Include Habit Tracker"
-                checked={variant.habits}
-                onChange={(habits) => updateVariant((v) => ({ ...v, habits }))}
-              />
-              <h3>Separate logging preview</h3>
-              {variant.habits ? (
-                <div className="cd-habit-preview">
-                  <span className="cd-check-circle">
-                    <Check size={16} />
-                  </span>
-                  <div>
-                    <strong>Evening walk</strong>
-                    <small>Daily · 20 minutes · 5 / 7 completed</small>
-                    <p>Create a calm transition into the evening.</p>
+                <h3>Separate logging preview</h3>
+                {variant.habits ? (
+                  <div className="cd-habit-preview">
+                    <span className="cd-check-circle">
+                      <Check size={16} />
+                    </span>
+                    <div>
+                      <strong>Evening walk</strong>
+                      <small>Daily · 20 minutes · 5 / 7 completed</small>
+                      <p>Create a calm transition into the evening.</p>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <Empty title="Habit Tracker is hidden">
-                  Enable it to include separate habit logging.
-                </Empty>
-              )}
-              <p className="cd-muted">
-                Define each athlete’s actual habits, frequency, goals and
-                reasons in client setup.
-              </p>
-              <Toggle
-                disabled={!variant.habits}
-                label="Include habit status in check-ins"
-                checked={variant.habits && variant.summaries.includes("habits")}
-                onChange={(checked) =>
-                  updateVariant((v) => ({
-                    ...v,
-                    summaries: checked
-                      ? [...new Set([...v.summaries, "habits"])]
-                      : v.summaries.filter((x) => x !== "habits"),
-                  }))
-                }
-              />
-            </>
-          )}
+                ) : (
+                  <Empty title="Habit Tracker is hidden">
+                    Enable it to include separate habit logging.
+                  </Empty>
+                )}
+                <p className="cd-muted">
+                  Define each athlete’s actual habits, frequency, goals and
+                  reasons in client setup.
+                </p>
+                <Toggle
+                  disabled={!variant.habits}
+                  label="Include habit status in check-ins"
+                  checked={
+                    variant.habits && variant.summaries.includes("habits")
+                  }
+                  onChange={(checked) =>
+                    updateVariant((v) => ({
+                      ...v,
+                      summaries: checked
+                        ? [...new Set([...v.summaries, "habits"])]
+                        : v.summaries.filter((x) => x !== "habits"),
+                    }))
+                  }
+                />
+              </>
+            )}
+          </Section>
         </Surface>
       </div>
       {preview && (
@@ -846,6 +853,7 @@ function OrderButtons({
     <span className="cd-order-buttons">
       <IconButton
         label="Move up"
+        size="sm"
         disabled={index === 0}
         onClick={() => move(index - 1)}
       >
@@ -853,6 +861,7 @@ function OrderButtons({
       </IconButton>
       <IconButton
         label="Move down"
+        size="sm"
         disabled={index === length - 1}
         onClick={() => move(index + 1)}
       >
@@ -1114,50 +1123,49 @@ function TrackerConfig({
                         />
                       )}
                       {canConfigureChoices && (
-                        <label className="cd-field cd-tracker-options">
-                          Choice labels
-                          <textarea
-                            value={
-                              optionDrafts[field.id] ??
-                              (field.options ?? parameter.options ?? []).join(
-                                ", ",
-                              )
-                            }
-                            rows={2}
-                            onChange={(event) => {
-                              const draft = event.target.value;
-                              const options = [
-                                ...new Set(
-                                  draft
-                                    .split(/[\n,]/)
-                                    .map((option) => option.trim())
-                                    .filter(Boolean),
-                                ),
-                              ];
-                              setOptionDrafts((drafts) => ({
-                                ...drafts,
-                                [field.id]: draft,
-                              }));
-                              update((v) => ({
-                                ...v,
-                                fields: v.fields.map((item) =>
-                                  item.id === field.id
-                                    ? { ...item, options }
-                                    : item,
-                                ),
-                              }));
-                            }}
-                            onBlur={() =>
-                              setOptionDrafts((drafts) => {
-                                const next = { ...drafts };
-                                delete next[field.id];
-                                return next;
-                              })
-                            }
-                            aria-label={`Choice labels for ${parameter.name}`}
-                            placeholder="Separate labels with commas"
-                          />
-                        </label>
+                        <TextArea
+                          className="cd-tracker-options"
+                          label="Choice labels"
+                          rows={2}
+                          value={
+                            optionDrafts[field.id] ??
+                            (field.options ?? parameter.options ?? []).join(
+                              ", ",
+                            )
+                          }
+                          onChange={(event) => {
+                            const draft = event.target.value;
+                            const options = [
+                              ...new Set(
+                                draft
+                                  .split(/[\n,]/)
+                                  .map((option) => option.trim())
+                                  .filter(Boolean),
+                              ),
+                            ];
+                            setOptionDrafts((drafts) => ({
+                              ...drafts,
+                              [field.id]: draft,
+                            }));
+                            update((v) => ({
+                              ...v,
+                              fields: v.fields.map((item) =>
+                                item.id === field.id
+                                  ? { ...item, options }
+                                  : item,
+                              ),
+                            }));
+                          }}
+                          onBlur={() =>
+                            setOptionDrafts((drafts) => {
+                              const next = { ...drafts };
+                              delete next[field.id];
+                              return next;
+                            })
+                          }
+                          aria-label={`Choice labels for ${parameter.name}`}
+                          placeholder="Separate labels with commas"
+                        />
                       )}
                     </div>
                   )}
@@ -1550,24 +1558,60 @@ function RoadmapConfig({
         onChange={(roadmapPhases) => update((v) => ({ ...v, roadmapPhases }))}
       />
       {phases && (
-        <label className="cd-field">
-          Phase options · comma separated
-          <input
-            ref={phaseInputRef}
-            value={phaseText}
-            maxLength={500}
-            placeholder="Fat loss, Maintenance, Muscle gain, Recovery"
-            onChange={(e) => commitPhaseText(e.target.value)}
-            onBlur={normalizePhaseText}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                normalizePhaseText();
-              }
-            }}
-          />
-        </label>
+        <Vari8Input
+          label="Phase options · comma separated"
+          ref={phaseInputRef}
+          value={phaseText}
+          maxLength={500}
+          placeholder="Fat loss, Maintenance, Muscle gain, Recovery"
+          onChange={(e) => commitPhaseText(e.target.value)}
+          onBlur={normalizePhaseText}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              normalizePhaseText();
+            }
+          }}
+        />
       )}
+      <h3>Activity planning</h3>
+      <p className="cd-caption">
+        Prescription columns resolved from each client’s saved activity targets.
+        They do not need a matching daily tracker field.
+      </p>
+      {(
+        [
+          ["steps", "Steps target"],
+          ["cardio", "Cardio target"],
+        ] as const
+      ).map(([metric, label]) => (
+        <Toggle
+          key={metric}
+          label={label}
+          detail={
+            metric === "steps"
+              ? "Shows the dated steps/day prescription in each weekly row."
+              : "Shows the dated sessions/week × min/session prescription in each weekly row."
+          }
+          checked={(variant.roadmapActivityTargets ?? []).includes(metric)}
+          onChange={(checked) =>
+            update((v) => {
+              const selected = new Set(v.roadmapActivityTargets ?? []);
+              if (checked) selected.add(metric);
+              else selected.delete(metric);
+              const ordered = (["steps", "cardio"] as const).filter((m) =>
+                selected.has(m),
+              );
+              return {
+                ...v,
+                roadmapActivityTargets: ordered.length
+                  ? [...ordered]
+                  : undefined,
+              };
+            })
+          }
+        />
+      ))}
       <p className="cd-caption">
         Open Preview client to see the weekly table built from actual recorded
         weeks.
@@ -1591,24 +1635,22 @@ function TrainingConfig({
       </p>
       <div className="cd-check-grid">
         {TRAINING_FIELDS.map((f) => (
-          <label key={f}>
-            <input
-              type="checkbox"
-              checked={t.fields.includes(f)}
-              onChange={(e) =>
-                update((v) => ({
-                  ...v,
-                  training: {
-                    ...v.training,
-                    fields: e.target.checked
-                      ? [...v.training.fields, f]
-                      : v.training.fields.filter((x) => x !== f),
-                  },
-                }))
-              }
-            />
-            {f}
-          </label>
+          <Checkbox
+            key={f}
+            label={f}
+            checked={t.fields.includes(f)}
+            onCheckedChange={(checked) =>
+              update((v) => ({
+                ...v,
+                training: {
+                  ...v.training,
+                  fields: checked
+                    ? [...v.training.fields, f]
+                    : v.training.fields.filter((x) => x !== f),
+                },
+              }))
+            }
+          />
         ))}
       </div>
       <TrainingOptionsConfig variant={variant} update={update} />
@@ -1638,8 +1680,8 @@ function TrainingConfig({
             }
           />
           <p className="cd-caption">
-            Open Preview client for the full program, volume table and body
-            heatmap.
+            Open Preview client to see the full program and configured volume
+            view.
           </p>
         </>
       )}
@@ -1650,26 +1692,31 @@ function TrainingConfig({
 const TRAINING_OPTION_FIELDS: {
   key: TrainingOptionKey;
   label: string;
+  field: string;
   description: string;
 }[] = [
   {
     key: "setType",
     label: "Set type",
+    field: "Set type",
     description: "Labels coaches can choose for each set.",
   },
   {
     key: "progression",
     label: "Progression",
+    field: "Progression notes",
     description: "Reusable guidance attached to an exercise.",
   },
   {
     key: "tempo",
     label: "Tempo",
+    field: "Tempo",
     description: "Common tempo prescriptions for the program.",
   },
   {
     key: "rest",
     label: "Rest",
+    field: "Rest / pause",
     description: "Rest intervals available in the set editor.",
   },
 ];
@@ -1688,6 +1735,7 @@ function TrainingOptionsConfig({
   const [draftValues, setDraftValues] = useState<
     Partial<Record<TrainingOptionKey, Record<number, string>>>
   >({});
+  const [activeKey, setActiveKey] = useState<TrainingOptionKey | null>(null);
   const options: TrainingOptions = {
     ...DEFAULT_TRAINING_OPTIONS,
     ...variant.training.options,
@@ -1728,163 +1776,175 @@ function TrainingOptionsConfig({
     });
   };
 
+  const enabledFields = TRAINING_OPTION_FIELDS.filter(({ field }) =>
+    variant.training.fields.includes(field),
+  );
+  const active = TRAINING_OPTION_FIELDS.find(({ key }) => key === activeKey);
+  const renderEditor = ({
+    key,
+    label,
+    description,
+  }: (typeof TRAINING_OPTION_FIELDS)[number]) => {
+    const values = options[key];
+    const currentValues = cleanTrainingOptions(
+      values.map((value, index) => draftValues[key]?.[index] ?? value),
+    );
+    const selectedDefault = values.includes(defaults[key])
+      ? defaults[key]
+      : (values[0] ?? "");
+    return (
+      <section className="cd-training-option-group" key={key}>
+        <header>
+          <div>
+            <h4>{label}</h4>
+            <p>{description}</p>
+          </div>
+          {values.length > 0 && (
+            <Vari8Select
+              label={`${label} default`}
+              value={selectedDefault}
+              onValueChange={(nextValue) =>
+                update((v) => ({
+                  ...v,
+                  training: {
+                    ...v.training,
+                    options: {
+                      ...DEFAULT_TRAINING_OPTIONS,
+                      ...v.training.options,
+                    },
+                    defaults: {
+                      ...DEFAULT_TRAINING_DEFAULTS,
+                      ...v.training.defaults,
+                      [key]: nextValue,
+                    },
+                  },
+                }))
+              }
+              options={values.map((value) => ({ value, label: value }))}
+            />
+          )}
+        </header>
+        <div className="cd-training-option-rows">
+          {values.map((value, index) => (
+            <div className="cd-training-option-row" key={`${key}-${value}`}>
+              <Vari8Input
+                label={`${label} option ${index + 1}`}
+                className="cd-training-option-input"
+                value={draftValues[key]?.[index] ?? value}
+                maxLength={100}
+                onChange={(event) =>
+                  setDraftValues((current) => ({
+                    ...current,
+                    [key]: {
+                      ...current[key],
+                      [index]: event.target.value,
+                    },
+                  }))
+                }
+                onBlur={(event) => {
+                  const next = [...values];
+                  const typed = event.currentTarget.value.trim();
+                  if (!typed && values.length > 1) next.splice(index, 1);
+                  else next[index] = typed || value;
+                  const normalized = cleanTrainingOptions(next);
+                  writeOptions(key, normalized);
+                  setDraftValues((current) => {
+                    return { ...current, [key]: {} };
+                  });
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    event.currentTarget.blur();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className="cd-training-option-remove"
+                aria-label={`Remove ${label.toLowerCase()} option ${value}`}
+                disabled={values.length === 1}
+                onClick={() => {
+                  writeOptions(
+                    key,
+                    currentValues.filter((option) => option !== value),
+                  );
+                  setDraftValues((current) => ({
+                    ...current,
+                    [key]: {},
+                  }));
+                }}
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))}
+          {values.length === 0 && (
+            <p className="cd-training-option-empty">
+              Add a choice to make this field available in the set editor.
+            </p>
+          )}
+          <Button
+            className="cd-training-option-add"
+            onClick={() => {
+              const base = "New option";
+              let label = base;
+              let index = 2;
+              while (currentValues.includes(label))
+                label = `${base} ${index++}`;
+              writeOptions(
+                key,
+                [...currentValues, label],
+                selectedDefault || label,
+              );
+              setDraftValues((current) => ({
+                ...current,
+                [key]: {},
+              }));
+            }}
+          >
+            <Plus size={14} />
+            Add choice
+          </Button>
+        </div>
+      </section>
+    );
+  };
+
   return (
     <section
       className="cd-training-options"
-      aria-labelledby="training-options-title"
+      aria-label="Training field choices"
     >
-      <div className="cd-training-options-heading">
-        <div>
-          <span className="cd-training-options-eyebrow">Coach defaults</span>
-          <h3 id="training-options-title">Reusable set choices</h3>
-          <p>
-            These choices speed up exercise setup. Coaches can still tailor each
-            exercise to the client.
+      <div className="cd-training-option-compact-list">
+        {enabledFields.map(({ key, label, description }) => (
+          <div className="cd-training-option-compact-row" key={key}>
+            <span>
+              <strong>{label}</strong>
+              <small>{description}</small>
+            </span>
+            <Button onClick={() => setActiveKey(key)}>Configure</Button>
+          </div>
+        ))}
+        {!enabledFields.length && (
+          <p className="cd-caption">
+            Enable a prescription field above to configure its choices.
           </p>
-        </div>
+        )}
       </div>
-      <div className="cd-training-options-list">
-        {TRAINING_OPTION_FIELDS.map(({ key, label, description }) => {
-          const values = options[key];
-          const currentValues = cleanTrainingOptions(
-            values.map((value, index) => draftValues[key]?.[index] ?? value),
-          );
-          const selectedDefault = values.includes(defaults[key])
-            ? defaults[key]
-            : (values[0] ?? "");
-          return (
-            <section className="cd-training-option-group" key={key}>
-              <header>
-                <div>
-                  <h4>{label}</h4>
-                  <p>{description}</p>
-                </div>
-                {values.length > 0 && (
-                  <label className="cd-training-default">
-                    Default
-                    <select
-                      aria-label={`${label} default`}
-                      value={selectedDefault}
-                      onChange={(event) =>
-                        update((v) => ({
-                          ...v,
-                          training: {
-                            ...v.training,
-                            options: {
-                              ...DEFAULT_TRAINING_OPTIONS,
-                              ...v.training.options,
-                            },
-                            defaults: {
-                              ...DEFAULT_TRAINING_DEFAULTS,
-                              ...v.training.defaults,
-                              [key]: event.target.value,
-                            },
-                          },
-                        }))
-                      }
-                    >
-                      {values.map((value) => (
-                        <option value={value} key={value}>
-                          {value}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                )}
-              </header>
-              <div className="cd-training-option-rows">
-                {values.map((value, index) => (
-                  <div
-                    className="cd-training-option-row"
-                    key={`${key}-${value}`}
-                  >
-                    <input
-                      aria-label={`${label} option ${index + 1}`}
-                      value={draftValues[key]?.[index] ?? value}
-                      maxLength={100}
-                      onChange={(event) =>
-                        setDraftValues((current) => ({
-                          ...current,
-                          [key]: {
-                            ...current[key],
-                            [index]: event.target.value,
-                          },
-                        }))
-                      }
-                      onBlur={(event) => {
-                        const next = [...values];
-                        const typed = event.currentTarget.value.trim();
-                        if (!typed && values.length > 1) next.splice(index, 1);
-                        else next[index] = typed || value;
-                        const normalized = cleanTrainingOptions(next);
-                        writeOptions(key, normalized);
-                        setDraftValues((current) => {
-                          return { ...current, [key]: {} };
-                        });
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          event.currentTarget.blur();
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="cd-training-option-remove"
-                      aria-label={`Remove ${label.toLowerCase()} option ${value}`}
-                      disabled={values.length === 1}
-                      onClick={() => {
-                        writeOptions(
-                          key,
-                          currentValues.filter((option) => option !== value),
-                        );
-                        setDraftValues((current) => ({
-                          ...current,
-                          [key]: {},
-                        }));
-                      }}
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                ))}
-                {values.length === 0 && (
-                  <p className="cd-training-option-empty">
-                    Add a choice to make this field available in the set editor.
-                  </p>
-                )}
-                <Button
-                  className="cd-training-option-add"
-                  onClick={() => {
-                    const base = "New option";
-                    let label = base;
-                    let index = 2;
-                    while (currentValues.includes(label))
-                      label = `${base} ${index++}`;
-                    writeOptions(
-                      key,
-                      [...currentValues, label],
-                      selectedDefault || label,
-                    );
-                    setDraftValues((current) => ({
-                      ...current,
-                      [key]: {},
-                    }));
-                  }}
-                >
-                  <Plus size={14} />
-                  Add choice
-                </Button>
-              </div>
-            </section>
-          );
-        })}
-      </div>
-      <p className="cd-caption">
-        Saved with this template. Existing client assignments keep their own
-        configuration until you assign an updated template.
-      </p>
+      {active && (
+        <Dialog
+          title={`${active.label} choices`}
+          onClose={() => setActiveKey(null)}
+          wide
+        >
+          <p className="cd-muted">
+            Saved with this template. Existing client assignments keep their
+            current configuration until you assign an updated template.
+          </p>
+          {renderEditor(active)}
+        </Dialog>
+      )}
     </section>
   );
 }
@@ -1969,13 +2029,11 @@ function QuestionnaireConfig({
               </IconButton>
             </div>
           </div>
-          <label className="cd-field">
-            Question label
-            <input
-              value={q.label}
-              onChange={(e) => patch(q.id, { label: e.target.value })}
-            />
-          </label>
+          <Vari8Input
+            label="Question label"
+            value={q.label}
+            onChange={(e) => patch(q.id, { label: e.target.value })}
+          />
           <Select
             label={`Question ${i + 1} type`}
             value={q.type}
@@ -1995,14 +2053,12 @@ function QuestionnaireConfig({
             }
           />
           {q.type === "Choice" && (
-            <label className="cd-field">
-              Choices, separated by commas
-              <input
-                value={q.options}
-                onChange={(e) => patch(q.id, { options: e.target.value })}
-                placeholder="Good, Okay, Difficult"
-              />
-            </label>
+            <Vari8Input
+              label="Choices, separated by commas"
+              value={q.options}
+              onChange={(e) => patch(q.id, { options: e.target.value })}
+              placeholder="Good, Okay, Difficult"
+            />
           )}
           {q.type === "Rating" && (
             <Select
@@ -2034,21 +2090,19 @@ function QuestionnaireConfig({
             })),
           ...(variant.habits ? [{ id: "habits", label: "Habit status" }] : []),
         ].map((s) => (
-          <label key={s.id}>
-            <input
-              type="checkbox"
-              checked={variant.summaries.includes(s.id)}
-              onChange={(e) =>
-                update((v) => ({
-                  ...v,
-                  summaries: e.target.checked
-                    ? [...v.summaries, s.id]
-                    : v.summaries.filter((x) => x !== s.id),
-                }))
-              }
-            />
-            {s.label}
-          </label>
+          <Checkbox
+            key={s.id}
+            label={s.label}
+            checked={variant.summaries.includes(s.id)}
+            onCheckedChange={(checked) =>
+              update((v) => ({
+                ...v,
+                summaries: checked
+                  ? [...v.summaries, s.id]
+                  : v.summaries.filter((x) => x !== s.id),
+              }))
+            }
+          />
         ))}
       </div>
       <div className="cd-subheading">
@@ -2110,20 +2164,20 @@ export function FormPreview({
             {variant.fields
               .filter((f) => f.id !== "weight")
               .map((f) => (
-                <label key={f.id}>
-                  <input
-                    type="checkbox"
-                    checked={metrics.includes(f.id)}
-                    onChange={(e) =>
-                      setMetrics(
-                        e.target.checked
-                          ? [...metrics, f.id]
-                          : metrics.filter((x) => x !== f.id),
-                      )
-                    }
-                  />
-                  {ALL_PARAMETERS.find((p) => p.id === f.id)?.name}
-                </label>
+                <Checkbox
+                  key={f.id}
+                  label={
+                    ALL_PARAMETERS.find((p) => p.id === f.id)?.name ?? f.id
+                  }
+                  checked={metrics.includes(f.id)}
+                  onCheckedChange={(checked) =>
+                    setMetrics(
+                      checked
+                        ? [...metrics, f.id]
+                        : metrics.filter((x) => x !== f.id),
+                    )
+                  }
+                />
               ))}
           </div>
           {variant.fields
@@ -2140,16 +2194,19 @@ export function FormPreview({
             </Button>
           </div>
           {visual && (
-            <label className="cd-field">
-              Progress visuals
-              <input type="file" accept="image/*" multiple />
-            </label>
+            <Vari8Input
+              label="Progress visuals"
+              type="file"
+              accept="image/*"
+              multiple
+            />
           )}
           {note && (
-            <label className="cd-field">
-              Your note
-              <textarea rows={3} placeholder="Share a quick update…" />
-            </label>
+            <TextArea
+              label="Your note"
+              rows={3}
+              placeholder="Share a quick update…"
+            />
           )}
         </>
       ) : (
@@ -2216,40 +2273,51 @@ export function FormPreview({
               </div>
             ))}
           {variant.questions.map((q) => (
-            <label className="cd-field" key={q.id} htmlFor={`preview-${q.id}`}>
-              {q.label}
-              {q.required ? " *" : " · optional"}
+            <div className="cd-field" key={q.id}>
               {q.type === "Long text" ? (
-                <textarea
+                <TextArea
+                  label={`${q.label}${q.required ? " *" : " · optional"}`}
                   id={`preview-${q.id}`}
                   rows={3}
                   placeholder="Your answer…"
                   required={q.required}
                 />
               ) : q.type === "Choice" || q.type === "Rating" ? (
-                <select
+                <Vari8Select
+                  label={`${q.label}${q.required ? " *" : " · optional"}`}
                   id={`preview-${q.id}`}
                   defaultValue=""
                   required={q.required}
-                >
-                  <option value="">Choose an answer</option>
-                  {(q.type === "Choice"
-                    ? q.options
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean)
-                    : q.options === "Word labels"
-                      ? ["Low", "Okay", "Good", "Excellent"]
-                      : Array.from(
-                          { length: q.options === "1–5" ? 5 : 10 },
-                          (_, i) => String(i + 1),
-                        )
-                  ).map((o) => (
-                    <option key={o}>{o}</option>
-                  ))}
-                </select>
+                  options={[
+                    { value: "", label: "Choose an answer" },
+                    ...(q.type === "Choice"
+                      ? q.options
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean)
+                          .map((option) => ({
+                            value: option,
+                            label: option,
+                          }))
+                      : q.options === "Word labels"
+                        ? ["Low", "Okay", "Good", "Excellent"].map(
+                            (option) => ({
+                              value: option,
+                              label: option,
+                            }),
+                          )
+                        : Array.from(
+                            { length: q.options === "1–5" ? 5 : 10 },
+                            (_, i) => String(i + 1),
+                          ).map((option) => ({
+                            value: option,
+                            label: option,
+                          }))),
+                  ]}
+                />
               ) : (
-                <input
+                <Vari8Input
+                  label={`${q.label}${q.required ? " *" : " · optional"}`}
                   id={`preview-${q.id}`}
                   type={
                     q.type === "Numeric"
@@ -2262,7 +2330,7 @@ export function FormPreview({
                   required={q.required}
                 />
               )}
-            </label>
+            </div>
           ))}
         </>
       )}

@@ -9,12 +9,33 @@
 }
 
 .coach-root .cb-db-card[data-size="Compact"] {
-  padding: 12px 14px;
+  padding: var(--v8-card-padding-sm);
 }
 
 .coach-root .cb-db-card[data-size="Compact"] .cb-db-card-header {
   height: 22px;
   margin-bottom: 6px;
+}
+
+.coach-root
+  .cb-db-card[data-kind="CU17"]:not([data-client-preview="true"])
+  .cb-db-card-header
+  h2 {
+  display: none;
+}
+
+.coach-root .cb-db-card[data-kind="CU17"][data-client-preview="true"] {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.coach-root
+  .cb-db-card[data-kind="CU17"][data-client-preview="true"]
+  .cb-db-card-header {
+  display: none;
 }
 
 .coach-root .cb-db-builder .cb-db-card .cb-db-source-title {
@@ -80,4 +101,11 @@
   .cb-db-card[data-size="Compact"]
   > .cb-dw-adaptive[data-kind="CU16"] {
   padding-bottom: 0;
+}
+
+.coach-root
+  .cb-db-card[data-kind="CU17"][data-client-preview="true"]
+  > .cb-dw-content.cb-dw-adaptive {
+  padding: 0;
+  overflow: visible;
 }

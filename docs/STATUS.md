@@ -1,3 +1,61 @@
+## 2026-10-22 — FRONTEND merged into Vari8-Beta, gate green — verified locally
+
+- Branch `beta/frontend-sync-2026-10-22`, merge of `origin/FRONTEND` `51fa6a2`
+  (#151) into `origin/Vari8-Beta` `69c74c3`. `frontend/` takes FRONTEND; the
+  #70 hydration fix (`useReducedMotion` from `@/lib/reduced-motion`, not
+  `motion/react`) is preserved.
+- `npm run check` in `frontend/` exit 0 after Biome sorted imports in five
+  files (import order only, no product change). Log kept outside Git.
+- Root `npx prettier --check docs/STATUS.md docs/tasks/frontend-current-2026-10-22.md` exit 0.
+
+## 2026-10-22 — current frontend publication gates green — verified locally
+
+- `npm test` in `frontend/`: 252 tests, 252 pass, 0 fail (exit 0).
+- `npm run check` in `frontend/` (test → agent-context:check → typecheck →
+  lint → build): exit 0. Biome checked 260 files with `--error-on-warnings`,
+  no findings; `tsc --noEmit` clean; `next build --webpack` produced routes
+  `/`, `/_not-found`, `/coach`, `/dev/design-system`, `/ethereal`.
+- Five stale test assertions were updated to deliberate current behavior
+  (test files only, no product changes):
+  - `accent-contrast.test.mjs`: the screenshot pink `#D93A7F` now keeps its
+    fill (hover `#DB4284`) with a black `#000000` label; the surface-aware
+    accent algorithm replaced the previous minimal-darkened fill plus white
+    label.
+  - `accent-contrast.test.mjs`: mid-gray `#777777` keeps its fill
+    (`#777777`) with a black label instead of darkening to `#767676` with a
+    white label; `contrastRatio(bg, fg) >= 4.5` is asserted.
+  - `widgets.test.mjs`: catalogue count is 22 after CU17 "Section heading"
+    and CU18 "Coach announcement" joined the Coaching category.
+  - `widgets.test.mjs`: CU17/CU18 intentionally return no source-record
+    detail (`widgetDetailKey` → `null`); the detail loop skips them behind
+    an ID allowlist assertion.
+  - `refinement.test.mjs`: `ChartPeriodControl` renders the shared VARI8
+    `Select` (`v8-select dw-chart-range`, Base UI trigger + hidden input)
+    instead of a native `<select>` with `<option selected>`.
+- Browser smoke on a dedicated dev server (port 3100, headless Chrome via
+  CDP): screenshots at 1440×900 and 390×844 for the Supplements plan
+  (`plan=supplements`), the Activity targets plan (`plan=activity-targets`)
+  and the client "Preview assigned tool" dialog, all for `client-001`.
+  Zero console errors; one network 404 for `/favicon.ico` in dev.
+  Artifacts kept outside Git under the local `.agent-runs` archive.
+- `/dev` boundary confirmed fail-closed: the production build lists the
+  `/dev/design-system` route but its built HTML renders the 404 page
+  (`notFound()` outside development) and `next.config.ts` aliases the
+  playground module to a throwing stub in production webpack builds.
+- Commit, push, PR and merge remain pending under the publication plan.
+
+## 2026-10-22 — current frontend PR and clean integration — planned
+
+- Owner authorized publication of the current local frontend, direct review
+  and a clean PR merge into `FRONTEND`. `main` remains out of scope.
+- Clean publication checkout starts from `great-tracker/FRONTEND` at
+  `fe5780dd5b759823b98f5adb4495530923cf4beb`.
+- Feature branch: `devin/vari8-frontend-current-20261022`.
+- Plan: `docs/tasks/frontend-current-2026-10-22.md`.
+- Preserve target-only tests/configuration and the source workspace. The
+  additive overlay, publication gates, direct review and PR are pending.
+- Root runtime, backend, database and CI workflows are not part of this work.
+
 ## 2026-10-19 — PR-02: root app on Next.js 16.3.8 + React 19.3.0 — verified locally
 
 - Branch `beta/pr-02-next16` (worktree `vari8-worktrees/pr-02-next16`), base

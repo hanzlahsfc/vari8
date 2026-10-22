@@ -8,6 +8,7 @@ import {
   getRoadmapWeeks,
   type HabitRecord,
   type SourceRecords,
+  safeResourceUrl,
 } from "./model";
 import { type AdaptiveWidgetProps, widgetDetailKey } from "./widget-geometry";
 import "./coaching-content.css";
@@ -802,6 +803,7 @@ function WeeklyFocus(props: AdaptiveWidgetProps) {
           <span className="cc-muted">Phase dates unavailable</span>
         )}
         {bodyHeight >= 150 &&
+          detailKey &&
           sourceAction("View phase details", () => onDetail(detailKey))}
       </section>
     );
@@ -1153,7 +1155,39 @@ export function CoachingWidgetContent(props: AdaptiveWidgetProps) {
       return <CheckInStatus {...props} />;
     case "CU10":
       return <PhaseMilestone {...props} />;
+    case "CU17":
+      return <DashboardSectionHeading {...props} />;
+    case "CU18":
+      return <CoachAnnouncement {...props} />;
     default:
       return null;
   }
+}
+
+function DashboardSectionHeading({ widget }: AdaptiveWidgetProps) {
+  const content = widget.settings.content;
+  return (
+    <section className="cc-section-heading">
+      <div>
+        <h2>{widget.settings.title}</h2>
+        {content?.body && <p>{content.body}</p>}
+      </div>
+      <span aria-hidden="true" />
+    </section>
+  );
+}
+
+function CoachAnnouncement({ widget }: AdaptiveWidgetProps) {
+  const content = widget.settings.content;
+  const href = safeResourceUrl(content?.actionUrl ?? "");
+  return (
+    <section className="cc-announcement" data-tone={content?.tone ?? "accent"}>
+      <p>{content?.body}</p>
+      {href && content?.actionLabel.trim() && (
+        <a href={href} target="_blank" rel="noreferrer noopener">
+          {content.actionLabel}
+        </a>
+      )}
+    </section>
+  );
 }
