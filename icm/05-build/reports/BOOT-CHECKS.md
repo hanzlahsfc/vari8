@@ -73,8 +73,14 @@ issue #168's logger inherits.
 
 ## 6. Boundaries and open items
 
-- **PR #156 (MAIL-ADAPTER, open):** adds its mail gate inside the same
-  `register()` `try` — adjacent-line merge for whichever lands second.
+- **PR #156 (MAIL-ADAPTER, open):** rewrites the same `instrumentation.ts`
+  import/call block (a `Promise.all` destructure adding its mail gate) and
+  also touches `.env.example` and `docs/index/SYMBOLS.md`. Whichever lands
+  second needs a small rebase plus an index regen — no semantic conflict:
+  every assertion just throws into the same `console.error` → `exit(1)`
+  catch. Merge handoff note: this PR's `docs/index/SYMBOLS.md` also carries
+  the stale-base frontend catch-up, so regen after either merge is required
+  rather than optional.
 - **Issue #166 (Marcel):** no file overlap; `next start` in the container
   inherits these checks via `register()`.
 - **Issue #168 (mine, next):** interface preserved — refusals still flow
@@ -83,3 +89,60 @@ issue #168's logger inherits.
   secrets or connection strings printed, no production contact.
 
 Head: `92615a9` plus this report's commit.
+
+---
+
+## Fix pass 1 — independent review (head `3e58cdc`, verdict FIX)
+
+Review: PR #194 issuecomment-6350839455. The reviewer confirmed the boot-check
+implementation meets #167 on Node v24.22.1; the single blocker was the
+final-head unit gate, which this pass repairs.
+
+**What the earlier verification omitted.** §4 ran the boot-check unit file,
+the affected `pr05-security` describes and the mechanism gates, but not the
+full `npm run test` suite — the report called the `verify-local.sh`
+container-name mismatch a reason not to run it end-to-end, and the unit step
+(which needs no container) was skipped with it. That omission left an
+inherited stale expectation red at head.
+
+**The finding.** `tests/unit/system-index.test.ts` expected every
+`MotionProvider` component row to be `… | /, /coach, /ethereal |`, but the
+accurately generated index (base `09b1424` predates the #160 frontend sync)
+lists `/, /coach, /dev/design-system, /ethereal` — the root layout at
+`frontend/src/app/layout.tsx:21` wraps every route, including the synced
+`frontend/src/app/dev/design-system/page.tsx`. At base, `index:check` was
+exit 1 with the same test red plus index staleness; this PR fixed the index
+but not the expectation. Repair: both affected expected rows now include
+`/dev/design-system`, verified against `docs/index/COMPONENTS.md:77,168` and
+the source — the comparison stays exact `toBe`, no substring loosening, and
+the generated docs are untouched.
+
+**Fresh results (Node v24.22.1, approved runtime; earlier evidence was Node
+v26.8.1):**
+
+- `npm run test` (full, verbatim) — **exit 1**, three runs: the repaired
+  MotionProvider assertion passes every run, but one of three compiler-API
+  tests (`prints one-line signatures…`, `F2: indexes re-exports…`,
+  `index:check reports a missing…`) rotates over the 5s vitest timeout under
+  parallel load on this host (~5.3–6.3s each). Environmental and
+  pre-existing — unrelated to this repair; preserved, not suppressed.
+- `npx vitest run --testTimeout=15000` (full suite, unmasked) — **exit 0,
+  1138/1138** including all 18 system-index tests and 23 boot-checks tests.
+- `npx vitest run tests/unit/system-index.test.ts` — 18/18 isolated
+  (~14s; the same compiler tests take 2.5–5.2s with the machine unloaded).
+- `npx vitest run tests/unit/boot-checks.test.ts` — 23/23.
+- `npm run format:check` 0 · `npm run typecheck` 0 · `npm run index:check` 0.
+- Mutation: renamed `frontend/src/app/dev/design-system` → the repaired
+  assertion failed (missing route caught) → restored byte-identically
+  (`git status` clean).
+- Production byte-identity vs reviewed head `3e58cdc`: sha256 of
+  `instrumentation.ts`, `lib/auth/server.ts`, `lib/storage.ts` each match;
+  `git diff 3e58cdc` on those paths is empty. §3's live-boot evidence
+  carries forward unchanged; startup-config checks remain distinct from
+  database readiness (the valid-config boot ran against a dead
+  `DATABASE_URL`).
+
+**Not rerun:** `npm run build`, lint, integration suites, e2e, parity — no
+production or screen code changed in this pass (test expectation + report
+only). Reviewer INFO items (malformed/`""` origins, blank-S3 trim vs
+`s3Config`) noted as out of contract — no behaviour change made.
