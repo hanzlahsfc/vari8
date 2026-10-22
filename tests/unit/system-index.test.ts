@@ -270,9 +270,12 @@ describe("system index generator", () => {
       );
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
-      // Imported by the root layout, which wraps /, /coach and /ethereal.
+      // Imported by the root layout, which wraps /, /coach, /ethereal and the
+      // dev design-system page FRONTEND-SYNC (#160) added beneath the same
+      // layout. The literal is the generator's output; keep it in step with the
+      // route list rather than pinning the route list in prose above.
       expect(row).toBe(
-        "| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /coach, /ethereal |",
+        "| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /coach, /dev/design-system, /ethereal |",
       );
     }
   });

@@ -150,6 +150,26 @@ html[data-theme="pro-white"] .auth-screen:not(.eg-auth) {
   font-size: 15px;
 }
 
+/* Field error. The five auth forms validate with the browser's own constraint
+   attributes (required, type=email), so the styled surface is the native
+   :user-invalid state: red marks a field only after the person has left it or
+   tried to submit, where a bare :invalid would paint an untouched field on
+   first load. Ink is the same pair .auth-error uses below, which in turn is
+   copied from coach.css; the client shell (.eg-auth) has its own danger token. */
+.auth-screen .auth-input:user-invalid {
+  border-color: #f2a4a8;
+}
+
+html[data-theme="pro-white"]
+  .auth-screen:not(.eg-auth)
+  .auth-input:user-invalid {
+  border-color: #973d47;
+}
+
+.auth-screen.eg-auth .auth-input:user-invalid {
+  border-color: var(--danger);
+}
+
 /* Canvas primary action: cd-button geometry with the cd-primary fill. */
 .auth-screen .auth-button {
   display: inline-flex;
@@ -178,6 +198,7 @@ html[data-theme="pro-white"] .auth-screen:not(.eg-auth) {
 
 .auth-screen .auth-button:disabled {
   cursor: progress;
+  opacity: 0.72;
 }
 
 /* coach.css paints .cd-error from literal colours it declares (the canvas has

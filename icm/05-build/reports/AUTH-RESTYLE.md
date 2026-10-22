@@ -202,3 +202,114 @@ scoped end to end.
   gap, not an auth-surface gap, and fixing it is outside this card.
 - The e2e guard cannot see `/reset` and `/reset-request` in CI while mail delivery is unconfigured;
   those two are covered by the dev-server measurement and the screenshots instead.
+
+## Repair round 1 (run 49, base `09b1424`, 2026-10-22)
+
+The card's acceptance list says every state must be styled, including field error. A read-only audit of
+the merged #130 result found three gaps that the earlier closure record missed. All three are CSS plus
+one pseudo-class, none touches a route, a server action, a form field name or a copy string.
+
+### 1. The field-error state did not exist
+
+No `:invalid`, `:user-invalid` or `[aria-invalid]` rule existed anywhere in `app/auth.css`, and no auth
+form set `aria-invalid`. The five forms validate with the browser's own constraint attributes
+(`required`, `type="email"`), so the styled surface is the native `:user-invalid` state: it fires only
+after the person has left the field or tried to submit, where a bare `:invalid` would paint a field red
+on first paint. Added at `app/auth.css:153-169`: `.auth-screen .auth-input:user-invalid`, the
+`html[data-theme="pro-white"] .auth-screen:not(.eg-auth)` mirror at `#973d47`, and
+`.auth-screen.eg-auth` at `var(--danger)`. The two literals are the pair `.auth-error` already uses ten
+lines below, which in turn is copied from `coach.css:1184`.
+
+Rejected: propagating a server-side field error. `requestReset` returns one message with no field
+attribution (`app/reset-request/actions.ts`), and giving the action a field shape would change the
+server contract the card freezes. The `type="email"` constraint already blocks a malformed address
+before submit, so the native state is the state a person actually reaches.
+
+### 2. Submitting was cursor-only
+
+`app/auth.css:196-199` set `cursor: progress` on `.auth-button:disabled` and nothing else, so the only
+visible change while the action was in flight was the pointer. Added `opacity: 0.72`.
+
+### 3. The focus ring on `/invite` and `/reset*` was the legacy red, not the canvas accent
+
+`app/globals.css:87-96` carried four pre-canvas rules (`.invite-form .auth-input:focus-visible` and its
+three siblings) at specificity 0,3,0 painting `outline: 2px solid var(--color-accent)`. That beat
+`.coach-root :focus-visible` (0,2,0) at `components/canvas/coach/coach.css:88-90`, so those two routes
+rang in the app's legacy accent (`#e34332` dark, `#b23325` light, `themes/pro-dark.css:14` and
+`themes/pro-white.css:16`) while every other auth route rang in `--cd-accent-ring`. Deleted the four
+rules. The canvas ring now applies, including `outline-offset: 4px` from `coach.css:83-87`, which is
+what `/coach` itself renders. Client-shell routes (`/me/login`, `/me/reset`, `/me/reset-request`) keep
+their ring from `components/canvas/ethereal/ethereal-shell.css:133`, so no route lost a focus indicator.
+
+### Measured, live
+
+Temporary Playwright probe against `next start` on 127.0.0.1:3000 with the lane database
+`app_authrs` (private cluster, 127.0.0.1:3995). The probe was deleted before the commit.
+
+```
+PROBE field-error  idle border rgba(255,255,255,0.12)  :user-invalid true  border rgb(242,164,168)
+PROBE submitting   idle {opacity 1, cursor pointer}    disabled {opacity 0.72, cursor progress}
+PROBE focus ring   /reset-request fixed rgb(235,145,184)  with-old-rule rgb(227,67,50)
+```
+
+The third line is the bite: re-injecting the deleted rule at runtime turns the ring back into
+`#e34332`, which is exactly the mismatch the repair removes. `/reset-request` is `/coach`-shell on
+`/coach`'s own accent `#eb91b8` once the rule is gone.
+
+Existing suites, which compare computed styles against the live `/coach` and `/me` roots and sign in
+through the real action, all pass unchanged:
+
+```
+tests/e2e/auth-card.spec.ts         2 passed  (pro-dark, pro-white root match)
+tests/e2e/me-auth-look.spec.ts      5 passed
+tests/e2e/password-reset.spec.ts    7 passed, 2 skipped (delivery-gated 404 pairs)
+tests/e2e/invite-acceptance.spec.ts 8 passed
+total 24 tests: 22 passed, 2 skipped, 0 failed
+```
+
+Screenshots at 1440 and 390 px for idle, field error, submitting, server error, the focused reset
+field and the `/coach` reference: `Vari8-evidence/scratch/auth-restyle-r1/screens/` (12 files).
+
+### Gates
+
+```
+npx prettier --check .         0
+npm run typecheck              0
+npm run lint                   0  (81 warnings, 0 errors)
+npm run index                  0
+npm run index:check            0
+npm run test                   0  (98 files, 1115 tests)
+npm run build                  0  (NODE_ENV unset)
+```
+
+`cd frontend && npm run build` was not run: no file under `frontend/` changed in this branch
+(`git diff --name-only origin/Vari8-Beta...HEAD` lists `app/` and `docs/index/` and one test).
+
+### Two base defects this branch had to step over
+
+1. `tests/unit/system-index.test.ts:274` pinned `MotionProvider`'s route list as `/, /coach, /ethereal`.
+   FRONTEND-SYNC (#160) added `/dev/design-system` under the same root layout, so the generator now
+   emits `/, /coach, /dev/design-system, /ethereal` and the literal went stale. It fails on the
+   untouched checkout at `09b1424` (measured: 2 failed of 18 there, 1 of 18 in a fresh worktree). The
+   generator is right, so the literal was updated and the comment now says why.
+2. `playwright.config.ts:26` sets `APP_ENV=test` for its own webServer, and `npm run build` with
+   `APP_ENV=test` fails at prerender: `Error occurred prerendering page "/_global-error"`,
+   `TypeError: Cannot read properties of null (reading 'useContext')`. Without `APP_ENV` the same build
+   is exit 0. So `npm run test:e2e` cannot start its own server on this base. Workaround used here:
+   build without `APP_ENV`, then `APP_ENV=test npm run start` and let Playwright reuse the running
+   server. The build-time failure is untouched by this card and belongs to whoever owns the runtime
+   classification in `lib/runtime.ts`.
+
+`npm run index` also rewrites `docs/index/COMPONENTS.md`, `ROUTES.md` and `SYMBOLS.md` on this base,
+because #160 landed frontend sources without regenerating the index. Those regenerated files are in
+this commit, which is what makes `index:check` exit 0.
+
+### Still open
+
+- `aria-busy` on the submitting form is not set. The visible state is fixed; announcements ride on the
+  disabled button. Adding it means touching five form components for a non-visual gain, so it is a
+  separate call.
+- The coach auth routes still paint the accent from the `#eb91b8` literal at `app/auth.css:30` rather
+  than from the appearance store (`components/canvas/coach/coach-app.tsx:83-86`), because the auth
+  shell does not mount that provider. Retargeting it is a behaviour-adjacent change and needs the
+  owner.
