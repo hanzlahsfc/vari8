@@ -6,8 +6,10 @@ Card `icm/05-build/cards/pr-sv2-daily-series.md`, issue
 review). Branch `beta/pr-sv2-daily-series`, base `69c74c3` (merge base
 with `origin/Vari8-Beta`; branch is already at the current beta tip, no
 merge needed). Gate-verified head `a4b2dcb`; commits on top add the
-report only, no product code. Repository renamed to `hanzlahsfc/vari8`
-during this card; origin updated accordingly.
+report and, at `cfb1105`, the review repairs documented below (one new
+integration test, report and card corrections — no product code).
+Repository renamed to `hanzlahsfc/vari8` during this card; origin
+updated accordingly.
 
 ## What changed
 
