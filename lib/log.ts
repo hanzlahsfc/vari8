@@ -101,18 +101,27 @@ function truncateText(value: string, maxBytes: number): string {
 }
 
 /**
- * Marker for a value the caller has already validated to a safe shape —
- * used for the v1 request id, whose `^[A-Za-z0-9-]{1,64}$` grammar cannot
- * carry secrets or forge a line. `trustedId` preserves it verbatim so the
- * logged correlation id always equals the one returned to the client; it
- * does NOT weaken the long-token scrub for any other field.
+ * The safe shape for a trusted identifier emitted verbatim — urlsafe,
+ * bounded, no secrets or line-forging characters possible. Canonical in
+ * this module; `lib/api/v1` uses it to validate `x-request-id`.
+ */
+export const TRUSTED_ID_SHAPE = /^[A-Za-z0-9-]{1,64}$/;
+
+/**
+ * Marker for a value the caller has already validated to the trusted-id
+ * shape — used for the v1 request id. `trustedId` preserves it verbatim so
+ * the logged correlation id always equals the one returned to the client.
+ * The marker self-validates at its own boundary: an input outside the
+ * grammar is returned as a plain string and takes the normal redaction
+ * path, so a raw `trustedId("x".repeat(100000))` cannot defeat the size
+ * bound or the long-token scrub.
  */
 class TrustedId {
   constructor(readonly value: string) {}
 }
 
-export function trustedId(value: string): TrustedId {
-  return new TrustedId(value);
+export function trustedId(value: string): TrustedId | string {
+  return TRUSTED_ID_SHAPE.test(value) ? new TrustedId(value) : value;
 }
 
 function formatError(

@@ -268,6 +268,23 @@ describe("logger — one JSON line, redacted", () => {
     expect(parsed.status).toBe(500);
   });
 
+  it("a trustedId marker cannot smuggle an oversized or unsafe string", () => {
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    // trustedId self-validates: outside the grammar the value takes the
+    // normal redaction path — the long-token scrub still applies.
+    logError("api_v1_request_failed", {
+      requestId: trustedId("x".repeat(10_000)),
+      method: "GET",
+      route: "/api/v1/media/object",
+      status: 500,
+    });
+    const line = String(spy.mock.calls[0][0]);
+    expect(Buffer.byteLength(line, "utf8")).toBeLessThanOrEqual(32_768);
+    expect(JSON.parse(line).requestId).toBe(REDACTED);
+  });
+
   it("a throwing getter plus a dead sink still cannot throw", () => {
     const spy = vi.spyOn(process.stdout, "write").mockImplementation(() => {
       throw new Error("EPIPE");

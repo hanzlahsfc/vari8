@@ -6,7 +6,7 @@ import { getViewerFromHeaders } from "@/lib/auth/viewer";
 import { capabilityScope, memberRoleToRole } from "@/lib/auth/roles";
 import type { Capability, CapabilityScope, Role } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db";
-import { logError, trustedId } from "@/lib/log";
+import { logError, TRUSTED_ID_SHAPE, trustedId } from "@/lib/log";
 
 /**
  * PR-05 /api/v1 route helper (D6): every operation goes through this boundary.
@@ -102,11 +102,9 @@ async function resolveWorkspaceContext(
  * into a log line; anything else mints a fresh UUID. The id is echoed back on
  * the 500 response so a client can report it against the log line.
  */
-const REQUEST_ID_SHAPE = /^[A-Za-z0-9-]{1,64}$/;
-
 export function requestIdFor(request: Request): string {
   const inbound = request.headers.get("x-request-id");
-  return inbound && REQUEST_ID_SHAPE.test(inbound) ? inbound : randomUUID();
+  return inbound && TRUSTED_ID_SHAPE.test(inbound) ? inbound : randomUUID();
 }
 
 /**
@@ -124,7 +122,7 @@ export function reportV1Failure(
 ): Response {
   // Re-validate: callers pass requestIdFor's output today, but the trusted
   // marker must never carry an unvalidated string into a log line.
-  const id = REQUEST_ID_SHAPE.test(requestId) ? requestId : randomUUID();
+  const id = TRUSTED_ID_SHAPE.test(requestId) ? requestId : randomUUID();
   logError("api_v1_request_failed", {
     requestId: trustedId(id),
     method: request.method,
