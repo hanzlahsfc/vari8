@@ -425,12 +425,15 @@ describe.skipIf(!enabled)("PR-05 security fixes (real PG)", () => {
         vi.stubEnv("NODE_ENV", "production");
         vi.stubEnv("BETTER_AUTH_SECRET", "x".repeat(40));
         vi.stubEnv("AUTH_SECRET", "");
-        vi.stubEnv("BETTER_AUTH_URL", "http://a.example");
-        vi.stubEnv("AUTH_URL", "http://b.example");
+        // https: fixtures — an http: auth origin is itself a production
+        // boot refusal since BOOT-CHECKS (#167), so equal-but-http values
+        // would throw for a different reason than the alias conflict.
+        vi.stubEnv("BETTER_AUTH_URL", "https://a.example");
+        vi.stubEnv("AUTH_URL", "https://b.example");
         expect(() => assertAuthSecretConfigured()).toThrow(
           /BETTER_AUTH_URL and AUTH_URL/,
         );
-        vi.stubEnv("AUTH_URL", "http://a.example");
+        vi.stubEnv("AUTH_URL", "https://a.example");
         expect(() => assertAuthSecretConfigured()).not.toThrow();
         vi.stubEnv("AUTH_SECRET", `different-${"y".repeat(40)}`);
         expect(() => assertAuthSecretConfigured()).toThrow(
