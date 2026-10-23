@@ -612,6 +612,11 @@ describe.skipIf(!enabled)("PR-SUPP supplement plan (real PG)", () => {
       deps(),
     );
     expect(view.plan!.items).toHaveLength(1);
+    // Full item rows captured for a literal before/after comparison.
+    const itemsBefore = await prisma.supplementPlanItem.findMany({
+      where: { planId: saved.planId },
+      orderBy: { position: "asc" },
+    });
     // Archived client: writes refuse inside the lock (issue card:
     // "archived client → plan_not_accessible per PR-M1").
     await expect(
@@ -627,12 +632,19 @@ describe.skipIf(!enabled)("PR-SUPP supplement plan (real PG)", () => {
         deps(),
       ),
     ).rejects.toMatchObject({ code: "plan_not_accessible" });
-    // The refused save leaves plan, revision and audit untouched.
+    // The refused save leaves plan, revision, item rows and audit
+    // untouched — a full-row literal comparison, not just a count.
     const plan = await prisma.supplementPlan.findUniqueOrThrow({
       where: { id: saved.planId },
       select: { revision: true, name: true },
     });
     expect(plan).toEqual({ revision: 1, name: "Plan" });
+    const itemsAfter = await prisma.supplementPlanItem.findMany({
+      where: { planId: saved.planId },
+      orderBy: { position: "asc" },
+    });
+    expect(itemsAfter).toEqual(itemsBefore);
+    expect(itemsAfter).toHaveLength(1);
     expect(await auditCount(saved.planId, "UPDATE")).toBe(0);
   });
 
