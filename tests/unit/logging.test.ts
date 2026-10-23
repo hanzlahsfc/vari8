@@ -9,8 +9,8 @@ import { createHmac, randomUUID } from "node:crypto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
-import { ApiError, defineApiV1Route } from "../../lib/api/v1";
-import { logError, redactString, REDACTED } from "../../lib/log";
+import { ApiError, defineApiV1Route, reportV1Failure } from "../../lib/api/v1";
+import { logError, redactString, REDACTED, trustedId } from "../../lib/log";
 
 /** Set per test — the mocked mediaObject lookup throws it when present. */
 const mediaFault = vi.hoisted(() => ({ current: null as Error | null }));
@@ -186,7 +186,100 @@ describe("logger — one JSON line, redacted", () => {
     const line = String(spy.mock.calls[0][0]);
     expect(line.length).toBeLessThanOrEqual(32_769);
     const shrunk = JSON.parse(line);
-    expect(shrunk.error.stack).toBe("[truncated]");
+    expect(shrunk.error.stack).toMatch(/…\[truncated\]$/);
+  });
+
+  it("oversized errors stay valid JSON, byte-bounded, correlation kept", () => {
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    logError("api_v1_request_failed", {
+      requestId: trustedId("t".repeat(32)),
+      method: "GET",
+      route: "/api/v1/workspaces/ws-1/session",
+      status: 500,
+      error: new Error("x ".repeat(30_000)),
+    });
+    const line = String(spy.mock.calls[0][0]);
+    expect(Buffer.byteLength(line, "utf8")).toBeLessThanOrEqual(32_768);
+    const parsed = JSON.parse(line);
+    expect(parsed.requestId).toBe("t".repeat(32));
+    expect(parsed.method).toBe("GET");
+    expect(parsed.route).toBe("/api/v1/workspaces/ws-1/session");
+    expect(parsed.status).toBe(500);
+    expect(parsed.error.message).toMatch(/…\[truncated\]$/);
+    expect(line).not.toContain("x ".repeat(30_000));
+  });
+
+  it("multibyte text is byte-bounded without splitting a surrogate pair", () => {
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    const error = new Error("💥".repeat(20_000));
+    error.name = "💥".repeat(200) + "Name";
+    logError("test_event", { error });
+    const line = String(spy.mock.calls[0][0]);
+    expect(Buffer.byteLength(line, "utf8")).toBeLessThanOrEqual(32_768);
+    const parsed = JSON.parse(line);
+    expect(parsed.error.message).toMatch(/…\[truncated\]$/);
+    expect(parsed.error.name).toMatch(/…\[truncated\]$/);
+    // no lone surrogate escaped into the output
+    expect(line).not.toMatch(/\\ud[89a-f][0-9a-f]{2}/i);
+  });
+
+  it("a nested giant cause is bounded and keeps the correlation fields", () => {
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    logError("api_v1_request_failed", {
+      requestId: trustedId("c".repeat(32)),
+      method: "PUT",
+      route: "/api/v1/media/object",
+      status: 500,
+      error: new Error("outer", { cause: new Error("y ".repeat(20_000)) }),
+    });
+    const line = String(spy.mock.calls[0][0]);
+    expect(Buffer.byteLength(line, "utf8")).toBeLessThanOrEqual(32_768);
+    const parsed = JSON.parse(line);
+    expect(parsed.requestId).toBe("c".repeat(32));
+    expect(parsed.error.cause.message).toMatch(/…\[truncated\]$/);
+  });
+
+  it("the minimal fallback keeps safe request-correlation fields", () => {
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    const fat: Record<string, unknown> = {};
+    for (let i = 0; i < 60; i += 1) fat[`k${i}`] = "v ".repeat(1000);
+    logError("api_v1_request_failed", {
+      requestId: trustedId("d".repeat(32)),
+      method: "GET",
+      route: "/api/v1/media/object",
+      status: 500,
+      fat,
+    });
+    const line = String(spy.mock.calls[0][0]);
+    expect(Buffer.byteLength(line, "utf8")).toBeLessThanOrEqual(32_768);
+    const parsed = JSON.parse(line);
+    expect(parsed.truncated).toBe("[event-exceeded-size-limit]");
+    expect(parsed.requestId).toBe("d".repeat(32));
+    expect(parsed.method).toBe("GET");
+    expect(parsed.route).toBe("/api/v1/media/object");
+    expect(parsed.status).toBe(500);
+  });
+
+  it("a throwing getter plus a dead sink still cannot throw", () => {
+    const spy = vi.spyOn(process.stdout, "write").mockImplementation(() => {
+      throw new Error("EPIPE");
+    });
+    expect(() =>
+      logError("test_event", {
+        get boom(): never {
+          throw new Error("getter explosion admin@x.test");
+        },
+      }),
+    ).not.toThrow();
+    spy.mockRestore();
   });
 
   it("a dead stdout sink never throws and never loses the response", async () => {
@@ -302,6 +395,23 @@ describe("api_v1_request_failed — the v1 500 line", () => {
       spy.mockRestore();
     },
   );
+
+  it("reportV1Failure re-validates its requestId argument", async () => {
+    const spy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
+    const res = reportV1Failure(
+      new Request("http://app.test/api/v1/media/object"),
+      'unvalidated {"level":"info"} a=b',
+      new Error("x"),
+    );
+    expect(res.status).toBe(500);
+    const parsed = JSON.parse(String(spy.mock.calls[0][0]));
+    expect(parsed.requestId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(res.headers.get("x-request-id")).toBe(parsed.requestId);
+    expect(String(spy.mock.calls[0][0])).not.toContain("unvalidated");
+    spy.mockRestore();
+  });
 
   it("expected traffic (typed errors, bad input) writes no log line", async () => {
     const GET_403 = defineApiV1Route({

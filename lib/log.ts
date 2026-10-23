@@ -79,8 +79,26 @@ const MAX_DEPTH = 4;
 const MAX_ITEMS = 20;
 const MAX_STRING = 2000;
 const MAX_KEYS = 64;
-/** Total serialized line budget — a degraded but always-valid JSON line. */
+/** Total serialized line budget in BYTES — degraded but always-valid JSON. */
 const MAX_LINE = 32_768;
+/** Per-field byte bounds inside a serialized error. */
+const MAX_ERROR_NAME = 256;
+const MAX_ERROR_MESSAGE = 4_096;
+const MAX_ERROR_STACK = 8_192;
+
+/**
+ * Byte-bound a string for logging — UTF-8 aware, never splits a surrogate
+ * pair, and marks the cut. `JSON.stringify` output stays valid.
+ */
+function truncateText(value: string, maxBytes: number): string {
+  if (Buffer.byteLength(value, "utf8") <= maxBytes) return value;
+  let end = Math.min(value.length, maxBytes);
+  while (end > 0 && Buffer.byteLength(value.slice(0, end), "utf8") > maxBytes)
+    end -= 1;
+  const last = value.charCodeAt(end - 1);
+  if (end > 0 && last >= 0xd800 && last <= 0xdbff) end -= 1;
+  return `${value.slice(0, end)}…[truncated]`;
+}
 
 /**
  * Marker for a value the caller has already validated to a safe shape —
@@ -103,14 +121,18 @@ function formatError(
   seen: WeakSet<object>,
 ): Record<string, unknown> {
   // name and code are caller-controlled strings on custom error classes —
-  // they go through the same scrub as message, stack and cause.
+  // they go through the same scrub as message, stack and cause, and every
+  // field is byte-bounded so a giant error can never force the minimal
+  // event fallback and discard the request-correlation fields.
   const out: Record<string, unknown> = {
-    name: redactString(error.name),
-    message: redactString(error.message),
+    name: truncateText(redactString(error.name), MAX_ERROR_NAME),
+    message: truncateText(redactString(error.message), MAX_ERROR_MESSAGE),
   };
   const code = (error as { code?: unknown }).code;
-  if (typeof code === "string") out.code = redactString(code);
-  if (typeof error.stack === "string") out.stack = redactString(error.stack);
+  if (typeof code === "string")
+    out.code = truncateText(redactString(code), MAX_ERROR_NAME);
+  if (typeof error.stack === "string")
+    out.stack = truncateText(redactString(error.stack), MAX_ERROR_STACK);
   if ("cause" in error && error.cause !== undefined) {
     out.cause =
       depth + 1 >= MAX_DEPTH
@@ -198,21 +220,34 @@ export function log(
     let line = JSON.stringify(entry);
     // Bounded line size: degrade the biggest serializations first, never
     // truncate raw JSON mid-line.
-    if (line.length > MAX_LINE && entry.error instanceof Object) {
+    if (
+      Buffer.byteLength(line, "utf8") > MAX_LINE &&
+      entry.error instanceof Object
+    ) {
       (entry.error as Record<string, unknown>).stack = "[truncated]";
       line = JSON.stringify(entry);
     }
-    if (line.length > MAX_LINE && entry.error instanceof Object) {
+    if (
+      Buffer.byteLength(line, "utf8") > MAX_LINE &&
+      entry.error instanceof Object
+    ) {
       (entry.error as Record<string, unknown>).cause = "[truncated]";
       line = JSON.stringify(entry);
     }
-    if (line.length > MAX_LINE) {
-      line = JSON.stringify({
+    if (Buffer.byteLength(line, "utf8") > MAX_LINE) {
+      // Last resort: the minimal event still carries the safe correlation
+      // fields when they exist (request ids are already shape-validated);
+      // boot events simply omit them.
+      const minimal: Record<string, unknown> = {
         level,
         event,
         ts: entry.ts,
         truncated: "[event-exceeded-size-limit]",
-      });
+      };
+      for (const key of ["requestId", "method", "route", "status"]) {
+        if (key in entry) minimal[key] = entry[key];
+      }
+      line = JSON.stringify(minimal);
     }
     try {
       process.stdout.write(`${line}\n`);

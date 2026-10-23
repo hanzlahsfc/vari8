@@ -122,8 +122,11 @@ export function reportV1Failure(
   requestId: string,
   error: unknown,
 ): Response {
+  // Re-validate: callers pass requestIdFor's output today, but the trusted
+  // marker must never carry an unvalidated string into a log line.
+  const id = REQUEST_ID_SHAPE.test(requestId) ? requestId : randomUUID();
   logError("api_v1_request_failed", {
-    requestId: trustedId(requestId),
+    requestId: trustedId(id),
     method: request.method,
     route: new URL(request.url).pathname,
     status: 500,
@@ -131,7 +134,7 @@ export function reportV1Failure(
   });
   return Response.json(
     { error: { code: "internal" } },
-    { status: 500, headers: { "x-request-id": requestId } },
+    { status: 500, headers: { "x-request-id": id } },
   );
 }
 

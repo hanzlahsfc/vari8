@@ -245,3 +245,98 @@ vitest.integration.config.ts tests/integration/pr05-security.test.ts` —
   tracked decision.
 
 Head: this pass's commits on `beta/logging` — ready for re-review.
+
+---
+
+## Fix pass 2 — re-review (head `284bb99`, verdict FIX for merge readiness)
+
+Re-review: PR #195 issuecomment-6352585429. Findings 1-4 closed by the
+previous pass; two items remained and are repaired:
+
+### Repaired findings
+
+1. **Large-error truncation dropped correlation (finding 5 remainder).**
+   `formatError` now byte-bounds every serialized error field —
+   name/code at 256 B, message at 4 KiB, stack at 8 KiB — via a UTF-8-aware
+   `truncateText` that never splits a surrogate pair and marks the cut
+   (`…[truncated]`). The total line bound is enforced in BYTES
+   (`Buffer.byteLength`, 32 KiB). The minimal fallback now retains the
+   safe correlation fields (`requestId`, `method`, `route`, `status`)
+   when present; boot events simply omit them and stay valid. Redaction
+   still runs before output — truncation cannot reintroduce a secret
+   (scrubbed values are what get bounded), and `trustedId` survives the
+   minimal fallback verbatim.
+2. **Fallback-path test isolation (finding 2 remainder — test-evidence
+   gap, not a code defect).** New test: a throwing field getter plus a
+   dead stdout sink — `logError` must not throw; it fails when the
+   fallback write guard is removed. The API 500 response and boot
+   `exit(1)` under a dead sink were already proven last pass.
+3. **reportV1Failure input hardening (reviewer INFO).** It now
+   re-validates the `requestId` argument against the shape grammar and
+   mints a UUID otherwise — the `trustedId` marker can no longer carry an
+   unvalidated string into a line if a future call site bypasses
+   `requestIdFor`.
+
+### Correction to the fix-pass-1 mutation record
+
+The pass-1 line "unguarded fallback write → 1 fail" was imprecise, as the
+reviewer noted: that mutation removed the primary-write inner guard AND
+unguarded the fallback together, and the committed dead-sink test only
+exercises the primary path (its inner catch swallows the throw before the
+fallback is reached). The new throwing-getter test isolates the outer-catch
+fallback path — removing the fallback guard alone now produces exactly
+1 failure there. Original run history preserved above; this note is the
+prospective correction.
+
+### New/updated tests (23 → 29)
+
+- request-id matrix through the real funnel (short/uuid/32/64/65/hostile)
+- oversized error (60 KB message) → valid JSON, ≤ 32 KiB bytes, truncated
+  message, requestId/method/route/status retained
+- multibyte (emoji) text → byte-bounded, no split surrogate in output
+- nested giant cause → bounded, correlation kept
+- minimal fallback on a >32 KiB field set → `truncated` marker +
+  correlation fields retained
+- throwing getter + dead sink → `logError` does not throw (isolates the
+  fallback guard)
+- `reportV1Failure` re-validation → hostile arg mints a UUID
+- media/object GET+PUT fault lines, silent 403/404 (pass 1)
+
+### Mutations (each restored byte-identically)
+
+| Break                                          | Result                                                           |
+| ---------------------------------------------- | ---------------------------------------------------------------- |
+| formatError field caps removed                 | 6 failures (oversize/multibyte/nested + 3 existing scrub/funnel) |
+| minimal-fallback correlation retention removed | 1 failure                                                        |
+| fallback write unguarded                       | 1 failure (getter + dead-sink test)                              |
+| reportV1Failure re-validation removed          | 1 failure                                                        |
+
+### Fresh results (this head, Node v24.22.1)
+
+- `npx vitest run tests/unit/logging.test.ts` — **exit 0, 29/29**.
+- `npm run test` verbatim — **exit 1, 1142/1144**: stale `MotionProvider`
+  expectation (inherited; #194 repair unmerged — not duplicated) and the
+  ~5.9s compiler-API timeout under 99-worker load (pre-existing
+  environmental; logging file 29/29 inside the same run).
+- Integration on disposable `app_plogging_it`:
+  `pr05-security` 16/16, `api-v1-media` 7/7, `api-v1-session` 4/4,
+  `api-v1-clients` 5/5 — **32/32**.
+- `npm run build` 0 · `npm run typecheck` 0 · `npm run format:check` 0 ·
+  `npm run lint` 0 errors (81 pre-existing warnings) · `npm run index` +
+  `index:check` OK.
+- Live probes re-run at this head: boot refusal → one JSON `boot_refused`
+  line + exit 1; media/object signed GET + dead DB → 500 + one
+  `api_v1_request_failed` line, 32-char inbound `x-request-id` preserved
+  in both line and response header; bad signature → 403, no line.
+
+### Remaining gate
+
+- **#194 merge** remains the outstanding integration gate — still OPEN at
+  `e4e6bb9` (SHIP). Order once it lands: rebase `beta/logging` → keep
+  auth + storage assertions (+ mail if #156 lands first) +
+  `logError("boot_refused")` → `npm run index` → re-run the standard
+  suite; the MotionProvider failure resolves via #194's repair. The 5s
+  compiler flake needs a separate tracked timeout/worker decision.
+- Residual (documented, by design): regex redaction is not semantic —
+  callers must not route request-derived free text into error fields;
+  the UUID exemption assumes ids not secrets are UUID-shaped.
