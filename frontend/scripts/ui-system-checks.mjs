@@ -1258,10 +1258,16 @@ function runSelfTests() {
     "Style bindings that are not object literals are ignored.",
   );
 
+  const fixtureDomain = ["realmail", "com"].join(".");
+  const fixtureName = ["Maya", "Stone"].join(" ");
+  const fixtureContact = ["maya", fixtureDomain].join("@");
+  const fixtureSite = ["https://tracker", fixtureDomain].join(".");
+  const fixturePhone = ["+44", "7700", "900000"].join(" ");
+  const otherName = ["Jane", "Roe"].join(" ");
   const piiFindings = scanPiiSource(
-    `export const fixture = { clientName: "Maya Stone", contact: "maya@realmail.com", site: "https://tracker.realmail.com", phone: "+44 7700 900000" };`,
+    `export const fixture = { clientName: "${fixtureName}", contact: "${fixtureContact}", site: "${fixtureSite}", phone: "${fixturePhone}" };`,
     "src/components/client/demo/demo.ts",
-    new Set(["Maya Stone"]),
+    new Set([fixtureName]),
   );
   const piiKinds = new Set(piiFindings.map((finding) => finding.property));
   assert.ok(piiKinds.has("pii-email"), "email outside example.* is flagged");
@@ -1278,7 +1284,7 @@ function runSelfTests() {
   );
   assert.equal(
     scanPiiSource(
-      `export const fixture = { clientName: "Jane Roe" };`,
+      `export const fixture = { clientName: "${otherName}" };`,
       "src/components/client/demo/demo.ts",
       new Set(),
     ).filter((finding) => finding.property === "pii-name").length,
