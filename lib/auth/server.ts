@@ -12,7 +12,6 @@ import { bearer } from "better-auth/plugins";
 
 import { prisma } from "../db";
 import { normalizeEmail } from "../email";
-import { classifyRuntime } from "../runtime";
 import { mailDeliveryConfigured, sendMail } from "../mail";
 import { hashPassword, verifyPassword } from "../password";
 import { PasswordPolicyError, validatePasswordSetup } from "../password-policy";
@@ -128,11 +127,7 @@ async function consumeOrThrow(
 }
 
 export function assertAuthSecretConfigured(): void {
-  // Production contract — keyed on the sanctioned runtime classification
-  // (lib/runtime): a disposable `next start` test/proof server sets the
-  // explicit `APP_ENV=test` marker, while every real deployment classifies
-  // production (APP_ENV unset) and keeps the refusal.
-  if (classifyRuntime() !== "production") return;
+  if (process.env.NODE_ENV !== "production") return;
   if (process.env.NEXT_PHASE === "phase-production-build") return;
   // Conflicting canonical/legacy pairs fail at boot rather than serving
   // 403 INVALID_ORIGIN on every auth call (the BETTER_AUTH_* name wins the

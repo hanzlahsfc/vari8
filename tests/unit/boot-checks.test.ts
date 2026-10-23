@@ -201,27 +201,52 @@ describe("assertAuthSecretConfigured — production refuses an http: auth origin
     expect(() => assertAuthSecretConfigured()).not.toThrow();
   });
 
-  it("accepts an http: origin under the sanctioned APP_ENV=test server", () => {
-    // The Playwright webServer runs `next start` (NODE_ENV=production)
-    // with APP_ENV=test — the repo's explicit disposable-server marker.
+  it("APP_ENV=test does not exempt the production http: refusal", () => {
     stub({
       ...PROD,
       APP_ENV: "test",
       BETTER_AUTH_URL: "http://127.0.0.1:3000",
       AUTH_URL: "http://127.0.0.1:3000",
     });
-    expect(() => assertAuthSecretConfigured()).not.toThrow();
+    expect(() => assertAuthSecretConfigured()).toThrow(
+      /Refusing to start: BETTER_AUTH_URL is an http: origin/,
+    );
   });
 
-  it("an explicit APP_ENV=production cannot escape the http: refusal", () => {
+  it("APP_ENV=development does not exempt the production http: refusal", () => {
     stub({
       ...PROD,
-      APP_ENV: "production",
+      APP_ENV: "development",
       BETTER_AUTH_URL: "http://app.internal.example",
     });
     expect(() => assertAuthSecretConfigured()).toThrow(
       /Refusing to start: BETTER_AUTH_URL is an http: origin/,
     );
+  });
+
+  it("APP_ENV=test does not exempt the secret or alias-refusals", () => {
+    stub({ NODE_ENV: "production", APP_ENV: "test" });
+    expect(() => assertAuthSecretConfigured()).toThrow(/BETTER_AUTH_SECRET/);
+    stub({
+      NODE_ENV: "production",
+      APP_ENV: "test",
+      BETTER_AUTH_SECRET: "x".repeat(40),
+      BETTER_AUTH_URL: "https://a.example",
+      AUTH_URL: "https://b.example",
+    });
+    expect(() => assertAuthSecretConfigured()).toThrow(
+      /BETTER_AUTH_URL and AUTH_URL/,
+    );
+  });
+
+  it("accepts a fully valid config under APP_ENV=test", () => {
+    stub({
+      ...PROD,
+      APP_ENV: "test",
+      BETTER_AUTH_URL: "https://127.0.0.1:3833",
+      AUTH_URL: "https://127.0.0.1:3833",
+    });
+    expect(() => assertAuthSecretConfigured()).not.toThrow();
   });
 
   it("is a no-op outside production", () => {
