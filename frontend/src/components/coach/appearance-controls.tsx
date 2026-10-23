@@ -177,6 +177,7 @@ export function AppearanceControls({
             <div className="cd-accent-hex-field">
               <Vari8Input
                 label="Accent hex value"
+                labelHidden
                 aria-invalid={!!error}
                 aria-describedby={error ? "cd-accent-error" : undefined}
                 className="cd-accent-hex"

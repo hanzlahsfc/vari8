@@ -1164,6 +1164,7 @@ function MealEditor({
               <span>Use saved meal</span>
               <ThemedSelect
                 label="Saved meal"
+                labelHidden
                 value=""
                 options={[
                   { value: "", label: "Select…", disabled: true },

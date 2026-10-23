@@ -1,6 +1,7 @@
 /* biome-ignore-all lint/a11y/noNoninteractiveTabindex: The named table region is a keyboard scroll target for wide tables. */
 "use client";
 
+import { Menu } from "@base-ui/react/menu";
 import { Select as BaseSelect } from "@base-ui/react/select";
 import { ChevronDown } from "lucide-react";
 import {
@@ -12,7 +13,6 @@ import {
   type ReactNode,
   type Ref,
   type TableHTMLAttributes,
-  useCallback,
   useEffect,
   useId,
   useLayoutEffect,
@@ -133,6 +133,7 @@ export function Card({
 
 type FieldMessages = {
   label: string;
+  labelHidden?: boolean;
   hint?: string;
   error?: string;
 };
@@ -147,6 +148,7 @@ function useFieldIds(id: string | undefined, hint?: string, error?: string) {
 
 function FieldMessagesView({
   label,
+  labelHidden,
   hint,
   error,
   controlId,
@@ -159,7 +161,13 @@ function FieldMessagesView({
 }) {
   return (
     <>
-      <label className="v8-field__label" htmlFor={controlId}>
+      <label
+        className={joinClasses(
+          "v8-field__label",
+          labelHidden && "visually-hidden",
+        )}
+        htmlFor={controlId}
+      >
         {label}
       </label>
       {hint && (
@@ -196,6 +204,7 @@ export type InputProps = FieldMessages &
 
 export function Input({
   label,
+  labelHidden,
   hint,
   error,
   id,
@@ -210,7 +219,13 @@ export function Input({
   const ids = useFieldIds(id, hint, error);
   return (
     <div className="v8-field">
-      <FieldMessagesView label={label} hint={hint} error={error} {...ids} />
+      <FieldMessagesView
+        label={label}
+        labelHidden={labelHidden}
+        hint={hint}
+        error={error}
+        {...ids}
+      />
       <input
         {...props}
         ref={ref}
@@ -249,6 +264,7 @@ export type SelectProps = FieldMessages & {
 
 export function Select({
   label,
+  labelHidden,
   hint,
   error,
   id,
@@ -280,7 +296,13 @@ export function Select({
           );
       }}
     >
-      <FieldMessagesView label={label} hint={hint} error={error} {...ids} />
+      <FieldMessagesView
+        label={label}
+        labelHidden={labelHidden}
+        hint={hint}
+        error={error}
+        {...ids}
+      />
       <BaseSelect.Root
         name={name}
         required={required}
@@ -912,137 +934,86 @@ export type DropdownMenuProps = {
 };
 
 export function DropdownMenu({ label, items, className }: DropdownMenuProps) {
-  const id = useId();
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const initialFocus = useRef<"first" | "last">("first");
-
-  const close = useCallback((restoreFocus = true) => {
-    setOpen(false);
-    if (restoreFocus) triggerRef.current?.focus({ preventScroll: true });
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    const menuItems = [
-      ...(menuRef.current?.querySelectorAll<HTMLButtonElement>(
-        "[role='menuitem']:not(:disabled)",
-      ) ?? []),
-    ];
-    const target =
-      initialFocus.current === "last" ? menuItems.at(-1) : menuItems[0];
-    target?.focus();
-    initialFocus.current = "first";
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (
-        event.target instanceof Node &&
-        !rootRef.current?.contains(event.target)
-      )
-        close(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open, close]);
-
-  const moveFocus = (current: number, direction: -1 | 1 | "first" | "last") => {
-    const enabled = items
-      .map((item, index) => ({ item, index }))
-      .filter(({ item }) => !item.disabled);
-    if (enabled.length === 0) return;
-    const position = enabled.findIndex(({ index }) => index === current);
-    const target =
-      direction === "first"
-        ? enabled[0]
-        : direction === "last"
-          ? enabled.at(-1)
-          : enabled[(position + direction + enabled.length) % enabled.length];
-    if (target)
-      menuRef.current
-        ?.querySelector<HTMLButtonElement>(
-          `[data-v8-menu-index="${target.index}"]`,
-        )
-        ?.focus();
-  };
+  const menuId = useId();
+  const [mounted, setMounted] = useState(false);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
+    null,
+  );
+  useEffect(() => setMounted(true), []);
 
   return (
-    <div ref={rootRef} className={joinClasses("v8-dropdown", className)}>
-      <Button
-        ref={triggerRef}
-        className="v8-dropdown__trigger"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={`${id}-menu`}
-        onClick={() => setOpen((current) => !current)}
-        onKeyDown={(event) => {
-          if (event.key === "Escape" && open) {
-            event.preventDefault();
-            close();
-          } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-            event.preventDefault();
-            initialFocus.current = event.key === "ArrowUp" ? "last" : "first";
-            setOpen(true);
+    <div
+      className={joinClasses("v8-dropdown", className)}
+      ref={(node) => {
+        if (node)
+          setPortalContainer(
+            node.closest("dialog") ?? node.closest(".v8-theme") ?? node,
+          );
+      }}
+    >
+      <Menu.Root>
+        <Menu.Trigger
+          render={
+            <Button
+              className="v8-dropdown__trigger"
+              aria-controls={`${menuId}-menu`}
+            />
           }
-        }}
-      >
-        {label}
-        <ChevronDown size={14} aria-hidden="true" />
-      </Button>
-      <div
-        ref={menuRef}
-        id={`${id}-menu`}
-        className="v8-dropdown__menu"
-        role="menu"
-        aria-label={`${label} options`}
-        hidden={!open}
-        onKeyDown={(event) => {
-          if (event.key === "Tab") {
-            close(false);
-            return;
-          }
-          const target = event.target;
-          if (!(target instanceof HTMLButtonElement)) return;
-          const current = Number(target.dataset.v8MenuIndex);
-          if (event.key === "Escape") {
-            event.preventDefault();
-            close();
-          } else if (event.key === "ArrowDown") {
-            event.preventDefault();
-            moveFocus(current, 1);
-          } else if (event.key === "ArrowUp") {
-            event.preventDefault();
-            moveFocus(current, -1);
-          } else if (event.key === "Home") {
-            event.preventDefault();
-            moveFocus(current, "first");
-          } else if (event.key === "End") {
-            event.preventDefault();
-            moveFocus(current, "last");
-          }
-        }}
-      >
-        {items.map((item, index) => (
-          <button
-            key={item.id}
-            type="button"
-            role="menuitem"
-            data-v8-menu-index={index}
-            className="v8-dropdown__item"
-            disabled={item.disabled}
-            onClick={() => {
-              item.onSelect?.();
-              close();
-            }}
+        >
+          {label}
+          <ChevronDown size={14} aria-hidden="true" />
+        </Menu.Trigger>
+        {mounted ? (
+          <Menu.Portal container={portalContainer ?? undefined} keepMounted>
+            <Menu.Positioner
+              className="v8-dropdown__positioner"
+              positionMethod="fixed"
+              side="bottom"
+              align="start"
+              sideOffset={6}
+              collisionPadding={12}
+              collisionAvoidance={{ side: "flip", align: "shift" }}
+            >
+              <Menu.Popup
+                className="v8-dropdown__menu"
+                aria-label={`${label} options`}
+              >
+                {items.map((item) => (
+                  <Menu.Item
+                    key={item.id}
+                    className="v8-dropdown__item"
+                    disabled={item.disabled}
+                    onClick={() => item.onSelect?.()}
+                    render={<button type="button" disabled={item.disabled} />}
+                  >
+                    {item.label}
+                  </Menu.Item>
+                ))}
+              </Menu.Popup>
+            </Menu.Positioner>
+          </Menu.Portal>
+        ) : (
+          <div
+            id={`${menuId}-menu`}
+            className="v8-dropdown__menu"
+            role="menu"
+            aria-label={`${label} options`}
+            hidden
           >
-            {item.label}
-          </button>
-        ))}
-      </div>
+            {items.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="menuitem"
+                className="v8-dropdown__item"
+                disabled={item.disabled}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </Menu.Root>
     </div>
   );
 }

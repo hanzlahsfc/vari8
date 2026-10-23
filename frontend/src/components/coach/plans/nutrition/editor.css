@@ -505,14 +505,6 @@
   width: min(180px, 100%);
   min-width: 130px;
 }
-.coach-root .cn-load .v8-field__label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 .coach-root .cn-meal footer {
   display: flex;
   justify-content: flex-end;

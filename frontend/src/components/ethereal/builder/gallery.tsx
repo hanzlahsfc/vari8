@@ -409,6 +409,7 @@ export function BuilderGallery({
                   <SearchIcon />
                   <Input
                     label="Search widgets"
+                    labelHidden
                     ref={searchRef}
                     className="eg-gallery-search-input"
                     size="sm"

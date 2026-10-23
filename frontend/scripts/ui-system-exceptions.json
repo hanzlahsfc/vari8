@@ -2,42 +2,6 @@
   "exceptions": [
     {
       "file": "src/components/coach/coach.css",
-      "selector": ".coach-root .cd-accent-hex-field .v8-field__label",
-      "property": "height",
-      "reason": "Visually hides the still-associated color input label in the compact appearance control. Remove when the field supports a shared visually-hidden label option."
-    },
-    {
-      "file": "src/components/coach/coach.css",
-      "selector": ".coach-root .cd-accent-hex-field .v8-field__label",
-      "property": "padding",
-      "reason": "Visually hides the still-associated color input label in the compact appearance control. Remove when the field supports a shared visually-hidden label option."
-    },
-    {
-      "file": "src/components/coach/coach.css",
-      "selector": ".coach-root .cd-search .v8-field__label",
-      "property": "height",
-      "reason": "Keeps the required search label available to assistive technology while visually hiding it in the icon-led compact search field. Remove when the field supports a shared visually-hidden label option."
-    },
-    {
-      "file": "src/components/coach/coach.css",
-      "selector": ".coach-root .cd-search .v8-field__label",
-      "property": "padding",
-      "reason": "Keeps the required search label available to assistive technology while visually hiding it in the icon-led compact search field. Remove when the field supports a shared visually-hidden label option."
-    },
-    {
-      "file": "src/components/coach/plans/nutrition/editor.css",
-      "selector": ".coach-root .cn-load .v8-field__label",
-      "property": "height",
-      "reason": "Keeps the required saved-meal select label associated while visually hiding it beside the visible Use saved meal text. Remove when the field supports a shared visually-hidden label option."
-    },
-    {
-      "file": "src/components/ethereal/builder/gallery.css",
-      "selector": ".eg-gallery-search .v8-field__label",
-      "property": "height",
-      "reason": "Keeps the required widget-search label associated while visually hiding it beside the search icon. Remove when the field supports a shared visually-hidden label option."
-    },
-    {
-      "file": "src/components/coach/coach.css",
       "selector": ".coach-root .cd-calendar.cd-core",
       "property": "padding",
       "reason": "The shared card wraps a flush calendar grid whose date cells align edge to edge; this zero padding is a layout exception, not a card surface fork. Reassess if the calendar stops needing a full-bleed grid."
