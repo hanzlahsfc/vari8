@@ -278,3 +278,35 @@ export async function getObjectStorage(): Promise<ObjectStorageBackend> {
       return nullObjectStorage;
   }
 }
+
+/**
+ * BOOT-CHECKS (READINESS B6): a production boot with
+ * `MEDIA_STORAGE_ADAPTER=s3` must refuse to start when a required S3
+ * variable is missing — the adapter would otherwise boot clean and throw
+ * `storage_not_configured` on the first media request. Called once from
+ * `instrumentation.ts` at server start; `next build`'s production-build
+ * phase is exempt (no env is bound there). The four names mirror
+ * `requireConfig()` in `./storage/s3` — only the missing names are
+ * reported, never their values.
+ */
+const S3_REQUIRED_ENV_VARS = [
+  "S3_BUCKET",
+  "S3_REGION",
+  "S3_ACCESS_KEY_ID",
+  "S3_SECRET_ACCESS_KEY",
+] as const;
+
+export function assertMediaStorageConfigured(
+  env: Record<string, string | undefined> = process.env,
+): void {
+  if (env.NODE_ENV !== "production") return;
+  if (env.NEXT_PHASE === "phase-production-build") return;
+  const adapter = (env.MEDIA_STORAGE_ADAPTER ?? "none").toLowerCase();
+  if (adapter !== "s3") return;
+  const missing = S3_REQUIRED_ENV_VARS.filter((k) => !env[k]?.trim());
+  if (missing.length > 0) {
+    throw new Error(
+      `Refusing to start: MEDIA_STORAGE_ADAPTER=s3 requires ${S3_REQUIRED_ENV_VARS.join(", ")}; missing: ${missing.join(", ")}.`,
+    );
+  }
+}
