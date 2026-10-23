@@ -194,11 +194,15 @@ async function lockProfile(
   tx: Prisma.TransactionClient,
   workspaceId: string,
   clientProfileId: string,
-): Promise<{ id: string; userId: string | null } | null> {
+): Promise<{
+  id: string;
+  userId: string | null;
+  archivedAt: Date | null;
+} | null> {
   const rows = await tx.$queryRawUnsafe<
-    { id: string; userId: string | null }[]
+    { id: string; userId: string | null; archivedAt: Date | null }[]
   >(
-    `SELECT id, user_id AS "userId" FROM "client_profile"
+    `SELECT id, user_id AS "userId", archived_at AS "archivedAt" FROM "client_profile"
      WHERE id = $1 AND workspace_id = $2 FOR UPDATE`,
     clientProfileId,
     workspaceId,
@@ -450,7 +454,8 @@ export async function saveSupplementPlan(
           input.workspaceId,
           input.clientProfileId,
         );
-        if (!profile) throw new SupplementError("plan_not_accessible");
+        if (!profile || profile.archivedAt)
+          throw new SupplementError("plan_not_accessible");
         await checkRequiredConsent(tx, profile.id, registry, true);
 
         const now = deps.now ?? new Date();
@@ -550,12 +555,15 @@ export async function saveSupplementPlan(
   );
 }
 
-// ── Staff read (detail surface — one structural READ audit per view) ──
+// ── Staff read / explicit view ───────────────────────────────────────
+// Ordinary list/page reads write NO audit (issue #161 acceptance 7).
+// Only the explicit staff view surface writes the structural READ.
 
-export async function readStaffSupplementPlan(
+async function staffSupplementPlanRead(
   session: SessionLike,
   input: { workspaceId: string; clientProfileId: string },
-  deps: SupplementsDeps = {},
+  deps: SupplementsDeps,
+  auditRead: boolean,
 ): Promise<StaffSupplementPlanView> {
   const db = deps.db ?? defaultPrisma;
   const registry = deps.registry ?? resolveSupplementsConsentPolicy();
@@ -614,18 +622,38 @@ export async function readStaffSupplementPlan(
         if (!plan) return { plan: null, writeCapable: !!writeAssignment };
 
         const view = await readPlanView(tx, plan.id);
-        // Detail-READ audit — written last, inside the tx.
-        await writeAuditEvent(tx, ctx, {
-          action: "READ",
-          resourceType: "supplement_plan",
-          resourceId: plan.id,
-          subjectClientProfileId: input.clientProfileId,
-        });
+        // View-READ audit — only on the explicit view surface; written
+        // last, inside the tx.
+        if (auditRead)
+          await writeAuditEvent(tx, ctx, {
+            action: "READ",
+            resourceType: "supplement_plan",
+            resourceId: plan.id,
+            subjectClientProfileId: input.clientProfileId,
+          });
         return { plan: view, writeCapable: !!writeAssignment };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     ),
   );
+}
+
+/** Ordinary staff list/page read — returns the view, writes no audit. */
+export function readStaffSupplementPlan(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string },
+  deps: SupplementsDeps = {},
+): Promise<StaffSupplementPlanView> {
+  return staffSupplementPlanRead(session, input, deps, false);
+}
+
+/** Explicit staff view action — the one structural READ audit per view. */
+export function viewStaffSupplementPlan(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string },
+  deps: SupplementsDeps = {},
+): Promise<StaffSupplementPlanView> {
+  return staffSupplementPlanRead(session, input, deps, true);
 }
 
 // ── Client own read ───────────────────────────────────────────────────
@@ -670,12 +698,6 @@ export async function readOwnSupplementPlan(
         if (!plan) return { plan: null };
 
         const view = await readPlanView(tx, plan.id);
-        await writeAuditEvent(tx, ctx, {
-          action: "READ",
-          resourceType: "supplement_plan",
-          resourceId: plan.id,
-          subjectClientProfileId: profile.id,
-        });
         return { plan: view };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },

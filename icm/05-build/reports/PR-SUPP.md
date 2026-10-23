@@ -51,8 +51,9 @@ supplements screen — see "Limits" for the proof boundary this sets).
   hostname and no credentials, exact status union, unknown-key
   rejection, null composition preserved (never coerced to 0), no
   derived dosage persisted.
-- `lib/supplements/service.ts`: `readSupplementPlan`,
-  `saveSupplementPlan`, `deleteSupplementPlan`. Serializable
+- `lib/supplements/service.ts`: `readStaffSupplementPlan`,
+  `viewStaffSupplementPlan`, `readOwnSupplementPlan`,
+  `saveSupplementPlan`. Serializable
   transactions, advisory lock on the client profile, authorization
   re-resolved inside the transaction, expected-revision CAS, ordered
   item rewrite on save, whole-save unit compatibility check.
@@ -63,8 +64,8 @@ supplements screen — see "Limits" for the proof boundary this sets).
 - `lib/supplements/gate.ts`: `ENABLE_SUPPLEMENT_PLAN` feature gate,
   checked before session/database work.
 - `app/workspace/[workspaceId]/clients/[clientProfileId]/supplements/actions.ts`:
-  `readSupplementPlanAction`, `saveSupplementPlanAction`,
-  `deleteSupplementPlanAction` — gate, session, bounded validation,
+  `saveSupplementPlanAction`, `viewSupplementPlanAction` — gate,
+  session, bounded validation,
   boundary, `revalidatePath`.
 - `lib/auth/rbac.ts` + `lib/auth/guard.ts`: `supplementPlans` resource
   reusing the `mealPlans` capability cells verbatim (`plan.read` /
@@ -102,24 +103,26 @@ supplements screen — see "Limits" for the proof boundary this sets).
   the same payload shape; unauthorized, foreign-workspace and
   foreign-client access return `plan_not_accessible` — identical to
   an absent plan.
-- Audit: `READ` on staff reads, `CREATE`/`UPDATE`/`DELETE` on saves,
-  with plan id + revision + item count only.
+- Audit: `READ` only on the explicit staff view action;
+  `CREATE`/`UPDATE` on saves, with plan id + revision + item count
+  only. Ordinary staff list/page reads and client-own reads write
+  none; no `DELETE` exists (no delete/lifecycle surface).
 - Refused operations (validation, auth, stale revision, flag off)
   perform zero writes — verified by row counts in integration tests.
 
 ## Checks at head `1819419` (Node v24.22.1, `REQUIRE_NODE24=1`)
 
-| Command                                             | Exit                                                                       |
-| --------------------------------------------------- | -------------------------------------------------------------------------- |
-| `verify-local.sh` (full gate, `LANE_DB=app_prsupp`) | 0 — every step PASS                                                        |
-| Unit `supplements-plan`                             | 0 (12/12)                                                                  |
-| Unit `rbac` + related                               | 0 (17/17 across touched files)                                             |
-| Integration `supplements-plan` on `app_prsupp`      | 0 (14/14, real Postgres)                                                   |
-| `prisma migrate deploy` on fresh `app_prsupp`       | 0                                                                          |
-| `down.sql` replay                                   | 0 — supplement tables/enum dropped, `_prisma_migrations` row removed       |
-| `prisma migrate diff` schema vs deployed            | only the 5 expected raw composite FKs (Prisma-inexpressible by convention) |
-| `generate.py --check`                               | 0 (158 generated files match)                                              |
-| `npm run index` + `index:check`                     | 0                                                                          |
+| Command                                             | Exit                                                                                                                                                                     |
+| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `verify-local.sh` (full gate, `LANE_DB=app_prsupp`) | 0 — every step PASS                                                                                                                                                      |
+| Unit `supplements-plan`                             | 0 (12/12)                                                                                                                                                                |
+| Unit `rbac` + related                               | 0 (17/17 across touched files)                                                                                                                                           |
+| Integration `supplements-plan` on `app_prsupp`      | 0 (14/14, real Postgres)                                                                                                                                                 |
+| `prisma migrate deploy` on fresh `app_prsupp`       | 0                                                                                                                                                                        |
+| `down.sql` replay                                   | 0 — supplement tables/enum dropped, `_prisma_migrations` row removed                                                                                                     |
+| `prisma migrate diff` schema vs deployed            | 121 `DROP CONSTRAINT` statements: the pre-existing raw composite FKs (Prisma-inexpressible by convention) plus the 5 supplement ones — same drift shape, generated count |
+| `generate.py --check`                               | 0 (158 generated files match)                                                                                                                                            |
+| `npm run index` + `index:check`                     | 0                                                                                                                                                                        |
 
 Gate summary line: `VERIFY-LOCAL PASS` — clean tree, schema guard
 (D34), generator check, npm ci, prisma generate, format, typecheck,
@@ -138,7 +141,8 @@ byte-identically:
 - Dose-unit vs quantity-unit compatibility check dropped → unit test
   failed.
 - `supplementPlans` RBAC cell removed → `rbac.test.ts` matrix test
-  failed (and exposed the hard-coded resource count, updated to 33).
+  produced 3 failures (and exposed the hard-coded resource count,
+  updated to 33).
 
 ## Live / API evidence and its boundary
 
@@ -194,9 +198,12 @@ against the current base.
 #195 landed since base `69c74c3`; check-in #193 not yet merged). One
 conflict — `docs/index/SYMBOLS.md` — resolved by `npm run index`
 regeneration. `.env.example` auto-merged (`ENABLE_SUPPLEMENTS` beside
-#194's S3 vars). `db/` had zero changes on the base: this lane still
-holds the only pending migration (D34 slot retained; #164 MIG-ORDER is
-an open coordination issue, not a competing writer).
+#194's S3 vars). `db/` had zero changes on the base; `SCHEMA_WRITERS` retains
+`PR-SUPP`. Correction: the earlier "only pending migration" claim was
+too strong — the allowlist entry is not an exclusive writer slot.
+PR #158 (AUTH-ROTATE, OPEN) carries `20261022090000_auth_rotate`
+(timestamped before this lane's `20261023000000_supplement_plan`) and
+touches `db/schema.prisma`; see "Schema coordination" below.
 
 ### Gates on the merged head `413d342` (Node v24.22.1)
 
@@ -208,7 +215,10 @@ an open coordination issue, not a competing writer).
 PASS clean tree / schema guard (D34) / generator check
 PASS npm ci / prisma generate / frontend npm ci
 PASS format / typecheck / frontend typecheck / lint / frontend lint
-PASS unit tests (1168) / frontend tests
+PASS unit tests / frontend tests
+(independent re-measurement: 1180/1180 across 101 files, including
+the 12 supplement tests — the "1168" figure recorded earlier was the
+pre-supplement base count and is corrected here)
 PASS integration tests (all suites) / migrate deploy
 PASS build / frontend build
 FAIL e2e flow specs (serialized): webServer exit 1
@@ -231,16 +241,34 @@ is the gate's env contract vs the new boot gate, not product code.
 Standalone rerun with `AUTH_URL`/`BETTER_AUTH_URL` unset (derived origin,
 the accepted case): `DATABASE_URL=app_prsupp CI=1 npx playwright test
 tests/e2e/invite-acceptance.spec.ts tests/e2e/password-reset.spec.ts
---workers=1` — **10 passed, 7 skipped, 0 failed**. Fixing the gate
-script's export is program machinery (shared file, other lanes use it);
-flagged for the orchestrator rather than patched in this lane.
+--workers=1` — **10 passed, 7 skipped, 0 failed**. The 7 skips are
+mail-adapter-dependent reset specs ("mail delivery adapter not
+configured") — skips, not passes; the standalone run also exercises
+the derived-origin path, not the configured-origin contract, so it is
+a diagnostic rather than the canonical gate. Fixing the gate script's
+export is program machinery (shared file, other lanes use it);
+tracked as **issue #197** rather than patched in this lane.
 
 ### Schema coordination
 
 - `20261023000000_supplement_plan` deploys cleanly over the merged
   schema (fresh DB, `migrate deploy` PASS inside the gate).
-- No other lane wrote `db/` on the base; `SCHEMA_WRITERS` still lists
-  `PR-SUPP`. #164 (`[MIG-ORDER]`) OPEN — order coordination only.
+- No other lane wrote `db/` on the merged base; `SCHEMA_WRITERS` still
+  lists `PR-SUPP` (allowlist, not an exclusive slot).
+- **#158 AUTH-ROTATE (OPEN)** carries
+  `db/migrations/20261022090000_auth_rotate` + `db/schema.prisma` —
+  timestamped before this lane's `20261023000000`. Concrete ordering:
+  whichever PR merges second merges the schema/models union and
+  regenerates the index; both migrations apply in timestamp order on
+  `migrate deploy` regardless of merge order (migration_name ordering
+  is by directory name), and the two feature areas do not share tables,
+  so no content conflict exists — only `schema.prisma` adjacency +
+  generated index. The reviewer's upgrade replay (base migrations →
+  seed rows → supplement migration → `down.sql` restores the base
+  state) already passed at `b696630`; migration files are unchanged in
+  this repair pass, so that evidence carries byte-identically.
+- **#164 (`[MIG-ORDER]`)** OPEN — the ordering coordination issue
+  itself; this PR's merge must sequence with it per the board.
 
 ### Carried forward (byte-identical code, unchanged since `a8c378e`)
 
@@ -255,3 +283,112 @@ W-card per the card contract.
 Head `413d342` (+ report/test commits), base `17eb756`, draft lifted for
 independent review. Verify card `pr-supp-plan-verify.md`, security
 verify `pr-supp-plan-secverify.md`. Builder did not approve or merge.
+
+---
+
+## Fix pass — independent review `b696630` (PROMPT 348)
+
+FIX verdict findings repaired; head of pass recorded below after gates.
+
+### 1. READ audit contract (HIGH, repaired)
+
+Issue #161 acceptance 7 + app-surface spec: "list/read GETs write none;
+explicit view action writes one READ." Previously `readStaffSupplementPlan`
+audited every staff read and `readOwnSupplementPlan` every client read.
+
+- `lib/supplements/service.ts`: the staff-read body is now internal
+  `staffSupplementPlanRead(…, auditRead)`; `readStaffSupplementPlan`
+  passes `false` (ordinary page/list read — zero audit) and
+  `viewStaffSupplementPlan` passes `true` (explicit view — one READ).
+  `readOwnSupplementPlan` writes none. Denied paths already throw before
+  the audit block.
+- `lib/supplements/boundary.ts`: `viewSupplementPlanFromAction` is the
+  audited surface; `readStaffSupplementPlanFromAction` stays audit-free.
+- `app/.../supplements/actions.ts`: `viewSupplementPlanAction` calls the
+  audited boundary.
+- Tests: staff read → READ 0; explicit view → READ 1; client own read →
+  READ 0; denied reads (unassigned coach, SUPPORT, foreign, empty
+  session) → READ 0 and `revision` unchanged.
+
+### 2. Archived-client write (MEDIUM, repaired)
+
+`lockProfile` selects `archived_at`; `saveSupplementPlan` throws
+`plan_not_accessible` when `archivedAt` is set — inside the existing
+serializable transaction/lock, matching the card's "archived client →
+plan_not_accessible per PR-M1". Reads unchanged (archived plan stays
+readable per acceptance 6). Test: archived save refuses; plan revision,
+name, items and UPDATE audit count all unchanged.
+
+### 3. URL scheme coverage (repaired)
+
+`safeProductUrl("ftp://shop.example.test/x")` added — parses and has a
+hostname, so only the http(s) scheme check refuses it. Mutation removing
+only the scheme guard now bites (1 failure); restored byte-identically.
+
+### 4. Authorization wording (resolved — no code change)
+
+Issue wording "owner/coach workspace-scope save" vs the code's
+assigned-write cells. The approved card is the narrower, later,
+authoritative instruction: "Access reuses the closed `plan.read`/
+`plan.write` capability cells exactly as `mealPlans`; no new capability,
+no broadened permission." The capability matrix is a closed set (PR-05,
+D10) — broadening it needs an owner decision, not a card. The issue's
+"workspace-scope" wording describes the surface breadth (any workspace
+client is addressable via `clientProfileId`), not a capability override;
+the write cell itself is `assigned` for owner and coach — identical to
+the mealPlans precedent the card mandates. Documented here; no
+permission change made.
+
+### 5. Schema coordination (corrected)
+
+The "only pending migration" claim was wrong — see "Schema
+coordination" above for the #158/#164 ordering record.
+
+### 6. Harness defect (tracked, not patched)
+
+Canonical `verify-local` e2e remains red: `AUTH_URL=http://` export vs
+the merged #194 production-origin refusal + LANE_PORT/Playwright-3000
+mismatch. Tracked as issue #197; shared harness files untouched here.
+The http-origin refusal is NOT weakened and unset-origin is NOT counted
+as equivalent; the standalone 10/7/0 run is diagnostic only.
+
+### 7. Hygiene corrections
+
+- Removed unused `w`/`cp` (the 2 new lint warnings at test line ~589).
+- Unit count corrected: fresh standard run recorded below; the "1168"
+  figure was the pre-supplement base count.
+- Removed the false `deleteSupplementPlan`/`deleteSupplementPlanAction`/
+  DELETE-audit claims (lines 54, 67, 105 of this report).
+- Drift description corrected: 121 `DROP CONSTRAINT` (pre-existing raw
+  FKs + 5 supplement), not "only the 5".
+- RBAC mutation count corrected: 3 failures, not 1. Prior URL scheme
+  mutation noted as non-biting is superseded by the ftp case above.
+- Function-name drift in the original inventory corrected inline;
+  original run history preserved.
+
+### Fresh results on the repaired head (Node v24.22.1)
+
+- `npx vitest run tests/unit/supplements-plan.test.ts` — **12/12**
+  (includes the ftp scheme case).
+- `INTEGRATION_DATABASE_URL=app_prsupp npx vitest run --config
+vitest.integration.config.ts tests/integration/supplements-plan.test.ts`
+  — **14/14** (audit counts, archived save refusal, denied no-audit).
+- `npm run test` (standard, no overrides) — **exit 1, 1179/1180 across
+  101 files**; the only failure is the environmental
+  `system-index.test.ts:79` compiler timeout (~6.7s vs the 5s default
+  under 101-worker load on this host; the same pre-existing flake, not a
+  regression — supplements tests all green in-run). Reviewer-measured
+  1180/1180 confirms the count.
+- `npm run format:check` 0 · `npm run typecheck` 0 · `npm run lint`
+  0 errors / **81 warnings** (the 2 new `w`/`cp` warnings removed) ·
+  `npm run index` + `index:check` 0 (new exports indexed) ·
+  `npm run build` 0.
+- Mutations this pass (restored byte-identically): scheme check removed
+  → 1 failure (ftp case); `|| profile.archivedAt` removed → 1 failure
+  (archived-save test); `readStaffSupplementPlan` flipped to
+  `auditRead: true` → 1 failure (read=0 assertion).
+- Migration evidence carries byte-identically: `db/` untouched this
+  pass; the reviewer's fresh-deploy / upgrade / down-replay results at
+  `b696630` stand.
+- Canonical `verify-local` e2e: still red — issue #197; not counted as
+  green here.

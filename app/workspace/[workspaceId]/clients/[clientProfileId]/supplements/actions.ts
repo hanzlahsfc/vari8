@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { isSupplementsEnabled } from "@/lib/supplements/gate";
 import {
-  readStaffSupplementPlanFromAction,
   saveSupplementPlanFromAction,
+  viewSupplementPlanFromAction,
 } from "@/lib/supplements/boundary";
 import type { StaffSupplementPlanView } from "@/lib/supplements/service";
 
@@ -110,7 +110,7 @@ export async function viewSupplementPlanAction(input: {
   if (!validId(input?.workspaceId) || !validId(input?.clientProfileId))
     return { status: "error", message: INVALID };
 
-  const result = await readStaffSupplementPlanFromAction(
+  const result = await viewSupplementPlanFromAction(
     { user: { id: userId } },
     input,
   );

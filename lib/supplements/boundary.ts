@@ -15,6 +15,7 @@ import {
   readStaffSupplementPlan,
   saveSupplementPlan,
   SupplementError,
+  viewStaffSupplementPlan,
   type OwnSupplementPlanView,
   type StaffSupplementPlanView,
   type SupplementsDeps,
@@ -121,6 +122,17 @@ export async function readStaffSupplementPlanFromAction(
 ): Promise<SupplementSafeResult<StaffSupplementPlanView>> {
   return guard(process.env, () =>
     readStaffSupplementPlan(session, input, deps),
+  );
+}
+
+/** Explicit staff view — the only read path that writes a READ audit. */
+export async function viewSupplementPlanFromAction(
+  session: Session,
+  input: { workspaceId: string; clientProfileId: string },
+  deps: SupplementsDeps = {},
+): Promise<SupplementSafeResult<StaffSupplementPlanView>> {
+  return guard(process.env, () =>
+    viewStaffSupplementPlan(session, input, deps),
   );
 }
 

@@ -23,6 +23,7 @@ import { createStaticConsentPolicy } from "../../lib/consent";
 import {
   readOwnSupplementPlan,
   readStaffSupplementPlan,
+  viewStaffSupplementPlan,
   saveSupplementPlan,
   SupplementError,
 } from "../../lib/supplements/service";
@@ -228,7 +229,15 @@ describe.skipIf(!enabled)("PR-SUPP supplement plan (real PG)", () => {
     expect(view.plan!.items[1].timing).toBe("before bed");
     expect(view.plan!.items[1].status).toBe("optional");
     expect(view.writeCapable).toBe(true);
-    // The staff view is the detail surface: one structural READ audit.
+    // Ordinary staff reads write NO audit (issue #161 acceptance 7).
+    expect(await auditCount(saved.planId, "READ")).toBe(0);
+    // The explicit staff view action surface writes exactly one READ.
+    const viewed = await viewStaffSupplementPlan(
+      session(coachU.id),
+      { workspaceId: w.id, clientProfileId: cp.id },
+      deps(),
+    );
+    expect(viewed.plan!.revision).toBe(1);
     expect(await auditCount(saved.planId, "READ")).toBe(1);
   });
 
@@ -354,7 +363,8 @@ describe.skipIf(!enabled)("PR-SUPP supplement plan (real PG)", () => {
       deps(),
     );
     expect(own.plan!.items[0].timing).toBe("with breakfast");
-    expect(await auditCount(saved.planId, "READ")).toBe(1);
+    // Client-own reads write no audit (issue #161 acceptance 7).
+    expect(await auditCount(saved.planId, "READ")).toBe(0);
     // Client write is denied.
     await expect(
       saveSupplementPlan(
@@ -432,7 +442,18 @@ describe.skipIf(!enabled)("PR-SUPP supplement plan (real PG)", () => {
   });
 
   it("unassigned coach, SUPPORT, foreign workspace and unauthenticated are denied", async () => {
-    const { w, supportU, cp } = await setup();
+    const { w, supportU, coachU, cp } = await setup();
+    const saved = await saveSupplementPlan(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: cp.id,
+        expectedRevision: 0,
+        name: "Plan",
+        items: [item],
+      },
+      deps(),
+    );
     const stray = await user();
     const strayMember = await member(w.id, stray.id, "COACH");
     void strayMember;
@@ -467,6 +488,14 @@ describe.skipIf(!enabled)("PR-SUPP supplement plan (real PG)", () => {
         deps(),
       ),
     ).rejects.toBeInstanceOf(AccessDeniedError);
+    // Denied access writes no audit and mutates no state.
+    expect(await auditCount(saved.planId, "READ")).toBe(0);
+    expect(
+      await prisma.supplementPlan.findUniqueOrThrow({
+        where: { id: saved.planId },
+        select: { revision: true },
+      }),
+    ).toEqual({ revision: 1 });
   });
 
   it("PLATFORM_ADMIN is denied including the dual-role membership path", async () => {
@@ -560,9 +589,9 @@ describe.skipIf(!enabled)("PR-SUPP supplement plan (real PG)", () => {
     vi.unstubAllEnvs();
   });
 
-  it("archived client's saved plan stays readable by authorized staff", async () => {
+  it("archived client's saved plan stays readable but refuses writes", async () => {
     const { w, coachU, cp } = await setup();
-    await saveSupplementPlan(
+    const saved = await saveSupplementPlan(
       session(coachU.id),
       {
         workspaceId: w.id,
@@ -583,10 +612,32 @@ describe.skipIf(!enabled)("PR-SUPP supplement plan (real PG)", () => {
       deps(),
     );
     expect(view.plan!.items).toHaveLength(1);
+    // Archived client: writes refuse inside the lock (issue card:
+    // "archived client → plan_not_accessible per PR-M1").
+    await expect(
+      saveSupplementPlan(
+        session(coachU.id),
+        {
+          workspaceId: w.id,
+          clientProfileId: cp.id,
+          expectedRevision: 1,
+          name: "Changed",
+          items: [item],
+        },
+        deps(),
+      ),
+    ).rejects.toMatchObject({ code: "plan_not_accessible" });
+    // The refused save leaves plan, revision and audit untouched.
+    const plan = await prisma.supplementPlan.findUniqueOrThrow({
+      where: { id: saved.planId },
+      select: { revision: true, name: true },
+    });
+    expect(plan).toEqual({ revision: 1, name: "Plan" });
+    expect(await auditCount(saved.planId, "UPDATE")).toBe(0);
   });
 
   it("boundary read returns non-disclosing denial for a foreign workspace", async () => {
-    const { w, cp } = await setup();
+    await setup();
     vi.stubEnv("ENABLE_SUPPLEMENTS", "1");
     vi.stubEnv("APP_ENV", "test");
     const foreign = await ws();

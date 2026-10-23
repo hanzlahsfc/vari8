@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 144 modules with exports, 1428 exported symbols.
+Counts: 144 modules with exports, 1430 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1553,6 +1553,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function readOwnSupplementPlanFromAction(session: Session, input: { workspaceId: string }, deps: SupplementsDeps = {}): Promise<SupplementSafeResult<OwnSupplementPlanView>>`
 - `export async function readStaffSupplementPlanFromAction(session: Session, input: { workspaceId: string; clientProfileId: string }, deps: SupplementsDeps = {}): Promise<SupplementSafeResult<StaffSup...`
 - `export async function saveSupplementPlanFromAction(session: Session, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; name?: string; items: unknown; }, deps: Supplem...`
+- `export async function viewSupplementPlanFromAction(session: Session, input: { workspaceId: string; clientProfileId: string }, deps: SupplementsDeps = {}): Promise<SupplementSafeResult<StaffSuppleme...`
 
 ## `lib/supplements/gate.ts`
 
@@ -1589,8 +1590,9 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type SupplementPlanView = { id: string; name: string; revision: number; savedAt: string | null; items: SupplementItemView[]; }`
 - `export type SupplementsDeps = { db?: PrismaClient; registry?: ConsentPolicyRegistry; now?: Date; }`
 - `export async function readOwnSupplementPlan(session: SessionLike, input: { workspaceId: string }, deps: SupplementsDeps = {}): Promise<OwnSupplementPlanView>`
-- `export async function readStaffSupplementPlan(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: SupplementsDeps = {}): Promise<StaffSupplementPlanView>`
+- `export function readStaffSupplementPlan(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: SupplementsDeps = {}): Promise<StaffSupplementPlanView>`
 - `export async function saveSupplementPlan(session: SessionLike, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; name?: string; items: unknown; }, deps: SupplementsDe...`
+- `export function viewStaffSupplementPlan(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: SupplementsDeps = {}): Promise<StaffSupplementPlanView>`
 
 ## `lib/tasks/boundary.ts`
 

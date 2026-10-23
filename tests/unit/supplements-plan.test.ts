@@ -45,6 +45,9 @@ describe("safeProductUrl", () => {
     );
     expect(safeProductUrl("javascript:alert(1)")).toBeUndefined();
     expect(safeProductUrl("data:text/html,x")).toBeUndefined();
+    // Scheme-only invalid: parses fine and has a hostname — only the
+    // http(s) scheme check refuses it.
+    expect(safeProductUrl("ftp://shop.example.test/x")).toBeUndefined();
     expect(
       safeProductUrl("https://user:pw@shop.example.test/p"),
     ).toBeUndefined();
