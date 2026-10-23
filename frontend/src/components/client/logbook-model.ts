@@ -82,3 +82,15 @@ export function finishSession(
     resumeIndex(session) === -1 ? "complete" : "partial";
   return { ...session, status: "done", result };
 }
+
+// The prescription a session was logged against, pinned by the version the
+// session carries, so a later revision of the same session does not rewrite
+// history.
+export function prescriptionFor(
+  session: LogSession,
+  versions: PrescriptionVersion[],
+): PrescriptionVersion | undefined {
+  return versions.find(
+    (v) => v.version === session.version && v.session.id === session.sessionId,
+  );
+}

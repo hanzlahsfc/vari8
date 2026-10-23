@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { finishSession, resumeIndex, startSession } from "./logbook-model.ts";
+import {
+  finishSession,
+  prescriptionFor,
+  resumeIndex,
+  startSession,
+} from "./logbook-model.ts";
 
 const prescription = {
   version: 1,
@@ -45,6 +50,50 @@ const prescription = {
 };
 
 describe("logbook model", () => {
+  it("keeps a session on the prescription version it was logged against", () => {
+    const v2 = {
+      ...prescription,
+      version: 2,
+      session: {
+        ...prescription.session,
+        sets: [
+          { ...prescription.session.exercises[0].sets[0], id: "s9", reps: 3 },
+        ],
+        exercises: [
+          {
+            ...prescription.session.exercises[0],
+            sets: [
+              {
+                ...prescription.session.exercises[0].sets[0],
+                id: "s9",
+                reps: 3,
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const logged = startSession({ sessions: [] }, "plan-1", prescription)
+      .sessions[0];
+    const pinned = prescriptionFor(logged, [v2, prescription]);
+    assert.equal(pinned?.version, 1);
+    assert.deepEqual(
+      pinned?.session.exercises[0].sets.map((s) => s.id),
+      ["s1", "s2", "s3"],
+    );
+    const newer = startSession({ sessions: [] }, "plan-1", v2).sessions[0];
+    assert.equal(prescriptionFor(newer, [v2, prescription])?.version, 2);
+  });
+
+  it("resumes past a set id that has no recorded entry", () => {
+    const session = startSession({ sessions: [] }, "plan-1", prescription)
+      .sessions[0];
+    session.sets.s1 = { reps: 5, load: 100, rpe: 8 };
+    delete session.sets.s2;
+    assert.equal(resumeIndex(session), 1);
+    assert.equal(finishSession(session, { skipped: false }).result, "partial");
+  });
+
   it("startSession creates an in-progress log with null set values", () => {
     const state = startSession({ sessions: [] }, "plan-1", prescription);
     assert.equal(state.sessions.length, 1);

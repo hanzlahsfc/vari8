@@ -13,7 +13,7 @@ Status values: `live in check` runs inside `npm run check`. `live manual
 
 ## Tokens
 
-### R1. Use only `--v8-*` colour roles in feature CSS and inline styles; never write hex, rgb or hsl values.
+### R1. Use only `--v8-*` colour roles in feature CSS for `color`, `background`, `border-color`, `outline-color` and `box-shadow`; never write a hex, rgb or hsl value in those properties.
 - Check: `ui:check`
 - Status: `live in check`
 

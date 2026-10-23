@@ -28,8 +28,11 @@ export function SupplementPlanView({
     return (
       <section className="supp-view" aria-label="Supplement plan">
         <p className="supp-empty">
-          {plan.name} · saved {new Date(plan.savedAt).toLocaleDateString()} · no
-          products prescribed.
+          {plan.name} · saved{" "}
+          {new Date(plan.savedAt).toLocaleDateString("en-GB", {
+            timeZone: "UTC",
+          })}{" "}
+          · no products prescribed.
         </p>
       </section>
     );
@@ -37,7 +40,12 @@ export function SupplementPlanView({
     <section className="supp-view" aria-label="Supplement plan">
       <div className="supp-view-head">
         <strong>{plan.name}</strong>
-        <small>Saved {new Date(plan.savedAt).toLocaleDateString()}</small>
+        <small>
+          Saved{" "}
+          {new Date(plan.savedAt).toLocaleDateString("en-GB", {
+            timeZone: "UTC",
+          })}
+        </small>
       </div>
       <ul className="supp-list">
         {plan.items.map((item) => {

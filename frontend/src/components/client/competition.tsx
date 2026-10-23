@@ -39,7 +39,6 @@ export function CompetitionLine() {
 }
 
 export function CompetitionScreen({ demo }: { demo: ParsedDemo }) {
-  const { asOf } = useDemoStore();
   const [competition] = useDemoSlice("competition");
   const record = competition.record;
   return (
@@ -72,15 +71,6 @@ export function CompetitionScreen({ demo }: { demo: ParsedDemo }) {
                   <Status tone="warning">{record.phase}</Status>
                 </div>
               </div>
-            </Card>
-            <Card>
-              <p className="client-hint">Countdown</p>
-              <p className="client-figure">
-                {countdownLabel(daysUntilShow(record.showDate, asOf))}
-              </p>
-              <p className="client-hint">
-                Computed from the show date, never stored.
-              </p>
             </Card>
           </>
         )}

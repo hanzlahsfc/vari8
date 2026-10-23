@@ -7,7 +7,12 @@ import { prescriptionVersions } from "./demo/fixtures";
 import type { ParsedDemo } from "./demo/state";
 import { useDemoSlice } from "./demo/store";
 import type { LoggedSet, LogSession } from "./logbook-model";
-import { finishSession, resumeIndex, startSession } from "./logbook-model";
+import {
+  finishSession,
+  prescriptionFor,
+  resumeIndex,
+  startSession,
+} from "./logbook-model";
 import { ClientScreen, DemoGate } from "./shell";
 
 const statusTone = (status: LogSession["status"]) =>
@@ -19,10 +24,8 @@ const statusTone = (status: LogSession["status"]) =>
         ? "info"
         : "neutral";
 
-function prescriptionFor(session: LogSession) {
-  return prescriptionVersions.find(
-    (v) => v.version === session.version && v.session.id === session.sessionId,
-  );
+function prescriptionForSession(session: LogSession) {
+  return prescriptionFor(session, prescriptionVersions);
 }
 
 function SessionView({
@@ -34,7 +37,7 @@ function SessionView({
   onChange: (next: LogSession) => void;
   onClose: () => void;
 }) {
-  const prescription = prescriptionFor(session);
+  const prescription = prescriptionForSession(session);
   const readOnly =
     session.status !== "in-progress" && session.status !== "planned";
   const [drafts, setDrafts] = useState<Record<string, LoggedSet>>({});
@@ -233,7 +236,7 @@ export function LogbookScreen({ demo }: { demo: ParsedDemo }) {
     }));
 
   const startPlanned = (planned: LogSession) => {
-    const version = prescriptionFor(planned);
+    const version = prescriptionForSession(planned);
     if (!version) return;
     const next = startSession({ sessions: [] }, planned.planId, version)
       .sessions[0];
@@ -263,7 +266,7 @@ export function LogbookScreen({ demo }: { demo: ParsedDemo }) {
           <>
             <div className="client-card-stack">
               {logbook.sessions.map((session) => {
-                const prescription = prescriptionFor(session);
+                const prescription = prescriptionForSession(session);
                 return (
                   <Card key={session.id}>
                     <div className="client-kv">
