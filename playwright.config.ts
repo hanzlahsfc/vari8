@@ -1,5 +1,12 @@
 import { defineConfig } from "@playwright/test";
 
+// PLAYWRIGHT_PORT_BASE (verify-local passes the lane port) picks the
+// webServer/browser port so lanes run side by side; default stays 3000.
+const PORT = process.env.PLAYWRIGHT_PORT_BASE
+  ? Number(process.env.PLAYWRIGHT_PORT_BASE)
+  : 3000;
+const ORIGIN = `http://127.0.0.1:${PORT}`;
+
 export default defineConfig({
   testDir: "tests/e2e",
   // S1-H: migrate + upsert reserved synthetic fixtures before the suite, and
@@ -11,12 +18,12 @@ export default defineConfig({
   workers: 1,
   timeout: 30_000,
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL: ORIGIN,
   },
   webServer: [
     {
-      command: "npm run build && npm run start",
-      url: "http://127.0.0.1:3000",
+      command: `npm run build && npm run start -- -p ${PORT}`,
+      url: ORIGIN,
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,
       env: {
@@ -24,6 +31,11 @@ export default defineConfig({
         // dev/test boundary requires an explicit APP_ENV=test — PR-05's
         // consent-boundary checks rely on this classification.
         APP_ENV: "test",
+        // The configured auth origin equals the address this config serves —
+        // both names set to the same value (the pair-refusal contract),
+        // overriding any inherited AUTH_URL pointing at another port.
+        BETTER_AUTH_URL: ORIGIN,
+        AUTH_URL: ORIGIN,
         // Deterministic test-only secret (NOT a real credential). CI/local may
         // override via BETTER_AUTH_SECRET (the legacy AUTH_SECRET value is
         // honored as a fallback); the default keeps the suite self-contained.

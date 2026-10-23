@@ -140,6 +140,7 @@ describe("assertAuthSecretConfigured — production refuses an http: auth origin
   const KEYS = [
     "NODE_ENV",
     "NEXT_PHASE",
+    "APP_ENV",
     "BETTER_AUTH_URL",
     "AUTH_URL",
     "BETTER_AUTH_SECRET",
@@ -198,6 +199,29 @@ describe("assertAuthSecretConfigured — production refuses an http: auth origin
   it("accepts an unset origin — Better Auth derives it per request", () => {
     stub({ ...PROD });
     expect(() => assertAuthSecretConfigured()).not.toThrow();
+  });
+
+  it("accepts an http: origin under the sanctioned APP_ENV=test server", () => {
+    // The Playwright webServer runs `next start` (NODE_ENV=production)
+    // with APP_ENV=test — the repo's explicit disposable-server marker.
+    stub({
+      ...PROD,
+      APP_ENV: "test",
+      BETTER_AUTH_URL: "http://127.0.0.1:3000",
+      AUTH_URL: "http://127.0.0.1:3000",
+    });
+    expect(() => assertAuthSecretConfigured()).not.toThrow();
+  });
+
+  it("an explicit APP_ENV=production cannot escape the http: refusal", () => {
+    stub({
+      ...PROD,
+      APP_ENV: "production",
+      BETTER_AUTH_URL: "http://app.internal.example",
+    });
+    expect(() => assertAuthSecretConfigured()).toThrow(
+      /Refusing to start: BETTER_AUTH_URL is an http: origin/,
+    );
   });
 
   it("is a no-op outside production", () => {
