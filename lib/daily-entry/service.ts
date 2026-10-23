@@ -973,7 +973,21 @@ export async function readStaffDailyEntryDetail(
  * the dailyTracking authorization context for the audit. Used by the
  * public detail service and by P-025-D6's Check-In tracker context.
  */
-export async function readStaffDailyEntryDetailTx(
+export type StaffDailyEntryLoad = {
+  /** Internal row id — audit resource target only, never leaves the tx
+   *  boundary in the public detail shape. */
+  entryId: string;
+  detail: StaffDailyEntryDetail;
+};
+
+/**
+ * Audit-free detail loader shared by `readStaffDailyEntryDetailTx`
+ * (which writes its own `READ daily_entry` audit) and the Check-In
+ * review packet embedded in the submission detail read (which carries
+ * one `checkin_submission` audit for the whole view instead — see
+ * `readCheckInSubmissionDetail`).
+ */
+export async function loadStaffDailyEntryDetailTx(
   tx: Prisma.TransactionClient,
   input: {
     workspaceId: string;
@@ -981,7 +995,7 @@ export async function readStaffDailyEntryDetailTx(
     entryDate: string;
     ctx: Awaited<ReturnType<typeof authorize>>;
   },
-): Promise<StaffDailyEntryDetail> {
+): Promise<StaffDailyEntryLoad> {
   // Entry + coherent current pointer + count.
   const entry = await tx.dailyEntry.findUnique({
     where: {
@@ -1047,23 +1061,38 @@ export async function readStaffDailyEntryDetailTx(
     version.definition as VersionDefinition,
   );
 
+  return {
+    entryId: entry.id,
+    detail: {
+      entryDate: input.entryDate,
+      revisionSeq: revision.seq,
+      revisionCount,
+      declaredAt: revision.declaredAt.toISOString(),
+      values,
+    },
+  };
+}
+
+export async function readStaffDailyEntryDetailTx(
+  tx: Prisma.TransactionClient,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    entryDate: string;
+    ctx: Awaited<ReturnType<typeof authorize>>;
+  },
+): Promise<StaffDailyEntryDetail> {
+  const { entryId, detail } = await loadStaffDailyEntryDetailTx(tx, input);
   // Structural READ audit — last, inside the same transaction; a failed
   // write rolls the detail read's audit (and result) back.
   await writeAuditEvent(tx, input.ctx, {
     action: "READ",
     resourceType: "daily_entry",
-    resourceId: entry.id,
+    resourceId: entryId,
     subjectClientProfileId: input.clientProfileId,
     meta: { changed: false },
   });
-
-  return {
-    entryDate: input.entryDate,
-    revisionSeq: revision.seq,
-    revisionCount,
-    declaredAt: revision.declaredAt.toISOString(),
-    values,
-  };
+  return detail;
 }
 
 // ── Read surface (form + history payload for the client's own page) ───────
