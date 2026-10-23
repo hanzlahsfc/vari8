@@ -392,3 +392,50 @@ vitest.integration.config.ts tests/integration/supplements-plan.test.ts`
   `b696630` stand.
 - Canonical `verify-local` e2e: still red — issue #197; not counted as
   green here.
+
+---
+
+## Post-#199 base merge — head `54701f1` (PROMPT 359)
+
+Merged `origin/Vari8-Beta` @ `ec5c301` (includes the merged harness PR
+#199) via normal merge `99352cc` — clean, no conflicts. The stale
+"canonical e2e red" blocker above is resolved by that merge.
+
+### Fixes/closures this pass
+
+- Archived-client save refusal now asserts the persisted item rows are
+  literally unchanged (full-row `findMany` equality before/after), not
+  merely a count — the review's coverage gap.
+- The canonical e2e now runs the merged HTTPS harness:
+  `PLAYWRIGHT_PORT_BASE=3833` → `next start` loopback on 3834, TLS
+  terminator + browser + configured `BETTER_AUTH_URL`/`AUTH_URL` on
+  `https://127.0.0.1:3833`. The old `AUTH_URL=http:` /
+  port-mismatch blocker (issue #197) is fixed upstream, not patched
+  here.
+
+### Canonical gate on `54701f1` (Node v24.22.1)
+
+`BASE_SHA=ec5c301 LANE_DB=app_prsupp LANE_PORT=3833 CARD=PR-SUPP
+SKIP_PARITY=1 verify-local.sh` — **VERIFY-LOCAL PASS**, every step:
+
+clean tree, schema guard (D34, `PR-SUPP` writer), generator check,
+npm ci, prisma generate, frontend npm ci, format, typecheck, frontend
+typecheck, lint (0 errors / 81 warnings), frontend lint, **unit tests
+(26s: 1199/1199 across 102 files)**, frontend tests (889/889), **full
+integration (231s, includes supplements 14/14 with the item-row
+assertion)**, migrate deploy, build, frontend build, **e2e flow specs
+(39s: 10 passed / 7 skipped / 0 failed)** — the 7 skips are the
+mail-adapter-dependent reset specs, not passes.
+
+### Contract status
+
+- Authorization: no new owner decision; the closed capability matrix
+  disposition stands (assigned write; issue wording documented, not
+  broadened).
+- Schema coordination: #158 (auth_rotate, earlier timestamp) and #164
+  (MIG-ORDER) remain OPEN — merge order is still a board sequencing
+  item; combined-schema compatibility demonstrated, not exclusive
+  authorization.
+- Migration evidence: `db/` unchanged since the reviewer's fresh-deploy/
+  upgrade/down-replay at `b696630` — carried byte-identically; the gate
+  redeployed it on `app_prsupp` again this pass (migrate deploy PASS).
