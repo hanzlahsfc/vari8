@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { requireSessionUser } from "@/lib/auth/route-guard";
 import { isMealPlansEnabled } from "@/lib/mealplan/gate";
 import { readOwnMealPlanFromAction } from "@/lib/mealplan/boundary";
+import { collectMealPlanFoodIds } from "@/lib/mealplan/payload";
+import { loadNutritionFoodMap } from "@/lib/nutrition/foods";
 
 import { MealPlanVersionView } from "@/components/mealplan/plan-version-view";
 
@@ -33,6 +35,15 @@ export default async function ClientMealPlanPage({
     { workspaceId },
   );
 
+  // Catalog foods for the published payload's portion references —
+  // totals come from the shared canvas math (D29).
+  const foods =
+    result.ok && result.value.current !== null
+      ? await loadNutritionFoodMap(
+          collectMealPlanFoodIds(result.value.current.payload),
+        )
+      : undefined;
+
   return (
     <div className="tracker-page" data-testid="client-mealplan-page">
       <header className="tracker-page__header">
@@ -62,6 +73,7 @@ export default async function ClientMealPlanPage({
           <MealPlanVersionView
             payload={result.value.current.payload}
             testidPrefix="mealplan-current"
+            foods={foods}
           />
         </div>
       ) : result.value.upcoming !== null ? (
