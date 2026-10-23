@@ -56,6 +56,7 @@ function baseDraft(): TrainingDraft {
     exercisePresence: { "s1/e1": { "1": true }, "s1/e2": { "1": true } },
     sessionNames: {},
     fieldCells: {},
+    setRows: {},
   };
 }
 
