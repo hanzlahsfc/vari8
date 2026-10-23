@@ -57,8 +57,11 @@ Runtime Node v24.22.1. Tasks: PROMPT 350, repair pass PROMPT 352.
   piping to the backend; exits non-zero on malformed env. The
   cert-dir cleanup is registered before the openssl spawn (the first
   candidate registered it after, leaking the dir on spawn failure)
-  and fires immediately once the credentials are in memory — even
-  Playwright's hard kill leaves nothing on disk.
+  and fires immediately once the credentials are in memory — a
+  SIGKILL after load therefore leaves nothing on disk. A hard kill
+  _before or during_ generation/loading cannot run any exit handler
+  and can still leave the mkdtemp dir (a residual best-effort window;
+  exit cleanup covers it only when handlers can run).
 - `tests/unit/e2e-config.test.ts` — 14 tests asserting the contract
   independently of the server: default port 3000, requested port
   agreement across browser origin / auth origins / server command
@@ -96,12 +99,14 @@ LANE_PORT=3847 SKIP_PARITY=1` — **VERIFY-LOCAL PASS**: clean tree,
   `TCP 127.0.0.1:3850 (LISTEN)` (TLS proxy) and `TCP 127.0.0.1:3851
 (LISTEN)` (`next start -H`), no wildcard binds;
   `curl -k https://127.0.0.1:3850/` → **307** through the proxy.
-- `npm run test` (standard, verbatim): **green, exit 0** — bounded
-  single check, not a flake-elimination claim: the `buildSymbols`
-  scan runs under a 10s `beforeAll` budget (~6s under this load);
-  a contended host could still approach the budget. Two scans →
+- `npm run test` (standard, verbatim): **101 test files / 1187
+  tests, all passing, exit 0** — the reviewer-verified count on the
+  exact head; "1182" quoted earlier was an earlier test count, not
+  files. A bounded single check, not a flake-elimination claim: the
+  `buildSymbols` scan runs under a 10s `beforeAll` budget (~6s under
+  this load); a contended host could still approach it. Two scans →
   one scan is the justified work reduction; timing risk reduced,
-  documented, not waived. (Fresh counts: gate unit step PASS.)
+  documented, not waived.
 - `npm run format:check` 0 · `npm run typecheck` 0 · `npm run lint`
   0 errors / 81 pre-existing warnings · `index:check` 0 ·
   `npm run build` 0 (inside the gate; standalone passes confirmed).
@@ -125,6 +130,18 @@ This pass (head `7603fdd`):
   subprocess env lacked `TMPDIR`, so the child's `os.tmpdir()` fell
   back to `/tmp` outside the watched directory — the test itself was
   fixed to inherit `TMPDIR`; the mutation then bit correctly.
+
+## Reviewer carry-forward (exact head, not re-run here)
+
+The focused confirmation re-ran the canonical path itself: `verify-local`
+on lane 3847, `LANE_DB=app_harness3_review`, `SKIP_PARITY=1` —
+**VERIFY-LOCAL PASS**; unit 22s, **101 files / 1187 tests**; E2E
+**10 passed / 7 skipped / 0 failed (29.7s)** — the 7 mail-adapter
+skips recorded separately, not as reset-flow proof; integration SKIP
+under the net-diff rule (auth restored). Loopback sockets observed
+live (`127.0.0.1:3847/3848`, no wildcard); post-load SIGKILL left no
+cert material. This section carries that evidence forward verbatim;
+no new behavioral runs are claimed in this documentation pass.
 
 ## E2E shutdown noise
 
