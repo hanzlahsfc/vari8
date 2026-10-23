@@ -20,6 +20,10 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The baseline ratchet compares against the merge base, so the job
+          # needs the base branch and its history, not a shallow single ref.
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version-file: frontend/.nvmrc

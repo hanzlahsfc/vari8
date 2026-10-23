@@ -1512,6 +1512,7 @@ if (process.argv.includes("--self-test")) {
   const ancestryFindings = [];
   if (!ancestry) {
     console.error("baseline ancestry NOT VERIFIED");
+    ancestryFindings.push({ rule: "baseline-ancestry" });
   } else {
     const mergeBaseBaseline = gitFileAt(
       ancestry.mergeBase,
