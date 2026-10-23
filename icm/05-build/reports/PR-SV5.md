@@ -167,6 +167,15 @@ before consent rows; no inversion between them is constructible.
 - The canvas consumes the new fields only after PR #147 lands (its
   `loadSubmissionAnswers` fills `metrics`/`flags` from this DTO); the
   read model deliberately does not wire the panel itself.
+- **PR #147 state (verified 2026-10-23):** OPEN at `4aead56` (PR-W6
+  "Wire check-ins"), targeting `Vari8-Beta`. It carries **no
+  recorded independent review** — zero PR reviews, zero PR/issue
+  comments — and its body reports a base of `3148df36`, which
+  predates the current tip `406c551` (supplements + https harness
+  merged since). Before it can land it needs a forward-merge onto
+  the current base, a fresh canonical gate, and independent review —
+  a concrete path, not an indefinite block. This lane does not touch
+  #147 without authorization.
 - Flagged set notes, photos, and nutrition semantics stay deferred
   to issues 14 / 11 / 12a — the slots serialize as `null`
   (unavailable), explicitly not "authorized but empty".
