@@ -337,7 +337,8 @@ D10) — broadening it needs an owner decision, not a card. The issue's
 client is addressable via `clientProfileId`), not a capability override;
 the write cell itself is `assigned` for owner and coach — identical to
 the mealPlans precedent the card mandates. Documented here; no
-permission change made.
+permission change made. **Owner decision (2026-10-23) confirms this
+reading** — recorded on issue #161.
 
 ### 5. Schema coordination (corrected)
 
@@ -421,21 +422,27 @@ SKIP_PARITY=1 verify-local.sh` — **VERIFY-LOCAL PASS**, every step:
 clean tree, schema guard (D34, `PR-SUPP` writer), generator check,
 npm ci, prisma generate, frontend npm ci, format, typecheck, frontend
 typecheck, lint (0 errors / 81 warnings), frontend lint, **unit tests
-(26s: 1199/1199 across 102 files)**, frontend tests (889/889), **full
-integration (231s, includes supplements 14/14 with the item-row
+(26s: 102 files / 1199 tests — reviewer-verified count)**, frontend
+tests (198), **full integration (231s: 63 files / 889 tests —
+reviewer-verified; includes supplements 14/14 with the item-row
 assertion)**, migrate deploy, build, frontend build, **e2e flow specs
 (39s: 10 passed / 7 skipped / 0 failed)** — the 7 skips are the
-mail-adapter-dependent reset specs, not passes.
+mail-adapter-dependent reset specs, not passes. (The earlier
+"889/889 frontend" label was miscopied — 889 is the integration
+count; corrected here.)
 
 ### Contract status
 
-- Authorization: no new owner decision; the closed capability matrix
-  disposition stands (assigned write; issue wording documented, not
-  broadened).
-- Schema coordination: #158 (auth_rotate, earlier timestamp) and #164
-  (MIG-ORDER) remain OPEN — merge order is still a board sequencing
-  item; combined-schema compatibility demonstrated, not exclusive
-  authorization.
-- Migration evidence: `db/` unchanged since the reviewer's fresh-deploy/
-  upgrade/down-replay at `b696630` — carried byte-identically; the gate
-  redeployed it on `app_prsupp` again this pass (migrate deploy PASS).
+- Authorization: **settled by owner decision (2026-10-23, recorded on
+  issue #161)** — the closed `plan.read`/`plan.write` capability cells
+  and assigned-client write stand; the issue's "workspace-scope save"
+  wording is superseded, not broadened. No permission change.
+- Schema coordination: **settled by owner decision** — #162 merges
+  first, then #158; the order + timestamp rule is recorded in
+  `db/AGENTS.md` (the mechanism #164 names) alongside the `PR-SUPP`
+  `SCHEMA_WRITERS` slot. #158 untouched; #164 remains open for the
+  other lanes' ordering.
+- Migration evidence: `db/migrations/` and `db/schema.prisma` unchanged
+  since the reviewer's fresh-deploy/upgrade/down-replay at `b696630` —
+  carried byte-identically; the gate redeployed on `app_prsupp` again
+  this pass (migrate deploy PASS).
