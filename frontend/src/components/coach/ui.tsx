@@ -8,9 +8,7 @@ import {
   useState,
 } from "react";
 import {
-  type ButtonVariant,
   type ControlSize,
-  Button as Vari8Button,
   Card as Vari8Card,
   IconButton as Vari8IconButton,
   Input as Vari8Input,
@@ -21,39 +19,11 @@ import {
 import { DatePicker, TimePicker } from "../vari8/inputs";
 import { PageHeader } from "../vari8/layouts";
 import { CoachDashboardPreview } from "./builder/coach-dashboard";
-import {
-  ALL_PARAMETERS,
-  type CoachClient,
-  type FieldConfig,
-  sampleValue,
-  type Template,
-  TODAY,
-  type Variant,
-} from "./model";
+import { Button } from "./form-controls";
+import { type CoachClient, type Template, TODAY, type Variant } from "./model";
 import { planTargets } from "./plans/domain";
-export function Button({
-  children,
-  className = "",
-  primary = false,
-  variant,
-  size = "md",
-  ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & {
-  primary?: boolean;
-  variant?: ButtonVariant;
-  size?: ControlSize;
-}) {
-  return (
-    <Vari8Button
-      variant={variant ?? (primary ? "primary" : "secondary")}
-      size={size}
-      className={`cd-button ${primary ? "cd-primary" : ""} ${className}`}
-      {...props}
-    >
-      {children}
-    </Vari8Button>
-  );
-}
+
+export { Button, ParameterValue } from "./form-controls";
 export function IconButton({
   label,
   children,
@@ -340,20 +310,6 @@ export function Status({ text }: { text: string }) {
       {text === "Feedback sent" && <Check size={12} />}
       {text}
     </span>
-  );
-}
-export function ParameterValue({
-  field,
-  client,
-}: {
-  field: FieldConfig;
-  client?: CoachClient;
-}) {
-  return (
-    <div className="cd-stat-row">
-      <span>{ALL_PARAMETERS.find((p) => p.id === field.id)?.name}</span>
-      <strong>{sampleValue(field, client)}</strong>
-    </div>
   );
 }
 export function WidgetPreview({

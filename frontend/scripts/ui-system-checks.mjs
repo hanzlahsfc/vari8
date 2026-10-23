@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import postcss from "postcss";
@@ -1017,6 +1023,98 @@ export function scanFeatureFiles(repoRoot = root) {
   return findings;
 }
 
+const moduleGraphScope = "src/components/client/";
+const forbiddenClientModules = new Set([
+  "src/components/coach/store.tsx",
+  "src/components/coach/client-preview.tsx",
+]);
+
+// Breadth first search over a static import graph. `readImports` and `resolve`
+// are injected so the traversal can be tested without touching the disk.
+export function reachableForbidden(entry, readImports, resolve, forbidden) {
+  const queue = [[entry, [entry]]];
+  const seen = new Set([entry]);
+  const hits = [];
+  while (queue.length > 0) {
+    const [current, chain] = queue.shift();
+    for (const specifier of readImports(current)) {
+      const next = resolve(current, specifier);
+      if (!next) continue;
+      if (forbidden.has(next)) {
+        hits.push({ entry, chain: [...chain, next] });
+        continue;
+      }
+      if (seen.has(next)) continue;
+      seen.add(next);
+      queue.push([next, [...chain, next]]);
+    }
+  }
+  return hits;
+}
+
+function resolveImport(repoRoot, fromFile, specifier) {
+  let base;
+  if (specifier.startsWith("@/")) {
+    base = path.join(repoRoot, "src", specifier.slice(2));
+  } else if (specifier.startsWith(".")) {
+    base = path.resolve(path.dirname(fromFile), specifier);
+  } else {
+    return null;
+  }
+  const candidates = [
+    base,
+    `${base}.tsx`,
+    `${base}.ts`,
+    path.join(base, "index.tsx"),
+    path.join(base, "index.ts"),
+  ];
+  for (const candidate of candidates) {
+    if (existsSync(candidate) && statSync(candidate).isFile()) return candidate;
+  }
+  return null;
+}
+
+function importedSpecifiers(filename) {
+  return ts
+    .preProcessFile(readFileSync(filename, "utf8"), true, true)
+    .importedFiles.map((entry) => entry.fileName);
+}
+
+export function moduleGraphFindings(repoRoot = root) {
+  const findings = [];
+  const forbidden = new Set(
+    [...forbiddenClientModules].map((repoPath) =>
+      path.join(repoRoot, repoPath),
+    ),
+  );
+  const entries = filesUnder(
+    path.join(repoRoot, moduleGraphScope),
+    new Set([".ts", ".tsx"]),
+  );
+  for (const entry of entries) {
+    const hits = reachableForbidden(
+      entry,
+      importedSpecifiers,
+      (fromFile, specifier) => resolveImport(repoRoot, fromFile, specifier),
+      forbidden,
+    );
+    for (const hit of hits) {
+      findings.push({
+        rule: "module-graph",
+        file: toRepoPath(entry),
+        line: 1,
+        selector: "static import graph",
+        property: path
+          .relative(repoRoot, hit.chain.at(-1))
+          .split(path.sep)
+          .join("/"),
+        value: hit.chain.map((step) => toRepoPath(step)).join(" -> "),
+      });
+    }
+  }
+  return findings;
+}
+
 function checkBinaryAssets(ancestry) {
   const current = [];
   for (const prefix of binaryScopePrefixes) {
@@ -1205,6 +1303,62 @@ function runSelfTests() {
     ).length,
     1,
     "Only binary assets new to the ref are flagged.",
+  );
+
+  const fakeModules = {
+    "screen.tsx": ["./view", "react"],
+    "view.tsx": ["./store"],
+    "store.tsx": [],
+    "clean.tsx": ["./pure"],
+    "pure.tsx": [],
+    "loop-a.tsx": ["./loop-b"],
+    "loop-b.tsx": ["./loop-a"],
+  };
+  const fakeModulePaths = {
+    "./view": "view.tsx",
+    "./store": "store.tsx",
+    "./pure": "pure.tsx",
+    "./loop-b": "loop-b.tsx",
+    "./loop-a": "loop-a.tsx",
+  };
+  const fakeReadImports = (file) => fakeModules[file] ?? [];
+  const fakeResolveImport = (_file, specifier) =>
+    fakeModulePaths[specifier] ?? null;
+  const graphHits = reachableForbidden(
+    "screen.tsx",
+    fakeReadImports,
+    fakeResolveImport,
+    new Set(["store.tsx"]),
+  );
+  assert.equal(
+    graphHits.length,
+    1,
+    "A client entry that reaches a forbidden module is reported once.",
+  );
+  assert.deepEqual(
+    graphHits[0].chain,
+    ["screen.tsx", "view.tsx", "store.tsx"],
+    "The graph finding names the whole import chain.",
+  );
+  assert.equal(
+    reachableForbidden(
+      "clean.tsx",
+      fakeReadImports,
+      fakeResolveImport,
+      new Set(["store.tsx"]),
+    ).length,
+    0,
+    "A graph that never reaches the forbidden module passes.",
+  );
+  assert.equal(
+    reachableForbidden(
+      "loop-a.tsx",
+      fakeReadImports,
+      fakeResolveImport,
+      new Set(["store.tsx"]),
+    ).length,
+    0,
+    "An import cycle terminates without a hit.",
   );
 
   const baselineFixture = {
@@ -1404,6 +1558,7 @@ if (process.argv.includes("--self-test")) {
   }
 
   const binaryFindings = checkBinaryAssets(ancestry);
+  const graphFindings = moduleGraphFindings();
   const stagedFindings = reconFileFindings(stagedPaths());
   const designRuleFindings = checkDesignRules();
 
@@ -1419,6 +1574,11 @@ if (process.argv.includes("--self-test")) {
   }
   for (const finding of binaryFindings) {
     console.error(`${finding.file}: new binary asset`);
+  }
+  for (const finding of graphFindings) {
+    console.error(
+      `${finding.file}: reaches ${finding.property} through ${finding.value}`,
+    );
   }
   for (const finding of stagedFindings) {
     console.error(`${finding.file}: staged recon-named file`);
@@ -1454,6 +1614,7 @@ if (process.argv.includes("--self-test")) {
     overAllowance.length +
     hardFindings.length +
     binaryFindings.length +
+    graphFindings.length +
     stagedFindings.length +
     designRuleFindings.length +
     ancestryFindings.length +

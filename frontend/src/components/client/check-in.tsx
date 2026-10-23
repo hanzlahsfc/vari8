@@ -1,6 +1,6 @@
 "use client";
 
-import { FormPreview } from "@/components/coach/templates";
+import { FormPreview } from "@/components/coach/form-preview";
 import { Button, Status } from "@/components/vari8/components";
 import type { ParsedDemo } from "./demo/state";
 import { useDemoSlice, useDemoStore } from "./demo/store";

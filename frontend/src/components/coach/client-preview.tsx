@@ -16,6 +16,7 @@ import { createExampleClient } from "./client-tracker-preview/example-client";
 import { createExampleHistory } from "./client-tracker-preview/example-history";
 import type { TrackerConfig } from "./client-tracker-preview/preview-model";
 import { TrackingView } from "./client-tracker-preview/tracking-view";
+import { FormPreview } from "./form-preview";
 import { HabitsTab } from "./habits-tab";
 import {
   ALL_PARAMETERS,
@@ -40,7 +41,6 @@ import {
 import { TargetSummary } from "./targets/target-summary";
 import { useLocalToday } from "./targets/use-local-today";
 import { templateSetup } from "./template-setup";
-import { FormPreview } from "./templates";
 import { trackerOverviewIds } from "./tracker-setup";
 import { Avatar, Empty } from "./ui";
 import "./client-preview.css";

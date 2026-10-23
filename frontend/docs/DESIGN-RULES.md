@@ -77,6 +77,12 @@ Status values: `live in check` runs inside `npm run check`. `live manual
 - Check: `ui:geometry`
 - Status: `live manual (reviewer runs)`
 
+## Modules
+
+### R15. A screen under `src/components/client/` reaches only pure modules and shared controls; it never imports the coach store or the coach client preview, directly or through the coach template screen.
+- Check: `ui:check`
+- Status: `live in check`
+
 ## Exceptions
 
 An exception is an entry in `scripts/ui-system-exceptions.json` with file,
