@@ -212,9 +212,20 @@ export const auth = betterAuth({
         ""
       ).replace(/\/+$/, "");
       // O17: a client's reset link stays on /me. The role is read here, at
-      // send time, from a live unarchived ClientProfile; staff keep /reset.
+      // send time, from a live unarchived ClientProfile AND an ACTIVE CLIENT
+      // membership in the same ACTIVE workspace (AUTH-ROTATE item 8): a
+      // profile alone must not route a staff or removed member to /me.
       const clientProfile = await prisma.clientProfile.findFirst({
-        where: { userId: user.id, archivedAt: null },
+        where: {
+          userId: user.id,
+          archivedAt: null,
+          workspace: {
+            status: "ACTIVE",
+            members: {
+              some: { userId: user.id, role: "CLIENT", status: "ACTIVE" },
+            },
+          },
+        },
         select: { id: true },
       });
       const resetPath = clientProfile ? "/me/reset" : "/reset";
