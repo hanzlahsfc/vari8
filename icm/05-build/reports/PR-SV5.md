@@ -61,18 +61,19 @@ or migration changes — #158 retains the next schema slot.
 
 ## Evidence
 
-### Canonical gate — `BASE_SHA=406c551 LANE_DB=app_chkreview LANE_PORT=3862 SKIP_PARITY=1`
+### Canonical gate — `BASE_SHA=406c551 LANE_DB=app_chkreview LANE_PORT=3866 SKIP_PARITY=1`
 
 `icm/05-build/tools/verify-local.sh` → **VERIFY-LOCAL PASS**, head
-`fb3f3ebdeee7f01f53fd9f9ed1607b8ce627eb5d`, node v24.22.1:
+`5e5b6d4fb6ffe7e343960e683406df2760dfa23f`, node v24.22.1:
 
 - format/typecheck/frontend typecheck/lint/frontend lint: PASS
-- unit tests: 102 files / 1199 tests PASS (fresh `npm run test`
+- unit tests: **103 files / 1204 tests PASS** (includes the new
+  `daily-entry-display-order.test.ts`, 5 tests; fresh `npm run test`
   verbatim, exit 0)
 - frontend tests: 198 PASS
 - integration tests: **64 files / 903 tests PASS** — includes
-  `sv5-checkin-review-read.test.ts` (14 tests) plus unchanged p025c /
-  p025d6 / feedback suites (75/75 standalone before the gate).
+  `sv5-checkin-review-read.test.ts` (14 tests); p025c + p025d6 + the
+  SV5 file re-run standalone: 68/68.
 - migrate deploy: no pending (no `db/` changes; schema guard PASS
   with no CARD)
 - build / frontend build: PASS
