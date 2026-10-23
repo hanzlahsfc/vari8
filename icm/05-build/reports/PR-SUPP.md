@@ -179,3 +179,79 @@ summary above (full output on request). Verify card:
 `icm/05-build/cards/pr-supp-plan-verify.md`; security verify:
 `pr-supp-plan-secverify.md` (`sec=True`). Builder did not approve and
 did not merge; PR #162 stays draft pending review.
+
+---
+
+## Resume — integration on `Vari8-Beta` @ `17eb756` (PROMPT 346)
+
+Review status before this pass: one gate-summary comment only; no
+independent FIX/SHIP findings. Candidate prepared for independent review
+against the current base.
+
+### Base integration
+
+`git merge origin/Vari8-Beta` at `17eb756` (boot-checks #194 + logging
+#195 landed since base `69c74c3`; check-in #193 not yet merged). One
+conflict — `docs/index/SYMBOLS.md` — resolved by `npm run index`
+regeneration. `.env.example` auto-merged (`ENABLE_SUPPLEMENTS` beside
+#194's S3 vars). `db/` had zero changes on the base: this lane still
+holds the only pending migration (D34 slot retained; #164 MIG-ORDER is
+an open coordination issue, not a competing writer).
+
+### Gates on the merged head `413d342` (Node v24.22.1)
+
+`verify-local.sh` with `BASE_SHA=17eb756`, `LANE_DB=app_prsupp`,
+`LANE_PORT=3833`, `CARD=PR-SUPP`, `SKIP_PARITY=1`, host shim
+`vari8-db-1`→`app-db-1` (docker arg rewrite; no container renamed):
+
+```
+PASS clean tree / schema guard (D34) / generator check
+PASS npm ci / prisma generate / frontend npm ci
+PASS format / typecheck / frontend typecheck / lint / frontend lint
+PASS unit tests (1168) / frontend tests
+PASS integration tests (all suites) / migrate deploy
+PASS build / frontend build
+FAIL e2e flow specs (serialized): webServer exit 1
+VERIFY-LOCAL FAIL on that step only
+```
+
+- Focused re-runs at this head: `supplements-plan` unit 12/12,
+  `rbac` 5/5; integration `supplements-plan` 14/14 + `pr05-security`
+  16/16 on a fresh disposable `app_prsupp` (`prisma migrate deploy`
+  incl. `20261023000000_supplement_plan` — clean).
+- `npm run test` inside the gate passed at 21s (the known
+  system-index compiler timeout did not reproduce on this run).
+
+### e2e step — diagnosed, run standalone
+
+The gate exports `AUTH_URL=http://127.0.0.1:${LANE_PORT}` unconditionally;
+the e2e `webServer` runs `next start` (production boot), and the merged
+#194 origin check correctly refuses `http:` in production — the failure
+is the gate's env contract vs the new boot gate, not product code.
+Standalone rerun with `AUTH_URL`/`BETTER_AUTH_URL` unset (derived origin,
+the accepted case): `DATABASE_URL=app_prsupp CI=1 npx playwright test
+tests/e2e/invite-acceptance.spec.ts tests/e2e/password-reset.spec.ts
+--workers=1` — **10 passed, 7 skipped, 0 failed**. Fixing the gate
+script's export is program machinery (shared file, other lanes use it);
+flagged for the orchestrator rather than patched in this lane.
+
+### Schema coordination
+
+- `20261023000000_supplement_plan` deploys cleanly over the merged
+  schema (fresh DB, `migrate deploy` PASS inside the gate).
+- No other lane wrote `db/` on the base; `SCHEMA_WRITERS` still lists
+  `PR-SUPP`. #164 (`[MIG-ORDER]`) OPEN — order coordination only.
+
+### Carried forward (byte-identical code, unchanged since `a8c378e`)
+
+All §4-§7 evidence stands: literal unit cases, CAS/CAS-lock integration
+role matrix, audit rows, flag-off short-circuit, the four mutations.
+No screen evidence — card gates no screens (`screens: []`); PR #160's
+frontend-sync is merged into base now, but wiring remains a later
+W-card per the card contract.
+
+### Review handoff
+
+Head `413d342` (+ report/test commits), base `17eb756`, draft lifted for
+independent review. Verify card `pr-supp-plan-verify.md`, security
+verify `pr-supp-plan-secverify.md`. Builder did not approve or merge.
