@@ -114,6 +114,42 @@ describe("CHECKIN-ENABLE: rating fields render an answerable control", () => {
     expect(wire).toContainEqual({ fieldId: "q-training", value: "7" });
   });
 
+  it("an optional rating can be left absent — submit unblocks and the wire carries no value for it", () => {
+    const fields = [
+      {
+        fieldId: "q-energy",
+        kind: "longText",
+        label: "How did you feel this week?",
+        required: true,
+        order: 0,
+      },
+      {
+        fieldId: "q-training",
+        kind: "rating",
+        label: "How was your training?",
+        required: false,
+        order: 1,
+        ratingScheme: "SCALE_1_10",
+      },
+    ] as OwnCheckInInstanceDetail["definition"]["fields"];
+    render(<CheckInSubmissionPanel workspaceId="ws" detail={detail(fields)} />);
+
+    expect(submitButton().disabled).toBe(true);
+    fireEvent.change(document.getElementById("ci-f-q-energy")!, {
+      target: { value: "Felt good this week." },
+    });
+    // The optional rating was never touched — submit unblocks anyway.
+    expect(submitButton().disabled).toBe(false);
+
+    const wire = JSON.parse(
+      (document.querySelector('input[name="answersJson"]') as HTMLInputElement)
+        .value,
+    ) as Array<{ fieldId: string; value: unknown }>;
+    // Absent — no answer row at all for the optional rating, so the
+    // server never sees a value it must interpret (never 0 or "").
+    expect(wire.some((a) => a.fieldId === "q-training")).toBe(false);
+  });
+
   it("SCALE_1_5 renders five options; WORD_LABELS renders the canvas labels", () => {
     const fields = [
       {
