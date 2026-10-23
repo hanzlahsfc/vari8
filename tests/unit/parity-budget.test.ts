@@ -11,7 +11,8 @@ import {
 } from "../../tools/parity/compare.mjs";
 
 // The JS signature infers NodeJS.ProcessEnv, which wants NODE_ENV; the harness only reads PARITY_*.
-const env = (vars: Record<string, string>) => vars as unknown as NodeJS.ProcessEnv;
+const env = (vars: Record<string, string>) =>
+  vars as unknown as NodeJS.ProcessEnv;
 
 describe("parity pixel budget", () => {
   it("allows 0.1 percent of a desktop and a mobile capture", () => {

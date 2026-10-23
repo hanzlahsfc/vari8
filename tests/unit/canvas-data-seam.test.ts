@@ -150,9 +150,9 @@ describe("coach data seam", () => {
     expect(read).toEqual(state);
     const roundTripped = read as CoachState;
     expect(roundTripped.clients[0].plans?.activityTargets).toHaveLength(1);
-    expect(roundTripped.clients[0].plans?.supplements?.items[0].product.name).toBe(
-      "Vitamin D3+K2",
-    );
+    expect(
+      roundTripped.clients[0].plans?.supplements?.items[0].product.name,
+    ).toBe("Vitamin D3+K2");
     expect(roundTripped.demoSeeds).toEqual({ amaraTraining: 1 });
   });
 

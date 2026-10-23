@@ -26,7 +26,8 @@ const HAND_MERGE = new Set([
 ]);
 
 // Out of scope: node:test suites and dev-only playground pages.
-const OUT_OF_SCOPE = /(\.test\.mjs|\.checks\.mjs|\.test\.ts)$|^app\/dev\/|^components\/vari8\/playground|^components\/vari8\/input-showcase|^components\/vari8\/playground-unavailable/;
+const OUT_OF_SCOPE =
+  /(\.test\.mjs|\.checks\.mjs|\.test\.ts)$|^app\/dev\/|^components\/vari8\/playground|^components\/vari8\/input-showcase|^components\/vari8\/playground-unavailable/;
 
 function git(...args) {
   return execFileSync("git", args, { cwd: ROOT, encoding: "utf8" });
@@ -46,10 +47,13 @@ function files() {
 // frontend/src path -> root path
 function target(rel) {
   if (rel === "app/layout.tsx") return "app/(canvas)/layout.tsx";
-  if (rel.startsWith("components/")) return "components/canvas/" + rel.slice("components/".length);
+  if (rel.startsWith("components/"))
+    return "components/canvas/" + rel.slice("components/".length);
   if (rel.startsWith("lib/")) return "lib/canvas/" + rel.slice("lib/".length);
-  if (rel.startsWith("data/")) return "lib/canvas/data/" + rel.slice("data/".length);
-  if (rel.startsWith("styles/")) return "components/canvas/app/" + rel.slice("styles/".length);
+  if (rel.startsWith("data/"))
+    return "lib/canvas/data/" + rel.slice("data/".length);
+  if (rel.startsWith("styles/"))
+    return "components/canvas/app/" + rel.slice("styles/".length);
   throw new Error("unmapped path: " + rel);
 }
 
@@ -65,12 +69,21 @@ function rewrite(body) {
       .replace(
         /import\s*\{([^}]*)\}\s*from\s*["']motion\/react["'];/g,
         (m, names) => {
-          const list = names.split(",").map((s) => s.trim()).filter(Boolean);
+          const list = names
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
           const keep = list.filter((n) => !/^useReducedMotion$/.test(n));
-          const hook = list.length !== keep.length
-            ? 'import { useReducedMotion } from "@/lib/canvas/reduced-motion";\n'
-            : "";
-          return hook + (keep.length ? `import { ${keep.join(", ")} } from "motion/react";` : "");
+          const hook =
+            list.length !== keep.length
+              ? 'import { useReducedMotion } from "@/lib/canvas/reduced-motion";\n'
+              : "";
+          return (
+            hook +
+            (keep.length
+              ? `import { ${keep.join(", ")} } from "motion/react";`
+              : "")
+          );
         },
       )
   );
@@ -96,7 +109,8 @@ if (process.argv.includes("--merge")) {
     const [b, t] = [join(dir, "base"), join(dir, "theirs")];
     writeFileSync(b, base);
     writeFileSync(t, theirs);
-    let merged, conflicts = 0;
+    let merged,
+      conflicts = 0;
     try {
       merged = execFileSync("git", ["merge-file", "-p", "--diff3", out, b, t], {
         encoding: "utf8",

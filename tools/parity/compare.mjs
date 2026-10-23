@@ -22,7 +22,8 @@ const MOVE_PX = 0.5;
 // D32 pass rule: "a pixel diff of at most 0.1 percent of pixels". Applied to the captured area of each
 // screen, so the allowance scales with page size instead of being one magic number for every shot.
 export const D32_MAX_CHANGED_FRACTION = 0.001;
-export const d32Budget = (total) => Math.floor(total * D32_MAX_CHANGED_FRACTION);
+export const d32Budget = (total) =>
+  Math.floor(total * D32_MAX_CHANGED_FRACTION);
 
 // Bad input is a refusal (exit 2), never a silent fallback: Number("abc") is NaN and `d > NaN` is always false,
 // which would switch the pixel check off.
@@ -59,7 +60,11 @@ export const RULED = [
   },
   {
     rule: "D32 truth text: the canvas records a real stream, not a demo",
-    text: { tag: "button", base: "Record demo video feedback", now: "Record video feedback" },
+    text: {
+      tag: "button",
+      base: "Record demo video feedback",
+      now: "Record video feedback",
+    },
   },
   {
     rule: "S11-04 real workspace name in the shell label (O15)",
