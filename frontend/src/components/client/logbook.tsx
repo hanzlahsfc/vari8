@@ -280,12 +280,18 @@ export function LogbookScreen({ demo }: { demo: ParsedDemo }) {
                           {session.status}
                         </Status>
                         {session.status === "planned" ? (
-                          <Button
-                            size="sm"
-                            onClick={() => startPlanned(session)}
-                          >
-                            Start
-                          </Button>
+                          prescription ? (
+                            <Button
+                              size="sm"
+                              onClick={() => startPlanned(session)}
+                            >
+                              Start
+                            </Button>
+                          ) : (
+                            <span className="client-hint">
+                              No prescription for Rx v{session.version}
+                            </span>
+                          )
                         ) : (
                           <Button
                             size="sm"

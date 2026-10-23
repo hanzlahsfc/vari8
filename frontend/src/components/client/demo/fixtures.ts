@@ -442,8 +442,78 @@ export const logbookSessionV1: TrainingSession = {
   ],
 };
 
+// Version 1 of session B, superseded by the current prescription. The skipped
+// row in the demo log was logged against this version, so it resolves here.
+export const logbookSessionBV1: TrainingSession = {
+  id: "demo-session-b",
+  name: "Session B - Upper body",
+  exercises: [
+    {
+      id: "demo-ex-bench",
+      name: "Bench press",
+      muscle: "Chest",
+      instructions: "Shoulder blades pinned, touch the chest.",
+      progression: "Add 1.25 kg after two clean sessions.",
+      sets: [
+        {
+          id: "bp-1",
+          reps: 6,
+          tempo: "2010",
+          type: "Work",
+          rest: "2:30",
+          instructions: "",
+        },
+        {
+          id: "bp-2",
+          reps: 6,
+          tempo: "2010",
+          type: "Work",
+          rest: "2:30",
+          instructions: "",
+        },
+        {
+          id: "bp-3",
+          reps: 8,
+          repsMax: 10,
+          tempo: "2010",
+          type: "Back-off",
+          rest: "2:00",
+          instructions: "",
+        },
+      ],
+    },
+    {
+      id: "demo-ex-row",
+      name: "Chest supported row",
+      muscle: "Upper back",
+      instructions: "Pull to the lower chest.",
+      progression: "Add a rep per set each week.",
+      sets: [
+        {
+          id: "row-1",
+          reps: 8,
+          tempo: "2011",
+          type: "Work",
+          rest: "2:00",
+          instructions: "",
+        },
+        {
+          id: "row-2",
+          reps: 8,
+          tempo: "2011",
+          type: "Work",
+          rest: "2:00",
+          instructions: "",
+        },
+      ],
+    },
+  ],
+};
+
 export const prescriptionVersions: PrescriptionVersion[] = [
   { version: 1, session: logbookSessionV1 },
+  { version: 1, session: logbookSessionBV1 },
+  { version: 2, session: trainingSessions[1] },
   { version: 2, session: trainingSessions[0] },
 ];
 

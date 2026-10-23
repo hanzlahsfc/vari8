@@ -117423,7 +117423,7 @@
   },
   "client/logbook/page@390": {
     "x": 20,
-    "y": 92.47,
+    "y": 79.42,
     "width": 65.72,
     "height": 46,
     "borderRadius": "12px",
@@ -117447,7 +117447,7 @@
       },
       "nav.v8-navigation[1]": {
         "x": 16,
-        "y": 88.47,
+        "y": 75.42,
         "width": 358,
         "height": 54,
         "borderRadius": "0px",
@@ -117457,7 +117457,7 @@
       },
       "button.v8-navigation__item[2]": {
         "x": 20,
-        "y": 92.47,
+        "y": 79.42,
         "width": 65.72,
         "height": 46,
         "borderRadius": "12px",
@@ -117467,7 +117467,7 @@
       },
       "span.v8-navigation__label[3]": {
         "x": 33,
-        "y": 104.47,
+        "y": 91.42,
         "width": 39.72,
         "height": 22,
         "borderRadius": "0px",
@@ -117477,7 +117477,7 @@
       },
       "button.v8-navigation__item[4]": {
         "x": 93.72,
-        "y": 92.47,
+        "y": 79.42,
         "width": 75.72,
         "height": 46,
         "borderRadius": "12px",
@@ -117487,7 +117487,7 @@
       },
       "span.v8-navigation__label[5]": {
         "x": 106.72,
-        "y": 104.47,
+        "y": 91.42,
         "width": 49.72,
         "height": 22,
         "borderRadius": "0px",
@@ -117497,7 +117497,7 @@
       },
       "button.v8-navigation__item[6]": {
         "x": 177.44,
-        "y": 92.47,
+        "y": 79.42,
         "width": 79.05,
         "height": 46,
         "borderRadius": "12px",
@@ -117507,7 +117507,7 @@
       },
       "span.v8-navigation__label[7]": {
         "x": 190.44,
-        "y": 104.47,
+        "y": 91.42,
         "width": 53.05,
         "height": 22,
         "borderRadius": "0px",
@@ -117517,7 +117517,7 @@
       },
       "button.v8-navigation__item[8]": {
         "x": 264.48,
-        "y": 92.47,
+        "y": 79.42,
         "width": 86.08,
         "height": 46,
         "borderRadius": "12px",
@@ -117527,7 +117527,7 @@
       },
       "span.v8-navigation__label[9]": {
         "x": 277.48,
-        "y": 104.47,
+        "y": 91.42,
         "width": 60.08,
         "height": 22,
         "borderRadius": "0px",
@@ -117537,7 +117537,7 @@
       },
       "button.v8-navigation__item[10]": {
         "x": 358.56,
-        "y": 92.47,
+        "y": 79.42,
         "width": 84.25,
         "height": 46,
         "borderRadius": "12px",
@@ -117547,7 +117547,7 @@
       },
       "span.v8-navigation__label[11]": {
         "x": 371.56,
-        "y": 104.47,
+        "y": 91.42,
         "width": 58.25,
         "height": 22,
         "borderRadius": "0px",
@@ -117557,7 +117557,7 @@
       },
       "button.v8-navigation__item[12]": {
         "x": 450.81,
-        "y": 92.47,
+        "y": 79.42,
         "width": 94.63,
         "height": 46,
         "borderRadius": "12px",
@@ -117567,7 +117567,7 @@
       },
       "span.v8-navigation__label[13]": {
         "x": 463.81,
-        "y": 104.47,
+        "y": 91.42,
         "width": 68.63,
         "height": 22,
         "borderRadius": "0px",
@@ -117577,7 +117577,7 @@
       },
       "button.v8-navigation__item[14]": {
         "x": 553.44,
-        "y": 92.47,
+        "y": 79.42,
         "width": 64.25,
         "height": 46,
         "borderRadius": "12px",
@@ -117587,7 +117587,7 @@
       },
       "span.v8-navigation__label[15]": {
         "x": 566.44,
-        "y": 104.47,
+        "y": 91.42,
         "width": 38.25,
         "height": 22,
         "borderRadius": "0px",
@@ -117597,7 +117597,7 @@
       },
       "button.v8-navigation__item[16]": {
         "x": 625.69,
-        "y": 92.47,
+        "y": 79.42,
         "width": 73.08,
         "height": 46,
         "borderRadius": "12px",
@@ -117607,7 +117607,7 @@
       },
       "span.v8-navigation__label[17]": {
         "x": 638.69,
-        "y": 104.47,
+        "y": 91.42,
         "width": 47.08,
         "height": 22,
         "borderRadius": "0px",
@@ -117617,7 +117617,7 @@
       },
       "button.v8-navigation__item[18]": {
         "x": 706.77,
-        "y": 92.47,
+        "y": 79.42,
         "width": 115.05,
         "height": 46,
         "borderRadius": "12px",
@@ -117627,7 +117627,7 @@
       },
       "span.v8-navigation__label[19]": {
         "x": 719.77,
-        "y": 104.47,
+        "y": 91.42,
         "width": 89.05,
         "height": 22,
         "borderRadius": "0px",
@@ -117637,7 +117637,7 @@
       },
       "button.v8-navigation__item[20]": {
         "x": 829.81,
-        "y": 92.47,
+        "y": 79.42,
         "width": 74.5,
         "height": 46,
         "borderRadius": "12px",
@@ -117647,7 +117647,7 @@
       },
       "span.v8-navigation__label[21]": {
         "x": 842.81,
-        "y": 93.47,
+        "y": 80.42,
         "width": 48.5,
         "height": 44,
         "borderRadius": "0px",
@@ -117657,7 +117657,7 @@
       },
       "button.v8-navigation__item[22]": {
         "x": 912.31,
-        "y": 92.47,
+        "y": 79.42,
         "width": 82.92,
         "height": 46,
         "borderRadius": "12px",
@@ -117667,7 +117667,7 @@
       },
       "span.v8-navigation__label[23]": {
         "x": 925.31,
-        "y": 104.47,
+        "y": 91.42,
         "width": 56.92,
         "height": 22,
         "borderRadius": "0px",
@@ -117677,7 +117677,7 @@
       },
       "header.v8-page-header.v8-page-header--wide[24]": {
         "x": 16,
-        "y": 188.3,
+        "y": 170.91,
         "width": 358,
         "height": 64,
         "borderRadius": "0px",
@@ -117687,7 +117687,7 @@
       },
       "div.v8-page-header__top[25]": {
         "x": 16,
-        "y": 188.3,
+        "y": 170.91,
         "width": 358,
         "height": 64,
         "borderRadius": "0px",
@@ -117697,7 +117697,7 @@
       },
       "div.v8-page-header__copy[26]": {
         "x": 16,
-        "y": 188.3,
+        "y": 170.91,
         "width": 244.66,
         "height": 64,
         "borderRadius": "0px",
@@ -117707,7 +117707,7 @@
       },
       "div.v8-card[27]": {
         "x": 16,
-        "y": 272.3,
+        "y": 254.91,
         "width": 358,
         "height": 120.8,
         "borderRadius": "16px",
@@ -117717,7 +117717,7 @@
       },
       "span.v8-status[28]": {
         "x": 244.83,
-        "y": 293.3,
+        "y": 275.91,
         "width": 53.3,
         "height": 26.8,
         "borderRadius": "999px",
@@ -117727,7 +117727,7 @@
       },
       "button.v8-button[29]": {
         "x": 244.83,
-        "y": 328.09,
+        "y": 310.7,
         "width": 53.39,
         "height": 44,
         "borderRadius": "12px",
@@ -117737,7 +117737,7 @@
       },
       "div.v8-card[30]": {
         "x": 16,
-        "y": 409.09,
+        "y": 391.7,
         "width": 358,
         "height": 120.8,
         "borderRadius": "16px",
@@ -117747,7 +117747,7 @@
       },
       "span.v8-status[31]": {
         "x": 192,
-        "y": 430.09,
+        "y": 412.7,
         "width": 88.98,
         "height": 26.8,
         "borderRadius": "999px",
@@ -117757,7 +117757,7 @@
       },
       "button.v8-button[32]": {
         "x": 192,
-        "y": 464.89,
+        "y": 447.5,
         "width": 79.94,
         "height": 44,
         "borderRadius": "12px",
@@ -117767,27 +117767,27 @@
       },
       "div.v8-card[33]": {
         "x": 16,
-        "y": 545.89,
+        "y": 528.5,
         "width": 358,
-        "height": 86,
+        "height": 120.8,
         "borderRadius": "16px",
         "paddingInline": "20px / 20px",
         "fontSize": "15px",
         "lineHeight": "22px"
       },
       "span.v8-status[34]": {
-        "x": 212.8,
-        "y": 566.89,
+        "x": 212.94,
+        "y": 549.5,
         "width": 70.09,
-        "height": 44,
+        "height": 26.8,
         "borderRadius": "999px",
         "paddingInline": "12px / 12px",
         "fontSize": "12px",
         "lineHeight": "16.8px"
       },
       "button.v8-button[35]": {
-        "x": 298.89,
-        "y": 566.89,
+        "x": 212.94,
+        "y": 584.3,
         "width": 54.11,
         "height": 44,
         "borderRadius": "12px",
@@ -117797,7 +117797,7 @@
       },
       "div.v8-card[36]": {
         "x": 16,
-        "y": 647.89,
+        "y": 665.3,
         "width": 358,
         "height": 120.8,
         "borderRadius": "16px",
@@ -117806,8 +117806,8 @@
         "lineHeight": "22px"
       },
       "span.v8-status[37]": {
-        "x": 218.98,
-        "y": 668.89,
+        "x": 233.45,
+        "y": 686.3,
         "width": 69.52,
         "height": 26.8,
         "borderRadius": "999px",
@@ -117816,8 +117816,8 @@
         "lineHeight": "16.8px"
       },
       "button.v8-button[38]": {
-        "x": 218.98,
-        "y": 703.69,
+        "x": 233.45,
+        "y": 721.09,
         "width": 53.39,
         "height": 44,
         "borderRadius": "12px",
@@ -117827,7 +117827,7 @@
       },
       "button.v8-button[39]": {
         "x": 16,
-        "y": 788.69,
+        "y": 806.09,
         "width": 263.14,
         "height": 44,
         "borderRadius": "12px",
