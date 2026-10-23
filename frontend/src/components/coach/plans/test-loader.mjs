@@ -40,6 +40,51 @@ export async function resolve(specifier, context, nextResolve) {
       shortCircuit: true,
     };
   }
+  if (
+    specifier === "./athlete/overview-widgets" &&
+    context.parentURL?.startsWith("data:text/javascript")
+  ) {
+    return {
+      url: new URL("../athlete/overview-widgets.ts", import.meta.url).href,
+      shortCircuit: true,
+    };
+  }
+  if (
+    specifier === "./athlete/timeline" &&
+    context.parentURL?.startsWith("data:text/javascript")
+  ) {
+    return {
+      url: new URL("../athlete/timeline.ts", import.meta.url).href,
+      shortCircuit: true,
+    };
+  }
+  if (
+    specifier === "./athlete-profile-demo" &&
+    context.parentURL?.startsWith("data:text/javascript")
+  ) {
+    return {
+      url: new URL("../athlete-profile-demo.ts", import.meta.url).href,
+      shortCircuit: true,
+    };
+  }
+  if (
+    specifier === "./client-app-demo" &&
+    context.parentURL?.startsWith("data:text/javascript")
+  ) {
+    return {
+      url: new URL("../client-app-demo.ts", import.meta.url).href,
+      shortCircuit: true,
+    };
+  }
+  if (
+    specifier === "./training-log-demo" &&
+    context.parentURL?.startsWith("data:text/javascript")
+  ) {
+    return {
+      url: new URL("../training-log-demo.ts", import.meta.url).href,
+      shortCircuit: true,
+    };
+  }
   if (specifier.startsWith("@/")) {
     const path = new URL(specifier.slice(2), sourceRoot);
     const url = pathToFileURL(fileURLToPath(path)).href;

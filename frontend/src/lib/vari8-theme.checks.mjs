@@ -86,9 +86,11 @@ function role(theme, name) {
 }
 
 function isAchromatic(hex) {
-  return (
-    hex.slice(1, 3) === hex.slice(3, 5) && hex.slice(3, 5) === hex.slice(5, 7)
+  const channels = [1, 3, 5].map((index) =>
+    Number.parseInt(hex.slice(index, index + 2), 16),
   );
+  // Cool-neutral roles (e.g. #A1A1A8) may tint a few points without color.
+  return Math.max(...channels) - Math.min(...channels) <= 8;
 }
 
 function mixHex(first, second, amount) {
@@ -425,9 +427,9 @@ test("semantic typography tokens retain distinct role-based sizes", () => {
   const themeRule = tokensCss.match(/\.v8-theme\s*\{([^}]+)\}/)?.[1];
   assert.ok(themeRule, "theme tokens must define the role-based type scale");
   for (const [name, value] of [
-    ["font-size-card-heading", "1rem"],
+    ["font-size-card-heading", "0.9375rem"],
     ["font-size-body", "0.9375rem"],
-    ["font-size-label", "0.875rem"],
+    ["font-size-label", "0.8125rem"],
     ["font-size-supporting", "0.75rem"],
     ["font-size-table", "0.875rem"],
     ["font-size-metric-large", "2.5rem"],
@@ -438,14 +440,15 @@ test("semantic typography tokens retain distinct role-based sizes", () => {
     );
 });
 
-test("app material background uses one bounded accent wash over the canvas", () => {
+test("app material background is the flat neutral canvas", () => {
   const themeRule = tokensCss.match(/\.v8-theme\s*\{([^}]+)\}/)?.[1];
   const recipe = themeRule?.match(/--v8-material-app:\s*([\s\S]*?);/)?.[1];
   assert.ok(recipe, "theme tokens must define the reusable app background");
-  assert.match(recipe, /radial-gradient\(/);
-  assert.match(recipe, /var\(--v8-accent-glow\)/);
-  assert.match(recipe, /var\(--v8-canvas\)/);
-  assert.doesNotMatch(recipe, /surface-raised|text-muted|linear-gradient/);
+  assert.match(recipe, /^var\(--v8-canvas\)$/);
+  assert.doesNotMatch(
+    recipe,
+    /radial-gradient|linear-gradient|accent|surface-raised|text-muted/,
+  );
 });
 
 test("all accent and text roles meet contrast against every rendered same-mode surface", () => {

@@ -1,0 +1,718 @@
+/* Athlete profile v1 — overview page. */
+
+.coach-root .ap {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.coach-root .ap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+}
+.coach-root .ap-header-id {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-inline-size: 0;
+}
+.coach-root .ap-header-id .cd-avatar {
+  inline-size: 56px;
+  block-size: 56px;
+  font-size: 20px;
+  flex: 0 0 auto;
+}
+.coach-root .ap-header-text {
+  min-inline-size: 0;
+}
+.coach-root .ap-header-text h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.coach-root .ap-header-text p {
+  margin: 3px 0 0;
+}
+.coach-root .ap-meta {
+  margin: 2px 0 0;
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-supporting);
+  line-height: var(--v8-line-height-supporting);
+}
+.coach-root .ap-header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.coach-root .ap-header-actions .cd-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.coach-root .ap-header-actions .cd-icon-button,
+.coach-root .ap-header-actions .v8-icon-button {
+  position: relative;
+}
+.coach-root .ap-unread {
+  position: absolute;
+  top: -5px;
+  inset-inline-end: -5px;
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--v8-on-action, var(--cd-on-accent, #fff));
+  background: var(--v8-action, var(--cd-accent));
+  border-radius: 999px;
+  padding: 0 4px;
+  min-inline-size: 15px;
+  block-size: 15px;
+  line-height: 15px;
+}
+
+/* ── Widget grid ─────────────────────────────────────────── */
+.coach-root .ap-widgets {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 12px;
+}
+.coach-root .ap-w {
+  display: flex;
+  min-inline-size: 0;
+}
+.coach-root .ap-w > * {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+.coach-root .ap-w-s3 {
+  grid-column: span 3;
+}
+.coach-root .ap-w-s6 {
+  grid-column: span 6;
+}
+.coach-root .ap-w-s12 {
+  grid-column: 1 / -1;
+}
+.coach-root .ap-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.coach-root .ap-widget-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.coach-root .ap-widget-head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+.coach-root .ap-widget-head p {
+  margin: 3px 0 0;
+}
+.coach-root .ap-layout {
+  margin: 0;
+  text-align: center;
+}
+.coach-root .ap-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--cd-muted);
+  cursor: pointer;
+}
+.coach-root .ap-link:hover {
+  color: var(--cd-text);
+}
+.coach-root .ap-timeline-more {
+  align-self: flex-start;
+  margin-block-start: 2px;
+}
+
+/* ── Status tiles ────────────────────────────────────────── */
+.coach-root .ap-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.coach-root .ap-tile h4 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cd-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.coach-root .ap-tile-value {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-inline-size: 0;
+}
+.coach-root .ap-tile-value-text {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.coach-root .ap-tile-unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cd-muted);
+}
+.coach-root .ap-tile p {
+  margin: 0;
+}
+.coach-root .ap-spark {
+  inline-size: 100%;
+  block-size: 28px;
+}
+.coach-root .ap-spark polyline {
+  fill: none;
+  stroke: var(--v8-accent-primary, var(--cd-accent));
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* ── Timeline card ───────────────────────────────────────── */
+.coach-root .ap-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.coach-root .ap-timeline-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+.coach-root .ap-timeline-head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+.coach-root .ap-timeline-head p {
+  margin: 3px 0 0;
+}
+.coach-root .ap-timeline-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.coach-root .ap-timeline-controls .cd-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Track — phase lane on top, event lane below; labels that do not fit are
+   lifted outside their segment via [data-narrow] (measured in overview.tsx). */
+.coach-root .ap-track {
+  position: relative;
+  block-size: 104px;
+  margin-block-start: 22px;
+  border-radius: 12px;
+  background: var(--v8-surface-subtle, var(--cd-wash));
+}
+.coach-root .ap-track-week {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inline-size: 1px;
+  background: var(--v8-border, rgb(128 128 128 / 0.14));
+}
+.coach-root .ap-track-week:first-child {
+  display: none;
+}
+.coach-root .ap-track-phase {
+  position: absolute;
+  top: 10px;
+  block-size: 30px;
+  border-radius: 9px;
+  background: var(--v8-surface, var(--cd-surface));
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  overflow: hidden;
+}
+.coach-root .ap-track-phase span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cd-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.coach-root .ap-track-phase-active {
+  background: var(--v8-accent-soft, var(--v8-accent-soft));
+}
+.coach-root .ap-track-phase-active span {
+  color: var(--cd-text);
+}
+.coach-root .ap-track-event {
+  position: absolute;
+  z-index: 2;
+}
+.coach-root .ap-track-bar {
+  bottom: 10px;
+  block-size: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  overflow: hidden;
+  background: var(--v8-accent-soft, var(--v8-accent-soft));
+  border: 1px solid var(--v8-accent-border, var(--cd-accent));
+}
+.coach-root .ap-track-bar span {
+  font-size: 10px;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--cd-text);
+}
+.coach-root .ap-track-refeed {
+  border-color: transparent;
+}
+.coach-root .ap-track-dot {
+  bottom: 13px;
+  inline-size: 12px;
+  block-size: 12px;
+  border-radius: 50%;
+  margin-inline-start: -6px;
+  background: var(--v8-action, var(--cd-action-bg));
+  border: 2px solid var(--v8-surface, var(--cd-surface));
+}
+.coach-root .ap-track-today {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  inline-size: 2px;
+  background: var(--v8-accent-primary, var(--cd-accent));
+  z-index: 3;
+}
+.coach-root .ap-track-today span {
+  position: absolute;
+  top: -1px;
+  inset-inline-start: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--v8-accent-primary, var(--cd-accent));
+}
+/* Narrow phase: caption sits above the track, aligned to the segment start. */
+.coach-root .ap-track-phase[data-narrow] {
+  overflow: visible;
+}
+.coach-root .ap-track-phase[data-narrow] > span {
+  position: absolute;
+  inset-inline-start: 0;
+  bottom: calc(100% + 4px);
+  overflow: visible;
+  font-size: 10px;
+  color: var(--cd-muted);
+}
+/* Narrow bar: label sits just above the bar, between the two lanes. */
+.coach-root .ap-track-bar[data-narrow] {
+  overflow: visible;
+}
+.coach-root .ap-track-bar[data-narrow] > span {
+  position: absolute;
+  inset-inline-start: 0;
+  bottom: calc(100% + 3px);
+  overflow: visible;
+  color: var(--cd-muted);
+}
+/* A lifted label that would overflow the track's right edge anchors to the
+   segment end instead. */
+.coach-root .ap-track-phase[data-narrow][data-flush="right"] > span,
+.coach-root .ap-track-bar[data-narrow][data-flush="right"] > span {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+}
+
+/* Event list */
+.coach-root .ap-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.coach-root .ap-event {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--v8-border, rgb(128 128 128 / 0.1));
+  min-inline-size: 0;
+}
+.coach-root .ap-event:first-child {
+  border-top: 0;
+}
+.coach-root .ap-event-past {
+  opacity: 0.55;
+}
+.coach-root .ap-event-kind {
+  flex: 0 0 auto;
+}
+.coach-root .ap-event-dates {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .ap-event-note {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.coach-root .ap-event-actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
+}
+
+/* ── Needs attention ─────────────────────────────────────── */
+.coach-root .ap-attention h3,
+.coach-root .ap-recent h3,
+.coach-root .ap-setup h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 650;
+}
+.coach-root .ap-attention-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.coach-root .ap-attention-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  inline-size: 100%;
+  min-block-size: 56px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--v8-surface-subtle, var(--cd-wash));
+  color: var(--cd-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.coach-root .ap-attention-row:hover {
+  background: var(--v8-surface-interactive, var(--cd-highlight));
+}
+.coach-root .ap-attention-text {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.coach-root .ap-attention-text b {
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+.coach-root .ap-attention-meta {
+  color: var(--cd-muted);
+  font-size: 12px;
+  line-height: var(--v8-line-height-supporting);
+}
+.coach-root .ap-attention-link {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cd-muted);
+}
+.coach-root .ap-attention-row:hover .ap-attention-link {
+  color: var(--cd-text);
+}
+
+/* ── Recent training ─────────────────────────────────────── */
+.coach-root .ap-recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.coach-root .ap-recent-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--v8-border, rgb(128 128 128 / 0.1));
+  min-inline-size: 0;
+}
+.coach-root .ap-recent-row:first-child {
+  border-top: 0;
+}
+.coach-root .ap-recent-date {
+  flex: 0 0 74px;
+}
+.coach-root .ap-recent-name {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.coach-root .ap-flag {
+  color: var(--v8-accent-primary, var(--cd-accent));
+  flex: 0 0 auto;
+}
+.coach-root .ap-recent-sets {
+  flex: 0 0 auto;
+}
+
+/* ── Nutrition targets ───────────────────────────────────── */
+.coach-root .ap-nt-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+.coach-root .ap-nt-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--v8-surface-subtle, var(--cd-wash));
+  min-inline-size: 0;
+}
+.coach-root .ap-nt-col-today {
+  background: var(--v8-accent-soft, var(--cd-wash));
+}
+.coach-root .ap-nt-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--cd-muted);
+}
+.coach-root .ap-nt-col-today .ap-nt-label {
+  color: var(--cd-text);
+}
+.coach-root .ap-nt-kcal {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+.coach-root .ap-nt-unit {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cd-muted);
+  margin-inline-start: 5px;
+}
+.coach-root .ap-nt-macros {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--cd-muted);
+}
+.coach-root .ap-nt-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.coach-root .ap-nt-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.coach-root .ap-nt-field .v8-field {
+  flex: 1 1 0;
+}
+.coach-root .ap-nt-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Activity targets ────────────────────────────────────── */
+.coach-root .ap-at-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+  border-top: 1px solid var(--v8-border, rgb(128 128 128 / 0.1));
+}
+.coach-root .ap-at-row:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+.coach-root .ap-at-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.coach-root .ap-at-text b {
+  font-size: 14px;
+  font-weight: 650;
+}
+.coach-root .ap-at-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-block-start: 4px;
+}
+.coach-root .ap-at-edit .v8-field {
+  inline-size: 110px;
+}
+.coach-root .ap-at-edit .v8-segmented {
+  flex: 1 1 auto;
+}
+
+/* ── Current plans ───────────────────────────────────────── */
+.coach-root .ap-plans-list {
+  display: flex;
+  flex-direction: column;
+}
+.coach-root .ap-plan-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-top: 1px solid var(--v8-border, rgb(128 128 128 / 0.1));
+}
+.coach-root .ap-plan-row:first-child {
+  border-top: 0;
+}
+.coach-root .ap-plan-text {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.coach-root .ap-plan-text b {
+  font-size: 13.5px;
+  font-weight: 650;
+}
+
+/* ── Coaching setup ──────────────────────────────────────── */
+.coach-root .ap-setup h4 {
+  margin: 14px 0 8px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--cd-muted);
+}
+.coach-root .ap-setup h4:first-of-type {
+  margin-top: 0;
+}
+.coach-root .ap-setup p {
+  margin: 0 0 8px;
+}
+.coach-root .ap-setup .cd-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Dialog ──────────────────────────────────────────────── */
+.coach-root .ap-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.coach-root .ap-dialog-hint {
+  margin: 0;
+}
+.coach-root .ap-dialog-error {
+  margin: 0;
+  color: var(--v8-danger, #e5534b);
+  font-size: 12.5px;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .coach-root .ap-w-s3 {
+    grid-column: span 6;
+  }
+  .coach-root .ap-w-s6,
+  .coach-root .ap-w-s12 {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 640px) {
+  .coach-root .ap-w-s3,
+  .coach-root .ap-w-s6,
+  .coach-root .ap-w-s12 {
+    grid-column: 1 / -1;
+  }
+  .coach-root .ap-nt-grid {
+    grid-auto-flow: row;
+    grid-auto-columns: unset;
+  }
+  .coach-root .ap-header-actions {
+    flex-basis: 100%;
+  }
+  .coach-root .ap-header-actions .cd-button,
+  .coach-root .ap-header-actions .v8-dropdown {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+  .coach-root .ap-event {
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
+  .coach-root .ap-event-note {
+    flex-basis: 100%;
+    order: 4;
+  }
+  .coach-root .ap-event-actions {
+    margin-inline-start: auto;
+  }
+}
+.coach-root .ap-sub {
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-supporting);
+  line-height: var(--v8-line-height-supporting);
+}

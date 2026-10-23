@@ -4,19 +4,17 @@ import {
   CalendarDays,
   ClipboardCheck,
   MessageCircle,
-  Plus,
   Trash2,
-  Users,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { Checkbox, SegmentedControl, Tabs } from "../vari8/components";
 import { TextArea } from "../vari8/inputs";
 import { FormGrid, Toolbar } from "../vari8/layouts";
+import { AthleteOverview, AthleteProfileHeader } from "./athlete/overview";
 import {
   addDays,
   assignTemplate,
   type CoachClient,
-  DAYS,
   eventsBetween,
   formatDate,
   TODAY,
@@ -26,7 +24,6 @@ import {
 import { ClientPlansSummary } from "./plans/setup-ui";
 import { useCoach } from "./store";
 import { templateSetup } from "./template-setup";
-import { PreviewDialog } from "./templates";
 import "./workspace-polish.css";
 import {
   Avatar,
@@ -40,7 +37,6 @@ import {
   Select,
   Status,
   Surface,
-  Toggle,
 } from "./ui";
 export function nextEvent(
   state: ReturnType<typeof useCoach>["state"],
@@ -287,9 +283,8 @@ export function ClientsWorkspace() {
   );
 }
 function ClientProfile({ client: c }: { client: CoachClient }) {
-  const { state, setState, navigate, route, toast } = useCoach();
+  const { state, setState, navigate, route } = useCoach();
   const tab = route.tab ?? "Overview";
-  const [preview, setPreview] = useState(false);
   const [assign, setAssign] = useState(false);
   const [templateId, setTemplate] = useState(state.templates[0]?.id ?? "");
   const [text, setText] = useState("");
@@ -302,171 +297,17 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
         client.id === c.id ? fn(client) : client,
       ),
     }));
-  const activeSchedule = c.schedules.at(-1);
   const history = state.submissions
     .filter((s) => s.clientId === c.id)
     .sort((a, b) => b.date.localeCompare(a.date));
-  const next = nextEvent(state, c.id);
-  const assignedSetup = c.assignment
-    ? templateSetup(c.assignment.snapshot, c.assignment.variantId)
-    : undefined;
-  const hasEditablePlan =
-    Boolean(
-      c.plans &&
-        (c.plans.nutrition.mealPlan.draft ||
-          c.plans.nutrition.mealPlan.active ||
-          c.plans.nutrition.iifym.draft ||
-          c.plans.nutrition.iifym.active ||
-          c.plans.training.draft ||
-          c.plans.training.active ||
-          (c.plans.activityTargets?.length ?? 0) > 0 ||
-          c.plans.supplements !== undefined ||
-          c.plans.goals.length > 0),
-    ) || c.habits.length > 0;
   const profilePanel = (
     <>
       {tab === "Overview" && (
-        <div className="cd-profile-grid">
-          <Surface>
-            <h2>Client setup</h2>
-            <div className="cd-stat-row">
-              <span>Current bodyweight</span>
-              <strong>{c.entries.at(-1)?.weight} kg</strong>
-            </div>
-            <div className="cd-stat-row">
-              <span>Assigned template</span>
-              <span>
-                <strong>{c.assignment?.snapshot.name ?? "Not assigned"}</strong>
-                {assignedSetup && (
-                  <small>
-                    {assignedSetup.views.join(" · ")} · Nutrition:{" "}
-                    {assignedSetup.views.some(
-                      (view) => view === "Nutrition" || view === "Mealplan",
-                    )
-                      ? assignedSetup.nutrition
-                      : "not included"}{" "}
-                    · Habits: {assignedSetup.habits ? "enabled" : "off"}
-                  </small>
-                )}
-              </span>
-            </div>
-
-            <div className="cd-actions cd-wrap cd-profile-actions">
-              <Button disabled={!c.assignment} onClick={() => setPreview(true)}>
-                <EyeIcon />
-                Preview assigned tool
-              </Button>
-              <Button primary={!c.assignment} onClick={() => setAssign(true)}>
-                <Users size={14} />
-                {c.assignment ? "Change assignment" : "Assign template"}
-              </Button>
-              {c.assignment && (
-                <Button
-                  primary
-                  onClick={() =>
-                    navigate({
-                      ...route,
-                      section: "clients",
-                      client: c.id,
-                      plan: "setup",
-                      tab: "Plans",
-                    })
-                  }
-                >
-                  {hasEditablePlan ? "Edit plans" : "Continue setup"}
-                  <ArrowUpRight size={14} />
-                </Button>
-              )}
-            </div>
-            <ClientPlansSummary client={c} />
-          </Surface>
-          <div className="cd-profile-side">
-            <Surface>
-              <h2>Coaching rhythm</h2>
-              <p className="cd-muted">Recurring check-ins · Europe/Vienna</p>
-              <div className="cd-weekdays">
-                {DAYS.map((d, i) => (
-                  <button
-                    type="button"
-                    key={d}
-                    aria-label={d}
-                    aria-pressed={activeSchedule?.weekdays.includes(i) ?? false}
-                    onClick={() => {
-                      const oldDays = c.schedules.at(-1)?.weekdays ?? [];
-                      const weekdays = oldDays.includes(i)
-                        ? oldDays.filter((d) => d !== i)
-                        : [...oldDays, i];
-                      update((c) => ({
-                        ...c,
-                        schedules: [
-                          ...c.schedules.filter(
-                            (s) => s.effective !== addDays(TODAY, 1),
-                          ),
-                          { effective: addDays(TODAY, 1), weekdays },
-                        ],
-                      }));
-                      toast(
-                        "Recurring schedule updated from tomorrow. Submitted history retained.",
-                      );
-                    }}
-                  >
-                    {d.slice(0, 2)}
-                  </button>
-                ))}
-              </div>
-              {c.schedules.some((s) => s.effective > TODAY) && (
-                <p className="cd-caption">
-                  From tomorrow:{" "}
-                  {c.schedules
-                    .at(-1)
-                    ?.weekdays.map((d) => DAYS[d])
-                    .join(", ") || "No recurring days"}
-                </p>
-              )}
-              <h3>Additional dates</h3>
-              {state.extras
-                .filter((e) => e.clientId === c.id)
-                .map((e) => (
-                  <div className="cd-setting-row" key={e.id}>
-                    <span>
-                      {formatDate(e.date)}
-                      <small>
-                        {e.type} · {e.note}
-                      </small>
-                    </span>
-                    <Button
-                      onClick={() =>
-                        navigate({ section: "check-ins", client: c.id })
-                      }
-                    >
-                      Manage
-                    </Button>
-                  </div>
-                ))}
-              {!state.extras.some((e) => e.clientId === c.id) && (
-                <p className="cd-muted">No additional dates.</p>
-              )}
-              <Button
-                className="cd-profile-add-date"
-                onClick={() => setExtra(true)}
-              >
-                <Plus size={14} />
-                Add date
-              </Button>
-            </Surface>
-            <Surface>
-              <h2>Priority messages</h2>
-              <Toggle
-                label="Allow priority flags"
-                detail="Applies to new chat flags. Training set notes stay separate."
-                checked={c.priorityMessages}
-                onChange={(priorityMessages) =>
-                  update((c) => ({ ...c, priorityMessages }))
-                }
-              />
-            </Surface>
-          </div>
-        </div>
+        <AthleteOverview
+          client={c}
+          onAssign={() => setAssign(true)}
+          onAddDate={() => setExtra(true)}
+        />
       )}
       {tab === "Plans" && (
         <ClientPlansSummary
@@ -677,48 +518,10 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
   );
   return (
     <>
-      <PageTitle
-        title={c.name}
-        description={`${c.label} · ${c.phase} · Week ${c.week}`}
-        back={() => navigate({ section: "clients" })}
-        actions={
-          <>
-            <Button
-              onClick={() => navigate({ section: "check-ins", client: c.id })}
-            >
-              <CalendarDays size={16} />
-              Check-in calendar
-            </Button>
-            <Button
-              onClick={() => navigate({ section: "messages", client: c.id })}
-            >
-              <MessageCircle size={16} />
-              Open chat
-              {unreadCount(state, c.id) > 0 && (
-                <span>{unreadCount(state, c.id)}</span>
-              )}
-            </Button>
-          </>
-        }
+      <AthleteProfileHeader
+        client={c}
+        onBack={() => navigate({ section: "clients" })}
       />
-      <div className="cd-profile-summary">
-        <Avatar client={c} />
-        <div>
-          <strong>{c.email}</strong>
-          <small>
-            Coaching since {formatDate(c.coachingSince, { year: "numeric" })} ·{" "}
-            {c.heightCm} cm
-          </small>
-        </div>
-        <div className="cd-profile-next">
-          <span>Next check-in</span>
-          <strong>
-            {next
-              ? formatDate(next.date, { weekday: "short" })
-              : "Not scheduled"}
-          </strong>
-        </div>
-      </div>
       <Tabs
         label="Client profile"
         value={tab}
@@ -743,13 +546,6 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
           content: value === tab ? profilePanel : null,
         }))}
       />
-      {preview && c.assignment && (
-        <PreviewDialog
-          template={c.assignment.snapshot}
-          client={c}
-          onClose={() => setPreview(false)}
-        />
-      )}
       {assign && (
         <Dialog
           title={`Assign a setup to ${c.name}`}
@@ -806,9 +602,6 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
       )}
     </>
   );
-}
-function EyeIcon() {
-  return <ArrowUpRight size={14} />;
 }
 function AssignmentInline({
   client,

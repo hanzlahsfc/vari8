@@ -11,6 +11,8 @@ import {
   useRef,
   useState,
 } from "react";
+import { adoptAthleteProfileDemo } from "./athlete-profile-demo";
+import { adoptClientAppDemo } from "./client-app-demo";
 import {
   type CoachState,
   isCoachState,
@@ -21,7 +23,9 @@ import {
 } from "./model";
 import { migrateCoachState } from "./plans/domain";
 import { adoptAmaraTrainingExample } from "./plans/training/amara-example";
+import { localToday } from "./targets/model";
 import { normalizeTemplateSetups } from "./template-setup";
+import { adoptTrainingLogDemo } from "./training-log-demo";
 
 type Store = {
   state: CoachState;
@@ -45,7 +49,14 @@ export function useCoach() {
 }
 export function routeUrl(route: Route) {
   const q = new URLSearchParams({ section: route.section });
-  for (const key of ["client", "editor", "review", "plan", "tab"] as const)
+  for (const key of [
+    "client",
+    "editor",
+    "review",
+    "plan",
+    "tab",
+    "templateSection",
+  ] as const)
     if (route[key]) q.set(key, route[key]);
   return `/coach?${q.toString()}`;
 }
@@ -76,6 +87,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     review: params.get("review") ?? undefined,
     plan: params.get("plan") ?? undefined,
     tab: params.get("tab") ?? undefined,
+    templateSection: params.get("templateSection") ?? undefined,
   };
   useEffect(() => {
     try {
@@ -83,7 +95,20 @@ export function CoachProvider({ children }: { children: ReactNode }) {
       if (raw) {
         const parsed: unknown = migrateCoachState(JSON.parse(raw));
         if (isCoachState(parsed))
-          setState(normalizeTemplateSetups(adoptAmaraTrainingExample(parsed)));
+          setState(
+            normalizeTemplateSetups(
+              adoptAthleteProfileDemo(
+                adoptTrainingLogDemo(
+                  adoptClientAppDemo(
+                    adoptAmaraTrainingExample(parsed),
+                    localToday(),
+                  ),
+                  localToday(),
+                ),
+                localToday(),
+              ),
+            ),
+          );
         else {
           preserveRaw.current = true;
           setStorageOk(false);

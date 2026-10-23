@@ -77,6 +77,41 @@ export type ClientGoal = {
   unit: string;
   date: string;
 };
+export type LogField = "weight" | "reps" | "rpe" | "rir" | "note";
+export type LoggedSet = {
+  setId: string;
+  done: boolean;
+  weight: number | null;
+  reps: number | null;
+  rpe: number | null;
+  rir: number | null;
+  note: string;
+  flagged: boolean;
+};
+export type LoggedExercise = {
+  exerciseId: string;
+  exerciseKey: string;
+  prescription: TrainingExercise;
+  sets: LoggedSet[];
+};
+export type TrainingSessionLog = {
+  id: string;
+  clientId: string;
+  planId: string;
+  /** Display week index (unbounded). */
+  week: number;
+  /** Rotation schedule entry key for this occurrence. */
+  occurrenceKey: string;
+  sessionId: string;
+  sessionName: string;
+  scheduledDate: string;
+  logFields: LogField[];
+  loadUnit: "kg" | "lb";
+  exercises: LoggedExercise[];
+  status: "in-progress" | "finished";
+  startedAt: string;
+  finishedAt?: string;
+};
 export type ClientPlans = {
   nutrition: {
     mealPlan: PlanLifecycle<MealPlan>;

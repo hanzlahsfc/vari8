@@ -3,10 +3,17 @@ import {
   type WorkspaceClient,
 } from "../ethereal/clients/model";
 import {
+  type AthleteOverviewSetting,
+  isAthleteOverviewSetting,
+} from "./athlete/overview-widgets";
+import { isTimelineEvent, type TimelineEvent } from "./athlete/timeline";
+import { adoptAthleteProfileDemo } from "./athlete-profile-demo";
+import {
   createDashboardDraft,
   type DashboardDraft,
   isValidDashboardDraft,
 } from "./builder/schema";
+import { adoptClientAppDemo } from "./client-app-demo";
 import { isClientPlans, plansOwnedBy, planTargets } from "./plans/domain";
 import {
   type ClientPhasePlan,
@@ -17,13 +24,19 @@ import type {
   TrainingOptionKey,
   TrainingOptions,
 } from "./plans/training-options";
-import type { ClientPlans, ExerciseDefinition } from "./plans/types";
+import type {
+  ClientPlans,
+  ExerciseDefinition,
+  LogField,
+  TrainingSessionLog,
+} from "./plans/types";
 import {
   type ActivityMetric,
   formatActivityTarget,
   localToday,
   resolveActivityTarget,
 } from "./targets/model";
+import { adoptTrainingLogDemo } from "./training-log-demo";
 
 export const STORAGE_KEY = "coach-desktop-mockup-v1";
 export const TODAY = "2026-10-13";
@@ -57,6 +70,8 @@ export type Route = {
   review?: string;
   plan?: string;
   tab?: string;
+  /** Template editor section to open (e.g. "Athlete overview"). */
+  templateSection?: string;
 };
 export type Parameter = {
   id: string;
@@ -606,6 +621,8 @@ export type Variant = {
   habits: boolean;
   widgets: Widget[];
   dashboard?: DashboardDraft;
+  /** Athlete profile overview layout (widget order + visibility). */
+  athleteOverview?: AthleteOverviewSetting;
   fields: FieldConfig[];
   roadmap: { source: string; calculation: string; comparison: boolean }[];
   roadmapPhases?: boolean;
@@ -616,6 +633,8 @@ export type Variant = {
     options?: TrainingOptions;
     defaults?: Record<TrainingOptionKey, string>;
     fields: string[];
+    logFields?: LogField[];
+    loadUnit?: "kg" | "lb";
     volume: boolean;
     breakdown: string;
     presentation: string;
@@ -657,6 +676,8 @@ export type Plan = {
 export type CoachClient = WorkspaceClient & {
   assignment?: Assignment;
   phasePlan?: ClientPhasePlan;
+  contestDate?: string;
+  timelineEvents?: TimelineEvent[];
   schedules: Schedule[];
   plan: Plan;
   plans?: ClientPlans;
@@ -727,7 +748,12 @@ export type ReviewDraft = {
 };
 export type CoachState = {
   version: 1;
-  demoSeeds?: { amaraTraining?: 1 };
+  demoSeeds?: {
+    amaraTraining?: 1;
+    clientAppDemo?: 1;
+    trainingLogDemo?: 1;
+    athleteProfileDemo?: 1;
+  };
   exerciseLibrary?: ExerciseDefinition[];
   coachNotes?: { id: string; text: string }[];
   coachTodos?: {
@@ -744,6 +770,7 @@ export type CoachState = {
   clients: CoachClient[];
   extras: Extra[];
   submissions: Submission[];
+  trainingLogs?: TrainingSessionLog[];
   messages: Message[];
   drafts: Record<
     string,
@@ -1437,13 +1464,20 @@ export function seedState(): CoachState {
       priorityNotifications: true,
     },
   };
-  return adoptAmaraTrainingExample(seeded);
+  return adoptAthleteProfileDemo(
+    adoptTrainingLogDemo(
+      adoptClientAppDemo(adoptAmaraTrainingExample(seeded), localToday()),
+      localToday(),
+    ),
+    localToday(),
+  );
 }
 
 // Validate the complete nested envelope before any UI uses persisted content.
 type Guard = (v: unknown) => boolean;
 const str: Guard = (v) => typeof v === "string";
 const num: Guard = (v) => typeof v === "number" && Number.isFinite(v);
+const nulNum: Guard = (v) => v === null || num(v);
 const bool: Guard = (v) => typeof v === "boolean";
 const arr =
   (g: Guard): Guard =>
@@ -1500,6 +1534,7 @@ const variantGuard = obj({
   views: arr(one(CORE_VIEWS)),
   habits: bool,
   dashboard: opt(isValidDashboardDraft),
+  athleteOverview: opt(isAthleteOverviewSetting),
   widgets: arr(
     obj({
       id: str,
@@ -1540,6 +1575,8 @@ const variantGuard = obj({
       obj({ setType: str, progression: str, tempo: str, rest: str }),
     ),
     fields: arr(one(TRAINING_FIELDS)),
+    logFields: opt(arr(one(["weight", "reps", "rpe", "rir", "note"]))),
+    loadUnit: opt(one(["kg", "lb"])),
     volume: bool,
     breakdown: str,
     presentation: str,
@@ -1679,12 +1716,21 @@ const clientGuard = obj({
     obj({ templateId: str, variantId: str, snapshot: templateGuard }),
   ),
   phasePlan: opt(isClientPhasePlan),
+  contestDate: opt(date),
+  timelineEvents: opt(arr(isTimelineEvent)),
 });
 export function isCoachState(v: unknown): v is CoachState {
   return (
     obj({
       version: one([1]),
-      demoSeeds: opt(obj({ amaraTraining: opt(one([1])) })),
+      demoSeeds: opt(
+        obj({
+          amaraTraining: opt(one([1])),
+          clientAppDemo: opt(one([1])),
+          trainingLogDemo: opt(one([1])),
+          athleteProfileDemo: opt(one([1])),
+        }),
+      ),
       exerciseLibrary: opt(
         arr(
           obj({
@@ -1721,6 +1767,64 @@ export function isCoachState(v: unknown): v is CoachState {
           type: one(["Full", "Custom"]),
           note: str,
         }),
+      ),
+      trainingLogs: opt(
+        arr(
+          obj({
+            id: str,
+            clientId: str,
+            planId: str,
+            week: num,
+            occurrenceKey: str,
+            sessionId: str,
+            sessionName: str,
+            scheduledDate: date,
+            logFields: arr(one(["weight", "reps", "rpe", "rir", "note"])),
+            loadUnit: one(["kg", "lb"]),
+            exercises: arr(
+              obj({
+                exerciseId: str,
+                exerciseKey: str,
+                prescription: obj({
+                  libraryId: opt(str),
+                  secondaryMuscles: opt(arr(str)),
+                  generalNotes: opt(str),
+                  id: str,
+                  name: str,
+                  muscle: opt(str),
+                  instructions: str,
+                  progression: str,
+                  sets: arr(
+                    obj({
+                      id: str,
+                      reps: num,
+                      repsMax: opt(num),
+                      tempo: str,
+                      type: str,
+                      rest: str,
+                      instructions: str,
+                    }),
+                  ),
+                }),
+                sets: arr(
+                  obj({
+                    setId: str,
+                    done: bool,
+                    weight: nulNum,
+                    reps: nulNum,
+                    rpe: nulNum,
+                    rir: nulNum,
+                    note: str,
+                    flagged: bool,
+                  }),
+                ),
+              }),
+            ),
+            status: one(["in-progress", "finished"]),
+            startedAt: str,
+            finishedAt: opt(str),
+          }),
+        ),
       ),
       submissions: arr(
         obj({

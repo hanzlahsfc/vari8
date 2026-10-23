@@ -31,10 +31,8 @@ import {
   Select as Vari8Select,
 } from "../vari8/components";
 import { TextArea } from "../vari8/inputs";
-import {
-  bindDashboardUnits,
-  CoachDashboardEditor,
-} from "./builder/coach-dashboard";
+import { resolveOverviewWidgets } from "./athlete/overview-widgets";
+import { bindDashboardUnits } from "./builder/coach-dashboard";
 import { ClientPreview } from "./client-preview";
 import {
   ALL_PARAMETERS,
@@ -440,7 +438,7 @@ export function TemplateLibrary() {
 }
 const EDITOR_SECTIONS = [
   "Tabs",
-  "Dashboard",
+  "Athlete overview",
   "Tracker",
   "Timeline / Roadmap",
   "Nutrition",
@@ -449,7 +447,7 @@ const EDITOR_SECTIONS = [
   "Habits",
 ];
 const PREVIEW_TAB_BY_SECTION: Record<string, string> = {
-  Dashboard: "Dashboard",
+  "Athlete overview": "Dashboard",
   Tracker: "Tracker",
   "Timeline / Roadmap": "Timeline / Roadmap",
   Nutrition: "Nutrition",
@@ -462,7 +460,11 @@ export function TemplateEditor({ id }: { id: string }) {
   const saved = state.templates.find((t) => t.id === id);
   const fresh = useMemo(() => newTemplate(id), [id]);
   const draft = state.editorDrafts[id] ?? saved ?? fresh;
-  const [section, setSection] = useState("Tabs");
+  const [section, setSection] = useState(() =>
+    route.templateSection && EDITOR_SECTIONS.includes(route.templateSection)
+      ? route.templateSection
+      : "Tabs",
+  );
   const [preview, setPreview] = useState(false);
   const [error, setError] = useState("");
   const [leaving, setLeaving] = useState<Route | null>(null);
@@ -608,10 +610,7 @@ export function TemplateEditor({ id }: { id: string }) {
           {error}
         </p>
       )}
-      <div
-        className="cd-editor-layout"
-        data-dashboard={section === "Dashboard"}
-      >
+      <div className="cd-editor-layout">
         <aside className="cd-editor-nav">
           <nav aria-label="Template configuration">
             {EDITOR_SECTIONS.map((s, i) => (
@@ -695,8 +694,8 @@ export function TemplateEditor({ id }: { id: string }) {
                 </div>
               </>
             )}
-            {section === "Dashboard" && (
-              <DashboardConfig variant={variant} update={updateVariant} />
+            {section === "Athlete overview" && (
+              <AthleteOverviewConfig variant={variant} update={updateVariant} />
             )}
             {section === "Tracker" && (
               <TrackerConfig variant={variant} update={updateVariant} />
@@ -870,18 +869,76 @@ function OrderButtons({
     </span>
   );
 }
-function DashboardConfig({
+function AthleteOverviewConfig({
   variant,
   update,
 }: {
   variant: Variant;
   update: (fn: (v: Variant) => Variant) => void;
 }) {
+  const widgets = resolveOverviewWidgets(variant.athleteOverview);
+  const write = (next: ReturnType<typeof resolveOverviewWidgets>) =>
+    update((v) => ({
+      ...v,
+      athleteOverview: {
+        widgets: next.map((widget) => ({
+          id: widget.id,
+          visible: widget.visible,
+        })),
+      },
+    }));
   return (
-    <CoachDashboardEditor
-      variant={variant}
-      onChange={(dashboard) => update((v) => ({ ...v, dashboard }))}
-    />
+    <div className="cd-ao-config">
+      <p className="cd-muted">
+        Choose which widgets appear on the athlete profile overview and their
+        order. Small widgets span 3 of 12 columns, medium 6, Timeline the full
+        row.
+      </p>
+      <ul className="cd-ao-list">
+        {widgets.map((widget, index) => (
+          <li key={widget.id} className="cd-ao-row">
+            <Toggle
+              label={widget.title}
+              checked={widget.visible}
+              onChange={(visible) =>
+                write(
+                  widgets.map((w) =>
+                    w.id === widget.id ? { ...w, visible } : w,
+                  ),
+                )
+              }
+            />
+            <span className="cd-ao-width cd-muted">{widget.width}</span>
+            <OrderButtons
+              index={index}
+              length={widgets.length}
+              move={(to) => write(reorder(widgets, index, to))}
+            />
+          </li>
+        ))}
+      </ul>
+      <div className="cd-actions">
+        <Button
+          onClick={() => update((v) => ({ ...v, athleteOverview: undefined }))}
+        >
+          <RotateCcw size={14} />
+          Reset to default
+        </Button>
+      </div>
+      <h3>Preview</h3>
+      <div className="cd-ao-preview" aria-hidden="true">
+        {widgets
+          .filter((widget) => widget.visible)
+          .map((widget) => (
+            <div
+              key={widget.id}
+              className={`cd-ao-cell cd-ao-cell-${widget.width}`}
+            >
+              {widget.title}
+            </div>
+          ))}
+      </div>
+    </div>
   );
 }
 function TrackerConfig({

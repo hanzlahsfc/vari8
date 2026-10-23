@@ -194,7 +194,7 @@ export function ClientPhasePlanEditor({
         item.id === client.id ? { ...item, phasePlan } : item,
       ),
     }));
-    setSaved(JSON.stringify(phasePlan));
+    setSaved(JSON.stringify(draft));
     toast(phasePlan ? "Phase plan saved" : "Phase plan removed");
   };
 
