@@ -521,6 +521,26 @@ PRS += [
         unit="None needed.",
         screens=[],
     ),
+    dict(
+        id="PR-SUPP", slug="pr-supp-plan", title="Supplement plan per client", track="Service",
+        deps=["PR-M1"], who="yamato", gear="kakashi", est=60, schema=True, sec=True, issue=161,
+        files=["db/schema.prisma", "db/migrations/<timestamp>_supplement_plan/**", "lib/supplements/{model,gate,service,boundary}.ts",
+               "lib/audit.ts (resource type)", "lib/auth/rbac.ts (resource cell)", "lib/consent.ts (parked registry)",
+               "app/workspace/[workspaceId]/clients/[clientProfileId]/supplements/actions.ts", ".env.example",
+               "tests/unit/supplements-plan.test.ts", "tests/integration/supplements-plan.test.ts"],
+        build=[
+            "Contract source: `frontend/docs/supplements-frontend-execution-brief.md` and `frontend/src/components/coach/supplements/{model,draft,editor,plan-view}.ts(x)` on FRONTEND 51fa6a2 (PR #151; beta sync is PR #160, unmerged at card creation).",
+            "One saved supplement plan per client; the coach edits name and ordered items with explicit Save/Cancel; the client reads the saved plan only. No draft/active/history lifecycle, no dates, weekdays, cycles or pause states.",
+            "Each item embeds the product snapshot (brand, name, reference quantity/unit, declared amount/unit, URL) plus quantity, dose unit, free-text timing and notes, and status in {must-have, optional, none}. Snapshots stay readable when the catalogue later changes; there is no backend-managed catalogue.",
+            "Validation mirrors the frontend model: positive finite quantity, catalogue-compatible dose unit, safe http(s) product URL (hostname, no credentials), exact status union, unknown keys rejected. Missing composition stays null; never persist derived dosage; no check-off, adherence, dose logic or PED/HRT behavior.",
+            "One `supplement_plan` + `supplement_plan_item` migration pair with hand-authored down.sql, composite same-workspace coherence FKs in raw SQL (Prisma cannot express them), expected-revision CAS under advisory lock and serializable transaction, re-resolved authorization inside the transaction.",
+            "Access reuses the closed `plan.read`/`plan.write` capability cells exactly as `mealPlans`; no new capability, no broadened permission. Client reads own; unassigned staff and foreign workspace/client are non-disclosing.",
+            "Actions follow the established order: feature gate `ENABLE_SUPPLEMENT_PLAN`, session, bounded input validation, service boundary, `revalidatePath`. Closed safe errors; `supplement_plan` audit resource with structural metadata only (no payload bodies).",
+        ],
+        see=["A coach saves a named plan with ordered items and the client reads exactly the saved data; a second stale save fails without writes; a foreign workspace or client sees the same not-found as an absent plan."],
+        unit="Literal validation cases (quantities, units, URLs, statuses, unknown keys, null versus zero composition) and integration cases for ordering, CAS, role matrix, audit and flag-off, each failing when the guard breaks.",
+        screens=[],
+    ),
 ]
 
 # Decision and audit cards outside the PR list. ext: "done" (create, then complete) or "running" (parked as blocked).
