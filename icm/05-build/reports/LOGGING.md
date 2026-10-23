@@ -340,3 +340,62 @@ prospective correction.
 - Residual (documented, by design): regex redaction is not semantic —
   callers must not route request-derived free text into error fields;
   the UUID exemption assumes ids not secrets are UUID-shaped.
+
+---
+
+## Integration pass — `Vari8-Beta` @ `9115627` merged (boot-checks #194 landed)
+
+#194 merged upstream at `9115627`; #156 (mail adapter) remains OPEN — no
+mail assertion to preserve. `git merge origin/Vari8-Beta` into
+`beta/logging`:
+
+- **instrumentation.ts** — docblock conflict only; resolved to cover both
+  contracts (auth-secret + http-origin + s3 assertions AND the structured
+  `boot_refused` line). Body merged cleanly: `assertAuthSecretConfigured`
+  - `assertMediaStorageConfigured` + `logError("boot_refused")` +
+    production `exit(1)`; nonproduction rethrow intact.
+- **docs/index/SYMBOLS.md** — regenerated post-merge (`npm run index`).
+- The inherited `MotionProvider` expectation repair arrived via the base;
+  no duplicate or undo here.
+- **Merge seam repaired:** `tests/unit/boot-checks.test.ts` asserted the
+  refusal reached `console.error`; the merged code emits it as one
+  `boot_refused` stdout line via lib/log. The spy target changed to
+  `process.stdout.write` — assertion strength identical (`S3_BUCKET`
+  present, sentinel secret absent, `exit(1)` intact). Sibling http-origin
+  test also silences the line.
+
+### Fix pass 3 — trusted marker boundary (re-review follow-up)
+
+`trustedId` self-validates `TRUSTED_ID_SHAPE` at its own boundary: an
+input outside the grammar returns as a plain string and takes the normal
+redaction path, so a raw `trustedId("x".repeat(N))` can no longer defeat
+the size bound or the token scrub. `TRUSTED_ID_SHAPE` moved to lib/log as
+the canonical regex shared by `requestIdFor`/`reportV1Failure`. Valid
+ids still correlate verbatim; general redaction unchanged.
+
+New test (30 total): oversized/unsafe marker input → `[redacted]`, line
+bounded. Mutation: unconditional wrap → test fails; restored.
+
+### Fresh results (merged head, Node v24.22.1)
+
+- `npm run test` verbatim, no overrides — **exit 1, 1167/1168**. The only
+  failure: `system-index.test.ts:79` at 6.1s vs the 5s per-test default
+  under 100-worker load on this host (the same pre-existing environmental
+  flake — passes isolated at ~2.9s; a timeout/worker change remains a
+  separate tracked decision). The MotionProvider failure is resolved via
+  the merged base; logging 30/30 and boot-checks 23/23 green in-run.
+- Focused: logging 30/30 · boot-checks 23/23 · system-index 18/18.
+- Integration on disposable `app_plogging_it`: pr05 16/16, api-v1-media
+  7/7, api-v1-session 4/4, api-v1-clients 5/5 — **32/32**.
+- `npm run build` 0 · typecheck 0 · format:check 0 · lint 0 errors
+  (81 pre-existing warnings) · `npm run index` + `index:check` OK.
+- Live probes at this head: missing secret → one JSON `boot_refused`
+  line + exit 1; signed media GET + dead DB → 500 +
+  `x-request-id` echoed, exactly one `api_v1_request_failed` line with
+  the 32-char id preserved; bad signature → 403, no line.
+- Mutations this pass (restored byte-identically): unconditional
+  `trustedId` wrap → 1 failure (marker test). Prior pass mutations listed
+  above remain valid for their code paths.
+- **What stays red:** only the environmental 5s compiler timeout; no
+  logging/boot regression. #156 still open — its mail assertion will need
+  this same try-block seam when it lands (adjacent lines, trivial merge).

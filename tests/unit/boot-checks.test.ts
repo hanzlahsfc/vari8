@@ -269,11 +269,15 @@ describe("instrumentation register() — refused config exits the process", () =
     ) => {
       throw new Error(`process.exit(${code})`);
     }) as never);
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    // The refusal is reported as one structured `boot_refused` stdout
+    // line via lib/log (#168) — same assertion, new sink.
+    const outSpy = vi
+      .spyOn(process.stdout, "write")
+      .mockImplementation(() => true);
     const { register } = await import("../../instrumentation");
     await expect(register()).rejects.toThrow("process.exit(1)");
     expect(exitSpy).toHaveBeenCalledWith(1);
-    const printed = errorSpy.mock.calls.flat().join(" ");
+    const printed = outSpy.mock.calls.flat().join(" ");
     expect(printed).toContain("S3_BUCKET");
     expect(printed).not.toContain(sentinel);
   });
@@ -291,6 +295,7 @@ describe("instrumentation register() — refused config exits the process", () =
       throw new Error(`process.exit(${code})`);
     }) as never);
     vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(process.stdout, "write").mockImplementation(() => true);
     const { register } = await import("../../instrumentation");
     await expect(register()).rejects.toThrow("process.exit(1)");
     expect(exitSpy).toHaveBeenCalledWith(1);
