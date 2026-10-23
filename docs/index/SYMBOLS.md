@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 144 modules with exports, 1435 exported symbols.
+Counts: 144 modules with exports, 1436 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -358,13 +358,14 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type CheckInFeedbackPage = { items: CheckInFeedbackItem[]; nextCursor: string | null; hasMore: boolean; }`
 - `export type { CheckInField }`
 - `export type CheckInFlaggedSetNote = { exercise: string; set: number; date: string; text: string; }`
-- `export type CheckInInstanceDeps = { db?: PrismaLike; registry?: ConsentPolicyRegistry; dailyRegistry?: ConsentPolicyRegistry; }`
+- `export type CheckInInstanceDeps = { db?: PrismaLike; registry?: ConsentPolicyRegistry; dailyRegistry?: ConsentPolicyRegistry; authorizeDaily?: typeof authorize; }`
 - `export class CheckInInstanceError extends Error (1 members)`
 - `export type CheckInInstanceErrorCode = | "invalid_input" | "not_available" | "already_submitted" | "instance_not_accessible" | "consent_missing" | "policy_not_configured" | "serialization_conflict"...`
 - `export type CheckInInstanceLifecycleInput = { cancelledAt: Date | null; cancelledByMemberId: string | null; hasSubmission: boolean; hasReview?: boolean; }`
 - `export type CheckInInstancePresentation = { state: CheckInInstanceState; late: boolean; }`
 - `export type CheckInInstanceState = "CANCELLED" | "REVIEWED" | "SUBMITTED" | "SCHEDULED"`
 - `export type CheckInNutritionItem = Record<string, never>`
+- `export type CheckInReviewPhoto = Record<string, never>`
 - `export type GetOwnCheckInInstanceInput = { workspaceId: string; instanceId: string; }`
 - `export const KIND_TO_ENUM = { shortText: "SHORT_TEXT", longText: "LONG_TEXT", number: "NUMBER", date: "DATE", singleChoice: "SINGLE_CHOICE", multiChoice: "MULTI_CHOICE", rating: "RATING", visual: "...`
 - `export type ListCheckInFeedbackInput = { workspaceId: string; clientProfileId: string; submissionId: string; cursor?: string; limit?: number; }`

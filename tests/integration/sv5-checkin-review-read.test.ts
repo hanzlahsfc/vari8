@@ -1,17 +1,19 @@
 /**
  * PR-SV5 (issue #171, C05): the staff check-in submission detail embeds
  * the tracker-parameter packet for the check-in date plus the flagged
- * set-notes and nutrition slots. Contract:
+ * set-notes, progress-photo and nutrition availability slots. Contract:
  *
  * - parameterValues = the daily packet for the Vienna local date of the
  *   instance's dueAt — served under the strict intersection of
  *   checkinsCoachReviews/read and dailyTracking/read inside the same
  *   audited transaction. `null` = withheld (denied/consent/policy);
  *   `[]` = authorized but no committed entry for the date.
- * - flags (issue 14) and nutrition (issue 12a) return empty — never
- *   fabricated.
- * - Withdrawn consent hides answers and packet alike; one READ audit
- *   per view, zero on passive reads; foreign workspace gets nothing.
+ * - flags (issue 14), photos (issue 11) and nutrition (issue 12a)
+ *   return `null` = unavailable — never an empty array that would
+ *   read as "authorized but none", never fabricated rows.
+ * - Withdrawn check-in consent refuses the whole read — answers and
+ *   packet alike; one READ audit per view, zero on passive reads;
+ *   foreign workspace gets nothing.
  */
 
 import { execFileSync } from "node:child_process";
@@ -19,6 +21,7 @@ import { execFileSync } from "node:child_process";
 import { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { AccessDeniedError, authorize } from "../../lib/auth/guard";
 import { createStaticConsentPolicy } from "../../lib/consent";
 import {
   loadDailyEntrySurface,
@@ -35,6 +38,7 @@ import {
   scheduleCheckInInstance,
   submitCheckInInstance,
 } from "../../lib/checkin/instances";
+import { localDateInZone } from "../../lib/checkin/timezone";
 
 const url = process.env.INTEGRATION_DATABASE_URL;
 const enabled = typeof url === "string" && url.length > 0;
@@ -48,7 +52,6 @@ const DAILY_REGISTRY = createStaticConsentPolicy({
   HEALTH_DATA: "sv5-de-health-v1",
 });
 
-// dueAt 2024-06-10T09:00Z is 2024-06-10 in Europe/Vienna (CEST).
 const DUE_AT = "2024-06-10T09:00:00.000Z";
 const ENTRY_DATE = "2024-06-10";
 
@@ -333,8 +336,8 @@ describe.skipIf(!enabled)("PR-SV5 review read model (real PG)", () => {
   async function setup(
     opts: {
       dailyConsent?: boolean;
-      dailyEntry?: boolean;
-      secondRevision?: boolean;
+      entries?: { date: string; weight: string; note: string }[];
+      dueAt?: string;
     } = {},
   ) {
     const w = await ws();
@@ -342,6 +345,12 @@ describe.skipIf(!enabled)("PR-SV5 review read model (real PG)", () => {
     const ownerMember = await member(w.id, ownerU.id, "WORKSPACE_OWNER");
     const coachU = await user();
     const coachMember = await member(w.id, coachU.id, "COACH");
+    const assistantU = await user();
+    const assistantMember = await member(
+      w.id,
+      assistantU.id,
+      "ASSISTANT_COACH",
+    );
     const clientU = await user();
     await member(w.id, clientU.id, "CLIENT");
     const cp = await profile(w.id, clientU.id);
@@ -356,7 +365,7 @@ describe.skipIf(!enabled)("PR-SV5 review read model (real PG)", () => {
         clientProfileId: cp.id,
         formId: form.formId,
         formVersionId: form.versionId,
-        dueAt: DUE_AT,
+        dueAt: opts.dueAt ?? DUE_AT,
       },
       deps(),
     );
@@ -379,10 +388,11 @@ describe.skipIf(!enabled)("PR-SV5 review read model (real PG)", () => {
     });
 
     await dailyFixture(w.id, cp.id, ownerMember.id);
-    if (opts.dailyEntry !== false && opts.dailyConsent !== false)
-      await clientSaves(clientU.id, w.id, ENTRY_DATE, "80", "first");
-    if (opts.secondRevision)
-      await clientSaves(clientU.id, w.id, ENTRY_DATE, "81", "revised");
+    if (opts.dailyConsent !== false)
+      for (const e of opts.entries ?? [
+        { date: ENTRY_DATE, weight: "80", note: "first" },
+      ])
+        await clientSaves(clientU.id, w.id, e.date, e.weight, e.note);
 
     return {
       w,
@@ -390,6 +400,8 @@ describe.skipIf(!enabled)("PR-SV5 review read model (real PG)", () => {
       owner: session(ownerU.id),
       coach: session(coachU.id),
       coachUserId: coachU.id,
+      assistant: session(assistantU.id),
+      assistantMember,
       clientUserId: clientU.id,
       submissionId: submission.id,
     };
@@ -398,6 +410,7 @@ describe.skipIf(!enabled)("PR-SV5 review read model (real PG)", () => {
   const read = (
     s: Awaited<ReturnType<typeof setup>>,
     by: { user: { id: string } },
+    extraDeps: Record<string, unknown> = {},
   ) =>
     readCheckInSubmissionDetail(
       by,
@@ -406,7 +419,7 @@ describe.skipIf(!enabled)("PR-SV5 review read model (real PG)", () => {
         clientProfileId: s.cp.id,
         submissionId: s.submissionId,
       },
-      deps(),
+      { ...deps(), ...extraDeps },
     );
 
   const audits = (workspaceId: string, resourceType: string) =>
@@ -414,7 +427,7 @@ describe.skipIf(!enabled)("PR-SV5 review read model (real PG)", () => {
       where: { workspaceId, resourceType },
     });
 
-  it("parameter packet serves the seeded daily values with flags/nutrition empty — one READ audit, no daily_entry audit", async () => {
+  it("parameter packet serves the seeded daily values with unavailable slots explicit — one READ audit, no daily_entry audit", async () => {
     const s = await setup();
     const detail = await read(s, s.owner);
     expect(detail.submissionId).toBe(s.submissionId);
@@ -427,10 +440,12 @@ describe.skipIf(!enabled)("PR-SV5 review read model (real PG)", () => {
       ["80", "kg"],
       ["first", null],
     ]);
-    // Empty slots — flagged set notes (issue 14) and nutrition (12a)
-    // return empty until those lanes land.
-    expect(detail.flags).toEqual([]);
-    expect(detail.nutrition).toEqual([]);
+    // Availability slots — `null` = the feature has not landed
+    // (unavailable), distinguishable from an authorized-but-empty `[]`;
+    // never fabricated.
+    expect(detail.flags).toBeNull();
+    expect(detail.photos).toBeNull();
+    expect(detail.nutrition).toBeNull();
     // One structural audit for the whole view — no daily_entry audit.
     expect(
       (await audits(s.w.id, "checkin_submission")).filter(
@@ -443,7 +458,12 @@ describe.skipIf(!enabled)("PR-SV5 review read model (real PG)", () => {
   });
 
   it("latest committed revision only — the packet is not a stale first save", async () => {
-    const s = await setup({ secondRevision: true });
+    const s = await setup({
+      entries: [
+        { date: ENTRY_DATE, weight: "80", note: "first" },
+        { date: ENTRY_DATE, weight: "81", note: "revised" },
+      ],
+    });
     const detail = await read(s, s.owner);
     expect(detail.parameterValues!.map((r) => r.display)).toEqual([
       "81",
@@ -451,10 +471,147 @@ describe.skipIf(!enabled)("PR-SV5 review read model (real PG)", () => {
     ]);
   });
 
+  it("the packet selects by the Vienna date of dueAt — spring DST, autumn DST, midnight, year boundary", async () => {
+    const vectors: { dueAt: string; expectedDate: string; decoy: string }[] = [
+      // Spring forward (CEST starts 2024-03-31 02:00→03:00): 22:30Z is
+      // already 2024-04-01 00:30 CEST.
+      {
+        dueAt: "2024-03-31T22:30:00.000Z",
+        expectedDate: "2024-04-01",
+        decoy: "2024-03-31",
+      },
+      // Autumn back (CET resumes 2024-10-27): 22:30Z is 2024-10-27
+      // 00:30 CEST — still daylight time.
+      {
+        dueAt: "2024-10-26T22:30:00.000Z",
+        expectedDate: "2024-10-27",
+        decoy: "2024-10-26",
+      },
+      // Local midnight exactly: 22:00Z = 2024-06-11 00:00 CEST.
+      {
+        dueAt: "2024-06-10T22:00:00.000Z",
+        expectedDate: "2024-06-11",
+        decoy: "2024-06-10",
+      },
+      // Year boundary: 23:30Z on New Year's Eve = 2025-01-01 00:30 CET.
+      {
+        dueAt: "2024-12-31T23:30:00.000Z",
+        expectedDate: "2025-01-01",
+        decoy: "2024-12-31",
+      },
+    ];
+    for (const v of vectors) {
+      const s = await setup({
+        dueAt: v.dueAt,
+        entries: [
+          { date: v.expectedDate, weight: "90", note: "expected-day" },
+          { date: v.decoy, weight: "11", note: "decoy-day" },
+        ],
+      });
+      const detail = await read(s, s.owner);
+      expect(
+        detail.parameterValues!.map((r) => [r.display, r.unit]),
+        `dueAt ${v.dueAt} must select ${v.expectedDate}, not ${v.decoy}`,
+      ).toEqual([
+        ["90", "kg"],
+        ["expected-day", null],
+      ]);
+    }
+  });
+
+  it("the packet follows dueAt, not submittedAt", async () => {
+    // The submission's submittedAt is real "now" — a different Vienna
+    // date than the 2024 dueAt. A decoy entry on today's date must not
+    // leak into the packet.
+    const today = localDateInZone(new Date(), "Europe/Vienna");
+    expect(today).not.toBe(ENTRY_DATE);
+    const s = await setup({
+      entries: [
+        { date: ENTRY_DATE, weight: "80", note: "due-day" },
+        { date: today!, weight: "55", note: "submitted-day" },
+      ],
+    });
+    const detail = await read(s, s.owner);
+    expect(detail.parameterValues!.map((r) => [r.display, r.unit])).toEqual([
+      ["80", "kg"],
+      ["due-day", null],
+    ]);
+  });
+
   it("authorized date with no entry returns an honest empty packet", async () => {
-    const s = await setup({ dailyEntry: false });
+    const s = await setup({ entries: [] });
     const detail = await read(s, s.owner);
     expect(detail.parameterValues).toEqual([]);
+    expect(detail.fields).toHaveLength(3);
+  });
+
+  it("check-in detail allowed but dailyTracking denied → answers served, packet withheld", async () => {
+    const s = await setup();
+    const detail = await read(s, s.owner, {
+      // Asymmetric capability — checkinsCoachReviews still delegates
+      // normally, dailyTracking/read refuses.
+      authorizeDaily: async (
+        sess: Parameters<typeof authorize>[0],
+        input: { resource: string; action: string },
+        repo: Parameters<typeof authorize>[2],
+      ) => {
+        if (input.resource === "dailyTracking")
+          throw new AccessDeniedError("role_denied", "dailyTracking", "read");
+        return authorize(sess, input as never, repo);
+      },
+    });
+    expect(detail.fields.map((f) => f.display)).toEqual([
+      "Feeling strong",
+      "82.5",
+      "Good",
+    ]);
+    expect(detail.parameterValues).toBeNull();
+    expect(
+      (await audits(s.w.id, "checkin_submission")).filter(
+        (a) => a.action === "READ",
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("assigned coach (assigned scope on both resources) still receives the packet", async () => {
+    const s = await setup();
+    const detail = await read(s, s.coach);
+    expect(detail.parameterValues!.map((r) => r.display)).toEqual([
+      "80",
+      "first",
+    ]);
+  });
+
+  it("unassigned staff still sees the packet at workspace scope (owner without assignment)", async () => {
+    const s = await setup();
+    // The owner has no assignment row — workspace scope on both sides.
+    const detail = await read(s, s.owner);
+    expect(detail.parameterValues).not.toBeNull();
+  });
+
+  it("daily consent revocation withholds the packet while answers still serve", async () => {
+    const s = await setup();
+    await prisma.consentRecord.updateMany({
+      where: {
+        clientProfileId: s.cp.id,
+        version: "sv5-de-health-v1",
+      },
+      data: { revokedAt: new Date() },
+    });
+    const detail = await read(s, s.owner);
+    expect(detail.parameterValues).toBeNull();
+    expect(detail.fields).toHaveLength(3);
+  });
+
+  it("a required daily version change withholds the packet under the test registries", async () => {
+    const s = await setup();
+    const detail = await read(s, s.owner, {
+      dailyRegistry: createStaticConsentPolicy({
+        PRIVACY_NOTICE: "sv5-de-privacy-v2",
+        HEALTH_DATA: "sv5-de-health-v2",
+      }),
+    });
+    expect(detail.parameterValues).toBeNull();
     expect(detail.fields).toHaveLength(3);
   });
 

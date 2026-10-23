@@ -17,27 +17,39 @@ and slots.
 - `parameterValues` — the daily tracker packet for the **check-in
   date**: the Vienna local date of the instance `dueAt` (the same
   date the canvas passes to the explicit tracker-context endpoint,
-  `viennaDate(dueAt)`). Inside the same Serializable transaction:
+  `viennaDate(dueAt)`). The issue's "parameter values per answer"
+  resolves to the date-level packet: the approved wiring spec
+  (`icm/03-plan/output/wiring/coach.md`, screen 20, "Tracker &
+  progress") declares the review's tracker table as one date per
+  call, and the canvas's own `loadTrackerContext` contract reads one
+  `entryDate`. Inside the same Serializable transaction:
   `authorize(dailyTracking/read)` → strict scope reconciliation with
   the check-in scope (`reconcileTrackerContextScopes`, shared helper)
-  → `assigned` re-resolves the ACTIVE assignment FOR UPDATE → daily
+  → `assigned` re-resolves the ACTIVE assignment FOR UPDATE — all
+  **before** the consent step, mirroring the tracker-context read's
+  authorize → scope → assignment → consent acquisition order so both
+  paths take assignment before consent rows and never invert → daily
   consent kinds verified against rows already locked FOR UPDATE in
   sorted-kind order at the single consent step (the union of both
   registries' kinds — the same global lock order as the
-  tracker-context intersection, so no lock-order inversion) → values
-  rendered by `loadStaffDailyEntryDetailTx`, an **audit-free** loader
-  split out of `readStaffDailyEntryDetailTx` (the tx function keeps
-  its own `READ daily_entry` audit last — behavior unchanged).
+  tracker-context intersection) → values rendered by
+  `loadStaffDailyEntryDetailTx`, an **audit-free** loader split out
+  of `readStaffDailyEntryDetailTx` (the tx function keeps its own
+  `READ daily_entry` audit last — behavior unchanged). Rendered rows
+  sort by the immutable template version's item order — DB row order
+  is arbitrary and the review table needs a stable order.
   - `null` = withheld (denied, reconcile `denied`, missing ACTIVE
     assignment, daily consent missing, daily policy unconfigured,
     ineligible template) — never presented as "no entry".
   - `[]` = authorized date with no committed entry — honest empty.
-- `flags` — the flagged set-notes column (issue 14): `[]` until it
-  lands. `CheckInFlaggedSetNote` matches the canvas `{exercise, set,
-date, text}` shape.
-- `nutrition` — the issue 12a slot: `[]` until its contract exists.
-- Photos (issue 11): already served per-answer via
-  `fields[].mediaIds`; no duplicate slot.
+- `flags`, `photos`, `nutrition` — availability slots with explicit
+  semantics (`T[] | null`): `null` = unavailable (the owning lane has
+  not landed), distinguishable from an authorized-but-empty `[]` once
+  the feature exists. `flags` carries the canvas `{exercise, set,
+date, text}` shape (issue 14); `photos` is the progress-photo slot
+  (issue 11 — check-in answer attachments remain on
+  `fields[].mediaIds`, a separate thing); `nutrition` awaits issue
+  12a's contract. All three currently serialize as `null`.
 
 One `checkin_submission` READ audit covers the whole view (the packet
 does **not** write a second `daily_entry` audit); passive GETs audit
@@ -77,34 +89,77 @@ this host's paths.
 
 ### New acceptance coverage (`tests/integration/sv5-checkin-review-read.test.ts`)
 
-- packet serves seeded daily values (`["80","kg"],["first",null]` rows)
-  with `flags`/`nutrition` empty, exactly one `checkin_submission`
-  READ audit and zero `daily_entry` audits;
+- packet serves seeded daily values (`["80","kg"],["first",null]` rows
+  — deterministic template-item order) with `flags`/`photos`/
+  `nutrition` serialized as `null` (unavailable, not "authorized
+  empty"), exactly one `checkin_submission` READ audit and zero
+  `daily_entry` audits;
 - latest committed revision only (`["81","revised"]`, not the first
   save);
+- **date selection through the packet** (dueAt → Vienna local date):
+  spring DST (2024-03-31T22:30Z → 2024-04-01), autumn DST
+  (2024-10-26T22:30Z → 2024-10-27), local midnight (2024-06-10T22:00Z
+  → 2024-06-11), year boundary (2024-12-31T23:30Z → 2025-01-01) —
+  each against a decoy entry on the neighbouring date; plus dueAt-vs-
+  submittedAt (a decoy on the real "today" never leaks in);
 - authorized date with no entry → `[]` while answers serve;
-- daily consent missing → `parameterValues: null`, answers still
-  serve, audit count unchanged;
+- **check-in detail allowed but `dailyTracking` denied** (injected
+  `authorizeDaily` seam) → answers served, `parameterValues: null`,
+  one audit;
+- assigned coach (assigned∩assigned) receives the packet; owner with
+  no assignment receives it at workspace scope;
+- daily consent missing, revoked, or registry-version change →
+  `parameterValues: null`, answers still serve, audit count
+  unchanged;
 - check-in consent withdrawal → whole read `consent_missing`, zero
   audits;
 - foreign-workspace coach → `not_available`, zero audits;
 - open vs marked states stay distinct (`reviewed`/`feedback`
   fields; committed drafts are canvas-local by contract).
 
-### Mutations (both restored byte-identically)
+### Mutations (all restored byte-identically)
 
+- `instance.dueAt` → `submission.submittedAt` in the packet date →
+  **5 failures** including the dueAt-vs-submittedAt and DST vectors;
 - drop `dailyConsented` from the packet gate → the
   withheld-packet test fails (packet would serve past consent);
+- authorize `checkinsCoachReviews` instead of `dailyTracking` for the
+  packet → the denied-daily test fails (intersection bypassed);
+- `flags`/`photos`/`nutrition` → `[]` instead of `null` → the
+  availability-semantics test fails;
 - map `not_available` → withheld instead of `[]` → the honest-empty
-  test fails.
+  test fails (carried from the first round).
+
+### Lock ordering (review finding 7)
+
+The packet's `authorize` → scope reconcile → ACTIVE-assignment
+FOR UPDATE now runs **before** the consent step, mirroring the
+tracker-context read's acquisition order exactly (authorize →
+assignment → profile → consent). Both paths take the assignment lock
+before consent rows; no inversion between them is constructible.
+
+### Contract disposition (review findings 5–6)
+
+- "parameter values per answer" (issue #171): resolved to the
+  date-level packet by the approved wiring spec — screen 20 row
+  "Tracker & progress, 7-day table" declares the review's tracker
+  table one date per call (`showCheckInReviewTrackerContext`), and
+  the canvas `loadTrackerContext` contract takes one `entryDate`.
+  The DTO field is `parameterValues` (date-level packet for the
+  check-in date).
+- PR #147 remains **OPEN** — `loadSubmissionAnswers` lives only on
+  its branch. This delivery is backend read-model only; UI
+  consumption is a genuine merge dependency on #147, not claimed
+  here.
 
 ## Dependencies / remaining gaps
 
 - The canvas consumes the new fields only after PR #147 lands (its
   `loadSubmissionAnswers` fills `metrics`/`flags` from this DTO); the
   read model deliberately does not wire the panel itself.
-- Flagged set notes, photos/lightbox, nutrition semantics stay
-  deferred to issues 14 / 11 / 12a — the slots are honest empties.
+- Flagged set notes, photos, and nutrition semantics stay deferred
+  to issues 14 / 11 / 12a — the slots serialize as `null`
+  (unavailable), explicitly not "authorized but empty".
 - The separate `tracker-context` endpoint is unchanged and remains
   the explicit read for other callers; the embedded packet reuses its
   scope/consent/loader machinery rather than duplicating it.

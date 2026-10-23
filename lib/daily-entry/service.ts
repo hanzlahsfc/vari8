@@ -671,7 +671,16 @@ function renderRevisionDisplayRows(
   def: VersionDefinition,
 ): DailyEntryHistoryRow[] {
   const paramById = new Map(snapshot.map((p) => [p.parameterId, p]));
+  // Stable ordering (PR-SV5): DB row order is arbitrary — render in the
+  // immutable template version's item order.
+  const orderOf = new Map(snapshot.map((p, i) => [p.parameterId, i]));
   return (values ?? [])
+    .slice()
+    .sort(
+      (a, b) =>
+        (orderOf.get(a.parameterId) ?? Number.MAX_SAFE_INTEGER) -
+        (orderOf.get(b.parameterId) ?? Number.MAX_SAFE_INTEGER),
+    )
     .map((v) => {
       const p = paramById.get(v.parameterId);
       if (!p || p.dataClassification !== "GENERAL_HEALTH") return null;

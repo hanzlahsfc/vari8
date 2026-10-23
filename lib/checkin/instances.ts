@@ -801,6 +801,9 @@ export type CheckInInstanceDeps = {
    *  embedded tracker-parameter packet; defaults to the deployed daily
    *  consent policy. */
   dailyRegistry?: ConsentPolicyRegistry;
+  /** PR-SV5 test seam — injectable dailyTracking authorization for the
+   *  embedded packet (asymmetric-capability coverage). */
+  authorizeDaily?: typeof authorize;
 };
 
 export type ScheduleCheckInInstanceInput = {
@@ -2158,8 +2161,14 @@ export type CheckInFlaggedSetNote = {
   text: string;
 };
 
+/** PR-SV5 slot — no fields are defined until issue 11's progress-photo
+ *  contract lands; the column ships as `null` (unavailable), never
+ *  fabricated rows. */
+export type CheckInReviewPhoto = Record<string, never>;
+
 /** PR-SV5 slot — no fields are defined until issue 12a's contract
- *  lands; the column ships as an empty array, never fabricated rows. */
+ *  lands; the column ships as `null` (unavailable), never fabricated
+ *  rows. */
 export type CheckInNutritionItem = Record<string, never>;
 
 export type StaffCheckInSubmissionDetail = {
@@ -2198,11 +2207,14 @@ export type StaffCheckInSubmissionDetail = {
    *  `[]` = authorized but no committed entry for the date. Never
    *  fabricated. */
   parameterValues: StaffDailyEntryDetail["values"] | null;
-  /** PR-SV5 slot — flagged set notes (issue 14); empty until it lands. */
-  flags: CheckInFlaggedSetNote[];
-  /** PR-SV5 slot — nutrition review items (issue 12a); empty until it
-   *  lands. */
-  nutrition: CheckInNutritionItem[];
+  /** PR-SV5 availability slots — `null` = the feature has not landed
+   *  (unavailable), distinguishable from an authorized-but-empty `[]`.
+   *  Flagged set notes arrive with issue 14, progress photos with
+   *  issue 11 (answer attachments in `fields[].mediaIds` are a separate
+   *  thing), nutrition with issue 12a. */
+  flags: CheckInFlaggedSetNote[] | null;
+  photos: CheckInReviewPhoto[] | null;
+  nutrition: CheckInNutritionItem[] | null;
   fields: StaffCheckInSubmissionFieldView[];
 };
 
@@ -2298,6 +2310,7 @@ export async function readCheckInSubmissionDetail(
   const dailyRegistry =
     deps.dailyRegistry ??
     dailyEntryConsentRegistry(isCheckInsEnabled(process.env));
+  const authorizeDaily = deps.authorizeDaily ?? authorize;
   if (
     !validId(input.workspaceId) ||
     !validId(input.clientProfileId) ||
@@ -2392,6 +2405,44 @@ export async function readCheckInSubmissionDetail(
         });
         if (state !== "SUBMITTED")
           throw new CheckInInstanceError("not_available");
+
+        // 7b. PR-SV5 packet pre-lock — authorize dailyTracking, reconcile
+        // both scopes and (for an assigned effective scope) re-resolve +
+        // lock the ACTIVE assignment BEFORE the consent step, mirroring
+        // the tracker-context read's authorize → scope → assignment →
+        // consent order so the two paths never invert lock acquisition.
+        // Any denial withholds the packet; the detail read itself
+        // continues on the check-in contract alone.
+        let ctxDaily: Awaited<ReturnType<typeof authorize>> | null = null;
+        let packetScope: "workspace" | "assigned" | "denied" = "denied";
+        try {
+          ctxDaily = await authorizeDaily(
+            session,
+            {
+              resource: "dailyTracking",
+              action: "read",
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+            },
+            createPrismaAuthorizationRepo(tx),
+          );
+          packetScope = reconcileTrackerContextScopes(
+            ctx.grantedScope,
+            ctxDaily.grantedScope,
+          );
+          if (packetScope === "assigned")
+            await lockAssignmentForScope(
+              tx,
+              input.workspaceId,
+              input.clientProfileId,
+              member.id,
+              "checkinsCoachReviews",
+            );
+        } catch (e) {
+          if (!(e instanceof AccessDeniedError)) throw e;
+          ctxDaily = null;
+          packetScope = "denied";
+        }
 
         // 8. Consent rows FOR UPDATE before ANY answer read (#85).
         // The check-in kinds are asserted fatally. The UNION of the
@@ -2618,58 +2669,32 @@ export async function readCheckInSubmissionDetail(
         // READ audit per view, zero on passive GET.
         let parameterValues: StaffCheckInSubmissionDetail["parameterValues"] =
           null;
-        try {
-          const ctxDaily = await authorize(
-            session,
-            {
-              resource: "dailyTracking",
-              action: "read",
-              workspaceId: input.workspaceId,
-              clientProfileId: input.clientProfileId,
-            },
-            createPrismaAuthorizationRepo(tx),
-          );
-          const scope = reconcileTrackerContextScopes(
-            ctx.grantedScope,
-            ctxDaily.grantedScope,
-          );
-          if (scope === "assigned")
-            await lockAssignmentForScope(
-              tx,
-              input.workspaceId,
-              input.clientProfileId,
-              member.id,
-              "checkinsCoachReviews",
-            );
-          if (scope !== "denied" && dailyConsented) {
-            // The check-in date contract is the canvas's
-            // `viennaDate(dueAt)` — Europe/Vienna local date of the
-            // instance due instant.
-            const entryDate = localDateInZone(instance.dueAt, "Europe/Vienna");
-            if (entryDate !== null) {
-              try {
-                const load = await loadStaffDailyEntryDetailTx(tx, {
-                  workspaceId: input.workspaceId,
-                  clientProfileId: input.clientProfileId,
-                  entryDate,
-                  ctx: ctxDaily,
-                });
-                parameterValues = load.detail.values;
-              } catch (e) {
-                // No entry for the date → honest empty. An ineligible
-                // template stays withheld — a withheld state, never
-                // presented as "no entry".
-                if (e instanceof DailyEntryError && e.code === "not_available")
-                  parameterValues = [];
-                else if (!(
-                  e instanceof DailyEntryError && e.code === "ineligible"
-                ))
-                  throw e;
-              }
+        if (ctxDaily !== null && packetScope !== "denied" && dailyConsented) {
+          // The check-in date contract is the canvas's
+          // `viennaDate(dueAt)` — Europe/Vienna local date of the
+          // instance due instant.
+          const entryDate = localDateInZone(instance.dueAt, "Europe/Vienna");
+          if (entryDate !== null) {
+            try {
+              const load = await loadStaffDailyEntryDetailTx(tx, {
+                workspaceId: input.workspaceId,
+                clientProfileId: input.clientProfileId,
+                entryDate,
+                ctx: ctxDaily,
+              });
+              parameterValues = load.detail.values;
+            } catch (e) {
+              // No entry for the date → honest empty. An ineligible
+              // template stays withheld — a withheld state, never
+              // presented as "no entry".
+              if (e instanceof DailyEntryError && e.code === "not_available")
+                parameterValues = [];
+              else if (!(
+                e instanceof DailyEntryError && e.code === "ineligible"
+              ))
+                throw e;
             }
           }
-        } catch (e) {
-          if (!(e instanceof AccessDeniedError)) throw e;
         }
 
         // 11. Structural READ audit — last; a failed write rolls the
@@ -2711,11 +2736,13 @@ export async function readCheckInSubmissionDetail(
             sendAssignment !== null &&
             review !== null,
           parameterValues,
-          // PR-SV5 empty slots — flagged set notes (issue 14) and
-          // nutrition (issue 12a) return empty until those lanes land,
-          // never fabricated rows.
-          flags: [],
-          nutrition: [],
+          // PR-SV5 availability slots — `null` = unavailable until the
+          // owning lane lands, never fabricated rows: flagged set notes
+          // (issue 14), progress photos (issue 11 — answer attachments
+          // stay on fields[].mediaIds), nutrition (issue 12a).
+          flags: null,
+          photos: null,
+          nutrition: null,
           fields: definition.fields.map((f) => {
             const a = byField.get(f.fieldId);
             const mediaIds = (a?.media ?? []).map((m) => m.mediaObjectId);
