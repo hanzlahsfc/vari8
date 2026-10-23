@@ -31,6 +31,12 @@ if (!targetMatch) {
 const targetPort = Number(targetMatch[1]);
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "vari8-e2e-tls-"));
+// Register cleanup before anything that can fail — an openssl spawn
+// failure must still remove the temp dir.
+const cleanup = () => fs.rmSync(dir, { recursive: true, force: true });
+process.on("exit", cleanup);
+for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => process.exit(0));
+
 const keyPath = path.join(dir, "key.pem");
 const certPath = path.join(dir, "cert.pem");
 execFileSync(
@@ -55,31 +61,33 @@ execFileSync(
   { stdio: "ignore" },
 );
 
-const cleanup = () => fs.rmSync(dir, { recursive: true, force: true });
-process.on("exit", cleanup);
-for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => process.exit(0));
+// The key/cert are only needed to construct the server — hold them in
+// memory and delete the dir immediately, so even a hard kill (Playwright
+// SIGKILLs webServers) leaves no material on disk.
+const credentials = {
+  key: fs.readFileSync(keyPath),
+  cert: fs.readFileSync(certPath),
+};
+cleanup();
 
 https
-  .createServer(
-    { key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) },
-    (req, res) => {
-      const upstream = http.request(
-        {
-          host: "127.0.0.1",
-          port: targetPort,
-          path: req.url,
-          method: req.method,
-          headers: req.headers,
-        },
-        (up) => {
-          res.writeHead(up.statusCode ?? 502, up.headers);
-          up.pipe(res);
-        },
-      );
-      upstream.on("error", () => {
-        res.writeHead(502).end("e2e tls-proxy: upstream unreachable");
-      });
-      req.pipe(upstream);
-    },
-  )
+  .createServer(credentials, (req, res) => {
+    const upstream = http.request(
+      {
+        host: "127.0.0.1",
+        port: targetPort,
+        path: req.url,
+        method: req.method,
+        headers: req.headers,
+      },
+      (up) => {
+        res.writeHead(up.statusCode ?? 502, up.headers);
+        up.pipe(res);
+      },
+    );
+    upstream.on("error", () => {
+      res.writeHead(502).end("e2e tls-proxy: upstream unreachable");
+    });
+    req.pipe(upstream);
+  })
   .listen(port, "127.0.0.1");

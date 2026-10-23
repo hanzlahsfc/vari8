@@ -13,6 +13,11 @@ function lanePort(raw: string | undefined): number {
   const n = Number(raw);
   if (n < 1 || n > 65535)
     throw new Error(`PLAYWRIGHT_PORT_BASE out of TCP range 1-65535: ${raw}`);
+  // TLS_PORT + 1 is the backend port — 65535 is unusable as a pair.
+  if (n > 65534)
+    throw new Error(
+      `PLAYWRIGHT_PORT_BASE ${raw} leaves no backend port (needs ${raw}+1)`,
+    );
   return n;
 }
 
@@ -44,7 +49,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: `npm run build && npm run start -- -p ${BACKEND_PORT}`,
+      command: `npm run build && npm run start -- -p ${BACKEND_PORT} -H 127.0.0.1`,
       url: `http://127.0.0.1:${BACKEND_PORT}`,
       // Canonical proof path: never attach to a process that happens to
       // own the port — an occupied port must fail.

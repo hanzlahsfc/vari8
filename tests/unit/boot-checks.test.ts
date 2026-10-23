@@ -224,8 +224,25 @@ describe("assertAuthSecretConfigured — production refuses an http: auth origin
     );
   });
 
+  it("APP_ENV=production does not exempt the production http: refusal", () => {
+    stub({
+      ...PROD,
+      APP_ENV: "production",
+      BETTER_AUTH_URL: "http://app.internal.example",
+    });
+    expect(() => assertAuthSecretConfigured()).toThrow(
+      /Refusing to start: BETTER_AUTH_URL is an http: origin/,
+    );
+  });
+
   it("APP_ENV=test does not exempt the secret or alias-refusals", () => {
     stub({ NODE_ENV: "production", APP_ENV: "test" });
+    expect(() => assertAuthSecretConfigured()).toThrow(/BETTER_AUTH_SECRET/);
+    stub({
+      NODE_ENV: "production",
+      APP_ENV: "test",
+      BETTER_AUTH_SECRET: "short",
+    });
     expect(() => assertAuthSecretConfigured()).toThrow(/BETTER_AUTH_SECRET/);
     stub({
       NODE_ENV: "production",
