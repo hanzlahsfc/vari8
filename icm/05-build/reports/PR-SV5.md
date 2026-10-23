@@ -61,24 +61,24 @@ or migration changes — #158 retains the next schema slot.
 
 ## Evidence
 
-### Canonical gate — `BASE_SHA=406c551 LANE_DB=app_chkreview LANE_PORT=3860 SKIP_PARITY=1`
+### Canonical gate — `BASE_SHA=406c551 LANE_DB=app_chkreview LANE_PORT=3862 SKIP_PARITY=1`
 
 `icm/05-build/tools/verify-local.sh` → **VERIFY-LOCAL PASS**, head
-`2ef8ebd5af01e0cf66b7a41d6f359437276cd48a`, node v24.22.1:
+`fb3f3ebdeee7f01f53fd9f9ed1607b8ce627eb5d`, node v24.22.1:
 
 - format/typecheck/frontend typecheck/lint/frontend lint: PASS
 - unit tests: 102 files / 1199 tests PASS (fresh `npm run test`
   verbatim, exit 0)
 - frontend tests: 198 PASS
-- integration tests: **64 files / 896 tests PASS** — includes the new
-  `sv5-checkin-review-read.test.ts` (7 tests) and unchanged p025c /
-  p025d6 / feedback suites (75/75 run standalone before the gate).
+- integration tests: **64 files / 903 tests PASS** — includes
+  `sv5-checkin-review-read.test.ts` (14 tests) plus unchanged p025c /
+  p025d6 / feedback suites (75/75 standalone before the gate).
 - migrate deploy: no pending (no `db/` changes; schema guard PASS
   with no CARD)
 - build / frontend build: PASS
 - e2e flow specs: **10 passed / 7 skipped / 0 failed** (real https
   lane — TLS proxy + loopback backend, configured origin
-  `https://127.0.0.1:3860`; the 7 skips are mail-adapter-dependent
+  `https://127.0.0.1:3862`; the 7 skips are mail-adapter-dependent
   reset specs — skips, not passes)
 - parity: SKIP (no screens change)
 
