@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 139 modules with exports, 1382 exported symbols.
+Counts: 144 modules with exports, 1430 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -63,6 +63,8 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type V1RouteContext<P, Q> = { viewer: ApiViewer; workspace: ApiWorkspaceContext; params: P; query: Q; request: Request; }`
 - `export type V1RouteDefinition<P, Q, R> = { capability: Capability; params: ZodType<P>; query?: ZodType<Q>; handler: (ctx: V1RouteContext<P, Q>) => Promise<R>; }`
 - `export function defineApiV1Route<P extends { workspaceId: string }, Q, R>(def: V1RouteDefinition<P, Q, R>)`
+- `export function reportV1Failure(request: Request, requestId: string, error: unknown): Response`
+- `export function requestIdFor(request: Request): string`
 
 ## `lib/audit.ts`
 
@@ -698,6 +700,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export const MEALPLAN_DEV_CONSENT = { PRIVACY_NOTICE: "meal-plan-dev-privacy-v1", HEALTH_DATA: "meal-plan-dev-health-v1", } as const`
 - `export const ONBOARDING_SUBMISSION_DEV_CONSENT = { PRIVACY_NOTICE: "onboarding-submission-dev-privacy-v1", HEALTH_DATA: "onboarding-submission-dev-health-v1", } as const`
 - `export type OnboardingSubmissionConsentEnv = RuntimeEnv & { ENABLE_ONBOARDING_SUBMISSION?: string; }`
+- `export const SUPPLEMENTS_DEV_CONSENT = { PRIVACY_NOTICE: "supplements-dev-privacy-v1", HEALTH_DATA: "supplements-dev-health-v1", } as const`
 - `export type SubmissionRuntimeClass = RuntimeClass`
 - `export const TRAINING_DEV_CONSENT = { PRIVACY_NOTICE: "training-plan-dev-privacy-v1", HEALTH_DATA: "training-plan-dev-health-v1", } as const`
 - `export function assertConsentMutationsExternallyExposable(env: ConsentGateEnv = process.env): void`
@@ -712,6 +715,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function resolveCheckInConsentPolicy(env: { ENABLE_CHECK_INS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
 - `export function resolveMealPlanConsentPolicy(env: { ENABLE_MEAL_PLANS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
 - `export function resolveOnboardingSubmissionConsentPolicy(env: OnboardingSubmissionConsentEnv = process.env): ConsentPolicyRegistry`
+- `export function resolveSupplementsConsentPolicy(env: { ENABLE_SUPPLEMENTS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
 - `export function resolveTrainingConsentPolicy(env: { ENABLE_TRAINING_PLANS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
 - `export async function revokeOwnConsent(session: SessionLike, input: { workspaceId: string; clientProfileId: string; kind: ConsentKind }, deps: ConsentServiceDeps = {}): Promise<ConsentMutationResult>`
 - `export const unconfiguredConsentPolicy: ConsentPolicyRegistry`
@@ -1229,6 +1233,17 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function listTodayHabits(session: SessionLike, input: { workspaceId: string; fields?: unknown }, deps: HabitDeps = {}): Promise<{ habits: TodayHabitView[]; hasMore: boolean; date: stri...`
 - `export async function setHabitLog(session: SessionLike, input: { workspaceId: string; clientProfileId: string; habitId: string; date: unknown; desired: "DONE" | "CLEARED"; }, deps: HabitDeps = {}):...`
 
+## `lib/log.ts`
+
+- `export type LogLevel = "info" | "warn" | "error"`
+- `export const REDACTED = "[redacted]"`
+- `export const TRUSTED_ID_SHAPE = /^[A-Za-z0-9-]{1,64}$/`
+- `export function log(level: LogLevel, event: string, fields: Record<string, unknown> = {}): void`
+- `export function logError(event: string, fields: Record<string, unknown>)`
+- `export function redact(value: unknown, depth = 0, seen: WeakSet<object> = new WeakSet()): unknown`
+- `export function redactString(value: string): string`
+- `export function trustedId(value: string): TrustedId | string`
+
 ## `lib/mail/index.ts`
 
 - `export const DEV_MAILBOX_FILE_ENV = "DEV_MAILBOX_FILE"`
@@ -1506,6 +1521,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type StorageErrorCode = | "invalid_input" | "invalid_key" | "invalid_ttl" | "invalid_signature" | "payload_too_large" | "unsupported_media_type" | "storage_not_configured"`
 - `export function assertClientObjectKey(key: unknown, workspaceId: string, clientProfileId: string): string`
 - `export function assertMediaByteSize(byteSize: unknown): number`
+- `export function assertMediaStorageConfigured(env: Record<string, string | undefined> = process.env): void`
 - `export function assertPresignGetTtl(ttlSeconds: number, maxTtlSeconds: number): void`
 - `export function clientObjectPrefix(workspaceId: string, clientProfileId: string): string`
 - `export async function getObjectStorage(): Promise<ObjectStorageBackend>`
@@ -1530,6 +1546,53 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function presignS3Url(input: { config: S3Config; method: "GET" | "PUT"; key: string; ttlSeconds: number; extraHeaders?: Record<string, string>; now?: Date; }): { url: string; headers: Record...`
 - `export function s3Config(env: Record<string, string | undefined> = process.env): S3Config | null`
 - `export const s3ObjectStorage: ObjectStorageBackend`
+
+## `lib/supplements/boundary.ts`
+
+- `export type SupplementSafeResult<T> = | { ok: true; value: T } | { ok: false; code: | "denied" | "invalid_input" | "not_available" | "conflict" | "consent_missing" | "policy_not_configured" | "seri...`
+- `export async function readOwnSupplementPlanFromAction(session: Session, input: { workspaceId: string }, deps: SupplementsDeps = {}): Promise<SupplementSafeResult<OwnSupplementPlanView>>`
+- `export async function readStaffSupplementPlanFromAction(session: Session, input: { workspaceId: string; clientProfileId: string }, deps: SupplementsDeps = {}): Promise<SupplementSafeResult<StaffSup...`
+- `export async function saveSupplementPlanFromAction(session: Session, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; name?: string; items: unknown; }, deps: Supplem...`
+- `export async function viewSupplementPlanFromAction(session: Session, input: { workspaceId: string; clientProfileId: string }, deps: SupplementsDeps = {}): Promise<SupplementSafeResult<StaffSuppleme...`
+
+## `lib/supplements/gate.ts`
+
+- `export type SupplementsEnv = RuntimeEnv & { ENABLE_SUPPLEMENTS?: string }`
+- `export type SupplementsRuntimeClass = RuntimeClass`
+- `export const classifySupplementsRuntime: ( env?: RuntimeEnv, ) => SupplementsRuntimeClass`
+- `export function isSupplementsEnabled(env: SupplementsEnv = process.env): boolean`
+
+## `lib/supplements/model.ts`
+
+- `export const MAX_ID_LENGTH = 128`
+- `export const MAX_NOTES_LENGTH = 2000`
+- `export const MAX_PLAN_NAME_LENGTH = 120`
+- `export const MAX_SUPPLEMENT_ITEMS = 50`
+- `export const MAX_TEXT_FIELD = 300`
+- `export const MAX_TIMING_LENGTH = 200`
+- `export const MAX_UNIT_LENGTH = 64`
+- `export const SUPPLEMENT_ITEM_STATUSES: readonly SupplementItemStatusWire[]`
+- `export type SupplementItemStatusWire = "must-have" | "optional" | "none"`
+- `export type SupplementProductSnapshot = { refId: string; brand: string; name: string; referenceQuantity: number | null; quantityUnit: string | null; declaredAmount: number | null; declaredUnit: str...`
+- `export class SupplementValidationError extends Error (2 members)`
+- `export type ValidatedSupplementItem = { itemRefId: string | null; product: SupplementProductSnapshot; quantity: number; doseUnit: string; timing: string; status: SupplementItemStatusWire; notes: st...`
+- `export function parseSupplementItems(input: unknown): ValidatedSupplementItem[]`
+- `export function parseSupplementPlanName(name: unknown): string`
+- `export function safeProductUrl(value: string | null): string | undefined`
+
+## `lib/supplements/service.ts`
+
+- `export type OwnSupplementPlanView = { plan: SupplementPlanView | null }`
+- `export type StaffSupplementPlanView = { plan: SupplementPlanView | null; writeCapable: boolean; }`
+- `export class SupplementError extends Error (2 members)`
+- `export type SupplementErrorCode = | "invalid_input" | "plan_not_accessible" | "stale_revision" | "consent_missing" | "policy_not_configured" | "serialization_conflict"`
+- `export type SupplementItemView = { id: string; itemRefId: string | null; position: number; product: { refId: string; brand: string; name: string; referenceQuantity: number | null; quantityUnit: str...`
+- `export type SupplementPlanView = { id: string; name: string; revision: number; savedAt: string | null; items: SupplementItemView[]; }`
+- `export type SupplementsDeps = { db?: PrismaClient; registry?: ConsentPolicyRegistry; now?: Date; }`
+- `export async function readOwnSupplementPlan(session: SessionLike, input: { workspaceId: string }, deps: SupplementsDeps = {}): Promise<OwnSupplementPlanView>`
+- `export function readStaffSupplementPlan(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: SupplementsDeps = {}): Promise<StaffSupplementPlanView>`
+- `export async function saveSupplementPlan(session: SessionLike, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; name?: string; items: unknown; }, deps: SupplementsDe...`
+- `export function viewStaffSupplementPlan(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: SupplementsDeps = {}): Promise<StaffSupplementPlanView>`
 
 ## `lib/tasks/boundary.ts`
 
