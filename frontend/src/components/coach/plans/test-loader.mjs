@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const sourceRoot = new URL("../../../", import.meta.url);
@@ -13,9 +13,46 @@ export async function resolve(specifier, context, nextResolve) {
       shortCircuit: true,
     };
   }
+  if (
+    specifier === "./plans/phase-planning" &&
+    context.parentURL?.startsWith("data:text/javascript")
+  ) {
+    return {
+      url: new URL("./phase-planning.ts", import.meta.url).href,
+      shortCircuit: true,
+    };
+  }
+  if (
+    specifier === "./plans/training/amara-example" &&
+    context.parentURL?.startsWith("data:text/javascript")
+  ) {
+    return {
+      url: new URL("./training/amara-example.ts", import.meta.url).href,
+      shortCircuit: true,
+    };
+  }
+  if (
+    specifier === "./targets/model" &&
+    context.parentURL?.startsWith("data:text/javascript")
+  ) {
+    return {
+      url: new URL("../targets/model.ts", import.meta.url).href,
+      shortCircuit: true,
+    };
+  }
   if (specifier.startsWith("@/")) {
     const path = new URL(specifier.slice(2), sourceRoot);
-    return { url: pathToFileURL(fileURLToPath(path)).href, shortCircuit: true };
+    const url = pathToFileURL(fileURLToPath(path)).href;
+    if (/\.[a-z0-9]+$/i.test(url)) return { url, shortCircuit: true };
+    for (const extension of [".ts", ".tsx", ".mjs", ".js", ".json"]) {
+      try {
+        await access(fileURLToPath(`${url}${extension}`));
+        return { url: `${url}${extension}`, shortCircuit: true };
+      } catch {
+        // Try the next extension.
+      }
+    }
+    return { url, shortCircuit: true };
   }
   if (specifier.startsWith(".") && !/\.[cm]?[jt]sx?$/.test(specifier)) {
     try {

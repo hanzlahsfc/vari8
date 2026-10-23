@@ -60,8 +60,13 @@ test("a client keeps the configuration actually assigned, including archived leg
   const original = template();
   const result = singleTemplateSetup(original, "iifym");
   assert.equal(result.variants[0].nutrition, "IIFYM");
+  assert.equal(result.variants[0].id, "iifym");
   assert.equal(result.defaultVariant, "iifym");
   assert.equal(result.legacyConfigurations[0].id, "meal-plan");
+  assert.notEqual(result.variants[0], original.variants[1]);
+  assert.notEqual(result.legacyConfigurations[0], original.variants[0]);
+  result.legacyConfigurations[0].fields[0].unit = "lb";
+  assert.equal(original.variants[0].fields[0].unit, "kg");
   const normalized = singleTemplateSetup(original);
   assert.equal(templateSetup(normalized, "iifym").nutrition, "IIFYM");
   assert.equal(

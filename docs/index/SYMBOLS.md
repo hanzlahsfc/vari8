@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 142 modules with exports, 1411 exported symbols.
+Counts: 144 modules with exports, 1428 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -46,6 +46,15 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export { cn } from "cn"`
 
+## `frontend/src/lib/vari8-theme.ts`
+
+- `export const VARI8_SURFACES = [ "canvas", "surface-navigation", "surface", "surface-subtle", "surface-raised", "surface-inset", "surface-interactive", "surface-selected", "surface-featured", "surfa...`
+- `export type Vari8Mode = "light" | "dark"`
+- `export type Vari8Theme = Record<`--v8-${Vari8Role}`, string>`
+- `export function contrastRatio(first: string, second: string): number`
+- `export function normalizeAccent(value: string): string | null`
+- `export function vari8Theme({ mode, accent, }: { mode: Vari8Mode; accent: string; }): Vari8Theme`
+
 ## `lib/api/v1.ts`
 
 - `export class ApiError extends Error (1 members)`
@@ -54,6 +63,8 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type V1RouteContext<P, Q> = { viewer: ApiViewer; workspace: ApiWorkspaceContext; params: P; query: Q; request: Request; }`
 - `export type V1RouteDefinition<P, Q, R> = { capability: Capability; params: ZodType<P>; query?: ZodType<Q>; handler: (ctx: V1RouteContext<P, Q>) => Promise<R>; }`
 - `export function defineApiV1Route<P extends { workspaceId: string }, Q, R>(def: V1RouteDefinition<P, Q, R>)`
+- `export function reportV1Failure(request: Request, requestId: string, error: unknown): Response`
+- `export function requestIdFor(request: Request): string`
 
 ## `lib/audit.ts`
 
@@ -1222,6 +1233,17 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function listTodayHabits(session: SessionLike, input: { workspaceId: string; fields?: unknown }, deps: HabitDeps = {}): Promise<{ habits: TodayHabitView[]; hasMore: boolean; date: stri...`
 - `export async function setHabitLog(session: SessionLike, input: { workspaceId: string; clientProfileId: string; habitId: string; date: unknown; desired: "DONE" | "CLEARED"; }, deps: HabitDeps = {}):...`
 
+## `lib/log.ts`
+
+- `export type LogLevel = "info" | "warn" | "error"`
+- `export const REDACTED = "[redacted]"`
+- `export const TRUSTED_ID_SHAPE = /^[A-Za-z0-9-]{1,64}$/`
+- `export function log(level: LogLevel, event: string, fields: Record<string, unknown> = {}): void`
+- `export function logError(event: string, fields: Record<string, unknown>)`
+- `export function redact(value: unknown, depth = 0, seen: WeakSet<object> = new WeakSet()): unknown`
+- `export function redactString(value: string): string`
+- `export function trustedId(value: string): TrustedId | string`
+
 ## `lib/mail/index.ts`
 
 - `export const DEV_MAILBOX_FILE_ENV = "DEV_MAILBOX_FILE"`
@@ -1499,6 +1521,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type StorageErrorCode = | "invalid_input" | "invalid_key" | "invalid_ttl" | "invalid_signature" | "payload_too_large" | "unsupported_media_type" | "storage_not_configured"`
 - `export function assertClientObjectKey(key: unknown, workspaceId: string, clientProfileId: string): string`
 - `export function assertMediaByteSize(byteSize: unknown): number`
+- `export function assertMediaStorageConfigured(env: Record<string, string | undefined> = process.env): void`
 - `export function assertPresignGetTtl(ttlSeconds: number, maxTtlSeconds: number): void`
 - `export function clientObjectPrefix(workspaceId: string, clientProfileId: string): string`
 - `export async function getObjectStorage(): Promise<ObjectStorageBackend>`

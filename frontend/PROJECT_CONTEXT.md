@@ -8,6 +8,14 @@ Do not add credentials, real client records, or claims of authenticated access. 
 
 The target full-stack repository has separate database, RBAC, consent, and audit gates. This preview does not exercise or pass those gates. Its approved P1, P2, and I4 integration scopes do not authorize wiring this preview, simulating security controls, or claiming authenticated behavior. If backend integration is requested later, consult the target repository's canonical product decisions before planning it.
 
+## Owner's delivery and review preferences
+
+The product owner is responsible for frontend screens, interactions and fictional demo behavior, not backend services or real client-data connections. A working demo that the owner accepts completes that frontend feature.
+
+Keep technical verification focused and internal. Perform the narrow checks needed for the change, but do not prolong a working-demo handoff with repeated browser matrices or production-style validation unrelated to the owner's scope. Do not ask the owner to manage checks or present verification work as another product requirement. Disclose concrete blockers without claiming checks that did not finish.
+
+Give beginner-friendly next steps, browser links and click paths. Work one approved feature at a time and stop for UI review before starting the next feature.
+
 ## Source of truth
 
 - Current route and runtime behavior: `src/app/` and the relevant component under `src/components/`.
