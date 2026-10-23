@@ -582,7 +582,7 @@ function valueRow(
   }
 }
 
-type StoredValue = {
+export type StoredValue = {
   parameterId: string;
   kind: string;
   valueNumeric: unknown;
@@ -664,8 +664,10 @@ export type StaffDailyEntryListResult =
 
 /** Renders a revision's stored values through an immutable version snapshot.
  * Parameters outside the snapshot — or not GENERAL_HEALTH — are dropped;
- * OPTION values resolve to their snapshot labels. Display strings only. */
-function renderRevisionDisplayRows(
+ * OPTION values resolve to their snapshot labels. Display strings only.
+ * Rows render in the snapshot's item order regardless of stored order
+ * (PR-SV5 stable ordering; exported for the ordering contract test). */
+export function renderRevisionDisplayRows(
   values: readonly StoredValue[],
   snapshot: readonly SnapshotParam[],
   def: VersionDefinition,

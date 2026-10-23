@@ -103,11 +103,16 @@ this host's paths.
   each against a decoy entry on the neighbouring date; plus dueAt-vs-
   submittedAt (a decoy on the real "today" never leaks in);
 - authorized date with no entry → `[]` while answers serve;
-- **check-in detail allowed but `dailyTracking` denied** (injected
-  `authorizeDaily` seam) → answers served, `parameterValues: null`,
-  one audit;
-- assigned coach (assigned∩assigned) receives the packet; owner with
-  no assignment receives it at workspace scope;
+- **check-in detail allowed but `dailyTracking` denied** via the
+  injected `authorizeDaily` seam → answers served,
+  `parameterValues: null`, one audit. This is **defensive-seam
+  coverage, not a production asymmetric-role scenario** — the current
+  RBAC matrix grants no staff role `checkinsCoachReviews` read while
+  denying `dailyTracking` read; the seam exercises the fail-closed
+  withholding path only;
+- assigned coach (assigned∩assigned, production `authorize`)
+  receives the packet; owner with no assignment receives it at
+  workspace scope;
 - daily consent missing, revoked, or registry-version change →
   `parameterValues: null`, answers still serve, audit count
   unchanged;
@@ -125,10 +130,14 @@ this host's paths.
   withheld-packet test fails (packet would serve past consent);
 - authorize `checkinsCoachReviews` instead of `dailyTracking` for the
   packet → the denied-daily test fails (intersection bypassed);
-- `flags`/`photos`/`nutrition` → `[]` instead of `null` → the
-  availability-semantics test fails;
+- **slots `null` → `[]`** (the mutation writes `[]`; the test asserts
+  `null`) → the availability-semantics test fails;
 - map `not_available` → withheld instead of `[]` → the honest-empty
-  test fails (carried from the first round).
+  test fails (carried from the first round);
+- remove the `renderRevisionDisplayRows` template-order sort → the
+  new ordering unit tests fail on shuffled input (**3 of 5** — the
+  drop/filter cases still pass since they assert filtering, not
+  order).
 
 ### Lock ordering (review finding 7)
 
