@@ -1,18 +1,28 @@
 // K6-GATE fixture lifecycle (issue #178). Two commands:
 //
-//   tsx tools/load/provision.ts create  --clients 30 --coaches 4 --out fixtures.json
-//   tsx tools/load/provision.ts cleanup --file fixtures.json
+//   CONFIRM_DISPOSABLE_DB=<dbname> tsx tools/load/provision.ts \
+//     create --clients 30 --coaches 4 --out fixtures.json
+//   CONFIRM_DISPOSABLE_DB=<dbname> tsx tools/load/provision.ts \
+//     cleanup --file fixtures.json
 //
 // `create` builds a self-contained `loadgate-<ts>` workspace: sign-in
-// users (owner + coaches + clients, Better Auth credential rows via the
-// same hashPassword the real seed uses), ACTIVE memberships, client
-// profiles and PRIMARY assignments. All fixture emails end in
-// `@loadgate.invalid` and every id the run owns is recorded in the
-// fixture file — `cleanup` deletes exactly those ids in FK order and
-// nothing else. No cleanup path ever touches a row it did not record.
+// users (owner-less coaches + clients, Better Auth credential rows via
+// the same hashPassword the real seed uses), ACTIVE memberships, client
+// profiles and PRIMARY assignments.
 //
-// Synthetic local data only. Passwords are random per run; they live in
-// the fixture file, which stays uncommitted and is deleted by cleanup.
+// Safety contract:
+//   - the target database must be an explicitly confirmed disposable
+//     lane: the DATABASE_URL database name must look like a lane db
+//     (app_*/test/lane/review) AND equal CONFIRM_DISPOSABLE_DB
+//   - fixture emails end in `@loadgate.invalid`, workspace slug starts
+//     `loadgate-`, every owned id is recorded in the manifest
+//   - `cleanup` re-validates ownership FROM THE DATABASE — a tampered
+//     or stale manifest whose ids point at foreign rows refuses to
+//     delete anything — then deletes recorded ids in one transaction
+//   - the manifest (which contains the random fixture passwords) is
+//     written 0600 and removed by cleanup
+//
+// Synthetic data only; never run against a shared or production DB.
 
 import { randomBytes } from "node:crypto";
 import fs from "node:fs";
@@ -23,15 +33,18 @@ import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "../../lib/password";
 
 const FIXTURE_DOMAIN = "loadgate.invalid";
+const FIXTURE_SLUG_PREFIX = "loadgate-";
 const CLIENT_PROFILE_NAME_PREFIX = "Load Gate Synthetic Client";
+const LANE_DB_NAME = /^(app_|test_|lane_|.*_it$|.*_review$|loadgate)/;
 
 type FixtureFile = {
   createdAt: string;
+  targetId: string;
   workspaceId: string;
   userIds: string[];
   clientProfileIds: string[];
-  coaches: { email: string; password: string }[];
-  clients: { email: string; password: string }[];
+  coaches: { email: string; password: string; userId: string }[];
+  clients: { email: string; password: string; userId: string }[];
 };
 
 function arg(name: string): string | undefined {
@@ -39,22 +52,40 @@ function arg(name: string): string | undefined {
   return i === -1 ? undefined : process.argv[i + 1];
 }
 
+/** The DB must be a confirmed disposable lane — fail closed. */
+function assertDisposableDb() {
+  const url = process.env.DATABASE_URL ?? "";
+  const dbName = url.split("/").pop()?.split("?")[0] ?? "";
+  const confirm = process.env.CONFIRM_DISPOSABLE_DB ?? "";
+  if (!dbName || !LANE_DB_NAME.test(dbName))
+    throw new Error(
+      `refusing: DATABASE_URL db ${JSON.stringify(dbName)} does not look like a disposable lane`,
+    );
+  if (confirm !== dbName)
+    throw new Error(
+      `refusing: CONFIRM_DISPOSABLE_DB must equal the DATABASE_URL db name ${JSON.stringify(dbName)}`,
+    );
+  return dbName;
+}
+
 async function main() {
-  const db = new PrismaClient();
   const cmd = process.argv[2];
+  assertDisposableDb();
+  const db = new PrismaClient();
   try {
     if (cmd === "create") {
       const clients = Number(arg("clients") ?? "30");
       const coaches = Number(arg("coaches") ?? "4");
       const out = arg("out") ?? "tools/load/out/fixtures.json";
-      if (!Number.isInteger(clients) || clients < 1 || clients > 500)
-        throw new Error("--clients must be an integer 1..500");
-      if (!Number.isInteger(coaches) || coaches < 1 || coaches > 50)
-        throw new Error("--coaches must be an integer 1..50");
+      if (!Number.isInteger(clients) || clients < 1 || clients > 750)
+        throw new Error("--clients must be an integer 1..750");
+      if (!Number.isInteger(coaches) || coaches < 1 || coaches > 250)
+        throw new Error("--coaches must be an integer 1..250");
 
-      const tag = `loadgate-${Date.now()}-${randomBytes(3).toString("hex")}`;
+      const tag = `${FIXTURE_SLUG_PREFIX}${Date.now()}-${randomBytes(3).toString("hex")}`;
       const fixture: FixtureFile = {
         createdAt: new Date().toISOString(),
+        targetId: "", // remote runs set this explicitly — see README
         workspaceId: "",
         userIds: [],
         clientProfileIds: [],
@@ -62,10 +93,9 @@ async function main() {
         clients: [],
       };
 
-      const ws = await db.workspace.create({
-        data: { name: tag, slug: tag },
-      });
+      const ws = await db.workspace.create({ data: { name: tag, slug: tag } });
       fixture.workspaceId = ws.id;
+      fixture.targetId = tag;
 
       const makeUser = async (email: string, role: "COACH" | "CLIENT") => {
         const password = `Lg!${randomBytes(8).toString("hex")}`;
@@ -81,26 +111,22 @@ async function main() {
           },
         });
         await db.workspaceMember.create({
-          data: {
-            workspaceId: ws.id,
-            userId: user.id,
-            role,
-            status: "ACTIVE",
-          },
+          data: { workspaceId: ws.id, userId: user.id, role, status: "ACTIVE" },
         });
         fixture.userIds.push(user.id);
         return { email, password, userId: user.id };
       };
 
-      const coachAccounts = [];
       for (let i = 0; i < coaches; i++)
-        coachAccounts.push(
+        fixture.coaches.push(
           await makeUser(`${tag}-coach-${i}@${FIXTURE_DOMAIN}`, "COACH"),
         );
-      const coachMemberIds = await db.workspaceMember.findMany({
-        where: { workspaceId: ws.id, role: "COACH" },
-        select: { id: true },
-      });
+      const coachMemberIds = (
+        await db.workspaceMember.findMany({
+          where: { workspaceId: ws.id, role: "COACH" },
+          select: { id: true },
+        })
+      ).map((m) => m.id);
 
       for (let i = 0; i < clients; i++) {
         const account = await makeUser(
@@ -115,21 +141,21 @@ async function main() {
           },
         });
         fixture.clientProfileIds.push(profile.id);
-        // Distribute clients round-robin across fixture coaches.
         await db.clientAssignment.create({
           data: {
             workspaceId: ws.id,
             clientProfileId: profile.id,
-            coachMemberId: coachMemberIds[i % coachMemberIds.length].id,
+            coachMemberId: coachMemberIds[i % coachMemberIds.length],
             role: "PRIMARY",
           },
         });
         fixture.clients.push(account);
       }
-      fixture.coaches = coachAccounts;
 
       fs.mkdirSync(path.dirname(out), { recursive: true });
-      fs.writeFileSync(out, JSON.stringify(fixture, null, 2));
+      fs.writeFileSync(out, JSON.stringify(fixture, null, 2), {
+        mode: 0o600,
+      });
       console.log(
         `provisioned workspace ${ws.id} (${tag}): ${coaches} coaches, ${clients} clients -> ${out}`,
       );
@@ -137,20 +163,56 @@ async function main() {
       const file = arg("file");
       if (!file) throw new Error("--file <fixtures.json> is required");
       const f = JSON.parse(fs.readFileSync(file, "utf8")) as FixtureFile;
-      // Exact-id deletes in FK order — nothing outside the recorded set.
-      await db.clientAssignment.deleteMany({
-        where: { clientProfileId: { in: f.clientProfileIds } },
+
+      // Ownership proof FROM THE DATABASE — never trust manifest ids.
+      // Every recorded user must be a loadgate email; every recorded
+      // profile must belong to the recorded loadgate workspace.
+      const ws = await db.workspace.findUnique({
+        where: { id: f.workspaceId },
+        select: { slug: true },
       });
-      await db.clientProfile.deleteMany({
+      if (!ws || !ws.slug.startsWith(FIXTURE_SLUG_PREFIX))
+        throw new Error(
+          `refusing cleanup: workspace ${f.workspaceId} is not a ${FIXTURE_SLUG_PREFIX}* fixture`,
+        );
+      const users = await db.user.findMany({
+        where: { id: { in: f.userIds } },
+        select: { id: true, email: true },
+      });
+      if (
+        users.length !== f.userIds.length ||
+        users.some((u) => !u.email.endsWith(`@${FIXTURE_DOMAIN}`))
+      )
+        throw new Error(
+          "refusing cleanup: manifest userIds do not all resolve to @loadgate.invalid users",
+        );
+      const profiles = await db.clientProfile.findMany({
         where: { id: { in: f.clientProfileIds } },
+        select: { id: true, workspaceId: true },
       });
-      await db.workspaceMember.deleteMany({
-        where: { userId: { in: f.userIds }, workspaceId: f.workspaceId },
+      if (
+        profiles.length !== f.clientProfileIds.length ||
+        profiles.some((p) => p.workspaceId !== f.workspaceId)
+      )
+        throw new Error(
+          "refusing cleanup: manifest clientProfileIds do not all belong to the fixture workspace",
+        );
+
+      await db.$transaction(async (tx) => {
+        await tx.clientAssignment.deleteMany({
+          where: { clientProfileId: { in: f.clientProfileIds } },
+        });
+        await tx.clientProfile.deleteMany({
+          where: { id: { in: f.clientProfileIds } },
+        });
+        await tx.workspaceMember.deleteMany({
+          where: { userId: { in: f.userIds }, workspaceId: f.workspaceId },
+        });
+        await tx.session.deleteMany({ where: { userId: { in: f.userIds } } });
+        await tx.account.deleteMany({ where: { userId: { in: f.userIds } } });
+        await tx.user.deleteMany({ where: { id: { in: f.userIds } } });
+        await tx.workspace.delete({ where: { id: f.workspaceId } });
       });
-      await db.session.deleteMany({ where: { userId: { in: f.userIds } } });
-      await db.account.deleteMany({ where: { userId: { in: f.userIds } } });
-      await db.user.deleteMany({ where: { id: { in: f.userIds } } });
-      await db.workspace.delete({ where: { id: f.workspaceId } });
       fs.rmSync(file, { force: true });
       console.log(
         `cleanup removed workspace ${f.workspaceId} + ${f.userIds.length} users`,

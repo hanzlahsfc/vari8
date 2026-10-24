@@ -1,29 +1,36 @@
 // K6-GATE (issue #178) — trial load gate for 500 concurrent sessions.
 //
 // Contract (the issue's acceptance):
-//   gate profile: ramp 0→750 VUs over 10 min (1.5× the 500 target), then
-//   a 2 h soak at 250 VUs. Pass at 500 concurrent sessions is measured
-//   by report.mjs: p95 < 400 ms, p99 < 1000 ms, errors < 0.5 %, CPU <
-//   70 %, DB connections under the configured Postgres limit, no
-//   restart. The 100-user local run stays the baseline only.
+//   ramp 0→750 VUs over 10 min (1.5× the 500 target), then a 2 h soak
+//   at 250 VUs. Measured pass: p95 < 400 ms, p99 < 1000 ms, errors <
+//   0.5 %, CPU < 70 %, DB connections under the Postgres limit, no
+//   restart — judged by report.mjs, not by k6 itself.
+//
+//   The specified profile never HOLDS 500 VUs: the only 500-concurrent
+//   moment is the transient ramp crossover. `ramp` and `soak` run as
+//   specified as named scenarios; `hold500` (LOAD_HOLD500_MIN, off by
+//   default) inserts the sustained-500 window the pass measurement
+//   actually needs — without it report.mjs marks 500-session evidence
+//   "not collected": inconclusive, not PASS. This is the recorded
+//   acceptance-choice gap.
+//
+// Workload: READ traffic only — session/roster APIs and page GETs under
+// real sessions. Issue #178's acceptance names latency/error/resource
+// bounds, not a write mix; nothing here is called a "submission".
 //
 // Safety:
-//   - TARGET_URL must be supplied explicitly; a non-loopback target is
-//     refused unless LOAD_ALLOW_REMOTE=1 is set deliberately.
-//   - All traffic runs under task-owned fixture users created by
-//     provision.ts (workspace `loadgate-*`); no real client data is
-//     read or written.
-//   - LOAD_MAX_VUS bounds every profile — an accidental huge run aborts
-//     at init.
+//   - TARGET_URL required; non-loopback additionally requires
+//     LOAD_ALLOW_REMOTE=1 AND LOAD_TARGET_ID matching the fixture file's
+//     targetId. setup() aborts when the target redirects to another host.
+//   - LOAD_MAX_VUS (default 750) must be a finite positive integer and
+//     caps every scenario — malformed values abort at init.
+//   - Fixture users only (@loadgate.invalid), one recorded workspace.
 //
-// Classification: every response lands in exactly one class —
-//   success    : 2xx with no `error` object in a JSON body
-//   refusal    : a JSON body carrying `error.code` at ANY status —
-//                a 200 must never conceal an application refusal
-//   http_error : non-2xx without a structured error body
-//   transport  : k6-level failure (connection, TLS, timeout)
-// Refusals and errors are counted separately in the report — a denial
-// is investigated, not silently treated as capacity failure.
+// Classification (shared contract — config.mjs::classifyResponse, and
+// every `load_latency` point carries BOTH `endpoint` and `class` tags
+// so report.mjs never sees an unclassified success):
+//   success | refusal | concealed_refusal (2xx + error body — counted
+//   and fails the run) | redirect | http_error | transport
 //
 // Run:  k6 run -e TARGET_URL=… -e FIXTURES=fixtures.json \
 //         -e LOAD_PROFILE=smoke tools/load/trial-gate.js
@@ -32,68 +39,25 @@ import http from "k6/http";
 import { check, sleep } from "k6";
 import { Counter, Trend } from "k6/metrics";
 
+import {
+  classifyResponse,
+  configError,
+  scenariosWithBounds,
+} from "./config.mjs";
+
 const reqCount = new Counter("load_requests");
 const refused = new Counter("load_refusals");
 const httpErrors = new Counter("load_http_errors");
 const transportErr = new Counter("load_transport_errors");
 const concealed = new Counter("load_concealed_refusals");
+const redirects = new Counter("load_redirects");
+const reauths = new Counter("load_reauths");
 const latency = new Trend("load_latency", true);
 
-// --- configuration ---------------------------------------------------------
+// --- fixtures + config ---------------------------------------------------------
 
-const PROFILE = __ENV.LOAD_PROFILE || "smoke";
-
-const PROFILES = {
-  // Bounded local check — never more than a handful of sessions and a
-  // few seconds; exists to prove the script end to end, not to measure.
-  smoke: {
-    stages: [
-      { duration: "15s", target: 5 },
-      { duration: "15s", target: 5 },
-      { duration: "5s", target: 0 },
-    ],
-  },
-  // The issue's acceptance workload: 0→750 over 10 min, then a 2 h soak
-  // at 250 concurrent sessions.
-  gate: {
-    stages: [
-      { duration: "10m", target: 750 },
-      { duration: "120m", target: 250 },
-      { duration: "1m", target: 0 },
-    ],
-  },
-};
-
-const LOOPBACK = /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?(\/|$)/;
-
-function validateTarget(url) {
-  if (typeof url !== "string" || url.length === 0)
-    return "TARGET_URL is required — the load target is never implied";
-  if (!/^https?:\/\//.test(url)) return "TARGET_URL must be absolute http(s)";
-  if (!LOOPBACK.test(url) && __ENV.LOAD_ALLOW_REMOTE !== "1")
-    return "non-loopback TARGET_URL requires LOAD_ALLOW_REMOTE=1";
-  return null;
-}
-
-function stages() {
-  const p = PROFILES[PROFILE];
-  if (!p) return `unknown LOAD_PROFILE ${JSON.stringify(PROFILE)}`;
-  const maxVus = Number(__ENV.LOAD_MAX_VUS || "750");
-  for (const s of p.stages)
-    if (s.target > maxVus)
-      return `profile ${PROFILE} exceeds LOAD_MAX_VUS=${maxVus}`;
-  return p.stages;
-}
-
-const cfgError =
-  validateTarget(__ENV.TARGET_URL) ||
-  (typeof stages() === "string" ? stages() : null);
-if (cfgError) throw new Error(`k6-gate config: ${cfgError}`);
-
-const BASE = __ENV.TARGET_URL.replace(/\/$/, "");
-
-// Task-owned fixtures — provision.ts writes this file; the run refuses
-// without it so no real account is ever touched.
+// The fixture file must be readable in init context — load it before
+// the config check so the remote guard can consult it.
 const fixturePath = __ENV.FIXTURES;
 if (!fixturePath)
   throw new Error("k6-gate config: FIXTURES=<provision.json> is required");
@@ -105,103 +69,195 @@ if (!WORKSPACE_ID || COACHES.length === 0 || CLIENTS.length === 0)
   throw new Error(
     "k6-gate fixtures: expected workspaceId + non-empty coaches/clients",
   );
+for (const a of [...COACHES, ...CLIENTS])
+  if (!a.userId)
+    throw new Error("k6-gate fixtures: every account must carry userId");
+
+const cfgError = configError(__ENV, fixtures);
+if (cfgError) throw new Error(`k6-gate config: ${cfgError}`);
+
+const BASE = __ENV.TARGET_URL.replace(/\/$/, "");
 
 export const options = {
-  stages: stages(),
+  scenarios: scenariosWithBounds(__ENV),
   thresholds: {
-    // A 2xx concealing an application refusal is the one thing k6 must
-    // flag itself — per-endpoint latency bounds live in report.mjs.
+    // A 2xx concealing an application refusal is the one thing k6 flags
+    // itself — the full verdict lives in report.mjs.
     load_concealed_refusals: ["count==0"],
   },
-  // Keep every per-endpoint tag in the summary for the report.
-  systemTags: ["status", "method", "url", "name", "class", "endpoint"],
+  systemTags: [
+    "status",
+    "method",
+    "url",
+    "name",
+    "class",
+    "endpoint",
+    "scenario",
+  ],
 };
 
-// --- response classification ------------------------------------------------
+// --- response classification -------------------------------------------------
 
 function classify(res) {
-  if (res.status === 0 || res.error) return "transport";
-  let refusal = false;
+  let body = null;
   try {
-    const body = res.json();
-    if (body && typeof body === "object" && body.error) refusal = true;
+    body = res.json();
   } catch {
-    // Non-JSON 2xx/4xx — a page or binary body; not a structured refusal.
+    /* non-JSON body — pages are HTML, that's expected */
   }
-  if (refusal) return res.status < 300 ? "concealed_refusal" : "refusal";
-  return res.status < 300 ? "success" : "http_error";
+  return classifyResponse(res.status, res.error, body);
+}
+
+function record(endpoint, res) {
+  const cls = classify(res);
+  const tags = { endpoint, class: cls };
+  reqCount.add(1, tags);
+  if (cls === "refusal") refused.add(1, tags);
+  else if (cls === "concealed_refusal") concealed.add(1, tags);
+  else if (cls === "http_error") httpErrors.add(1, tags);
+  else if (cls === "transport") transportErr.add(1, tags);
+  else if (cls === "redirect") redirects.add(1, tags);
+  latency.add(res.timings.duration, tags);
+  check(res, { "not a concealed refusal": () => cls !== "concealed_refusal" });
+  return cls;
 }
 
 function hit(endpoint, method, path, opts) {
   const res = http.request(method, BASE + path, opts?.body ?? null, {
     headers: opts?.headers,
-    tags: { endpoint },
-    redirects: 0,
+    cookies: opts?.cookies,
+    redirects: 0, // measure the real response; redirects are classified
     timeout: "30s",
   });
-  const cls = classify(res);
-  reqCount.add(1, { endpoint, class: cls });
-  if (cls === "refusal") refused.add(1, { endpoint });
-  else if (cls === "concealed_refusal") concealed.add(1, { endpoint });
-  else if (cls === "http_error") httpErrors.add(1, { endpoint });
-  else transportErr.add(1, { endpoint });
-  latency.add(res.timings.duration, { endpoint });
-  check(res, { "not a concealed refusal": () => cls !== "concealed_refusal" });
-  return { res, cls };
+  return { res, cls: record(endpoint, res) };
 }
 
-// --- sessions ---------------------------------------------------------------
+// --- sessions ------------------------------------------------------------------
 
-// k6 keeps a per-VU cookie jar automatically — one sign-in per VU, then
-// the jar replays the session cookie on every following request.
-const signedIn = new Set();
+// The session cookie's Expires parses to a past instant inside k6's
+// cookie jar (measured: expires=-6795364578871 — the jar drops it
+// mid-run, which is how the first smoke decayed into 401s/307s). We pin
+// the Set-Cookie value captured at sign-in and send it explicitly on
+// every measured request, plus the bearer token the API routes accept.
+const AUTH_COOKIE = "__Secure-better-auth.session_token";
+const sessionByVu = {};
 
-function signIn(account) {
+function signIn(account, tag) {
   const res = http.post(
     `${BASE}/api/auth/sign-in/email`,
     JSON.stringify({ email: account.email, password: account.password }),
     {
       headers: { "content-type": "application/json" },
-      tags: { endpoint: "sign_in" },
+      redirects: 0,
     },
   );
-  latency.add(res.timings.duration, { endpoint: "sign_in" });
-  const cls = classify(res);
-  reqCount.add(1, { endpoint: "sign_in", class: cls });
-  return cls === "success";
+  const cls = record(tag ?? "sign_in", res);
+  if (cls !== "success") return null;
+  const cookie = res.cookies[AUTH_COOKIE]?.[0]?.value;
+  let token = null;
+  try {
+    token = res.json().token ?? null;
+  } catch {
+    /* no token body — cookie may still exist */
+  }
+  if (!cookie && !token) return null;
+  return { cookie, token };
+}
+
+function authParams(sess) {
+  const headers = {};
+  if (sess.token) headers["authorization"] = `Bearer ${sess.token}`;
+  return {
+    headers,
+    cookies: sess.cookie ? { [AUTH_COOKIE]: sess.cookie } : {},
+  };
+}
+
+// A 200 is not enough — the session body must name the fixture user.
+function verifySession(sess, expectedUserId) {
+  const r = http.get(`${BASE}/api/v1/workspaces/${WORKSPACE_ID}/session`, {
+    ...authParams(sess),
+    redirects: 0,
+  });
+  let ok = false;
+  try {
+    ok = r.status === 200 && r.json()?.user?.id === expectedUserId;
+  } catch {}
+  record("session_verify", r);
+  return ok;
+}
+
+// Before any VU traffic: the target must answer on its own origin — a
+// redirect to another host (a front door bouncing to production, a
+// parked domain) aborts the run rather than loading the wrong site.
+export function setup() {
+  const res = http.get(`${BASE}/login`, { redirects: 0 });
+  const loc = res.headers.Location ?? res.headers.location ?? "";
+  if (loc && /^https?:\/\//.test(loc)) {
+    let foreign = false;
+    try {
+      foreign = new URL(loc).host !== new URL(BASE).host;
+    } catch {
+      foreign = true;
+    }
+    if (foreign) throw new Error(`k6-gate: target redirects to foreign host`);
+  }
+  return {};
 }
 
 export default function virtualUser() {
-  // Every third VU acts as a coach; the rest act as clients — a stand-in
-  // mix for the trial's coach-heavy read traffic + client submissions.
   const isCoach = __VU % 3 === 0;
   const pool = isCoach ? COACHES : CLIENTS;
   const account = pool[__VU % pool.length];
 
-  if (!signedIn.has(__VU)) {
-    if (!signIn(account)) {
+  if (!sessionByVu[__VU]) {
+    const sess = signIn(account, "sign_in");
+    if (!sess || !verifySession(sess, account.userId)) {
+      sessionByVu[__VU] = null;
       sleep(2);
       return;
     }
-    signedIn.add(__VU);
+    sessionByVu[__VU] = sess;
   }
 
+  const opts = authParams(sessionByVu[__VU]);
+  let sessionCls;
   if (isCoach) {
-    hit("session", "GET", `/api/v1/workspaces/${WORKSPACE_ID}/session`);
+    sessionCls = hit(
+      "session",
+      "GET",
+      `/api/v1/workspaces/${WORKSPACE_ID}/session`,
+      opts,
+    ).cls;
     sleep(0.5);
-    hit("clients", "GET", `/api/v1/workspaces/${WORKSPACE_ID}/clients`);
+    hit("clients", "GET", `/api/v1/workspaces/${WORKSPACE_ID}/clients`, opts);
     sleep(1);
-    hit("workspace_page", "GET", `/workspace/${WORKSPACE_ID}`);
+    hit("workspace_page", "GET", `/workspace/${WORKSPACE_ID}`, opts);
   } else {
     // Client-scoped reads only — staff routes correctly refuse CLIENT
     // sessions at the layout (403); a denial is evidence, not load.
-    hit("session", "GET", `/api/v1/workspaces/${WORKSPACE_ID}/session`);
+    sessionCls = hit(
+      "session",
+      "GET",
+      `/api/v1/workspaces/${WORKSPACE_ID}/session`,
+      opts,
+    ).cls;
     sleep(0.5);
-    hit("client_home", "GET", `/workspace/${WORKSPACE_ID}/home`);
+    hit("client_home", "GET", `/workspace/${WORKSPACE_ID}/home`, opts);
     sleep(1);
-    hit("checkins_page", "GET", `/workspace/${WORKSPACE_ID}/check-ins`);
+    hit("checkins_page", "GET", `/workspace/${WORKSPACE_ID}/check-ins`, opts);
     sleep(0.5);
-    hit("client_daily", "GET", `/workspace/${WORKSPACE_ID}/daily`);
+    hit("client_daily", "GET", `/workspace/${WORKSPACE_ID}/daily`, opts);
+  }
+  // Auth decay is real evidence: the failed request stays a refusal/
+  // redirect; re-authentication is a separate, separately-tagged op —
+  // never a silent retry that launders the failure.
+  if (sessionCls === "refusal" || sessionCls === "redirect") {
+    const re = signIn(account, "reauth");
+    if (re) {
+      sessionByVu[__VU] = re;
+      reauths.add(1);
+    } else sessionByVu[__VU] = null;
   }
   sleep(1 + Math.random() * 2); // think time — users are not request bots
 }
@@ -210,6 +266,6 @@ export function handleSummary(data) {
   const out = __ENV.LOAD_SUMMARY_OUT ?? "tools/load/out/summary.json";
   return {
     [out]: JSON.stringify(data, null, 2),
-    stdout: `\nload run complete — results in ${out}\n`,
+    stdout: `\nload run complete — summary ${out}\n`,
   };
 }
