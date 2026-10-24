@@ -31,8 +31,9 @@
   differences plus real DOM/page-size changes. Baseline provenance
   lacks OS/browser/source environment sufficient to prove a host-only
   cause; #202 remains blocked on mandatory visual parity.
-- No 55880/55881 listeners or `vari8-local-tls-*` material remain.
-  Full record: `icm/05-build/reports/PARITY-HTTPS.md`.
+- No 55880/55881 listeners or `vari8-local-tls-*` material remain;
+  disposable `app_parity_https` was dropped. Full record:
+  `icm/05-build/reports/PARITY-HTTPS.md`.
 
 ## 2026-10-24 — PR #201 K6-GATE evidence whitespace closure — receipts normalized, checks clean
 

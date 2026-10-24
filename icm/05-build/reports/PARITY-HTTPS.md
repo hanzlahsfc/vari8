@@ -182,8 +182,9 @@ Standard gates:
 - `git diff --check` → exit 0
 
 Cleanup verified after the final parity run: no listeners remain on
-55880/55881 or the temporary frontend probe port, and no
-`vari8-local-tls-*` material remains under `/tmp`.
+55880/55881 or the temporary frontend probe port, no
+`vari8-local-tls-*` material remains under `/tmp`, and the disposable
+`app_parity_https` database was dropped (`pg_database` count 0).
 
 ## Visual investigation
 
