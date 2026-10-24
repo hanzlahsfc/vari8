@@ -8,7 +8,7 @@
 // Destructive paths never run against shared databases; the lane DB is
 // dropped after the suite.
 
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -62,6 +62,74 @@ function runProvision(
       code: err.status ?? 1,
       output: `${err.stdout ?? ""}${err.stderr ?? ""}`,
     };
+  }
+}
+
+function runHarness(
+  args: string[],
+  env: Record<string, string> = {},
+  dbUrl = laneDbUrl,
+) {
+  const child = spawn(
+    "npx",
+    [
+      "tsx",
+      "tests/integration/k6-gate-provision-harness.ts",
+      ...args,
+      "--lane",
+      lanePath,
+    ],
+    {
+      stdio: ["ignore", "pipe", "pipe"],
+      env: {
+        ...process.env,
+        NODE_ENV: "test",
+        DATABASE_URL: dbUrl,
+        CONFIRM_DISPOSABLE_DB: new URL(dbUrl).pathname.replace(/^\//, "") || "",
+        ...env,
+      },
+    },
+  );
+  let output = "";
+  child.stdout?.on("data", (d) => {
+    output += String(d);
+  });
+  child.stderr?.on("data", (d) => {
+    output += String(d);
+  });
+  const done = new Promise<{
+    code: number | null;
+    signal: NodeJS.Signals | null;
+    output: string;
+  }>((resolve) => {
+    child.once("error", (e) =>
+      resolve({ code: 1, signal: null, output: output + String(e) }),
+    );
+    child.once("close", (code, signal) => resolve({ code, signal, output }));
+  });
+  return { child, done };
+}
+
+async function waitForFile(file: string, timeoutMs = 15_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (!fs.existsSync(file)) {
+    if (Date.now() > deadline) throw new Error(`timed out waiting for ${file}`);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+}
+
+async function dbExists(dbName: string) {
+  const admin = new PrismaClient({
+    datasources: { db: { url: adminUrl() } },
+  });
+  try {
+    const rows = await admin.$queryRawUnsafe<{ exists: boolean }[]>(
+      "SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = $1) AS exists",
+      dbName,
+    );
+    return rows[0]?.exists === true;
+  } finally {
+    await admin.$disconnect();
   }
 }
 
@@ -189,6 +257,107 @@ describe.skipIf(!enabled)(
       expect(f.clients).toHaveLength(3);
     });
 
+    it("SIGTERM during fixture create leaves no partial fixture or victim change", async () => {
+      const beforeWorkspaces = await prisma.workspace.count({
+        where: { slug: { startsWith: "loadgate-" } },
+      });
+      const beforeUsers = await prisma.user.count({
+        where: { email: { endsWith: "@loadgate.invalid" } },
+      });
+      const victimBefore = await prisma.user.findUnique({
+        where: { id: victimUserId },
+      });
+      const out = path.join(dir, "interrupted-create.json");
+      const sync = fs.mkdtempSync(path.join(dir, "sync-fixture-create-"));
+      const { child, done } = runHarness(
+        ["create", "--clients", "2", "--coaches", "1", "--out", out],
+        {
+          K6_GATE_TEST_BARRIER: "fixture-create-hold",
+          K6_GATE_TEST_SYNC_DIR: sync,
+        },
+      );
+      await waitForFile(path.join(sync, "fixture-create-started"));
+      expect(child.kill("SIGTERM")).toBe(true);
+      fs.writeFileSync(path.join(sync, "fixture-create-release"), "release\n");
+      const r = await done;
+      expect(r.code).not.toBe(0);
+      expect(
+        await prisma.workspace.count({
+          where: { slug: { startsWith: "loadgate-" } },
+        }),
+      ).toBe(beforeWorkspaces);
+      expect(
+        await prisma.user.count({
+          where: { email: { endsWith: "@loadgate.invalid" } },
+        }),
+      ).toBe(beforeUsers);
+      expect(fs.existsSync(out)).toBe(false);
+      expect(
+        await prisma.user.findUnique({ where: { id: victimUserId } }),
+      ).toEqual(victimBefore);
+    }, 60_000);
+
+    it("SIGTERM during fixture cleanup completes scoped deletion only", async () => {
+      const out = path.join(dir, "interrupted-cleanup.json");
+      const created = runProvision([
+        "create",
+        "--clients",
+        "2",
+        "--coaches",
+        "1",
+        "--out",
+        out,
+      ]);
+      expect(created.code).toBe(0);
+      const f = JSON.parse(fs.readFileSync(out, "utf8"));
+      const victimUserBefore = await prisma.user.findUnique({
+        where: { id: victimUserId },
+      });
+      const victimProfileBefore = await prisma.clientProfile.findUnique({
+        where: { id: victimProfileId },
+      });
+      const sync = fs.mkdtempSync(path.join(dir, "sync-fixture-clean-"));
+      const { child, done } = runHarness(["cleanup", "--file", out], {
+        K6_GATE_TEST_BARRIER: "fixture-cleanup-hold",
+        K6_GATE_TEST_SYNC_DIR: sync,
+      });
+      await waitForFile(path.join(sync, "fixture-cleanup-started"));
+      expect(child.kill("SIGTERM")).toBe(true);
+      fs.writeFileSync(path.join(sync, "fixture-cleanup-release"), "release\n");
+      const r = await done;
+      expect(r.code).not.toBe(0);
+      expect(
+        await prisma.workspace.findUnique({ where: { id: f.workspaceId } }),
+      ).toBeNull();
+      expect(
+        await prisma.user.count({ where: { id: { in: f.userIds } } }),
+      ).toBe(0);
+      expect(
+        await prisma.clientProfile.count({
+          where: { id: { in: f.clientProfileIds } },
+        }),
+      ).toBe(0);
+      expect(
+        await prisma.workspaceMember.count({
+          where: { userId: { in: f.userIds } },
+        }),
+      ).toBe(0);
+      expect(
+        await prisma.account.count({
+          where: { userId: { in: f.userIds } },
+        }),
+      ).toBe(0);
+      expect(fs.existsSync(out)).toBe(false);
+      expect(
+        await prisma.user.findUnique({ where: { id: victimUserId } }),
+      ).toEqual(victimUserBefore);
+      expect(
+        await prisma.clientProfile.findUnique({
+          where: { id: victimProfileId },
+        }),
+      ).toEqual(victimProfileBefore);
+    }, 60_000);
+
     it("a manifest with a mismatched targetId refuses", async () => {
       const f = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
       const forged = { ...f, targetId: "loadgate-other-fixture" };
@@ -238,15 +407,95 @@ describe.skipIf(!enabled)(
       expect(await laneDbs()).toEqual(before);
     }, 60_000);
 
-    it("marker-install failure drops only the DB created by that call", async () => {
-      // K6_GATE_FAULT=marker throws after CREATE DATABASE + migrate,
-      // before the marker install — the catch must drop its own DB.
-      const before = await laneDbs();
-      const r = runProvision(
-        ["lane-create", "--lane", path.join(dir, "fault-lane.json")],
-        { K6_GATE_FAULT: "marker" },
+    it.each(["SIGTERM", "SIGINT"] as const)(
+      "%s during in-flight CREATE DATABASE waits for it and removes only its lane",
+      async (signal) => {
+        // Deterministic window: the test-only harness starts CREATE,
+        // blocks before it can complete, receives the signal, then
+        // releases the query. Cleanup must await that result.
+        const dbName = `app_k6_race_${Date.now().toString(36)}_${signal.toLowerCase()}`;
+        const sync = fs.mkdtempSync(path.join(dir, `sync-${signal}-`));
+        const started = path.join(sync, "create-started");
+        const release = path.join(sync, "create-release");
+        const { child, done } = runHarness(
+          ["lane-create", "--lane", path.join(dir, `race-${signal}.json`)],
+          {
+            K6_GATE_TEST_BARRIER: "create-hold",
+            K6_GATE_TEST_DB_NAME: dbName,
+            K6_GATE_TEST_SYNC_DIR: sync,
+          },
+          url as string,
+        );
+        await waitForFile(started);
+        expect(child.kill(signal)).toBe(true);
+        fs.writeFileSync(release, "release\n");
+        const r = await done;
+        expect(r.code).not.toBe(0);
+        expect(await dbExists(dbName)).toBe(false);
+        expect(fs.existsSync(path.join(dir, `race-${signal}.json`))).toBe(
+          false,
+        );
+      },
+      60_000,
+    );
+
+    it("CREATE failure during termination never drops another database", async () => {
+      const dbName = `app_k6_fail_${Date.now().toString(36)}`;
+      const sync = fs.mkdtempSync(path.join(dir, "sync-create-fail-"));
+      const started = path.join(sync, "create-started");
+      const release = path.join(sync, "create-release");
+      const { child, done } = runHarness(
+        ["lane-create", "--lane", path.join(dir, "create-fail.json")],
+        {
+          K6_GATE_TEST_BARRIER: "create-hold-fail",
+          K6_GATE_TEST_DB_NAME: dbName,
+          K6_GATE_TEST_SYNC_DIR: sync,
+        },
         url as string,
       );
+      await waitForFile(started);
+      expect(child.kill("SIGTERM")).toBe(true);
+      fs.writeFileSync(release, "release\n");
+      const r = await done;
+      expect(r.code).not.toBe(0);
+      expect(r.output).toMatch(/CREATE DATABASE failed/);
+      expect(await dbExists(dbName)).toBe(false);
+    }, 60_000);
+
+    it("an already-existing database is refused and preserved", async () => {
+      const dbName = `app_k6_existing_${Date.now().toString(36)}`;
+      const admin = new PrismaClient({
+        datasources: { db: { url: adminUrl() } },
+      });
+      try {
+        await admin.$executeRawUnsafe(`CREATE DATABASE "${dbName}"`);
+      } finally {
+        await admin.$disconnect();
+      }
+      try {
+        const { done } = runHarness(
+          ["lane-create", "--lane", path.join(dir, "existing.json")],
+          { K6_GATE_TEST_DB_NAME: dbName },
+          url as string,
+        );
+        const r = await done;
+        expect(r.code).not.toBe(0);
+        expect(await dbExists(dbName)).toBe(true);
+      } finally {
+        await dropDb(dbName);
+      }
+    }, 60_000);
+
+    it("marker-install failure drops only the DB created by that call", async () => {
+      // The test harness throws after CREATE DATABASE + migrate, before
+      // marker install — the catch must drop its own DB.
+      const before = await laneDbs();
+      const { done } = runHarness(
+        ["lane-create", "--lane", path.join(dir, "fault-lane.json")],
+        { K6_GATE_TEST_FAULT: "marker" },
+        url as string,
+      );
+      const r = await done;
       expect(r.code).not.toBe(0);
       expect(await laneDbs()).toEqual(before);
       // And the fault-lane file must not authorize anything later —
@@ -264,29 +513,30 @@ describe.skipIf(!enabled)(
       expect(rc.code).not.toBe(0);
     }, 60_000);
 
-    it("SIGTERM mid-create drops only its own DB and exits nonzero", async () => {
+    it("SIGTERM after create/migrate drops only its own DB and exits nonzero", async () => {
       // Catchable termination after CREATE DATABASE: the installed
       // handler must stop provisioning, drop exactly the created DB,
       // and exit nonzero — zero residue, no other DB touched.
       // (SIGKILL/machine failure still leaves a residual — documented.)
       const before = await laneDbs();
-      const r = runProvision(
+      const { done } = runHarness(
         ["lane-create", "--lane", path.join(dir, "term-lane.json")],
-        { K6_GATE_FAULT: "term" },
+        { K6_GATE_TEST_FAULT: "term" },
         url as string,
       );
+      const r = await done;
       expect(r.code).not.toBe(0);
       expect(await laneDbs()).toEqual(before); // zero residue
       expect(fs.existsSync(path.join(dir, "term-lane.json"))).toBe(false);
     }, 60_000);
 
-    it("fault hooks are inert outside a test context", async () => {
-      // K6_GATE_FAULT without NODE_ENV=test + CONFIRM_DISPOSABLE_DB
-      // must NOT trigger — a normal lane-create ignores it entirely.
-      const env = { K6_GATE_FAULT: "term", NODE_ENV: "production" };
+    it("the shipping CLI ignores K6_GATE_FAULT entirely", async () => {
+      // Normal execution must not interpret the old environment fault
+      // switch — even in test-like variables it creates a normal lane.
+      const env = { K6_GATE_FAULT: "term", NODE_ENV: "test" };
       const r = runProvision(
         ["lane-create", "--lane", path.join(dir, "inert-lane.json")],
-        { CONFIRM_DISPOSABLE_DB: "", ...env },
+        env,
         url as string,
       );
       if (r.code === 0) {

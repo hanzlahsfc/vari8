@@ -1,5 +1,7 @@
-// K6-GATE fixture lifecycle (issue #178). Two commands:
+// K6-GATE fixture lifecycle (issue #178). Commands:
 //
+//   DATABASE_URL=<admin-url> tsx tools/load/provision.ts lane-create \
+//     --lane tools/load/out/lane.json
 //   CONFIRM_DISPOSABLE_DB=<dbname> tsx tools/load/provision.ts \
 //     create --clients 30 --coaches 4 --out fixtures.json
 //   CONFIRM_DISPOSABLE_DB=<dbname> tsx tools/load/provision.ts \
@@ -24,12 +26,13 @@
 //
 // Synthetic data only; never run against a shared or production DB.
 
-import { execFileSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 import { hashPassword } from "../../lib/password";
 
@@ -56,6 +59,14 @@ type FixtureFile = {
   clientProfileIds: string[];
   coaches: { email: string; password: string; userId: string }[];
   clients: { email: string; password: string; userId: string }[];
+};
+
+export type ProvisionHooks = {
+  dbName?: string;
+  createDatabase?: (admin: PrismaClient, dbName: string) => Promise<unknown>;
+  beforeMarkerInstall?: () => Promise<void> | void;
+  beforeFixtureCommit?: () => Promise<void> | void;
+  beforeCleanupCommit?: () => Promise<void> | void;
 };
 
 function arg(name: string): string | undefined {
@@ -160,7 +171,113 @@ async function assertLaneOwnership(
     );
 }
 
-async function main() {
+type TerminationScope = {
+  run<T>(operation: Promise<T>): Promise<T>;
+  checkpoint(): Promise<void>;
+  close(): void;
+};
+
+/**
+ * Catchable-signal scope. A signal never skips an already-started DB
+ * operation: the handler marks termination, waits for the tracked
+ * operation to settle, runs the scoped cleanup for the resulting state,
+ * then exits nonzero. `checkpoint` stops later provisioning after sync
+ * sections too. SIGKILL/machine failure cannot run this contract.
+ */
+function terminationScope(
+  onInterrupted: () => Promise<void>,
+): TerminationScope {
+  let active: Promise<unknown> | null = null;
+  let termination: Promise<never> | null = null;
+  const terminate = async (): Promise<never> => {
+    if (active) await active.catch(() => {});
+    try {
+      await onInterrupted();
+    } finally {
+      process.exit(1);
+    }
+  };
+  const onSignal = () => {
+    termination ??= terminate();
+  };
+  process.on("SIGTERM", onSignal);
+  process.on("SIGINT", onSignal);
+  return {
+    async run(operation) {
+      active = operation;
+      try {
+        return await operation;
+      } finally {
+        active = null;
+        if (termination) await termination;
+      }
+    },
+    async checkpoint() {
+      await new Promise((resolve) => setImmediate(resolve));
+      if (termination) await termination;
+    },
+    close() {
+      process.off("SIGTERM", onSignal);
+      process.off("SIGINT", onSignal);
+    },
+  };
+}
+
+async function createDatabase(admin: PrismaClient, dbName: string) {
+  await admin.$executeRawUnsafe(`CREATE DATABASE "${dbName}"`);
+}
+
+function migrateDeploy(databaseUrl: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("npx", ["prisma", "migrate", "deploy"], {
+      stdio: "inherit",
+      env: { ...process.env, DATABASE_URL: databaseUrl },
+    });
+    child.once("error", reject);
+    child.once("close", (code, signal) => {
+      if (code === 0) resolve();
+      else
+        reject(
+          new Error(
+            `prisma migrate deploy failed (code ${code ?? "null"}${
+              signal ? `, signal ${signal}` : ""
+            })`,
+          ),
+        );
+    });
+  });
+}
+
+async function deleteFixtureRows(
+  tx: Prisma.TransactionClient,
+  fixture: FixtureFile,
+) {
+  await tx.clientAssignment.deleteMany({
+    where: { clientProfileId: { in: fixture.clientProfileIds } },
+  });
+  await tx.clientProfile.deleteMany({
+    where: { id: { in: fixture.clientProfileIds } },
+  });
+  await tx.workspaceMember.deleteMany({
+    where: {
+      userId: { in: fixture.userIds },
+      workspaceId: fixture.workspaceId,
+    },
+  });
+  await tx.session.deleteMany({ where: { userId: { in: fixture.userIds } } });
+  await tx.account.deleteMany({ where: { userId: { in: fixture.userIds } } });
+  await tx.user.deleteMany({ where: { id: { in: fixture.userIds } } });
+  await tx.workspace.delete({ where: { id: fixture.workspaceId } });
+}
+
+async function deleteFixtureRowsWithClient(
+  db: PrismaClient,
+  fixture: FixtureFile,
+) {
+  await db.$transaction((tx) => deleteFixtureRows(tx, fixture));
+}
+
+export async function main(hooks: ProvisionHooks = {}) {
   const cmd = process.argv[2];
 
   // lane-create: build a fresh task-owned database end-to-end —
@@ -172,7 +289,9 @@ async function main() {
   // database this invocation created.
   if (cmd === "lane-create") {
     const url = process.env.DATABASE_URL ?? "";
-    const dbName = `app_k6_${Date.now().toString(36)}${randomBytes(3).toString("hex")}`;
+    const dbName =
+      hooks.dbName ??
+      `app_k6_${Date.now().toString(36)}${randomBytes(3).toString("hex")}`;
     const adminUrl = new URL(url);
     adminUrl.pathname = "/postgres"; // URL parsing preserves ?schema=…
     const laneUrl = new URL(url);
@@ -180,82 +299,97 @@ async function main() {
     const admin = new PrismaClient({
       datasources: { db: { url: adminUrl.toString() } },
     });
-    let created = false;
-    const dropOwnDb = async () => {
-      if (!created) return;
-      const admin2 = new PrismaClient({
-        datasources: { db: { url: adminUrl.toString() } },
-      });
-      try {
-        await admin2.$executeRawUnsafe(`DROP DATABASE "${dbName}"`);
-        created = false;
-      } finally {
-        await admin2.$disconnect();
-      }
+    let createState: "pending" | "created" | "failed" | "dropped" = "pending";
+    let laneFileWritten = false;
+    const removeOwnLaneFile = () => {
+      if (laneFileWritten) fs.rmSync(LANE_FILE, { force: true });
     };
-    // Catchable termination: stop provisioning, drop ONLY the database
-    // this invocation created, exit nonzero. SIGKILL/machine failure
-    // cannot run this handler — that residual window is documented.
-    let terminating = false;
-    const onTerminate = () => {
-      if (terminating) return;
-      terminating = true;
-      console.error(`lane-create interrupted — dropping ${dbName}`);
-      dropOwnDb()
-        .catch(() => {})
-        .finally(() => {
-          fs.rmSync(LANE_FILE, { force: true });
-          process.exit(1);
+    let dropPromise: Promise<void> | null = null;
+    const dropOwnDb = () => {
+      if (createState !== "created") return Promise.resolve();
+      dropPromise ??= (async () => {
+        const admin2 = new PrismaClient({
+          datasources: { db: { url: adminUrl.toString() } },
         });
-    };
-    process.on("SIGTERM", onTerminate);
-    process.on("SIGINT", onTerminate);
-    try {
-      await admin.$executeRawUnsafe(`CREATE DATABASE "${dbName}"`);
-      created = true;
-    } finally {
-      await admin.$disconnect();
-    }
-    try {
-      const lane = await writeLaneFile(dbName);
-      execFileSync("npx", ["prisma", "migrate", "deploy"], {
-        stdio: "inherit",
-        env: { ...process.env, DATABASE_URL: laneUrl.toString() },
-      });
-      // TEST-ONLY fault injection — honored ONLY inside an explicit
-      // disposable test context (NODE_ENV=test AND the disposable-DB
-      // confirmation), never in a normal lane-create. "marker" throws
-      // before ownership install; "term" raises a real SIGTERM which
-      // the handler above must clean up.
-      if (
-        process.env.NODE_ENV === "test" &&
-        process.env.CONFIRM_DISPOSABLE_DB
-      ) {
-        if (process.env.K6_GATE_FAULT === "marker")
-          throw new Error("fault: marker install aborted");
-        if (process.env.K6_GATE_FAULT === "term") {
-          process.kill(process.pid, "SIGTERM");
-          await new Promise((r) => setTimeout(r, 10_000)); // handler exits
+        try {
+          await admin2.$executeRawUnsafe(`DROP DATABASE "${dbName}"`);
+          createState = "dropped";
+        } finally {
+          await admin2.$disconnect();
         }
-      }
-      const db = new PrismaClient({
-        datasources: { db: { url: laneUrl.toString() } },
+      })().catch((e) => {
+        dropPromise = null;
+        throw e;
       });
+      return dropPromise;
+    };
+    // Catchable termination: wait for CREATE DATABASE to settle, then
+    // drop only if THIS invocation successfully created the lane. A
+    // failed/existing-database CREATE is never dropped by this tool.
+    const scope = terminationScope(async () => {
       try {
-        await installMarker(db, lane);
+        await dropOwnDb();
+      } catch (e) {
+        console.error(`lane-create cleanup failed for ${dbName}: ${e}`);
       } finally {
-        await db.$disconnect();
+        removeOwnLaneFile();
       }
-      process.off("SIGTERM", onTerminate);
-      process.off("SIGINT", onTerminate);
-      console.log(
-        `lane created: ${dbName} (migrated, marker installed, ${LANE_FILE})`,
-      );
-    } catch (e) {
-      // Failure cleanup drops ONLY the database this invocation made.
-      await dropOwnDb();
-      fs.rmSync(LANE_FILE, { force: true });
-      throw e;
+    });
+    try {
+      const createPromise = Promise.resolve()
+        .then(() => (hooks.createDatabase ?? createDatabase)(admin, dbName))
+        .then(
+          () => {
+            createState = "created";
+          },
+          (e) => {
+            createState = "failed";
+            throw e;
+          },
+        );
+      try {
+        await scope.run(createPromise);
+      } finally {
+        await admin.$disconnect();
+      }
+      await scope.checkpoint();
+      try {
+        const lane = await scope.run(
+          Promise.resolve().then(async () => {
+            const written = await writeLaneFile(dbName);
+            laneFileWritten = true;
+            return written;
+          }),
+        );
+        await scope.run(migrateDeploy(laneUrl.toString()));
+        await scope.run(
+          Promise.resolve().then(() => hooks.beforeMarkerInstall?.()),
+        );
+        const markerInstall = (async () => {
+          const db = new PrismaClient({
+            datasources: { db: { url: laneUrl.toString() } },
+          });
+          try {
+            await installMarker(db, lane);
+          } finally {
+            await db.$disconnect();
+          }
+        })();
+        await scope.run(markerInstall);
+        console.log(
+          `lane created: ${dbName} (migrated, marker installed, ${LANE_FILE})`,
+        );
+      } catch (e) {
+        // Failure cleanup drops ONLY the database this invocation made.
+        try {
+          await dropOwnDb();
+        } finally {
+          removeOwnLaneFile();
+        }
+        throw e;
+      }
+    } finally {
+      scope.close();
     }
     return;
   }
@@ -283,110 +417,141 @@ async function main() {
         coaches: [],
         clients: [],
       };
-
-      // One transaction: a partial provision commits nothing.
-      await db.$transaction(async (tx) => {
-        const ws = await tx.workspace.create({
-          data: { name: tag, slug: tag },
-        });
-        fixture.workspaceId = ws.id;
-
-        const makeUser = async (email: string, role: "COACH" | "CLIENT") => {
-          const password = `Lg!${randomBytes(8).toString("hex")}`;
-          const user = await tx.user.create({
-            data: { email, name: `Load Gate ${role}`, emailVerified: true },
-          });
-          await tx.account.create({
-            data: {
-              userId: user.id,
-              providerId: "credential",
-              accountId: user.id,
-              password: await hashPassword(password),
-            },
-          });
-          await tx.workspaceMember.create({
-            data: {
-              workspaceId: ws.id,
-              userId: user.id,
-              role,
-              status: "ACTIVE",
-            },
-          });
-          fixture.userIds.push(user.id);
-          return { email, password, userId: user.id };
-        };
-
-        for (let i = 0; i < coaches; i++)
-          fixture.coaches.push(
-            await makeUser(`${tag}-coach-${i}@${FIXTURE_DOMAIN}`, "COACH"),
-          );
-        const coachMemberIds = (
-          await tx.workspaceMember.findMany({
-            where: { workspaceId: ws.id, role: "COACH" },
-            select: { id: true },
+      let fixtureState:
+        "transaction" | "committed" | "failed" | "manifestWritten" | "cleaned" =
+        "transaction";
+      let rollbackPromise: Promise<void> | null = null;
+      let manifestCreated = false;
+      const rollbackFixture = () => {
+        if (fixtureState !== "committed" && fixtureState !== "manifestWritten")
+          return Promise.resolve();
+        rollbackPromise ??= deleteFixtureRowsWithClient(db, fixture)
+          .then(() => {
+            fixtureState = "cleaned";
           })
-        ).map((m) => m.id);
-
-        for (let i = 0; i < clients; i++) {
-          const account = await makeUser(
-            `${tag}-client-${i}@${FIXTURE_DOMAIN}`,
-            "CLIENT",
-          );
-          const profile = await tx.clientProfile.create({
-            data: {
-              workspaceId: ws.id,
-              userId: account.userId,
-              name: `${CLIENT_PROFILE_NAME_PREFIX} ${i}`,
-            },
+          .catch((e) => {
+            rollbackPromise = null;
+            throw e;
           });
-          fixture.clientProfileIds.push(profile.id);
-          await tx.clientAssignment.create({
-            data: {
-              workspaceId: ws.id,
-              clientProfileId: profile.id,
-              coachMemberId: coachMemberIds[i % coachMemberIds.length],
-              role: "PRIMARY",
-            },
-          });
-          fixture.clients.push(account);
+        return rollbackPromise;
+      };
+      const scope = terminationScope(async () => {
+        try {
+          await rollbackFixture();
+        } finally {
+          if (manifestCreated) fs.rmSync(out, { force: true });
         }
       });
-
-      // Manifest write is post-commit; on failure roll the fixture rows
-      // back rather than leave orphaned synthetic users.
       try {
-        fs.mkdirSync(path.dirname(out), { recursive: true });
-        fs.writeFileSync(out, JSON.stringify(fixture, null, 2), {
-          mode: 0o600,
-        });
-      } catch (e) {
-        await db.$transaction(async (tx) => {
-          await tx.clientAssignment.deleteMany({
-            where: { clientProfileId: { in: fixture.clientProfileIds } },
-          });
-          await tx.clientProfile.deleteMany({
-            where: { id: { in: fixture.clientProfileIds } },
-          });
-          await tx.workspaceMember.deleteMany({
-            where: {
-              userId: { in: fixture.userIds },
-              workspaceId: fixture.workspaceId,
+        // One transaction: a partial provision commits nothing.
+        const createPromise = db
+          .$transaction(async (tx) => {
+            const ws = await tx.workspace.create({
+              data: { name: tag, slug: tag },
+            });
+            fixture.workspaceId = ws.id;
+
+            const makeUser = async (
+              email: string,
+              role: "COACH" | "CLIENT",
+            ) => {
+              const password = `Lg!${randomBytes(8).toString("hex")}`;
+              const user = await tx.user.create({
+                data: { email, name: `Load Gate ${role}`, emailVerified: true },
+              });
+              await tx.account.create({
+                data: {
+                  userId: user.id,
+                  providerId: "credential",
+                  accountId: user.id,
+                  password: await hashPassword(password),
+                },
+              });
+              await tx.workspaceMember.create({
+                data: {
+                  workspaceId: ws.id,
+                  userId: user.id,
+                  role,
+                  status: "ACTIVE",
+                },
+              });
+              fixture.userIds.push(user.id);
+              return { email, password, userId: user.id };
+            };
+
+            for (let i = 0; i < coaches; i++)
+              fixture.coaches.push(
+                await makeUser(`${tag}-coach-${i}@${FIXTURE_DOMAIN}`, "COACH"),
+              );
+            const coachMemberIds = (
+              await tx.workspaceMember.findMany({
+                where: { workspaceId: ws.id, role: "COACH" },
+                select: { id: true },
+              })
+            ).map((m) => m.id);
+
+            for (let i = 0; i < clients; i++) {
+              const account = await makeUser(
+                `${tag}-client-${i}@${FIXTURE_DOMAIN}`,
+                "CLIENT",
+              );
+              const profile = await tx.clientProfile.create({
+                data: {
+                  workspaceId: ws.id,
+                  userId: account.userId,
+                  name: `${CLIENT_PROFILE_NAME_PREFIX} ${i}`,
+                },
+              });
+              fixture.clientProfileIds.push(profile.id);
+              await tx.clientAssignment.create({
+                data: {
+                  workspaceId: ws.id,
+                  clientProfileId: profile.id,
+                  coachMemberId: coachMemberIds[i % coachMemberIds.length],
+                  role: "PRIMARY",
+                },
+              });
+              fixture.clients.push(account);
+            }
+            await hooks.beforeFixtureCommit?.();
+          })
+          .then(
+            () => {
+              fixtureState = "committed";
             },
+            (e) => {
+              fixtureState = "failed";
+              throw e;
+            },
+          );
+        await scope.run(createPromise);
+        await scope.checkpoint();
+
+        // Manifest write is post-commit; on failure roll the fixture rows
+        // back rather than leave orphaned synthetic users. On catchable
+        // termination, rollbackFixture performs the same scoped cleanup.
+        try {
+          fs.mkdirSync(path.dirname(out), { recursive: true });
+          fs.writeFileSync(out, JSON.stringify(fixture, null, 2), {
+            mode: 0o600,
           });
-          await tx.session.deleteMany({
-            where: { userId: { in: fixture.userIds } },
-          });
-          await tx.account.deleteMany({
-            where: { userId: { in: fixture.userIds } },
-          });
-          await tx.user.deleteMany({ where: { id: { in: fixture.userIds } } });
-          await tx.workspace.delete({ where: { id: fixture.workspaceId } });
-        });
-        throw e;
+          manifestCreated = true;
+          fixtureState = "manifestWritten";
+        } catch (e) {
+          try {
+            await scope.run(rollbackFixture());
+          } catch (cleanupError) {
+            console.error(`fixture rollback failed: ${cleanupError}`);
+          }
+          throw e;
+        }
+        await scope.checkpoint();
+        console.log(
+          `provisioned workspace ${fixture.workspaceId} (${tag}): ${coaches} coaches, ${clients} clients -> ${out}`,
+        );
+      } finally {
+        scope.close();
       }
-      console.log(
-        `provisioned workspace ${fixture.workspaceId} (${tag}): ${coaches} coaches, ${clients} clients -> ${out}`,
-      );
     } else if (cmd === "cleanup") {
       const file = arg("file");
       if (!file) throw new Error("--file <fixtures.json> is required");
@@ -433,25 +598,42 @@ async function main() {
           "refusing cleanup: manifest clientProfileIds do not all belong to the fixture workspace",
         );
 
-      await db.$transaction(async (tx) => {
-        await tx.clientAssignment.deleteMany({
-          where: { clientProfileId: { in: f.clientProfileIds } },
-        });
-        await tx.clientProfile.deleteMany({
-          where: { id: { in: f.clientProfileIds } },
-        });
-        await tx.workspaceMember.deleteMany({
-          where: { userId: { in: f.userIds }, workspaceId: f.workspaceId },
-        });
-        await tx.session.deleteMany({ where: { userId: { in: f.userIds } } });
-        await tx.account.deleteMany({ where: { userId: { in: f.userIds } } });
-        await tx.user.deleteMany({ where: { id: { in: f.userIds } } });
-        await tx.workspace.delete({ where: { id: f.workspaceId } });
+      let cleanupState: "transaction" | "committed" | "failed" = "transaction";
+      let fileRemoved = false;
+      const scope = terminationScope(async () => {
+        // A committed deletion is completed by removing its manifest;
+        // a failed/rolled-back transaction leaves the fixture intact.
+        if (cleanupState === "committed" && !fileRemoved) {
+          fs.rmSync(file, { force: true });
+          fileRemoved = true;
+        }
       });
-      fs.rmSync(file, { force: true });
-      console.log(
-        `cleanup removed workspace ${f.workspaceId} + ${f.userIds.length} users`,
-      );
+      try {
+        const cleanupPromise = db
+          .$transaction(async (tx) => {
+            await deleteFixtureRows(tx, f);
+            await hooks.beforeCleanupCommit?.();
+          })
+          .then(
+            () => {
+              cleanupState = "committed";
+            },
+            (e) => {
+              cleanupState = "failed";
+              throw e;
+            },
+          );
+        await scope.run(cleanupPromise);
+        await scope.checkpoint();
+        fs.rmSync(file, { force: true });
+        fileRemoved = true;
+        await scope.checkpoint();
+        console.log(
+          `cleanup removed workspace ${f.workspaceId} + ${f.userIds.length} users`,
+        );
+      } finally {
+        scope.close();
+      }
     } else {
       console.error(
         "usage: provision.ts create --clients N --coaches N --out file.json | cleanup --file file.json",
@@ -463,7 +645,13 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error(String(e));
-  process.exit(1);
-});
+const invokedAsCli =
+  process.argv[1] != null &&
+  fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (invokedAsCli) {
+  main().catch((e) => {
+    console.error(String(e));
+    process.exit(1);
+  });
+}

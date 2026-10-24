@@ -1,3 +1,14 @@
-[2m      Tests [22m [1m[32m46 passed[39m[22m[90m (46)[39m
-[2m   Start at [22m 15:52:22
-[2m   Duration [22m 253ms[2m (transform 64%, import 16%, tests 16%, worker 4%)[22m
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.2 /Users/apple/Devin/vari8-worktrees/k6-gate
+
+ ✓ tests/unit/load-gate.test.ts (46 tests) 11ms
+
+ Test Files  1 passed (1)
+      Tests  46 passed (46)
+   Start at  18:10:16
+   Duration  165ms (transform 66%, import 16%, tests 15%, worker 3%)
+
+COMMAND_EXIT=0

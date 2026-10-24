@@ -1,3 +1,27 @@
+## 2026-10-24 — PR #201 K6-GATE repair 8 lifecycle/mutation provenance — verified locally except disposable PG
+
+- Branch `beta/k6-gate` (worktree `vari8-worktrees/k6-gate`) implements
+  PROMPT 391 review repairs for `tools/load/provision.ts`: explicit
+  pending/created/failed `CREATE DATABASE` state, catchable-signal
+  cleanup that awaits in-flight operations, scoped fixture transaction
+  semantics, and no `K6_GATE_FAULT` read in the shipping CLI.
+- Test-only synchronization/fault injection moved to
+  `tests/integration/k6-gate-provision-harness.ts`; the disposable-PG
+  suite now has 22 lifecycle/safety cases covering SIGTERM/SIGINT race,
+  create failure, existing-DB refusal, and fixture atomicity.
+- Node v24.22.1 (`npx -p node@24.22.1`) results: `npm run typecheck` 0;
+  focused load-gate tests 46/46; `npm run test` 1250/1250; lint 0
+  errors/81 existing warnings; `npm run format:check` 0;
+  `npm run index:check` 0; `npm run build` 0; `git diff --check` 0.
+- Docker is unavailable (`docker info` exit 1) and
+  `INTEGRATION_DATABASE_URL` is unset; focused integration reports 22/22
+  skipped, so fresh disposable-DB lifecycle/mut4 evidence is explicitly
+  unavailable rather than relabeled. Mutation patches were regenerated
+  from the final baseline with apply/restore proofs; report mutants
+  failed fresh unit checks as expected.
+- Commit, push, and independent review remain pending; issue #178 stays
+  open with capacity/staging unchanged.
+
 ## 2026-10-22 — FRONTEND merged into Vari8-Beta, gate green — verified locally
 
 - Branch `beta/frontend-sync-2026-10-22`, merge of `origin/FRONTEND` `51fa6a2`

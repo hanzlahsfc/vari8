@@ -176,18 +176,34 @@ DATABASE_URL=<lane-url> CONFIRM_DISPOSABLE_DB=<lane-db> \
   --file tools/load/out/fixtures.json --lane tools/load/out/lane.json
 ```
 
-On catchable interruption after `CREATE DATABASE` (SIGTERM/SIGINT) the
-installed handler stops provisioning, drops only the database that
-invocation created, removes the lane file and exits nonzero — proven
-in integration tests. On SIGKILL or machine failure the handler cannot
-run: exactly that invocation's `app_k6_*` database may remain residual
-(its stale lane file still refuses everything; no other database is
-touched). Manual recovery: `DROP DATABASE "<lane.dbName from
+Catchable `SIGTERM`/`SIGINT` behavior is explicit by lifecycle window:
+
+- `lane-create` tracks `CREATE DATABASE` as pending/created/failed. A
+  signal during the pending window stops later provisioning, waits for
+  the create promise, drops the DB only when this invocation's create
+  succeeded, removes only the lane file this invocation wrote, and exits
+  nonzero. A failed or already-existing database is never dropped.
+- A signal during the later lane file/migrate/marker windows waits for
+  that tracked operation to settle, then performs the same own-DB
+  cleanup and exits nonzero.
+- Fixture `create` runs in one transaction. A signal during it waits
+  for commit/rollback: rollback leaves zero fixture rows; a committed
+  transaction is immediately removed by the same scoped fixture-delete
+  transaction. The manifest is removed only if this invocation wrote it.
+- Fixture `cleanup` likewise waits for its deletion transaction. A
+  rolled-back transaction leaves fixture+manifest intact; a committed
+  transaction completes the scoped deletion by removing the manifest.
+- `SIGKILL`, machine failure, or an equivalent uncatchable stop cannot
+  run these handlers. The only documented residual is exactly that
+  invocation's `app_k6_*` lane DB if the failure happens after a
+  successful `CREATE DATABASE`; its stale lane file still refuses all
+  fixture commands. Manual recovery: `DROP DATABASE "<lane.dbName from
 lane.json>"`.
 
-`K6_GATE_FAULT` exists only for the test suite: it is honored solely
-when `NODE_ENV=test` AND `CONFIRM_DISPOSABLE_DB` is set — a normal
-`lane-create` ignores it entirely (proven by test).
+The shipping CLI has no fault-injection switch and never interprets
+`K6_GATE_FAULT`. Deterministic lifecycle failures/synchronization live
+only in `tests/integration/k6-gate-provision-harness.ts`, which injects
+`ProvisionHooks` into the exported runner for the disposable-PG suite.
 
 The report always prints three dispositions: TOOL EXECUTION
 (complete/incomplete/failed — script ran its plan), RESOURCE

@@ -2,45 +2,17 @@
   - ESM syntax in a file loaded as CommonJS (vitest.integration.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
 Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
 
-[1m[30m[46m RUN [49m[39m[22m [36mv5.0.2 [39m[90m/Users/apple/Devin/vari8-worktrees/k6-gate[39m
+ RUN  v5.0.2 /Users/apple/Devin/vari8-worktrees/k6-gate
 
- [31m❯[39m tests/integration/k6-gate-provision.test.ts [2m([22m[2m16 tests[22m[2m | [22m[31m1 failed[39m[2m | [22m[33m15 skipped[39m[2m)[22m[33m 3799[2mms[22m[39m
-   [31m❯[39m K6-GATE provision/cleanup safety (real PG, task-owned lane) [2m(16)[22m
-     [2m[90m↓[39m[22m refuses destructive commands with no lane ownership file
-     [2m[90m↓[39m[22m there is no adoption path — lane-init does not exist
-     [2m[90m↓[39m[22m creates the fixture workspace with 0600 manifest perms
-[31m     [31m×[31m a manifest with a mismatched targetId refuses[39m[32m 3[2mms[22m[39m
-     [2m[90m↓[39m[22m lane-create failure drops only the DB it created
-     [2m[90m↓[39m[22m marker-install failure drops only the DB created by that call
-     [2m[90m↓[39m[22m SIGTERM mid-create drops only its own DB and exits nonzero
-     [2m[90m↓[39m[22m fault hooks are inert outside a test context
-     [2m[90m↓[39m[22m a tampered manifest deletes nothing — victims survive
-     [2m[90m↓[39m[22m a stale manifest (fixture ids pointing at nothing) refuses
-     [2m[90m↓[39m[22m forged lane file token refuses destructive cleanup
-     [2m[90m↓[39m[22m stale lane file for another database refuses
-     [2m[90m↓[39m[22m an unmarked pre-existing lane-named DB refuses
-     [2m[90m↓[39m[22m shared database names are refused even when confirmed
-     [2m[90m↓[39m[22m a failed manifest write rolls the fixture rows back
-     [2m[90m↓[39m[22m legitimate cleanup removes exactly the fixture set
+stderr | tests/integration/k6-gate-provision.test.ts
+skipping: INTEGRATION_DATABASE_URL unset
 
-[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+ ↓ tests/integration/k6-gate-provision.test.ts (22 tests | 22 skipped)
 
-[41m[1m FAIL [22m[49m tests/integration/k6-gate-provision.test.ts[2m > [22mK6-GATE provision/cleanup safety (real PG, task-owned lane)[2m > [22ma manifest with a mismatched targetId refuses
-[31m[1mError[22m: ENOENT: no such file or directory, open '/var/folders/4b/rdd0tnl55gjfb4txrnfx9vq40000gn/T/k6-gate-v7Zk3n/fixtures.json'[39m
-[36m [2m❯[22m tests/integration/k6-gate-provision.test.ts:[2m193:31[22m[39m
-    [90m191|[39m
-    [90m192|[39m     it("a manifest with a mismatched targetId refuses", async () => {
-    [90m193|[39m       const f = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-    [90m   |[39m                               [31m^[39m
-    [90m194|[39m       const forged = { ...f, targetId: "loadgate-other-fixture" };
-    [90m195|[39m       const p = path.join(dir, "wrong-target.json");
+ Test Files  1 skipped (1)
+      Tests  22 skipped (22)
+   Start at  18:17:43
+   Duration  151ms (transform 50%, import 46%, worker 4%)
 
-[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
-
-
-[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
-[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[33m15 skipped[39m[90m (16)[39m
-[2m   Start at [22m 15:52:12
-[2m   Duration [22m 4.08s[2m (tests 97%, transform 1%, import 1%)[22m
-
-exit=1
+COMMAND_EXIT=0
+MUTATION_BITE=not proven — disposable PostgreSQL unavailable
