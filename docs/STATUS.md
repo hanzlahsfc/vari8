@@ -1,3 +1,30 @@
+## 2026-10-25 — Issue #202 process-identity repair — ownership token/start checks; visual blocker remains
+
+- Replaced numeric-PGID-only cleanup ownership: parity injects a per-run
+  `PARITY_OWNERSHIP_TOKEN`, descendants inherit it, and cleanup verifies
+  PID/PGID/start-time/token identity immediately before each signal.
+  Signals go to verified PIDs, never `-PGID`; unverified processes,
+  inspection failures and foreign listeners are reported instead of
+  killed.
+- Added injected-seam tests for same-PGID foreign identity, owned
+  descendants after leader exit, escalation recheck and inspection
+  failure, while retaining live subprocess descendant cleanup. Focused
+  suite: **17/17**, exit 0. Ownership-guard mutation bit once
+  (`same-PGID` process incorrectly signaled), then restored
+  byte-identically.
+- Removed unused `VIEW_TOGGLE`. Fresh lint: **0 errors / 81 warnings**.
+  Standard Node v24.22.1 gates: format/index/typecheck/build/diff exit
+  0; full unit **105 files / 1267 tests**, exit 0.
+- Carried visual evidence remains **FAIL, 70 problems** from the prior
+  real parity run; all 70 captures were valid. `s04-template-habits` is
+  now separated as a baseline/recipe-state defect: baseline and old
+  capture showed `Tabs`, corrected capture shows `Habits`; those two
+  viewport comparisons are not like-for-like.
+- Remaining blocker: five page-size changes, two element-count changes,
+  `s11-preferences` DOM delta and pervasive raster differences remain
+  unexplained; `merge-proto @ 58eb6ed` provenance is unavailable. No
+  baseline refresh, UI/tolerance change, parity waiver, merge or SHIP.
+
 ## 2026-10-24 — Issue #202 parity HTTPS repair — capture/auth lifecycle verified; visual comparison remains failed
 
 - Reproduced the defect on `Vari8-Beta` `d1c4081`: production parity
