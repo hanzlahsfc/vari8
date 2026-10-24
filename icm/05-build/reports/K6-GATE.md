@@ -235,35 +235,59 @@ host. The only adapter used was the previously documented command map
 exported bash function that invokes the real Docker command and preserves
 stdout/stderr/exit.
 
-`verify-local.sh` ran once at head `5fbeef3` under Node v24.22.1 with
-`REQUIRE_NODE24=1`, `BASE_SHA=2214105…`,
-`LANE_DB=app_k6_gate_verify`, `LANE_PORT=55682`, `CARD=K6-GATE`,
-credentials sourced privately from `.env`, and
-`VARI8_WORKTREES=/Users/apple/Devin/vari8-worktrees`. Complete log:
-`verify-local-canonical.txt`.
+### Parity applicability
 
-Result: **VERIFY-LOCAL FAIL, exit 1**. Passed: clean tree, schema guard,
-program generator, root/frontend installs, Prisma generate,
-format/type/lint, root unit tests, frontend lint/tests, disposable lane
-migrate deploy, root/frontend builds, and e2e flow specs (**10 passed /
-7 skipped / 0 failed**). The script's integration-test stage was skipped
-by its own path rule (`db/`, `lib/`, `app/api/` unchanged); the separate
-focused lifecycle suite above was **23/23, zero skipped** on real
+D32 says PR-01 gates all 35 canvas screens and “each wiring PR gates the
+screens it wires” (`icm/03-plan/DECISIONS.md`). The local gate permits
+`SKIP_PARITY=1` only for a card whose contract gates no screens; the
+script records that case as a skip because the reference baseline is
+host-specific (`icm/05-build/tools/verify-local.sh`).
+
+Issue #178/K6-GATE is local load instrumentation, not a canvas wiring
+PR. The complete base-to-head diff contains no rendered UI, styling,
+font, asset, public file, `app/`, `components/`, `frontend/`, JSX/TSX,
+CSS, image, or font changes. The applicable contract is therefore
+**Parity (D32) on: none** — parity is NOT APPLICABLE/SKIPPED, not PASS.
+
+### Runs
+
+An earlier run at `5fbeef3` omitted `SKIP_PARITY`; it reached the real DB
+stage and then failed only at `parity regression (D32)`, exit 2. That
+run is preserved in `verify-local-canonical.txt`. The failure was a
+harness startup defect: `tools/parity/run.mjs` launched production
+`next start` with HTTP `BETTER_AUTH_URL`, and the app correctly refused
+an HTTP auth origin. This exposed a separate tracking issue (#202); it
+was not a visual regression and no parity/auth code was patched.
+
+The applicable canonical invocation at `44bf054` used:
+
+- `SKIP_PARITY=1` (explicit no-screen contract)
+- `BASE_SHA=2214105…`
+- `LANE_DB=app_k6_gate_skip`
+- `LANE_PORT=55682`
+- `CARD=K6-GATE`
+- `REQUIRE_NODE24=1`
+- `VARI8_WORKTREES=/Users/apple/Devin/vari8-worktrees`
+- the same real `app-db-1` exec adapter
+- private `.env` credentials
+
+`verify-local-canonical-skip-parity.txt`: **VERIFY-LOCAL PASS, exit 0**.
+Passed: clean tree, schema guard, program generator, root/frontend
+installs, Prisma generate, format/type/lint, root unit tests
+(**1250/1250**), frontend lint/tests (**198/198**), disposable migrate
+deploy, root/frontend builds, and e2e flow specs (**10 passed / 7
+skipped / 0 failed**). Integration was skipped by the script's own
+unchanged-path rule (`db/`, `lib/`, `app/api/` unchanged); the separate
+focused lifecycle suite above remains **23/23, zero skipped** on real
 PostgreSQL and is not counted as canonical integration evidence.
-
-The canonical run failed only at `parity regression (D32)`, exit 2:
-`tools/parity/run.mjs` starts `next start` with an HTTP
-`BETTER_AUTH_URL`, and production boot refuses it (`BETTER_AUTH_URL is
-an http: origin; production auth requires an https: base URL`). The
-adapter was not extended to fake a pass; this is a canonical parity
-harness/environment mismatch, not a lifecycle-database failure.
+Parity is recorded as `SKIP`, never pass.
 
 Task cleanup was verified through the same adapter: disposable
-`app_k6_gate_verify` is absent after the run; pre-existing builder
-`app_k6_it` remains unchanged. `app-db-1` and other pre-existing Docker
-containers were left in their post-Docker-start configured state; no
-duplicate or renamed container was created and no shared database
-contents were modified.
+`app_k6_gate_verify` and `app_k6_gate_skip` are absent after their runs;
+pre-existing builder `app_k6_it` remains unchanged. `app-db-1` and other
+pre-existing Docker containers were left in their post-Docker-start
+configured state; no duplicate or renamed container was created and no
+shared database contents were modified.
 
 ## Remaining issue-178 acceptance (NOT this lane)
 

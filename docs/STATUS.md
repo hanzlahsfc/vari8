@@ -1,3 +1,28 @@
+## 2026-10-24 — PR #201 K6-GATE canonical gate — applicable run passes; parity recorded not applicable
+
+- Applicability decision: K6-GATE is local tooling only and the full
+  base-to-head diff contains no rendered UI, style, font, asset,
+  `app/`, `components/`, `frontend/`, JSX/TSX, CSS, image or font
+  changes. Under D32 (“each wiring PR gates the screens it wires”) and
+  the local gate's no-screen rule, `Parity (D32) on: none`.
+- The earlier `5fbeef3` run without `SKIP_PARITY` is preserved as a
+  separate failure: parity startup exit 2 because the runner supplied an
+  HTTP `BETTER_AUTH_URL` to production boot. It was not a visual
+  regression; issue #202 tracks the harness defect.
+- Applicable canonical invocation at `44bf054`: Node v24.22.1,
+  `LANE_DB=app_k6_gate_skip`, `CARD=K6-GATE`, `REQUIRE_NODE24=1`,
+  `SKIP_PARITY=1`, and only the real `docker exec vari8-db-1 →
+app-db-1` adapter.
+- Result: **VERIFY-LOCAL PASS, exit 0** — clean tree, schema guard,
+  generator, installs, format/type/lint, unit **1250/1250**, frontend
+  tests **198/198**, disposable migrate deploy, root/frontend builds,
+  and e2e **10 passed / 7 skipped / 0 failed**. Integration remained
+  skipped by the script's unchanged-path rule; parity is `SKIP`, not
+  PASS.
+- Task DB `app_k6_gate_skip` was removed by the script trap and verified
+  absent. Lifecycle and mutation receipts remain separate: focused
+  suite 23/23, zero skipped; mut4 bite/restore/current baseline intact.
+
 ## 2026-10-24 — PR #201 K6-GATE canonical gate — DB stage reached; parity harness fails on HTTPS origin
 
 - Docker Desktop was started to inspect the expected development DB.
