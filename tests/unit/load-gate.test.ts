@@ -543,7 +543,48 @@ describe("K6-GATE manifestFailures — proving the planned run", () => {
     ).toEqual([]);
     // An op name the plan doesn't know is unexplained too.
     expect(mf(m, obs, smokeVus, 6, { sneaky: 1 })).toEqual(
-      expect.arrayContaining([expect.stringMatching(/unexpected setup op/)]),
+      expect.arrayContaining([expect.stringMatching(/setup op/)]),
+    );
+  });
+  it("the manifest cannot authorize ops the script doesn't support", () => {
+    // setupOps:["evil"] with a matching raw tag — the supported list is
+    // bound in code; a forged manifest op fails even when raw matches.
+    const evil = cleanManifest({
+      setupOps: ["evil"],
+      httpReqs: 6,
+      loadRequests: 5,
+    });
+    const fails = mf(evil, obs, smokeVus, 6, { evil: 1 });
+    expect(fails).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/unsupported op evil/),
+        expect.stringMatching(/missing required op origin_probe/),
+        expect.stringMatching(/unsupported setup op evil/),
+      ]),
+    );
+    // Surplus op in the manifest is a forgery too.
+    const surplus = cleanManifest({
+      setupOps: ["origin_probe", "extra"],
+      httpReqs: 6,
+      loadRequests: 5,
+    });
+    expect(mf(surplus, obs, smokeVus, 6, { origin_probe: 1 })).toEqual(
+      expect.arrayContaining([expect.stringMatching(/unsupported op extra/)]),
+    );
+    // Missing required op fails even with no surplus.
+    expect(
+      mf(
+        cleanManifest({ setupOps: [], httpReqs: 6, loadRequests: 5 }),
+        obs,
+        smokeVus,
+        6,
+        { origin_probe: 1 },
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/no setupOps plan/),
+        expect.stringMatching(/missing required op/),
+      ]),
     );
   });
   it("manifest http_reqs disagreeing with raw points fails", () => {

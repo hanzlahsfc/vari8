@@ -50,6 +50,10 @@ export const EDGE_LAG_FACTOR = 2;
 // raw http_reqs point carrying that tag is a setup operation and
 // nothing else is — a bare /login request is unexplained traffic.
 export const SETUP_OP_TAG = "setup_op";
+// The SUPPORTED setup-operation contract, bound in code — not in the
+// manifest. A manifest may only plan ops the script actually supports;
+// an unknown op name in either direction is a forgery.
+export const SUPPORTED_SETUP_OPS = ["origin_probe"];
 
 export const FAILURE_CLASSES = new Set([
   "refusal",
@@ -456,14 +460,24 @@ export function manifestFailures(
     ? manifest.setupOps
     : null;
   if (!plannedOps?.length) fails.push("manifest carries no setupOps plan");
+  // The manifest may only plan ops the SCRIPT supports — a forged
+  // setupOps:["evil"] fails even if a matching raw tag exists.
   for (const op of plannedOps ?? [])
-    if ((setupObserved?.[op] ?? 0) !== 1)
+    if (!SUPPORTED_SETUP_OPS.includes(op))
+      fails.push(`manifest setupOps contains unsupported op ${op}`);
+  for (const op of SUPPORTED_SETUP_OPS)
+    if (!plannedOps?.includes(op))
+      fails.push(`manifest setupOps missing required op ${op}`);
+  for (const op of plannedOps ?? [])
+    if (SUPPORTED_SETUP_OPS.includes(op) && (setupObserved?.[op] ?? 0) !== 1)
       fails.push(
         `setup op ${op}: expected exactly 1 tagged request, observed ${setupObserved?.[op] ?? 0}`,
       );
   for (const op of Object.keys(setupObserved ?? {}))
-    if (!plannedOps?.includes(op))
-      fails.push(`unexpected setup op ${op} in raw evidence`);
+    if (!SUPPORTED_SETUP_OPS.includes(op))
+      fails.push(`unsupported setup op ${op} in raw evidence`);
+    else if (!plannedOps?.includes(op))
+      fails.push(`unplanned setup op ${op} in raw evidence`);
   const setupTotal = Object.values(setupObserved ?? {}).reduce(
     (a, b) => a + b,
     0,

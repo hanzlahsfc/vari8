@@ -1,0 +1,146 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.2 [39m[90m/Users/apple/Devin/vari8-worktrees/k6-gate[39m
+
+ [31m❯[39m tests/unit/load-gate.test.ts [2m([22m[2m46 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 23[2mms[22m[39m
+   [32m✓[39m K6-GATE classifyResponse — the shared contract [2m(7)[22m
+     [32m✓[39m 2xx with a refusal body is concealed, never success[32m 1[2mms[22m[39m
+     [32m✓[39m non-2xx structured/state denial is a refusal[32m 0[2mms[22m[39m
+     [32m✓[39m redirects are their own class — never success or error[32m 0[2mms[22m[39m
+     [32m✓[39m JSON-expected endpoints reject HTML/non-JSON 200s[32m 0[2mms[22m[39m
+     [32m✓[39m a served login page is never a page success[32m 0[2mms[22m[39m
+     [32m✓[39m clean page 2xx (html, not login) is success; transport is status-0[32m 0[2mms[22m[39m
+     [32m✓[39m ongoing identity: a 200 naming the wrong user is failure[32m 0[2mms[22m[39m
+   [32m✓[39m K6-GATE config — target + bounds safety [2m(6)[22m
+     [32m✓[39m refuses missing/relative targets[32m 0[2mms[22m[39m
+     [32m✓[39m remote is DISABLED — no flag can re-enable it[32m 0[2mms[22m[39m
+     [32m✓[39m NaN / malformed LOAD_MAX_VUS aborts — it cannot bypass the cap[32m 0[2mms[22m[39m
+     [32m✓[39m the gate REQUIRES LOAD_HOLD500_MIN — unresolved decision exposed[32m 0[2mms[22m[39m
+     [32m✓[39m durationToSec parses and rejects malformed[32m 1[2mms[22m[39m
+     [32m✓[39m buildManifest derives planned specs from the configured profile[32m 1[2mms[22m[39m
+   [32m✓[39m K6-GATE report — execution + capacity dual verdicts [2m(9)[22m
+     [32m✓[39m percentile picks the nearest-rank element[32m 0[2mms[22m[39m
+     [32m✓[39m CAPACITY PASS is unreachable — no synthetic input can obtain it[32m 1[2mms[22m[39m
+     [32m✓[39m bounded smoke: execution COMPLETE is script completion only[32m 0[2mms[22m[39m
+     [32m✓[39m measured breaches stay visible — never laundered as pass[32m 0[2mms[22m[39m
+     [32m✓[39m manifest problems are execution FAILED[32m 0[2mms[22m[39m
+     [32m✓[39m the reviewer's failing run shape fails with correct totals[32m 2[2mms[22m[39m
+     [32m✓[39m unknown/missing class tags are unclassified — and FAIL[32m 1[2mms[22m[39m
+     [32m✓[39m counter disagreement makes the run inconclusive[32m 0[2mms[22m[39m
+     [32m✓[39m threshold boundary: p95 reported as observed data, never certified[32m 0[2mms[22m[39m
+   [32m✓[39m K6-GATE manifestFailures — proving the planned run [2m(6)[22m
+     [32m✓[39m sound manifest + observed phases → no failures[32m 0[2mms[22m[39m
+     [32m✓[39m vus evidence is never consumed — certification unreachable[32m 0[2mms[22m[39m
+     [32m✓[39m the 42+2-login forgery fails — only one setup op is planned[32m 0[2mms[22m[39m
+     [32m✓[39m the manifest cannot authorize ops the script doesn't support[32m 0[2mms[22m[39m
+     [32m✓[39m manifest http_reqs disagreeing with raw points fails[32m 0[2mms[22m[39m
+     [32m✓[39m absent scenario evidence / endpoints / iterations fail[32m 0[2mms[22m[39m
+   [32m✓[39m K6-GATE phaseFailures — execution diagnostics only [2m(5)[22m
+     [32m✓[39m a fully covered window passes the execution diagnostic[32m 0[2mms[22m[39m
+     [32m✓[39m a one-point run fails window coverage[32m 0[2mms[22m[39m
+     [32m✓[39m vus series are ignored — a forged peak cannot alter diagnostics[32m 0[2mms[22m[39m
+     [32m✓[39m interior silence fails continuity[32m 0[2mms[22m[39m
+     [32m✓[39m ramping phases carry no VU-level requirement[32m 0[2mms[22m[39m
+   [31m❯[39m K6-GATE parseResources — declared cadence coverage [2m(12)[22m
+     [32m✓[39m declared cadence must equal the run config — the file can't self-authorize[32m 1[2mms[22m[39m
+     [32m✓[39m fabricated cadence (intervalSec=9999) cannot claim coverage[32m 0[2mms[22m[39m
+     [32m✓[39m one/two sparse samples cannot satisfy a window[32m 0[2mms[22m[39m
+     [32m✓[39m the preserved 9m39s suspension gap fails coverage[32m 0[2mms[22m[39m
+     [32m✓[39m duplicate/out-of-order timestamps are not evidence[32m 0[2mms[22m[39m
+[31m     [31m×[31m metrics present only in the first sample are unmeasured[39m[32m 4[2mms[22m[39m
+[31m     [31m×[31m a contiguous missing tail fails — the reviewer's first-4-of-7[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m a pre-run sample cannot mask a missing first in-window metric[39m[32m 0[2mms[22m[39m
+[31m     [31m×[31m a missing last in-window metric fails[39m[32m 6[2mms[22m[39m
+     [32m✓[39m metrics in out-of-window samples only count for nothing[32m 0[2mms[22m[39m
+     [32m✓[39m a brief interior dropout is tolerated, a long run is not[32m 0[2mms[22m[39m
+     [32m✓[39m missing cadence declaration fails — cadence is not inferred[32m 0[2mms[22m[39m
+   [32m✓[39m K6-GATE units [2m(1)[22m
+     [32m✓[39m memToMb converts docker units — 1.2GiB is not 1 MB[32m 0[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 4 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/unit/load-gate.test.ts[2m > [22mK6-GATE parseResources — declared cadence coverage[2m > [22mmetrics present only in the first sample are unmeasured
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m tests/unit/load-gate.test.ts:[2m790:27[22m[39m
+    [90m788|[39m     ].join("\n");
+    [90m789|[39m     const r = parseResources(text, win, 5);
+    [90m790|[39m     expect(r.ramMeasured).toBe(false);
+    [90m   |[39m                           [31m^[39m
+    [90m791|[39m     expect(r.pgMeasured).toBe(false);
+    [90m792|[39m     expect(r.restartsMeasured).toBe(false);
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/unit/load-gate.test.ts[2m > [22mK6-GATE parseResources — declared cadence coverage[2m > [22ma contiguous missing tail fails — the reviewer's first-4-of-7
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m tests/unit/load-gate.test.ts:[2m815:30[22m[39m
+    [90m813|[39m     const r = parseResources(text, win, 5);
+    [90m814|[39m     expect(r.samples).toBe(7);
+    [90m815|[39m     expect(r.appCpuMeasured).toBe(false);
+    [90m   |[39m                              [31m^[39m
+    [90m816|[39m     expect(r.ramMeasured).toBe(false);
+    [90m817|[39m     expect(r.pgMeasured).toBe(false);
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/unit/load-gate.test.ts[2m > [22mK6-GATE parseResources — declared cadence coverage[2m > [22ma pre-run sample cannot mask a missing first in-window metric
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m tests/unit/load-gate.test.ts:[2m831:54[22m[39m
+    [90m829|[39m       ...[5, 10, 15, 20, 25, 30].map((s) => mk(s)),
+    [90m830|[39m     ].join("\n");
+    [90m831|[39m     expect(parseResources(text, win, 5).ramMeasured).toBe(false);
+    [90m   |[39m                                                      [31m^[39m
+    [90m832|[39m   });
+    [90m833|[39m   it("a missing last in-window metric fails", () => {
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/unit/load-gate.test.ts[2m > [22mK6-GATE parseResources — declared cadence coverage[2m > [22ma missing last in-window metric fails
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m tests/unit/load-gate.test.ts:[2m840:57[22m[39m
+    [90m838|[39m       mk(34), // post-run — irrelevant to coverage
+    [90m839|[39m     ].join("\n");
+    [90m840|[39m     expect(parseResources(text, win, 5).appCpuMeasured).toBe(false);
+    [90m   |[39m                                                         [31m^[39m
+    [90m841|[39m   });
+    [90m842|[39m   it("metrics in out-of-window samples only count for nothing", () => {
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m42 passed[39m[22m[90m (46)[39m
+[2m   Start at [22m 15:52:06
+[2m   Duration [22m 209ms[2m (transform 59%, tests 25%, import 13%, worker 2%)[22m
+
+exit=1

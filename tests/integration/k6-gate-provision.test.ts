@@ -244,7 +244,7 @@ describe.skipIf(!enabled)(
       const before = await laneDbs();
       const r = runProvision(
         ["lane-create", "--lane", path.join(dir, "fault-lane.json")],
-        { CONFIRM_DISPOSABLE_DB: "", K6_GATE_FAULT: "marker" },
+        { K6_GATE_FAULT: "marker" },
         url as string,
       );
       expect(r.code).not.toBe(0);
@@ -264,41 +264,40 @@ describe.skipIf(!enabled)(
       expect(rc.code).not.toBe(0);
     }, 60_000);
 
-    it("SIGTERM mid-create leaves ONLY its own DB residual (documented window)", async () => {
-      // Catchable termination after CREATE DATABASE: Node's default
-      // SIGTERM handling exits without running the catch — the created
-      // DB is residual by design. Assert the residual is EXACTLY the
-      // DB this invocation created, then perform the documented manual
-      // recovery (drop the residual lane DB).
+    it("SIGTERM mid-create drops only its own DB and exits nonzero", async () => {
+      // Catchable termination after CREATE DATABASE: the installed
+      // handler must stop provisioning, drop exactly the created DB,
+      // and exit nonzero — zero residue, no other DB touched.
+      // (SIGKILL/machine failure still leaves a residual — documented.)
       const before = await laneDbs();
       const r = runProvision(
         ["lane-create", "--lane", path.join(dir, "term-lane.json")],
-        { CONFIRM_DISPOSABLE_DB: "", K6_GATE_FAULT: "term" },
+        { K6_GATE_FAULT: "term" },
         url as string,
       );
       expect(r.code).not.toBe(0);
-      const mid = await laneDbs();
-      const residual = mid.filter((d) => !before.includes(d));
-      expect(residual).toHaveLength(1); // only the invocation's own DB
-      const laneName = residual[0];
-      // The lane file exists but no marker was installed — the stale
-      // lane file cannot authorize create/cleanup on the residual.
-      const stale = runProvision(
-        [
-          "cleanup",
-          "--file",
-          manifestPath,
-          "--lane",
-          path.join(dir, "term-lane.json"),
-        ],
-        {},
-        dbUrlFor(laneName),
-      ).code;
-      expect(stale).not.toBe(0);
-      // Documented manual recovery: operator drops the residual lane.
-      await dropDb(laneName);
-      expect(await laneDbs()).toEqual(before);
+      expect(await laneDbs()).toEqual(before); // zero residue
+      expect(fs.existsSync(path.join(dir, "term-lane.json"))).toBe(false);
     }, 60_000);
+
+    it("fault hooks are inert outside a test context", async () => {
+      // K6_GATE_FAULT without NODE_ENV=test + CONFIRM_DISPOSABLE_DB
+      // must NOT trigger — a normal lane-create ignores it entirely.
+      const env = { K6_GATE_FAULT: "term", NODE_ENV: "production" };
+      const r = runProvision(
+        ["lane-create", "--lane", path.join(dir, "inert-lane.json")],
+        { CONFIRM_DISPOSABLE_DB: "", ...env },
+        url as string,
+      );
+      if (r.code === 0) {
+        // Clean the legitimately created lane (fault was inert).
+        const laneName = JSON.parse(
+          fs.readFileSync(path.join(dir, "inert-lane.json"), "utf8"),
+        ).dbName;
+        await dropDb(laneName);
+      }
+      expect(r.code).toBe(0); // created normally — fault never fired
+    }, 120_000);
 
     it("a tampered manifest deletes nothing — victims survive", async () => {
       const f = JSON.parse(fs.readFileSync(manifestPath, "utf8"));

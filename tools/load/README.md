@@ -38,9 +38,12 @@ Every run must produce three artifacts:
    configuration (`PLANNED_SCENARIOS`, captured in init context):
    profile, scenario specs (`planned.vus`/`durationSec`), expected
    workload endpoints, iterations, vusMax, httpReqs, loadRequests,
-   and the bounded `setupOps` identity list (`["origin_probe"]`) —
-   the report reconciles raw `http_reqs` points carrying the
-   `setup_op` tag against this list operation-for-operation.
+   and the bounded `setupOps` identity list (`["origin_probe"]`).
+   The report reconciles raw `http_reqs` points carrying the
+   `setup_op` tag operation-for-operation, AND validates the manifest
+   plan against `SUPPORTED_SETUP_OPS` bound in report.mjs — a manifest
+   may only plan ops the script supports; an unknown name in either
+   direction is a forgery, not setup.
 3. `resources.ndjson` — first line `{"type":"meta","intervalSec":N}`
    records the collector's cadence. The report receives the EXPECTED
    cadence from run config (`LOAD_RESOURCE_INTERVAL_S`) — the file
@@ -173,11 +176,18 @@ DATABASE_URL=<lane-url> CONFIRM_DISPOSABLE_DB=<lane-db> \
   --file tools/load/out/fixtures.json --lane tools/load/out/lane.json
 ```
 
-If `lane-create` is interrupted after `CREATE DATABASE` (SIGTERM,
-SIGKILL, machine failure) the catch cannot run — exactly that
-invocation's `app_k6_*` database remains residual (its stale lane
-file still refuses everything; no other database is touched).
-Manual recovery: `DROP DATABASE "<lane.dbName from lane.json>"`.
+On catchable interruption after `CREATE DATABASE` (SIGTERM/SIGINT) the
+installed handler stops provisioning, drops only the database that
+invocation created, removes the lane file and exits nonzero — proven
+in integration tests. On SIGKILL or machine failure the handler cannot
+run: exactly that invocation's `app_k6_*` database may remain residual
+(its stale lane file still refuses everything; no other database is
+touched). Manual recovery: `DROP DATABASE "<lane.dbName from
+lane.json>"`.
+
+`K6_GATE_FAULT` exists only for the test suite: it is honored solely
+when `NODE_ENV=test` AND `CONFIRM_DISPOSABLE_DB` is set — a normal
+`lane-create` ignores it entirely (proven by test).
 
 The report always prints three dispositions: TOOL EXECUTION
 (complete/incomplete/failed — script ran its plan), RESOURCE

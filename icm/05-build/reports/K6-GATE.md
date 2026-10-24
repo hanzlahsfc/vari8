@@ -30,67 +30,79 @@ flag truncated/interrupted runs and carry no acceptance authority.
 
 ## Other repairs
 
-- **Setup operations identified by tag, not URL**: `setup()` emits
-  `tags:{setup_op:"origin_probe"}` and the manifest carries the
-  bounded `setupOps` plan. Raw `http_reqs` points carrying the tag are
-  the ONLY setup operations — an untagged /login, a duplicate probe,
-  or an unexpected op name is unexplained traffic and fails the run:
-  `raw = measured + observed_setup_ops` and each planned op observed
-  exactly once.
-- **Per-metric coverage computed INSIDE the run window**: a metric
-  must be present in the earliest AND latest in-window sample with no
-  contiguous absence > 3× cadence. A fully populated pre-run sample
-  cannot mask a missing first in-window metric; out-of-window samples
-  count for nothing; no interpolation substitutes old measurements.
+- **Setup ops tagged AND code-bounded**: `setup()` emits
+  `tags:{setup_op:"origin_probe"}`; `SUPPORTED_SETUP_OPS` is bound in
+  report.mjs — a manifest `setupOps:["evil"]` fails even with a
+  matching raw tag; missing/surplus/duplicate/unknown ops all fail;
+  `raw = measured + tagged_setup_ops` exactly. URL matching is gone.
+- **Per-metric coverage computed INSIDE the run window**: earliest
+  AND latest in-window sample must carry each metric, no contiguous
+  absence > 3× cadence, no interpolation; pre-run samples cannot mask
+  missing in-window metrics.
 - **Cleanup binds target identity**: `manifest.targetId === live
-workspace.slug` — a forged manifest cannot retarget another
-  fixture set. (`targetId` is user-editable label, documented — not
+workspace.slug`. (`targetId` is a user-editable label — not
   production attestation.)
-- **Lifecycle failure paths proven**: `K6_GATE_FAULT` (test-only
-  hook) injects `marker` (throws before ownership → catch drops only
-  the created DB) and `term` (SIGTERM → Node's default handler exits
-  WITHOUT running catch → exactly the invocation's DB remains
-  residual, its stale lane file still refused, documented manual
-  recovery = drop the residual). SIGKILL/machine failure share that
-  residual window — no cleanup is promised there; the documented
-  recovery is `DROP DATABASE` of the lane name in `lane.json`.
-- **Mutation evidence preserved**: `icm/05-build/reports/
-k6-gate-mutations/` holds diffs, failing logs+exits, restore
-  hashes and green reruns for the accounting, coverage and
-  targetId guards.
-- **README is executable**: full lane-create → provision → sampler →
-  k6 → report (`LOAD_RESOURCE_INTERVAL_S`) → cleanup sequence.
-- **Preserved evidence corrected**: the 127-request raw smoke's
-  resources.ndjson has app CPU in 10/25 samples, RAM 11, pg 11 — a
-  contiguous missing tail; the report shows those FAILs. The raw
-  artifacts are preserved in `tools/load/out/` (gitignored). The
-  preserved run's setup probe predates the `setup_op` tag, so its
-  TOOL EXECUTION now reads incomplete — recorded honestly, artifacts
-  untouched.
+- **Catchable termination handled**: lane-create installs
+  SIGTERM/SIGINT handlers that stop provisioning, drop only the
+  created DB and exit nonzero — integration-proven with zero residue.
+  SIGKILL/machine failure remains the documented residual window
+  (manual `DROP DATABASE` of the lane name).
+- **Fault hooks test-gated**: `K6_GATE_FAULT` is honored ONLY with
+  `NODE_ENV=test` + `CONFIRM_DISPOSABLE_DB` — inert in a normal
+  lane-create (integration-proven).
+- **Mutation evidence**: `icm/05-build/reports/k6-gate-mutations/`
+  — final-code baseline hash, four guard-disable diffs, failing
+  logs+exits, byte-identical restore (HASHES-IDENTICAL), green
+  reruns.
+- **Preserved-run outcome corrected** (per independent review): on
+  the preserved 127-request raw with `LOAD_RESOURCE_INTERVAL_S=4`,
+  the current report prints TOOL EXECUTION FAILED (pre-tag manifest,
+  1 unexplained request) and RESOURCE COMPLETENESS PASS for all
+  metrics — the missing tail falls after the measured window and is
+  correctly excluded. The preserved artifacts were later replaced by
+  the fresh bounded smoke below; the recorded outcome stands.
 
-## Preserved smoke interpretation (127 requests, all success)
+## Fresh bounded smoke (repair-7 head, k6 v1.3.0, documented sequence)
 
-TOOL EXECUTION: INCOMPLETE under the tagged-op contract (the
-preserved run's setup probe predates `setup_op` tagging — honest).
-RESOURCE COMPLETENESS: app CPU/RAM/pg/limit coverage FAIL (contiguous
-missing tail — honest sampler gap). CAPACITY: UNAVAILABLE.
-STAGING: NOT PERFORMED. VERDICT: FAIL — as every run must read.
+lane-create → provision → sampler (`LOAD_INTERVAL_S=4`) → k6
+`LOAD_PROFILE=smoke` → report (`LOAD_RESOURCE_INTERVAL_S=4`) →
+cleanup. Raw reconciliation: **120 http_reqs = 119 measured +
+1 `setup_op:"origin_probe"` point** — tag verified in the real
+stream; all 119 workload requests `success`; manifest `setupOps`
+matches.
+
+```
+TOOL EXECUTION: COMPLETE
+RESOURCE COMPLETENESS: all metrics PASS in-window
+CAPACITY ACCEPTANCE: UNAVAILABLE
+STAGING: NOT PERFORMED
+VERDICT: FAIL (capacity unreachable by construction)
+```
+
+Lane DB + fixtures dropped; only builder `app_k6_it` remains.
+
+## Preserved-run outcome (127 requests, historical)
+
+Per independent review at `b435fff`: TOOL EXECUTION FAILED (pre-tag
+manifest, 1 unexplained request) and RESOURCE COMPLETENESS PASS
+in-window (the missing tail lies after the measured window). The raw
+artifacts were subsequently replaced by the fresh smoke above; the
+recorded outcome stands.
 
 ## Tests
 
-- Unit **45**: classification, remote-disabled, manifest,
-  phase diagnostics, capacity-unreachable, tagged-op accounting
-  (untagged/dup/unknown-op forgery), unexplained surplus, in-window
-  per-metric coverage (pre-run masking, missing last, interior
-  dropout vs long gap, out-of-window-only), cadence authorization,
+- Unit **46**: classification, remote-disabled, manifest,
+  phase diagnostics, capacity-unreachable, tagged+code-bounded op
+  accounting (untagged/dup/unknown/forged-op forgery), unexplained
+  surplus, in-window per-metric coverage, cadence authorization,
   ordering, sparse windows, units.
-- Integration **15** on canonical `?schema=public`: no-lane-file,
+- Integration **16** on canonical `?schema=public`: no-lane-file,
   no-adoption, 0600, targetId mismatch, lane-create write failure,
-  marker-fault drop, SIGTERM residual (only own DB + stale lane
-  refused), tampered/stale manifest, forged/stale lane, unmarked DB,
-  denylist, rollback, scoped cleanup.
-- Mutations: accounting/coverage off → 6 unit failures; targetId
-  off → 2 integration failures — diffs/logs/hashes in
+  marker-fault drop, SIGTERM handled (zero residue, nonzero exit),
+  fault-hook inertness outside test context, tampered/stale manifest,
+  forged/stale lane, unmarked DB, denylist, rollback, scoped cleanup.
+- Mutations: accounting/coverage/bounded-ops/targetId off → 2+4+1
+  unit + 1 integration failures — diffs/logs/hashes in
   `k6-gate-mutations/`; restored byte-identically.
 - verify-local: see gate log at commit.
 
