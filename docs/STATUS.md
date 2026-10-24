@@ -19,9 +19,9 @@
   unavailable rather than relabeled. Mutation patches were regenerated
   from the final baseline with apply/restore proofs; report mutants
   failed fresh unit checks as expected.
-- Commit `029dda9` contains the scoped repair/evidence delta; push and
-  independent review remain pending. Issue #178 stays open with
-  capacity/staging unchanged.
+- The scoped repair/evidence commits were pushed to
+  `origin/beta/k6-gate`; independent review remains pending. Issue #178
+  stays open with capacity/staging unchanged.
 
 ## 2026-10-22 — FRONTEND merged into Vari8-Beta, gate green — verified locally
 
