@@ -18,11 +18,12 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const url = process.env.INTEGRATION_DATABASE_URL;
 const enabled = typeof url === "string" && url.length > 0;
-const dbName = (url ?? "").split("/").pop()?.split("?")[0] ?? "";
+let victimWorkspaceId: string | null = null;
 
 function runProvision(
   args: string[],
   env: Record<string, string> = {},
+  dbUrl = url as string,
 ): { code: number; output: string } {
   try {
     const out = execFileSync(
@@ -33,8 +34,8 @@ function runProvision(
         env: {
           ...process.env,
           NODE_ENV: "test",
-          DATABASE_URL: url as string,
-          CONFIRM_DISPOSABLE_DB: dbName,
+          DATABASE_URL: dbUrl,
+          CONFIRM_DISPOSABLE_DB: dbUrl.split("/").pop()?.split("?")[0] ?? "",
           ...env,
         },
       },
@@ -73,6 +74,7 @@ describe.skipIf(!enabled)(
       const victimWs = await prisma.workspace.create({
         data: { name: `victim-${Date.now()}`, slug: `victim-${Date.now()}` },
       });
+      victimWorkspaceId = victimWs.id;
       const victim = await prisma.user.create({
         data: {
           email: `victim-${Date.now()}@seed.test`,
@@ -100,6 +102,24 @@ describe.skipIf(!enabled)(
     }, 120_000);
 
     afterAll(async () => {
+      // Remove the suite's own victim rows — the disposable lane stays
+      // clean for the next run. FK order: dependents first.
+      if (victimProfileId)
+        await prisma.clientProfile
+          .delete({ where: { id: victimProfileId } })
+          .catch(() => {});
+      if (victimUserId) {
+        await prisma.workspaceMember
+          .deleteMany({ where: { userId: victimUserId } })
+          .catch(() => {});
+        await prisma.user
+          .delete({ where: { id: victimUserId } })
+          .catch(() => {});
+      }
+      if (victimWorkspaceId)
+        await prisma.workspace
+          .delete({ where: { id: victimWorkspaceId } })
+          .catch(() => {});
       await prisma.$disconnect();
       fs.rmSync(dir, { recursive: true, force: true });
     }, 30_000);
@@ -170,6 +190,53 @@ describe.skipIf(!enabled)(
       const r = runProvision(["cleanup", "--file", stalePath]);
       expect(r.code).not.toBe(0);
       expect(r.output).toMatch(/refusing cleanup/);
+    });
+
+    it("shared database names are refused even when confirmed", () => {
+      for (const shared of ["app_dev", "app_e2e", "app_integration_test"]) {
+        const r = runProvision(
+          ["create", "--clients", "1", "--coaches", "1", "--out", manifestPath],
+          {},
+          `postgresql://app:app_dev_password@127.0.0.1:5433/${shared}`,
+        );
+        expect(r.code).not.toBe(0);
+        expect(r.output).toMatch(/disposable lane/);
+      }
+    });
+
+    it("a failed manifest write rolls the fixture rows back", async () => {
+      // --out inside a directory tsx cannot create → post-commit write
+      // fails → rollback must remove everything it provisioned. Compare
+      // loadgate counts before/after — the earlier test's fixture set
+      // legitimately still exists.
+      const before = {
+        users: await prisma.user.count({
+          where: { email: { endsWith: "@loadgate.invalid" } },
+        }),
+        workspaces: await prisma.workspace.count({
+          where: { slug: { startsWith: "loadgate-" } },
+        }),
+      };
+      const r = runProvision([
+        "create",
+        "--clients",
+        "1",
+        "--coaches",
+        "1",
+        "--out",
+        "/proc/definitely-cannot-create/fixtures.json",
+      ]);
+      expect(r.code).not.toBe(0);
+      expect(
+        await prisma.user.count({
+          where: { email: { endsWith: "@loadgate.invalid" } },
+        }),
+      ).toBe(before.users);
+      expect(
+        await prisma.workspace.count({
+          where: { slug: { startsWith: "loadgate-" } },
+        }),
+      ).toBe(before.workspaces);
     });
 
     it("legitimate cleanup removes exactly the fixture set", async () => {

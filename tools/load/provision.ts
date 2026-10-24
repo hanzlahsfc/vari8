@@ -35,7 +35,17 @@ import { hashPassword } from "../../lib/password";
 const FIXTURE_DOMAIN = "loadgate.invalid";
 const FIXTURE_SLUG_PREFIX = "loadgate-";
 const CLIENT_PROFILE_NAME_PREFIX = "Load Gate Synthetic Client";
+// A disposable lane must look like one AND not be a shared database —
+// app_dev / e2e / the shared integration DBs are never fixture targets.
 const LANE_DB_NAME = /^(app_|test_|lane_|.*_it$|.*_review$|loadgate)/;
+const SHARED_DB_DENYLIST = new Set([
+  "app_dev",
+  "app_e2e",
+  "app",
+  "postgres",
+  "app_integration_test",
+  "integration_test",
+]);
 
 type FixtureFile = {
   createdAt: string;
@@ -57,9 +67,9 @@ function assertDisposableDb() {
   const url = process.env.DATABASE_URL ?? "";
   const dbName = url.split("/").pop()?.split("?")[0] ?? "";
   const confirm = process.env.CONFIRM_DISPOSABLE_DB ?? "";
-  if (!dbName || !LANE_DB_NAME.test(dbName))
+  if (!dbName || !LANE_DB_NAME.test(dbName) || SHARED_DB_DENYLIST.has(dbName))
     throw new Error(
-      `refusing: DATABASE_URL db ${JSON.stringify(dbName)} does not look like a disposable lane`,
+      `refusing: DATABASE_URL db ${JSON.stringify(dbName)} is not a task-owned disposable lane`,
     );
   if (confirm !== dbName)
     throw new Error(
@@ -85,7 +95,7 @@ async function main() {
       const tag = `${FIXTURE_SLUG_PREFIX}${Date.now()}-${randomBytes(3).toString("hex")}`;
       const fixture: FixtureFile = {
         createdAt: new Date().toISOString(),
-        targetId: "", // remote runs set this explicitly — see README
+        targetId: tag,
         workspaceId: "",
         userIds: [],
         clientProfileIds: [],
@@ -93,71 +103,108 @@ async function main() {
         clients: [],
       };
 
-      const ws = await db.workspace.create({ data: { name: tag, slug: tag } });
-      fixture.workspaceId = ws.id;
-      fixture.targetId = tag;
+      // One transaction: a partial provision commits nothing.
+      await db.$transaction(async (tx) => {
+        const ws = await tx.workspace.create({
+          data: { name: tag, slug: tag },
+        });
+        fixture.workspaceId = ws.id;
 
-      const makeUser = async (email: string, role: "COACH" | "CLIENT") => {
-        const password = `Lg!${randomBytes(8).toString("hex")}`;
-        const user = await db.user.create({
-          data: { email, name: `Load Gate ${role}`, emailVerified: true },
-        });
-        await db.account.create({
-          data: {
-            userId: user.id,
-            providerId: "credential",
-            accountId: user.id,
-            password: await hashPassword(password),
-          },
-        });
-        await db.workspaceMember.create({
-          data: { workspaceId: ws.id, userId: user.id, role, status: "ACTIVE" },
-        });
-        fixture.userIds.push(user.id);
-        return { email, password, userId: user.id };
-      };
+        const makeUser = async (email: string, role: "COACH" | "CLIENT") => {
+          const password = `Lg!${randomBytes(8).toString("hex")}`;
+          const user = await tx.user.create({
+            data: { email, name: `Load Gate ${role}`, emailVerified: true },
+          });
+          await tx.account.create({
+            data: {
+              userId: user.id,
+              providerId: "credential",
+              accountId: user.id,
+              password: await hashPassword(password),
+            },
+          });
+          await tx.workspaceMember.create({
+            data: {
+              workspaceId: ws.id,
+              userId: user.id,
+              role,
+              status: "ACTIVE",
+            },
+          });
+          fixture.userIds.push(user.id);
+          return { email, password, userId: user.id };
+        };
 
-      for (let i = 0; i < coaches; i++)
-        fixture.coaches.push(
-          await makeUser(`${tag}-coach-${i}@${FIXTURE_DOMAIN}`, "COACH"),
-        );
-      const coachMemberIds = (
-        await db.workspaceMember.findMany({
-          where: { workspaceId: ws.id, role: "COACH" },
-          select: { id: true },
-        })
-      ).map((m) => m.id);
+        for (let i = 0; i < coaches; i++)
+          fixture.coaches.push(
+            await makeUser(`${tag}-coach-${i}@${FIXTURE_DOMAIN}`, "COACH"),
+          );
+        const coachMemberIds = (
+          await tx.workspaceMember.findMany({
+            where: { workspaceId: ws.id, role: "COACH" },
+            select: { id: true },
+          })
+        ).map((m) => m.id);
 
-      for (let i = 0; i < clients; i++) {
-        const account = await makeUser(
-          `${tag}-client-${i}@${FIXTURE_DOMAIN}`,
-          "CLIENT",
-        );
-        const profile = await db.clientProfile.create({
-          data: {
-            workspaceId: ws.id,
-            userId: account.userId,
-            name: `${CLIENT_PROFILE_NAME_PREFIX} ${i}`,
-          },
-        });
-        fixture.clientProfileIds.push(profile.id);
-        await db.clientAssignment.create({
-          data: {
-            workspaceId: ws.id,
-            clientProfileId: profile.id,
-            coachMemberId: coachMemberIds[i % coachMemberIds.length],
-            role: "PRIMARY",
-          },
-        });
-        fixture.clients.push(account);
-      }
-
-      fs.mkdirSync(path.dirname(out), { recursive: true });
-      fs.writeFileSync(out, JSON.stringify(fixture, null, 2), {
-        mode: 0o600,
+        for (let i = 0; i < clients; i++) {
+          const account = await makeUser(
+            `${tag}-client-${i}@${FIXTURE_DOMAIN}`,
+            "CLIENT",
+          );
+          const profile = await tx.clientProfile.create({
+            data: {
+              workspaceId: ws.id,
+              userId: account.userId,
+              name: `${CLIENT_PROFILE_NAME_PREFIX} ${i}`,
+            },
+          });
+          fixture.clientProfileIds.push(profile.id);
+          await tx.clientAssignment.create({
+            data: {
+              workspaceId: ws.id,
+              clientProfileId: profile.id,
+              coachMemberId: coachMemberIds[i % coachMemberIds.length],
+              role: "PRIMARY",
+            },
+          });
+          fixture.clients.push(account);
+        }
       });
+
+      // Manifest write is post-commit; on failure roll the fixture rows
+      // back rather than leave orphaned synthetic users.
+      try {
+        fs.mkdirSync(path.dirname(out), { recursive: true });
+        fs.writeFileSync(out, JSON.stringify(fixture, null, 2), {
+          mode: 0o600,
+        });
+      } catch (e) {
+        await db.$transaction(async (tx) => {
+          await tx.clientAssignment.deleteMany({
+            where: { clientProfileId: { in: fixture.clientProfileIds } },
+          });
+          await tx.clientProfile.deleteMany({
+            where: { id: { in: fixture.clientProfileIds } },
+          });
+          await tx.workspaceMember.deleteMany({
+            where: {
+              userId: { in: fixture.userIds },
+              workspaceId: fixture.workspaceId,
+            },
+          });
+          await tx.session.deleteMany({
+            where: { userId: { in: fixture.userIds } },
+          });
+          await tx.account.deleteMany({
+            where: { userId: { in: fixture.userIds } },
+          });
+          await tx.user.deleteMany({ where: { id: { in: fixture.userIds } } });
+          await tx.workspace.delete({ where: { id: fixture.workspaceId } });
+        });
+        throw e;
+      }
       console.log(
-        `provisioned workspace ${ws.id} (${tag}): ${coaches} coaches, ${clients} clients -> ${out}`,
+        `provisioned workspace ${fixture.workspaceId} (${tag}): ${coaches} coaches, ${clients} clients -> ${out}`,
       );
     } else if (cmd === "cleanup") {
       const file = arg("file");

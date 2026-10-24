@@ -7,30 +7,30 @@
 //   restart — judged by report.mjs, not by k6 itself.
 //
 //   The specified profile never HOLDS 500 VUs: the only 500-concurrent
-//   moment is the transient ramp crossover. `ramp` and `soak` run as
-//   specified as named scenarios; `hold500` (LOAD_HOLD500_MIN, off by
-//   default) inserts the sustained-500 window the pass measurement
-//   actually needs — without it report.mjs marks 500-session evidence
-//   "not collected": inconclusive, not PASS. This is the recorded
-//   acceptance-choice gap.
+//   moment is the transient ramp crossover. `hold500` is REQUIRED for
+//   the gate — LOAD_HOLD500_MIN is the recorded unresolved acceptance
+//   decision; the profile refuses to run without it, and report.mjs
+//   fails "500-session hold phase" when the phase never executed.
 //
 // Workload: READ traffic only — session/roster APIs and page GETs under
-// real sessions. Issue #178's acceptance names latency/error/resource
-// bounds, not a write mix; nothing here is called a "submission".
+// verified sessions. Issue #178's acceptance names latency/error/
+// resource bounds, not a write mix; nothing here is called a
+// "submission".
 //
 // Safety:
-//   - TARGET_URL required; non-loopback additionally requires
-//     LOAD_ALLOW_REMOTE=1 AND LOAD_TARGET_ID matching the fixture file's
-//     targetId. setup() aborts when the target redirects to another host.
+//   - TARGET_URL required; remote execution is DISABLED (no approved
+//     staging identity mechanism exists yet — see README).
+//   - setup() aborts when the target redirects to another host.
 //   - LOAD_MAX_VUS (default 750) must be a finite positive integer and
 //     caps every scenario — malformed values abort at init.
 //   - Fixture users only (@loadgate.invalid), one recorded workspace.
 //
-// Classification (shared contract — config.mjs::classifyResponse, and
-// every `load_latency` point carries BOTH `endpoint` and `class` tags
-// so report.mjs never sees an unclassified success):
-//   success | refusal | concealed_refusal (2xx + error body — counted
-//   and fails the run) | redirect | http_error | transport
+// Classification (shared contract — config.mjs::classifyResponse; every
+// `load_latency` point carries `endpoint`, `class` and `scenario` tags
+// so report.mjs can never treat an unclassified response as success):
+//   success | refusal | concealed_refusal (2xx + refusal body)
+//   | redirect | http_error | transport | unexpected_html
+//   | login_page | identity_mismatch
 //
 // Run:  k6 run -e TARGET_URL=… -e FIXTURES=fixtures.json \
 //         -e LOAD_PROFILE=smoke tools/load/trial-gate.js
@@ -40,9 +40,13 @@ import { check, sleep } from "k6";
 import { Counter, Trend } from "k6/metrics";
 
 import {
+  AUTH_ENDPOINTS,
+  JSON_ENDPOINTS,
+  WORKLOAD_ENDPOINTS,
   classifyResponse,
   configError,
   scenariosWithBounds,
+  verifyIdentity,
 } from "./config.mjs";
 
 const reqCount = new Counter("load_requests");
@@ -51,13 +55,16 @@ const httpErrors = new Counter("load_http_errors");
 const transportErr = new Counter("load_transport_errors");
 const concealed = new Counter("load_concealed_refusals");
 const redirects = new Counter("load_redirects");
+const unexpectedHtml = new Counter("load_unexpected_html");
+const loginPages = new Counter("load_login_pages");
+const identityMismatches = new Counter("load_identity_mismatches");
 const reauths = new Counter("load_reauths");
 const latency = new Trend("load_latency", true);
 
 // --- fixtures + config ---------------------------------------------------------
 
 // The fixture file must be readable in init context — load it before
-// the config check so the remote guard can consult it.
+// the config check.
 const fixturePath = __ENV.FIXTURES;
 if (!fixturePath)
   throw new Error("k6-gate config: FIXTURES=<provision.json> is required");
@@ -98,18 +105,28 @@ export const options = {
 
 // --- response classification -------------------------------------------------
 
-function classify(res) {
+function classify(res, expectJson) {
   let body = null;
   try {
     body = res.json();
   } catch {
     /* non-JSON body — pages are HTML, that's expected */
   }
-  return classifyResponse(res.status, res.error, body);
+  // A served login page is evidence of broken auth, not a page success:
+  // detect it before the generic 2xx path.
+  const looksLikeLogin =
+    !body &&
+    typeof res.body === "string" &&
+    /type="password"|name="password"|sign-?in/i.test(res.body) &&
+    /<html|<!doctype/i.test(res.body);
+  return classifyResponse(res.status, res.error, body, {
+    expectJson: expectJson ?? JSON_ENDPOINTS.has("__never__"),
+    looksLikeLogin,
+  });
 }
 
-function record(endpoint, res) {
-  const cls = classify(res);
+function record(endpoint, res, forcedClass) {
+  const cls = forcedClass ?? classify(res, JSON_ENDPOINTS.has(endpoint));
   const tags = { endpoint, class: cls };
   reqCount.add(1, tags);
   if (cls === "refusal") refused.add(1, tags);
@@ -117,6 +134,9 @@ function record(endpoint, res) {
   else if (cls === "http_error") httpErrors.add(1, tags);
   else if (cls === "transport") transportErr.add(1, tags);
   else if (cls === "redirect") redirects.add(1, tags);
+  else if (cls === "unexpected_html") unexpectedHtml.add(1, tags);
+  else if (cls === "login_page") loginPages.add(1, tags);
+  else if (cls === "identity_mismatch") identityMismatches.add(1, tags);
   latency.add(res.timings.duration, tags);
   check(res, { "not a concealed refusal": () => cls !== "concealed_refusal" });
   return cls;
@@ -134,11 +154,12 @@ function hit(endpoint, method, path, opts) {
 
 // --- sessions ------------------------------------------------------------------
 
-// The session cookie's Expires parses to a past instant inside k6's
-// cookie jar (measured: expires=-6795364578871 — the jar drops it
-// mid-run, which is how the first smoke decayed into 401s/307s). We pin
-// the Set-Cookie value captured at sign-in and send it explicitly on
-// every measured request, plus the bearer token the API routes accept.
+// WORKAROUND: k6's cookie jar appears to drop the session cookie mid-run
+// (the first smoke decayed into 401s/307s after iteration 1; the exact
+// jar-side expiry behavior is unverified — we do not claim a diagnosis).
+// We pin the Set-Cookie value captured at sign-in and send it explicitly
+// on every measured request, plus the bearer token the API routes
+// accept. Two-hour session behavior is unproven either way.
 const AUTH_COOKIE = "__Secure-better-auth.session_token";
 const sessionByVu = {};
 
@@ -174,22 +195,30 @@ function authParams(sess) {
 }
 
 // A 200 is not enough — the session body must name the fixture user.
+// A mismatch is recorded as `identity_mismatch` (a measured failure),
+// never as success.
 function verifySession(sess, expectedUserId) {
   const r = http.get(`${BASE}/api/v1/workspaces/${WORKSPACE_ID}/session`, {
     ...authParams(sess),
     redirects: 0,
   });
-  let ok = false;
+  let body = null;
   try {
-    ok = r.status === 200 && r.json()?.user?.id === expectedUserId;
+    body = r.json();
   } catch {}
-  record("session_verify", r);
-  return ok;
+  // A 200 names the user: verified or identity_mismatch. Any other
+  // status classifies normally — refusal/redirect stays evidence.
+  const cls =
+    r.status === 200
+      ? verifyIdentity(r.status, body, expectedUserId)
+      : classify(r, true);
+  record("session_verify", r, cls);
+  return cls === "success";
 }
 
 // Before any VU traffic: the target must answer on its own origin — a
-// redirect to another host (a front door bouncing to production, a
-// parked domain) aborts the run rather than loading the wrong site.
+// redirect to another host (a front door bouncing elsewhere, a parked
+// domain) aborts the run rather than loading the wrong site.
 export function setup() {
   const res = http.get(`${BASE}/login`, { redirects: 0 });
   const loc = res.headers.Location ?? res.headers.location ?? "";
@@ -200,9 +229,19 @@ export function setup() {
     } catch {
       foreign = true;
     }
-    if (foreign) throw new Error(`k6-gate: target redirects to foreign host`);
+    if (foreign) throw new Error("k6-gate: target redirects to foreign host");
   }
   return {};
+}
+
+// Establish or re-establish a verified session for this VU. `tag` keeps
+// re-auth visible as its own measured operation — never a silent retry.
+function ensureSession(account, tag) {
+  const sess = signIn(account, tag);
+  if (!sess) return null;
+  if (!verifySession(sess, account.userId)) return null;
+  if (tag === "reauth") reauths.add(1);
+  return sess;
 }
 
 export default function virtualUser() {
@@ -211,13 +250,11 @@ export default function virtualUser() {
   const account = pool[__VU % pool.length];
 
   if (!sessionByVu[__VU]) {
-    const sess = signIn(account, "sign_in");
-    if (!sess || !verifySession(sess, account.userId)) {
-      sessionByVu[__VU] = null;
+    sessionByVu[__VU] = ensureSession(account, "sign_in");
+    if (!sessionByVu[__VU]) {
       sleep(2);
       return;
     }
-    sessionByVu[__VU] = sess;
   }
 
   const opts = authParams(sessionByVu[__VU]);
@@ -249,23 +286,44 @@ export default function virtualUser() {
     sleep(0.5);
     hit("client_daily", "GET", `/workspace/${WORKSPACE_ID}/daily`, opts);
   }
-  // Auth decay is real evidence: the failed request stays a refusal/
-  // redirect; re-authentication is a separate, separately-tagged op —
-  // never a silent retry that launders the failure.
+  // Auth decay is real evidence: the failed request stays counted; the
+  // re-auth is a separately-tagged operation, and ITS session must also
+  // pass identity verification before it can serve measured traffic.
   if (sessionCls === "refusal" || sessionCls === "redirect") {
-    const re = signIn(account, "reauth");
-    if (re) {
-      sessionByVu[__VU] = re;
-      reauths.add(1);
-    } else sessionByVu[__VU] = null;
+    sessionByVu[__VU] = ensureSession(account, "reauth");
   }
   sleep(1 + Math.random() * 2); // think time — users are not request bots
 }
 
 export function handleSummary(data) {
   const out = __ENV.LOAD_SUMMARY_OUT ?? "tools/load/out/summary.json";
+  // The run manifest — report.mjs requires it to prove the planned run
+  // actually completed (expected scenarios, endpoint coverage, request
+  // totals), not merely that some points exist.
+  const manifest = {
+    tool: "k6-gate",
+    profile: __ENV.LOAD_PROFILE ?? "smoke",
+    targetUrl: BASE,
+    workspaceId: WORKSPACE_ID,
+    scenarios: Object.keys(options.scenarios),
+    expectedWorkloadEndpoints: [
+      ...WORKLOAD_ENDPOINTS.coach,
+      ...WORKLOAD_ENDPOINTS.client,
+    ],
+    authEndpoints: [...AUTH_ENDPOINTS],
+    iterations: data?.metrics?.iterations?.values?.count ?? null,
+    vusMax: data?.metrics?.vus_max?.values?.value ?? null,
+    httpReqs: data?.metrics?.http_reqs?.values?.count ?? null,
+    loadRequests: data?.metrics?.load_requests?.values?.count ?? null,
+    testRunDurationMs: data?.state?.testRunDurationMs ?? null,
+  };
   return {
     [out]: JSON.stringify(data, null, 2),
+    [out.replace(/\.json$/, "-manifest.json")]: JSON.stringify(
+      manifest,
+      null,
+      2,
+    ),
     stdout: `\nload run complete — summary ${out}\n`,
   };
 }

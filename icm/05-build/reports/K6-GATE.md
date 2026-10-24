@@ -3,127 +3,114 @@
 Head: see `git log` on `beta/k6-gate`. Base: `Vari8-Beta` @
 `2214105` (post-#193 merge).
 
-## Correction to the earlier smoke claim
+## Retractions
 
-The first build's "134 requests, 0 errors / VERDICT PASS" was **false**:
-the emitted `load_latency` points carried no `class` tag, so the parser
-bucketed all of them `unknown` and counted zero failures while the raw
-run actually contained 40 refusals (401s), 70 redirects (307 login
-bounces) and 19 transport errors — the session cookie's `Expires`
-parses to a past instant inside k6's cookie jar
-(`expires=-6795364578871`), so auth decayed after the first iteration.
-That claim is retracted; the repaired run below is what the tool now
-reports.
+- The first build's "134 requests, 0 errors / VERDICT PASS" was
+  **false**: `load_latency` points carried no `class` tag, so the
+  parser bucketed everything `unknown` and counted zero failures while
+  the raw run actually contained 40 refusals, 70 redirects and 19
+  transport errors (session decay — see below).
+- The first repair's cookie claim ("jar computes `Expires` as a past
+  instant") was **unverified** — pinning the Set-Cookie value is a
+  working workaround; the exact jar-side expiry behavior is not
+  diagnosed. Two-hour session behavior is unproven either way.
 
-## Repair round (post-FIX review)
+## Repair round 2 (post second FIX review)
 
-Root causes fixed:
+- **Complete-run evidence** — `handleSummary` emits a run manifest
+  (profile, planned scenarios, expected workload endpoints, iterations,
+  vusMax, httpReqs, loadRequests, duration). `report.mjs` cross-checks:
+  measured points must equal the manifest's `loadRequests` and the
+  `load_requests` counter; `httpReqs` must cover measured + auth/setup
+  traffic; every expected workload endpoint and planned scenario must
+  appear. Auth-only, one-point, truncated and manifest-less runs are
+  inconclusive.
+- **Endpoint-specific classification** — JSON endpoints rejecting
+  non-JSON 200s (`unexpected_html`); served login forms detected and
+  classified `login_page`; `state:"consent_missing"`-style denials are
+  refusals, not success. `session_verify` compares `user.id` against
+  the fixture — a 200 naming another user is `identity_mismatch`, and
+  re-authentication re-verifies identity before serving traffic. The
+  failed measured request stays failed; reauth is separately tagged.
+- **Resource coverage** — every mandatory metric separately required
+  (app CPU, app RAM, pg connections + limit, app AND db restart
+  signals). Samples must bracket the measured run window with no
+  > 3×-median-interval gap — the preserved 9m39s-gap smoke would now
+  > fail coverage. CPU: docker CPUPerc/cputime-delta units (100% = one
+  > core) normalized to whole-host share via `hostCpus`; the "CPU < 70%"
+  > check is on the host share.
+- **Fixture lifecycle** — provisioning is one transaction; a
+  post-commit manifest-write failure rolls the fixture rows back.
+  `CONFIRM_DISPOSABLE_DB` + a shared-DB denylist (`app_dev`, `app_e2e`,
+  `app`, `postgres`, `app_integration_test`). Integration suite
+  cleans up its own victim rows (FK-order, verified: lane DB empty
+  after run).
+- **Remote execution disabled** — non-loopback targets are refused
+  unconditionally; no `LOAD_ALLOW_REMOTE` escape exists in this lane.
+  An approved remote-target mechanism is a separate prerequisite.
+- **hold500 required** — `LOAD_PROFILE=gate` refuses to run without
+  `LOAD_HOLD500_MIN` (the recorded unresolved owner decision), and the
+  verdict requires a `hold500` phase to have emitted points.
+- **PR body corrected** — the retracted "134 requests" claim removed;
+  corrected counts throughout.
 
-- **False classification** — every `load_latency` point now carries
-  `{endpoint, class}`; `classify`/`classifyResponse` moved to a shared,
-  k6-free module (`config.mjs`) so tests exercise the same code the
-  script runs. Response contract covers structured refusals,
-  `ok:false`, and state-based denials (`state:"DENIED"` etc.); 3xx is
-  its own `redirect` class (redirects disabled); a 2xx carrying a
-  refusal body is `concealed_refusal` and fails the run.
-- **Report fail-closed** — zero requests, unclassified points,
-  malformed lines, counter-vs-latency disagreement, missing/partial
-  resources (CPU/RAM/pg-limit/restart coverage each separately
-  required), and an uncollected 500-hold phase all block PASS.
-- **Auth repair** — the Set-Cookie value is pinned from sign-in and
-  sent explicitly (jar replay was decaying mid-run); the bearer token
-  also goes to API routes; `session_verify` must return the fixture
-  user's `user.id` before measured traffic starts — a bare 200 is not
-  authentication. Auth decay keeps its failed request counted and
-  re-authenticates as a separate `reauth` metric.
-- **Workload phases** — `gate` is now three named scenarios: `ramp`
-  0→750/10m, `hold500` (LOAD_HOLD500_MIN, off by default), `soak`
-  250/2h constant hold — the earlier stage list was a 2 h ramp _down_
-  from 750, not a soak. Per-scenario report tables. The acceptance
-  wording's 500-concurrent pass has no home in the specified profile;
-  `hold500` is the exposed choice, and without it the verdict is
-  inconclusive by design.
-- **Resources** — MiB/GiB memory units (the old parser turned 1.2 GiB
-  into 1 MB), docker `RestartCount` / PID `lstart` restart signals,
-  process-tree CPU (cputime-delta) + RSS summation for host PID mode,
-  `hostCpus` recorded for multicore normalization context.
-- **Fixture safety** — `CONFIRM_DISPOSABLE_DB` must equal the
-  lane-shaped `DATABASE_URL` db name; cleanup re-validates ownership
-  **from the database** (loadgate emails + fixture workspace membership)
-  before deleting in one transaction; tampered/stale manifests delete
-  nothing; manifests are 0600.
-- **Target safety** — remote targets need `LOAD_ALLOW_REMOTE=1` AND
-  `LOAD_TARGET_ID` matching the manifest; `setup()` aborts on
-  redirect-to-foreign-host; `LOAD_MAX_VUS` must be a finite positive
-  integer (NaN no longer bypasses the cap).
-- **Honest labeling** — the workload is read traffic; nothing is
-  called a "submission".
-
-## Bounded local smoke — repaired run (harness check, NOT the gate)
+## Bounded local smoke — repaired run 2 (harness check, NOT the gate)
 
 Production `next start` (flag on), seeded `app_chkenable_live`, TLS
-proxy `https://127.0.0.1:3870`; 5 VUs / 30 s, `LOAD_PROFILE=smoke`:
+proxy `https://127.0.0.1:3870`; 5 VUs / 33 s, `LOAD_PROFILE=smoke`:
 
 | endpoint       | count | p50  | p95   | p99   |
 | -------------- | ----- | ---- | ----- | ----- |
-| sign_in        | 5     | 81ms | 105ms | 105ms |
-| checkins_page  | 24    | 45ms | 87ms  | 113ms |
-| client_home    | 24    | 44ms | 80ms  | 500ms |
-| workspace_page | 8     | 45ms | 67ms  | 67ms  |
-| client_daily   | 24    | 35ms | 64ms  | 68ms  |
-| session        | 32    | 22ms | 44ms  | 105ms |
-| clients        | 8     | 23ms | 37ms  | 37ms  |
-| session_verify | 5     | 9ms  | 13ms  | 13ms  |
+| sign_in        | 5     | 69ms | 166ms | 166ms |
+| session_verify | 5     | 15ms | 89ms  | 89ms  |
+| client_home    | 22    | 40ms | 77ms  | 116ms |
+| checkins_page  | 22    | 35ms | 63ms  | 93ms  |
+| workspace_page | 9     | 28ms | 59ms  | 59ms  |
+| client_daily   | 22    | 26ms | 44ms  | 53ms  |
+| session        | 31    | 18ms | 43ms  | 46ms  |
+| clients        | 9     | 18ms | 29ms  | 29ms  |
 
-130 requests — **all classified `success` this time** (raw tags
-verified against the ndjson directly, not inferred): sessions held
-across every iteration; `session_verify` matched each fixture user's
-id. Resources sampled: app tree ~0–0.2 % CPU / 44 MB RSS peak, DB
-< 9 % CPU, pg connections 11/100, zero restarts.
+125 requests — all `success` (verified against raw ndjson); manifest
+proves the planned run (7 workload endpoints + auth traffic all
+accounted); resources cover the window: peak 7.2 % cpu units
+(0.9 % host share), 55 MB app RSS, pg 10/100, restarts 0.
 
-**VERDICT: FAIL — on exactly one check:** `500-session hold phase
-collected` (hold500 off by design in a smoke run). Every measured
-check passed; the missing phase correctly blocks PASS. That is the
-tool working: the smoke proves the harness, it is not a 500-concurrent
-result and never claims one.
+**VERDICT: FAIL — only `500-session hold phase collected`.** Honest
+inconclusive: every measured check passed; the missing gate phase
+correctly blocks PASS. A smoke proves the harness; it is not a
+500-concurrent result.
 
 ## Tests
 
-- `tests/unit/load-gate.test.ts` — 22 tests: classification matrix
-  (concealed/state/redirect/transport), target + bounds validation
-  (NaN, remote, targetId), acceptance scenario shape (hold not
-  ramp-down, hold500 insertion), percentiles, the reviewer's failing
-  run shape as a sanitized fixture (must FAIL with 40 refusals +
-  70 redirects), counter drift, empty/malformed input, partial
-  resources, restart detection, MiB/GiB units, threshold boundary
-  (p95=400 fails, 399 passes).
-- `tests/integration/k6-gate-provision.test.ts` — 5 tests on real PG
-  via the real CLI: wrong-DB refusal, 0600 manifest, **tampered
-  manifest deletes nothing (victims survive)**, stale manifest
-  refusal, scoped legitimate cleanup.
-- Mutations run (restored byte-identically): `p95ms 400→4000` → 4
-  failures; concealed→success relabel → 2 failures; missing `class`
-  tag → `unclassified` row + FAIL (structural, not a mutation).
+- `tests/unit/load-gate.test.ts` — 27 tests: classification matrix
+  (concealed/state/consent-missing/HTML-on-JSON/login-page/identity),
+  remote-disabled regardless of flags, required hold500, manifest
+  cross-checks (auth-only/one-point/truncated/missing endpoints),
+  counter drift, reviewer-run replica (40 refusals + 70 redirects →
+  FAIL with correct totals), resource gaps/window/partial coverage,
+  memory units, threshold boundary.
+- `tests/integration/k6-gate-provision.test.ts` — 7 tests on real PG:
+  wrong-DB refusal, 0600 manifest, tampered-manifest victim survival,
+  stale-manifest refusal, **shared-DB denylist** (app_dev/e2e/it
+  refused even when confirmed), **create-failure rollback**, scoped
+  cleanup. Suite leaves the lane DB empty.
+- Mutations (restored byte-identically): concealed→success relabel →
+  1 failure; manifest check disabled → 2 failures; coverage check
+  weakened → stale/gap tests fail; denylist removed → shared-DB test
+  fails.
 
 ## Gates
 
-- `verify-local` at the repair head: see the gate log (unit
-  104 files / 1212 + new suites, integration runs — this lane adds a
-  `tests/integration` file, e2e 10/7/0, build/migrate/format/lint/
-  typecheck/index clean).
-- 22 unit + 5 integration tests green; typecheck 0; lint 0 errors and
-  zero warnings in lane files.
+- `verify-local` at the new head — see gate log.
+- 27 unit + 7 integration lane tests; typecheck/lint/format/index via
+  the gate.
 
 ## Not done — the blocked half
 
-- **Staging execution is not authorized or performed**: no deployed
-  stack (issue #5), no separate generator host, no 500-VU or 2 h run.
-- The `gate` profile + `hold500` are implemented and config-validated;
-  the certification run awaits staging access.
-- CPU semantics: docker `CPUPerc` (100 % = one host core) with
-  `hostCpus` recorded; PID mode uses process-tree cputime deltas. The
-  "CPU < 70 %" acceptance unit is applied to the raw docker
-  percentage — multicore normalization policy is a recorded open
-  choice, not silently decided.
-- `firstSaturated` reports the first failing resource check only when
-  resources were actually sampled; otherwise "unavailable".
+- Staging execution: needs the issue-5 stack, a generator host, an
+  approved remote-target mechanism, and the hold500 duration/placement
+  owner decision. Unresolved acceptance choices: hold500 duration +
+  placement, distinct-user definition, CPU-normalization policy,
+  write mix if intended.
+- The 2-hour soak behavior and long-session cookie behavior are
+  unproven — pinning is a workaround, not a diagnosis.
