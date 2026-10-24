@@ -26,8 +26,10 @@ semantics, or claiming a visual pass when only startup succeeds.
      removed immediately;
    - backend process group and proxy listener are re-checked before and
      after captures, then cleaned in `finally`.
-3. Preserve capture meaning: no baseline, selector, viewport, font,
-   pixel threshold, app code, or production-auth changes. Pass HTTPS
+3. Preserve comparison meaning: no baseline, shot-index recipe,
+   comparison selector, viewport, font, pixel threshold, app code, or
+   production-auth changes. Harness-only click scoping may be corrected
+   when validation proves it captured the wrong element. Pass HTTPS
    session cookies with their Secure attribute.
 4. Add focused regression coverage for port-pair validation, HTTPS
    proxy forwarding/certificate cleanup, Secure-cookie conversion, and
@@ -110,10 +112,12 @@ No screenshot comparison began. Raw evidence:
   escalates with bounded `SIGKILL` only while owned members/listeners
   remain. A listener or process outside the original group is reported,
   never killed; empty/reused PGIDs are not signalled.
-- Capture semantics are unchanged except `ignoreHTTPSErrors` for the
-  disposable self-signed loopback cert. Baselines, selectors, viewport
-  dimensions, fixed clock, pixel/DOM thresholds and fonts were not
-  changed.
+- Comparison semantics are unchanged except `ignoreHTTPSErrors` for the
+  disposable self-signed loopback cert. Baselines, shot-index recipes,
+  comparison selectors, viewport dimensions, fixed clock, pixel/DOM
+  thresholds and fonts were not changed; the only selector-like edit is
+  the harness's `STEP_SCOPES`/recipe-label resolution above, which makes
+  the intended template-navigation step deterministic.
 
 Certificate limitation: the temporary directory is created before
 OpenSSL runs and is removed in `finally` after key/cert bytes are in
