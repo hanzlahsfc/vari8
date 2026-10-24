@@ -86,7 +86,6 @@ const TEMPLATE_CARD = {
   within: "article.cd-template-card",
   containing: "Strength & balance",
 };
-const VIEW_TOGGLE = { within: ".cd-view-settings", target: "[role=switch]" };
 const REQUIRED_QUERY_VALUE = "*";
 const COACH_QUERY_KEYS = [
   "section",

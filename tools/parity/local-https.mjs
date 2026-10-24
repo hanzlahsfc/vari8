@@ -95,11 +95,7 @@ export function httpsRequest(
   });
 }
 
-function processGroup(pid) {
-  return spawnSync("ps", ["-o", "pgid=", "-p", String(pid)], {
-    encoding: "utf8",
-  }).stdout.trim();
-}
+export const OWNERSHIP_ENV = "PARITY_OWNERSHIP_TOKEN";
 
 export function listenerPids(port) {
   return spawnSync("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"], {
@@ -119,12 +115,39 @@ function processGroupMembers(pgid) {
     .filter(Boolean);
 }
 
-function portOwnedByGroup(port, pgid) {
-  const pids = listenerPids(port);
-  return (
-    pids.length > 0 && pids.every((pid) => processGroup(pid) === String(pgid))
+function processIdentity(pid, ownershipToken) {
+  if (!ownershipToken) return null;
+  const info = spawnSync(
+    "ps",
+    ["-o", "pid=,pgid=,lstart=", "-p", String(pid)],
+    { encoding: "utf8" },
   );
+  if (info.error || info.status !== 0) return null;
+  const fields = info.stdout.trim().split(/\s+/);
+  if (fields.length < 7) return null;
+  const env = spawnSync("ps", ["eww", "-p", String(pid)], {
+    encoding: "utf8",
+  });
+  if (env.error || env.status !== 0) return null;
+  return {
+    pid: Number(fields[0]),
+    pgid: Number(fields[1]),
+    start: fields.slice(2).join(" "),
+    owned: env.stdout.includes(`${OWNERSHIP_ENV}=${ownershipToken}`),
+  };
 }
+
+const liveInspector = (ownershipToken) => ({
+  group: (pgid) =>
+    processGroupMembers(pgid)
+      .map((pid) => processIdentity(pid, ownershipToken))
+      .filter(Boolean),
+  listeners: (port) =>
+    listenerPids(port)
+      .map((pid) => processIdentity(pid, ownershipToken))
+      .filter(Boolean),
+  process: (pid) => processIdentity(pid, ownershipToken),
+});
 
 function waitForProcessExit(child, ms) {
   if (child.exitCode !== null || child.signalCode !== null)
@@ -138,72 +161,143 @@ function waitForProcessExit(child, ms) {
   });
 }
 
-async function waitForNoListeners(port, ms = 2000) {
-  const t0 = Date.now();
-  while (Date.now() - t0 <= ms) {
-    if (listenerPids(port).length === 0) return true;
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  }
-  return listenerPids(port).length === 0;
-}
-
-async function waitForNoGroupMembers(pgid, ms = 2000) {
-  const t0 = Date.now();
-  while (Date.now() - t0 <= ms) {
-    if (processGroupMembers(pgid).length === 0) return true;
-    await new Promise((resolve) => setTimeout(resolve, 50));
-  }
-  return processGroupMembers(pgid).length === 0;
-}
-
+/**
+ * @typedef {{pid:number,pgid:number|string,start:string,owned:boolean}} ProcessIdentity
+ * @typedef {{group:(pgid:string)=>ProcessIdentity[],listeners:(port:number)=>ProcessIdentity[],process:(pid:number)=>ProcessIdentity|null}} ProcessInspector
+ * @param {import('node:child_process').ChildProcess | {pid:number,exitCode:number|null,signalCode:string|null,once?:(event:string,cb:()=>void)=>unknown}} child
+ * @param {number} port
+ * @param {{ownershipToken:string,terminateMs?:number,killMs?:number,inspector?:ProcessInspector,signal?:(pid:number,name:string)=>void}} options
+ */
 export async function stopOwnedProcessGroup(
   child,
   port,
-  { terminateMs = 10000, killMs = 5000 } = {},
+  {
+    ownershipToken,
+    terminateMs = 10000,
+    killMs = 5000,
+    inspector = liveInspector(ownershipToken),
+    signal = (pid, name) => process.kill(pid, name),
+  } = {},
 ) {
   const problems = [];
   const pgid = String(child.pid);
-  const signalOwnedGroup = (signal) => {
-    // A group survives leader exit while descendants remain. Only signal the
-    // original PGID when it still has members or exactly owns this listener;
-    // this avoids PID reuse and never targets a foreign listener.
-    if (processGroupMembers(pgid).length === 0 && !portOwnedByGroup(port, pgid))
-      return;
-    try {
-      process.kill(-Number(pgid), signal);
-    } catch (error) {
-      if (error.code !== "ESRCH") throw error;
+  const owned = (entry) =>
+    entry?.owned === true &&
+    String(entry.pgid) === pgid &&
+    Boolean(entry.start);
+  const inspect = (kind) => {
+    const result =
+      kind === "group" ? inspector.group(pgid) : inspector.listeners(port);
+    return Array.isArray(result) ? result : [];
+  };
+  const group = () => inspect("group");
+  const listeners = () => inspect("listeners");
+  const ownedGroup = () => group().filter(owned);
+  const ownedListeners = () => listeners().filter(owned);
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const waitForNoOwned = async (kind, ms) => {
+    const t0 = Date.now();
+    const read = kind === "group" ? ownedGroup : ownedListeners;
+    while (Date.now() - t0 <= ms) {
+      if (read().length === 0) return true;
+      await sleep(50);
+    }
+    return read().length === 0;
+  };
+  const signalVerified = (candidates, name) => {
+    const unique = [...new Map(candidates.map((c) => [c.pid, c])).values()];
+    for (const candidate of unique) {
+      let current = null;
+      try {
+        current = inspector.process(candidate.pid);
+      } catch {}
+      if (
+        !owned(current) ||
+        current.start !== candidate.start ||
+        current.pid !== candidate.pid
+      ) {
+        problems.push(
+          `${name} skipped for process ${candidate.pid}: ownership no longer verifies`,
+        );
+        continue;
+      }
+      try {
+        signal(candidate.pid, name);
+      } catch (error) {
+        if (error.code !== "ESRCH")
+          problems.push(
+            `${name} failed for process ${candidate.pid}: ${error.message}`,
+          );
+      }
     }
   };
 
-  signalOwnedGroup("SIGTERM");
+  let initialGroup;
+  let initialListeners;
+  try {
+    initialGroup = group();
+    initialListeners = listeners();
+  } catch (error) {
+    return [`process inspection failed: ${error.message}`];
+  }
+  signalVerified(
+    [...initialGroup.filter(owned), ...initialListeners.filter(owned)],
+    "SIGTERM",
+  );
   let exited = await waitForProcessExit(child, terminateMs);
-  await waitForNoListeners(port);
-  await waitForNoGroupMembers(pgid);
-
-  if (processGroupMembers(pgid).length > 0 || portOwnedByGroup(port, pgid)) {
-    signalOwnedGroup("SIGKILL");
-    await waitForProcessExit(child, killMs);
-    await waitForNoListeners(port);
-    await waitForNoGroupMembers(pgid, killMs);
+  let inspectionFailed = false;
+  try {
+    await waitForNoOwned("group", terminateMs);
+    await waitForNoOwned("listeners", terminateMs);
+  } catch (error) {
+    inspectionFailed = true;
+    problems.push(`process inspection failed: ${error.message}`);
   }
 
-  const pids = listenerPids(port);
-  const members = processGroupMembers(pgid);
-  if (pids.length) {
-    if (pids.every((pid) => processGroup(pid) === pgid))
-      problems.push(`process group ${pgid} still owns listener ${port}`);
-    else
-      problems.push(
-        `listener ${port} is owned by process(es) ${pids.join(", ")} outside this run`,
-      );
+  if (!inspectionFailed) {
+    try {
+      const remaining = [...ownedGroup(), ...ownedListeners()];
+      if (remaining.length) {
+        signalVerified(remaining, "SIGKILL");
+        exited = (await waitForProcessExit(child, killMs)) || exited;
+        await waitForNoOwned("group", killMs);
+        await waitForNoOwned("listeners", killMs);
+      }
+    } catch (error) {
+      problems.push(`process inspection failed: ${error.message}`);
+    }
   }
-  if (members.length)
+
+  let finalGroup = [];
+  let finalListeners = [];
+  try {
+    finalGroup = group();
+    finalListeners = listeners();
+  } catch (error) {
+    problems.push(`process inspection failed: ${error.message}`);
+  }
+  const remainingOwned = finalGroup.filter(owned);
+  const remainingOwnedListeners = finalListeners.filter(owned);
+  const unverifiedGroup = finalGroup.filter((entry) => !owned(entry));
+  const foreignListeners = finalListeners.filter((entry) => !owned(entry));
+  if (remainingOwnedListeners.length)
     problems.push(
-      `process group ${pgid} still has process(es) ${members.join(", ")}`,
+      `owned process(es) ${remainingOwnedListeners.map((p) => p.pid).join(", ")} still own listener ${port}`,
+    );
+  if (remainingOwned.length)
+    problems.push(
+      `owned process(es) ${remainingOwned.map((p) => p.pid).join(", ")} remain in group ${pgid}`,
+    );
+  if (unverifiedGroup.length)
+    problems.push(
+      `unverified process(es) ${unverifiedGroup.map((p) => p.pid).join(", ")} remain in group ${pgid}`,
+    );
+  if (foreignListeners.length)
+    problems.push(
+      `listener ${port} is owned by unverified process(es) ${foreignListeners.map((p) => p.pid).join(", ")}`,
     );
   if (!exited) problems.push(`process ${child.pid} did not exit`);
-  return problems;
+  return [...new Set(problems)];
 }
 
 export function browserCookies(setCookieLines, baseUrl, nowMs = Date.now()) {
