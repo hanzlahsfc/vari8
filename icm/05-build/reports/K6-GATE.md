@@ -175,7 +175,8 @@ task-owned isolated cluster instead of shared tooling:
 `embedded-postgres@16.14.0-beta.17` under
 `_evidence/K6-GATE/repair9-pg-20261024-1838`, PostgreSQL **16.14** on
 `127.0.0.1:55681`, scratch `pgdata`, and `app_k6_it?schema=public`.
-No shared database or service was changed.
+The cluster was stopped and the scratch runtime/data directory removed
+after verification. No shared database or service was changed.
 
 Focused command (canonical `?schema=public`):
 

@@ -3,8 +3,8 @@
 - Branch `beta/k6-gate` adds deterministic lifecycle proof on an
   isolated `embedded-postgres@16.14.0-beta.17` cluster (PostgreSQL
   16.14, `127.0.0.1:55681`, scratch `pgdata`, `app_k6_it?schema=public`).
-  Docker Desktop remains unavailable and no shared database/service was
-  modified.
+  Docker Desktop remains unavailable; the scratch cluster was stopped and
+  removed afterward, with no shared database/service modified.
 - Focused suite on Node v24.22.1: **23/23 passed, zero skipped, exit 0**.
   Coverage now distinguishes an injected pending create promise
   (post-dispatch/pre-settlement, repeated signals) from an actual SQL
