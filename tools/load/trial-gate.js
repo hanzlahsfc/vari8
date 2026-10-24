@@ -225,7 +225,13 @@ function verifySession(sess, expectedUserId) {
 // redirect to another host (a front door bouncing elsewhere, a parked
 // domain) aborts the run rather than loading the wrong site.
 export function setup() {
-  const res = http.get(`${BASE}/login`, { redirects: 0 });
+  // The one planned setup operation — tagged so raw http_reqs points
+  // identify it by operation, not by URL shape. Any other /login hit
+  // is an unexplained request, not setup.
+  const res = http.get(`${BASE}/login`, {
+    redirects: 0,
+    tags: { setup_op: "origin_probe" },
+  });
   const loc = res.headers.Location ?? res.headers.location ?? "";
   if (loc && /^https?:\/\//.test(loc)) {
     let foreign = false;
@@ -319,7 +325,7 @@ export function handleSummary(data) {
       load_requests: data?.metrics?.load_requests,
       testRunDurationMs: data?.state?.testRunDurationMs,
     },
-    setupReqs: 1, // the /login origin probe in setup()
+    setupOps: ["origin_probe"], // the one planned setup operation
   });
   return {
     [out]: JSON.stringify(data, null, 2),

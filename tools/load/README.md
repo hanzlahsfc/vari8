@@ -38,7 +38,9 @@ Every run must produce three artifacts:
    configuration (`PLANNED_SCENARIOS`, captured in init context):
    profile, scenario specs (`planned.vus`/`durationSec`), expected
    workload endpoints, iterations, vusMax, httpReqs, loadRequests,
-   setupReqs.
+   and the bounded `setupOps` identity list (`["origin_probe"]`) —
+   the report reconciles raw `http_reqs` points carrying the
+   `setup_op` tag against this list operation-for-operation.
 3. `resources.ndjson` — first line `{"type":"meta","intervalSec":N}`
    records the collector's cadence. The report receives the EXPECTED
    cadence from run config (`LOAD_RESOURCE_INTERVAL_S`) — the file
@@ -59,10 +61,11 @@ issue acceptance authority):
   `[startTime, startTime+duration]` within 10 s of both edges, with
   no interior point gap > 30 s — diagnostics only, not acceptance
 - exact HTTP accounting against the RAW stream: every `http_reqs`
-  point must be either a measured workload point or an OBSERVED
-  /login setup probe — `raw = measured + observed_setup` exactly, and
-  the manifest's declared `setupReqs` must equal the observed setup
-  count; a surplus of even one request is unexplained and fails
+  point must be either a measured workload point or a `setup_op`-
+  tagged setup request — `raw = measured + observed_setup_ops`
+  exactly, and each planned op must be observed exactly once; a
+  surplus of even one request (or an untagged /login) is unexplained
+  and fails
 - `load_requests` counter == measured points
 - expected workload endpoints present; auth-only, truncated and
   endpoint-absent runs are inconclusive
@@ -169,6 +172,12 @@ DATABASE_URL=<lane-url> CONFIRM_DISPOSABLE_DB=<lane-db> \
   tsx tools/load/provision.ts cleanup \
   --file tools/load/out/fixtures.json --lane tools/load/out/lane.json
 ```
+
+If `lane-create` is interrupted after `CREATE DATABASE` (SIGTERM,
+SIGKILL, machine failure) the catch cannot run — exactly that
+invocation's `app_k6_*` database remains residual (its stale lane
+file still refuses everything; no other database is touched).
+Manual recovery: `DROP DATABASE "<lane.dbName from lane.json>"`.
 
 The report always prints three dispositions: TOOL EXECUTION
 (complete/incomplete/failed — script ran its plan), RESOURCE

@@ -241,7 +241,7 @@ export function buildManifest({
   workspaceId,
   scenarios,
   metrics,
-  setupReqs,
+  setupOps,
 }) {
   const planned = {};
   for (const [name, s] of Object.entries(scenarios)) {
@@ -277,7 +277,10 @@ export function buildManifest({
       ...WORKLOAD_ENDPOINTS.client,
     ],
     authEndpoints: [...AUTH_ENDPOINTS],
-    setupReqs: setupReqs ?? 1,
+    // Bounded setup-operation identity — report.mjs reconciles raw
+    // http_reqs points carrying the `setup_op` tag against THIS list;
+    // a URL alone is not a setup operation.
+    setupOps: setupOps ?? ["origin_probe"],
     iterations: metrics?.iterations?.values?.count ?? null,
     vusMax: metrics?.vus_max?.values?.value ?? null,
     httpReqs: metrics?.http_reqs?.values?.count ?? null,

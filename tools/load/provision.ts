@@ -193,6 +193,14 @@ async function main() {
         stdio: "inherit",
         env: { ...process.env, DATABASE_URL: laneUrl.toString() },
       });
+      // TEST-ONLY fault injection — exercises failure-path cleanup.
+      // "marker" throws before ownership install; "term" sends SIGTERM
+      // (a catchable signal — Node's default handler terminates without
+      // running the catch, so the created DB is residual by design and
+      // the test verifies the residual is only this invocation's DB).
+      if (process.env.K6_GATE_FAULT === "marker")
+        throw new Error("fault: marker install aborted");
+      if (process.env.K6_GATE_FAULT === "term") process.kill(process.pid);
       const db = new PrismaClient({
         datasources: { db: { url: laneUrl.toString() } },
       });

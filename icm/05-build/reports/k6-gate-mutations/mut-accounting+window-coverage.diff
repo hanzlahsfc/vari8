@@ -1,0 +1,180 @@
+diff --git a/tools/load/report.mjs b/tools/load/report.mjs
+index 0f8dfc8..8c4c7d8 100644
+--- a/tools/load/report.mjs
++++ b/tools/load/report.mjs
+@@ -45,10 +45,11 @@ export const PHASE_POINT_GAP_SEC = 30;
+ // absence span > GAP_FACTOR×interval — a missing tail is a real gap.
+ export const GAP_FACTOR = 3;
+ export const EDGE_LAG_FACTOR = 2;
+-// Non-measured requests are identified FROM RAW URL EVIDENCE: the
+-// /login origin probe(s) setup() emits. Nothing else may be folded
+-// into "setup" — a surplus of even one request is unexplained.
+-export const SETUP_URL_PATTERN = /\/login(\?|$)/;
++// Non-measured requests are identified by OPERATION, not URL: the
++// k6 script tags every planned setup() request with `setup_op`, so a
++// raw http_reqs point carrying that tag is a setup operation and
++// nothing else is — a bare /login request is unexplained traffic.
++export const SETUP_OP_TAG = "setup_op";
+ 
+ export const FAILURE_CLASSES = new Set([
+   "refusal",
+@@ -90,8 +91,7 @@ export function parseJsonOut(text) {
+   const scenarioObs = {};
+   const vusPoints = []; // {t, v} — k6's global `vus` gauge stream
+   let httpReqsObserved = 0; // raw request evidence, independent of tags
+-  let setupReqsObserved = 0; // raw requests whose URL is the setup probe
+-  const httpReqUrls = new Set();
++  const setupObserved = {}; // op name → raw tagged-request count
+   let malformed = 0;
+   let tMin = Infinity;
+   let tMax = -Infinity;
+@@ -129,11 +129,12 @@ export function parseJsonOut(text) {
+     }
+     const sc = p.data?.tags?.scenario ?? "default";
+     if (p.metric === "http_reqs") {
+-      // Raw request evidence — every real request, tagged by URL.
++      // Raw request evidence — every real request. Setup operations
++      // are identified by the `setup_op` tag the script emits, never
++      // by URL alone: a duplicated or unexpected /login is unexplained.
+       httpReqsObserved += Number(p.data?.value) || 0;
+-      const url = p.data?.tags?.url ?? p.data?.tags?.name ?? "?";
+-      httpReqUrls.add(url);
+-      if (SETUP_URL_PATTERN.test(url)) setupReqsObserved++;
++      const op = p.data?.tags?.[SETUP_OP_TAG];
++      if (op) setupObserved[op] = (setupObserved[op] ?? 0) + 1;
+     } else if (p.metric === "load_latency") {
+       const o = obs(sc, ts);
+       if (o) {
+@@ -171,8 +172,7 @@ export function parseJsonOut(text) {
+     scenarioObs,
+     vusPoints,
+     httpReqsObserved,
+-    setupReqsObserved,
+-    httpReqUrls,
++    setupObserved,
+     window: tMin <= tMax ? [tMin, tMax] : null,
+   };
+ }
+@@ -301,24 +301,27 @@ export function parseResources(text, runWindow, expectedIntervalSec = null) {
+   const times = samples
+     .map((s) => Date.parse(s.ts ?? ""))
+     .filter((t) => Number.isFinite(t));
+-  // Per-metric TIME coverage: the metric must be present in the first
+-  // AND last chronological sample, with no contiguous absence span
+-  // > GAP_FACTOR×interval between present samples. A missing tail or
+-  // a long null run is a real coverage gap — majority presence is not
+-  // sufficient.
++  // Per-metric TIME coverage INSIDE the run window: coverage is
++  // computed over in-window samples only — a valid pre-run sample can
++  // never mask a missing in-window metric. The metric must be present
++  // in the earliest AND latest in-window sample, with no contiguous
++  // absence span > GAP_FACTOR×interval between present in-window
++  // observations. No interpolation: a null in-window value is an
++  // unmeasured instant, not coverage.
+   const metricCovered = (f) => {
+-    if (samples.length === 0 || intervalSec == null) return false;
+-    const all = samples
+-      .map((s) => Date.parse(s.ts ?? ""))
+-      .sort((a, b) => a - b);
+-    const pres = samples
+-      .filter((s) => f(s) != null)
+-      .map((s) => Date.parse(s.ts ?? ""))
+-      .sort((a, b) => a - b);
++    if (!runWindow || intervalSec == null) return false;
++    const inWin = samples
++      .map((s) => ({ t: Date.parse(s.ts ?? ""), v: f(s) }))
++      .filter((x) => x.t >= runWindow[0] && x.t <= runWindow[1])
++      .sort((a, b) => a.t - b.t);
++    if (inWin.length === 0) return false;
++    const pres = inWin.filter((x) => x.v != null).map((x) => x.t);
+     if (pres.length === 0) return false;
+-    if (pres[0] !== all[0] || pres.at(-1) !== all.at(-1)) return false;
++    if (false) // MUTATION2
++      return false;
+     for (let i = 1; i < pres.length; i++)
+-      if (pres[i] - pres[i - 1] > GAP_FACTOR * intervalSec * 1000) return false;
++      if (pres[i] - pres[i - 1] > GAP_FACTOR * intervalSec * 1000)
++        return false;
+     return true;
+   };
+ 
+@@ -410,7 +413,7 @@ export function counterAgreement(points, counters) {
+  * @param {Record<string, object>} [scenarioObs] — observed per-scenario evidence
+  * @param {Array<{t: number, v: number}>} [vusPoints] — global vus stream
+  * @param {number | null} [observedHttpReqs] — raw http_reqs point count
+- * @param {number | null} [setupObserved] — raw /login probe points
++ * @param {Record<string, number> | null} [setupObserved] — setup_op tag counts
+  */
+ export function manifestFailures(
+   manifest,
+@@ -438,10 +441,11 @@ export function manifestFailures(
+       `manifest load_requests=${manifest.loadRequests} != measured points=${points.length}`,
+     );
+   // Exact HTTP accounting against the RAW stream. `httpReqsObserved`
+-  // counts real `http_reqs` points; `setupObserved` counts only the
+-  // raw requests whose URL is the /login setup probe. The manifest's
+-  // declared setupReqs must equal the OBSERVED setup count — it cannot
+-  // absorb even one unexplained request.
++  // counts real `http_reqs` points; `setupObserved` counts only raw
++  // requests carrying the `setup_op` tag. The manifest's planned
++  // `setupOps` list must match the observed tag counts operation-for-
++  // operation — an untagged /login, a duplicate probe, or any other
++  // surplus is unexplained and fails.
+   if (
+     observedHttpReqs != null &&
+     manifest.httpReqs != null &&
+@@ -450,17 +454,29 @@ export function manifestFailures(
+     fails.push(
+       `manifest http_reqs=${manifest.httpReqs} != raw http_reqs points=${observedHttpReqs}`,
+     );
++  const plannedOps = Array.isArray(manifest.setupOps)
++    ? manifest.setupOps
++    : null;
++  if (!plannedOps?.length) fails.push("manifest carries no setupOps plan");
++  for (const op of plannedOps ?? [])
++    if ((setupObserved?.[op] ?? 0) !== 1)
++      fails.push(
++        `setup op ${op}: expected exactly 1 tagged request, observed ${setupObserved?.[op] ?? 0}`,
++      );
++  for (const op of Object.keys(setupObserved ?? {}))
++    if (!plannedOps?.includes(op))
++      fails.push(`unexpected setup op ${op} in raw evidence`);
++  const setupTotal = Object.values(setupObserved ?? {}).reduce(
++    (a, b) => a + b,
++    0,
++  );
+   const unexplained =
+     observedHttpReqs == null
+       ? null
+-      : observedHttpReqs - points.length - setupObserved;
+-  if (unexplained == null || unexplained !== 0)
+-    fails.push(
+-      `http accounting: raw=${observedHttpReqs} - measured=${points.length} - observed setup=${setupObserved} = ${unexplained} unexplained`,
+-    );
+-  if (manifest.setupReqs != null && manifest.setupReqs !== setupObserved)
++      : observedHttpReqs - points.length - setupTotal;
++  if (false) // MUTATION1
+     fails.push(
+-      `manifest setupReqs=${manifest.setupReqs} != observed setup requests=${setupObserved}`,
++      `http accounting: raw=${observedHttpReqs} - measured=${points.length} - observed setup=${setupTotal} = ${unexplained} unexplained`,
+     );
+   const loadReqCounter = Object.entries(counters)
+     .filter(([k]) => k.startsWith("load_requests|"))
+@@ -640,7 +656,7 @@ function main() {
+     scenarioObs,
+     vusPoints,
+     httpReqsObserved,
+-    setupReqsObserved,
++    setupObserved,
+   } = parseJsonOut(fs.readFileSync(resultsFile, "utf8"));
+   const rows = rowsFromPoints(points);
+   // The expected collector cadence comes from the RUN CONFIG — the
+@@ -678,7 +694,7 @@ function main() {
+         scenarioObs,
+         vusPoints,
+         httpReqsObserved,
+-        setupReqsObserved,
++        setupObserved,
+       )
+     : ["run manifest not supplied"];
+   const v = verdict(rows, res, durationSec, {

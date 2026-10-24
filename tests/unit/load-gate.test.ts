@@ -138,7 +138,7 @@ function cleanManifest(over = {}) {
     },
     expectedWorkloadEndpoints: ["session", "clients"],
     authEndpoints: ["sign_in", "session_verify", "reauth"],
-    setupReqs: 1,
+    setupOps: ["origin_probe"],
     iterations: 10,
     vusMax: 5,
     httpReqs: 101,
@@ -308,7 +308,7 @@ describe("K6-GATE config — target + bounds safety", () => {
         LOAD_HOLD500_MIN: "30",
       }),
       metrics: {},
-      setupReqs: 1,
+      setupOps: ["origin_probe"],
     });
     const planned = m.planned as Record<
       string,
@@ -468,8 +468,8 @@ describe("K6-GATE manifestFailures — proving the planned run", () => {
     m: unknown,
     so: unknown = obs,
     vu = smokeVus,
-    httpObserved: number | null = 6, // 5 measured + 1 observed setup
-    setupObserved: number | null = 1,
+    httpObserved: number | null = 6, // 5 measured + 1 observed setup op
+    setupObserved: Record<string, number> | null = { origin_probe: 1 },
   ) =>
     manifestFailures(
       m as never,
@@ -519,30 +519,32 @@ describe("K6-GATE manifestFailures — proving the planned run", () => {
       ),
     ).toEqual([]);
   });
-  it("the exact 44 raw / 42 measured / setupReqs=2 forgery fails", () => {
-    // One /login probe observed; manifest claims setupReqs=2 → surplus 1.
-    const m = cleanManifest({
-      setupReqs: 2,
-      httpReqs: 44,
-      loadRequests: 42,
-    });
-    const fails = mf(m, obs, smokeVus, 44, 1);
+  it("the 42+2-login forgery fails — only one setup op is planned", () => {
+    // Raw evidence: 5 measured + TWO /login requests where the plan has
+    // exactly one setup op. An untagged second /login is unexplained
+    // traffic, not setup — URL matching alone is insufficient.
+    const m = cleanManifest({ httpReqs: 7, loadRequests: 5 });
+    // Case A: one tagged probe + one UNTAGGED /login → surplus 1.
+    const fails = mf(m, obs, smokeVus, 7, { origin_probe: 1 });
     expect(fails).toEqual(
+      expect.arrayContaining([expect.stringMatching(/unexplained/)]),
+    );
+    // Case B: both /login calls TAGGED as the same op → duplicate op.
+    expect(mf(m, obs, smokeVus, 7, { origin_probe: 2 })).toEqual(
       expect.arrayContaining([
-        expect.stringMatching(/unexplained/),
-        expect.stringMatching(/setupReqs=2 != observed setup/),
+        expect.stringMatching(/origin_probe.*expected exactly 1/),
       ]),
     );
-    // Honest: raw = measured + observed setup → clean.
+    // Case C: honest — one tagged probe only → clean.
     expect(
-      mf(
-        cleanManifest({ setupReqs: 2, httpReqs: 7, loadRequests: 5 }),
-        obs,
-        smokeVus,
-        7,
-        2,
-      ),
+      mf(cleanManifest({ httpReqs: 6, loadRequests: 5 }), obs, smokeVus, 6, {
+        origin_probe: 1,
+      }),
     ).toEqual([]);
+    // An op name the plan doesn't know is unexplained too.
+    expect(mf(m, obs, smokeVus, 6, { sneaky: 1 })).toEqual(
+      expect.arrayContaining([expect.stringMatching(/unexpected setup op/)]),
+    );
   });
   it("manifest http_reqs disagreeing with raw points fails", () => {
     const fails = mf(
@@ -775,6 +777,34 @@ describe("K6-GATE parseResources — declared cadence coverage", () => {
     expect(r.pgLimitKnown).toBe(false);
     expect(r.restartsMeasured).toBe(false);
     expect(r.dbCpuMeasured).toBe(false);
+  });
+  it("a pre-run sample cannot mask a missing first in-window metric", () => {
+    // Full metrics BEFORE the window; inside the window the metric is
+    // missing on the first sample and present after — coverage fails.
+    const text = [
+      meta(5),
+      mk(-4), // fully populated pre-run sample — NOT coverage
+      mk(0, { appRamMb: null }),
+      ...[5, 10, 15, 20, 25, 30].map((s) => mk(s)),
+    ].join("\n");
+    expect(parseResources(text, win, 5).ramMeasured).toBe(false);
+  });
+  it("a missing last in-window metric fails", () => {
+    const text = [
+      meta(5),
+      ...[0, 5, 10, 15, 20, 25].map((s) => mk(s)),
+      mk(30, { appCpuPct: null }),
+      mk(34), // post-run — irrelevant to coverage
+    ].join("\n");
+    expect(parseResources(text, win, 5).appCpuMeasured).toBe(false);
+  });
+  it("metrics in out-of-window samples only count for nothing", () => {
+    const text = [
+      meta(5),
+      mk(-4),
+      ...[0, 5, 10, 15, 20, 25, 30].map((s) => mk(s, { dbCpuPct: null })),
+    ].join("\n");
+    expect(parseResources(text, win, 5).dbCpuMeasured).toBe(false);
   });
   it("a brief interior dropout is tolerated, a long run is not", () => {
     // One missing metric in a single interior sample (< GAP×interval)

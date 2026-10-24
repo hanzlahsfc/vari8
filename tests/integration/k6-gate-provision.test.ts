@@ -206,19 +206,26 @@ describe.skipIf(!enabled)(
       ).not.toBeNull();
     });
 
+    async function laneDbs(): Promise<string[]> {
+      const admin = new PrismaClient({
+        datasources: { db: { url: adminUrl() } },
+      });
+      try {
+        return (
+          await admin.$queryRawUnsafe<{ datname: string }[]>(
+            "SELECT datname FROM pg_database WHERE datname LIKE 'app_k6_%'",
+          )
+        ).map((r) => r.datname);
+      } finally {
+        await admin.$disconnect();
+      }
+    }
+
     it("lane-create failure drops only the DB it created", async () => {
       // --lane pointing into a path whose parent is an existing FILE →
       // writeLaneFile throws AFTER CREATE DATABASE → cleanup must drop
       // exactly that DB and no other.
-      const admin = new PrismaClient({
-        datasources: { db: { url: adminUrl() } },
-      });
-      const before = (
-        await admin.$queryRawUnsafe<{ datname: string }[]>(
-          "SELECT datname FROM pg_database WHERE datname LIKE 'app_k6_%'",
-        )
-      ).map((r) => r.datname);
-      await admin.$disconnect();
+      const before = await laneDbs();
       const badLane = path.join(manifestPath, "lane.json"); // parent is a file
       const r2 = runProvision(
         ["lane-create", "--lane", badLane], // first --lane wins
@@ -226,18 +233,71 @@ describe.skipIf(!enabled)(
         url as string,
       );
       expect(r2.code).not.toBe(0);
-      const admin2 = new PrismaClient({
-        datasources: { db: { url: adminUrl() } },
-      });
-      const after = (
-        await admin2.$queryRawUnsafe<{ datname: string }[]>(
-          "SELECT datname FROM pg_database WHERE datname LIKE 'app_k6_%'",
-        )
-      ).map((x) => x.datname);
-      await admin2.$disconnect();
       // Exactly zero leftover databases — the failed invocation dropped
       // its own, and no others were touched.
-      expect(after).toEqual(before);
+      expect(await laneDbs()).toEqual(before);
+    }, 60_000);
+
+    it("marker-install failure drops only the DB created by that call", async () => {
+      // K6_GATE_FAULT=marker throws after CREATE DATABASE + migrate,
+      // before the marker install — the catch must drop its own DB.
+      const before = await laneDbs();
+      const r = runProvision(
+        ["lane-create", "--lane", path.join(dir, "fault-lane.json")],
+        { CONFIRM_DISPOSABLE_DB: "", K6_GATE_FAULT: "marker" },
+        url as string,
+      );
+      expect(r.code).not.toBe(0);
+      expect(await laneDbs()).toEqual(before);
+      // And the fault-lane file must not authorize anything later —
+      // its DB was dropped, so any use is a live-marker refusal.
+      const f = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      const probe = path.join(dir, "probe.json");
+      fs.writeFileSync(probe, JSON.stringify(f));
+      const rc = runProvision([
+        "cleanup",
+        "--file",
+        probe,
+        "--lane",
+        path.join(dir, "fault-lane.json"),
+      ]);
+      expect(rc.code).not.toBe(0);
+    }, 60_000);
+
+    it("SIGTERM mid-create leaves ONLY its own DB residual (documented window)", async () => {
+      // Catchable termination after CREATE DATABASE: Node's default
+      // SIGTERM handling exits without running the catch — the created
+      // DB is residual by design. Assert the residual is EXACTLY the
+      // DB this invocation created, then perform the documented manual
+      // recovery (drop the residual lane DB).
+      const before = await laneDbs();
+      const r = runProvision(
+        ["lane-create", "--lane", path.join(dir, "term-lane.json")],
+        { CONFIRM_DISPOSABLE_DB: "", K6_GATE_FAULT: "term" },
+        url as string,
+      );
+      expect(r.code).not.toBe(0);
+      const mid = await laneDbs();
+      const residual = mid.filter((d) => !before.includes(d));
+      expect(residual).toHaveLength(1); // only the invocation's own DB
+      const laneName = residual[0];
+      // The lane file exists but no marker was installed — the stale
+      // lane file cannot authorize create/cleanup on the residual.
+      const stale = runProvision(
+        [
+          "cleanup",
+          "--file",
+          manifestPath,
+          "--lane",
+          path.join(dir, "term-lane.json"),
+        ],
+        {},
+        dbUrlFor(laneName),
+      ).code;
+      expect(stale).not.toBe(0);
+      // Documented manual recovery: operator drops the residual lane.
+      await dropDb(laneName);
+      expect(await laneDbs()).toEqual(before);
     }, 60_000);
 
     it("a tampered manifest deletes nothing — victims survive", async () => {

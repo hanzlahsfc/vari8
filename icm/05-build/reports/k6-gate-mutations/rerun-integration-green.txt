@@ -1,0 +1,3 @@
+[2m   Start at [22m 15:20:16
+[2m   Duration [22m 19.59s[2m (tests 100%)[22m
+
