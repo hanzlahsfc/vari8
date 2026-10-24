@@ -1,3 +1,26 @@
+## 2026-10-24 — PR #201 K6-GATE evidence whitespace closure — receipts normalized, checks clean
+
+- Independent review found the complete base-to-head
+  `git diff --check` had **16 findings / exit 2** in two committed
+  `.txt` receipts. The prior unqualified “diff check 0” claim is
+  corrected: it did not cover those committed receipt artifacts.
+- `verify-local-canonical.txt` and
+  `verify-local-canonical-skip-parity.txt` are whitespace-normalized
+  copies only: trailing spaces and whitespace-only blank lines removed;
+  output order, commands, results, counts and exits unchanged. Raw
+  pre-normalization copies are preserved outside the tracked tree under
+  `_evidence/K6-GATE/` with recorded SHA-256 hashes in `K6-GATE.md`.
+- Node v24.22.1 checks after normalization: `npm run format:check`
+  exit 0; `npm run index:check` exit 0; working-tree
+  `git diff --check 2214105…` exit 0. Post-commit
+  `git diff --check 2214105…..HEAD` exit 0.
+- Exact non-documentation/non-evidence path check from reviewed
+  `0c3c3d5` to the normalized head: `git diff --exit-code -- tests/
+tools/ app/ components/ frontend/ public/ db/ lib/ scripts/
+package.json package-lock.json playwright.config.ts vitest.config.ts
+vitest.integration.config.ts tsconfig.json` exit 0. The delta is
+  documentation/evidence only; no behavioral suite was rerun.
+
 ## 2026-10-24 — PR #201 K6-GATE canonical gate — applicable run passes; parity recorded not applicable
 
 - Applicability decision: K6-GATE is local tooling only and the full
