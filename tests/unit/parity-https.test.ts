@@ -122,6 +122,33 @@ describe("task-owned process lifecycle", () => {
     expect(listenerPids(port)).toEqual([]);
     expect(ownedChild.exitCode ?? ownedChild.signalCode).not.toBeNull();
   });
+
+  it("cleans a descendant listener after the group leader exits", async () => {
+    const port = await freePort();
+    const unrelatedPort = await freePort();
+    backend = http.createServer((_req, res) => res.end("unrelated"));
+    await new Promise<void>((resolve) =>
+      backend!.listen(unrelatedPort, "127.0.0.1", resolve),
+    );
+    expect(listenerPids(unrelatedPort)).toEqual([String(process.pid)]);
+
+    ownedChild = spawn(
+      process.execPath,
+      [
+        "-e",
+        `const {spawn}=require("node:child_process");const c=spawn(process.execPath,["-e","require('node:http').createServer((_q,r)=>r.end('ok')).listen(${port},'127.0.0.1',()=>setInterval(()=>{},1000))"],{stdio:"ignore"});c.unref();setTimeout(()=>process.exit(0),10);`,
+      ],
+      { detached: true, stdio: "ignore" },
+    );
+    await new Promise<void>((resolve) => ownedChild!.once("exit", resolve));
+    for (let i = 0; i < 100 && !listenerPids(port).length; i++)
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(listenerPids(port)).toHaveLength(1);
+
+    await expect(stopOwnedProcessGroup(ownedChild, port)).resolves.toEqual([]);
+    expect(listenerPids(port)).toEqual([]);
+    expect(listenerPids(unrelatedPort)).toEqual([String(process.pid)]);
+  });
 });
 
 describe("authenticated capture validation", () => {
@@ -132,11 +159,11 @@ describe("authenticated capture validation", () => {
     clicks: ["Clients"],
   };
   const page = {
-    url: "https://127.0.0.1:55880/coach",
-    text: "Clients roster CP Chloe Park Lifestyle",
+    url: "https://127.0.0.1:55880/coach?section=clients",
+    text: "Clients roster Filter athletes CP Chloe Park Lifestyle",
   };
 
-  it("rejects redirected and unauthenticated captures", () => {
+  it("rejects redirected, unauthenticated, wrong-state and generic captures", () => {
     expect(
       captureProblem(shot, { ...page, url: "https://x.test/login" }),
     ).toContain("expected capture route");
@@ -145,28 +172,65 @@ describe("authenticated capture validation", () => {
     );
     expect(
       captureProblem(shot, { ...page, text: "Missing navigation" }),
-    ).toContain('content marker "Clients"');
+    ).toContain('content marker "Filter athletes"');
     expect(captureProblem(shot, page)).toBeNull();
+
+    const profile = {
+      file: "s01-profile-overview.png",
+      route: "/coach",
+      screen: "Client profile, Overview tab",
+      clicks: ["Clients", "CP Chloe Park Lifestyle"],
+    };
+    expect(
+      captureProblem(profile, {
+        url: "https://127.0.0.1:55880/coach?section=messages&client=wrong",
+        text: "Clients Client setup generic client text",
+        state: [],
+      }),
+    ).toContain("expected capture query section=clients");
+    expect(
+      captureProblem(profile, {
+        url: "https://127.0.0.1:55880/coach?section=clients&client=wrong",
+        text: "Clients Client setup generic client text",
+        state: [],
+      }),
+    ).toContain("expected capture query client=client-013");
   });
 
-  it("keeps a screen-specific marker for captures without click recipes", () => {
+  it("keeps a screen-specific state marker for captures without click recipes", () => {
     const studio = {
       file: "s10-clients-studio.png",
       route: "/ethereal#clients",
       screen: "Clients studio",
       clicks: [],
     };
-    expect(expectedCaptureMarker(studio)).toBe("Clients");
+    expect(expectedCaptureMarker(studio)).toBe("active clients");
     expect(
       captureProblem(studio, {
         url: "https://127.0.0.1:55880/ethereal#clients",
-        text: "Clients studio shared roster",
+        text: "Clients 12 active clients shared roster",
+        state: ["Clients"],
       }),
     ).toBeNull();
     expect(
       captureProblem(studio, {
+        url: "https://127.0.0.1:55880/ethereal#clients",
+        text: "Clients",
+        state: ["Clients"],
+      }),
+    ).toContain('content marker "active clients"');
+    expect(
+      captureProblem(studio, {
+        url: "https://127.0.0.1:55880/ethereal#clients",
+        text: "Clients 12 active clients",
+        state: [],
+      }),
+    ).toContain('selected capture state "Clients"');
+    expect(
+      captureProblem(studio, {
         url: "https://127.0.0.1:55880/ethereal",
-        text: "Clients studio shared roster",
+        text: "Clients 12 active clients",
+        state: ["Clients"],
       }),
     ).toContain("#clients");
   });

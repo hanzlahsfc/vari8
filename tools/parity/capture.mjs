@@ -87,25 +87,205 @@ const TEMPLATE_CARD = {
   containing: "Strength & balance",
 };
 const VIEW_TOGGLE = { within: ".cd-view-settings", target: "[role=switch]" };
-export const CAPTURE_MARKERS = {
-  "s01-profile-overview": "Client setup",
-  "s02-thread": "Your coaching conversation",
-  "s02-thread-attachments": "Choose photo, video or file",
-  "s03-checkin-review": "Tracker & progress",
-  "s04-habit-editor": "Client habit definitions",
-  "s05-templates": "Templates",
-  "s05-template-editor": "Tabs",
-  "s05-tracker-setup": "Daily log",
-  "s06-mealplan-editor": "Meal plan",
-  "s06-template-nutrition": "Nutrition",
-  "s07-exercise-library": "Add an exercise",
-  "s08-builder": "Dashboard",
-  "s08-template-dashboard": "Dashboard",
-  "s09-tracker-config": "Tracker",
-  "s10-appearance": "Appearance",
-  "s10-clients-studio": "Clients",
-  "s10-mealplan-studio": "Meal plans",
-  "s11-preferences": "Workspace preferences",
+const REQUIRED_QUERY_VALUE = "*";
+const COACH_QUERY_KEYS = [
+  "section",
+  "client",
+  "tab",
+  "plan",
+  "review",
+  "editor",
+];
+const STEP_ALIASES = {
+  "s04-template-habits": { "Training Program": "Training" },
+};
+
+export const CAPTURE_EXPECTATIONS = {
+  "s01-roster": {
+    query: { section: "clients" },
+    marker: "Filter athletes",
+  },
+  "s01-profile-overview": {
+    query: { section: "clients", client: "client-013" },
+    marker: "Chloe Park",
+    state: "Overview",
+  },
+  "s01-profile-plans": {
+    query: { section: "clients", client: "client-013", tab: "Plans" },
+    marker: "Plans & targets",
+    state: "Plans",
+  },
+  "s01-profile-checkins": {
+    query: { section: "clients", client: "client-013", tab: "Check-ins" },
+    marker: "Check-in calendar",
+    state: "Check-ins",
+  },
+  "s01-profile-notes": {
+    query: {
+      section: "clients",
+      client: "client-013",
+      tab: "Notes & tasks",
+    },
+    marker: "Notes & tasks",
+    state: "Notes & tasks",
+  },
+  "s01-profile-onboarding": {
+    query: {
+      section: "clients",
+      client: "client-013",
+      tab: "Onboarding",
+    },
+    marker: "Onboarding",
+    state: "Onboarding",
+  },
+  "s02-messages": {
+    query: { section: "messages" },
+    marker: "Conversations",
+  },
+  "s02-thread": {
+    query: { section: "messages", client: "client-013" },
+    marker: "Your coaching conversation",
+  },
+  "s02-thread-attachments": {
+    query: { section: "messages", client: "client-013" },
+    marker: "Choose photo, video or file",
+  },
+  "s02-notes-todos": {
+    query: { section: "notes" },
+    marker: "Notes & to-dos",
+  },
+  "s03-checkins-board": {
+    query: { section: "check-ins" },
+    marker: "Awaiting feedback",
+  },
+  "s03-add-extra": {
+    query: { section: "check-ins" },
+    marker: "Add an extra check-in date",
+    state: "Add an extra check-in date",
+  },
+  "s03-checkin-review": {
+    query: {
+      section: "check-ins",
+      client: "client-001",
+      review: "submission-emma",
+    },
+    marker: "Tracker & progress",
+  },
+  "s04-habit-editor": {
+    query: {
+      section: "clients",
+      client: "client-010",
+      plan: "habits",
+      tab: "Plans",
+    },
+    marker: "Client habit definitions",
+  },
+  "s04-template-habits": {
+    query: { section: "templates", editor: REQUIRED_QUERY_VALUE },
+    marker: "Include Habit Tracker",
+    state: "Habits",
+  },
+  "s05-templates": {
+    forbiddenQuery: COACH_QUERY_KEYS,
+    marker: "A thoughtful starting point for every athlete",
+  },
+  "s05-template-editor": {
+    query: { section: "templates", editor: REQUIRED_QUERY_VALUE },
+    marker: "Tabs",
+    state: "Tabs",
+  },
+  "s05-tracker-setup": {
+    query: { section: "templates", editor: REQUIRED_QUERY_VALUE },
+    marker: "Daily log",
+    state: "Tracker",
+  },
+  "s05-client-setup": {
+    query: { section: "clients", client: "client-015" },
+    marker: "Assign a setup to Eva Fischer",
+    state: "Assign a setup to Eva Fischer",
+  },
+  "s06-mealplan-editor": {
+    query: {
+      section: "clients",
+      client: "client-013",
+      plan: "nutrition",
+      tab: "Plans",
+    },
+    marker: "Meal plan",
+  },
+  "s06-template-nutrition": {
+    query: { section: "templates", editor: REQUIRED_QUERY_VALUE },
+    marker: "Nutrition",
+    state: "Nutrition",
+  },
+  "s07-training-editor": {
+    query: { section: "clients", client: "client-001", plan: "training" },
+    marker: "Training program",
+  },
+  "s07-exercise-library": {
+    query: { section: "clients", client: "client-001", plan: "training" },
+    marker: "Add an exercise",
+  },
+  "s08-builder": {
+    hash: "#dashboard",
+    marker: "A canvas for your coaching",
+    state: "Dashboard",
+  },
+  "s08-widget-gallery": {
+    hash: "#dashboard",
+    marker: "Choose widgets to add",
+    state: "Add widgets",
+  },
+  "s08-template-dashboard": {
+    query: { section: "templates", editor: REQUIRED_QUERY_VALUE },
+    marker: "Dashboard",
+    state: "Dashboard",
+  },
+  "s09-tracker-today": {
+    forbiddenQuery: COACH_QUERY_KEYS,
+    marker: "Today",
+    state: "Client preview",
+  },
+  "s09-tracker-week": {
+    forbiddenQuery: COACH_QUERY_KEYS,
+    marker: "Week",
+    state: "Client preview",
+  },
+  "s09-tracker-trends": {
+    forbiddenQuery: COACH_QUERY_KEYS,
+    marker: "Trends",
+    state: "Client preview",
+  },
+  "s09-tracker-config": {
+    hash: "#tracker",
+    marker: "Client tracker",
+    state: "Tracker",
+  },
+  "s10-appearance": {
+    hash: "#appearance",
+    marker: "Make it yours",
+    state: "Appearance",
+  },
+  "s10-clients-studio": {
+    hash: "#clients",
+    marker: "active clients",
+    state: "Clients",
+  },
+  "s10-mealplan-studio": {
+    hash: "#mealplan",
+    marker: "Demo workspace",
+    state: "Meal plans",
+  },
+  "s11-preferences": {
+    forbiddenQuery: COACH_QUERY_KEYS,
+    marker: "Workspace preferences",
+    state: "Workspace preferences",
+  },
+  "s11-client-preview": {
+    query: { section: "clients", client: "client-001" },
+    marker: "Client preview",
+    state: "Client preview",
+  },
 };
 
 const AUTH_OR_ERROR_CONTENT =
@@ -116,34 +296,63 @@ const shotStem = (shot) => shot.file.replace(/\.(png|webp)$/, "");
 export function expectedCaptureMarker(shot) {
   const stem = shotStem(shot);
   return (
-    CAPTURE_MARKERS[stem] ?? shot.clicks[shot.clicks.length - 1] ?? shot.screen
+    CAPTURE_EXPECTATIONS[stem]?.marker ??
+    shot.clicks[shot.clicks.length - 1] ??
+    shot.screen
   );
 }
 
+const includesText = (haystack, needle) =>
+  haystack
+    .replace(/\s+/g, " ")
+    .toLowerCase()
+    .includes(needle.replace(/\s+/g, " ").toLowerCase());
+
+/**
+ * @param {{file:string,route:string,screen:string,clicks:string[]}} shot
+ * @param {{url:string,text:string,state?:string[]}} page
+ * @param {{requireMarker?:boolean,expectedScreen?:boolean}} [options]
+ */
 export function captureProblem(
   shot,
-  { url, text },
-  { requireMarker = true } = {},
+  { url, text, state = [] },
+  { requireMarker = true, expectedScreen = true } = {},
 ) {
+  const stem = shotStem(shot);
+  const contract = CAPTURE_EXPECTATIONS[stem] ?? {};
   const expected = new URL(`https://capture.invalid${shot.route}`);
   const actual = new URL(url);
-  if (
-    actual.pathname !== expected.pathname ||
-    (expected.hash && actual.hash !== expected.hash)
-  )
-    return `expected capture route ${expected.pathname}${expected.hash}, got ${actual.pathname}${actual.hash}`;
+  if (expectedScreen) {
+    const expectedHash = contract.hash ?? expected.hash;
+    if (actual.pathname !== expected.pathname || actual.hash !== expectedHash)
+      return `expected capture route ${expected.pathname}${expectedHash}, got ${actual.pathname}${actual.hash}`;
+    for (const key of contract.forbiddenQuery ?? [])
+      if (actual.searchParams.has(key))
+        return `unexpected capture query parameter "${key}"`;
+    for (const [key, expectedValue] of Object.entries(contract.query ?? {})) {
+      const actualValue = actual.searchParams.get(key);
+      if (
+        expectedValue === REQUIRED_QUERY_VALUE
+          ? !actual.searchParams.has(key)
+          : actualValue !== expectedValue
+      )
+        return `expected capture query ${key}=${expectedValue}, got ${actualValue ?? "missing"}`;
+    }
+  } else if (actual.pathname !== expected.pathname) {
+    return `expected capture route ${expected.pathname}, got ${actual.pathname}${actual.hash}`;
+  }
   if (AUTH_OR_ERROR_CONTENT.test(text))
     return "capture reached an authentication, authorization, or error page";
   const marker = expectedCaptureMarker(shot);
+  if (requireMarker && marker && !includesText(text, marker))
+    return `expected capture content marker "${marker}"`;
+  const stateText = state.join("\n");
   if (
     requireMarker &&
-    marker &&
-    !text
-      .replace(/\s+/g, " ")
-      .toLowerCase()
-      .includes(marker.replace(/\s+/g, " ").toLowerCase())
+    contract.state &&
+    !includesText(stateText, contract.state)
   )
-    return `expected capture content marker "${marker}"`;
+    return `expected selected capture state "${contract.state}"`;
   return null;
 }
 
@@ -158,7 +367,7 @@ export const STEP_SCOPES = {
       "Training Program",
       "Check-In",
       "Habits",
-    ].map((label) => [label, VIEW_TOGGLE]),
+    ].map((label) => [label, TEMPLATE_NAV]),
   ),
   "s05-tracker-setup": { "02 Dashboard": TEMPLATE_NAV },
   "s06-mealplan-editor": {
@@ -506,22 +715,52 @@ export async function captureAll({
             const pageState = async () => ({
               url: page.url(),
               text: await page.locator("body").innerText(),
+              state: await page.evaluate(() => {
+                const label = (el) =>
+                  (
+                    el.innerText ||
+                    el.getAttribute("aria-label") ||
+                    el.getAttribute("title") ||
+                    ""
+                  )
+                    .replace(/\s+/g, " ")
+                    .trim();
+                const selected = [
+                  ...document.querySelectorAll(
+                    '[data-active="true"], [data-state="active"], [aria-current], [aria-selected="true"], [aria-pressed="true"], dialog[open], details[open] > summary, [data-page]',
+                  ),
+                ]
+                  .map((el) => el.getAttribute("aria-label") || label(el))
+                  .filter(Boolean);
+                return [...new Set(selected)];
+              }),
             });
             const initialProblem = captureProblem(shot, await pageState(), {
               requireMarker: false,
+              expectedScreen: false,
             });
             if (initialProblem) throw new Error(initialProblem);
             const clickLog = [];
-            for (const label of shot.clicks)
-              clickLog.push(
-                await clickByText(page, label, {
+            for (const label of shot.clicks) {
+              const result = await clickByText(
+                page,
+                STEP_ALIASES[stem]?.[label] ?? label,
+                {
                   fallback: vp === "390",
                   scope: STEP_SCOPES[stem]?.[label] ?? null,
-                }),
+                },
               );
+              clickLog.push({ ...result, recipe: label });
+            }
             await page.evaluate(() => window.scrollTo(0, 0));
             await settle(page);
-            const finalProblem = captureProblem(shot, await pageState());
+            const started = Date.now();
+            let finalProblem = null;
+            do {
+              finalProblem = captureProblem(shot, await pageState());
+              if (!finalProblem) break;
+              await page.waitForTimeout(50);
+            } while (Date.now() - started < 3000);
             if (finalProblem) throw new Error(finalProblem);
             const png = await page.screenshot({
               fullPage: true,

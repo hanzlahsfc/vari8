@@ -110,6 +110,15 @@ export function listenerPids(port) {
     .filter(Boolean);
 }
 
+function processGroupMembers(pgid) {
+  return spawnSync("ps", ["-axo", "pid=,pgid="], { encoding: "utf8" })
+    .stdout.split("\n")
+    .map((line) => line.trim().split(/\s+/))
+    .filter(([, group]) => group === String(pgid))
+    .map(([pid]) => pid)
+    .filter(Boolean);
+}
+
 function portOwnedByGroup(port, pgid) {
   const pids = listenerPids(port);
   return (
@@ -138,36 +147,60 @@ async function waitForNoListeners(port, ms = 2000) {
   return listenerPids(port).length === 0;
 }
 
+async function waitForNoGroupMembers(pgid, ms = 2000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 <= ms) {
+    if (processGroupMembers(pgid).length === 0) return true;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return processGroupMembers(pgid).length === 0;
+}
+
 export async function stopOwnedProcessGroup(
   child,
   port,
   { terminateMs = 10000, killMs = 5000 } = {},
 ) {
   const problems = [];
-  if (child.exitCode === null && child.signalCode === null) {
+  const pgid = String(child.pid);
+  const signalOwnedGroup = (signal) => {
+    // A group survives leader exit while descendants remain. Only signal the
+    // original PGID when it still has members or exactly owns this listener;
+    // this avoids PID reuse and never targets a foreign listener.
+    if (processGroupMembers(pgid).length === 0 && !portOwnedByGroup(port, pgid))
+      return;
     try {
-      process.kill(-child.pid, "SIGTERM");
+      process.kill(-Number(pgid), signal);
     } catch (error) {
       if (error.code !== "ESRCH") throw error;
     }
-  }
+  };
+
+  signalOwnedGroup("SIGTERM");
   let exited = await waitForProcessExit(child, terminateMs);
-  if (!exited && portOwnedByGroup(port, child.pid)) {
-    try {
-      process.kill(-child.pid, "SIGKILL");
-    } catch {}
-    exited = await waitForProcessExit(child, killMs);
+  await waitForNoListeners(port);
+  await waitForNoGroupMembers(pgid);
+
+  if (processGroupMembers(pgid).length > 0 || portOwnedByGroup(port, pgid)) {
+    signalOwnedGroup("SIGKILL");
+    await waitForProcessExit(child, killMs);
+    await waitForNoListeners(port);
+    await waitForNoGroupMembers(pgid, killMs);
   }
-  if (await waitForNoListeners(port)) {
-    if (!exited) problems.push(`process ${child.pid} did not exit`);
-    return problems;
-  }
+
   const pids = listenerPids(port);
-  if (pids.every((pid) => processGroup(pid) === String(child.pid)))
-    problems.push(`process ${child.pid} still owns listener ${port}`);
-  else
+  const members = processGroupMembers(pgid);
+  if (pids.length) {
+    if (pids.every((pid) => processGroup(pid) === pgid))
+      problems.push(`process group ${pgid} still owns listener ${port}`);
+    else
+      problems.push(
+        `listener ${port} is owned by process(es) ${pids.join(", ")} outside this run`,
+      );
+  }
+  if (members.length)
     problems.push(
-      `listener ${port} is owned by process(es) ${pids.join(", ")} outside this run`,
+      `process group ${pgid} still has process(es) ${members.join(", ")}`,
     );
   if (!exited) problems.push(`process ${child.pid} did not exit`);
   return problems;
