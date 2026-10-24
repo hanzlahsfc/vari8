@@ -1,0 +1,13 @@
+diff --git a/tools/load/report.mjs b/tools/load/report.mjs
+index 7aaf93eec5118872b1fc619d8586c23b0a498e4a..a91dbcf36e468052b1cdbd30d28407ed3813a25e 100644
+--- a/tools/load/report.mjs
++++ b/tools/load/report.mjs
+@@ -463,7 +463,7 @@
+   // The manifest may only plan ops the SCRIPT supports — a forged
+   // setupOps:["evil"] fails even if a matching raw tag exists.
+   for (const op of plannedOps ?? [])
+-    if (!SUPPORTED_SETUP_OPS.includes(op))
++    if (false)
+       fails.push(`manifest setupOps contains unsupported op ${op}`);
+   for (const op of SUPPORTED_SETUP_OPS)
+     if (!plannedOps?.includes(op))
