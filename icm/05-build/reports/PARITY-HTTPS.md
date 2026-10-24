@@ -1,6 +1,7 @@
 # PARITY-HTTPS — issue #202 parity production startup repair
 
 Base: `Vari8-Beta` `d1c4081022f2ac21070b28f284248fad2ef04839`.
+Residual-repair code head: `5e16ec8e3c914a9b7335c9fb967cfb9dd0d499f9`.
 Issue: https://github.com/hanzlahsfc/vari8/issues/202.
 
 ## Scope
@@ -90,17 +91,25 @@ No screenshot comparison began. Raw evidence:
   `Domain`, `Path`, `Max-Age` and `Expires`. `Max-Age` wins over
   `Expires`, invalid `Max-Age` falls back to `Expires`, expired cookies
   stay expired and session cookies keep no `expires` field.
-- Capture validates the final route and rejects auth/authorization/error
-  content immediately after navigation. After the recipe it requires a
-  screen-specific marker before saving the screenshot; the manifest now
-  records `finalUrl` and `marker`. Screens without click recipes have
-  explicit markers.
+- Capture validates the expected pathname and rejects
+  auth/authorization/error content immediately after navigation. After
+  the recipe it waits, bounded, for the expected screen contract:
+  pathname/hash, required query parameters, screen-specific content and
+  selected/open state (`aria-current`, `aria-selected`, `aria-pressed`,
+  `data-active`, open dialogs). The manifest records `finalUrl` and
+  `marker`. Screens without click recipes have explicit content/state
+  markers rather than generic navigation labels.
+- The template-habits recipe now scopes its section clicks to the
+  template navigation instead of unrelated right-panel toggles; the
+  `Training Program` recipe label resolves to the actual `Training`
+  navigation item while the original recipe remains in the manifest.
 - Backend process-group ownership and proxy listener ownership are
   checked at startup and re-checked before/after captures. `finally`
-  sends `SIGTERM` to the spawned backend group, waits for exit, uses
-  bounded `SIGKILL` escalation only while the listener belongs to that
-  same process group, and verifies the public/backend listeners are
-  gone. A listener owned by another process is reported, never killed.
+  tracks the original PGID, signals that group even if its leader has
+  already exited, waits for exit/listener/group-member disappearance and
+  escalates with bounded `SIGKILL` only while owned members/listeners
+  remain. A listener or process outside the original group is reported,
+  never killed; empty/reused PGIDs are not signalled.
 - Capture semantics are unchanged except `ignoreHTTPSErrors` for the
   disposable self-signed loopback cert. Baselines, selectors, viewport
   dimensions, fixed clock, pixel/DOM thresholds and fonts were not
@@ -115,30 +124,36 @@ covered.
 ## Fresh verification — Node v24.22.1
 
 Focused regression suite:
-`npx vitest run tests/unit/parity-https.test.ts` → **12/12 passed,
+`npx vitest run tests/unit/parity-https.test.ts` → **13/13 passed,
 exit 0**. Covers TLS forwarding/certificate cleanup, non-loopback
 refusal, malformed or unusable port pairs, distinct unpinned pairs,
-occupied public-port race refusal, spawned-process termination/listener
-verification, authenticated URL/content rejection, explicit markers for
-no-click screens, malformed/non-HTTPS `PARITY_URL`, Secure/SameSite,
-Domain/Path and controlled-clock `Max-Age`/`Expires` semantics.
+occupied public-port race refusal, spawned listener cleanup, leader-exit
+descendant cleanup with an unrelated listener preserved, authenticated
+route/query/content/state rejection, explicit markers for no-click
+screens, malformed/non-HTTPS `PARITY_URL`, Secure/SameSite, Domain/Path
+and controlled-clock `Max-Age`/`Expires` semantics.
 
-Targeted mutations:
+Targeted mutations on the post-review head:
 
-- Cookie expiry propagation removed → focused suite **1 expected
-  failure**, exit 1.
-- `captureProblem` made unconditional-success → **2 expected failures**,
-  exit 1.
-- Owned-process cleanup made a no-op → **1 expected listener-residue
-  failure**, exit 1.
-- Each mutation was restored by the exact inverse edit and the focused
-  suite returned to **12/12**, exit 0. Restored SHA-256:
+- Leader-exit cleanup restricted to the leader's lifetime (the actual
+  reviewed failure window) → **1 expected failure**, exit 1: the
+  descendant listener and owned group member remained.
+- Required-query and selected-state validation removed → **2 expected
+  failures**, exit 1: the reviewer's wrong-query and missing-state
+  probes no longer produced the required errors.
+- Mutations were restored by exact inverse edits and the focused suite
+  returned to **13/13**, exit 0. Restored SHA-256:
   `tools/parity/local-https.mjs`
-  `87cd1ae18f7c4a4b03e1ec67a176d24d2a052d2770ef9b75b3fce53a9d06745f`;
+  `8d97e82bd447bb9e9e31bca2e3eecf7e7ec1a56cb3e44d3bb64dfeee82772e01`;
   `tools/parity/capture.mjs`
-  `4b26a2c0db424d4726e5c6800c23a6f2fb67f894a0ecb246ffd7322fc9d22ebb`.
+  `e415ae814b640c34beec88ca21f1de34d38808046579006e50d54309246541b9`;
+  `tests/unit/parity-https.test.ts`
+  `8ab4a0a56cbe8ed8b21f26658ca5cb04c58806e67fdcedb09d517f3733ca3241`.
+- Earlier cookie-expiry, unconditional-capture and cleanup-no-op
+  mutations remain preserved receipts; their prior SHA-256 values refer
+  to the pre-review files, not this head.
 
-Production parity run after the repair:
+Production parity run after the residual repairs:
 
 ```text
 PARITY_PORT=55880 npm run parity -> exit 1
@@ -148,21 +163,22 @@ manifest.failures = 0
 manifest.retried = 0
 ```
 
-All 70 captures now pass authenticated-route/content validation. Sample
-manifest evidence: `s01-roster@1440` ended at
-`https://127.0.0.1:55880/coach?section=clients` with marker `Clients`;
-`s08-builder@1440` ended at `/ethereal#dashboard` with marker
-`Dashboard`; `s10-clients-studio@390` ended at `/ethereal#clients` with
-marker `Clients`. Login/error content would become a capture failure,
-not a saved screenshot.
+All 70 captures pass the stronger screen contract. The run also exposed
+one real recipe defect rather than weakening it: `s04-template-habits`
+was previously clicking right-panel toggles while passing on the generic
+`Habits` navigation text. After the scope/label correction, both
+viewports capture the actual `Habits` editor section. Sample final URLs:
+`s01-profile-overview` uses
+`/coach?section=clients&client=client-013`; `s10-clients-studio` uses
+`/ethereal#clients`. Login/error content and wrong query/state produce
+capture failure, not a saved screenshot.
 
 The visual comparison itself remains **not green**: `parity FAIL: 70
 problem(s)`, exit 1. Evidence:
-`_evidence/PARITY-HTTPS-run-repair2.log`,
-`_evidence/PARITY-HTTPS-server-repair2.log`,
-`_evidence/PARITY-HTTPS-manifest-repair2.json`,
-`_evidence/PARITY-HTTPS-report-repair2.html` and the copied current tree
-`_evidence/PARITY-HTTPS-current-repair2/`.
+`_evidence/PARITY-HTTPS-run-404f.log`,
+`_evidence/PARITY-HTTPS-server-404f.log`,
+`_evidence/PARITY-HTTPS-manifest-404f.json`,
+`_evidence/PARITY-HTTPS-report-404f.html` and `tools/parity/out/`.
 
 TLS/E2E regression path on the same disposable DB:
 `PLAYWRIGHT_PORT_BASE=55900 npx playwright test` → **16 passed /
@@ -177,72 +193,85 @@ Standard gates:
 - `npm run index:check` → exit 0
 - `npm run typecheck` → exit 0
 - `npm run lint` → exit 0, 0 errors / 81 pre-existing warnings
-- `npm run test` → **105 files / 1262 tests**, exit 0
+- `npm run test` → **105 files / 1263 tests**, exit 0
 - `npm run build` → exit 0
 - `git diff --check` → exit 0
 
 Cleanup verified after the final parity run: no listeners remain on
-55880/55881 or the temporary frontend probe port, no
-`vari8-local-tls-*` material remains under `/tmp`, and the disposable
-`app_parity_https` database was dropped (`pg_database` count 0).
+55880/55881, no `vari8-local-tls-*` material remains under `/tmp`, and
+the disposable `app_parity_https` database was dropped
+(`pg_database` count 0).
 
 ## Visual investigation
 
-Environment measured on this host:
+Current-run provenance:
 
-- Playwright `1.63.0`, Chromium for Testing `chrome-mac-arm64`
-  (`chromium-1243`), macOS arm64, Darwin `27.0.0`.
-- `deviceScaleFactor=1`; viewports are 1440×900 and 390×844.
-- `FIXED_NOW=2026-10-19T10:00:00+02:00`, timezone `Europe/Vienna`.
-- Capture waits for `document.fonts.ready`, disables transitions and
-  animations with injected CSS plus `animations: "disabled"`, hides the
-  caret, blocks service workers and takes full-page screenshots.
+- Source: root-app parity code executed on the reviewed candidate and is
+  byte-identical to commit `5e16ec8` for the three changed files; the
+  run predated only the commit operation. Base remained `8aa93e7` while
+  `tools/parity/capture.mjs`, `tools/parity/local-https.mjs` and
+  `tests/unit/parity-https.test.ts` were the only modified files.
+- Launch: `PARITY_PORT=55880 npm run parity`; public loopback HTTPS
+  `127.0.0.1:55880`, backend loopback HTTP `127.0.0.1:55881`, disposable
+  DB `app_parity_https`.
+- Runtime: Node `v24.22.1`, Playwright `1.63.0`, Chromium
+  `153.0.8010.12`, macOS arm64, Darwin `27.0.0`.
+- Screenshot configuration: `deviceScaleFactor=1`; viewports 1440×900
+  and 390×844; `FIXED_NOW=2026-10-19T10:00:00+02:00`; timezone
+  `Europe/Vienna`; `document.fonts.ready`, injected transition/animation
+  freeze CSS, Playwright `animations: "disabled"`, hidden caret, service
+  workers blocked and full-page screenshots.
 - `InfinityGeist.woff2` is byte-identical between `public/` and
   `frontend/public/` (SHA-256
   `1b5ebfb3a01a97343ac96873e6d59a8cb285c66012b6a1ac509cb2765e995ba8`).
-- Baseline manifest records `baseUrl=http://127.0.0.1:42645` and the
-  same fixed clock but does **not** record OS, Chromium version or a
-  reproducible source worktree. `icm/04-briefing/shots/index.json`
-  names `/home/nexuslink/vari8-worktrees/merge-proto @ 58eb6ed`; that
-  object is not present in this repository, so the exact reference
-  source/environment is unavailable.
+
+Baseline provenance remains incomplete:
+
+- `icm/04-briefing/shots/index.json` names
+  `/home/nexuslink/vari8-worktrees/merge-proto @ 58eb6ed`.
+- Read-only checks found no `58eb6ed` object in local history
+  (`git cat-file`/`git rev-list --all`), no matching remote ref in
+  `git ls-remote`, and no local `/Users/apple/Devin/vari8-worktrees/
+merge-proto` directory. The baseline manifest records
+  `baseUrl=http://127.0.0.1:42645` and the same fixed clock, but not OS,
+  Node, Playwright, Chromium, device scale or the source tree's dirty
+  state.
 
 Measured findings:
 
-- **Determinism:** the `s08-builder@1440` current image from the prior
-  repaired run and the post-validation run are pixel-identical
-  (`diff=0`). The 70 failures are not caused by run-to-run capture
-  nondeterminism on this host.
+- **Determinism:** the `s08-builder@1440` image from the latest strict
+  run is SHA-256
+  `38b90ea2b787e52a3541e569bddb7736fe917852bd5fd45ffcc76af3dd93615c`,
+  identical to the earlier repaired capture. The 70 failures are not
+  local capture nondeterminism.
 - **Builder raster differences:** `s08-builder@1440` differs from the
   committed baseline in 1,248,913 pixels over the whole page
   (`bbox 0,0 → 1439,970`): 800,613 differ by one channel unit,
-  420,566 by two, 1,578 by three and 26,156 by more than three. This is
-  predominantly pervasive low-channel raster/anti-aliasing variation,
-  while DOM element count and text are unchanged.
+  420,566 by two, 1,578 by three and 26,156 by more than three. DOM
+  element count and text are unchanged. This is measured raster/layout
+  variation, not proof of a host-only baseline cause.
 - **Roster geometry:** `s01-roster@1440` has the same element count and
-  no text differences, but 200 moved boxes; representative labels move
-  or resize by roughly 0.5–6.5px. This is consistent with font/layout
-  metric differences, but the exact reference browser/OS is not
-  recorded, so a host cause is not proven.
+  no text differences, but 200 moved boxes with representative
+  ~0.5–6.5px shifts. This is consistent with font/layout metrics, but
+  the missing reference environment prevents attribution.
 - **Page-size and element differences:** five screens changed page size
-  and two changed element count. `s11-preferences` concretely adds a
-  `dialog > div > div[12] > form` and its button at both viewports; that
-  is a real DOM change versus baseline, not raster noise.
-- **Controlled frontend probe:** a fresh production build of the
-  current `frontend/` directory was captured on this host and compared
-  with the committed baseline. It is materially different (for
-  `s08-builder@1440`: 1,497,233 changed pixels, mostly >3) because the
-  frontend source has evolved and one recipe no longer resolves. This
-  controlled run establishes that the checked-in baseline is stale for
-  the current frontend source; it does not establish that all root-app
-  differences are host-only.
+  and two changed element count. `s11-preferences` adds a
+  `dialog > div > div[12] > form` and its button at both viewports;
+  these remain unresolved real DOM differences unless the missing
+  baseline source/environment explains them.
+- **Prior frontend probe limitation:** the earlier same-host `frontend/`
+  probe did not record the exact source commit, dirty state or launch
+  configuration and captured only 68 screens with two recipe failures.
+  It is retained as evidence that the current `frontend/` source and
+  committed baseline are not a clean reference, but it is **not** used
+  to explain the root-app failures.
 
-Conclusion: the startup/auth/capture defect is repaired, but mandatory
-visual parity remains **FAIL**. The evidence separates deterministic
-low-channel rendering differences from real DOM/page-size changes, but
-cannot prove a host-only cause without the missing baseline OS,
-browser/version and source worktree. No baseline refresh, tolerance or
-visual-acceptance claim is made.
+Conclusion: HTTPS startup, authenticated capture and lifecycle repairs
+are verified, but mandatory visual parity remains **FAIL**. The missing
+reference source/environment is the precise blocker for attributing the
+five size changes, two element-count changes, `s11-preferences` DOM
+delta and pervasive raster differences. No baseline refresh, tolerance
+or visual-acceptance claim is made.
 
 ## Remaining limitation / blockers
 

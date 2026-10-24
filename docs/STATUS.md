@@ -6,27 +6,30 @@
 - Root parity now serves the public browser/auth origin over a
   disposable loopback HTTPS proxy and `next start` on a distinct
   loopback backend port. Port selection is availability probing only;
-  a startup race fails closed. Backend/proxy ownership is checked,
-  spawned processes are awaited, bounded escalation is limited to the
-  owned process group, and listeners are verified gone.
+  a startup race fails closed. Backend/proxy ownership is checked by the
+  original PGID, leader-exit descendants are cleaned, bounded escalation
+  is limited to that group, and listeners/members are verified gone.
 - Cookie conversion preserves `Max-Age`/`Expires` precedence, expired
   cookies, session cookies and security/domain/path attributes. Each
-  capture now validates authenticated route/content immediately after
-  navigation and again after the recipe before a screenshot is saved;
-  `finalUrl`/markers are recorded.
+  capture validates pathname/auth content after navigation, then waits
+  for required route/hash/query, screen-specific content and
+  selected/open state before a screenshot is saved; `finalUrl`/markers
+  are recorded. The strict contract exposed and repaired the
+  `s04-template-habits` right-panel-toggle scope defect.
 - Fresh proof: `PARITY_PORT=55880 npm run parity` reaches
   `https://127.0.0.1:55880`, signs in, captures **70/70 screens** and
   reports **0 capture failures / 0 retries**. Comparison is **FAIL,
   70 problems, exit 1** against the checked-in baseline — startup and
   capture validity are fixed, visual acceptance is not claimed.
-- Checks on Node v24.22.1: focused 12/12; full unit **105 files /
-  1262 tests**; typecheck, format, index, build and `git diff --check`
-  exit 0; lint 0 errors/81 pre-existing warnings; shared E2E
-  **16 passed / 8 skipped**, exit 0. The earlier **10 passed / 7
-  skipped** count was the narrower canonical E2E subset.
-- Targeted mutations: expiry removal, unconditional capture success and
-  cleanup no-op each produced the expected focused failure, then were
-  restored and the suite returned green.
+- Checks on Node v24.22.1: focused 13/13; full unit **105 files /
+  1263 tests**; typecheck, format, index, build and `git diff --check`
+  exit 0; lint 0 errors/81 warnings; shared E2E **16 passed /
+  8 skipped**, exit 0. The earlier **10 passed / 7 skipped** count was
+  the narrower canonical E2E subset; mail-gated skips are not passes.
+- Fresh mutations: leader-exit cleanup left a descendant listener as
+  expected when restricted to leader lifetime; removing query/state
+  checks caused the reviewer's probes to pass incorrectly. Both were
+  restored byte-identically and the suite returned **13/13**.
 - Visual investigation found deterministic low-channel raster/layout
   differences plus real DOM/page-size changes. Baseline provenance
   lacks OS/browser/source environment sufficient to prove a host-only
