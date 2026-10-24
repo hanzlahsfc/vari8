@@ -226,23 +226,44 @@ suite reran green.
 
 ## Canonical gate result
 
-`verify-local.sh` was invoked under Node v24.22.1 with
-`REQUIRE_NODE24=1`, `BASE_SHA=2214105…`, `LANE_DB=app_k6_it`, and the
-script-supported `VARI8_WORKTREES=/Users/apple/Devin/vari8-worktrees`
-adapter. `verify-local-repair9.txt` shows clean tree, schema guard,
-generator check, installs, Prisma generate, format/type/lint/unit checks,
-and frontend checks proceeding before the canonical DB stage. The script
-then exits 1 at its hardcoded `docker exec vari8-db-1` step because
-Docker Desktop is closed and `vari8-db-1` is unavailable. It also emits a
-stale-host `realpath` warning from `program-config.json` (`/home/nexuslink/...`).
+Docker identity on this host is the compose container **`app-db-1`**:
+image `postgres:16-alpine`, project `app`, service `db`, bound to
+`127.0.0.1:5433`, volume `app_app-postgres`, healthy. There is no
+`vari8-db-1` container; the earlier unblock wording was wrong for this
+host. The only adapter used was the previously documented command map
+`docker exec vari8-db-1 → docker exec app-db-1`, implemented as an
+exported bash function that invokes the real Docker command and preserves
+stdout/stderr/exit.
 
-This is **not** a canonical pass. The isolated PostgreSQL environment
-cannot satisfy that script without replacing its shared container
-adapter; no lock, stage, container-name, or Docker behavior was faked.
-Exact user action for a canonical run: start Docker Desktop so
-`docker info` succeeds, make the approved `vari8-db-1` PostgreSQL
-container available on `127.0.0.1:5433`, and rerun the script with the
-real `POSTGRES_PASSWORD` from the root `.env` (never printed).
+`verify-local.sh` ran once at head `5fbeef3` under Node v24.22.1 with
+`REQUIRE_NODE24=1`, `BASE_SHA=2214105…`,
+`LANE_DB=app_k6_gate_verify`, `LANE_PORT=55682`, `CARD=K6-GATE`,
+credentials sourced privately from `.env`, and
+`VARI8_WORKTREES=/Users/apple/Devin/vari8-worktrees`. Complete log:
+`verify-local-canonical.txt`.
+
+Result: **VERIFY-LOCAL FAIL, exit 1**. Passed: clean tree, schema guard,
+program generator, root/frontend installs, Prisma generate,
+format/type/lint, root unit tests, frontend lint/tests, disposable lane
+migrate deploy, root/frontend builds, and e2e flow specs (**10 passed /
+7 skipped / 0 failed**). The script's integration-test stage was skipped
+by its own path rule (`db/`, `lib/`, `app/api/` unchanged); the separate
+focused lifecycle suite above was **23/23, zero skipped** on real
+PostgreSQL and is not counted as canonical integration evidence.
+
+The canonical run failed only at `parity regression (D32)`, exit 2:
+`tools/parity/run.mjs` starts `next start` with an HTTP
+`BETTER_AUTH_URL`, and production boot refuses it (`BETTER_AUTH_URL is
+an http: origin; production auth requires an https: base URL`). The
+adapter was not extended to fake a pass; this is a canonical parity
+harness/environment mismatch, not a lifecycle-database failure.
+
+Task cleanup was verified through the same adapter: disposable
+`app_k6_gate_verify` is absent after the run; pre-existing builder
+`app_k6_it` remains unchanged. `app-db-1` and other pre-existing Docker
+containers were left in their post-Docker-start configured state; no
+duplicate or renamed container was created and no shared database
+contents were modified.
 
 ## Remaining issue-178 acceptance (NOT this lane)
 

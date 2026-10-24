@@ -1,3 +1,27 @@
+## 2026-10-24 — PR #201 K6-GATE canonical gate — DB stage reached; parity harness fails on HTTPS origin
+
+- Docker Desktop was started to inspect the expected development DB.
+  Established container identity: `app-db-1`, compose project `app`,
+  service `db`, `postgres:16-alpine`, healthy on `127.0.0.1:5433`.
+  `vari8-db-1` does not exist; the earlier instruction was corrected.
+- Canonical run used only the documented narrow adapter
+  `docker exec vari8-db-1 → docker exec app-db-1`, `LANE_DB` =
+  disposable `app_k6_gate_verify`, Node v24.22.1,
+  `REQUIRE_NODE24=1`, and private `.env` credentials.
+- `verify-local.sh` result: **FAIL, exit 1**. It passed clean tree,
+  schema guard, generator, installs, format/type/lint, root and frontend
+  tests/builds, disposable migrate deploy, and e2e (**10 passed /
+  7 skipped / 0 failed**). Its integration stage was skipped by the
+  script's unchanged-path rule; the separate lifecycle suite remains
+  23/23 on real PostgreSQL.
+- The sole failure is parity D32 exit 2: the parity runner launches
+  production `next start` with HTTP `BETTER_AUTH_URL`, and the app
+  correctly refuses HTTP auth in production. The run was not repeated or
+  adapted to fake a pass.
+- Disposable `app_k6_gate_verify` was dropped by the script's trap and
+  verified absent; builder `app_k6_it` remains. No duplicate/renamed
+  container or shared DB contents were changed.
+
 ## 2026-10-24 — PR #201 K6-GATE repair 9 disposable-PG proof — focused suite green; canonical DB stage blocked by Docker
 
 - Branch `beta/k6-gate` adds deterministic lifecycle proof on an
