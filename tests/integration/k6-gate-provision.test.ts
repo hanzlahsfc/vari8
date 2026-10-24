@@ -20,6 +20,8 @@ const url = process.env.INTEGRATION_DATABASE_URL;
 const enabled = typeof url === "string" && url.length > 0;
 let victimWorkspaceId: string | null = null;
 
+let lanePath = "";
+
 function runProvision(
   args: string[],
   env: Record<string, string> = {},
@@ -28,7 +30,7 @@ function runProvision(
   try {
     const out = execFileSync(
       "npx",
-      ["tsx", "tools/load/provision.ts", ...args],
+      ["tsx", "tools/load/provision.ts", ...args, "--lane", lanePath],
       {
         stdio: "pipe",
         env: {
@@ -69,6 +71,11 @@ describe.skipIf(!enabled)(
       });
       dir = fs.mkdtempSync(path.join(os.tmpdir(), "k6-gate-"));
       manifestPath = path.join(dir, "fixtures.json");
+      lanePath = path.join(dir, "lane.json");
+      // Task-owned lane: the tool installs its marker + lane file;
+      // create/cleanup require this positive ownership evidence.
+      const init = runProvision(["lane-init"]);
+      if (init.code !== 0) throw new Error(`lane-init failed: ${init.output}`);
 
       // An unrelated victim workspace + user + profile — must survive.
       const victimWs = await prisma.workspace.create({
@@ -190,6 +197,80 @@ describe.skipIf(!enabled)(
       const r = runProvision(["cleanup", "--file", stalePath]);
       expect(r.code).not.toBe(0);
       expect(r.output).toMatch(/refusing cleanup/);
+    });
+
+    it("positive ownership: pre-existing DB without the marker refuses", async () => {
+      // A real, lane-named, CONFIRMED database — but lane-init never
+      // ran on it, so no marker row exists. Point lane.json at it
+      // anyway: cleanup must refuse before touching anything.
+      const noMarkerDb = `app_nomarker_${Date.now().toString(36)}`;
+      const admin = new PrismaClient({
+        datasources: {
+          db: { url: (url as string).replace(/\/[^/?]+$/, "/postgres") },
+        },
+      });
+      try {
+        await admin.$executeRawUnsafe(`CREATE DATABASE "${noMarkerDb}"`);
+      } finally {
+        await admin.$disconnect();
+      }
+      execFileSync("npx", ["prisma", "migrate", "deploy"], {
+        stdio: "pipe",
+        env: {
+          ...process.env,
+          DATABASE_URL: (url as string).replace(/\/[^/?]+$/, `/${noMarkerDb}`),
+        },
+      });
+      const r = runProvision(
+        ["cleanup", "--file", manifestPath],
+        {},
+        (url as string).replace(/\/[^/?]+$/, `/${noMarkerDb}`),
+      );
+      expect(r.code).not.toBe(0);
+      expect(r.output).toMatch(/lane|ownership|marker/i);
+      // Drop the probe DB — the disposable host stays clean.
+      const admin2 = new PrismaClient({
+        datasources: {
+          db: { url: (url as string).replace(/\/[^/?]+$/, "/postgres") },
+        },
+      });
+      try {
+        await admin2.$executeRawUnsafe(`DROP DATABASE "${noMarkerDb}"`);
+      } finally {
+        await admin2.$disconnect();
+      }
+    }, 90_000);
+
+    it("forged lane file token refuses destructive cleanup", async () => {
+      // Overwrite lane.json's token — the live DB marker no longer
+      // matches → cleanup refuses before touching rows.
+      const lane = JSON.parse(fs.readFileSync(lanePath, "utf8"));
+      fs.writeFileSync(
+        lanePath,
+        JSON.stringify({ ...lane, token: "forged-token" }),
+        { mode: 0o600 },
+      );
+      const r = runProvision(["cleanup", "--file", manifestPath]);
+      expect(r.code).not.toBe(0);
+      expect(r.output).toMatch(/lane marker|ownership/i);
+      // Restore — the legitimate cleanup test still needs real ownership.
+      fs.writeFileSync(lanePath, JSON.stringify(lane), { mode: 0o600 });
+      const victims = await prisma.user.findUnique({
+        where: { id: victimUserId },
+      });
+      expect(victims).not.toBeNull();
+    });
+
+    it("stale lane file for another database refuses", () => {
+      const lane = JSON.parse(fs.readFileSync(lanePath, "utf8"));
+      fs.writeFileSync(
+        lanePath,
+        JSON.stringify({ ...lane, dbName: "app_other_lane" }),
+        { mode: 0o600 },
+      );
+      const r = runProvision(["cleanup", "--file", manifestPath]);
+      expect(r.code).not.toBe(0);
+      fs.writeFileSync(lanePath, JSON.stringify(lane), { mode: 0o600 });
     });
 
     it("shared database names are refused even when confirmed", () => {

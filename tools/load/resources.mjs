@@ -172,6 +172,16 @@ let pidRestarts = 0;
 
 let n = 0;
 while (running && (maxSamples === 0 || n < maxSamples)) {
+  // First line declares the configured cadence — the report validates
+  // coverage against this declared interval, not the observed median.
+  if (n === 0)
+    console.log(
+      JSON.stringify({
+        type: "meta",
+        intervalSec: intervalS,
+        startedAt: new Date().toISOString(),
+      }),
+    );
   const app = appC ? dockerStat(appC) : { cpuPct: null, ramMb: null };
   const pidS = !appC && appPid ? pidStat(appPid) : null;
   const dbStats = dockerStat(dbC);

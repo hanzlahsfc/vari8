@@ -33,18 +33,40 @@ Every run must produce three artifacts:
 
 1. `k6.ndjson` — the `--out json` stream; every `load_latency` point
    carries `endpoint`, `class`, `scenario`, `time`.
-2. `*-manifest.json` — emitted by `handleSummary`: profile, scenarios,
-   expected workload endpoints, iterations, vusMax, httpReqs,
-   loadRequests, duration. The report cross-checks it: measured points
-   must equal `loadRequests` (and the `load_requests` counter),
-   `httpReqs` must cover measured + auth/setup traffic, expected
-   workload endpoints and planned scenarios must all appear. Auth-only,
-   truncated, or endpoint-absent runs are inconclusive — never PASS.
-3. `resources.ndjson` — the sampler output; timestamps must bracket
-   the measured run window with no gap > 3× the median interval
-   (suspension/stale data is not coverage), and every required field
-   (app CPU, app RAM, pg connections + limit, app AND db restart
-   signals) must be present.
+2. `*-manifest.json` — emitted by `handleSummary` from the PLANNED
+   configuration (`PLANNED_SCENARIOS`, captured in init context):
+   profile, scenario specs (`planned.vus`/`durationSec`), expected
+   workload endpoints, iterations, vusMax, httpReqs, loadRequests,
+   setupReqs.
+3. `resources.ndjson` — first line `{"type":"meta","intervalSec":N}`
+   declares the cadence; coverage is checked against the DECLARED
+   interval, not the observed median: samples must bracket the run
+   window within 2× interval, carry no gap > 3× interval, and number
+   at least `floor(window/interval)` (minimum 2).
+
+The report verifies execution against OBSERVED evidence, not manifest
+assertions:
+
+- per-scenario measured-point time extent ≥ planned duration × 0.8
+- observed `vus` gauge max within each scenario's window ≥ planned
+  VUs × 0.9 (k6's gauges are untagged — attributed by time window; a
+  one-point forgery has a near-zero window and cannot inherit a peak)
+- exact HTTP accounting: `http_reqs == load_requests + setupReqs`
+  (setup probe + sign-in + session checks + workload + reauth are all
+  measured; any surplus/deficit is unexplained)
+- `load_requests` counter == measured points
+- expected workload endpoints present; auth-only, truncated and
+  endpoint-absent runs are inconclusive
+
+And reports TWO independent dispositions:
+
+- **TOOL EXECUTION** — complete / incomplete / failed (the planned run
+  happened and is internally consistent).
+- **CAPACITY ACCEPTANCE** — pass / fail / inconclusive (measured
+  thresholds + mandatory resource coverage + the 500-session hold
+  phase; missing acceptance configuration is inconclusive, never PASS).
+
+Exit 0 requires execution COMPLETE and capacity PASS.
 
 ## Safety contract
 
@@ -59,10 +81,16 @@ Every run must produce three artifacts:
   cleanup re-validates ownership from the database — a tampered
   manifest deletes nothing — and runs as one transaction. Provisioning
   is transactional and post-commit failures roll the fixture rows back.
-- `provision.ts` refuses any database that isn't a confirmed
-  task-owned lane (lane-shaped `DATABASE_URL` name equal to
-  `CONFIRM_DISPOSABLE_DB` AND not on the shared denylist:
-  `app_dev`, `app_e2e`, `app`, `postgres`, `app_integration_test`).
+- Positive lane ownership: `lane-create` builds a fresh `app_k6_*`
+  database end-to-end (create, migrate, marker); `lane-init` installs
+  the marker into an existing confirmed lane. Both write a
+  `_k6_lane_ownership` marker row inside the database plus a matching
+  0600 `lane.json`. `create`/`cleanup` require the live marker to
+  equal the lane file — a forged manifest, forged lane file, stale
+  lane file, or an arbitrary pre-existing `app_*` database without the
+  marker is refused. (The lane name must still pass the shape check +
+  shared denylist: `app_dev`, `app_e2e`, `app`, `postgres`,
+  `app_integration_test`.)
 - Manifests carry random fixture passwords — written mode 0600,
   deleted by cleanup, `tools/load/out/` gitignored.
 

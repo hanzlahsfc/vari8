@@ -40,13 +40,12 @@ import { check, sleep } from "k6";
 import { Counter, Trend } from "k6/metrics";
 
 import {
-  AUTH_ENDPOINTS,
+  IDENTITY_ENDPOINTS,
   JSON_ENDPOINTS,
-  WORKLOAD_ENDPOINTS,
+  buildManifest,
   classifyResponse,
   configError,
   scenariosWithBounds,
-  verifyIdentity,
 } from "./config.mjs";
 
 const reqCount = new Counter("load_requests");
@@ -85,8 +84,13 @@ if (cfgError) throw new Error(`k6-gate config: ${cfgError}`);
 
 const BASE = __ENV.TARGET_URL.replace(/\/$/, "");
 
+// The raw planned scenario map — captured in init context because k6
+// normalizes `options` before handleSummary (fields like `stages` are
+// no longer present in the resolved shape).
+const PLANNED_SCENARIOS = scenariosWithBounds(__ENV);
+
 export const options = {
-  scenarios: scenariosWithBounds(__ENV),
+  scenarios: PLANNED_SCENARIOS,
   thresholds: {
     // A 2xx concealing an application refusal is the one thing k6 flags
     // itself — the full verdict lives in report.mjs.
@@ -105,7 +109,7 @@ export const options = {
 
 // --- response classification -------------------------------------------------
 
-function classify(res, expectJson) {
+function classify(res, expectJson, expectUserId) {
   let body = null;
   try {
     body = res.json();
@@ -120,13 +124,20 @@ function classify(res, expectJson) {
     /type="password"|name="password"|sign-?in/i.test(res.body) &&
     /<html|<!doctype/i.test(res.body);
   return classifyResponse(res.status, res.error, body, {
-    expectJson: expectJson ?? JSON_ENDPOINTS.has("__never__"),
+    expectJson: expectJson ?? false,
     looksLikeLogin,
+    expectUserId: expectUserId ?? null,
   });
 }
 
-function record(endpoint, res, forcedClass) {
-  const cls = forcedClass ?? classify(res, JSON_ENDPOINTS.has(endpoint));
+function record(endpoint, res, forcedClass, expectUserId) {
+  const cls =
+    forcedClass ??
+    classify(
+      res,
+      JSON_ENDPOINTS.has(endpoint),
+      IDENTITY_ENDPOINTS.has(endpoint) ? expectUserId : null,
+    );
   const tags = { endpoint, class: cls };
   reqCount.add(1, tags);
   if (cls === "refusal") refused.add(1, tags);
@@ -149,7 +160,7 @@ function hit(endpoint, method, path, opts) {
     redirects: 0, // measure the real response; redirects are classified
     timeout: "30s",
   });
-  return { res, cls: record(endpoint, res) };
+  return { res, cls: record(endpoint, res, null, opts?.expectUserId) };
 }
 
 // --- sessions ------------------------------------------------------------------
@@ -172,16 +183,19 @@ function signIn(account, tag) {
       redirects: 0,
     },
   );
-  const cls = record(tag ?? "sign_in", res);
-  if (cls !== "success") return null;
+  // Classify first — a 200 is not auth success until credentials and a
+  // usable session artifact (cookie and/or bearer token) both check out.
+  let cls = classify(res, true);
   const cookie = res.cookies[AUTH_COOKIE]?.[0]?.value;
   let token = null;
   try {
     token = res.json().token ?? null;
   } catch {
-    /* no token body — cookie may still exist */
+    /* non-JSON — already classified by classify() */
   }
-  if (!cookie && !token) return null;
+  if (cls === "success" && !cookie && !token) cls = "identity_mismatch";
+  record(tag ?? "sign_in", res, cls);
+  if (cls !== "success") return null;
   return { cookie, token };
 }
 
@@ -202,16 +216,7 @@ function verifySession(sess, expectedUserId) {
     ...authParams(sess),
     redirects: 0,
   });
-  let body = null;
-  try {
-    body = r.json();
-  } catch {}
-  // A 200 names the user: verified or identity_mismatch. Any other
-  // status classifies normally — refusal/redirect stays evidence.
-  const cls =
-    r.status === 200
-      ? verifyIdentity(r.status, body, expectedUserId)
-      : classify(r, true);
+  const cls = classify(r, true, expectedUserId);
   record("session_verify", r, cls);
   return cls === "success";
 }
@@ -257,7 +262,10 @@ export default function virtualUser() {
     }
   }
 
-  const opts = authParams(sessionByVu[__VU]);
+  const opts = {
+    ...authParams(sessionByVu[__VU]),
+    expectUserId: account.userId, // ongoing identity — every session probe
+  };
   let sessionCls;
   if (isCoach) {
     sessionCls = hit(
@@ -297,26 +305,22 @@ export default function virtualUser() {
 
 export function handleSummary(data) {
   const out = __ENV.LOAD_SUMMARY_OUT ?? "tools/load/out/summary.json";
-  // The run manifest — report.mjs requires it to prove the planned run
-  // actually completed (expected scenarios, endpoint coverage, request
-  // totals), not merely that some points exist.
-  const manifest = {
-    tool: "k6-gate",
+  // The run manifest — built from the CONFIGURED profile plus measured
+  // counters so report.mjs verifies the plan, not the assertions.
+  const manifest = buildManifest({
     profile: __ENV.LOAD_PROFILE ?? "smoke",
     targetUrl: BASE,
     workspaceId: WORKSPACE_ID,
-    scenarios: Object.keys(options.scenarios),
-    expectedWorkloadEndpoints: [
-      ...WORKLOAD_ENDPOINTS.coach,
-      ...WORKLOAD_ENDPOINTS.client,
-    ],
-    authEndpoints: [...AUTH_ENDPOINTS],
-    iterations: data?.metrics?.iterations?.values?.count ?? null,
-    vusMax: data?.metrics?.vus_max?.values?.value ?? null,
-    httpReqs: data?.metrics?.http_reqs?.values?.count ?? null,
-    loadRequests: data?.metrics?.load_requests?.values?.count ?? null,
-    testRunDurationMs: data?.state?.testRunDurationMs ?? null,
-  };
+    scenarios: PLANNED_SCENARIOS,
+    metrics: {
+      iterations: data?.metrics?.iterations,
+      vus_max: data?.metrics?.vus_max,
+      http_reqs: data?.metrics?.http_reqs,
+      load_requests: data?.metrics?.load_requests,
+      testRunDurationMs: data?.state?.testRunDurationMs,
+    },
+    setupReqs: 1, // the /login origin probe in setup()
+  });
   return {
     [out]: JSON.stringify(data, null, 2),
     [out.replace(/\.json$/, "-manifest.json")]: JSON.stringify(

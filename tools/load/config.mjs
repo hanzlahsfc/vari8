@@ -76,8 +76,17 @@ export const WORKLOAD_ENDPOINTS = {
   coach: ["session", "clients", "workspace_page"],
   client: ["session", "client_home", "checkins_page", "client_daily"],
 };
-export const JSON_ENDPOINTS = new Set(["session", "clients", "session_verify"]);
+export const JSON_ENDPOINTS = new Set([
+  "session",
+  "clients",
+  "session_verify",
+  "sign_in",
+  "reauth",
+]);
 export const AUTH_ENDPOINTS = new Set(["sign_in", "session_verify", "reauth"]);
+// Endpoints whose success body MUST name the authenticated fixture
+// user — a wrong/missing user id is identity_mismatch, never success.
+export const IDENTITY_ENDPOINTS = new Set(["session", "session_verify"]);
 
 export function nonNegInt(v) {
   const n = Number(v);
@@ -182,6 +191,11 @@ export function classifyResponse(status, transportError, body, ctx = {}) {
   // 2xx from here.
   if (ctx.looksLikeLogin) return "login_page";
   if (ctx.expectJson && !body) return "unexpected_html";
+  // Endpoints that answer with the authenticated identity must answer
+  // with THE fixture identity — a 200 naming another/unknown user is
+  // measured failure.
+  if (ctx.expectUserId && body?.user?.id !== ctx.expectUserId)
+    return "identity_mismatch";
   return "success";
 }
 
@@ -193,6 +207,78 @@ export function classifyResponse(status, transportError, body, ctx = {}) {
 export function verifyIdentity(status, body, expectedUserId) {
   if (status === 200 && body?.user?.id === expectedUserId) return "success";
   return "identity_mismatch";
+}
+
+/** "10m" → 600, "90s" → 90, "1h30m" → 5400. Throws on malformed. */
+export function durationToSec(s) {
+  if (typeof s !== "string" || s.length === 0)
+    throw new Error(`malformed duration ${JSON.stringify(s)}`);
+  let rest = s;
+  let total = 0;
+  const re = /(\d+)(h|m|s)/g;
+  let m;
+  let matched = 0;
+  while ((m = re.exec(rest))) {
+    matched++;
+    total += Number(m[1]) * (m[2] === "h" ? 3600 : m[2] === "m" ? 60 : 1);
+  }
+  const consumed = rest.replace(/\d+(h|m|s)/g, "");
+  if (consumed.length > 0 || matched === 0)
+    throw new Error(`malformed duration ${JSON.stringify(s)}`);
+  return total;
+}
+
+/**
+ * The run manifest — built from the CONFIGURED profile (not observed
+ * results) plus measured counters, so report.mjs can verify the run
+ * against the plan instead of trusting summary assertions.
+ * `scenarios` = the configured map; `planned` records each phase's
+ * expected VU count and duration in seconds.
+ */
+export function buildManifest({
+  profile,
+  targetUrl,
+  workspaceId,
+  scenarios,
+  metrics,
+  setupReqs,
+}) {
+  const planned = {};
+  for (const [name, s] of Object.entries(scenarios)) {
+    if (s.executor === "constant-vus") {
+      planned[name] = {
+        vus: s.vus,
+        durationSec: durationToSec(s.duration),
+      };
+    } else {
+      planned[name] = {
+        vus: Math.max(...s.stages.map((st) => st.target)),
+        durationSec: s.stages.reduce(
+          (n, st) => n + durationToSec(st.duration),
+          0,
+        ),
+      };
+    }
+  }
+  return {
+    tool: "k6-gate",
+    profile,
+    targetUrl,
+    workspaceId,
+    scenarios: Object.keys(scenarios),
+    planned,
+    expectedWorkloadEndpoints: [
+      ...WORKLOAD_ENDPOINTS.coach,
+      ...WORKLOAD_ENDPOINTS.client,
+    ],
+    authEndpoints: [...AUTH_ENDPOINTS],
+    setupReqs: setupReqs ?? 1,
+    iterations: metrics?.iterations?.values?.count ?? null,
+    vusMax: metrics?.vus_max?.values?.value ?? null,
+    httpReqs: metrics?.http_reqs?.values?.count ?? null,
+    loadRequests: metrics?.load_requests?.values?.count ?? null,
+    testRunDurationMs: metrics?.testRunDurationMs ?? null,
+  };
 }
 
 /** Parse a docker-size string ("1.2GiB", "512MiB", "700KiB") → MB. */

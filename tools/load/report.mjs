@@ -1,33 +1,44 @@
 #!/usr/bin/env node
 // K6-GATE report — parses the k6 `--out json` NDJSON stream, the run
-// manifest and the resource-sample NDJSON into the issue-178
-// acceptance table (per-scenario per-endpoint p50/p95/p99, error rate,
-// rps, CPU/RAM, connections, restarts) and the verdict.
+// manifest and the resource-sample NDJSON, and reports TWO independent
+// verdicts:
 //
-// Fail-closed contract (paired with trial-gate.js + config.mjs):
-//   - every `load_latency` point MUST carry `class`/`endpoint`/`scenario`
-//   - `load_*` counters must agree with the latency-derived classes
-//   - the run manifest must prove the PLANNED run: expected workload
-//     endpoints present, iterations > 0, load_requests total == the
-//     measured point count, http_reqs >= load_requests (auth/setup
-//     traffic is accounted, never laundered as workload)
-//   - resource coverage must bracket the measured run window with no
-//     >3×-median-interval gaps; every required metric (app CPU, app
-//     RAM, pg conns+limit, app AND db restart signals) separately
-//     measured — partial coverage is inconclusive, never zero
-//   - the official verdict requires the 500-session hold phase —
-//     `scenario:hold500` rows; absent → "not collected", not PASS
+//   TOOL EXECUTION — complete / incomplete / failed.
+//     The planned run is verified against OBSERVED evidence: per-
+//     scenario `vus_max` and time extents from the raw stream, exact
+//     HTTP accounting (http_reqs == load_requests + setup), counter
+//     agreement, endpoint coverage. Manifest assertions alone never
+//     prove execution — a one-VU/one-iteration hold500 forgery fails
+//     here even when its totals agree.
+//
+//   CAPACITY ACCEPTANCE — pass / fail / inconclusive.
+//     The issue-178 thresholds plus mandatory resource coverage and
+//     the 500-session hold phase. Missing acceptance configuration
+//     (hold500 never planned/collected) is INCONCLUSIVE — never PASS.
+//
+// Exit 0 only when execution is COMPLETE and capacity is PASS.
 
 import fs from "node:fs";
 
-import { CLASSES, JSON_ENDPOINTS } from "./config.mjs";
+import { CLASSES } from "./config.mjs";
 
 export const ACCEPTANCE = {
   p95ms: 400,
   p99ms: 1000,
   errorRate: 0.005, // 0.5 %
-  cpuPct: 70, // of host capacity — see cpuHostSharePct normalization
+  cpuPct: 70, // of whole-host share — see cpuHostSharePct
 };
+
+// Phase-execution tolerances (documented, not hidden):
+//   - measured scenario duration >= planned * DURATION_TOLERANCE
+//   - observed vus_max >= planned VUs * VUS_TOLERANCE
+export const DURATION_TOLERANCE = 0.8;
+export const VUS_TOLERANCE = 0.9;
+// Resource coverage: samples must bracket the run window within
+// 2× the declared interval and carry no gap > 3× it; at least
+// floor(window/interval) samples, minimum 2.
+export const GAP_FACTOR = 3;
+export const EDGE_LAG_FACTOR = 2;
 
 export const FAILURE_CLASSES = new Set([
   "refusal",
@@ -59,15 +70,34 @@ export function percentile(sorted, p) {
 
 /**
  * Parse the k6 `--out json` stream → {points, counters, malformed,
- * window}: latency points, per-class counter sums, malformed line
- * count and the measured run window [startMs,endMs] from point times.
+ * window, scenarioObs}: latency points, per-class counter sums,
+ * malformed lines, run window, and per-scenario OBSERVED evidence
+ * (point count, time extent, max vus_max).
  */
 export function parseJsonOut(text) {
   const points = [];
   const counters = {};
+  const scenarioObs = {};
+  const vusPoints = []; // {t, v} — k6's global `vus` gauge stream
   let malformed = 0;
   let tMin = Infinity;
   let tMax = -Infinity;
+  const obs = (sc, ts) => {
+    if (!sc) return null;
+    const o =
+      scenarioObs[sc] ??
+      (scenarioObs[sc] = {
+        points: 0,
+        tMin: Infinity,
+        tMax: -Infinity,
+        vusMax: 0,
+      });
+    if (Number.isFinite(ts)) {
+      o.tMin = Math.min(o.tMin, ts);
+      o.tMax = Math.max(o.tMax, ts);
+    }
+    return o;
+  };
   for (const line of text.split("\n")) {
     const t = line.trim();
     if (!t) continue;
@@ -84,13 +114,21 @@ export function parseJsonOut(text) {
       tMin = Math.min(tMin, ts);
       tMax = Math.max(tMax, ts);
     }
+    const sc = p.data?.tags?.scenario ?? "default";
     if (p.metric === "load_latency") {
+      const o = obs(sc, ts);
+      if (o) o.points++;
       points.push({
         endpoint: p.data?.tags?.endpoint ?? null,
         cls: p.data?.tags?.class ?? null,
-        scenario: p.data?.tags?.scenario ?? "default",
+        scenario: sc,
         ms: Number(p.data?.value),
       });
+    } else if (p.metric === "vus" || p.metric === "vus_max") {
+      // k6's built-in concurrency gauges arrive untagged — attribute
+      // them to scenarios by time window below.
+      if (p.metric === "vus" && Number.isFinite(ts))
+        vusPoints.push({ t: ts, v: Number(p.data?.value) || 0 });
     } else if (
       /^load_(requests|refusals|http_errors|transport_errors|concealed_refusals|redirects|unexpected_html|login_pages|identity_mismatches|reauths)$/.test(
         p.metric,
@@ -101,10 +139,20 @@ export function parseJsonOut(text) {
       counters[key] = (counters[key] ?? 0) + (Number(p.data?.value) || 0);
     }
   }
+  for (const o of Object.values(scenarioObs)) {
+    o.durationSec = o.tMax > o.tMin ? (o.tMax - o.tMin) / 1000 : 0;
+    // Observed concurrency: the maximum `vus` gauge value emitted while
+    // this scenario's measured points span. A one-point forgery has a
+    // near-zero window and cannot inherit a peak.
+    o.vusMax = vusPoints
+      .filter((x) => x.t >= o.tMin - 1000 && x.t <= o.tMax + 1000)
+      .reduce((m, x) => Math.max(m, x.v), 0);
+  }
   return {
     points,
     counters,
     malformed,
+    scenarioObs,
     window: tMin <= tMax ? [tMin, tMax] : null,
   };
 }
@@ -158,18 +206,27 @@ export function rowsFromPoints(points) {
 }
 
 /**
- * Parse the resource sampler NDJSON. Every field the verdict needs is
- * `*Measured`-flagged separately. `ts` coverage is checked against the
- * measured run window: samples must bracket it and carry no
- * >3×-median-interval gaps (suspension/stale data is not coverage).
+ * Parse the resource sampler NDJSON. The first line may carry
+ * `{type:"meta",intervalSec}` — the DECLARED cadence. Coverage checks
+ * use the declared interval (never the observed median): samples must
+ * bracket the run window within EDGE_LAG_FACTOR×interval, carry no
+ * >GAP_FACTOR×interval gap, and number at least floor(window/interval)
+ * (minimum 2). Every required metric is separately *Measured.
  */
 export function parseResources(text, runWindow) {
   const samples = [];
+  let intervalSec = null;
   let malformed = 0;
   for (const line of text.split("\n")) {
     if (!line.trim()) continue;
     try {
-      samples.push(JSON.parse(line));
+      const o = JSON.parse(line);
+      if (o?.type === "meta") {
+        if (typeof o.intervalSec === "number" && o.intervalSec > 0)
+          intervalSec = o.intervalSec;
+        continue;
+      }
+      samples.push(o);
     } catch {
       malformed++;
     }
@@ -178,23 +235,25 @@ export function parseResources(text, runWindow) {
   const measured = (f) =>
     samples.length > 0 && samples.some((s) => f(s) != null);
 
-  // Time coverage: sort samples, median interval, gap > 3× median → gap.
   const times = samples
     .map((s) => Date.parse(s.ts ?? ""))
     .filter((t) => Number.isFinite(t))
     .sort((a, b) => a - b);
   const deltas = times.slice(1).map((t, i) => t - times[i]);
-  const medianDelta = deltas.length
-    ? deltas.slice().sort((a, b) => a - b)[Math.floor(deltas.length / 2)]
-    : 0;
-  const maxGap = deltas.length ? Math.max(...deltas) : 0;
+  const hasInterval = intervalSec != null && intervalSec > 0;
   const hasGap =
-    deltas.length > 0 && medianDelta > 0 && maxGap > 3 * medianDelta;
+    hasInterval && deltas.some((d) => d > GAP_FACTOR * intervalSec * 1000);
+  const windowSec = runWindow ? (runWindow[1] - runWindow[0]) / 1000 : 0;
+  const expectedMin = hasInterval
+    ? Math.max(2, Math.floor(windowSec / intervalSec))
+    : 2;
   const coversWindow =
     !!runWindow &&
+    hasInterval &&
     times.length > 0 &&
-    times[0] <= runWindow[0] + 15_000 &&
-    times.at(-1) >= runWindow[1] - 15_000;
+    times[0] <= runWindow[0] + EDGE_LAG_FACTOR * intervalSec * 1000 &&
+    times.at(-1) >= runWindow[1] - EDGE_LAG_FACTOR * intervalSec * 1000;
+  const enoughSamples = hasInterval && times.length >= expectedMin;
   const tsMeasured = times.length === samples.length && samples.length > 0;
 
   const rawCpuPeak = peak((s) => s.appCpuPct) + peak((s) => s.dbCpuPct);
@@ -202,9 +261,12 @@ export function parseResources(text, runWindow) {
   return {
     samples: samples.length,
     malformed,
+    intervalSec,
     tsMeasured,
     coversWindow,
     hasGap,
+    enoughSamples,
+    expectedMinSamples: expectedMin,
     appCpuMeasured: measured((s) => s.appCpuPct),
     dbCpuMeasured: measured((s) => s.dbCpuPct),
     cpuMeasured: measured((s) => s.appCpuPct) && measured((s) => s.dbCpuPct),
@@ -244,15 +306,19 @@ export function counterAgreement(points, counters) {
 }
 
 /**
- * Validate the run manifest against the measured points — proves the
- * PLANNED run happened, not that arbitrary points exist.
- * Returns a list of failure strings (empty = manifest sound).
+ * Validate the run manifest against the measured points and observed
+ * scenario evidence — proves the PLANNED run, not arbitrary points.
  */
-export function manifestFailures(manifest, points, counters) {
+export function manifestFailures(manifest, points, counters, scenarioObs = {}) {
   const fails = [];
   if (!manifest || typeof manifest !== "object")
     return ["run manifest missing"];
   if (manifest.tool !== "k6-gate") fails.push("manifest tool mismatch");
+  // The manifest must enumerate the planned scenarios AND their specs.
+  if (!Array.isArray(manifest.scenarios) || manifest.scenarios.length === 0)
+    fails.push("manifest declares no planned scenarios");
+  if (!manifest.planned || Object.keys(manifest.planned).length === 0)
+    fails.push("manifest carries no planned scenario specs");
   if (!(manifest.iterations > 0)) fails.push("manifest reports no iterations");
   if (!(manifest.loadRequests > 0))
     fails.push("manifest reports no measured requests");
@@ -260,12 +326,18 @@ export function manifestFailures(manifest, points, counters) {
     fails.push(
       `manifest load_requests=${manifest.loadRequests} != measured points=${points.length}`,
     );
+  // Exact HTTP accounting: setup probes + sign-in + session checks +
+  // workload + reauth are ALL measured requests; any unexplained
+  // surplus/deficit in http_reqs is an unaccounted request.
+  const setupReqs = manifest.setupReqs ?? 0;
   if (
     manifest.httpReqs != null &&
     manifest.loadRequests != null &&
-    manifest.httpReqs < manifest.loadRequests
+    manifest.httpReqs !== manifest.loadRequests + setupReqs
   )
-    fails.push("manifest http_reqs < load_requests — accounting impossible");
+    fails.push(
+      `http accounting: http_reqs=${manifest.httpReqs} != load_requests=${manifest.loadRequests} + setup=${setupReqs}`,
+    );
   const loadReqCounter = Object.entries(counters)
     .filter(([k]) => k.startsWith("load_requests|"))
     .reduce((n, [, v]) => n + v, 0);
@@ -279,21 +351,36 @@ export function manifestFailures(manifest, points, counters) {
   for (const ep of manifest.expectedWorkloadEndpoints ?? [])
     if (!measuredEps.has(ep))
       fails.push(`expected workload endpoint ${ep} absent`);
-  // Expected scenarios must have emitted points.
-  const measuredScenarios = new Set(points.map((p) => p.scenario));
-  for (const sc of manifest.scenarios ?? [])
-    if (!measuredScenarios.has(sc))
-      fails.push(`planned scenario ${sc} emitted no points`);
+  // Each planned scenario must be OBSERVED with the planned duration
+  // and concurrency — presence of a single tagged point is not proof.
+  for (const [name, spec] of Object.entries(manifest.planned ?? {})) {
+    const o = scenarioObs[name];
+    if (!o || o.points === 0) {
+      fails.push(`planned scenario ${name} emitted no measured points`);
+      continue;
+    }
+    if (
+      spec.durationSec > 0 &&
+      o.durationSec < spec.durationSec * DURATION_TOLERANCE
+    )
+      fails.push(
+        `scenario ${name} ran ${o.durationSec.toFixed(0)}s < planned ${spec.durationSec}s`,
+      );
+    if (spec.vus > 0 && o.vusMax < spec.vus * VUS_TOLERANCE)
+      fails.push(
+        `scenario ${name} observed vus_max=${o.vusMax} < planned ${spec.vus}`,
+      );
+  }
   return fails;
 }
 
 /**
- * The verdict. `rows` is the full measured scope; `res` may be null;
- * `opts` carries malformed count, counter agreement, manifest failures
- * and whether the 500-hold phase was collected.
+ * Two independent verdicts.
+ *   execution: "complete" | "incomplete" | "failed"
+ *   capacity:  "pass" | "fail" | "inconclusive"
+ * Overall PASS requires complete execution AND capacity pass.
  */
 export function verdict(rows, res, durationSec, opts = {}) {
-  const checks = [];
   const total = rows.reduce((n, r) => n + r.count, 0);
   const fails = rows.reduce(
     (n, r) =>
@@ -317,89 +404,120 @@ export function verdict(rows, res, durationSec, opts = {}) {
     ? finite.find((r) => r.p95 === worst95)?.endpoint
     : "(no measured endpoints)";
 
-  checks.push({ name: "requests measured", pass: total > 0 });
-  checks.push({
-    name: "run manifest proves the planned run",
-    pass: (opts.manifestFailures ?? ["missing"]).length === 0,
-  });
-  checks.push({
-    name: "every request classified",
-    pass: rows.every((r) => r.unclassified === 0) && total > 0,
-  });
-  checks.push({
-    name: "counters agree with latency points",
-    pass: opts.counterCheck ?? false,
-  });
-  checks.push({
-    name: "no malformed output lines",
-    pass: (opts.malformed ?? 1) === 0,
-  });
-  checks.push({
-    name: "p95 < 400ms per endpoint worst",
-    pass: Number.isFinite(worst95) && worst95 < ACCEPTANCE.p95ms,
-  });
-  checks.push({
-    name: "p99 < 1000ms per endpoint worst",
-    pass: Number.isFinite(worst99) && worst99 < ACCEPTANCE.p99ms,
-  });
-  checks.push({
-    name: "error rate < 0.5%",
-    pass: total > 0 && errorRate < ACCEPTANCE.errorRate,
-  });
-  checks.push({
-    name: "concealed refusals = 0",
-    pass: total > 0 && rows.every((r) => r.concealed === 0),
-  });
+  const execChecks = [
+    { name: "requests measured", pass: total > 0 },
+    {
+      name: "run manifest + observed phases prove the planned run",
+      pass: (opts.manifestFailures ?? ["missing"]).length === 0,
+    },
+    {
+      name: "every request classified",
+      pass: rows.every((r) => r.unclassified === 0) && total > 0,
+    },
+    {
+      name: "counters agree with latency points",
+      pass: opts.counterCheck ?? false,
+    },
+    { name: "no malformed output lines", pass: (opts.malformed ?? 1) === 0 },
+  ];
+  const execution = execChecks.every((c) => c.pass)
+    ? "complete"
+    : opts.manifestFailures?.length ||
+        (opts.malformed ?? 0) > 0 ||
+        opts.counterCheck === false
+      ? "failed"
+      : "incomplete";
 
-  // Resource coverage — every required measurement or inconclusive.
-  checks.push({ name: "resources sampled", pass: !!res && res.samples > 0 });
-  checks.push({
-    name: "no malformed resource samples",
-    pass: !!res && res.malformed === 0,
-  });
-  checks.push({
-    name: "resource samples cover the run window",
-    pass: !!res && res.coversWindow === true,
-  });
-  checks.push({
-    name: "no resource sample gaps",
-    pass: !!res && res.hasGap === false,
-  });
-  checks.push({ name: "app CPU measured", pass: !!res && res.appCpuMeasured });
-  checks.push({
-    name: "CPU < 70% (host share)",
-    pass:
-      !!res &&
-      res.cpuMeasured &&
-      res.cpuHostSharePct != null &&
-      res.cpuHostSharePct < ACCEPTANCE.cpuPct,
-  });
-  checks.push({ name: "RAM measured", pass: !!res && res.ramMeasured });
-  checks.push({
-    name: "pg connections measured",
-    pass: !!res && res.pgMeasured,
-  });
-  checks.push({
-    name: "pg connections under limit",
-    pass:
-      !!res &&
-      res.pgMeasured &&
-      res.pgLimitKnown &&
-      res.pgConnPeak < res.pgConnLimit,
-  });
-  checks.push({
-    name: "restart signals measured + none observed",
-    pass:
-      !!res &&
-      res.restartsMeasured &&
-      res.appRestarts === 0 &&
-      res.dbRestarts === 0,
-  });
-  checks.push({
-    name: "500-session hold phase collected",
-    pass: !!opts.hold500Collected,
-  });
+  const capChecks = [
+    {
+      name: "p95 < 400ms per endpoint worst",
+      pass: Number.isFinite(worst95) && worst95 < ACCEPTANCE.p95ms,
+    },
+    {
+      name: "p99 < 1000ms per endpoint worst",
+      pass: Number.isFinite(worst99) && worst99 < ACCEPTANCE.p99ms,
+    },
+    {
+      name: "error rate < 0.5%",
+      pass: total > 0 && errorRate < ACCEPTANCE.errorRate,
+    },
+    {
+      name: "concealed refusals = 0",
+      pass: total > 0 && rows.every((r) => r.concealed === 0),
+    },
+    { name: "resources sampled", pass: !!res && res.samples > 0 },
+    {
+      name: "no malformed resource samples",
+      pass: !!res && res.malformed === 0,
+    },
+    {
+      name: "sampling cadence declared",
+      pass: !!res && res.intervalSec != null,
+    },
+    {
+      name: "resource samples cover the run window",
+      pass: !!res && res.coversWindow === true,
+    },
+    { name: "no resource sample gaps", pass: !!res && res.hasGap === false },
+    {
+      name: "sufficient samples for the window",
+      pass: !!res && res.enoughSamples === true,
+    },
+    { name: "app CPU measured", pass: !!res && res.appCpuMeasured },
+    {
+      name: "CPU < 70% (host share)",
+      pass:
+        !!res &&
+        res.cpuMeasured &&
+        res.cpuHostSharePct != null &&
+        res.cpuHostSharePct < ACCEPTANCE.cpuPct,
+    },
+    { name: "RAM measured", pass: !!res && res.ramMeasured },
+    { name: "pg connections measured", pass: !!res && res.pgMeasured },
+    {
+      name: "pg connections under limit",
+      pass:
+        !!res &&
+        res.pgMeasured &&
+        res.pgLimitKnown &&
+        res.pgConnPeak < res.pgConnLimit,
+    },
+    {
+      name: "restart signals measured + none observed",
+      pass:
+        !!res &&
+        res.restartsMeasured &&
+        res.appRestarts === 0 &&
+        res.dbRestarts === 0,
+    },
+    { name: "500-session hold phase collected", pass: !!opts.hold500Collected },
+  ];
+  // Measured-failure checks (thresholds/errors/restarts) → fail;
+  // missing evidence (resources absent, hold500 uncollected, cadence
+  // unknown) → inconclusive. A measured breach beats inconclusive.
+  const missingEvidence = capChecks.some(
+    (c) =>
+      !c.pass &&
+      /sampled|cadence|cover|gaps|sufficient|measured|hold phase|malformed resource/.test(
+        c.name,
+      ),
+  );
+  const measuredBreach = capChecks.some(
+    (c) =>
+      !c.pass &&
+      /p95|p99|error rate|concealed|CPU <70|under limit|restart signals/.test(
+        c.name,
+      ),
+  );
+  const capacity = measuredBreach
+    ? "fail"
+    : missingEvidence
+      ? "inconclusive"
+      : capChecks.every((c) => c.pass)
+        ? "pass"
+        : "inconclusive";
 
+  const checks = [...execChecks, ...capChecks];
   const resourceChecks = checks.filter((c) =>
     /CPU|RAM|pg conn|restart/.test(c.name),
   );
@@ -415,7 +533,11 @@ export function verdict(rows, res, durationSec, opts = {}) {
     rps: durationSec > 0 ? total / durationSec : NaN,
     slowestEndpoint: slowest,
     firstSaturated: firstSat,
-    pass: checks.every((c) => c.pass),
+    execution,
+    capacity,
+    pass: execution === "complete" && capacity === "pass",
+    execChecks,
+    capChecks,
     checks,
   };
 }
@@ -429,7 +551,7 @@ function main() {
     );
     process.exit(2);
   }
-  const { points, counters, malformed, window } = parseJsonOut(
+  const { points, counters, malformed, window, scenarioObs } = parseJsonOut(
     fs.readFileSync(resultsFile, "utf8"),
   );
   const rows = rowsFromPoints(points);
@@ -454,9 +576,20 @@ function main() {
   }
 
   const manFails = manifest
-    ? manifestFailures(manifest, points, counters)
+    ? manifestFailures(manifest, points, counters, scenarioObs)
     : ["run manifest not supplied"];
-  const hold500Collected = scenarios.includes("hold500");
+  // The hold phase counts as collected only when the planned scenario
+  // was OBSERVED at its planned concurrency+duration — one tagged point
+  // is not a hold.
+  const holdObs = scenarioObs.hold500;
+  const holdPlan = manifest?.planned?.hold500;
+  const hold500Collected =
+    !!holdPlan &&
+    !!holdObs &&
+    holdObs.points > 0 &&
+    (!holdPlan.vus || holdObs.vusMax >= holdPlan.vus * VUS_TOLERANCE) &&
+    (!holdPlan.durationSec ||
+      holdObs.durationSec >= holdPlan.durationSec * DURATION_TOLERANCE);
   const v = verdict(rows, res, durationSec, {
     malformed,
     counterCheck: counterAgreement(points, counters),
@@ -469,16 +602,20 @@ function main() {
   );
   if (res)
     console.log(
-      `cpuPeak=${res.cpuPeakPct.toFixed(1)}% (host share ${res.cpuHostSharePct?.toFixed(1) ?? "?"}/100) ramPeak=${res.ramPeakMb}MB pgConn=${res.pgConnPeak}/${res.pgConnLimit ?? "?"} restarts=app:${res.appRestarts}/db:${res.dbRestarts}`,
+      `cpuPeak=${res.cpuPeakPct.toFixed(1)}% (host share ${res.cpuHostSharePct?.toFixed(1) ?? "?"}/100) ramPeak=${res.ramPeakMb}MB pgConn=${res.pgConnPeak}/${res.pgConnLimit ?? "?"} restarts=app:${res.appRestarts}/db:${res.dbRestarts} interval=${res.intervalSec ?? "?"}s`,
     );
-  else console.log("resources: not supplied — verdict cannot pass");
+  else console.log("resources: not supplied — capacity inconclusive");
   if (manFails.length)
     for (const f_ of manFails) console.log(`manifest: ${f_}`);
   console.log(
     `slowest: ${v.slowestEndpoint} · first saturated: ${v.firstSaturated}`,
   );
-  for (const c of v.checks)
-    console.log(`${c.pass ? "PASS" : "FAIL"} ${c.name}`);
+  console.log(`\nTOOL EXECUTION: ${v.execution.toUpperCase()}`);
+  for (const c of v.execChecks)
+    console.log(`  ${c.pass ? "PASS" : "FAIL"} ${c.name}`);
+  console.log(`CAPACITY ACCEPTANCE: ${v.capacity.toUpperCase()}`);
+  for (const c of v.capChecks)
+    console.log(`  ${c.pass ? "PASS" : "FAIL"} ${c.name}`);
   console.log(`\nVERDICT: ${v.pass ? "PASS" : "FAIL"}`);
   process.exit(v.pass ? 0 : 1);
 
