@@ -1920,7 +1920,7 @@ migrations/
     └─ migration.sql
   └─ 20261023000000_supplement_plan/
     └─ migration.sql
-      
+
 All migrations have been successfully applied.
 == build: npm run build
 
@@ -1939,9 +1939,9 @@ All migrations have been successfully applied.
   Finished TypeScript in 6.0s ...
   Collecting page data using 7 workers ...
   Generating static pages using 7 workers (0/13) ...
-  Generating static pages using 7 workers (3/13) 
-  Generating static pages using 7 workers (6/13) 
-  Generating static pages using 7 workers (9/13) 
+  Generating static pages using 7 workers (3/13)
+  Generating static pages using 7 workers (6/13)
+  Generating static pages using 7 workers (9/13)
 ✓ Generating static pages using 7 workers (13/13) in 290ms
   Finalizing page optimization ...
   Collecting build traces ...
@@ -2026,7 +2026,7 @@ Route (app)
  We detected multiple lockfiles and selected the directory of /Users/apple/Devin/vari8-worktrees/k6-gate/package-lock.json as the root directory.
  To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
    See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
- Detected additional lockfiles: 
+ Detected additional lockfiles:
    * /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package-lock.json
 
 ✓ Running next.config.ts took 60ms
@@ -2037,9 +2037,9 @@ Route (app)
   Finished TypeScript in 1806ms ...
   Collecting page data using 7 workers ...
   Generating static pages using 7 workers (0/6) ...
-  Generating static pages using 7 workers (1/6) 
-  Generating static pages using 7 workers (2/6) 
-  Generating static pages using 7 workers (4/6) 
+  Generating static pages using 7 workers (1/6)
+  Generating static pages using 7 workers (2/6)
+  Generating static pages using 7 workers (4/6)
 ✓ Generating static pages using 7 workers (6/6) in 690ms
   Finalizing page optimization ...
   Collecting build traces ...

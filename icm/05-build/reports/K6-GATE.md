@@ -164,7 +164,11 @@ Fresh mechanism/behavior checks, unmasked exits:
 - `npm run format:check` — exit 0.
 - `npm run index:check` — exit 0.
 - `npm run build` — exit 0.
-- `git diff --check` — exit 0.
+- Local working-tree `git diff --check` — exit 0 at repair-8. The
+  later complete committed-receipt check `git diff --check
+2214105..0c3c3d5` exposed 16 whitespace findings, exit 2; those are
+  corrected below and the earlier unqualified “diff check 0” claim is
+  superseded.
 - `npx tsx -e "import('./tools/load/provision.ts')..."` — exit 0;
   import does not execute the CLI (`IMPORT_OK`).
 
@@ -270,6 +274,18 @@ The applicable canonical invocation at `44bf054` used:
 - `VARI8_WORKTREES=/Users/apple/Devin/vari8-worktrees`
 - the same real `app-db-1` exec adapter
 - private `.env` credentials
+
+`verify-local-canonical.txt` and
+`verify-local-canonical-skip-parity.txt` are whitespace-normalized
+copies: trailing spaces were removed from 16 log lines and
+whitespace-only blank lines were normalized. Command output, ordering,
+summaries, counts, verdicts and exit statuses are unchanged. Original
+pre-normalization copies are preserved outside the tracked tree at
+`_evidence/K6-GATE/verify-local-canonical.raw-0c3c3d5.txt` (SHA-256
+`557c3fb5f469673a2d51a750d4712102fe67dcfb1a3c3ef78895e99b27128fba`)
+and
+`_evidence/K6-GATE/verify-local-canonical-skip-parity.raw-0c3c3d5.txt`
+(SHA-256 `f851b3c5bb8ce25e5ab76429201a66f9f2d81bc46467fde75e0f9e8e140eb973`).
 
 `verify-local-canonical-skip-parity.txt`: **VERIFY-LOCAL PASS, exit 0**.
 Passed: clean tree, schema guard, program generator, root/frontend
