@@ -39,32 +39,41 @@ Every run must produce three artifacts:
    workload endpoints, iterations, vusMax, httpReqs, loadRequests,
    setupReqs.
 3. `resources.ndjson` — first line `{"type":"meta","intervalSec":N}`
-   declares the cadence; coverage is checked against the DECLARED
-   interval, not the observed median: samples must bracket the run
-   window within 2× interval, carry no gap > 3× interval, and number
-   at least `floor(window/interval)` (minimum 2).
+   records the collector's cadence. The report receives the EXPECTED
+   cadence from run config (`LOAD_RESOURCE_INTERVAL_S`) — the file
+   cannot authorize its own sampling standard — then requires:
+   declared == expected, timestamps strictly increasing, samples
+   bracketing the run window within 2× interval, no gap > 3× interval,
+   count ≥ `floor(window/interval)` (min 2), and every mandatory
+   metric present in a majority (>50%) of samples.
 
 The report verifies execution against OBSERVED evidence, not manifest
 assertions:
 
-- per-scenario measured-point time extent ≥ planned duration × 0.8
-- observed `vus` gauge max within each scenario's window ≥ planned
-  VUs × 0.9 (k6's gauges are untagged — attributed by time window; a
-  one-point forgery has a near-zero window and cannot inherit a peak)
-- exact HTTP accounting: `http_reqs == load_requests + setupReqs`
-  (setup probe + sign-in + session checks + workload + reauth are all
-  measured; any surplus/deficit is unexplained)
+- per-scenario measured points must cover the PLANNED window
+  `[startTime, startTime+duration]` within 10 s of both edges, with
+  no interior point gap > 30 s
+- constant-vus phases (hold500): every `vus` gauge sample strictly
+  inside the window (5 s drain edges excluded) must be ≥ planned
+  VUs — constant-vus guarantees exactly N, so a single peak can never
+  prove a sustained hold; ramping phases carry no VU requirement
+- exact HTTP accounting against the RAW stream: `http_reqs` points
+  counted independently must equal `load_requests` + a bounded
+  `setupReqs` (≤ 2 — the /login probe); manifest http_reqs must equal
+  the raw count; any surplus/deficit is unexplained
 - `load_requests` counter == measured points
 - expected workload endpoints present; auth-only, truncated and
   endpoint-absent runs are inconclusive
 
-And reports TWO independent dispositions:
+And reports THREE independent dispositions:
 
 - **TOOL EXECUTION** — complete / incomplete / failed (the planned run
   happened and is internally consistent).
 - **CAPACITY ACCEPTANCE** — pass / fail / inconclusive (measured
-  thresholds + mandatory resource coverage + the 500-session hold
-  phase; missing acceptance configuration is inconclusive, never PASS).
+  thresholds + mandatory resource coverage + a sustained hold; a local
+  capacity verdict is explicitly _not_ staging certification).
+- **STAGING CERTIFICATION** — not performed by this tool; requires the
+  issue-5 stack, a generator host and an approved remote mechanism.
 
 Exit 0 requires execution COMPLETE and capacity PASS.
 
@@ -81,16 +90,17 @@ Exit 0 requires execution COMPLETE and capacity PASS.
   cleanup re-validates ownership from the database — a tampered
   manifest deletes nothing — and runs as one transaction. Provisioning
   is transactional and post-commit failures roll the fixture rows back.
-- Positive lane ownership: `lane-create` builds a fresh `app_k6_*`
-  database end-to-end (create, migrate, marker); `lane-init` installs
-  the marker into an existing confirmed lane. Both write a
-  `_k6_lane_ownership` marker row inside the database plus a matching
-  0600 `lane.json`. `create`/`cleanup` require the live marker to
-  equal the lane file — a forged manifest, forged lane file, stale
-  lane file, or an arbitrary pre-existing `app_*` database without the
-  marker is refused. (The lane name must still pass the shape check +
-  shared denylist: `app_dev`, `app_e2e`, `app`, `postgres`,
-  `app_integration_test`.)
+- Positive lane ownership, exactly one path: `lane-create` builds a
+  fresh `app_k6_*` database end-to-end (create, migrate, marker row +
+  0600 `lane.json`). There is no adoption path — no command installs
+  or overwrites a marker on an existing database; a failed
+  `lane-create` drops only the database that invocation made.
+  `create`/`cleanup` require the live marker to equal the lane file —
+  a forged manifest, forged lane file, stale lane file, or an
+  arbitrary pre-existing `app_*` database without the marker is
+  refused. (The lane name must still pass the shape check + shared
+  denylist: `app_dev`, `app_e2e`, `app`, `postgres`,
+  `app_integration_test` — defense in depth, not ownership.)
 - Manifests carry random fixture passwords — written mode 0600,
   deleted by cleanup, `tools/load/out/` gitignored.
 

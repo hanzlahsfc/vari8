@@ -29,16 +29,31 @@ export const ACCEPTANCE = {
   cpuPct: 70, // of whole-host share — see cpuHostSharePct
 };
 
-// Phase-execution tolerances (documented, not hidden):
-//   - measured scenario duration >= planned * DURATION_TOLERANCE
-//   - observed vus_max >= planned VUs * VUS_TOLERANCE
-export const DURATION_TOLERANCE = 0.8;
-export const VUS_TOLERANCE = 0.9;
-// Resource coverage: samples must bracket the run window within
-// 2× the declared interval and carry no gap > 3× it; at least
-// floor(window/interval) samples, minimum 2.
+// Phase-execution rules (documented; NOT tolerances for PASS):
+//   - a scenario's measured points must cover its PLANNED window
+//     [startTime, startTime+duration] within PHASE_EDGE_SEC of both
+//     edges, with no interior point gap > PHASE_POINT_GAP_SEC
+//   - constant-vus phases (hold500): every `vus` gauge sample strictly
+//     inside the window (excluding EDGE drain) must be >= planned VUs —
+//     constant-vus guarantees exactly N, so a deficit is a real miss
+//   - ramping phases carry no VU-level requirement (concurrency varies
+//     by design); insufficient telemetry → INCONCLUSIVE, never PASS
+export const PHASE_EDGE_SEC = 10;
+export const PHASE_POINT_GAP_SEC = 30;
+export const VUS_EDGE_SEC = 5;
+// Resource coverage: the sampler's declared interval must equal the
+// expected cadence supplied by the RUN CONFIG (never the file's own
+// word); samples bracket the window within 2× interval, no gap > 3×,
+// count >= floor(window/interval) (min 2), timestamps strictly
+// increasing, and every mandatory metric present in a MAJORITY (>50%)
+// of samples — transient collection errors are tolerated, sustained
+// absence is not.
 export const GAP_FACTOR = 3;
 export const EDGE_LAG_FACTOR = 2;
+export const METRIC_COVERAGE = 0.5;
+// Non-measured requests the contract permits: the /login origin probe
+// in setup() plus at most one retry. Anything more is unexplained.
+export const MAX_SETUP_REQS = 2;
 
 export const FAILURE_CLASSES = new Set([
   "refusal",
@@ -79,6 +94,8 @@ export function parseJsonOut(text) {
   const counters = {};
   const scenarioObs = {};
   const vusPoints = []; // {t, v} — k6's global `vus` gauge stream
+  let httpReqsObserved = 0; // raw request evidence, independent of tags
+  const httpReqUrls = new Set();
   let malformed = 0;
   let tMin = Infinity;
   let tMax = -Infinity;
@@ -88,9 +105,9 @@ export function parseJsonOut(text) {
       scenarioObs[sc] ??
       (scenarioObs[sc] = {
         points: 0,
+        pointTimes: [],
         tMin: Infinity,
         tMax: -Infinity,
-        vusMax: 0,
       });
     if (Number.isFinite(ts)) {
       o.tMin = Math.min(o.tMin, ts);
@@ -115,14 +132,22 @@ export function parseJsonOut(text) {
       tMax = Math.max(tMax, ts);
     }
     const sc = p.data?.tags?.scenario ?? "default";
-    if (p.metric === "load_latency") {
+    if (p.metric === "http_reqs") {
+      // Raw request evidence — every real request, tagged by URL.
+      httpReqsObserved += Number(p.data?.value) || 0;
+      httpReqUrls.add(p.data?.tags?.url ?? p.data?.tags?.name ?? "?");
+    } else if (p.metric === "load_latency") {
       const o = obs(sc, ts);
-      if (o) o.points++;
+      if (o) {
+        o.points++;
+        if (Number.isFinite(ts)) o.pointTimes.push(ts);
+      }
       points.push({
         endpoint: p.data?.tags?.endpoint ?? null,
         cls: p.data?.tags?.class ?? null,
         scenario: sc,
         ms: Number(p.data?.value),
+        ts,
       });
     } else if (p.metric === "vus" || p.metric === "vus_max") {
       // k6's built-in concurrency gauges arrive untagged — attribute
@@ -139,22 +164,77 @@ export function parseJsonOut(text) {
       counters[key] = (counters[key] ?? 0) + (Number(p.data?.value) || 0);
     }
   }
-  for (const o of Object.values(scenarioObs)) {
+  for (const o of Object.values(scenarioObs))
     o.durationSec = o.tMax > o.tMin ? (o.tMax - o.tMin) / 1000 : 0;
-    // Observed concurrency: the maximum `vus` gauge value emitted while
-    // this scenario's measured points span. A one-point forgery has a
-    // near-zero window and cannot inherit a peak.
-    o.vusMax = vusPoints
-      .filter((x) => x.t >= o.tMin - 1000 && x.t <= o.tMax + 1000)
-      .reduce((m, x) => Math.max(m, x.v), 0);
-  }
   return {
     points,
     counters,
     malformed,
     scenarioObs,
+    vusPoints,
+    httpReqsObserved,
+    httpReqUrls,
     window: tMin <= tMax ? [tMin, tMax] : null,
   };
+}
+
+/**
+ * Verify a planned scenario against OBSERVED stream evidence.
+ * `planned` = {vus, durationSec, startTimeSec, executor} and
+ * `obs` = {points, pointTimes[]} plus the global vus series and the
+ * run's first point time (window origin). Returns failure strings.
+ */
+export function phaseFailures(name, planned, obs, vusPoints, runStartMs) {
+  const fails = [];
+  if (!obs || obs.pointTimes.length === 0) {
+    return [`planned scenario ${name} emitted no measured points`];
+  }
+  const startMs = runStartMs + planned.startTimeSec * 1000;
+  const endMs = startMs + planned.durationSec * 1000;
+  const edge = PHASE_EDGE_SEC * 1000;
+  const times = obs.pointTimes.slice().sort((a, b) => a - b);
+  const first = times[0];
+  const last = times.at(-1);
+  // Coverage of the PLANNED window — point extent, not assertions.
+  if (first > startMs + edge)
+    fails.push(
+      `scenario ${name}: first point ${((first - startMs) / 1000).toFixed(0)}s after planned start`,
+    );
+  if (last < endMs - edge)
+    fails.push(
+      `scenario ${name}: last point ${((endMs - last) / 1000).toFixed(0)}s before planned end`,
+    );
+  // Continuity: no unaccounted silence inside the window.
+  for (let i = 1; i < times.length; i++) {
+    if (times[i] - times[i - 1] > PHASE_POINT_GAP_SEC * 1000) {
+      fails.push(
+        `scenario ${name}: ${((times[i] - times[i - 1]) / 1000).toFixed(0)}s gap in measured points`,
+      );
+      break;
+    }
+  }
+  // Concurrency: constant-vus phases guarantee exactly N VUs — every
+  // gauge sample strictly inside the window must agree. A single peak
+  // never proves a sustained hold.
+  if (planned.executor === "constant-vus" && planned.vus > 0) {
+    const inner = vusPoints.filter(
+      (x) =>
+        x.t >= startMs + VUS_EDGE_SEC * 1000 &&
+        x.t <= endMs - VUS_EDGE_SEC * 1000,
+    );
+    if (inner.length === 0)
+      fails.push(
+        `scenario ${name}: no concurrency samples inside the hold window`,
+      );
+    else {
+      const below = inner.filter((x) => x.v < planned.vus).length;
+      if (below > 0)
+        fails.push(
+          `scenario ${name}: ${below}/${inner.length} concurrency samples below planned ${planned.vus} — no sustained hold`,
+        );
+    }
+  }
+  return fails;
 }
 
 /** Per-endpoint rows. Unclassified stays its own (failing) bucket. */
@@ -213,7 +293,12 @@ export function rowsFromPoints(points) {
  * >GAP_FACTOR×interval gap, and number at least floor(window/interval)
  * (minimum 2). Every required metric is separately *Measured.
  */
-export function parseResources(text, runWindow) {
+/**
+ * @param {string} text
+ * @param {[number, number] | null} runWindow
+ * @param {number | null} [expectedIntervalSec] — cadence from run config
+ */
+export function parseResources(text, runWindow, expectedIntervalSec = null) {
   const samples = [];
   let intervalSec = null;
   let malformed = 0;
@@ -232,28 +317,39 @@ export function parseResources(text, runWindow) {
     }
   }
   const peak = (f) => samples.reduce((m, s) => Math.max(m, f(s) ?? 0), 0);
-  const measured = (f) =>
-    samples.length > 0 && samples.some((s) => f(s) != null);
+  // Per-metric coverage: present in a majority (>50%) of samples —
+  // transient collection errors tolerated, first-sample-only refused.
+  const metricCovered = (f) =>
+    samples.length > 0 &&
+    samples.filter((s) => f(s) != null).length >
+      samples.length * METRIC_COVERAGE;
 
   const times = samples
     .map((s) => Date.parse(s.ts ?? ""))
-    .filter((t) => Number.isFinite(t))
-    .sort((a, b) => a - b);
+    .filter((t) => Number.isFinite(t));
+  const ordered =
+    times.length === samples.length &&
+    times.every((t, i) => i === 0 || t > times[i - 1]);
   const deltas = times.slice(1).map((t, i) => t - times[i]);
-  const hasInterval = intervalSec != null && intervalSec > 0;
+  // The declared cadence must equal the run config's expected cadence —
+  // the file cannot authorize its own sampling standard.
+  const intervalValid =
+    expectedIntervalSec != null &&
+    intervalSec != null &&
+    intervalSec === expectedIntervalSec;
   const hasGap =
-    hasInterval && deltas.some((d) => d > GAP_FACTOR * intervalSec * 1000);
+    intervalValid && deltas.some((d) => d > GAP_FACTOR * intervalSec * 1000);
   const windowSec = runWindow ? (runWindow[1] - runWindow[0]) / 1000 : 0;
-  const expectedMin = hasInterval
+  const expectedMin = intervalValid
     ? Math.max(2, Math.floor(windowSec / intervalSec))
     : 2;
   const coversWindow =
     !!runWindow &&
-    hasInterval &&
+    intervalValid &&
     times.length > 0 &&
     times[0] <= runWindow[0] + EDGE_LAG_FACTOR * intervalSec * 1000 &&
     times.at(-1) >= runWindow[1] - EDGE_LAG_FACTOR * intervalSec * 1000;
-  const enoughSamples = hasInterval && times.length >= expectedMin;
+  const enoughSamples = intervalValid && times.length >= expectedMin;
   const tsMeasured = times.length === samples.length && samples.length > 0;
 
   const rawCpuPeak = peak((s) => s.appCpuPct) + peak((s) => s.dbCpuPct);
@@ -262,30 +358,33 @@ export function parseResources(text, runWindow) {
     samples: samples.length,
     malformed,
     intervalSec,
+    intervalValid,
+    ordered,
     tsMeasured,
     coversWindow,
     hasGap,
     enoughSamples,
     expectedMinSamples: expectedMin,
-    appCpuMeasured: measured((s) => s.appCpuPct),
-    dbCpuMeasured: measured((s) => s.dbCpuPct),
-    cpuMeasured: measured((s) => s.appCpuPct) && measured((s) => s.dbCpuPct),
+    appCpuMeasured: metricCovered((s) => s.appCpuPct),
+    dbCpuMeasured: metricCovered((s) => s.dbCpuPct),
+    cpuMeasured:
+      metricCovered((s) => s.appCpuPct) && metricCovered((s) => s.dbCpuPct),
     cpuPeakPct: rawCpuPeak,
     hostCpus,
     // CPU denominator: docker CPUPerc / cputime-delta units where
     // 100% == one host core; hostSharePct normalizes to whole-host %.
     cpuHostSharePct: hostCpus ? rawCpuPeak / hostCpus : null,
-    ramMeasured: measured((s) => s.appRamMb),
+    ramMeasured: metricCovered((s) => s.appRamMb),
     ramPeakMb: peak((s) => s.appRamMb),
-    pgMeasured: measured((s) => s.pgConnections),
+    pgMeasured: metricCovered((s) => s.pgConnections),
     pgConnPeak: peak((s) => s.pgConnections),
-    pgLimitKnown: measured((s) => s.pgConnLimit),
+    pgLimitKnown: metricCovered((s) => s.pgConnLimit),
     pgConnLimit:
       samples.find((s) => s.pgConnLimit != null)?.pgConnLimit ?? null,
-    appRestartsMeasured: measured((s) => s.appRestarts),
-    dbRestartsMeasured: measured((s) => s.dbRestarts),
+    appRestartsMeasured: metricCovered((s) => s.appRestarts),
+    dbRestartsMeasured: metricCovered((s) => s.dbRestarts),
     restartsMeasured:
-      measured((s) => s.appRestarts) && measured((s) => s.dbRestarts),
+      metricCovered((s) => s.appRestarts) && metricCovered((s) => s.dbRestarts),
     appRestarts: peak((s) => s.appRestarts),
     dbRestarts: peak((s) => s.dbRestarts),
   };
@@ -309,7 +408,22 @@ export function counterAgreement(points, counters) {
  * Validate the run manifest against the measured points and observed
  * scenario evidence — proves the PLANNED run, not arbitrary points.
  */
-export function manifestFailures(manifest, points, counters, scenarioObs = {}) {
+/**
+ * @param {object | null} manifest
+ * @param {Array<object>} points — parsed load_latency points (with ts)
+ * @param {Record<string, number>} counters
+ * @param {Record<string, object>} [scenarioObs] — observed per-scenario evidence
+ * @param {Array<{t: number, v: number}>} [vusPoints] — global vus stream
+ * @param {number | null} [observedHttpReqs] — raw http_reqs point count
+ */
+export function manifestFailures(
+  manifest,
+  points,
+  counters,
+  scenarioObs = {},
+  vusPoints = [],
+  observedHttpReqs = null,
+) {
   const fails = [];
   if (!manifest || typeof manifest !== "object")
     return ["run manifest missing"];
@@ -326,17 +440,29 @@ export function manifestFailures(manifest, points, counters, scenarioObs = {}) {
     fails.push(
       `manifest load_requests=${manifest.loadRequests} != measured points=${points.length}`,
     );
-  // Exact HTTP accounting: setup probes + sign-in + session checks +
-  // workload + reauth are ALL measured requests; any unexplained
-  // surplus/deficit in http_reqs is an unaccounted request.
+  // Exact HTTP accounting against the RAW stream — the manifest's own
+  // http_reqs field is a claim, not evidence. `httpReqsObserved` counts
+  // real `http_reqs` points; `setupReqs` is the manifest's declared
+  // setup traffic and is itself bounded (the /login probe only).
   const setupReqs = manifest.setupReqs ?? 0;
+  if (!(setupReqs >= 0 && setupReqs <= MAX_SETUP_REQS))
+    fails.push(
+      `declared setupReqs=${setupReqs} exceeds the bounded setup (${MAX_SETUP_REQS}) — it cannot absorb unexplained requests`,
+    );
   if (
+    observedHttpReqs != null &&
     manifest.httpReqs != null &&
-    manifest.loadRequests != null &&
-    manifest.httpReqs !== manifest.loadRequests + setupReqs
+    manifest.httpReqs !== observedHttpReqs
   )
     fails.push(
-      `http accounting: http_reqs=${manifest.httpReqs} != load_requests=${manifest.loadRequests} + setup=${setupReqs}`,
+      `manifest http_reqs=${manifest.httpReqs} != raw http_reqs points=${observedHttpReqs}`,
+    );
+  if (
+    observedHttpReqs != null &&
+    observedHttpReqs !== points.length + setupReqs
+  )
+    fails.push(
+      `http accounting: raw http_reqs=${observedHttpReqs} != measured=${points.length} + setup=${setupReqs} — unexplained requests`,
     );
   const loadReqCounter = Object.entries(counters)
     .filter(([k]) => k.startsWith("load_requests|"))
@@ -351,25 +477,22 @@ export function manifestFailures(manifest, points, counters, scenarioObs = {}) {
   for (const ep of manifest.expectedWorkloadEndpoints ?? [])
     if (!measuredEps.has(ep))
       fails.push(`expected workload endpoint ${ep} absent`);
-  // Each planned scenario must be OBSERVED with the planned duration
-  // and concurrency — presence of a single tagged point is not proof.
+  // Each planned scenario verified against OBSERVED window coverage,
+  // continuity and sustained concurrency — not manifest assertions.
+  const runStart = points.length
+    ? Math.min(...points.map((p) => p.ts ?? Infinity))
+    : NaN;
   for (const [name, spec] of Object.entries(manifest.planned ?? {})) {
     const o = scenarioObs[name];
-    if (!o || o.points === 0) {
-      fails.push(`planned scenario ${name} emitted no measured points`);
+    if (!Number.isFinite(runStart)) {
+      fails.push(`planned scenario ${name}: no measured run window`);
       continue;
     }
-    if (
-      spec.durationSec > 0 &&
-      o.durationSec < spec.durationSec * DURATION_TOLERANCE
-    )
-      fails.push(
-        `scenario ${name} ran ${o.durationSec.toFixed(0)}s < planned ${spec.durationSec}s`,
-      );
-    if (spec.vus > 0 && o.vusMax < spec.vus * VUS_TOLERANCE)
-      fails.push(
-        `scenario ${name} observed vus_max=${o.vusMax} < planned ${spec.vus}`,
-      );
+    fails.push(
+      ...phaseFailures(name, spec, o, vusPoints, runStart).map(
+        (f) => `phase ${f}`,
+      ),
+    );
   }
   return fails;
 }
@@ -451,8 +574,12 @@ export function verdict(rows, res, durationSec, opts = {}) {
       pass: !!res && res.malformed === 0,
     },
     {
-      name: "sampling cadence declared",
-      pass: !!res && res.intervalSec != null,
+      name: "sampling cadence authorized by run config",
+      pass: !!res && res.intervalValid === true,
+    },
+    {
+      name: "sample timestamps strictly increasing",
+      pass: !!res && res.ordered === true,
     },
     {
       name: "resource samples cover the run window",
@@ -498,7 +625,7 @@ export function verdict(rows, res, durationSec, opts = {}) {
   const missingEvidence = capChecks.some(
     (c) =>
       !c.pass &&
-      /sampled|cadence|cover|gaps|sufficient|measured|hold phase|malformed resource/.test(
+      /sampled|cadence|cover|gaps|sufficient|measured|hold phase|malformed resource|timestamps|increasing/.test(
         c.name,
       ),
   );
@@ -551,12 +678,25 @@ function main() {
     );
     process.exit(2);
   }
-  const { points, counters, malformed, window, scenarioObs } = parseJsonOut(
-    fs.readFileSync(resultsFile, "utf8"),
-  );
+  const {
+    points,
+    counters,
+    malformed,
+    window,
+    scenarioObs,
+    vusPoints,
+    httpReqsObserved,
+  } = parseJsonOut(fs.readFileSync(resultsFile, "utf8"));
   const rows = rowsFromPoints(points);
+  // The expected collector cadence comes from the RUN CONFIG — the
+  // resource file's own meta line cannot authorize its own standard.
+  const expectedInterval = Number(process.env.LOAD_RESOURCE_INTERVAL_S) || null;
   const res = resourcesFile
-    ? parseResources(fs.readFileSync(resourcesFile, "utf8"), window)
+    ? parseResources(
+        fs.readFileSync(resourcesFile, "utf8"),
+        window,
+        expectedInterval,
+      )
     : null;
   const manifest = manifestFile
     ? JSON.parse(fs.readFileSync(manifestFile, "utf8"))
@@ -576,20 +716,29 @@ function main() {
   }
 
   const manFails = manifest
-    ? manifestFailures(manifest, points, counters, scenarioObs)
+    ? manifestFailures(
+        manifest,
+        points,
+        counters,
+        scenarioObs,
+        vusPoints,
+        httpReqsObserved,
+      )
     : ["run manifest not supplied"];
-  // The hold phase counts as collected only when the planned scenario
-  // was OBSERVED at its planned concurrency+duration — one tagged point
-  // is not a hold.
-  const holdObs = scenarioObs.hold500;
+  // The hold phase is "collected" only when the planned constant-vus
+  // scenario passed the window/continuity/concurrency checks — a single
+  // tagged point or brief spike is not a sustained hold.
   const holdPlan = manifest?.planned?.hold500;
   const hold500Collected =
     !!holdPlan &&
-    !!holdObs &&
-    holdObs.points > 0 &&
-    (!holdPlan.vus || holdObs.vusMax >= holdPlan.vus * VUS_TOLERANCE) &&
-    (!holdPlan.durationSec ||
-      holdObs.durationSec >= holdPlan.durationSec * DURATION_TOLERANCE);
+    points.length > 0 &&
+    phaseFailures(
+      "hold500",
+      holdPlan,
+      scenarioObs.hold500 ?? { points: 0, pointTimes: [] },
+      vusPoints,
+      Math.min(...points.map((p) => p.ts ?? Infinity)),
+    ).length === 0;
   const v = verdict(rows, res, durationSec, {
     malformed,
     counterCheck: counterAgreement(points, counters),
@@ -613,7 +762,9 @@ function main() {
   console.log(`\nTOOL EXECUTION: ${v.execution.toUpperCase()}`);
   for (const c of v.execChecks)
     console.log(`  ${c.pass ? "PASS" : "FAIL"} ${c.name}`);
-  console.log(`CAPACITY ACCEPTANCE: ${v.capacity.toUpperCase()}`);
+  console.log(
+    `CAPACITY ACCEPTANCE: ${v.capacity.toUpperCase()} (local instrumentation — not staging certification)`,
+  );
   for (const c of v.capChecks)
     console.log(`  ${c.pass ? "PASS" : "FAIL"} ${c.name}`);
   console.log(`\nVERDICT: ${v.pass ? "PASS" : "FAIL"}`);

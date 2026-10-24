@@ -245,18 +245,23 @@ export function buildManifest({
 }) {
   const planned = {};
   for (const [name, s] of Object.entries(scenarios)) {
+    const startTimeSec = s.startTime ? durationToSec(s.startTime) : 0;
     if (s.executor === "constant-vus") {
       planned[name] = {
+        executor: s.executor,
         vus: s.vus,
         durationSec: durationToSec(s.duration),
+        startTimeSec,
       };
     } else {
       planned[name] = {
+        executor: s.executor ?? "ramping-vus",
         vus: Math.max(...s.stages.map((st) => st.target)),
         durationSec: s.stages.reduce(
           (n, st) => n + durationToSec(st.duration),
           0,
         ),
+        startTimeSec,
       };
     }
   }

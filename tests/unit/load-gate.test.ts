@@ -18,11 +18,13 @@ import {
 } from "../../tools/load/config.mjs";
 import {
   ACCEPTANCE,
+  MAX_SETUP_REQS,
   counterAgreement,
   manifestFailures,
   parseJsonOut,
   parseResources,
   percentile,
+  phaseFailures,
   rowsFromPoints,
   verdict,
 } from "../../tools/load/report.mjs";
@@ -97,6 +99,8 @@ function fullResources(over = {}) {
     hasGap: false,
     enoughSamples: true,
     expectedMinSamples: 6,
+    intervalValid: true,
+    ordered: true,
     appCpuMeasured: true,
     dbCpuMeasured: true,
     cpuMeasured: true,
@@ -125,7 +129,14 @@ function cleanManifest(over = {}) {
     targetUrl: "https://127.0.0.1:3870",
     workspaceId: "ws1",
     scenarios: ["smoke"],
-    planned: { smoke: { vus: 5, durationSec: 30 } },
+    planned: {
+      smoke: {
+        executor: "ramping-vus",
+        vus: 5,
+        durationSec: 30,
+        startTimeSec: 0,
+      },
+    },
     expectedWorkloadEndpoints: ["session", "clients"],
     authEndpoints: ["sign_in", "session_verify", "reauth"],
     setupReqs: 1,
@@ -305,7 +316,12 @@ describe("K6-GATE config — target + bounds safety", () => {
       { vus: number; durationSec: number }
     >;
     expect(m.scenarios).toEqual(["ramp", "hold500", "soak"]);
-    expect(planned.hold500).toEqual({ vus: 500, durationSec: 1800 });
+    expect(planned.hold500).toEqual({
+      executor: "constant-vus",
+      vus: 500,
+      durationSec: 1800,
+      startTimeSec: 600,
+    });
     expect(planned.ramp.durationSec).toBe(600);
     expect(planned.soak.vus).toBe(250);
   });
@@ -424,87 +440,233 @@ describe("K6-GATE report — execution + capacity dual verdicts", () => {
 });
 
 describe("K6-GATE manifestFailures — proving the planned run", () => {
-  const pts = [
-    { endpoint: "session", cls: "success", scenario: "smoke", ms: 5 },
-    { endpoint: "clients", cls: "success", scenario: "smoke", ms: 5 },
-  ];
-  const counters = { "load_requests|success": 2 };
+  // Measured points across the planned 30s smoke window.
+  const pts = [0, 8, 16, 24, 30].map((s) => ({
+    endpoint: s % 16 ? "session" : "clients",
+    cls: "success",
+    scenario: "smoke",
+    ms: 5,
+    ts: T0 + s * 1000,
+  }));
+  const counters = { "load_requests|success": 5 };
   const obs = {
-    smoke: { points: 2, durationSec: 30, vusMax: 5 },
+    smoke: {
+      points: 5,
+      pointTimes: [0, 8, 16, 24, 30].map((s) => T0 + s * 1000),
+    },
   };
+  const smokeVus = [1, 2, 3, 4, 5, 4, 2].map((v, i) => ({
+    t: T0 + i * 5 * 1000,
+    v,
+  }));
+  const mf = (
+    m: unknown,
+    so: unknown = obs,
+    vu = smokeVus,
+    httpObserved: number | null = 6, // 5 measured + 1 setup
+  ) =>
+    manifestFailures(
+      m as never,
+      pts as never,
+      counters,
+      so as never,
+      vu,
+      httpObserved,
+    );
 
   it("sound manifest + observed phases → no failures", () => {
-    expect(
-      manifestFailures(
-        cleanManifest({ loadRequests: 2, httpReqs: 3 }),
-        pts,
-        counters,
-        obs,
-      ),
-    ).toEqual([]);
+    expect(mf(cleanManifest({ loadRequests: 5, httpReqs: 6 }))).toEqual([]);
   });
-  it("one-VU one-point hold500 forgery fails — vus/duration observed", () => {
+  it("one-peak hold500 forgery fails — sustained concurrency absent", () => {
     const m = cleanManifest({
       scenarios: ["hold500"],
-      planned: { hold500: { vus: 500, durationSec: 1800 } },
-      expectedWorkloadEndpoints: ["session"],
-      loadRequests: 2,
-      httpReqs: 3,
+      planned: {
+        hold500: {
+          executor: "constant-vus",
+          vus: 500,
+          durationSec: 30,
+          startTimeSec: 0,
+        },
+      },
+      expectedWorkloadEndpoints: ["session", "clients"],
+      loadRequests: 5,
+      httpReqs: 6,
     });
-    const forgedObs = { hold500: { points: 2, durationSec: 2, vusMax: 1 } };
-    const fails = manifestFailures(m, pts, counters, forgedObs);
+    const holdObs = { hold500: obs.smoke };
+    // One 500-VU sample amid 1-VU observations — the reviewer's probe.
+    const spiky = [
+      ...[1, 1, 1, 1].map((v, i) => ({ t: T0 + i * 5 * 1000, v })),
+      { t: T0 + 20_000, v: 500 },
+      { t: T0 + 25_000, v: 1 },
+    ];
+    const fails = mf(m, holdObs, spiky);
+    expect(fails).toEqual(
+      expect.arrayContaining([expect.stringMatching(/sustained hold/)]),
+    );
+  });
+  it("boundary vus spike outside the hold window cannot certify it", () => {
+    const m = cleanManifest({
+      scenarios: ["hold500"],
+      planned: {
+        hold500: {
+          executor: "constant-vus",
+          vus: 500,
+          durationSec: 20,
+          startTimeSec: 10, // window [10,30]: inner [15,25]
+        },
+      },
+      expectedWorkloadEndpoints: ["session", "clients"],
+      loadRequests: 5,
+      httpReqs: 6,
+    });
+    const contaminated = [
+      { t: T0 + 9_000, v: 750 }, // ramp peak — outside inner window
+      { t: T0 + 16_000, v: 500 },
+      { t: T0 + 20_000, v: 500 },
+      { t: T0 + 24_000, v: 500 },
+      { t: T0 + 31_000, v: 1 },
+    ];
+    // All samples inside [15,25] are 500 → hold proven.
+    expect(mf(m, { hold500: obs.smoke }, contaminated)).toEqual([]);
+    const inside = [
+      { t: T0 + 16_000, v: 1 },
+      { t: T0 + 20_000, v: 500 }, // brief spike only
+      { t: T0 + 24_000, v: 1 },
+    ];
+    expect(mf(m, { hold500: obs.smoke }, inside)).toEqual(
+      expect.arrayContaining([expect.stringMatching(/sustained hold/)]),
+    );
+  });
+  it("forged setupReqs cannot absorb unexplained requests", () => {
+    const fails = mf(
+      cleanManifest({
+        loadRequests: 5,
+        setupReqs: 999,
+        httpReqs: 1004,
+      }),
+      obs,
+      smokeVus,
+      1004,
+    );
     expect(fails).toEqual(
       expect.arrayContaining([
-        expect.stringMatching(/hold500.*vus_max/),
-        expect.stringMatching(/hold500.*ran .*s < planned/),
+        expect.stringMatching(/exceeds the bounded setup/),
       ]),
     );
+    expect(MAX_SETUP_REQS).toBe(2);
   });
-  it("unexplained http surplus (999 vs measured) fails accounting", () => {
-    const fails = manifestFailures(
-      cleanManifest({ loadRequests: 2, httpReqs: 999 }),
-      pts,
-      counters,
+  it("manifest http_reqs disagreeing with raw points fails", () => {
+    const fails = mf(
+      cleanManifest({ loadRequests: 5, httpReqs: 999 }),
       obs,
+      smokeVus,
+      6,
     );
     expect(fails).toEqual(
-      expect.arrayContaining([expect.stringMatching(/http accounting/)]),
+      expect.arrayContaining([expect.stringMatching(/raw http_reqs/)]),
+    );
+    const unaccounted = mf(
+      cleanManifest({ loadRequests: 5, httpReqs: 100 }),
+      obs,
+      smokeVus,
+      100, // 94 requests unaccounted for
+    );
+    expect(unaccounted).toEqual(
+      expect.arrayContaining([expect.stringMatching(/unexplained/)]),
     );
   });
-  it("empty scenarios field fails — presence is not a plan", () => {
-    const fails = manifestFailures(
-      cleanManifest({ scenarios: [], planned: {} }),
-      pts,
-      counters,
-      obs,
+  it("absent scenario evidence / endpoints / iterations fail", () => {
+    const noObs = mf(cleanManifest({ loadRequests: 5, httpReqs: 6 }), {});
+    expect(noObs).toEqual(
+      expect.arrayContaining([expect.stringMatching(/smoke/)]),
     );
-    expect(fails).toEqual(
+    const noEp = mf(
+      cleanManifest({
+        loadRequests: 5,
+        httpReqs: 6,
+        expectedWorkloadEndpoints: ["session", "daily"],
+      }),
+    );
+    expect(noEp).toEqual(
+      expect.arrayContaining([expect.stringMatching(/daily absent/)]),
+    );
+    expect(
+      mf(cleanManifest({ loadRequests: 5, httpReqs: 6, iterations: 0 })),
+    ).toEqual(expect.arrayContaining([expect.stringMatching(/no iterations/)]));
+    expect(mf(null as never)).toEqual(["run manifest missing"]);
+    expect(mf(cleanManifest({ scenarios: [], planned: {} }), obs)).toEqual(
       expect.arrayContaining([
         expect.stringMatching(/no planned scenarios/),
         expect.stringMatching(/no planned scenario specs/),
       ]),
     );
   });
-  it("absent planned scenario / endpoint / iterations fail", () => {
-    const noObs = manifestFailures(cleanManifest(), pts, counters, {});
-    expect(noObs).toEqual(
-      expect.arrayContaining([expect.stringMatching(/smoke.*no measured/)]),
-    );
-    const noEp = manifestFailures(
-      cleanManifest({ expectedWorkloadEndpoints: ["session", "daily"] }),
-      pts,
-      counters,
-      obs,
-    );
-    expect(noEp).toEqual(
-      expect.arrayContaining([expect.stringMatching(/daily absent/)]),
-    );
+});
+
+describe("K6-GATE phaseFailures — observed phase proof", () => {
+  const plan = {
+    executor: "constant-vus",
+    vus: 500,
+    durationSec: 30,
+    startTimeSec: 0,
+  };
+  const obs = (secs: number[]) => ({
+    points: secs.length,
+    pointTimes: secs.map((s) => T0 + s * 1000),
+  });
+  const vus = (vals: number[], step = 5) =>
+    vals.map((v, i) => ({ t: T0 + i * step * 1000, v }));
+
+  it("a real sustained hold passes", () => {
     expect(
-      manifestFailures(cleanManifest({ iterations: 0 }), pts, counters, obs),
-    ).toEqual(expect.arrayContaining([expect.stringMatching(/no iterations/)]));
-    expect(manifestFailures(null, pts, counters, obs)).toEqual([
-      "run manifest missing",
-    ]);
+      phaseFailures(
+        "hold500",
+        plan,
+        obs([0, 5, 10, 15, 20, 25, 30]),
+        vus([500, 500, 500, 500, 500, 500, 500]),
+        T0,
+      ),
+    ).toEqual([]);
+  });
+  it("a one-point run fails window coverage and concurrency", () => {
+    const fails = phaseFailures("hold500", plan, obs([15]), vus([500]), T0);
+    expect(fails.length).toBeGreaterThan(0);
+    expect(fails).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(
+          /planned start|planned end|sustained|no concurrency/,
+        ),
+      ]),
+    );
+  });
+  it("interior silence fails continuity", () => {
+    const fails = phaseFailures(
+      "hold500",
+      plan,
+      obs([0, 31, 31]),
+      vus([500, 500, 500, 500, 500, 500, 500]),
+      T0,
+    );
+    expect(fails).toEqual(
+      expect.arrayContaining([expect.stringMatching(/gap in measured points/)]),
+    );
+  });
+  it("ramping phases carry no VU-level requirement", () => {
+    const ramp = {
+      executor: "ramping-vus",
+      vus: 750,
+      durationSec: 30,
+      startTimeSec: 0,
+    };
+    expect(
+      phaseFailures(
+        "ramp",
+        ramp,
+        obs([0, 10, 20, 30]),
+        vus([1, 2, 3, 4, 5, 6, 7]),
+        T0,
+      ),
+    ).toEqual([]);
   });
 });
 
@@ -526,25 +688,38 @@ describe("K6-GATE parseResources — declared cadence coverage", () => {
     });
   const win: [number, number] = [T0, T0 + 30_000];
 
-  it("declared-interval coverage: enough samples bracketing the window", () => {
+  it("declared cadence must equal the run config — the file can't self-authorize", () => {
     const text = [
       meta(5),
       ...[0, 5, 10, 15, 20, 25, 30].map((s) => mk(s)),
     ].join("\n");
-    const r = parseResources(text, win);
+    const r = parseResources(text, win, 5);
     expect(r.intervalSec).toBe(5);
+    expect(r.intervalValid).toBe(true);
     expect(r.coversWindow).toBe(true);
     expect(r.hasGap).toBe(false);
     expect(r.enoughSamples).toBe(true);
     expect(r.cpuHostSharePct).toBeCloseTo(15 / 8);
+    // The SAME file with a different expected cadence is unverified.
+    expect(parseResources(text, win, 60).intervalValid).toBe(false);
+    expect(parseResources(text, win, 60).coversWindow).toBe(false);
+    // No expected cadence at all → inconclusive, never authorized.
+    expect(parseResources(text, win).intervalValid).toBe(false);
+  });
+  it("fabricated cadence (intervalSec=9999) cannot claim coverage", () => {
+    const text = [meta(9999), mk(0), mk(24)].join("\n");
+    const r = parseResources(text, win, 5);
+    expect(r.intervalValid).toBe(false);
+    expect(r.coversWindow).toBe(false);
+    expect(r.enoughSamples).toBe(false);
   });
   it("one/two sparse samples cannot satisfy a window", () => {
     const one = [meta(5), mk(15)].join("\n");
-    const r1 = parseResources(one, win);
+    const r1 = parseResources(one, win, 5);
     expect(r1.enoughSamples).toBe(false);
     expect(r1.coversWindow).toBe(false);
     const two = [meta(5), mk(0), mk(30)].join("\n");
-    const r2 = parseResources(two, win);
+    const r2 = parseResources(two, win, 5);
     expect(r2.enoughSamples).toBe(false); // 2 < floor(30/5)
     expect(r2.hasGap).toBe(true); // 30s > 3×5s
   });
@@ -561,22 +736,42 @@ describe("K6-GATE parseResources — declared cadence coverage", () => {
       mk(5 + 625),
       mk(5 + 630),
     ].join("\n");
-    const r = parseResources(text, win);
+    const r = parseResources(text, win, 5);
     expect(r.hasGap).toBe(true);
   });
-  it("missing cadence declaration fails — cadence is not inferred", () => {
-    const r = parseResources([mk(0), mk(5), mk(10)].join("\n"), win);
-    expect(r.intervalSec).toBeNull();
-    expect(r.coversWindow).toBe(false);
+  it("duplicate/out-of-order timestamps are not evidence", () => {
+    const dup = [meta(5), mk(0), mk(5), mk(5), mk(10)].join("\n");
+    expect(parseResources(dup, win, 5).ordered).toBe(false);
+    const oo = [meta(5), mk(10), mk(0), mk(5)].join("\n");
+    expect(parseResources(oo, win, 5).ordered).toBe(false);
   });
-  it("missing metrics stay unmeasured — never silently zero", () => {
-    const r = parseResources(
-      [meta(5), mk(0, { appCpuPct: null, dbRestarts: null })].join("\n"),
-      win,
-    );
-    expect(r.appCpuMeasured).toBe(false);
-    expect(r.dbRestartsMeasured).toBe(false);
+  it("metrics present only in the first sample are unmeasured", () => {
+    // 7 samples — only the first carries RAM/PG/restart (the reviewer
+    // probe): majority coverage refuses first-sample-only.
+    const text = [
+      meta(5),
+      mk(0),
+      ...[5, 10, 15, 20, 25, 30].map((s) =>
+        mk(s, {
+          appRamMb: null,
+          pgConnections: null,
+          pgConnLimit: null,
+          appRestarts: null,
+          dbRestarts: null,
+        }),
+      ),
+    ].join("\n");
+    const r = parseResources(text, win, 5);
+    expect(r.ramMeasured).toBe(false);
+    expect(r.pgMeasured).toBe(false);
     expect(r.restartsMeasured).toBe(false);
+    expect(r.appCpuMeasured).toBe(true); // present in most samples
+  });
+  it("missing cadence declaration fails — cadence is not inferred", () => {
+    const r = parseResources([mk(0), mk(5), mk(10)].join("\n"), win, 5);
+    expect(r.intervalSec).toBeNull();
+    expect(r.intervalValid).toBe(false);
+    expect(r.coversWindow).toBe(false);
   });
 });
 

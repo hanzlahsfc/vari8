@@ -109,7 +109,15 @@ async function installMarker(db: PrismaClient, lane: LaneFile) {
   await db.$executeRawUnsafe(
     "CREATE TABLE IF NOT EXISTS _k6_lane_ownership (token text PRIMARY KEY, created_at timestamptz NOT NULL DEFAULT now())",
   );
-  await db.$executeRawUnsafe("DELETE FROM _k6_lane_ownership");
+  // Never overwrite an existing marker — an already-owned database is
+  // not ours to adopt.
+  const existing = await db.$queryRawUnsafe<{ token: string }[]>(
+    "SELECT token FROM _k6_lane_ownership",
+  );
+  if (existing.length > 0)
+    throw new Error(
+      "refusing: database already carries a lane ownership marker — cannot re-own",
+    );
   await db.$executeRawUnsafe(
     "INSERT INTO _k6_lane_ownership (token) VALUES ($1)",
     lane.token,
@@ -118,9 +126,9 @@ async function installMarker(db: PrismaClient, lane: LaneFile) {
 
 /**
  * Ownership gate: lane.json must exist, name the same database as
- * DATABASE_URL, and match the live marker row written by lane-create /
- * lane-init. Anything else — missing file, wrong name, forged token,
- * pre-existing unmarked database — refuses.
+ * DATABASE_URL, and match the live marker row written by lane-create.
+ * Anything else — missing file, wrong name, forged token, pre-existing
+ * unmarked database — refuses.
  */
 async function assertLaneOwnership(
   db: PrismaClient,
@@ -131,7 +139,7 @@ async function assertLaneOwnership(
     lane = JSON.parse(fs.readFileSync(LANE_FILE, "utf8"));
   } catch {
     throw new Error(
-      `refusing: no lane ownership record at ${LANE_FILE} — run lane-create or lane-init first`,
+      `refusing: no lane ownership record at ${LANE_FILE} — run lane-create first`,
     );
   }
   if (lane?.dbName !== dbName || typeof lane?.token !== "string")
@@ -157,47 +165,59 @@ async function main() {
 
   // lane-create: build a fresh task-owned database end-to-end —
   // `app_k6_<rand>` via the same credentials on the `postgres` admin
-  // db, `prisma migrate deploy`, ownership marker + lane file.
+  // db, `prisma migrate deploy`, ownership marker + lane file. This is
+  // the ONLY ownership-establishment path: it creates a database that
+  // provably did not exist before, so it can never adopt or overwrite
+  // someone else's ownership. On any failure it drops only the
+  // database this invocation created.
   if (cmd === "lane-create") {
     const url = process.env.DATABASE_URL ?? "";
     const dbName = `app_k6_${Date.now().toString(36)}${randomBytes(3).toString("hex")}`;
-    const adminUrl = url.replace(/\/[^/?]+(\?|$)/, "/postgres$1");
-    const admin = new PrismaClient({ datasources: { db: { url: adminUrl } } });
+    const adminUrl = new URL(url);
+    adminUrl.pathname = "/postgres"; // URL parsing preserves ?schema=…
+    const laneUrl = new URL(url);
+    laneUrl.pathname = `/${dbName}`;
+    const admin = new PrismaClient({
+      datasources: { db: { url: adminUrl.toString() } },
+    });
+    let created = false;
     try {
       await admin.$executeRawUnsafe(`CREATE DATABASE "${dbName}"`);
+      created = true;
     } finally {
       await admin.$disconnect();
     }
-    const lane = await writeLaneFile(dbName);
-    const laneUrl = url.replace(/\/[^/?]+(\?|$)/, `/${dbName}$1`);
-    execFileSync("npx", ["prisma", "migrate", "deploy"], {
-      stdio: "inherit",
-      env: { ...process.env, DATABASE_URL: laneUrl },
-    });
-    const db = new PrismaClient({ datasources: { db: { url: laneUrl } } });
-    try {
-      await installMarker(db, lane);
-    } finally {
-      await db.$disconnect();
-    }
-    console.log(
-      `lane created: ${dbName} (migrated, marker installed, ${LANE_FILE})`,
-    );
-    return;
-  }
-
-  // lane-init: install the ownership marker into an EXISTING lane —
-  // requires the same confirmed disposable name; the marker+file is
-  // what authorizes create/cleanup afterwards.
-  if (cmd === "lane-init") {
-    const dbName = assertDisposableDb();
-    const db = new PrismaClient();
     try {
       const lane = await writeLaneFile(dbName);
-      await installMarker(db, lane);
-      console.log(`lane initialized: ${dbName} → ${LANE_FILE}`);
-    } finally {
-      await db.$disconnect();
+      execFileSync("npx", ["prisma", "migrate", "deploy"], {
+        stdio: "inherit",
+        env: { ...process.env, DATABASE_URL: laneUrl.toString() },
+      });
+      const db = new PrismaClient({
+        datasources: { db: { url: laneUrl.toString() } },
+      });
+      try {
+        await installMarker(db, lane);
+      } finally {
+        await db.$disconnect();
+      }
+      console.log(
+        `lane created: ${dbName} (migrated, marker installed, ${LANE_FILE})`,
+      );
+    } catch (e) {
+      // Failure cleanup drops ONLY the database this invocation made.
+      if (created) {
+        const admin2 = new PrismaClient({
+          datasources: { db: { url: adminUrl.toString() } },
+        });
+        try {
+          await admin2.$executeRawUnsafe(`DROP DATABASE "${dbName}"`);
+        } finally {
+          await admin2.$disconnect();
+        }
+      }
+      fs.rmSync(LANE_FILE, { force: true });
+      throw e;
     }
     return;
   }
