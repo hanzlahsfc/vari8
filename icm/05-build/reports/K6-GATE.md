@@ -168,32 +168,80 @@ Fresh mechanism/behavior checks, unmasked exits:
 - `npx tsx -e "import('./tools/load/provision.ts')..."` — exit 0;
   import does not execute the CLI (`IMPORT_OK`).
 
-Disposable PostgreSQL is **not available** on this host:
-`docker info` exits 1 and `INTEGRATION_DATABASE_URL` is unset. The
-focused integration command therefore ran under Node 24.22.1 but
-reported **22/22 skipped, exit 0**; it created no lane DB and proves
-only that the suite parses/skips cleanly. The repair-7 `16/16`
-integration result remains carried/superseded context, not fresh
-repair-8 evidence.
+## Disposable PostgreSQL evidence (repair 9, fresh)
 
-Added but not freshly executable here: deterministic `SIGTERM`/`SIGINT`
-during in-flight `CREATE DATABASE`, CREATE-failure-during-termination,
-existing-database refusal, fixture-create transaction signal atomicity,
-fixture-cleanup transaction signal completion, and no-unrelated-row
-checks. Tested signal windows are exactly: before release of the create
-barrier, inside the fixture-create transaction before commit, and
-inside the cleanup transaction before commit.
+Docker remains closed (`docker info` exit 1), so the verification used a
+task-owned isolated cluster instead of shared tooling:
+`embedded-postgres@16.14.0-beta.17` under
+`_evidence/K6-GATE/repair9-pg-20261024-1838`, PostgreSQL **16.14** on
+`127.0.0.1:55681`, scratch `pgdata`, and `app_k6_it?schema=public`.
+No shared database or service was changed.
+
+Focused command (canonical `?schema=public`):
+
+```bash
+INTEGRATION_DATABASE_URL=<local-url> \
+  npx vitest run --config vitest.integration.config.ts \
+  tests/integration/k6-gate-provision.test.ts
+```
+
+`rerun-integration-green.txt`: **23/23 passed, zero skipped, exit 0**.
+The suite covers no-lane refusal, no adoption path, 0600 manifest,
+targetId mismatch, lane-create write failure, fixture create/cleanup
+transaction windows, tampered/stale manifests and lanes, unmarked/shared
+database refusal, ownership-bound scoped cleanup, and victim-row
+survival. Post-suite residue check returned only builder `app_k6_it` for
+`app_k6_%` and no `loadgate_%` databases.
+
+Exact signal-test distinction:
+
+- **Pending-promise control:** `SIGTERM` and `SIGINT` are delivered after
+  `create-sql-dispatched` while the injected create promise is held
+  before settlement; the opposite signal is then sent before release.
+  This proves promise/scope synchronization and repeated-signal
+  coalescing, not SQL-in-flight timing.
+- **Actual SQL-in-flight probe:** a 2000-table template makes
+  `CREATE DATABASE ... TEMPLATE` long enough for `pg_stat_activity` to
+  report the exact statement `state='active'`; SIGTERM is then sent
+  while PostgreSQL reports it active. The create result is awaited, the
+  created lane DB is dropped, the lane file is gone, and exit is
+  nonzero.
+- **Create failure during termination:** SQL is dispatched, a duplicate
+  `CREATE DATABASE` fails, the injected promise is held before
+  settlement, repeated signals arrive, and the pre-existing database is
+  preserved.
+- **Fixture windows:** signals land inside `beforeFixtureCommit` and
+  `beforeCleanupCommit`; rollback/compensation and committed cleanup
+  are asserted without partial fixture rows or victim changes.
 
 Mutations: report accounting/coverage/bounded-ops mutants fail fresh
 unit runs (2/4/1 expected failures, exit 1); all four patches apply to
 recorded baselines byte-for-byte and reverse-restore to
-`HASHES-IDENTICAL`. The targetId disposable-PG mutant was applied and
-restored, but its behavioral bite is explicitly unavailable here (22/22
-skipped); prior mut4/integration logs are named `*-superseded.txt`.
+`HASHES-IDENTICAL`. The targetId mutant ran the full disposable-PG
+suite and produced two behavioral failures (mismatched `targetId`
+accepted; subsequent legitimate cleanup failed), exit 1. It was
+reverse-restored to blob `a298a892`/SHA-256 `d95bbc5f` and the focused
+suite reran green.
 
-`verify-local.sh` was not run: it requires a clean tree plus
-`POSTGRES_PASSWORD` and Docker access to `vari8-db-1`; Docker is down
-and no password was available. This is a limitation, not a pass.
+## Canonical gate result
+
+`verify-local.sh` was invoked under Node v24.22.1 with
+`REQUIRE_NODE24=1`, `BASE_SHA=2214105…`, `LANE_DB=app_k6_it`, and the
+script-supported `VARI8_WORKTREES=/Users/apple/Devin/vari8-worktrees`
+adapter. `verify-local-repair9.txt` shows clean tree, schema guard,
+generator check, installs, Prisma generate, format/type/lint/unit checks,
+and frontend checks proceeding before the canonical DB stage. The script
+then exits 1 at its hardcoded `docker exec vari8-db-1` step because
+Docker Desktop is closed and `vari8-db-1` is unavailable. It also emits a
+stale-host `realpath` warning from `program-config.json` (`/home/nexuslink/...`).
+
+This is **not** a canonical pass. The isolated PostgreSQL environment
+cannot satisfy that script without replacing its shared container
+adapter; no lock, stage, container-name, or Docker behavior was faked.
+Exact user action for a canonical run: start Docker Desktop so
+`docker info` succeeds, make the approved `vari8-db-1` PostgreSQL
+container available on `127.0.0.1:5433`, and rerun the script with the
+real `POSTGRES_PASSWORD` from the root `.env` (never printed).
 
 ## Remaining issue-178 acceptance (NOT this lane)
 

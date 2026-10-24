@@ -204,6 +204,9 @@ The shipping CLI has no fault-injection switch and never interprets
 `K6_GATE_FAULT`. Deterministic lifecycle failures/synchronization live
 only in `tests/integration/k6-gate-provision-harness.ts`, which injects
 `ProvisionHooks` into the exported runner for the disposable-PG suite.
+The suite separately covers an injected pending create promise (promise
+scope/repeated-signal control) and a real `CREATE DATABASE` observed
+`state='active'` in `pg_stat_activity` (SQL-in-flight timing).
 
 The report always prints three dispositions: TOOL EXECUTION
 (complete/incomplete/failed — script ran its plan), RESOURCE

@@ -1,3 +1,30 @@
+## 2026-10-24 — PR #201 K6-GATE repair 9 disposable-PG proof — focused suite green; canonical DB stage blocked by Docker
+
+- Branch `beta/k6-gate` adds deterministic lifecycle proof on an
+  isolated `embedded-postgres@16.14.0-beta.17` cluster (PostgreSQL
+  16.14, `127.0.0.1:55681`, scratch `pgdata`, `app_k6_it?schema=public`).
+  Docker Desktop remains unavailable and no shared database/service was
+  modified.
+- Focused suite on Node v24.22.1: **23/23 passed, zero skipped, exit 0**.
+  Coverage now distinguishes an injected pending create promise
+  (post-dispatch/pre-settlement, repeated signals) from an actual SQL
+  `CREATE DATABASE` observed `state='active'` in `pg_stat_activity`
+  before SIGTERM. Existing DB, fixture transaction and victim-row checks
+  pass; residue check leaves only `app_k6_it` and no `loadgate_*` DBs.
+- TargetId mutation ran behaviorally on PostgreSQL: full focused suite
+  exit 1 with the expected mismatched-target acceptance and follow-on
+  legitimate-cleanup failure. The patch reverse-restored
+  byte-identically; the focused suite reran 23/23 green.
+- `verify-local.sh` under Node 24 proceeded through clean tree, schema
+  guard, generator, installs, format/type/lint/unit and frontend checks,
+  then exited 1 at its hardcoded `docker exec vari8-db-1` stage because
+  Docker Desktop is closed. Its stale `/home/nexuslink` root path also
+  emits a `realpath` warning. This is a canonical-gate blocker, not a
+  pass.
+- PR body/report update, scoped commit, push and independent review
+  remain the handoff path; issue #178 stays open with capacity/staging
+  unchanged.
+
 ## 2026-10-24 — PR #201 K6-GATE repair 8 lifecycle/mutation provenance — verified locally except disposable PG
 
 - Branch `beta/k6-gate` (worktree `vari8-worktrees/k6-gate`) implements
