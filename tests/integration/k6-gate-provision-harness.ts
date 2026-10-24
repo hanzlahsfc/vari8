@@ -28,18 +28,52 @@ async function createDatabase(admin: PrismaClient, dbName: string) {
   await admin.$executeRawUnsafe(`CREATE DATABASE "${dbName}"`);
 }
 
+async function createDatabaseFromTemplate(
+  admin: PrismaClient,
+  dbName: string,
+  templateName: string,
+) {
+  await admin.$executeRawUnsafe(
+    `CREATE DATABASE "${dbName}" TEMPLATE "${templateName}"`,
+  );
+}
+
 const hooks: ProvisionHooks = {
   dbName: process.env.K6_GATE_TEST_DB_NAME || undefined,
 };
 
-if (mode === "create-hold" || mode === "create-hold-fail") {
+if (mode === "create-dispatch-hold" || mode === "create-dispatch-fail") {
   hooks.createDatabase = async (admin, dbName) => {
-    await barrier("create");
-    if (mode === "create-hold-fail") {
+    const createPromise = createDatabase(admin, dbName);
+    fs.writeFileSync(
+      path.join(syncDir, "create-sql-dispatched"),
+      "dispatched\n",
+    );
+    try {
+      await createPromise;
+    } catch (e) {
       console.error("fault: CREATE DATABASE failed during termination");
-      throw new Error("fault: CREATE DATABASE failed during termination");
+      await barrier("create-settle");
+      throw e;
     }
-    await createDatabase(admin, dbName);
+    await barrier("create-settle");
+  };
+}
+
+if (mode === "create-sql-inflight") {
+  const templateName = process.env.K6_GATE_TEST_TEMPLATE ?? "";
+  if (!templateName) throw new Error("K6_GATE_TEST_TEMPLATE is required");
+  hooks.createDatabase = async (admin, dbName) => {
+    const createPromise = createDatabaseFromTemplate(
+      admin,
+      dbName,
+      templateName,
+    );
+    fs.writeFileSync(
+      path.join(syncDir, "create-sql-dispatched"),
+      "dispatched\n",
+    );
+    await createPromise;
   };
 }
 

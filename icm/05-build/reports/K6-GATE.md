@@ -32,6 +32,31 @@ tests/integration/k6-gate-provision.test.ts`) when a database is
 available. Docker/PG availability must be probed first; unavailable
 infrastructure is reported, never relabeled as fresh.
 
+## Repair-9 plan (PROMPT 393)
+
+Paths: `tests/integration/k6-gate-provision-harness.ts`,
+`tests/integration/k6-gate-provision.test.ts`,
+`icm/05-build/reports/k6-gate-mutations/mut4-*`,
+this record, `tools/load/README.md`, and `docs/STATUS.md`.
+
+Plan: create a task-owned PostgreSQL 16 environment without Docker by
+installing `embedded-postgres@16.14.0-beta.17` into a unique scratch
+directory under `_evidence/K6-GATE/`; initialize only loopback storage
+there; run it on a free 127.0.0.1 port; export
+`INTEGRATION_DATABASE_URL=postgresql://app:<random>@127.0.0.1:<port>/app_k6_it?schema=public`;
+and destroy the scratch cluster after verification. Split the CREATE
+race proof into (a) an injected pending-promise dependency test, which
+controls settlement precisely, and (b) a real SQL-in-flight probe that
+polls `pg_stat_activity` for the lane `CREATE DATABASE` before sending
+the signal. Repeated signals are asserted to coalesce cleanup.
+
+Acceptance: focused integration suite reports all tests, zero skipped,
+exit 0 on canonical `?schema=public`; no `app_k6_*` residue remains;
+targetId mutant produces a behavioral failure and reverse-restores
+byte-identically; `verify-local.sh` is run if the isolated PG can meet
+its explicit contract, otherwise its exact Docker/shared-container
+mismatch is recorded without modifying shared machinery.
+
 ## Capacity certification: unavailable by construction
 
 Repair 5 removes every capacity-pass path. The report prints:

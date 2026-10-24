@@ -71,8 +71,9 @@ function runHarness(
   dbUrl = laneDbUrl,
 ) {
   const child = spawn(
-    "npx",
+    process.execPath,
     [
+      "--import",
       "tsx",
       "tests/integration/k6-gate-provision-harness.ts",
       ...args,
@@ -141,6 +142,55 @@ async function dropDb(dbName: string) {
     await admin.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${dbName}"`);
   } finally {
     await admin.$disconnect();
+  }
+}
+
+async function waitForCreateActive(dbName: string, timeoutMs = 15_000) {
+  const admin = new PrismaClient({
+    datasources: { db: { url: adminUrl() } },
+  });
+  try {
+    const deadline = Date.now() + timeoutMs;
+    const pattern = `CREATE DATABASE "${dbName}"%`;
+    while (Date.now() <= deadline) {
+      const rows = await admin.$queryRawUnsafe<{ state: string }[]>(
+        `SELECT state FROM pg_stat_activity
+         WHERE state = 'active' AND query LIKE $1 LIMIT 1`,
+        pattern,
+      );
+      if (rows.length > 0) return rows[0].state;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    throw new Error(`CREATE DATABASE for ${dbName} was not observed active`);
+  } finally {
+    await admin.$disconnect();
+  }
+}
+
+async function createInflightTemplate(templateName: string) {
+  const admin = new PrismaClient({
+    datasources: { db: { url: adminUrl() } },
+  });
+  try {
+    await admin.$executeRawUnsafe(`CREATE DATABASE "${templateName}"`);
+  } finally {
+    await admin.$disconnect();
+  }
+
+  const template = new PrismaClient({
+    datasources: { db: { url: dbUrlFor(templateName) } },
+  });
+  try {
+    await template.$executeRawUnsafe(`
+      DO $$
+      BEGIN
+        FOR i IN 1..2000 LOOP
+          EXECUTE format('CREATE TABLE load_copy_%s (id int)', i);
+        END LOOP;
+      END $$;
+    `);
+  } finally {
+    await template.$disconnect();
   }
 }
 
@@ -408,26 +458,32 @@ describe.skipIf(!enabled)(
     }, 60_000);
 
     it.each(["SIGTERM", "SIGINT"] as const)(
-      "%s during in-flight CREATE DATABASE waits for it and removes only its lane",
+      "%s during a pending CREATE promise waits for settlement and coalesces repeated signals",
       async (signal) => {
-        // Deterministic window: the test-only harness starts CREATE,
-        // blocks before it can complete, receives the signal, then
-        // releases the query. Cleanup must await that result.
+        // Controlled dependency window: SQL has been dispatched, the
+        // hook delays promise settlement, and repeated signals arrive
+        // before release. This proves scope/promise synchronization;
+        // the SQL may already have completed, so it is not a SQL-in-
+        // flight proof — that is covered separately below.
         const dbName = `app_k6_race_${Date.now().toString(36)}_${signal.toLowerCase()}`;
         const sync = fs.mkdtempSync(path.join(dir, `sync-${signal}-`));
-        const started = path.join(sync, "create-started");
-        const release = path.join(sync, "create-release");
+        const dispatched = path.join(sync, "create-sql-dispatched");
+        const release = path.join(sync, "create-settle-release");
         const { child, done } = runHarness(
           ["lane-create", "--lane", path.join(dir, `race-${signal}.json`)],
           {
-            K6_GATE_TEST_BARRIER: "create-hold",
+            K6_GATE_TEST_BARRIER: "create-dispatch-hold",
             K6_GATE_TEST_DB_NAME: dbName,
             K6_GATE_TEST_SYNC_DIR: sync,
           },
           url as string,
         );
-        await waitForFile(started);
+        await waitForFile(dispatched);
         expect(child.kill(signal)).toBe(true);
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        expect(child.kill(signal === "SIGTERM" ? "SIGINT" : "SIGTERM")).toBe(
+          true,
+        );
         fs.writeFileSync(release, "release\n");
         const r = await done;
         expect(r.code).not.toBe(0);
@@ -439,27 +495,70 @@ describe.skipIf(!enabled)(
       60_000,
     );
 
+    it("SIGTERM while PostgreSQL reports CREATE DATABASE active removes only its lane", async () => {
+      // Actual SQL-in-flight window: a multi-file template makes
+      // CREATE DATABASE long enough for pg_stat_activity to report the
+      // exact statement active before SIGTERM is sent.
+      const dbName = `app_k6_sqlrace_${Date.now().toString(36)}`;
+      const templateName = `app_k6_template_${Date.now().toString(36)}`;
+      await createInflightTemplate(templateName);
+      try {
+        const sync = fs.mkdtempSync(path.join(dir, "sync-sql-inflight-"));
+        const { child, done } = runHarness(
+          ["lane-create", "--lane", path.join(dir, "sql-race.json")],
+          {
+            K6_GATE_TEST_BARRIER: "create-sql-inflight",
+            K6_GATE_TEST_DB_NAME: dbName,
+            K6_GATE_TEST_TEMPLATE: templateName,
+            K6_GATE_TEST_SYNC_DIR: sync,
+          },
+          url as string,
+        );
+        await waitForFile(path.join(sync, "create-sql-dispatched"));
+        await expect(waitForCreateActive(dbName)).resolves.toBe("active");
+        expect(child.kill("SIGTERM")).toBe(true);
+        const r = await done;
+        expect(r.code).not.toBe(0);
+        expect(await dbExists(dbName)).toBe(false);
+        expect(fs.existsSync(path.join(dir, "sql-race.json"))).toBe(false);
+      } finally {
+        await dropDb(templateName);
+      }
+    }, 120_000);
+
     it("CREATE failure during termination never drops another database", async () => {
       const dbName = `app_k6_fail_${Date.now().toString(36)}`;
-      const sync = fs.mkdtempSync(path.join(dir, "sync-create-fail-"));
-      const started = path.join(sync, "create-started");
-      const release = path.join(sync, "create-release");
-      const { child, done } = runHarness(
-        ["lane-create", "--lane", path.join(dir, "create-fail.json")],
-        {
-          K6_GATE_TEST_BARRIER: "create-hold-fail",
-          K6_GATE_TEST_DB_NAME: dbName,
-          K6_GATE_TEST_SYNC_DIR: sync,
-        },
-        url as string,
-      );
-      await waitForFile(started);
-      expect(child.kill("SIGTERM")).toBe(true);
-      fs.writeFileSync(release, "release\n");
-      const r = await done;
-      expect(r.code).not.toBe(0);
-      expect(r.output).toMatch(/CREATE DATABASE failed/);
-      expect(await dbExists(dbName)).toBe(false);
+      const admin = new PrismaClient({
+        datasources: { db: { url: adminUrl() } },
+      });
+      try {
+        await admin.$executeRawUnsafe(`CREATE DATABASE "${dbName}"`);
+      } finally {
+        await admin.$disconnect();
+      }
+      try {
+        const sync = fs.mkdtempSync(path.join(dir, "sync-create-fail-"));
+        const { child, done } = runHarness(
+          ["lane-create", "--lane", path.join(dir, "create-fail.json")],
+          {
+            K6_GATE_TEST_BARRIER: "create-dispatch-fail",
+            K6_GATE_TEST_DB_NAME: dbName,
+            K6_GATE_TEST_SYNC_DIR: sync,
+          },
+          url as string,
+        );
+        await waitForFile(path.join(sync, "create-sql-dispatched"));
+        expect(child.kill("SIGTERM")).toBe(true);
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        expect(child.kill("SIGINT")).toBe(true);
+        fs.writeFileSync(path.join(sync, "create-settle-release"), "release\n");
+        const r = await done;
+        expect(r.code).not.toBe(0);
+        expect(r.output).toMatch(/CREATE DATABASE failed|already exists/);
+        expect(await dbExists(dbName)).toBe(true);
+      } finally {
+        await dropDb(dbName);
+      }
     }, 60_000);
 
     it("an already-existing database is refused and preserved", async () => {
