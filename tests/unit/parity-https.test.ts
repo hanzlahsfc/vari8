@@ -13,9 +13,10 @@ import {
 import {
   browserCookies,
   httpsRequest,
+  createOwnedProcessGroup,
   listenerPids,
-  OWNERSHIP_ENV,
   parityPortPair,
+  registerOwnedProcess,
   stopOwnedProcessGroup,
   parityUrl,
   selectPortPair,
@@ -105,8 +106,6 @@ describe("local TLS proxy", () => {
 });
 
 describe("task-owned process lifecycle", () => {
-  const token = "test-ownership-token";
-
   it("terminates only the spawned listener and verifies the port is released", async () => {
     const port = await freePort();
     ownedChild = spawn(
@@ -115,24 +114,21 @@ describe("task-owned process lifecycle", () => {
         "-e",
         `require("node:http").createServer((_q,r)=>r.end("ok")).listen(${port},"127.0.0.1",()=>setInterval(()=>{},1000))`,
       ],
-      {
-        detached: true,
-        stdio: "ignore",
-        env: { ...process.env, [OWNERSHIP_ENV]: token },
-      },
+      { detached: true, stdio: "ignore" },
     );
+    const ownership = await createOwnedProcessGroup(ownedChild);
     for (let i = 0; i < 100 && !listenerPids(port).length; i++)
       await new Promise((resolve) => setTimeout(resolve, 20));
     expect(listenerPids(port)).toEqual([String(ownedChild.pid)]);
 
     await expect(
-      stopOwnedProcessGroup(ownedChild, port, { ownershipToken: token }),
+      stopOwnedProcessGroup(ownedChild, port, { ownership }),
     ).resolves.toEqual([]);
     expect(listenerPids(port)).toEqual([]);
     expect(ownedChild.exitCode ?? ownedChild.signalCode).not.toBeNull();
   });
 
-  it("cleans a descendant listener after the group leader exits", async () => {
+  it("cleans a registered descendant listener after the group leader exits", async () => {
     const port = await freePort();
     const unrelatedPort = await freePort();
     backend = http.createServer((_req, res) => res.end("unrelated"));
@@ -145,21 +141,22 @@ describe("task-owned process lifecycle", () => {
       process.execPath,
       [
         "-e",
-        `const {spawn}=require("node:child_process");const c=spawn(process.execPath,["-e","require('node:http').createServer((_q,r)=>r.end('ok')).listen(${port},'127.0.0.1',()=>setInterval(()=>{},1000))"],{stdio:"ignore"});c.unref();setTimeout(()=>process.exit(0),10);`,
+        `const {spawn}=require("node:child_process");const c=spawn(process.execPath,["-e","require('node:http').createServer((_q,r)=>r.end('ok')).listen(${port},'127.0.0.1',()=>setInterval(()=>{},1000))"],{stdio:"ignore"});c.unref();process.on("message",()=>process.exit(0));`,
       ],
-      {
-        detached: true,
-        stdio: "ignore",
-        env: { ...process.env, [OWNERSHIP_ENV]: token },
-      },
+      { detached: true, stdio: ["ignore", "ignore", "ignore", "ipc"] },
     );
-    await new Promise<void>((resolve) => ownedChild!.once("exit", resolve));
+    const ownership = await createOwnedProcessGroup(ownedChild);
     for (let i = 0; i < 100 && !listenerPids(port).length; i++)
       await new Promise((resolve) => setTimeout(resolve, 20));
     expect(listenerPids(port)).toHaveLength(1);
+    expect(registerOwnedProcess(ownership, Number(listenerPids(port)[0]))).toBe(
+      true,
+    );
+    ownedChild.send("exit");
+    await new Promise<void>((resolve) => ownedChild!.once("exit", resolve));
 
     await expect(
-      stopOwnedProcessGroup(ownedChild, port, { ownershipToken: token }),
+      stopOwnedProcessGroup(ownedChild, port, { ownership }),
     ).resolves.toEqual([]);
     expect(listenerPids(port)).toEqual([]);
     expect(listenerPids(unrelatedPort)).toEqual([String(process.pid)]);
@@ -167,31 +164,85 @@ describe("task-owned process lifecycle", () => {
 });
 
 describe("owned-process identity", () => {
-  type Identity = { pid: number; pgid: number; start: string; owned: boolean };
+  type Identity = {
+    pid: number;
+    ppid?: number;
+    pgid: number;
+    start: string;
+    argv?: string;
+  };
   const child = { pid: 500, exitCode: 0, signalCode: null };
-  const owner = { pid: 501, pgid: 500, start: "start-1", owned: true };
+  const leader = { pid: 500, pgid: 500, start: "leader" };
+  const owner = { pid: 501, ppid: 500, pgid: 500, start: "start-1" };
+  const ownership = { pgid: "500", processes: [leader] };
+  const descendantOwnership = { pgid: "500", processes: [leader, owner] };
 
-  const inspectorFor = (group: Identity[], listeners: Identity[]) => ({
-    group: () => group.map((entry) => ({ ...entry })),
-    listeners: () => listeners.map((entry) => ({ ...entry })),
+  const inspectorFor = (
+    group: Array<Identity | null>,
+    listeners: Array<Identity | null>,
+  ) => ({
+    group: () => group.map((entry) => (entry ? { ...entry } : null)),
+    listeners: () => listeners.map((entry) => (entry ? { ...entry } : null)),
     process: (pid: number) => {
-      const found = [...group, ...listeners].find((entry) => entry.pid === pid);
+      const found = [...group, ...listeners].find(
+        (entry) => entry?.pid === pid,
+      );
       return found ? { ...found } : null;
     },
   });
 
-  it("never signals a same-PGID process without ownership proof", async () => {
-    const group = [{ pid: 700, pgid: 500, start: "s1", owned: false }];
-    const listeners = [{ pid: 200, pgid: 500, start: "s1", owned: false }];
+  it("returns an explicit problem when ownership is unavailable", async () => {
     const sent: [number, string][] = [];
     const problems = await stopOwnedProcessGroup(child, 40000, {
-      ownershipToken: "tok",
+      signal: (pid: number, name: string) => sent.push([pid, name]),
+    });
+    expect(sent).toEqual([]);
+    expect(problems).toEqual([
+      "process ownership is unavailable; cleanup refused",
+    ]);
+  });
+
+  it("never signals a same-PGID argv-only or unverified process", async () => {
+    const group = [
+      {
+        pid: 700,
+        pgid: 500,
+        start: "s1",
+        argv: "PARITY_OWNERSHIP_TOKEN=tok",
+      },
+    ];
+    const listeners = [
+      {
+        pid: 200,
+        pgid: 500,
+        start: "s1",
+        argv: "PARITY_OWNERSHIP_TOKEN=tok",
+      },
+    ];
+    const sent: [number, string][] = [];
+    const problems = await stopOwnedProcessGroup(child, 40000, {
+      ownership,
       inspector: inspectorFor(group, listeners),
       signal: (pid: number, name: string) => sent.push([pid, name]),
       terminateMs: 0,
       killMs: 0,
     });
     expect(sent).toEqual([]);
+    expect(problems.join(" ")).toContain("unverified");
+    expect(problems.join(" ")).toContain("listener 40000");
+  });
+
+  it("fails closed on malformed inspection records", async () => {
+    const sent: [number, string][] = [];
+    const problems = await stopOwnedProcessGroup(child, 40000, {
+      ownership,
+      inspector: inspectorFor([null], [null]),
+      signal: (pid: number, name: string) => sent.push([pid, name]),
+      terminateMs: 0,
+      killMs: 0,
+    });
+    expect(sent).toEqual([]);
+    expect(problems.join(" ")).toContain("malformed-record");
     expect(problems.join(" ")).toContain("unverified");
   });
 
@@ -200,7 +251,7 @@ describe("owned-process identity", () => {
     const listeners = [owner];
     const sent: [number, string][] = [];
     const problems = await stopOwnedProcessGroup(child, 40000, {
-      ownershipToken: "tok",
+      ownership: descendantOwnership,
       inspector: inspectorFor(group, listeners),
       signal: (pid: number, name: string) => {
         sent.push([pid, name]);
@@ -215,15 +266,14 @@ describe("owned-process identity", () => {
   });
 
   it("rechecks identity before escalation and never signals a reused process", async () => {
-    const member = { pid: 700, pgid: 500, start: "old", owned: true };
-    const reused = { pid: 700, pgid: 500, start: "new", owned: false };
+    const member = { pid: 700, pgid: 500, start: "old" };
+    const reused = { pid: 700, pgid: 500, start: "new" };
+    const memberOwnership = { pgid: "500", processes: [member] };
     let recheckForeign = false;
     const sent: [number, string][] = [];
     const problems = await stopOwnedProcessGroup(child, 40000, {
-      ownershipToken: "tok",
+      ownership: memberOwnership,
       inspector: {
-        // Group/listener snapshots still contain the stale identity; the
-        // per-process recheck observes that PID 700 has been reused.
         group: () => [{ ...member }],
         listeners: () => [{ ...member }],
         process: () => ({ ...(recheckForeign ? reused : member) }),
@@ -242,7 +292,7 @@ describe("owned-process identity", () => {
   it("fails closed when process inspection fails", async () => {
     const sent: [number, string][] = [];
     const problems = await stopOwnedProcessGroup(child, 40000, {
-      ownershipToken: "tok",
+      ownership,
       inspector: {
         group: () => {
           throw new Error("ps unavailable");

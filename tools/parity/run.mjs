@@ -22,10 +22,11 @@ import { captureAll, INDEX_PATH } from "./capture.mjs";
 import { compareRuns, ConfigError, envThresholds } from "./compare.mjs";
 import {
   browserCookies,
+  createOwnedProcessGroup,
   httpsRequest,
   listenerPids,
-  OWNERSHIP_ENV,
   parityUrl,
+  processIdentity,
   selectPortPair,
   stopOwnedProcessGroup,
 } from "./local-https.mjs";
@@ -35,6 +36,7 @@ const ROOT = path.resolve(HERE, "../..");
 const FE = path.join(ROOT, "frontend");
 const ROOT_APP = process.env.PARITY_APP !== "frontend";
 const APP = ROOT_APP ? ROOT : FE;
+const NEXT_BIN = path.join(ROOT, "node_modules/next/dist/bin/next");
 const OUT = path.join(HERE, "out");
 const CUR = path.join(OUT, "current");
 const BASE = path.join(HERE, "baseline");
@@ -104,22 +106,20 @@ async function waitForHttp(url, server, checkUrl, ms = 180000) {
   }
 }
 
-// Every process listening on the port must be in the server's process group (it was spawned detached, so its pid is
-// the group id). Fails closed: if lsof or ps cannot answer, the server is not trusted.
-function ownsPort(port, pgid, ownershipToken) {
+// Every listener on the port must have been registered as this invocation's
+// spawned process identity. Fails closed: a port occupant alone is not proof.
+function ownsPort(port, ownership) {
   const pids = listenerPids(port);
   return (
     pids.length > 0 &&
     pids.every((pid) => {
-      const info = spawnSync("ps", ["eww", "-p", pid], {
-        encoding: "utf8",
-      });
+      const identity = processIdentity(pid);
       return (
-        info.status === 0 &&
-        info.stdout.includes(`${OWNERSHIP_ENV}=${ownershipToken}`) &&
-        spawnSync("ps", ["-o", "pgid=", "-p", pid], {
-          encoding: "utf8",
-        }).stdout.trim() === String(pgid)
+        identity &&
+        ownership.processes.some(
+          (entry) =>
+            entry.pid === identity.pid && entry.start === identity.start,
+        )
       );
     })
   );
@@ -161,7 +161,7 @@ let server = null;
 let proxy = null;
 let port = null;
 let backendPort = null;
-let ownershipToken = null;
+let ownership = null;
 // Next dev and build append to AGENTS.md in the app they run in. Snapshot and restore so the tree stays untouched.
 const agentsPath = path.join(APP, "AGENTS.md");
 const agentsBefore = await readFile(agentsPath, "utf8");
@@ -208,18 +208,15 @@ try {
     // PARITY_DEV=1 falls back to next dev for debugging only.
     const logFd = openSync(LOG, "w");
     const stdio = ["ignore", logFd, logFd];
-    ownershipToken = randomBytes(16).toString("hex");
     // Better Auth trusts its own base URL only, so the root app must be told the address this run serves.
-    const env = {
-      ...process.env,
-      [OWNERSHIP_ENV]: ownershipToken,
-      ...(ROOT_APP ? { BETTER_AUTH_URL: baseUrl, AUTH_URL: baseUrl } : {}),
-    };
+    const env = ROOT_APP
+      ? { ...process.env, BETTER_AUTH_URL: baseUrl, AUTH_URL: baseUrl }
+      : process.env;
     if (DEV) {
       server = spawn(
-        "npx",
+        process.execPath,
         [
-          "next",
+          NEXT_BIN,
           "dev",
           "--webpack",
           "--hostname",
@@ -240,9 +237,9 @@ try {
           `next build failed (exit ${build.status}); see ${LOG}`,
         );
       server = spawn(
-        "npx",
+        process.execPath,
         [
-          "next",
+          NEXT_BIN,
           "start",
           "--hostname",
           "127.0.0.1",
@@ -252,6 +249,7 @@ try {
         { cwd: APP, env, detached: true, stdio },
       );
     }
+    ownership = await createOwnedProcessGroup(server);
     const checkUrl = proxy
       ? async (url) => {
           const res = await httpsRequest(url, { ca: proxy.cert });
@@ -260,7 +258,7 @@ try {
       : async (url) => (await fetch(url)).ok;
     await waitForHttp(`${baseUrl}/coach`, server, checkUrl);
     if (
-      !ownsPort(backendPort, server.pid, ownershipToken) ||
+      !ownsPort(backendPort, ownership) ||
       (proxy && !ownsPortPid(port, process.pid))
     )
       throw new Refuse(
@@ -278,7 +276,7 @@ try {
   // took it. null for PARITY_URL runs, where no spawned server exists to own the port.
   const serverMine = server
     ? () =>
-        ownsPort(backendPort, server.pid, ownershipToken) &&
+        ownsPort(backendPort, ownership) &&
         (!proxy || ownsPortPid(port, process.pid))
     : null;
   const cookies = ROOT_APP ? await signInCookies(baseUrl, proxy?.cert) : [];
@@ -344,9 +342,7 @@ try {
   if (server)
     try {
       cleanupProblems.push(
-        ...(await stopOwnedProcessGroup(server, backendPort, {
-          ownershipToken,
-        })),
+        ...(await stopOwnedProcessGroup(server, backendPort, { ownership })),
       );
     } catch (e) {
       cleanupProblems.push(`server cleanup failed: ${e.message}`);

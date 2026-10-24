@@ -95,8 +95,6 @@ export function httpsRequest(
   });
 }
 
-export const OWNERSHIP_ENV = "PARITY_OWNERSHIP_TOKEN";
-
 export function listenerPids(port) {
   return spawnSync("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"], {
     encoding: "utf8",
@@ -115,39 +113,111 @@ function processGroupMembers(pgid) {
     .filter(Boolean);
 }
 
-function processIdentity(pid, ownershipToken) {
-  if (!ownershipToken) return null;
+export function processIdentity(pid) {
   const info = spawnSync(
     "ps",
-    ["-o", "pid=,pgid=,lstart=", "-p", String(pid)],
+    ["-o", "pid=,ppid=,pgid=,lstart=", "-p", String(pid)],
     { encoding: "utf8" },
   );
   if (info.error || info.status !== 0) return null;
   const fields = info.stdout.trim().split(/\s+/);
-  if (fields.length < 7) return null;
-  const env = spawnSync("ps", ["eww", "-p", String(pid)], {
-    encoding: "utf8",
-  });
-  if (env.error || env.status !== 0) return null;
+  if (fields.length < 8) return null;
   return {
     pid: Number(fields[0]),
-    pgid: Number(fields[1]),
-    start: fields.slice(2).join(" "),
-    owned: env.stdout.includes(`${OWNERSHIP_ENV}=${ownershipToken}`),
+    ppid: Number(fields[1]),
+    pgid: Number(fields[2]),
+    start: fields.slice(3).join(" "),
   };
 }
 
-const liveInspector = (ownershipToken) => ({
-  group: (pgid) =>
-    processGroupMembers(pgid)
-      .map((pid) => processIdentity(pid, ownershipToken))
-      .filter(Boolean),
-  listeners: (port) =>
-    listenerPids(port)
-      .map((pid) => processIdentity(pid, ownershipToken))
-      .filter(Boolean),
-  process: (pid) => processIdentity(pid, ownershipToken),
+const liveInspector = () => ({
+  group: (pgid) => processGroupMembers(pgid).map((pid) => processIdentity(pid)),
+  listeners: (port) => listenerPids(port).map((pid) => processIdentity(pid)),
+  process: (pid) => processIdentity(pid),
 });
+
+const identityKey = (entry) => `${entry?.pid}:${entry?.start}`;
+const validIdentity = (entry) =>
+  entry !== null &&
+  typeof entry === "object" &&
+  Number.isInteger(Number(entry.pid)) &&
+  Number.isInteger(Number(entry.pgid)) &&
+  typeof entry.start === "string" &&
+  entry.start.length > 0;
+
+const ownedIdentity = (ownership, entry) =>
+  validIdentity(entry) &&
+  String(entry.pgid) === String(ownership.pgid) &&
+  ownership.processes.some(
+    (owned) => owned.pid === Number(entry.pid) && owned.start === entry.start,
+  );
+
+export async function createOwnedProcessGroup(
+  child,
+  { inspector = liveInspector(), timeoutMs = 2000 } = {},
+) {
+  const deadline = Date.now() + timeoutMs;
+  let leader = null;
+  do {
+    leader = inspector.process(child.pid);
+    if (validIdentity(leader)) break;
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  } while (Date.now() < deadline);
+  if (!validIdentity(leader))
+    throw new Error(`could not establish process identity for ${child.pid}`);
+  if (String(leader.pgid) !== String(child.pid))
+    throw new Error(`process ${child.pid} is not a process-group leader`);
+  return {
+    pgid: String(child.pid),
+    processes: [
+      {
+        pid: Number(leader.pid),
+        pgid: Number(leader.pgid),
+        start: leader.start,
+      },
+    ],
+  };
+}
+
+export function registerOwnedProcess(
+  ownership,
+  pid,
+  { inspector = liveInspector() } = {},
+) {
+  if (!ownership || !Array.isArray(ownership.processes)) return false;
+  const candidate = inspector.process(pid);
+  if (!validIdentity(candidate)) return false;
+  if (String(candidate.pgid) !== String(ownership.pgid)) return false;
+  const key = identityKey(candidate);
+  if (ownership.processes.some((entry) => identityKey(entry) === key))
+    return true;
+
+  const seen = new Set();
+  let cursor = candidate;
+  while (cursor && !seen.has(cursor.pid)) {
+    if (
+      ownership.processes.some(
+        (entry) => entry.pid === cursor.pid && entry.start === cursor.start,
+      )
+    ) {
+      ownership.processes.push({
+        pid: Number(candidate.pid),
+        pgid: Number(candidate.pgid),
+        start: candidate.start,
+      });
+      return true;
+    }
+    seen.add(cursor.pid);
+    const parent = inspector.process(cursor.ppid);
+    if (
+      !validIdentity(parent) ||
+      String(parent.pgid) !== String(ownership.pgid)
+    )
+      return false;
+    cursor = parent;
+  }
+  return false;
+}
 
 function waitForProcessExit(child, ms) {
   if (child.exitCode !== null || child.signalCode !== null)
@@ -162,34 +232,43 @@ function waitForProcessExit(child, ms) {
 }
 
 /**
- * @typedef {{pid:number,pgid:number|string,start:string,owned:boolean}} ProcessIdentity
- * @typedef {{group:(pgid:string)=>ProcessIdentity[],listeners:(port:number)=>ProcessIdentity[],process:(pid:number)=>ProcessIdentity|null}} ProcessInspector
+ * @typedef {{pid:number,ppid?:number,pgid:number|string,start:string}} ProcessIdentity
+ * @typedef {{pgid:string,processes:ProcessIdentity[]}} ProcessOwnership
+ * @typedef {{group:(pgid:string)=>Array<ProcessIdentity|null>,listeners:(port:number)=>Array<ProcessIdentity|null>,process:(pid:number)=>ProcessIdentity|null}} ProcessInspector
  * @param {import('node:child_process').ChildProcess | {pid:number,exitCode:number|null,signalCode:string|null,once?:(event:string,cb:()=>void)=>unknown}} child
  * @param {number} port
- * @param {{ownershipToken:string,terminateMs?:number,killMs?:number,inspector?:ProcessInspector,signal?:(pid:number,name:string)=>void}} options
+ * @param {{ownership?:ProcessOwnership,terminateMs?:number,killMs?:number,inspector?:ProcessInspector,signal?:(pid:number,name:string)=>void}} options
  */
 export async function stopOwnedProcessGroup(
   child,
   port,
   {
-    ownershipToken,
+    ownership,
     terminateMs = 10000,
     killMs = 5000,
-    inspector = liveInspector(ownershipToken),
+    inspector = liveInspector(),
     signal = (pid, name) => process.kill(pid, name),
   } = {},
 ) {
   const problems = [];
-  const pgid = String(child.pid);
-  const owned = (entry) =>
-    entry?.owned === true &&
-    String(entry.pgid) === pgid &&
-    Boolean(entry.start);
+  const pgid = String(child?.pid);
+  if (
+    !ownership ||
+    String(ownership.pgid) !== pgid ||
+    !Array.isArray(ownership.processes) ||
+    ownership.processes.length === 0 ||
+    !ownership.processes.every(
+      (entry) => validIdentity(entry) && String(entry.pgid) === pgid,
+    )
+  )
+    return ["process ownership is unavailable; cleanup refused"];
+  const owned = (entry) => ownedIdentity(ownership, entry);
   const inspect = (kind) => {
     const result =
       kind === "group" ? inspector.group(pgid) : inspector.listeners(port);
-    return Array.isArray(result) ? result : [];
+    return Array.isArray(result) ? result : [null];
   };
+  const identityLabel = (entry) => entry?.pid ?? "malformed-record";
   const group = () => inspect("group");
   const listeners = () => inspect("listeners");
   const ownedGroup = () => group().filter(owned);
@@ -282,19 +361,19 @@ export async function stopOwnedProcessGroup(
   const foreignListeners = finalListeners.filter((entry) => !owned(entry));
   if (remainingOwnedListeners.length)
     problems.push(
-      `owned process(es) ${remainingOwnedListeners.map((p) => p.pid).join(", ")} still own listener ${port}`,
+      `owned process(es) ${remainingOwnedListeners.map(identityLabel).join(", ")} still own listener ${port}`,
     );
   if (remainingOwned.length)
     problems.push(
-      `owned process(es) ${remainingOwned.map((p) => p.pid).join(", ")} remain in group ${pgid}`,
+      `owned process(es) ${remainingOwned.map(identityLabel).join(", ")} remain in group ${pgid}`,
     );
   if (unverifiedGroup.length)
     problems.push(
-      `unverified process(es) ${unverifiedGroup.map((p) => p.pid).join(", ")} remain in group ${pgid}`,
+      `unverified process(es) ${unverifiedGroup.map(identityLabel).join(", ")} remain in group ${pgid}`,
     );
   if (foreignListeners.length)
     problems.push(
-      `listener ${port} is owned by unverified process(es) ${foreignListeners.map((p) => p.pid).join(", ")}`,
+      `listener ${port} is owned by unverified process(es) ${foreignListeners.map(identityLabel).join(", ")}`,
     );
   if (!exited) problems.push(`process ${child.pid} did not exit`);
   return [...new Set(problems)];
