@@ -1,9 +1,11 @@
-// npm run parity: builds the root app for production (next build), serves it with next start on a free port this run
-// picks, signs in as the dev user, captures every screen at 1440x900 and 390x844, compares with tools/parity/baseline
-// (captured from frontend/), writes tools/parity/out/report.html, then stops the server. Exit code: 0 match, 1 change or capture failure,
-// 2 refused (bad env, port taken, or the listener is not the server this run started). Nothing is compared on 2.
-// PARITY_PORT pins the port (refused if taken). PARITY_URL compares a server you run yourself (not checked).
-// PARITY_DEV=1 uses next dev instead (debugging only; dev timing noise makes the gate flaky).
+// npm run parity: builds the root app for production (next build), serves it with next start on a loopback HTTP
+// backend, terminates that backend through a disposable loopback HTTPS proxy, signs in through the real configured
+// https origin, captures every screen at 1440x900 and 390x844, compares with tools/parity/baseline (captured from
+// frontend/), writes tools/parity/out/report.html, then stops the server. Exit code: 0 match, 1 change or capture
+// failure, 2 refused (bad env, port taken, or the listener is not the server this run started). Nothing is compared
+// on 2. PARITY_PORT pins the public HTTPS port and requires <port+1> free for the backend. PARITY_URL compares a
+// server you run yourself (not checked); root-app PARITY_URL must be https:.
+// PARITY_DEV=1 uses next dev on the same private backend port (debugging only; dev timing noise makes the gate flaky).
 // npm run parity -- --update-baseline   recaptures the baseline instead of comparing (needs PARITY_APP=frontend).
 // PARITY_APP=frontend serves frontend/ (no session) instead of the root app; the baseline comes from there.
 // Sign-in (root app): PARITY_USER_EMAIL and PARITY_USER_PASSWORD name an existing account. Without a password the
@@ -15,8 +17,15 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createLocalTlsProxy } from "../local-tls-proxy.mjs";
 import { captureAll, INDEX_PATH } from "./capture.mjs";
 import { compareRuns, ConfigError, envThresholds } from "./compare.mjs";
+import {
+  browserCookies,
+  httpsRequest,
+  parityUrl,
+  selectPortPair,
+} from "./local-https.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../..");
@@ -33,7 +42,7 @@ const DEV = process.env.PARITY_DEV === "1";
 class Refuse extends Error {}
 
 // Signs in to the root app through Better Auth and returns the session cookies for the capture contexts.
-async function signInCookies(baseUrl) {
+async function signInCookies(baseUrl, ca = null) {
   const email = process.env.PARITY_USER_EMAIL ?? "owner@vari8.test";
   let password = process.env.PARITY_USER_PASSWORD;
   if (!password) {
@@ -56,27 +65,15 @@ async function signInCookies(baseUrl) {
         `dev user upsert failed (exit ${seed.status}): ${(seed.stderr || seed.stdout).trim().split("\n").pop()}`,
       );
   }
-  const res = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
+  const res = await httpsRequest(`${baseUrl}/api/auth/sign-in/email`, {
+    ca,
     method: "POST",
     headers: { "content-type": "application/json", origin: baseUrl },
     body: JSON.stringify({ email, password }),
   });
-  const set = res.headers.getSetCookie();
-  if (!res.ok || set.length === 0)
+  if (res.status < 200 || res.status >= 300 || res.setCookie.length === 0)
     throw new Refuse(`sign-in as ${email} failed (HTTP ${res.status})`);
-  const domain = new URL(baseUrl).hostname;
-  return set.map((line) => {
-    const [pair] = line.split(";");
-    const i = pair.indexOf("=");
-    return {
-      name: pair.slice(0, i).trim(),
-      value: pair.slice(i + 1).trim(),
-      domain,
-      path: "/",
-      httpOnly: true,
-      sameSite: "Lax",
-    };
-  });
+  return browserCookies(res.setCookie, baseUrl);
 }
 
 // Binds 127.0.0.1:port (0 = any free port) and reports the port, or rejects if it is taken.
@@ -90,13 +87,13 @@ const bind = (port) =>
     });
   });
 
-async function waitForHttp(url, server, ms = 180000) {
+async function waitForHttp(url, server, checkUrl, ms = 180000) {
   const t0 = Date.now();
   for (;;) {
     if (server.exitCode !== null || server.signalCode !== null)
       throw new Refuse(`server exited before answering; see ${LOG}`);
     try {
-      if ((await fetch(url)).ok) return;
+      if (await checkUrl(url)) return;
     } catch {}
     if (Date.now() - t0 > ms)
       throw new Refuse(`server did not answer at ${url} within ${ms / 1000} s`);
@@ -106,15 +103,17 @@ async function waitForHttp(url, server, ms = 180000) {
 
 // Every process listening on the port must be in the server's process group (it was spawned detached, so its pid is
 // the group id). Fails closed: if lsof or ps cannot answer, the server is not trusted.
-function ownsPort(port, pgid) {
-  const pids = spawnSync(
-    "lsof",
-    ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"],
-    { encoding: "utf8" },
-  )
+function portPids(port) {
+  return spawnSync("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"], {
+    encoding: "utf8",
+  })
     .stdout.trim()
     .split(/\s+/)
     .filter(Boolean);
+}
+
+function ownsPort(port, pgid) {
+  const pids = portPids(port);
   return (
     pids.length > 0 &&
     pids.every(
@@ -124,6 +123,11 @@ function ownsPort(port, pgid) {
         }).stdout.trim() === String(pgid),
     )
   );
+}
+
+function ownsPortPid(port, pid) {
+  const pids = portPids(port);
+  return pids.length > 0 && pids.every((p) => p === String(pid));
 }
 
 function pinnedPort() {
@@ -138,9 +142,13 @@ function pinnedPort() {
 
 let th;
 let pinned;
+let externalUrl;
 try {
   th = envThresholds();
   pinned = pinnedPort();
+  externalUrl = process.env.PARITY_URL
+    ? parityUrl(process.env.PARITY_URL, ROOT_APP)
+    : null;
 } catch (e) {
   if (!(e instanceof ConfigError)) throw e;
   console.error(`parity: ${e.message}`);
@@ -148,9 +156,11 @@ try {
 }
 
 await mkdir(OUT, { recursive: true });
-let baseUrl = process.env.PARITY_URL;
+let baseUrl = externalUrl;
 let server = null;
+let proxy = null;
 let port = null;
+let backendPort = null;
 // Next dev and build append to AGENTS.md in the app they run in. Snapshot and restore so the tree stays untouched.
 const agentsPath = path.join(APP, "AGENTS.md");
 const agentsBefore = await readFile(agentsPath, "utf8");
@@ -161,18 +171,38 @@ try {
       "--update-baseline captures the frontend/ canvas; set PARITY_APP=frontend",
     );
   if (!baseUrl) {
-    if (
-      pinned !== null &&
-      !(await bind(pinned).then(
-        () => true,
-        () => false,
-      ))
-    )
-      throw new Refuse(
-        `port ${pinned} is in use; PARITY_PORT must name a free port. Nothing was compared.`,
-      );
-    port = pinned ?? (await bind(0));
-    baseUrl = `http://127.0.0.1:${port}`;
+    if (ROOT_APP) {
+      let pair;
+      try {
+        pair = await selectPortPair(pinned, bind);
+      } catch (e) {
+        throw new Refuse(e.message);
+      }
+      port = pair.publicPort;
+      backendPort = pair.backendPort;
+      try {
+        proxy = await createLocalTlsProxy({
+          port,
+          target: `http://127.0.0.1:${backendPort}`,
+        });
+      } catch (e) {
+        throw new Refuse(`local TLS proxy failed: ${e.message}`);
+      }
+      baseUrl = proxy.url;
+    } else {
+      if (
+        pinned !== null &&
+        !(await bind(pinned).then(
+          () => true,
+          () => false,
+        ))
+      )
+        throw new Refuse(
+          `port ${pinned} is in use; PARITY_PORT must name a free port. Nothing was compared.`,
+        );
+      port = backendPort = pinned ?? (await bind(0));
+      baseUrl = `http://127.0.0.1:${port}`;
+    }
     // Production build by default: dev mode (HMR, overlay, on-demand compile) adds timing noise.
     // PARITY_DEV=1 falls back to next dev for debugging only.
     const logFd = openSync(LOG, "w");
@@ -191,7 +221,7 @@ try {
           "--hostname",
           "127.0.0.1",
           "--port",
-          String(port),
+          String(backendPort),
         ],
         { cwd: APP, env, detached: true, stdio },
       );
@@ -207,26 +237,59 @@ try {
         );
       server = spawn(
         "npx",
-        ["next", "start", "--hostname", "127.0.0.1", "--port", String(port)],
+        [
+          "next",
+          "start",
+          "--hostname",
+          "127.0.0.1",
+          "--port",
+          String(backendPort),
+        ],
         { cwd: APP, env, detached: true, stdio },
       );
     }
-    await waitForHttp(`${baseUrl}/coach`, server);
-    if (!ownsPort(port, server.pid))
+    const checkUrl = proxy
+      ? async (url) => {
+          const res = await httpsRequest(url, { ca: proxy.cert });
+          return res.status >= 200 && res.status < 400;
+        }
+      : async (url) => (await fetch(url)).ok;
+    await waitForHttp(`${baseUrl}/coach`, server, checkUrl);
+    if (
+      !ownsPort(backendPort, server.pid) ||
+      (proxy && !ownsPortPid(port, process.pid))
+    )
       throw new Refuse(
-        `port ${port} answers from a process this run did not start. Refusing to compare it.`,
+        `port pair ${port}/${backendPort} answers from a process this run did not start. Refusing to compare it.`,
       );
   }
+  const checkUrl = proxy
+    ? async (url) => {
+        const res = await httpsRequest(url, { ca: proxy.cert });
+        return res.status >= 200 && res.status < 400;
+      }
+    : async (url) => (await fetch(url)).ok;
   // Re-checked by captureAll before every capture, before a retry, and once after the last
   // capture: a port that answers means nothing if this run's server died and another process
   // took it. null for PARITY_URL runs, where no spawned server exists to own the port.
-  const serverMine = server ? () => ownsPort(port, server.pid) : null;
-  const cookies = ROOT_APP ? await signInCookies(baseUrl) : [];
+  const serverMine = server
+    ? () =>
+        ownsPort(backendPort, server.pid) &&
+        (!proxy || ownsPortPid(port, process.pid))
+    : null;
+  const cookies = ROOT_APP ? await signInCookies(baseUrl, proxy?.cert) : [];
   if (update) {
     // Capture into a temp dir; the committed baseline is replaced only when every shot captured.
     const tmp = path.join(OUT, "baseline.tmp");
     await rm(tmp, { recursive: true, force: true });
-    const m = await captureAll({ baseUrl, outDir: tmp, serverMine, cookies });
+    const m = await captureAll({
+      baseUrl,
+      outDir: tmp,
+      serverMine,
+      cookies,
+      checkUrl,
+      ignoreHTTPSErrors: Boolean(proxy),
+    });
     const expected =
       JSON.parse(await readFile(INDEX_PATH, "utf8")).shots.length * 2;
     if (m.failures.length || m.screens.length !== expected) {
@@ -242,7 +305,14 @@ try {
     }
   } else {
     await rm(CUR, { recursive: true, force: true });
-    const m = await captureAll({ baseUrl, outDir: CUR, serverMine, cookies });
+    const m = await captureAll({
+      baseUrl,
+      outDir: CUR,
+      serverMine,
+      cookies,
+      checkUrl,
+      ignoreHTTPSErrors: Boolean(proxy),
+    });
     if (m.failures.length) {
       console.log(
         `capture: ${m.failures.length} failure(s), retried=${m.retried ?? 0}; see ${path.join(CUR, "manifest.json")}`,
@@ -272,6 +342,7 @@ try {
       process.kill(-server.pid, "SIGTERM");
     } catch {}
   }
+  await proxy?.close().catch(() => {});
   const now = await readFile(agentsPath, "utf8").catch(() => null);
   if (now !== null && now !== agentsBefore)
     await writeFile(agentsPath, agentsBefore);

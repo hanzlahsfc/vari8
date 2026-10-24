@@ -1,3 +1,28 @@
+## 2026-10-24 — Issue #202 parity HTTPS startup — capture fixed; visual comparison remains failed
+
+- Reproduced the defect on `Vari8-Beta` `d1c4081`: production parity
+  supplied HTTP `BETTER_AUTH_URL`/`AUTH_URL`, boot correctly refused,
+  and the run exited 2 before screenshots.
+- `tools/local-tls-proxy.mjs` now provides the shared disposable
+  loopback TLS terminator; `tests/e2e/tls-proxy.mjs` wraps it. Root
+  parity reserves an HTTPS public port plus backend port, configures
+  both auth origins to the real HTTPS origin, checks backend/proxy
+  ownership and cleans processes/material in `finally`. Baselines,
+  selectors, viewports, tolerances and production-auth checks are
+  unchanged.
+- Fresh proof: `PARITY_PORT=55880 npm run parity` reaches
+  `https://127.0.0.1:55880`, signs in, captures **70/70 screens** and
+  reports **0 capture failures / 0 retries**. Comparison is **FAIL,
+  70 problems, exit 1** against the checked-in baseline — startup is
+  fixed, visual acceptance is not claimed.
+- Checks on Node v24.22.1: focused 7/7; unit 1255/1255; typecheck,
+  format, index, build and `git diff --check` exit 0; lint 0
+  errors/81 pre-existing warnings; E2E TLS wrapper path **16 passed /
+  8 skipped**, exit 0.
+- Disposable `app_parity_https` was dropped; no 55880/55881 listeners
+  or `vari8-local-tls-*` material remain. Full record:
+  `icm/05-build/reports/PARITY-HTTPS.md`.
+
 ## 2026-10-24 — PR #201 K6-GATE evidence whitespace closure — receipts normalized, checks clean
 
 - Independent review found the complete base-to-head

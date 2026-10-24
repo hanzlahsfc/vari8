@@ -345,15 +345,11 @@ async function captureScrollers(page, outDir, vp, stem) {
 
 // Under CPU load Chromium can drop a navigation or a screenshot mid-run. One retry of the capture is allowed
 // (never of a comparison): relaunch the browser, wait for the server to answer again, then replay the same shot.
-async function waitForServer(baseUrl, ms = 60000) {
+async function waitForServer(baseUrl, checkUrl, ms = 60000) {
   const t0 = Date.now();
   for (;;) {
     try {
-      if (
-        (await fetch(`${baseUrl}/coach`, { signal: AbortSignal.timeout(5000) }))
-          .ok
-      )
-        return true;
+      if (await checkUrl(`${baseUrl}/coach`)) return true;
     } catch {}
     if (Date.now() - t0 > ms) return false;
     await new Promise((r) => setTimeout(r, 1000));
@@ -367,6 +363,9 @@ export async function captureAll({
   serverMine = null,
   // Session cookies for every capture context (run.mjs signs in to the root app); none for the frontend/ baseline.
   cookies = [],
+  checkUrl = async (url) =>
+    (await fetch(url, { signal: AbortSignal.timeout(5000) })).ok,
+  ignoreHTTPSErrors = false,
 }) {
   const index = JSON.parse(await readFile(INDEX_PATH, "utf8"));
   // --disable-partial-raster: partial raster re-rasters only the invalidated part of a tile, so the anti-aliased
@@ -414,7 +413,7 @@ export async function captureAll({
             }
             await browser.close().catch(() => {});
             browser = await launch();
-            if (!(await waitForServer(baseUrl))) {
+            if (!(await waitForServer(baseUrl, checkUrl))) {
               lastErr = new Error(
                 `server at ${baseUrl} stopped answering; retry not attempted`,
               );
@@ -429,6 +428,7 @@ export async function captureAll({
             colorScheme: "light",
             reducedMotion: "reduce",
             serviceWorkers: "block",
+            ignoreHTTPSErrors,
           });
           if (cookies?.length) await ctx.addCookies(cookies);
           await ctx.addInitScript(initScript(STORAGE_SEED));
