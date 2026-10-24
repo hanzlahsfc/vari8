@@ -1,7 +1,7 @@
 # PARITY-HTTPS — issue #202 parity production startup repair
 
 Base: `Vari8-Beta` `d1c4081022f2ac21070b28f284248fad2ef04839`.
-Residual-repair code head: `9e183d025c29d1da8e83e009ac4ac77a0c50cfa0`.
+Residual-repair code head: `8b5424f825dddd7e515882d69d346b46157ef849`.
 Issue: https://github.com/hanzlahsfc/vari8/issues/202.
 
 ## Scope
@@ -105,15 +105,18 @@ No screenshot comparison began. Raw evidence:
   template navigation instead of unrelated right-panel toggles; the
   `Training Program` recipe label resolves to the actual `Training`
   navigation item while the original recipe remains in the manifest.
-- Backend process-group ownership and proxy listener ownership are
-  checked at startup and re-checked before/after captures. The spawned
-  backend gets a per-run `PARITY_OWNERSHIP_TOKEN`; descendant processes
-  inherit it. Cleanup records PID, PGID, host process-start time and
-  token ownership, signals verified member/listener PIDs individually —
-  never `-PGID` — and rechecks PID/start/token immediately before
-  `SIGTERM` or `SIGKILL`. Same-PGID processes without ownership proof,
-  inspection failures and foreign listeners are reported, never killed;
-  unverified residue makes cleanup incomplete rather than green.
+- Backend process ownership no longer relies on `ps eww` environment
+  text: on this host that output mixes argv/environment and the actual
+  `npx → next-server` chain exposed no token on either process. The
+  runner now invokes `node node_modules/next/dist/bin/next` directly;
+  the spawned PID becomes the `next-server` listener. Startup records a
+  PID/PGID/process-start registry for the spawned group leader;
+  `registerOwnedProcess` adds a descendant only while its parent lineage
+  resolves to a registered member in the same original PGID. Cleanup
+  signals only registry identities, rechecked by PID/PGID/start before
+  `SIGTERM` or `SIGKILL`; same-PGID argv-only processes, malformed/null
+  records, inspection failures and foreign listeners are reported,
+  never killed. Missing ownership returns an explicit cleanup problem.
 - Comparison semantics are unchanged except `ignoreHTTPSErrors` for the
   disposable self-signed loopback cert. Baselines, shot-index recipes,
   comparison selectors, viewport dimensions, fixed clock, pixel/DOM
@@ -127,39 +130,59 @@ memory. A `SIGKILL` in the narrow window before that `finally` can still
 leave the empty/partial `mkdtemp` directory; this is not claimed to be
 covered.
 
+Process-identity limitation: rechecking PID/PGID/start immediately
+before each signal narrows, but cannot eliminate, the inherent
+inspect-then-signal TOCTOU window. A PID/PGID could still be reused
+between the final identity read and `kill`. The code does not claim to
+close that window and does not use PGID-only, port-only, argv-only or
+environment-substring fallback.
+
 ## Fresh verification — Node v24.22.1
 
 Focused regression suite:
-`npx vitest run tests/unit/parity-https.test.ts` → **17/17 passed,
+`npx vitest run tests/unit/parity-https.test.ts` → **19/19 passed,
 exit 0**. Covers TLS forwarding/certificate cleanup, non-loopback
 refusal, malformed or unusable port pairs, distinct unpinned pairs,
 occupied public-port race refusal, live spawned listener cleanup, live
-leader-exit descendant cleanup with an unrelated listener preserved,
-injected same-PGID/unverified identity refusal, owned descendant
+registered-descendant cleanup after leader exit with an unrelated
+listener preserved, missing-ownership refusal, same-PGID argv-only
+refusal, malformed/null record fail-closed behavior, owned descendant
 cleanup, escalation identity recheck, inspection fail-closed behavior,
 authenticated route/query/content/state rejection, explicit markers for
 no-click screens, malformed/non-HTTPS `PARITY_URL`, Secure/SameSite,
 Domain/Path and controlled-clock `Max-Age`/`Expires` semantics.
 
+Bounded real-chain proof:
+`node node_modules/next/dist/bin/next start -p 55984 -H 127.0.0.1`
+produced listener PID `76370`, the same PID/PGID/start identity recorded
+in the ownership registry. `stopOwnedProcessGroup` returned `[]`, exit
+was `143`, and no listener/owned process remained. Receipt:
+`icm/05-build/reports/parity-https-identity-mutation/real-chain-proof.txt`.
+A direct `npx next start` probe reproduced the prior defect: neither
+`npm exec` nor `next-server` exposed the token through `ps eww`, so the
+old ownership check could not verify the real listener.
+
 Targeted mutations:
 
-- Ownership predicate removed → **1 expected failure**, exit 1:
-  same-PGID unverified identities were incorrectly sent SIGTERM and
-  SIGKILL. Exact patch/log/restore hash:
-  `icm/05-build/reports/parity-https-identity-mutation/`.
+- Process-start identity removed from ownership and signal recheck →
+  **1 expected failure**, exit 1: a same-PID/same-PGID process with a
+  different start time received `SIGKILL`. Exact patch/log/restore
+  evidence: `icm/05-build/reports/parity-https-identity-mutation/`.
 - Mutations were restored by exact inverse edits and the focused suite
-  returned to **17/17**, exit 0. Restored SHA-256:
+  returned to **19/19**, exit 0. Immediate restore hashes and final
+  post-hardening hashes are preserved in the mutation directory; final
+  SHA-256:
   `tools/parity/local-https.mjs`
-  `285fcd92fd28e411c8b1871d0133db1c40d7a2c2612c24477201288ea5cf0206`;
-  `tools/parity/capture.mjs`
-  `2cb445bcd4b0a5736b8b650ab6b7ec9f275d001528b04965bc31d1c8a513291a`;
-  `tests/unit/parity-https.test.ts`
-  `b38001487495f50366bdababa1451745deb5bbaf80341b05a074c76f450d2b24`;
+  `9309f4de41d2ad2bc9f36b2e67af778ac8f9f775dbdad2ae01f289e0f4bf2fb3`;
   `tools/parity/run.mjs`
-  `ce42737a606e4e24444ed07c8df9fa1c80ac99d2add58b80ee30c741b7f63bed`.
-- Earlier cookie-expiry, leader-lifetime, unconditional-capture and
-  query/state mutations remain preserved receipts; their hashes refer to
-  earlier file versions, not this head.
+  `53d3bd8102002cff50721bdefce9db1f64d3ace43a78edf55c29a0f2ed2e59ac`;
+  `tests/unit/parity-https.test.ts`
+  `d430db3a311dffc08149f8e14c9e4589d287122a83a11410fdeffb9f9b6250aa`;
+  `tools/parity/capture.mjs`
+  `2cb445bcd4b0a5736b8b650ab6b7ec9f275d001528b04965bc31d1c8a513291a`.
+- Earlier cookie-expiry, leader-lifetime, unconditional-capture,
+  query/state and ownership-predicate mutations remain preserved
+  receipts; their hashes refer to earlier file versions, not this head.
 
 Production parity run after the residual repairs:
 
@@ -182,10 +205,11 @@ viewports capture the actual `Habits` editor section. Sample final URLs:
 capture failure, not a saved screenshot.
 
 The visual comparison itself remains **not green**: `parity FAIL: 70
-problem(s)`, exit 1. Prompt 406 did not rerun all 70 captures solely to
-confirm the same known-red comparison; the only fresh behavior under
-repair was process identity/cleanup and one unused declaration, covered
-by focused live/simulated tests and standard gates. Evidence:
+problem(s)`, exit 1. Prompts 406/408 did not rerun all 70 captures
+solely to confirm the same known-red comparison; the fresh behavior was
+process ownership/cleanup plus an unused declaration, covered by focused
+live/simulated tests, a bounded real server proof and standard gates.
+Evidence:
 `_evidence/PARITY-HTTPS-server-404f.log`,
 `_evidence/PARITY-HTTPS-manifest-404f.json`,
 `_evidence/PARITY-HTTPS-report-404f.html` and `tools/parity/out/`.
@@ -203,7 +227,7 @@ Standard gates:
 - `npm run index:check` → exit 0
 - `npm run typecheck` → exit 0
 - `npm run lint` → exit 0, 0 errors / 81 warnings; `VIEW_TOGGLE` removed
-- `npm run test` → **105 files / 1267 tests**, exit 0
+- `npm run test` → **105 files / 1269 tests**, exit 0
 - `npm run build` → exit 0
 - `git diff --check` → exit 0
 
@@ -217,9 +241,9 @@ the disposable `app_parity_https` database was dropped
 Latest real-parity provenance:
 
 - Source: the strict-capture run used code byte-identical to commit
-  `5e16ec8` for its changed files. Prompt 406's `9e183d0` changes
-  process-identity cleanup and removes an unused constant; it does not
-  alter capture recipes, images, baselines or comparison behavior, so
+  `5e16ec8` for its changed files. The prompt-406/408 process-identity
+  cleanup commits do not alter capture recipes, images, baselines or
+  comparison behavior, so
   the earlier real parity evidence is carried forward rather than
   rerunning all 70 captures.
 - Launch: `PARITY_PORT=55880 npm run parity`; public loopback HTTPS

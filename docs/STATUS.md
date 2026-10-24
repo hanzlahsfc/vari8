@@ -1,25 +1,28 @@
-## 2026-10-25 — Issue #202 process-identity repair — ownership token/start checks; visual blocker remains
+## 2026-10-25 — Issue #202 process-identity repair — start-registry ownership proven on real Next chain
 
-- Replaced numeric-PGID-only cleanup ownership: parity injects a per-run
-  `PARITY_OWNERSHIP_TOKEN`, descendants inherit it, and cleanup verifies
-  PID/PGID/start-time/token identity immediately before each signal.
-  Signals go to verified PIDs, never `-PGID`; unverified processes,
-  inspection failures and foreign listeners are reported instead of
-  killed.
-- Added injected-seam tests for same-PGID foreign identity, owned
-  descendants after leader exit, escalation recheck and inspection
-  failure, while retaining live subprocess descendant cleanup. Focused
-  suite: **17/17**, exit 0. Ownership-guard mutation bit once
-  (`same-PGID` process incorrectly signaled), then restored
-  byte-identically.
-- Removed unused `VIEW_TOGGLE`. Fresh lint: **0 errors / 81 warnings**.
-  Standard Node v24.22.1 gates: format/index/typecheck/build/diff exit
-  0; full unit **105 files / 1267 tests**, exit 0.
+- Reproduced the real-chain defect: `npx next start` produced
+  `npm exec` plus `next-server`, but neither exposed the ownership token
+  through `ps eww`; argv/environment substring matching was therefore
+  unsafe and unusable. The launcher now invokes
+  `node node_modules/next/dist/bin/next` directly; the spawned PID
+  becomes the `next-server` listener.
+- Cleanup uses a recorded PID/PGID/process-start registry for the
+  spawned leader and only registered descendants verified by live
+  lineage. Signals go to individually rechecked registry identities,
+  never `-PGID`; missing ownership, malformed/null records, inspection
+  failures, same-PGID argv-only identities and foreign listeners fail
+  closed instead of being signaled.
+- Focused suite: **19/19**, exit 0. Removing process-start matching
+  produced the expected reused-PID `SIGKILL` failure, then restored
+  byte-identically. Bounded real `next start` proof cleaned the
+  listener/server and left no residue.
+- Standard Node v24.22.1 gates: format/index/typecheck/lint/build/diff
+  exit 0; lint **0 errors / 81 warnings**; full unit **105 files /
+  1269 tests**, exit 0.
 - Carried visual evidence remains **FAIL, 70 problems** from the prior
-  real parity run; all 70 captures were valid. `s04-template-habits` is
-  now separated as a baseline/recipe-state defect: baseline and old
-  capture showed `Tabs`, corrected capture shows `Habits`; those two
-  viewport comparisons are not like-for-like.
+  real parity run; all 70 captures were valid. `s04-template-habits`
+  remains a separate baseline/recipe-state defect, not a like-for-like
+  visual regression.
 - Remaining blocker: five page-size changes, two element-count changes,
   `s11-preferences` DOM delta and pervasive raster differences remain
   unexplained; `merge-proto @ 58eb6ed` provenance is unavailable. No
