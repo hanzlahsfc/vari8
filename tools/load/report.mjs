@@ -29,31 +29,26 @@ export const ACCEPTANCE = {
   cpuPct: 70, // of whole-host share — see cpuHostSharePct
 };
 
-// Phase-execution rules (documented; NOT tolerances for PASS):
-//   - a scenario's measured points must cover its PLANNED window
-//     [startTime, startTime+duration] within PHASE_EDGE_SEC of both
-//     edges, with no interior point gap > PHASE_POINT_GAP_SEC
-//   - constant-vus phases (hold500): every `vus` gauge sample strictly
-//     inside the window (excluding EDGE drain) must be >= planned VUs —
-//     constant-vus guarantees exactly N, so a deficit is a real miss
-//   - ramping phases carry no VU-level requirement (concurrency varies
-//     by design); insufficient telemetry → INCONCLUSIVE, never PASS
+// ── Phase-execution DIAGNOSTICS ─────────────────────────────────────
+// These constants are builder-chosen execution diagnostics — they
+// flag truncated/interrupted runs for TOOL EXECUTION only. They are
+// NOT acceptance thresholds and carry no issue authority: a run that
+// satisfies them has merely *run its plan*, nothing more.
 export const PHASE_EDGE_SEC = 10;
 export const PHASE_POINT_GAP_SEC = 30;
-export const VUS_EDGE_SEC = 5;
 // Resource coverage: the sampler's declared interval must equal the
 // expected cadence supplied by the RUN CONFIG (never the file's own
 // word); samples bracket the window within 2× interval, no gap > 3×,
 // count >= floor(window/interval) (min 2), timestamps strictly
-// increasing, and every mandatory metric present in a MAJORITY (>50%)
-// of samples — transient collection errors are tolerated, sustained
-// absence is not.
+// increasing, and EVERY mandatory metric must have time coverage:
+// present in the first and last in-window samples AND no contiguous
+// absence span > GAP_FACTOR×interval — a missing tail is a real gap.
 export const GAP_FACTOR = 3;
 export const EDGE_LAG_FACTOR = 2;
-export const METRIC_COVERAGE = 0.5;
-// Non-measured requests the contract permits: the /login origin probe
-// in setup() plus at most one retry. Anything more is unexplained.
-export const MAX_SETUP_REQS = 2;
+// Non-measured requests are identified FROM RAW URL EVIDENCE: the
+// /login origin probe(s) setup() emits. Nothing else may be folded
+// into "setup" — a surplus of even one request is unexplained.
+export const SETUP_URL_PATTERN = /\/login(\?|$)/;
 
 export const FAILURE_CLASSES = new Set([
   "refusal",
@@ -95,6 +90,7 @@ export function parseJsonOut(text) {
   const scenarioObs = {};
   const vusPoints = []; // {t, v} — k6's global `vus` gauge stream
   let httpReqsObserved = 0; // raw request evidence, independent of tags
+  let setupReqsObserved = 0; // raw requests whose URL is the setup probe
   const httpReqUrls = new Set();
   let malformed = 0;
   let tMin = Infinity;
@@ -135,7 +131,9 @@ export function parseJsonOut(text) {
     if (p.metric === "http_reqs") {
       // Raw request evidence — every real request, tagged by URL.
       httpReqsObserved += Number(p.data?.value) || 0;
-      httpReqUrls.add(p.data?.tags?.url ?? p.data?.tags?.name ?? "?");
+      const url = p.data?.tags?.url ?? p.data?.tags?.name ?? "?";
+      httpReqUrls.add(url);
+      if (SETUP_URL_PATTERN.test(url)) setupReqsObserved++;
     } else if (p.metric === "load_latency") {
       const o = obs(sc, ts);
       if (o) {
@@ -173,16 +171,20 @@ export function parseJsonOut(text) {
     scenarioObs,
     vusPoints,
     httpReqsObserved,
+    setupReqsObserved,
     httpReqUrls,
     window: tMin <= tMax ? [tMin, tMax] : null,
   };
 }
 
 /**
- * Verify a planned scenario against OBSERVED stream evidence.
- * `planned` = {vus, durationSec, startTimeSec, executor} and
- * `obs` = {points, pointTimes[]} plus the global vus series and the
- * run's first point time (window origin). Returns failure strings.
+ * Phase EXECUTION diagnostics — did the planned scenario emit measured
+ * points across its planned window? These are completeness checks for
+ * TOOL EXECUTION only: window coverage proves the script ran, never
+ * that acceptance targets were met. Concurrency is deliberately NOT
+ * assessed — the untagged global `vus` gauge cannot attribute VUs to a
+ * scenario, let alone to authenticated sessions, so no synthetic vus
+ * series may satisfy a hold.
  */
 export function phaseFailures(name, planned, obs, vusPoints, runStartMs) {
   const fails = [];
@@ -211,27 +213,6 @@ export function phaseFailures(name, planned, obs, vusPoints, runStartMs) {
         `scenario ${name}: ${((times[i] - times[i - 1]) / 1000).toFixed(0)}s gap in measured points`,
       );
       break;
-    }
-  }
-  // Concurrency: constant-vus phases guarantee exactly N VUs — every
-  // gauge sample strictly inside the window must agree. A single peak
-  // never proves a sustained hold.
-  if (planned.executor === "constant-vus" && planned.vus > 0) {
-    const inner = vusPoints.filter(
-      (x) =>
-        x.t >= startMs + VUS_EDGE_SEC * 1000 &&
-        x.t <= endMs - VUS_EDGE_SEC * 1000,
-    );
-    if (inner.length === 0)
-      fails.push(
-        `scenario ${name}: no concurrency samples inside the hold window`,
-      );
-    else {
-      const below = inner.filter((x) => x.v < planned.vus).length;
-      if (below > 0)
-        fails.push(
-          `scenario ${name}: ${below}/${inner.length} concurrency samples below planned ${planned.vus} — no sustained hold`,
-        );
     }
   }
   return fails;
@@ -317,16 +298,30 @@ export function parseResources(text, runWindow, expectedIntervalSec = null) {
     }
   }
   const peak = (f) => samples.reduce((m, s) => Math.max(m, f(s) ?? 0), 0);
-  // Per-metric coverage: present in a majority (>50%) of samples —
-  // transient collection errors tolerated, first-sample-only refused.
-  const metricCovered = (f) =>
-    samples.length > 0 &&
-    samples.filter((s) => f(s) != null).length >
-      samples.length * METRIC_COVERAGE;
-
   const times = samples
     .map((s) => Date.parse(s.ts ?? ""))
     .filter((t) => Number.isFinite(t));
+  // Per-metric TIME coverage: the metric must be present in the first
+  // AND last chronological sample, with no contiguous absence span
+  // > GAP_FACTOR×interval between present samples. A missing tail or
+  // a long null run is a real coverage gap — majority presence is not
+  // sufficient.
+  const metricCovered = (f) => {
+    if (samples.length === 0 || intervalSec == null) return false;
+    const all = samples
+      .map((s) => Date.parse(s.ts ?? ""))
+      .sort((a, b) => a - b);
+    const pres = samples
+      .filter((s) => f(s) != null)
+      .map((s) => Date.parse(s.ts ?? ""))
+      .sort((a, b) => a - b);
+    if (pres.length === 0) return false;
+    if (pres[0] !== all[0] || pres.at(-1) !== all.at(-1)) return false;
+    for (let i = 1; i < pres.length; i++)
+      if (pres[i] - pres[i - 1] > GAP_FACTOR * intervalSec * 1000) return false;
+    return true;
+  };
+
   const ordered =
     times.length === samples.length &&
     times.every((t, i) => i === 0 || t > times[i - 1]);
@@ -415,6 +410,7 @@ export function counterAgreement(points, counters) {
  * @param {Record<string, object>} [scenarioObs] — observed per-scenario evidence
  * @param {Array<{t: number, v: number}>} [vusPoints] — global vus stream
  * @param {number | null} [observedHttpReqs] — raw http_reqs point count
+ * @param {number | null} [setupObserved] — raw /login probe points
  */
 export function manifestFailures(
   manifest,
@@ -423,6 +419,7 @@ export function manifestFailures(
   scenarioObs = {},
   vusPoints = [],
   observedHttpReqs = null,
+  setupObserved = null,
 ) {
   const fails = [];
   if (!manifest || typeof manifest !== "object")
@@ -440,15 +437,11 @@ export function manifestFailures(
     fails.push(
       `manifest load_requests=${manifest.loadRequests} != measured points=${points.length}`,
     );
-  // Exact HTTP accounting against the RAW stream — the manifest's own
-  // http_reqs field is a claim, not evidence. `httpReqsObserved` counts
-  // real `http_reqs` points; `setupReqs` is the manifest's declared
-  // setup traffic and is itself bounded (the /login probe only).
-  const setupReqs = manifest.setupReqs ?? 0;
-  if (!(setupReqs >= 0 && setupReqs <= MAX_SETUP_REQS))
-    fails.push(
-      `declared setupReqs=${setupReqs} exceeds the bounded setup (${MAX_SETUP_REQS}) — it cannot absorb unexplained requests`,
-    );
+  // Exact HTTP accounting against the RAW stream. `httpReqsObserved`
+  // counts real `http_reqs` points; `setupObserved` counts only the
+  // raw requests whose URL is the /login setup probe. The manifest's
+  // declared setupReqs must equal the OBSERVED setup count — it cannot
+  // absorb even one unexplained request.
   if (
     observedHttpReqs != null &&
     manifest.httpReqs != null &&
@@ -457,12 +450,17 @@ export function manifestFailures(
     fails.push(
       `manifest http_reqs=${manifest.httpReqs} != raw http_reqs points=${observedHttpReqs}`,
     );
-  if (
-    observedHttpReqs != null &&
-    observedHttpReqs !== points.length + setupReqs
-  )
+  const unexplained =
+    observedHttpReqs == null
+      ? null
+      : observedHttpReqs - points.length - setupObserved;
+  if (unexplained == null || unexplained !== 0)
     fails.push(
-      `http accounting: raw http_reqs=${observedHttpReqs} != measured=${points.length} + setup=${setupReqs} — unexplained requests`,
+      `http accounting: raw=${observedHttpReqs} - measured=${points.length} - observed setup=${setupObserved} = ${unexplained} unexplained`,
+    );
+  if (manifest.setupReqs != null && manifest.setupReqs !== setupObserved)
+    fails.push(
+      `manifest setupReqs=${manifest.setupReqs} != observed setup requests=${setupObserved}`,
     );
   const loadReqCounter = Object.entries(counters)
     .filter(([k]) => k.startsWith("load_requests|"))
@@ -498,10 +496,13 @@ export function manifestFailures(
 }
 
 /**
- * Two independent verdicts.
- *   execution: "complete" | "incomplete" | "failed"
- *   capacity:  "pass" | "fail" | "inconclusive"
- * Overall PASS requires complete execution AND capacity pass.
+ * Three independent dispositions.
+ *   execution: "complete" | "incomplete" | "failed" — did the script
+ *     run its plan and is the evidence internally consistent?
+ *   resourceChecks: evidence-quality checks (not verdicts)
+ *   capacity: always "unavailable" — certification needs approved
+ *     acceptance configuration and authenticated-concurrency telemetry
+ *     this tool does not have. PASS is unreachable by construction.
  */
 export function verdict(rows, res, durationSec, opts = {}) {
   const total = rows.reduce((n, r) => n + r.count, 0);
@@ -551,23 +552,8 @@ export function verdict(rows, res, durationSec, opts = {}) {
       ? "failed"
       : "incomplete";
 
-  const capChecks = [
-    {
-      name: "p95 < 400ms per endpoint worst",
-      pass: Number.isFinite(worst95) && worst95 < ACCEPTANCE.p95ms,
-    },
-    {
-      name: "p99 < 1000ms per endpoint worst",
-      pass: Number.isFinite(worst99) && worst99 < ACCEPTANCE.p99ms,
-    },
-    {
-      name: "error rate < 0.5%",
-      pass: total > 0 && errorRate < ACCEPTANCE.errorRate,
-    },
-    {
-      name: "concealed refusals = 0",
-      pass: total > 0 && rows.every((r) => r.concealed === 0),
-    },
+  // ── RESOURCE COMPLETENESS (evidence quality, not a capacity verdict)
+  const resourceChecks = [
     { name: "resources sampled", pass: !!res && res.samples > 0 },
     {
       name: "no malformed resource samples",
@@ -590,81 +576,49 @@ export function verdict(rows, res, durationSec, opts = {}) {
       name: "sufficient samples for the window",
       pass: !!res && res.enoughSamples === true,
     },
-    { name: "app CPU measured", pass: !!res && res.appCpuMeasured },
+    { name: "app CPU covered", pass: !!res && res.appCpuMeasured },
+    { name: "db CPU covered", pass: !!res && res.dbCpuMeasured },
+    { name: "RAM covered", pass: !!res && res.ramMeasured },
+    { name: "pg connections covered", pass: !!res && res.pgMeasured },
+    { name: "pg limit covered", pass: !!res && res.pgLimitKnown },
     {
-      name: "CPU < 70% (host share)",
-      pass:
-        !!res &&
-        res.cpuMeasured &&
-        res.cpuHostSharePct != null &&
-        res.cpuHostSharePct < ACCEPTANCE.cpuPct,
+      name: "restart signals covered",
+      pass: !!res && res.restartsMeasured,
     },
-    { name: "RAM measured", pass: !!res && res.ramMeasured },
-    { name: "pg connections measured", pass: !!res && res.pgMeasured },
-    {
-      name: "pg connections under limit",
-      pass:
-        !!res &&
-        res.pgMeasured &&
-        res.pgLimitKnown &&
-        res.pgConnPeak < res.pgConnLimit,
-    },
-    {
-      name: "restart signals measured + none observed",
-      pass:
-        !!res &&
-        res.restartsMeasured &&
-        res.appRestarts === 0 &&
-        res.dbRestarts === 0,
-    },
-    { name: "500-session hold phase collected", pass: !!opts.hold500Collected },
   ];
-  // Measured-failure checks (thresholds/errors/restarts) → fail;
-  // missing evidence (resources absent, hold500 uncollected, cadence
-  // unknown) → inconclusive. A measured breach beats inconclusive.
-  const missingEvidence = capChecks.some(
-    (c) =>
-      !c.pass &&
-      /sampled|cadence|cover|gaps|sufficient|measured|hold phase|malformed resource|timestamps|increasing/.test(
-        c.name,
-      ),
-  );
-  const measuredBreach = capChecks.some(
-    (c) =>
-      !c.pass &&
-      /p95|p99|error rate|concealed|CPU <70|under limit|restart signals/.test(
-        c.name,
-      ),
-  );
-  const capacity = measuredBreach
-    ? "fail"
-    : missingEvidence
-      ? "inconclusive"
-      : capChecks.every((c) => c.pass)
-        ? "pass"
-        : "inconclusive";
 
-  const checks = [...execChecks, ...capChecks];
-  const resourceChecks = checks.filter((c) =>
-    /CPU|RAM|pg conn|restart/.test(c.name),
-  );
+  // ── CAPACITY ACCEPTANCE — permanently UNAVAILABLE ─────────────────
+  // The issue-178 acceptance thresholds exist as constants for future
+  // use, but no local run can satisfy them: the untagged global `vus`
+  // gauge cannot prove sustained, scenario-specific AUTHENTICATED
+  // concurrency, and the owner acceptance configuration (hold
+  // duration/placement, distinct users, CPU normalization, write mix,
+  // approved staging mechanism) is unresolved. Capacity PASS is
+  // therefore unreachable by design — not merely "not yet passed".
+  const capacity = "unavailable";
+
+  const checks = [...execChecks, ...resourceChecks];
+  const failedResourceChecks = resourceChecks.filter((c) => !c.pass);
   const firstSat =
     res && res.samples > 0
-      ? (resourceChecks.find((c) => !c.pass)?.name ?? "none")
+      ? (failedResourceChecks[0]?.name ?? "none")
       : "unavailable";
 
   return {
     total,
     fails,
     errorRate,
+    worst95,
+    worst99,
     rps: durationSec > 0 ? total / durationSec : NaN,
     slowestEndpoint: slowest,
     firstSaturated: firstSat,
     execution,
+    resourceChecks,
     capacity,
-    pass: execution === "complete" && capacity === "pass",
+    // The tool can never self-certify: PASS is unreachable.
+    pass: false,
     execChecks,
-    capChecks,
     checks,
   };
 }
@@ -686,6 +640,7 @@ function main() {
     scenarioObs,
     vusPoints,
     httpReqsObserved,
+    setupReqsObserved,
   } = parseJsonOut(fs.readFileSync(resultsFile, "utf8"));
   const rows = rowsFromPoints(points);
   // The expected collector cadence comes from the RUN CONFIG — the
@@ -723,27 +678,13 @@ function main() {
         scenarioObs,
         vusPoints,
         httpReqsObserved,
+        setupReqsObserved,
       )
     : ["run manifest not supplied"];
-  // The hold phase is "collected" only when the planned constant-vus
-  // scenario passed the window/continuity/concurrency checks — a single
-  // tagged point or brief spike is not a sustained hold.
-  const holdPlan = manifest?.planned?.hold500;
-  const hold500Collected =
-    !!holdPlan &&
-    points.length > 0 &&
-    phaseFailures(
-      "hold500",
-      holdPlan,
-      scenarioObs.hold500 ?? { points: 0, pointTimes: [] },
-      vusPoints,
-      Math.min(...points.map((p) => p.ts ?? Infinity)),
-    ).length === 0;
   const v = verdict(rows, res, durationSec, {
     malformed,
     counterCheck: counterAgreement(points, counters),
     manifestFailures: manFails,
-    hold500Collected,
   });
 
   console.log(
@@ -762,11 +703,15 @@ function main() {
   console.log(`\nTOOL EXECUTION: ${v.execution.toUpperCase()}`);
   for (const c of v.execChecks)
     console.log(`  ${c.pass ? "PASS" : "FAIL"} ${c.name}`);
-  console.log(
-    `CAPACITY ACCEPTANCE: ${v.capacity.toUpperCase()} (local instrumentation — not staging certification)`,
-  );
-  for (const c of v.capChecks)
+  console.log(`RESOURCE COMPLETENESS (evidence quality, not a verdict)`);
+  for (const c of v.resourceChecks)
     console.log(`  ${c.pass ? "PASS" : "FAIL"} ${c.name}`);
+  console.log(`CAPACITY ACCEPTANCE: UNAVAILABLE`);
+  console.log(
+    `  requires approved acceptance configuration + authenticated-` +
+      `concurrency telemetry this tool does not have`,
+  );
+  console.log(`STAGING: NOT PERFORMED`);
   console.log(`\nVERDICT: ${v.pass ? "PASS" : "FAIL"}`);
   process.exit(v.pass ? 0 : 1);
 

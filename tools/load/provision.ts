@@ -365,6 +365,13 @@ async function main() {
         throw new Error(
           `refusing cleanup: workspace ${f.workspaceId} is not a ${FIXTURE_SLUG_PREFIX}* fixture`,
         );
+      // Target identity: the manifest's recorded targetId must equal
+      // the live workspace slug — a stale/forged manifest can point at
+      // another loadgate fixture set only if this check binds it.
+      if (f.targetId !== ws.slug)
+        throw new Error(
+          `refusing cleanup: manifest targetId ${f.targetId} != live workspace slug ${ws.slug}`,
+        );
       const users = await db.user.findMany({
         where: { id: { in: f.userIds } },
         select: { id: true, email: true },

@@ -189,6 +189,57 @@ describe.skipIf(!enabled)(
       expect(f.clients).toHaveLength(3);
     });
 
+    it("a manifest with a mismatched targetId refuses", async () => {
+      const f = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+      const forged = { ...f, targetId: "loadgate-other-fixture" };
+      const p = path.join(dir, "wrong-target.json");
+      fs.writeFileSync(p, JSON.stringify(forged));
+      const r = runProvision(["cleanup", "--file", p]);
+      expect(r.code).not.toBe(0);
+      expect(r.output).toMatch(/targetId/i);
+      expect(
+        await prisma.user.findUnique({ where: { id: victimUserId } }),
+      ).not.toBeNull();
+      // The real fixture itself must also survive the wrong-target attempt.
+      expect(
+        await prisma.workspace.findUnique({ where: { id: f.workspaceId } }),
+      ).not.toBeNull();
+    });
+
+    it("lane-create failure drops only the DB it created", async () => {
+      // --lane pointing into a path whose parent is an existing FILE →
+      // writeLaneFile throws AFTER CREATE DATABASE → cleanup must drop
+      // exactly that DB and no other.
+      const admin = new PrismaClient({
+        datasources: { db: { url: adminUrl() } },
+      });
+      const before = (
+        await admin.$queryRawUnsafe<{ datname: string }[]>(
+          "SELECT datname FROM pg_database WHERE datname LIKE 'app_k6_%'",
+        )
+      ).map((r) => r.datname);
+      await admin.$disconnect();
+      const badLane = path.join(manifestPath, "lane.json"); // parent is a file
+      const r2 = runProvision(
+        ["lane-create", "--lane", badLane], // first --lane wins
+        { CONFIRM_DISPOSABLE_DB: "" },
+        url as string,
+      );
+      expect(r2.code).not.toBe(0);
+      const admin2 = new PrismaClient({
+        datasources: { db: { url: adminUrl() } },
+      });
+      const after = (
+        await admin2.$queryRawUnsafe<{ datname: string }[]>(
+          "SELECT datname FROM pg_database WHERE datname LIKE 'app_k6_%'",
+        )
+      ).map((x) => x.datname);
+      await admin2.$disconnect();
+      // Exactly zero leftover databases — the failed invocation dropped
+      // its own, and no others were touched.
+      expect(after).toEqual(before);
+    }, 60_000);
+
     it("a tampered manifest deletes nothing — victims survive", async () => {
       const f = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
       const forged = {

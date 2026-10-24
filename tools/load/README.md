@@ -21,8 +21,9 @@ Executable load-test tooling for the 500-concurrent-session gate. The
   `LOAD_HOLD500_MIN=<n>` inserts a sustained 500-VU window between ramp
   and soak — it is **required** for `LOAD_PROFILE=gate` (the gate
   refuses to run without it: the duration is an unresolved owner
-  acceptance decision), and without a `hold500` phase in the results
-  the verdict is inconclusive — never PASS.
+  acceptance decision). Its presence is an execution fact only — the
+  untagged global `vus` gauge cannot prove scenario-specific
+  authenticated sessions, so it never authorizes capacity PASS.
 - Workload is READ traffic only (session/roster APIs + page GETs under
   verified sessions). Nothing here submits data; the issue's
   thresholds cover latency/errors/resources, not a write mix.
@@ -45,37 +46,44 @@ Every run must produce three artifacts:
    declared == expected, timestamps strictly increasing, samples
    bracketing the run window within 2× interval, no gap > 3× interval,
    count ≥ `floor(window/interval)` (min 2), and every mandatory
-   metric present in a majority (>50%) of samples.
+   metric with time coverage — present in the first AND last in-window
+   sample AND no contiguous absence span > 3× interval (a missing tail
+   is a real gap; majority presence is not coverage).
 
 The report verifies execution against OBSERVED evidence, not manifest
-assertions:
+assertions (all phase rules are builder-chosen EXECUTION DIAGNOSTICS,
+labeled as such — they flag truncated/interrupted runs and carry no
+issue acceptance authority):
 
 - per-scenario measured points must cover the PLANNED window
   `[startTime, startTime+duration]` within 10 s of both edges, with
-  no interior point gap > 30 s
-- constant-vus phases (hold500): every `vus` gauge sample strictly
-  inside the window (5 s drain edges excluded) must be ≥ planned
-  VUs — constant-vus guarantees exactly N, so a single peak can never
-  prove a sustained hold; ramping phases carry no VU requirement
-- exact HTTP accounting against the RAW stream: `http_reqs` points
-  counted independently must equal `load_requests` + a bounded
-  `setupReqs` (≤ 2 — the /login probe); manifest http_reqs must equal
-  the raw count; any surplus/deficit is unexplained
+  no interior point gap > 30 s — diagnostics only, not acceptance
+- exact HTTP accounting against the RAW stream: every `http_reqs`
+  point must be either a measured workload point or an OBSERVED
+  /login setup probe — `raw = measured + observed_setup` exactly, and
+  the manifest's declared `setupReqs` must equal the observed setup
+  count; a surplus of even one request is unexplained and fails
 - `load_requests` counter == measured points
 - expected workload endpoints present; auth-only, truncated and
   endpoint-absent runs are inconclusive
 
-And reports THREE independent dispositions:
+And reports three dispositions — capacity certification is OFF:
 
 - **TOOL EXECUTION** — complete / incomplete / failed (the planned run
-  happened and is internally consistent).
-- **CAPACITY ACCEPTANCE** — pass / fail / inconclusive (measured
-  thresholds + mandatory resource coverage + a sustained hold; a local
-  capacity verdict is explicitly _not_ staging certification).
-- **STAGING CERTIFICATION** — not performed by this tool; requires the
+  happened and is internally consistent — script completion only).
+- **RESOURCE COMPLETENESS** — per-metric evidence quality (measured,
+  not a verdict).
+- **CAPACITY ACCEPTANCE: UNAVAILABLE** — `pass`/`fail`/`inconclusive`
+  is replaced by unreachable UNAVAILABLE: the untagged global `vus`
+  gauge cannot prove sustained scenario-specific AUTHENTICATED
+  concurrency, and the owner acceptance configuration (hold duration/
+  placement, distinct users, CPU normalization, write mix, approved
+  staging mechanism) is unresolved. No synthetic or real input can
+  produce CAPACITY PASS.
+- **STAGING: NOT PERFORMED** — printed explicitly; requires the
   issue-5 stack, a generator host and an approved remote mechanism.
 
-Exit 0 requires execution COMPLETE and capacity PASS.
+The tool exits nonzero on every run — it cannot self-certify.
 
 ## Safety contract
 
@@ -125,23 +133,50 @@ is a measured `identity_mismatch`, including after re-authentication.
 Auth decay keeps its failed request counted and re-authenticates as a
 separate `reauth` metric.
 
-## Local bounded smoke
+## Local bounded smoke (complete, documented sequence)
 
 ```bash
-CONFIRM_DISPOSABLE_DB=<lane-db> tsx tools/load/provision.ts create \
-  --clients 9 --coaches 3 --out tools/load/out/fixtures.json
+# 1. Create a task-owned lane database — the ONLY ownership path.
+DATABASE_URL=<admin-url> tsx tools/load/provision.ts lane-create \
+  --lane tools/load/out/lane.json
+#    → writes the lane file (0600) and prints the lane DB name;
+#      on failure it drops only the database it created.
+
+# 2. Provision fixtures into the lane (DATABASE_URL must be the lane).
+DATABASE_URL=<lane-url> CONFIRM_DISPOSABLE_DB=<lane-db> \
+  tsx tools/load/provision.ts create \
+  --clients 9 --coaches 3 --out tools/load/out/fixtures.json \
+  --lane tools/load/out/lane.json
+
+# 3. Run the bounded smoke while the sampler watches the app/DB.
+LOAD_APP_PID=<pid> LOAD_DB_CONTAINER=<pg-container> \
+  LOAD_PG_DB=<lane-db> LOAD_INTERVAL_S=4 node tools/load/resources.mjs \
+  > tools/load/out/resources.ndjson   # runs alongside
 k6 run -e TARGET_URL=https://127.0.0.1:PORT \
   -e FIXTURES=$PWD/tools/load/out/fixtures.json \
   -e LOAD_PROFILE=smoke --out json=$PWD/tools/load/out/k6.ndjson \
+  -e LOAD_SUMMARY_OUT=$PWD/tools/load/out/summary.json \
   tools/load/trial-gate.js
-LOAD_APP_PID=<pid> LOAD_DB_CONTAINER=<pg-container> \
-  LOAD_PG_DB=<lane-db> node tools/load/resources.mjs \
-  > tools/load/out/resources.ndjson   # runs alongside
-node tools/load/report.mjs tools/load/out/k6.ndjson \
-  tools/load/out/resources.ndjson <durationSec>
-CONFIRM_DISPOSABLE_DB=<lane-db> tsx tools/load/provision.ts \
-  cleanup --file tools/load/out/fixtures.json
+
+# 4. Report — the expected cadence must come from RUN CONFIG, and the
+#    run manifest is required for the execution checks.
+LOAD_RESOURCE_INTERVAL_S=4 node tools/load/report.mjs \
+  tools/load/out/k6.ndjson tools/load/out/resources.ndjson \
+  tools/load/out/summary-manifest.json <durationSec>
+
+# 5. Cleanup — bound to lane ownership + manifest targetId.
+DATABASE_URL=<lane-url> CONFIRM_DISPOSABLE_DB=<lane-db> \
+  tsx tools/load/provision.ts cleanup \
+  --file tools/load/out/fixtures.json --lane tools/load/out/lane.json
 ```
+
+The report always prints three dispositions: TOOL EXECUTION
+(complete/incomplete/failed — script ran its plan), RESOURCE
+COMPLETENESS (evidence-quality checks), and CAPACITY ACCEPTANCE:
+UNAVAILABLE — certification requires owner acceptance configuration
+plus authenticated-concurrency telemetry this tool does not have, so
+capacity PASS is unreachable by construction. STAGING: NOT PERFORMED
+is explicit.
 
 ## Staging gate (separate, authorized step)
 
