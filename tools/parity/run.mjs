@@ -23,8 +23,10 @@ import { compareRuns, ConfigError, envThresholds } from "./compare.mjs";
 import {
   browserCookies,
   httpsRequest,
+  listenerPids,
   parityUrl,
   selectPortPair,
+  stopOwnedProcessGroup,
 } from "./local-https.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -103,17 +105,8 @@ async function waitForHttp(url, server, checkUrl, ms = 180000) {
 
 // Every process listening on the port must be in the server's process group (it was spawned detached, so its pid is
 // the group id). Fails closed: if lsof or ps cannot answer, the server is not trusted.
-function portPids(port) {
-  return spawnSync("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"], {
-    encoding: "utf8",
-  })
-    .stdout.trim()
-    .split(/\s+/)
-    .filter(Boolean);
-}
-
 function ownsPort(port, pgid) {
-  const pids = portPids(port);
+  const pids = listenerPids(port);
   return (
     pids.length > 0 &&
     pids.every(
@@ -126,7 +119,7 @@ function ownsPort(port, pgid) {
 }
 
 function ownsPortPid(port, pid) {
-  const pids = portPids(port);
+  const pids = listenerPids(port);
   return pids.length > 0 && pids.every((p) => p === String(pid));
 }
 
@@ -336,13 +329,30 @@ try {
   console.error(`parity: ${e.message}`);
   code = 2;
 } finally {
-  // A server that already exited makes kill throw ESRCH; that must not skip the AGENTS.md restore below.
-  if (server) {
+  const cleanupProblems = [];
+  if (server)
     try {
-      process.kill(-server.pid, "SIGTERM");
-    } catch {}
+      cleanupProblems.push(
+        ...(await stopOwnedProcessGroup(server, backendPort)),
+      );
+    } catch (e) {
+      cleanupProblems.push(`server cleanup failed: ${e.message}`);
+    }
+  if (proxy) {
+    await proxy.close().catch((e) => {
+      cleanupProblems.push(`TLS proxy cleanup failed: ${e.message}`);
+    });
+    const pids = listenerPids(port);
+    if (pids.length)
+      cleanupProblems.push(
+        pids.every((pid) => pid === String(process.pid))
+          ? `TLS proxy listener ${port} did not close`
+          : `listener ${port} is owned by process(es) ${pids.join(", ")} outside this run`,
+      );
   }
-  await proxy?.close().catch(() => {});
+  for (const problem of cleanupProblems)
+    console.error(`parity: cleanup: ${problem}`);
+  if (cleanupProblems.length) code = 2;
   const now = await readFile(agentsPath, "utf8").catch(() => null);
   if (now !== null && now !== agentsBefore)
     await writeFile(agentsPath, agentsBefore);

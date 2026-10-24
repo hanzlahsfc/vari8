@@ -1,27 +1,38 @@
-## 2026-10-24 — Issue #202 parity HTTPS startup — capture fixed; visual comparison remains failed
+## 2026-10-24 — Issue #202 parity HTTPS repair — capture/auth lifecycle verified; visual comparison remains failed
 
 - Reproduced the defect on `Vari8-Beta` `d1c4081`: production parity
   supplied HTTP `BETTER_AUTH_URL`/`AUTH_URL`, boot correctly refused,
   and the run exited 2 before screenshots.
-- `tools/local-tls-proxy.mjs` now provides the shared disposable
-  loopback TLS terminator; `tests/e2e/tls-proxy.mjs` wraps it. Root
-  parity reserves an HTTPS public port plus backend port, configures
-  both auth origins to the real HTTPS origin, checks backend/proxy
-  ownership and cleans processes/material in `finally`. Baselines,
-  selectors, viewports, tolerances and production-auth checks are
-  unchanged.
+- Root parity now serves the public browser/auth origin over a
+  disposable loopback HTTPS proxy and `next start` on a distinct
+  loopback backend port. Port selection is availability probing only;
+  a startup race fails closed. Backend/proxy ownership is checked,
+  spawned processes are awaited, bounded escalation is limited to the
+  owned process group, and listeners are verified gone.
+- Cookie conversion preserves `Max-Age`/`Expires` precedence, expired
+  cookies, session cookies and security/domain/path attributes. Each
+  capture now validates authenticated route/content immediately after
+  navigation and again after the recipe before a screenshot is saved;
+  `finalUrl`/markers are recorded.
 - Fresh proof: `PARITY_PORT=55880 npm run parity` reaches
   `https://127.0.0.1:55880`, signs in, captures **70/70 screens** and
   reports **0 capture failures / 0 retries**. Comparison is **FAIL,
-  70 problems, exit 1** against the checked-in baseline — startup is
-  fixed, visual acceptance is not claimed.
-- Checks on Node v24.22.1: focused 7/7; unit 1255/1255; typecheck,
-  format, index, build and `git diff --check` exit 0; lint 0
-  errors/81 pre-existing warnings; E2E TLS wrapper path **16 passed /
-  8 skipped**, exit 0.
-- Disposable `app_parity_https` was dropped; no 55880/55881 listeners
-  or `vari8-local-tls-*` material remain. Full record:
-  `icm/05-build/reports/PARITY-HTTPS.md`.
+  70 problems, exit 1** against the checked-in baseline — startup and
+  capture validity are fixed, visual acceptance is not claimed.
+- Checks on Node v24.22.1: focused 12/12; full unit **105 files /
+  1262 tests**; typecheck, format, index, build and `git diff --check`
+  exit 0; lint 0 errors/81 pre-existing warnings; shared E2E
+  **16 passed / 8 skipped**, exit 0. The earlier **10 passed / 7
+  skipped** count was the narrower canonical E2E subset.
+- Targeted mutations: expiry removal, unconditional capture success and
+  cleanup no-op each produced the expected focused failure, then were
+  restored and the suite returned green.
+- Visual investigation found deterministic low-channel raster/layout
+  differences plus real DOM/page-size changes. Baseline provenance
+  lacks OS/browser/source environment sufficient to prove a host-only
+  cause; #202 remains blocked on mandatory visual parity.
+- No 55880/55881 listeners or `vari8-local-tls-*` material remain.
+  Full record: `icm/05-build/reports/PARITY-HTTPS.md`.
 
 ## 2026-10-24 — PR #201 K6-GATE evidence whitespace closure — receipts normalized, checks clean
 

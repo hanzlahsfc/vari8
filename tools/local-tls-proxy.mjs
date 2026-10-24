@@ -90,6 +90,9 @@ export async function createLocalTlsProxy({ port, target }) {
     materialDir,
     port: actualPort,
     url: `https://127.0.0.1:${actualPort}`,
-    close: () => new Promise((resolve) => server.close(() => resolve())),
+    close: async () => {
+      server.closeAllConnections?.();
+      await new Promise((resolve) => server.close(() => resolve()));
+    },
   };
 }

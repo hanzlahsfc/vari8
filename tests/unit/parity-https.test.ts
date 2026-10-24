@@ -1,3 +1,4 @@
+import { spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
 import { AddressInfo } from "node:net";
@@ -6,15 +7,22 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { createLocalTlsProxy } from "../../tools/local-tls-proxy.mjs";
 import {
+  captureProblem,
+  expectedCaptureMarker,
+} from "../../tools/parity/capture.mjs";
+import {
   browserCookies,
   httpsRequest,
+  listenerPids,
   parityPortPair,
+  stopOwnedProcessGroup,
   parityUrl,
   selectPortPair,
 } from "../../tools/parity/local-https.mjs";
 
 let proxy: Awaited<ReturnType<typeof createLocalTlsProxy>> | null = null;
 let backend: http.Server | null = null;
+let ownedChild: ChildProcess | null = null;
 
 const freePort = () =>
   new Promise<number>((resolve, reject) => {
@@ -31,8 +39,13 @@ afterEach(async () => {
   await new Promise<void>(
     (resolve) => backend?.close(() => resolve()) ?? resolve(),
   );
+  if (ownedChild && ownedChild.exitCode === null)
+    try {
+      process.kill(-ownedChild.pid!, "SIGKILL");
+    } catch {}
   proxy = null;
   backend = null;
+  ownedChild = null;
 });
 
 describe("local TLS proxy", () => {
@@ -69,6 +82,93 @@ describe("local TLS proxy", () => {
         target: "http://example.com:8080",
       }),
     ).rejects.toThrow("http://127.0.0.1");
+  });
+
+  it("fails closed when the public port is taken before proxy startup", async () => {
+    const port = await freePort();
+    backend = http.createServer((_req, res) => res.end("occupant"));
+    await new Promise<void>((resolve) =>
+      backend!.listen(port, "127.0.0.1", resolve),
+    );
+
+    const backendPort = await freePort();
+    await expect(
+      createLocalTlsProxy({
+        port,
+        target: `http://127.0.0.1:${backendPort}`,
+      }),
+    ).rejects.toThrow();
+
+    expect(listenerPids(port)).toEqual([String(process.pid)]);
+  });
+});
+
+describe("task-owned process lifecycle", () => {
+  it("terminates only the spawned listener and verifies the port is released", async () => {
+    const port = await freePort();
+    ownedChild = spawn(
+      process.execPath,
+      [
+        "-e",
+        `require("node:http").createServer((_q,r)=>r.end("ok")).listen(${port},"127.0.0.1",()=>setInterval(()=>{},1000))`,
+      ],
+      { detached: true, stdio: "ignore" },
+    );
+    for (let i = 0; i < 100 && !listenerPids(port).length; i++)
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(listenerPids(port)).toEqual([String(ownedChild.pid)]);
+
+    await expect(stopOwnedProcessGroup(ownedChild, port)).resolves.toEqual([]);
+    expect(listenerPids(port)).toEqual([]);
+    expect(ownedChild.exitCode ?? ownedChild.signalCode).not.toBeNull();
+  });
+});
+
+describe("authenticated capture validation", () => {
+  const shot = {
+    file: "s01-roster.png",
+    route: "/coach",
+    screen: "Clients roster",
+    clicks: ["Clients"],
+  };
+  const page = {
+    url: "https://127.0.0.1:55880/coach",
+    text: "Clients roster CP Chloe Park Lifestyle",
+  };
+
+  it("rejects redirected and unauthenticated captures", () => {
+    expect(
+      captureProblem(shot, { ...page, url: "https://x.test/login" }),
+    ).toContain("expected capture route");
+    expect(captureProblem(shot, { ...page, text: "Please sign in" })).toContain(
+      "authentication",
+    );
+    expect(
+      captureProblem(shot, { ...page, text: "Missing navigation" }),
+    ).toContain('content marker "Clients"');
+    expect(captureProblem(shot, page)).toBeNull();
+  });
+
+  it("keeps a screen-specific marker for captures without click recipes", () => {
+    const studio = {
+      file: "s10-clients-studio.png",
+      route: "/ethereal#clients",
+      screen: "Clients studio",
+      clicks: [],
+    };
+    expect(expectedCaptureMarker(studio)).toBe("Clients");
+    expect(
+      captureProblem(studio, {
+        url: "https://127.0.0.1:55880/ethereal#clients",
+        text: "Clients studio shared roster",
+      }),
+    ).toBeNull();
+    expect(
+      captureProblem(studio, {
+        url: "https://127.0.0.1:55880/ethereal",
+        text: "Clients studio shared roster",
+      }),
+    ).toContain("#clients");
   });
 });
 
@@ -139,5 +239,37 @@ describe("parity HTTPS origin configuration", () => {
         sameSite: "Strict",
       },
     ]);
+    expect(cookies[0]).not.toHaveProperty("expires");
+    expect(cookies[1]).not.toHaveProperty("expires");
+  });
+
+  it("preserves Max-Age and Expires semantics with a controlled clock", () => {
+    const now = Date.UTC(2026, 9, 24, 12, 0, 0);
+    const cookies = browserCookies(
+      [
+        "session=now; Max-Age=60; Expires=Wed, 21 Oct 2030 00:00:00 GMT; Secure; HttpOnly; SameSite=Lax; Path=/app; Domain=127.0.0.1",
+        "expired=old; Max-Age=0",
+        "dated=expiry; Expires=Wed, 21 Oct 2030 00:00:00 GMT",
+        "fallback=expires; Max-Age=garbage; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+      ],
+      "https://127.0.0.1:55880",
+      now,
+    );
+
+    expect(cookies[0]).toMatchObject({
+      name: "session",
+      expires: now / 1000 + 60,
+      secure: true,
+      httpOnly: true,
+      sameSite: "Lax",
+      domain: "127.0.0.1",
+      path: "/app",
+    });
+    expect(cookies[1]).toMatchObject({ name: "expired", expires: now / 1000 });
+    expect(cookies[2]).toMatchObject({
+      name: "dated",
+      expires: Date.UTC(2030, 9, 21) / 1000,
+    });
+    expect(cookies[3]).toMatchObject({ name: "fallback", expires: 0 });
   });
 });

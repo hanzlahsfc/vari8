@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import http from "node:http";
 import https from "node:https";
 
@@ -14,6 +15,9 @@ export function parityPortPair(raw) {
   return { publicPort, backendPort: publicPort + 1 };
 }
 
+// bind() probes then closes immediately: this checks availability only and
+// intentionally does not reserve the pair. Startup must fail closed if a port
+// is taken in the selection-to-listen race.
 export async function selectPortPair(pinned, bind) {
   if (pinned !== null) {
     const pair = parityPortPair(String(pinned));
@@ -35,7 +39,7 @@ export async function selectPortPair(pinned, bind) {
     if (publicPort !== backendPort) return { publicPort, backendPort };
   }
   throw new ParityRefuse(
-    "could not reserve a distinct local HTTPS/backend port pair",
+    "could not select a distinct local HTTPS/backend port pair",
   );
 }
 
@@ -91,8 +95,86 @@ export function httpsRequest(
   });
 }
 
-export function browserCookies(setCookieLines, baseUrl) {
-  const domain = new URL(baseUrl).hostname;
+function processGroup(pid) {
+  return spawnSync("ps", ["-o", "pgid=", "-p", String(pid)], {
+    encoding: "utf8",
+  }).stdout.trim();
+}
+
+export function listenerPids(port) {
+  return spawnSync("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"], {
+    encoding: "utf8",
+  })
+    .stdout.trim()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+function portOwnedByGroup(port, pgid) {
+  const pids = listenerPids(port);
+  return (
+    pids.length > 0 && pids.every((pid) => processGroup(pid) === String(pgid))
+  );
+}
+
+function waitForProcessExit(child, ms) {
+  if (child.exitCode !== null || child.signalCode !== null)
+    return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(false), ms);
+    child.once("exit", () => {
+      clearTimeout(timer);
+      resolve(true);
+    });
+  });
+}
+
+async function waitForNoListeners(port, ms = 2000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 <= ms) {
+    if (listenerPids(port).length === 0) return true;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return listenerPids(port).length === 0;
+}
+
+export async function stopOwnedProcessGroup(
+  child,
+  port,
+  { terminateMs = 10000, killMs = 5000 } = {},
+) {
+  const problems = [];
+  if (child.exitCode === null && child.signalCode === null) {
+    try {
+      process.kill(-child.pid, "SIGTERM");
+    } catch (error) {
+      if (error.code !== "ESRCH") throw error;
+    }
+  }
+  let exited = await waitForProcessExit(child, terminateMs);
+  if (!exited && portOwnedByGroup(port, child.pid)) {
+    try {
+      process.kill(-child.pid, "SIGKILL");
+    } catch {}
+    exited = await waitForProcessExit(child, killMs);
+  }
+  if (await waitForNoListeners(port)) {
+    if (!exited) problems.push(`process ${child.pid} did not exit`);
+    return problems;
+  }
+  const pids = listenerPids(port);
+  if (pids.every((pid) => processGroup(pid) === String(child.pid)))
+    problems.push(`process ${child.pid} still owns listener ${port}`);
+  else
+    problems.push(
+      `listener ${port} is owned by process(es) ${pids.join(", ")} outside this run`,
+    );
+  if (!exited) problems.push(`process ${child.pid} did not exit`);
+  return problems;
+}
+
+export function browserCookies(setCookieLines, baseUrl, nowMs = Date.now()) {
+  const defaultDomain = new URL(baseUrl).hostname;
   return setCookieLines.map((line) => {
     const [pair, ...attrs] = line.split(";");
     const i = pair.indexOf("=");
@@ -104,14 +186,21 @@ export function browserCookies(setCookieLines, baseUrl) {
           : [attr.slice(0, j).trim().toLowerCase(), attr.slice(j + 1).trim()];
       }),
     );
-    return {
+    const cookie = {
       name: pair.slice(0, i).trim(),
       value: pair.slice(i + 1).trim(),
-      domain,
+      domain: values.domain ?? defaultDomain,
       path: values.path ?? "/",
       httpOnly: values.httponly === true,
       secure: values.secure === true,
       sameSite: values.samesite ?? "Lax",
     };
+    if (/^-?\d+$/.test(values["max-age"] ?? "")) {
+      cookie.expires = Math.floor(nowMs / 1000) + Number(values["max-age"]);
+    } else if (values.expires) {
+      const expires = Date.parse(values.expires);
+      if (Number.isFinite(expires)) cookie.expires = Math.floor(expires / 1000);
+    }
+    return cookie;
   });
 }

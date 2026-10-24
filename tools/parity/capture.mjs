@@ -87,6 +87,66 @@ const TEMPLATE_CARD = {
   containing: "Strength & balance",
 };
 const VIEW_TOGGLE = { within: ".cd-view-settings", target: "[role=switch]" };
+export const CAPTURE_MARKERS = {
+  "s01-profile-overview": "Client setup",
+  "s02-thread": "Your coaching conversation",
+  "s02-thread-attachments": "Choose photo, video or file",
+  "s03-checkin-review": "Tracker & progress",
+  "s04-habit-editor": "Client habit definitions",
+  "s05-templates": "Templates",
+  "s05-template-editor": "Tabs",
+  "s05-tracker-setup": "Daily log",
+  "s06-mealplan-editor": "Meal plan",
+  "s06-template-nutrition": "Nutrition",
+  "s07-exercise-library": "Add an exercise",
+  "s08-builder": "Dashboard",
+  "s08-template-dashboard": "Dashboard",
+  "s09-tracker-config": "Tracker",
+  "s10-appearance": "Appearance",
+  "s10-clients-studio": "Clients",
+  "s10-mealplan-studio": "Meal plans",
+  "s11-preferences": "Workspace preferences",
+};
+
+const AUTH_OR_ERROR_CONTENT =
+  /(sign in|forbidden|unauthorized|not authorized|access denied|page could not be found)/i;
+
+const shotStem = (shot) => shot.file.replace(/\.(png|webp)$/, "");
+
+export function expectedCaptureMarker(shot) {
+  const stem = shotStem(shot);
+  return (
+    CAPTURE_MARKERS[stem] ?? shot.clicks[shot.clicks.length - 1] ?? shot.screen
+  );
+}
+
+export function captureProblem(
+  shot,
+  { url, text },
+  { requireMarker = true } = {},
+) {
+  const expected = new URL(`https://capture.invalid${shot.route}`);
+  const actual = new URL(url);
+  if (
+    actual.pathname !== expected.pathname ||
+    (expected.hash && actual.hash !== expected.hash)
+  )
+    return `expected capture route ${expected.pathname}${expected.hash}, got ${actual.pathname}${actual.hash}`;
+  if (AUTH_OR_ERROR_CONTENT.test(text))
+    return "capture reached an authentication, authorization, or error page";
+  const marker = expectedCaptureMarker(shot);
+  if (
+    requireMarker &&
+    marker &&
+    !text
+      .replace(/\s+/g, " ")
+      .toLowerCase()
+      .includes(marker.replace(/\s+/g, " ").toLowerCase())
+  )
+    return `expected capture content marker "${marker}"`;
+  return null;
+}
+
 export const STEP_SCOPES = {
   "s01-profile-checkins": { "Check-ins": { within: ".cd-profile-tabs" } },
   "s04-template-habits": Object.fromEntries(
@@ -443,6 +503,14 @@ export async function captureAll({
             });
             await page.addStyleTag({ content: FREEZE_CSS });
             await settle(page);
+            const pageState = async () => ({
+              url: page.url(),
+              text: await page.locator("body").innerText(),
+            });
+            const initialProblem = captureProblem(shot, await pageState(), {
+              requireMarker: false,
+            });
+            if (initialProblem) throw new Error(initialProblem);
             const clickLog = [];
             for (const label of shot.clicks)
               clickLog.push(
@@ -453,6 +521,8 @@ export async function captureAll({
               );
             await page.evaluate(() => window.scrollTo(0, 0));
             await settle(page);
+            const finalProblem = captureProblem(shot, await pageState());
+            if (finalProblem) throw new Error(finalProblem);
             const png = await page.screenshot({
               fullPage: true,
               animations: "disabled",
@@ -478,6 +548,8 @@ export async function captureAll({
               stem,
               route: shot.route,
               screen: shot.screen,
+              finalUrl: page.url(),
+              marker: expectedCaptureMarker(shot),
               clicks: clickLog,
               png: rel.split(path.sep).join("/"),
               scrolls,
