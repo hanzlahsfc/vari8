@@ -90,6 +90,59 @@ mutant only bites on a clean DB):
 - Skip the `20-clients` assignment upsert → `expect(assignments).toBe(15)` gets 0.
   Restored.
 
+## 4b. Integration refresh (2026-10-24, post-SHIP)
+
+Forward-merged `Vari8-Beta` @ `406c551` (supplements #162, https harness
+#199, subsequent base work) into `beta/checkin-enable` — merge `71b24ab`,
+published history untouched. **One conflict:** generated
+`docs/index/SYMBOLS.md`, resolved by regeneration (`npm run index`
+reproduced it — `index:check` clean, zero residual diff). The lane's own
+diff vs base is unchanged: no `db/`, `lib/` or `app/api/` edits.
+
+Documentation nits from review `6349947204` applied at `244cb59`:
+
+- "before any database read" → **"before any check-in data read"** —
+  shared layouts still resolve session/workspace first.
+- Flag-off refusal split explicit: authorized staff → **404** (page
+  `notFound()`); a client-role session on a staff route → **403**
+  (layout role gate, precedes the flag check).
+- Optional-rating regression added: a form whose rating field is
+  `required: false` submits once the required answers are in, and the
+  wire carries **no** answer row for the rating (absent, never `0` or
+  `""`) — `checkin-submission-panel.dom.test.tsx` now 5/5.
+- `Closes #163` confirmed already present in the PR body.
+
+### Fresh verification on `244cb59` (Node v24.22.1)
+
+Canonical `verify-local.sh` (`BASE_SHA=406c551 LANE_DB=app_chkenable
+LANE_PORT=3868 SKIP_PARITY=1`) → **VERIFY-LOCAL PASS, every step**:
+format/typecheck/frontend typecheck/lint/index unit 103 files /
+1204 tests · frontend 198 · migrate deploy applies all 39 migrations
+cleanly · build + frontend build · **e2e flow specs 10 passed /
+7 skipped / 0 failed** over the real https lane (TLS proxy + loopback
+backend, configured origin `https://127.0.0.1:3868`; the 7 skips are
+mail-adapter-dependent — not certifying reset flows). Integration
+legitimately **SKIPPED** under the documented net-diff rule (this lane
+still touches no `db/`/`lib/`/`app/api/` paths; the merged supplements
+migration is base content and deploys cleanly).
+
+### Fresh live receipts on `244cb59`
+
+Seeded `app_chkenable_live` (real `tsx scripts/seed/index.ts`,
+APP_ENV=test) + production `next start` behind the e2e TLS proxy
+(https configured origin — boot would refuse http, as designed):
+
+- **Flag OFF:** authorized coach gets **404** on `/check-ins`,
+  `/checkins/review-queue`, `/checkins/forms` and
+  `/clients/<id>/checkins` (real workspace id).
+- **Flag ON (`ENABLE_CHECK_INS=1`):** coach review queue, forms and
+  check-ins pages all **200**; client (Emma) `/check-ins` **200**.
+- **Denials intact:** client session on the staff review queue →
+  **403** (layout role gate); foreign-workspace `staff2` on the
+  canvas-demo queue → **403**.
+- Unrelated note: the workspace segment is the workspace **id**, not
+  the slug — a bogus id is refused at the layout before the page gate.
+
 ## 5. Open items / limits
 
 - **Out of scope by design:** the `/coach` canvas board wiring is PR #147 (open,
