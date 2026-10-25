@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 150 modules with exports, 1483 exported symbols.
+Counts: 153 modules with exports, 1506 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -54,6 +54,38 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function contrastRatio(first: string, second: string): number`
 - `export function normalizeAccent(value: string): string | null`
 - `export function vari8Theme({ mode, accent, }: { mode: Vari8Mode; accent: string; }): Vari8Theme`
+
+## `lib/activity-targets/boundary.ts`
+
+- `export type ActivityTargetSafeResult<T> = | { ok: true; value: T } | { ok: false; code: | "denied" | "invalid_input" | "confirmation_required" | "conflict" | "serialization_conflict"; message: stri...`
+- `export async function readOwnActivityTargetsFromAction(session: Session, input: { workspaceId: string }, deps: ActivityTargetDeps = {}): Promise<ActivityTargetSafeResult<ActivityTargetsView>>`
+- `export async function readStaffActivityTargetsFromAction(session: Session, input: { workspaceId: string; clientProfileId: string }, deps: ActivityTargetDeps = {}): Promise<ActivityTargetSafeResult<...`
+- `export async function writeActivityTargetFromAction(session: Session, input: { workspaceId: string; clientProfileId: string; metric: unknown; effectiveFrom: unknown; target: unknown; confirmSameDay...`
+
+## `lib/activity-targets/model.ts`
+
+- `export const ACTIVITY_METRICS: readonly ActivityMetric[]`
+- `export type ActivityMetric = "steps" | "cardioMin"`
+- `export type ActivityTargetKind = | "MINIMUM" | "MAXIMUM" | "RANGE" | "FIXED" | "CARDIO"`
+- `export type ActivityTargetRow = { id: string; metric: ActivityMetric; kind: ActivityTargetKind | null; stepMin: number | null; stepMax: number | null; sessionsPerWeek: number | null; minutesPerSess...`
+- `export type ActivityTargetWrite = | { kind: "MINIMUM"; stepMin: number } | { kind: "MAXIMUM"; stepMax: number } | { kind: "RANGE"; stepMin: number; stepMax: number } | { kind: "FIXED"; stepMin: num...`
+- `export type ActivityTargetWritePlan = | { kind: "invalid"; errors: string[] } | { kind: "confirmation-required" } | { kind: "insert"; id: string; metric: ActivityMetric; effectiveFrom: string; targ...`
+- `export function isActivityMetric(value: unknown): value is ActivityMetric`
+- `export function isLocalCalendarDate(value: string): boolean`
+- `export function localToday(now: Date = new Date()): string`
+- `export function planActivityTargetWrite({ rows, metric, effectiveFrom, target, id, confirmSameDay = false, }: { rows: ActivityTargetRow[]; metric: ActivityMetric; effectiveFrom: string; target: Act...`
+- `export function resolveActivityTarget({ rows, metric, date, }: { rows: ActivityTargetRow[]; metric: ActivityMetric; date: string; }): ActivityTargetRow | undefined`
+- `export function validateActivityTargetWrite(target: ActivityTargetWrite): string[]`
+
+## `lib/activity-targets/service.ts`
+
+- `export type ActivityTargetDeps = { db?: PrismaLike }`
+- `export class ActivityTargetError extends Error (1 members)`
+- `export type ActivityTargetVersionView = { id: string; metric: ActivityMetric; kind: ActivityTargetKind | null; stepMin: number | null; stepMax: number | null; sessionsPerWeek: number | null; minute...`
+- `export type ActivityTargetsView = { clientProfileId: string; versions: ActivityTargetVersionView[]; }`
+- `export async function readOwnActivityTargets(session: SessionLike, input: { workspaceId: string }, deps: ActivityTargetDeps = {}): Promise<ActivityTargetsView>`
+- `export async function readStaffActivityTargets(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: ActivityTargetDeps = {}): Promise<ActivityTargetsView>`
+- `export async function writeActivityTarget(session: SessionLike, input: { workspaceId: string; clientProfileId: string; metric: unknown; effectiveFrom: unknown; target: unknown; confirmSameDay?: unk...`
 
 ## `lib/api/v1.ts`
 
