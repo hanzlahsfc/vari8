@@ -13,6 +13,11 @@ import type { CoachClient, Variant } from "../coach/model";
 import type { SupplementPlan } from "../coach/supplements/model";
 import { SupplementPlanView } from "../coach/supplements/plan-view";
 import { fetchSupplementPlan, planFromView } from "../data/supplements";
+import {
+  fetchActivityTargets,
+  versionsFromWire,
+} from "../data/activity-targets";
+import type { ActivityTargetVersion } from "../coach/targets/model";
 import { TargetSummary } from "../coach/targets/target-summary";
 import { useLocalToday } from "../coach/targets/use-local-today";
 import { Empty } from "../coach/ui";
@@ -102,6 +107,57 @@ function RemoteSupplementsPart({
         </Empty>
       ) : (
         <SupplementPlanView plan={plan ?? undefined} clientName={clientName} />
+      )}
+    </section>
+  );
+}
+
+// Issue #169: the client Activity targets part reads the dated versions
+// through the card 07 route (own scope resolves the caller's profile
+// server-side) and is strictly read-only — writes are coach-side only.
+function RemoteActivityTargetsPart({
+  workspaceId,
+  clientProfileId,
+}: {
+  workspaceId: string;
+  clientProfileId: string;
+}) {
+  const liveToday = useLocalToday();
+  const [versions, setVersions] = useState<ActivityTargetVersion[] | null>(
+    null,
+  );
+  const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
+  useEffect(() => {
+    let cancelled = false;
+    fetchActivityTargets(workspaceId, clientProfileId)
+      .then((response) => {
+        if (cancelled) return;
+        setVersions(versionsFromWire(response.versions));
+        setPhase("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setPhase("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId, clientProfileId]);
+  return (
+    <section className="cd-preview-section" aria-label="Activity targets">
+      {phase === "loading" ? (
+        <div className="client-app-loading" role="status">
+          Loading your targets…
+        </div>
+      ) : phase === "error" ? (
+        <Empty title="Your activity targets could not be loaded">
+          Check your connection and reload the page.
+        </Empty>
+      ) : (
+        <TargetSummary
+          versions={versions ?? []}
+          date={liveToday}
+          mode="week"
+        />
       )}
     </section>
   );
@@ -266,9 +322,15 @@ export function ClientApp({
                       />
                     </section>
                   ))}
-                {activePlanPart === "activity-targets" && (
-                  <ActivityTargetsPart client={client} />
-                )}
+                {activePlanPart === "activity-targets" &&
+                  (own ? (
+                    <RemoteActivityTargetsPart
+                      workspaceId={own.workspaceId}
+                      clientProfileId={own.clientProfileId}
+                    />
+                  ) : (
+                    <ActivityTargetsPart client={client} />
+                  ))}
                 {activePlanPart === "roadmap" && (
                   <RoadmapTab configuration={configuration} client={client} />
                 )}

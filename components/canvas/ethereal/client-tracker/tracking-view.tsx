@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { TrackingView as SharedTrackingView } from "@/components/canvas/coach/client-tracker-preview/tracking-view";
 import {
   categories,
@@ -28,6 +30,11 @@ type TrackingViewProps = {
   remote?: boolean;
   parameterGroups?: Record<string, string>;
   textValues?: Record<string, string>;
+  /** Issue #169: the day/week target readout, resolved for the selected date. */
+  renderTargets?: (context: {
+    date: string;
+    view: "Today" | "Week";
+  }) => ReactNode;
   onUpdateText?: (date: string, id: string, value: string) => void;
 };
 
@@ -56,6 +63,7 @@ export function TrackingView({
   parameterGroups,
   textValues,
   onUpdateText,
+  renderTargets,
 }: TrackingViewProps) {
   return (
     <div className="coach-root ct-shared-tracker">
@@ -82,6 +90,7 @@ export function TrackingView({
         onConfigure={remote ? undefined : onConfigure}
         allowCoachMode={remote ? undefined : true}
         persistenceHint={remote ? "Saved to your workspace" : "Local tracker"}
+        renderTargets={renderTargets}
       />
     </div>
   );

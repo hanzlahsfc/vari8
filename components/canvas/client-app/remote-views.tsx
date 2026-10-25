@@ -171,6 +171,7 @@ export function RemoteTrackerTab({
   return (
     <RemoteClientTracker
       workspaceId={own.workspaceId}
+      clientProfileId={own.clientProfileId}
       clientName={clientName}
       clientInitials={clientInitials}
       asOf={asOf}

@@ -2,6 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  fetchActivityTargets,
+  versionsFromWire,
+} from "@/components/canvas/data/activity-targets";
+import {
   dailyEntrySurfaceToTrackerView,
   fetchDailyEntrySurface,
   remoteDayDataFromHistory,
@@ -16,6 +20,8 @@ import {
   type RemoteParameterMeta,
   type RemoteTrackerViewModel,
 } from "@/components/canvas/data/tracker";
+import type { ActivityTargetVersion } from "../../coach/targets/model";
+import { TargetSummary } from "../../coach/targets/target-summary";
 import type { TrackerEntry } from "./model";
 import { TrackingView } from "./tracking-view";
 
@@ -52,11 +58,13 @@ const STATE_COPY: Record<Exclude<SurfaceState, "ready" | "loading">, string> = {
 
 export function RemoteClientTracker({
   workspaceId,
+  clientProfileId,
   clientName,
   clientInitials,
   asOf,
 }: {
   workspaceId: string;
+  clientProfileId?: string;
   clientName: string;
   clientInitials: string;
   asOf: string;
@@ -66,11 +74,29 @@ export function RemoteClientTracker({
   const [entries, setEntries] = useState<TrackerEntry[]>([]);
   const [textValues, setTextValues] = useState<Record<string, string>>({});
   const [status, setStatus] = useState("");
+  const [targetVersions, setTargetVersions] = useState<
+    ActivityTargetVersion[] | null
+  >(null);
   const datesRef = useRef(new Map<string, RemoteDateRecord>());
   const baseRef = useRef(new Map<string, RemoteDayData>());
   const metasRef = useRef<RemoteParameterMeta[]>([]);
   const metaByIdRef = useRef(new Map<string, RemoteParameterMeta>());
   const viewRef = useRef<RemoteTrackerViewModel | null>(null);
+
+  useEffect(() => {
+    if (!clientProfileId) return;
+    let cancelled = false;
+    void fetchActivityTargets(workspaceId, clientProfileId)
+      .then((view) => {
+        if (!cancelled) setTargetVersions(versionsFromWire(view.versions));
+      })
+      .catch(() => {
+        // The readout stays absent rather than misreporting targets.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId, clientProfileId]);
 
   const recordFor = (date: string) => {
     let record = datesRef.current.get(date);
@@ -275,6 +301,17 @@ export function RemoteClientTracker({
         clientInitials={clientInitials}
         asOf={asOf}
         parameterGroups={view.parameterGroups}
+        renderTargets={
+          targetVersions === null
+            ? undefined
+            : ({ date, view }) => (
+                <TargetSummary
+                  versions={targetVersions}
+                  date={date}
+                  mode={view === "Today" ? "day" : "week"}
+                />
+              )
+        }
       />
       <p className="ct-save-status" role="status">
         {status}
