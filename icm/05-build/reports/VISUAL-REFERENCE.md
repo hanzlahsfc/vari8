@@ -60,17 +60,17 @@ Actions ran.
 
 `candidate-run` against the proposed historical reference:
 
-- **68/70 pass** under canonical and strict diagnostics.
-- Only `s03-checkin-review@390` and `s03-checkin-review@1440` fail.
-- Both failures are geometry/text/role/name: the historical button reads
-  **“Record demo video feedback”**; the current root reads **“Record video feedback”**.
-  Button width changes `244.5 → 205.5` px (**39px**) at both widths. Pixel counts remain within the
-  canonical budget (`624`/`625` changed), but the geometry contract fails independently.
+- Historical pre-decision receipt: **68/70** under canonical and strict diagnostics; preserved unchanged.
+- Both pre-decision failures were geometry/text/role/name for `s03-checkin-review@390` and `@1440`: the
+  historical button reads **“Record demo video feedback”**; the current root reads **“Record video
+  feedback”**. Button width changes `244.5 → 205.5` px (**39px**) at both widths. Pixels remain within
+  the canonical budget (`624`/`625` changed); geometry failed independently.
+- Post-decision recomputation from the existing reference/candidate artifacts: **canonical 70/70 pass**,
+  **strict diagnostic 68/70**. The strict diagnostic still fails s03 pixels only; it remains separate and
+  non-canonical. No capture was rerun.
 - Current root screenshots are never used as expected output.
-- Post-decision mechanical accounting on the committed comparison: canonical geometry/text now disposes
-  both exact S03-18 failures, so the canonical disposition is 70/70. The strict legacy diagnostic remains
-  reported as the preserved 68/70 receipt because this package does not contain the raw candidate image
-  directory needed to recompute masked pixels; no strict pass is fabricated.
+- Evidence: `outputs/p414/owner-s03-canonical-comparison.json` and
+  `outputs/p414/owner-s03-strict-comparison.json`; historical `all-70-comparison.json` remains 68/70.
 
 ### s03 copy disposition — Prompt 417
 
@@ -80,23 +80,39 @@ The real recorder added by PR-MEDIA commit `21d8fc0` introduced “Record video 
 canvas chain. Prompt 417 keeps the real-recorder copy and accepts the demonstrated 39px narrower
 button as exact rule S03-18.
 
-The disposition uses the existing ruled-change mechanism: exact tag, historical text, current text
-and screen must match, and only that element's baseline/current boxes leave pixel comparison. No
-whole-screen mask, global tolerance, current-root expectation or unrelated UI difference is allowed.
+The disposition uses the existing stem-scoped ruled-change mechanism: exact tag, historical text,
+current text, screen, and exact `244.5×44 → 205.5×44` button geometry must match. Only that exact text
+and geometry consequence is disposed; no pixel mask, global tolerance, current-root expectation,
+unrelated text/width or whole-screen mask is allowed. Canonical pixels remain within the ordinary budget;
+strict pixel comparison remains the separate 68/70 diagnostic.
 
 ## Verification
 
 Task-local runs on Node `v24.22.1`:
 
-- Unit/validation: **106 files / 1280 tests**, exit 0 (fresh final run).
+- Unit/validation: **106 files / 1281 tests**, exit 0 (fresh final run).
 - Focused reference tests: **11/11**, exit 0 (fresh Prompt 417 run).
-- Typecheck: exit 0. Lint on changed code paths: exit 0. Format on changed files: exit 0.
+- Typecheck: exit 0. Lint: exit 0, 0 errors / 81 warnings. Format: exit 0.
 - Index generation/check: exit 0; historical/candidate source trees remain exact.
 - Build: exit 0; historical and candidate builds were also 0 under their lockfiles.
 - `git diff --check`: 0; old baseline diff: 0.
 - Reference runs: 2 x 70/70, zero failures/retries, bit-identical.
-- No full 70-screen rerun was performed for this packaging; the two valid reference runs and current
-  root comparison are the task evidence. No full E2E suite was rerun for this evidence-only packaging.
+- No full 70-screen rerun was performed for this comparison-only change; the two valid reference runs and
+  existing current-root capture are the task evidence. No full E2E suite was rerun for this evidence-only
+  packaging.
+- Canonical comparison recomputed: **70/70**; strict diagnostic recomputed: **68/70**. Historical 68/70 is
+  preserved. The proposed reference remains unactivated; no baseline was refreshed.
+
+## Integration sequence (documented, not executed)
+
+1. PR #203 (`beta/parity-https`, head `90c16be`, base `Vari8-Beta`) lands under its own independent gates; it is currently draft/unmerged.
+2. PR #206 stays temporarily stacked on `90c16be` for review so the harness repairs remain separate.
+3. After #203 lands, retarget #206 to `Vari8-Beta` and assess the canonical gate on the combined result.
+4. Baseline activation/replacement remains a separately reviewed step; this task does not activate it.
+
+Explicit transition decisions still required: #203 landing/merge authorization, then #206 retarget and
+separate baseline activation approval. This task does not merge #203 against an unresolved old reference
+or waive any gate.
 
 ## Remaining blockers
 

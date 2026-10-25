@@ -9,11 +9,11 @@
 - `tools/parity/reference/proposed/` contains 245 files: 244 mapped proposed artifacts plus the
   mapping file. The 272-entry map remains, including 28 honest old-only paths with no proposed
   counterpart because their historical offsets/artifacts differ.
-- Prompt 417 checks on Node 24.22.1: focused reference tests 11/11, format/index/typecheck/lint and
-  `git diff --check` exit 0. Preserved comparison remains canonical 68/70 and strict 68/70; the exact
-  rule disposes both canonical s03 geometry/text failures. Strict pixel outcome is not recomputed here
-  because the raw candidate capture directory is not part of the committed package; no strict pass is
-  claimed.
+- Prompt 417 checks on Node 24.22.1: focused reference tests 11/11, unit 1281/1281, format/index/typecheck/lint and
+  `git diff --check` exit 0. Post-decision recomputation from existing artifacts: canonical **70/70**, strict diagnostic
+  **68/70** (s03 pixels only); historical 68/70 receipt preserved. Exact S03-18 rule is stem-scoped,
+  text/exact-width based, and adds no pixel mask/global tolerance. Unit **106 files / 1281 tests**;
+  focused 11/11; format/index/type/lint/diff pass.
 - Scope remains the historical/current-Beta reference only. FRONTEND `9491897` and Marcel's
   unpublished full-package pipeline are not certified or imported. Baseline activation, merge and
   issue #202 resolution remain held behind independent review and unmerged PR #203 `90c16be`.
