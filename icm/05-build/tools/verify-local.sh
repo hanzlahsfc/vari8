@@ -12,7 +12,7 @@ set -euo pipefail
 LANE_PORT="${LANE_PORT:-3999}"
 CARD="${CARD:-}"
 . "$(dirname "${BASH_SOURCE[0]}")/paths.sh"
-SCHEMA_WRITERS="PR-05 PR-M0 PR-R2"
+SCHEMA_WRITERS="PR-05 PR-M0 PR-R2 PR-SUPP"
 
 if [[ ! "$LANE_DB" =~ ^app_[a-z0-9_]+$ ]] || [[ "$LANE_DB" == "app_dev" ]]; then
   echo "FAIL setup: LANE_DB must match ^app_[a-z0-9_]+$ and must not be app_dev" >&2

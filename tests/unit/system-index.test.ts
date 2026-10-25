@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import ts from "typescript";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import {
   buildComponents,
@@ -35,6 +35,15 @@ function walkAll(dirAbs: string, out: string[] = []): string[] {
 }
 
 describe("system index generator", () => {
+  // buildSymbols runs the full TypeScript-program scan (~seconds each
+  // call); the output is deterministic within a test file, so compute it
+  // once in beforeAll (10s hook budget) instead of inside each test
+  // (5s budget the parallel suite kept blowing past).
+  let symbols: string;
+  beforeAll(() => {
+    symbols = buildSymbols();
+  });
+
   it("derives route paths the way the App Router does", () => {
     expect(
       routePath(
@@ -77,7 +86,6 @@ describe("system index generator", () => {
   });
 
   it("prints one-line signatures from the compiler and never an absolute path", () => {
-    const symbols = buildSymbols();
     expect(symbols).toContain(
       "`export type AuditAction = (typeof AUDIT_ACTIONS)[number]`",
     );
@@ -137,7 +145,6 @@ describe("system index generator", () => {
   });
 
   it("F2: indexes re-exports and matches an independent compiler count", () => {
-    const symbols = buildSymbols();
     expect(symbols).toContain("## `frontend/src/lib/utils.ts`");
     expect(symbols).toContain('- `export { cn } from "cn"`');
     expect(symbols).toContain(
