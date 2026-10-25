@@ -153,6 +153,12 @@ const ownedIdentity = (ownership, entry) =>
   );
 
 // A live port occupant must match a registered process identity.
+/**
+ * @param {number} port
+ * @param {ProcessOwnership | null | undefined} ownership
+ * @param {{inspector?: ProcessInspector}} options
+ * @returns {boolean}
+ */
 export function ownsPort(
   port,
   ownership,
