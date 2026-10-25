@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Dumbbell,
   House,
+  Images,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { HabitsTab } from "../coach/habits-tab";
@@ -25,6 +26,7 @@ import {
   sectionForLegacyTab,
 } from "./sections";
 import { TrainingLogbook } from "./training-log/training-logbook";
+import { ClientPhotos } from "./photos";
 import { RemoteDashboardTab, RemoteTrackerTab } from "./remote-views";
 import {
   CheckInTab,
@@ -43,6 +45,7 @@ const SECTION_ICONS: Record<ClientAppSectionId, typeof House> = {
   tracker: Activity,
   training: Dumbbell,
   "check-ins": CalendarCheck,
+  photos: Images,
 };
 
 function ActivityTargetsPart({ client }: { client: CoachClient }) {
@@ -127,8 +130,11 @@ export function ClientApp({
   own?: { workspaceId: string; clientProfileId: string };
 }) {
   const sections = useMemo(
-    () => clientAppSections(configuration, client.plans),
-    [configuration, client.plans],
+    () =>
+      clientAppSections(configuration, client.plans, {
+        remote: own !== undefined,
+      }),
+    [configuration, client.plans, own],
   );
   const plans = sections.find((section) => section.id === "plans");
   const [section, setSection] = useState<ClientAppSectionId | undefined>(
@@ -320,6 +326,12 @@ export function ClientApp({
                 configuration={configuration}
                 client={client}
                 workspaceId={own?.workspaceId}
+              />
+            )}
+            {active === "photos" && own && (
+              <ClientPhotos
+                workspaceId={own.workspaceId}
+                clientProfileId={own.clientProfileId}
               />
             )}
           </div>
