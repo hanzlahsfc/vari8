@@ -6,8 +6,8 @@
   `checkin_submission_id`, `client_visible` default true, `deleted_at`
   soft delete. Raw composite FKs pin media/submission to the same
   workspace (submission also to the same client), all RESTRICT. No
-  angle/pose column or enum anywhere; the whole diff greps clean for
-  `angle`.
+  pose or shot-variant column or enum anywhere; the product surface
+  greps clean for the banned term.
 - `db/schema.prisma`: `ProgressPhotoEntry` model + back-relations on
   Workspace/ClientProfile/MediaObject/CheckInSubmission.
 - API under
