@@ -1285,7 +1285,7 @@ export function submitFeedback(
 export function trainingSets(week: number) {
   return week < 4 ? 3 : 4;
 }
-export function seedState(): CoachState {
+export function seedState(today: string = localToday()): CoachState {
   const strength = newTemplate("strength");
   strength.name = "Strength & balance";
   strength.description =
@@ -1499,12 +1499,12 @@ export function seedState(): CoachState {
   return adoptAthleteDataDemo(
     adoptAthleteProfileDemo(
       adoptTrainingLogDemo(
-        adoptClientAppDemo(adoptAmaraTrainingExample(seeded), localToday()),
-        localToday(),
+        adoptClientAppDemo(adoptAmaraTrainingExample(seeded), today),
+        today,
       ),
-      localToday(),
+      today,
     ),
-    localToday(),
+    today,
   );
 }
 
