@@ -53,3 +53,6 @@ lib/canvas/
 
 # Generated, hash-verified proposed reference evidence; never reformat pixels/receipts.
 tools/parity/reference/proposed/
+
+# Raw candidate capture artifacts are committed byte-exactly for reproducibility.
+tools/parity/reference/evidence/candidate/

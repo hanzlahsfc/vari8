@@ -12,9 +12,49 @@ export const sha256 = (data) => createHash("sha256").update(data).digest("hex");
 export const fileHash = (p) => sha256(fs.readFileSync(p));
 const git = (root, ...args) =>
   execFileSync("git", ["-C", root, ...args], { encoding: "utf8" }).trim();
+const MATERIAL_CONTRACT_FIELDS = [
+  "id",
+  "referenceSource",
+  "referenceFrontendTree",
+  "candidateSource",
+  "harnessDependency",
+  "clock",
+  "timezone",
+  "geometryPx",
+  "maxChangedFraction",
+  "pixelmatchThreshold",
+  "pixelmatchIncludeAA",
+  "deviceScaleFactor",
+  "viewports",
+  "expectedScreens",
+  "s04State",
+  "referenceRootTree",
+  "candidateRootTree",
+  "portability",
+];
+
+// Version 1 is the retained pre-adoption receipt; version 2 adds owner
+// adoption metadata and the exact S03-18 allowance. Administrative fields
+// may differ, but effective capture/comparison fields must be identical.
 export function assertContract(value) {
-  if (JSON.stringify(value) !== JSON.stringify(CONTRACT))
-    throw new Error("contract differs from the recorded D32 proposal");
+  if (!value || typeof value !== "object")
+    throw new Error("contract is missing or malformed");
+  const version = value.contractVersion ?? 1;
+  if (![1, CONTRACT.contractVersion].includes(version))
+    throw new Error(`contract version ${version} is unknown/incompatible`);
+  for (const field of MATERIAL_CONTRACT_FIELDS)
+    if (JSON.stringify(value[field]) !== JSON.stringify(CONTRACT[field]))
+      throw new Error(`contract material field differs: ${field}`);
+  if (!Array.isArray(value.allowances))
+    throw new Error("contract allowances are missing");
+  for (const allowance of value.allowances)
+    if (!CONTRACT.allowances.includes(allowance))
+      throw new Error(
+        `contract allowance ${allowance} is unknown/incompatible`,
+      );
+  if (!("status" in value))
+    throw new Error("contract administrative status is missing");
+  return true;
 }
 /** @param {string} root @param {{expectedSha?: string, frontend?: boolean}} [options] */
 export function snapshotSource(root, { expectedSha, frontend = false } = {}) {

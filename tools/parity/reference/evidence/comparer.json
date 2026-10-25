@@ -1,0 +1,21 @@
+{
+  "id": "visual-reference-comparer-v1",
+  "referenceCompareSha256": "6ea1115863f8132e3243258c05ee3a9a984e61cb9c1a5c024e66be301bb5be95",
+  "legacyCompareSha256": "56a709a4c334526b5991b15868775bf3ed843e5552535a4b2e472090d4788e3a",
+  "referencePackageLockSha256": "24381568ffd2435ed2919d7cf7c6a342ccd4ea767c5a77dd1a80868dfd8fd628",
+  "contractSha256": "4a29fd5c68cd00fb544be375622652849dd2a6e21e55804b92a5baa1699b6363",
+  "dependencies": {
+    "pixelmatch": {
+      "version": "7.1.0",
+      "integrity": "sha512-1wrVzJ2STrpmONHKBy228LM1b84msXDUoAzVEl0R8Mz4Ce6EPr+IVtxm8+yvrqLYMHswREkjYFaMxnyGnaY3Ng=="
+    },
+    "pngjs": {
+      "version": "7.0.0",
+      "integrity": "sha512-LKWqWJRhstyYo9pGvgor/ivk2w94eSjE3RGVuzLGlr3NmD8bf7RcYGze1mNdEHRP6TRP6rMuDHk5t44hnTRyow=="
+    }
+  },
+  "commands": [
+    "node tools/parity/reference/evidence/verify-evidence.mjs",
+    "node tools/parity/reference/evidence/recompare.mjs"
+  ]
+}

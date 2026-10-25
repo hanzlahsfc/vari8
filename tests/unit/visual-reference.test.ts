@@ -14,6 +14,8 @@ import {
   compareGeometry,
 } from "../../tools/parity/reference/compare.mjs";
 import { applyRuled, geomDiff } from "../../tools/parity/compare.mjs";
+import { createHash } from "node:crypto";
+import { verifyArtifactIndex } from "../../tools/parity/reference/evidence/evidence-lib.mjs";
 import { createRequire } from "node:module";
 type FixturePng = { data: Buffer };
 const { PNG } = createRequire(
@@ -65,6 +67,51 @@ it("pins the explicit owner D32 contract instead of accepting implemented defaul
   expect(() =>
     assertContract({ ...CONTRACT, clock: "2026-10-19T10:00:00+02:00" }),
   ).toThrow(/contract/);
+});
+it("accepts only adoption-only contract differences and rejects material/unknown changes", () => {
+  const legacy = {
+    ...CONTRACT,
+    status: "proposed-for-independent-review",
+    allowances: ["S11-03", "D18", "S11-04"],
+  } as Record<string, unknown>;
+  delete legacy.contractVersion;
+  delete legacy.ownerDecision;
+  expect(() => assertContract(legacy)).not.toThrow();
+  expect(legacy.status).toBe("proposed-for-independent-review");
+  expect(legacy.allowances).toEqual(["S11-03", "D18", "S11-04"]);
+
+  expect(() =>
+    assertContract({
+      ...legacy,
+      status: "owner-adopted proposal; not activated",
+      ownerDecision: "adoption-only change",
+    }),
+  ).not.toThrow();
+
+  for (const [field, value] of [
+    ["clock", "2026-10-19T10:00:00+02:00"],
+    ["referenceSource", "0".repeat(40)],
+    [
+      "viewports",
+      { ...CONTRACT.viewports, "390": { width: 391, height: 844 } },
+    ],
+    ["deviceScaleFactor", 2],
+    ["geometryPx", 0.5],
+    ["pixelmatchThreshold", 0],
+  ] as const)
+    expect(() => assertContract({ ...CONTRACT, [field]: value })).toThrow(
+      /material field/,
+    );
+
+  expect(() => assertContract({ ...CONTRACT, contractVersion: 999 })).toThrow(
+    /unknown\/incompatible/,
+  );
+  expect(() =>
+    assertContract({
+      ...CONTRACT,
+      allowances: [...CONTRACT.allowances, "UNKNOWN"],
+    }),
+  ).toThrow(/unknown\/incompatible/);
 });
 it("enforces geometry and exact text/role/name independently of the pixel budget", () => {
   const row = [
@@ -399,4 +446,29 @@ it("accepts only the owner-approved s03 copy and exact width consequence", () =>
   );
   expect(rejectedText.rules).toEqual([]);
   expect(rejectedText.geom.texts).toHaveLength(1);
+});
+
+it("verifies artifact hashes and fails on missing, tampered or escaping files", () => {
+  const d = mkdtempSync(path.join(tmpdir(), "visual-reference-evidence-"));
+  dirs.push(d);
+  writeFileSync(path.join(d, "a.png"), "synthetic");
+  const entries = [
+    {
+      path: "a.png",
+      sha256: createHash("sha256").update("synthetic").digest("hex"),
+    },
+  ];
+  expect(verifyArtifactIndex(d, entries)).toBe(1);
+  expect(() =>
+    verifyArtifactIndex(d, [
+      ...entries,
+      { path: "missing.png", sha256: "0".repeat(64) },
+    ]),
+  ).toThrow(/missing artifact/);
+  writeFileSync(path.join(d, "a.png"), "tampered");
+  expect(() => verifyArtifactIndex(d, entries)).toThrow(/tampered artifact/);
+  writeFileSync(path.join(d, "a.png"), "synthetic");
+  expect(() =>
+    verifyArtifactIndex(d, [{ path: "../escape", sha256: "0".repeat(64) }]),
+  ).toThrow(/escapes/);
 });

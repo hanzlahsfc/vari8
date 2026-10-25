@@ -56,6 +56,31 @@ From `provenance.json`:
 This is reproducibility for the recorded macOS host, not a Linux/hosted-CI portability claim. No
 Actions ran.
 
+## Contract self-validation
+
+The retained reference/candidate provenance still contains the pre-adoption v1 contract. `assertContract` now uses an explicit compatibility rule:
+
+- version 2 is the owner-adopted contract; retained v1 (absent version) is accepted;
+- every material field must match exactly: source/tree identities, clock, timezone, geometry budget, pixelmatch threshold/AA, device scale factor, viewports, expected screens, s04 state, root trees and portability;
+- only administrative adoption fields (status/ownerDecision) may differ;
+- allowances may only be a subset of the current known allowances; unknown allowances and unknown contract versions fail;
+- original provenance is never rewritten.
+
+Tests cover legitimate adoption-only changes and reject changed clock/source/viewport/browser-rendering material settings, unknown allowances and unknown versions.
+
+## Durable comparison evidence
+
+`tools/parity/reference/evidence/` is a committed, reviewer-accessible package independent of the local p414 outputs:
+
+- candidate: 237 files (233 referenced screen artifacts + manifest/provenance/validated-artifacts/server-ownership);
+- reference: 245 files (244 mapped/package artifacts + mapping file);
+- evidence directory: 246 files; artifact index: 482 entries; old baseline: 242 files unchanged; old→proposed map: 272 entries.
+- `artifact-hashes.json`, `comparer.json`, `recompare.mjs`, `verify-evidence.mjs`, `evidence-lib.mjs`.
+- `receipts/canonical.json`, `receipts/strict.json`, `receipts/metadata.json` are **new recomparisons**, not original receipts or new captures. They record comparer SHA `6ea1115863f8132e3243258c05ee3a9a984e61cb9c1a5c024e66be301bb5be95`, legacy comparer SHA `56a709a4c334526b5991b15868775bf3ed843e5552535a4b2e472090d4788e3a`, contract SHA `4a29fd5c68cd00fb544be375622652849dd2a6e21e55804b92a5baa1699b6363`, and reference/candidate manifest/provenance/artifact-index hashes.
+- Historical receipts have no comparer provenance; that limitation is preserved and disclosed.
+
+Allowances actually applied: D18 and S11-04 on s03-checkin-review@1440 and other 1440 screens; S11-03 on s11-preferences; S03-18 on both s03-checkin-review widths. No allowance/mask was added beyond the owner-approved S03-18 exact rule.
+
 ## Current root comparison
 
 `candidate-run` against the proposed historical reference:
@@ -69,8 +94,7 @@ Actions ran.
   **strict diagnostic 68/70**. The strict diagnostic still fails s03 pixels only; it remains separate and
   non-canonical. No capture was rerun.
 - Current root screenshots are never used as expected output.
-- Evidence: `outputs/p414/owner-s03-canonical-comparison.json` and
-  `outputs/p414/owner-s03-strict-comparison.json`; historical `all-70-comparison.json` remains 68/70.
+- Evidence: `tools/parity/reference/evidence/receipts/{canonical,strict}.json`; historical `all-70-comparison.json` remains 68/70. New receipts are recomparisons, not original captures.
 
 ### s03 copy disposition — Prompt 417
 
@@ -90,7 +114,7 @@ strict pixel comparison remains the separate 68/70 diagnostic.
 
 Task-local runs on Node `v24.22.1`:
 
-- Unit/validation: **106 files / 1281 tests**, exit 0 (fresh final run).
+- Unit/validation: **106 files / 1283 tests**, exit 0 (fresh final run).
 - Focused reference tests: **11/11**, exit 0 (fresh Prompt 417 run).
 - Typecheck: exit 0. Lint: exit 0, 0 errors / 81 warnings. Format: exit 0.
 - Index generation/check: exit 0; historical/candidate source trees remain exact.

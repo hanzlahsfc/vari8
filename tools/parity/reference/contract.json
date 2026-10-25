@@ -35,5 +35,6 @@
   "portability": "Pinned macOS arm64 environment only; independent same-host runs do not certify Linux or hosted CI portability. No Actions are run.",
   "referenceRootTree": "5a65471694d945b6b6041aa78b6a5d04d5f39a7c",
   "candidateRootTree": "6fd7353e4734632c49c6d9e28427dd2c5c8a1556",
-  "ownerDecision": "Prompt 417: D32-owner-written-v1 adopted; S03-18 keeps \u201cRecord video feedback\u201d with the demonstrated 39px narrower button; proposed reference remains unactivated pending PR #203 and independent review"
+  "ownerDecision": "Prompt 417: D32-owner-written-v1 adopted; S03-18 keeps \u201cRecord video feedback\u201d with the demonstrated 39px narrower button; proposed reference remains unactivated pending PR #203 and independent review",
+  "contractVersion": 2
 }

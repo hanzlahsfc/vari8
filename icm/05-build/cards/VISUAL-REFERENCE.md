@@ -30,3 +30,9 @@ No product UI, fonts, old baselines, mask expansion, waiver, merge, deployment o
 - Keep `Record video feedback` instead of `Record demo video feedback`; the demonstrated 39px button-width reduction is accepted as S03-18.
 - Adopt `D32-owner-written-v1`: 09:00 Europe/Vienna, 1 CSS-pixel geometry, pixelmatch threshold 0.1 and changed-pixel fraction <=0.001. The legacy strict settings remain diagnostic only.
 - The proposed reference package is authorized as a proposal only. Baseline activation, merge, deployment and independent acceptance remain blocked on the normal workflow and unmerged PR #203.
+
+## Prompt 423 evidence package
+
+- Contract v2 compatibility accepts retained v1 only when all material capture/comparison fields match; adoption-only metadata differences are accepted, unknown versions/allowances and material changes fail. Original provenance unchanged.
+- Candidate 237-file evidence and reference 245-file package are committed under `tools/parity/reference/evidence/`; artifact index 482; verifier/recompare are self-contained. New recomparisons: canonical 70/70, strict 68/70; historical 68/70 preserved.
+- No capture/tolerance/mask/S03-18 change; no merge, retarget or baseline activation. Stop for SWE-2 validation.

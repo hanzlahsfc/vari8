@@ -1,0 +1,2900 @@
+{
+  "strict": true,
+  "total": 70,
+  "passed": 68,
+  "failed": 2,
+  "results": [
+    {
+      "id": "s01-roster@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [762, 1842],
+          [762, 1842]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [312, 1377],
+            [312, 1377]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [312, 1377],
+            [312, 1377]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [312, 1377],
+            [312, 1377]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s01-profile-overview@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1859],
+          [390, 1859]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 52],
+            [358, 52]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 52],
+            [358, 52]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s01-profile-plans@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1386],
+          [390, 1386]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 52],
+            [358, 52]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 52],
+            [358, 52]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s01-profile-checkins@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 982],
+          [390, 982]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 52],
+            [358, 52]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 52],
+            [358, 52]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s01-profile-notes@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1515],
+          [390, 1515]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 52],
+            [358, 52]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 52],
+            [358, 52]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s01-profile-onboarding@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 896],
+          [390, 896]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 52],
+            [358, 52]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 52],
+            [358, 52]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s02-messages@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 844],
+          [390, 844]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [390, 454],
+            [390, 454]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [390, 454],
+            [390, 454]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [390, 454],
+            [390, 454]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s02-thread@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 844],
+          [390, 844]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s02-thread-attachments@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 844],
+          [390, 844]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s02-notes-todos@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 3875],
+          [390, 3875]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s03-checkins-board@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 2446],
+          [390, 2446]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s03-add-extra@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 2446],
+          [390, 2446]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s03-checkin-review@390",
+      "pass": false,
+      "problems": ["pixels exceed budget"],
+      "pixels": {
+        "pass": false,
+        "changed": 2795,
+        "raw": 2795,
+        "budget": 0,
+        "sizes": [
+          [390, 3098],
+          [390, 3098]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": ["S03-18 real video feedback copy and width (Prompt 417)"]
+    },
+    {
+      "id": "s04-habit-editor@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [430, 1051],
+          [430, 1051]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s04-template-habits@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 934],
+          [390, 934]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 50],
+            [358, 50]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 50],
+            [358, 50]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s05-templates@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1454],
+          [390, 1454]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s05-template-editor@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1121],
+          [390, 1121]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 50],
+            [358, 50]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 50],
+            [358, 50]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s05-tracker-setup@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1971],
+          [390, 1971]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 50],
+            [358, 50]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 50],
+            [358, 50]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s05-client-setup@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1513],
+          [390, 1513]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 52],
+            [358, 52]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 52],
+            [358, 52]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s06-mealplan-editor@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 2017],
+          [390, 2017]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s06-template-nutrition@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 844],
+          [390, 844]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 50],
+            [358, 50]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 50],
+            [358, 50]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s07-training-editor@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1460],
+          [390, 1460]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s07-exercise-library@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 2688],
+          [390, 2688]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [330, 86],
+            [330, 86]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [330, 86],
+            [330, 86]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [330, 86],
+            [330, 86]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s08-builder@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1196],
+          [390, 1196]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [336, 48],
+            [336, 48]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [336, 48],
+            [336, 48]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s08-widget-gallery@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1196],
+          [390, 1196]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [336, 48],
+            [336, 48]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [336, 48],
+            [336, 48]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [390, 650],
+            [390, 650]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [390, 650],
+            [390, 650]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [390, 650],
+            [390, 650]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [390, 650],
+            [390, 650]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [390, 650],
+            [390, 650]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [390, 650],
+            [390, 650]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [390, 650],
+            [390, 650]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [390, 650],
+            [390, 650]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [390, 650],
+            [390, 650]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [390, 650],
+            [390, 650]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [390, 650],
+            [390, 650]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s08-template-dashboard@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1990],
+          [390, 1990]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 50],
+            [358, 50]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 50],
+            [358, 50]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s09-tracker-today@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1454],
+          [390, 1454]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 812],
+            [358, 812]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 812],
+            [358, 812]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [318, 52],
+            [318, 52]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [318, 52],
+            [318, 52]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s09-tracker-week@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1454],
+          [390, 1454]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 812],
+            [358, 812]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 812],
+            [358, 812]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 812],
+            [358, 812]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [318, 52],
+            [318, 52]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [318, 52],
+            [318, 52]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s09-tracker-trends@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1454],
+          [390, 1454]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 812],
+            [358, 812]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 812],
+            [358, 812]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [318, 52],
+            [318, 52]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [318, 52],
+            [318, 52]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s09-tracker-config@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1970],
+          [390, 1970]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s10-appearance@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 4422],
+          [390, 4422]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s10-clients-studio@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 5880],
+          [390, 5880]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s10-mealplan-studio@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 2861],
+          [390, 2861]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s11-preferences@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1454],
+          [390, 1454]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [354, 814],
+            [354, 814]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [354, 814],
+            [354, 814]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": ["S11-03 sign-out in the preferences dialog"]
+    },
+    {
+      "id": "s11-client-preview@390",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [390, 1926],
+          [390, 1926]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 52],
+            [358, 52]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 52],
+            [358, 52]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 812],
+            [358, 812]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [358, 812],
+            [358, 812]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [318, 52],
+            [318, 52]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [318, 52],
+            [318, 52]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s01-roster@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 1635],
+          [1440, 1635]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s01-profile-overview@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 1073],
+          [1440, 1073]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s01-profile-plans@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 971],
+          [1440, 971]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s01-profile-checkins@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 900],
+          [1440, 900]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s01-profile-notes@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 1126],
+          [1440, 1126]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s01-profile-onboarding@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 900],
+          [1440, 900]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s02-messages@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 900],
+          [1440, 900]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [304, 552],
+            [304, 552]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [304, 552],
+            [304, 552]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [304, 552],
+            [304, 552]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s02-thread@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 900],
+          [1440, 900]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [304, 552],
+            [304, 552]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [304, 552],
+            [304, 552]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [304, 552],
+            [304, 552]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s02-thread-attachments@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 900],
+          [1440, 900]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [304, 552],
+            [304, 552]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [304, 552],
+            [304, 552]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [304, 552],
+            [304, 552]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s02-notes-todos@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 2351],
+          [1440, 2351]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s03-checkins-board@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 967],
+          [1440, 967]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s03-add-extra@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 967],
+          [1440, 967]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s03-checkin-review@1440",
+      "pass": false,
+      "problems": ["pixels exceed budget"],
+      "pixels": {
+        "pass": false,
+        "changed": 2797,
+        "raw": 2797,
+        "budget": 0,
+        "sizes": [
+          [1440, 2159],
+          [1440, 2159]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)",
+        "S03-18 real video feedback copy and width (Prompt 417)"
+      ]
+    },
+    {
+      "id": "s04-habit-editor@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 973],
+          [1440, 973]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s04-template-habits@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 900],
+          [1440, 900]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s05-templates@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 900],
+          [1440, 900]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s05-template-editor@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 935],
+          [1440, 935]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s05-tracker-setup@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 1389],
+          [1440, 1389]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s05-client-setup@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 956],
+          [1440, 956]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s06-mealplan-editor@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 1392],
+          [1440, 1392]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s06-template-nutrition@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 900],
+          [1440, 900]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s07-training-editor@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 1018],
+          [1440, 1018]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s07-exercise-library@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 1695],
+          [1440, 1695]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [216, 86],
+            [216, 86]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [216, 86],
+            [216, 86]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [216, 86],
+            [216, 86]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s08-builder@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 1022],
+          [1440, 1022]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s08-widget-gallery@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 1022],
+          [1440, 1022]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [1390, 661],
+            [1390, 661]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [1390, 661],
+            [1390, 661]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [1390, 661],
+            [1390, 661]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [1390, 661],
+            [1390, 661]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [1390, 661],
+            [1390, 661]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [1390, 661],
+            [1390, 661]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": []
+    },
+    {
+      "id": "s08-template-dashboard@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 1184],
+          [1440, 1184]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s09-tracker-today@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 900],
+          [1440, 900]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [1408, 868],
+            [1408, 868]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [1408, 868],
+            [1408, 868]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s09-tracker-week@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 900],
+          [1440, 900]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [1408, 868],
+            [1408, 868]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [1408, 868],
+            [1408, 868]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s09-tracker-trends@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 900],
+          [1440, 900]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s09-tracker-config@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 1207],
+          [1440, 1207]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s10-appearance@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 2442],
+          [1440, 2442]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s10-clients-studio@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 3188],
+          [1440, 3188]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s10-mealplan-studio@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 2213],
+          [1440, 2213]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [],
+      "ruled": []
+    },
+    {
+      "id": "s11-preferences@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 900],
+          [1440, 900]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [510, 850],
+            [510, 850]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [510, 850],
+            [510, 850]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-03 sign-out in the preferences dialog",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    },
+    {
+      "id": "s11-client-preview@1440",
+      "pass": true,
+      "problems": [],
+      "pixels": {
+        "pass": true,
+        "changed": 0,
+        "raw": 0,
+        "budget": 0,
+        "sizes": [
+          [1440, 1073],
+          [1440, 1073]
+        ],
+        "sizeEqual": true
+      },
+      "geometry": {
+        "added": [],
+        "removed": [],
+        "moved": [],
+        "texts": [],
+        "semantics": []
+      },
+      "scrolls": [
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [1408, 868],
+            [1408, 868]
+          ],
+          "sizeEqual": true
+        },
+        {
+          "pass": true,
+          "changed": 0,
+          "raw": 0,
+          "budget": 0,
+          "sizes": [
+            [1408, 868],
+            [1408, 868]
+          ],
+          "sizeEqual": true
+        }
+      ],
+      "ruled": [
+        "D18 real role in the account block",
+        "S11-04 real workspace name in the shell label (O15)"
+      ]
+    }
+  ]
+}
