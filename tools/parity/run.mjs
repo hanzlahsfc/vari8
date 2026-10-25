@@ -524,7 +524,7 @@ try {
               [
                 "tools/parity/run.mjs",
                 "tools/parity/capture.mjs",
-                "tools/parity/capture-metadata.mjs",
+                "tools/parity/reference/capture-metadata.mjs",
                 "tools/parity/safe-paths.mjs",
                 "tools/parity/compare.mjs",
                 "tools/parity/reference/reference.mjs",

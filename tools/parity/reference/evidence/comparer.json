@@ -41,7 +41,7 @@
     },
     "parityRunner": {
       "path": "tools/parity/run.mjs",
-      "sha256": "136e994dbefa63a066fdd48d346ec0fc3d51858ea3d5175d70f74f7658b3fda0"
+      "sha256": "cdf5cb89cbc7aa3f6c099c2f96a85bd813ef45eaf7a8b4ce713eff42a9f096e9"
     },
     "safePaths": {
       "path": "tools/parity/safe-paths.mjs",
