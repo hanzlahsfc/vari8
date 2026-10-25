@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 151 modules with exports, 1491 exported symbols.
+Counts: 153 modules with exports, 1506 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -54,6 +54,38 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function contrastRatio(first: string, second: string): number`
 - `export function normalizeAccent(value: string): string | null`
 - `export function vari8Theme({ mode, accent, }: { mode: Vari8Mode; accent: string; }): Vari8Theme`
+
+## `lib/activity-targets/boundary.ts`
+
+- `export type ActivityTargetSafeResult<T> = | { ok: true; value: T } | { ok: false; code: | "denied" | "invalid_input" | "confirmation_required" | "conflict" | "serialization_conflict"; message: stri...`
+- `export async function readOwnActivityTargetsFromAction(session: Session, input: { workspaceId: string }, deps: ActivityTargetDeps = {}): Promise<ActivityTargetSafeResult<ActivityTargetsView>>`
+- `export async function readStaffActivityTargetsFromAction(session: Session, input: { workspaceId: string; clientProfileId: string }, deps: ActivityTargetDeps = {}): Promise<ActivityTargetSafeResult<...`
+- `export async function writeActivityTargetFromAction(session: Session, input: { workspaceId: string; clientProfileId: string; metric: unknown; effectiveFrom: unknown; target: unknown; confirmSameDay...`
+
+## `lib/activity-targets/model.ts`
+
+- `export const ACTIVITY_METRICS: readonly ActivityMetric[]`
+- `export type ActivityMetric = "steps" | "cardioMin"`
+- `export type ActivityTargetKind = | "MINIMUM" | "MAXIMUM" | "RANGE" | "FIXED" | "CARDIO"`
+- `export type ActivityTargetRow = { id: string; metric: ActivityMetric; kind: ActivityTargetKind | null; stepMin: number | null; stepMax: number | null; sessionsPerWeek: number | null; minutesPerSess...`
+- `export type ActivityTargetWrite = | { kind: "MINIMUM"; stepMin: number } | { kind: "MAXIMUM"; stepMax: number } | { kind: "RANGE"; stepMin: number; stepMax: number } | { kind: "FIXED"; stepMin: num...`
+- `export type ActivityTargetWritePlan = | { kind: "invalid"; errors: string[] } | { kind: "confirmation-required" } | { kind: "insert"; id: string; metric: ActivityMetric; effectiveFrom: string; targ...`
+- `export function isActivityMetric(value: unknown): value is ActivityMetric`
+- `export function isLocalCalendarDate(value: string): boolean`
+- `export function localToday(now: Date = new Date()): string`
+- `export function planActivityTargetWrite({ rows, metric, effectiveFrom, target, id, confirmSameDay = false, }: { rows: ActivityTargetRow[]; metric: ActivityMetric; effectiveFrom: string; target: Act...`
+- `export function resolveActivityTarget({ rows, metric, date, }: { rows: ActivityTargetRow[]; metric: ActivityMetric; date: string; }): ActivityTargetRow | undefined`
+- `export function validateActivityTargetWrite(target: ActivityTargetWrite): string[]`
+
+## `lib/activity-targets/service.ts`
+
+- `export type ActivityTargetDeps = { db?: PrismaLike }`
+- `export class ActivityTargetError extends Error (1 members)`
+- `export type ActivityTargetVersionView = { id: string; metric: ActivityMetric; kind: ActivityTargetKind | null; stepMin: number | null; stepMax: number | null; sessionsPerWeek: number | null; minute...`
+- `export type ActivityTargetsView = { clientProfileId: string; versions: ActivityTargetVersionView[]; }`
+- `export async function readOwnActivityTargets(session: SessionLike, input: { workspaceId: string }, deps: ActivityTargetDeps = {}): Promise<ActivityTargetsView>`
+- `export async function readStaffActivityTargets(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: ActivityTargetDeps = {}): Promise<ActivityTargetsView>`
+- `export async function writeActivityTarget(session: SessionLike, input: { workspaceId: string; clientProfileId: string; metric: unknown; effectiveFrom: unknown; target: unknown; confirmSameDay?: unk...`
 
 ## `lib/api/v1.ts`
 
@@ -340,7 +372,6 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function markCheckInSubmissionReviewedFromAction(session: Session, input: MarkCheckInSubmissionReviewedInput, deps: CheckInInstanceDeps = {}): Promise<CheckInSafeResult<MarkCheckInSubm...`
 - `export { parseCheckInSubmissionParam }`
 - `export async function projectStaffCheckInScheduleOccurrences(session: Session, input: ProjectCheckInScheduleOccurrencesInput, deps: CheckInScheduleDeps = {}): Promise<CheckInSafeResult<ProjectCheck...`
-- `export async function readCheckInReviewPanelFromAction(session: Session, input: { workspaceId: string; clientProfileId: string; submissionId: string; }, deps: CheckInInstanceDeps = {}): Promise<Che...`
 - `export async function readCheckInReviewTrackerContextFromAction(session: Session, input: { workspaceId: string; clientProfileId: string; submissionId: string; entryDate: string; }, deps: CheckInTra...`
 - `export async function readOwnCheckInCalendar(session: Session, input: { workspaceId: string; from: string; to: string }, deps: CheckInInstanceDeps = {}): Promise< CheckInSafeResult<{ items: OwnChec...`
 - `export async function readOwnNextCheckInInstance(session: Session, input: { workspaceId: string }, deps: CheckInInstanceDeps = {}): Promise<CheckInSafeResult<{ next: OwnNextCheckInInstance | null }>>`
@@ -404,7 +435,6 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function cancelCheckInInstance(session: SessionLike, input: CancelCheckInInstanceInput, deps: CheckInInstanceDeps = {}): Promise<CancelCheckInInstanceResult>`
 - `export function canonicalizeCheckInAnswers(definition: CheckInDefinition, raw: readonly RawCheckInAnswerEntry[]): CanonicalCheckInAnswer[]`
 - `export function deriveCheckInQueueCanReview(role: string, rowHasActiveAssignment: boolean): boolean`
-- `export function displayCheckInAnswer(field: CheckInField, answer: | { kind: string; valueText: string | null; valueNumeric: Prisma.Decimal | null; valueDate: Date | null; valueOptionIds: Prisma.Jso...`
 - `export async function getOwnCheckInInstance(session: SessionLike, input: GetOwnCheckInInstanceInput, deps: CheckInInstanceDeps = {}): Promise<OwnCheckInInstanceDetail>`
 - `export async function getOwnNextCheckInInstance(session: SessionLike, input: { workspaceId: string }, deps: CheckInInstanceDeps = {}): Promise<OwnNextCheckInInstance | null>`
 - `export async function listCheckInFeedback(session: SessionLike, input: ListCheckInFeedbackInput, deps: CheckInInstanceDeps = {}): Promise<CheckInFeedbackPage>`
@@ -430,15 +460,6 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function scheduleCheckInInstance(session: SessionLike, input: ScheduleCheckInInstanceInput, deps: CheckInInstanceDeps = {}): Promise<ScheduleCheckInInstanceResult>`
 - `export async function sendCheckInFeedback(session: SessionLike, input: SendCheckInFeedbackInput, deps: CheckInInstanceDeps = {}): Promise<SendCheckInFeedbackResult>`
 - `export async function submitCheckInInstance(session: SessionLike, input: SubmitCheckInInstanceInput, deps: CheckInInstanceDeps = {}): Promise<SubmitCheckInInstanceResult>`
-
-## `lib/checkin/review-panel.ts`
-
-- `export type CheckInAnswerChange = { fieldId: string; label: string; kind: string; previous: string | null; current: string | null; }`
-- `export type CheckInReviewPanelAnswer = { fieldId: string; kind: string; valueText: string | null; valueNumeric: Prisma.Decimal | null; valueDate: Date | null; valueOptionIds: Prisma.JsonValue | nul...`
-- `export type CheckInReviewPanelDetail = StaffCheckInSubmissionDetail & { reviewState: "open" | "answered"; changeSummary: CheckInSubmissionChangeSummary | null; }`
-- `export type CheckInSubmissionChangeSummary = { previousSubmissionId: string; previousSubmittedAt: string; previousFormName: string; added: CheckInAnswerChange[]; removed: CheckInAnswerChange[]; cha...`
-- `export function diffCheckInSubmissions(input: { current: { fields: CheckInField[]; answers: CheckInReviewPanelAnswer[]; }; previous: { submissionId: string; submittedAt: string; formName: string; f...`
-- `export async function readCheckInReviewPanel(session: SessionLike, input: { workspaceId: string; clientProfileId: string; submissionId: string; }, deps: CheckInInstanceDeps = {}): Promise<CheckInRe...`
 
 ## `lib/checkin/schedules.ts`
 

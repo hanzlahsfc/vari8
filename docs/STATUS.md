@@ -1,3 +1,47 @@
+## 2026-10-25 — Stage 5 card 07 (#169): activity targets with a day-effective resolver landed; awaiting Marcel's 3964 screen review
+
+- `db/migrations/20261023010000_activity_target/` (new): `activity_target`
+  — one row per (client, metric, day); kind set = prescription, kind NULL +
+  stopped_at = stop version. Raw CHECKs: metric closed set ('steps',
+  'cardioMin'), cardio columns together and exactly on CARDIO, ordered
+  range bounds, positive prescription numbers (sessions_per_week whole, no
+  cap; minutes_per_session NUMERIC fractional), kind/stopped_at pairing,
+  revision > 0. Composite workspace-coherence FKs per convention; `down.sql`
+  per db/AGENTS.md.
+- `lib/activity-targets/` (new): `model.ts` pure resolver + write planner
+  (latest row with effectiveFrom <= date wins; same-day replace needs the
+  confirm flag and bumps revision); `service.ts` serializable tx with
+  advisory locks, in-tx authorize (new `activityTargets` RBAC resource —
+  staff workspace|assigned, client own-read/write-denied), revision CAS on
+  same-day replace, audit CREATE/UPDATE (structural meta only);
+  `boundary.ts` closed safe vocabulary incl. `confirmation_required`;
+  thin route `GET/PUT .../clients/[clientProfileId]/activity-targets` on
+  plan.read / plan.write.
+- `components/canvas/data/activity-targets.ts` (new): remote provider +
+  wire↔canvas mapping (wire 'cardioMin' ↔ canvas 'cardio').
+- Surfaces: coach `targets/editor.tsx` hydrates and saves remotely when a
+  workspace is attached (confirm dialog on 409 confirmation_required,
+  local demo fallback kept); `RemoteClientTracker` renders `TargetSummary`
+  for the selected date (new `renderTargets` slot on the ethereal
+  tracking view); `/client` Plans part + `/me` tracker read own-scope
+  versions; coach `timeline-tab` hydrates persisted versions through the
+  same canvas resolver.
+- `tests/unit/activity-targets.test.ts` (new, 19 tests): Wednesday change,
+  earlier days keep old target, same-day refuse/confirm + revision bump,
+  metric scoping, stops, unsorted rows, client isolation, all step kinds,
+  range + cardio validation, date boundaries. `tests/unit/rbac.test.ts`
+  gained the activityTargets row (34 resources).
+- Gates: npm ci 0, prisma generate 0, typecheck 0, lint 0 (warnings all
+  pre-existing), index 0, index:check 0, test 0 (112 files / 1336),
+  build 0 (route listed). Lane DB app_fp_stage5: migrate deploy 0, all
+  CHECKs/FKs verified, seed 0, service probe 14/14 (Wed change, same-day
+  refuse/confirm, revision CAS, metric scoping, stop, denied paths,
+  own-scope isolation, audit). Screenshots at 1440 + 390 under
+  `Vari8-evidence/FULL-PACKAGE/STAGE-5/card-07/` (also gates.txt +
+  probe-output.txt). Preview: managed runner on 127.0.0.1:3997 left running
+  (3964/3000/3001 held by sibling lanes).
+- NOT done: push/PR — held per card rule until Marcel approves the screens.
+
 ## 2026-10-26 - Stage 3 card 05a (in progress): client store routes + provider seam landed; screens and verification pending
 
 - `lib/messages/service.ts` (new): own-thread list + client send, one

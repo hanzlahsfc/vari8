@@ -352,6 +352,7 @@ model Workspace {
   messageAttachments      MessageAttachment[]
   messageDraftAttachments MessageDraftAttachment[]
   checkinAnswerMedia      CheckInAnswerMedia[]
+  activityTargets         ActivityTarget[]
 
   @@map("workspace")
 }
@@ -434,6 +435,7 @@ model WorkspaceMember {
   coachTasksCompleted         CoachTask[]           @relation("CoachTaskCompleter")
   trackerCommentsAuthored     TrackerComment[]      @relation("TrackerCommentAuthor")
   clientGoalsCreated          ClientGoal[]          @relation("ClientGoalCreator")
+  activityTargetsCreated      ActivityTarget[]      @relation("ActivityTargetCreator")
   savedMealsCreated           SavedMeal[]           @relation("SavedMealCreator")
   exerciseLibraryItemsCreated ExerciseLibraryItem[] @relation("ExerciseLibraryItemCreator")
   clientPlansUpdated          ClientPlan[]          @relation("ClientPlanUpdater")
@@ -514,6 +516,7 @@ model ClientProfile {
   coachTasks        CoachTask[]        @relation("CoachTaskClient")
   trackerComments   TrackerComment[]   @relation("TrackerCommentClient")
   clientGoals       ClientGoal[]       @relation("ClientGoalClient")
+  activityTargets   ActivityTarget[]   @relation("ActivityTargetClient")
   clientPlan        ClientPlan?        @relation("ClientPlanClient")
   iifymPlan         IifymPlan?         @relation("IifymPlanClient")
   iifymPlanVersions IifymPlanVersion[] @relation("IifymPlanVersionClient")
@@ -2275,6 +2278,50 @@ model ClientGoal {
   @@unique([id, workspaceId])
   @@index([clientProfileId, parameterId, targetDate])
   @@map("client_goal")
+}
+
+enum ActivityTargetKind {
+  MINIMUM
+  MAXIMUM
+  RANGE
+  FIXED
+  CARDIO
+}
+
+// Issue #169 (Stage 5 card 07): day-effective activity prescriptions.
+// One row per (client, metric, day): kind set = prescription, kind NULL +
+// stopped_at set = stop version. A same-day write replaces the row in place
+// (revision CAS). The domain CHECKs — cardio columns arrive together and
+// exactly on kind CARDIO, ordered range bounds, positive prescription
+// numbers (sessions_per_week whole, no cap; minutes_per_session fractional),
+// kind/stopped_at pairing, metric closed set — are raw migration SQL.
+model ActivityTarget {
+  id                String              @id @default(cuid())
+  workspaceId       String              @map("workspace_id")
+  clientProfileId   String              @map("client_profile_id")
+  // Tracker metric key verbatim: 'steps' | 'cardioMin' (raw CHECK).
+  metric            String
+  // NULL on a stop version; the raw stop-pairing CHECK binds kind/stopped_at.
+  kind              ActivityTargetKind?
+  stepMin           Int?                @map("step_min")
+  stepMax           Int?                @map("step_max")
+  sessionsPerWeek   Int?                @map("sessions_per_week")
+  minutesPerSession Decimal?            @map("minutes_per_session") @db.Decimal(10, 2)
+  effectiveFrom     DateTime            @map("effective_from") @db.Date
+  stoppedAt         DateTime?           @map("stopped_at") @db.Timestamptz(6)
+  revision          Int                 @default(1)
+  createdByMemberId String              @map("created_by_member_id")
+  createdAt         DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace       Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile   ClientProfile   @relation("ActivityTargetClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  createdByMember WorkspaceMember @relation("ActivityTargetCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+
+  @@unique([clientProfileId, metric, effectiveFrom], map: "activity_target_client_metric_day_key")
+  @@unique([id, workspaceId], map: "activity_target_id_workspace_id_key")
+  @@index([workspaceId, clientProfileId, metric, effectiveFrom], map: "activity_target_workspace_client_idx")
+  @@map("activity_target")
 }
 
 // N05/S06-10: workspace reusable-meal library. `meal` is the canvas Meal

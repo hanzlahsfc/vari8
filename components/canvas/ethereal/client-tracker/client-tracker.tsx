@@ -37,6 +37,11 @@ export type ClientTrackerIdentity = {
    * localStorage draft and sample history.
    */
   workspaceId?: string;
+  /**
+   * Issue #169: the viewer's own client profile — when present the remote
+   * tracker also resolves the day's activity targets through the API.
+   */
+  clientProfileId?: string;
 };
 
 const DEFAULT_IDENTITY: ClientTrackerIdentity = {
@@ -58,6 +63,7 @@ export function ClientTracker({
     return (
       <RemoteClientTracker
         workspaceId={identity.workspaceId}
+        clientProfileId={identity.clientProfileId}
         clientName={identity.clientName}
         clientInitials={identity.clientInitials}
         asOf={identity.asOf}
