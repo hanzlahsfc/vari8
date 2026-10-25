@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import { gunzipSync } from "node:zlib";
 import { PNG } from "pngjs";
 import { captureProblem } from "../capture.mjs";
@@ -12,48 +13,81 @@ export const sha256 = (data) => createHash("sha256").update(data).digest("hex");
 export const fileHash = (p) => sha256(fs.readFileSync(p));
 const git = (root, ...args) =>
   execFileSync("git", ["-C", root, ...args], { encoding: "utf8" }).trim();
-const MATERIAL_CONTRACT_FIELDS = [
-  "id",
-  "referenceSource",
-  "referenceFrontendTree",
-  "candidateSource",
-  "harnessDependency",
-  "clock",
-  "timezone",
-  "geometryPx",
-  "maxChangedFraction",
-  "pixelmatchThreshold",
-  "pixelmatchIncludeAA",
-  "deviceScaleFactor",
-  "viewports",
-  "expectedScreens",
-  "s04State",
-  "referenceRootTree",
-  "candidateRootTree",
-  "portability",
-];
+// Compatibility is deliberately closed: version 1 is the exact retained
+// provenance shape; version 2 is the exact owner-approved adoption shape.
+// There is no field subsetting, defaulting or administrative normalization.
+export const RETAINED_V1_CONTRACT = Object.freeze({
+  id: CONTRACT.id,
+  authority: CONTRACT.authority,
+  status: "proposed-for-independent-review",
+  referenceSource: CONTRACT.referenceSource,
+  referenceFrontendTree: CONTRACT.referenceFrontendTree,
+  candidateSource: CONTRACT.candidateSource,
+  harnessDependency: CONTRACT.harnessDependency,
+  clock: CONTRACT.clock,
+  timezone: CONTRACT.timezone,
+  geometryPx: CONTRACT.geometryPx,
+  maxChangedFraction: CONTRACT.maxChangedFraction,
+  pixelmatchThreshold: CONTRACT.pixelmatchThreshold,
+  pixelmatchIncludeAA: CONTRACT.pixelmatchIncludeAA,
+  deviceScaleFactor: CONTRACT.deviceScaleFactor,
+  viewports: CONTRACT.viewports,
+  expectedScreens: CONTRACT.expectedScreens,
+  s04State: CONTRACT.s04State,
+  allowances: Object.freeze(["S11-03", "D18", "S11-04"]),
+  implementedAlternative: Object.freeze({
+    clock: "2026-10-19T10:00:00+02:00",
+    geometryPx: 0.5,
+    channelTolerance: 0,
+    maxDiffPixels: 0,
+  }),
+  portability: CONTRACT.portability,
+  referenceRootTree: CONTRACT.referenceRootTree,
+  candidateRootTree: CONTRACT.candidateRootTree,
+});
 
-// Version 1 is the retained pre-adoption receipt; version 2 adds owner
-// adoption metadata and the exact S03-18 allowance. Administrative fields
-// may differ, but effective capture/comparison fields must be identical.
+export const CONTRACT_SCHEMAS = Object.freeze({
+  1: Object.freeze({
+    version: 1,
+    fields: Object.freeze(Object.keys(RETAINED_V1_CONTRACT)),
+    value: RETAINED_V1_CONTRACT,
+  }),
+  2: Object.freeze({
+    version: 2,
+    fields: Object.freeze(Object.keys(CONTRACT)),
+    value: CONTRACT,
+  }),
+});
+
+export const CONTRACT_COMPATIBILITY = Object.freeze({
+  "retained-v1-to-approved-v2": Object.freeze({
+    from: 1,
+    to: 2,
+    policy:
+      "Exact retained v1 provenance or exact approved v2 contract only; all fields are required, unknown fields are rejected, and administrative/material/allowance changes outside the named transition are rejected.",
+  }),
+});
+
 export function assertContract(value) {
-  if (!value || typeof value !== "object")
+  if (!value || typeof value !== "object" || Array.isArray(value))
     throw new Error("contract is missing or malformed");
-  const version = value.contractVersion ?? 1;
-  if (![1, CONTRACT.contractVersion].includes(version))
+  const version = Object.prototype.hasOwnProperty.call(value, "contractVersion")
+    ? value.contractVersion
+    : 1;
+  if (version !== 1 && version !== 2)
     throw new Error(`contract version ${version} is unknown/incompatible`);
-  for (const field of MATERIAL_CONTRACT_FIELDS)
-    if (JSON.stringify(value[field]) !== JSON.stringify(CONTRACT[field]))
-      throw new Error(`contract material field differs: ${field}`);
-  if (!Array.isArray(value.allowances))
-    throw new Error("contract allowances are missing");
-  for (const allowance of value.allowances)
-    if (!CONTRACT.allowances.includes(allowance))
-      throw new Error(
-        `contract allowance ${allowance} is unknown/incompatible`,
-      );
-  if (!("status" in value))
-    throw new Error("contract administrative status is missing");
+  const expected = version === 1 ? RETAINED_V1_CONTRACT : CONTRACT;
+  const actualFields = Object.keys(value).sort();
+  const expectedFields = Object.keys(expected).sort();
+  const missing = expectedFields.filter((f) => !actualFields.includes(f));
+  const unknown = actualFields.filter((f) => !expectedFields.includes(f));
+  if (missing.length)
+    throw new Error(`contract schema missing fields: ${missing.join(",")}`);
+  if (unknown.length)
+    throw new Error(`contract schema unknown fields: ${unknown.join(",")}`);
+  for (const field of expectedFields)
+    if (!isDeepStrictEqual(value[field], expected[field]))
+      throw new Error(`contract field differs: ${field}`);
   return true;
 }
 /** @param {string} root @param {{expectedSha?: string, frontend?: boolean}} [options] */

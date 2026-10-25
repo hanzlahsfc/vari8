@@ -1,10 +1,19 @@
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  rmSync,
+  readFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { gzipSync } from "node:zlib";
 import { afterEach, expect, it } from "vitest";
 import {
   CONTRACT,
+  CONTRACT_COMPATIBILITY,
+  CONTRACT_SCHEMAS,
+  RETAINED_V1_CONTRACT,
   assertContract,
   validateRun,
   snapshotSource,
@@ -13,9 +22,18 @@ import {
   comparePixels,
   compareGeometry,
 } from "../../tools/parity/reference/compare.mjs";
-import { applyRuled, geomDiff } from "../../tools/parity/compare.mjs";
+import { RULED, applyRuled, geomDiff } from "../../tools/parity/compare.mjs";
 import { createHash } from "node:crypto";
-import { verifyArtifactIndex } from "../../tools/parity/reference/evidence/evidence-lib.mjs";
+import {
+  COMPONENT_PATHS,
+  assertComparerManifest,
+  assertReceiptToolchain,
+  fileHash,
+  verifyAllowanceRules,
+  verifyArtifactIndex,
+  verifyComponentPins,
+  verifyPinnedToolchain,
+} from "../../tools/parity/reference/evidence/evidence-lib.mjs";
 import { createRequire } from "node:module";
 type FixturePng = { data: Buffer };
 const { PNG } = createRequire(
@@ -53,6 +71,10 @@ const dirs: string[] = [];
 afterEach(() =>
   dirs.splice(0).forEach((d) => rmSync(d, { recursive: true, force: true })),
 );
+type ContractProbe = Record<string, unknown> & {
+  allowances: string[];
+  implementedAlternative: Record<string, unknown>;
+};
 const pixel = (value: number) => {
   const p = new PNG({ width: 100, height: 100 });
   p.data.fill(255);
@@ -68,51 +90,145 @@ it("pins the explicit owner D32 contract instead of accepting implemented defaul
     assertContract({ ...CONTRACT, clock: "2026-10-19T10:00:00+02:00" }),
   ).toThrow(/contract/);
 });
-it("accepts only adoption-only contract differences and rejects material/unknown changes", () => {
-  const legacy = {
-    ...CONTRACT,
-    status: "proposed-for-independent-review",
-    allowances: ["S11-03", "D18", "S11-04"],
-  } as Record<string, unknown>;
-  delete legacy.contractVersion;
-  delete legacy.ownerDecision;
-  expect(() => assertContract(legacy)).not.toThrow();
-  expect(legacy.status).toBe("proposed-for-independent-review");
-  expect(legacy.allowances).toEqual(["S11-03", "D18", "S11-04"]);
-
-  expect(() =>
-    assertContract({
-      ...legacy,
-      status: "owner-adopted proposal; not activated",
-      ownerDecision: "adoption-only change",
-    }),
-  ).not.toThrow();
-
-  for (const [field, value] of [
-    ["clock", "2026-10-19T10:00:00+02:00"],
-    ["referenceSource", "0".repeat(40)],
+it("rejects every contract normalization and reviewer probe", () => {
+  expect(assertContract(CONTRACT)).toBe(true);
+  const probes: [string, (value: ContractProbe) => void][] = [
+    ["authority", (value) => (value.authority = "unapproved authority")],
     [
-      "viewports",
-      { ...CONTRACT.viewports, "390": { width: 391, height: 844 } },
+      "implementedAlternative",
+      (value) => (value.implementedAlternative.channelTolerance = 1),
     ],
-    ["deviceScaleFactor", 2],
-    ["geometryPx", 0.5],
-    ["pixelmatchThreshold", 0],
-  ] as const)
-    expect(() => assertContract({ ...CONTRACT, [field]: value })).toThrow(
-      /material field/,
-    );
-
-  expect(() => assertContract({ ...CONTRACT, contractVersion: 999 })).toThrow(
-    /unknown\/incompatible/,
-  );
+    ["unknown field", (value) => (value.unexpected = true)],
+    ["empty allowances", (value) => (value.allowances = [])],
+    ["S03-only subset", (value) => (value.allowances = ["S03-18"])],
+    [
+      "pre-S03 subset",
+      (value) => (value.allowances = ["S11-03", "D18", "S11-04"]),
+    ],
+    [
+      "missing allowances",
+      (value) => delete (value as { allowances?: string[] }).allowances,
+    ],
+    ["unknown allowance", (value) => value.allowances.push("UNKNOWN")],
+    ["administrative status", (value) => (value.status = "adoption-only")],
+    [
+      "administrative ownerDecision",
+      (value) => (value.ownerDecision = "adoption-only"),
+    ],
+    ["clock", (value) => (value.clock = "2026-10-19T10:00:00+02:00")],
+    ["referenceSource", (value) => (value.referenceSource = "0".repeat(40))],
+    ["deviceScaleFactor", (value) => (value.deviceScaleFactor = 2)],
+  ];
+  for (const [label, mutate] of probes) {
+    const probe = structuredClone(CONTRACT) as ContractProbe;
+    mutate(probe);
+    expect(() => assertContract(probe), label).toThrow();
+  }
   expect(() =>
-    assertContract({
-      ...CONTRACT,
-      allowances: [...CONTRACT.allowances, "UNKNOWN"],
-    }),
+    assertContract({ ...structuredClone(CONTRACT), contractVersion: 999 }),
   ).toThrow(/unknown\/incompatible/);
 });
+
+it("accepts only the exact retained v1 provenance or exact approved v2 contract", () => {
+  const v1 = structuredClone(RETAINED_V1_CONTRACT) as unknown as ContractProbe;
+  const historical = JSON.parse(
+    readFileSync("tools/parity/reference/proposed/provenance.json", "utf8"),
+  ).contract;
+  expect(assertContract(v1)).toBe(true);
+  expect(assertContract(historical)).toBe(true);
+  expect(assertContract(CONTRACT)).toBe(true);
+  expect(v1.contractVersion).toBeUndefined();
+  expect(CONTRACT_SCHEMAS[1].fields).toEqual(Object.keys(v1));
+  expect(CONTRACT_SCHEMAS[2].fields).toEqual(Object.keys(CONTRACT));
+  expect(CONTRACT_COMPATIBILITY["retained-v1-to-approved-v2"]).toMatchObject({
+    from: 1,
+    to: 2,
+  });
+  expect(v1.allowances).toEqual(["S11-03", "D18", "S11-04"]);
+  expect(CONTRACT.allowances).toEqual(["S11-03", "D18", "S11-04", "S03-18"]);
+
+  for (const mutate of [
+    (value: ContractProbe) =>
+      (value.status = "owner-adopted proposal; not activated"),
+    (value: ContractProbe) => (value.ownerDecision = "adoption-only"),
+    (value: ContractProbe) => (value.authority = "unapproved authority"),
+    (value: ContractProbe) => (value.implementedAlternative.geometryPx = 1),
+    (value: ContractProbe) => (value.extra = true),
+  ]) {
+    const probe = structuredClone(v1) as ContractProbe;
+    mutate(probe);
+    expect(() => assertContract(probe)).toThrow();
+  }
+});
+
+it("validates exact allowance identities and their comparer contents", () => {
+  expect(verifyAllowanceRules(CONTRACT.allowances, RULED)).toBe(true);
+  expect(() => verifyAllowanceRules([], RULED)).toThrow(/empty/);
+  expect(() =>
+    verifyAllowanceRules(CONTRACT.allowances, RULED.slice(0, -1)),
+  ).toThrow(/differ/);
+  const changed = structuredClone(RULED) as { rule: string }[];
+  changed[0].rule = "D18 arbitrary content";
+  expect(() => verifyAllowanceRules(CONTRACT.allowances, changed)).toThrow(
+    /content differs/,
+  );
+});
+
+it("pins all material execution components and detects omissions and tampering", () => {
+  const comparerFile = "tools/parity/reference/evidence/comparer.json";
+  const manifest = JSON.parse(readFileSync(comparerFile, "utf8"));
+  expect(assertComparerManifest(manifest)).toBe(true);
+  expect(verifyPinnedToolchain(process.cwd(), manifest)).toBe(true);
+  for (const name of Object.keys(COMPONENT_PATHS)) {
+    const omitted = structuredClone(manifest);
+    delete omitted.components[name];
+    expect(() => assertComparerManifest(omitted), name).toThrow(/missing/);
+  }
+
+  const d = mkdtempSync(path.join(tmpdir(), "visual-reference-toolchain-"));
+  dirs.push(d);
+  const components: Record<string, { path: string; sha256: string }> = {};
+  for (const [name, relative] of Object.entries(COMPONENT_PATHS)) {
+    const file = path.join(d, relative);
+    mkdirSync(path.dirname(file), { recursive: true });
+    writeFileSync(file, `${name} original\n`);
+    components[name] = { path: relative, sha256: fileHash(file) };
+  }
+  expect(verifyComponentPins(d, components)).toBe(true);
+  for (const [name, relative] of Object.entries(COMPONENT_PATHS)) {
+    const file = path.join(d, relative);
+    writeFileSync(file, `${name} tampered\n`);
+    expect(() => verifyComponentPins(d, components), name).toThrow(
+      new RegExp(`component ${name} hash differs`),
+    );
+    writeFileSync(file, `${name} original\n`);
+  }
+
+  const metadata = JSON.parse(
+    readFileSync(
+      "tools/parity/reference/evidence/receipts/metadata.json",
+      "utf8",
+    ),
+  );
+  const manifestSha = fileHash(comparerFile);
+  expect(assertReceiptToolchain(metadata, manifest, manifestSha)).toBe(true);
+  const omitted = structuredClone(metadata);
+  delete omitted.toolchain.components.reference;
+  expect(() => assertReceiptToolchain(omitted, manifest, manifestSha)).toThrow(
+    /missing/,
+  );
+  const version = structuredClone(metadata);
+  version.receiptVersion = 1;
+  expect(() => assertReceiptToolchain(version, manifest, manifestSha)).toThrow(
+    /version differs/,
+  );
+  const dependency = structuredClone(manifest);
+  dependency.dependencies.reference.pixelmatch.version = "0.0.0";
+  expect(() => verifyPinnedToolchain(process.cwd(), dependency)).toThrow(
+    /pin differs/,
+  );
+});
+
 it("enforces geometry and exact text/role/name independently of the pixel budget", () => {
   const row = [
     "body[1]>h1[0]",
@@ -471,4 +587,19 @@ it("verifies artifact hashes and fails on missing, tampered or escaping files", 
   expect(() =>
     verifyArtifactIndex(d, [{ path: "../escape", sha256: "0".repeat(64) }]),
   ).toThrow(/escapes/);
+  mkdirSync(path.join(d, "art"));
+  writeFileSync(path.join(d, "art/known.png"), "known");
+  const exact: { path: string; sha256: string }[] = [
+    {
+      path: "art/known.png",
+      sha256: createHash("sha256").update("known").digest("hex"),
+    },
+  ];
+  expect(
+    verifyArtifactIndex(d, exact, { exactRoots: ["art"] as string[] }),
+  ).toBe(1);
+  writeFileSync(path.join(d, "art/unindexed.png"), "extra");
+  expect(() =>
+    verifyArtifactIndex(d, exact, { exactRoots: ["art"] as string[] }),
+  ).toThrow(/unindexed artifact/);
 });

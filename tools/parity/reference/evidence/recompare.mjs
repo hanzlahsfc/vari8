@@ -1,49 +1,79 @@
 import fs from "node:fs";
 import path from "node:path";
-import { CONTRACT, fileHash } from "../reference.mjs";
+import { fileURLToPath } from "node:url";
+import { CONTRACT, assertContract, fileHash } from "../reference.mjs";
 import { compareRuns } from "../compare.mjs";
+import { RULED } from "../../compare.mjs";
+import {
+  COMPARER_PATH,
+  RECEIPT_VERSION,
+  SHOTS_PATH,
+  assertComparerManifest,
+  verifyAllowanceRules,
+  verifyArtifactIndex,
+  verifyPinnedToolchain,
+  walkFiles,
+} from "./evidence-lib.mjs";
 
-const HERE = path.dirname(new URL(import.meta.url).pathname);
+const HERE = path.dirname(fileURLToPath(import.meta.url));
 const EVIDENCE = path.resolve(HERE);
+const REPO_ROOT = path.resolve(EVIDENCE, "../../../..");
 const REFERENCE = path.resolve(EVIDENCE, "../proposed");
 const CANDIDATE = path.resolve(EVIDENCE, "candidate");
 const RECEIPTS = path.resolve(EVIDENCE, "receipts");
 const CONTRACT_FILE = path.resolve(EVIDENCE, "../contract.json");
+const COMPARER_FILE = path.resolve(EVIDENCE, "comparer.json");
 const ARTIFACT_INDEX = path.resolve(EVIDENCE, "artifact-hashes.json");
-const COMPARE = path.resolve(EVIDENCE, "../compare.mjs");
-const LEGACY_COMPARE = path.resolve(EVIDENCE, "../../compare.mjs");
-const PACKAGE_LOCK = path.resolve(EVIDENCE, "../package-lock.json");
+const ARTIFACT_ROOT = path.resolve(EVIDENCE, "..");
+const SHOTS = path.join(REPO_ROOT, SHOTS_PATH);
 
 const readJson = (file) => JSON.parse(fs.readFileSync(file, "utf8"));
-const lock = readJson(PACKAGE_LOCK);
-const dependencies = Object.fromEntries(
-  ["pixelmatch", "pngjs"].map((name) => {
-    const entry = lock.packages[`node_modules/${name}`];
-    if (!entry) throw new Error(`reference dependency ${name} is not pinned`);
-    return [name, { version: entry.version, integrity: entry.integrity }];
-  }),
-);
+const countFiles = (directory) => walkFiles(directory).length;
 
-const inputHashes = {
+assertContract(CONTRACT);
+verifyAllowanceRules(CONTRACT.allowances, RULED);
+
+const comparer = readJson(COMPARER_FILE);
+assertComparerManifest(comparer);
+verifyPinnedToolchain(REPO_ROOT, comparer);
+
+const artifactIndex = readJson(ARTIFACT_INDEX);
+const artifactCount = verifyArtifactIndex(ARTIFACT_ROOT, artifactIndex, {
+  exactRoots: ["proposed", "evidence/candidate"],
+});
+const inputs = {
   referenceManifestSha256: fileHash(path.join(REFERENCE, "manifest.json")),
   referenceProvenanceSha256: fileHash(path.join(REFERENCE, "provenance.json")),
   candidateManifestSha256: fileHash(path.join(CANDIDATE, "manifest.json")),
   candidateProvenanceSha256: fileHash(path.join(CANDIDATE, "provenance.json")),
   artifactIndexSha256: fileHash(ARTIFACT_INDEX),
+  shotIndexSha256: fileHash(SHOTS),
 };
-
+const packageCounts = {
+  reference: countFiles(REFERENCE),
+  candidate: countFiles(CANDIDATE),
+  evidence: countFiles(EVIDENCE),
+  artifactIndex: artifactCount,
+};
 const metadata = {
   kind: "recomparison-not-original-capture",
-  comparer: {
-    id: "visual-reference-comparer-v1",
-    referenceCompareSha256: fileHash(COMPARE),
-    legacyCompareSha256: fileHash(LEGACY_COMPARE),
-    referencePackageLockSha256: fileHash(PACKAGE_LOCK),
-    dependencies,
+  receiptVersion: RECEIPT_VERSION,
+  toolchain: {
+    id: comparer.id,
+    manifest: {
+      path: COMPARER_PATH,
+      sha256: fileHash(COMPARER_FILE),
+    },
+    components: comparer.components,
+    locks: comparer.locks,
+    dependencies: comparer.dependencies,
+    contract: comparer.contract,
   },
   contractId: CONTRACT.id,
+  contractVersion: CONTRACT.contractVersion,
   contractSha256: fileHash(CONTRACT_FILE),
-  inputs: inputHashes,
+  inputs,
+  packageCounts,
 };
 
 fs.mkdirSync(RECEIPTS, { recursive: true });
@@ -73,11 +103,14 @@ fs.writeFileSync(
 console.log(
   JSON.stringify(
     {
+      receiptVersion: metadata.receiptVersion,
       canonical: metadata.canonical,
       strict: metadata.strict,
-      comparer: metadata.comparer.referenceCompareSha256,
+      toolchain: metadata.toolchain.id,
+      comparerManifest: metadata.toolchain.manifest.sha256,
       contract: metadata.contractSha256,
       inputs: metadata.inputs,
+      packageCounts: metadata.packageCounts,
     },
     null,
     2,
