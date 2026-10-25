@@ -183,6 +183,10 @@ const PLATFORM_ADMIN_DENIED_RESOURCES: ReadonlySet<Resource> =
     // programs and their published versions deny PLATFORM_ADMIN
     // including the dual-role membership path.
     "trainingPlansLogs",
+    // PR-SUPP (same binding posture): supplement plans deny
+    // PLATFORM_ADMIN including a dual-role administrator holding an
+    // ACTIVE membership of any role.
+    "supplementPlans",
   ]);
 
 /**

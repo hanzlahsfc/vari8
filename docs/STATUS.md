@@ -1,3 +1,127 @@
+## 2026-10-24 — PR #201 K6-GATE evidence whitespace closure — receipts normalized, checks clean
+
+- Independent review found the complete base-to-head
+  `git diff --check` had **16 findings / exit 2** in two committed
+  `.txt` receipts. The prior unqualified “diff check 0” claim is
+  corrected: it did not cover those committed receipt artifacts.
+- `verify-local-canonical.txt` and
+  `verify-local-canonical-skip-parity.txt` are whitespace-normalized
+  copies only: trailing spaces and whitespace-only blank lines removed;
+  output order, commands, results, counts and exits unchanged. Raw
+  pre-normalization copies are preserved outside the tracked tree under
+  `_evidence/K6-GATE/` with recorded SHA-256 hashes in `K6-GATE.md`.
+- Node v24.22.1 checks after normalization: `npm run format:check`
+  exit 0; `npm run index:check` exit 0; working-tree
+  `git diff --check 2214105…` exit 0. Post-commit
+  `git diff --check 2214105…..HEAD` exit 0.
+- Exact non-documentation/non-evidence path check from reviewed
+  `0c3c3d5` to the normalized head: `git diff --exit-code -- tests/
+tools/ app/ components/ frontend/ public/ db/ lib/ scripts/
+package.json package-lock.json playwright.config.ts vitest.config.ts
+vitest.integration.config.ts tsconfig.json` exit 0. The delta is
+  documentation/evidence only; no behavioral suite was rerun.
+
+## 2026-10-24 — PR #201 K6-GATE canonical gate — applicable run passes; parity recorded not applicable
+
+- Applicability decision: K6-GATE is local tooling only and the full
+  base-to-head diff contains no rendered UI, style, font, asset,
+  `app/`, `components/`, `frontend/`, JSX/TSX, CSS, image or font
+  changes. Under D32 (“each wiring PR gates the screens it wires”) and
+  the local gate's no-screen rule, `Parity (D32) on: none`.
+- The earlier `5fbeef3` run without `SKIP_PARITY` is preserved as a
+  separate failure: parity startup exit 2 because the runner supplied an
+  HTTP `BETTER_AUTH_URL` to production boot. It was not a visual
+  regression; issue #202 tracks the harness defect.
+- Applicable canonical invocation at `44bf054`: Node v24.22.1,
+  `LANE_DB=app_k6_gate_skip`, `CARD=K6-GATE`, `REQUIRE_NODE24=1`,
+  `SKIP_PARITY=1`, and only the real `docker exec vari8-db-1 →
+app-db-1` adapter.
+- Result: **VERIFY-LOCAL PASS, exit 0** — clean tree, schema guard,
+  generator, installs, format/type/lint, unit **1250/1250**, frontend
+  tests **198/198**, disposable migrate deploy, root/frontend builds,
+  and e2e **10 passed / 7 skipped / 0 failed**. Integration remained
+  skipped by the script's unchanged-path rule; parity is `SKIP`, not
+  PASS.
+- Task DB `app_k6_gate_skip` was removed by the script trap and verified
+  absent. Lifecycle and mutation receipts remain separate: focused
+  suite 23/23, zero skipped; mut4 bite/restore/current baseline intact.
+
+## 2026-10-24 — PR #201 K6-GATE canonical gate — DB stage reached; parity harness fails on HTTPS origin
+
+- Docker Desktop was started to inspect the expected development DB.
+  Established container identity: `app-db-1`, compose project `app`,
+  service `db`, `postgres:16-alpine`, healthy on `127.0.0.1:5433`.
+  `vari8-db-1` does not exist; the earlier instruction was corrected.
+- Canonical run used only the documented narrow adapter
+  `docker exec vari8-db-1 → docker exec app-db-1`, `LANE_DB` =
+  disposable `app_k6_gate_verify`, Node v24.22.1,
+  `REQUIRE_NODE24=1`, and private `.env` credentials.
+- `verify-local.sh` result: **FAIL, exit 1**. It passed clean tree,
+  schema guard, generator, installs, format/type/lint, root and frontend
+  tests/builds, disposable migrate deploy, and e2e (**10 passed /
+  7 skipped / 0 failed**). Its integration stage was skipped by the
+  script's unchanged-path rule; the separate lifecycle suite remains
+  23/23 on real PostgreSQL.
+- The sole failure is parity D32 exit 2: the parity runner launches
+  production `next start` with HTTP `BETTER_AUTH_URL`, and the app
+  correctly refuses HTTP auth in production. The run was not repeated or
+  adapted to fake a pass.
+- Disposable `app_k6_gate_verify` was dropped by the script's trap and
+  verified absent; builder `app_k6_it` remains. No duplicate/renamed
+  container or shared DB contents were changed.
+
+## 2026-10-24 — PR #201 K6-GATE repair 9 disposable-PG proof — focused suite green; canonical DB stage blocked by Docker
+
+- Branch `beta/k6-gate` adds deterministic lifecycle proof on an
+  isolated `embedded-postgres@16.14.0-beta.17` cluster (PostgreSQL
+  16.14, `127.0.0.1:55681`, scratch `pgdata`, `app_k6_it?schema=public`).
+  Docker Desktop remains unavailable; the scratch cluster was stopped and
+  removed afterward, with no shared database/service modified.
+- Focused suite on Node v24.22.1: **23/23 passed, zero skipped, exit 0**.
+  Coverage now distinguishes an injected pending create promise
+  (post-dispatch/pre-settlement, repeated signals) from an actual SQL
+  `CREATE DATABASE` observed `state='active'` in `pg_stat_activity`
+  before SIGTERM. Existing DB, fixture transaction and victim-row checks
+  pass; residue check leaves only `app_k6_it` and no `loadgate_*` DBs.
+- TargetId mutation ran behaviorally on PostgreSQL: full focused suite
+  exit 1 with the expected mismatched-target acceptance and follow-on
+  legitimate-cleanup failure. The patch reverse-restored
+  byte-identically; the focused suite reran 23/23 green.
+- `verify-local.sh` under Node 24 proceeded through clean tree, schema
+  guard, generator, installs, format/type/lint/unit and frontend checks,
+  then exited 1 at its hardcoded `docker exec vari8-db-1` stage because
+  Docker Desktop is closed. Its stale `/home/nexuslink` root path also
+  emits a `realpath` warning. This is a canonical-gate blocker, not a
+  pass.
+- PR body/report update, scoped commit, push and independent review
+  remain the handoff path; issue #178 stays open with capacity/staging
+  unchanged.
+
+## 2026-10-24 — PR #201 K6-GATE repair 8 lifecycle/mutation provenance — verified locally except disposable PG
+
+- Branch `beta/k6-gate` (worktree `vari8-worktrees/k6-gate`) implements
+  PROMPT 391 review repairs for `tools/load/provision.ts`: explicit
+  pending/created/failed `CREATE DATABASE` state, catchable-signal
+  cleanup that awaits in-flight operations, scoped fixture transaction
+  semantics, and no `K6_GATE_FAULT` read in the shipping CLI.
+- Test-only synchronization/fault injection moved to
+  `tests/integration/k6-gate-provision-harness.ts`; the disposable-PG
+  suite now has 22 lifecycle/safety cases covering SIGTERM/SIGINT race,
+  create failure, existing-DB refusal, and fixture atomicity.
+- Node v24.22.1 (`npx -p node@24.22.1`) results: `npm run typecheck` 0;
+  focused load-gate tests 46/46; `npm run test` 1250/1250; lint 0
+  errors/81 existing warnings; `npm run format:check` 0;
+  `npm run index:check` 0; `npm run build` 0; `git diff --check` 0.
+- Docker is unavailable (`docker info` exit 1) and
+  `INTEGRATION_DATABASE_URL` is unset; focused integration reports 22/22
+  skipped, so fresh disposable-DB lifecycle/mut4 evidence is explicitly
+  unavailable rather than relabeled. Mutation patches were regenerated
+  from the final baseline with apply/restore proofs; report mutants
+  failed fresh unit checks as expected.
+- The scoped repair/evidence commits were pushed to
+  `origin/beta/k6-gate`; independent review remains pending. Issue #178
+  stays open with capacity/staging unchanged.
+
 ## 2026-10-23 — frontend UI redesign branch for review — verified locally
 
 - This work is on branch `frontend-ui-redesign-20261023`, based on

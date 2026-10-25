@@ -65,6 +65,15 @@ enum HabitLogStatus {
   SKIPPED
 }
 
+// PR-SUPP: supplement-plan item status — the approved workbook planner
+// choices. Coach instruction/priority only; never a taken/not-taken or
+// active/paused state.
+enum SupplementItemStatus {
+  MUST_HAVE
+  OPTIONAL
+  NONE
+}
+
 enum ConsentKind {
   PRIVACY_NOTICE
   HEALTH_DATA
@@ -323,6 +332,8 @@ model Workspace {
   trainingPrograms              TrainingProgram[]
   trainingProgramVersions       TrainingProgramVersion[]
   trainingSessionBookings       TrainingSessionBooking[]
+  supplementPlans               SupplementPlan[]
+  supplementPlanItems           SupplementPlanItem[]
 
   // PR-M0 (schema v2) tenant tables.
   mediaObjects            MediaObject[]
@@ -405,6 +416,9 @@ model WorkspaceMember {
   mealPlanDraftsSaved       MealPlan[]        @relation("MealPlanDraftSaver")
   mealPlanTimezonesSet      MealPlan[]        @relation("MealPlanTimezoneSetter")
   mealPlanVersionsPublished MealPlanVersion[] @relation("MealPlanVersionPublisher")
+
+  supplementPlansCreated SupplementPlan[] @relation("SupplementPlanCreator")
+  supplementPlansSaved   SupplementPlan[] @relation("SupplementPlanSaver")
 
   trainingProgramsCreated          TrainingProgram[]        @relation("TrainingProgramCreator")
   trainingProgramsDraftsSaved      TrainingProgram[]        @relation("TrainingProgramDraftSaver")
@@ -489,6 +503,8 @@ model ClientProfile {
   habits                      Habit[]                      @relation("HabitClient")
   mealPlan                    MealPlan?                    @relation("MealPlanClient")
   mealPlanVersions            MealPlanVersion[]            @relation("MealPlanVersionClient")
+  supplementPlan              SupplementPlan?              @relation("SupplementPlanClient")
+  supplementPlanItems         SupplementPlanItem[]         @relation("SupplementPlanItemClient")
   trainingPrograms            TrainingProgram[]            @relation("TrainingProgramClient")
   trainingProgramVersions     TrainingProgramVersion[]     @relation("TrainingProgramVersionClient")
   trainingBookings            TrainingSessionBooking[]     @relation("TrainingBookingClient")
@@ -2529,4 +2545,73 @@ model CheckInAnswerMedia {
 
   @@id([answerId, mediaObjectId])
   @@map("checkin_answer_media")
+}
+
+// PR-SUPP: one saved supplement plan per client — latest-saved
+// whole-plan semantics (the approved UI ships no draft/active/history
+// lifecycle). revision is the save-CAS guard; saved_* provenance marks
+// the last committed save. Composite coherence keys feed the raw
+// migration FKs.
+model SupplementPlan {
+  id                String    @id @default(cuid())
+  workspaceId       String    @map("workspace_id")
+  clientProfileId   String    @unique @map("client_profile_id")
+  name              String
+  revision          Int       @default(1)
+  savedByMemberId   String?   @map("saved_by_member_id")
+  savedAt           DateTime? @map("saved_at") @db.Timestamptz(6)
+  createdByMemberId String    @map("created_by_member_id")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace       Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile   ClientProfile        @relation("SupplementPlanClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  savedByMember   WorkspaceMember?     @relation("SupplementPlanSaver", fields: [savedByMemberId], references: [id], onDelete: Restrict)
+  createdByMember WorkspaceMember      @relation("SupplementPlanCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  items           SupplementPlanItem[]
+
+  // Composite coherence targets for the raw item/member FKs.
+  @@unique([id, workspaceId])
+  @@unique([id, workspaceId, clientProfileId])
+  @@index([workspaceId])
+  @@map("supplement_plan")
+}
+
+// Ordered rows — position is the coach-arranged order; the same product
+// may appear more than once. The item embeds the catalogue snapshot the
+// coach saw at save time, so later catalogue edits never alter a saved
+// prescription (declared/reference fields stay NULL when the source had
+// none — never zero-filled). Content CHECKs (positive quantity, bounded
+// text) are raw migration SQL.
+model SupplementPlanItem {
+  id                String               @id @default(cuid())
+  planId            String               @map("plan_id")
+  workspaceId       String               @map("workspace_id")
+  clientProfileId   String               @map("client_profile_id")
+  position          Int
+  itemRefId         String?              @map("item_ref_id")
+  productRefId      String               @map("product_ref_id")
+  brand             String
+  productName       String               @map("product_name")
+  referenceQuantity Decimal?             @map("reference_quantity") @db.Decimal(14, 4)
+  quantityUnit      String?              @map("quantity_unit")
+  declaredAmount    Decimal?             @map("declared_amount") @db.Decimal(14, 4)
+  declaredUnit      String?              @map("declared_unit")
+  productUrl        String?              @map("product_url")
+  quantity          Decimal              @db.Decimal(14, 4)
+  doseUnit          String               @map("dose_unit")
+  timing            String
+  status            SupplementItemStatus
+  notes             String
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  plan          SupplementPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile  @relation("SupplementPlanItemClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+
+  @@unique([planId, position])
+  @@unique([id, workspaceId])
+  @@index([planId])
+  @@index([workspaceId])
+  @@map("supplement_plan_item")
 }
