@@ -43,6 +43,7 @@ export function envThresholds(env = process.env) {
 export const RULED = [
   {
     rule: "S03-18 real video feedback copy and width (Prompt 417)",
+    stem: "s03-checkin-review",
     text: {
       tag: "button",
       base: "Record demo video feedback",
@@ -75,15 +76,16 @@ export function applyRuled(stem, g, baseRows, curRows) {
   const keys = new Set();
   const rules = new Set();
   for (const r of RULED) {
-    for (const t of r.text ? g.texts : [])
-      if (
-        t.tag === r.text.tag &&
-        t.base === r.text.base &&
-        t.now === r.text.now
-      ) {
-        keys.add(t.key);
-        rules.add(r.rule);
-      }
+    if (r.text && (!r.stem || r.stem === stem))
+      for (const t of g.texts)
+        if (
+          t.tag === r.text.tag &&
+          t.base === r.text.base &&
+          t.now === r.text.now
+        ) {
+          keys.add(t.key);
+          rules.add(r.rule);
+        }
     if (!r.added || r.added.stem !== stem) continue;
     const added = new Set(g.added.map((a) => a[0]));
     for (const a of g.added)

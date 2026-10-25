@@ -409,4 +409,22 @@ it("disposes only the exact S03-18 recorder copy/geometry decision", () => {
     buttonKey,
     otherKey,
   ]);
+
+  const foreignScreen = applyRuled(
+    "s03-add-extra",
+    diff,
+    baseRows,
+    currentRows,
+  );
+  expect(foreignScreen.rules).not.toContain(
+    "S03-18 real video feedback copy and width (Prompt 417)",
+  );
+  expect(foreignScreen.geom.texts.map((x: { key: string }) => x.key)).toEqual([
+    buttonKey,
+    otherKey,
+  ]);
+  expect(foreignScreen.geom.moved.map((x: { key: string }) => x.key)).toEqual([
+    buttonKey,
+    otherKey,
+  ]);
 });
