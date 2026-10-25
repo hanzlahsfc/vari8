@@ -442,6 +442,95 @@ export async function loadSubmissionAnswers(
   };
 }
 
+/* -------------------------------------------------------------------------
+ * FULL-PACKAGE SLICE of #171 — review-panel read (card 06 / R2-N2)
+ * ---------------------------------------------------------------------- */
+
+/** One changed answer row in the panel's change summary (display values). */
+export type CheckInAnswerChangeWire = {
+  fieldId: string;
+  label: string;
+  kind: string;
+  previous: string | null;
+  current: string | null;
+};
+
+/**
+ * The one-call review read: the audited submission detail (answers,
+ * review state, feedback, linked media) plus the change summary against
+ * the previous submission of the same form. `reviewState` carries the
+ * two durable server states; `draft` stays client-local autosave.
+ */
+export type CheckInReviewPanelWire = {
+  submissionId: string;
+  instanceId: string;
+  formName: string;
+  versionSeq: number;
+  dueAt: string;
+  submittedAt: string;
+  late: boolean;
+  reviewed: { byName: string; at: string } | null;
+  canMark: boolean;
+  canSend: boolean;
+  feedback: { id: string; sentAt: string; byName: string; body: string }[] | null;
+  feedbackNextCursor: string | null;
+  fields: {
+    fieldId: string;
+    label: string;
+    kind: string;
+    required: boolean;
+    display: string;
+    mediaIds: string[];
+  }[];
+  reviewState: "open" | "answered";
+  changeSummary: {
+    previousSubmissionId: string;
+    previousSubmittedAt: string;
+    previousFormName: string;
+    added: CheckInAnswerChangeWire[];
+    removed: CheckInAnswerChangeWire[];
+    changed: CheckInAnswerChangeWire[];
+    unchanged: number;
+  } | null;
+};
+
+/**
+ * GET submissions/:submissionId/review — the review-panel read. Returns
+ * the raw wire payload plus the `Submission` patch the rest of the
+ * review screen renders from (same mapping `loadSubmissionAnswers`
+ * applies, fed by this read so the screen issues one audited call).
+ */
+export async function loadCheckInReview(
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    submissionId: string;
+  },
+  submission: Submission,
+): Promise<{ panel: CheckInReviewPanelWire; submission: Submission }> {
+  const panel = await apiFetch<CheckInReviewPanelWire>(
+    `/workspaces/${input.workspaceId}/checkins/submissions/${input.submissionId}/review?clientProfileId=${encodeURIComponent(input.clientProfileId)}`,
+  );
+  const sent = panel.feedback?.[panel.feedback.length - 1];
+  return {
+    panel,
+    submission: {
+      ...submission,
+      answers: panel.fields
+        .filter((field) => field.kind !== "visual")
+        .map((field) => ({ question: field.label, answer: field.display })),
+      visuals: panel.fields.flatMap((field) => field.mediaIds),
+      response: sent
+        ? {
+            text: sent.body,
+            changes: submission.response?.changes ?? [],
+            date: viennaDate(sent.sentAt),
+          }
+        : submission.response,
+    },
+  };
+}
+
 /** One tracker value for the check-in date, display-ready (server-rendered). */
 export type TrackerContextValue = {
   parameterKey: string;
