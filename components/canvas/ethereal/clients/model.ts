@@ -11,7 +11,12 @@ export type ClientTask = {
   status: "open" | "complete" | "overdue";
 };
 
-export type CoachTask = { id: string; title: string; complete: boolean };
+export type CoachTask = {
+  id: string;
+  title: string;
+  complete: boolean;
+  deadline?: string;
+};
 export type CheckIn = {
   id: string;
   date: string;
@@ -19,7 +24,7 @@ export type CheckIn = {
   summary: string;
   feedback: string;
 };
-export type ClientNote = { id: string; text: string };
+export type ClientNote = { id: string; text: string; pinned?: boolean };
 
 export type WorkspaceClient = Client & {
   email: string;

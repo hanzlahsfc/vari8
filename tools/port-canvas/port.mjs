@@ -3,9 +3,16 @@
 // into the root canvas, rewriting import specifiers.
 // Rerunnable. `node tools/port-canvas/port.mjs --list` prints the plan only.
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmdirSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, sep } from "node:path";
 
 const SRC_REF = process.env.PORT_REF ?? "51fa6a2";
 const BASE_REF = process.env.PORT_BASE ?? "fe5780d";
@@ -47,6 +54,10 @@ function files() {
 // frontend/src path -> root path
 function target(rel) {
   if (rel === "app/layout.tsx") return "app/(canvas)/layout.tsx";
+  // route dirs (app/<x>/**) port into the canvas route group; the group does
+  // not change the URL, so they keep serving at /<x>/*.
+  if (rel.startsWith("app/") && rel.slice("app/".length).includes("/"))
+    return "app/(canvas)/" + rel.slice("app/".length);
   if (rel.startsWith("components/"))
     return "components/canvas/" + rel.slice("components/".length);
   if (rel.startsWith("lib/")) return "lib/canvas/" + rel.slice("lib/".length);
@@ -125,12 +136,29 @@ if (process.argv.includes("--merge")) {
   process.exit(0);
 }
 
-let written = 0;
-for (const { rel } of list) {
-  const body = rewrite(git("show", `${SRC_REF}:${SRC_PREFIX}${rel}`));
+let written = 0,
+  deleted = 0;
+for (const { status, rel } of list) {
   const out = join(ROOT, target(rel));
+  if (status === "D") {
+    // deleted upstream: remove the ported copy and prune now-empty dirs
+    if (existsSync(out)) {
+      unlinkSync(out);
+      for (let dir = dirname(out); dir.startsWith(ROOT + sep);) {
+        try {
+          rmdirSync(dir);
+        } catch {
+          break;
+        }
+        dir = dirname(dir);
+      }
+    }
+    deleted++;
+    continue;
+  }
+  const body = rewrite(git("show", `${SRC_REF}:${SRC_PREFIX}${rel}`));
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, body);
   written++;
 }
-console.log(`wrote ${written} files from ${SRC_REF}`);
+console.log(`wrote ${written} files, deleted ${deleted} from ${SRC_REF}`);

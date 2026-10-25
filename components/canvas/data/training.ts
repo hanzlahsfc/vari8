@@ -18,6 +18,8 @@ type TrainingData = {
   training: Record<string, ClientPlans["training"]>;
   /** Activity target versions per client id (prescriptions sit with training). */
   activityTargets?: Record<string, ClientPlans["activityTargets"]>;
+  /** Client-logged training sessions (the client app's logbook). */
+  trainingLogs?: CoachState["trainingLogs"];
   /** One-shot demo seeds, kept so the Amara example is adopted exactly once. */
   demoSeeds?: CoachState["demoSeeds"];
 };
@@ -36,6 +38,7 @@ export const trainingSlice: CoachSlice = {
         client.plans ? [[client.id, client.plans.activityTargets]] : [],
       ),
     ),
+    trainingLogs: state.trainingLogs,
     demoSeeds: state.demoSeeds,
   }),
   merge: (slice, state) => {
@@ -43,6 +46,7 @@ export const trainingSlice: CoachSlice = {
       throw new Error("Invalid training slice");
     const data = slice as Partial<TrainingData>;
     if (data.exerciseLibrary) state.exerciseLibrary = data.exerciseLibrary;
+    if (data.trainingLogs) state.trainingLogs = data.trainingLogs;
     if (data.demoSeeds) state.demoSeeds = data.demoSeeds;
     if (data.training && typeof data.training === "object")
       for (const client of state.clients) {

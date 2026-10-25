@@ -48,3 +48,66 @@
   cursor: not-allowed;
   opacity: 0.55;
 }
+
+.coach-root .cd-nt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  align-items: start;
+}
+.coach-root .cd-nt-grid > * {
+  min-width: 0;
+}
+.coach-root .cd-nt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 14px;
+}
+.coach-root .cd-nt-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 0;
+}
+.coach-root .cd-nt-row p {
+  flex: 1;
+  margin: 0;
+  min-width: 0;
+}
+.coach-root .cd-nt-row p[data-pinned] {
+  font-weight: 550;
+}
+.coach-root .cd-nt-row .cd-task {
+  flex: 1;
+  min-width: 0;
+}
+.coach-root .cd-nt-row small {
+  color: var(--cd-muted);
+  white-space: nowrap;
+}
+.coach-root .cd-nt-task-title {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.coach-root .cd-nt-general {
+  margin-top: 16px;
+  color: var(--cd-text-secondary);
+}
+.coach-root .cd-nt-general summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+@media (max-width: 1100px) {
+  .coach-root .cd-nt-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.coach-root .cd-nt-pin.is-pinned {
+  color: var(--cd-accent);
+}

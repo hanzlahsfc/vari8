@@ -7,6 +7,7 @@ import type { CoachClient, CoachState } from "../coach/model";
 import {
   emptyClientPlans,
   type ClientGoal,
+  type ClientPlans,
 } from "../coach/plans/types";
 import {
   parameters,
@@ -22,6 +23,8 @@ type TrackerData = {
   entries: Record<string, CoachClient["entries"]>;
   /** Client goals per client id (G10: goals belong to the tracker wiring). */
   goals: Record<string, ClientGoal[]>;
+  /** Date-less metric targets per client id; same family as goals. */
+  otherTargets?: Record<string, ClientPlans["otherTargets"]>;
 };
 
 export const trackerSlice: CoachSlice = {
@@ -33,6 +36,11 @@ export const trackerSlice: CoachSlice = {
     goals: Object.fromEntries(
       state.clients.flatMap((client) =>
         client.plans ? [[client.id, client.plans.goals]] : [],
+      ),
+    ),
+    otherTargets: Object.fromEntries(
+      state.clients.flatMap((client) =>
+        client.plans ? [[client.id, client.plans.otherTargets]] : [],
       ),
     ),
   }),
@@ -49,6 +57,12 @@ export const trackerSlice: CoachSlice = {
         const goals = data.goals[client.id];
         if (goals !== undefined)
           (client.plans ??= emptyClientPlans()).goals = goals;
+      }
+    if (data.otherTargets && typeof data.otherTargets === "object")
+      for (const client of state.clients) {
+        const targets = data.otherTargets[client.id];
+        if (targets !== undefined)
+          (client.plans ??= emptyClientPlans()).otherTargets = targets;
       }
   },
 };
