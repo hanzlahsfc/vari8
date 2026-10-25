@@ -36,7 +36,7 @@ Two independent reference server/browser runs:
 
 Proposed artifacts are under `tools/parity/reference/proposed/`: reference images and geometry,
 manifest, provenance, stability, comparison results, old hash list and the old→proposed map. The
-mapping has 274 entries; the proposal contains 246 files (including manifest/provenance). The old
+mapping has 272 entries; the proposal contains 244 files (including manifest/provenance). The old
 `tools/parity/baseline/` remains byte-identical.
 
 ## Provenance/environment
