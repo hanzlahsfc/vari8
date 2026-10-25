@@ -69,3 +69,8 @@ export function fetchOwnMediaDownload(
 ): Promise<OwnMediaDownloadWire> {
   return apiFetch(`/media/${workspaceId}/${mediaObjectId}`);
 }
+
+// Card 08: the same mint route serves staff reading a client's media —
+// the service re-checks scope either way, so this is only a clearer name
+// for staff-side callers.
+export const fetchMediaDownload = fetchOwnMediaDownload;
