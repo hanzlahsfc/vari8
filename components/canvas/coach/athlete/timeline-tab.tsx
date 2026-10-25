@@ -59,8 +59,12 @@ import {
   normalizePhases,
   phaseRanges,
 } from "../plans/phase-planning";
+import {
+  fetchActivityTargets,
+  versionsFromWire,
+} from "../../data/activity-targets";
 import { TemporaryPlanDialog } from "../plans/temporary-plan-dialog";
-import type { IifymPlan } from "../plans/types";
+import { emptyClientPlans, type IifymPlan } from "../plans/types";
 import { useCoach } from "../store";
 import {
   addLocalDays,
@@ -1028,7 +1032,14 @@ function groupSummary(entries: Map<string, DayEntry>, gweeks: Week[]) {
 // ─── Components ─────────────────────────────────────────────────────
 
 export function AthleteTimelineTab({ client }: { client: CoachClient }) {
-  const { state, setState, navigate, toast } = useCoach();
+  const {
+    state,
+    setState,
+    navigate,
+    toast,
+    workspaceId,
+    clientProfileIdFor,
+  } = useCoach();
   const today = localToday();
   const ranges = useMemo(() => phaseRanges(client.phases), [client.phases]);
   const weeks = useMemo(
@@ -1058,6 +1069,42 @@ export function AthleteTimelineTab({ client }: { client: CoachClient }) {
     () => new Map(clientTracking(client).map((entry) => [entry.date, entry])),
     [client],
   );
+
+  // Issue #169: attached to a workspace the timeline resolves the persisted
+  // day-effective versions through the same canvas resolver — a successful
+  // read is authoritative, a failed read keeps the local copy.
+  useEffect(() => {
+    if (!workspaceId) return;
+    let live = true;
+    void (async () => {
+      const clientProfileId = await clientProfileIdFor(client.name);
+      if (!live || !clientProfileId) return;
+      try {
+        const res = await fetchActivityTargets(workspaceId, clientProfileId);
+        if (!live) return;
+        const versions = versionsFromWire(res.versions);
+        setState((current) => ({
+          ...current,
+          clients: current.clients.map((item) =>
+            item.id === client.id
+              ? {
+                  ...item,
+                  plans: {
+                    ...(item.plans ?? emptyClientPlans()),
+                    activityTargets: versions,
+                  },
+                }
+              : item,
+          ),
+        }));
+      } catch {
+        // The timeline keeps its local versions rather than misreporting.
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [workspaceId, clientProfileIdFor, client.id, client.name, setState]);
 
   const isFutureWeek = (week: Week) => week.monday > today;
   const upcomingCount = weeks.filter(isFutureWeek).length;
