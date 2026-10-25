@@ -61,7 +61,7 @@
     },
     "packageCombined": {
       "path": "tools/parity/reference/package-combined.mjs",
-      "sha256": "b24ddf2a26d9641c8ddf80862fef0c344f2d9e7c5b164bd75682b1f2f228c7fe"
+      "sha256": "0d9e35e8742394edb9438f70e32d926280fc9d953af1d32bb40778b309e616e5"
     },
     "verifyCombined": {
       "path": "tools/parity/reference/verify-combined.mjs",

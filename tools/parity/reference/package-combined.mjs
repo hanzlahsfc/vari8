@@ -13,7 +13,7 @@ const arg = (name) => {
   return path.resolve(process.argv[i + 1]);
 };
 const git = (...args) =>
-  execFileSync("git", ["-C", ROOT, ...args], { encoding: "utf8" }).trim();
+  execFileSync("git", ["-C", ROOT, ...args], { encoding: "utf8" }).trimEnd();
 
 const run = arg("--run");
 const out = arg("--out");
