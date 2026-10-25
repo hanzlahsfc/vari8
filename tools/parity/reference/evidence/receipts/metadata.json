@@ -5,12 +5,12 @@
     "id": "visual-reference-comparer-v2",
     "manifest": {
       "path": "tools/parity/reference/evidence/comparer.json",
-      "sha256": "4168c4c0e68a11e3d5ec4ecb2296534a400810e583309f8b38cd309c351235f9"
+      "sha256": "66fc96ba6cf9e3a19f4fa6b4c2c5ff78a116c5e96dcd331a0d1a67fea94ff3e8"
     },
     "components": {
       "reference": {
         "path": "tools/parity/reference/reference.mjs",
-        "sha256": "3c7db0ad1285a4847ee8dea24a2f60d30e842702a6a7bf4ab67c4c345061c7c4"
+        "sha256": "0f7ca10d28c41bb3fe81977c2f823f2653ef9901115c5e86c21605fe04428bad"
       },
       "referenceCompare": {
         "path": "tools/parity/reference/compare.mjs",

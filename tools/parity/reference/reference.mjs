@@ -329,7 +329,7 @@ export function createAdapter({ harnessRoot, outputFile }) {
   code = replace(
     code,
     "const FREEZE_CSS = `",
-    `const { inspectPage } = await import(pathToFileURL(path.join(ROOT, "tools/parity/reference/capture-metadata.mjs")).href);\nconst FREEZE_CSS = `,
+    `const { inspectPage } = await import(pathToFileURL(path.join(ROOT, "tools/parity/reference/capture-metadata.mjs")).href);\nconst FREEZE_CSS = \``,
   );
   code = replace(
     code,

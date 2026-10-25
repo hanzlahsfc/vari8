@@ -290,6 +290,9 @@ describe("combined-run source and pin enforcement", () => {
     expect(fs.readFileSync(a, "utf8")).toBe(fs.readFileSync(b, "utf8"));
     expect(fs.readFileSync(a, "utf8")).not.toContain(process.cwd());
     expect(fs.readFileSync(a, "utf8")).toContain("while (!existsSync(");
+    expect(
+      spawnSync(process.execPath, ["--check", a], { encoding: "utf8" }).status,
+    ).toBe(0);
   });
 
   it("rejects comparer and receipt-hash tampering independent of artifact indexing", () => {
