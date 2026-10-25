@@ -1080,6 +1080,25 @@
   color: var(--v8-warning-text);
   background: color-mix(in srgb, var(--v8-warning) 14%, var(--cd-surface));
 }
+/* FULL-PACKAGE SLICE of #171 — review panel state chips: open stays the
+   base muted pill, draft flags the unsent autosave, answered closes out. */
+.coach-root .cd-status[data-status="Draft"] {
+  color: var(--v8-warning-text);
+  background: color-mix(in srgb, var(--v8-warning) 14%, var(--cd-surface));
+}
+.coach-root .cd-status[data-status="Answered"] {
+  color: var(--cd-accent-text);
+  background: color-mix(in srgb, var(--cd-accent) 14%, var(--cd-surface));
+}
+.coach-root .cd-change-summary[data-change="added"] strong {
+  color: var(--v8-accent-text);
+}
+.coach-root .cd-change-summary[data-change="removed"] strong {
+  color: var(--v8-danger-text);
+}
+.coach-root .cd-change-summary[data-change="changed"] strong {
+  color: var(--v8-warning-text);
+}
 .coach-root .cd-template-editor-header {
   margin-bottom: 26px;
   position: sticky;

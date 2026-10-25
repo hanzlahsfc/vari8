@@ -1,11 +1,21 @@
 import { z } from "zod";
 
 import { defineApiV1Route } from "@/lib/api/v1";
-import { markCheckInSubmissionReviewedFromAction } from "@/lib/checkin/instances-boundary";
+import {
+  markCheckInSubmissionReviewedFromAction,
+  readCheckInReviewPanelFromAction,
+} from "@/lib/checkin/instances-boundary";
 
 import { readBody, sessionOf, unwrap } from "../../../_result";
 
 /**
+ * GET /api/v1/workspaces/:workspaceId/checkins/submissions/:submissionId/review
+ *
+ * FULL-PACKAGE SLICE of #171 — the coach review-panel read: one call
+ * returns the audited submission detail (answers, review state, feedback,
+ * linked media) plus the change summary against the previous submission
+ * of the same form.
+ *
  * POST /api/v1/workspaces/:workspaceId/checkins/submissions/:submissionId/review
  *
  * The terminal review acknowledgement. Idempotent: a replay returns
@@ -18,7 +28,23 @@ const paramsSchema = z.object({
   submissionId: z.string().min(1),
 });
 
+const querySchema = z.object({ clientProfileId: z.string().min(1) });
+
 const bodySchema = z.object({ clientProfileId: z.string().min(1) });
+
+export const GET = defineApiV1Route({
+  capability: "clientData.read",
+  params: paramsSchema,
+  query: querySchema,
+  handler: async ({ viewer, params, query }) =>
+    unwrap(
+      await readCheckInReviewPanelFromAction(sessionOf(viewer), {
+        workspaceId: params.workspaceId,
+        clientProfileId: query.clientProfileId,
+        submissionId: params.submissionId,
+      }),
+    ),
+});
 
 export const POST = defineApiV1Route({
   capability: "plan.write",
