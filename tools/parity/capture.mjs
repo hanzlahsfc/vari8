@@ -87,6 +87,7 @@ const TEMPLATE_CARD = {
   containing: "Strength & balance",
 };
 const VIEW_TOGGLE = { within: ".cd-view-settings", target: "[role=switch]" };
+const PLAN_CARD = { within: ".cp-card" };
 export const STEP_SCOPES = {
   "s01-profile-checkins": { "Check-ins": { within: ".cd-profile-tabs" } },
   "s04-template-habits": Object.fromEntries(
@@ -100,15 +101,30 @@ export const STEP_SCOPES = {
       "Habits",
     ].map((label) => [label, VIEW_TOGGLE]),
   ),
-  "s05-tracker-setup": { "02 Dashboard": TEMPLATE_NAV },
+  "s05-tracker-setup": {
+    "01 Tabs": TEMPLATE_NAV,
+    "02 Tracker": TEMPLATE_NAV,
+    "Move down": {
+      within: "article.cd-tracker-selected-row",
+      containing: "Bodyweight",
+      target: '[aria-label="Move down"]',
+    },
+  },
   "s06-mealplan-editor": {
-    Create: { within: ".cd-plan-module", containing: "Nutrition" },
+    "Edit plan": { ...PLAN_CARD, containing: "Nutrition" },
   },
   "s07-exercise-library": {
-    Create: { within: ".cd-plan-module", containing: "Training" },
+    "Set up plan": { ...PLAN_CARD, containing: "Training" },
   },
-  "s06-template-nutrition": { "02 Dashboard": TEMPLATE_NAV },
-  "s08-template-dashboard": { "02 Dashboard": TEMPLATE_NAV },
+  "s13-supplements": {
+    "Set up plan": { ...PLAN_CARD, containing: "Supplements" },
+  },
+  "s06-template-nutrition": {
+    "02 Tracker": TEMPLATE_NAV,
+    "03 Timeline / Roadmap": TEMPLATE_NAV,
+    "04 Nutrition": TEMPLATE_NAV,
+  },
+  "s08-template-dashboard": { "01 Tabs": TEMPLATE_NAV },
   "s09-tracker-today": { Preview: TEMPLATE_CARD },
   "s09-tracker-week": { Preview: TEMPLATE_CARD },
   "s09-tracker-trends": { Preview: TEMPLATE_CARD },
