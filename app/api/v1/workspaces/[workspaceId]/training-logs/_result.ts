@@ -25,6 +25,7 @@ const STATUS: Record<string, number> = {
   consent_missing: 409,
   nothing_published: 409,
   no_governing_version: 409,
+  past_handover: 409,
   publish_incomplete: 409,
   program_cancelled: 409,
   program_ended: 409,
