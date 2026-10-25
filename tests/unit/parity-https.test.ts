@@ -1,4 +1,9 @@
-import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import {
+  execFileSync,
+  spawn,
+  spawnSync,
+  type ChildProcess,
+} from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
 import { AddressInfo } from "node:net";
@@ -17,6 +22,17 @@ import {
   canonicalizePath,
   prepareOwnedOutputDir,
 } from "../../tools/parity/safe-paths.mjs";
+import { assertRecordedTooling } from "../../tools/parity/reference/combined-pins.mjs";
+import {
+  createAdapter,
+  fileHash,
+} from "../../tools/parity/reference/reference.mjs";
+import {
+  assertCommitMatchesSource,
+  assertCurrentMaterialInputs,
+  assertPostCaptureDelta,
+  materialTreeSha256,
+} from "../../tools/parity/reference/source-identity.mjs";
 import {
   browserCookies,
   httpsRequest,
@@ -260,6 +276,161 @@ describe("combined-run artifact validation", () => {
         },
       }),
     ).toThrow(/unexpected|missing capture artifact/);
+  });
+});
+
+describe("combined-run source and pin enforcement", () => {
+  it("generates byte-identical location-independent adapters", () => {
+    const dir = fs.mkdtempSync("/tmp/parity-adapter-");
+    const a = path.join(dir, "first/d32-capture-adapter.mjs");
+    const b = path.join(dir, "second location/d32-capture-adapter.mjs");
+    const first = createAdapter({ harnessRoot: process.cwd(), outputFile: a });
+    const second = createAdapter({ harnessRoot: process.cwd(), outputFile: b });
+    expect(first.adapterSha256).toBe(second.adapterSha256);
+    expect(fs.readFileSync(a, "utf8")).toBe(fs.readFileSync(b, "utf8"));
+    expect(fs.readFileSync(a, "utf8")).not.toContain(process.cwd());
+    expect(fs.readFileSync(a, "utf8")).toContain("while (!existsSync(");
+  });
+
+  it("rejects comparer and receipt-hash tampering independent of artifact indexing", () => {
+    const root = fs.mkdtempSync("/tmp/parity-pins-");
+    const files = [
+      "tools/parity/run.mjs",
+      "tools/parity/capture.mjs",
+      "tools/parity/capture-metadata.mjs",
+      "tools/parity/safe-paths.mjs",
+      "tools/parity/compare.mjs",
+      "tools/parity/reference/reference.mjs",
+      "tools/parity/reference/combined-run.mjs",
+      "tools/parity/reference/combined-pins.mjs",
+      "tools/parity/reference/compare.mjs",
+      "tools/parity/reference/contract.json",
+      "tools/parity/reference/environment.mjs",
+      "tools/parity/reference/source-identity.mjs",
+      "tools/parity/reference/package-combined.mjs",
+      "tools/parity/reference/verify-combined.mjs",
+      "package.json",
+      "package-lock.json",
+      "tools/parity/reference/package.json",
+      "tools/parity/reference/package-lock.json",
+      "icm/04-briefing/shots/index.json",
+    ];
+    for (const file of files) {
+      fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+      fs.writeFileSync(path.join(root, file), `${file}\n`);
+    }
+    const adapter = path.join(root, "adapter/d32-capture-adapter.mjs");
+    fs.mkdirSync(path.dirname(adapter), { recursive: true });
+    fs.writeFileSync(adapter, "while (!existsSync(\n");
+    fs.mkdirSync(path.join(root, "tools/parity/reference/evidence"), {
+      recursive: true,
+    });
+    fs.writeFileSync(
+      path.join(root, "tools/parity/reference/evidence/comparer.json"),
+      "manifest\n",
+    );
+    const receipt = {
+      tooling: {
+        runner: fileHash(path.join(root, "tools/parity/run.mjs")),
+        comparer: fileHash(
+          path.join(root, "tools/parity/reference/compare.mjs"),
+        ),
+        legacyComparer: fileHash(path.join(root, "tools/parity/compare.mjs")),
+        validator: fileHash(
+          path.join(root, "tools/parity/reference/combined-run.mjs"),
+        ),
+        contract: fileHash(
+          path.join(root, "tools/parity/reference/contract.json"),
+        ),
+        comparerManifest: fileHash(
+          path.join(root, "tools/parity/reference/evidence/comparer.json"),
+        ),
+        locks: {
+          root: fileHash(path.join(root, "package-lock.json")),
+          reference: fileHash(
+            path.join(root, "tools/parity/reference/package-lock.json"),
+          ),
+        },
+        files: Object.fromEntries(
+          files.map((file) => [file, fileHash(path.join(root, file))]),
+        ),
+        adapter: { adapterSha256: fileHash(adapter) },
+      },
+      commands: [{ cwd: ".", argv: ["node", "tools/parity/run.mjs"] }],
+    };
+    expect(() =>
+      assertRecordedTooling({ root, receipt, adapterFile: adapter }),
+    ).not.toThrow();
+
+    fs.appendFileSync(
+      path.join(root, "tools/parity/reference/compare.mjs"),
+      "// no-op\n",
+    );
+    expect(() =>
+      assertRecordedTooling({ root, receipt, adapterFile: adapter }),
+    ).toThrow(
+      /recorded tool\/input pin differs|recorded comparer hash differs/,
+    );
+    fs.writeFileSync(
+      path.join(root, "tools/parity/reference/compare.mjs"),
+      "tools/parity/reference/compare.mjs\n",
+    );
+    receipt.tooling.runner = "0".repeat(64);
+    expect(() =>
+      assertRecordedTooling({ root, receipt, adapterFile: adapter }),
+    ).toThrow(/recorded runner hash differs/);
+  });
+
+  it("binds capture identity while allowing only explicitly recorded post-capture paths", () => {
+    const root = fs.mkdtempSync("/tmp/parity-source-id-");
+    const git = (...args: string[]) =>
+      execFileSync("git", ["-C", root, ...args], { encoding: "utf8" }).trim();
+    execFileSync("git", ["init", "-q", root]);
+    execFileSync("git", ["-C", root, "config", "user.name", "test"]);
+    execFileSync("git", [
+      "-C",
+      root,
+      "config",
+      "user.email",
+      "test@example.com",
+    ]);
+    fs.mkdirSync(path.join(root, "app"), { recursive: true });
+    fs.mkdirSync(path.join(root, "docs"), { recursive: true });
+    fs.writeFileSync(path.join(root, "app/a.txt"), "capture input\n");
+    fs.writeFileSync(path.join(root, "docs/a.txt"), "before\n");
+    git("add", ".");
+    git("commit", "-qm", "capture");
+    const source = {
+      sha: git("rev-parse", "HEAD"),
+      tree: git("rev-parse", "HEAD^{tree}"),
+      materialTreeSha256: materialTreeSha256(root, "HEAD"),
+    };
+    fs.writeFileSync(path.join(root, "docs/a.txt"), "after\n");
+    git("add", "docs/a.txt");
+    git("commit", "-qm", "docs only");
+    expect(() => assertCommitMatchesSource(root, source)).not.toThrow();
+    expect(() => assertCurrentMaterialInputs(root, source)).not.toThrow();
+    expect(() =>
+      assertPostCaptureDelta(root, {
+        capture: source,
+        postCapturePaths: ["docs/a.txt"],
+      }),
+    ).not.toThrow();
+    fs.writeFileSync(path.join(root, "app/a.txt"), "changed\n");
+    git("add", "app/a.txt");
+    git("commit", "-qm", "material");
+    expect(() => assertCurrentMaterialInputs(root, source)).toThrow(
+      /material inputs changed/,
+    );
+    expect(() =>
+      assertPostCaptureDelta(root, {
+        capture: source,
+        postCapturePaths: ["docs/a.txt"],
+      }),
+    ).toThrow(/post-capture delta differs/);
+    expect(() =>
+      assertCommitMatchesSource(root, { ...source, tree: "0".repeat(40) }),
+    ).toThrow(/source tree/);
   });
 });
 

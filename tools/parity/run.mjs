@@ -187,7 +187,6 @@ try {
     const { createAdapter } = await import("./reference/reference.mjs");
     combinedAdapter = createAdapter({
       harnessRoot: ROOT,
-      sourceRoot: ROOT,
       outputFile: adapterPath,
     });
     captureAll = (await import(pathToFileURL(adapterPath).href)).captureAll;
@@ -381,6 +380,8 @@ try {
           await import("./reference/combined-run.mjs");
         const { CONTRACT, installedDependencies, snapshotSource, fileHash } =
           await import("./reference/reference.mjs");
+        const { sourceIdentity } =
+          await import("./reference/source-identity.mjs");
         const { environment } = await import("./reference/environment.mjs");
         const { execFileSync: gitExec } = await import("node:child_process");
         const git = (...args) =>
@@ -400,7 +401,7 @@ try {
             pr206: "43b63ed0f41e6e92e93ecf72065c0190c9ef3dea",
             prep: { branch: "beta/p203-p206-combined-verification", head },
           },
-          source,
+          source: { ...source, ...sourceIdentity(ROOT, head) },
           dependencies,
           environment: env,
           adapter: combinedAdapter,
@@ -436,17 +437,16 @@ try {
         const receipt = {
           kind: "combined-proposed-reference-verification",
           commands: [
-            [
-              `PARITY_COMPARER=${process.env.PARITY_COMPARER}`,
-              `PARITY_REFERENCE_DIR=${process.env.PARITY_REFERENCE_DIR}`,
-              `PARITY_OUT_DIR=${process.env.PARITY_OUT_DIR}`,
-              process.env.PARITY_PORT
-                ? `PARITY_PORT=${process.env.PARITY_PORT}`
-                : null,
-              `${process.execPath} ${process.argv[1]}`,
-            ]
-              .filter(Boolean)
-              .join(" "),
+            {
+              cwd: ".",
+              argv: ["node", "tools/parity/run.mjs"],
+              env: {
+                PARITY_COMPARER: process.env.PARITY_COMPARER,
+                PARITY_REFERENCE_DIR: process.env.PARITY_REFERENCE_DIR,
+                PARITY_OUT_DIR: process.env.PARITY_OUT_DIR,
+                PARITY_PORT: process.env.PARITY_PORT ?? null,
+              },
+            },
           ],
           environmentVariables: Object.fromEntries(
             [
@@ -478,7 +478,7 @@ try {
             maxChangedFraction: CONTRACT.maxChangedFraction,
           },
           inputs: provenance.inputs,
-          source,
+          source: provenance.source,
           productTree: {
             tree: source.tree,
             diffFromPr203: git(
@@ -520,6 +520,31 @@ try {
                 path.join(ROOT, "tools/parity/reference/package-lock.json"),
               ),
             },
+            files: Object.fromEntries(
+              [
+                "tools/parity/run.mjs",
+                "tools/parity/capture.mjs",
+                "tools/parity/capture-metadata.mjs",
+                "tools/parity/safe-paths.mjs",
+                "tools/parity/compare.mjs",
+                "tools/parity/reference/reference.mjs",
+                "tools/parity/reference/combined-run.mjs",
+                "tools/parity/reference/compare.mjs",
+                "tools/parity/reference/contract.json",
+                "tools/parity/reference/environment.mjs",
+                "tools/parity/reference/source-identity.mjs",
+                "tools/parity/reference/combined-pins.mjs",
+                "tools/parity/reference/package-combined.mjs",
+                "tools/parity/reference/verify-combined.mjs",
+                "tools/parity/reference/evidence/evidence-lib.mjs",
+                "tools/parity/reference/evidence/comparer.json",
+                "package.json",
+                "package-lock.json",
+                "tools/parity/reference/package.json",
+                "tools/parity/reference/package-lock.json",
+                "icm/04-briefing/shots/index.json",
+              ].map((file) => [file, fileHash(path.join(ROOT, file))]),
+            ),
             adapter: combinedAdapter,
           },
           environment: env,

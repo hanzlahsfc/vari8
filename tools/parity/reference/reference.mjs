@@ -290,7 +290,7 @@ export function validateRun({ directory, manifest, shots, provenance }) {
   if (seen.size !== expected.size) throw new Error("incomplete captures");
   return artifacts;
 }
-export function createAdapter({ harnessRoot, sourceRoot, outputFile }) {
+export function createAdapter({ harnessRoot, outputFile }) {
   const pinned = execFileSync(
     "git",
     [
@@ -314,7 +314,7 @@ export function createAdapter({ harnessRoot, sourceRoot, outputFile }) {
   let code = replace(
     pinned,
     'const ROOT = path.resolve(HERE, "../..");',
-    `const ROOT = ${JSON.stringify(sourceRoot)};`,
+    'let ROOT = path.dirname(fileURLToPath(import.meta.url));\nwhile (!existsSync(path.join(ROOT, "package.json")) && path.dirname(ROOT) !== ROOT) ROOT = path.dirname(ROOT);\nif (!existsSync(path.join(ROOT, "package.json"))) throw new Error("package.json not found above adapter");',
   );
   code = replace(
     code,
@@ -324,7 +324,12 @@ export function createAdapter({ harnessRoot, sourceRoot, outputFile }) {
   code = replace(
     code,
     'import { chromium } from "@playwright/test";',
-    `import { chromium } from "@playwright/test";\nimport { inspectPage } from ${JSON.stringify(new URL("./capture-metadata.mjs", import.meta.url).href)};`,
+    'import { chromium } from "@playwright/test";\nimport { existsSync } from "node:fs";',
+  );
+  code = replace(
+    code,
+    "const FREEZE_CSS = `",
+    `const { inspectPage } = await import(pathToFileURL(path.join(ROOT, "tools/parity/reference/capture-metadata.mjs")).href);\nconst FREEZE_CSS = `,
   );
   code = replace(
     code,
@@ -343,7 +348,7 @@ export function createAdapter({ harnessRoot, sourceRoot, outputFile }) {
     originalCaptureSha256: sha256(pinned),
     adapterSha256: sha256(code),
     transformations: [
-      "source ROOT path only",
+      "portable checkout root discovery",
       "D32 09:00 clock",
       "post-image semantic/font/state/scroller metadata; role/name append to geometry; no screenshot selectors/settings change",
     ],

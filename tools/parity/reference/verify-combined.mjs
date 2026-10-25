@@ -5,6 +5,15 @@ import { fileHash, CONTRACT, assertContract } from "./reference.mjs";
 import { validateCombinedRun } from "./combined-run.mjs";
 import { compareRuns } from "./compare.mjs";
 import { verifyArtifactIndex, walkFiles } from "./evidence/evidence-lib.mjs";
+import {
+  assertRecordedDependencies,
+  assertRecordedTooling,
+} from "./combined-pins.mjs";
+import {
+  assertCommitMatchesSource,
+  assertCurrentMaterialInputs,
+  assertPostCaptureDelta,
+} from "./source-identity.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../../..");
@@ -33,6 +42,9 @@ const receipt = readJson(path.join(PKG, "receipts/execution.json"));
 const provenance = readJson(
   path.join(PKG, "receipts/combined-provenance.json"),
 );
+const compatibility = readJson(
+  path.join(PKG, "receipts/source-compatibility.json"),
+);
 const manifest = readJson(path.join(PKG, "current/manifest.json"));
 const shots = readJson(SHOTS).shots;
 assertContract(CONTRACT);
@@ -40,16 +52,31 @@ assertContract(provenance.contract);
 if (
   receipt.kind !== "combined-proposed-reference-verification" ||
   provenance.role !== "combined" ||
+  compatibility.kind !== "combined-source-compatibility-v1" ||
   provenance.source.sha !== provenance.inputs.prep.head ||
   receipt.source.sha !== provenance.source.sha ||
-  receipt.inputs.prep.head !== provenance.inputs.prep.head
+  receipt.inputs.prep.head !== provenance.inputs.prep.head ||
+  compatibility.capture.sha !== provenance.source.sha ||
+  compatibility.capture.tree !== provenance.source.tree
 )
   throw new Error("combined receipt/provenance source mismatch");
+
+assertCommitMatchesSource(ROOT, provenance.source);
+assertCurrentMaterialInputs(ROOT, provenance.source);
+assertPostCaptureDelta(ROOT, compatibility);
+
+assertRecordedTooling({
+  root: ROOT,
+  receipt,
+  adapterFile: path.join(PKG, "adapter/d32-capture-adapter.mjs"),
+});
 if (
-  receipt.tooling.adapter.adapterSha256 !==
+  provenance.adapter.adapterSha256 !==
   fileHash(path.join(PKG, "adapter/d32-capture-adapter.mjs"))
 )
   throw new Error("packaged adapter hash differs");
+assertRecordedDependencies(ROOT, receipt);
+
 const artifacts = validateCombinedRun({
   directory: path.join(PKG, "current"),
   manifest,
@@ -85,6 +112,12 @@ console.log(
     package: PKG,
     indexedArtifacts: indexed,
     captureArtifacts: artifacts.length,
+    captureSource: {
+      sha: provenance.source.sha,
+      tree: provenance.source.tree,
+      materialTreeSha256: provenance.source.materialTreeSha256,
+    },
+    currentHead: process.env.GIT_COMMIT ?? null,
     canonical: { passed: receipt.results.canonical.passed, failed: 0 },
     strict: {
       passed: receipt.results.strict.passed,
