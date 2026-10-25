@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 150 modules with exports, 1483 exported symbols.
+Counts: 151 modules with exports, 1503 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -754,6 +754,22 @@ Imported type names are shown without their `import("...")` prefix.
 - `export { isDailyPrototypeEnabled } from "../daily-prototype"`
 - `export function resolveDailyEntryMode(entryEnv: string | undefined, prototypeEnv: string | undefined, env: RuntimeEnv = process.env): DailyEntryMode`
 
+## `lib/daily-entry/nutrition-log.ts`
+
+- `export { DailyEntryError } from "./gate"`
+- `export const MAX_MACRO_GRAMS = 10000`
+- `export const NUTRITION_LOG_HISTORY_LIMIT = 30`
+- `export type NutritionLogDay = { entryDate: string; protein: number | null; carbohydrate: number | null; fat: number | null; }`
+- `export type NutritionLogSurface = | { state: "ready"; entryDate: string; log: Omit<NutritionLogDay, "entryDate"> | null; history: NutritionLogDay[]; } | { state: "not_applicable" } | { state: "cons...`
+- `export type NutritionMacroValues = { protein: number | null; carbohydrate: number | null; fat: number | null; }`
+- `export const STAFF_NUTRITION_LOG_MAX_SPAN_DAYS = 366`
+- `export type SaveNutritionLogInput = { workspaceId: string; entryDate: string; macros: NutritionMacroValues; }`
+- `export type SaveNutritionLogResult = { status: "saved" | "no_op" }`
+- `export type StaffNutritionLogListResult = | { state: "ready"; clientName: string; items: NutritionLogDay[]; } | { state: "consent_missing" }`
+- `export async function listStaffNutritionLogs(session: SessionLike, input: { workspaceId: string; clientProfileId: string; from?: string; to?: string; }, deps: DailyEntryDeps = {}): Promise<StaffNut...`
+- `export async function loadNutritionLogSurface(session: SessionLike, input: { workspaceId: string; entryDate?: string }, deps: DailyEntryDeps = {}): Promise<NutritionLogSurface>`
+- `export async function saveNutritionLog(session: SessionLike, input: SaveNutritionLogInput, deps: DailyEntryDeps = {}): Promise<SaveNutritionLogResult>`
+
 ## `lib/daily-entry/service.ts`
 
 - `export const DAILY_ENTRY_DEV_CONSENT = { PRIVACY_NOTICE: "daily-entry-dev-privacy-v1", HEALTH_DATA: "daily-entry-dev-health-v1", } as const`
@@ -770,14 +786,19 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type StaffDailyEntryDetail = { entryDate: string; revisionSeq: number; revisionCount: number; declaredAt: string; values: DailyEntryHistoryRow[]; }`
 - `export type StaffDailyEntryListItem = { entryDate: string; revisionCount: number; currentRevisionSeq: number | null; }`
 - `export type StaffDailyEntryListResult = | { state: "ready"; clientName: string; items: StaffDailyEntryListItem[]; nextCursor: string | null; } | { state: "consent_missing" }`
+- `export async function advisoryLock(tx: Prisma.TransactionClient, key: string): Promise<void>`
+- `export async function checkRequiredConsent(tx: PrismaLike, clientProfileId: string, registry: ConsentPolicyRegistry, forUpdate: boolean): Promise<void>`
 - `export function dailyEntryConsentRegistry(entryFlagEnabled: boolean): ConsentPolicyRegistry`
 - `export async function listStaffDailyEntries(session: SessionLike, input: { workspaceId: string; clientProfileId: string; cursor?: string }, deps: DailyEntryDeps = {}): Promise<StaffDailyEntryListRe...`
 - `export async function loadDailyEntrySurface(session: SessionLike, input: { workspaceId: string; entryDate?: string }, deps: DailyEntryDeps = {}): Promise<DailyEntrySurface>`
+- `export async function lockRow(tx: Prisma.TransactionClient, sql: string, ...params: string[]): Promise<void>`
 - `export function parseDeclaredDate(raw: unknown): string`
 - `export function parseStaffEntryCursor(raw: unknown): string | null`
 - `export async function readStaffDailyEntryDetail(session: SessionLike, input: { workspaceId: string; clientProfileId: string; entryDate: string }, deps: DailyEntryDeps = {}): Promise<StaffDailyEntry...`
 - `export async function readStaffDailyEntryDetailTx(tx: Prisma.TransactionClient, input: { workspaceId: string; clientProfileId: string; entryDate: string; ctx: Awaited<ReturnType<typeof authorize>>;...`
+- `export async function resolveOwnClient(tx: Prisma.TransactionClient, workspaceId: string, userId: string): Promise<{ id: string } | null>`
 - `export async function saveDailyEntry(session: SessionLike, input: SaveDailyEntryInput, deps: DailyEntryDeps = {}): Promise<SaveDailyEntryResult>`
+- `export async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T>`
 
 ## `lib/daily-entry/validate.ts`
 
@@ -1345,6 +1366,7 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/nutrition/math.ts`
 
 - `export type Food = Nutrients & { id: string; name: string; amount: number; unit: string; }`
+- `export type MacroActuals = { protein: number | null; carbohydrate: number | null; fat: number | null; }`
 - `export type MacroEnergyShares = Pick<Nutrients, "protein" | "carbs" | "fat">`
 - `export type MealLike = { portions: readonly PortionLike[] }`
 - `export type Nutrients = { calories: number; protein: number; carbs: number; fat: number; }`
@@ -1354,6 +1376,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function calculateMealNutrients(meal: MealLike, foods: ReadonlyMap<string, Food>): Nutrients`
 - `export function calculatePortionNutrients(food: Food, quantity: number): Nutrients`
 - `export function calculateVariantNutrients(variant: VariantLike, foods: ReadonlyMap<string, Food>): Nutrients`
+- `export function caloriesFromMacros(actuals: MacroActuals): number`
 - `export const emptyNutrients = (): Nutrients =>`
 - `export function iifymTargetNutrients(targets: MealTargets): Nutrients`
 - `export function macroEnergyShares(nutrients: Nutrients): MacroEnergyShares`
