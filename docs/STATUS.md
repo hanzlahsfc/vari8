@@ -1,3 +1,32 @@
+## 2026-10-25 — Stage 1 card 02 (#162 slice): supplement-plan thin route, provider, coach editor wiring
+
+- Thin route
+  `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/supplement-plan/route.ts`:
+  `GET` `plan.read` selects `readStaffSupplementPlan` (workspace scope) or
+  `readOwnSupplementPlan` (own scope); `PUT` `plan.write` denies clients at
+  the capability gate. Backend untouched — the merged
+  `lib/supplements/{model,service,boundary,gate}.ts` is called through its
+  safe `*FromAction` boundary with a closed error mapping.
+- `components/canvas/data/supplements.ts` is the remote provider
+  (apiFetch) with `planFromView`/`toWireItems` mappers; registered in
+  `data/index.ts` as a remote domain with no localStorage slice. The coach
+  `SupplementEditor` hydrates from the API on mount and PUTs the full
+  ordered list on Save; no autosave. Slice wiring is marked temporary for
+  the owning #162 follow-up.
+- Gates: `npm run typecheck` 0; `npm run lint` 0 (89 known warnings);
+  `npm run format:check` 0; `npm run index` + `index:check` 0;
+  `npm run test` 0 (1292, +3 provider tests); `npm run build` 0.
+- Lane db `app_fp_card02`: `prisma migrate deploy` 0,
+  `20261023000000_supplement_plan` applied exactly once; db dropped.
+- Probes on the built artifact (https origin via disposable TLS proxy,
+  `APP_ENV=test ENABLE_SUPPLEMENTS=1`): coach GET 200 / PUT 200 / GET 200
+  ordered; profile-linked client GET 200 same items; client PUT 403;
+  foreign-workspace GET 403. Seeded walk added two items with statuses,
+  saved, reloaded — order and rows persisted.
+- No consent gate on supplements (owner decision 2026-10-22);
+  `ENABLE_CONSENT_GATES` unset. Evidence report:
+  `Vari8-evidence/FULL-PACKAGE/STAGE-1/card-02/REPORT.md`.
+
 ## 2026-10-24 — PR #201 K6-GATE evidence whitespace closure — receipts normalized, checks clean
 
 - Independent review found the complete base-to-head
