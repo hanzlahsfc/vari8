@@ -4,6 +4,7 @@ import { forbidden } from "next/navigation";
 import { AccessDeniedError } from "@/lib/auth/guard";
 import { requireSessionUser } from "@/lib/auth/route-guard";
 import { resolveScope } from "@/lib/auth/rbac";
+import { memberRoleToRole } from "@/lib/auth/roles";
 import { resolveDailyEntryMode } from "@/lib/daily-entry/gate";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
 import { isClientDashboardEnabled } from "@/lib/dashboard/gate";
@@ -150,6 +151,12 @@ export default async function ClientsPage({
     isTrainingPlansEnabled() &&
     (trainingPlanLinkScope === "workspace" ||
       trainingPlanLinkScope === "assigned");
+  // Card 08: same cosmetic-gate shape — the link renders for staff roles
+  // only; the destination page and every /api/v1 call it makes re-authorize.
+  const photoLinkRole =
+    member?.status === "ACTIVE" ? memberRoleToRole(member.role) : null;
+  const showPhotoLinks =
+    photoLinkRole === "owner" || photoLinkRole === "coach";
 
   return (
     <div className="catalog-page" data-testid="client-roster">
@@ -180,6 +187,7 @@ export default async function ClientsPage({
               <th scope="col">Updated</th>
               {showDailyLinks ? <th scope="col">Daily</th> : null}
               {showCheckInLinks ? <th scope="col">Check-Ins</th> : null}
+              {showPhotoLinks ? <th scope="col">Photos</th> : null}
               {showOnboardingLinks ? <th scope="col">Onboarding</th> : null}
               {showDashboardLinks ? <th scope="col">Dashboard</th> : null}
               {showMealPlanLinks ? <th scope="col">Meal plan</th> : null}
@@ -210,6 +218,17 @@ export default async function ClientsPage({
                       href={`${basePath}/${encodeURIComponent(client.id)}/checkins`}
                     >
                       Check-Ins
+                    </Link>
+                  </td>
+                ) : null}
+                {showPhotoLinks ? (
+                  <td>
+                    <Link
+                      className="roster-pagination__link"
+                      href={`${basePath}/${encodeURIComponent(client.id)}/photos`}
+                      data-testid={`photos-link-${client.id}`}
+                    >
+                      Photos
                     </Link>
                   </td>
                 ) : null}
