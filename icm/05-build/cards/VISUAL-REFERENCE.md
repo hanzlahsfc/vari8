@@ -48,3 +48,8 @@ No product UI, fonts, old baselines, mask expansion, waiver, merge, deployment o
 
 - Owner authorized combined #203+#206 result verification and disclosed cross-review. Prep branch `beta/p203-p206-combined-verification` preserves both PR branches and adds only explicit proposed-reference/capture/output/comparer env paths.
 - Fresh combined-app capture on synthetic `app_p427`: canonical 70/70, strict 68/70; active old baseline diagnostic remains 70 failures. No merge, retarget or baseline activation.
+
+## Prompt 429 combined-gate repair
+
+- The labelled prep branch now forbids arbitrary capture modules and unsafe output paths, validates the proposed package and real combined captures, and records exact source/tool/environment provenance.
+- Durable `tools/parity/reference/combined/p429-run` evidence verifies canonical 70/70 and strict 68/70; old active baseline diagnostic is separately red at 70 failures. Historical 482-artifact evidence remains separate.

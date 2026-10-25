@@ -59,3 +59,6 @@ tools/parity/reference/evidence/candidate/
 
 # Generated recomparison receipts preserve exact comparer output.
 tools/parity/reference/evidence/receipts/
+
+# Generated combined-run receipts/captures preserve exact verifier output.
+tools/parity/reference/combined/

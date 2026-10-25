@@ -31,6 +31,16 @@ copy(path.join(run, "execution-receipt.json"), "receipts/execution.json");
 copy(path.join(run, "proposed-canonical.json"), "receipts/canonical.json");
 copy(path.join(run, "proposed-strict.json"), "receipts/strict.json");
 copy(path.join(run, "server.log"), "receipts/server.log");
+if (fs.existsSync(path.join(run, "old-reference-report.html")))
+  copy(
+    path.join(run, "old-reference-report.html"),
+    "receipts/old-reference-report.html",
+  );
+if (fs.existsSync(path.join(run, "old-reference-result.json")))
+  copy(
+    path.join(run, "old-reference-result.json"),
+    "receipts/old-reference-result.json",
+  );
 for (const file of walkFiles(path.join(run, "current"))) {
   const from = path.join(run, "current", file);
   const to = path.join(out, "current", file);
