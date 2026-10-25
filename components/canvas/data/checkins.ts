@@ -538,3 +538,91 @@ export async function sendFeedback(input: {
     },
   });
 }
+
+// ---------------------------------------------------------------------------
+// Card 05b: the client-facing own check-in surface. Three calls — the "next"
+// header that hands the screen its instanceId, the own detail that renders
+// the pinned definition, and the submit that carries the answers payload.
+// ---------------------------------------------------------------------------
+
+export type OwnNextCheckInWire = {
+  instanceId: string;
+  formName: string;
+  dueAt: string;
+  late: boolean;
+} | null;
+
+export type OwnCheckInFieldWire = {
+  fieldId: string;
+  kind:
+    | "shortText"
+    | "longText"
+    | "number"
+    | "date"
+    | "singleChoice"
+    | "multiChoice"
+    | "rating"
+    | "visual";
+  label: string;
+  required: boolean;
+  order: number;
+  helpText?: string;
+  options?: { optionId: string; label: string }[];
+  ratingScheme?: "SCALE_1_10" | "SCALE_1_5" | "WORD_LABELS";
+};
+
+export type OwnCheckInSubmittedAnswerWire = {
+  fieldId: string;
+  kind: string;
+  valueText: string | null;
+  valueNumeric: string | null;
+  valueDate: string | null;
+  valueOptionIds: string[] | null;
+  valueRating: number | null;
+  mediaIds: string[];
+};
+
+export type OwnCheckInInstanceDetailWire = {
+  instanceId: string;
+  formName: string;
+  versionSeq: number;
+  dueAt: string;
+  state: string;
+  late: boolean;
+  submittedAt: string | null;
+  definition: { title: string; fields: OwnCheckInFieldWire[] };
+  submittedAnswers: OwnCheckInSubmittedAnswerWire[] | null;
+  feedback:
+    | { id: string; sentAt: string; byName: string; body: string }[]
+    | null;
+  feedbackNextCursor: string | null;
+};
+
+/** GET checkins/instances/next — the caller's earliest unfinished check-in. */
+export function fetchOwnNextCheckIn(
+  workspaceId: string,
+): Promise<{ next: OwnNextCheckInWire }> {
+  return apiFetch(`/workspaces/${workspaceId}/checkins/instances/next`);
+}
+
+/** GET checkins/instances/:instanceId — own detail + pinned definition. */
+export function fetchOwnCheckInInstance(
+  workspaceId: string,
+  instanceId: string,
+): Promise<OwnCheckInInstanceDetailWire> {
+  return apiFetch(
+    `/workspaces/${workspaceId}/checkins/instances/${instanceId}`,
+  );
+}
+
+/** POST checkins/instances/:instanceId/submit — one own submission. */
+export function submitOwnCheckIn(
+  workspaceId: string,
+  instanceId: string,
+  answersJson: string,
+): Promise<{ status: "submitted" | "already_submitted"; submissionId: string }> {
+  return apiFetch(
+    `/workspaces/${workspaceId}/checkins/instances/${instanceId}/submit`,
+    { method: "POST", body: { answersJson } },
+  );
+}

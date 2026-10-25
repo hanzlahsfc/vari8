@@ -798,9 +798,17 @@ export function IllustrativeTrainingTab({
 export function CheckInTab({
   configuration,
   client,
+  workspaceId,
 }: {
   configuration: Variant;
   client: CoachClient;
+  workspaceId?: string;
 }) {
-  return <CheckInForm configuration={configuration} client={client} />;
+  return (
+    <CheckInForm
+      configuration={configuration}
+      client={client}
+      workspaceId={workspaceId}
+    />
+  );
 }
