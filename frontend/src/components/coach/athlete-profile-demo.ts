@@ -4,7 +4,7 @@ import {
   scalePortion,
 } from "../ethereal/mealplan/model";
 import type { TimelineEvent } from "./athlete/timeline";
-import { type CoachClient, type CoachState, uid } from "./model";
+import type { CoachClient, CoachState } from "./model";
 import { normalizePhases } from "./plans/phase-planning";
 import type { ClientPlans } from "./plans/types";
 import { addLocalDays } from "./targets/model";
@@ -81,7 +81,7 @@ export function adoptAthleteProfileDemo(
           /rest|daily|low/i.test(variant.label),
         ) ?? mealPlan.variants[0];
       const refeed: MealPlanVariant = cloneVariant(source, "Refeed day");
-      refeed.id = uid("variant");
+      refeed.id = "demo-variant-refeed";
       // Higher carbs for the demo: scale every portion up a quarter.
       refeed.meals = refeed.meals.map((meal) => ({
         ...meal,
@@ -117,14 +117,14 @@ export function adoptAthleteProfileDemo(
   }
   const deloadStart = addLocalDays(today, 21);
   events = addEvent(events, {
-    id: uid("timeline"),
+    id: "demo-timeline-deload",
     kind: "deload",
     startDate: deloadStart,
     endDate: addLocalDays(deloadStart, 6),
     note: "Recovery week — reduce volume.",
   });
   events = addEvent(events, {
-    id: uid("timeline"),
+    id: "demo-timeline-dietbreak",
     kind: "diet-break",
     startDate: dietBreakStart,
     endDate: addLocalDays(dietBreakStart, 6),
