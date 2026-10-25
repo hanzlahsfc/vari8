@@ -31,10 +31,7 @@ import {
   Select as Vari8Select,
 } from "../vari8/components";
 import { TextArea } from "../vari8/inputs";
-import {
-  bindDashboardUnits,
-  CoachDashboardEditor,
-} from "./builder/coach-dashboard";
+import { bindDashboardUnits } from "./builder/coach-dashboard";
 import { ClientPreview } from "./client-preview";
 import {
   ALL_PARAMETERS,
@@ -54,6 +51,7 @@ import {
   uid,
   type Variant,
 } from "./model";
+import { habitFrequencyLabel, parseHabitFrequency } from "./plans/habits";
 import {
   DEFAULT_TRAINING_DEFAULTS,
   DEFAULT_TRAINING_OPTIONS,
@@ -440,7 +438,6 @@ export function TemplateLibrary() {
 }
 const EDITOR_SECTIONS = [
   "Tabs",
-  "Dashboard",
   "Tracker",
   "Timeline / Roadmap",
   "Nutrition",
@@ -449,7 +446,6 @@ const EDITOR_SECTIONS = [
   "Habits",
 ];
 const PREVIEW_TAB_BY_SECTION: Record<string, string> = {
-  Dashboard: "Dashboard",
   Tracker: "Tracker",
   "Timeline / Roadmap": "Timeline / Roadmap",
   Nutrition: "Nutrition",
@@ -608,10 +604,7 @@ export function TemplateEditor({ id }: { id: string }) {
           {error}
         </p>
       )}
-      <div
-        className="cd-editor-layout"
-        data-dashboard={section === "Dashboard"}
-      >
+      <div className="cd-editor-layout">
         <aside className="cd-editor-nav">
           <nav aria-label="Template configuration">
             {EDITOR_SECTIONS.map((s, i) => (
@@ -694,9 +687,6 @@ export function TemplateEditor({ id }: { id: string }) {
                   />
                 </div>
               </>
-            )}
-            {section === "Dashboard" && (
-              <DashboardConfig variant={variant} update={updateVariant} />
             )}
             {section === "Tracker" && (
               <TrackerConfig variant={variant} update={updateVariant} />
@@ -868,20 +858,6 @@ function OrderButtons({
         <ArrowDown size={13} />
       </IconButton>
     </span>
-  );
-}
-function DashboardConfig({
-  variant,
-  update,
-}: {
-  variant: Variant;
-  update: (fn: (v: Variant) => Variant) => void;
-}) {
-  return (
-    <CoachDashboardEditor
-      variant={variant}
-      onChange={(dashboard) => update((v) => ({ ...v, dashboard }))}
-    />
   );
 }
 function TrackerConfig({
@@ -2261,7 +2237,9 @@ export function FormPreview({
               client.habits.map((habit) => (
                 <div className="cd-stat-row" key={habit.id}>
                   <span>
-                    {habit.name} · {habit.frequency} · {habit.goal}
+                    {habit.name} ·{" "}
+                    {habitFrequencyLabel(parseHabitFrequency(habit.frequency))}{" "}
+                    · {habit.goal}
                   </span>
                   <strong>{habit.completed} completed</strong>
                 </div>

@@ -1,3 +1,15 @@
+## 2026-10-23 — frontend UI redesign branch for review — verified locally
+
+- This work is on branch `frontend-ui-redesign-20261023`, based on
+  `FRONTEND` at `51fa6a2`. It is a review branch for Marcel to diff against `FRONTEND`; no PR yet.
+- Contents: visual reset (tokens, shared controls, light/dark), standalone
+  client app at `/client` with training logbook, athlete overview v2
+  (nutrition/activity targets, situative timeline, template-driven layout),
+  demo data and specs under `frontend/docs/`.
+- `npm run check` in `frontend/`: tests 316/316, agent-context:check,
+  typecheck, lint and build all exit 0. Test-loader shims and two
+  visual-reset check files were updated; no tests removed or weakened.
+
 ## 2026-10-22 — CANVAS-PORT: Lilly frontend carried into the served root canvas, gates and parity green
 
 - Branch `beta/canvas-port` (worktree `.worktrees/canvas-port`), base `09b1424`

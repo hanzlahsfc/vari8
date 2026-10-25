@@ -1,39 +1,19 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
+import Module, { createRequire } from "node:module";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
-// Map `@/` specifiers to `src/` like the app's tsconfig paths so required TS
-// modules resolve identically to the bundler.
-const Module = require("node:module");
-const nodePath = require("node:path");
-const nodeUrl = require("node:url");
-const srcRoot = nodePath.resolve(
-  nodePath.dirname(nodeUrl.fileURLToPath(import.meta.url)),
-  "../../..",
-);
-const resolveFilename = Module._resolveFilename;
-Module._resolveFilename = function (specifier, ...rest) {
-  if (specifier.startsWith("@/")) {
-    const base = nodePath.join(srcRoot, specifier.slice(2));
-    for (const candidate of [
-      `${base}.ts`,
-      `${base}.tsx`,
-      `${base}.js`,
-      `${base}.mjs`,
-      `${base}/index.ts`,
-      `${base}/index.tsx`,
-      base,
-    ]) {
-      try {
-        return resolveFilename.call(this, candidate, ...rest);
-      } catch {
-        // Try the next candidate.
-      }
-    }
-  }
-  return resolveFilename.call(this, specifier, ...rest);
+// Resolve the app's "@/…" (src/…) specifiers for the CJS-compiled modules.
+const srcRoot = fileURLToPath(new URL("../../../", import.meta.url));
+const originalResolve = Module._resolveFilename;
+Module._resolveFilename = function (specifier, ...args) {
+  return originalResolve.call(
+    this,
+    specifier.startsWith("@/") ? srcRoot + specifier.slice(2) : specifier,
+    ...args,
+  );
 };
 const ts = require("typescript");
 for (const extension of [".ts", ".tsx"])

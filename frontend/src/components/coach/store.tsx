@@ -11,6 +11,9 @@ import {
   useRef,
   useState,
 } from "react";
+import { adoptAthleteDataDemo } from "./athlete-data-demo";
+import { adoptAthleteProfileDemo } from "./athlete-profile-demo";
+import { adoptClientAppDemo } from "./client-app-demo";
 import {
   type CoachState,
   isCoachState,
@@ -21,7 +24,9 @@ import {
 } from "./model";
 import { migrateCoachState } from "./plans/domain";
 import { adoptAmaraTrainingExample } from "./plans/training/amara-example";
+import { localToday } from "./targets/model";
 import { normalizeTemplateSetups } from "./template-setup";
+import { adoptTrainingLogDemo } from "./training-log-demo";
 
 type Store = {
   state: CoachState;
@@ -83,7 +88,23 @@ export function CoachProvider({ children }: { children: ReactNode }) {
       if (raw) {
         const parsed: unknown = migrateCoachState(JSON.parse(raw));
         if (isCoachState(parsed))
-          setState(normalizeTemplateSetups(adoptAmaraTrainingExample(parsed)));
+          setState(
+            normalizeTemplateSetups(
+              adoptAthleteDataDemo(
+                adoptAthleteProfileDemo(
+                  adoptTrainingLogDemo(
+                    adoptClientAppDemo(
+                      adoptAmaraTrainingExample(parsed),
+                      localToday(),
+                    ),
+                    localToday(),
+                  ),
+                  localToday(),
+                ),
+                localToday(),
+              ),
+            ),
+          );
         else {
           preserveRaw.current = true;
           setStorageOk(false);

@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { Section } from "@/components/vari8/layouts";
 import { type CoachClient, formatDate, TODAY } from "./model";
+import { habitFrequencyLabel, parseHabitFrequency } from "./plans/habits";
 import { Empty } from "./ui";
 import "./habits-tab.css";
 import { useReducedMotion } from "@/lib/reduced-motion";
@@ -167,7 +168,10 @@ export function HabitsTab({
                   <div className="cd-habit-info">
                     <strong>{habit.name}</strong>
                     <small>
-                      {habit.frequency} · {habit.goal}
+                      {habitFrequencyLabel(
+                        parseHabitFrequency(habit.frequency),
+                      )}{" "}
+                      · {habit.goal}
                     </small>
                     <p>{habit.reason}</p>
                   </div>
@@ -189,7 +193,8 @@ export function HabitsTab({
                 <span>
                   {habit.completed}{" "}
                   {habit.completed === 1 ? "completion" : "completions"} ·{" "}
-                  {habit.frequency} · {habit.goal}
+                  {habitFrequencyLabel(parseHabitFrequency(habit.frequency))} ·{" "}
+                  {habit.goal}
                 </span>
               </li>
             ))}
