@@ -14,6 +14,7 @@ import {
   type TrackerConfig,
   type TrackerEntry,
 } from "../ethereal/client-tracker/model";
+import { apiFetch } from "./http";
 import { type CoachSlice, readStorage, writeJson } from "./provider";
 
 export const TRACKER_KEY = "coach-data-tracker-v1";
@@ -193,4 +194,109 @@ export function writeClientTrackerDraft(
     entries: draft.entries,
     comments: draft.comments,
   });
+}
+
+/* -------------------------------------------------------------------------
+ * Card 05a remote surface: the own daily-entry routes the real client
+ * tracker reads and writes through. Wire shapes mirror
+ * `lib/daily-entry/service.ts`; duplicated here so the canvas never imports
+ * server modules.
+ * ---------------------------------------------------------------------- */
+
+export type DailyEntrySurfaceItemWire = {
+  ordinal: number;
+  parameterKey: string;
+  label: string;
+  helpText: string | null;
+  unit: string | null;
+  kind: string;
+  required: boolean;
+  ratingScheme: string | null;
+  options: { ordinal: number; label: string }[];
+  validation: { min: number | null; max: number | null } | null;
+  current: string;
+};
+
+export type DailyEntrySurfaceSectionWire = {
+  sectionKey: string;
+  label: string;
+  items: DailyEntrySurfaceItemWire[];
+};
+
+export type DailyEntryHistoryRowWire = {
+  parameterKey: string;
+  label: string;
+  unit: string | null;
+  display: string;
+};
+
+export type DailyEntryHistoryEntryWire = {
+  entryDate: string;
+  declaredAt: string;
+  revisionCount: number;
+  values: DailyEntryHistoryRowWire[];
+};
+
+export type DailyEntrySurfaceWire =
+  | {
+      state: "ready";
+      formToken: string;
+      entryDate: string;
+      sections: DailyEntrySurfaceSectionWire[];
+      history: DailyEntryHistoryEntryWire[];
+    }
+  | { state: "not_applicable" }
+  | { state: "unavailable" }
+  | { state: "ineligible" }
+  | { state: "consent_missing" };
+
+/** GET daily-entries?date= — the caller's own surface for `date` (or today). */
+export function fetchDailyEntrySurface(
+  workspaceId: string,
+  date?: string,
+): Promise<DailyEntrySurfaceWire> {
+  const suffix = date ? `?date=${encodeURIComponent(date)}` : "";
+  return apiFetch<DailyEntrySurfaceWire>(
+    `/workspaces/${workspaceId}/daily-entries${suffix}`,
+  );
+}
+
+/** PUT daily-entries/:date — one save against the caller's own day entry. */
+export function saveDailyEntryRemote(
+  workspaceId: string,
+  entryDate: string,
+  input: {
+    formToken: string;
+    values: { ordinal: number; raw: string }[];
+  },
+): Promise<{ status: "saved"; revisionSeq: number } | { status: "no_op" }> {
+  return apiFetch(`/workspaces/${workspaceId}/daily-entries/${entryDate}`, {
+    method: "PUT",
+    body: input,
+  });
+}
+
+export type StaffDailyEntryHistoryWire =
+  | {
+      state: "ready";
+      clientName: string;
+      items: {
+        entryDate: string;
+        revisionCount: number;
+        currentRevisionSeq: number | null;
+      }[];
+      nextCursor: string | null;
+    }
+  | { state: "consent_missing" };
+
+/** GET clients/:clientProfileId/daily-entries/history — the staff page. */
+export function fetchStaffDailyEntryHistory(
+  workspaceId: string,
+  clientProfileId: string,
+  cursor?: string,
+): Promise<StaffDailyEntryHistoryWire> {
+  const suffix = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  return apiFetch<StaffDailyEntryHistoryWire>(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/daily-entries/history${suffix}`,
+  );
 }
