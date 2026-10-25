@@ -7,10 +7,12 @@ import {
   Dumbbell,
   House,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { HabitsTab } from "../coach/habits-tab";
 import type { CoachClient, Variant } from "../coach/model";
+import type { SupplementPlan } from "../coach/supplements/model";
 import { SupplementPlanView } from "../coach/supplements/plan-view";
+import { fetchSupplementPlan, planFromView } from "../data/supplements";
 import { TargetSummary } from "../coach/targets/target-summary";
 import { useLocalToday } from "../coach/targets/use-local-today";
 import { Empty } from "../coach/ui";
@@ -55,18 +57,71 @@ function ActivityTargetsPart({ client }: { client: CoachClient }) {
   );
 }
 
+// Card 05b: the client Supplements section reads the saved plan through the
+// card 02 route (own scope resolves the caller's profile server-side) and is
+// strictly read-only — there is no plan-write surface on the client.
+function RemoteSupplementsPart({
+  workspaceId,
+  clientProfileId,
+  clientName,
+}: {
+  workspaceId: string;
+  clientProfileId: string;
+  clientName: string;
+}) {
+  const [plan, setPlan] = useState<SupplementPlan | null>(null);
+  const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
+  useEffect(() => {
+    let cancelled = false;
+    fetchSupplementPlan(workspaceId, clientProfileId)
+      .then((response) => {
+        if (cancelled) return;
+        setPlan(
+          response.plan ? planFromView(response.plan, clientProfileId) : null,
+        );
+        setPhase("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setPhase("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId, clientProfileId]);
+  return (
+    <section className="cd-preview-section" aria-label="Supplement plan">
+      <h2>Supplements</h2>
+      {phase === "loading" ? (
+        <div className="client-app-loading" role="status">
+          Loading your plan…
+        </div>
+      ) : phase === "error" ? (
+        <Empty title="Your supplement plan could not be loaded">
+          Check your connection and reload the page.
+        </Empty>
+      ) : (
+        <SupplementPlanView plan={plan ?? undefined} clientName={clientName} />
+      )}
+    </section>
+  );
+}
+
 export function ClientApp({
   configuration,
   client,
   context,
   illustrative = false,
   initialTab,
+  own,
 }: {
   configuration: Variant;
   client: CoachClient;
   context: "standalone" | "preview";
   illustrative?: boolean;
   initialTab?: string;
+  // The caller's own workspace + profile. When set, supplements and
+  // check-ins bind to the own /api/v1 routes instead of canvas fixtures.
+  own?: { workspaceId: string; clientProfileId: string };
 }) {
   const sections = useMemo(
     () => clientAppSections(configuration, client.plans),
@@ -175,18 +230,25 @@ export function ClientApp({
                     illustrative={illustrative}
                   />
                 )}
-                {activePlanPart === "supplements" && (
-                  <section
-                    className="cd-preview-section"
-                    aria-label="Supplement plan"
-                  >
-                    <h2>Supplements</h2>
-                    <SupplementPlanView
-                      plan={client.plans?.supplements}
+                {activePlanPart === "supplements" &&
+                  (own ? (
+                    <RemoteSupplementsPart
+                      workspaceId={own.workspaceId}
+                      clientProfileId={own.clientProfileId}
                       clientName={client.name}
                     />
-                  </section>
-                )}
+                  ) : (
+                    <section
+                      className="cd-preview-section"
+                      aria-label="Supplement plan"
+                    >
+                      <h2>Supplements</h2>
+                      <SupplementPlanView
+                        plan={client.plans?.supplements}
+                        clientName={client.name}
+                      />
+                    </section>
+                  ))}
                 {activePlanPart === "activity-targets" && (
                   <ActivityTargetsPart client={client} />
                 )}
@@ -237,7 +299,11 @@ export function ClientApp({
               </>
             )}
             {active === "check-ins" && (
-              <CheckInTab configuration={configuration} client={client} />
+              <CheckInTab
+                configuration={configuration}
+                client={client}
+                workspaceId={own?.workspaceId}
+              />
             )}
           </div>
         </div>
