@@ -68,12 +68,16 @@ async function signInCookies(baseUrl) {
   return set.map((line) => {
     const [pair] = line.split(";");
     const i = pair.indexOf("=");
+    const name = pair.slice(0, i).trim();
     return {
-      name: pair.slice(0, i).trim(),
+      name,
       value: pair.slice(i + 1).trim(),
       domain,
       path: "/",
       httpOnly: true,
+      // Better Auth mints __Secure- names in production; Playwright refuses
+      // that prefix without the secure flag (localhost still accepts it).
+      secure: name.startsWith("__Secure-"),
       sameSite: "Lax",
     };
   });
