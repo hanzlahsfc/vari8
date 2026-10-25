@@ -7,7 +7,7 @@ import {
   useMemo,
   useRef,
 } from "react";
-import type { SheetCells } from "./fixture";
+import type { SheetCells } from "./imported";
 import {
   cellAddress,
   colLabel,
@@ -16,10 +16,11 @@ import {
   freezeSplit,
   mergeCovering,
   moveSelection,
+  NOT_CALCULATED_BADGE,
+  provenanceBadge,
   type RangeRef,
   rowHeightPx,
   type SheetTab,
-  SYNTHETIC_VALUE_BADGE,
   UDF_SHAPE_BADGE,
   visibleCols,
   visibleRows,
@@ -32,6 +33,8 @@ type GridProps = {
   cells: SheetCells;
   selection: RangeRef;
   onSelectionChange: (next: RangeRef) => void;
+  /** Commits an edited bound cell (raw text); only called for editable cells. */
+  onCommit?: (row: number, col: number, raw: string) => void;
 };
 
 // Track index (1-based inside the CSS grid) for a sheet row/column.
@@ -44,6 +47,7 @@ export function SheetGrid({
   cells,
   selection,
   onSelectionChange,
+  onCommit,
 }: GridProps) {
   const rows = useMemo(() => visibleRows(tab), [tab]);
   const cols = useMemo(() => visibleCols(tab), [tab]);
@@ -102,9 +106,14 @@ export function SheetGrid({
     row: number,
     col: number,
   ) => {
-    event.preventDefault();
+    const onInput =
+      event.target instanceof HTMLElement && event.target.tagName === "INPUT";
+    if (!onInput) event.preventDefault();
     const merge = mergeCovering(tab, row, col);
-    select(merge ? { ...merge } : { r1: row, c1: col, r2: row, c2: col });
+    if (!onInput) wantsFocus.current = true;
+    onSelectionChange(
+      merge ? { ...merge } : { r1: row, c1: col, r2: row, c2: col },
+    );
   };
 
   const inSelection = (row: number, col: number) =>
@@ -207,6 +216,9 @@ export function SheetGrid({
       if (c === freeze.cols) classes.push("ls-split-col");
       if (cell?.vertical) classes.push("ls-cell--v");
       if (cell?.kind === "formula") classes.push("ls-cell--fx");
+      if (cell?.editable) classes.push("ls-cell--edit");
+      if (cell?.valueSource === "imported") classes.push("ls-cell--imported");
+      if (cell?.notCalculated) classes.push("ls-cell--stale");
       if (inSelection(r, c)) classes.push("ls-cell--sel");
       const active = selection.r1 === r && selection.c1 === c;
       if (active) classes.push("ls-cell--active");
@@ -215,8 +227,9 @@ export function SheetGrid({
         tips.push(
           cell.formulaWrap === "udf" ? UDF_SHAPE_BADGE : FORMULA_SHAPE_BADGE,
         );
+      if (cell?.notCalculated) tips.push(NOT_CALCULATED_BADGE);
       if (cell?.value !== undefined && cell.value !== "")
-        tips.push(SYNTHETIC_VALUE_BADGE);
+        tips.push(provenanceBadge(cell));
       const display =
         cell?.kind === "checkbox"
           ? cell.value === "TRUE"
@@ -240,9 +253,33 @@ export function SheetGrid({
           data-r={r}
           data-c={c}
           data-kind={cell?.kind ?? "blank"}
+          data-source={cell?.valueSource ?? "blank"}
           onMouseDown={(event) => onCellPointer(event, r, c)}
         >
-          <span className="ls-cell-text">{display}</span>
+          {cell?.editable ? (
+            <input
+              key={cell.value ?? ""}
+              className="ls-cell-input"
+              aria-label={`${cellAddress({ row: r, col: c })} editable store cell`}
+              defaultValue={cell.value ?? ""}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  onCommit?.(r, c, event.currentTarget.value);
+                  event.currentTarget.blur();
+                } else if (event.key === "Escape") {
+                  event.currentTarget.value = cell.value ?? "";
+                  event.currentTarget.blur();
+                }
+              }}
+              onBlur={(event) => {
+                if (event.currentTarget.value !== (cell.value ?? ""))
+                  onCommit?.(r, c, event.currentTarget.value);
+              }}
+            />
+          ) : (
+            <span className="ls-cell-text">{display}</span>
+          )}
         </div>,
       );
     }

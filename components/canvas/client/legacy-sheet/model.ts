@@ -1,15 +1,37 @@
-// Workbook structure for the legacy sheets demo. Every constant in this
+// Workbook structure for the legacy sheets view. Every constant in this
 // file is transcribed from R3b (01-recon/R3b-xlsx-structure.json), the
-// measured export of the team workbook. Cell values live in fixture.ts and
-// are synthetic; this module carries structure only.
+// measured export of the team workbook. Imported cell values live in
+// imported.ts; bound cells come from bind.ts. This module carries structure
+// and selection/navigation helpers only.
 
 export const LEGACY_SHEET_BANNER =
-  "Emulation of PRGRSS 2.0. Tab order, frozen bands, column widths, row heights, hidden rows and columns, merged regions, number formats, conditional formatting kinds and formula shapes are read from the team workbook structure. All cell values and the dropdown item lists are synthetic. Formula string literals are withheld.";
+  "Emulation of PRGRSS 2.0. Tab order, frozen bands, column widths, row heights, hidden rows and columns, merged regions, number formats, conditional formatting kinds and formula shapes are read from the team workbook structure. Bound cells read and write the client store; imported cells keep their exported value. Formula string literals are withheld.";
 
 export const FORMULA_SHAPE_BADGE =
   "Formula text from the team export, string literals withheld";
 export const UDF_SHAPE_BADGE = "Google only formula, not evaluated";
 export const SYNTHETIC_VALUE_BADGE = "Synthetic value";
+export const IMPORTED_VALUE_BADGE = "Imported value";
+export const STORE_VALUE_BADGE = "Store value";
+export const COMPUTED_VALUE_BADGE = "Computed from store";
+export const NOT_CALCULATED_BADGE =
+  "Array formula shape, not calculated, last imported value";
+
+export function provenanceBadge(cell: {
+  valueSource?: string;
+  notCalculated?: boolean;
+}): string {
+  switch (cell.valueSource) {
+    case "store":
+      return STORE_VALUE_BADGE;
+    case "computed":
+      return COMPUTED_VALUE_BADGE;
+    case "imported":
+      return IMPORTED_VALUE_BADGE;
+    default:
+      return SYNTHETIC_VALUE_BADGE;
+  }
+}
 
 export type CellPos = { row: number; col: number };
 export type RangeRef = { r1: number; c1: number; r2: number; c2: number };

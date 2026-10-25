@@ -239,3 +239,63 @@
   color: var(--v8-text-secondary);
   font-size: var(--v8-font-size-sm);
 }
+
+/* Card 12: bound cells + imported-row treatment + Coach Tools menu. */
+.ls-cell--imported {
+  color: var(--ls-ink-dim, #6b7280);
+}
+.ls-cell--stale {
+  color: var(--ls-ink-dim, #6b7280);
+  font-style: italic;
+}
+.ls-cell--edit {
+  padding: 0;
+}
+.ls-cell-input {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  padding: 0 2px;
+  outline: none;
+}
+.ls-cell-input:focus {
+  outline: 1px solid var(--ls-accent, #2563eb);
+  outline-offset: -1px;
+}
+.ls-menu--tools {
+  position: relative;
+}
+.ls-menu-btn {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+.ls-menu-pop {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  background: var(--ls-menu-bg, #fff);
+  border: 1px solid var(--ls-line, #d1d5db);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  min-width: 160px;
+}
+.ls-menu-action {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.ls-menu-action:hover {
+  background: var(--ls-hover, #f3f4f6);
+}

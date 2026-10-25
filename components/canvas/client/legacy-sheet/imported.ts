@@ -1,7 +1,8 @@
-// Synthetic cell values for the legacy sheets demo. Everything the grid
-// displays comes from this file. Formula cells keep the real R1C1 shape
-// transcribed from R3b (formula string literals are withheld as STR); the
-// displayed value stays synthetic and every cell says so.
+// Imported cell values for the legacy sheets view. This file is the imported
+// workbook record: labels, dates, seed values and formula shapes as the export
+// captured them (formula string literals stay withheld as STR). Bound cells are
+// overlaid at render time by bind.ts — the values here are what the sheet
+// shows for imported rows only, read only and greyed.
 
 export type SheetCell = {
   kind: "text" | "number" | "checkbox" | "formula";
@@ -11,7 +12,19 @@ export type SheetCell = {
   formulaShape?: "recovered";
   /** The shape is wrapped by the team UDF, Google only, never evaluated. */
   formulaWrap?: "udf";
-  valueSource?: "synthetic";
+  /**
+   * Provenance of the displayed value. `imported` cells keep the exported
+   * value and stay read only; `store` cells read and write the client store;
+   * `computed` cells are plain TypeScript recomputations of the shape.
+   */
+  valueSource?: "synthetic" | "imported" | "store" | "computed";
+  /**
+   * The shape needs an array formula engine this port does not run. The cell
+   * keeps its last imported value, greyed, and says so in its title.
+   */
+  notCalculated?: boolean;
+  /** The cell writes through the store when the sheet commits an edit. */
+  editable?: boolean;
   /** Render the value in the tall label columns that the trackers use. */
   vertical?: boolean;
 };
@@ -21,27 +34,27 @@ export type SheetCells = Record<string, SheetCell>;
 const txt = (value: string, vertical?: boolean): SheetCell => ({
   kind: "text",
   value,
-  valueSource: "synthetic",
+  valueSource: "imported",
   ...(vertical ? { vertical: true } : {}),
 });
 
 const num = (value: string): SheetCell => ({
   kind: "number",
   value,
-  valueSource: "synthetic",
+  valueSource: "imported",
 });
 
 const chk = (value: string): SheetCell => ({
   kind: "checkbox",
   value,
-  valueSource: "synthetic",
+  valueSource: "imported",
 });
 
 const fx = (formulaText: string, value: string): SheetCell => ({
   kind: "formula",
   formulaText,
   formulaShape: "recovered",
-  valueSource: "synthetic",
+  valueSource: "imported",
   value,
 });
 
@@ -70,7 +83,7 @@ const cells = (entries: SheetCells): SheetCells => entries;
 const DT_KCAL =
   '=if(RC[-3]*4.1+RC[-2]*4.1+RC[-1]*9.3=0,"STR",RC[-3]*4.1+RC[-2]*4.1+RC[-1]*9.3)';
 
-export const SHEET_FIXTURE: Record<string, SheetCells> = {
+export const IMPORTED_CELLS: Record<string, SheetCells> = {
   dashboard: cells({
     "3:2": txt("ATHLETE PANEL"),
     "3:13": txt("WEEK 6"),
@@ -101,7 +114,7 @@ export const SHEET_FIXTURE: Record<string, SheetCells> = {
     "37:10": num("3"),
     "38:3": txt("STEPS"),
     "38:10": num("9,200"),
-    "41:2": txt("Coach notes live here. Every value on this tab is synthetic."),
+    "41:2": txt("Coach notes live here."),
   }),
 
   "daily-tracker": cells({
@@ -1016,15 +1029,15 @@ export const SHEET_FIXTURE: Record<string, SheetCells> = {
 // as measured in the export. Displayed values stay synthetic.
 for (let r = 11; r <= 30; r += 1) {
   const gap = 1000 - r;
-  SHEET_FIXTURE.timeline[`${r}:15`] = udf(
+  IMPORTED_CELLS.timeline[`${r}:15`] = udf(
     `UDF[IF(RC7<>"STR","",IF(RC[-3]=TRUE,'DAILY TRACKER'!$R1C[+14],IFERROR(MIN(FILTER(R10C3:R[+${gap}]C3,R10C[-3]:R[+${gap}]C[-3]=TRUE,R10C3:R[+${gap}]C3>RC3))-RC3,"")))]`,
     String(41 - r),
   );
-  SHEET_FIXTURE.timeline[`${r}:18`] = fx(
+  IMPORTED_CELLS.timeline[`${r}:18`] = fx(
     `=IFERROR( ROUND( AVERAGEIFS( 'DAILY TRACKER'!H:H, 'DAILY TRACKER'!$C[-12]:R[-${r - 6}]C[-15],"STR"&RC4, 'DAILY TRACKER'!$C[-12]:R[-${r - 6}]C[-15],"STR"&RC6 ), 1), "")`,
     `9${r % 3}.${(r * 7) % 10}`,
   );
-  SHEET_FIXTURE.timeline[`${r}:21`] = fx(
+  IMPORTED_CELLS.timeline[`${r}:21`] = fx(
     `=IFERROR( ROUND( AVERAGEIFS( 'DAILY TRACKER'!AS:AS, 'DAILY TRACKER'!$C[-15]:R[-${r - 6}]C[-18],"STR"&RC4, 'DAILY TRACKER'!$C[-15]:R[-${r - 6}]C[-18],"STR"&RC6 ), 0), "")`,
     `${2180 - ((r * 13) % 140)}`,
   );
@@ -1038,7 +1051,7 @@ const TIMELINE_PHASES: [string, string, string][] = [
 ];
 for (let r = 17; r <= 30; r += 1) {
   const [mode, plan, sub] = TIMELINE_PHASES[r % TIMELINE_PHASES.length];
-  SHEET_FIXTURE.timeline[`${r}:7`] = txt(mode);
-  SHEET_FIXTURE.timeline[`${r}:8`] = txt(plan);
-  SHEET_FIXTURE.timeline[`${r}:9`] = txt(sub);
+  IMPORTED_CELLS.timeline[`${r}:7`] = txt(mode);
+  IMPORTED_CELLS.timeline[`${r}:8`] = txt(plan);
+  IMPORTED_CELLS.timeline[`${r}:9`] = txt(sub);
 }

@@ -167,7 +167,7 @@ export function AthleteProfileHeader({
       <LegacySheetDialog
         open={sheetOpen}
         onOpenChange={setSheetOpen}
-        clientName={client.name}
+        client={client}
       />
     </header>
   );
