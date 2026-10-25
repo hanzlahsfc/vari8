@@ -1,3 +1,23 @@
+## 2026-10-25 — Issue #202 Prompt 410 — listener PGID consistency and mutation provenance
+
+- Codex builder repair, not independent review: runner listener ownership
+  now reuses cleanup's canonical PID/PGID/start predicate. A same PID/start
+  with a different PGID failed RED before the fix, then passed GREEN.
+- Code baseline `bd036ec`: focused 20/20; standard unit 105 files/1270
+  (prior to JSDoc-only typing); type/lint/build and index checks exit 0.
+  Direct Next listener/leader identity verified; cleanup `[]`, exit 143,
+  no residue. Final checks/receipts are in `PARITY-HTTPS.md`.
+- Replaced the corrupt start-identity mutation with an applicable pure
+  final-baseline patch. Expected reused-process SIGKILL failure reproduced;
+  inverse patch restored byte-identical hash and focused 20/20 green.
+  Corrupt historical artifact retained explicitly as superseded evidence.
+- Production registers only the direct Next leader. Descendant helper
+  coverage is not automatic production discovery; unregistered descendants
+  are safely refused/reported. The original timing-failure receipt is
+  absent, so that observation is builder-reported, not verified evidence.
+- Historical visual result remains FAIL/70, no all-70 rerun for this
+  ownership-only fix. No SHIP, baseline update, waiver, merge or deployment.
+
 ## 2026-10-25 — Issue #202 process-identity repair — start-registry ownership proven on real Next chain
 
 - Reproduced the real-chain defect: `npx next start` produced

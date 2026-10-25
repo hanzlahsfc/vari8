@@ -6,6 +6,10 @@ Issue: https://github.com/hanzlahsfc/vari8/issues/202.
 
 ## Prompt 410 bounded repair — Codex builder
 
+Behavioral baseline: `bd036ece2a758a1d725e511077b9e93c4c5cc2ad`
+(initial PGID fix `a3b5217`, then JSDoc inspector typing). Builder is
+Codex, not SWE-2 and not an independent reviewer.
+
 Plan/acceptance: extract the runner's listener ownership check into
 `tools/parity/local-https.mjs`, reuse the cleanup PID/PGID/start predicate,
 and add a literal same-PID/start/different-PGID refusal in
@@ -26,6 +30,44 @@ automatic descendant-cleanup coverage.
 The earlier IPC regression timing failure was builder-reported history;
 no original receipt was preserved, so it cannot be independently verified.
 No new test is presented as a replacement for that missing original log.
+
+Fresh results, Node v24.22.1:
+
+- Literal same-PID/start/different-PGID regression: RED before the fix
+  (`expected true to be false`), GREEN afterward. `ownsPort` now imports
+  the same canonical PID/PGID/start predicate used by cleanup, rather
+  than maintaining a weaker runner-local predicate.
+- Focused suite: **20/20**, exit 0 after final mutation restore.
+- Standard `npm run test`: **105 files / 1270 tests**, exit 0, 17.65s.
+  This ran on the fixed behavior before the JSDoc-only typing commit;
+  no subsequent behavior/test change. Focused tests ran on the final code.
+- `npm run typecheck`, `npm run lint`, `npm run build`: exit 0 after
+  the inspector JSDoc correction. An earlier typecheck caught inferred
+  required `ppid`; the public helper now uses existing `ProcessInspector`.
+- `npm run index:check`: exit 0 after unit fixtures completed. A check
+  concurrent with system-index tests observed their temporary README
+  removal; the tracked README was restored by the tests, not altered here.
+- Sandbox-only focused tests initially failed loopback `EPERM`; the
+  permitted real-localhost run passed. No failure was silently counted
+  as a pass or attributed to application behavior.
+- Direct Next probe: dynamic loopback port 64361, listener/leader PID
+  95692, PGID 95692, matching start identity, `/login` 200 and
+  `ownsPort=true`; cleanup `[]`, exit 143, no remaining listeners.
+  Synthetic startup credentials and a dead DB URL ensured no account or
+  database mutation. Receipt: `parity-https-identity-mutation/prompt410-real-chain.txt`.
+- Pure start-identity mutant: final-baseline patch apply-check/apply
+  succeeds; selected guard test fails (unexpected SIGKILL), inverse
+  application restores SHA-256
+  `6c885487e5c523f61fabb3d4dc3f0a4152e408cd278e01a87da4cd9374bf0cb9`,
+  then focused 20/20. See `prompt410-mutation.txt`; the original corrupt
+  patch is retained as `start-identity-off.superseded.txt`, not accepted
+  historical applicable evidence.
+
+No new all-70 parity/E2E/browser screenshot run was performed for this
+ownership-only repair. Prior visual receipts below are historical:
+70 valid captures, 70 visual problems; s04 Tabs-versus-Habits state,
+s11 DOM and five size/two element changes remain unresolved. Issue #202
+and PR #203 remain open/draft; no SHIP, waiver or merge is claimed.
 
 ## Scope
 
@@ -160,7 +202,7 @@ between the final identity read and `kill`. The code does not claim to
 close that window and does not use PGID-only, port-only, argv-only or
 environment-substring fallback.
 
-## Fresh verification — Node v24.22.1
+## Historical verification before Prompt 410 — Node v24.22.1
 
 Focused regression suite:
 `npx vitest run tests/unit/parity-https.test.ts` → **19/19 passed,
