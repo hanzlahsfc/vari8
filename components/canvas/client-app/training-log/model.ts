@@ -115,6 +115,17 @@ export type SessionStatus =
   | "upcoming"
   | "missed";
 
+export const STATUS_META: Record<
+  SessionStatus,
+  { label: string; tone: "positive" | "info" | "warning" | "neutral" | "danger" }
+> = {
+  done: { label: "Done", tone: "positive" },
+  "in-progress": { label: "In progress", tone: "info" },
+  today: { label: "Today", tone: "warning" },
+  upcoming: { label: "Upcoming", tone: "neutral" },
+  missed: { label: "Missed", tone: "danger" },
+};
+
 const logFor = (logs: TrainingSessionLog[], item: ScheduledSession) =>
   logs.find(
     (log) =>

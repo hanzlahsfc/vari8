@@ -31,6 +31,7 @@ import {
   sectionForLegacyTab,
 } from "./sections";
 import { TrainingLogbook } from "./training-log/training-logbook";
+import { RemoteTrainingLogbook } from "./training-log/remote-training-logbook";
 import { ClientPhotos } from "./photos";
 import { RemoteDashboardTab, RemoteTrackerTab } from "./remote-views";
 import {
@@ -371,10 +372,21 @@ export function ClientApp({
                   />
                 </div>
                 {trainingView === "sessions" ? (
-                  <TrainingLogbook
-                    client={client}
-                    configuration={configuration}
-                  />
+                  // Card 11/#176: a signed-in client logs against the
+                  // server's pinned prescription; the local path stays
+                  // for the unsigned demo.
+                  own ? (
+                    <RemoteTrainingLogbook
+                      client={client}
+                      configuration={configuration}
+                      own={own}
+                    />
+                  ) : (
+                    <TrainingLogbook
+                      client={client}
+                      configuration={configuration}
+                    />
+                  )
                 ) : (
                   <TrainingTab
                     configuration={configuration}

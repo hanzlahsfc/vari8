@@ -18,7 +18,6 @@ import {
   Button,
   IconButton,
   Status,
-  type StatusTone,
 } from "../../vari8/components";
 import {
   DEFAULT_LOG_FIELDS,
@@ -26,23 +25,14 @@ import {
   findLog,
   nextSession,
   type ScheduledSession,
-  type SessionStatus,
   scheduledSessions,
   sessionStatus,
   startLog,
+  STATUS_META,
   weekRange,
 } from "./model";
 import { SessionLogger } from "./session-logger";
 import "./training-log.css";
-
-const STATUS_META: Record<SessionStatus, { label: string; tone: StatusTone }> =
-  {
-    done: { label: "Done", tone: "positive" },
-    "in-progress": { label: "In progress", tone: "info" },
-    today: { label: "Today", tone: "warning" },
-    upcoming: { label: "Upcoming", tone: "neutral" },
-    missed: { label: "Missed", tone: "danger" },
-  };
 
 export function TrainingLogbook({
   client,
