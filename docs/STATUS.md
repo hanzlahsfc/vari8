@@ -1,3 +1,43 @@
+## 2026-10-25 — Stage 7 card 09 (built, pending owner screen review): daily nutrition actuals (#173 slice)
+
+- Schema: `NutritionLog` as a 1:1 child of `DailyEntry`, also unique on
+  `(workspaceId, clientProfileId, entryDate)`; nullable `protein`,
+  `carbohydrate`, `fat`; no calories column anywhere. Migration
+  `db/migrations/20261023030000_nutrition_log/` with `down.sql`.
+- Math: `MacroActuals` + `caloriesFromMacros` (4/4/9, missing macro
+  contributes nothing, all-missing = 0, explicit 0 stays "0 g") in
+  `lib/nutrition/math.ts`; the canvas duplicates the derivation inline —
+  canvas never imports server modules.
+- Service: `lib/daily-entry/nutrition-log.ts` — own read/save reusing the
+  `saveDailyEntry` lock/auth/consent protocol, staff 30-day range read.
+  Logs bind to the daily entry/date, so meal-plan ↔ IIFYM switches keep
+  earlier entries; template-independent.
+- Routes: own `GET ?date=` + `PUT /[entryDate]` under
+  `nutrition-logs/`, staff `GET clients/[id]/nutrition-logs?from&to=`.
+- Client UI: `nutrition-actuals.tsx` panel on the Nutrition screen
+  (`own`-gated, illustrative path untouched): blank fields stay blank,
+  "Not recorded" never zero, derived kcal live + after save, recent-days
+  list, empty-day state. Coach daily page gained a read-only "Recorded
+  macros" table, hidden when the daily-entry surface is unavailable.
+- Tests: 6 unit (`caloriesFromMacros`), 18 integration on lane DB
+  `app_fp_stage7` (partial/full/zero macros, reload, staff range,
+  pin-switch retention, auth guards).
+- Gates: `npm ci`, `prisma generate`, `typecheck`, `lint` (0 err),
+  `index:check`, `test` (111 files / 1323), `build` — all exit 0.
+- Live proof on `app_fp_stage7` (seeded, synthetic `card09-*` fixtures):
+  Playwright driver, 14/14 PASS — empty day, protein-only 720 kcal,
+  150/200/60 → 1940 kcal hand-checked, reload persistence, IIFYM-variant
+  client keeps entries, coach table shows 1940 + 400 kcal rows.
+  Screenshots 1440/390 + `PROOF.md` in the card-09 evidence dir.
+- Preview for review R2-4: served on `https://127.0.0.1:3967` (TLS proxy
+  → backend 3968), `APP_ENV=test`, `MEDIA_STORAGE_ADAPTER=local`,
+  `ENABLE_DAILY_ENTRY=1`. Port 3964 is owned by the sibling
+  merge-preview lane and was left alone — flag for Marcel.
+- Commits: `9731f3a` schema+math, `0ce232e` service, `b412a50` routes,
+  `91937c1` client panel, `edbe706` coach section + index. No push.
+- NOT done: independent review, owner screen sign-off, lane DB drop
+  (kept for the preview).
+
 ## 2026-10-26 - Stage 3 card 05a (in progress): client store routes + provider seam landed; screens and verification pending
 
 - `lib/messages/service.ts` (new): own-thread list + client send, one
