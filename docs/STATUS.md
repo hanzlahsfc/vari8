@@ -1,3 +1,59 @@
+## 2026-10-25 — Stage 7 card 10 (built, pending owner screen review): IIFYM macro targets end to end (#175)
+
+- Schema: none added — existing `IifymPlan` (shared draft, `draftRevision` CAS,
+  plan-scoped `timezone`) + `IifymPlanVersion` (immutable payload snapshot,
+  `publishOriginRevision` dedupe authority) carry the whole card.
+- Service: `lib/iifym/` — `gate.ts` (`ENABLE_IIFYM_PLANS` + trusted-runtime
+  resolver, enforced at the top of every exported service function: flag off →
+  `plan_not_accessible`/403), `limits.ts`, `payload.ts` (strict draft
+  normalizer; macros options reject `calories`, calorie options reject macros),
+  `service.ts` (draft save / timezone confirm / publish / staff+own reads —
+  meal-plan protocol cloned: advisory lock, serializable tx, consent under
+  locks, replay-lookup before stale/publish checks, audit last).
+- Routes (api/v1): own `GET workspaces/{ws}/iifym-plans` (current version
+  payload + upcoming header only — draft never leaves the server); staff
+  `GET|PUT clients/{cp}/iifym-plans`, `POST .../publish`,
+  `POST .../timezone`. `_result.ts` maps the closed error vocabulary:
+  400/403/409, never 404, foreign workspace → 403.
+- Coach UI: `app/workspace/[ws]/clients/[cp]/macro-targets` +
+  `components/iifym/` — option editor (macro mode: P/C/F with derived-kcal
+  readout; calorie mode entered directly + labelled), weekly weekday
+  assignment grid (+manual; a stored `cycle` schedule is preserved, not
+  clobbered), explicit "Confirm timezone" action (`setIifymTimezone` via the
+  timezone route — the coach's browser zone is never auto-stamped), publish
+  with effective date, version table. Clients roster row links to it.
+- Client UI: `nutrition-targets.tsx` beside card-09 `NutritionActuals` in a
+  `ca-nutrition-split` — resolves the weekday option for the displayed date
+  through the canvas's own `scheduledOption`, derives kcal at 4/4/9 in macro
+  mode, labels calorie mode; empty/error states when no version is live.
+- Tests: 11 unit (payload normalize/derived-calorie rules), 7 integration on a
+  disposable PG (two-option publish + weekday resolution via the real
+  `scheduledOption`, byte-identical replay incl. after v2, foreign-workspace
+  denial, flag-off closure, immutability, consent missing).
+- Gates: `npm ci` · `prisma generate` · `typecheck` · `lint` (0 err, 85 warn —
+  all pre-existing) · `index:check` · `test` (112 files / 1334) · `build` —
+  all exit 0.
+- Live proof on lane `app_fp_stage7c10` (seeded synthetic fixtures, `next
+  start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
+  options → own read resolves Rest day on Sun 25 Oct and Training day on Tue
+  13 Oct; publish replay byte-identical (`cmp`) incl. replay of v1 after v2
+  published (v1 untouched, upcoming=v2); foreign-workspace PUT/POST/GET all
+  403; second instance without `ENABLE_IIFYM_PLANS` returns 403
+  `plan_not_accessible` on all four endpoints; nutrition actuals written via
+  card-09 route for the side-by-side. Screenshots 1440/390 coach+client and
+  `PROOF.md` in the card-10 evidence dir.
+- Independent review (verifier subagent): REPAIR → fixed. MAJOR-1 flag was
+  page-gated only — now enforced in the service and proven live flag-off.
+  MAJOR-2 browser auto-stamp replaced by explicit confirm route. Minors:
+  dead exports dropped (`readStaffIifymVersion`, cursor pagination), cycle
+  schedule preserved in editor, create-without-title 403→400, test imports
+  the real `scheduledOption`.
+- Preview for review R2-4: production server on `http://127.0.0.1:3971`
+  (`ENABLE_IIFYM_PLANS=1` etc.), lane DB kept alive for the preview. Sign in:
+  `coach@card10.test` / `emma.anders@canvas-demo.test` (fixture passwords in
+  the seed env only). No push, no PR until Marcel approves the screens.
+- NOT done: owner screen sign-off, lane DB drop (kept for preview).
+
 ## 2026-10-25 — Stage 7 card 09 (built, pending owner screen review): daily nutrition actuals (#173 slice)
 
 - Schema: `NutritionLog` as a 1:1 child of `DailyEntry`, also unique on

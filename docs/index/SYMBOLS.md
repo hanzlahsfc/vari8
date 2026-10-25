@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 151 modules with exports, 1503 exported symbols.
+Counts: 155 modules with exports, 1536 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -706,6 +706,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type ConsentStatusRow = { id: string; kind: ConsentKind; version: string; grantedAt: Date; revokedAt: Date | null; }`
 - `export type ConsentVersionPair = { kind: ConsentKind; version: string }`
 - `export type HealthOperationDeps = { client?: PrismaLike; registry?: ConsentPolicyRegistry; }`
+- `export const IIFYM_DEV_CONSENT = { PRIVACY_NOTICE: "iifym-dev-privacy-v1", HEALTH_DATA: "iifym-dev-health-v1", } as const`
 - `export const MEALPLAN_DEV_CONSENT = { PRIVACY_NOTICE: "meal-plan-dev-privacy-v1", HEALTH_DATA: "meal-plan-dev-health-v1", } as const`
 - `export const ONBOARDING_SUBMISSION_DEV_CONSENT = { PRIVACY_NOTICE: "onboarding-submission-dev-privacy-v1", HEALTH_DATA: "onboarding-submission-dev-health-v1", } as const`
 - `export type OnboardingSubmissionConsentEnv = RuntimeEnv & { ENABLE_ONBOARDING_SUBMISSION?: string; }`
@@ -722,6 +723,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function readOwnConsentStatus(session: SessionLike, input: { workspaceId: string; clientProfileId: string; limit?: number; cursor?: string; }, deps: ConsentServiceDeps = {}): Promise<C...`
 - `export function requiredConsentsFor(resource: Resource): readonly ConsentKind[] | undefined`
 - `export function resolveCheckInConsentPolicy(env: { ENABLE_CHECK_INS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
+- `export function resolveIifymConsentPolicy(env: { ENABLE_IIFYM_PLANS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
 - `export function resolveMealPlanConsentPolicy(env: { ENABLE_MEAL_PLANS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
 - `export function resolveOnboardingSubmissionConsentPolicy(env: OnboardingSubmissionConsentEnv = process.env): ConsentPolicyRegistry`
 - `export function resolveSupplementsConsentPolicy(env: { ENABLE_SUPPLEMENTS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
@@ -1262,6 +1264,49 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function listStaffHabits(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: HabitDeps = {}): Promise<{ habits: HabitView[]; hasMore: boolean }>`
 - `export async function listTodayHabits(session: SessionLike, input: { workspaceId: string; fields?: unknown }, deps: HabitDeps = {}): Promise<{ habits: TodayHabitView[]; hasMore: boolean; date: stri...`
 - `export async function setHabitLog(session: SessionLike, input: { workspaceId: string; clientProfileId: string; habitId: string; date: unknown; desired: "DONE" | "CLEARED"; }, deps: HabitDeps = {}):...`
+
+## `lib/iifym/gate.ts`
+
+- `export type IifymPlansEnv = RuntimeEnv & { ENABLE_IIFYM_PLANS?: string }`
+- `export type IifymRuntimeClass = RuntimeClass`
+- `export const classifyIifymRuntime: ( env?: RuntimeEnv, ) => IifymRuntimeClass`
+- `export function isIifymPlansEnabled(env: IifymPlansEnv = process.env): boolean`
+
+## `lib/iifym/limits.ts`
+
+- `export const IIFYM_LIMITS = { titleMax: 80, planNameMax: 120, maxOptions: 8, minPublishOptions: 1, optionLabelMax: 80, optionIdMax: 64, cycleStepDaysMin: 1, cycleStepDaysMax: 28, cycleDaysMax: 365,...`
+
+## `lib/iifym/payload.ts`
+
+- `export type IifymDraft = { options: IifymOption[]; name?: string; startDate?: string; schedule?: VariantSchedule; }`
+- `export class IifymError extends Error (1 members)`
+- `export type IifymErrorCode = | "invalid_input" | "plan_not_accessible" | "stale_revision" | "timezone_required" | "unrepresentable_date" | "publish_incomplete" | "consent_missing" | "policy_not_con...`
+- `export type IifymOption = { id: string; label: string; targets: MealTargets; }`
+- `export type { MealTargets }`
+- `export type { TargetValue }`
+- `export type { VariantSchedule }`
+- `export function normalizeIifymPayload(input: unknown, opts: { forPublish: boolean }): IifymDraft`
+
+## `lib/iifym/service.ts`
+
+- `export type IifymActivation = | { status: "ok"; instant: Date } | { status: "unrepresentable" } | { status: "invalid" }`
+- `export type IifymDeps = { db?: PrismaClient; registry?: ConsentPolicyRegistry; now?: Date; }`
+- `export type { IifymDraft } from "./payload"`
+- `export { IifymError } from "./payload"`
+- `export type { IifymOption } from "./payload"`
+- `export type IifymVersionHeader = { id: string; versionSeq: number; effectiveDate: string; effectiveTimezone: string; publishedAt: string; }`
+- `export type { MealTargets } from "./payload"`
+- `export type OwnIifymView = { current: { versionSeq: number; effectiveDate: string; effectiveTimezone: string; payload: IifymDraft; } | null; upcoming: { versionSeq: number; effectiveDate: string; e...`
+- `export type StaffIifymView = { plan: { id: string; title: string; timezone: string | null; draftRevision: number; draft: IifymDraft; } | null; versions: IifymVersionHeader[]; currentVersionId: stri...`
+- `export type { TargetValue } from "./payload"`
+- `export type { VariantSchedule } from "./payload"`
+- `export function parseEffectiveDate(raw: unknown, now: Date = new Date()): string`
+- `export async function publishIifymVersion(session: SessionLike, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; effectiveDate: string; }, deps: IifymDeps = {}): Pro...`
+- `export async function readOwnIifymPlan(session: SessionLike, input: { workspaceId: string }, deps: IifymDeps = {}): Promise<OwnIifymView>`
+- `export async function readStaffIifymPlan(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: IifymDeps = {}): Promise<StaffIifymView>`
+- `export function resolveIifymActivation(zone: string, effectiveDate: string): IifymActivation`
+- `export async function saveIifymDraft(session: SessionLike, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; title?: string; draft: unknown; timezone?: string; }, dep...`
+- `export async function setIifymTimezone(session: SessionLike, input: { workspaceId: string; clientProfileId: string; timezone: string }, deps: IifymDeps = {}): Promise<{ planId: string }>`
 
 ## `lib/log.ts`
 
