@@ -331,100 +331,72 @@ it("maps replacement manifest hashes as well as image hashes", async () => {
   ).toBeNull();
 });
 
-it("disposes only the exact S03-18 recorder copy/geometry decision", () => {
-  const buttonKey = "main>section[0]>button[2]";
-  const otherKey = "main>section[0]>div[3]";
-  const baseRows = [
-    [
-      buttonKey,
-      "button",
-      100,
-      200,
-      244.5,
-      44,
-      "Record demo video feedback",
-      "button",
-      "Record demo video feedback",
-    ],
-    [otherKey, "div", 0, 0, 100, 20, "Old label", "text", "Old label"],
+it("accepts only the owner-approved s03 copy and exact width consequence", () => {
+  const key = "body[1]>button[1]";
+  const base = [
+    key,
+    "button",
+    964,
+    661,
+    244.5,
+    44,
+    "Record demo video feedback",
+    "button",
+    "Record demo video feedback",
   ];
-  const currentRows = [
-    [
-      buttonKey,
-      "button",
-      100,
-      200,
-      205.5,
-      44,
-      "Record video feedback",
-      "button",
-      "Record video feedback",
-    ],
-    [otherKey, "div", 0, 0, 120, 20, "New label", "text", "New label"],
+  const current = [
+    key,
+    "button",
+    964,
+    661,
+    205.5,
+    44,
+    "Record video feedback",
+    "button",
+    "Record video feedback",
   ];
-
-  const diff = geomDiff(baseRows, currentRows);
-  const ruled = applyRuled("s03-checkin-review", diff, baseRows, currentRows);
-
-  expect(ruled.rules).toEqual([
+  const diff = geomDiff([base], [current]);
+  const approved = applyRuled("s03-checkin-review", diff, [base], [current]);
+  expect(approved.rules).toContain(
     "S03-18 real video feedback copy and width (Prompt 417)",
-  ]);
-  expect(ruled.geom.texts.map((x: { key: string }) => x.key)).toEqual([
-    otherKey,
-  ]);
-  expect(ruled.geom.moved.map((x: { key: string }) => x.key)).toEqual([
-    otherKey,
-  ]);
-  expect(ruled.masks).toHaveLength(2);
+  );
+  expect(approved.geom.moved).toEqual([]);
+  expect(approved.geom.texts).toEqual([]);
+  expect(approved.masks).toEqual([]);
 
-  const wrongCopy = [
-    [
-      buttonKey,
-      "button",
-      100,
-      200,
-      205.5,
-      44,
-      "Record demo video",
-      "button",
-      "Record demo video",
-    ],
-    currentRows[1],
-  ];
-  const wrongDiff = geomDiff(baseRows, wrongCopy);
-  const wrong = applyRuled(
+  const unrelatedWidth = [...current];
+  unrelatedWidth[4] = 210;
+  const widthDiff = geomDiff([base], [unrelatedWidth]);
+  const rejectedWidth = applyRuled(
     "s03-checkin-review",
-    wrongDiff,
-    baseRows,
-    wrongCopy,
+    widthDiff,
+    [base],
+    [unrelatedWidth],
   );
-  expect(wrong.rules).not.toContain(
-    "S03-18 real video feedback copy and width (Prompt 417)",
-  );
-  expect(wrong.geom.texts.map((x: { key: string }) => x.key)).toEqual([
-    buttonKey,
-    otherKey,
-  ]);
-  expect(wrong.geom.moved.map((x: { key: string }) => x.key)).toEqual([
-    buttonKey,
-    otherKey,
-  ]);
+  expect(rejectedWidth.rules).toEqual([]);
+  expect(rejectedWidth.geom.moved).toHaveLength(1);
+  expect(rejectedWidth.geom.texts).toHaveLength(1);
 
-  const foreignScreen = applyRuled(
-    "s03-add-extra",
+  const otherScreen = applyRuled(
+    "s04-template-habits",
     diff,
-    baseRows,
-    currentRows,
+    [base],
+    [current],
   );
-  expect(foreignScreen.rules).not.toContain(
-    "S03-18 real video feedback copy and width (Prompt 417)",
+  expect(otherScreen.rules).toEqual([]);
+  expect(otherScreen.geom.moved).toHaveLength(1);
+  expect(otherScreen.geom.texts).toHaveLength(1);
+
+  const otherText = [...current];
+  otherText[6] = "Record video note";
+  otherText[8] = "Record video note";
+  const textDiff = geomDiff([base], [otherText]);
+  const rejectedText = applyRuled(
+    "s03-checkin-review",
+    textDiff,
+    [base],
+    [otherText],
   );
-  expect(foreignScreen.geom.texts.map((x: { key: string }) => x.key)).toEqual([
-    buttonKey,
-    otherKey,
-  ]);
-  expect(foreignScreen.geom.moved.map((x: { key: string }) => x.key)).toEqual([
-    buttonKey,
-    otherKey,
-  ]);
+  expect(rejectedText.rules).toEqual([]);
+  expect(rejectedText.geom.texts).toHaveLength(1);
 });
