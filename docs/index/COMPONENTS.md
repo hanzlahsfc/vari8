@@ -7,7 +7,7 @@ Source: TypeScript compiler API over `frontend/src/**`. A component is an export
 function, or a const whose initializer is a function, whose body contains JSX.
 `Imported by` lists the canvas route entries that reach the component through imports;
 a layout's imports count for every route beneath it.
-Counts: 168 components in 88 files.
+Counts: 170 components in 90 files.
 
 Rows are grouped by canvas surface: the coach workspace at `/coach`, the ethereal
 canvas at `/ethereal` and `/`. A screen element shared by both surfaces is listed in
@@ -235,4 +235,6 @@ its surface section and open the file in the second column. Canvas screens: see
 | `CoachingWorkspaceSample` | `frontend/src/components/vari8/playground-compositions.tsx` | - |
 | `InputShowcase` | `frontend/src/components/vari8/input-showcase.tsx` | - |
 | `LayoutShowcase` | `frontend/src/components/vari8/playground-compositions.tsx` | - |
+| `LegacySheetDialog` | `frontend/src/components/client/legacy-sheet/dialog.tsx` | - |
+| `SheetGrid` | `frontend/src/components/client/legacy-sheet/grid.tsx` | - |
 | `Vari8Playground` | `frontend/src/components/vari8/playground.tsx` | - |
