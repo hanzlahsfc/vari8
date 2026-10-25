@@ -62,16 +62,21 @@ const committed = git(
   "--no-renames",
   `${receipt.source.sha}..HEAD`,
 );
-const status = git("status", "--porcelain=v1", "--untracked-files=all")
+const statusPaths = git("status", "--porcelain=v1", "--untracked-files=all")
   .split("\n")
   .filter(Boolean)
   .map((line) => line.slice(3).split(" -> ").pop());
 const packageRoot = path.relative(ROOT, out);
+const status = statusPaths.flatMap((file) => {
+  const absolute = path.join(ROOT, file);
+  return fs.statSync(absolute).isDirectory()
+    ? walkFiles(absolute).map((nested) => path.join(file, nested))
+    : [file];
+});
 const postCapturePaths = [
   ...new Set([
     ...committed.split("\n").filter(Boolean),
     ...status,
-    ...walkFiles(out).map((file) => path.join(packageRoot, file)),
     path.join(packageRoot, "receipts/source-compatibility.json"),
     path.join(packageRoot, "artifact-index.json"),
   ]),
