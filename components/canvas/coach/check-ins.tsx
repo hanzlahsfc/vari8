@@ -35,19 +35,36 @@ import {
 import { useCoach } from "./store";
 import { templateSetup } from "./template-setup";
 import {
+  cancelExtra,
+  type CheckinInstanceRow,
+  loadCheckins,
+  loadSubmissionAnswers,
+  loadTrackerContext,
+  mergeCheckinLoad,
+  sendFeedback,
+  type TrackerContextValue,
+} from "../data/checkins";
+import {
   Avatar,
   Button,
   Dialog,
   Empty,
   IconButton,
   PageTitle,
-  ParameterValue,
   Select,
   Status,
   Surface,
 } from "./ui";
 export function CheckInsWorkspace() {
-  const { state, route, navigate, setState, toast } = useCoach();
+  const {
+    state,
+    route,
+    navigate,
+    setState,
+    toast,
+    workspaceId,
+    clientProfileIdFor,
+  } = useCoach();
   const [mode, setMode] = useState("Week");
   const [anchor, setAnchor] = useState(TODAY);
   const [client, setClient] = useState(route.client ?? "all");
@@ -65,6 +82,78 @@ export function CheckInsWorkspace() {
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
   }, []);
+  // PR-W6: the board reads the calendar, the submission headers and the
+  // recurring rules from /api/v1 for the visible range. The range is reloaded
+  // only when it actually moves, so a state merge cannot re-trigger the read.
+  const instances = useRef<Record<string, CheckinInstanceRow>>({});
+  const loadedRange = useRef("");
+  // Bumped after a server write (cancel/restore) so the range effect re-fetches
+  // even though the range key did not move.
+  const [reload, setReload] = useState(0);
+  const reloadRange = () => {
+    loadedRange.current = "";
+    setReload((n) => n + 1);
+  };
+  useEffect(() => {
+    if (!workspaceId) return;
+    const [from, to] = calendarRange(mode, anchor);
+    const key = `${workspaceId}:${from}:${to}`;
+    if (loadedRange.current === key) return;
+    let live = true;
+    loadCheckins({
+      workspaceId,
+      from,
+      to,
+      clients: state.clients.map((c) => ({ id: c.id, name: c.name })),
+      profileIdFor: clientProfileIdFor,
+    })
+      .then((loaded) => {
+        if (!live) return;
+        instances.current = loaded.instances;
+        // Mark the range read only once it landed: a mount that unmounts its
+        // own effect (React's double-invoked dev effects) drops the first
+        // result, and the guard must not then block the retry.
+        loadedRange.current = key;
+        setState((s) => {
+          const failedIds = s.clients
+            .filter((c) => loaded.failed.includes(c.name))
+            .map((c) => c.id);
+          const merged = mergeCheckinLoad(
+            { extras: s.extras, submissions: s.submissions },
+            { extras: loaded.extras, submissions: loaded.submissions },
+            failedIds,
+          );
+          return {
+            ...s,
+            extras: merged.extras,
+            submissions: merged.submissions,
+            clients: s.clients.map((c) =>
+              loaded.schedules[c.id]
+                ? { ...c, schedules: loaded.schedules[c.id] }
+                : c,
+            ),
+          };
+        });
+        if (loaded.failed.length)
+          toast(`Check-ins did not load for ${loaded.failed.join(", ")}`);
+      })
+      .catch(() => {
+        loadedRange.current = "";
+        toast("Check-ins could not be loaded from the server");
+      });
+    return () => {
+      live = false;
+    };
+  }, [
+    workspaceId,
+    mode,
+    anchor,
+    reload,
+    clientProfileIdFor,
+    setState,
+    toast,
+    state.clients,
+  ]);
   if (route.review) {
     const sub = state.submissions.find((s) => s.id === route.review);
     return sub ? (
@@ -80,13 +169,7 @@ export function CheckInsWorkspace() {
       />
     );
   }
-  const start = mode === "Month" ? `${anchor.slice(0, 7)}-01` : monday(anchor);
-  const monthEnd = new Date(`${start}T12:00:00Z`);
-  monthEnd.setUTCMonth(monthEnd.getUTCMonth() + 1, 0);
-  const end =
-    mode === "Month"
-      ? monthEnd.toISOString().slice(0, 10)
-      : addDays(start, mode === "Agenda" ? 27 : 6);
+  const [start, end] = calendarRange(mode, anchor);
   const events = eventsBetween(state, start, end).filter(
     (e) =>
       (client === "all" || e.clientId === client) &&
@@ -156,20 +239,33 @@ export function CheckInsWorkspace() {
             Reschedule additional date
           </Button>
           <Button
-            onClick={() => {
+            onClick={async () => {
               const x = e.extra;
-              setState((s) => ({
-                ...s,
-                extras: s.extras.filter((e) => e.id !== x?.id),
-              }));
-              setSelected(null);
-              toast("Additional date removed", () => {
-                if (x)
-                  setState((s) => ({
-                    ...s,
-                    extras: [...s.extras, x],
-                  }));
-              });
+              const profileId = await clientProfileIdFor(c.name);
+              const row = x ? instances.current[x.id] : undefined;
+              if (!x || !profileId || !row || !workspaceId) {
+                toast("This additional date could not be removed");
+                return;
+              }
+              try {
+                const restore = await cancelExtra({
+                  workspaceId,
+                  clientProfileId: profileId,
+                  instance: row,
+                });
+                setState((s) => ({
+                  ...s,
+                  extras: s.extras.filter((extra) => extra.id !== x.id),
+                }));
+                setSelected(null);
+                reloadRange();
+                toast("Additional date removed", async () => {
+                  await restore();
+                  reloadRange();
+                });
+              } catch {
+                toast("This additional date could not be removed");
+              }
             }}
           >
             Remove additional date
@@ -441,7 +537,8 @@ export function CheckInsWorkspace() {
   );
 }
 function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
-  const { state, setState, navigate, toast } = useCoach();
+  const { state, setState, navigate, toast, workspaceId, clientProfileIdFor } =
+    useCoach();
   const [visual, setVisual] = useState<string | null>(null);
   const c = state.clients.find((c) => c.id === sub.clientId);
   const draft: ReviewDraft = state.reviewDrafts[sub.id] ?? {
@@ -459,6 +556,74 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
         },
       },
     }));
+  // PR-W6: answers, visuals and any sent body come from the audited detail
+  // read; the header list is answer-free on purpose. One idempotency anchor per
+  // mounted review, so a second click retries rather than double-sends.
+  const requestId = useRef(crypto.randomUUID());
+  const answersRequested = useRef(sub.answers.length > 0);
+  useEffect(() => {
+    if (answersRequested.current || !workspaceId || !c) return;
+    answersRequested.current = true;
+    let live = true;
+    clientProfileIdFor(c.name)
+      .then((id) =>
+        id
+          ? loadSubmissionAnswers(
+              {
+                workspaceId,
+                clientProfileId: id,
+                submissionId: sub.id,
+              },
+              sub,
+            )
+          : null,
+      )
+      .then((detail) => {
+        if (!live || !detail) return;
+        setState((s) => ({
+          ...s,
+          submissions: s.submissions.map((x) => (x.id === detail.id ? detail : x)),
+        }));
+      })
+      .catch(() => {
+        // Let a later mount/render of this review try the read again; the
+        // empty answers stay until it succeeds.
+        answersRequested.current = false;
+        if (live) toast("This submission’s answers could not be loaded");
+      });
+    return () => {
+      live = false;
+    };
+  }, [workspaceId, c, clientProfileIdFor, setState, sub, toast]);
+  // PR-W6/R1: parameter rows come from the explicit DailyEntry tracker read for
+  // this check-in date. `null` is "not read yet", `[]` is "nothing real to
+  // draw" (a 403 `not_available` or a failed read), and the panel then shows its
+  // empty line instead of borrowed numbers.
+  const [tracker, setTracker] = useState<TrackerContextValue[] | null>(null);
+  useEffect(() => {
+    if (!workspaceId || !c) return;
+    let live = true;
+    clientProfileIdFor(c.name)
+      .then((id) =>
+        id
+          ? loadTrackerContext({
+              workspaceId,
+              clientProfileId: id,
+              submissionId: sub.id,
+              entryDate: sub.date,
+            })
+          : [],
+      )
+      .then((values) => {
+        if (live) setTracker(values);
+      })
+      .catch(() => {
+        if (live) setTracker([]);
+      });
+    return () => {
+      live = false;
+    };
+  }, [workspaceId, c, clientProfileIdFor, sub.id, sub.date]);
   if (!c) return <Empty title="Athlete not found" />;
   const variant = c.assignment
     ? templateSetup(c.assignment.snapshot, c.assignment.variantId)
@@ -535,16 +700,25 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
                 <ArrowUpRight size={14} />
               </Button>
             </div>
-            {sub.metrics
-              .filter((id) => id !== "habits")
-              .map((id) => (
-                <ParameterValue key={id} field={unit(id)} client={c} />
-              ))}
-            {sub.metrics.includes("habits") && (
-              <div className="cd-stat-row">
-                <span>Habit consistency</span>
-                <strong>{c.habits[0]?.completed ?? 0} / 7 days</strong>
-              </div>
+            {tracker === null ? null : tracker.length > 0 ? (
+              tracker.map((value) => (
+                <div className="cd-stat-row" key={value.parameterKey}>
+                  <span>
+                    {value.label ||
+                      ALL_PARAMETERS.find((p) => p.id === value.parameterKey)
+                        ?.name ||
+                      value.parameterKey}
+                  </span>
+                  <strong>
+                    {value.display}
+                    {value.unit ? ` ${value.unit}` : ""}
+                  </strong>
+                </div>
+              ))
+            ) : (
+              <p className="cd-muted">
+                No tracker values recorded for this check-in date.
+              </p>
             )}
             <div className="cd-table-scroll">
               <table className="cd-table">
@@ -748,11 +922,32 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
                 primary
                 className="cd-submit-feedback"
                 disabled={!draft.text.trim() && !draft.video}
-                onClick={() => {
-                  setState((s) =>
-                    submitFeedback(s, sub.id, new Date().toISOString()),
-                  );
-                  toast("Feedback sent to the athlete’s local conversation");
+                onClick={async () => {
+                  if (!workspaceId || !c) return;
+                  if (!draft.text.trim()) {
+                    toast("Video feedback is not stored yet; add a note to send");
+                    return;
+                  }
+                  const profileId = await clientProfileIdFor(c.name);
+                  if (!profileId) {
+                    toast("Feedback could not be sent");
+                    return;
+                  }
+                  try {
+                    await sendFeedback({
+                      workspaceId,
+                      clientProfileId: profileId,
+                      submissionId: sub.id,
+                      body: draft.text.trim(),
+                      clientRequestId: requestId.current,
+                    });
+                    setState((s) =>
+                      submitFeedback(s, sub.id, new Date().toISOString()),
+                    );
+                    toast("Feedback sent to the athlete’s local conversation");
+                  } catch {
+                    toast("Feedback could not be sent");
+                  }
                 }}
               >
                 Submit feedback
@@ -802,3 +997,17 @@ function ProgressVisual() {
     </svg>
   );
 }
+
+/** The visible range for a board mode, `YYYY-MM-DD` inclusive (PR-W6: shared
+ * by the render and the server read so the two can never disagree). */
+function calendarRange(mode: string, anchor: string): [string, string] {
+  const start = mode === "Month" ? `${anchor.slice(0, 7)}-01` : monday(anchor);
+  const monthEnd = new Date(`${start}T12:00:00Z`);
+  monthEnd.setUTCMonth(monthEnd.getUTCMonth() + 1, 0);
+  const end =
+    mode === "Month"
+      ? monthEnd.toISOString().slice(0, 10)
+      : addDays(start, mode === "Agenda" ? 27 : 6);
+  return [start, end];
+}
+

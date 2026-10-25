@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 55 backend pages, 9 API routes, 14 layouts, 5 canvas pages.
+Counts: 55 backend pages, 20 API routes, 14 layouts, 5 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -81,6 +81,17 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/media/[workspaceId]` | `app/api/v1/media/[workspaceId]/route.ts` | - | none detected |
 | `/api/v1/media/[workspaceId]/[mediaObjectId]` | `app/api/v1/media/[workspaceId]/[mediaObjectId]/route.ts` | - | none detected |
 | `/api/v1/media/object` | `app/api/v1/media/object/route.ts` | GET, PUT | none detected |
+| `/api/v1/workspaces/[workspaceId]/checkins/instances` | `app/api/v1/workspaces/[workspaceId]/checkins/instances/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/checkins/instances/[instanceId]/cancel` | `app/api/v1/workspaces/[workspaceId]/checkins/instances/[instanceId]/cancel/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/checkins/schedule-rules` | `app/api/v1/workspaces/[workspaceId]/checkins/schedule-rules/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/checkins/schedule-rules/[ruleId]/generate` | `app/api/v1/workspaces/[workspaceId]/checkins/schedule-rules/[ruleId]/generate/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/checkins/schedule-rules/[ruleId]/status` | `app/api/v1/workspaces/[workspaceId]/checkins/schedule-rules/[ruleId]/status/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/checkins/schedule-versions` | `app/api/v1/workspaces/[workspaceId]/checkins/schedule-versions/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/checkins/submissions` | `app/api/v1/workspaces/[workspaceId]/checkins/submissions/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]` | `app/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/feedback` | `app/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/feedback/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/review` | `app/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/review/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/tracker-context` | `app/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/tracker-context/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients` | `app/api/v1/workspaces/[workspaceId]/clients/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/supplement-plan` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/supplement-plan/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/session` | `app/api/v1/workspaces/[workspaceId]/session/route.ts` | - | none detected |
