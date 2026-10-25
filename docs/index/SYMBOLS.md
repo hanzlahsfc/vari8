@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 149 modules with exports, 1478 exported symbols.
+Counts: 150 modules with exports, 1483 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1324,6 +1324,14 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function saveMealPlanDraft(session: SessionLike, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; title?: string; draft: unknown; timezone?: string; }, ...`
 - `export async function setMealPlanTimezone(session: SessionLike, input: { workspaceId: string; clientProfileId: string; timezone: string }, deps: MealPlanDeps = {}): Promise<{ planId: string }>`
 
+## `lib/messages/service.ts`
+
+- `export type MessageDeps = { db?: PrismaLike }`
+- `export class MessageError extends Error (1 members)`
+- `export type MessageView = { id: string; body: string; senderKind: "CLIENT" | "STAFF"; sentAt: string; clientRequestId: string; }`
+- `export async function listOwnMessages(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ messages: MessageView[] }>`
+- `export async function sendOwnMessage(session: SessionLike, input: { workspaceId: string; body: unknown; clientRequestId?: unknown }, deps: MessageDeps = {}): Promise<{ message: MessageView }>`
+
 ## `lib/nutrition/foods.ts`
 
 - `export async function loadNutritionFoodMap(foodIds: readonly string[], db: PrismaClient = defaultPrisma): Promise<Map<string, Food>>`
@@ -1655,7 +1663,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function assignClientTask(session: SessionLike, input: { workspaceId: string; clientProfileId: string; title: unknown; dueDate: unknown; }, deps: TaskDeps = {}): Promise<{ id: string; ...`
 - `export async function cancelClientTask(session: SessionLike, input: { workspaceId: string; clientProfileId: string; taskId: string; expectedRevision: number; }, deps: TaskDeps = {}): Promise<{ revi...`
 - `export async function editClientTask(session: SessionLike, input: { workspaceId: string; clientProfileId: string; taskId: string; title?: unknown; dueDate?: unknown; expectedRevision: number; }, de...`
-- `export async function listOwnClientTasks(session: SessionLike, input: { workspaceId: string; option?: "open" | "completed" | "both"; }, deps: TaskDeps = {}): Promise<{ tasks: TaskView[]; hasMore: b...`
+- `export async function listOwnClientTasks(session: SessionLike, input: { workspaceId: string; option?: "open" | "completed" | "both"; }, deps: TaskDeps = {}): Promise<{ clientProfileId: string; task...`
 - `export async function listStaffClientTasks(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: TaskDeps = {}): Promise<{ tasks: TaskView[]; hasMore: boolean }>`
 - `export async function setClientTaskCompletion(session: SessionLike, input: { workspaceId: string; clientProfileId: string; taskId: string; desired: "COMPLETED" | "OPEN"; expectedRevision: number; }...`
 

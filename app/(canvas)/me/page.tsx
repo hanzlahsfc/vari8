@@ -44,6 +44,7 @@ export default async function MePage() {
               clientName: viewer.name,
               clientInitials: viewer.initials,
               asOf: todayIsoDate(),
+              workspaceId: viewer.workspace.id,
             }}
           />
         </main>

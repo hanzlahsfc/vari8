@@ -15,10 +15,20 @@ type TrackingViewProps = {
   clientName: string;
   clientInitials: string;
   asOf: string;
-  onConfigure: () => void;
+  onConfigure?: () => void;
   onUpdateValue: (date: string, id: string, value: number | null) => void;
   comments: Record<string, string>;
   onSaveComment: (date: string, id: string, text: string) => void;
+  /**
+   * Remote mode (card 05a): `config` already carries the server's parameter
+   * definitions, the caller supplies text values and the surface's own
+   * grouping, and the client never sees the coach-notes mode or the template
+   * configurator.
+   */
+  remote?: boolean;
+  parameterGroups?: Record<string, string>;
+  textValues?: Record<string, string>;
+  onUpdateText?: (date: string, id: string, value: string) => void;
 };
 
 const NO_TEXT_VALUES: Record<string, string> = {};
@@ -42,24 +52,36 @@ export function TrackingView({
   onUpdateValue,
   comments,
   onSaveComment,
+  remote = false,
+  parameterGroups,
+  textValues,
+  onUpdateText,
 }: TrackingViewProps) {
   return (
     <div className="coach-root ct-shared-tracker">
       <SharedTrackingView
-        config={{ ...config, parameterDefinitions: SHARED_PARAMETERS }}
+        config={
+          remote
+            ? config
+            : { ...config, parameterDefinitions: SHARED_PARAMETERS }
+        }
         entries={entries}
         onUpdateValue={onUpdateValue}
-        textValues={NO_TEXT_VALUES}
-        onUpdateText={NOOP_UPDATE_TEXT}
+        textValues={remote ? (textValues ?? NO_TEXT_VALUES) : NO_TEXT_VALUES}
+        onUpdateText={
+          remote ? (onUpdateText ?? NOOP_UPDATE_TEXT) : NOOP_UPDATE_TEXT
+        }
         comments={comments}
         onSaveComment={onSaveComment}
         clientName={clientName}
         clientInitials={clientInitials}
         asOf={asOf}
-        parameterGroups={PARAMETER_GROUPS}
-        onConfigure={onConfigure}
-        allowCoachMode
-        persistenceHint="Local tracker"
+        parameterGroups={
+          remote ? (parameterGroups ?? {}) : PARAMETER_GROUPS
+        }
+        onConfigure={remote ? undefined : onConfigure}
+        allowCoachMode={remote ? undefined : true}
+        persistenceHint={remote ? "Saved to your workspace" : "Local tracker"}
       />
     </div>
   );

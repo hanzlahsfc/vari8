@@ -8,7 +8,6 @@ import { describe, expect, it } from "vitest";
 
 import { AccessDeniedError } from "../../lib/auth/guard";
 import {
-  MessageError,
   listOwnMessages,
   sendOwnMessage,
 } from "../../lib/messages/service";
@@ -142,7 +141,7 @@ describe("sendOwnMessage", () => {
           { workspaceId: "ws-1", body },
           { db: db as never },
         ),
-      ).rejects.toMatchObject<MessageError>({ code: "invalid_input" });
+      ).rejects.toMatchObject({ code: "invalid_input" });
     }
   });
 

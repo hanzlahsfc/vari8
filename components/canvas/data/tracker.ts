@@ -4,6 +4,10 @@
 // domain to the server; it edits this file only.
 
 import type { CoachClient, CoachState } from "../coach/model";
+import type {
+  TrackerConfig as PreviewTrackerConfig,
+  TrackerParameter,
+} from "../coach/client-tracker-preview/preview-model";
 import {
   emptyClientPlans,
   type ClientGoal,
@@ -237,14 +241,16 @@ export type DailyEntryHistoryEntryWire = {
   values: DailyEntryHistoryRowWire[];
 };
 
+export type DailyEntrySurfaceReadyWire = {
+  state: "ready";
+  formToken: string;
+  entryDate: string;
+  sections: DailyEntrySurfaceSectionWire[];
+  history: DailyEntryHistoryEntryWire[];
+};
+
 export type DailyEntrySurfaceWire =
-  | {
-      state: "ready";
-      formToken: string;
-      entryDate: string;
-      sections: DailyEntrySurfaceSectionWire[];
-      history: DailyEntryHistoryEntryWire[];
-    }
+  | DailyEntrySurfaceReadyWire
   | { state: "not_applicable" }
   | { state: "unavailable" }
   | { state: "ineligible" }
@@ -299,4 +305,274 @@ export function fetchStaffDailyEntryHistory(
   return apiFetch<StaffDailyEntryHistoryWire>(
     `/workspaces/${workspaceId}/clients/${clientProfileId}/daily-entries/history${suffix}`,
   );
+}
+
+// ---------------------------------------------------------------------------
+// Card 05a: daily-entry surface -> TrackingView adapter (pure functions, the
+// mapping unit tests exercise). Server values stay untouched by the preview
+// model's per-field unit conversion because remote parameter ids carry the
+// `srv-` prefix, which matches none of its special-cased ids.
+// ---------------------------------------------------------------------------
+
+const REMOTE_PARAMETER_PREFIX = "srv-";
+
+export const remoteParameterId = (key: string) =>
+  `${REMOTE_PARAMETER_PREFIX}${key}`;
+
+export type RemoteParameterMeta = {
+  /** `srv-`-prefixed id used inside the tracker model. */
+  id: string;
+  /** Server parameterKey the entry and history payloads carry. */
+  key: string;
+  /** Positional ordinal the save payload addresses. */
+  ordinal: number;
+  kind: DailyEntrySurfaceItemWire["kind"];
+  ratingScheme: DailyEntrySurfaceItemWire["ratingScheme"];
+  optionLabels: string[];
+};
+
+export type RemoteTrackerViewModel = {
+  config: PreviewTrackerConfig;
+  parameterGroups: Record<string, string>;
+  metas: RemoteParameterMeta[];
+};
+
+const REMOTE_NUMBER_MIN = -1e12;
+const REMOTE_NUMBER_MAX = 1e12;
+
+function remoteParameter(item: DailyEntrySurfaceItemWire): TrackerParameter {
+  const id = remoteParameterId(item.parameterKey);
+  const base = {
+    id,
+    label: item.label || item.parameterKey,
+    categoryId: "",
+    decimals: 0,
+  };
+  if (item.kind === "OPTION") {
+    return {
+      ...base,
+      unit: "",
+      kind: "number",
+      summary: "latest",
+      min: 0,
+      max: 0,
+      inputType: "choice",
+      options: item.options.map((option) => option.label),
+    };
+  }
+  if (item.kind === "TEXT") {
+    return {
+      ...base,
+      unit: "",
+      kind: "number",
+      summary: "latest",
+      min: 0,
+      max: 0,
+      inputType: "text",
+    };
+  }
+  if (item.kind === "RATING") {
+    return {
+      ...base,
+      unit: "rating",
+      kind: "rating",
+      summary: "distribution",
+      min: 1,
+      max: 10,
+    };
+  }
+  return {
+    ...base,
+    unit: item.unit ?? "",
+    kind: "number",
+    summary: "average",
+    decimals: 2,
+    min: item.validation?.min ?? REMOTE_NUMBER_MIN,
+    max: item.validation?.max ?? REMOTE_NUMBER_MAX,
+  };
+}
+
+/**
+ * Map a ready surface into the shared tracker's config: one TrackerParameter
+ * per surface item (surface order preserved), one category label per section.
+ */
+export function dailyEntrySurfaceToTrackerView(
+  surface: DailyEntrySurfaceReadyWire,
+): RemoteTrackerViewModel {
+  const metas: RemoteParameterMeta[] = [];
+  const definitions: TrackerParameter[] = [];
+  const parameterGroups: Record<string, string> = {};
+  const ratingScales: Record<string, "1-10" | "1-5"> = {};
+  const fieldOptions: Record<string, string[]> = {};
+  for (const section of surface.sections) {
+    for (const item of section.items) {
+      const parameter = remoteParameter(item);
+      definitions.push(parameter);
+      parameterGroups[parameter.id] = section.label || "Tracking";
+      metas.push({
+        id: parameter.id,
+        key: item.parameterKey,
+        ordinal: item.ordinal,
+        kind: item.kind,
+        ratingScheme: item.ratingScheme,
+        optionLabels: item.options.map((option) => option.label),
+      });
+      if (item.kind === "RATING" && item.ratingScheme === "SCALE_1_5") {
+        ratingScales[parameter.id] = "1-5";
+      }
+      if (item.kind === "OPTION") {
+        fieldOptions[parameter.id] = item.options.map(
+          (option) => option.label,
+        );
+      }
+    }
+  }
+  return {
+    config: {
+      parameterIds: definitions.map((parameter) => parameter.id),
+      parameterDefinitions: definitions,
+      weightUnit: "kg",
+      lengthUnit: "cm",
+      waterUnit: "L",
+      ratingScale: "1-10",
+      ratingScales,
+      fieldOptions,
+    },
+    parameterGroups,
+    metas,
+  };
+}
+
+export type RemoteDayData = {
+  /** Numeric values the shared model stores (canonical; ratings 1-10 space). */
+  values: Record<string, number>;
+  /** Display strings for OPTION (option label) and TEXT items. */
+  texts: Record<string, string>;
+};
+
+/**
+ * Translate one wire `raw` into the shared model's display form. OPTION raws
+ * are positional indexes into the snapshot option list, so display carries the
+ * label; SCALE_1_5 ratings expand into the cell's canonical 1-10 space.
+ */
+export function remoteDisplayFromRaw(
+  meta: RemoteParameterMeta,
+  raw: string,
+): { value?: number; text?: string } {
+  if (raw === "") return {};
+  if (meta.kind === "OPTION") {
+    return { text: meta.optionLabels[Number(raw)] ?? "" };
+  }
+  if (meta.kind === "TEXT") return { text: raw };
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return {};
+  if (meta.kind === "RATING" && meta.ratingScheme === "SCALE_1_5") {
+    return { value: 1 + ((parsed - 1) * 9) / 4 };
+  }
+  return { value: parsed };
+}
+
+export function remoteDayDataFromRaws(
+  raws: Record<string, string>,
+  metas: RemoteParameterMeta[],
+): RemoteDayData {
+  const values: Record<string, number> = {};
+  const texts: Record<string, string> = {};
+  for (const meta of metas) {
+    const display = remoteDisplayFromRaw(meta, raws[meta.key] ?? "");
+    if (display.value !== undefined) values[meta.id] = display.value;
+    if (display.text !== undefined && display.text !== "")
+      texts[meta.id] = display.text;
+  }
+  return { values, texts };
+}
+
+/** Seed the wire raws for one date from the surface's prefilled `current`. */
+export function remoteRawsFromSurface(
+  surface: DailyEntrySurfaceReadyWire,
+): Record<string, string> {
+  const raws: Record<string, string> = {};
+  for (const section of surface.sections) {
+    for (const item of section.items) {
+      raws[item.parameterKey] = item.current;
+    }
+  }
+  return raws;
+}
+
+/**
+ * Display rows for one history entry. Keys missing from the current surface
+ * (parameters later removed from the template) fall back to a numeric parse
+ * so past numbers still trend; anything else lands in the text bucket where
+ * it never renders because its id is not configured.
+ */
+export function remoteDayDataFromHistory(
+  values: DailyEntryHistoryEntryWire["values"],
+  metas: RemoteParameterMeta[],
+): RemoteDayData {
+  const metaByKey = new Map(metas.map((meta) => [meta.key, meta]));
+  const result: RemoteDayData = { values: {}, texts: {} };
+  for (const row of values) {
+    const meta = metaByKey.get(row.parameterKey);
+    const id = remoteParameterId(row.parameterKey);
+    if (meta) {
+      const display = remoteDisplayFromRaw(meta, row.display);
+      if (meta.kind === "OPTION" || meta.kind === "TEXT") {
+        // History display already carries the rendered label/text, not a raw.
+        if (row.display !== "") result.texts[id] = row.display;
+      } else if (display.value !== undefined) {
+        result.values[id] = display.value;
+      }
+      continue;
+    }
+    const parsed = Number(row.display);
+    if (row.display !== "" && Number.isFinite(parsed)) {
+      result.values[id] = parsed;
+    } else if (row.display !== "") {
+      result.texts[id] = row.display;
+    }
+  }
+  return result;
+}
+
+/** Rebuild the complete ordered save payload from the current raws. */
+export function remoteOrdinalValues(
+  metas: RemoteParameterMeta[],
+  raws: Record<string, string>,
+): { ordinal: number; raw: string }[] {
+  return metas.map((meta) => ({
+    ordinal: meta.ordinal,
+    raw: raws[meta.key] ?? "",
+  }));
+}
+
+/** Wire raw for a numeric edit; `null` clears the value. */
+export function remoteRawFromNumber(
+  meta: RemoteParameterMeta,
+  value: number | null,
+): string {
+  if (value === null) return "";
+  if (meta.kind === "RATING" && meta.ratingScheme === "SCALE_1_5") {
+    return String(
+      Math.max(1, Math.min(5, Math.round(((value - 1) * 4) / 9) + 1)),
+    );
+  }
+  if (meta.kind === "RATING") return String(Math.round(value));
+  return String(value);
+}
+
+/**
+ * Wire raw for a text/choice edit. Choice edits carry the option label back,
+ * so the raw is the label's positional index; an unknown or empty label
+ * clears the value.
+ */
+export function remoteRawFromText(
+  meta: RemoteParameterMeta,
+  value: string,
+): string {
+  if (meta.kind === "OPTION") {
+    const index = meta.optionLabels.indexOf(value);
+    return index < 0 ? "" : String(index);
+  }
+  return value;
 }
