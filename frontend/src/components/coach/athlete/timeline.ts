@@ -4,13 +4,15 @@ import {
   scheduledSessions,
   sessionStatus,
 } from "../../client-app/training-log/model";
-import type { MealPlan, MealPlanVariant } from "../../ethereal/mealplan/model";
+import type { MealPlan } from "../../ethereal/mealplan/model";
 import { type CoachClient, type CoachState, formatDate } from "../model";
 import { applicablePlan, scheduledOption } from "../plans/domain";
-import { type ClientPhasePlan, phasePlanRanges } from "../plans/phase-planning";
-import type { IifymPlan } from "../plans/types";
+import { type ClientPhase, phaseRanges } from "../plans/phase-planning";
+import { temporaryNutritionForDate } from "../plans/temporary-nutrition";
+import type { IifymPlan, TemporaryNutrition } from "../plans/types";
 import { addLocalDays, isLocalCalendarDate, mondayOf } from "../targets/model";
 import { templateSetup } from "../template-setup";
+import { clientTracking } from "../tracking/data";
 
 export type TimelineEventKind = "deload" | "diet-break" | "refeed";
 export type TimelineEvent = {
@@ -21,7 +23,6 @@ export type TimelineEvent = {
   /** ISO date, >= startDate; refeed defaults to one day */
   endDate: string;
   note: string;
-  nutritionOverride?: { source: "mealPlan" | "iifym"; optionId: string };
 };
 
 export const TIMELINE_KIND_LABELS: Record<TimelineEventKind, string> = {
@@ -62,16 +63,9 @@ export function isTimelineEvent(value: unknown): value is TimelineEvent {
     typeof event.note !== "string"
   )
     return false;
-  if (event.nutritionOverride === undefined) return true;
-  const override = event.nutritionOverride;
-  return (
-    typeof override === "object" &&
-    override !== null &&
-    ["mealPlan", "iifym"].includes(
-      (override as Record<string, unknown>).source as string,
-    ) &&
-    typeof (override as Record<string, unknown>).optionId === "string"
-  );
+  // Stored events may still carry a legacy `nutritionOverride`; it is stripped
+  // by the normaliser, so the guard simply ignores unknown extra keys.
+  return true;
 }
 
 export type ResolvedNutrition = {
@@ -79,13 +73,14 @@ export type ResolvedNutrition = {
   plan: MealPlan | IifymPlan | undefined;
   optionId: string | undefined;
   label: string | undefined;
-  /** Set when the resolved option comes from a timeline override. */
-  event: TimelineEvent | undefined;
+  /** Set when a temporary plan covers the date. */
+  temporary: TemporaryNutrition | undefined;
 };
 
 /**
- * The option that applies on a date: the regular plan's schedule selection
- * unless a diet-break or refeed event with a nutrition override covers it.
+ * The plan + option that apply on a date. A temporary plan covering the date
+ * (latest createdAt wins) replaces the regular plan entirely; otherwise the
+ * regular lifecycle plan's schedule selects the option.
  */
 export function nutritionForDate(
   client: CoachClient,
@@ -97,31 +92,29 @@ export function nutritionForDate(
   const source: ResolvedNutrition["source"] =
     setup?.nutrition === "IIFYM" ? "iifym" : "mealPlan";
   const plans = client.plans;
-  const plan = plans
-    ? source === "iifym"
-      ? applicablePlan(plans.nutrition.iifym, date)
-      : applicablePlan(plans.nutrition.mealPlan, date)
-    : undefined;
+  const temporary = plans
+    ? temporaryNutritionForDate(plans.nutrition.temporary, date, source)
+    : null;
+  const plan =
+    temporary?.plan ??
+    (plans
+      ? source === "iifym"
+        ? applicablePlan(plans.nutrition.iifym, date)
+        : applicablePlan(plans.nutrition.mealPlan, date)
+      : undefined);
   if (!plan)
     return {
       source,
       plan: undefined,
       optionId: undefined,
       label: undefined,
-      event: undefined,
+      temporary: temporary ?? undefined,
     };
   const ids =
     source === "iifym"
       ? (plan as IifymPlan).options.map((option) => option.id)
       : (plan as MealPlan).variants.map((variant) => variant.id);
-  const regular = scheduledOption(plan.schedule, ids, date);
-  const covering = eventsOnDate(client.timelineEvents, date).find(
-    (event) =>
-      (event.kind === "refeed" || event.kind === "diet-break") &&
-      event.nutritionOverride?.source === source &&
-      ids.includes(event.nutritionOverride.optionId),
-  );
-  const optionId = covering?.nutritionOverride?.optionId ?? regular;
+  const optionId = scheduledOption(plan.schedule, ids, date);
   const option =
     source === "iifym"
       ? (plan as IifymPlan).options.find((entry) => entry.id === optionId)
@@ -131,7 +124,7 @@ export function nutritionForDate(
     plan,
     optionId,
     label: option?.label,
-    event: covering,
+    temporary: temporary ?? undefined,
   };
 }
 
@@ -152,10 +145,18 @@ export function weeksOut(
 }
 
 export function currentPhase(
-  plan: ClientPhasePlan | undefined,
+  phases: ClientPhase[] | undefined,
   today: string,
-): { name: string; week: number; weeks: number } | undefined {
-  const range = phasePlanRanges(plan).find(
+):
+  | {
+      name: string;
+      week: number;
+      weeks: number;
+      startDate: string;
+      endDate: string;
+    }
+  | undefined {
+  const range = phaseRanges(phases).find(
     (phase) => today >= phase.startDate && today <= phase.endDate,
   );
   if (!range) return undefined;
@@ -165,7 +166,13 @@ export function currentPhase(
         Date.parse(`${range.startDate}T12:00:00Z`)) /
         (7 * DAY_MS),
     ) + 1;
-  return { name: range.name, week, weeks: range.durationWeeks };
+  return {
+    name: range.name,
+    week,
+    weeks: range.durationWeeks,
+    startDate: range.startDate,
+    endDate: range.endDate,
+  };
 }
 
 /**
@@ -195,21 +202,6 @@ export function validateTimelineEvent(
   );
   if (clash)
     return `This overlaps an existing ${TIMELINE_KIND_LABELS[event.kind].toLowerCase()}.`;
-  // Deloads never carry a nutrition override in v1; an override only makes
-  // sense on refeed/diet-break events, which the resolver honours.
-  if (event.nutritionOverride && event.kind !== "deload") {
-    const resolved = nutritionForDate(client, event.startDate);
-    if (!resolved.plan || resolved.source !== event.nutritionOverride.source)
-      return "Overrides need an active nutrition plan of the matching type.";
-    const ids =
-      event.nutritionOverride.source === "iifym"
-        ? (resolved.plan as IifymPlan).options.map((option) => option.id)
-        : (resolved.plan as MealPlan).variants.map(
-            (variant: MealPlanVariant) => variant.id,
-          );
-    if (!ids.includes(event.nutritionOverride.optionId))
-      return "Choose an option from the athlete's active nutrition plan.";
-  }
   return null;
 }
 
@@ -328,9 +320,13 @@ export function bodyweightSummary(
   delta: number | undefined;
   points: { date: string; value: number }[];
 } {
-  const entries = client.entries
-    .filter((entry) => entry.date <= today)
-    .sort((a, b) => a.date.localeCompare(b.date));
+  const entries = clientTracking(client)
+    .filter((entry) => entry.date <= today && entry.values.weight != null)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((entry) => ({
+      date: entry.date,
+      weight: entry.values.weight as number,
+    }));
   const latest = entries.at(-1);
   const windowAvg = (from: string, to: string) => {
     const slice = entries.filter(

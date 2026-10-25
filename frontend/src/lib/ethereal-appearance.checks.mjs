@@ -1,8 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 import { createJiti } from "jiti";
 
-const jiti = createJiti(import.meta.url, { jsx: true, tsconfigPaths: true });
+const jiti = createJiti(import.meta.url, {
+  jsx: true,
+  alias: {
+    "@/components/vari8/theme": fileURLToPath(
+      new URL("../components/vari8/theme.tsx", import.meta.url),
+    ),
+  },
+});
 const { themeVariables } = await jiti.import("./ethereal-appearance.tsx");
 
 function luminance(hex) {

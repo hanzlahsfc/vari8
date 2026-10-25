@@ -6,113 +6,75 @@ import {
   ExternalLink,
   Flag,
   MessageCircle,
-  Pencil,
+  Pin,
   Plus,
-  Trash2,
+  Settings,
 } from "lucide-react";
-import {
-  type ChangeEvent,
-  type ReactNode,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   displayWeek,
-  nextSession,
   scheduledSessions,
+  sessionStatus,
 } from "../../client-app/training-log/model";
 import {
+  calculateVariantNutrients,
   type MealPlan,
-  type MealTargets,
+  type Nutrients,
   type TargetValue,
-  validateTargets,
 } from "../../ethereal/mealplan/model";
-import { Input, Modal, SegmentedControl, Status } from "../../vari8/components";
-import { DateRangePicker } from "../../vari8/inputs";
+import { SegmentedControl, Status } from "../../vari8/components";
 import {
   addDays,
   type CoachClient,
+  type CoachState,
   DAYS,
   eventsBetween,
   formatDate,
   TODAY,
-  uid,
   unreadCount,
 } from "../model";
 import {
-  activateLifecycle,
   applicablePlan,
+  planFoodMap,
   scheduledOption,
+  targetNumber,
+  trainingWeek,
 } from "../plans/domain";
-import { NutritionEditor } from "../plans/nutrition/editor";
-import { phasePlanRanges } from "../plans/phase-planning";
-import {
-  type ClientPlans,
-  emptyClientPlans,
-  type IifymPlan,
-} from "../plans/types";
+import { phaseRanges } from "../plans/phase-planning";
+import { optionDaysLabel } from "../plans/plan-cards-support";
+import { type IifymPlan, resolveTrainingWeek } from "../plans/types";
 import { useCoach } from "../store";
-import { isSupplementPlan } from "../supplements/model";
 import {
-  type ActivityChange,
-  type ActivityTargetVersion,
   addLocalDays,
   type CardioTarget,
   formatActivityTarget,
   localToday,
   resolveActivityTarget,
   type StepsTarget,
-  writeActivityTarget,
 } from "../targets/model";
-import { templateSetup } from "../template-setup";
+import { clientTracking } from "../tracking/data";
 import {
   Avatar,
   Button,
-  DateField,
   Dialog,
-  Empty,
   IconButton,
   Select,
   Surface,
   Toggle,
 } from "../ui";
-import { nutritionTargetsModel } from "./nutrition-targets";
 import {
-  type AthleteWidgetId,
-  layoutOverviewWidgets,
-  resolveOverviewWidgets,
-} from "./overview-widgets";
-import {
-  attentionItems,
-  bodyweightSummary,
   currentPhase,
   nutritionForDate,
-  TIMELINE_KIND_LABELS,
-  type TimelineEvent,
-  type TimelineEventKind,
-  timelineInWindow,
-  timelineSegment,
-  timelineWindow,
-  validateTimelineEvent,
+  weekTrainingSummary,
 } from "./timeline";
 import "./overview.css";
 
-const KIND_OPTIONS = (
-  ["deload", "diet-break", "refeed"] as TimelineEventKind[]
-).map((id) => ({ value: id, label: TIMELINE_KIND_LABELS[id] }));
-const kindLabel = (kind: TimelineEventKind) => TIMELINE_KIND_LABELS[kind];
-const REGULAR_PLAN = "__regular__";
-
-const kindTone = (kind: TimelineEventKind) =>
-  kind === "refeed"
-    ? ("info" as const)
-    : kind === "diet-break"
-      ? ("warning" as const)
-      : ("neutral" as const);
-
+const integer = new Intl.NumberFormat("en", { maximumFractionDigits: 0 });
 const number1 = new Intl.NumberFormat("en", { maximumFractionDigits: 1 });
+const compact = new Intl.NumberFormat("en", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
 const DAY_MS = 86_400_000;
 const daysBetween = (start: string, end: string) =>
   Math.round(
@@ -120,42 +82,23 @@ const daysBetween = (start: string, end: string) =>
       DAY_MS,
   );
 
-const formatRange = (start: string, end: string) =>
-  start === end
-    ? formatDate(start, { weekday: "short" })
-    : `${formatDate(start, { weekday: undefined })} – ${formatDate(end, { weekday: undefined })}`;
-
-const overrideOptionLabel = (
-  client: CoachClient,
-  event: TimelineEvent,
-): string | undefined => {
-  const override = event.nutritionOverride;
-  if (!override) return undefined;
-  const plan = client.plans
-    ? override.source === "mealPlan"
-      ? applicablePlan(client.plans.nutrition.mealPlan, event.startDate)
-      : applicablePlan(client.plans.nutrition.iifym, event.startDate)
-    : undefined;
-  if (!plan) return override.optionId;
-  const option =
-    override.source === "mealPlan"
-      ? (plan as MealPlan).variants.find((v) => v.id === override.optionId)
-      : (plan as IifymPlan).options.find((o) => o.id === override.optionId);
-  return option?.label ?? override.optionId;
-};
-
 /** Single header above the client tabs — shared by every tab. */
 export function AthleteProfileHeader({
   client,
   onBack,
+  onAssign,
+  onAddDate,
 }: {
   client: CoachClient;
   onBack: () => void;
+  onAssign: () => void;
+  onAddDate: () => void;
 }) {
   const { state, navigate, route } = useCoach();
   const today = localToday();
-  const phase = currentPhase(client.phasePlan, today);
+  const phase = currentPhase(client.phases, today);
   const unread = unreadCount(state, client.id);
+  const [settings, setSettings] = useState(false);
   const subline = phase
     ? `${phase.name} · Week ${String(phase.week)} of ${String(phase.weeks)}`
     : [client.label, client.phase, `Week ${String(client.week)}`]
@@ -203,1262 +146,1150 @@ export function AthleteProfileHeader({
           <MessageCircle size={16} aria-hidden="true" />
           {unread > 0 && <span className="ap-unread">{unread}</span>}
         </IconButton>
+        <IconButton label="Client settings" onClick={() => setSettings(true)}>
+          <Settings size={16} aria-hidden="true" />
+        </IconButton>
       </div>
+      {settings && (
+        <ClientSettingsDialog
+          client={client}
+          onAssign={onAssign}
+          onAddDate={onAddDate}
+          onClose={() => setSettings(false)}
+        />
+      )}
     </header>
   );
 }
 
-export function AthleteOverview({
+/** Client settings: coaching setup (assignment, check-in rhythm, priority
+ *  messages) and the client's submitted onboarding answers. */
+function ClientSettingsDialog({
   client,
   onAssign,
   onAddDate,
+  onClose,
 }: {
   client: CoachClient;
   onAssign: () => void;
   onAddDate: () => void;
+  onClose: () => void;
 }) {
-  const { state, setState, navigate, route, toast } = useCoach();
-  const today = localToday();
-  const [editing, setEditing] = useState<TimelineEvent | null>(null);
-  const [presetKind, setPresetKind] = useState<TimelineEventKind | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-
+  const { state, setState, navigate, toast } = useCoach();
   const update = (fn: (c: CoachClient) => CoachClient) =>
     setState((s) => ({
       ...s,
       clients: s.clients.map((cl) => (cl.id === client.id ? fn(cl) : cl)),
     }));
-
-  const openDialog = (
-    event: TimelineEvent | null,
-    kind: TimelineEventKind | null = null,
-  ) => {
-    setEditing(event);
-    setPresetKind(kind);
-    setDialogOpen(true);
-  };
-
-  const saveEvent = (event: TimelineEvent): string | null => {
-    const error = validateTimelineEvent(client, event, {
-      ignoreId: event.id,
-    });
-    if (error) return error;
-    update((c) => {
-      const events = c.timelineEvents ?? [];
-      const next = events.some((e) => e.id === event.id)
-        ? events.map((e) => (e.id === event.id ? event : e))
-        : [...events, event];
-      return { ...c, timelineEvents: next };
-    });
-    setDialogOpen(false);
-    return null;
-  };
-
-  const deleteEvent = (id: string) => {
-    const removed = client.timelineEvents?.find((e) => e.id === id);
-    if (!removed) return;
-    update((c) => ({
-      ...c,
-      timelineEvents: (c.timelineEvents ?? []).filter((e) => e.id !== id),
-    }));
-    toast("Timeline event removed", () =>
-      update((c) => ({
-        ...c,
-        timelineEvents: [...(c.timelineEvents ?? []), removed].sort((a, b) =>
-          a.startDate.localeCompare(b.startDate),
-        ),
-      })),
-    );
-  };
-
-  const bodyweight = bodyweightSummary(client, today);
-  const nextCheckin = eventsBetween(state, today, addLocalDays(today, 35)).find(
-    (e) => e.clientId === client.id && !e.submission,
-  );
-  const awaiting = state.submissions.filter(
-    (s) => s.clientId === client.id && !s.response,
-  ).length;
-  const ranges = phasePlanRanges(client.phasePlan);
-  // Coach-side presentation reads the live template variant; the assignment
-  // snapshot is only a fallback for deleted templates.
-  const liveTemplate = client.assignment
-    ? state.templates.find((t) => t.id === client.assignment?.templateId)
-    : undefined;
-  const setup =
-    (liveTemplate
-      ? templateSetup(liveTemplate, client.assignment?.variantId ?? "")
-      : undefined) ??
-    (client.assignment
-      ? templateSetup(client.assignment.snapshot, client.assignment.variantId)
-      : undefined);
-  const widgets = resolveOverviewWidgets(setup?.athleteOverview).filter(
-    (widget) => widget.visible,
-  );
-  const spans = new Map(
-    layoutOverviewWidgets(widgets).map((cell) => [cell.id, cell.span]),
-  );
-
-  const renderWidget = (id: AthleteWidgetId) => {
-    switch (id) {
-      case "bodyweight":
-        return <BodyweightTile data={bodyweight} />;
-      case "next-check-in":
-        return <CheckinTile next={nextCheckin?.date} awaiting={awaiting} />;
-      case "nutrition-targets":
-        return <NutritionTargetsWidget client={client} today={today} />;
-      case "activity-targets":
-        return (
-          <ActivityTargetsWidget
-            client={client}
-            today={today}
-            update={update}
-          />
-        );
-      case "needs-attention":
-        return <NeedsAttention client={client} today={today} />;
-      case "recent-training":
-        return <RecentTraining client={client} />;
-      case "timeline":
-        return (
-          <TimelineCard
-            client={client}
-            today={today}
-            ranges={ranges}
-            onAdd={(kind) => openDialog(null, kind ?? null)}
-            onEdit={(event) => openDialog(event)}
-            onDelete={deleteEvent}
-          />
-        );
-      case "coaching-setup":
-        return (
-          <CoachingSetup
-            client={client}
-            update={update}
-            onAddDate={onAddDate}
-            onAssign={onAssign}
-          />
-        );
-      case "training-plan":
-        return (
-          <TrainingPlanWidget
-            client={client}
-            today={today}
-            onNavigate={(plan) => navigate({ ...route, tab: "Plans", plan })}
-          />
-        );
-      case "supplements":
-        return (
-          <SupplementsWidget
-            client={client}
-            onNavigate={(plan) => navigate({ ...route, tab: "Plans", plan })}
-          />
-        );
-    }
-  };
-
+  const activeSchedule = client.schedules.at(-1);
   return (
-    <div className="ap">
-      <div className="ap-widgets">
-        {widgets.map((widget) => (
-          <div
-            key={widget.id}
-            className={`ap-w ap-w-s${String(spans.get(widget.id) ?? 12)}`}
-          >
-            {renderWidget(widget.id)}
-          </div>
-        ))}
-      </div>
-
-      {client.assignment && (
-        <p className="ap-layout">
-          <button
-            type="button"
-            className="ap-link"
-            onClick={() =>
-              navigate({
-                section: "templates",
-                editor: client.assignment?.templateId ?? "",
-                templateSection: "Athlete overview",
-              })
-            }
-          >
-            Layout from template {client.assignment.snapshot.name} · Edit
-          </button>
-        </p>
-      )}
-
-      {dialogOpen && (
-        <TimelineEventDialog
-          client={client}
-          event={editing}
-          presetKind={presetKind}
-          today={today}
-          onClose={() => setDialogOpen(false)}
-          onSave={saveEvent}
-        />
-      )}
-    </div>
-  );
-}
-
-function BodyweightTile({
-  data,
-}: {
-  data: ReturnType<typeof bodyweightSummary>;
-}) {
-  const values = data.points.map((point) => point.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const span = max - min || 1;
-  const points = data.points
-    .map(
-      (point, index) =>
-        `${String((index / Math.max(1, data.points.length - 1)) * 100)},${String(
-          100 - ((point.value - min) / span) * 100,
-        )}`,
-    )
-    .join(" ");
-  return (
-    <Surface className="ap-tile">
-      <h4>Bodyweight</h4>
-      {data.latest ? (
-        <>
-          <div className="ap-tile-value">
-            {number1.format(data.latest.value)}
-            <span className="ap-tile-unit">kg</span>
-          </div>
-          {data.points.length > 1 && (
-            <svg
-              className="ap-spark"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-              aria-hidden="true"
-            >
-              <polyline points={points} />
-            </svg>
-          )}
-          <p className="ap-sub">
-            {data.avg7 !== undefined
-              ? `7-day avg ${number1.format(data.avg7)} kg`
-              : "No 7-day average yet"}
-            {data.delta !== undefined
-              ? ` · ${data.delta >= 0 ? "+" : ""}${number1.format(data.delta)} vs prior`
-              : ""}
-          </p>
-        </>
-      ) : (
-        <Empty title="Nothing logged yet" />
-      )}
-    </Surface>
-  );
-}
-
-function NutritionTargetsWidget({
-  client,
-  today,
-}: {
-  client: CoachClient;
-  today: string;
-}) {
-  const { setState, navigate, route, toast } = useCoach();
-  const model = nutritionTargetsModel(client, today);
-  const [adjusting, setAdjusting] = useState(false);
-  const [mealEditorOpen, setMealEditorOpen] = useState(false);
-  const [mealDraft, setMealDraft] = useState<MealPlan | null>(null);
-  const [confirmSave, setConfirmSave] = useState<{
-    plan: IifymPlan;
-  } | null>(null);
-  const [applyDate, setApplyDate] = useState(today);
-  const [drafts, setDrafts] = useState<Record<string, MealTargets> | null>(
-    null,
-  );
-  const [errors, setErrors] = useState<string[]>([]);
-  const updatePlans = (fn: (plans: ClientPlans) => ClientPlans) =>
-    setState((s) => ({
-      ...s,
-      clients: s.clients.map((cl) =>
-        cl.id === client.id
-          ? { ...cl, plans: fn(cl.plans ?? emptyClientPlans()) }
-          : cl,
-      ),
-    }));
-
-  if (!model) {
-    return (
-      <Surface className="ap-widget">
-        <WidgetHead title="Nutrition targets" />
-        <Empty
-          title="No nutrition plan"
-          action={
-            <Button
-              primary
-              onClick={() =>
-                navigate({ ...route, tab: "Plans", plan: "nutrition" })
-              }
-            >
-              Create nutrition plan
-            </Button>
-          }
-        />
-      </Surface>
-    );
-  }
-
-  const plan = nutritionForDate(client, today).plan as MealPlan | IifymPlan;
-
-  const saveMealPlan = () => {
-    if (!mealDraft) return;
-    const plans = client.plans ?? emptyClientPlans();
-    updatePlans(() => ({
-      ...plans,
-      nutrition: {
-        ...plans.nutrition,
-        mealPlan: activateLifecycle(plans.nutrition.mealPlan, mealDraft),
-      },
-    }));
-    setMealEditorOpen(false);
-    setMealDraft(null);
-    toast("Meal plan saved");
-  };
-
-  const saveIifym = () => {
-    if (!drafts) return;
-    const iifym = plan as IifymPlan;
-    const issues = model.options.flatMap((option) => {
-      const targets =
-        drafts[option.id] ??
-        iifym.options.find((o) => o.id === option.id)?.targets;
-      return targets ? validateTargets(targets, option.label || "Option") : [];
-    });
-    if (issues.length) {
-      setErrors(issues);
-      return;
-    }
-    setErrors([]);
-    setConfirmSave({
-      plan: {
-        ...iifym,
-        options: iifym.options.map((o) => ({
-          ...o,
-          targets: drafts[o.id] ?? o.targets,
-        })),
-      },
-    });
-    setApplyDate(today);
-  };
-
-  return (
-    <Surface className="ap-widget">
-      <WidgetHead
-        title="Nutrition targets"
-        sub={model.planName}
-        action={
-          adjusting ? undefined : (
-            <Button
-              variant="secondary"
-              onClick={() => {
-                if (model.source === "mealPlan") {
-                  setMealDraft(structuredClone(plan as MealPlan));
-                  setMealEditorOpen(true);
-                } else {
-                  setDrafts(
-                    Object.fromEntries(
-                      (plan as IifymPlan).options.map((o) => [
-                        o.id,
-                        structuredClone(o.targets),
-                      ]),
-                    ),
-                  );
-                  setErrors([]);
-                  setAdjusting(true);
-                }
-              }}
-            >
-              Adjust
-            </Button>
-          )
-        }
-      />
-      <div className="ap-nt-grid">
-        {model.options.map((option) => (
-          <div
-            key={option.id}
-            className={`ap-nt-col${option.today ? " ap-nt-col-today" : ""}`}
-          >
-            <div className="ap-nt-label">
-              {option.label}
-              {option.today && <Status tone="info">Today</Status>}
-            </div>
-            {adjusting ? (
-              <TargetFields
-                targets={drafts?.[option.id]}
-                onChange={(targets) =>
-                  setDrafts((current) => ({
-                    ...(current ?? {}),
-                    [option.id]: targets,
-                  }))
-                }
-              />
-            ) : (
-              <>
-                <div className="ap-nt-kcal">
-                  {option.cells.kcal}
-                  <span className="ap-nt-unit">kcal</span>
-                </div>
-                <div className="ap-nt-macros">
-                  <span>P {option.cells.protein} g</span>
-                  <span>C {option.cells.carbs} g</span>
-                  <span>F {option.cells.fat} g</span>
-                </div>
-              </>
+    <Dialog title="Client settings" onClose={onClose} wide>
+      <section className="ap-settings-section">
+        <h3>Coaching setup</h3>
+        <h4>Template</h4>
+        <div className="ap-plan-row">
+          <div className="ap-plan-text">
+            <b>{client.assignment?.snapshot.name ?? "No template"}</b>
+            {client.assignment && (
+              <span className="ap-sub">
+                Variant{" "}
+                {client.assignment.snapshot.variants.find(
+                  (v) => v.id === client.assignment?.variantId,
+                )?.name ?? client.assignment.variantId}
+              </span>
             )}
           </div>
-        ))}
-      </div>
-      {adjusting && (
-        <div className="ap-nt-actions">
-          {errors.map((error) => (
-            <p key={error} className="ap-dialog-error" role="alert">
-              {error}
-            </p>
-          ))}
-          <div className="cd-actions">
-            <Button primary onClick={saveIifym}>
-              Save
-            </Button>
-            <Button
-              variant="ghost"
+          <Button
+            variant="ghost"
+            onClick={() => {
+              onClose();
+              onAssign();
+            }}
+          >
+            Change
+          </Button>
+        </div>
+        <h4>Recurring check-in</h4>
+        <p className="ap-sub">Recurring check-ins · Europe/Vienna</p>
+        <div className="cd-weekdays">
+          {DAYS.map((day, index) => (
+            <button
+              type="button"
+              key={day}
+              aria-label={day}
+              aria-pressed={activeSchedule?.weekdays.includes(index) ?? false}
               onClick={() => {
-                setAdjusting(false);
-                setDrafts(null);
-                setErrors([]);
+                const oldDays = client.schedules.at(-1)?.weekdays ?? [];
+                const weekdays = oldDays.includes(index)
+                  ? oldDays.filter((d) => d !== index)
+                  : [...oldDays, index];
+                update((cl) => ({
+                  ...cl,
+                  schedules: [
+                    ...cl.schedules.filter(
+                      (s) => s.effective !== addDays(TODAY, 1),
+                    ),
+                    { effective: addDays(TODAY, 1), weekdays },
+                  ],
+                }));
+                toast(
+                  "Recurring schedule updated from tomorrow. Submitted history retained.",
+                );
               }}
             >
-              Cancel
-            </Button>
-          </div>
+              {day.slice(0, 2)}
+            </button>
+          ))}
         </div>
-      )}
-      {mealEditorOpen && mealDraft && (
-        <Dialog
-          full
-          title="Edit meal plan"
-          onClose={() => setMealEditorOpen(false)}
-        >
-          <NutritionEditor
-            value={mealDraft}
-            onChange={(value) => setMealDraft(value)}
-          />
-          <div className="cd-dialog-actions">
-            <Button variant="ghost" onClick={() => setMealEditorOpen(false)}>
-              Cancel
-            </Button>
-            <Button primary onClick={saveMealPlan}>
-              Save meal plan
-            </Button>
-          </div>
-        </Dialog>
-      )}
-      {confirmSave && (
-        <Modal
-          open
-          onOpenChange={(open) => {
-            if (!open) setConfirmSave(null);
-          }}
-          title="Save nutrition targets"
-          footer={
-            <>
-              <Button variant="ghost" onClick={() => setConfirmSave(null)}>
-                Cancel
-              </Button>
+        {client.schedules.some((s) => s.effective > TODAY) && (
+          <p className="ap-sub">
+            From tomorrow:{" "}
+            {client.schedules
+              .at(-1)
+              ?.weekdays.map((d) => DAYS[d])
+              .join(", ") || "No recurring days"}
+          </p>
+        )}
+        <h4>Additional dates</h4>
+        {state.extras
+          .filter((e) => e.clientId === client.id)
+          .map((extra) => (
+            <div className="cd-setting-row" key={extra.id}>
+              <span>
+                {formatDate(extra.date)}
+                <small>
+                  {extra.type} · {extra.note}
+                </small>
+              </span>
               <Button
-                primary
-                disabled={!applyDate || applyDate < today}
+                variant="ghost"
                 onClick={() => {
-                  const plans = client.plans ?? emptyClientPlans();
-                  updatePlans(() => ({
-                    ...plans,
-                    nutrition: {
-                      ...plans.nutrition,
-                      iifym: activateLifecycle(plans.nutrition.iifym, {
-                        ...confirmSave.plan,
-                        startDate: applyDate,
-                      }),
-                    },
-                  }));
-                  setConfirmSave(null);
-                  setAdjusting(false);
-                  setDrafts(null);
-                  toast("Nutrition targets saved");
+                  onClose();
+                  navigate({ section: "check-ins", client: client.id });
                 }}
               >
-                Save
+                Manage
               </Button>
-            </>
-          }
-        >
-          <div className="ap-dialog">
-            <p className="ap-sub">
-              The previous version stays in plan history.
-            </p>
-            <DateField
-              label="Applies from"
-              value={applyDate}
-              onChange={setApplyDate}
-            />
-            {applyDate && applyDate < today && (
-              <p className="ap-dialog-error">Choose today or a later date.</p>
-            )}
-          </div>
-        </Modal>
-      )}
-    </Surface>
-  );
-}
-
-function CheckinTile({
-  next,
-  awaiting,
-}: {
-  next: string | undefined;
-  awaiting: number;
-}) {
-  return (
-    <Surface className="ap-tile">
-      <h4>Next check-in</h4>
-      <div className="ap-tile-value ap-tile-value-text">
-        {next ? formatDate(next, { weekday: "short" }) : "—"}
-      </div>
-      <p className="ap-sub">
-        {awaiting
-          ? `${String(awaiting)} awaiting your feedback`
-          : "Nothing awaiting feedback"}
-      </p>
-    </Surface>
-  );
-}
-
-function TimelineCard({
-  client,
-  today,
-  ranges,
-  onAdd,
-  onEdit,
-  onDelete,
-}: {
-  client: CoachClient;
-  today: string;
-  ranges: ReturnType<typeof phasePlanRanges>;
-  onAdd: (kind?: TimelineEventKind) => void;
-  onEdit: (event: TimelineEvent) => void;
-  onDelete: (id: string) => void;
-}) {
-  const [fullPlan, setFullPlan] = useState(false);
-  const [showEarlier, setShowEarlier] = useState(false);
-  const events = useMemo(
-    () =>
-      [...(client.timelineEvents ?? [])].sort((a, b) =>
-        a.startDate.localeCompare(b.startDate),
-      ),
-    [client.timelineEvents],
-  );
-  const ordered = [
-    ...events.filter((e) => e.endDate >= today),
-    ...events.filter((e) => e.endDate < today),
-  ];
-  const recentEvents = ordered.filter(
-    (e) => e.endDate >= addLocalDays(today, -28),
-  );
-  const earlierEvents = ordered.filter(
-    (e) => e.endDate < addLocalDays(today, -28),
-  );
-  const listedEvents = showEarlier ? ordered : recentEvents;
-
-  const trackRef = useRef<HTMLDivElement>(null);
-  const view = timelineWindow(today, ranges, fullPlan);
-  const trackStart = view.start;
-  const trackEnd = view.end;
-  const totalDays = Math.max(1, daysBetween(trackStart, trackEnd));
-  const pct = (date: string) =>
-    Math.min(
-      100,
-      Math.max(
-        0,
-        (daysBetween(
-          trackStart,
-          date > trackEnd ? trackEnd : date < trackStart ? trackStart : date,
-        ) /
-          totalDays) *
-          100,
-      ),
-    );
-  const segment = (start: string, end: string) =>
-    timelineSegment(view, start, end);
-  const weeks = Math.max(1, Math.ceil(totalDays / 7));
-
-  // Labels that do not fit inside their segment/bar are lifted outside it
-  // (data-narrow) instead of being ellipsized.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: labels must re-measure whenever the timeline content changes
-  useLayoutEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-    const measure = () => {
-      for (const el of track.querySelectorAll<HTMLElement>(
-        ".ap-track-phase, .ap-track-bar",
-      )) {
-        const label = el.querySelector("span");
-        if (!label) continue;
-        el.removeAttribute("data-narrow");
-        el.removeAttribute("data-flush");
-        if (label.scrollWidth > label.clientWidth + 2) {
-          el.setAttribute("data-narrow", "");
-          const trackRight = track.getBoundingClientRect().right;
-          if (
-            el.getBoundingClientRect().left + label.scrollWidth >
-            trackRight
-          ) {
-            el.setAttribute("data-flush", "right");
-          }
-        }
-      }
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [events, ranges, today, fullPlan]);
-
-  const visibleRanges = ranges.filter((range) =>
-    timelineInWindow(view, range.startDate, range.endDate),
-  );
-  const visibleEvents = events.filter((event) =>
-    timelineInWindow(view, event.startDate, event.endDate),
-  );
-
-  return (
-    <Surface className="ap-timeline">
-      <header className="ap-timeline-head">
-        <div>
-          <h3>Timeline</h3>
-          <p className="ap-sub">
-            {visibleRanges.length
-              ? `${formatDate(trackStart, { weekday: undefined })} – ${formatDate(trackEnd, { weekday: undefined })}`
-              : "Phases and nutrition events at a glance"}
-          </p>
-        </div>
-        <div className="ap-timeline-controls">
-          <Toggle label="Full plan" checked={fullPlan} onChange={setFullPlan} />
-          <Button variant="secondary" size="sm" onClick={() => onAdd("refeed")}>
-            Refeed
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => onAdd("diet-break")}
-          >
-            Diet break
-          </Button>
-          <Button variant="secondary" size="sm" onClick={() => onAdd("deload")}>
-            Deload
-          </Button>
-          <Button primary onClick={() => onAdd()}>
-            <Plus size={15} aria-hidden="true" /> Add to timeline
-          </Button>
-        </div>
-      </header>
-
-      <div
-        ref={trackRef}
-        className="ap-track"
-        role="img"
-        aria-label="Plan timeline"
-      >
-        {Array.from({ length: weeks + 1 }, (_, index) => (
-          <div
-            // biome-ignore lint/suspicious/noArrayIndexKey: static week tick marks
-            key={index}
-            className="ap-track-week"
-            style={{ left: `${String((index / weeks) * 100)}%` }}
-          />
-        ))}
-        {visibleRanges.map((range) => {
-          const active = today >= range.startDate && today <= range.endDate;
-          const seg = segment(range.startDate, range.endDate);
-          if (!seg) return null;
-          return (
-            <div
-              key={`${range.startDate}-${range.name}`}
-              className={`ap-track-phase${active ? " ap-track-phase-active" : ""}`}
-              style={{
-                left: `${String(seg.left)}%`,
-                width: `${String(seg.width)}%`,
-              }}
-              title={`${range.name} · ${formatRange(range.startDate, range.endDate)}`}
-            >
-              <span>{range.name}</span>
             </div>
-          );
-        })}
-        {visibleEvents.map((event) => {
-          const seg = segment(event.startDate, event.endDate);
-          if (!seg) return null;
-          return event.kind === "refeed" ? (
-            <div
-              key={event.id}
-              className="ap-track-event ap-track-dot"
-              style={{ left: `${String(seg.left + seg.width / 2)}%` }}
-              title={`${kindLabel(event.kind)} · ${formatRange(event.startDate, event.endDate)}`}
-            />
-          ) : (
-            <div
-              key={event.id}
-              className={`ap-track-event ap-track-bar ap-track-${event.kind}`}
-              style={{
-                left: `${String(seg.left)}%`,
-                width: `${String(seg.width)}%`,
-              }}
-              title={`${kindLabel(event.kind)} · ${formatRange(event.startDate, event.endDate)}`}
-            >
-              <span>{kindLabel(event.kind)}</span>
-            </div>
-          );
-        })}
-        {today >= trackStart && today <= trackEnd && (
-          <div
-            className="ap-track-today"
-            style={{ left: `${String(pct(today))}%` }}
-          >
-            <span>Today</span>
-          </div>
-        )}
-      </div>
-
-      {listedEvents.length ? (
-        <ul className="ap-events">
-          {listedEvents.map((event) => {
-            const override = overrideOptionLabel(client, event);
-            return (
-              <li
-                key={event.id}
-                className={`ap-event${event.endDate < today ? " ap-event-past" : ""}`}
-              >
-                <Status tone={kindTone(event.kind)} className="ap-event-kind">
-                  {kindLabel(event.kind)}
-                </Status>
-                <span className="ap-event-dates">
-                  {formatRange(event.startDate, event.endDate)}
-                </span>
-                <span className="ap-event-note ap-sub">
-                  {event.note ||
-                    (override
-                      ? `Override: ${override}`
-                      : event.kind === "deload"
-                        ? "Training unchanged"
-                        : "")}
-                </span>
-                <span className="ap-event-actions">
-                  <IconButton
-                    label={`Edit ${kindLabel(event.kind)}`}
-                    onClick={() => onEdit(event)}
-                  >
-                    <Pencil size={14} aria-hidden="true" />
-                  </IconButton>
-                  <IconButton
-                    label={`Delete ${kindLabel(event.kind)}`}
-                    onClick={() => onDelete(event.id)}
-                  >
-                    <Trash2 size={14} aria-hidden="true" />
-                  </IconButton>
-                </span>
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <Empty title="Plan an event on the timeline" />
-      )}
-      {earlierEvents.length > 0 && !showEarlier && (
-        <button
-          type="button"
-          className="ap-link ap-timeline-more"
-          onClick={() => setShowEarlier(true)}
-        >
-          Show earlier ({earlierEvents.length})
-        </button>
-      )}
-      {showEarlier && earlierEvents.length > 0 && (
-        <button
-          type="button"
-          className="ap-link ap-timeline-more"
-          onClick={() => setShowEarlier(false)}
-        >
-          Hide earlier
-        </button>
-      )}
-    </Surface>
-  );
-}
-
-function TimelineEventDialog({
-  client,
-  event,
-  presetKind,
-  today,
-  onClose,
-  onSave,
-}: {
-  client: CoachClient;
-  event: TimelineEvent | null;
-  presetKind: TimelineEventKind | null;
-  today: string;
-  onClose: () => void;
-  onSave: (event: TimelineEvent) => string | null;
-}) {
-  const [kind, setKind] = useState<TimelineEventKind>(
-    event?.kind ?? presetKind ?? "deload",
-  );
-  const [start, setStart] = useState(event?.startDate ?? today);
-  const [end, setEnd] = useState(event?.endDate ?? today);
-  const [note, setNote] = useState(event?.note ?? "");
-  const [overrideId, setOverrideId] = useState(
-    event?.nutritionOverride?.optionId ?? REGULAR_PLAN,
-  );
-  const [error, setError] = useState<string | null>(null);
-
-  const source: "mealPlan" | "iifym" =
-    client.plans && applicablePlan(client.plans.nutrition.mealPlan, today)
-      ? "mealPlan"
-      : "iifym";
-  const plan = client.plans
-    ? source === "mealPlan"
-      ? applicablePlan(client.plans.nutrition.mealPlan, start || today)
-      : applicablePlan(client.plans.nutrition.iifym, start || today)
-    : undefined;
-  const options: { id: string; label: string }[] =
-    source === "mealPlan"
-      ? ((plan as MealPlan | undefined)?.variants ?? [])
-      : ((plan as IifymPlan | undefined)?.options ?? []);
-  const scheduled = plan
-    ? scheduledOption(
-        plan.schedule,
-        options.map((o) => o.id),
-        start,
-      )
-    : undefined;
-
-  const nutritionKind = kind === "diet-break" || kind === "refeed";
-  const submit = () => {
-    const next: TimelineEvent = {
-      id: event?.id ?? uid("timeline"),
-      kind,
-      startDate: start,
-      endDate: kind === "refeed" ? start : end,
-      note: note.trim(),
-      nutritionOverride:
-        nutritionKind && overrideId !== REGULAR_PLAN
-          ? { source, optionId: overrideId }
-          : undefined,
-    };
-    setError(onSave(next));
-  };
-
-  return (
-    <Modal
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-      title={
-        event ? `Edit ${kindLabel(kind).toLowerCase()}` : "Add to timeline"
-      }
-      footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button primary onClick={submit}>
-            {event ? "Save" : "Add"}
-          </Button>
-        </>
-      }
-    >
-      <div className="ap-dialog">
-        <SegmentedControl
-          label="Event kind"
-          value={kind}
-          onValueChange={(value) => {
-            const next = value as TimelineEventKind;
-            setKind(next);
-            if (next === "refeed") setEnd(start);
-          }}
-          options={KIND_OPTIONS}
-        />
-        {kind === "refeed" ? (
-          <DateField label="Date" value={start} onChange={setStart} />
-        ) : (
-          <DateRangePicker
-            label="Dates"
-            start={start}
-            end={end}
-            onStartChange={setStart}
-            onEndChange={setEnd}
-          />
-        )}
-        <Input
-          label="Note"
-          value={note}
-          onChange={(e: ChangeEvent<HTMLInputElement>) =>
-            setNote(e.currentTarget.value)
-          }
-          placeholder="Optional note"
-        />
-        {nutritionKind && (
-          <Select
-            label="Nutrition while this runs"
-            value={overrideId}
-            onChange={setOverrideId}
-            options={[
-              {
-                value: REGULAR_PLAN,
-                label: scheduled
-                  ? `Keep regular plan (${options.find((o) => o.id === scheduled)?.label ?? "scheduled"})`
-                  : "Keep regular plan",
-              },
-              ...options.map((o) => ({ value: o.id, label: o.label })),
-            ]}
-          />
-        )}
-        {kind === "deload" && (
-          <p className="ap-sub ap-dialog-hint">Training unchanged</p>
-        )}
-        {kind === "refeed" && (
-          <p className="ap-sub ap-dialog-hint">
-            Overrides nutrition for this day.
-          </p>
-        )}
-        {error && <p className="ap-dialog-error">{error}</p>}
-      </div>
-    </Modal>
-  );
-}
-
-const ATTENTION_TONE: Record<
-  ReturnType<typeof attentionItems>[number]["kind"],
-  "danger" | "warning" | "info"
-> = {
-  "check-in": "warning",
-  "flagged-note": "info",
-  "missed-session": "danger",
-  "in-progress": "info",
-};
-
-function NeedsAttention({
-  client,
-  today,
-}: {
-  client: CoachClient;
-  today: string;
-}) {
-  const { state, navigate, route } = useCoach();
-  const items = attentionItems(state, client, today);
-  const go = (item: ReturnType<typeof attentionItems>[number]) => {
-    if (item.kind === "check-in")
-      navigate({
-        section: "check-ins",
-        client: client.id,
-        review: item.reviewId ?? "",
-      });
-    else
-      navigate({
-        ...route,
-        section: "clients",
-        client: client.id,
-        tab: "Plans",
-      });
-  };
-  return (
-    <Surface className="ap-attention">
-      <h3>Needs attention</h3>
-      {items.length ? (
-        <ul className="ap-attention-list">
-          {items.map((item) => (
-            <li key={`${item.kind}-${item.date}-${item.label}`}>
-              <button
-                type="button"
-                className="ap-attention-row"
-                onClick={() => go(item)}
-              >
-                <Status tone={ATTENTION_TONE[item.kind]}>
-                  {item.kind === "check-in"
-                    ? "Check-in"
-                    : item.kind === "flagged-note"
-                      ? "Note"
-                      : item.kind === "missed-session"
-                        ? "Missed"
-                        : "Training"}
-                </Status>
-                <span className="ap-attention-text">
-                  <b>{item.label}</b>
-                  <span className="ap-attention-meta">{item.detail}</span>
-                </span>
-                <span className="ap-attention-link">
-                  {item.kind === "check-in"
-                    ? "Review"
-                    : item.kind === "flagged-note"
-                      ? "Open"
-                      : "View"}
-                  <ChevronRight size={14} aria-hidden="true" />
-                </span>
-              </button>
-            </li>
           ))}
-        </ul>
-      ) : (
-        <Empty title="Nothing needs attention" />
-      )}
-    </Surface>
+        {!state.extras.some((e) => e.clientId === client.id) && (
+          <p className="ap-sub">No additional dates.</p>
+        )}
+        <Button
+          variant="secondary"
+          onClick={() => {
+            onClose();
+            onAddDate();
+          }}
+        >
+          <Plus size={14} aria-hidden="true" /> Add date
+        </Button>
+        <h4>Priority message</h4>
+        <Toggle
+          label="Allow priority flags"
+          detail="Applies to new chat flags. Training set notes stay separate."
+          checked={client.priorityMessages}
+          onChange={(priorityMessages) =>
+            update((cl) => ({ ...cl, priorityMessages }))
+          }
+        />
+      </section>
+      <section className="ap-settings-section">
+        <h3>Onboarding answers</h3>
+        {client.onboarding.length ? (
+          client.onboarding.map((a) => (
+            <div className="cd-answer" key={a.question}>
+              <h4>{a.question}</h4>
+              <p>{a.answer}</p>
+            </div>
+          ))
+        ) : (
+          <p className="ap-sub">No onboarding submission on file.</p>
+        )}
+      </section>
+    </Dialog>
   );
 }
 
-function RecentTraining({ client }: { client: CoachClient }) {
-  const { state } = useCoach();
-  const logs = useMemo(
-    () =>
-      (state.trainingLogs ?? [])
-        .filter((log) => log.clientId === client.id)
-        .sort((a, b) => b.scheduledDate.localeCompare(a.scheduledDate))
-        .slice(0, 5),
-    [state.trainingLogs, client.id],
-  );
-  return (
-    <Surface className="ap-recent">
-      <h3>Recent training</h3>
-      {logs.length ? (
-        <ul className="ap-recent-list">
-          {logs.map((log) => {
-            const sets = log.exercises.flatMap((exercise) => exercise.sets);
-            const done = sets.filter((set) => set.done).length;
-            const flagged = sets.some((set) => set.flagged && set.note.trim());
-            return (
-              <li key={log.id} className="ap-recent-row">
-                <span className="ap-recent-date ap-sub">
-                  {formatDate(log.scheduledDate, { weekday: "short" })}
-                </span>
-                <span className="ap-recent-name">
-                  <span className="ap-recent-name-text">{log.sessionName}</span>
-                  {flagged && (
-                    <Flag
-                      size={12}
-                      className="ap-flag"
-                      aria-label="Flagged note"
-                    />
-                  )}
-                </span>
-                <span className="ap-recent-sets ap-sub">
-                  {done} of {sets.length} sets
-                </span>
-                <Status
-                  tone={log.status === "finished" ? "positive" : "warning"}
-                >
-                  {log.status === "finished" ? "Done" : "In progress"}
-                </Status>
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <Empty title="No training logged yet" />
-      )}
-    </Surface>
-  );
-}
+// ─── Shared card pieces ─────────────────────────────────────────────
 
-function WidgetHead({
+/** Clickable card header — every overview card links to its data home. */
+function CardLink({
   title,
   sub,
-  action,
+  onOpen,
 }: {
   title: string;
   sub?: string;
-  action?: ReactNode;
+  onOpen: () => void;
 }) {
   return (
-    <div className="ap-widget-head">
-      <div>
+    <button type="button" className="ap-card-link" onClick={onOpen}>
+      <span>
         <h3>{title}</h3>
         {sub && <p className="ap-sub">{sub}</p>}
-      </div>
-      {action}
-    </div>
+      </span>
+      <span className="ap-card-open">
+        Open <ChevronRight size={14} aria-hidden="true" />
+      </span>
+    </button>
   );
 }
 
-function TrainingPlanWidget({
+const open = (
+  navigate: ReturnType<typeof useCoach>["navigate"],
+  clientId: string,
+  route: { tab?: string; plan?: string },
+) => navigate({ section: "clients", client: clientId, ...route });
+
+// ─── Accuracy (targets vs tracked actuals) ──────────────────────────
+
+type NumericTarget = number | TargetValue | undefined;
+
+function accuracyRatio(
+  actual: number | undefined,
+  target: NumericTarget,
+): number | undefined {
+  if (actual === undefined || target === undefined) return undefined;
+  if (typeof target === "number")
+    return target > 0 ? actual / target : undefined;
+  if (target.kind === "range") {
+    if (actual >= target.min && actual <= target.max) return 1;
+    return actual < target.min ? actual / target.min : actual / target.max;
+  }
+  return target.value > 0 ? actual / target.value : undefined;
+}
+
+const accuracyTone = (ratio: number | undefined) =>
+  ratio === undefined
+    ? undefined
+    : Math.abs(ratio - 1) <= 0.05
+      ? "positive"
+      : Math.abs(ratio - 1) <= 0.1
+        ? "neutral"
+        : "warning";
+
+function AccuracyChip({ ratio }: { ratio: number | undefined }) {
+  if (ratio === undefined) return <span className="ap-acc ap-sub">—</span>;
+  const pct = Math.round(ratio * 100);
+  return (
+    <span className="ap-acc" data-tone={accuracyTone(ratio)}>
+      {pct}%
+    </span>
+  );
+}
+
+const targetMid = (target: NumericTarget): number | undefined =>
+  typeof target === "number"
+    ? target
+    : target
+      ? targetNumber(target) || undefined
+      : undefined;
+
+const targetText = (target: NumericTarget, decimals = false): string => {
+  if (target === undefined) return "—";
+  const format = decimals ? number1 : integer;
+  if (typeof target === "number") return format.format(target);
+  if (target.kind === "range")
+    return `${format.format(target.min)}–${format.format(target.max)}`;
+  return `${target.kind === "minimum" ? "≥" : ""}${format.format(target.value)}`;
+};
+
+// ─── Data helpers ───────────────────────────────────────────────────
+
+type OptionTargets = {
+  calories: NumericTarget;
+  protein: NumericTarget;
+  carbs: NumericTarget;
+  fat: NumericTarget;
+};
+
+function optionTargets(
+  plan: MealPlan | IifymPlan,
+  source: "mealPlan" | "iifym",
+  optionId: string | undefined,
+): OptionTargets | undefined {
+  if (!optionId) return undefined;
+  if (source === "iifym") {
+    const option = (plan as IifymPlan).options.find(
+      (entry) => entry.id === optionId,
+    );
+    if (!option) return undefined;
+    const protein = option.targets.protein;
+    const carbs = option.targets.carbs;
+    const fat = option.targets.fat;
+    const derived =
+      targetNumber(protein) * 4 +
+      targetNumber(carbs) * 4 +
+      targetNumber(fat) * 9;
+    return {
+      calories: option.targets.calories ?? (derived > 0 ? derived : undefined),
+      protein,
+      carbs,
+      fat,
+    };
+  }
+  const variant = (plan as MealPlan).variants.find(
+    (entry) => entry.id === optionId,
+  );
+  if (!variant) return undefined;
+  const totals: Nutrients = calculateVariantNutrients(variant, planFoodMap);
+  return {
+    calories: totals.calories,
+    protein: totals.protein,
+    carbs: totals.carbs,
+    fat: totals.fat,
+  };
+}
+
+/** Mean of a tracked metric on the days where `match` holds. */
+function trackedAverage(
+  client: CoachClient,
+  days: string[],
+  metric: string,
+  match: (date: string) => boolean,
+): number | undefined {
+  const entries = clientTracking(client);
+  const values = days
+    .filter(match)
+    .map((date) => entries.find((entry) => entry.date === date)?.values[metric])
+    .filter((value): value is number => value != null);
+  return values.length
+    ? values.reduce((sum, value) => sum + value, 0) / values.length
+    : undefined;
+}
+
+const lastDays = (today: string, count: number) =>
+  Array.from({ length: count }, (_, i) => addLocalDays(today, i - count + 1));
+
+const weightOn = (client: CoachClient, date: string): number | undefined => {
+  const entries = clientTracking(client)
+    .filter((entry) => entry.values.weight != null)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  return ([...entries].reverse().find((entry) => entry.date <= date)?.values
+    .weight ??
+    entries[0]?.values.weight ??
+    undefined) as number | undefined;
+};
+
+const dayLabel = (date: string) =>
+  formatDate(date, { weekday: "short", day: "numeric", month: "short" });
+
+const relDay = (date: string, today: string) => {
+  const diff = daysBetween(today, date);
+  if (diff === 0) return "today";
+  if (diff === 1) return "tomorrow";
+  if (diff === -1) return "yesterday";
+  return diff > 0 ? `in ${String(diff)} days` : `${String(-diff)} days overdue`;
+};
+
+// ─── Cards ──────────────────────────────────────────────────────────
+
+function PhaseProgressCard({
   client,
   today,
-  onNavigate,
+  onOpen,
 }: {
   client: CoachClient;
   today: string;
-  onNavigate: (plan: string) => void;
+  onOpen: () => void;
 }) {
-  const { state } = useCoach();
-  const training = client.plans
-    ? applicablePlan(client.plans.training, today)
-    : undefined;
-  const week = training ? displayWeek(training, today) : undefined;
-  const next = training
-    ? nextSession(
-        scheduledSessions(training, displayWeek(training, today)),
-        (state.trainingLogs ?? []).filter((log) => log.clientId === client.id),
-        today,
-      )
-    : undefined;
+  const labelsRef = useRef<HTMLDivElement>(null);
+  const [overflowing, setOverflowing] = useState<Set<number>>(new Set());
+  const ranges = phaseRanges(client.phases);
+  // Labels that don't fit their segment are moved to a small legend row.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when the segment count changes; ranges content is read via the DOM.
+  useLayoutEffect(() => {
+    const row = labelsRef.current;
+    if (!row) return;
+    const measure = () => {
+      const next = new Set<number>();
+      row.querySelectorAll<HTMLElement>("[data-seg]").forEach((el, i) => {
+        if (el.scrollWidth > el.clientWidth + 2) next.add(i);
+      });
+      setOverflowing((prev) =>
+        prev.size === next.size && [...next].every((i) => prev.has(i))
+          ? prev
+          : next,
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, [ranges.length]);
+  const totalWeeks = ranges.reduce((sum, r) => sum + r.durationWeeks, 0);
+  const phase = currentPhase(client.phases, today);
+  const next = ranges.find((r) => r.startDate > today);
   return (
-    <Surface className="ap-widget">
-      <WidgetHead
-        title="Training program"
-        action={
-          <Button variant="ghost" onClick={() => onNavigate("training")}>
-            Change
-          </Button>
-        }
-      />
-      {training ? (
-        <div className="ap-plan-text">
-          <b>{training.name}</b>
-          <span className="ap-sub">
-            {week !== undefined
-              ? `Week ${String(week)}${training.weeks ? ` of ${String(training.weeks)}` : ""}${next ? ` · next ${next.session.name}` : ""}`
-              : "Not scheduled"}
-          </span>
-        </div>
-      ) : (
-        <Empty title="No training plan" />
-      )}
-    </Surface>
-  );
-}
-
-function SupplementsWidget({
-  client,
-  onNavigate,
-}: {
-  client: CoachClient;
-  onNavigate: (plan: string) => void;
-}) {
-  const supplements =
-    client.plans?.supplements && isSupplementPlan(client.plans.supplements)
-      ? client.plans.supplements
-      : undefined;
-  const mustHaves = supplements?.items.filter(
-    (item) => item.status === "must-have",
-  ).length;
-  return (
-    <Surface className="ap-widget">
-      <WidgetHead
-        title="Supplements"
-        action={
-          <Button variant="ghost" onClick={() => onNavigate("supplements")}>
-            Change
-          </Button>
-        }
-      />
-      {supplements ? (
-        <div className="ap-plan-text">
-          <b>{supplements.items.length} supplements</b>
-          {mustHaves !== undefined && (
-            <span className="ap-sub">
-              {mustHaves} must-have{mustHaves === 1 ? "" : "s"}
-            </span>
-          )}
-        </div>
-      ) : (
-        <Empty title="No supplement plan" />
-      )}
-    </Surface>
-  );
-}
-
-function TargetFields({
-  targets,
-  onChange,
-}: {
-  targets: MealTargets | undefined;
-  onChange: (targets: MealTargets) => void;
-}) {
-  const style = targets?.style ?? "calories";
-  const keys =
-    style === "calories"
-      ? (["calories"] as const)
-      : (["protein", "carbs", "fat"] as const);
-  const labelFor = (key: string) =>
-    key === "calories" ? "kcal" : key[0].toUpperCase();
-  const num = (s: string) => (s.trim() === "" ? Number.NaN : Number(s));
-  return (
-    <div className="ap-nt-fields">
-      {keys.map((key) => {
-        const tv = targets?.[key];
-        const write = (next: TargetValue) =>
-          onChange({ ...(targets ?? { style }), style, [key]: next });
-        return (
-          <div className="ap-nt-field" key={key}>
-            {tv?.kind === "range" ? (
-              <>
-                <Input
-                  label={`${labelFor(key)} min`}
-                  type="number"
-                  value={String(tv.min)}
-                  onChange={(e) =>
-                    write({
-                      kind: "range",
-                      min: num(e.target.value),
-                      max: tv.max,
-                    })
-                  }
-                />
-                <Input
-                  label={`${labelFor(key)} max`}
-                  type="number"
-                  value={String(tv.max)}
-                  onChange={(e) =>
-                    write({
-                      kind: "range",
-                      min: tv.min,
-                      max: num(e.target.value),
-                    })
-                  }
-                />
-              </>
-            ) : (
-              <Input
-                label={labelFor(key)}
-                type="number"
-                value={tv ? String(tv.value) : ""}
-                onChange={(e) =>
-                  write({
-                    kind: tv?.kind ?? "fixed",
-                    value: num(e.target.value),
-                  })
-                }
-              />
+    <Surface className="ap-card ap-w-s6">
+      <CardLink title="Phase progress" onOpen={onOpen} />
+      {ranges.length ? (
+        <>
+          <div className="ap-phase-head">
+            <div>
+              <b>{phase?.name ?? "Outside the plan window"}</b>
+              {phase && (
+                <p className="ap-sub">
+                  Week {phase.week} of {phase.weeks}
+                </p>
+              )}
+            </div>
+            {phase && (
+              <span className="ap-sub">
+                {formatDate(phase.startDate, {
+                  day: "numeric",
+                  month: "short",
+                })}{" "}
+                –{" "}
+                {formatDate(phase.endDate, { day: "numeric", month: "short" })}
+              </span>
             )}
           </div>
-        );
-      })}
+          <div className="ap-phase-bar" role="img" aria-label="Phase progress">
+            {ranges.map((range) => {
+              const width = (range.durationWeeks / totalWeeks) * 100;
+              const fill =
+                today < range.startDate
+                  ? 0
+                  : today > range.endDate
+                    ? 100
+                    : ((daysBetween(range.startDate, today) + 1) /
+                        (range.durationWeeks * 7)) *
+                      100;
+              return (
+                <span
+                  key={range.name + range.startDate}
+                  className="ap-phase-seg"
+                  style={{ width: `${width}%` }}
+                  title={`${range.name} · ${formatDate(range.startDate, { weekday: "short" })} – ${formatDate(range.endDate, { weekday: "short" })}`}
+                >
+                  <span
+                    className="ap-phase-fill"
+                    style={{ width: `${Math.min(100, fill)}%` }}
+                  />
+                </span>
+              );
+            })}
+          </div>
+          <div className="ap-phase-labels" ref={labelsRef}>
+            {ranges.map((range, index) => (
+              <span
+                key={range.name}
+                data-seg
+                className="ap-sub"
+                style={{
+                  width: `${(range.durationWeeks / totalWeeks) * 100}%`,
+                }}
+              >
+                {overflowing.has(index) ? "" : range.name}
+              </span>
+            ))}
+          </div>
+          {overflowing.size > 0 && (
+            <div className="ap-phase-legend">
+              {ranges.map((range, index) =>
+                overflowing.has(index) ? (
+                  <span key={range.name} className="ap-sub">
+                    <i className="ap-phase-dot" />
+                    {range.name} · {range.durationWeeks}w
+                  </span>
+                ) : null,
+              )}
+            </div>
+          )}
+          <p className="ap-sub ap-phase-next">
+            {next
+              ? `Next: ${next.name} in ${String(Math.max(0, Math.round(daysBetween(today, next.startDate) / 7)))} weeks`
+              : today > (ranges.at(-1)?.endDate ?? "9999-12-31")
+                ? "Plan complete"
+                : "Final phase"}
+          </p>
+        </>
+      ) : (
+        <div className="ap-empty">
+          <p>No phase plan yet.</p>
+          <Button variant="secondary" onClick={onOpen}>
+            Plan phases
+          </Button>
+        </div>
+      )}
+    </Surface>
+  );
+}
+
+function CheckinCard({
+  client,
+  state,
+  today,
+  onOpenTab,
+  onOpenReview,
+}: {
+  client: CoachClient;
+  state: CoachState;
+  today: string;
+  onOpenTab: () => void;
+  onOpenReview: (submissionId: string) => void;
+}) {
+  const waiting = state.submissions
+    .filter((s) => s.clientId === client.id && !s.response)
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+  const scheduled = eventsBetween(
+    state,
+    addLocalDays(today, -21),
+    addLocalDays(today, 35),
+  ).filter((e) => e.clientId === client.id && !e.submission);
+  const overdue = scheduled.filter((e) => e.date < today).at(-1);
+  const next = scheduled.find((e) => e.date >= today);
+  const go = waiting ? () => onOpenReview(waiting.id) : onOpenTab;
+  return (
+    <Surface className="ap-card ap-w-s3">
+      <CardLink title="Check-in" onOpen={go} />
+      {waiting ? (
+        <>
+          <Status tone="warning">Awaiting feedback</Status>
+          <b className="ap-big">
+            {formatDate(waiting.date, { weekday: "short" })}
+          </b>
+          <p className="ap-sub">
+            {waiting.type} check-in · submitted {(() => {
+              const days = daysBetween(waiting.date, today);
+              return days === 0
+                ? "today"
+                : days === 1
+                  ? "yesterday"
+                  : `${String(days)} days ago`;
+            })()}
+          </p>
+        </>
+      ) : overdue ? (
+        <>
+          <Status tone="warning">Overdue</Status>
+          <b className="ap-big">{relDay(overdue.date, today)}</b>
+          <p className="ap-sub">Scheduled {dayLabel(overdue.date)}</p>
+        </>
+      ) : next ? (
+        <>
+          <Status tone={next.date === today ? "info" : "neutral"}>
+            {next.date === today ? "Due today" : "Scheduled"}
+          </Status>
+          <b className="ap-big">{relDay(next.date, today)}</b>
+          <p className="ap-sub">{dayLabel(next.date)}</p>
+        </>
+      ) : (
+        <p className="ap-sub">Nothing scheduled.</p>
+      )}
+    </Surface>
+  );
+}
+
+function PinnedNotesCard({
+  client,
+  onOpen,
+}: {
+  client: CoachClient;
+  onOpen: () => void;
+}) {
+  const pinned = client.internalNotes.filter((note) => note.pinned);
+  return (
+    <Surface className="ap-card ap-w-s3">
+      <CardLink title="Pinned notes" onOpen={onOpen} />
+      {pinned.length ? (
+        <>
+          <ul className="ap-note-list">
+            {pinned.slice(0, 3).map((note) => (
+              <li key={note.id}>
+                <Pin size={11} aria-hidden="true" />
+                <span>{note.text}</span>
+              </li>
+            ))}
+          </ul>
+          {pinned.length > 3 && (
+            <p className="ap-sub">+{pinned.length - 3} more</p>
+          )}
+        </>
+      ) : (
+        <p className="ap-sub">No pinned notes.</p>
+      )}
+    </Surface>
+  );
+}
+
+function NutritionCard({
+  client,
+  today,
+  onOpen,
+}: {
+  client: CoachClient;
+  today: string;
+  onOpen: () => void;
+}) {
+  const days = lastDays(today, 7);
+  const resolved = nutritionForDate(client, today);
+  const source = resolved.source;
+  // Columns always come from the regular active plan; an active temporary
+  // plan is a compact secondary strip below the columns.
+  const regular = client.plans
+    ? source === "iifym"
+      ? applicablePlan(client.plans.nutrition.iifym, today)
+      : applicablePlan(client.plans.nutrition.mealPlan, today)
+    : undefined;
+  // Active temporary plan today, else the nearest upcoming one of this source.
+  const temp =
+    resolved.temporary ??
+    (client.plans?.nutrition.temporary ?? [])
+      .filter((entry) => entry.source === source && entry.startDate > today)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate))[0];
+  const tempTargets = temp
+    ? optionTargets(
+        temp.plan,
+        temp.source,
+        scheduledOption(
+          temp.plan.schedule,
+          temp.source === "iifym"
+            ? (temp.plan as IifymPlan).options.map((o) => o.id)
+            : (temp.plan as MealPlan).variants.map((v) => v.id),
+          temp.startDate <= today ? today : temp.startDate,
+        ),
+      )
+    : undefined;
+  type Col = {
+    id: string;
+    label: string;
+    days: string;
+    targets: OptionTargets | undefined;
+    applied: (date: string) => boolean;
+  };
+  const columns: Col[] = [];
+  if (regular) {
+    const all =
+      source === "iifym"
+        ? (regular as IifymPlan).options
+        : (regular as MealPlan).variants;
+    // Every variant/option of the plan gets a column, scheduled or not.
+    for (const option of all)
+      columns.push({
+        id: option.id,
+        label: option.label || "Untitled day",
+        days: optionDaysLabel(regular.schedule, option.id),
+        targets: optionTargets(regular, source, option.id),
+        applied: (date) => {
+          const r = nutritionForDate(client, date);
+          return !r.temporary && r.optionId === option.id;
+        },
+      });
+  }
+  const macroRows: { key: keyof OptionTargets; label: string }[] = [
+    { key: "protein", label: "P" },
+    { key: "carbs", label: "C" },
+    { key: "fat", label: "F" },
+  ];
+  return (
+    <Surface className="ap-card ap-w-s6">
+      <CardLink
+        title="Nutrition targets vs actual"
+        sub={
+          regular
+            ? ((regular as { name?: string }).name ?? undefined)
+            : undefined
+        }
+        onOpen={onOpen}
+      />
+      {columns.length ? (
+        <div className="ap-nt-cols">
+          {columns.map((column) => {
+            const kcalActual = trackedAverage(
+              client,
+              days,
+              "calories",
+              column.applied,
+            );
+            return (
+              <div key={column.id} className="ap-nt-col">
+                <span className="ap-nt-label">
+                  {column.label}
+                  <small> · {column.days}</small>
+                </span>
+                <b className="ap-nt-kcal">
+                  {targetText(column.targets?.calories)}
+                </b>
+                <span className="ap-nt-actual ap-sub">
+                  ø{" "}
+                  {kcalActual !== undefined
+                    ? integer.format(Math.round(kcalActual))
+                    : "—"}
+                  <AccuracyChip
+                    ratio={accuracyRatio(kcalActual, column.targets?.calories)}
+                  />
+                </span>
+                <dl className="ap-nt-macros">
+                  {macroRows.map((macro) => {
+                    const actual = trackedAverage(
+                      client,
+                      days,
+                      macro.key,
+                      column.applied,
+                    );
+                    return (
+                      <div key={macro.key}>
+                        <dt>{macro.label}</dt>
+                        <dd>
+                          <b>{targetText(column.targets?.[macro.key], true)}</b>
+                          <span className="ap-sub">
+                            ø{" "}
+                            {actual !== undefined
+                              ? number1.format(Math.round(actual * 10) / 10)
+                              : "—"}
+                          </span>
+                          <AccuracyChip
+                            ratio={accuracyRatio(
+                              actual,
+                              column.targets?.[macro.key],
+                            )}
+                          />
+                        </dd>
+                      </div>
+                    );
+                  })}
+                </dl>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="ap-sub">No nutrition plan active.</p>
+      )}
+      {temp && (
+        <div className="ap-nt-temp">
+          <span className="ap-nt-temp-kind">{kindLabel(temp.kind)}</span>
+          <span className="ap-nt-temp-text">
+            {temp.label} ·{" "}
+            {formatDate(temp.startDate, { day: "numeric", month: "short" })} –{" "}
+            {formatDate(temp.endDate, { day: "numeric", month: "short" })}
+            {tempTargets && (
+              <>
+                {" "}
+                · {targetText(tempTargets.calories)} kcal · P{" "}
+                {targetText(tempTargets.protein, true)} · C{" "}
+                {targetText(tempTargets.carbs, true)} · F{" "}
+                {targetText(tempTargets.fat, true)}
+              </>
+            )}
+          </span>
+        </div>
+      )}
+    </Surface>
+  );
+}
+
+const kindLabel = (kind: "refeed" | "diet-break" | "custom") =>
+  kind === "refeed"
+    ? "Refeed"
+    : kind === "diet-break"
+      ? "Diet break"
+      : "Custom";
+
+type MiniBar = {
+  label: string;
+  value?: number;
+  valueLabel?: string;
+  target?: number;
+};
+
+/** Small bar chart: accent bars, per-bar dashed target marker, legend. */
+function MiniBars({
+  bars,
+  label,
+  showValues = true,
+}: {
+  bars: MiniBar[];
+  label: string;
+  showValues?: boolean;
+}) {
+  const shown = bars.flatMap((b) =>
+    [b.value, b.target].filter((v): v is number => v != null),
+  );
+  const floor = shown.length
+    ? Math.max(0, Math.floor(Math.min(...shown) * 0.7))
+    : 0;
+  const ceil = shown.length
+    ? Math.max(floor + 1, Math.ceil(Math.max(...shown) * 1.05))
+    : floor + 1;
+  const pct = (v: number) =>
+    Math.min(100, Math.max(0, ((v - floor) / (ceil - floor)) * 100));
+  const targets = [
+    ...new Set(
+      bars
+        .map((b) => b.target)
+        .filter((v): v is number => v != null)
+        .map((v) => Math.round(v)),
+    ),
+  ];
+  const targetLabel = targets.length
+    ? `Target${targets.length === 1 ? ` ${integer.format(targets[0])}` : ""}`
+    : undefined;
+  return (
+    <>
+      <div className="ap-kcal-chart" role="img" aria-label={label}>
+        {bars.map((bar) => {
+          const off =
+            bar.value !== undefined &&
+            bar.target !== undefined &&
+            bar.target > 0 &&
+            Math.abs(bar.value / bar.target - 1) > 0.1;
+          return (
+            <div className="ap-kcal-col" key={bar.label}>
+              <div className="ap-kcal-track">
+                {bar.target !== undefined && (
+                  <span
+                    className="ap-kcal-target"
+                    style={{ bottom: `${pct(bar.target)}%` }}
+                    title={`Target ${integer.format(Math.round(bar.target))}`}
+                  />
+                )}
+                {bar.value !== undefined && (
+                  <span
+                    className="ap-kcal-bar"
+                    data-off={off || undefined}
+                    style={{ height: `${pct(bar.value)}%` }}
+                    title={integer.format(Math.round(bar.value))}
+                  />
+                )}
+              </div>
+              {showValues && (
+                <small className="ap-kcal-val">
+                  {bar.valueLabel ??
+                    (bar.value !== undefined
+                      ? integer.format(Math.round(bar.value))
+                      : "—")}
+                </small>
+              )}
+              <small>{bar.label}</small>
+            </div>
+          );
+        })}
+      </div>
+      {targetLabel && (
+        <div className="ap-chart-legend">
+          <span className="ap-chart-legend-dash" aria-hidden="true" />
+          <span>{targetLabel}</span>
+        </div>
+      )}
+    </>
+  );
+}
+
+function CalorieCard({
+  client,
+  today,
+  onOpen,
+}: {
+  client: CoachClient;
+  today: string;
+  onOpen: () => void;
+}) {
+  const [view, setView] = useState<"7d" | "4w">("7d");
+  const entries = clientTracking(client);
+  const valueOn = (date: string) =>
+    entries.find((e) => e.date === date)?.values.calories ?? undefined;
+  const targetOn = (date: string) => {
+    const r = nutritionForDate(client, date);
+    const targets = r.plan
+      ? optionTargets(r.plan, r.source, r.optionId)
+      : undefined;
+    return targetMid(targets?.calories);
+  };
+  const days = lastDays(today, 7);
+  const prior = lastDays(addLocalDays(today, -7), 7);
+  const mean = (list: (number | undefined)[]) => {
+    const vals = list.filter((v): v is number => v != null);
+    return vals.length
+      ? vals.reduce((a, b) => a + b, 0) / vals.length
+      : undefined;
+  };
+  const bars =
+    view === "7d"
+      ? days.map((date) => ({
+          label: formatDate(date, { weekday: "narrow" }),
+          value: valueOn(date),
+          target: targetOn(date),
+        }))
+      : [0, 1, 2, 3].map((week) => {
+          const range = lastDays(addLocalDays(today, (week - 3) * 7), 7);
+          return {
+            label: week === 3 ? "This week" : `W${String(week + 1)}`,
+            value: mean(range.map(valueOn)),
+            target: mean(range.map(targetOn)),
+          };
+        });
+  const avg =
+    view === "7d" ? mean(days.map(valueOn)) : mean(bars.map((b) => b.value));
+  const priorAvg = mean(prior.map(valueOn));
+  const diff =
+    avg !== undefined && priorAvg !== undefined ? avg - priorAvg : undefined;
+  return (
+    <Surface className="ap-card ap-w-s6">
+      <CardLink
+        title="Calorie intake"
+        sub={
+          avg !== undefined
+            ? `ø ${integer.format(Math.round(avg))} avg intake${diff !== undefined ? ` · ${diff >= 0 ? "+" : "−"}${integer.format(Math.abs(Math.round(diff)))} vs last week` : ""}`
+            : undefined
+        }
+        onOpen={onOpen}
+      />
+      <SegmentedControl
+        label="Calorie intake range"
+        value={view}
+        onValueChange={(v) => setView(v as "7d" | "4w")}
+        options={[
+          { value: "7d", label: "7 days" },
+          { value: "4w", label: "4 weeks" },
+        ]}
+      />
+      <MiniBars bars={bars} label="Calorie intake per day against target" />
+    </Surface>
+  );
+}
+
+function useElementSize() {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const rect = entry.contentRect;
+      setSize({ w: rect.width, h: rect.height });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, size] as const;
+}
+
+/** Catmull-Rom → cubic bézier smooth line through the points. */
+function smoothLinePath(points: { x: number; y: number }[]): string {
+  if (!points.length) return "";
+  if (points.length === 1) return `M${points[0].x} ${points[0].y}`;
+  let d = `M${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const p0 = points[Math.max(0, i - 1)];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[Math.min(points.length - 1, i + 2)];
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+
+/** Bodyweight line: tight y gutter, full-width plot, round ticks. */
+function BodyweightChart({
+  rows,
+}: {
+  rows: { date: string; value: number }[];
+}) {
+  const [ref, size] = useElementSize();
+  if (!rows.length) return null;
+  const values = rows.map((r) => r.value);
+  const dataMin = Math.min(...values);
+  const dataMax = Math.max(...values);
+  const span = Math.max(dataMax - dataMin, 0.4);
+  const step = span <= 1.5 ? 0.5 : span <= 3 ? 1 : span <= 7 ? 2 : 5;
+  const lo = Math.floor(dataMin / step) * step;
+  const hi = Math.max(lo + step, Math.ceil(dataMax / step) * step);
+  const pad = step * 0.3;
+  const y0 = lo - pad;
+  const y1 = hi + pad;
+  const ticks: number[] = [];
+  for (let t = lo; t <= hi + 1e-9; t += step) ticks.push(+t.toFixed(2));
+
+  const w = Math.max(200, size.w);
+  const h = Math.max(110, size.h);
+  const gutter = 36;
+  const x0 = gutter;
+  const x1 = w - 4;
+  const yTop = 8;
+  const yBot = h - 20;
+  const stamp = (d: string) => new Date(`${d}T12:00:00`).valueOf();
+  const t0 = stamp(rows[0].date);
+  const t1 = stamp(rows.at(-1)?.date ?? rows[0].date);
+  const px = (d: string) =>
+    t1 === t0 ? (x0 + x1) / 2 : x0 + ((stamp(d) - t0) / (t1 - t0)) * (x1 - x0);
+  const py = (v: number) => yTop + ((y1 - v) / (y1 - y0)) * (yBot - yTop);
+  const points = rows.map((r) => ({ x: px(r.date), y: py(r.value) }));
+  const xLabels = [
+    { row: rows[0], x: x0, anchor: "start" as const },
+    {
+      row: rows[Math.floor((rows.length - 1) / 2)],
+      x: (x0 + x1) / 2,
+      anchor: "middle" as const,
+    },
+    { row: rows.at(-1) ?? rows[0], x: x1, anchor: "end" as const },
+  ];
+  return (
+    <div
+      ref={ref}
+      className="ap-bw-chart"
+      role="img"
+      aria-label="Bodyweight trend"
+    >
+      {size.w > 0 && (
+        <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+          <title>Bodyweight trend over the selected range</title>
+          {ticks.map((t) => {
+            const yy = py(t);
+            return (
+              <g key={t}>
+                <line x1={x0} x2={x1} y1={yy} y2={yy} className="ap-bw-grid" />
+                <text
+                  x={x0 - 7}
+                  y={yy + 3.5}
+                  textAnchor="end"
+                  className="ap-bw-ylabel"
+                >
+                  {number1.format(t)}
+                </text>
+              </g>
+            );
+          })}
+          <path d={smoothLinePath(points)} className="ap-bw-line" />
+          {points.map((p) => (
+            <circle key={p.x} cx={p.x} cy={p.y} r={2.4} className="ap-bw-dot" />
+          ))}
+          {xLabels.map(
+            (l) =>
+              l.row && (
+                <text
+                  key={l.row.date}
+                  x={l.x}
+                  y={h - 4}
+                  textAnchor={l.anchor}
+                  className="ap-bw-xlabel"
+                >
+                  {formatDate(l.row.date, { day: "numeric", month: "short" })}
+                </text>
+              ),
+          )}
+        </svg>
+      )}
     </div>
   );
 }
 
-function ActivityTargetsWidget({
+function BodyweightCard({
   client,
   today,
-  update,
+  onOpen,
 }: {
   client: CoachClient;
   today: string;
-  update: (fn: (c: CoachClient) => CoachClient) => void;
+  onOpen: () => void;
 }) {
-  const { toast } = useCoach();
+  const [range, setRange] = useState<"2w" | "4w" | "12w" | "all">("4w");
+  const entries = clientTracking(client)
+    .filter((e) => e.values.weight != null && e.date <= today)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const points = entries.map((e) => ({
+    date: e.date,
+    value: e.values.weight as number,
+  }));
+  const cutoff: Record<typeof range, string | undefined> = {
+    "2w": addLocalDays(today, -13),
+    "4w": addLocalDays(today, -27),
+    "12w": addLocalDays(today, -83),
+    all: undefined,
+  };
+  const rows = points.filter((p) => !cutoff[range] || p.date >= cutoff[range]);
+  const avg = (from: string, to: string) => {
+    const slice = points.filter((p) => p.date >= from && p.date <= to);
+    return slice.length
+      ? slice.reduce((s, p) => s + p.value, 0) / slice.length
+      : undefined;
+  };
+  const avg7 = avg(addLocalDays(today, -6), today);
+  const prev7 = avg(addLocalDays(today, -13), addLocalDays(today, -7));
+  const fourBack = avg(addLocalDays(today, -34), addLocalDays(today, -28));
+  const weeklyDelta =
+    avg7 !== undefined && prev7 !== undefined ? avg7 - prev7 : undefined;
+  const trend4w =
+    avg7 !== undefined && fourBack !== undefined
+      ? (avg7 - fourBack) / 4
+      : undefined;
+  const latest = points.at(-1);
+  const fmt = (v: number | undefined, signed = false) =>
+    v === undefined
+      ? "—"
+      : `${signed && v > 0 ? "+" : v < 0 ? "−" : ""}${number1.format(Math.abs(v))}`;
+  return (
+    <Surface className="ap-card ap-w-s8">
+      <CardLink
+        title="Bodyweight"
+        sub={latest ? `Last entry ${dayLabel(latest.date)}` : undefined}
+        onOpen={onOpen}
+      />
+      <div className="ap-bw-stats">
+        <div>
+          <b className="ap-big">
+            {latest ? `${number1.format(latest.value)} kg` : "—"}
+          </b>
+          <span className="ap-sub">Latest</span>
+        </div>
+        <div>
+          <b>{fmt(avg7)} kg</b>
+          <span className="ap-sub">7-day avg</span>
+        </div>
+        <div>
+          <b
+            data-tone={
+              weeklyDelta !== undefined && weeklyDelta <= 0
+                ? "positive"
+                : "neutral"
+            }
+          >
+            {fmt(weeklyDelta, true)} kg
+          </b>
+          <span className="ap-sub">Weekly change</span>
+        </div>
+        <div>
+          <b>{fmt(trend4w, true)} kg/wk</b>
+          <span className="ap-sub">4-week trend</span>
+        </div>
+      </div>
+      <SegmentedControl
+        label="Bodyweight range"
+        value={range}
+        onValueChange={(v) => setRange(v as typeof range)}
+        options={[
+          { value: "2w", label: "2W" },
+          { value: "4w", label: "4W" },
+          { value: "12w", label: "12W" },
+          { value: "all", label: "All" },
+        ]}
+      />
+      <BodyweightChart rows={rows} />
+    </Surface>
+  );
+}
+
+function stepsTargetNumber(target: StepsTarget | null | undefined) {
+  if (!target) return undefined;
+  return target.kind === "range" ? (target.min + target.max) / 2 : target.value;
+}
+
+function ExpenditureCard({
+  client,
+  today,
+  onOpen,
+}: {
+  client: CoachClient;
+  today: string;
+  onOpen: () => void;
+}) {
   const versions = client.plans?.activityTargets ?? [];
   const steps = resolveActivityTarget({
     versions,
@@ -1470,402 +1301,352 @@ function ActivityTargetsWidget({
     metric: "cardio",
     date: today,
   });
-  const prevFor = (
-    metric: "steps" | "cardio",
-    current: ActivityTargetVersion | undefined,
-  ) =>
-    [...versions]
-      .filter(
-        (v) =>
-          v.metric === metric &&
-          (!current || v.effectiveFrom < current.effectiveFrom),
-      )
-      .sort((a, b) => b.effectiveFrom.localeCompare(a.effectiveFrom))[0];
-
-  const [editing, setEditing] = useState(false);
-  const [stepsDraft, setStepsDraft] = useState<StepsTarget | null>(null);
-  const [cardioDraft, setCardioDraft] = useState<CardioTarget | null>(null);
-  const [errors, setErrors] = useState<string[]>([]);
-  const [pending, setPending] = useState<{
-    versions: ActivityTargetVersion[];
-    changes: ActivityChange[];
-  } | null>(null);
-
-  const persist = (nextVersions: ActivityTargetVersion[]) => {
-    update((c) => ({
-      ...c,
-      plans: {
-        ...(c.plans ?? emptyClientPlans()),
-        activityTargets: nextVersions,
-      },
-    }));
-    setEditing(false);
-    setErrors([]);
-    toast("Activity targets saved");
-  };
-
-  const save = () => {
-    const changes: ActivityChange[] = [];
-    if (stepsDraft) changes.push({ metric: "steps", target: stepsDraft });
-    if (cardioDraft) changes.push({ metric: "cardio", target: cardioDraft });
-    let next = versions;
-    const needConfirm: ActivityChange[] = [];
-    const errs: string[] = [];
-    for (const change of changes) {
-      const result = writeActivityTarget({
-        versions: next,
-        change,
-        effectiveFrom: today,
-        id: uid("target"),
-      });
-      if (result.kind === "invalid") errs.push(...result.errors);
-      else if (result.kind === "confirmation-required")
-        needConfirm.push(change);
-      else next = result.versions;
-    }
-    if (errs.length) {
-      setErrors(errs);
-      return;
-    }
-    if (needConfirm.length) {
-      setPending({ versions: next, changes: needConfirm });
-      return;
-    }
-    persist(next);
-  };
-
-  const stepsPrev = prevFor("steps", steps);
-  const cardioPrev = prevFor("cardio", cardio);
-
+  const days = lastDays(today, 7);
+  const entries = clientTracking(client);
+  const stepsActual =
+    entries
+      .filter((e) => days.includes(e.date) && e.values.steps != null)
+      .map((e) => e.values.steps as number)
+      .reduce((a, b, _i, all) => a + b / all.length, 0) || undefined;
+  const cardioActual = entries
+    .filter((e) => days.includes(e.date) && e.values["cardio-duration"] != null)
+    .reduce((sum, e) => sum + (e.values["cardio-duration"] as number), 0);
+  const stepsT = stepsTargetNumber(steps?.target as StepsTarget | null);
+  const cardioT =
+    cardio?.metric === "cardio" && cardio.target
+      ? (cardio.target as CardioTarget).sessionsPerWeek *
+        (cardio.target as CardioTarget).minutesPerSession
+      : undefined;
+  const stepBars = days.map((date) => {
+    const value = entries.find((e) => e.date === date)?.values.steps as
+      | number
+      | undefined;
+    return {
+      label: DAYS[(new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7].slice(
+        0,
+        3,
+      ),
+      value,
+      valueLabel: value !== undefined ? compact.format(Math.round(value)) : "—",
+      target: stepsT,
+    };
+  });
   return (
-    <Surface className="ap-widget">
-      <WidgetHead
-        title="Activity targets"
-        sub="per week"
-        action={
-          editing ? undefined : (
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setStepsDraft(
-                  (steps?.target as StepsTarget | null) ?? {
-                    kind: "fixed",
-                    value: 8000,
-                  },
-                );
-                setCardioDraft(
-                  (cardio?.target as CardioTarget | null) ?? {
-                    sessionsPerWeek: 0,
-                    minutesPerSession: 0,
-                  },
-                );
-                setErrors([]);
-                setEditing(true);
-              }}
-            >
-              Adjust
-            </Button>
-          )
-        }
-      />
-      <div className="ap-at-row">
+    <Surface className="ap-card ap-w-s4">
+      <CardLink title="Expenditure" onOpen={onOpen} />
+      <div className="ap-exp-row">
         <span className="ap-sub">Steps</span>
-        <div className="ap-at-text">
-          <b>{formatActivityTarget(steps)}</b>
-          {steps && (
-            <span className="ap-sub">
-              from {formatDate(steps.effectiveFrom, { weekday: undefined })}
-              {stepsPrev &&
-                ` · was ${formatActivityTarget(stepsPrev)} until ${formatDate(addLocalDays(steps.effectiveFrom, -1), { weekday: undefined })}`}
-            </span>
-          )}
-        </div>
-        {editing && stepsDraft && (
-          <div className="ap-at-edit">
-            <SegmentedControl
-              label="Steps target kind"
-              value={stepsDraft.kind}
-              onValueChange={(value) => {
-                const kind = value as StepsTarget["kind"];
-                setStepsDraft(
-                  kind === "range"
-                    ? { kind: "range", min: 6000, max: 8000 }
-                    : {
-                        kind,
-                        value:
-                          stepsDraft.kind === "range"
-                            ? stepsDraft.min
-                            : stepsDraft.value,
-                      },
-                );
-              }}
-              options={[
-                { value: "minimum", label: "Min" },
-                { value: "maximum", label: "Max" },
-                { value: "fixed", label: "Fixed" },
-                { value: "range", label: "Range" },
-              ]}
-            />
-            {stepsDraft.kind === "range" ? (
-              <>
-                <Input
-                  label="Min steps"
-                  type="number"
-                  value={String(stepsDraft.min)}
-                  onChange={(e) =>
-                    setStepsDraft({
-                      kind: "range",
-                      min: Number(e.target.value),
-                      max: stepsDraft.kind === "range" ? stepsDraft.max : 0,
-                    })
-                  }
-                />
-                <Input
-                  label="Max steps"
-                  type="number"
-                  value={String(stepsDraft.max)}
-                  onChange={(e) =>
-                    setStepsDraft({
-                      kind: "range",
-                      min: stepsDraft.kind === "range" ? stepsDraft.min : 0,
-                      max: Number(e.target.value),
-                    })
-                  }
-                />
-              </>
-            ) : (
-              <Input
-                label="Steps"
-                type="number"
-                value={String(stepsDraft.value)}
-                onChange={(e) =>
-                  setStepsDraft({
-                    kind: stepsDraft.kind,
-                    value: Number(e.target.value),
-                  })
-                }
-              />
-            )}
-          </div>
-        )}
+        <b>
+          {steps?.target
+            ? formatActivityTarget(steps).replace(" steps/day", "")
+            : "No target"}
+        </b>
+        <span className="ap-sub">
+          ø{" "}
+          {stepsActual !== undefined
+            ? integer.format(Math.round(stepsActual))
+            : "—"}
+          <AccuracyChip ratio={accuracyRatio(stepsActual, stepsT)} />
+        </span>
       </div>
-      <div className="ap-at-row">
+      <div className="ap-exp-row">
         <span className="ap-sub">Cardio</span>
-        <div className="ap-at-text">
-          <b>{formatActivityTarget(cardio)}</b>
-          {cardio && (
-            <span className="ap-sub">
-              from {formatDate(cardio.effectiveFrom, { weekday: undefined })}
-              {cardioPrev &&
-                ` · was ${formatActivityTarget(cardioPrev)} until ${formatDate(addLocalDays(cardio.effectiveFrom, -1), { weekday: undefined })}`}
-            </span>
-          )}
-        </div>
-        {editing && cardioDraft && (
-          <div className="ap-at-edit ap-at-edit-cardio">
-            <Input
-              label="Sessions / week"
-              type="number"
-              value={String(cardioDraft.sessionsPerWeek)}
-              onChange={(e) =>
-                setCardioDraft({
-                  ...cardioDraft,
-                  sessionsPerWeek: Number(e.target.value),
-                })
-              }
-            />
-            <Input
-              label="Minutes / session"
-              type="number"
-              value={String(cardioDraft.minutesPerSession)}
-              onChange={(e) =>
-                setCardioDraft({
-                  ...cardioDraft,
-                  minutesPerSession: Number(e.target.value),
-                })
-              }
-            />
-          </div>
-        )}
+        <b>{formatActivityTarget(cardio)}</b>
+        <span className="ap-sub">
+          {integer.format(Math.round(cardioActual))} min this week
+          <AccuracyChip
+            ratio={
+              cardioT
+                ? cardioActual > 0
+                  ? cardioActual / cardioT
+                  : undefined
+                : undefined
+            }
+          />
+        </span>
       </div>
-      {editing && (
-        <div className="ap-nt-actions">
-          {errors.map((error) => (
-            <p key={error} className="ap-dialog-error" role="alert">
-              {error}
-            </p>
-          ))}
-          <div className="cd-actions">
-            <Button primary onClick={save}>
-              Save
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setEditing(false);
-                setErrors([]);
-              }}
-            >
-              Cancel
-            </Button>
+      <div className="ap-exp-chart">
+        <MiniBars bars={stepBars} label="Daily steps vs target" />
+      </div>
+    </Surface>
+  );
+}
+
+function PhysiqueCard({
+  client,
+  state,
+  onOpenReview,
+  onOpenTemplate,
+}: {
+  client: CoachClient;
+  state: CoachState;
+  onOpenReview: (submissionId: string) => void;
+  onOpenTemplate: () => void;
+}) {
+  const submissions = state.submissions
+    .filter((s) => s.clientId === client.id && s.photos?.length)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const poses = [
+    ...new Set(submissions.flatMap((s) => (s.photos ?? []).map((p) => p.pose))),
+  ];
+  const [pose, setPose] = useState(poses[0] ?? "");
+  const [leftId, setLeftId] = useState(submissions[0]?.id ?? "");
+  const [rightId, setRightId] = useState(submissions.at(-1)?.id ?? "");
+  const left = submissions.find((s) => s.id === leftId) ?? submissions[0];
+  const right = submissions.find((s) => s.id === rightId) ?? submissions.at(-1);
+  const shot = (submission: (typeof submissions)[number] | undefined) =>
+    submission?.photos?.find((p) => p.pose === pose) ?? submission?.photos?.[0];
+  const options = submissions.map((s) => ({
+    value: s.id,
+    label: formatDate(s.date, { weekday: "short" }),
+  }));
+  const figure = (
+    submission: (typeof submissions)[number] | undefined,
+    label: string,
+  ) => {
+    const photo = shot(submission);
+    const weight = submission ? weightOn(client, submission.date) : undefined;
+    return (
+      <figure className="ap-phys">
+        {photo ? (
+          // biome-ignore lint/performance/noImgElement: demo photo previews are dynamic data srcs
+          <img src={photo.src} alt={`${photo.pose} — ${label}`} />
+        ) : (
+          <div className="ap-phys-empty">No photo for this pose</div>
+        )}
+        <figcaption>
+          <b>
+            {submission
+              ? formatDate(submission.date, { weekday: "short" })
+              : "—"}
+          </b>
+          <span className="ap-sub">
+            {weight !== undefined ? `${number1.format(weight)} kg` : "—"}
+          </span>
+        </figcaption>
+      </figure>
+    );
+  };
+  return (
+    <Surface className="ap-card ap-w-s8">
+      <CardLink
+        title="Physique comparison"
+        onOpen={() => right && onOpenReview(right.id)}
+      />
+      {submissions.length ? (
+        <>
+          <div className="ap-phys-controls">
+            <Select
+              label="Pose"
+              value={pose}
+              onChange={setPose}
+              options={poses}
+            />
+            <Select
+              label="From"
+              value={left?.id ?? ""}
+              onChange={setLeftId}
+              options={options}
+            />
+            <Select
+              label="To"
+              value={right?.id ?? ""}
+              onChange={setRightId}
+              options={options}
+            />
           </div>
-        </div>
-      )}
-      {pending && (
-        <Modal
-          open
-          onOpenChange={(open) => {
-            if (!open) setPending(null);
-          }}
-          title="Replace today's target?"
-          footer={
-            <>
-              <Button variant="ghost" onClick={() => setPending(null)}>
-                Cancel
-              </Button>
-              <Button
-                primary
-                onClick={() => {
-                  let next = pending.versions;
-                  for (const change of pending.changes) {
-                    const result = writeActivityTarget({
-                      versions: next,
-                      change,
-                      effectiveFrom: today,
-                      id: uid("target"),
-                      confirmSameDay: true,
-                    });
-                    if (result.kind === "saved") next = result.versions;
-                  }
-                  setPending(null);
-                  persist(next);
-                }}
-              >
-                Replace
-              </Button>
-            </>
-          }
-        >
+          <div className="ap-phys-grid">
+            {figure(left, "earlier check-in")}
+            {figure(right, "latest check-in")}
+          </div>
+        </>
+      ) : (
+        <div className="ap-empty">
           <p className="ap-sub">
-            A target already starts today. Save anyway? The earlier version will
-            be replaced.
+            Add a photo upload question to the check-in form.
           </p>
-        </Modal>
+          <Button variant="secondary" onClick={onOpenTemplate}>
+            Open check-in section
+          </Button>
+        </div>
       )}
     </Surface>
   );
 }
 
-function CoachingSetup({
+function TrainingCard({
   client,
-  update,
-  onAddDate,
-  onAssign,
+  state,
+  today,
+  onOpen,
 }: {
   client: CoachClient;
-  update: (fn: (c: CoachClient) => CoachClient) => void;
-  onAddDate: () => void;
-  onAssign: () => void;
+  state: CoachState;
+  today: string;
+  onOpen: () => void;
 }) {
-  const { state, navigate, toast } = useCoach();
-  const activeSchedule = client.schedules.at(-1);
+  const plan = client.plans
+    ? applicablePlan(client.plans.training, today)
+    : undefined;
+  const week = plan ? displayWeek(plan, today) : undefined;
+  const sessions =
+    plan && week !== undefined ? resolveTrainingWeek(plan, week) : [];
+  const summary = weekTrainingSummary(state, client, today);
+  const logs = (state.trainingLogs ?? []).filter(
+    (log) => log.clientId === client.id,
+  );
+  const weekSessions =
+    plan && week !== undefined ? scheduledSessions(plan, week) : [];
+  const statusLabel = {
+    done: "Done",
+    "in-progress": "Unfinished",
+    today: "Today",
+    upcoming: "Upcoming",
+    missed: "Missed",
+  } as const;
+  const rotationText = (() => {
+    if (!plan?.rotation) return undefined;
+    if (plan.rotation.mode === "weekly") {
+      const days = Object.entries(plan.rotation.weekdays)
+        .filter(([, ids]) => ids.length)
+        .map(([day]) => day.slice(0, 3));
+      return days.length ? `Weekly · ${days.join(" ")}` : "Weekly";
+    }
+    const names = plan.rotation.sessionIds
+      .filter((sid): sid is string => sid != null)
+      .map((sid) => sessions.find((s) => s.id === sid)?.name ?? sid);
+    return `${String(names.length)}-day cycle · ${names.join(", ")}`;
+  })();
+  const notes: string[] = [];
+  if (summary.inProgress > 0)
+    notes.push(
+      `${String(summary.inProgress)} session${summary.inProgress === 1 ? "" : "s"} unfinished`,
+    );
+  if (summary.flagged > 0)
+    notes.push(
+      `${String(summary.flagged)} flagged note${summary.flagged === 1 ? "" : "s"}`,
+    );
   return (
-    <Surface className="ap-setup">
-      <h3>Coaching setup</h3>
-      <h4>Template</h4>
-      <div className="ap-plan-row">
-        <div className="ap-plan-text">
-          <b>{client.assignment?.snapshot.name ?? "No template"}</b>
-          {client.assignment && (
-            <span className="ap-sub">
-              Variant{" "}
-              {client.assignment.snapshot.variants.find(
-                (v) => v.id === client.assignment?.variantId,
-              )?.name ?? client.assignment.variantId}
-            </span>
+    <Surface className="ap-card ap-w-s4">
+      <CardLink title="Training program" onOpen={onOpen} />
+      {plan ? (
+        <>
+          <b>{plan.name}</b>
+          {rotationText && <p className="ap-sub">{rotationText}</p>}
+          {plan.focus && <p className="ap-sub">{plan.focus}</p>}
+          {weekSessions.length > 0 && (
+            <ul className="ap-sessions">
+              {weekSessions.map((item) => {
+                const status = sessionStatus(item, logs, today);
+                return (
+                  <li key={`${item.occurrenceKey}:${item.date}`}>
+                    <span className="ap-session-day">
+                      {item.weekdayLabel
+                        ? item.weekdayLabel.slice(0, 3)
+                        : formatDate(item.date, { weekday: "short" })}
+                    </span>
+                    <span className="ap-session-name">{item.session.name}</span>
+                    <span className="ap-session-status" data-status={status}>
+                      {status === "done" ? "✓ " : ""}
+                      {statusLabel[status]}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
           )}
-        </div>
-        <Button variant="ghost" onClick={onAssign}>
-          Change
-        </Button>
-      </div>
-      <h4>Recurring check-in</h4>
-      <p className="ap-sub">Recurring check-ins · Europe/Vienna</p>
-      <div className="cd-weekdays">
-        {DAYS.map((day, index) => (
-          <button
-            type="button"
-            key={day}
-            aria-label={day}
-            aria-pressed={activeSchedule?.weekdays.includes(index) ?? false}
-            onClick={() => {
-              const oldDays = client.schedules.at(-1)?.weekdays ?? [];
-              const weekdays = oldDays.includes(index)
-                ? oldDays.filter((d) => d !== index)
-                : [...oldDays, index];
-              update((cl) => ({
-                ...cl,
-                schedules: [
-                  ...cl.schedules.filter(
-                    (s) => s.effective !== addDays(TODAY, 1),
-                  ),
-                  { effective: addDays(TODAY, 1), weekdays },
-                ],
-              }));
-              toast(
-                "Recurring schedule updated from tomorrow. Submitted history retained.",
-              );
-            }}
-          >
-            {day.slice(0, 2)}
-          </button>
-        ))}
-      </div>
-      {client.schedules.some((s) => s.effective > TODAY) && (
-        <p className="ap-sub">
-          From tomorrow:{" "}
-          {client.schedules
-            .at(-1)
-            ?.weekdays.map((d) => DAYS[d])
-            .join(", ") || "No recurring days"}
-        </p>
-      )}
-      <h4>Additional dates</h4>
-      {state.extras
-        .filter((e) => e.clientId === client.id)
-        .map((extra) => (
-          <div className="cd-setting-row" key={extra.id}>
+          <div className="ap-training-stats">
             <span>
-              {formatDate(extra.date)}
-              <small>
-                {extra.type} · {extra.note}
-              </small>
+              {plan
+                ? `Plan week ${String(trainingWeek(plan, today))}`
+                : "Not scheduled"}
             </span>
-            <Button
-              variant="ghost"
-              onClick={() =>
-                navigate({ section: "check-ins", client: client.id })
-              }
-            >
-              Manage
-            </Button>
+            <span className="ap-sub">
+              {summary.done} of {summary.scheduled} sessions this week
+            </span>
           </div>
-        ))}
-      {!state.extras.some((e) => e.clientId === client.id) && (
-        <p className="ap-sub">No additional dates.</p>
+          {notes.length > 0 && (
+            <p className="ap-sub ap-flagged">
+              <Flag size={11} aria-hidden="true" /> {notes.join(" · ")}
+            </p>
+          )}
+        </>
+      ) : (
+        <p className="ap-sub">No training plan active.</p>
       )}
-      <Button variant="secondary" onClick={onAddDate}>
-        <Plus size={14} aria-hidden="true" /> Add date
-      </Button>
-      <h4>Priority message</h4>
-      <Toggle
-        label="Allow priority flags"
-        detail="Applies to new chat flags. Training set notes stay separate."
-        checked={client.priorityMessages}
-        onChange={(priorityMessages) =>
-          update((cl) => ({ ...cl, priorityMessages }))
+    </Surface>
+  );
+}
+
+// ─── Overview ───────────────────────────────────────────────────────
+
+export function AthleteOverview({ client }: { client: CoachClient }) {
+  const { state, navigate } = useCoach();
+  const today = localToday();
+  const openReview = (submissionId: string) =>
+    navigate({ section: "check-ins", review: submissionId, client: client.id });
+  return (
+    <div className="ap-grid">
+      <PhaseProgressCard
+        client={client}
+        today={today}
+        onOpen={() => open(navigate, client.id, { tab: "Timeline" })}
+      />
+      <CheckinCard
+        client={client}
+        state={state}
+        today={today}
+        onOpenTab={() => open(navigate, client.id, { tab: "Check-ins" })}
+        onOpenReview={openReview}
+      />
+      <PinnedNotesCard
+        client={client}
+        onOpen={() => open(navigate, client.id, { tab: "Notes & tasks" })}
+      />
+      <NutritionCard
+        client={client}
+        today={today}
+        onOpen={() =>
+          open(navigate, client.id, { tab: "Plans", plan: "nutrition" })
         }
       />
-    </Surface>
+      <CalorieCard
+        client={client}
+        today={today}
+        onOpen={() => open(navigate, client.id, { tab: "Timeline" })}
+      />
+      <BodyweightCard
+        client={client}
+        today={today}
+        onOpen={() => open(navigate, client.id, { tab: "Timeline" })}
+      />
+      <ExpenditureCard
+        client={client}
+        today={today}
+        onOpen={() =>
+          open(navigate, client.id, { tab: "Plans", plan: "activity-targets" })
+        }
+      />
+      <PhysiqueCard
+        client={client}
+        state={state}
+        onOpenReview={openReview}
+        onOpenTemplate={() =>
+          client.assignment &&
+          navigate({
+            section: "templates",
+            editor: client.assignment.templateId,
+          })
+        }
+      />
+      <TrainingCard
+        client={client}
+        state={state}
+        today={today}
+        onOpen={() =>
+          open(navigate, client.id, { tab: "Plans", plan: "training" })
+        }
+      />
+    </div>
   );
 }

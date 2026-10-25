@@ -13,6 +13,12 @@ import {
 import type { CoachClient, CoachState } from "../model";
 import { isSupplementPlan } from "../supplements/model";
 import { isActivityTargetVersion } from "../targets/model";
+import {
+  isClientPhasePlan,
+  isClientPhases,
+  legacyPhasePlanToPhases,
+  normalizePhases,
+} from "./phase-planning";
 import { defaultExerciseLibrary } from "./training/library-model";
 import {
   type ClientPlans,
@@ -354,8 +360,26 @@ export function migrateCoachState(value: unknown): unknown {
   state.clients = state.clients.map((client) => {
     const base = emptyClientPlans();
     const old = client.plans as Partial<ClientPlans> | undefined;
+    // Legacy single phase plan {startDate, phases[]} → back-to-back phases.
+    const { phasePlan: legacyPhasePlan, ...clientRest } =
+      client as CoachClient & {
+        phasePlan?: unknown;
+      };
+    const phases = isClientPhases(client.phases)
+      ? normalizePhases(client.phases)
+      : isClientPhasePlan(legacyPhasePlan)
+        ? legacyPhasePlanToPhases(legacyPhasePlan)
+        : undefined;
     return {
-      ...client,
+      ...clientRest,
+      phases,
+      // Drop legacy event-level nutrition overrides; temporary plans replaced
+      // them and the event type no longer carries the field.
+      timelineEvents: (
+        client.timelineEvents as { nutritionOverride?: unknown }[] | undefined
+      )?.map(
+        ({ nutritionOverride: _dropped, ...event }) => event,
+      ) as CoachClient["timelineEvents"],
       plans: old
         ? {
             ...base,
@@ -371,6 +395,7 @@ export function migrateCoachState(value: unknown): unknown {
                 ...old.nutrition?.iifym,
                 history: old.nutrition?.iifym?.history ?? [],
               },
+              temporary: old.nutrition?.temporary,
             },
             training: old.training
               ? { ...old.training, history: old.training.history ?? [] }
@@ -453,6 +478,7 @@ const training = (v: unknown) =>
   string(v.startDate) &&
   ["Evergreen", "Week-based"].includes(String(v.program)) &&
   number(v.weeks) &&
+  (v.focus === undefined || string(v.focus)) &&
   (v.rotation === undefined || trainingRotation(v.rotation)) &&
   record(v.overrides) &&
   Object.entries(v.overrides).every(
@@ -491,6 +517,17 @@ const training = (v: unknown) =>
           ),
       ),
   );
+const temporaryNutrition = (v: unknown) =>
+  record(v) &&
+  string(v.id) &&
+  ["refeed", "diet-break", "custom"].includes(String(v.kind)) &&
+  string(v.label) &&
+  string(v.startDate) &&
+  string(v.endDate) &&
+  string(v.createdAt) &&
+  (v.source === "mealPlan"
+    ? isMealPlan(v.plan)
+    : v.source === "iifym" && iifym(v.plan));
 function lifecycle(v: unknown, guard: (x: unknown) => boolean): boolean {
   const version = (x: unknown) =>
     record(x) &&
@@ -511,10 +548,24 @@ export function isClientPlans(v: unknown): v is ClientPlans {
     record(v.nutrition) &&
     lifecycle(v.nutrition.mealPlan, isMealPlan) &&
     lifecycle(v.nutrition.iifym, iifym) &&
+    (v.nutrition.temporary === undefined ||
+      array(v.nutrition.temporary, temporaryNutrition)) &&
     lifecycle(v.training, training) &&
     (v.activityTargets === undefined ||
       array(v.activityTargets, isActivityTargetVersion)) &&
     (v.supplements === undefined || isSupplementPlan(v.supplements)) &&
+    (v.otherTargets === undefined ||
+      array(
+        v.otherTargets,
+        (t) =>
+          record(t) &&
+          string(t.id) &&
+          string(t.fieldId) &&
+          ["minimum", "maximum", "range", "exact"].includes(t.kind as string) &&
+          (t.value === undefined || number(t.value)) &&
+          (t.min === undefined || number(t.min)) &&
+          (t.max === undefined || number(t.max)),
+      )) &&
     array(
       v.goals,
       (g) =>

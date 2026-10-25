@@ -1,3 +1,4 @@
+import type { TrackerEntry } from "../ethereal/client-tracker/model";
 import {
   createInitialClients,
   type WorkspaceClient,
@@ -7,6 +8,7 @@ import {
   isAthleteOverviewSetting,
 } from "./athlete/overview-widgets";
 import { isTimelineEvent, type TimelineEvent } from "./athlete/timeline";
+import { adoptAthleteDataDemo } from "./athlete-data-demo";
 import { adoptAthleteProfileDemo } from "./athlete-profile-demo";
 import {
   createDashboardDraft,
@@ -15,10 +17,7 @@ import {
 } from "./builder/schema";
 import { adoptClientAppDemo } from "./client-app-demo";
 import { isClientPlans, plansOwnedBy, planTargets } from "./plans/domain";
-import {
-  type ClientPhasePlan,
-  isClientPhasePlan,
-} from "./plans/phase-planning";
+import { type ClientPhase, isClientPhase } from "./plans/phase-planning";
 import { adoptAmaraTrainingExample } from "./plans/training/amara-example";
 import type {
   TrainingOptionKey,
@@ -70,8 +69,6 @@ export type Route = {
   review?: string;
   plan?: string;
   tab?: string;
-  /** Template editor section to open (e.g. "Athlete overview"). */
-  templateSection?: string;
 };
 export type Parameter = {
   id: string;
@@ -144,6 +141,16 @@ export const PARAMETERS: Parameter[] = [
     "Adherence",
   ]),
   parameter("protein", "Protein intake", "Nutrition", ["g"], 140, [
+    "Weekly average",
+    "Target vs actual",
+    "Adherence",
+  ]),
+  parameter("carbs", "Carbohydrate intake", "Nutrition", ["g"], 220, [
+    "Weekly average",
+    "Target vs actual",
+    "Adherence",
+  ]),
+  parameter("fat", "Fat intake", "Nutrition", ["g"], 60, [
     "Weekly average",
     "Target vs actual",
     "Adherence",
@@ -675,9 +682,13 @@ export type Plan = {
 };
 export type CoachClient = WorkspaceClient & {
   assignment?: Assignment;
-  phasePlan?: ClientPhasePlan;
+  phases?: ClientPhase[];
   contestDate?: string;
   timelineEvents?: TimelineEvent[];
+  /** Persisted client tracker log; falls back to `entries` when absent. */
+  tracking?: { entries: TrackerEntry[]; text: Record<string, string> };
+  /** Coach notes per timeline week, keyed by the week's Monday ISO date. */
+  weekNotes?: Record<string, string>;
   schedules: Schedule[];
   plan: Plan;
   plans?: ClientPlans;
@@ -692,12 +703,18 @@ export type CoachClient = WorkspaceClient & {
   habits: {
     id: string;
     name: string;
-    frequency: string;
+    frequency: string | HabitFrequency;
     goal: string;
     reason: string;
     completed: number;
   }[];
+  habitLog?: Record<string, string[]>;
 };
+export type HabitFrequency =
+  | { kind: "daily" }
+  | { kind: "per-week"; count: number }
+  | { kind: "every-n-days"; n: number }
+  | { kind: "weekdays"; days: number[] };
 export type Media = {
   id: string;
   name: string;
@@ -727,6 +744,7 @@ export type Submission = {
   answers: { question: string; answer: string }[];
   metrics: string[];
   visuals: string[];
+  photos?: { pose: string; src: string }[];
   note: string;
   flags: { exercise: string; set: number; date: string; text: string }[];
   response?: { text: string; video?: Media; changes: string[]; date: string };
@@ -753,6 +771,7 @@ export type CoachState = {
     clientAppDemo?: 1;
     trainingLogDemo?: 1;
     athleteProfileDemo?: 1;
+    athleteDataDemo?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
   };
   exerciseLibrary?: ExerciseDefinition[];
   coachNotes?: { id: string; text: string }[];
@@ -771,6 +790,17 @@ export type CoachState = {
   extras: Extra[];
   submissions: Submission[];
   trainingLogs?: TrainingSessionLog[];
+  /** Coach-wide timeline-tab views (column lists); built-ins are
+   *  reorderable but not deletable. */
+  timelineViews?: {
+    id: string;
+    name: string;
+    columns: string[];
+    builtIn?: boolean;
+    compare?: boolean;
+  }[];
+  /** Coach-wide week ordering on the timeline tab. */
+  timelineOrder?: "newest" | "oldest";
   messages: Message[];
   drafts: Record<
     string,
@@ -1464,9 +1494,12 @@ export function seedState(): CoachState {
       priorityNotifications: true,
     },
   };
-  return adoptAthleteProfileDemo(
-    adoptTrainingLogDemo(
-      adoptClientAppDemo(adoptAmaraTrainingExample(seeded), localToday()),
+  return adoptAthleteDataDemo(
+    adoptAthleteProfileDemo(
+      adoptTrainingLogDemo(
+        adoptClientAppDemo(adoptAmaraTrainingExample(seeded), localToday()),
+        localToday(),
+      ),
       localToday(),
     ),
     localToday(),
@@ -1507,6 +1540,11 @@ const dict =
     typeof v === "object" &&
     !Array.isArray(v) &&
     Object.values(v).every(g);
+const isHabitFrequency: Guard = (v) =>
+  obj({ kind: one(["daily"]) })(v) ||
+  obj({ kind: one(["per-week"]), count: num })(v) ||
+  obj({ kind: one(["every-n-days"]), n: num })(v) ||
+  obj({ kind: one(["weekdays"]), days: arr(num) })(v);
 const date: Guard = (v) =>
   typeof v === "string" &&
   /^\d{4}-\d{2}-\d{2}$/.test(v) &&
@@ -1659,7 +1697,7 @@ const clientGuard = obj({
   coachingSince: str,
   priorityMessages: bool,
   archived: bool,
-  internalNotes: arr(obj({ id: str, text: str })),
+  internalNotes: arr(obj({ id: str, text: str, pinned: opt(bool) })),
   generalNotes: arr(obj({ id: str, text: str })),
   coachTasks: arr(
     obj({
@@ -1686,7 +1724,7 @@ const clientGuard = obj({
       obj({
         id: str,
         name: str,
-        frequency: str,
+        frequency: (v) => str(v) || isHabitFrequency(v),
         goal: str,
         reason: str,
         completed: num,
@@ -1710,14 +1748,33 @@ const clientGuard = obj({
     obj({ date, weight: num, sleep: num, steps: num, calories: num }),
   ),
   habits: arr(
-    obj({ name: str, frequency: str, goal: str, reason: str, completed: num }),
+    obj({
+      name: str,
+      frequency: (v) => str(v) || isHabitFrequency(v),
+      goal: str,
+      reason: str,
+      completed: num,
+    }),
   ),
+  habitLog: opt(dict(arr(str))),
   assignment: opt(
     obj({ templateId: str, variantId: str, snapshot: templateGuard }),
   ),
-  phasePlan: opt(isClientPhasePlan),
+  phases: opt(arr(isClientPhase)),
   contestDate: opt(date),
   timelineEvents: opt(arr(isTimelineEvent)),
+  tracking: opt(
+    obj({
+      entries: arr(
+        obj({
+          date,
+          values: dict((v) => v === null || num(v)),
+        }),
+      ),
+      text: dict(str),
+    }),
+  ),
+  weekNotes: opt(dict(str)),
 });
 export function isCoachState(v: unknown): v is CoachState {
   return (
@@ -1729,6 +1786,7 @@ export function isCoachState(v: unknown): v is CoachState {
           clientAppDemo: opt(one([1])),
           trainingLogDemo: opt(one([1])),
           athleteProfileDemo: opt(one([1])),
+          athleteDataDemo: opt(one([1, 2, 3, 4, 5, 6, 7, 8])),
         }),
       ),
       exerciseLibrary: opt(
@@ -1743,6 +1801,18 @@ export function isCoachState(v: unknown): v is CoachState {
         ),
       ),
       coachNotes: opt(arr(obj({ id: str, text: str }))),
+      timelineViews: opt(
+        arr(
+          obj({
+            id: str,
+            name: str,
+            columns: arr(str),
+            builtIn: opt(bool),
+            compare: opt(bool),
+          }),
+        ),
+      ),
+      timelineOrder: opt(one(["newest", "oldest"])),
       coachTodos: opt(
         arr(
           obj({
@@ -1836,6 +1906,7 @@ export function isCoachState(v: unknown): v is CoachState {
           answers: arr(obj({ question: str, answer: str })),
           metrics: arr(str),
           visuals: arr(str),
+          photos: opt(arr(obj({ pose: str, src: str }))),
           note: str,
           flags: arr(obj({ exercise: str, set: num, date, text: str })),
           response: opt(

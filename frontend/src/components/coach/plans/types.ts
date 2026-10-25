@@ -69,6 +69,8 @@ export type TrainingPlan = {
   weeks: number;
   overrides: Record<string, TrainingSession[]>;
   rotation?: TrainingRotation;
+  /** Coach-authored focus line shown on the athlete profile. */
+  focus?: string;
 };
 export type ClientGoal = {
   id: string;
@@ -76,6 +78,15 @@ export type ClientGoal = {
   value: number;
   unit: string;
   date: string;
+};
+/** Date-less metric target ("sleep ≥ 7.5 h", "water 4–5 L"). */
+export type ClientOtherTarget = {
+  id: string;
+  fieldId: string;
+  kind: "minimum" | "maximum" | "range" | "exact";
+  value?: number;
+  min?: number;
+  max?: number;
 };
 export type LogField = "weight" | "reps" | "rpe" | "rir" | "note";
 export type LoggedSet = {
@@ -112,13 +123,26 @@ export type TrainingSessionLog = {
   startedAt: string;
   finishedAt?: string;
 };
+export type TemporaryNutrition = {
+  id: string;
+  kind: "refeed" | "diet-break" | "custom";
+  label: string;
+  startDate: string;
+  endDate: string;
+  source: "mealPlan" | "iifym";
+  plan: MealPlan | IifymPlan;
+  createdAt: string;
+};
 export type ClientPlans = {
   nutrition: {
     mealPlan: PlanLifecycle<MealPlan>;
     iifym: PlanLifecycle<IifymPlan>;
+    /** Coach-scoped temporary plans applied by date range. */
+    temporary?: TemporaryNutrition[];
   };
   training: PlanLifecycle<TrainingPlan>;
   goals: ClientGoal[];
+  otherTargets?: ClientOtherTarget[];
   activityTargets?: ActivityTargetVersion[];
   supplements?: SupplementPlan;
 };

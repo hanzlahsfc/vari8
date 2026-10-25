@@ -790,8 +790,8 @@ export function ActiveClientNutrition({
   date?: string;
   /** When set, the picker becomes controlled by the parent. */
   onDateChange?: (date: string) => void;
-  /** Timeline override option applied instead of the scheduled one. */
-  override?: { optionId: string };
+  /** Temporary plan (or a specific option) applied instead of the schedule. */
+  override?: { plan?: MealPlan | IifymPlan; optionId?: string };
 }) {
   const [internalDate, setInternalDate] = useState(date);
   const selectedDate = onDateChange ? date : internalDate;
@@ -817,7 +817,9 @@ export function ActiveClientNutrition({
       </>
     );
   if (setup.nutrition === "IIFYM") {
-    const plan = applicablePlan(p.nutrition.iifym, selectedDate);
+    const plan =
+      (override?.plan as IifymPlan | undefined) ??
+      applicablePlan(p.nutrition.iifym, selectedDate);
     const option = plan
       ? override?.optionId &&
         plan.options.some((o) => o.id === override.optionId)
@@ -842,7 +844,9 @@ export function ActiveClientNutrition({
       </>
     );
   }
-  const plan = applicablePlan(p.nutrition.mealPlan, selectedDate);
+  const plan =
+    (override?.plan as MealPlan | undefined) ??
+    applicablePlan(p.nutrition.mealPlan, selectedDate);
   if (!plan)
     return (
       <>

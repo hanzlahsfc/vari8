@@ -1,9 +1,19 @@
-import { access, readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const sourceRoot = new URL("../../../", import.meta.url);
 
 export async function resolve(specifier, context, nextResolve) {
+  if (
+    specifier === "./targets/model" &&
+    context.parentURL?.startsWith("data:text/javascript")
+  ) {
+    return {
+      url: new URL("../targets/model.ts", import.meta.url).href,
+      shortCircuit: true,
+    };
+  }
   if (
     specifier === "./plans/domain" &&
     context.parentURL?.startsWith("data:text/javascript")
@@ -23,38 +33,11 @@ export async function resolve(specifier, context, nextResolve) {
     };
   }
   if (
-    specifier === "./plans/training/amara-example" &&
+    specifier === "./client-app-demo" &&
     context.parentURL?.startsWith("data:text/javascript")
   ) {
     return {
-      url: new URL("./training/amara-example.ts", import.meta.url).href,
-      shortCircuit: true,
-    };
-  }
-  if (
-    specifier === "./targets/model" &&
-    context.parentURL?.startsWith("data:text/javascript")
-  ) {
-    return {
-      url: new URL("../targets/model.ts", import.meta.url).href,
-      shortCircuit: true,
-    };
-  }
-  if (
-    specifier === "./athlete/overview-widgets" &&
-    context.parentURL?.startsWith("data:text/javascript")
-  ) {
-    return {
-      url: new URL("../athlete/overview-widgets.ts", import.meta.url).href,
-      shortCircuit: true,
-    };
-  }
-  if (
-    specifier === "./athlete/timeline" &&
-    context.parentURL?.startsWith("data:text/javascript")
-  ) {
-    return {
-      url: new URL("../athlete/timeline.ts", import.meta.url).href,
+      url: new URL("../client-app-demo.ts", import.meta.url).href,
       shortCircuit: true,
     };
   }
@@ -68,11 +51,11 @@ export async function resolve(specifier, context, nextResolve) {
     };
   }
   if (
-    specifier === "./client-app-demo" &&
+    specifier === "./athlete-data-demo" &&
     context.parentURL?.startsWith("data:text/javascript")
   ) {
     return {
-      url: new URL("../client-app-demo.ts", import.meta.url).href,
+      url: new URL("../athlete-data-demo.ts", import.meta.url).href,
       shortCircuit: true,
     };
   }
@@ -85,19 +68,44 @@ export async function resolve(specifier, context, nextResolve) {
       shortCircuit: true,
     };
   }
+  if (
+    specifier === "./athlete/timeline" &&
+    context.parentURL?.startsWith("data:text/javascript")
+  ) {
+    return {
+      url: new URL("../athlete/timeline.ts", import.meta.url).href,
+      shortCircuit: true,
+    };
+  }
+  if (
+    specifier === "./athlete/overview-widgets" &&
+    context.parentURL?.startsWith("data:text/javascript")
+  ) {
+    return {
+      url: new URL("../athlete/overview-widgets.ts", import.meta.url).href,
+      shortCircuit: true,
+    };
+  }
+  if (
+    specifier === "./plans/training/amara-example" &&
+    context.parentURL?.startsWith("data:text/javascript")
+  ) {
+    return {
+      url: new URL("./training/amara-example.ts", import.meta.url).href,
+      shortCircuit: true,
+    };
+  }
   if (specifier.startsWith("@/")) {
     const path = new URL(specifier.slice(2), sourceRoot);
-    const url = pathToFileURL(fileURLToPath(path)).href;
-    if (/\.[a-z0-9]+$/i.test(url)) return { url, shortCircuit: true };
-    for (const extension of [".ts", ".tsx", ".mjs", ".js", ".json"]) {
-      try {
-        await access(fileURLToPath(`${url}${extension}`));
-        return { url: `${url}${extension}`, shortCircuit: true };
-      } catch {
-        // Try the next extension.
-      }
-    }
-    return { url, shortCircuit: true };
+    const file = fileURLToPath(path);
+    if (!/\.[a-z]+$/.test(file) && !existsSync(file))
+      for (const ext of [".ts", ".tsx", ".js", ".json"])
+        if (existsSync(file + ext))
+          return {
+            url: pathToFileURL(file + ext).href,
+            shortCircuit: true,
+          };
+    return { url: pathToFileURL(file).href, shortCircuit: true };
   }
   if (specifier.startsWith(".") && !/\.[cm]?[jt]sx?$/.test(specifier)) {
     try {

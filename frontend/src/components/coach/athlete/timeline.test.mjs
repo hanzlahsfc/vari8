@@ -58,6 +58,25 @@ const mealPlan = {
   reusableMeals: [],
 };
 
+const refeedTempPlan = {
+  ...mealPlan,
+  id: "mp-refeed-copy",
+  name: "Meal plan (refeed copy)",
+  variants: [{ id: "rf-high", label: "High carb", meals: [] }],
+  schedule: { mode: "manual", selectedVariantId: "rf-high" },
+};
+
+const temporaryRefeed = {
+  id: "temp-1",
+  kind: "refeed",
+  label: "Refeed",
+  startDate: "2026-10-24",
+  endDate: "2026-10-25",
+  source: "mealPlan",
+  plan: refeedTempPlan,
+  createdAt: "2026-10-20T08:00:00Z",
+};
+
 const client = {
   id: "c1",
   assignment: {
@@ -94,6 +113,7 @@ const client = {
         history: [],
       },
       iifym: { history: [] },
+      temporary: [temporaryRefeed],
     },
     training: {
       active: {
@@ -113,7 +133,6 @@ const client = {
       startDate: "2026-10-24",
       endDate: "2026-10-24",
       note: "Higher carbs",
-      nutritionOverride: { source: "mealPlan", optionId: "refeed" },
     },
     {
       id: "ev-deload",
@@ -123,13 +142,20 @@ const client = {
       note: "Recovery week",
     },
   ],
-  phasePlan: {
-    startDate: "2026-10-12",
-    phases: [
-      { id: "p1", name: "Contest prep", durationWeeks: 6 },
-      { id: "p2", name: "Peak week", durationWeeks: 1 },
-    ],
-  },
+  phases: [
+    {
+      id: "p1",
+      name: "Contest prep",
+      startDate: "2026-10-12",
+      durationWeeks: 6,
+    },
+    {
+      id: "p2",
+      name: "Peak week",
+      startDate: "2026-11-23",
+      durationWeeks: 1,
+    },
+  ],
   contestDate: "2026-11-29",
   entries: [
     { date: "2026-10-09", weight: 72.4, sleep: 7, steps: 8000, calories: 2000 },
@@ -261,7 +287,6 @@ test("validateTimelineEvent accepts a valid refeed", () => {
     startDate: "2026-10-31",
     endDate: "2026-11-01",
     note: "",
-    nutritionOverride: { source: "mealPlan", optionId: "refeed" },
   };
   assert.equal(validateTimelineEvent(client, event), null);
 });
@@ -311,7 +336,9 @@ test("validateTimelineEvent rejects overlapping same-kind events", () => {
   );
 });
 
-test("validateTimelineEvent rejects an override option missing from the plan", () => {
+test("validateTimelineEvent ignores stray override fields on stored events", () => {
+  // Event-level nutrition overrides were replaced by temporary plans; a
+  // stored object still carrying the field validates like a plain tag.
   const event = {
     id: "new",
     kind: "diet-break",
@@ -320,16 +347,7 @@ test("validateTimelineEvent rejects an override option missing from the plan", (
     note: "",
     nutritionOverride: { source: "mealPlan", optionId: "missing" },
   };
-  assert.match(validateTimelineEvent(client, event), /option|plan/i);
-  // Deload carries no override.
-  assert.equal(
-    validateTimelineEvent(client, {
-      ...event,
-      kind: "deload",
-      nutritionOverride: { source: "mealPlan", optionId: "missing" },
-    }),
-    null,
-  );
+  assert.equal(validateTimelineEvent(client, event), null);
 });
 
 test("eventsOnDate returns covering events only", () => {
@@ -350,32 +368,85 @@ test("nutritionForDate returns the scheduled option on regular days", () => {
   assert.equal(resolved.optionId, "train");
   assert.equal(resolved.label, "Training day");
   assert.equal(resolved.source, "mealPlan");
-  assert.equal(resolved.event, undefined);
-  // Saturday 2026-10-24 would be "rest" without the override.
-  const overridden = nutritionForDate(client, "2026-10-24");
-  assert.equal(overridden.optionId, "refeed");
-  assert.equal(overridden.label, "Refeed day");
-  assert.equal(overridden.event?.id, "ev-refeed");
+  assert.equal(resolved.temporary, undefined);
+  // Monday 2026-10-26 is outside the temporary window.
+  const after = nutritionForDate(client, "2026-10-26");
+  assert.equal(after.optionId, "train");
+  assert.equal(after.temporary, undefined);
 });
 
-test("nutritionForDate ignores deload events and wrong-source overrides", () => {
-  const withDeload = nutritionForDate(client, "2026-11-03");
-  assert.equal(withDeload.optionId, "train");
-  assert.equal(withDeload.event, undefined);
-  const iifymOnly = {
+test("nutritionForDate resolves a covering temporary plan", () => {
+  // Saturday 2026-10-24 would be "rest" on the regular schedule; the
+  // temporary plan replaces plan + option entirely.
+  const resolved = nutritionForDate(client, "2026-10-24");
+  assert.equal(resolved.temporary?.id, "temp-1");
+  assert.equal(resolved.plan.id, "mp-refeed-copy");
+  assert.equal(resolved.optionId, "rf-high");
+  assert.equal(resolved.label, "High carb");
+});
+
+test("nutritionForDate picks the temporary plan created latest", () => {
+  const older = {
+    ...temporaryRefeed,
+    id: "temp-old",
+    plan: { ...refeedTempPlan, id: "old-copy" },
+    createdAt: "2026-10-18T08:00:00Z",
+  };
+  const newer = {
+    ...temporaryRefeed,
+    id: "temp-new",
+    plan: { ...refeedTempPlan, id: "new-copy" },
+    createdAt: "2026-10-21T08:00:00Z",
+  };
+  const overlapping = {
+    ...client,
+    plans: {
+      ...client.plans,
+      nutrition: {
+        ...client.plans.nutrition,
+        temporary: [older, newer],
+      },
+    },
+  };
+  const resolved = nutritionForDate(overlapping, "2026-10-24");
+  assert.equal(resolved.temporary?.id, "temp-new");
+  assert.equal(resolved.plan.id, "new-copy");
+});
+
+test("nutritionForDate ignores temporary plans of the other source", () => {
+  const iifymTemp = { ...temporaryRefeed, source: "iifym" };
+  const other = {
+    ...client,
+    plans: {
+      ...client.plans,
+      nutrition: {
+        ...client.plans.nutrition,
+        temporary: [iifymTemp],
+      },
+    },
+  };
+  const resolved = nutritionForDate(other, "2026-10-24");
+  assert.equal(resolved.temporary, undefined);
+  assert.equal(resolved.optionId, "rest");
+});
+
+test("nutritionForDate ignores legacy event-level overrides", () => {
+  const legacy = {
     ...client,
     timelineEvents: [
       {
         id: "ev-x",
         kind: "refeed",
-        startDate: "2026-10-24",
-        endDate: "2026-10-24",
+        startDate: "2026-10-26",
+        endDate: "2026-10-26",
         note: "",
-        nutritionOverride: { source: "iifym", optionId: "opt" },
+        nutritionOverride: { source: "mealPlan", optionId: "refeed" },
       },
     ],
   };
-  assert.equal(nutritionForDate(iifymOnly, "2026-10-24").optionId, "rest");
+  const resolved = nutritionForDate(legacy, "2026-10-26");
+  assert.equal(resolved.optionId, "train");
+  assert.equal(resolved.temporary, undefined);
 });
 
 test("weeksOut counts calendar weeks until the contest", () => {
@@ -385,11 +456,11 @@ test("weeksOut counts calendar weeks until the contest", () => {
 });
 
 test("currentPhase returns the phase and week within it", () => {
-  const phase = currentPhase(client.phasePlan, TODAY);
+  const phase = currentPhase(client.phases, TODAY);
   assert.equal(phase.name, "Contest prep");
   assert.equal(phase.week, 2);
   assert.equal(phase.weeks, 6);
-  assert.equal(currentPhase(client.phasePlan, "2027-02-01"), undefined);
+  assert.equal(currentPhase(client.phases, "2027-02-01"), undefined);
 });
 
 test("attentionItems surfaces check-ins, flagged notes, missed and open sessions", () => {

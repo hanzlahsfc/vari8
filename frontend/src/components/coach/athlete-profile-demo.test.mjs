@@ -18,7 +18,7 @@ function baseWithoutDemo() {
     client.id === "client-007"
       ? {
           ...client,
-          phasePlan: undefined,
+          phases: undefined,
           contestDate: undefined,
           timelineEvents: undefined,
           plans: client.plans
@@ -61,22 +61,23 @@ test("adoptAthleteProfileDemo seeds client-007 and sets the flag", () => {
     ATHLETE_PROFILE_DEMO_REVISION,
   );
   const amara = clientOf(state);
-  assert.ok(amara.phasePlan);
+  assert.ok(amara.phases);
   assert.ok(amara.contestDate);
-  assert.equal(amara.phasePlan.phases.length, 3);
-  assert.ok(amara.timelineEvents.length >= 4);
+  assert.equal(amara.phases.length, 2);
+  assert.ok(amara.timelineEvents.length >= 3);
   const kinds = amara.timelineEvents.map((e) => e.kind);
   assert.ok(kinds.includes("refeed"));
   assert.ok(kinds.includes("deload"));
   assert.ok(kinds.includes("diet-break"));
-  // A refeed lands two days out and overrides nutrition for that date.
+  // A refeed lands two days out as a plain week tag (temporary plans own
+  // nutrition swaps now).
   const refeed = amara.timelineEvents.find(
     (e) => e.kind === "refeed" && e.startDate === "2026-10-24",
   );
-  assert.ok(refeed?.nutritionOverride);
+  assert.ok(refeed);
+  assert.equal(refeed.nutritionOverride, undefined);
   const resolved = nutritionForDate(amara, "2026-10-24");
-  assert.equal(resolved.event?.id, refeed.id);
-  assert.equal(resolved.label, "Refeed day");
+  assert.ok(resolved.optionId);
   assert.ok(isCoachState(state));
 });
 
@@ -99,18 +100,17 @@ test("other clients are untouched", () => {
 
 test("existing phase plan and contest date are preserved", () => {
   const base = baseWithoutDemo();
-  const existing = {
-    startDate: "2026-09-01",
-    phases: [{ id: "x", name: "Mine", durationWeeks: 4 }],
-  };
+  const existing = [
+    { id: "x", name: "Mine", startDate: "2026-09-01", durationWeeks: 4 },
+  ];
   const clients = base.clients.map((client) =>
     client.id === "client-007"
-      ? { ...client, phasePlan: existing, contestDate: "2026-12-31" }
+      ? { ...client, phases: existing, contestDate: "2026-12-31" }
       : client,
   );
   const state = adoptAthleteProfileDemo({ ...base, clients }, TODAY);
   const amara = clientOf(state);
-  assert.deepEqual(amara.phasePlan, existing);
+  assert.deepEqual(amara.phases, existing);
   assert.equal(amara.contestDate, "2026-12-31");
 });
 

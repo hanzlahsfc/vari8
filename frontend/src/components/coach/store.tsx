@@ -11,6 +11,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { adoptAthleteDataDemo } from "./athlete-data-demo";
 import { adoptAthleteProfileDemo } from "./athlete-profile-demo";
 import { adoptClientAppDemo } from "./client-app-demo";
 import {
@@ -49,14 +50,7 @@ export function useCoach() {
 }
 export function routeUrl(route: Route) {
   const q = new URLSearchParams({ section: route.section });
-  for (const key of [
-    "client",
-    "editor",
-    "review",
-    "plan",
-    "tab",
-    "templateSection",
-  ] as const)
+  for (const key of ["client", "editor", "review", "plan", "tab"] as const)
     if (route[key]) q.set(key, route[key]);
   return `/coach?${q.toString()}`;
 }
@@ -87,7 +81,6 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     review: params.get("review") ?? undefined,
     plan: params.get("plan") ?? undefined,
     tab: params.get("tab") ?? undefined,
-    templateSection: params.get("templateSection") ?? undefined,
   };
   useEffect(() => {
     try {
@@ -97,10 +90,13 @@ export function CoachProvider({ children }: { children: ReactNode }) {
         if (isCoachState(parsed))
           setState(
             normalizeTemplateSetups(
-              adoptAthleteProfileDemo(
-                adoptTrainingLogDemo(
-                  adoptClientAppDemo(
-                    adoptAmaraTrainingExample(parsed),
+              adoptAthleteDataDemo(
+                adoptAthleteProfileDemo(
+                  adoptTrainingLogDemo(
+                    adoptClientAppDemo(
+                      adoptAmaraTrainingExample(parsed),
+                      localToday(),
+                    ),
                     localToday(),
                   ),
                   localToday(),

@@ -27,11 +27,28 @@
   --cd-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --font-ui: "Coach Geist", system-ui, sans-serif;
   min-height: 100dvh;
+  position: relative;
   background: var(--cd-bg);
   color: var(--cd-text);
   font: 15px / 1.5 var(--font-ui);
   font-optical-sizing: auto;
   isolation: isolate;
+}
+/* Fill the sidebar column for the full document height — the fixed sidebar
+   only paints one viewport in long pages and full-page captures. */
+.coach-root::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--cd-sidebar-width);
+  background: var(--v8-surface-navigation);
+  border-right: 1px solid var(--cd-line);
+  z-index: -1;
+}
+@media (max-width: 760px) {
+  .coach-root::before {
+    display: none;
+  }
 }
 .coach-root ::selection {
   background: var(--cd-action-bg);
@@ -312,6 +329,9 @@
 }
 .coach-root .cd-main.cd-main-wide {
   max-width: 1760px;
+}
+.coach-root .cd-main.cd-main-clients {
+  max-width: 1680px;
 }
 .coach-root .cd-main:focus {
   outline: none;

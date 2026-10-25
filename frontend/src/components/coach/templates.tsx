@@ -31,7 +31,6 @@ import {
   Select as Vari8Select,
 } from "../vari8/components";
 import { TextArea } from "../vari8/inputs";
-import { resolveOverviewWidgets } from "./athlete/overview-widgets";
 import { bindDashboardUnits } from "./builder/coach-dashboard";
 import { ClientPreview } from "./client-preview";
 import {
@@ -52,6 +51,7 @@ import {
   uid,
   type Variant,
 } from "./model";
+import { habitFrequencyLabel, parseHabitFrequency } from "./plans/habits";
 import {
   DEFAULT_TRAINING_DEFAULTS,
   DEFAULT_TRAINING_OPTIONS,
@@ -438,7 +438,6 @@ export function TemplateLibrary() {
 }
 const EDITOR_SECTIONS = [
   "Tabs",
-  "Athlete overview",
   "Tracker",
   "Timeline / Roadmap",
   "Nutrition",
@@ -447,7 +446,6 @@ const EDITOR_SECTIONS = [
   "Habits",
 ];
 const PREVIEW_TAB_BY_SECTION: Record<string, string> = {
-  "Athlete overview": "Dashboard",
   Tracker: "Tracker",
   "Timeline / Roadmap": "Timeline / Roadmap",
   Nutrition: "Nutrition",
@@ -460,11 +458,7 @@ export function TemplateEditor({ id }: { id: string }) {
   const saved = state.templates.find((t) => t.id === id);
   const fresh = useMemo(() => newTemplate(id), [id]);
   const draft = state.editorDrafts[id] ?? saved ?? fresh;
-  const [section, setSection] = useState(() =>
-    route.templateSection && EDITOR_SECTIONS.includes(route.templateSection)
-      ? route.templateSection
-      : "Tabs",
-  );
+  const [section, setSection] = useState("Tabs");
   const [preview, setPreview] = useState(false);
   const [error, setError] = useState("");
   const [leaving, setLeaving] = useState<Route | null>(null);
@@ -694,9 +688,6 @@ export function TemplateEditor({ id }: { id: string }) {
                 </div>
               </>
             )}
-            {section === "Athlete overview" && (
-              <AthleteOverviewConfig variant={variant} update={updateVariant} />
-            )}
             {section === "Tracker" && (
               <TrackerConfig variant={variant} update={updateVariant} />
             )}
@@ -867,78 +858,6 @@ function OrderButtons({
         <ArrowDown size={13} />
       </IconButton>
     </span>
-  );
-}
-function AthleteOverviewConfig({
-  variant,
-  update,
-}: {
-  variant: Variant;
-  update: (fn: (v: Variant) => Variant) => void;
-}) {
-  const widgets = resolveOverviewWidgets(variant.athleteOverview);
-  const write = (next: ReturnType<typeof resolveOverviewWidgets>) =>
-    update((v) => ({
-      ...v,
-      athleteOverview: {
-        widgets: next.map((widget) => ({
-          id: widget.id,
-          visible: widget.visible,
-        })),
-      },
-    }));
-  return (
-    <div className="cd-ao-config">
-      <p className="cd-muted">
-        Choose which widgets appear on the athlete profile overview and their
-        order. Small widgets span 3 of 12 columns, medium 6, Timeline the full
-        row.
-      </p>
-      <ul className="cd-ao-list">
-        {widgets.map((widget, index) => (
-          <li key={widget.id} className="cd-ao-row">
-            <Toggle
-              label={widget.title}
-              checked={widget.visible}
-              onChange={(visible) =>
-                write(
-                  widgets.map((w) =>
-                    w.id === widget.id ? { ...w, visible } : w,
-                  ),
-                )
-              }
-            />
-            <span className="cd-ao-width cd-muted">{widget.width}</span>
-            <OrderButtons
-              index={index}
-              length={widgets.length}
-              move={(to) => write(reorder(widgets, index, to))}
-            />
-          </li>
-        ))}
-      </ul>
-      <div className="cd-actions">
-        <Button
-          onClick={() => update((v) => ({ ...v, athleteOverview: undefined }))}
-        >
-          <RotateCcw size={14} />
-          Reset to default
-        </Button>
-      </div>
-      <h3>Preview</h3>
-      <div className="cd-ao-preview" aria-hidden="true">
-        {widgets
-          .filter((widget) => widget.visible)
-          .map((widget) => (
-            <div
-              key={widget.id}
-              className={`cd-ao-cell cd-ao-cell-${widget.width}`}
-            >
-              {widget.title}
-            </div>
-          ))}
-      </div>
-    </div>
   );
 }
 function TrackerConfig({
@@ -2318,7 +2237,9 @@ export function FormPreview({
               client.habits.map((habit) => (
                 <div className="cd-stat-row" key={habit.id}>
                   <span>
-                    {habit.name} · {habit.frequency} · {habit.goal}
+                    {habit.name} ·{" "}
+                    {habitFrequencyLabel(parseHabitFrequency(habit.frequency))}{" "}
+                    · {habit.goal}
                   </span>
                   <strong>{habit.completed} completed</strong>
                 </div>

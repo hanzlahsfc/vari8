@@ -5,7 +5,7 @@ import {
 } from "../ethereal/mealplan/model";
 import type { TimelineEvent } from "./athlete/timeline";
 import { type CoachClient, type CoachState, uid } from "./model";
-import { scheduledOption } from "./plans/domain";
+import { normalizePhases } from "./plans/phase-planning";
 import type { ClientPlans } from "./plans/types";
 import { addLocalDays } from "./targets/model";
 
@@ -23,8 +23,8 @@ function addEvent(existing: TimelineEvent[], event: TimelineEvent) {
 
 /**
  * Populate client-007 with the athlete-profile demo: a phase plan, contest
- * date, a "Refeed day" meal-plan variant and timeline events (refeed, deload,
- * diet break, one past refeed). Fills only missing data; runs once via
+ * date, a "Refeed day" meal-plan variant and timeline events (deload, diet
+ * break).. Fills only missing data; runs once via
  * demoSeeds.athleteProfileDemo.
  */
 export function adoptAthleteProfileDemo(
@@ -41,16 +41,24 @@ export function adoptAthleteProfileDemo(
   const client = state.clients[index];
   if (!client.assignment) return state;
 
-  // --- Phase plan + contest date (only when missing) ---
+  // --- Phases + contest date (only when missing) ---
   const phaseStart = addLocalDays(today, -42);
-  const phasePlan = client.phasePlan ?? {
-    startDate: phaseStart,
-    phases: [
-      { id: "phase-prep", name: "Contest prep", durationWeeks: 14 },
-      { id: "phase-peak", name: "Peak week", durationWeeks: 1 },
-      { id: "phase-post", name: "Post-show", durationWeeks: 6 },
-    ],
-  };
+  const phases =
+    client.phases ??
+    normalizePhases([
+      {
+        id: "phase-prep",
+        name: "Contest prep",
+        startDate: phaseStart,
+        durationWeeks: 15,
+      },
+      {
+        id: "phase-post",
+        name: "Recovery",
+        startDate: phaseStart,
+        durationWeeks: 6,
+      },
+    ]);
   const contestDate =
     client.contestDate ?? addLocalDays(phaseStart, 14 * 7 + 6);
 
@@ -92,50 +100,19 @@ export function adoptAthleteProfileDemo(
     }
   }
 
-  // Regular option for the diet break: whatever the schedule prescribes that
-  // day (her rest-day/daily option in this demo), else the first variant.
   const dietBreakStart = addLocalDays(today, 35);
-  const iifymPlan = plans?.nutrition.iifym.active?.content;
-  const dietBreakOverride = mealPlan
-    ? {
-        source: "mealPlan" as const,
-        optionId:
-          scheduledOption(
-            mealPlan.schedule,
-            mealPlan.variants.map((variant) => variant.id),
-            dietBreakStart,
-          ) ?? mealPlan.variants[0]?.id,
-      }
-    : iifymPlan
-      ? {
-          source: "iifym" as const,
-          optionId:
-            scheduledOption(
-              iifymPlan.schedule,
-              iifymPlan.options.map((option) => option.id),
-              dietBreakStart,
-            ) ?? iifymPlan.options[0]?.id,
-        }
-      : undefined;
 
   // --- Timeline events (append only; never overwrite) ---
+  // Refeed ids are stable so the athlete-data demo can swap the upcoming one
+  // for a temporary nutrition plan; events are plain week tags now.
   let events = [...(client.timelineEvents ?? [])];
   if (refeedVariantId) {
     events = addEvent(events, {
-      id: uid("timeline"),
+      id: "demo-refeed-upcoming",
       kind: "refeed",
       startDate: addLocalDays(today, 2),
       endDate: addLocalDays(today, 2),
       note: "Keep sodium consistent.",
-      nutritionOverride: { source: "mealPlan", optionId: refeedVariantId },
-    });
-    events = addEvent(events, {
-      id: uid("timeline"),
-      kind: "refeed",
-      startDate: addLocalDays(today, -9),
-      endDate: addLocalDays(today, -9),
-      note: "First refeed of the block.",
-      nutritionOverride: { source: "mealPlan", optionId: refeedVariantId },
     });
   }
   const deloadStart = addLocalDays(today, 21);
@@ -146,19 +123,17 @@ export function adoptAthleteProfileDemo(
     endDate: addLocalDays(deloadStart, 6),
     note: "Recovery week — reduce volume.",
   });
-  if (dietBreakOverride?.optionId)
-    events = addEvent(events, {
-      id: uid("timeline"),
-      kind: "diet-break",
-      startDate: dietBreakStart,
-      endDate: addLocalDays(dietBreakStart, 6),
-      note: "Eat at maintenance for the week.",
-      nutritionOverride: dietBreakOverride,
-    });
+  events = addEvent(events, {
+    id: uid("timeline"),
+    kind: "diet-break",
+    startDate: dietBreakStart,
+    endDate: addLocalDays(dietBreakStart, 6),
+    note: "Eat at maintenance for the week.",
+  });
 
   const nextClient: CoachClient = {
     ...client,
-    phasePlan,
+    phases,
     contestDate,
     timelineEvents: events.length ? events : client.timelineEvents,
     plans,

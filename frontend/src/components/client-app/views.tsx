@@ -7,10 +7,7 @@ import {
   type Food,
 } from "@/components/ethereal/mealplan/model";
 import foodSource from "@/data/food-database.json";
-import {
-  nutritionForDate,
-  TIMELINE_KIND_LABELS,
-} from "../coach/athlete/timeline";
+import { nutritionForDate } from "../coach/athlete/timeline";
 import {
   bindDashboardUnits,
   recordsForCoach,
@@ -31,7 +28,7 @@ import {
   TODAY,
   type Variant,
 } from "../coach/model";
-import { phaseForDate, phasePlanRanges } from "../coach/plans/phase-planning";
+import { phaseForDate, phaseRanges } from "../coach/plans/phase-planning";
 import { TrainingPrescription } from "../coach/plans/training/editor";
 import {
   ActiveClientNutrition,
@@ -46,9 +43,15 @@ import {
 } from "../coach/targets/model";
 import { TargetSummary } from "../coach/targets/target-summary";
 import { useLocalToday } from "../coach/targets/use-local-today";
-import { FormPreview } from "../coach/templates";
 import { trackerOverviewIds } from "../coach/tracker-setup";
+import {
+  clientTracking,
+  clientTrackingText,
+  withTrackingText,
+  withTrackingValue,
+} from "../coach/tracking/data";
 import { Empty } from "../coach/ui";
+import { CheckInForm } from "./check-in";
 import "../coach/client-preview.css";
 
 const foodMap = new Map<string, Food>(
@@ -120,24 +123,6 @@ export function trackerConfig(configuration: Variant): TrackerConfig {
   };
 }
 
-function trackerEntries(client: CoachClient): TrackerEntry[] {
-  return client.entries.map((entry) => ({
-    date: entry.date,
-    values: {
-      weight: entry.weight,
-      sleep: entry.sleep,
-      steps: entry.steps,
-      calories: entry.calories,
-      waist: null,
-      protein: null,
-      stress: null,
-      energy: null,
-      rhr: null,
-      fbg: null,
-    },
-  }));
-}
-
 function parameterGroups() {
   const groups: Record<string, string> = {};
   for (const parameter of ALL_PARAMETERS)
@@ -185,17 +170,28 @@ export function TrackerTab({
   example?: boolean;
 }) {
   const liveToday = useLocalToday();
-  const [initialHistory] = useState(() =>
+  const { setState } = useCoach();
+  const [exampleHistory, setExampleHistory] = useState<{
+    entries: TrackerEntry[];
+    textValues: Record<string, string>;
+  }>(() =>
     example
       ? createExampleHistory(trackerConfig(configuration), TODAY)
-      : { entries: trackerEntries(client), textValues: {} },
+      : { entries: [], textValues: {} },
   );
-  const [entries, setEntries] = useState(initialHistory.entries);
   const [comments, setComments] = useState<Record<string, string>>({});
-  const [textValues, setTextValues] = useState<Record<string, string>>(
-    initialHistory.textValues,
-  );
   const groups = useMemo(parameterGroups, []);
+  const entries = example ? exampleHistory.entries : clientTracking(client);
+  const textValues = example
+    ? exampleHistory.textValues
+    : clientTrackingText(client);
+  const writeClient = (update: (item: CoachClient) => CoachClient) =>
+    setState((current) => ({
+      ...current,
+      clients: current.clients.map((item) =>
+        item.id === client.id ? update(item) : item,
+      ),
+    }));
   return (
     <TrackingView
       config={trackerConfig(configuration)}
@@ -220,25 +216,34 @@ export function TrackerTab({
       parameterGroups={groups}
       comments={comments}
       textValues={textValues}
-      onUpdateText={(date, id, value) =>
-        setTextValues((current) => {
-          const next = { ...current };
+      onUpdateText={(date, id, value) => {
+        if (!example) {
+          writeClient((item) => withTrackingText(item, date, id, value));
+          return;
+        }
+        setExampleHistory((current) => {
+          const next = { ...current.textValues };
           if (value) next[`${date}:${id}`] = value;
           else delete next[`${date}:${id}`];
-          return next;
-        })
-      }
-      onUpdateValue={(date, id, value) =>
-        setEntries((current) =>
-          current.some((entry) => entry.date === date)
-            ? current.map((entry) =>
+          return { ...current, textValues: next };
+        });
+      }}
+      onUpdateValue={(date, id, value) => {
+        if (!example) {
+          writeClient((item) => withTrackingValue(item, date, id, value));
+          return;
+        }
+        setExampleHistory((current) => ({
+          ...current,
+          entries: current.entries.some((entry) => entry.date === date)
+            ? current.entries.map((entry) =>
                 entry.date === date
                   ? { ...entry, values: { ...entry.values, [id]: value } }
                   : entry,
               )
-            : [...current, { date, values: { [id]: value } }],
-        )
-      }
+            : [...current.entries, { date, values: { [id]: value } }],
+        }));
+      }}
       onSaveComment={(date, id, text) =>
         setComments((current) => {
           const next = { ...current };
@@ -279,8 +284,8 @@ export function RoadmapTab({
   const showPhases = configuration.roadmapPhases !== false;
   const currentWeek = monday(liveToday);
   const displayedCurrentPhase =
-    phaseForDate(client.phasePlan, liveToday) ?? client.phase;
-  const savedPhaseRanges = phasePlanRanges(client.phasePlan);
+    phaseForDate(client.phases, liveToday) ?? client.phase;
+  const savedPhaseRanges = phaseRanges(client.phases);
   if (!configuration.roadmap.length && !planning.length)
     return (
       <Empty title="No weekly metrics configured">
@@ -342,7 +347,7 @@ export function RoadmapTab({
                 {rows.map((row) => {
                   const isCurrent = row.start === currentWeek;
                   const phase =
-                    phaseForDate(client.phasePlan, row.start) ??
+                    phaseForDate(client.phases, row.start) ??
                     (isCurrent ? client.phase : "");
                   return (
                     <tr key={row.start}>
@@ -443,16 +448,16 @@ function ClientNutritionTab({ client }: { client: CoachClient }) {
   const resolved = nutritionForDate(client, date);
   return (
     <>
-      {resolved.event && (
+      {resolved.temporary && (
         <div className="cd-nutrition-banner" role="status">
           <strong className="cd-nutrition-banner-kind">
-            {TIMELINE_KIND_LABELS[resolved.event.kind]}
+            {resolved.temporary.label}
           </strong>
           <span className="cd-nutrition-banner-text">
-            {resolved.label
-              ? `${resolved.label} applies today`
-              : "applies today"}
-            {resolved.event.note ? ` · ${resolved.event.note}` : ""}
+            {resolved.temporary.startDate === resolved.temporary.endDate
+              ? formatDate(resolved.temporary.startDate)
+              : `${formatDate(resolved.temporary.startDate)} – ${formatDate(resolved.temporary.endDate)}`}
+            {resolved.label ? ` · ${resolved.label} applies` : ""}
           </span>
         </div>
       )}
@@ -461,8 +466,8 @@ function ClientNutritionTab({ client }: { client: CoachClient }) {
         date={date}
         onDateChange={setDate}
         override={
-          resolved.event?.nutritionOverride
-            ? { optionId: resolved.event.nutritionOverride.optionId }
+          resolved.temporary
+            ? { plan: resolved.temporary.plan, optionId: resolved.optionId }
             : undefined
         }
       />
@@ -797,10 +802,5 @@ export function CheckInTab({
   configuration: Variant;
   client: CoachClient;
 }) {
-  return (
-    <section className="cd-preview-section" aria-label="Check-in form">
-      <h2>Check-In</h2>
-      <FormPreview variant={configuration} custom={false} client={client} />
-    </section>
-  );
+  return <CheckInForm configuration={configuration} client={client} />;
 }
