@@ -42,8 +42,12 @@ async function main(): Promise<void> {
   const dbName = laneDbName(process.env.DATABASE_URL ?? "");
 
   const dir = dirname(fileURLToPath(import.meta.url));
+  const demoOn = process.env.VARI8_SEED_DEMO === "1";
   const files = readdirSync(dir)
     .filter((file) => file.endsWith(".seed.ts"))
+    // Opt-in demo profile (Stage 11): `*-demo-*.seed.ts` modules run only
+    // under VARI8_SEED_DEMO=1, keeping the default output byte-identical.
+    .filter((file) => demoOn || !file.includes("-demo-"))
     .sort();
   if (files.length === 0) throw new Error("no scripts/seed/*.seed.ts found");
 
