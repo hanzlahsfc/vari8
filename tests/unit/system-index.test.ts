@@ -270,10 +270,11 @@ describe("system index generator", () => {
       );
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
-      // Imported by the root layout, which wraps /, /coach, /dev/design-system (the frontend
-      // design system playground, dev only) and /ethereal.
+      // Imported by the root layout, which wraps /, /client, /coach,
+      // /dev/design-system (the frontend design system playground, dev only)
+      // and /ethereal.
       expect(row).toBe(
-        "| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /coach, /dev/design-system, /ethereal |",
+        "| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /client, /coach, /dev/design-system, /ethereal |",
       );
     }
   });
@@ -294,9 +295,10 @@ describe("system index generator", () => {
     expect(coach).not.toContain(
       "`frontend/src/components/ethereal/clients/clients-workspace.tsx`",
     );
-    // "meal plan editor" shows both, each under its surface.
+    // "meal plan editor" shows both, each under its surface; the client app
+    // reuses the coach NutritionEditor, so it maps to /client and /coach.
     expect(coach).toContain(
-      "| `NutritionEditor` | `frontend/src/components/coach/plans/nutrition/editor.tsx` | /coach |",
+      "| `NutritionEditor` | `frontend/src/components/coach/plans/nutrition/editor.tsx` | /client, /coach |",
     );
     expect(ethereal).toContain(
       "| `MealplanWorkspace` | `frontend/src/components/ethereal/mealplan/mealplan-workspace.tsx` | /, /ethereal |",
