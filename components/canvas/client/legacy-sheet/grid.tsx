@@ -8,6 +8,7 @@ import {
   useRef,
 } from "react";
 import type { SheetCells } from "./imported";
+import { sheetFill, sheetGeom } from "./styles";
 import {
   cellAddress,
   colLabel,
@@ -204,6 +205,8 @@ export function SheetGrid({
         gridRow: `${ri + 2} / span ${spanRows}`,
         gridColumn: `${trackIndex(cols, c) + 1} / span ${spanCols}`,
       };
+      const fill = sheetFill(tab.slug, r, trackIndex(cols, c) - 1);
+      if (fill) style["--ls-fill"] = fill;
       if (frozenRow)
         style["--ls-t"] =
           `calc(var(--ls-head) + ${sticky.rowTop.get(r) ?? 0}px)`;
@@ -298,6 +301,54 @@ export function SheetGrid({
         onKeyDown={onKeyDown}
       >
         {emitted}
+        {(() => {
+          const lines = sheetGeom(tab.slug)?.lines;
+          if (!lines?.length) return null;
+          const w = cols.reduce((s, c) => s + colWidthPx(tab, c), 0);
+          const h = rows.reduce((s, r) => s + rowHeightPx(tab, r), 0);
+          return (
+            <div
+              aria-hidden
+              className="ls-lines"
+              style={{
+                gridRow: `2 / span ${rows.length}`,
+                gridColumn: `2 / span ${cols.length}`,
+              }}
+            >
+              <svg width={w} height={h}>
+                {lines.map((line, li) => {
+                  const [lw, lc, pts] = line;
+                  const [a, b] = [pts[0], pts[pts.length - 1]];
+                  const horizontal = Math.abs(a[1] - b[1]) < 0.05;
+                  const vertical = Math.abs(a[0] - b[0]) < 0.05;
+                  // measured spans are integer-pixel: a filled rect paints
+                  // exactly those rows/cols, matching the LO rasterization.
+                  if (horizontal || vertical)
+                    return (
+                      <rect
+                        key={li}
+                        x={horizontal ? Math.min(a[0], b[0]) : a[0] - lw / 2}
+                        y={vertical ? Math.min(a[1], b[1]) : a[1] - lw / 2}
+                        width={horizontal ? Math.abs(b[0] - a[0]) : lw}
+                        height={vertical ? Math.abs(b[1] - a[1]) : lw}
+                        fill={lc}
+                        shapeRendering="crispEdges"
+                      />
+                    );
+                  return (
+                    <polyline
+                      key={li}
+                      points={pts.map((p) => p.join(",")).join(" ")}
+                      fill="none"
+                      stroke={lc}
+                      strokeWidth={lw}
+                    />
+                  );
+                })}
+              </svg>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

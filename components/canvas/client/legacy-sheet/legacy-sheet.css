@@ -149,7 +149,7 @@
   padding: 0 var(--v8-space-1);
   font-size: var(--v8-font-size-xs);
   color: var(--v8-text);
-  background: var(--v8-canvas);
+  background: var(--ls-fill, #fff);
   display: flex;
   align-items: center;
   white-space: nowrap;
@@ -166,7 +166,7 @@
   top: var(--ls-t, auto);
   left: var(--ls-l, auto);
   z-index: 2;
-  background: var(--v8-surface);
+  background: var(--ls-fill, #fff);
 }
 
 .ls-cell.ls-split-row {
@@ -183,6 +183,19 @@
   box-shadow:
     inset 0 calc(-1 * var(--v8-border-width-emphasis)) 0 0 var(--v8-accent),
     inset calc(-1 * var(--v8-border-width-emphasis)) 0 0 0 var(--v8-accent);
+}
+
+.ls-lines {
+  position: relative;
+  pointer-events: none;
+  z-index: 3;
+  overflow: hidden;
+}
+
+.ls-lines > svg {
+  position: absolute;
+  inset: 0;
+  display: block;
 }
 
 .ls-cell--sel {

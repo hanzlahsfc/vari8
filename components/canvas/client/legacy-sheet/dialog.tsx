@@ -15,6 +15,7 @@ import type { CoachClient } from "../../coach/model";
 import { applicablePlan, targetNumber } from "../../coach/plans/domain";
 import { useCoach } from "../../coach/store";
 import { localToday } from "../../coach/targets/model";
+import { withTrackingValue } from "../../coach/tracking/data";
 import { bindTab, boundEditFor, type SheetContext } from "./bind";
 import {
   applyWeekTargets,
@@ -118,7 +119,7 @@ export function LegacySheetDialog({
       refreshLocal();
       if (!profileId || cancelled) return;
       const from = localToday(new Date(Date.now() - 30 * 86_400_000));
-      const to = localToday(new Date(Date.now() + 14 * 86_400_000));
+      const to = localToday(new Date());
       void fetchStaffNutritionLogs(workspaceId, profileId, { from, to })
         .then((wire) => {
           if (cancelled || wire.state !== "ready") return;
@@ -176,29 +177,15 @@ export function LegacySheetDialog({
     const value = raw.trim() === "" ? null : Number(raw.trim());
     if (value !== null && !Number.isFinite(value)) return;
     if (edit.store === "tracker") {
-      // Same record the tracker screens read: client.tracking.entries,
-      // values keyed by tracker parameter id.
+      // Same record and same write path the tracker uses:
+      // client.tracking.entries via withTrackingValue.
       setState((prev) => ({
         ...prev,
-        clients: prev.clients.map((c) => {
-          if (c.id !== client.id) return c;
-          const tracking = c.tracking ?? { entries: [], text: {} };
-          const existing = tracking.entries.find((e) => e.date === edit.date);
-          const nextEntry = {
-            date: edit.date,
-            values: { ...(existing?.values ?? {}), [edit.key]: value },
-          };
-          return {
-            ...c,
-            tracking: {
-              ...tracking,
-              entries: [
-                ...tracking.entries.filter((e) => e.date !== edit.date),
-                nextEntry,
-              ].sort((a, b) => (a.date < b.date ? -1 : 1)),
-            },
-          };
-        }),
+        clients: prev.clients.map((c) =>
+          c.id === client.id
+            ? withTrackingValue(c, edit.date, edit.key, value)
+            : c,
+        ),
       }));
     } else {
       const next = writeSheetMacro(client.id, edit.date, edit.field, value);

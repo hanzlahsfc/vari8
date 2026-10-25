@@ -4,6 +4,8 @@
 // imported.ts; bound cells come from bind.ts. This module carries structure
 // and selection/navigation helpers only.
 
+import { sheetGeom } from "./styles";
+
 export const LEGACY_SHEET_BANNER =
   "Emulation of PRGRSS 2.0. Tab order, frozen bands, column widths, row heights, hidden rows and columns, merged regions, number formats, conditional formatting kinds and formula shapes are read from the team workbook structure. Bound cells read and write the client store; imported cells keep their exported value. Formula string literals are withheld.";
 
@@ -99,7 +101,7 @@ const TABS: RawTab[] = [
     freezePanes: null,
     gridlines: false,
     windowRows: 60,
-    windowCols: 14,
+    windowCols: 32,
     defaultColWidth: 8.43,
     colWidths: { "1": 2.75 },
     rowHeights: {
@@ -203,7 +205,7 @@ const TABS: RawTab[] = [
     usedRange: "A1:BB1002",
     freezePanes: "G8",
     gridlines: false,
-    windowRows: 30,
+    windowRows: 45,
     windowCols: 54,
     defaultColWidth: 8.43,
     colWidths: {
@@ -531,8 +533,8 @@ const TABS: RawTab[] = [
     usedRange: "A1:CS1000",
     freezePanes: "A10",
     gridlines: false,
-    windowRows: 30,
-    windowCols: 28,
+    windowRows: 45,
+    windowCols: 32,
     defaultColWidth: 8.43,
     colWidths: {
       "1": 1.5,
@@ -641,8 +643,8 @@ const TABS: RawTab[] = [
     usedRange: "A1:CQ1004",
     freezePanes: null,
     gridlines: false,
-    windowRows: 30,
-    windowCols: 20,
+    windowRows: 45,
+    windowCols: 32,
     defaultColWidth: 8.43,
     colWidths: { "1": 2.75 },
     rowHeights: { "7": 18.75, "8": 7.5, "9": 26.25, "19": 22.5, "29": 22.5 },
@@ -696,8 +698,8 @@ const TABS: RawTab[] = [
     usedRange: "A1:Z1000",
     freezePanes: null,
     gridlines: false,
-    windowRows: 30,
-    windowCols: 26,
+    windowRows: 45,
+    windowCols: 32,
     defaultColWidth: 8.43,
     colWidths: { "1": 2.75, "2": 10.13, "3": 20.63, "5": 15 },
     rowHeights: { "7": 22.5 },
@@ -717,8 +719,8 @@ const TABS: RawTab[] = [
     usedRange: "A1:EB1002",
     freezePanes: null,
     gridlines: false,
-    windowRows: 30,
-    windowCols: 18,
+    windowRows: 45,
+    windowCols: 32,
     defaultColWidth: 8.43,
     colWidths: { "1": 2.75 },
     rowHeights: {
@@ -777,8 +779,8 @@ const TABS: RawTab[] = [
     usedRange: "A1:QH780",
     freezePanes: "P1",
     gridlines: false,
-    windowRows: 31,
-    windowCols: 22,
+    windowRows: 45,
+    windowCols: 32,
     defaultColWidth: 8.43,
     colWidths: { "1": 2.75 },
     rowHeights: {
@@ -870,7 +872,7 @@ const TABS: RawTab[] = [
     usedRange: "A1:AF973",
     freezePanes: null,
     gridlines: false,
-    windowRows: 38,
+    windowRows: 45,
     windowCols: 32,
     defaultColWidth: 8.43,
     colWidths: {
@@ -1150,8 +1152,8 @@ const TABS: RawTab[] = [
     usedRange: "A1:AB996",
     freezePanes: null,
     gridlines: false,
-    windowRows: 30,
-    windowCols: 28,
+    windowRows: 45,
+    windowCols: 32,
     defaultColWidth: 8.43,
     colWidths: {
       "1": 2.75,
@@ -1232,9 +1234,9 @@ const TABS: RawTab[] = [
     order: 10,
     usedRange: "A1:V996",
     freezePanes: "A3",
-    gridlines: true,
-    windowRows: 30,
-    windowCols: 22,
+    gridlines: false,
+    windowRows: 45,
+    windowCols: 32,
     defaultColWidth: 8.43,
     colWidths: {
       "1": 2.75,
@@ -1265,8 +1267,8 @@ const TABS: RawTab[] = [
     usedRange: "A1:U1171",
     freezePanes: "A3",
     gridlines: false,
-    windowRows: 30,
-    windowCols: 21,
+    windowRows: 45,
+    windowCols: 32,
     defaultColWidth: 8.43,
     colWidths: {
       "1": 5.13,
@@ -1374,6 +1376,8 @@ export function isColHidden(tab: SheetTab, col: number): boolean {
 }
 
 export function visibleRows(tab: SheetTab): number[] {
+  const g = sheetGeom(tab.slug);
+  if (g) return g.visRows;
   const rows: number[] = [];
   for (let r = 1; r <= tab.windowRows; r += 1)
     if (!isRowHidden(tab, r)) rows.push(r);
@@ -1381,6 +1385,8 @@ export function visibleRows(tab: SheetTab): number[] {
 }
 
 export function visibleCols(tab: SheetTab): number[] {
+  const g = sheetGeom(tab.slug);
+  if (g) return g.visCols;
   const cols: number[] = [];
   for (let c = 1; c <= tab.windowCols; c += 1)
     if (!isColHidden(tab, c)) cols.push(c);
@@ -1508,17 +1514,25 @@ export function moveSelection(
   return { r1: row, c1: col, r2: row, c2: col };
 }
 
-// Convert a declared xlsx column width (character units) to px. The factor
-// matches the Sheets renderer closely enough for a structural demo.
+// Convert a declared xlsx column width (character units) to px. Tabs carry the
+// LibreOffice-rendered track sizes in styles.ts (5.55pt per char, no padding);
+// the chars*7+5 fallback matches Sheets for any column outside that window.
 export function colWidthPx(tab: SheetTab, col: number): number {
+  const g = sheetGeom(tab.slug);
+  if (g) {
+    const i = g.visCols.indexOf(col);
+    if (i >= 0) return g.colPx[i];
+  }
   const w = tab.colWidths[col] ?? tab.defaultColWidth;
-  return Math.max(8, Math.round(w * 7) + 5);
+  return Math.max(8, Math.round(w * 7.4));
 }
 
-// Declared row heights are points (R3b). Undeclared rows use a renderer
-// fallback of 21 px, the Sheets default row height.
+// Declared row heights are points (R3b). Undeclared rows use the workbook's
+// sheetFormatPr defaultRowHeight (15.75pt -> 21px) via the emitted table.
 export function rowHeightPx(tab: SheetTab, row: number): number {
+  const g = sheetGeom(tab.slug);
+  if (g?.rowPx[row] != null) return g.rowPx[row];
   const pt = tab.rowHeights[row];
   if (pt == null) return 21;
-  return Math.max(6, Math.round((pt * 4) / 3));
+  return Math.max(6, Math.round(pt * 4 / 3));
 }
