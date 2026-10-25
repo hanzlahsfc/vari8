@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 56 backend pages, 30 API routes, 14 layouts, 5 canvas pages.
+Counts: 57 backend pages, 32 API routes, 14 layouts, 5 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -52,6 +52,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/workspace/[workspaceId]/clients/[clientProfileId]/dashboard` | `app/workspace/[workspaceId]/clients/[clientProfileId]/dashboard/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/clients/[clientProfileId]/meal-plan` | `app/workspace/[workspaceId]/clients/[clientProfileId]/meal-plan/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/clients/[clientProfileId]/onboarding` | `app/workspace/[workspaceId]/clients/[clientProfileId]/onboarding/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
+| `/workspace/[workspaceId]/clients/[clientProfileId]/photos` | `app/workspace/[workspaceId]/clients/[clientProfileId]/photos/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/clients/[clientProfileId]/training-program` | `app/workspace/[workspaceId]/clients/[clientProfileId]/training-program/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/clients/[clientProfileId]/training-program/[programId]` | `app/workspace/[workspaceId]/clients/[clientProfileId]/training-program/[programId]/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/daily` | `app/(tracker)/workspace/[workspaceId]/daily/page.tsx` | server | requireDailyTrackerAccess + requireSessionUser (some via layout) |
@@ -97,8 +98,10 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/review` | `app/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/review/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/tracker-context` | `app/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/tracker-context/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients` | `app/api/v1/workspaces/[workspaceId]/clients/route.ts` | - | none detected |
-| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/activity-targets` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/activity-targets/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/daily-entries/history` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/daily-entries/history/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/[entryId]` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/[entryId]/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/compare` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/compare/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/supplement-plan` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/supplement-plan/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/[taskId]` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/[taskId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/daily-entries` | `app/api/v1/workspaces/[workspaceId]/daily-entries/route.ts` | - | none detected |

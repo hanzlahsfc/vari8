@@ -6,7 +6,8 @@ export type ClientAppSectionId =
   | "plans"
   | "tracker"
   | "training"
-  | "check-ins";
+  | "check-ins"
+  | "photos";
 export type ClientPlanPart =
   | "nutrition"
   | "supplements"
@@ -31,6 +32,7 @@ const SECTION_LABELS: Record<ClientAppSectionId, string> = {
   tracker: "Tracker",
   training: "Training",
   "check-ins": "Check-ins",
+  photos: "Photos",
 };
 
 const SECTION_ORDER: ClientAppSectionId[] = [
@@ -39,6 +41,7 @@ const SECTION_ORDER: ClientAppSectionId[] = [
   "tracker",
   "training",
   "check-ins",
+  "photos",
 ];
 
 const PLAN_PART_ORDER: ClientPlanPart[] = [
@@ -51,6 +54,7 @@ const PLAN_PART_ORDER: ClientPlanPart[] = [
 export function clientAppSections(
   configuration: Pick<Variant, "views" | "habits">,
   plans: Pick<ClientPlans, "supplements" | "activityTargets"> | undefined,
+  options?: { remote?: boolean },
 ): ClientAppSection[] {
   const views = new Set(configuration.views);
   const planParts = PLAN_PART_ORDER.filter((part) => {
@@ -67,6 +71,10 @@ export function clientAppSections(
     tracker: views.has("Tracker") || configuration.habits === true,
     training: views.has("Training Program"),
     "check-ins": views.has("Check-In"),
+    // Card 08: the gallery reads live own-scope data, so the section only
+    // exists when a signed-in client's own binding is mounted — a preview
+    // configuration has no entries to show.
+    photos: options?.remote === true,
   };
   return SECTION_ORDER.filter((id) => enabled[id]).map((id) => ({
     id,

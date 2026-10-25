@@ -1658,3 +1658,119 @@
   color: var(--color-text-secondary);
   font-size: 0.875rem;
 }
+
+/* Card 08 (#172): staff progress-photo gallery + comparator. Layout only;
+ * colors come from the shared theme tokens. */
+.photos-panel {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.photos-compare {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+}
+
+.photos-compare__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.photos-compare__controls label {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.photos-compare__controls select {
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: inherit;
+}
+
+.photos-compare__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.photos-compare__figure {
+  margin: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.photos-compare__figure img,
+.photos-compare__placeholder {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+}
+
+.photos-compare__figure figcaption {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.photos-compare__error {
+  margin: 0;
+  color: var(--color-danger);
+}
+
+.photos-gallery {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--space-3);
+}
+
+.photos-gallery__item {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+}
+
+.photos-gallery__item img,
+.photos-gallery__placeholder {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+}
+
+.photos-gallery__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.photos-gallery__date {
+  font-size: var(--font-size-sm);
+}
+
+.photos-gallery__flag {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
