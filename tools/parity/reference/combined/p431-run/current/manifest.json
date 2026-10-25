@@ -13167,11 +13167,11 @@
             "",
             ""
           ],
-          "head[0]>script[19]": [
+          "head[0]>style[19]": [
             "",
             ""
           ],
-          "head[0]>style[20]": [
+          "head[0]>meta[20]": [
             "",
             ""
           ],
@@ -13179,23 +13179,19 @@
             "",
             ""
           ],
-          "head[0]>meta[22]": [
+          "head[0]>title[22]": [
             "",
             ""
           ],
-          "head[0]>title[23]": [
+          "head[0]>meta[23]": [
             "",
             ""
           ],
-          "head[0]>meta[24]": [
+          "head[0]>link[24]": [
             "",
             ""
           ],
           "head[0]>link[25]": [
-            "",
-            ""
-          ],
-          "head[0]>link[26]": [
             "",
             ""
           ],
@@ -14426,7 +14422,7 @@
         },
         "actualFonts": [
           {
-            "nodeId": 39,
+            "nodeId": 38,
             "fonts": [
               {
                 "familyName": "Geist",
@@ -14437,7 +14433,7 @@
             ]
           },
           {
-            "nodeId": 60,
+            "nodeId": 59,
             "fonts": [
               {
                 "familyName": "Geist",
@@ -14448,7 +14444,7 @@
             ]
           },
           {
-            "nodeId": 67,
+            "nodeId": 66,
             "fonts": [
               {
                 "familyName": "Geist",
@@ -14459,7 +14455,7 @@
             ]
           },
           {
-            "nodeId": 81,
+            "nodeId": 80,
             "fonts": [
               {
                 "familyName": "Geist",
@@ -14470,7 +14466,7 @@
             ]
           },
           {
-            "nodeId": 83,
+            "nodeId": 82,
             "fonts": [
               {
                 "familyName": "Geist",
@@ -14481,7 +14477,7 @@
             ]
           },
           {
-            "nodeId": 88,
+            "nodeId": 87,
             "fonts": [
               {
                 "familyName": "Geist",
@@ -14492,7 +14488,7 @@
             ]
           },
           {
-            "nodeId": 90,
+            "nodeId": 89,
             "fonts": [
               {
                 "familyName": "Geist",
@@ -14503,7 +14499,7 @@
             ]
           },
           {
-            "nodeId": 100,
+            "nodeId": 99,
             "fonts": [
               {
                 "familyName": "Geist",
@@ -14514,7 +14510,7 @@
             ]
           },
           {
-            "nodeId": 128,
+            "nodeId": 127,
             "fonts": [
               {
                 "familyName": "Geist",
@@ -14525,7 +14521,7 @@
             ]
           },
           {
-            "nodeId": 131,
+            "nodeId": 130,
             "fonts": [
               {
                 "familyName": "Geist",
@@ -14536,7 +14532,7 @@
             ]
           },
           {
-            "nodeId": 154,
+            "nodeId": 153,
             "fonts": [
               {
                 "familyName": "Geist",
@@ -14547,7 +14543,7 @@
             ]
           },
           {
-            "nodeId": 379,
+            "nodeId": 378,
             "fonts": [
               {
                 "familyName": "Geist",
@@ -14558,7 +14554,7 @@
             ]
           },
           {
-            "nodeId": 382,
+            "nodeId": 381,
             "fonts": [
               {
                 "familyName": "Geist",
@@ -14569,7 +14565,7 @@
             ]
           },
           {
-            "nodeId": 384,
+            "nodeId": 383,
             "fonts": [
               {
                 "familyName": "Geist",
@@ -14580,7 +14576,7 @@
             ]
           },
           {
-            "nodeId": 399,
+            "nodeId": 398,
             "fonts": [
               {
                 "familyName": "Geist",
@@ -14591,7 +14587,7 @@
             ]
           },
           {
-            "nodeId": 404,
+            "nodeId": 403,
             "fonts": [
               {
                 "familyName": "Lucida Grande",
@@ -14602,7 +14598,7 @@
             ]
           },
           {
-            "nodeId": 406,
+            "nodeId": 405,
             "fonts": [
               {
                 "familyName": "Geist",
@@ -14613,7 +14609,7 @@
             ]
           },
           {
-            "nodeId": 408,
+            "nodeId": 407,
             "fonts": [
               {
                 "familyName": "Geist",

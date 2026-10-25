@@ -10,7 +10,7 @@
       "env": {
         "PARITY_COMPARER": "reference",
         "PARITY_REFERENCE_DIR": "tools/parity/reference/proposed",
-        "PARITY_OUT_DIR": "tools/parity/out/p431-run-5",
+        "PARITY_OUT_DIR": "tools/parity/out/p431-run-7",
         "PARITY_PORT": "58132"
       }
     }
@@ -23,7 +23,7 @@
     "MEDIA_STORAGE_DIR": "/tmp/vari8-p431-media",
     "PARITY_COMPARER": "reference",
     "PARITY_REFERENCE_DIR": "tools/parity/reference/proposed",
-    "PARITY_OUT_DIR": "tools/parity/out/p431-run-5",
+    "PARITY_OUT_DIR": "tools/parity/out/p431-run-7",
     "PARITY_PORT": "58132"
   },
   "exits": {
@@ -57,12 +57,12 @@
     "pr206": "43b63ed0f41e6e92e93ecf72065c0190c9ef3dea",
     "prep": {
       "branch": "beta/p203-p206-combined-verification",
-      "head": "3e7115754f43163098710d2969e998525d36bbb6"
+      "head": "b99a940ffad9cd442dce8e50ae944eb53acdba59"
     }
   },
   "source": {
-    "sha": "3e7115754f43163098710d2969e998525d36bbb6",
-    "tree": "95b94df76228b9fd3e673afa2991243308d57611",
+    "sha": "b99a940ffad9cd442dce8e50ae944eb53acdba59",
+    "tree": "b02e5928fc71b9167d77a5f7e0fb1267e2b90b08",
     "frontendTree": "54a005db99a29f59cdcbed8ebafce1c796ed3300",
     "dirtyTracked": "",
     "untracked": "",
@@ -90,10 +90,10 @@
       "middleware.ts",
       "instrumentation.ts"
     ],
-    "materialTreeSha256": "167663709be713b9e679fa90feb8cda0cbd720be51618b8bd9affe80e1e201b8"
+    "materialTreeSha256": "470d6486a53ed76a83b9dfe3febc17bdb2bae4335b216a095b6572f98eee791c"
   },
   "productTree": {
-    "tree": "95b94df76228b9fd3e673afa2991243308d57611",
+    "tree": "b02e5928fc71b9167d77a5f7e0fb1267e2b90b08",
     "diffFromPr203": ""
   },
   "tooling": {
@@ -102,7 +102,7 @@
     "legacyComparer": "56a709a4c334526b5991b15868775bf3ed843e5552535a4b2e472090d4788e3a",
     "validator": "87ba673902f999b6372cc200eec7d39a84299d62dbdc30b317a86633e8d1b679",
     "contract": "4a29fd5c68cd00fb544be375622652849dd2a6e21e55804b92a5baa1699b6363",
-    "comparerManifest": "aa9044056931aa2c1a601a4d7fe1405be06b41754ac5f76b3b371026919398a8",
+    "comparerManifest": "378b2640dbef67fdf321a425965da0dcd2d0cd46b7788a715a9bfe4d1a80a347",
     "locks": {
       "root": "52eb97cec84ca242db420047181606fd6d5b7050302dd8753ac249210f9eab75",
       "reference": "24381568ffd2435ed2919d7cf7c6a342ccd4ea767c5a77dd1a80868dfd8fd628"
@@ -120,10 +120,10 @@
       "tools/parity/reference/environment.mjs": "ecf02d2c6b5a3db8c76739ffeb1346395a2f30a339c776d07967812e98884e97",
       "tools/parity/reference/source-identity.mjs": "46c472a7ac91df0db8332d28ff7a330016b12cdaf3559b4a18535c9fb408dec9",
       "tools/parity/reference/combined-pins.mjs": "fe5b685461bc67e6113f121910cefde438544bd09c3e9ada21bd76dffd22e799",
-      "tools/parity/reference/package-combined.mjs": "1cc6f5dc3de9a51680156c4b2508ac33f44873f8dcc2d7f6431f5df871dc1387",
+      "tools/parity/reference/package-combined.mjs": "b24ddf2a26d9641c8ddf80862fef0c344f2d9e7c5b164bd75682b1f2f228c7fe",
       "tools/parity/reference/verify-combined.mjs": "2c048e910aadb01bdc38c75e78065269fc1b6dcb66b4c0e0a0ac0a40d1323092",
       "tools/parity/reference/evidence/evidence-lib.mjs": "c4da822e3b11d3d10848dae4f8634c04520befaaec187e63a87dbfcd68402223",
-      "tools/parity/reference/evidence/comparer.json": "aa9044056931aa2c1a601a4d7fe1405be06b41754ac5f76b3b371026919398a8",
+      "tools/parity/reference/evidence/comparer.json": "378b2640dbef67fdf321a425965da0dcd2d0cd46b7788a715a9bfe4d1a80a347",
       "package.json": "9c4c37adb538cda3529a8f4e9d51b6c1b5fe11fd7d69f533f07de078c4569652",
       "package-lock.json": "52eb97cec84ca242db420047181606fd6d5b7050302dd8753ac249210f9eab75",
       "tools/parity/reference/package.json": "9b8b558bd8c42a94f0a3effe3db5a1d1cd58c574641eba0899d6941a8deb732b",
@@ -162,7 +162,7 @@
         "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
         "jsVersion": "15.3.76.4"
       },
-      "command": "/Users/apple/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,Translate,AutoDeElevate,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --disable-partial-raster --user-data-dir=/var/folders/4b/rdd0tnl55gjfb4txrnfx9vq40000gn/T/playwright_chromiumdev_profile-oOgtGH --remote-debugging-pipe --no-startup-window",
+      "command": "/Users/apple/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,Translate,AutoDeElevate,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --disable-partial-raster --user-data-dir=/var/folders/4b/rdd0tnl55gjfb4txrnfx9vq40000gn/T/playwright_chromiumdev_profile-Xqelf3 --remote-debugging-pipe --no-startup-window",
       "system": {
         "gpu": {
           "devices": [
@@ -190,7 +190,7 @@
             "glWsVendor": "",
             "glWsVersion": "",
             "inProcessGpu": false,
-            "initializationTime": 0.07705,
+            "initializationTime": 0.083164,
             "isAsan": false,
             "isClangCoverage": false,
             "jpegDecodeAcceleratorSupported": false,
@@ -228,7 +228,7 @@
         },
         "modelName": "MacBookPro",
         "modelVersion": "17.1",
-        "commandLine": "/Users/apple/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,Translate,AutoDeElevate,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --disable-partial-raster --user-data-dir=/var/folders/4b/rdd0tnl55gjfb4txrnfx9vq40000gn/T/playwright_chromiumdev_profile-oOgtGH --remote-debugging-pipe --no-startup-window --use-mock-keychain --use-gl=angle --use-angle=swiftshader-webgl --allow-pre-commit-input"
+        "commandLine": "/Users/apple/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,Translate,AutoDeElevate,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --disable-partial-raster --user-data-dir=/var/folders/4b/rdd0tnl55gjfb4txrnfx9vq40000gn/T/playwright_chromiumdev_profile-Xqelf3 --remote-debugging-pipe --no-startup-window --use-mock-keychain --use-gl=angle --use-angle=swiftshader-webgl --allow-pre-commit-input"
       }
     },
     "capture": {
@@ -252,7 +252,7 @@
     "lockSha256": "52eb97cec84ca242db420047181606fd6d5b7050302dd8753ac249210f9eab75",
     "installedLockSha256": "f9c064f3b034dbe0d899a7c917fdb7ba4453dc27e0cb913fe7cc63b694a8e109",
     "mismatches": [],
-    "installedTreeSha256": "38903df3e91dfcf53cf66baa6a8594de178e6b12953f470e7ac20f79cd8561a9",
+    "installedTreeSha256": "320e1d29734fa2f86477924c778d8fd1212ebd0126d32f9c2cc45401ff56c9ff",
     "hashedFiles": 48225
   },
   "reference": {
@@ -1196,8 +1196,8 @@
     ]
   },
   "capture": {
-    "directory": "/Users/apple/Desktop/Devin Next/vari8-p417/tools/parity/out/p431-run-5/current",
-    "manifestSha256": "543842fc0c1431b317390d86e92b0c8d574e8f026a96fbf97ced0ed20ff48d25",
+    "directory": "/Users/apple/Desktop/Devin Next/vari8-p417/tools/parity/out/p431-run-7/current",
+    "manifestSha256": "24ea0bd2386663987e12a36a6e50904ed645da9f9b83f137d9f3ce3546035e5c",
     "screens": 70,
     "failures": 0,
     "retried": 0,
