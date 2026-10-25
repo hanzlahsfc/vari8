@@ -11,15 +11,23 @@ import { ClientApp } from "./client-app";
 import "../coach/coach.css";
 import "./client-app.css";
 
-export function ClientRoute() {
+export function ClientRoute({
+  own,
+}: {
+  own?: { workspaceId: string; clientProfileId: string };
+}) {
   return (
     <CoachProvider>
-      <ClientRouteInner />
+      <ClientRouteInner own={own} />
     </CoachProvider>
   );
 }
 
-function ClientRouteInner() {
+function ClientRouteInner({
+  own,
+}: {
+  own?: { workspaceId: string; clientProfileId: string };
+}) {
   const { state, hydrated } = useCoach();
   const params = useSearchParams();
   const clientId = params.get("client") ?? "";
@@ -86,6 +94,7 @@ function ClientRouteInner() {
             configuration={configuration}
             client={client}
             context="standalone"
+            own={own}
           />
         </>
       )}
