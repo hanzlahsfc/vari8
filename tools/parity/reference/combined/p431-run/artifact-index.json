@@ -4,7 +4,7 @@
   "artifacts": [
     {
       "path": "adapter/d32-capture-adapter.mjs",
-      "sha256": "8d640316ae12c07db6227941b499c48870e9e03d4caf85ce57aae639c98d2198"
+      "sha256": "fd6a9a99eefd6b366370da70d3741432c4b62d2ea6306abc16f3632cc398fb8c"
     },
     {
       "path": "current/1440/s01-profile-checkins.geom.json.gz",
@@ -948,27 +948,27 @@
     },
     {
       "path": "receipts/combined-provenance.json",
-      "sha256": "07f94132ef2961dc66ea853b7dbe8289ee68c398e463a196f47f8459f034bf60"
+      "sha256": "8d5ff5805f2d0fb71edb3cfaf2bacfb8430fd840d77276d784ddb1df32123489"
     },
     {
       "path": "receipts/execution.json",
-      "sha256": "e6da74e32009be195b76c27ccc47f2a404e500bd54ac264d3474e080ee3ecce1"
+      "sha256": "770fa363798ef77c7e1249198ca0b9072aaca8f2ee3eff7a8b6e4e80fbf9fde9"
     },
     {
       "path": "receipts/old-reference-report.html",
-      "sha256": "99d8d0b3a008242b34d21e293b25f35b24c3bef448966984a78ba063a19e3e1a"
+      "sha256": "253c7311b1dd2677cd1875870f65af539ee98687b99f70ca622ff35244849ce7"
     },
     {
       "path": "receipts/old-reference-result.json",
-      "sha256": "28a4481714058cc2a186703409b3f0028c5e13d81650a12000ae5b88ee52e600"
+      "sha256": "09ff18a52a2574af7104d5ea07319d566a7644268affc2acd87acf790933846f"
     },
     {
       "path": "receipts/server.log",
-      "sha256": "4292ff671245c1077bd75d7657fd17043e1f2ba71204262bbb99feb93400c806"
+      "sha256": "9cbeeb149abaa495cf8a8cf391672af200471bba0410fc01c78f22ac9d3e709b"
     },
     {
       "path": "receipts/source-compatibility.json",
-      "sha256": "2f64b9207d43172a8ef799a1cf94769f016ff1d02fb77c64162ec3013168141b"
+      "sha256": "186132da898c09105435b85b92fe054ccdf133ac622a903e7ea6da90c40a2820"
     },
     {
       "path": "receipts/strict.json",

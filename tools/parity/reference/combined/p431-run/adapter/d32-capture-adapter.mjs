@@ -10,7 +10,6 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "@playwright/test";
 import { existsSync } from "node:fs";
 
-const HERE = path.dirname(fileURLToPath(import.meta.url));
 let ROOT = path.dirname(fileURLToPath(import.meta.url));
 while (!existsSync(path.join(ROOT, "package.json")) && path.dirname(ROOT) !== ROOT) ROOT = path.dirname(ROOT);
 if (!existsSync(path.join(ROOT, "package.json"))) throw new Error("package.json not found above adapter");
