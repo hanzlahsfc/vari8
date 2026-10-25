@@ -52,6 +52,7 @@ import {
 } from "../coach/tracking/data";
 import { Empty } from "../coach/ui";
 import { CheckInForm } from "./check-in";
+import { NutritionActuals } from "./nutrition-actuals";
 import "../coach/client-preview.css";
 
 const foodMap = new Map<string, Food>(
@@ -435,14 +436,23 @@ export function NutritionTab(props: {
   configuration: Variant;
   client: CoachClient;
   illustrative?: boolean;
+  /** The caller's own identity; presence binds the actuals panel to the
+   * own /api/v1 nutrition-logs routes (card 09, #173). */
+  own?: { workspaceId: string; clientProfileId: string };
 }) {
   return props.illustrative ? (
     <IllustrativeNutritionTab {...props} />
   ) : (
-    <ClientNutritionTab client={props.client} />
+    <ClientNutritionTab client={props.client} own={props.own} />
   );
 }
-function ClientNutritionTab({ client }: { client: CoachClient }) {
+function ClientNutritionTab({
+  client,
+  own,
+}: {
+  client: CoachClient;
+  own?: { workspaceId: string; clientProfileId: string };
+}) {
   const liveToday = useLocalToday();
   const [date, setDate] = useState(liveToday);
   const resolved = nutritionForDate(client, date);
@@ -471,6 +481,7 @@ function ClientNutritionTab({ client }: { client: CoachClient }) {
             : undefined
         }
       />
+      {own && <NutritionActuals workspaceId={own.workspaceId} date={date} />}
     </>
   );
 }

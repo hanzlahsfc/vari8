@@ -6,6 +6,7 @@
 import type { CoachState } from "../coach/model";
 import { emptyClientPlans, type ClientPlans } from "../coach/plans/types";
 import { isMealPlan, type MealPlan } from "../ethereal/mealplan/model";
+import { apiFetch } from "./http";
 import { type CoachSlice, readStorage, writeJson } from "./provider";
 
 export const NUTRITION_KEY = "coach-data-nutrition-v1";
@@ -84,3 +85,77 @@ export {
   fetchDailyEntrySurface,
   saveDailyEntryRemote,
 } from "./tracker";
+
+/* -------------------------------------------------------------------------
+ * Card 09 (#173) remote surface: the client's own daily macro actuals and
+ * the staff date-range read. Wire shapes mirror
+ * `lib/daily-entry/nutrition-log.ts`; duplicated here so the canvas never
+ * imports server modules. `null` is "not recorded", never zero; there is
+ * no calories field anywhere - kcal derives at render (4/4/9).
+ * ---------------------------------------------------------------------- */
+
+export type NutritionLogMacrosWire = {
+  protein: number | null;
+  carbohydrate: number | null;
+  fat: number | null;
+};
+
+export type NutritionLogDayWire = NutritionLogMacrosWire & {
+  entryDate: string;
+};
+
+export type NutritionLogSurfaceWire =
+  | {
+      state: "ready";
+      entryDate: string;
+      log: NutritionLogMacrosWire | null;
+      history: NutritionLogDayWire[];
+    }
+  | { state: "not_applicable" }
+  | { state: "consent_missing" };
+
+/** GET nutrition-logs?date= — the caller's own actuals for the day. */
+export function fetchNutritionLogSurface(
+  workspaceId: string,
+  date?: string,
+): Promise<NutritionLogSurfaceWire> {
+  const suffix = date ? `?date=${encodeURIComponent(date)}` : "";
+  return apiFetch<NutritionLogSurfaceWire>(
+    `/workspaces/${workspaceId}/nutrition-logs${suffix}`,
+  );
+}
+
+/** PUT nutrition-logs/:date — one save against the caller's own day log. */
+export function saveNutritionLogRemote(
+  workspaceId: string,
+  entryDate: string,
+  macros: NutritionLogMacrosWire,
+): Promise<{ status: "saved" | "no_op" }> {
+  return apiFetch(`/workspaces/${workspaceId}/nutrition-logs/${entryDate}`, {
+    method: "PUT",
+    body: macros,
+  });
+}
+
+export type StaffNutritionLogListWire =
+  | {
+      state: "ready";
+      clientName: string;
+      items: NutritionLogDayWire[];
+    }
+  | { state: "consent_missing" };
+
+/** GET clients/:clientProfileId/nutrition-logs?from=&to= — staff range. */
+export function fetchStaffNutritionLogs(
+  workspaceId: string,
+  clientProfileId: string,
+  range?: { from?: string; to?: string },
+): Promise<StaffNutritionLogListWire> {
+  const parts: string[] = [];
+  if (range?.from) parts.push(`from=${encodeURIComponent(range.from)}`);
+  if (range?.to) parts.push(`to=${encodeURIComponent(range.to)}`);
+  const suffix = parts.length ? `?${parts.join("&")}` : "";
+  return apiFetch<StaffNutritionLogListWire>(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/nutrition-logs${suffix}`,
+  );
+}
