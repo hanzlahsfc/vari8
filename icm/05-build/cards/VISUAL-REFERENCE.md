@@ -52,4 +52,4 @@ No product UI, fonts, old baselines, mask expansion, waiver, merge, deployment o
 ## Prompt 429 combined-gate repair
 
 - The labelled prep branch now forbids arbitrary capture modules and unsafe output paths, validates the proposed package and real combined captures, and records exact source/tool/environment provenance.
-- Durable `tools/parity/reference/combined/p429-run` evidence verifies canonical 70/70 and strict 68/70; old active baseline diagnostic is separately red at 70 failures. Historical 482-artifact evidence remains separate.
+- Draft PR #207 is stacked on `beta/visual-reference-establishment` at head `2bee45a`. Durable `tools/parity/reference/combined/p429-run` evidence verifies canonical 70/70 and strict 68/70; old active baseline diagnostic is separately red at 70 failures. Historical 482-artifact evidence remains separate.
