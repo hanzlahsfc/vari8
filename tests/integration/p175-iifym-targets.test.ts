@@ -33,6 +33,7 @@ import {
   readOwnIifymPlan,
   readStaffIifymPlan,
   saveIifymDraft,
+  setIifymTimezone,
   type IifymDraft,
   type VariantSchedule,
 } from "../../lib/iifym/service";
@@ -179,6 +180,9 @@ describe.skipIf(!enabled)("card 10 IIFYM macro targets (real PG)", () => {
     ).rejects.toMatchObject({ code: "plan_not_accessible" });
     await expect(
       readOwnIifymPlan(clientSession, { workspaceId: ws.id }, deps()),
+    ).rejects.toMatchObject({ code: "plan_not_accessible" });
+    await expect(
+      setIifymTimezone(coachSession, { ...args, timezone: TIMEZONE }, deps()),
     ).rejects.toMatchObject({ code: "plan_not_accessible" });
   });
 
