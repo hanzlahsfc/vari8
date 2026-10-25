@@ -4,9 +4,7 @@
     "cwd": ".",
     "argv": [
       "node",
-      "--input-type=module",
-      "-e",
-      "compareRuns(old baseline,current)"
+      "tools/parity/run.mjs"
     ]
   },
   "failed": 70,
@@ -83,5 +81,5 @@
     "s11-preferences@1440",
     "s11-client-preview@1440"
   ],
-  "reportSha256": "98b05c29d70846df889afc890fd6e8b5abe4090e21c37c6050544e515b6fa42f"
+  "reportSha256": "1661dea9bc77bcee872bcfe855e40338e6f93d0078b1b5f975126574b9d1c260"
 }

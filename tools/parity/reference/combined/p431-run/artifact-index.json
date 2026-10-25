@@ -7,10 +7,6 @@
       "sha256": "8d640316ae12c07db6227941b499c48870e9e03d4caf85ce57aae639c98d2198"
     },
     {
-      "path": "artifact-index.json",
-      "sha256": "fa5416c4fcddb0e08ddee104fc0657d2aaa87c9592cd77176ff8e1047a5f7fb2"
-    },
-    {
       "path": "current/1440/s01-profile-checkins.geom.json.gz",
       "sha256": "cd46480244b01c3462902ca79814583f5efa3b22bb3de7edb7459298c2fcf215"
     },
@@ -944,7 +940,7 @@
     },
     {
       "path": "current/manifest.json",
-      "sha256": "99decaa92cd12396d80b92160b02cfec6ac312c5b9b95db1bbc030ce89a11d57"
+      "sha256": "543842fc0c1431b317390d86e92b0c8d574e8f026a96fbf97ced0ed20ff48d25"
     },
     {
       "path": "receipts/canonical.json",
@@ -952,27 +948,27 @@
     },
     {
       "path": "receipts/combined-provenance.json",
-      "sha256": "3b2ee648708376540eb6d666343b7fbd7fd32fc6ce91092cd3fe1a078f8758c1"
+      "sha256": "93a68657b5786428a00f779a21189229e34cd7386f353e5a9eee1be806a8dec0"
     },
     {
       "path": "receipts/execution.json",
-      "sha256": "6c175db0cee18e079b993b437b4eebfce953d5906255d40dad47206d54b276ac"
+      "sha256": "10b05cb6eaa0b8ce3aa83dc1a86a574c17158e303e5a92de62f5aae3933d8fc8"
     },
     {
       "path": "receipts/old-reference-report.html",
-      "sha256": "98b05c29d70846df889afc890fd6e8b5abe4090e21c37c6050544e515b6fa42f"
+      "sha256": "1661dea9bc77bcee872bcfe855e40338e6f93d0078b1b5f975126574b9d1c260"
     },
     {
       "path": "receipts/old-reference-result.json",
-      "sha256": "a18824c378b7d94de682976c881a2c3b05e70b1058855ba010c6d36a0f8e312b"
+      "sha256": "4558c086191e5221472aebfa08bcc74cec76d95d873b6e8d816f9749a1ff84e6"
     },
     {
       "path": "receipts/server.log",
-      "sha256": "f41326d7d6edb4c5bd524e8cce5e93ef8177bedb417c5b7eda3c5163dab07cae"
+      "sha256": "98f042aab624d3acc57dd1988f4b022497489804bda07c2549feee24bd2f88f0"
     },
     {
       "path": "receipts/source-compatibility.json",
-      "sha256": "ace62ca9b7912ff294aed33bce1f674a0c27c42b07cca55d29a3ecbcf91218f6"
+      "sha256": "e1e27890dd6e146f9cb0a39c77f294838c2625e5dd1f693c9e52226353fdd563"
     },
     {
       "path": "receipts/strict.json",

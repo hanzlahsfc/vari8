@@ -1,8 +1,8 @@
 {
   "kind": "combined-source-compatibility-v1",
   "capture": {
-    "sha": "ff808c4a2fecd7642f25741c75ca1ce39f8b64c5",
-    "tree": "686d9d805c1866507bb36c918194364b4a17cffd",
+    "sha": "52393b6ec61f4e8638d8fe96db19edc40445d6ab",
+    "tree": "27375afe1efc6ae6d908855cad525479f0d27d37",
     "frontendTree": "54a005db99a29f59cdcbed8ebafce1c796ed3300",
     "dirtyTracked": "",
     "untracked": "",
@@ -30,11 +30,10 @@
       "middleware.ts",
       "instrumentation.ts"
     ],
-    "materialTreeSha256": "0d606c648cfca32820a52e2ac5a9ecdf476f3805341eb2e6605e0e2d7e2f2177"
+    "materialTreeSha256": "7a552d408a8e00195ff1221671227ac19b8dcf39a246ba1a2203367c45d61366"
   },
   "authority": "Git review of the listed commits/paths; package hashes bind checked-out inputs but do not prevent a coordinated rewrite of code and manifests",
   "postCapturePaths": [
-    "icm/05-build/cards/VISUAL-REFERENCE.md",
     "icm/05-build/reports/VISUAL-REFERENCE.md",
     "ocs/STATUS.md",
     "tools/parity/reference/combined/p431-run/adapter/d32-capture-adapter.mjs",
