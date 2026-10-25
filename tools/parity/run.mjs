@@ -443,11 +443,24 @@ try {
               process.env.PARITY_PORT
                 ? `PARITY_PORT=${process.env.PARITY_PORT}`
                 : null,
-              "node tools/parity/run.mjs",
+              `${process.execPath} ${process.argv[1]}`,
             ]
               .filter(Boolean)
               .join(" "),
           ],
+          environmentVariables: Object.fromEntries(
+            [
+              "NODE_ENV",
+              "APP_ENV",
+              "NEXT_TELEMETRY_DISABLED",
+              "MEDIA_STORAGE_ADAPTER",
+              "MEDIA_STORAGE_DIR",
+              "PARITY_COMPARER",
+              "PARITY_REFERENCE_DIR",
+              "PARITY_OUT_DIR",
+              "PARITY_PORT",
+            ].map((name) => [name, process.env[name] ?? null]),
+          ),
           exits: {
             capture: 0,
             canonical: canonical.failed ? 1 : 0,
