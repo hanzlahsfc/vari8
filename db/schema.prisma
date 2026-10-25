@@ -313,6 +313,7 @@ model Workspace {
   clientSetups                  ClientSetup[]
   clientSetupPins               ClientSetupPin[]
   dailyEntries                  DailyEntry[]
+  nutritionLogs                 NutritionLog[]
   onboardingSubmissions         OnboardingSubmission[]
   onboardingSubmissionAnswers   OnboardingSubmissionAnswer[]
   checkInForms                  CheckInForm[]
@@ -387,6 +388,8 @@ model WorkspaceMember {
 
   dailyEntriesCreated            DailyEntry[]           @relation("DailyEntryCreator")
   dailyEntryRevisionsCreated     DailyEntryRevision[]   @relation("DailyEntryRevisionCreator")
+  nutritionLogsCreated           NutritionLog[]         @relation("NutritionLogCreator")
+  nutritionLogsUpdated           NutritionLog[]         @relation("NutritionLogUpdater")
   onboardingSubmissionsSubmitted OnboardingSubmission[] @relation("OnboardingSubmissionSubmittedByMember")
 
   checkInFormsCreated                 CheckInForm[]                @relation("CheckInFormCreator")
@@ -490,6 +493,7 @@ model ClientProfile {
   clientSetups                ClientSetup[]                @relation("ClientSetupClient")
   clientSetupPins             ClientSetupPin[]             @relation("ClientSetupPinClient")
   dailyEntries                DailyEntry[]                 @relation("ClientProfileDailyEntries")
+  nutritionLogs               NutritionLog[]               @relation("ClientProfileNutritionLogs")
   onboardingSubmissions       OnboardingSubmission[]       @relation("OnboardingSubmissionClient")
   checkInInstances            CheckInInstance[]            @relation("CheckInInstanceClient")
   checkInSubmissions          CheckInSubmission[]          @relation("CheckInSubmissionClient")
@@ -1229,6 +1233,7 @@ model DailyEntry {
   clientProfile   ClientProfile        @relation("ClientProfileDailyEntries", fields: [clientProfileId], references: [id], onDelete: Restrict)
   createdByMember WorkspaceMember      @relation("DailyEntryCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
   revisions       DailyEntryRevision[]
+  nutritionLog    NutritionLog?
 
   // One logical entry per client per declared date (#65).
   @@unique([workspaceId, clientProfileId, entryDate])
@@ -1303,6 +1308,41 @@ model DailyEntryRevisionValue {
   @@id([revisionId, parameterId])
   @@index([parameterId])
   @@map("daily_entry_revision_value")
+}
+
+// Card 09 (#173): daily nutrition actuals over daily entries. One log per
+// day entry with three independent nullable macro columns - NULL reads as
+// not recorded, never zero. Calories are derived at read (4/4/9); no
+// entered or stored calorie column exists by design. The log is pinned to
+// the day entry, not to any template pin or nutrition mode, so switching
+// a client between meal plan and macro counting keeps earlier entries.
+model NutritionLog {
+  id                String   @id @default(cuid())
+  dailyEntryId      String   @map("daily_entry_id")
+  workspaceId       String   @map("workspace_id")
+  clientProfileId   String   @map("client_profile_id")
+  entryDate         DateTime @map("entry_date") @db.Date
+  protein           Decimal? @db.Decimal(9, 3)
+  carbohydrate      Decimal? @db.Decimal(9, 3)
+  fat               Decimal? @db.Decimal(9, 3)
+  createdByMemberId String   @map("created_by_member_id")
+  updatedByMemberId String   @map("updated_by_member_id")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  dailyEntry      DailyEntry     @relation(fields: [dailyEntryId], references: [id], onDelete: Restrict)
+  workspace       Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile   ClientProfile  @relation("ClientProfileNutritionLogs", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  createdByMember WorkspaceMember @relation("NutritionLogCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  updatedByMember WorkspaceMember @relation("NutritionLogUpdater", fields: [updatedByMemberId], references: [id], onDelete: Restrict)
+
+  // One log per day entry and per client day; (id, workspace_id) is the
+  // coherence target for tenant-scoped foreign keys in raw SQL.
+  @@unique([dailyEntryId])
+  @@unique([workspaceId, clientProfileId, entryDate])
+  @@unique([id, workspaceId])
+  @@index([clientProfileId, entryDate])
+  @@map("nutrition_log")
 }
 
 // P-023 (decisions #82–#85): client onboarding submission. Exactly one
