@@ -395,7 +395,7 @@ export type StaffNutritionLogListResult =
     }
   | { state: "consent_missing" };
 
-function parseRangeDate(raw: unknown, label: string): string {
+function parseRangeDate(raw: unknown): string {
   try {
     return parseDeclaredDate(raw);
   } catch {
@@ -435,13 +435,13 @@ export async function listStaffNutritionLogs(
     throw new DailyEntryError("invalid_input");
 
   const today = new Date().toISOString().slice(0, 10);
-  const to = input.to === undefined ? today : parseRangeDate(input.to, "to");
+  const to = input.to === undefined ? today : parseRangeDate(input.to);
   const from =
     input.from === undefined
       ? new Date(Date.parse(`${to}T00:00:00Z`) - 29 * 86400000)
           .toISOString()
           .slice(0, 10)
-      : parseRangeDate(input.from, "from");
+      : parseRangeDate(input.from);
   if (from > to) throw new DailyEntryError("invalid_input");
   const spanDays =
     (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) /
