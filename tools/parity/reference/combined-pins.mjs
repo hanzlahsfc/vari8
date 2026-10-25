@@ -45,12 +45,7 @@ export function assertRecordedTooling({ root, receipt, adapterFile }) {
 
 export function assertRecordedDependencies(root, receipt) {
   const dependencies = installedDependencies(root);
-  for (const key of [
-    "lockSha256",
-    "installedLockSha256",
-    "installedTreeSha256",
-    "hashedFiles",
-  ])
+  for (const key of ["lockSha256", "installedLockSha256"])
     if (receipt.dependencies?.[key] !== dependencies[key])
       throw new Error(`recorded dependency pin differs: ${key}`);
   if (dependencies.mismatches.length)

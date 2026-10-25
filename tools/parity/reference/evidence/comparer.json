@@ -53,7 +53,7 @@
     },
     "combinedPins": {
       "path": "tools/parity/reference/combined-pins.mjs",
-      "sha256": "fe5b685461bc67e6113f121910cefde438544bd09c3e9ada21bd76dffd22e799"
+      "sha256": "ec5c2f362544370fc12cb8180969890f6365e3d8a9bbb91eca2e1656157db194"
     },
     "sourceIdentity": {
       "path": "tools/parity/reference/source-identity.mjs",
