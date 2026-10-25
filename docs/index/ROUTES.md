@@ -17,7 +17,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | Path | File | Rendered | Auth (detected) |
 |---|---|---|---|
 | `/` | `app/(canvas)/page.tsx` | server | requireSessionUser |
-| `/client` | `app/(canvas)/client/page.tsx` | server | none detected |
+| `/client` | `app/(canvas)/client/page.tsx` | server | auth |
 | `/coach` | `app/(canvas)/coach/page.tsx` | server | requireCanvasAccess |
 | `/daily` | `app/daily/page.tsx` | server | none detected |
 | `/ethereal` | `app/(canvas)/ethereal/page.tsx` | server | requireCanvasAccess |
