@@ -333,6 +333,8 @@ model Workspace {
   trainingPrograms              TrainingProgram[]
   trainingProgramVersions       TrainingProgramVersion[]
   trainingSessionBookings       TrainingSessionBooking[]
+  trainingSessionLogs           TrainingSessionLog[]
+  trainingSetLogs               TrainingSetLog[]
   supplementPlans               SupplementPlan[]
   supplementPlanItems           SupplementPlanItem[]
 
@@ -516,6 +518,8 @@ model ClientProfile {
   trainingPrograms            TrainingProgram[]            @relation("TrainingProgramClient")
   trainingProgramVersions     TrainingProgramVersion[]     @relation("TrainingProgramVersionClient")
   trainingBookings            TrainingSessionBooking[]     @relation("TrainingBookingClient")
+  trainingSessionLogs         TrainingSessionLog[]         @relation("TrainingSessionLogClient")
+  trainingSetLogs             TrainingSetLog[]             @relation("TrainingSetLogClient")
 
   // PR-M0 (schema v2) client-scoped records.
   coachNotes        CoachNote[]        @relation("CoachNoteClient")
@@ -2076,6 +2080,7 @@ model TrainingProgram {
   cancelledByMember   WorkspaceMember?         @relation("TrainingProgramCanceller", fields: [cancelledByMemberId], references: [id], onDelete: Restrict)
   versions            TrainingProgramVersion[]
   bookings            TrainingSessionBooking[]
+  sessionLogs         TrainingSessionLog[]
 
   // Composite coherence targets for raw version/replacement FKs.
   @@unique([id, workspaceId])
@@ -2112,6 +2117,7 @@ model TrainingProgramVersion {
   clientProfile     ClientProfile            @relation("TrainingProgramVersionClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
   publishedByMember WorkspaceMember          @relation("TrainingProgramVersionPublisher", fields: [publishedByMemberId], references: [id], onDelete: Restrict)
   bookings          TrainingSessionBooking[]
+  sessionLogs       TrainingSessionLog[]
 
   @@unique([programId, versionSeq])
   @@unique([programId, publishOriginRevision], map: "training_program_version_publish_origin_key")
@@ -2151,6 +2157,75 @@ model TrainingSessionBooking {
   @@index([programId, scheduledDate])
   @@index([workspaceId, clientProfileId, scheduledDate], map: "training_session_booking_client_scope_date_idx")
   @@map("training_session_booking")
+}
+
+// ── PR-M10 (#176): the client's performed session log. One row per session
+// occurrence (natural key on program + session + booked week + performed
+// date), pinning the prescription version that governed at start — later
+// publishes never rewrite the pinned payload beside the logged actuals.
+// The set payload stores whatever fields the coach's own template defines
+// (P01/O5): actuals travel as a validated JSONB SetLogEntry, never one
+// column per field. Terminal states are explicit rows, not zeros.
+model TrainingSessionLog {
+  id                  String    @id @default(cuid())
+  // Denormalized tenant/client stamps — part of the composite coherence
+  // targets (raw-SQL FKs, established convention).
+  workspaceId         String    @map("workspace_id")
+  clientProfileId     String    @map("client_profile_id")
+  programId           String    @map("program_id")
+  // Immutable prescription pin: the version governing the performed date
+  // at start. A later publish leaves this row beside the old payload.
+  pinnedVersionId     String    @map("pinned_version_id")
+  sessionId           String    @map("session_id")
+  bookedWeek          Int       @map("booked_week")
+  // Declared local calendar date the session was performed (anchor zone).
+  performedDate       DateTime  @map("performed_date") @db.Date
+  // IN_PROGRESS | COMPLETED | PARTIAL | SKIPPED (raw CHECK).
+  status              String    @default("IN_PROGRESS")
+  startedAt           DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  // Terminal instant for every non-IN_PROGRESS state (raw pairing CHECK).
+  completedAt         DateTime? @map("completed_at") @db.Timestamptz(6)
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace     Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile          @relation("TrainingSessionLogClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  program       TrainingProgram        @relation(fields: [programId], references: [id], onDelete: Restrict)
+  pinnedVersion TrainingProgramVersion @relation(fields: [pinnedVersionId], references: [id], onDelete: Restrict)
+  sets          TrainingSetLog[]
+
+  // One log per session occurrence — the resume/replay natural key.
+  @@unique([workspaceId, clientProfileId, programId, sessionId, bookedWeek, performedDate], map: "training_session_log_natural_key")
+  // Composite coherence target for the raw set-log FK.
+  @@unique([id, workspaceId, clientProfileId])
+  @@index([workspaceId, clientProfileId, performedDate], map: "training_session_log_client_date_idx")
+  @@map("training_session_log")
+}
+
+model TrainingSetLog {
+  id              String   @id @default(cuid())
+  sessionLogId    String   @map("session_log_id")
+  // Denormalized tenant/client stamps — the raw composite FK pins every
+  // set to the same (session, workspace, client) triple.
+  workspaceId     String   @map("workspace_id")
+  clientProfileId String   @map("client_profile_id")
+  exerciseId      String   @map("exercise_id")
+  // "p:{prescribedSetId}" or "a:{client-added set id}" — the idempotency
+  // key; saving the same set twice updates this row instead of doubling.
+  setKey          String   @map("set_key")
+  position        Int
+  // Validated SetLogEntry actuals — template-defined fields (P01).
+  actuals         Json
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  sessionLog    TrainingSessionLog @relation(fields: [sessionLogId], references: [id], onDelete: Restrict)
+  workspace     Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile      @relation("TrainingSetLogClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+
+  @@unique([sessionLogId, exerciseId, setKey], map: "training_set_log_set_key")
+  @@index([workspaceId, clientProfileId], map: "training_set_log_client_idx")
+  @@map("training_set_log")
 }
 
 // ── PR-M0 schema v2 (D20, D24, D26, D27, D28, D31, O13) ──────────────────
