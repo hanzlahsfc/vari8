@@ -67,8 +67,11 @@ describe.skipIf(!enabled)("check-in routes (real PG)", () => {
     await prisma.$executeRawUnsafe(
       'TRUNCATE "checkin_schedule_rule","checkin_feedback","checkin_review","checkin_submission_answer","checkin_submission","checkin_instance","checkin_form_version","checkin_form","consent_record","audit_event","client_assignment","client_profile","coach_profile","access_token","workspace_member","workspace","users" RESTART IDENTITY CASCADE',
     );
+    // Trusted dev/test runtime + flag "1" → the shared resolver opens.
+    process.env.ENABLE_CHECK_INS = "1";
   });
   afterAll(async () => {
+    delete process.env.ENABLE_CHECK_INS;
     await prisma?.$disconnect();
   });
 
