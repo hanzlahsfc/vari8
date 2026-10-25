@@ -36,6 +36,8 @@ const eslintConfig = [
       "frontend/**",
       ".next/**",
       "out/**",
+      // Generated reference adapters and capture artifacts are runtime evidence.
+      "tools/parity/out/**",
       "build/**",
       "next-env.d.ts",
       "playwright-report/**",

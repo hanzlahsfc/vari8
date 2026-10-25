@@ -1,3 +1,24 @@
+## 2026-10-25 — VISUAL-REFERENCE #205 — historical reference proposal packaged; s03 copy decision outstanding
+
+- Authority/contract: historical frontend `c78311042edcc2f96350a132c682782d8da1b6a7`; frontend tree
+  `36ceaf8eadc010369ed48ab5158682f2bf9d55de`; owner D32 09:00 Vienna clock, 1px geometry, 0.1%
+  changed pixels / pixelmatch 0.1. The legacy 10:00/.5px/zero-pixel contract is retained only as a
+  separately reported strict diagnostic.
+- Two independent historical runs each captured all 70 screens with zero failures/retries; image,
+  geometry and scroll artifacts were byte-identical (`hashMismatches: []`, stability 70/70 canonical
+  and strict). Original baselines remain unchanged; old hashes and the old→proposed map are packaged
+  under `tools/parity/reference/proposed/`.
+- Current root comparison is **68/70** canonical and strict. Both `s03-checkin-review` widths fail
+  geometry/text/role/name because the button changed from “Record demo video feedback” to “Record
+  video feedback” and narrowed 39px (`244.5 → 205.5`); pixels remain within budget.
+- The copy was introduced by PR-MEDIA `21d8fc0` and wired by `e355c59`. No owner D32 truth-text row
+  or issue-#205 allowance covers it; both failures remain explicit and an exact owner decision is
+  requested. No mask, tolerance change or baseline refresh was made.
+- Tooling: Node v24.22.1; unit **106 files / 1280 tests**, exit 0; typecheck/lint/format/index/build
+  checks recorded; reference tests and two 70/70 reference runs valid. No full 70 rerun for packaging.
+- PR #206 remains draft/stacked on unmerged PR #203 `90c16be`; issue #202 remains open. Stop for
+  independent review; no parity PASS, merge, deployment, Actions, Slack/Hermes or website change.
+
 ## 2026-10-25 — Issue #202 Prompt 410 — listener PGID consistency and mutation provenance
 
 - Codex builder repair, not independent review: runner listener ownership

@@ -15,6 +15,7 @@ import {
 import {
   CONTRACT,
   assertD32Text,
+  artifactMapping,
   snapshotSource,
   installedDependencies,
   createAdapter,
@@ -85,8 +86,7 @@ const main = async () => {
       sha256: fileHash(path.join(candidate, file)),
     });
   write(path.join(out, "preserved-original-artifacts.json"), oldArtifacts);
-  const logs = [],
-    cleanups = [];
+  const cleanups = [];
   const definitionsPublic = Object.fromEntries(
     Object.entries(definitions).map(([role, d]) => [
       role,
@@ -218,8 +218,8 @@ const main = async () => {
           throw Error(`real sign-in failed ${auth.status}`);
         cookies = browserCookies(auth.setCookie, proxy.url);
       }
-      const module = await import(pathToFileURL(adapterPath).href);
-      const manifest = await module.captureAll({
+      const captureModule = await import(pathToFileURL(adapterPath).href);
+      const manifest = await captureModule.captureAll({
         baseUrl: proxy.url,
         outDir: dir,
         cookies,
@@ -310,20 +310,11 @@ const main = async () => {
       strict: compareRuns(r1, cur, { strict: true }),
     };
     write(path.join(out, "all-70-comparison.json"), results.comparison);
-    const oldMap = new Map(oldArtifacts.map((x) => [x.path, x.sha256])),
-      newMap = new Map(files1.map((x) => [x.path, x.sha256]));
-    const mapping = [...new Set([...oldMap.keys(), ...newMap.keys()])]
-      .sort()
-      .map((file) => ({
-        path: file,
-        oldSha256: oldMap.get(file) ?? null,
-        proposedSha256: newMap.get(file) ?? null,
-        reason: file.includes("s04-template-habits")
-          ? "Intended Habits replaces faulty Tabs; historical authority, D32 clock, recorded environment and semantic metadata. No current-app expected pixels."
-          : file.endsWith(".geom.json.gz")
-            ? "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
-            : "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels.",
-      }));
+    const mapping = artifactMapping({
+      oldArtifacts,
+      proposedDirectory: r1,
+      artifacts: files1,
+    });
     write(path.join(out, "old-proposed-artifact-map.json"), mapping);
     results.originalsUnchanged = oldArtifacts.every(
       (x) => fileHash(path.join(oldRoot, x.path)) === x.sha256,

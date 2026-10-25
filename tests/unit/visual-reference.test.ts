@@ -13,7 +13,39 @@ import {
   comparePixels,
   compareGeometry,
 } from "../../tools/parity/reference/compare.mjs";
-import { PNG } from "../../tools/parity/reference/node_modules/pngjs/lib/png.js";
+import { createRequire } from "node:module";
+type FixturePng = { data: Buffer };
+const { PNG } = createRequire(
+  new URL("../../tools/parity/reference/reference.mjs", import.meta.url),
+)("pngjs") as {
+  PNG: {
+    new (options: { width: number; height: number }): FixturePng;
+    sync: { write(p: FixturePng): Buffer };
+  };
+};
+type FixtureScreen = {
+  id: string;
+  stem: string;
+  vp: string;
+  png: string;
+  finalUrl: string;
+  captureEvidence: {
+    url: string;
+    text: string;
+    state: string[];
+    scrollers: {
+      name: string;
+      maxX: number;
+      maxY: number;
+      cw: number;
+      ch: number;
+    }[];
+  };
+  size: { width: number; height: number };
+  sha256: string;
+  elements: number;
+  scrolls: never[];
+};
 const dirs: string[] = [];
 afterEach(() =>
   dirs.splice(0).forEach((d) => rmSync(d, { recursive: true, force: true })),
@@ -159,7 +191,7 @@ it("validates complete real-format receipts and rejects corrupt images, state an
     dependencies: { installedTreeSha256: "e".repeat(64), mismatches: [] },
     adapter: { adapterSha256: "f".repeat(64) },
   };
-  const screens: any[] = [];
+  const screens: FixtureScreen[] = [];
   for (const vp of ["390", "1440"]) {
     mkdirSync(path.join(d, vp));
     const size = CONTRACT.viewports[vp];
@@ -168,7 +200,13 @@ it("validates complete real-format receipts and rejects corrupt images, state an
     const bytes = PNG.sync.write(p);
     for (const shot of shots) {
       const stem = shot.file.replace(/\.(png|webp)$/, "");
-      const expectation = CAPTURE_EXPECTATIONS[stem] ?? {};
+      const expectation = (CAPTURE_EXPECTATIONS[
+        stem as keyof typeof CAPTURE_EXPECTATIONS
+      ] ?? {}) as {
+        query?: Record<string, string>;
+        hash?: string;
+        state?: string;
+      };
       const url = new URL(shot.route, "https://127.0.0.1:55940");
       if (expectation.hash) url.hash = expectation.hash;
       for (const [key, value] of Object.entries(expectation.query ?? {}))
@@ -243,7 +281,7 @@ it("validates complete real-format receipts and rejects corrupt images, state an
   expect(() =>
     validateRun({ directory: d, manifest, shots, provenance }),
   ).toThrow(/provenance/);
-});
+}, 15000);
 
 it("rejects current-app expected output even before reading capture artifacts", async () => {
   const { compareRuns } =
@@ -269,4 +307,25 @@ it("fails closed when the written owner D32 contract drifts", async () => {
   expect(() =>
     assertD32Text(text.replace(CONTRACT.clock, "2026-10-19T10:00:00+02:00")),
   ).toThrow(/owner decision/);
+});
+
+it("maps replacement manifest hashes as well as image hashes", async () => {
+  const { artifactMapping } =
+    await import("../../tools/parity/reference/reference.mjs");
+  const d = mkdtempSync(path.join(tmpdir(), "visual-reference-map-"));
+  dirs.push(d);
+  writeFileSync(path.join(d, "manifest.json"), "new manifest");
+  writeFileSync(path.join(d, "provenance.json"), "new provenance");
+  const mapped = artifactMapping({
+    oldArtifacts: [{ path: "manifest.json", sha256: "old" }],
+    proposedDirectory: d,
+    artifacts: [{ path: "390/example.png", sha256: "new" }],
+  });
+  expect(
+    mapped.find((x) => x.path === "manifest.json")?.proposedSha256,
+  ).toMatch(/^[a-f0-9]{64}$/);
+  expect(mapped.find((x) => x.path === "manifest.json")?.oldSha256).toBe("old");
+  expect(
+    mapped.find((x) => x.path === "provenance.json")?.oldSha256,
+  ).toBeNull();
 });

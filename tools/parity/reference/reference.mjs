@@ -16,6 +16,7 @@ export function assertContract(value) {
   if (JSON.stringify(value) !== JSON.stringify(CONTRACT))
     throw new Error("contract differs from the recorded D32 proposal");
 }
+/** @param {string} root @param {{expectedSha?: string, frontend?: boolean}} [options] */
 export function snapshotSource(root, { expectedSha, frontend = false } = {}) {
   const source = {
     sha: git(root, "rev-parse", "HEAD"),
@@ -288,4 +289,29 @@ export function assertD32Text(text) {
       throw new Error(
         "D32 document/contract inconsistency; owner decision required",
       );
+}
+
+export function artifactMapping({
+  oldArtifacts,
+  proposedDirectory,
+  artifacts,
+}) {
+  const old = new Map(oldArtifacts.map((x) => [x.path, x.sha256]));
+  const proposed = new Map(artifacts.map((x) => [x.path, x.sha256]));
+  for (const name of ["manifest.json", "provenance.json"])
+    proposed.set(name, fileHash(path.join(proposedDirectory, name)));
+  return [...new Set([...old.keys(), ...proposed.keys()])]
+    .sort()
+    .map((file) => ({
+      path: file,
+      oldSha256: old.get(file) ?? null,
+      proposedSha256: proposed.get(file) ?? null,
+      reason: ["manifest.json", "provenance.json"].includes(file)
+        ? "New validated historical-source capture/provenance receipt, including full contract and source/environment hashes."
+        : file.includes("s04-template-habits")
+          ? "Intended Habits replaces faulty Tabs; historical authority, D32 clock, recorded environment and semantic metadata. No current-app expected pixels."
+          : file.endsWith(".geom.json.gz")
+            ? "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+            : "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels.",
+    }));
 }

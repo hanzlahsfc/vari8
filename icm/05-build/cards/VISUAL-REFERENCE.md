@@ -1,6 +1,6 @@
 # VISUAL-REFERENCE — reproducible reference establishment
 
-Owner request: Prompt 414 (2026-10-25). Status: implementation, not accepted.
+Owner request: Prompt 414 (2026-10-25). Status: packaged proposal, not accepted; stop for independent review.
 
 Base and dependency: PR #203 `90c16bee63e2609ebc4f09e91459332390562464`; stacked branch `beta/visual-reference-establishment`, draft PR base `beta/parity-https`. No ownership/HTTPS/cookie repairs are copied or independently changed. Retarget only after that dependency is accepted and merged. Issue #202 remains open.
 
@@ -17,3 +17,10 @@ Base and dependency: PR #203 `90c16bee63e2609ebc4f09e91459332390562464`; stacked
 Evidence: `icm/05-build/reports/VISUAL-REFERENCE.md`, reference provenance/manifest/artifact mapping under `tools/parity/reference/proposed/`; bulky run logs/captures are outside the code tree in task outputs. Old `tools/parity/baseline/` is preserved.
 
 No product UI, fonts, old baselines, mask expansion, waiver, merge, deployment or external messaging.
+
+## Packaging result
+
+- Two historical reference runs captured 70/70 with zero failures/retries and byte-identical image/geometry/scroll artifacts (`stability.json`: 70/70 canonical and strict, `hashMismatches: []`).
+- Proposed artifacts/provenance/mapping are under `tools/parity/reference/proposed/`; the old baseline is unchanged and every old hash is preserved.
+- Current root comparison is 68/70. Only s03 `Record demo video feedback` → `Record video feedback` fails geometry/text/role/name at both widths (39px narrower). No allowance/mask/tolerance/baseline change was made; the exact copy decision remains with the owner.
+- Full evidence and gate results are in `icm/05-build/reports/VISUAL-REFERENCE.md`.
