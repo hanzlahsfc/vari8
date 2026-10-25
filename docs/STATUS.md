@@ -1,3 +1,49 @@
+## 2026-10-25 — Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
+
+- Verification only, no product repair. Boot gates all green: `npm ci` 0,
+  `prisma generate` 0, `index`/`index:check` 0 (no index drift),
+  `typecheck` 0, `lint` 0 (89 warnings), `test` 0 (116 files, 1380 tests),
+  `build` 0. `npm run check` absent by design.
+- Lane DBs on 127.0.0.1:5433: `app_fp_stage10_b1` default seed (7 modules,
+  `50-demo-coverage` absent) and `app_fp_stage10_b1d` demo seed ×2 (8
+  modules, `50-demo-coverage` present; run 2 idempotent — normalized dump
+  diff empty, 155 seeded CUIDs identical). Both dropped at teardown.
+- Live sweep against the production build (216 PNGs in evidence): unauth
+  `/` `/coach` `/me` → 307; staff + client logins; 43 surfaces at 1440 and
+  390 — coach canvas (roster, client overview/timeline/plans/check-ins/
+  notes+tasks/habits/targets, all five plan-part editors, client setup,
+  check-in board/review, messages, notes, templates + template editor,
+  legacy-sheet dialog, ethereal, workspace home) and client app (home,
+  plans + nutrition + roadmap, tracker, training, check-ins incl. list,
+  photos) plus `/me` tracker. Denials hold: foreign workspace 403
+  (page+API), cross-client API 404, client→`/coach` 307→`/me`.
+- Parity (owner ruling 2026-10-25): 10 stale click recipes re-derived
+  against the merged UI (profile tabs, renumbered template nav 01–07,
+  `.cd-plan-module`→`.cp-card` scoping, `Open chat (1 unread)`,
+  `Edit plans → Open client setup`, `Open client app`); dev-mode replay
+  74/74 clean. Committed as `44eec07`. Baseline regen BLOCKED —
+  `PARITY_APP=frontend ... --update-baseline` exits 2: `frontend/` prod
+  build fails typecheck on `dialog.tsx:109` `labelHidden`, an inherited
+  defect present at merge base `6d3a07f` (fix lives on unmerged
+  `c605b78`/`29fbb31`). `npm run parity` vs the stale baseline exits 1
+  (74/74 fail — expected pre-PR-204 signature; captures clean); runner
+  self-spawn mode also exit-2's because its `http:` `BETTER_AUTH_URL`
+  trips the inherited prod boot guard (worked around via `PARITY_URL`
+  against a manually started server).
+- Sheets pixel harness: **11/11 tabs PASS** vs the LibreOffice refs
+  (worst score 0.001, timeline) using the established same-geometry
+  frame (`ls-scroll` chrome-stripped capture, A1:AF45 clip) — raw
+  window shots fail by construction, kept as counter-evidence.
+- `npm run format:check` exits 1: 57 files fail, all inherited at merge
+  base `6d3a07f`; zero package-introduced. No files reformatted.
+- Defects recorded, unrepaired: F1 inherited `frontend/` typecheck
+  failure above (blocks parity baseline); F2 parity runner self-spawn
+  vs http-auth guard (inherited interplay); F3 iifym/supplements APIs
+  403 under the card env (feature flags unset — config boundary, by
+  design); `BETTER_AUTH_URL`-unset boot warning (cosmetic).
+- Full record: `~/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/FULL-PACKAGE/STAGE-10/REPORT.md`.
+  NOT done: owner sign-off; no push, no PR.
+
 ## 2026-10-25 — Stage 11 card 13: opt-in demo-coverage seed profile from Lilly's export snapshot
 
 - `scripts/seed/50-demo-coverage.seed.ts` — opt-in module gated on
