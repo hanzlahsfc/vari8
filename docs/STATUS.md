@@ -1,3 +1,64 @@
+## 2026-10-25 — Stage 6 card 08 (#172): progress photos with comparison — built, live-verified, awaiting R2-4 screen review
+
+- Migration `db/migrations/20261023020000_progress_photo/` (+ `down.sql`
+  ending in the `_prisma_migrations` delete): `progress_photo_entry` —
+  unique `media_object_id` link, `taken_on` DATE, optional
+  `checkin_submission_id`, `client_visible` default true, `deleted_at`
+  soft delete. Raw composite FKs pin media/submission to the same
+  workspace (submission also to the same client), all RESTRICT. No
+  angle/pose column or enum anywhere; the whole diff greps clean for
+  `angle`.
+- `db/schema.prisma`: `ProgressPhotoEntry` model + back-relations on
+  Workspace/ClientProfile/MediaObject/CheckInSubmission.
+- API under
+  `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/`:
+  `service.ts` + routes — GET list + POST create (route.ts), GET/DELETE
+  `[entryId]` (route.ts), GET `compare?first&second` (compare/route.ts).
+  Reads `clientData.read`, writes `message.write`. Client callers are
+  resolved to their own profile server-side and constrained to it
+  regardless of path ids; staff need an active member with staff scope.
+  Compare requires both entries under the same requested client —
+  cross-client pairs return `not_found`, never leak existence. Deleted
+  entries are filtered from list/get/compare; the media_object row is
+  untouched by delete (retention pass owns it).
+- Upload keeps the media intent + presigned PUT seam
+  (`components/canvas/data/media.ts`); `progress-photos.ts` provider adds
+  `uploadOwnProgressPhoto` (intent → PUT → dated entry create) plus
+  list/create/delete/compare. `fetchMediaDownload` alias clarifies the
+  staff-side mint caller.
+- Client UI: `components/canvas/client-app/photos.tsx` — dated upload
+  (DatePicker, defaults today), own gallery with delete; mounted as a
+  remote-only `photos` section (sections.ts/client-app.tsx) visible only
+  for a signed-in client with an `own` binding.
+- Coach UI: real staff page
+  `app/workspace/[workspaceId]/clients/[clientProfileId]/photos/`
+  (page.tsx + photos-panel.tsx) — gallery mints fresh download urls per
+  entry, two-entry comparator via the compare route, soft-delete buttons.
+  Roster `app/workspace/[workspaceId]/clients/page.tsx` gains a Photos
+  column link for owner/coach. Styles in `app/globals.css`.
+- Gates (all exit 0): `npm ci`, `npx prisma generate`,
+  `npm run typecheck`, `npm run lint` (warnings only, matching baseline),
+  `npm run index` + `index:check`, `npm run test` (111 files / 1317
+  tests), `npm run build`. `tests/unit/system-index.test.ts` canary
+  bumped 56→57 pages deliberately.
+- `tests/integration/api-v1-progress-photos.test.ts`: 8 tests green on
+  lane db `app_fp_stage6` (real Postgres, migration deployed,
+  `MEDIA_STORAGE_ADAPTER=local`) — list/create/compare/soft-delete,
+  own-scope pinning, cross-client refusal, media survives entry delete.
+- Live probes on the built artifact (`next start`, port 3966; 3964 was
+  held by the merge-preview lane): real upload through the media routes,
+  dated entry in coach gallery, same-client compare 200, cross-client
+  compare 404 both directions, client→other-client list/entry/media-mint
+  403/404, client cross-client compare 404, soft delete 200 + entry gone
+  + media still mintable + rows retained in db.
+- Screenshots 1440 + 390 (client gallery incl. real UI upload of two
+  dated photos, coach gallery + comparator mid-compare, roster link row)
+  under `Vari8-evidence/FULL-PACKAGE/STAGE-6/card-08/` with the probe
+  logs and report.
+- NOT pushed, no PR — awaiting Marcel's visual review of the screens
+  (preview requirement was port 3964; sibling lanes occupy it, live
+  instance for this card ran on 3966 — coordinate before publish).
+
 ## 2026-10-26 - Stage 3 card 05a (in progress): client store routes + provider seam landed; screens and verification pending
 
 - `lib/messages/service.ts` (new): own-thread list + client send, one
