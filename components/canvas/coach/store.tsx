@@ -12,10 +12,8 @@ import {
   useState,
 } from "react";
 import { readCoachState, writeCoachState } from "../data";
-import { adoptAthleteDataDemo } from "./athlete-data-demo";
-import { adoptAthleteProfileDemo } from "./athlete-profile-demo";
-import { adoptClientAppDemo } from "./client-app-demo";
 import {
+  adoptCanvasDemos,
   type CoachState,
   isCoachState,
   type Media,
@@ -23,10 +21,8 @@ import {
   seedState,
 } from "./model";
 import { migrateCoachState } from "./plans/domain";
-import { adoptAmaraTrainingExample } from "./plans/training/amara-example";
 import { localToday } from "./targets/model";
 import { normalizeTemplateSetups } from "./template-setup";
-import { adoptTrainingLogDemo } from "./training-log-demo";
 
 type Store = {
   state: CoachState;
@@ -67,8 +63,15 @@ export function CoachProvider({
 }) {
   const router = useRouter();
   const params = useSearchParams();
+  // Card 05a: the Amara fixture set is canvas demo content. It survives for
+  // the domains without an endpoint (competition, settings) and only mounts
+  // when the url carries `?demo=`; without it the store renders real/stored
+  // state only, so fixtures can never leak into a coach's workspace.
+  const demo = params.has("demo");
   const [state, setState] = useState<CoachState>(() =>
-    normalizeTemplateSetups(migrateCoachState(seedState()) as CoachState),
+    normalizeTemplateSetups(
+      migrateCoachState(seedState({ demo })) as CoachState,
+    ),
   );
   const [hydrated, setHydrated] = useState(false);
   const [storageOk, setStorageOk] = useState(true);
@@ -100,19 +103,7 @@ export function CoachProvider({
         if (isCoachState(parsed))
           setState(
             normalizeTemplateSetups(
-              adoptAthleteDataDemo(
-                adoptAthleteProfileDemo(
-                  adoptTrainingLogDemo(
-                    adoptClientAppDemo(
-                      adoptAmaraTrainingExample(parsed),
-                      localToday(),
-                    ),
-                    localToday(),
-                  ),
-                  localToday(),
-                ),
-                localToday(),
-              ),
+              (demo ? adoptCanvasDemos(parsed, localToday()) : parsed) as CoachState,
             ),
           );
         else {
@@ -131,7 +122,7 @@ export function CoachProvider({
       });
     }
     setHydrated(true);
-  }, []);
+  }, [demo]);
   useEffect(() => {
     if (!hydrated || preserveRaw.current) return;
     try {

@@ -1285,7 +1285,7 @@ export function submitFeedback(
 export function trainingSets(week: number) {
   return week < 4 ? 3 : 4;
 }
-export function seedState(): CoachState {
+export function seedState({ demo = true }: { demo?: boolean } = {}): CoachState {
   const strength = newTemplate("strength");
   strength.name = "Strength & balance";
   strength.description =
@@ -1496,15 +1496,28 @@ export function seedState(): CoachState {
       priorityNotifications: true,
     },
   };
+  // Card 05a: the adopters only mount when the caller wants the demo.
+  return demo ? adoptCanvasDemos(seeded, localToday()) : seeded;
+}
+
+/**
+ * The client-007 (Amara) demo chain: contest/competition fixtures, settings
+ * and the rest of the canvas demo content for the domains that still have no
+ * store endpoint. Gated behind `?demo=` by the store provider.
+ */
+export function adoptCanvasDemos(
+  state: CoachState,
+  today: string,
+): CoachState {
   return adoptAthleteDataDemo(
     adoptAthleteProfileDemo(
       adoptTrainingLogDemo(
-        adoptClientAppDemo(adoptAmaraTrainingExample(seeded), localToday()),
-        localToday(),
+        adoptClientAppDemo(adoptAmaraTrainingExample(state), today),
+        today,
       ),
-      localToday(),
+      today,
     ),
-    localToday(),
+    today,
   );
 }
 
