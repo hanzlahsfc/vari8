@@ -58,15 +58,16 @@ Actions ran.
 
 ## Contract self-validation
 
-The retained reference/candidate provenance still contains the pre-adoption v1 contract. `assertContract` now uses an explicit compatibility rule:
+The retained reference/candidate provenance still contains the pre-adoption v1 contract. Compatibility is a closed, named `retained-v1-to-approved-v2` transition:
 
-- version 2 is the owner-adopted contract; retained v1 (absent version) is accepted;
-- every material field must match exactly: source/tree identities, clock, timezone, geometry budget, pixelmatch threshold/AA, device scale factor, viewports, expected screens, s04 state, root trees and portability;
-- only administrative adoption fields (status/ownerDecision) may differ;
-- allowances may only be a subset of the current known allowances; unknown allowances and unknown contract versions fail;
-- original provenance is never rewritten.
+- version 2 is the exact owner-adopted contract; retained v1 (absent version) is the exact historical shape;
+- every required field must match the applicable schema exactly; missing or unknown fields fail;
+- authority, `implementedAlternative`, source/tree identities, clock, timezone, geometry budget, pixelmatch threshold/AA, device scale factor, viewports, expected screens, s04 state, root trees and portability are all checked exactly;
+- allowances are the exact approved sets, never a caller-selected subset; empty or missing sets fail;
+- the comparer's exact allowance rule identities and labels are checked independently;
+- no administrative field is normalized; original provenance is never rewritten.
 
-Tests cover legitimate adoption-only changes and reject changed clock/source/viewport/browser-rendering material settings, unknown allowances and unknown versions.
+Tests cover every SWE-2 probe (authority, `implementedAlternative`, unknown fields, empty/subset/missing/unknown allowances, administrative changes), the positive retained-v1-to-approved-v2 case, the historical v1 provenance, and allowance-rule contents.
 
 ## Durable comparison evidence
 
@@ -76,8 +77,10 @@ Tests cover legitimate adoption-only changes and reject changed clock/source/vie
 - reference: 245 files (244 mapped/package artifacts + mapping file);
 - evidence directory: 246 files; artifact index: 482 entries; old baseline: 242 files unchanged; old→proposed map: 272 entries.
 - `artifact-hashes.json`, `comparer.json`, `recompare.mjs`, `verify-evidence.mjs`, `evidence-lib.mjs`.
-- `receipts/canonical.json`, `receipts/strict.json`, `receipts/metadata.json` are **new recomparisons**, not original receipts or new captures. They record comparer SHA `6ea1115863f8132e3243258c05ee3a9a984e61cb9c1a5c024e66be301bb5be95`, legacy comparer SHA `56a709a4c334526b5991b15868775bf3ed843e5552535a4b2e472090d4788e3a`, contract SHA `4a29fd5c68cd00fb544be375622652849dd2a6e21e55804b92a5baa1699b6363`, and reference/candidate manifest/provenance/artifact-index hashes.
-- Historical receipts have no comparer provenance; that limitation is preserved and disclosed.
+- `receipts/canonical.json`, `receipts/strict.json`, `receipts/metadata.json` are **new recomparisons**, not original receipts or new captures. The metadata is `receiptVersion: 2` and pins the reviewed execution closure: `reference.mjs`, `reference/compare.mjs`, legacy `compare.mjs`, `capture.mjs`, `capture-metadata.mjs`, `recompare.mjs`, `verify-evidence.mjs`, `evidence-lib.mjs`, both lockfiles, direct dependency pins, contract and comparer manifest.
+- `comparer.json` is the reviewed pin manifest (`visual-reference-comparer-v2`); its current SHA is `8bc293554f2d31d11beaf009efa18cfcff09371feafb2c60e0fb50a0bf6d080d`. Changing a pinned component or lock fails verification and `recompare` refuses to generate receipts until the pins are explicitly reviewed/updated.
+- No self-hash loop: the manifest does not hash itself; metadata hashes the manifest but not itself; generated receipt result files are excluded. Artifact-index and shot-index hashes are inputs; the 482 artifacts are verified separately. Historical receipts have no comparer provenance; that limitation is preserved and disclosed.
+- Candidate captures contain synthetic application data, but provenance also retains local absolute paths, browser command lines, process IDs/start times and ownership metadata. The package is therefore **not purely synthetic**. No credentials/tokens/keys/database URLs/auth secrets were found; local runtime metadata is retained for reproducibility and any redaction needs separate owner authorization.
 
 Allowances actually applied: D18 and S11-04 on s03-checkin-review@1440 and other 1440 screens; S11-03 on s11-preferences; S03-18 on both s03-checkin-review widths. No allowance/mask was added beyond the owner-approved S03-18 exact rule.
 
@@ -114,8 +117,8 @@ strict pixel comparison remains the separate 68/70 diagnostic.
 
 Task-local runs on Node `v24.22.1`:
 
-- Unit/validation: **106 files / 1283 tests**, exit 0 (fresh final run).
-- Focused reference tests: **13/13**, exit 0 (fresh Prompt 423 run).
+- Unit/validation: **106 files / 1286 tests**, exit 0 (fresh final run).
+- Focused reference tests: **16/16**, exit 0 (fresh Prompt 425 run).
 - Typecheck: exit 0. Lint: exit 0, 0 errors / 81 warnings. Format: exit 0.
 - Index generation/check: exit 0; historical/candidate source trees remain exact.
 - Build: exit 0; historical and candidate builds were also 0 under their lockfiles.
@@ -126,11 +129,15 @@ Task-local runs on Node `v24.22.1`:
   packaging.
 - Canonical comparison recomputed: **70/70**; strict diagnostic recomputed: **68/70**. Historical 68/70 is
   preserved. The proposed reference remains unactivated; no baseline was refreshed.
-- Clean detached checkout of the code/evidence contents at `c93f33b` (Node v24.22.1; `npm ci
---ignore-scripts` at root and in `tools/parity/reference`; no `outputs/p414` input):
+- Clean detached checkout at code/evidence commit `11bfe70` under a path containing spaces and
+  non-ASCII characters (`.../PR 425 – référence/clean checkout`), Node v24.22.1; lockfile installs at
+  root and `tools/parity/reference`; no `outputs/p414` input:
   `verify-evidence.mjs` exit 0 with 482 artifacts, canonical 70/70 and strict 68/70;
-  `recompare.mjs` reproduced the committed receipts byte-for-byte and left the worktree clean.
-  Receipt JSON is generated and Prettier-ignored so clean recomparison remains byte-stable.
+  two `recompare.mjs` runs had identical stdout and receipt bytes (canonical
+  `f92a5d30…`, strict `cef4510d…`, metadata `3ed5354b…`) and left `git status` clean.
+  This directly exercises the `fileURLToPath` fix; the earlier `URL.pathname` implementation failed
+  under the same space-containing path.
+- Receipt JSON is generated and Prettier-ignored so clean recomparison remains byte-stable.
 
 ## Integration sequence (documented, not executed)
 

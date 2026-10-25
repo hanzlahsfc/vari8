@@ -1,3 +1,10 @@
+## Prompt 425 contract/provenance repair
+
+- Exact v1/v2 contract schemas with no field subsetting or administrative normalization; exact allowance sets and comparer rule identities; positive v1→v2 compatibility and all SWE-2 negative probes covered.
+- Reviewed execution-pin manifest covers reference, both comparers, capture, capture metadata, recompare, verifier, evidence library, lockfiles, direct dependency pins and contract. Receipt metadata v2 detects omitted/tampered components; no self-hash claims.
+- `recompare.mjs` uses `fileURLToPath`; clean checkout under spaces/non-ASCII: 482 artifacts, canonical 70/70, strict 68/70, byte-stable repeat, clean worktree.
+- No capture/reference/threshold/S03-18 change; no merge, retarget, baseline activation or self-SHIP.
+
 # VISUAL-REFERENCE — reproducible reference establishment
 
 Owner request: Prompt 414 (2026-10-25). Prompt 417 owner decisions are recorded below; proposal remains unactivated and stops for independent review.
