@@ -3,7 +3,7 @@
 // draft key (configuration, entries and coach comments). PR-W4 wires this
 // domain to the server; it edits this file only.
 
-import type { CoachClient, CoachState } from "../coach/model";
+import type { CoachClient } from "../coach/model";
 import type {
   TrackerConfig as PreviewTrackerConfig,
   TrackerParameter,
