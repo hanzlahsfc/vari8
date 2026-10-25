@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 // PR-31: installable PWA surface only. `display: "standalone"` promises an
 // app-like window; it does NOT promise offline support, and no service
 // worker ships here. Colors are the pro-dark theme tokens
-// (themes/pro-dark.css): base #191919, accent #e34332.
+// (themes/pro-dark.css, v8 values): base #0b0b0c, accent #eb91b8.
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Vari8",
@@ -13,8 +13,8 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     scope: "/",
     display: "standalone",
-    background_color: "#191919",
-    theme_color: "#191919",
+    background_color: "#0b0b0c",
+    theme_color: "#0b0b0c",
     icons: [
       {
         src: "/icons/icon-192.png",

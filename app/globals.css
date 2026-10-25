@@ -6,6 +6,15 @@
  * Application base styles. Colors and spacing come exclusively from the theme
  * custom properties (see themes/). No hex values belong here.
  */
+/* VARI8 Geist variable font, same @font-face as
+ * frontend/src/styles/vari8-tokens.css --v8-font-family-ui (weights 100-900). */
+@font-face {
+  font-family: "VARI8 Geist";
+  src: url("/fonts/InfinityGeist.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
 /* PR-01: in the base layer so the canvas routes' own base body rule wins there. */
 @layer base {
   body {
@@ -58,20 +67,28 @@
 .auth-button {
   padding: var(--space-2) var(--space-4);
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   background-color: var(--color-accent);
-  color: var(--color-text-primary);
+  color: var(--color-on-accent);
   font: inherit;
   cursor: pointer;
 }
 
+.auth-button:hover {
+  background-color: var(--color-accent-hover);
+}
+
+.auth-button:active {
+  background-color: var(--color-accent-active);
+}
+
 .auth-error {
   margin: 0;
-  color: var(--color-accent);
+  color: var(--color-danger);
   font-size: var(--font-size-sm);
 }
 
-/* Phase 3.1/3.2 invite + reset forms — scoped additions (login unchanged). */
+/* Phase 3.1/3.2 invite + reset forms - scoped additions (login unchanged). */
 .auth-hint {
   margin: 0;
   color: var(--color-text-secondary);
@@ -251,7 +268,7 @@
 }
 
 .notice {
-  border: 1px solid var(--color-accent);
+  border: 1px solid var(--color-accent-border);
   border-radius: var(--radius-md);
   padding: var(--space-2) var(--space-3);
   color: var(--color-text-primary);
@@ -290,7 +307,7 @@
 }
 
 .daily-errors {
-  color: var(--color-accent);
+  color: var(--color-danger);
   font-size: var(--font-size-sm);
   margin: var(--space-2) 0;
 }
@@ -374,7 +391,7 @@
   margin-top: auto;
 }
 
-/* FI-I3: bounded appearance control — two real themes only; the
+/* FI-I3: bounded appearance control - two real themes only; the
    selected button gets the accent outline so state is visible, not
    aria-only. Tokens only; no new palette. */
 .theme-toggle {
@@ -399,12 +416,12 @@
 }
 
 .theme-toggle__button:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
 .theme-toggle__button[aria-pressed="true"] {
-  border-color: var(--color-accent);
+  border-color: var(--color-accent-border);
 }
 
 .shell__signout {
@@ -447,7 +464,7 @@
   max-width: 32rem;
 }
 
-/* Tablet: top bar with horizontally scrollable navigation (640–1023px). */
+/* Tablet: top bar with horizontally scrollable navigation (640-1023px). */
 @media (max-width: 1023px) {
   .shell {
     grid-template-columns: minmax(0, 1fr);
@@ -599,7 +616,7 @@
 }
 
 .tracker__nav-link:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -708,7 +725,7 @@
   font-size: var(--font-size-sm);
 }
 
-/* Tablet (640–1023px): single column, horizontal section chips, touch targets. */
+/* Tablet (640-1023px): single column, horizontal section chips, touch targets. */
 @media (max-width: 1023px) {
   .tracker {
     grid-template-columns: minmax(0, 1fr);
@@ -797,7 +814,7 @@
 }
 
 .catalog-search__input:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -805,11 +822,19 @@
   min-height: 44px;
   padding: var(--space-2) var(--space-4);
   border: 0;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-pill);
   background-color: var(--color-accent);
-  color: var(--color-text-primary);
+  color: var(--color-on-accent);
   font: inherit;
   cursor: pointer;
+}
+
+.catalog-search__submit:hover {
+  background-color: var(--color-accent-hover);
+}
+
+.catalog-search__submit:active {
+  background-color: var(--color-accent-active);
 }
 
 .catalog-search__submit:focus-visible {
@@ -954,7 +979,7 @@
   letter-spacing: 0.02em;
 }
 
-/* --- P-010 read-only client roster — pagination ---------------------------
+/* --- P-010 read-only client roster - pagination ---------------------------
  * Link targets keep ≥44px hit areas at every width; the row never wraps or
  * scrolls horizontally.
  */
@@ -981,7 +1006,7 @@
 }
 
 .roster-pagination__link:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -1011,7 +1036,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background-color: var(--color-surface);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .assignment-create {
@@ -1029,7 +1054,7 @@
 }
 
 .assignment-row__actions {
-  /* No nowrap — the 390px layout must wrap instead of overflowing. */
+  /* No nowrap - the 390px layout must wrap instead of overflowing. */
   min-width: 0;
 }
 
@@ -1046,7 +1071,7 @@
 }
 
 .assignment-button-secondary:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -1131,14 +1156,14 @@
   overflow-wrap: anywhere;
 }
 
-/* P-025-A: ≥44px touch targets on staff catalog-surface action controls —
+/* P-025-A: ≥44px touch targets on staff catalog-surface action controls -
  * scoped to .catalog-page so login/auth flows keep their reviewed sizing.
  */
 .catalog-page .auth-button {
   min-height: 44px;
 }
 
-/* P-025-D2 — Check-In calendar: layout only; colors come from themes. */
+/* P-025-D2 - Check-In calendar: layout only; colors come from themes. */
 .checkin-calendar__toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -1228,7 +1253,7 @@
 
 /* ── FRONTEND-INTEGRATION-I1: Lily-derived DailyEntry treatment ──────
  * Ported from Lily's tracking-view/tracker-cell CSS (commit ccef6211)
- * onto the existing theme tokens — translucent surfaces, soft radii,
+ * onto the existing theme tokens - translucent surfaces, soft radii,
  * tabular figures, gentle hover/focus transitions. No hex literals,
  * no new fonts, no dependencies. */
 
@@ -1276,7 +1301,7 @@
 .de-datenav__input:focus-visible,
 .de-cell__input:focus-visible,
 .de-save:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--color-focus);
   outline-offset: 2px;
 }
 
@@ -1453,8 +1478,8 @@
   }
 }
 
-/* ── FI-I2 client Home — Lily-direction navigation cards ─────────────
- * Translucent card treatment on the existing theme tokens — no new
+/* ── FI-I2 client Home - Lily-direction navigation cards ─────────────
+ * Translucent card treatment on the existing theme tokens - no new
  * fonts, dependencies, or data. */
 
 .home-cards {
@@ -1510,7 +1535,7 @@
   }
 }
 
-/* DASHBOARD-I1: shared arrangement grid — token-only, theme-consistent. */
+/* DASHBOARD-I1: shared arrangement grid - token-only, theme-consistent. */
 .dashboard-toolbar {
   display: flex;
   align-items: center;
