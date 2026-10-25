@@ -43,3 +43,8 @@ No product UI, fonts, old baselines, mask expansion, waiver, merge, deployment o
 - Contract v2 compatibility accepts retained v1 only when all material capture/comparison fields match; adoption-only metadata differences are accepted, unknown versions/allowances and material changes fail. Original provenance unchanged.
 - Candidate 237-file evidence and reference 245-file package are committed under `tools/parity/reference/evidence/`; artifact index 482; verifier/recompare are self-contained. New recomparisons: canonical 70/70, strict 68/70; historical 68/70 preserved.
 - No capture/tolerance/mask/S03-18 change. Clean checkout at `c93f33b` verified 482 artifacts, canonical 70/70, strict 68/70 and byte-stable recomparison. No merge, retarget or baseline activation; stop for SWE-2 validation.
+
+## Prompt 427 combined gate preparation
+
+- Owner authorized combined #203+#206 result verification and disclosed cross-review. Prep branch `beta/p203-p206-combined-verification` preserves both PR branches and adds only explicit proposed-reference/capture/output/comparer env paths.
+- Fresh combined-app capture on synthetic `app_p427`: canonical 70/70, strict 68/70; active old baseline diagnostic remains 70 failures. No merge, retarget or baseline activation.

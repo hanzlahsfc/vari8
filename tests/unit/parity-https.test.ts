@@ -1,7 +1,8 @@
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
 import { AddressInfo } from "node:net";
+import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -49,6 +50,30 @@ afterEach(async () => {
   proxy = null;
   backend = null;
   ownedChild = null;
+});
+
+describe("parity runner configuration", () => {
+  it("refuses to update a non-baseline reference directory", () => {
+    const run = spawnSync(
+      process.execPath,
+      [
+        fileURLToPath(new URL("../../tools/parity/run.mjs", import.meta.url)),
+        "--update-baseline",
+      ],
+      {
+        env: {
+          ...process.env,
+          PARITY_REFERENCE_DIR: "tools/parity/reference/proposed",
+          PARITY_OUT_DIR: fs.mkdtempSync("/tmp/parity-out-"),
+        },
+        encoding: "utf8",
+      },
+    );
+    expect(run.status).toBe(2);
+    expect(run.stderr).toContain(
+      "--update-baseline must not target PARITY_REFERENCE_DIR",
+    );
+  });
 });
 
 describe("local TLS proxy", () => {

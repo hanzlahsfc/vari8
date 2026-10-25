@@ -8,6 +8,8 @@
 // PARITY_DEV=1 uses next dev on the same private backend port (debugging only; dev timing noise makes the gate flaky).
 // npm run parity -- --update-baseline   recaptures the baseline instead of comparing (needs PARITY_APP=frontend).
 // PARITY_APP=frontend serves frontend/ (no session) instead of the root app; the baseline comes from there.
+// Explicit isolated prep runs may set PARITY_REFERENCE_DIR + PARITY_OUT_DIR, and may use
+// PARITY_CAPTURE_MODULE plus PARITY_COMPARER=reference for the owner-adopted reference gate.
 // Sign-in (root app): PARITY_USER_EMAIL and PARITY_USER_PASSWORD name an existing account. Without a password the
 // run upserts the dev user (icm/05-build/tools/dev-user.ts) with a fresh password on DATABASE_URL, a lane database.
 import { spawn, spawnSync } from "node:child_process";
@@ -16,9 +18,8 @@ import { openSync } from "node:fs";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { createLocalTlsProxy } from "../local-tls-proxy.mjs";
-import { captureAll, INDEX_PATH } from "./capture.mjs";
 import { compareRuns, ConfigError, envThresholds } from "./compare.mjs";
 import {
   browserCookies,
@@ -37,12 +38,18 @@ const FE = path.join(ROOT, "frontend");
 const ROOT_APP = process.env.PARITY_APP !== "frontend";
 const APP = ROOT_APP ? ROOT : FE;
 const NEXT_BIN = path.join(ROOT, "node_modules/next/dist/bin/next");
-const OUT = path.join(HERE, "out");
+const OUT = path.resolve(process.env.PARITY_OUT_DIR ?? path.join(HERE, "out"));
 const CUR = path.join(OUT, "current");
-const BASE = path.join(HERE, "baseline");
+const BASE = path.resolve(
+  process.env.PARITY_REFERENCE_DIR ?? path.join(HERE, "baseline"),
+);
 const LOG = path.join(OUT, "server.log");
 const update = process.argv.includes("--update-baseline");
 const DEV = process.env.PARITY_DEV === "1";
+const CAPTURE_MODULE = process.env.PARITY_CAPTURE_MODULE
+  ? pathToFileURL(path.resolve(process.env.PARITY_CAPTURE_MODULE)).href
+  : new URL("./capture.mjs", import.meta.url).href;
+const { captureAll, INDEX_PATH } = await import(CAPTURE_MODULE);
 
 class Refuse extends Error {}
 
@@ -125,6 +132,18 @@ let th;
 let pinned;
 let externalUrl;
 try {
+  if (
+    process.env.PARITY_COMPARER !== undefined &&
+    process.env.PARITY_COMPARER !== "reference"
+  )
+    throw new ConfigError(`PARITY_COMPARER must be "reference" when set`);
+  if (
+    process.env.PARITY_COMPARER === "reference" &&
+    !process.env.PARITY_REFERENCE_DIR
+  )
+    throw new ConfigError(
+      "PARITY_COMPARER=reference requires an explicit PARITY_REFERENCE_DIR",
+    );
   th = envThresholds();
   pinned = pinnedPort();
   externalUrl = process.env.PARITY_URL
@@ -148,6 +167,10 @@ const agentsPath = path.join(APP, "AGENTS.md");
 const agentsBefore = await readFile(agentsPath, "utf8");
 let code = 1;
 try {
+  if (update && process.env.PARITY_REFERENCE_DIR)
+    throw new Refuse(
+      "--update-baseline must not target PARITY_REFERENCE_DIR; only the active baseline may be updated by its own reviewed flow",
+    );
   if (update && ROOT_APP)
     throw new Refuse(
       "--update-baseline captures the frontend/ canvas; set PARITY_APP=frontend",
@@ -302,16 +325,35 @@ try {
       );
       code = 1;
     } else {
-      const r = await compareRuns({
-        baseline: BASE,
-        current: CUR,
-        report: path.join(OUT, "report.html"),
-        th,
-      });
-      console.log(
-        `parity ${r.failed ? "FAIL" : "PASS"}: ${r.failed} problem(s), retried=${m.retried ?? 0}; report ${r.report}`,
-      );
-      code = r.failed ? 1 : 0;
+      if (process.env.PARITY_COMPARER === "reference") {
+        const { compareRuns: compareReference } =
+          await import("./reference/compare.mjs");
+        const canonical = compareReference(BASE, CUR);
+        const strict = compareReference(BASE, CUR, { strict: true });
+        await writeFile(
+          path.join(OUT, "proposed-canonical.json"),
+          JSON.stringify(canonical, null, 2) + "\n",
+        );
+        await writeFile(
+          path.join(OUT, "proposed-strict.json"),
+          JSON.stringify(strict, null, 2) + "\n",
+        );
+        console.log(
+          `proposed-reference canonical ${canonical.failed ? "FAIL" : "PASS"}: ${canonical.failed} problem(s), strict diagnostic ${strict.failed} problem(s), retried=${m.retried ?? 0}; receipts ${OUT}`,
+        );
+        code = canonical.failed ? 1 : 0;
+      } else {
+        const r = await compareRuns({
+          baseline: BASE,
+          current: CUR,
+          report: path.join(OUT, "report.html"),
+          th,
+        });
+        console.log(
+          `parity ${r.failed ? "FAIL" : "PASS"}: ${r.failed} problem(s), retried=${m.retried ?? 0}; report ${r.report}`,
+        );
+        code = r.failed ? 1 : 0;
+      }
     }
   }
 } catch (e) {
