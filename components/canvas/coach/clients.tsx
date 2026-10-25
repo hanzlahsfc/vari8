@@ -28,6 +28,7 @@ import {
   uid,
   unreadCount,
 } from "./model";
+import { ClientTrainingLogs } from "./client-training-logs";
 import { ClientPlansSummary } from "./plans/setup-ui";
 import { useCoach } from "./store";
 import { templateSetup } from "./template-setup";
@@ -317,11 +318,14 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
       {tab === "Overview" && <AthleteOverview client={c} />}
       {tab === "Timeline" && <AthleteTimelineTab client={c} />}
       {tab === "Plans" && (
-        <ClientPlansSummary
-          client={c}
-          expanded
-          onAssign={() => setAssign(true)}
-        />
+        <>
+          <ClientPlansSummary
+            client={c}
+            expanded
+            onAssign={() => setAssign(true)}
+          />
+          <ClientTrainingLogs client={c} />
+        </>
       )}
       {tab === "Check-ins" && (
         <Surface>

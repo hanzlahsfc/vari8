@@ -278,6 +278,9 @@ export function mergeCheckinLoad(
               ...item,
               answers: previous.answers,
               visuals: previous.visuals,
+              // The header list is answer-free and flag-free: both come
+              // from the audited detail read, so keep them with it.
+              flags: previous.flags,
               response: previous.response,
             }
           : item;
@@ -492,6 +495,14 @@ export type CheckInReviewPanelWire = {
     changed: CheckInAnswerChangeWire[];
     unchanged: number;
   } | null;
+  /** Card 11/#176: set-log notes the client flagged for the coach. */
+  flaggedTrainingNotes: {
+    sessionLogId: string;
+    performedDate: string;
+    exerciseName: string;
+    set: number;
+    note: string;
+  }[];
 };
 
 /**
@@ -520,6 +531,15 @@ export async function loadCheckInReview(
         .filter((field) => field.kind !== "visual")
         .map((field) => ({ question: field.label, answer: field.display })),
       visuals: panel.fields.flatMap((field) => field.mediaIds),
+      // #176: the flagged set notes the review surface draws — the
+      // server resolves exercise names through each log's pinned
+      // version, so the label matches what the client logged against.
+      flags: (panel.flaggedTrainingNotes ?? []).map((note) => ({
+        exercise: note.exerciseName,
+        set: note.set,
+        date: note.performedDate,
+        text: note.note,
+      })),
       response: sent
         ? {
             text: sent.body,

@@ -111,3 +111,30 @@
 .coach-root .cd-nt-pin.is-pinned {
   color: var(--cd-accent);
 }
+
+/* Card 11/#176: logged training sessions on client detail. */
+.coach-root .cd-training-logs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.coach-root .cd-training-log {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 0;
+  border-top: 1px solid var(--cd-line, var(--v8-border, rgba(0, 0, 0, 0.08)));
+}
+.coach-root .cd-training-log:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+.coach-root .cd-training-log-ex {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 12px;
+}
+.coach-root .cd-training-log-ex small {
+  color: var(--cd-muted);
+}
