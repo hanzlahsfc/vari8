@@ -1,18 +1,18 @@
 # Reproducible visual reference proposal — issue #205 / draft PR #206
 
-Status: proposed, requires independent DeepSeek review. No parity waiver or baseline acceptance.
+Status: owner-adopted proposal, still requiring independent review and PR #203 before activation. No parity waiver, baseline activation or merge.
 
-This tooling is stacked on unmerged PR #203 at `90c16bee63e2609ebc4f09e91459332390562464`. It imports that code's process/TLS/cookie helpers and derives a hash-recorded capture adapter from its exact committed capture module. Existing `capture.mjs`, `compare.mjs`, masks and `baseline/` are unchanged. This PR must not be independently landed without its dependency.
+This tooling is stacked on unmerged PR #203 at `90c16bee63e2609ebc4f09e91459332390562464`. It imports that code's process/TLS/cookie helpers and derives a hash-recorded capture adapter from its exact committed capture module. Existing `capture.mjs` and `baseline/` are unchanged; `compare.mjs` gains only the exact owner-ruled S03-18 recorder-copy/geometry disposition. This PR must not be independently landed without its dependency.
 
 ## Authority and contract
 
-`contract.json` proposes the explicit owner-overriding D32 contract from `icm/03-plan/DECISIONS.md`: 09:00 Vienna fixed clock, bounding-box differences <=1 CSS pixel, exact text/role/accessible name, pixelmatch 7.1.0 threshold 0.1/default `includeAA=false`, changed fraction <=0.001 independently for the main screenshot and every scroll image. Size and scroll-coverage differences always fail. All three existing allowance rules and their 14px masks remain imported unchanged. No environment budget overrides are accepted by this lane.
+`contract.json` records the explicit owner-overriding D32 contract adopted by Prompt 417 from `icm/03-plan/DECISIONS.md`: 09:00 Vienna fixed clock, bounding-box differences <=1 CSS pixel, exact text/role/accessible name, pixelmatch 7.1.0 threshold 0.1/default `includeAA=false`, changed fraction <=0.001 independently for the main screenshot and every scroll image. Size and scroll-coverage differences always fail. The three pre-existing allowance rules and their 14px masks remain unchanged; Prompt 417 adds only the exact S03-18 text/geometry rule. No environment budget overrides are accepted by this lane.
 
 The legacy implementation uses 10:00/.5px/zero channel and pixel budgets. Its verifier receipts explain the zero-tolerance change, but do not amend the higher-priority owner D32 document. The contract was chosen and committed before captures, not selected by results. Strict .5px/zero-pixel diagnostics are also reported on the 09:00 images; they are not a fresh run of the legacy 10:00 gate. Any owner change to D32 requires a corresponding separately reviewed contract update; document drift fails closed.
 
 Reference authority is the historical frontend at `c78311042edcc2f96350a132c682782d8da1b6a7`, with its exact locks. `17352b0`/`55a0f08`/`706fe2f` share the predecessor frontend tree; only 15 test/check files differ through c783110. Recoverable production capture source does not require unavailable merge-proto 58eb6ed. Later FRONTEND publications, including #151/#204 and open CANVAS-PORT #188, are separate product evolution and are not silently imported here.
 
-s04 uses the accepted template-navigation Habits state, not historical right-panel switches/Tabs. Other recipes remain unchanged. Root-app screenshots are prohibited as expected output. Existing S11-03 sign-out/D18 role/S11-04 workspace allowances are preserved without expansion. Unexplained root differences remain findings.
+s04 uses the accepted template-navigation Habits state, not historical right-panel switches/Tabs. Other recipes remain unchanged. Root-app screenshots are prohibited as expected output. Existing S11-03 sign-out/D18 role/S11-04 workspace allowances are preserved without expansion, plus the exact Prompt-417 S03-18 recorder rule. Unrelated root differences remain findings.
 
 ## Procedure
 

@@ -13,6 +13,7 @@ import {
   comparePixels,
   compareGeometry,
 } from "../../tools/parity/reference/compare.mjs";
+import { applyRuled, geomDiff } from "../../tools/parity/compare.mjs";
 import { createRequire } from "node:module";
 type FixturePng = { data: Buffer };
 const { PNG } = createRequire(
@@ -328,4 +329,84 @@ it("maps replacement manifest hashes as well as image hashes", async () => {
   expect(
     mapped.find((x) => x.path === "provenance.json")?.oldSha256,
   ).toBeNull();
+});
+
+it("disposes only the exact S03-18 recorder copy/geometry decision", () => {
+  const buttonKey = "main>section[0]>button[2]";
+  const otherKey = "main>section[0]>div[3]";
+  const baseRows = [
+    [
+      buttonKey,
+      "button",
+      100,
+      200,
+      244.5,
+      44,
+      "Record demo video feedback",
+      "button",
+      "Record demo video feedback",
+    ],
+    [otherKey, "div", 0, 0, 100, 20, "Old label", "text", "Old label"],
+  ];
+  const currentRows = [
+    [
+      buttonKey,
+      "button",
+      100,
+      200,
+      205.5,
+      44,
+      "Record video feedback",
+      "button",
+      "Record video feedback",
+    ],
+    [otherKey, "div", 0, 0, 120, 20, "New label", "text", "New label"],
+  ];
+
+  const diff = geomDiff(baseRows, currentRows);
+  const ruled = applyRuled("s03-checkin-review", diff, baseRows, currentRows);
+
+  expect(ruled.rules).toEqual([
+    "S03-18 real video feedback copy and width (Prompt 417)",
+  ]);
+  expect(ruled.geom.texts.map((x: { key: string }) => x.key)).toEqual([
+    otherKey,
+  ]);
+  expect(ruled.geom.moved.map((x: { key: string }) => x.key)).toEqual([
+    otherKey,
+  ]);
+  expect(ruled.masks).toHaveLength(2);
+
+  const wrongCopy = [
+    [
+      buttonKey,
+      "button",
+      100,
+      200,
+      205.5,
+      44,
+      "Record demo video",
+      "button",
+      "Record demo video",
+    ],
+    currentRows[1],
+  ];
+  const wrongDiff = geomDiff(baseRows, wrongCopy);
+  const wrong = applyRuled(
+    "s03-checkin-review",
+    wrongDiff,
+    baseRows,
+    wrongCopy,
+  );
+  expect(wrong.rules).not.toContain(
+    "S03-18 real video feedback copy and width (Prompt 417)",
+  );
+  expect(wrong.geom.texts.map((x: { key: string }) => x.key)).toEqual([
+    buttonKey,
+    otherKey,
+  ]);
+  expect(wrong.geom.moved.map((x: { key: string }) => x.key)).toEqual([
+    buttonKey,
+    otherKey,
+  ]);
 });

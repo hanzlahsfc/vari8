@@ -42,6 +42,14 @@ export function envThresholds(env = process.env) {
 // including a ruled element's neighbours moving, still fails.
 export const RULED = [
   {
+    rule: "S03-18 real video feedback copy and width (Prompt 417)",
+    text: {
+      tag: "button",
+      base: "Record demo video feedback",
+      now: "Record video feedback",
+    },
+  },
+  {
     rule: "D18 real role in the account block",
     text: { tag: "small", base: "Coach", now: "Owner" },
   },

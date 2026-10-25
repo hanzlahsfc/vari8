@@ -1,6 +1,6 @@
 # VISUAL-REFERENCE — historical canvas reference proposal (#205 / PR #206)
 
-Status: **PROPOSED, NOT ACCEPTED**. This is a builder handoff for independent review.
+Status: **OWNER-ADOPTED PROPOSAL, NOT ACTIVATED**. This is a builder handoff for independent review.
 Base/dependency: PR #203 `90c16bee63e2609ebc4f09e91459332390562464` (unmerged).
 Issue #202 remains open; no merge, deployment, Actions, waiver or visual acceptance is claimed.
 
@@ -14,7 +14,7 @@ Issue #202 remains open; no merge, deployment, Actions, waiver or visual accepta
 - Geometry: every visible element's role/accessible name/text and bounding box within 1 CSS pixel.
 - Pixelmatch 7.1.0 threshold 0.1, `includeAA=false`; changed fraction <= 0.001 for the main image and
   each scroll image; size differences always fail.
-- Existing allowances only: S11-03, D18, S11-04, with their unchanged 14px masks.
+- Existing allowances S11-03, D18 and S11-04 are unchanged; Prompt 417 adds exact S03-18 only.
 - Implemented 10:00/.5px/zero-pixel-budget settings are retained only as a separately named strict
   diagnostic; they do not amend D32. The contract was committed before captures.
 
@@ -36,7 +36,9 @@ Two independent reference server/browser runs:
 
 Proposed artifacts are under `tools/parity/reference/proposed/`: reference images and geometry,
 manifest, provenance, stability, comparison results, old hash list and the old→proposed map. The
-mapping has 272 entries; the proposal contains 244 files (including manifest/provenance). The old
+mapping retains 272 entries; the proposal contains 245 files: 244 mapped proposed artifacts plus
+`old-proposed-artifact-map.json` itself. The 28 unpaired map paths are old-only scroll/capture
+artifacts whose historical replacement offsets/artifacts are intentionally absent. The old
 `tools/parity/baseline/` remains byte-identical.
 
 ## Provenance/environment
@@ -65,28 +67,30 @@ Actions ran.
   Button width changes `244.5 → 205.5` px (**39px**) at both widths. Pixel counts remain within the
   canonical budget (`624`/`625` changed), but the geometry contract fails independently.
 - Current root screenshots are never used as expected output.
+- Post-decision mechanical accounting on the committed comparison: canonical geometry/text now disposes
+  both exact S03-18 failures, so the canonical disposition is 70/70. The strict legacy diagnostic remains
+  reported as the preserved 68/70 receipt because this package does not contain the raw candidate image
+  directory needed to recompute masked pixels; no strict pass is fabricated.
 
-### s03 copy disposition
+### s03 copy disposition — Prompt 417
 
 Historical `frontend/src/components/coach/media.tsx:264-265` (source `c783110`) uses the demo copy.
 The real recorder added by PR-MEDIA commit `21d8fc0` introduced “Record video feedback” at
 `components/canvas/coach/demo-recorder.tsx:203`; `e355c59` wired the real recorder into the root
-canvas chain. PR-MEDIA/S02-25 describes dropping demo-only copy, but the owner D32 truth-text table
-does not include this button and issue #205 authorizes only the existing S11-03/D18/S11-04 allowances.
-No explicit owner approval for this exact copy/geometry change was found.
+canvas chain. Prompt 417 keeps the real-recorder copy and accepts the demonstrated 39px narrower
+button as exact rule S03-18.
 
-Therefore both s03 failures remain explicit. I did **not** add a mask, widen tolerance, or baseline
-the current app. An owner decision is required for this exact copy change; if rejected, the current
-app or reference must change in a separately reviewed repair, not by a parity waiver.
+The disposition uses the existing ruled-change mechanism: exact tag, historical text, current text
+and screen must match, and only that element's baseline/current boxes leave pixel comparison. No
+whole-screen mask, global tolerance, current-root expectation or unrelated UI difference is allowed.
 
 ## Verification
 
 Task-local runs on Node `v24.22.1`:
 
 - Unit/validation: **106 files / 1280 tests**, exit 0 (fresh final run).
-- Focused reference tests: **10/10**, exit 0 (fresh final run).
-- Typecheck: exit 0. Lint: exit 0, **0 errors / 81 warnings** (pre-existing warnings).
-- Format source-policy check: pass; generated proposed artifacts are intentionally Prettier-ignored.
+- Focused reference tests: **11/11**, exit 0 (fresh Prompt 417 run).
+- Typecheck: exit 0. Lint on changed code paths: exit 0. Format on changed files: exit 0.
 - Index generation/check: exit 0; historical/candidate source trees remain exact.
 - Build: exit 0; historical and candidate builds were also 0 under their lockfiles.
 - `git diff --check`: 0; old baseline diff: 0.
@@ -96,11 +100,11 @@ Task-local runs on Node `v24.22.1`:
 
 ## Remaining blockers
 
-1. Independent review of the proposed reference replacement and its provenance/host limitations.
-2. Explicit owner decision on the s03 “Record demo video feedback” → “Record video feedback” copy
-   and its 39px geometry consequence; existing allowances are unchanged.
-3. PR #203 must be accepted/merged or otherwise handled before this stacked PR can be retargeted;
+1. Independent review of the proposed reference replacement, adopted contract, S03-18 exact rule
+   and provenance/host limitations.
+2. PR #203 must be accepted/merged or otherwise handled before this stacked PR can be retargeted;
    issue #202 remains unresolved.
-4. No parity PASS or visual acceptance is claimed; the current root comparison is 68/70.
+3. No baseline activation, parity waiver, merge or visual acceptance is claimed; the preserved
+   pre-decision comparison remains 68/70 and the post-decision comparison is reported separately.
 
 No self-approval, merge, deployment, Actions, Slack/Hermes, website or shared-infrastructure changes.

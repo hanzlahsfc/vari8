@@ -1,3 +1,23 @@
+## 2026-10-25 — VISUAL-REFERENCE #205 Prompt 417 — owner decisions recorded; activation still held
+
+- Owner adopted `D32-owner-written-v1`: 09:00 Europe/Vienna, 1 CSS-pixel geometry, pixelmatch
+  threshold 0.1 and changed-pixel fraction <=0.001. The legacy 10:00/.5px/zero settings remain a
+  separate strict diagnostic only.
+- Owner accepted the real-recorder copy `Record video feedback`, including the demonstrated 39px
+  narrower button. Recorded as exact S03-18 truth-text/geometry rule; unrelated text, movement,
+  added/removed elements and pixel differences still fail.
+- `tools/parity/reference/proposed/` contains 245 files: 244 mapped proposed artifacts plus the
+  mapping file. The 272-entry map remains, including 28 honest old-only paths with no proposed
+  counterpart because their historical offsets/artifacts differ.
+- Prompt 417 checks on Node 24.22.1: focused reference tests 11/11, format/index/typecheck/lint and
+  `git diff --check` exit 0. Preserved comparison remains canonical 68/70 and strict 68/70; the exact
+  rule disposes both canonical s03 geometry/text failures. Strict pixel outcome is not recomputed here
+  because the raw candidate capture directory is not part of the committed package; no strict pass is
+  claimed.
+- Scope remains the historical/current-Beta reference only. FRONTEND `9491897` and Marcel's
+  unpublished full-package pipeline are not certified or imported. Baseline activation, merge and
+  issue #202 resolution remain held behind independent review and unmerged PR #203 `90c16be`.
+
 ## 2026-10-25 — VISUAL-REFERENCE #205 — historical reference proposal packaged; s03 copy decision outstanding
 
 - Authority/contract: historical frontend `c78311042edcc2f96350a132c682782d8da1b6a7`; frontend tree

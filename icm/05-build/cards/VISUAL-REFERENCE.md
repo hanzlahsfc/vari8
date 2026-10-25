@@ -1,6 +1,6 @@
 # VISUAL-REFERENCE — reproducible reference establishment
 
-Owner request: Prompt 414 (2026-10-25). Status: packaged proposal, not accepted; stop for independent review.
+Owner request: Prompt 414 (2026-10-25). Prompt 417 owner decisions are recorded below; proposal remains unactivated and stops for independent review.
 
 Base and dependency: PR #203 `90c16bee63e2609ebc4f09e91459332390562464`; stacked branch `beta/visual-reference-establishment`, draft PR base `beta/parity-https`. No ownership/HTTPS/cookie repairs are copied or independently changed. Retarget only after that dependency is accepted and merged. Issue #202 remains open.
 
@@ -21,6 +21,12 @@ No product UI, fonts, old baselines, mask expansion, waiver, merge, deployment o
 ## Packaging result
 
 - Two historical reference runs captured 70/70 with zero failures/retries and byte-identical image/geometry/scroll artifacts (`stability.json`: 70/70 canonical and strict, `hashMismatches: []`).
-- Proposed artifacts/provenance/mapping are under `tools/parity/reference/proposed/`; the old baseline is unchanged and every old hash is preserved.
-- Current root comparison is 68/70. Only s03 `Record demo video feedback` → `Record video feedback` fails geometry/text/role/name at both widths (39px narrower). No allowance/mask/tolerance/baseline change was made; the exact copy decision remains with the owner.
+- Proposed artifacts/provenance/mapping are under `tools/parity/reference/proposed/`; the old baseline is unchanged and every old hash is preserved. Package count is 245 files: 244 mapped proposed artifacts plus `old-proposed-artifact-map.json`; the 272-entry map retains 28 old-only paths.
+- Historical comparison evidence remains 68/70: only s03 `Record demo video feedback` → `Record video feedback` failed geometry/text/role/name at both widths (39px narrower). Prompt 417 accepts that exact copy/geometry change through S03-18; no broad mask, tolerance change, baseline activation or current-root expected output was added.
 - Full evidence and gate results are in `icm/05-build/reports/VISUAL-REFERENCE.md`.
+
+## Prompt 417 owner decisions (2026-10-25)
+
+- Keep `Record video feedback` instead of `Record demo video feedback`; the demonstrated 39px button-width reduction is accepted as S03-18.
+- Adopt `D32-owner-written-v1`: 09:00 Europe/Vienna, 1 CSS-pixel geometry, pixelmatch threshold 0.1 and changed-pixel fraction <=0.001. The legacy strict settings remain diagnostic only.
+- The proposed reference package is authorized as a proposal only. Baseline activation, merge, deployment and independent acceptance remain blocked on the normal workflow and unmerged PR #203.
