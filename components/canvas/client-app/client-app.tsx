@@ -25,6 +25,7 @@ import {
   sectionForLegacyTab,
 } from "./sections";
 import { TrainingLogbook } from "./training-log/training-logbook";
+import { RemoteDashboardTab, RemoteTrackerTab } from "./remote-views";
 import {
   CheckInTab,
   DashboardTab,
@@ -119,8 +120,10 @@ export function ClientApp({
   context: "standalone" | "preview";
   illustrative?: boolean;
   initialTab?: string;
-  // The caller's own workspace + profile. When set, supplements and
-  // check-ins bind to the own /api/v1 routes instead of canvas fixtures.
+  // The caller's own workspace + profile, resolved from the session on
+  // the host page. When set, dashboard tasks and messages, the tracker,
+  // supplements and check-ins bind to the own /api/v1 routes instead of
+  // canvas fixtures.
   own?: { workspaceId: string; clientProfileId: string };
 }) {
   const sections = useMemo(
@@ -192,20 +195,34 @@ export function ClientApp({
                 Enable at least one tab in the template’s Tabs section.
               </Empty>
             )}
-            {active === "home" && (
-              <DashboardTab configuration={configuration} client={client} />
-            )}
+            {active === "home" &&
+              (own ? (
+                <RemoteDashboardTab
+                  configuration={configuration}
+                  client={client}
+                  own={own}
+                />
+              ) : (
+                <DashboardTab configuration={configuration} client={client} />
+              ))}
             <div hidden={active !== "tracker"}>
               {showTracker && (
                 <>
-                  {configuration.views.includes("Tracker") && (
-                    <TrackerTab
-                      key={`${client.id}:${configuration.id}`}
-                      configuration={configuration}
-                      client={client}
-                      example={illustrative}
-                    />
-                  )}
+                  {configuration.views.includes("Tracker") &&
+                    (own ? (
+                      <RemoteTrackerTab
+                        key={`${client.id}:${configuration.id}`}
+                        own={own}
+                        clientName={client.name}
+                      />
+                    ) : (
+                      <TrackerTab
+                        key={`${client.id}:${configuration.id}`}
+                        configuration={configuration}
+                        client={client}
+                        example={illustrative}
+                      />
+                    ))}
                   {configuration.habits && (
                     <HabitsTab
                       client={client}

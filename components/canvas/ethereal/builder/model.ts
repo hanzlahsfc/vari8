@@ -229,7 +229,9 @@ export interface CoachFeedback {
 export interface ClientMessage {
   id: string;
   date: string;
-  sender: "Maya" | "Coach";
+  // Card 05a: the sender name is the bound client's, not a fixture
+  // literal, when the thread is read through the own /api/v1 route.
+  sender: string;
   excerpt: string;
   unread: boolean;
 }
