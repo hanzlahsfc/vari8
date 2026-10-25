@@ -177,6 +177,11 @@ export const AUDIT_RESOURCE_TYPES = [
   // — never plan names, product names, brands, timing, notes, statuses,
   // or URLs.
   "supplement_plan",
+  // Issue #169 (Stage 5 card 07): activity-target version lifecycle
+  // (CREATE on a new dated version, UPDATE on a same-day confirmed
+  // replace — `changed` marker only). IDs and structural markers only —
+  // never metric, kind, bounds, sessions or minutes values.
+  "activity_target",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 

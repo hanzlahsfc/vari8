@@ -319,6 +319,18 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "denied"],
   },
+  // Issue #169 (Stage 5 card 07): same reviewed posture as supplementPlans —
+  // staff author activity targets only for clients they hold an ACTIVE
+  // assignment to; owner reads workspace-wide; assistants read-only;
+  // clients read their own versions and never write.
+  activityTargets: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "assigned"],
+    COACH: ["assigned", "assigned"],
+    ASSISTANT_COACH: ["assigned", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "denied"],
+  },
 };
 
 const PRINCIPAL_ROLES: PrincipalRole[] = [
@@ -332,7 +344,7 @@ const PRINCIPAL_ROLES: PrincipalRole[] = [
 
 describe("RBAC matrix", () => {
   it("covers every resource × principal role × action", () => {
-    expect(RESOURCES).toHaveLength(33);
+    expect(RESOURCES).toHaveLength(34);
     for (const resource of RESOURCES) {
       for (const role of PRINCIPAL_ROLES) {
         const cell = RBAC_MATRIX[resource]?.[role];
