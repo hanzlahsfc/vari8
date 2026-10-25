@@ -1,3 +1,67 @@
+## 2026-10-25 — Stage 8 card 11 (built, pending owner screen review): training session and set log end to end (#176)
+
+- Schema/migration: `20261023040000_training_log` (+`down.sql`) adds
+  `TrainingSessionLog` (unique per client/program/session/week/date —
+  the replay-safe natural key; `pinnedVersionId` FK to the version live
+  at start; status IN_PROGRESS/COMPLETED/PARTIAL/SKIPPED) and
+  `TrainingSetLog` (idempotent per session-log/exercise/set position;
+  actuals as validated JSON — the coach's own template defines the set
+  fields, the log carries no fixed field list).
+- Service (`lib/trainingprogram/service.ts`): `startTrainingSessionLog`
+  (pins governing published version, replay-safe), `saveTrainingSetLog`
+  (M6 `setLogEntrySchema` before write, replace-on-resave, terminal
+  sessions refuse), `finishTrainingSessionLog` (completed → COMPLETED
+  or PARTIAL by unlogged prescribed sets; explicit `skipped`),
+  `readOwnSessionLog`/`readOwnTrainingLogWeek` (materialized from the
+  PINNED payload, not the live one), `readStaffTrainingLogs`.
+  `readOwnTrainingProgram` gained optional `week` for logbook
+  navigation without touching date-derived lifecycle. `lib/audit.ts`
+  allowlist: two resource types + `sessionOutcome` field.
+- Check-in surface (`lib/checkin/review-panel.ts`):
+  `flaggedTrainingNotes` on the panel wire — set rows with flags +
+  non-empty note, exercise names resolved through each log's pinned
+  payload (`weeks[].sessions[].exercises[]`), newest first.
+- Routes (api/v1): own `GET training-program`, `GET training-logs?week`,
+  `POST training-logs/sessions`, `GET sessions/[id]`,
+  `POST sessions/[id]/sets`, `POST sessions/[id]/finish`; staff
+  `GET clients/[cp]/training-logs`. `_result.ts` maps the closed
+  `TrainingError`/`AccessDeniedError` vocabulary to 400/403/404/409/503.
+- Client UI: `components/canvas/data/training-logs.ts` wire module +
+  `RemoteTrainingLogbook` — reuses Lilly's `SessionLogger` and ctl-*
+  classes, converts pinned server prescriptions to canvas types,
+  synthesizes positional set ids only for scalar `sets`, persists only
+  changed sets through a write queue, hydrates stub logs before open,
+  week navigation. Mounted for signed-in clients (`own`) in
+  `client-app.tsx`; unsigned demo keeps the local logbook.
+- Coach UI: `ClientTrainingLogs` surface under client detail → Plans
+  tab — each log (date · week · program · status badge) with per-set
+  actuals; demo falls back to local fixture logs. `checkins.ts` maps
+  `flaggedTrainingNotes` into `sub.flags` for the review card;
+  `mergeCheckinLoad` now preserves them (a board reload used to drop
+  detail-read flags).
+- Tests: 11 integration on a disposable PG — start/resume, replay,
+  replace-on-resave, v1 pinned beside actuals after v2 publish,
+  PARTIAL/COMPLETED/SKIPPED, terminal-write refusal, cross-client
+  denial, flagged note on review, invalid-payload pre-write rejection.
+- Gates: `npm ci` · `prisma generate` · `migrate deploy` (lane) ·
+  `typecheck` · `lint` (0 errors) · `index:check` · `test` (115/1365) ·
+  `build` — all exit 0.
+- Live proof on lane `app_fp_stage8c11` (seeded fixtures, `next start`
+  127.0.0.1:3972, `APP_ENV=test ENABLE_CHECK_INS=1
+  MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
+  returns both; replay start same id; re-save same set keeps one row;
+  flagged note + note flag on set 3; finish → PARTIAL; skipped session
+  refuses writes 409; publish v2 (week-6 boundary 4–5→12–14) → log
+  still reads pinned v1 (4–5) beside actuals while program is v2;
+  staff read returns both logs. Screenshots 1440+390 client logbook,
+  session logger (v1 beside actuals), coach client detail, check-in
+  flag — all in the card-11 evidence dir with proof reports.
+- Preview for review R2-4: production server `http://127.0.0.1:3972`,
+  lane DB kept alive. Sign in `emma.anders@canvas-demo.test` /
+  `coach@c11proof.test` (seed env passwords only). No push, no PR until
+  Marcel approves the screens.
+- NOT done: owner screen sign-off, lane DB drop (kept for preview).
+
 ## 2026-10-25 — Stage 7 card 10 (built, pending owner screen review): IIFYM macro targets end to end (#175)
 
 - Schema: none added — existing `IifymPlan` (shared draft, `draftRevision` CAS,

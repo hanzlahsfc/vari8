@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 159 modules with exports, 1567 exported symbols.
+Counts: 159 modules with exports, 1581 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -467,8 +467,9 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export type CheckInAnswerChange = { fieldId: string; label: string; kind: string; previous: string | null; current: string | null; }`
 - `export type CheckInReviewPanelAnswer = { fieldId: string; kind: string; valueText: string | null; valueNumeric: Prisma.Decimal | null; valueDate: Date | null; valueOptionIds: Prisma.JsonValue | nul...`
-- `export type CheckInReviewPanelDetail = StaffCheckInSubmissionDetail & { reviewState: "open" | "answered"; changeSummary: CheckInSubmissionChangeSummary | null; }`
+- `export type CheckInReviewPanelDetail = StaffCheckInSubmissionDetail & { reviewState: "open" | "answered"; changeSummary: CheckInSubmissionChangeSummary | null; flaggedTrainingNotes: FlaggedTraining...`
 - `export type CheckInSubmissionChangeSummary = { previousSubmissionId: string; previousSubmittedAt: string; previousFormName: string; added: CheckInAnswerChange[]; removed: CheckInAnswerChange[]; cha...`
+- `export type FlaggedTrainingNote = { sessionLogId: string; performedDate: string; exerciseName: string; set: number; note: string; }`
 - `export function diffCheckInSubmissions(input: { current: { fields: CheckInField[]; answers: CheckInReviewPanelAnswer[]; }; previous: { submissionId: string; submittedAt: string; formName: string; f...`
 - `export async function readCheckInReviewPanel(session: SessionLike, input: { workspaceId: string; clientProfileId: string; submissionId: string; }, deps: CheckInInstanceDeps = {}): Promise<CheckInRe...`
 
@@ -1891,12 +1892,19 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type { MaterializedProgram } from "./payload"`
 - `export type { MaterializedSession } from "./payload"`
 - `export type { MaterializedWeek } from "./payload"`
+- `export type OwnLogWeek = { programId: string; logs: OwnLogWeekItem[]; }`
+- `export type OwnLogWeekItem = { sessionLogId: string; sessionId: string; sessionName: string; bookedWeek: number; performedDate: string; status: SessionLogStatus; completedAt: string | null; setCoun...`
+- `export type OwnSessionLog = { sessionLogId: string; programId: string; sessionId: string; bookedWeek: number; performedDate: string; status: SessionLogStatus; startedAt: string; completedAt: string...`
 - `export type OwnTrainingView = { state: "none" | "upcoming" | "active" | "completed"; agenda: ClientAgendaItem[]; current: { programId: string; title: string; versionSeq: number; weekIndex: number; ...`
 - `export type OwnVersionDetail = { id: string; programId: string; versionSeq: number; effectiveDate: string; activationInstant: string; scheduled: boolean; payload: MaterializedProgram; }`
+- `export type SessionLogStatus = | "IN_PROGRESS" | "COMPLETED" | "PARTIAL" | "SKIPPED"`
+- `export type SessionSetRow = { id: string; exerciseId: string; setId: string; setKey: string; position: number; actuals: SetLogEntry; }`
 - `export type StaffBooking = { bookingId: string; scheduledDate: string; bookedWeek: number; pinnedVersionSeq: number; session: MaterializedSession; cancelledAt: string | null; programUpdatedSinceBoo...`
 - `export type StaffBookingsPage = { upcoming: StaffBooking[]; history: StaffBooking[]; nextCursor: { scheduledDate: string; id: string } | null; hasMore: boolean; canWrite: boolean; }`
 - `export type StaffProgramDetail = { program: { id: string; title: string; startDate: string; weekCount: number; programMode: "WEEK_BASED" | "EVERGREEN"; fieldConfig: TrainingFieldConfig; confirmedTi...`
 - `export type StaffProgramList = { programs: TrainingProgramListItem[]; nextCursor: { createdAt: string; id: string } | null; canWrite: boolean; }`
+- `export type StaffSessionLogEntry = { sessionLogId: string; programId: string; programTitle: string; sessionId: string; bookedWeek: number; performedDate: string; status: SessionLogStatus; completed...`
+- `export type StaffTrainingLogPage = { logs: StaffSessionLogEntry[]; nextCursor: string | null; hasMore: boolean; }`
 - `export type StaffVersionDetail = { id: string; programId: string; versionSeq: number; effectiveDate: string; effectiveTimezone: string; activationInstant: string; fieldConfig: TrainingFieldConfig; ...`
 - `export { TRAINING_FIELD_KEYS } from "./payload"`
 - `export type TrainingDeps = { db?: PrismaClient; registry?: ConsentPolicyRegistry; now?: Date; }`
@@ -1907,21 +1915,27 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function bookTrainingSession(session: SessionLike, input: { workspaceId: string; clientProfileId: string; programId: string; sessionId: string; scheduledDate: string; }, deps: Training...`
 - `export async function cancelTrainingProgram(session: SessionLike, input: { workspaceId: string; clientProfileId: string; programId: string; }, deps: TrainingDeps = {}): Promise<{ programId: string;...`
 - `export async function cancelTrainingSessionBooking(session: SessionLike, input: { workspaceId: string; clientProfileId: string; programId: string; bookingId: string; }, deps: TrainingDeps = {}): Pr...`
+- `export async function finishTrainingSessionLog(session: SessionLike, input: { workspaceId: string; sessionLogId: string; outcome: "completed" | "skipped"; }, deps: TrainingDeps = {}): Promise<{ sta...`
 - `export async function moveTrainingSessionBooking(session: SessionLike, input: { workspaceId: string; clientProfileId: string; programId: string; bookingId: string; scheduledDate: string; }, deps: T...`
 - `export function parseEffectiveDate(raw: unknown, now: Date): string`
 - `export async function publishTrainingProgramVersion(session: SessionLike, input: { workspaceId: string; clientProfileId: string; programId: string; expectedRevision: number; effectiveDate: string; ...`
+- `export async function readOwnSessionLog(session: SessionLike, input: { workspaceId: string; sessionLogId: string }, deps: TrainingDeps = {}): Promise<OwnSessionLog>`
 - `export async function readOwnTrainingBookingHistory(session: SessionLike, input: { workspaceId: string; cursor?: { scheduledDate: string; id: string }; }, deps: TrainingDeps = {}): Promise<ClientBo...`
 - `export async function readOwnTrainingHistory(session: SessionLike, input: { workspaceId: string; cursor?: { firstPublishedAt: string; id: string }; }, deps: TrainingDeps = {}): Promise<ClientHistor...`
-- `export async function readOwnTrainingProgram(session: SessionLike, input: { workspaceId: string }, deps: TrainingDeps = {}): Promise<OwnTrainingView>`
+- `export async function readOwnTrainingLogWeek(session: SessionLike, input: { workspaceId: string; week: number }, deps: TrainingDeps = {}): Promise<OwnLogWeek | null>`
+- `export async function readOwnTrainingProgram(session: SessionLike, input: { workspaceId: string; week?: number }, deps: TrainingDeps = {}): Promise<OwnTrainingView>`
 - `export async function readOwnTrainingProgramVersions(session: SessionLike, input: { workspaceId: string; programId: string; cursorSeq?: number; }, deps: TrainingDeps = {}): Promise<ClientVersionsPage>`
 - `export async function readOwnTrainingVersion(session: SessionLike, input: { workspaceId: string; programId: string; versionId: string; }, deps: TrainingDeps = {}): Promise<OwnVersionDetail>`
 - `export async function readStaffTrainingBookings(session: SessionLike, input: { workspaceId: string; clientProfileId: string; programId: string; cursor?: { scheduledDate: string; id: string }; }, de...`
+- `export async function readStaffTrainingLogs(session: SessionLike, input: { workspaceId: string; clientProfileId: string; cursor?: string }, deps: TrainingDeps = {}): Promise<StaffTrainingLogPage>`
 - `export async function readStaffTrainingProgram(session: SessionLike, input: { workspaceId: string; clientProfileId: string; programId: string; versionCursor?: number; }, deps: TrainingDeps = {}): P...`
 - `export async function readStaffTrainingProgramVersion(session: SessionLike, input: { workspaceId: string; clientProfileId: string; programId: string; versionId: string; }, deps: TrainingDeps = {}):...`
 - `export async function readStaffTrainingPrograms(session: SessionLike, input: { workspaceId: string; clientProfileId: string; cursor?: { createdAt: string; id: string }; }, deps: TrainingDeps = {}):...`
 - `export function resolveTrainingActivation(zone: string, effectiveDate: string): | { status: "ok"; instant: Date } | { status: "unrepresentable" } | { status: "invalid" }`
 - `export async function saveTrainingProgramDraft(session: SessionLike, input: { workspaceId: string; clientProfileId: string; programId?: string; expectedRevision: number; title?: string; startDate?:...`
+- `export async function saveTrainingSetLog(session: SessionLike, input: { workspaceId: string; sessionLogId: string; exerciseId: string; position: number; set: unknown; }, deps: TrainingDeps = {}): P...`
 - `export async function setTrainingProgramTimezone(session: SessionLike, input: { workspaceId: string; clientProfileId: string; programId: string; timezone: string; }, deps: TrainingDeps = {}): Promi...`
+- `export async function startTrainingSessionLog(session: SessionLike, input: { workspaceId: string; programId: string; sessionId: string; bookedWeek: number; performedDate: string; }, deps: TrainingD...`
 
 ## `lib/trainingprogram/validators.ts`
 
