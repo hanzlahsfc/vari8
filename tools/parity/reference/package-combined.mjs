@@ -91,10 +91,12 @@ fs.writeFileSync(
   ) + "\n",
 );
 
-const entries = walkFiles(out).map((file) => ({
-  path: file,
-  sha256: fileHash(path.join(out, file)),
-}));
+const entries = walkFiles(out)
+  .filter((file) => file !== "artifact-index.json")
+  .map((file) => ({
+    path: file,
+    sha256: fileHash(path.join(out, file)),
+  }));
 fs.writeFileSync(
   path.join(out, "artifact-index.json"),
   JSON.stringify(
