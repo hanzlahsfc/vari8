@@ -352,6 +352,7 @@ model Workspace {
   messageAttachments      MessageAttachment[]
   messageDraftAttachments MessageDraftAttachment[]
   checkinAnswerMedia      CheckInAnswerMedia[]
+  progressPhotoEntries    ProgressPhotoEntry[]
 
   @@map("workspace")
 }
@@ -493,6 +494,7 @@ model ClientProfile {
   onboardingSubmissions       OnboardingSubmission[]       @relation("OnboardingSubmissionClient")
   checkInInstances            CheckInInstance[]            @relation("CheckInInstanceClient")
   checkInSubmissions          CheckInSubmission[]          @relation("CheckInSubmissionClient")
+  progressPhotos              ProgressPhotoEntry[]         @relation("ProgressPhotoEntryClient")
   checkInReviews              CheckInReview[]              @relation("CheckInReviewClient")
   checkInFeedback             CheckInFeedback[]            @relation("CheckInFeedbackClient")
   checkInScheduleRules        CheckInScheduleRule[]        @relation("CheckInScheduleRuleClient")
@@ -1582,6 +1584,7 @@ model CheckInSubmission {
   answers           CheckInSubmissionAnswer[]
   reviews           CheckInReview[]
   feedback          CheckInFeedback[]
+  progressPhotos    ProgressPhotoEntry[]    @relation("ProgressPhotoEntrySubmission")
 
   // At-most-one durable submission per instance — idempotency anchor and
   // final concurrency authority (P2002 → bounded full-protocol re-entry).
@@ -2175,10 +2178,38 @@ model MediaObject {
   messageAttachments      MessageAttachment[]
   messageDraftAttachments MessageDraftAttachment[]
   checkinAnswerMedia      CheckInAnswerMedia[]
+  progressPhoto           ProgressPhotoEntry?
 
   @@unique([id, workspaceId])
   @@index([workspaceId, createdAt])
   @@map("media_object")
+}
+
+// Card 08 (#172): one dated gallery photo per media object. Soft delete
+// detaches it from every gallery; the media_object row stays for the
+// retention pass. The composite coherence FKs live in raw migration SQL;
+// the schema declares only the plain relations.
+model ProgressPhotoEntry {
+  id                  String    @id @default(cuid())
+  workspaceId         String    @map("workspace_id")
+  clientProfileId     String    @map("client_profile_id")
+  mediaObjectId       String    @unique @map("media_object_id")
+  takenOn             DateTime  @map("taken_on") @db.Date
+  checkInSubmissionId String?   @map("checkin_submission_id")
+  clientVisible       Boolean   @default(true) @map("client_visible")
+  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  deletedAt           DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  workspace         Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile     ClientProfile      @relation("ProgressPhotoEntryClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  mediaObject       MediaObject        @relation(fields: [mediaObjectId], references: [id], onDelete: Restrict)
+  checkInSubmission CheckInSubmission? @relation("ProgressPhotoEntrySubmission", fields: [checkInSubmissionId], references: [id], onDelete: Restrict)
+
+  @@unique([id, workspaceId])
+  @@unique([id, workspaceId, clientProfileId])
+  @@index([clientProfileId, takenOn])
+  @@index([workspaceId, clientProfileId])
+  @@map("progress_photo_entry")
 }
 
 // D26, O13: staff-authored note; null client = workspace-level note.
