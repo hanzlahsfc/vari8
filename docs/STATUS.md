@@ -1,3 +1,42 @@
+## 2026-10-26 - Stage 3 card 05a (in progress): client store routes + provider seam landed; screens and verification pending
+
+- `lib/messages/service.ts` (new): own-thread list + client send, one
+  Conversation per (workspaceId, clientProfileId), `clientRequestId`
+  idempotent retry via the (conversationId, clientRequestId) unique index.
+  No `messages` RBAC resource exists, so ownership binds by resolving the
+  caller's own ClientProfile in the workspace (same first step as
+  `listOwnClientTasks`); callers without a linked profile are denied.
+- `lib/tasks/service.ts`: `listOwnClientTasks` now returns
+  `clientProfileId` (recon decision - the PATCH path needs it; backward
+  compatible for `{tasks, hasMore}` callers).
+- Eight 05a route files under `app/api/v1/workspaces/[workspaceId]/`:
+  `daily-entries` GET (`own.read` → `loadDailyEntrySurface`),
+  `daily-entries/[entryDate]` PUT (`own.write` → `saveDailyEntry`),
+  `clients/[clientProfileId]/daily-entries/history` GET
+  (`clientData.read` → `listStaffDailyEntries`), `messages` GET
+  (`own.read`) + POST (`message.write`), `tasks` GET (`own.read` →
+  `listOwnClientTasks`), `clients/[clientProfileId]/tasks/[taskId]` PATCH
+  (`own.write` → `setClientTaskCompletion`),
+  `checkins/instances/[instanceId]` GET (`own.read` →
+  `getOwnCheckInInstance`) and `.../submit` POST (`own.write` →
+  `submitCheckInInstanceFromAction`). Per-domain `_result.ts` mappers
+  translate DailyEntryError/TaskError/MessageError/AccessDeniedError to
+  400/403/409 per the card table - never 404.
+- `components/canvas/data/{tracker,nutrition,messages,tasks}.ts`: remote
+  functions over the new routes (wire shapes mirror the lib services).
+  LocalStorage slices untouched; coach store hydration contract unmoved.
+- Gates run so far: `npx tsc --noEmit` 0; eslint on touched files 0 (3
+  pre-existing unused-type-import warnings in data providers).
+- Commits: `d8ca444` (backend routes + service + mappers), `31b7a57`
+  (provider remote calls).
+- NOT done: `/me` + `/client` screen rewiring to the providers, `?demo=`
+  gating, 05b screens (supplements/photos/client check-in), seed, lane DB
+  probes, coach↔client round trips, screenshots, the seven substitute
+  gates, independent review, evidence report. Verification claims stand on
+  none of that yet - typecheck/lint only.
+- Evidence dir: `Vari8-evidence/FULL-PACKAGE/STAGE-3/card-05/` (recon note
+  `01-service-signatures.md` already there).
+
 ## 2026-10-25 — Stage 1 card 02 (#162 slice): supplement-plan thin route, provider, coach editor wiring
 
 - Thin route
