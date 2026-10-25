@@ -13,6 +13,7 @@ import {
   calculateMealNutrients,
   calculatePortionNutrients,
   calculateVariantNutrients,
+  caloriesFromMacros,
   emptyNutrients,
   iifymTargetNutrients,
   macroEnergyShares,
@@ -204,5 +205,47 @@ describe("PR-M5 nutrition math — target numbers and IIFYM derived kcal", () =>
         { calories: 217.5, protein: 48, carbs: 0, fat: 2.85 },
       ),
     ).toEqual({ calories: 404.5, protein: 53.45, carbs: 32, fat: 6.9 });
+  });
+});
+
+// Card 09 (#173): derived actuals kcal = 4P + 4C + 9F over the macros
+// present. A missing macro contributes nothing (it stays "not recorded"
+// on screen); an all-empty day yields 0 kcal, never null.
+describe("card 09 derived calories from recorded macros (#173)", () => {
+  it("all three macros: 4*protein + 4*carbohydrate + 9*fat", () => {
+    // Hand check: 150*4 + 200*4 + 60*9 = 600 + 800 + 540 = 1940.
+    expect(
+      caloriesFromMacros({ protein: 150, carbohydrate: 200, fat: 60 }),
+    ).toBe(1940);
+  });
+
+  it("protein only derives 4*protein", () => {
+    expect(
+      caloriesFromMacros({ protein: 180, carbohydrate: null, fat: null }),
+    ).toBe(720);
+  });
+
+  it("carbohydrate only derives 4*carbohydrate", () => {
+    expect(
+      caloriesFromMacros({ protein: null, carbohydrate: 95, fat: null }),
+    ).toBe(380);
+  });
+
+  it("fat only derives 9*fat", () => {
+    expect(
+      caloriesFromMacros({ protein: null, carbohydrate: null, fat: 55 }),
+    ).toBe(495);
+  });
+
+  it("all macros missing yields 0 kcal, not null", () => {
+    expect(
+      caloriesFromMacros({ protein: null, carbohydrate: null, fat: null }),
+    ).toBe(0);
+  });
+
+  it("recorded zeros still yield 0 kcal", () => {
+    expect(
+      caloriesFromMacros({ protein: 0, carbohydrate: 0, fat: 0 }),
+    ).toBe(0);
   });
 });

@@ -14,6 +14,7 @@ import { isSupplementsEnabled } from "./supplements/gate";
 import {
   classifyRuntime,
   consentGatesEnabled,
+  devFlagEnabled,
   type ConsentGateEnv,
   type RuntimeClass,
   type RuntimeEnv,
@@ -691,6 +692,11 @@ export const MEALPLAN_DEV_CONSENT = {
   HEALTH_DATA: "meal-plan-dev-health-v1",
 } as const;
 
+export const IIFYM_DEV_CONSENT = {
+  PRIVACY_NOTICE: "iifym-dev-privacy-v1",
+  HEALTH_DATA: "iifym-dev-health-v1",
+} as const;
+
 export const TRAINING_DEV_CONSENT = {
   PRIVACY_NOTICE: "training-plan-dev-privacy-v1",
   HEALTH_DATA: "training-plan-dev-health-v1",
@@ -740,6 +746,19 @@ export function resolveMealPlanConsentPolicy(
   if (!isMealPlansEnabled(env)) return unconfiguredConsentPolicy;
   if (classifyRuntime(env) === "production") return unconfiguredConsentPolicy;
   return createStaticConsentPolicy({ ...MEALPLAN_DEV_CONSENT });
+}
+
+export function resolveIifymConsentPolicy(
+  env: {
+    ENABLE_IIFYM_PLANS?: string;
+    APP_ENV?: string;
+    NODE_ENV?: string;
+  } = process.env,
+): ConsentPolicyRegistry {
+  if (!devFlagEnabled(env.ENABLE_IIFYM_PLANS, env))
+    return unconfiguredConsentPolicy;
+  if (classifyRuntime(env) === "production") return unconfiguredConsentPolicy;
+  return createStaticConsentPolicy({ ...IIFYM_DEV_CONSENT });
 }
 
 export function resolveTrainingConsentPolicy(

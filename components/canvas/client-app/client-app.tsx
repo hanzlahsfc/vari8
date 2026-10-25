@@ -307,6 +307,7 @@ export function ClientApp({
                     configuration={configuration}
                     client={client}
                     illustrative={illustrative}
+                    own={own}
                   />
                 )}
                 {activePlanPart === "supplements" &&

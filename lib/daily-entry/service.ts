@@ -82,7 +82,9 @@ export type DailyEntryDeps = {
 
 // ── Concurrency protocol (mirrors the reviewed client-setup service) ──────
 
-async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
+export async function withSerializedRetry<T>(
+  fn: () => Promise<T>,
+): Promise<T> {
   return sharedWithSerializedRetry(fn, {
     maxAttempts: 8,
     backoffBaseMs: 10,
@@ -91,7 +93,7 @@ async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
   });
 }
 
-async function advisoryLock(
+export async function advisoryLock(
   tx: Prisma.TransactionClient,
   key: string,
 ): Promise<void> {
@@ -103,7 +105,7 @@ async function advisoryLock(
   );
 }
 
-async function lockRow(
+export async function lockRow(
   tx: Prisma.TransactionClient,
   sql: string,
   ...params: string[]
@@ -235,7 +237,7 @@ function projectSnapshot(definition: unknown): SnapshotParam[] | null {
 
 // ── Shared context resolution ─────────────────────────────────────────────
 
-async function resolveOwnClient(
+export async function resolveOwnClient(
   tx: Prisma.TransactionClient,
   workspaceId: string,
   userId: string,
@@ -248,7 +250,7 @@ async function resolveOwnClient(
 
 /** Consent read in deterministic kind order — write path locks each kind's
  * rows FOR UPDATE; read path uses the same order without the lock. */
-async function checkRequiredConsent(
+export async function checkRequiredConsent(
   tx: PrismaLike,
   clientProfileId: string,
   registry: ConsentPolicyRegistry,

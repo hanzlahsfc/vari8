@@ -1,3 +1,99 @@
+## 2026-10-25 — Stage 7 card 10 (built, pending owner screen review): IIFYM macro targets end to end (#175)
+
+- Schema: none added — existing `IifymPlan` (shared draft, `draftRevision` CAS,
+  plan-scoped `timezone`) + `IifymPlanVersion` (immutable payload snapshot,
+  `publishOriginRevision` dedupe authority) carry the whole card.
+- Service: `lib/iifym/` — `gate.ts` (`ENABLE_IIFYM_PLANS` + trusted-runtime
+  resolver, enforced at the top of every exported service function: flag off →
+  `plan_not_accessible`/403), `limits.ts`, `payload.ts` (strict draft
+  normalizer; macros options reject `calories`, calorie options reject macros),
+  `service.ts` (draft save / timezone confirm / publish / staff+own reads —
+  meal-plan protocol cloned: advisory lock, serializable tx, consent under
+  locks, replay-lookup before stale/publish checks, audit last).
+- Routes (api/v1): own `GET workspaces/{ws}/iifym-plans` (current version
+  payload + upcoming header only — draft never leaves the server); staff
+  `GET|PUT clients/{cp}/iifym-plans`, `POST .../publish`,
+  `POST .../timezone`. `_result.ts` maps the closed error vocabulary:
+  400/403/409, never 404, foreign workspace → 403.
+- Coach UI: `app/workspace/[ws]/clients/[cp]/macro-targets` +
+  `components/iifym/` — option editor (macro mode: P/C/F with derived-kcal
+  readout; calorie mode entered directly + labelled), weekly weekday
+  assignment grid (+manual; a stored `cycle` schedule is preserved, not
+  clobbered), explicit "Confirm timezone" action (`setIifymTimezone` via the
+  timezone route — the coach's browser zone is never auto-stamped), publish
+  with effective date, version table. Clients roster row links to it.
+- Client UI: `nutrition-targets.tsx` beside card-09 `NutritionActuals` in a
+  `ca-nutrition-split` — resolves the weekday option for the displayed date
+  through the canvas's own `scheduledOption`, derives kcal at 4/4/9 in macro
+  mode, labels calorie mode; empty/error states when no version is live.
+- Tests: 11 unit (payload normalize/derived-calorie rules), 7 integration on a
+  disposable PG (two-option publish + weekday resolution via the real
+  `scheduledOption`, byte-identical replay incl. after v2, foreign-workspace
+  denial, flag-off closure, immutability, consent missing).
+- Gates: `npm ci` · `prisma generate` · `typecheck` · `lint` (0 err, 85 warn —
+  all pre-existing) · `index:check` · `test` (112 files / 1334) · `build` —
+  all exit 0.
+- Live proof on lane `app_fp_stage7c10` (seeded synthetic fixtures, `next
+  start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
+  options → own read resolves Rest day on Sun 25 Oct and Training day on Tue
+  13 Oct; publish replay byte-identical (`cmp`) incl. replay of v1 after v2
+  published (v1 untouched, upcoming=v2); foreign-workspace PUT/POST/GET all
+  403; second instance without `ENABLE_IIFYM_PLANS` returns 403
+  `plan_not_accessible` on all four endpoints; nutrition actuals written via
+  card-09 route for the side-by-side. Screenshots 1440/390 coach+client and
+  `PROOF.md` in the card-10 evidence dir.
+- Independent review (verifier subagent): REPAIR → fixed. MAJOR-1 flag was
+  page-gated only — now enforced in the service and proven live flag-off.
+  MAJOR-2 browser auto-stamp replaced by explicit confirm route. Minors:
+  dead exports dropped (`readStaffIifymVersion`, cursor pagination), cycle
+  schedule preserved in editor, create-without-title 403→400, test imports
+  the real `scheduledOption`.
+- Preview for review R2-4: production server on `http://127.0.0.1:3971`
+  (`ENABLE_IIFYM_PLANS=1` etc.), lane DB kept alive for the preview. Sign in:
+  `coach@card10.test` / `emma.anders@canvas-demo.test` (fixture passwords in
+  the seed env only). No push, no PR until Marcel approves the screens.
+- NOT done: owner screen sign-off, lane DB drop (kept for preview).
+
+## 2026-10-25 — Stage 7 card 09 (built, pending owner screen review): daily nutrition actuals (#173 slice)
+
+- Schema: `NutritionLog` as a 1:1 child of `DailyEntry`, also unique on
+  `(workspaceId, clientProfileId, entryDate)`; nullable `protein`,
+  `carbohydrate`, `fat`; no calories column anywhere. Migration
+  `db/migrations/20261023030000_nutrition_log/` with `down.sql`.
+- Math: `MacroActuals` + `caloriesFromMacros` (4/4/9, missing macro
+  contributes nothing, all-missing = 0, explicit 0 stays "0 g") in
+  `lib/nutrition/math.ts`; the canvas duplicates the derivation inline —
+  canvas never imports server modules.
+- Service: `lib/daily-entry/nutrition-log.ts` — own read/save reusing the
+  `saveDailyEntry` lock/auth/consent protocol, staff 30-day range read.
+  Logs bind to the daily entry/date, so meal-plan ↔ IIFYM switches keep
+  earlier entries; template-independent.
+- Routes: own `GET ?date=` + `PUT /[entryDate]` under
+  `nutrition-logs/`, staff `GET clients/[id]/nutrition-logs?from&to=`.
+- Client UI: `nutrition-actuals.tsx` panel on the Nutrition screen
+  (`own`-gated, illustrative path untouched): blank fields stay blank,
+  "Not recorded" never zero, derived kcal live + after save, recent-days
+  list, empty-day state. Coach daily page gained a read-only "Recorded
+  macros" table, hidden when the daily-entry surface is unavailable.
+- Tests: 6 unit (`caloriesFromMacros`), 18 integration on lane DB
+  `app_fp_stage7` (partial/full/zero macros, reload, staff range,
+  pin-switch retention, auth guards).
+- Gates: `npm ci`, `prisma generate`, `typecheck`, `lint` (0 err),
+  `index:check`, `test` (111 files / 1323), `build` — all exit 0.
+- Live proof on `app_fp_stage7` (seeded, synthetic `card09-*` fixtures):
+  Playwright driver, 14/14 PASS — empty day, protein-only 720 kcal,
+  150/200/60 → 1940 kcal hand-checked, reload persistence, IIFYM-variant
+  client keeps entries, coach table shows 1940 + 400 kcal rows.
+  Screenshots 1440/390 + `PROOF.md` in the card-09 evidence dir.
+- Preview for review R2-4: served on `https://127.0.0.1:3967` (TLS proxy
+  → backend 3968), `APP_ENV=test`, `MEDIA_STORAGE_ADAPTER=local`,
+  `ENABLE_DAILY_ENTRY=1`. Port 3964 is owned by the sibling
+  merge-preview lane and was left alone — flag for Marcel.
+- Commits: `9731f3a` schema+math, `0ce232e` service, `b412a50` routes,
+  `91937c1` client panel, `edbe706` coach section + index. No push.
+- NOT done: independent review, owner screen sign-off, lane DB drop
+  (kept for the preview).
+
 ## 2026-10-25 — Stage 6 card 08 (#172): progress photos with comparison — built, live-verified, awaiting R2-4 screen review
 
 - Migration `db/migrations/20261023020000_progress_photo/` (+ `down.sql`

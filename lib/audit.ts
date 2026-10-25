@@ -182,6 +182,18 @@ export const AUDIT_RESOURCE_TYPES = [
   // replace — `changed` marker only). IDs and structural markers only —
   // never metric, kind, bounds, sessions or minutes values.
   "activity_target",
+  // Card 09 (#173): nutrition-log lifecycle (CREATE on first save, UPDATE
+  // on re-save, DELETE on clear; staff list reads carry no event). IDs +
+  // structural markers only — never macro values or dates.
+  "nutrition_log",
+  // Card 10 (#175): IIFYM macro-target container lifecycle (CREATE on
+  // first draft save, UPDATE on draft saves + timezone changes —
+  // `changed` marker only) and published-version events (CREATE +
+  // staff/client detail READ). IDs and structural markers only (version,
+  // effective date, status, option count) — never target values, labels,
+  // or timezone strings.
+  "iifym_plan",
+  "iifym_plan_version",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 
