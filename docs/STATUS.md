@@ -1,3 +1,36 @@
+## 2026-10-25 — Stage 11 card 13: opt-in demo-coverage seed profile from Lilly's export snapshot
+
+- `scripts/seed/50-demo-coverage.seed.ts` — opt-in module gated on
+  `VARI8_SEED_DEMO=1` (skipped in `scripts/seed/index.ts` and self-gated
+  in-module). Reads the byte-verbatim JSON snapshot in
+  `scripts/seed/demo-export/` (provenance `trackc/merge-frontend-9491897`,
+  SHA `9491897b…`; `PROVENANCE.md` inside the fixture dir) and fills the
+  `canvas-demo` workspace: 15 client logins, check-in forms + schedule
+  rules + instances, submissions with typed answers/reviews/photos,
+  conversations + messages, coach notes and tasks, client tasks, habits,
+  daily entries + nutrition logs, meal/IIFYM/supplement/training plans,
+  activity targets, goals, training session/set logs, workspace
+  preferences onto the workspace settings columns, and a per-client
+  dashboard draft (Tasks + Messages + Bodyweight trend + Your training).
+- Mapping doc + credentials list + run report live outside the repo in
+  `~/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/FULL-PACKAGE/STAGE-11/`
+  (MAPPING.md covers every export field, mapped or unmapped-with-reason;
+  CREDENTIALS.md lists the 15 demo emails — three name-matched clients
+  keep the default profile's `@canvas-demo.test` accounts — no passwords
+  anywhere).
+- Verification: flag-off seed dump on a fresh lane diffs EMPTY against
+  the stage-9 base lane (normalized); opt-in seed is idempotent across
+  two runs (normalized diff EMPTY, 78-table row counts equal); workspace
+  preference columns carry the fixture values. Gates `index` /
+  `typecheck` / `lint` / `index:check` / `test` (116 files, 1380 tests) /
+  `build` all exit 0. Live proof on a lane DB: coach and client surfaces
+  render seeded data at 1440 + 390 with denials holding; 10 screenshots
+  in the evidence dir.
+- Independent verifier repair round 1 fixed here: three CREDENTIALS
+  emails corrected to the real seeded values, `workspace.preferences`
+  now written and mapped, this STATUS entry added.
+- NOT done: owner sign-off; no push, no PR.
+
 ## 2026-10-25 — Stage 9 card 12: legacy PRGRSS 2.0 sheets view on the real client store
 
 - Ported Lilly's `legacy-sheet/` folder into `components/canvas/client/legacy-sheet/`

@@ -113,6 +113,31 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     },
     orderBy: { createdAt: "asc" },
   });
+  // Workspace preferences -> the workspace settings columns.
+  const prefs = WORKSPACE.preferences ?? {};
+  const prefData: Prisma.WorkspaceUpdateInput = {
+    appearanceMode:
+      String(prefs.mode ?? "dark").toUpperCase() === "LIGHT"
+        ? "LIGHT"
+        : "DARK",
+    appearanceAccent: String(prefs.accent ?? "#EB91B8"),
+    availabilityText: String(prefs.availability ?? ""),
+    notificationsEnabled: prefs.notifications !== false,
+    priorityNotificationsEnabled: prefs.priorityNotifications !== false,
+  };
+  if (
+    workspace.appearanceMode !== prefData.appearanceMode ||
+    workspace.appearanceAccent !== prefData.appearanceAccent ||
+    workspace.availabilityText !== prefData.availabilityText ||
+    workspace.notificationsEnabled !== prefData.notificationsEnabled ||
+    workspace.priorityNotificationsEnabled !==
+      prefData.priorityNotificationsEnabled
+  )
+    await prisma.workspace.update({
+      where: { id: workspace.id },
+      data: prefData,
+    });
+
   const clients = INDEX.clients.map((c) => ({ meta: c, data: load(c.file) }));
   const password = process.env.SEED_DEMO_CLIENT_PASSWORD ??
     process.env.SEED_CLIENT_PASSWORD;
