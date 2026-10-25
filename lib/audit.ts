@@ -177,6 +177,10 @@ export const AUDIT_RESOURCE_TYPES = [
   // — never plan names, product names, brands, timing, notes, statuses,
   // or URLs.
   "supplement_plan",
+  // Card 09 (#173): nutrition-log lifecycle (CREATE on first save, UPDATE
+  // on re-save, DELETE on clear; staff list reads carry no event). IDs +
+  // structural markers only — never macro values or dates.
+  "nutrition_log",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 
