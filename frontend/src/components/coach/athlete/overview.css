@@ -1,0 +1,641 @@
+/* Athlete profile v3 — shared header + fixed overview grid. */
+
+/* ── Header ──────────────────────────────────────────────── */
+.coach-root .ap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  margin-block-end: 16px;
+}
+.coach-root .ap-header-id {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-inline-size: 0;
+}
+.coach-root .ap-header-id .cd-avatar {
+  inline-size: 56px;
+  block-size: 56px;
+  font-size: 20px;
+  flex: 0 0 auto;
+}
+.coach-root .ap-header-text {
+  min-inline-size: 0;
+}
+.coach-root .ap-header-text h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.coach-root .ap-header-text p {
+  margin: 3px 0 0;
+}
+.coach-root .ap-meta {
+  margin: 2px 0 0;
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-supporting);
+  line-height: var(--v8-line-height-supporting);
+}
+.coach-root .ap-header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.coach-root .ap-header-actions .cd-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.coach-root .ap-header-actions .cd-icon-button,
+.coach-root .ap-header-actions .v8-icon-button {
+  position: relative;
+}
+.coach-root .ap-unread {
+  position: absolute;
+  top: -5px;
+  inset-inline-end: -5px;
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--v8-on-action, var(--cd-on-accent, #fff));
+  background: var(--v8-action, var(--cd-accent));
+  border-radius: 999px;
+  padding: 0 4px;
+  min-inline-size: 15px;
+  block-size: 15px;
+  line-height: 15px;
+}
+
+/* ── Client settings dialog ──────────────────────────────── */
+.coach-root .ap-settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.coach-root .ap-settings-section + .ap-settings-section {
+  margin-block-start: 20px;
+  padding-block-start: 20px;
+  border-top: 1px solid var(--v8-border, rgb(128 128 128 / 0.14));
+}
+.coach-root .ap-settings-section h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 650;
+}
+.coach-root .ap-settings-section h4 {
+  margin: 6px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── Overview grid ───────────────────────────────────────── */
+.coach-root .ap-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 12px;
+}
+.coach-root .ap-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-inline-size: 0;
+}
+.coach-root .ap-w-s3 {
+  grid-column: span 3;
+}
+.coach-root .ap-w-s4 {
+  grid-column: span 4;
+}
+.coach-root .ap-w-s6 {
+  grid-column: span 6;
+}
+.coach-root .ap-w-s8 {
+  grid-column: span 8;
+}
+
+/* Card header = the link to the data's home. */
+.coach-root .ap-card-link {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  inline-size: 100%;
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  text-align: start;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  border-radius: 8px;
+}
+.coach-root .ap-card-link h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+}
+.coach-root .ap-card-link p {
+  margin: 3px 0 0;
+}
+.coach-root .ap-card-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+  font-size: var(--v8-font-size-supporting);
+  line-height: var(--v8-line-height-supporting);
+  color: var(--cd-muted);
+  transition: color 120ms ease;
+}
+.coach-root .ap-card-link:hover .ap-card-open,
+.coach-root .ap-card-link:focus-visible .ap-card-open {
+  color: var(--cd-text);
+}
+.coach-root .ap-card-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--v8-focus, var(--cd-accent));
+}
+
+.coach-root .ap-big {
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .ap-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.coach-root .ap-empty p {
+  margin: 0;
+}
+
+/* Accuracy chip */
+.coach-root .ap-acc {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.coach-root .ap-acc[data-tone="positive"] {
+  color: var(--v8-positive, var(--cd-positive));
+}
+.coach-root .ap-acc[data-tone="warning"] {
+  color: var(--v8-warning, var(--cd-warning));
+}
+
+/* ── Phase progress ──────────────────────────────────────── */
+.coach-root .ap-phase-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.coach-root .ap-phase-head b {
+  font-size: 16px;
+}
+.coach-root .ap-phase-bar {
+  display: flex;
+  gap: 3px;
+  block-size: 10px;
+}
+.coach-root .ap-phase-seg {
+  position: relative;
+  border-radius: 999px;
+  background: var(--v8-surface-inset, var(--cd-field));
+  overflow: hidden;
+}
+.coach-root .ap-phase-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--v8-accent-primary, var(--cd-accent));
+}
+.coach-root .ap-phase-labels {
+  display: flex;
+  gap: 3px;
+}
+.coach-root .ap-phase-labels > span {
+  min-inline-size: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.coach-root .ap-phase-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.coach-root .ap-phase-legend .ap-phase-dot {
+  display: inline-block;
+  inline-size: 7px;
+  block-size: 7px;
+  border-radius: 50%;
+  background: var(--v8-accent-primary, var(--cd-accent));
+  margin-inline-end: 5px;
+}
+.coach-root .ap-phase-next {
+  margin: 0;
+}
+
+/* ── Check-in + pinned notes ─────────────────────────────── */
+.coach-root .ap-note-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.coach-root .ap-note-list li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 13px;
+  line-height: 19px;
+}
+.coach-root .ap-note-list li > svg {
+  flex: 0 0 auto;
+  color: var(--cd-muted);
+  transform: translateY(1px);
+}
+
+/* ── Nutrition targets vs actual ─────────────────────────── */
+.coach-root .ap-nt-cols {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.coach-root .ap-nt-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-inline-size: 0;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--v8-surface-subtle, var(--cd-wash));
+}
+.coach-root .ap-nt-label {
+  font-size: var(--v8-font-size-supporting);
+  color: var(--cd-muted);
+  font-weight: 550;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.coach-root .ap-nt-kcal {
+  font-size: 24px;
+  line-height: 28px;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .ap-nt-actual {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .ap-nt-macros {
+  margin: 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.coach-root .ap-nt-macros > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.coach-root .ap-nt-macros dt {
+  inline-size: 14px;
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .ap-nt-macros dd {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+.coach-root .ap-nt-temp {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--cd-muted);
+}
+.coach-root .ap-nt-temp-kind {
+  flex: 0 0 auto;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: var(--v8-surface-subtle, var(--cd-wash));
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.coach-root .ap-nt-temp-text {
+  min-inline-size: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Calorie intake bars ─────────────────────────────────── */
+.coach-root .ap-kcal-chart {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  block-size: 120px;
+}
+.coach-root .ap-kcal-col {
+  flex: 1 1 0;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.coach-root .ap-kcal-col small {
+  text-align: center;
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .ap-kcal-track {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.coach-root .ap-kcal-bar {
+  display: block;
+  border-radius: 6px 6px 3px 3px;
+  background: var(--v8-accent-primary, var(--cd-accent));
+  min-block-size: 2px;
+}
+.coach-root .ap-kcal-bar[data-off] {
+  opacity: 0.45;
+}
+.coach-root .ap-kcal-val {
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  text-align: center;
+  color: var(--cd-muted);
+}
+.coach-root .ap-kcal-target {
+  position: absolute;
+  inset-inline: 0;
+  border-top: 2px dashed var(--v8-border-strong, var(--cd-muted));
+}
+.coach-root .ap-chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--cd-muted);
+}
+.coach-root .ap-chart-legend-dash {
+  inline-size: 18px;
+  border-top: 2px dashed var(--v8-border-strong, var(--cd-muted));
+}
+
+/* ── Bodyweight ──────────────────────────────────────────── */
+.coach-root .ap-bw-stats {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.coach-root .ap-bw-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.coach-root .ap-bw-stats b {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.coach-root .ap-bw-stats b[data-tone="positive"] {
+  color: var(--v8-positive, var(--cd-positive));
+}
+.coach-root .ap-bw-chart {
+  flex: 1 1 auto;
+  min-block-size: 150px;
+}
+/* biome-ignore lint/style/noDescendingSpecificity: shared chart surface */
+.coach-root .ap-bw-chart svg {
+  display: block;
+}
+.coach-root .ap-bw-grid {
+  stroke: var(--cd-line);
+  stroke-width: 1;
+}
+.coach-root .ap-bw-ylabel,
+.coach-root .ap-bw-xlabel {
+  font-size: 10px;
+  fill: var(--cd-muted);
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .ap-bw-line {
+  fill: none;
+  stroke: var(--v8-accent-primary, var(--cd-accent));
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.coach-root .ap-bw-dot {
+  fill: var(--v8-accent-primary, var(--cd-accent));
+}
+
+/* ── Expenditure ─────────────────────────────────────────── */
+.coach-root .ap-exp-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-block: 4px;
+}
+.coach-root .ap-exp-row b {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .ap-exp-row .ap-sub {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .ap-exp-chart {
+  margin-top: auto;
+}
+.coach-root .ap-exp-chart .ap-kcal-chart {
+  block-size: 120px;
+}
+
+/* ── Physique comparison ─────────────────────────────────── */
+.coach-root .ap-phys-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.coach-root .ap-phys-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.coach-root .ap-phys {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.coach-root .ap-phys img,
+.coach-root .ap-phys-empty {
+  inline-size: 100%;
+  block-size: 220px;
+  object-fit: contain;
+  border-radius: 14px;
+  background: var(--v8-surface-subtle, var(--cd-wash));
+}
+.coach-root .ap-phys-empty {
+  display: grid;
+  place-items: center;
+  color: var(--cd-muted);
+  font-size: 13px;
+}
+.coach-root .ap-phys figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Training program ────────────────────────────────────── */
+.coach-root .ap-sessions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.coach-root .ap-sessions li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 12px;
+}
+.coach-root .ap-session-day {
+  color: var(--cd-muted);
+}
+.coach-root .ap-session-name {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.coach-root .ap-session-status {
+  color: var(--cd-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.coach-root .ap-session-status[data-status="done"] {
+  color: var(--v8-positive, var(--cd-positive));
+}
+.coach-root .ap-session-status[data-status="in-progress"],
+.coach-root .ap-session-status[data-status="today"] {
+  color: var(--v8-warning, var(--cd-warning));
+}
+.coach-root .ap-session-status[data-status="missed"] {
+  color: var(
+    --v8-negative,
+    var(--cd-negative, var(--v8-warning, var(--cd-warning)))
+  );
+}
+.coach-root .ap-training-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-block-start: 8px;
+  font-weight: 550;
+}
+.coach-root .ap-flagged {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--v8-warning, var(--cd-warning));
+  margin: 0;
+}
+.coach-root .ap-card b {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Shared text ─────────────────────────────────────────── */
+/* biome-ignore lint/style/noDescendingSpecificity: shared muted style */
+.coach-root .ap-sub {
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-supporting);
+  line-height: var(--v8-line-height-supporting);
+}
+.coach-root .ap-plan-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.coach-root .ap-plan-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
+}
+
+/* ── Breakpoints ─────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  .coach-root .ap-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .coach-root .ap-w-s3 {
+    grid-column: span 3;
+  }
+  .coach-root .ap-w-s4,
+  .coach-root .ap-w-s6,
+  .coach-root .ap-w-s8 {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 640px) {
+  .coach-root .ap-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .coach-root .ap-w-s3,
+  .coach-root .ap-w-s4,
+  .coach-root .ap-w-s6,
+  .coach-root .ap-w-s8 {
+    grid-column: 1 / -1;
+  }
+  .coach-root .ap-nt-cols {
+    grid-auto-flow: row;
+    grid-auto-columns: unset;
+  }
+  .coach-root .ap-phys-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .coach-root .ap-header-actions {
+    flex-basis: 100%;
+  }
+  .coach-root .ap-header-actions .cd-button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}

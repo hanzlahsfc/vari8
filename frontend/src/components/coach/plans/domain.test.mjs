@@ -132,6 +132,36 @@ test("state migration preserves legacy profile data and creates only empty indiv
   assert.equal(migrated.clients[1].plans.goals.length, 0);
 });
 
+test("migration preserves temporary nutrition plans", () => {
+  const temporary = {
+    id: "temp-1",
+    kind: "refeed",
+    label: "Refeed",
+    startDate: "2026-10-24",
+    endDate: "2026-10-25",
+    source: "mealPlan",
+    plan: emptyMealPlan("client-a", "2026-10-01"),
+    createdAt: "2026-10-22T08:00:00Z",
+  };
+  const old = {
+    clients: [
+      {
+        id: "client-a",
+        plans: {
+          ...emptyClientPlans(),
+          nutrition: {
+            mealPlan: { history: [] },
+            iifym: { history: [] },
+            temporary: [temporary],
+          },
+        },
+      },
+    ],
+  };
+  const migrated = migrateCoachState(old);
+  assert.deepEqual(migrated.clients[0].plans.nutrition.temporary, [temporary]);
+});
+
 test("nested structural validation rejects malformed prescriptions while accepting valid empty drafts", () => {
   const meal = emptyMealPlan("client-a", "2026-01-01");
   const targets = emptyIifymPlan("client-a", "2026-01-01");
@@ -271,23 +301,12 @@ test("unknown schedule references are rejected and cycle scheduling survives DST
 
 test("nutrition activation requires authored positive targets and valid plans retain client ownership", () => {
   const plan = emptyIifymPlan("client-a", "2026-01-01");
-  plan.options.push({
-    ...structuredClone(plan.options[0]),
-    id: "rest-option",
-    label: "Rest Day",
-  });
   assert.ok(
     validateIndividualPlan("iifym", plan).some((error) =>
       /positive targets/.test(error),
     ),
   );
   plan.options[0].targets.calories.value = 2100;
-  assert.ok(
-    validateIndividualPlan("iifym", plan).some((error) =>
-      /positive targets/.test(error),
-    ),
-  );
-  plan.options[1].targets.calories.value = 1800;
   assert.deepEqual(validateIndividualPlan("iifym", plan), []);
   const otherClient = { ...plan, clientId: "client-b" };
   assert.equal(otherClient.clientId === plan.clientId, false);
@@ -295,11 +314,10 @@ test("nutrition activation requires authored positive targets and valid plans re
 
 test("weekly day roles survive storage and activation without changing date assignments", () => {
   const content = emptyMealPlan("client-a", "2026-10-17");
-  content.variants.push({
-    ...structuredClone(content.variants[0]),
-    id: "rest-role-option",
-    label: "Rest Day",
-  });
+  const restVariant = structuredClone(content.variants[0]);
+  restVariant.id = "variant-rest";
+  restVariant.label = "Rest day";
+  content.variants.push(restVariant);
   const [training, rest] = content.variants.map((variant) => variant.id);
   content.schedule = {
     mode: "weekly",

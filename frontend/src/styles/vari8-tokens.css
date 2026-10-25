@@ -8,40 +8,34 @@
 
 .v8-theme {
   --v8-font-family-ui: "VARI8 Geist", system-ui, sans-serif;
-  --v8-material-app:
-    radial-gradient(
-      480px 180px at 0% 0%,
-      color-mix(in srgb, var(--v8-accent-glow) 55%, transparent),
-      transparent 78%
-    ),
-    var(--v8-canvas);
+  --v8-material-app: var(--v8-canvas);
   --v8-font-size-xs: 0.75rem;
   --v8-font-size-sm: 0.875rem;
   --v8-font-size-md: 0.9375rem;
   --v8-font-size-lg: 1.25rem;
   --v8-font-size-xl: 1.75rem;
-  --v8-font-size-page-title: 1.75rem;
-  --v8-font-size-section-title: 1.25rem;
+  --v8-font-size-page-title: 1.875rem;
+  --v8-font-size-section-title: 1.125rem;
   --v8-font-size-subsection-title: 1rem;
   --v8-font-size-body: 0.9375rem;
   --v8-font-size-body-mobile: 1rem;
   --v8-font-size-control: 0.875rem;
   --v8-font-size-supporting: 0.75rem;
-  --v8-font-size-card-heading: 1rem;
-  --v8-font-size-label: 0.875rem;
+  --v8-font-size-card-heading: 0.9375rem;
+  --v8-font-size-label: 0.8125rem;
   --v8-font-size-table: 0.875rem;
-  --v8-line-height-card-heading: 1.375rem;
-  --v8-line-height-label: 1.25rem;
+  --v8-line-height-card-heading: 1.25rem;
+  --v8-line-height-label: 1.125rem;
   --v8-line-height-table: 1.25rem;
   --v8-font-size-metric: 2rem;
   --v8-font-size-metric-large: 2.5rem;
-  --v8-line-height-page-title: 2.125rem;
-  --v8-line-height-section-title: 1.75rem;
+  --v8-line-height-page-title: 2.25rem;
+  --v8-line-height-section-title: 1.5rem;
   --v8-line-height-subsection-title: 1.5rem;
   --v8-line-height-body: 1.375rem;
   --v8-line-height-body-mobile: 1.5rem;
   --v8-line-height-control: 1.25rem;
-  --v8-line-height-supporting: 1.125rem;
+  --v8-line-height-supporting: 1rem;
   --v8-line-height-metric: 2.25rem;
   --v8-line-height-metric-large: 2.75rem;
   --v8-line-height-tight: 1.2;
@@ -50,10 +44,11 @@
   --v8-font-weight-regular: 400;
   --v8-font-weight-medium: 500;
   --v8-font-weight-semibold: 600;
-  --v8-font-weight-page-title: 550;
-  --v8-font-weight-section-title: 550;
-  --v8-font-weight-metric: 450;
+  --v8-font-weight-page-title: 600;
+  --v8-font-weight-section-title: 600;
+  --v8-font-weight-metric: 600;
   --v8-letter-spacing-tight: -0.02em;
+  --v8-letter-spacing-metric: -0.025em;
   --v8-letter-spacing-ui: -0.01em;
 
   --v8-space-1: 0.25rem;
@@ -76,12 +71,12 @@
   --v8-data-row-height: 3rem;
   --v8-data-row-height-compact: 2.5rem;
 
-  --v8-radius-dense: 0.5rem;
-  --v8-radius-compact: 0.5rem;
-  --v8-radius-field: 0.75rem;
-  --v8-radius-control: 0.75rem;
-  --v8-radius-panel: 1rem;
-  --v8-radius-card: 1rem;
+  --v8-radius-dense: 0.625rem;
+  --v8-radius-compact: 0.625rem;
+  --v8-radius-field: 0.875rem;
+  --v8-radius-control: 0.875rem;
+  --v8-radius-panel: 1.25rem;
+  --v8-radius-card: 1.25rem;
   --v8-radius-overlay: 1.5rem;
   --v8-radius-pill: 999px;
   --v8-border-width-hairline: 1px;
@@ -142,6 +137,8 @@
   --v8-elevation-control:
     inset 0 1px 0 rgb(255 255 255 / 70%), 0 1px 2px rgb(0 0 0 / 8%);
   --v8-elevation-overlay: 0 20px 48px rgb(0 0 0 / 18%);
+  --v8-shadow-card: 0 1px 2px rgb(16 16 16 / 4%), 0 6px 20px rgb(16 16 16 / 5%);
+  --v8-shadow-overlay: 0 12px 40px rgb(16 16 16 / 12%);
 }
 
 .v8-theme[data-mode="dark"] {
@@ -156,6 +153,8 @@
   --v8-elevation-control:
     inset 0 1px 0 rgb(255 255 255 / 3%), 0 1px 2px rgb(0 0 0 / 20%);
   --v8-elevation-overlay: 0 20px 48px rgb(0 0 0 / 48%);
+  --v8-shadow-card: none;
+  --v8-shadow-overlay: 0 16px 48px rgb(0 0 0 / 50%);
 }
 
 .v8-scope {

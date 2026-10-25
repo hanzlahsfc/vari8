@@ -4,27 +4,30 @@ The live development reference is `/dev/design-system`. Source owners are `src/l
 
 ## Visual direction
 
-Use a near-black neutral canvas, quiet slightly raised panels, clear type hierarchy, and restrained accent lighting. The fixed palette is achromatic; changing the accent must never give every neutral surface a colored undertone. A small accent wash may identify one lead region. Ordinary panels, fields and controls remain quiet. Do not add ornamental light pools, bright enclosing shells, glass blur, gradients on every card, or feature-specific copies of controls.
+**The owner approved the visual reset (`docs/visual-reset-spec.md`, 2026-10-23) as the standard for the whole tool.** New and reworked screens follow it; its values override older notes in this guide.
 
-Both modes are supported. Light mode uses white card bases and soft neutral decorative button edges. Dark mode uses the neutral surface hierarchy below. Depth should clarify grouping, rather than compete with the content.
+Surfaces separate by tone, not by grey borders: tone-elevated rounded cards, filled fields without resting borders and an accent focus ring, pill buttons and chips, circular icon buttons, large confident tabular numbers with quiet labels. One accent, used sparingly for the primary action, the active/selected state and the current item in charts. The fixed palette stays achromatic; changing the accent must never tint neutral surfaces. Glass blur is reserved for floating navigation. No ornamental light pools, gradients on every card, or feature-specific copies of controls.
+
+Both modes are equally finished. Light mode uses a grey canvas with white cards and a very soft card shadow; dark mode uses the tone hierarchy below and no card shadow.
 
 | Role | Dark | Light |
 | --- | --- | --- |
-| `canvas` | #080808 | #F5F5F5 |
-| `surface-navigation` | #171717 | #FAFAFA |
-| `surface` | #101010 | #FFFFFF |
-| `surface-raised` | #212121 | #FFFFFF |
-| `surface-inset` / `field` | #0C0C0C | #FAFAFA |
-| `surface-interactive` | #1D1D1D | #F6F6F6 |
-| `surface-selected` | #282828 | #EAEAEA |
-| `surface-featured` | #1B1B1B | #F1F1F1 |
-| `surface-overlay` | #242424 | #FFFFFF |
+| `canvas` | #0B0B0C | #F2F2F4 |
+| `surface-navigation` | #111113 | #FFFFFF |
+| `surface` | #161618 | #FFFFFF |
+| `surface-subtle` | #1B1B1E | #F7F7F8 |
+| `surface-raised` | #1F1F22 | #FFFFFF |
+| `surface-inset` / `field` | #1C1C1F | #F2F2F4 |
+| `surface-interactive` | #232327 | #EDEDF0 |
+| `surface-selected` | #2A2A2E | #E6E6EA |
+| `surface-featured` | #1B1B1E | #F7F7F8 |
+| `surface-overlay` | #1F1F22 | #FFFFFF |
 
 Card variants in light mode keep a white base; hierarchy comes from grouping and restrained elevation. The `spotlight` treatment uses the ordinary surface base with a small bounded accent wash. It does not reserve empty space for decoration. `--v8-material-app` provides a faint localized light over the neutral canvas. Use material highlight/shade and elevation tokens rather than inventing shadow recipes.
 
 ## Spacing and typography
 
-Use the spacing scale 4, 8, 12, 16, 20, 24, 32, 40, 48 and 64px. Group related controls closely; separate sections more generously. Default card padding is 20px, compact 16px, spacious 24px. Standard page insets are 32px desktop, 24px tablet, 16px phone. Cards use a 16px radius, controls 12px, compact controls 8px. Do not apply a single radius to every layer.
+Use the spacing scale 4, 8, 12, 16, 20, 24, 32, 40, 48 and 64px. Group related controls closely; separate sections more generously. Default card padding is 20px, compact 16px, spacious 24px. Standard page insets are 32px desktop, 24px tablet, 16px phone. Cards use a 20px radius, overlays 24px, fields and controls 14px, compact controls 10px; buttons and chips are pills. Inner radii are concentric (outer radius minus padding). Do not apply a single radius to every layer.
 
 | Role | Size / line height | Weight |
 | --- | --- | --- |

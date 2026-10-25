@@ -69,6 +69,8 @@ export type TrainingPlan = {
   weeks: number;
   overrides: Record<string, TrainingSession[]>;
   rotation?: TrainingRotation;
+  /** Coach-authored focus line shown on the athlete profile. */
+  focus?: string;
 };
 export type ClientGoal = {
   id: string;
@@ -77,13 +79,70 @@ export type ClientGoal = {
   unit: string;
   date: string;
 };
+/** Date-less metric target ("sleep ≥ 7.5 h", "water 4–5 L"). */
+export type ClientOtherTarget = {
+  id: string;
+  fieldId: string;
+  kind: "minimum" | "maximum" | "range" | "exact";
+  value?: number;
+  min?: number;
+  max?: number;
+};
+export type LogField = "weight" | "reps" | "rpe" | "rir" | "note";
+export type LoggedSet = {
+  setId: string;
+  done: boolean;
+  weight: number | null;
+  reps: number | null;
+  rpe: number | null;
+  rir: number | null;
+  note: string;
+  flagged: boolean;
+};
+export type LoggedExercise = {
+  exerciseId: string;
+  exerciseKey: string;
+  prescription: TrainingExercise;
+  sets: LoggedSet[];
+};
+export type TrainingSessionLog = {
+  id: string;
+  clientId: string;
+  planId: string;
+  /** Display week index (unbounded). */
+  week: number;
+  /** Rotation schedule entry key for this occurrence. */
+  occurrenceKey: string;
+  sessionId: string;
+  sessionName: string;
+  scheduledDate: string;
+  logFields: LogField[];
+  loadUnit: "kg" | "lb";
+  exercises: LoggedExercise[];
+  status: "in-progress" | "finished";
+  startedAt: string;
+  finishedAt?: string;
+};
+export type TemporaryNutrition = {
+  id: string;
+  kind: "refeed" | "diet-break" | "custom";
+  label: string;
+  startDate: string;
+  endDate: string;
+  source: "mealPlan" | "iifym";
+  plan: MealPlan | IifymPlan;
+  createdAt: string;
+};
 export type ClientPlans = {
   nutrition: {
     mealPlan: PlanLifecycle<MealPlan>;
     iifym: PlanLifecycle<IifymPlan>;
+    /** Coach-scoped temporary plans applied by date range. */
+    temporary?: TemporaryNutrition[];
   };
   training: PlanLifecycle<TrainingPlan>;
   goals: ClientGoal[];
+  otherTargets?: ClientOtherTarget[];
   activityTargets?: ActivityTargetVersion[];
   supplements?: SupplementPlan;
 };

@@ -65,6 +65,18 @@
       "selector": ".eg-builder-gallery .eg-gallery-item > .eg-gallery-tile-action",
       "property": "padding",
       "reason": "The shared tile button overlays the widget specimen to preserve full-card selection; zero padding keeps the overlay aligned with card bounds while VARI8 owns its visual style. Reassess if tile markup changes."
+    },
+    {
+      "file": "src/components/coach/builder/chart-period-control.css",
+      "selector": ".coach-root .v8-field:has(.cb-dw-chart-range) > .v8-field__label",
+      "property": "height",
+      "reason": "Widget headers already identify the chart; keeps the required Select label available to assistive technology while visually hiding it in the cramped widget controls row. Remove when the field supports a shared visually-hidden label option."
+    },
+    {
+      "file": "src/components/coach/builder/chart-period-control.css",
+      "selector": ".coach-root .v8-field:has(.cb-dw-chart-range) > .v8-field__label",
+      "property": "padding",
+      "reason": "Widget headers already identify the chart; keeps the required Select label available to assistive technology while visually hiding it in the cramped widget controls row. Remove when the field supports a shared visually-hidden label option."
     }
   ]
 }

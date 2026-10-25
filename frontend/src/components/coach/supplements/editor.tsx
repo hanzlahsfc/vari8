@@ -316,8 +316,11 @@ export function SupplementEditor({ client }: { client: CoachClient }) {
   };
 
   const reset = () => {
-    setName(saved?.name ?? "Supplement plan");
-    setItems(saved?.items.map(draftOf) ?? []);
+    const restoredName = saved?.name ?? "Supplement plan";
+    const restoredRows = saved?.items.map(draftOf) ?? [];
+    setName(restoredName);
+    setItems(restoredRows);
+    setBaseline(serialize(restoredName, restoredRows));
     setShowErrors(false);
   };
 
@@ -352,8 +355,10 @@ export function SupplementEditor({ client }: { client: CoachClient }) {
           : entry,
       ),
     }));
+    const canonicalRows = plan.items.map(draftOf);
     setName(plan.name);
-    setBaseline(serialize(plan.name, items));
+    setItems(canonicalRows);
+    setBaseline(serialize(plan.name, canonicalRows));
     setShowErrors(false);
     toast("Supplement plan saved.");
   };

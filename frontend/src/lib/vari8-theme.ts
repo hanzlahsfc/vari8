@@ -251,30 +251,30 @@ function makeSurfaceRoles(
 ): Record<Exclude<SurfaceRole, "accent-soft" | "accent-spotlight">, string> {
   return mode === "dark"
     ? {
-        canvas: "#080808",
-        "surface-navigation": "#171717",
-        surface: "#101010",
-        "surface-subtle": "#171717",
-        "surface-raised": "#212121",
-        "surface-inset": "#0C0C0C",
-        "surface-interactive": "#1D1D1D",
-        "surface-selected": "#282828",
-        "surface-featured": "#1B1B1B",
-        "surface-overlay": "#242424",
-        field: "#0C0C0C",
+        canvas: "#0B0B0C",
+        "surface-navigation": "#111113",
+        surface: "#161618",
+        "surface-subtle": "#1B1B1E",
+        "surface-raised": "#1F1F22",
+        "surface-inset": "#1C1C1F",
+        "surface-interactive": "#232327",
+        "surface-selected": "#2A2A2E",
+        "surface-featured": "#1B1B1E",
+        "surface-overlay": "#1F1F22",
+        field: "#1C1C1F",
       }
     : {
-        canvas: "#F5F5F5",
-        "surface-navigation": "#FAFAFA",
+        canvas: "#F2F2F4",
+        "surface-navigation": "#FFFFFF",
         surface: "#FFFFFF",
-        "surface-subtle": "#F0F0F0",
+        "surface-subtle": "#F7F7F8",
         "surface-raised": "#FFFFFF",
-        "surface-inset": "#FAFAFA",
-        "surface-interactive": "#F6F6F6",
-        "surface-selected": "#EAEAEA",
-        "surface-featured": "#F1F1F1",
+        "surface-inset": "#F2F2F4",
+        "surface-interactive": "#EDEDF0",
+        "surface-selected": "#E6E6EA",
+        "surface-featured": "#F7F7F8",
         "surface-overlay": "#FFFFFF",
-        field: "#FAFAFA",
+        field: "#F2F2F4",
       };
 }
 
@@ -282,14 +282,14 @@ function makeTextRoles(mode: Vari8Mode, surfaces: readonly string[]) {
   const base =
     mode === "dark"
       ? {
-          text: "#F1F1F1",
-          secondary: "#B2B2B2",
-          tertiary: "#9A9A9A",
+          text: "#F4F4F5",
+          secondary: "#A1A1A8",
+          tertiary: "#8A8A92",
         }
       : {
-          text: "#212121",
-          secondary: "#626262",
-          tertiary: "#707070",
+          text: "#18181B",
+          secondary: "#5F5F67",
+          tertiary: "#6E6E76",
         };
   return {
     text: contrastSafe(base.text, surfaces, 4.5),
@@ -321,7 +321,7 @@ function statusColor(
 }
 
 function modeAccentSoft(mode: Vari8Mode, accent: string): string {
-  const base = mode === "dark" ? "#171717" : "#F0F0F0";
+  const base = mode === "dark" ? "#1B1B1E" : "#F7F7F8";
   return mixHex(base, accent, 0.13);
 }
 
@@ -379,9 +379,9 @@ export function vari8Theme({
   );
   const chart = contrastSafeChart(rawAccent, surfaces, [accentGlow, chartFill]);
   const statusSurfaces = readableSurfaces;
-  const border = mode === "dark" ? "#2A2A2A" : "#DDDDDD";
+  const border = mode === "dark" ? "#232326" : "#E7E7EA";
   const borderControl = contrastSafe(
-    mode === "dark" ? "#777777" : "#777777",
+    mode === "dark" ? "#6E6E76" : "#6E6E76",
     surfaces,
     3,
   );
