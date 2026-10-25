@@ -115,7 +115,7 @@ strict pixel comparison remains the separate 68/70 diagnostic.
 Task-local runs on Node `v24.22.1`:
 
 - Unit/validation: **106 files / 1283 tests**, exit 0 (fresh final run).
-- Focused reference tests: **11/11**, exit 0 (fresh Prompt 417 run).
+- Focused reference tests: **13/13**, exit 0 (fresh Prompt 423 run).
 - Typecheck: exit 0. Lint: exit 0, 0 errors / 81 warnings. Format: exit 0.
 - Index generation/check: exit 0; historical/candidate source trees remain exact.
 - Build: exit 0; historical and candidate builds were also 0 under their lockfiles.
@@ -126,6 +126,11 @@ Task-local runs on Node `v24.22.1`:
   packaging.
 - Canonical comparison recomputed: **70/70**; strict diagnostic recomputed: **68/70**. Historical 68/70 is
   preserved. The proposed reference remains unactivated; no baseline was refreshed.
+- Clean detached checkout of the code/evidence contents at `c93f33b` (Node v24.22.1; `npm ci
+--ignore-scripts` at root and in `tools/parity/reference`; no `outputs/p414` input):
+  `verify-evidence.mjs` exit 0 with 482 artifacts, canonical 70/70 and strict 68/70;
+  `recompare.mjs` reproduced the committed receipts byte-for-byte and left the worktree clean.
+  Receipt JSON is generated and Prettier-ignored so clean recomparison remains byte-stable.
 
 ## Integration sequence (documented, not executed)
 

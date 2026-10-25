@@ -4,7 +4,7 @@
 - Candidate captures and recomparison tooling are committed under `tools/parity/reference/evidence/`: candidate 237 files, reference 245, evidence directory 246, artifact index 482 hashes, old baseline 242 unchanged, map 272. `verify-evidence.mjs` fails on missing/tampered artifacts and validates both runs/contract/receipt provenance; `recompare.mjs` uses only the committed reference+candidate package.
 - New recomparison receipts (not original receipts, not new captures): canonical **70/70**, strict **68/70**; metadata records comparer `6ea1115…`, legacy comparer `56a709a…`, contract `4a29fd5…`, dependency versions/integrities and input hashes. Historical 68/70 receipt preserved; original receipt comparer provenance remains missing and disclosed.
 - Existing S11-03/D18/S11-04 applied allowances remain unchanged; D18/S11-04 apply on s03@1440 alongside S03-18. No tolerance/mask expansion or capture semantics change.
-- Fresh focused 13/13, unit 106 files/1283, format/index/type/lint/build/diff checks pass. Clean isolated-worktree reproduction commands/results are recorded in the final handoff. No merge/retarget/baseline activation/Actions/Slack/Hermes/shared changes; stop for SWE-2 validation.
+- Fresh focused 13/13, unit 106 files/1283, format/index/type/lint/build/diff checks pass. Clean detached checkout at `c93f33b` with fresh Node 24 installs: verifier 482 artifacts/canonical 70/70/strict 68/70, recompare byte-stable, no p414 input. No merge/retarget/baseline activation/Actions/Slack/Hermes/shared changes; stop for SWE-2 validation.
 
 ## 2026-10-25 — VISUAL-REFERENCE #205 Prompt 417 — owner decisions recorded; activation still held
 

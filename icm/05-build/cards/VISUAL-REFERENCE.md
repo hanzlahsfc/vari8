@@ -35,4 +35,4 @@ No product UI, fonts, old baselines, mask expansion, waiver, merge, deployment o
 
 - Contract v2 compatibility accepts retained v1 only when all material capture/comparison fields match; adoption-only metadata differences are accepted, unknown versions/allowances and material changes fail. Original provenance unchanged.
 - Candidate 237-file evidence and reference 245-file package are committed under `tools/parity/reference/evidence/`; artifact index 482; verifier/recompare are self-contained. New recomparisons: canonical 70/70, strict 68/70; historical 68/70 preserved.
-- No capture/tolerance/mask/S03-18 change; no merge, retarget or baseline activation. Stop for SWE-2 validation.
+- No capture/tolerance/mask/S03-18 change. Clean checkout at `c93f33b` verified 482 artifacts, canonical 70/70, strict 68/70 and byte-stable recomparison. No merge, retarget or baseline activation; stop for SWE-2 validation.
