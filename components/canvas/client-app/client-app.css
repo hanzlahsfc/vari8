@@ -549,3 +549,17 @@
 .coach-root .ca-nutrition-kcal span {
   color: var(--cd-muted);
 }
+
+/* Card 10 (#175): published macro targets beside card 09 actuals — two
+   columns on wide viewports, one stacked column on narrow. */
+.coach-root .ca-nutrition-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 900px) {
+  .coach-root .ca-nutrition-split {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}

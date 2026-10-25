@@ -159,3 +159,70 @@ export function fetchStaffNutritionLogs(
     `/workspaces/${workspaceId}/clients/${clientProfileId}/nutrition-logs${suffix}`,
   );
 }
+
+/* -------------------------------------------------------------------------
+ * Card 10 (#175) remote surface: the caller's own CURRENT published IIFYM
+ * macro-target version (immutable payload: options + weekday schedule).
+ * Wire shapes mirror `lib/iifym/service.ts` and `lib/db-types` —
+ * duplicated here so the canvas never imports server modules. The server
+ * resolves which VERSION applies; the screen resolves which OPTION
+ * applies on the selected weekday (`scheduledOption` from the shared
+ * canvas domain). Calories are never stored: macros-style targets derive
+ * kcal at render (4/4/9); calories-style targets are entered directly.
+ * ---------------------------------------------------------------------- */
+
+export type IifymTargetValueWire =
+  | { kind: "fixed"; value: number }
+  | { kind: "range"; min: number; max: number }
+  | { kind: "minimum"; value: number };
+
+export type IifymTargetsWire = {
+  style: "calories" | "macros";
+  calories?: IifymTargetValueWire;
+  protein?: IifymTargetValueWire;
+  carbs?: IifymTargetValueWire;
+  fat?: IifymTargetValueWire;
+};
+
+export type IifymOptionWire = {
+  id: string;
+  label: string;
+  targets: IifymTargetsWire;
+};
+
+export type IifymScheduleWire =
+  | { mode: "manual"; selectedVariantId: string }
+  | { mode: "weekly"; days: Partial<Record<string, string>> }
+  | {
+      mode: "cycle";
+      anchorDate: string;
+      steps: { variantId: string; days: number }[];
+    };
+
+export type IifymPayloadWire = {
+  options: IifymOptionWire[];
+  name?: string;
+  startDate?: string;
+  schedule?: IifymScheduleWire;
+};
+
+export type OwnIifymPlanWire = {
+  current: {
+    versionSeq: number;
+    effectiveDate: string;
+    effectiveTimezone: string;
+    payload: IifymPayloadWire;
+  } | null;
+  upcoming: {
+    versionSeq: number;
+    effectiveDate: string;
+    effectiveTimezone: string;
+  } | null;
+};
+
+/** GET iifym-plans — the caller's own published macro target version. */
+export function fetchOwnIifymPlan(
+  workspaceId: string,
+): Promise<OwnIifymPlanWire> {
+  return apiFetch<OwnIifymPlanWire>(`/workspaces/${workspaceId}/iifym-plans`);
+}

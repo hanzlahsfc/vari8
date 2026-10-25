@@ -53,6 +53,7 @@ import {
 import { Empty } from "../coach/ui";
 import { CheckInForm } from "./check-in";
 import { NutritionActuals } from "./nutrition-actuals";
+import { NutritionTargets } from "./nutrition-targets";
 import "../coach/client-preview.css";
 
 const foodMap = new Map<string, Food>(
@@ -481,7 +482,12 @@ function ClientNutritionTab({
             : undefined
         }
       />
-      {own && <NutritionActuals workspaceId={own.workspaceId} date={date} />}
+      {own && (
+        <div className="ca-nutrition-split">
+          <NutritionTargets workspaceId={own.workspaceId} date={date} />
+          <NutritionActuals workspaceId={own.workspaceId} date={date} />
+        </div>
+      )}
     </>
   );
 }
