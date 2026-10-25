@@ -1,3 +1,24 @@
+## 2026-10-25 — deterministic demo-export snapshot for backend seeding — verified locally
+
+- This work is on branch `frontend-demo-export-20261025`, based on
+  `FRONTEND` at `9383578a`; commit pending, no push yet.
+- Contents: `frontend/src/data/demo-export/` — a generated snapshot of the
+  fully populated demo coach state (workspace.json + 15 client files +
+  index.json) for backend seeding, plus `frontend/scripts/export-demo.mjs`
+  (`npm run export:demo`) which regenerates it deterministically against the
+  pinned anchor `2026-10-25`. All calendar dates serialize as `day <n>`
+  offsets from the anchor; fixed-date and free-text keys are whitelisted and
+  documented in `frontend/src/data/demo-export/README.md`. `seedState` gained
+  an optional `today` parameter and three demo ids are now stable literals
+  (`demo-variant-refeed`, `demo-timeline-deload`, `demo-timeline-dietbreak`).
+- `npm run export:demo` regenerates byte-identical files across runs and
+  machines (verified via SHA-256 in both the source workspace and this
+  worktree); the script re-anchors every offset and deep-compares against the
+  pre-conversion state before writing.
+- `npm run check` in `frontend/`: tests 319/319, agent-context:check,
+  typecheck, lint (300 files) and build all exit 0. Published-only test files
+  were renormalized to Biome format; no tests removed or weakened.
+
 ## 2026-10-23 — frontend UI redesign branch for review — verified locally
 
 - This work is on branch `frontend-ui-redesign-20261023`, based on
