@@ -15,6 +15,7 @@ import {
   httpsRequest,
   createOwnedProcessGroup,
   listenerPids,
+  ownsPort,
   parityPortPair,
   registerOwnedProcess,
   stopOwnedProcessGroup,
@@ -189,6 +190,19 @@ describe("owned-process identity", () => {
       );
       return found ? { ...found } : null;
     },
+  });
+
+  it("requires listener PGID as well as matching PID and start identity", () => {
+    expect(
+      ownsPort(40000, ownership, {
+        inspector: inspectorFor([leader], [leader]),
+      }),
+    ).toBe(true);
+    expect(
+      ownsPort(40000, ownership, {
+        inspector: inspectorFor([], [{ ...leader, pgid: 999 }]),
+      }),
+    ).toBe(false);
   });
 
   it("returns an explicit problem when ownership is unavailable", async () => {

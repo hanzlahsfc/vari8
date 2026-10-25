@@ -25,8 +25,8 @@ import {
   createOwnedProcessGroup,
   httpsRequest,
   listenerPids,
+  ownsPort,
   parityUrl,
-  processIdentity,
   selectPortPair,
   stopOwnedProcessGroup,
 } from "./local-https.mjs";
@@ -104,25 +104,6 @@ async function waitForHttp(url, server, checkUrl, ms = 180000) {
       throw new Refuse(`server did not answer at ${url} within ${ms / 1000} s`);
     await new Promise((r) => setTimeout(r, 1000));
   }
-}
-
-// Every listener on the port must have been registered as this invocation's
-// spawned process identity. Fails closed: a port occupant alone is not proof.
-function ownsPort(port, ownership) {
-  const pids = listenerPids(port);
-  return (
-    pids.length > 0 &&
-    pids.every((pid) => {
-      const identity = processIdentity(pid);
-      return (
-        identity &&
-        ownership.processes.some(
-          (entry) =>
-            entry.pid === identity.pid && entry.start === identity.start,
-        )
-      );
-    })
-  );
 }
 
 function ownsPortPid(port, pid) {

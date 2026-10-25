@@ -4,6 +4,29 @@ Base: `Vari8-Beta` `d1c4081022f2ac21070b28f284248fad2ef04839`.
 Residual-repair code head: `8b5424f825dddd7e515882d69d346b46157ef849`.
 Issue: https://github.com/hanzlahsfc/vari8/issues/202.
 
+## Prompt 410 bounded repair — Codex builder
+
+Plan/acceptance: extract the runner's listener ownership check into
+`tools/parity/local-https.mjs`, reuse the cleanup PID/PGID/start predicate,
+and add a literal same-PID/start/different-PGID refusal in
+`tests/unit/parity-https.test.ts`. Run focused RED/GREEN, standard units,
+format/type/lint/index/build checks, and one direct-Next loopback
+startup/shutdown proof. Regenerate the start-identity mutant from an
+exact formatted baseline, apply-check/apply/fail/reverse/hash/green.
+Do not change capture/baseline inputs or repeat the known-red 70-shot run.
+
+Production currently registers only the directly spawned Next leader.
+The current listener is that PID and has bounded real-chain proof.
+`registerOwnedProcess` and its descendant tests exercise the helper;
+production does not automatically discover/register descendants. Any
+unregistered future descendant is not killed and produces explicit
+incomplete-cleanup reporting. This is a safe limitation, not full
+automatic descendant-cleanup coverage.
+
+The earlier IPC regression timing failure was builder-reported history;
+no original receipt was preserved, so it cannot be independently verified.
+No new test is presented as a replacement for that missing original log.
+
 ## Scope
 
 `tools/parity/run.mjs` starts `next start` and gives production auth an

@@ -152,6 +152,25 @@ const ownedIdentity = (ownership, entry) =>
     (owned) => owned.pid === Number(entry.pid) && owned.start === entry.start,
   );
 
+// A live port occupant must match a registered process identity.
+export function ownsPort(
+  port,
+  ownership,
+  { inspector = liveInspector() } = {},
+) {
+  if (!ownership || !Array.isArray(ownership.processes)) return false;
+  try {
+    const listeners = inspector.listeners(port);
+    return (
+      Array.isArray(listeners) &&
+      listeners.length > 0 &&
+      listeners.every((identity) => ownedIdentity(ownership, identity))
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function createOwnedProcessGroup(
   child,
   { inspector = liveInspector(), timeoutMs = 2000 } = {},
