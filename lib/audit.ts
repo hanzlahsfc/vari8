@@ -194,6 +194,13 @@ export const AUDIT_RESOURCE_TYPES = [
   // or timezone strings.
   "iifym_plan",
   "iifym_plan_version",
+  // PR-M10 (#176): client training session-log lifecycle (CREATE on start,
+  // UPDATE on terminal transition + set saves, READ on the resume read).
+  // IDs and structural markers only (performed date, pinned version seq,
+  // booked week, terminal outcome) — never set actuals, notes, or
+  // prescription text.
+  "training_session_log",
+  "training_set_log",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 
@@ -225,6 +232,9 @@ export type AuditMeta = {
   versionSeq?: number;
   /** TRAINING-I1B-2: pinned prescription week on booking create. */
   bookedWeek?: number;
+  /** PR-M10 (#176): terminal outcome recorded on a training session log
+   * (the row's stored state — skipped and partial are states, not zeros). */
+  sessionOutcome?: "COMPLETED" | "PARTIAL" | "SKIPPED";
 };
 
 /** S1-F2D: metadata allowed on ACCOUNT-scoped audit events only. Deliberately
@@ -308,6 +318,10 @@ const META_VALIDATORS = new Map<keyof AuditMeta, (v: unknown) => boolean>([
   [
     "bookedWeek",
     (v) => typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= 1_000,
+  ],
+  [
+    "sessionOutcome",
+    (v) => v === "COMPLETED" || v === "PARTIAL" || v === "SKIPPED",
   ],
 ]);
 

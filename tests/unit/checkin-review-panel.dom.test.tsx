@@ -101,6 +101,7 @@ function panel(over: Partial<CheckInReviewPanelWire> = {}): CheckInReviewPanelWi
       ],
       unchanged: 1,
     },
+    flaggedTrainingNotes: [],
     ...over,
   };
 }

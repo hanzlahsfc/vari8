@@ -66,6 +66,19 @@ export type CheckInSubmissionChangeSummary = {
   unchanged: number;
 };
 
+/** A set-log note the client flagged for the coach — the "Flagged
+ * training notes" block on the review surface. The exercise name
+ * resolves through the session log's PINNED version payload, so the
+ * label matches what the client actually saw. */
+export type FlaggedTrainingNote = {
+  sessionLogId: string;
+  performedDate: string;
+  exerciseName: string;
+  /** 1-based position inside the exercise, matching the client's view. */
+  set: number;
+  note: string;
+};
+
 export type CheckInReviewPanelDetail = StaffCheckInSubmissionDetail & {
   /**
    * Server-side review state. Draft feedback is client-local by design
@@ -75,6 +88,8 @@ export type CheckInReviewPanelDetail = StaffCheckInSubmissionDetail & {
   reviewState: "open" | "answered";
   /** Null when no earlier submission of this form exists to compare. */
   changeSummary: CheckInSubmissionChangeSummary | null;
+  /** Set-log notes flagged for review, newest performed date first. */
+  flaggedTrainingNotes: FlaggedTrainingNote[];
 };
 
 const ANSWER_SELECT = {
@@ -299,6 +314,69 @@ export async function readCheckInReviewPanel(
       })
     : null;
 
+  // Same-scope follow-up read: set-log notes the client flagged for
+  // review — only rows with BOTH a non-empty flags array and a non-empty
+  // note qualify, so a bare flag with nothing to read never surfaces.
+  const flaggedRows = await db.$queryRawUnsafe<
+    {
+      session_log_id: string;
+      exercise_id: string;
+      position: number;
+      note: string;
+      performed_date: Date;
+      pinned_version_id: string;
+      booked_week: number;
+    }[]
+  >(
+    `SELECT s.session_log_id, s.exercise_id, s.position,
+            s.actuals->>'note' AS note,
+            l.performed_date, l.pinned_version_id, l.booked_week
+     FROM "training_set_log" s
+     JOIN "training_session_log" l ON l.id = s.session_log_id
+     WHERE l.workspace_id = $1 AND l.client_profile_id = $2
+       AND jsonb_array_length(COALESCE(s.actuals->'flags', '[]'::jsonb)) > 0
+       AND COALESCE(s.actuals->>'note', '') <> ''
+     ORDER BY l.performed_date DESC, s.exercise_id ASC, s.position ASC
+     LIMIT 50`,
+    input.workspaceId,
+    input.clientProfileId,
+  );
+  const versionIds = [...new Set(flaggedRows.map((r) => r.pinned_version_id))];
+  const pinnedVersions = versionIds.length
+    ? await db.$queryRawUnsafe<{ id: string; payload: unknown }[]>(
+        `SELECT id, payload FROM "training_program_version"
+         WHERE id = ANY($1::text[])`,
+        versionIds,
+      )
+    : [];
+  const payloadById = new Map(pinnedVersions.map((v) => [v.id, v.payload]));
+  const flaggedTrainingNotes: FlaggedTrainingNote[] = flaggedRows.map(
+    (row) => {
+      const payload = payloadById.get(row.pinned_version_id) as unknown as
+        | {
+            weeks?: {
+              week: number;
+              sessions?: { exercises?: { id: string; name: string }[] }[];
+            }[];
+          }
+        | undefined;
+      const sessionDef = payload?.weeks
+        ?.find((w) => w.week === row.booked_week)
+        ?.sessions?.find((s) =>
+          s.exercises?.some((e) => e.id === row.exercise_id),
+        );
+      return {
+        sessionLogId: row.session_log_id,
+        performedDate: row.performed_date.toISOString().slice(0, 10),
+        exerciseName:
+          sessionDef?.exercises?.find((e) => e.id === row.exercise_id)?.name ??
+          "Exercise",
+        set: row.position + 1,
+        note: row.note,
+      };
+    },
+  );
+
   const changeSummary =
     current && previous
       ? diffCheckInSubmissions({
@@ -324,6 +402,7 @@ export async function readCheckInReviewPanel(
     ...detail,
     reviewState: detail.reviewed ? "answered" : "open",
     changeSummary,
+    flaggedTrainingNotes,
   };
 }
 

@@ -75,6 +75,10 @@ import {
   type TrainingFieldConfig,
 } from "./payload";
 import {
+  setLogEntrySchema,
+  type SetLogEntry,
+} from "./validators";
+import {
   addDays,
   boundaryInstant,
   ceiling,
@@ -2136,13 +2140,18 @@ export type OwnTrainingView = {
  */
 export async function readOwnTrainingProgram(
   session: SessionLike,
-  input: { workspaceId: string },
+  input: { workspaceId: string; week?: number },
   deps: TrainingDeps = {},
 ): Promise<OwnTrainingView> {
   const db = deps.db ?? defaultPrisma;
   const registry = deps.registry ?? resolveTrainingConsentPolicy();
   const now = deps.now ?? new Date();
-  if (!validId(input.workspaceId)) throw new TrainingError("invalid_input");
+  if (
+    !validId(input.workspaceId) ||
+    (input.week !== undefined &&
+      (!Number.isInteger(input.week) || input.week < 1))
+  )
+    throw new TrainingError("invalid_input");
   return withSerializedRetry(() =>
     db.$transaction(async (tx) => {
       const deadline = await beginRead(tx);
@@ -2223,12 +2232,19 @@ export async function readOwnTrainingProgram(
       const startDate = isoDate(programRow.startDate);
       const isEvergreen = programRow.programMode === "EVERGREEN";
       // Evergreen shows its single prescription week — no week index math.
-      const idx = isEvergreen
+      const currentIdx = isEvergreen
         ? 1
         : Math.min(
             programRow.weekCount,
             Math.max(1, weekIndex(startDate, localDateOf(now, anchorTz))),
           );
+      // `week` is the client's requested navigation week; `weekIndex`
+      // stays the date-derived current week either way.
+      const idx = isEvergreen
+        ? 1
+        : input.week !== undefined
+          ? Math.min(programRow.weekCount, input.week)
+          : currentIdx;
       // Lifecycle state derives from the real end boundary (exclusive
       // start of the week AFTER the last one under the immutable anchor
       // calendar) — never from the clamped display index: the final week
@@ -2324,7 +2340,7 @@ export async function readOwnTrainingProgram(
           programId: sel.current.id,
           title: programRow.title,
           versionSeq: governing?.versionSeq ?? 0,
-          weekIndex: idx,
+          weekIndex: currentIdx,
           weekCount: programRow.weekCount,
           ongoing: isEvergreen,
           startDate,
@@ -3482,5 +3498,961 @@ export async function readOwnTrainingBookingHistory(
         hasMore: rows.length > TRAINING_LIMITS.bookingPageSize,
       };
     }, TX_OPTS),
+  );
+}
+
+// ── PR-M10 (#176): client session + set log ──────────────────────────────
+// The client logging surface the `trainingPlansLogs` CLIENT own-write cell
+// was reserved for. One TrainingSessionLog per session occurrence (natural
+// key: workspace, client, program, session, booked week, performed date),
+// pinned at start to the prescription version governing the performed date
+// — a later publish never rewrites the pin, so the old prescription stays
+// beside its actuals. Per-set actuals store as a validated SetLogEntry
+// JSONB (P01: whatever fields the coach's own template defines — no fixed
+// column per field). Terminal states are explicit rows, not zeros.
+
+/** Resolve the caller's own client profile in the workspace — the subject
+ * every own-scope log path binds to. A caller with no linked profile can
+ * never log. */
+async function ownClientProfile(
+  tx: Prisma.TransactionClient,
+  workspaceId: string,
+  userId: string,
+): Promise<{ id: string } | null> {
+  const rows = await tx.$queryRawUnsafe<{ id: string }[]>(
+    `SELECT id FROM "client_profile"
+     WHERE workspace_id = $1 AND user_id = $2`,
+    workspaceId,
+    userId,
+  );
+  return rows[0] ?? null;
+}
+
+/** Own-write prelude: locked authorize must grant the CLIENT own write
+ * cell; the subject profile is locked and must link back to the caller's
+ * user — a client writes only their own log. */
+async function logOwnWritePrelude(
+  tx: Prisma.TransactionClient,
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string },
+  registry: ConsentPolicyRegistry,
+) {
+  const { ctx, member, userId } = await lockedAuthorize(tx, session, {
+    action: "write",
+    workspaceId: input.workspaceId,
+    clientProfileId: input.clientProfileId,
+  });
+  if (ctx.grantedScope !== "own")
+    throw new AccessDeniedError(
+      "role_denied",
+      "trainingPlansLogs",
+      "write",
+    );
+  const profile = await lockProfile(
+    tx,
+    input.workspaceId,
+    input.clientProfileId,
+  );
+  if (!profile) throw new TrainingError("not_found");
+  if (profile.userId !== userId)
+    throw new AccessDeniedError("not_owner", "trainingPlansLogs", "write");
+  await checkRequiredConsent(tx, profile.id, registry, true);
+  return { ctx, member, profile };
+}
+
+/** Own-read prelude: same profile binding on the read path. */
+async function logOwnReadPrelude(
+  tx: Prisma.TransactionClient,
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string },
+  registry: ConsentPolicyRegistry,
+) {
+  const { ctx, member, userId } = await lockedAuthorize(tx, session, {
+    action: "read",
+    workspaceId: input.workspaceId,
+    clientProfileId: input.clientProfileId,
+  });
+  if (ctx.grantedScope !== "own")
+    throw new AccessDeniedError("role_denied", "trainingPlansLogs", "read");
+  const profile = await lockProfile(
+    tx,
+    input.workspaceId,
+    input.clientProfileId,
+  );
+  if (!profile) throw new TrainingError("not_found");
+  if (profile.userId !== userId)
+    throw new AccessDeniedError("not_owner", "trainingPlansLogs", "read");
+  await checkRequiredConsent(tx, profile.id, registry, true);
+  return { ctx, member, profile };
+}
+
+export type SessionLogStatus =
+  | "IN_PROGRESS"
+  | "COMPLETED"
+  | "PARTIAL"
+  | "SKIPPED";
+
+export type SessionSetRow = {
+  id: string;
+  exerciseId: string;
+  /** The set identity the client saved — prescribed or client-added. */
+  setId: string;
+  setKey: string;
+  position: number;
+  actuals: SetLogEntry;
+};
+
+/**
+ * Start (or resume-create) a session log. Idempotent on the natural key:
+ * a replay or an already-started occurrence returns the existing row with
+ * its original pin — never a second row, never a re-pin.
+ */
+export async function startTrainingSessionLog(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    programId: string;
+    sessionId: string;
+    bookedWeek: number;
+    performedDate: string;
+  },
+  deps: TrainingDeps = {},
+): Promise<{ sessionLogId: string; replayed: boolean }> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveTrainingConsentPolicy();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.programId) ||
+    !validId(input.sessionId) ||
+    !Number.isInteger(input.bookedWeek) ||
+    input.bookedWeek < 1 ||
+    typeof input.performedDate !== "string" ||
+    !DATE_RE.test(input.performedDate)
+  )
+    throw new TrainingError("invalid_input");
+
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const userId = session?.user?.id;
+        if (typeof userId !== "string" || userId.length === 0)
+          throw new AccessDeniedError(
+            "unauthenticated",
+            "trainingPlansLogs",
+            "write",
+          );
+        const own = await ownClientProfile(tx, input.workspaceId, userId);
+        if (!own)
+          throw new AccessDeniedError(
+            "not_owner",
+            "trainingPlansLogs",
+            "write",
+          );
+        const clientProfileId = own.id;
+        const { ctx } = await logOwnWritePrelude(
+          tx,
+          session,
+          { workspaceId: input.workspaceId, clientProfileId },
+          registry,
+        );
+        const program = await lockProgram(
+          tx,
+          input.workspaceId,
+          clientProfileId,
+          input.programId,
+        );
+        if (!program) throw new TrainingError("not_found");
+        if (program.cancelled_at !== null)
+          throw new TrainingError("program_cancelled");
+        const versions = await programVersions(tx, program.id);
+        const seq1 = versions.find((v) => v.versionSeq === 1);
+        if (!seq1) throw new TrainingError("no_governing_version");
+        const anchorTz = seq1.effectiveTimezone;
+        const selectionInstant = resolveBookingInstant(
+          anchorTz,
+          input.performedDate,
+        );
+        const succ = await liveSuccessor(tx, program.id);
+        assertBeforeHandover(selectionInstant, succ?.takeover ?? null);
+        const pinned = gvAt(
+          versions.map(toVersionInstant),
+          selectionInstant,
+          succ?.takeover ?? null,
+        );
+        if (!pinned) throw new TrainingError("no_governing_version");
+        const pinnedRow = versions.find((v) => v.id === pinned.id)!;
+        const payload = pinnedRow.payload as MaterializedProgram;
+        const bookedWeek =
+          program.program_mode === "EVERGREEN" ? 1 : input.bookedWeek;
+        if (bookedWeek < 1 || bookedWeek > payload.weekCount)
+          throw new TrainingError("invalid_input");
+        if (!pinnedSession(pinnedRow, bookedWeek, input.sessionId))
+          throw new TrainingError("invalid_input");
+
+        // Find-or-create on the natural key. A hit (or a P2002 race) is a
+        // resume — the stored pin stands.
+        const performedAt = new Date(parseLocalDate(input.performedDate));
+        const natural = {
+          workspaceId: input.workspaceId,
+          clientProfileId,
+          programId: program.id,
+          sessionId: input.sessionId,
+          bookedWeek,
+          performedDate: performedAt,
+        };
+        const existing = await tx.trainingSessionLog.findFirst({
+          where: natural,
+          select: { id: true },
+        });
+        if (existing) return { sessionLogId: existing.id, replayed: true };
+        try {
+          const created = await tx.trainingSessionLog.create({
+            data: { ...natural, pinnedVersionId: pinned.id },
+            select: { id: true },
+          });
+          await writeAuditEvent(tx, ctx, {
+            action: "CREATE",
+            resourceType: "training_session_log",
+            resourceId: created.id,
+            subjectClientProfileId: clientProfileId,
+            meta: {
+              date: input.performedDate,
+              bookedWeek,
+              versionSeq: pinned.versionSeq,
+            },
+          });
+          return { sessionLogId: created.id, replayed: false };
+        } catch (error) {
+          if (!isSerializationConflict(error) && !isP2002(error)) throw error;
+          const raced = await tx.trainingSessionLog.findFirst({
+            where: natural,
+            select: { id: true },
+          });
+          if (raced) return { sessionLogId: raced.id, replayed: true };
+          throw error;
+        }
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}
+
+function isP2002(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "P2002"
+  );
+}
+
+/**
+ * Manual save of one set. `setId` is mandatory: a set without identity
+ * cannot save idempotently. The payload is checked against the M6
+ * `setLogEntrySchema` before the store write; a `setId` that matches a
+ * prescribed set row keys as `p:{id}`, anything else as `a:{id}` — the
+ * (session_log, exercise, set_key) unique makes a second save of the same
+ * set an update, never a duplicate.
+ */
+export async function saveTrainingSetLog(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    sessionLogId: string;
+    exerciseId: string;
+    position: number;
+    set: unknown;
+  },
+  deps: TrainingDeps = {},
+): Promise<{ setLogId: string; replayed: boolean }> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveTrainingConsentPolicy();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.sessionLogId) ||
+    !validId(input.exerciseId) ||
+    !Number.isInteger(input.position) ||
+    input.position < 0 ||
+    input.position >= 40
+  )
+    throw new TrainingError("invalid_input");
+  const parsed = setLogEntrySchema.safeParse(input.set);
+  if (!parsed.success || typeof parsed.data.setId !== "string")
+    throw new TrainingError("invalid_input");
+  const set = parsed.data;
+  const setId: string = parsed.data.setId;
+
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const userId = session?.user?.id;
+        if (typeof userId !== "string" || userId.length === 0)
+          throw new AccessDeniedError(
+            "unauthenticated",
+            "trainingPlansLogs",
+            "write",
+          );
+        const own = await ownClientProfile(tx, input.workspaceId, userId);
+        if (!own)
+          throw new AccessDeniedError(
+            "not_owner",
+            "trainingPlansLogs",
+            "write",
+          );
+        const clientProfileId = own.id;
+        const { ctx } = await logOwnWritePrelude(
+          tx,
+          session,
+          { workspaceId: input.workspaceId, clientProfileId },
+          registry,
+        );
+        const log = await lockSessionLog(
+          tx,
+          input.workspaceId,
+          clientProfileId,
+          input.sessionLogId,
+        );
+        if (!log) throw new TrainingError("not_found");
+        if (log.status !== "IN_PROGRESS")
+          throw new TrainingError("state_conflict");
+        const pinnedRow = await tx.trainingProgramVersion.findUnique({
+          where: { id: log.pinned_version_id },
+          select: { payload: true, fieldConfig: true },
+        });
+        if (!pinnedRow) throw new TrainingError("not_found");
+        const pinned = pinnedSession(
+          pinnedRow,
+          log.booked_week,
+          log.session_id,
+        );
+        const exercise = pinned?.session.exercises.find(
+          (e) => e.id === input.exerciseId,
+        );
+        if (!exercise) throw new TrainingError("invalid_input");
+        const prescribed = new Set(
+          (exercise.setRows ?? []).map((row) => row.id),
+        );
+        const setKey = `${prescribed.has(setId) ? "p" : "a"}:${setId}`;
+
+        const found = await tx.trainingSetLog.findFirst({
+          where: {
+            sessionLogId: log.id,
+            exerciseId: input.exerciseId,
+            setKey,
+          },
+          select: { id: true },
+        });
+        const data = {
+          position: input.position,
+          actuals: set as unknown as Prisma.InputJsonValue,
+        };
+        let setLogId: string;
+        if (found) {
+          await tx.trainingSetLog.update({
+            where: { id: found.id },
+            data,
+          });
+          setLogId = found.id;
+        } else {
+          const created = await tx.trainingSetLog.create({
+            data: {
+              sessionLogId: log.id,
+              workspaceId: input.workspaceId,
+              clientProfileId,
+              exerciseId: input.exerciseId,
+              setKey,
+              ...data,
+            },
+            select: { id: true },
+          });
+          setLogId = created.id;
+        }
+        await writeAuditEvent(tx, ctx, {
+          action: "UPDATE",
+          resourceType: "training_set_log",
+          resourceId: setLogId,
+          subjectClientProfileId: clientProfileId,
+          meta: { changed: found !== null },
+        });
+        return { setLogId, replayed: found !== null };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}
+
+type LockedSessionLog = {
+  id: string;
+  pinned_version_id: string;
+  session_id: string;
+  booked_week: number;
+  performed_date: Date;
+  status: string;
+  started_at: Date;
+  completed_at: Date | null;
+};
+
+/** Row lock scoped to the verified (workspace, client, log) triple. */
+async function lockSessionLog(
+  tx: Prisma.TransactionClient,
+  workspaceId: string,
+  clientProfileId: string,
+  sessionLogId: string,
+): Promise<LockedSessionLog | null> {
+  const rows = await tx.$queryRawUnsafe<LockedSessionLog[]>(
+    `SELECT id, pinned_version_id, session_id, booked_week, performed_date,
+            status, started_at, completed_at
+     FROM "training_session_log"
+     WHERE id = $1 AND workspace_id = $2 AND client_profile_id = $3
+     FOR UPDATE`,
+    sessionLogId,
+    workspaceId,
+    clientProfileId,
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * Terminal transition. `completed` finishes the session — COMPLETED when
+ * every prescribed set row has a logged set, PARTIAL otherwise; `skipped`
+ * records the deliberate skip. Terminal logs accept no further set saves —
+ * the stored states are the record, not zeros.
+ */
+export async function finishTrainingSessionLog(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    sessionLogId: string;
+    outcome: "completed" | "skipped";
+  },
+  deps: TrainingDeps = {},
+): Promise<{ status: SessionLogStatus }> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveTrainingConsentPolicy();
+  const now = deps.now ?? new Date();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.sessionLogId) ||
+    (input.outcome !== "completed" && input.outcome !== "skipped")
+  )
+    throw new TrainingError("invalid_input");
+
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const userId = session?.user?.id;
+        if (typeof userId !== "string" || userId.length === 0)
+          throw new AccessDeniedError(
+            "unauthenticated",
+            "trainingPlansLogs",
+            "write",
+          );
+        const own = await ownClientProfile(tx, input.workspaceId, userId);
+        if (!own)
+          throw new AccessDeniedError(
+            "not_owner",
+            "trainingPlansLogs",
+            "write",
+          );
+        const clientProfileId = own.id;
+        const { ctx } = await logOwnWritePrelude(
+          tx,
+          session,
+          { workspaceId: input.workspaceId, clientProfileId },
+          registry,
+        );
+        const log = await lockSessionLog(
+          tx,
+          input.workspaceId,
+          clientProfileId,
+          input.sessionLogId,
+        );
+        if (!log) throw new TrainingError("not_found");
+        // Terminal transitions are idempotent: the same outcome on a
+        // terminal row replays; a different terminal state is refused.
+        if (log.status !== "IN_PROGRESS") {
+          if (
+            input.outcome === "skipped"
+              ? log.status === "SKIPPED"
+              : log.status === "COMPLETED" || log.status === "PARTIAL"
+          )
+            return { status: log.status as SessionLogStatus };
+          throw new TrainingError("state_conflict");
+        }
+        let status: SessionLogStatus = "SKIPPED";
+        if (input.outcome === "completed") {
+          const pinnedRow = await tx.trainingProgramVersion.findUnique({
+            where: { id: log.pinned_version_id },
+            select: { payload: true, fieldConfig: true },
+          });
+          if (!pinnedRow) throw new TrainingError("not_found");
+          const pinned = pinnedSession(
+            pinnedRow,
+            log.booked_week,
+            log.session_id,
+          );
+          const logged = await tx.trainingSetLog.findMany({
+            where: { sessionLogId: log.id },
+            select: { exerciseId: true },
+          });
+          const countByExercise = new Map<string, number>();
+          for (const s of logged)
+            countByExercise.set(
+              s.exerciseId,
+              (countByExercise.get(s.exerciseId) ?? 0) + 1,
+            );
+          status = (pinned?.session.exercises ?? []).every(
+            (e) =>
+              (countByExercise.get(e.id) ?? 0) >=
+              (e.setRows?.length ?? e.sets ?? 0),
+          )
+            ? "COMPLETED"
+            : "PARTIAL";
+        }
+        await tx.trainingSessionLog.update({
+          where: { id: log.id },
+          data: { status, completedAt: now },
+        });
+        await writeAuditEvent(tx, ctx, {
+          action: "UPDATE",
+          resourceType: "training_session_log",
+          resourceId: log.id,
+          subjectClientProfileId: clientProfileId,
+          meta: { sessionOutcome: status },
+        });
+        return { status };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}
+
+export type OwnSessionLog = {
+  sessionLogId: string;
+  programId: string;
+  sessionId: string;
+  bookedWeek: number;
+  performedDate: string;
+  status: SessionLogStatus;
+  startedAt: string;
+  completedAt: string | null;
+  pinnedVersionId: string;
+  pinnedVersionSeq: number;
+  /** The PINNED version's client-projected session — the prescription that
+   * was live at start, regardless of later publishes. */
+  session: MaterializedSession;
+  sets: SessionSetRow[];
+};
+
+/** Resume read: the client's own log with every saved set and the pinned
+ * prescription beside it. */
+export async function readOwnSessionLog(
+  session: SessionLike,
+  input: { workspaceId: string; sessionLogId: string },
+  deps: TrainingDeps = {},
+): Promise<OwnSessionLog> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveTrainingConsentPolicy();
+  if (!validId(input.workspaceId) || !validId(input.sessionLogId))
+    throw new TrainingError("invalid_input");
+
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const deadline = await beginRead(tx);
+        const userId = session?.user?.id;
+        if (typeof userId !== "string" || userId.length === 0)
+          throw new AccessDeniedError(
+            "unauthenticated",
+            "trainingPlansLogs",
+            "read",
+          );
+        const own = await ownClientProfile(tx, input.workspaceId, userId);
+        if (!own)
+          throw new AccessDeniedError(
+            "not_owner",
+            "trainingPlansLogs",
+            "read",
+          );
+        const clientProfileId = own.id;
+        const { ctx } = await logOwnReadPrelude(
+          tx,
+          session,
+          { workspaceId: input.workspaceId, clientProfileId },
+          registry,
+        );
+        const log = await tx.trainingSessionLog.findFirst({
+          where: {
+            id: input.sessionLogId,
+            workspaceId: input.workspaceId,
+            clientProfileId,
+          },
+          select: {
+            id: true,
+            programId: true,
+            pinnedVersionId: true,
+            sessionId: true,
+            bookedWeek: true,
+            performedDate: true,
+            status: true,
+            startedAt: true,
+            completedAt: true,
+            sets: {
+              orderBy: [
+                { exerciseId: "asc" },
+                { position: "asc" },
+                { id: "asc" },
+              ],
+              select: {
+                id: true,
+                exerciseId: true,
+                setKey: true,
+                position: true,
+                actuals: true,
+              },
+            },
+          },
+        });
+        checkDeadline(deadline);
+        if (!log) throw new TrainingError("not_found");
+        const version = await tx.trainingProgramVersion.findUnique({
+          where: { id: log.pinnedVersionId },
+          select: { payload: true, fieldConfig: true, versionSeq: true },
+        });
+        if (!version) throw new TrainingError("not_found");
+        const pinned = pinnedSession(version, log.bookedWeek, log.sessionId);
+        await writeAuditEvent(tx, ctx, {
+          action: "READ",
+          resourceType: "training_session_log",
+          resourceId: log.id,
+          subjectClientProfileId: clientProfileId,
+        });
+        return {
+          sessionLogId: log.id,
+          programId: log.programId,
+          sessionId: log.sessionId,
+          bookedWeek: log.bookedWeek,
+          performedDate: isoDate(log.performedDate),
+          status: log.status as SessionLogStatus,
+          startedAt: log.startedAt.toISOString(),
+          completedAt: log.completedAt?.toISOString() ?? null,
+          pinnedVersionId: log.pinnedVersionId,
+          pinnedVersionSeq: version.versionSeq,
+          session: pinned?.projected ?? {
+            id: log.sessionId,
+            name: "Session",
+            exercises: [],
+          },
+          sets: log.sets.map((s) => ({
+            id: s.id,
+            exerciseId: s.exerciseId,
+            setId: s.setKey.slice(2),
+            setKey: s.setKey,
+            position: s.position,
+            actuals: s.actuals as unknown as SetLogEntry,
+          })),
+        };
+      },
+      TX_OPTS,
+    ),
+  );
+}
+
+/** The client's own logbook week list: every log for the caller's own
+ * program in the asked week — statuses for the scheduled sessions plus
+ * skipped/partial records. The pinned session names resolve through each
+ * log's own pinned payload, so history stays historical. */
+export type OwnLogWeekItem = {
+  sessionLogId: string;
+  sessionId: string;
+  sessionName: string;
+  bookedWeek: number;
+  performedDate: string;
+  status: SessionLogStatus;
+  completedAt: string | null;
+  setCount: number;
+};
+
+export type OwnLogWeek = {
+  programId: string;
+  logs: OwnLogWeekItem[];
+};
+
+export async function readOwnTrainingLogWeek(
+  session: SessionLike,
+  input: { workspaceId: string; week: number },
+  deps: TrainingDeps = {},
+): Promise<OwnLogWeek | null> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveTrainingConsentPolicy();
+  if (
+    !validId(input.workspaceId) ||
+    !Number.isInteger(input.week) ||
+    input.week < 1
+  )
+    throw new TrainingError("invalid_input");
+
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const deadline = await beginRead(tx);
+        const userId = session?.user?.id;
+        if (typeof userId !== "string" || userId.length === 0)
+          throw new AccessDeniedError(
+            "unauthenticated",
+            "trainingPlansLogs",
+            "read",
+          );
+        const own = await ownClientProfile(tx, input.workspaceId, userId);
+        if (!own)
+          throw new AccessDeniedError(
+            "not_owner",
+            "trainingPlansLogs",
+            "read",
+          );
+        const clientProfileId = own.id;
+        const { ctx } = await logOwnReadPrelude(
+          tx,
+          session,
+          { workspaceId: input.workspaceId, clientProfileId },
+          registry,
+        );
+        const rows = await tx.$queryRawUnsafe<
+          {
+            id: string;
+            program_id: string;
+            pinned_version_id: string;
+            session_id: string;
+            booked_week: number;
+            performed_date: Date;
+            status: string;
+            completed_at: Date | null;
+            set_count: number;
+          }[]
+        >(
+          `SELECT l.id, l.program_id, l.pinned_version_id, l.session_id,
+                  l.booked_week, l.performed_date, l.status, l.completed_at,
+                  (SELECT COUNT(*)::int FROM "training_set_log" s
+                   WHERE s.session_log_id = l.id) AS set_count
+           FROM "training_session_log" l
+           WHERE l.workspace_id = $1 AND l.client_profile_id = $2
+             AND l.booked_week = $3
+           ORDER BY l.performed_date ASC, l.id ASC
+           LIMIT 100`,
+          input.workspaceId,
+          clientProfileId,
+          input.week,
+        );
+        checkDeadline(deadline);
+        if (rows.length === 0) {
+          await writeAuditEvent(tx, ctx, {
+            action: "READ",
+            resourceType: "training_session_log",
+            resourceId: clientProfileId,
+            subjectClientProfileId: clientProfileId,
+          });
+          return null;
+        }
+        const versions = await tx.trainingProgramVersion.findMany({
+          where: { id: { in: [...new Set(rows.map((r) => r.pinned_version_id))] } },
+          select: { id: true, payload: true, fieldConfig: true },
+        });
+        const byId = new Map(versions.map((v) => [v.id, v]));
+        const logs = rows.map((r) => {
+          const pinned = byId.get(r.pinned_version_id)
+            ? pinnedSession(
+                byId.get(r.pinned_version_id)!,
+                r.booked_week,
+                r.session_id,
+              )
+            : null;
+          return {
+            sessionLogId: r.id,
+            sessionId: r.session_id,
+            sessionName: pinned?.session.name ?? "Session",
+            bookedWeek: r.booked_week,
+            performedDate: isoDate(r.performed_date),
+            status: r.status as SessionLogStatus,
+            completedAt: r.completed_at?.toISOString() ?? null,
+            setCount: r.set_count,
+          };
+        });
+        await writeAuditEvent(tx, ctx, {
+          action: "READ",
+          resourceType: "training_session_log",
+          resourceId: clientProfileId,
+          subjectClientProfileId: clientProfileId,
+        });
+        return { programId: rows[0].program_id, logs };
+      },
+      TX_OPTS,
+    ),
+  );
+}
+
+/** Staff read for the coach client detail: the client's bounded session
+ * history — every log with its sets and the PINNED prescription beside
+ * them. Newest performed date first. */
+export type StaffSessionLogEntry = {
+  sessionLogId: string;
+  programId: string;
+  programTitle: string;
+  sessionId: string;
+  bookedWeek: number;
+  performedDate: string;
+  status: SessionLogStatus;
+  completedAt: string | null;
+  pinnedVersionSeq: number;
+  session: MaterializedSession;
+  sets: SessionSetRow[];
+};
+
+export type StaffTrainingLogPage = {
+  logs: StaffSessionLogEntry[];
+  nextCursor: string | null;
+  hasMore: boolean;
+};
+
+export async function readStaffTrainingLogs(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string; cursor?: string },
+  deps: TrainingDeps = {},
+): Promise<StaffTrainingLogPage> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveTrainingConsentPolicy();
+  if (!validId(input.workspaceId) || !validId(input.clientProfileId))
+    throw new TrainingError("invalid_input");
+
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const deadline = await beginRead(tx);
+        const { ctx } = await readPrelude(
+          tx,
+          session,
+          {
+            workspaceId: input.workspaceId,
+            clientProfileId: input.clientProfileId,
+          },
+          registry,
+        );
+        if (ctx.grantedScope === "own")
+          throw new AccessDeniedError(
+            "role_denied",
+            "trainingPlansLogs",
+            "read",
+          );
+        const pageSize = 25;
+        const rows = await tx.$queryRawUnsafe<
+          {
+            id: string;
+            program_id: string;
+            program_title: string;
+            pinned_version_id: string;
+            session_id: string;
+            booked_week: number;
+            performed_date: Date;
+            status: string;
+            completed_at: Date | null;
+          }[]
+        >(
+          `SELECT l.id, l.program_id, p.title AS program_title,
+                  l.pinned_version_id, l.session_id, l.booked_week,
+                  l.performed_date, l.status, l.completed_at
+           FROM "training_session_log" l
+           JOIN "training_program" p ON p.id = l.program_id
+           WHERE l.workspace_id = $1 AND l.client_profile_id = $2
+             AND ($3::text IS NULL OR l.id < $3)
+           ORDER BY l.performed_date DESC, l.id DESC
+           LIMIT $4`,
+          input.workspaceId,
+          input.clientProfileId,
+          input.cursor ?? null,
+          pageSize + 1,
+        );
+        checkDeadline(deadline);
+        const page = rows.slice(0, pageSize);
+        const versionIds = [...new Set(page.map((r) => r.pinned_version_id))];
+        const versions = versionIds.length
+          ? await tx.trainingProgramVersion.findMany({
+              where: { id: { in: versionIds } },
+              select: {
+                id: true,
+                versionSeq: true,
+                payload: true,
+                fieldConfig: true,
+              },
+            })
+          : [];
+        const byId = new Map(versions.map((v) => [v.id, v]));
+        const setRows = page.length
+          ? await tx.trainingSetLog.findMany({
+              where: { sessionLogId: { in: page.map((r) => r.id) } },
+              orderBy: [
+                { exerciseId: "asc" },
+                { position: "asc" },
+                { id: "asc" },
+              ],
+              select: {
+                id: true,
+                sessionLogId: true,
+                exerciseId: true,
+                setKey: true,
+                position: true,
+                actuals: true,
+              },
+            })
+          : [];
+        const setsByLog = new Map<string, typeof setRows>();
+        for (const s of setRows) {
+          const list = setsByLog.get(s.sessionLogId) ?? [];
+          list.push(s);
+          setsByLog.set(s.sessionLogId, list);
+        }
+        const logs = page.map((r) => {
+          const v = byId.get(r.pinned_version_id);
+          const pinned = v
+            ? pinnedSession(v, r.booked_week, r.session_id)
+            : null;
+          return {
+            sessionLogId: r.id,
+            programId: r.program_id,
+            programTitle: r.program_title,
+            sessionId: r.session_id,
+            bookedWeek: r.booked_week,
+            performedDate: isoDate(r.performed_date),
+            status: r.status as SessionLogStatus,
+            completedAt: r.completed_at?.toISOString() ?? null,
+            pinnedVersionSeq: v?.versionSeq ?? 0,
+            session: pinned?.projected ?? {
+              id: r.session_id,
+              name: "Session",
+              exercises: [],
+            },
+            sets: (setsByLog.get(r.id) ?? []).map((s) => ({
+              id: s.id,
+              exerciseId: s.exerciseId,
+              setId: s.setKey.slice(2),
+              setKey: s.setKey,
+              position: s.position,
+              actuals: s.actuals as unknown as SetLogEntry,
+            })),
+          };
+        });
+        await writeAuditEvent(tx, ctx, {
+          action: "READ",
+          resourceType: "training_session_log",
+          resourceId: input.clientProfileId,
+          subjectClientProfileId: input.clientProfileId,
+        });
+        return {
+          logs,
+          nextCursor:
+            rows.length > pageSize ? page[page.length - 1].id : null,
+          hasMore: rows.length > pageSize,
+        };
+      },
+      TX_OPTS,
+    ),
   );
 }
