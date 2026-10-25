@@ -1,12 +1,5 @@
 {
   "kind": "old-active-baseline-diagnostic",
-  "command": {
-    "cwd": ".",
-    "argv": [
-      "node",
-      "tools/parity/run.mjs"
-    ]
-  },
   "failed": 70,
   "exit": 1,
   "failedIds": [
@@ -81,5 +74,5 @@
     "s11-preferences@1440",
     "s11-client-preview@1440"
   ],
-  "reportSha256": "1661dea9bc77bcee872bcfe855e40338e6f93d0078b1b5f975126574b9d1c260"
+  "reportSha256": "f29906b4c74fb8239ed0e23af8e7d7d873ba3d7474eee3c61ae6c1307b18fa78"
 }
