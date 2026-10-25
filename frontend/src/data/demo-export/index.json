@@ -1,0 +1,125 @@
+{
+  "generatedAt": "2026-10-25",
+  "schema": 1,
+  "anchorNote": "Demo coaching state for backend seeding. Re-anchor every `day <n>` token to ANCHOR + n days before use.",
+  "dayOffsetFormat": {
+    "day": "day <n> -> YYYY-MM-DD equal to generatedAt + n days (n may be negative)",
+    "timestamp": "day <n>T<HH:mm:ss[.mmm][Z]> -> resolved date plus the original time tail",
+    "fixedKeys": [
+      "updated",
+      "referenceDate",
+      "birthDate",
+      "dateOfBirth"
+    ],
+    "verbatimTextKeys": [
+      "answer",
+      "note",
+      "text",
+      "name",
+      "label",
+      "title",
+      "description",
+      "instructions",
+      "reason",
+      "goal",
+      "message",
+      "subject",
+      "visuals"
+    ]
+  },
+  "files": [
+    "workspace.json",
+    "clients/client-001.json",
+    "clients/client-002.json",
+    "clients/client-003.json",
+    "clients/client-004.json",
+    "clients/client-005.json",
+    "clients/client-006.json",
+    "clients/client-007.json",
+    "clients/client-008.json",
+    "clients/client-009.json",
+    "clients/client-010.json",
+    "clients/client-011.json",
+    "clients/client-012.json",
+    "clients/client-013.json",
+    "clients/client-014.json",
+    "clients/client-015.json"
+  ],
+  "clients": [
+    {
+      "id": "client-001",
+      "name": "Emma Anders",
+      "file": "clients/client-001.json"
+    },
+    {
+      "id": "client-002",
+      "name": "James Reed",
+      "file": "clients/client-002.json"
+    },
+    {
+      "id": "client-003",
+      "name": "Lily Chen",
+      "file": "clients/client-003.json"
+    },
+    {
+      "id": "client-004",
+      "name": "Oliver Stone",
+      "file": "clients/client-004.json"
+    },
+    {
+      "id": "client-005",
+      "name": "Maya Patel",
+      "file": "clients/client-005.json"
+    },
+    {
+      "id": "client-006",
+      "name": "Noah Williams",
+      "file": "clients/client-006.json"
+    },
+    {
+      "id": "client-007",
+      "name": "Amara Lewis",
+      "file": "clients/client-007.json"
+    },
+    {
+      "id": "client-008",
+      "name": "Jack Kim",
+      "file": "clients/client-008.json"
+    },
+    {
+      "id": "client-009",
+      "name": "Isla Morgan",
+      "file": "clients/client-009.json"
+    },
+    {
+      "id": "client-010",
+      "name": "Ethan Cole",
+      "file": "clients/client-010.json"
+    },
+    {
+      "id": "client-011",
+      "name": "Zara Ahmed",
+      "file": "clients/client-011.json"
+    },
+    {
+      "id": "client-012",
+      "name": "Finn Walsh",
+      "file": "clients/client-012.json"
+    },
+    {
+      "id": "client-013",
+      "name": "Chloe Park",
+      "file": "clients/client-013.json"
+    },
+    {
+      "id": "client-014",
+      "name": "Theo Grant",
+      "file": "clients/client-014.json"
+    },
+    {
+      "id": "client-015",
+      "name": "Eva Fischer",
+      "file": "clients/client-015.json"
+    }
+  ]
+}

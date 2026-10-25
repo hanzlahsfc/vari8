@@ -1,0 +1,752 @@
+{
+  "id": "client-006",
+  "name": "Noah Williams",
+  "initials": "NW",
+  "label": "Prep",
+  "phase": "Prep",
+  "week": 9,
+  "checkInStatus": "on track",
+  "lastCheckIn": "day -22",
+  "nextCheckIn": "day -15",
+  "unreadCount": 3,
+  "overdueTaskCount": 0,
+  "heightCm": 185,
+  "bodyweightKg": 82.6,
+  "bodyweightDate": "day -22",
+  "weightTrend": [
+    {
+      "date": "day -29",
+      "kg": 83.1
+    },
+    {
+      "date": "day -22",
+      "kg": 82.6
+    }
+  ],
+  "template": "Forma Prep",
+  "presentation": "meal_plan",
+  "coachingSince": "day -83",
+  "recurringCheckIn": "Every Saturday",
+  "email": "noah.williams@example.com",
+  "priorityMessages": false,
+  "trainingFlags": 0,
+  "additionalCheckInDates": [],
+  "clientTasks": [
+    {
+      "id": "noah-task-1",
+      "title": "Send final session of the week",
+      "status": "open",
+      "dueDate": "day -19"
+    }
+  ],
+  "coachTasks": [],
+  "internalNotes": [
+    {
+      "id": "noah-note-1",
+      "text": "Three unread messages likely relate to show-week schedule; check before routine review."
+    }
+  ],
+  "generalNotes": [
+    {
+      "id": "noah-general-1",
+      "text": "Preparing for a local physique show; Saturday check-in."
+    }
+  ],
+  "checkIns": [
+    {
+      "id": "noah-checkin-1",
+      "date": "day -22",
+      "status": "feedback sent",
+      "summary": "All planned sessions completed; appetite rises after evening cardio.",
+      "feedback": "Add the planned post-cardio snack and keep water intake steady."
+    }
+  ],
+  "messages": [
+    {
+      "id": "noah-message-1",
+      "text": "The venue moved check-in to Friday evening.",
+      "from": "client",
+      "date": "2026-10-04T10:20"
+    },
+    {
+      "id": "noah-message-2",
+      "text": "My tan appointment is now at 4 pm.",
+      "from": "client",
+      "date": "2026-10-04T10:21"
+    },
+    {
+      "id": "noah-message-3",
+      "text": "Should I move the last session earlier?",
+      "from": "client",
+      "date": "2026-10-04T10:22"
+    }
+  ],
+  "onboarding": [
+    {
+      "question": "What is your event goal?",
+      "answer": "Feel confident and keep the final prep calm."
+    },
+    {
+      "question": "Any key schedule constraints?",
+      "answer": "Show check-in details can change at short notice."
+    }
+  ],
+  "archived": false,
+  "schedules": [
+    {
+      "effective": "day -24",
+      "weekdays": [
+        5
+      ]
+    }
+  ],
+  "plan": {
+    "calories": 2200,
+    "protein": 140,
+    "sets": 3,
+    "instructions": "Controlled reps. Keep two reps in reserve.",
+    "nutritionVariant": "Training day",
+    "program": "Week-based",
+    "weeks": 8
+  },
+  "entries": [
+    {
+      "date": "day -19",
+      "weight": 83.1,
+      "sleep": 7.2,
+      "steps": 7800,
+      "calories": 2140
+    },
+    {
+      "date": "day -18",
+      "weight": 83,
+      "sleep": 7.3,
+      "steps": 8010,
+      "calories": 2152
+    },
+    {
+      "date": "day -17",
+      "weight": 82.9,
+      "sleep": 7.4,
+      "steps": 8220,
+      "calories": 2164
+    },
+    {
+      "date": "day -16",
+      "weight": 82.8,
+      "sleep": 7.5,
+      "steps": 8430,
+      "calories": 2176
+    },
+    {
+      "date": "day -15",
+      "weight": 82.8,
+      "sleep": 7.6,
+      "steps": 8640,
+      "calories": 2188
+    },
+    {
+      "date": "day -14",
+      "weight": 82.7,
+      "sleep": 7.7,
+      "steps": 8850,
+      "calories": 2200
+    },
+    {
+      "date": "day -13",
+      "weight": 82.6,
+      "sleep": 7.8,
+      "steps": 9060,
+      "calories": 2212
+    }
+  ],
+  "habits": [
+    {
+      "id": "habit-client-006",
+      "name": "Evening walk",
+      "frequency": "Daily",
+      "goal": "20 minutes",
+      "reason": "Create a calm transition into the evening.",
+      "completed": 5
+    }
+  ],
+  "assignment": {
+    "templateId": "strength",
+    "variantId": "meal-plan",
+    "snapshot": {
+      "id": "strength",
+      "name": "Strength & balance",
+      "description": "A complete coaching setup for sustainable strength, nutrition and everyday progress.",
+      "updated": "2026-10-12",
+      "defaultVariant": "meal-plan",
+      "variants": [
+        {
+          "id": "meal-plan",
+          "name": "Meal plan",
+          "nutrition": "Meal plan",
+          "cycleTrackingEnabled": false,
+          "views": [
+            "Dashboard",
+            "Tracker",
+            "Timeline / Roadmap",
+            "Nutrition",
+            "Training Program",
+            "Check-In"
+          ],
+          "habits": true,
+          "dashboard": {
+            "version": 1,
+            "name": "Daily overview",
+            "widgets": [
+              {
+                "id": "seed-BN01",
+                "kind": "BN01",
+                "settings": {
+                  "title": "Bodyweight trend",
+                  "source": "bodyweight",
+                  "summary": "daily",
+                  "period": "30d",
+                  "target": false,
+                  "size": "Wide",
+                  "fields": [],
+                  "option": "default",
+                  "unit": "kg"
+                }
+              },
+              {
+                "id": "seed-BN15",
+                "kind": "BN15",
+                "settings": {
+                  "title": "Nutrition today",
+                  "source": "nutrition:active",
+                  "summary": "daily",
+                  "period": "today",
+                  "target": true,
+                  "size": "Wide",
+                  "fields": [
+                    "protein",
+                    "carbs",
+                    "fat"
+                  ],
+                  "option": "circles",
+                  "unit": "g"
+                }
+              },
+              {
+                "id": "seed-TL26",
+                "kind": "TL26",
+                "settings": {
+                  "title": "Your training",
+                  "source": "workouts",
+                  "summary": "current",
+                  "period": "week",
+                  "target": false,
+                  "size": "Regular",
+                  "fields": [
+                    "exercise",
+                    "sets",
+                    "reps"
+                  ],
+                  "option": "current",
+                  "unit": ""
+                }
+              },
+              {
+                "id": "seed-TL11",
+                "kind": "TL11",
+                "settings": {
+                  "title": "Sleep duration",
+                  "source": "sleep",
+                  "summary": "average",
+                  "period": "7d",
+                  "target": false,
+                  "size": "Regular",
+                  "fields": [],
+                  "option": "hours",
+                  "unit": "h"
+                }
+              }
+            ],
+            "layouts": {
+              "desktop": {
+                "seed-BN01": {
+                  "w": 6,
+                  "h": 3,
+                  "size": "Wide",
+                  "x": 0,
+                  "y": 0
+                },
+                "seed-BN15": {
+                  "w": 6,
+                  "h": 3,
+                  "size": "Wide",
+                  "x": 6,
+                  "y": 0
+                },
+                "seed-TL26": {
+                  "w": 4,
+                  "h": 3,
+                  "size": "Regular",
+                  "x": 0,
+                  "y": 3
+                },
+                "seed-TL11": {
+                  "w": 4,
+                  "h": 3,
+                  "size": "Regular",
+                  "x": 4,
+                  "y": 3
+                }
+              }
+            },
+            "widths": {
+              "desktop": 1040
+            }
+          },
+          "widgets": [
+            {
+              "id": "w-weight",
+              "name": "Weight trend",
+              "category": "Lifestyle",
+              "source": "weight",
+              "summary": "Weekly average",
+              "size": "wide"
+            },
+            {
+              "id": "w-nutrition",
+              "name": "Daily nutrition",
+              "category": "Nutrition",
+              "source": "calories",
+              "summary": "Target vs actual",
+              "size": "small"
+            },
+            {
+              "id": "w-training",
+              "name": "Training week",
+              "category": "Training",
+              "source": "sessions",
+              "summary": "Completed sessions",
+              "size": "small"
+            },
+            {
+              "id": "w-sleep",
+              "name": "Recovery",
+              "category": "Lifestyle",
+              "source": "sleep",
+              "summary": "Weekly average",
+              "size": "small"
+            }
+          ],
+          "fields": [
+            {
+              "id": "weight",
+              "unit": "kg"
+            },
+            {
+              "id": "time",
+              "unit": "24-hour"
+            },
+            {
+              "id": "sleep",
+              "unit": "hours"
+            },
+            {
+              "id": "energy",
+              "unit": "1–10"
+            },
+            {
+              "id": "steps",
+              "unit": "steps"
+            },
+            {
+              "id": "calories",
+              "unit": "kcal"
+            },
+            {
+              "id": "protein",
+              "unit": "g"
+            }
+          ],
+          "roadmap": [
+            {
+              "source": "weight",
+              "calculation": "Weekly average",
+              "comparison": false
+            },
+            {
+              "source": "calories",
+              "calculation": "Target vs actual",
+              "comparison": true
+            },
+            {
+              "source": "sleep",
+              "calculation": "Weekly average",
+              "comparison": false
+            }
+          ],
+          "roadmapPhases": true,
+          "phaseOptions": [
+            "Fat loss",
+            "Maintenance",
+            "Muscle gain",
+            "Recovery"
+          ],
+          "training": {
+            "fields": [
+              "Sets",
+              "Fixed reps",
+              "Rep ranges",
+              "Tempo",
+              "Set type",
+              "Rest / pause",
+              "Detailed instructions",
+              "Progression notes"
+            ],
+            "volume": true,
+            "breakdown": "Muscle groups / week",
+            "presentation": "Table"
+          },
+          "questions": [
+            {
+              "id": "q-energy",
+              "label": "How did you feel this week?",
+              "type": "Long text",
+              "required": true,
+              "options": ""
+            },
+            {
+              "id": "q-training",
+              "label": "How was your training?",
+              "type": "Rating",
+              "required": true,
+              "options": "1–10"
+            },
+            {
+              "id": "q-note",
+              "label": "Anything you would like me to know?",
+              "type": "Long text",
+              "required": false,
+              "options": ""
+            }
+          ],
+          "summaries": [
+            "weight",
+            "calories",
+            "sleep",
+            "habits"
+          ]
+        }
+      ],
+      "legacyConfigurations": [
+        {
+          "id": "iifym",
+          "name": "IIFYM",
+          "nutrition": "IIFYM",
+          "cycleTrackingEnabled": false,
+          "views": [
+            "Dashboard",
+            "Tracker",
+            "Timeline / Roadmap",
+            "Nutrition",
+            "Training Program",
+            "Check-In"
+          ],
+          "habits": true,
+          "dashboard": {
+            "version": 1,
+            "name": "Daily overview",
+            "widgets": [
+              {
+                "id": "seed-BN01",
+                "kind": "BN01",
+                "settings": {
+                  "title": "Bodyweight trend",
+                  "source": "bodyweight",
+                  "summary": "daily",
+                  "period": "30d",
+                  "target": false,
+                  "size": "Wide",
+                  "fields": [],
+                  "option": "default",
+                  "unit": "kg"
+                }
+              },
+              {
+                "id": "seed-BN15",
+                "kind": "BN15",
+                "settings": {
+                  "title": "Nutrition today",
+                  "source": "nutrition:active",
+                  "summary": "daily",
+                  "period": "today",
+                  "target": true,
+                  "size": "Wide",
+                  "fields": [
+                    "protein",
+                    "carbs",
+                    "fat"
+                  ],
+                  "option": "circles",
+                  "unit": "g"
+                }
+              },
+              {
+                "id": "seed-TL26",
+                "kind": "TL26",
+                "settings": {
+                  "title": "Your training",
+                  "source": "workouts",
+                  "summary": "current",
+                  "period": "week",
+                  "target": false,
+                  "size": "Regular",
+                  "fields": [
+                    "exercise",
+                    "sets",
+                    "reps"
+                  ],
+                  "option": "current",
+                  "unit": ""
+                }
+              },
+              {
+                "id": "seed-TL11",
+                "kind": "TL11",
+                "settings": {
+                  "title": "Sleep duration",
+                  "source": "sleep",
+                  "summary": "average",
+                  "period": "7d",
+                  "target": false,
+                  "size": "Regular",
+                  "fields": [],
+                  "option": "hours",
+                  "unit": "h"
+                }
+              }
+            ],
+            "layouts": {
+              "desktop": {
+                "seed-BN01": {
+                  "w": 6,
+                  "h": 3,
+                  "size": "Wide",
+                  "x": 0,
+                  "y": 0
+                },
+                "seed-BN15": {
+                  "w": 6,
+                  "h": 3,
+                  "size": "Wide",
+                  "x": 6,
+                  "y": 0
+                },
+                "seed-TL26": {
+                  "w": 4,
+                  "h": 3,
+                  "size": "Regular",
+                  "x": 0,
+                  "y": 3
+                },
+                "seed-TL11": {
+                  "w": 4,
+                  "h": 3,
+                  "size": "Regular",
+                  "x": 4,
+                  "y": 3
+                }
+              }
+            },
+            "widths": {
+              "desktop": 1040
+            }
+          },
+          "widgets": [
+            {
+              "id": "w-weight",
+              "name": "Weight trend",
+              "category": "Lifestyle",
+              "source": "weight",
+              "summary": "Weekly average",
+              "size": "wide"
+            },
+            {
+              "id": "w-nutrition",
+              "name": "Daily nutrition",
+              "category": "Nutrition",
+              "source": "calories",
+              "summary": "Target vs actual",
+              "size": "small"
+            },
+            {
+              "id": "w-training",
+              "name": "Training week",
+              "category": "Training",
+              "source": "sessions",
+              "summary": "Completed sessions",
+              "size": "small"
+            },
+            {
+              "id": "w-sleep",
+              "name": "Recovery",
+              "category": "Lifestyle",
+              "source": "sleep",
+              "summary": "Weekly average",
+              "size": "small"
+            }
+          ],
+          "fields": [
+            {
+              "id": "weight",
+              "unit": "kg"
+            },
+            {
+              "id": "time",
+              "unit": "24-hour"
+            },
+            {
+              "id": "sleep",
+              "unit": "hours"
+            },
+            {
+              "id": "energy",
+              "unit": "1–10"
+            },
+            {
+              "id": "steps",
+              "unit": "steps"
+            },
+            {
+              "id": "calories",
+              "unit": "kcal"
+            },
+            {
+              "id": "protein",
+              "unit": "g"
+            }
+          ],
+          "roadmap": [
+            {
+              "source": "weight",
+              "calculation": "Weekly average",
+              "comparison": false
+            },
+            {
+              "source": "calories",
+              "calculation": "Target vs actual",
+              "comparison": true
+            },
+            {
+              "source": "sleep",
+              "calculation": "Weekly average",
+              "comparison": false
+            }
+          ],
+          "roadmapPhases": true,
+          "phaseOptions": [
+            "Fat loss",
+            "Maintenance",
+            "Muscle gain",
+            "Recovery"
+          ],
+          "training": {
+            "fields": [
+              "Sets",
+              "Fixed reps",
+              "Rep ranges",
+              "Tempo",
+              "Set type",
+              "Rest / pause",
+              "Detailed instructions",
+              "Progression notes"
+            ],
+            "volume": true,
+            "breakdown": "Muscle groups / week",
+            "presentation": "Table"
+          },
+          "questions": [
+            {
+              "id": "q-energy",
+              "label": "How did you feel this week?",
+              "type": "Long text",
+              "required": true,
+              "options": ""
+            },
+            {
+              "id": "q-training",
+              "label": "How was your training?",
+              "type": "Rating",
+              "required": true,
+              "options": "1–10"
+            },
+            {
+              "id": "q-note",
+              "label": "Anything you would like me to know?",
+              "type": "Long text",
+              "required": false,
+              "options": ""
+            }
+          ],
+          "summaries": [
+            "weight",
+            "calories",
+            "sleep",
+            "habits"
+          ]
+        }
+      ]
+    }
+  },
+  "plans": {
+    "nutrition": {
+      "mealPlan": {
+        "history": []
+      },
+      "iifym": {
+        "history": []
+      }
+    },
+    "training": {
+      "history": []
+    },
+    "goals": [],
+    "activityTargets": []
+  },
+  "related": {
+    "submissions": [],
+    "messages": [
+      {
+        "id": "seed-coach-5",
+        "clientId": "client-006",
+        "text": "How did the adjusted session feel? We can look at it together in your check-in.",
+        "from": "coach",
+        "date": "day -13T08:10:00Z",
+        "read": true,
+        "priority": false,
+        "attachments": [],
+        "link": {
+          "label": "Training program",
+          "route": {
+            "section": "clients",
+            "client": "client-006",
+            "plan": "training"
+          }
+        }
+      },
+      {
+        "id": "seed-client-5",
+        "clientId": "client-006",
+        "text": "The new routine is feeling good. Thanks for the guidance!",
+        "from": "client",
+        "date": "day -12T08:25:00Z",
+        "read": true,
+        "priority": false,
+        "attachments": []
+      }
+    ],
+    "extras": [],
+    "trainingLogs": [],
+    "coachTodos": [],
+    "reviewDrafts": {}
+  }
+}

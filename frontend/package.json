@@ -16,6 +16,7 @@
     "agent-context:check": "node scripts/agent-context.mjs --check",
     "agent-context:test": "node --test scripts/agent-context.test.mjs",
     "format": "biome format . --write",
+    "export:demo": "node --experimental-strip-types --loader ./src/components/coach/plans/test-loader.mjs scripts/export-demo.mjs",
     "test": "node scripts/test-frontend.mjs",
     "check": "npm run test && npm run agent-context:check && npm run typecheck && npm run lint && npm run build",
     "typecheck": "next typegen && tsc --noEmit",

@@ -1285,7 +1285,9 @@ export function submitFeedback(
 export function trainingSets(week: number) {
   return week < 4 ? 3 : 4;
 }
-export function seedState({ demo = true }: { demo?: boolean } = {}): CoachState {
+export function seedState(
+  { demo = true, today = localToday() }: { demo?: boolean; today?: string } = {},
+): CoachState {
   const strength = newTemplate("strength");
   strength.name = "Strength & balance";
   strength.description =
@@ -1497,7 +1499,7 @@ export function seedState({ demo = true }: { demo?: boolean } = {}): CoachState 
     },
   };
   // Card 05a: the adopters only mount when the caller wants the demo.
-  return demo ? adoptCanvasDemos(seeded, localToday()) : seeded;
+  return demo ? adoptCanvasDemos(seeded, today) : seeded;
 }
 
 /**
