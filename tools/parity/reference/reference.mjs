@@ -323,6 +323,11 @@ export function createAdapter({ harnessRoot, outputFile }) {
   );
   code = replace(
     code,
+    "const HERE = path.dirname(fileURLToPath(import.meta.url));\n",
+    "",
+  );
+  code = replace(
+    code,
     'import { chromium } from "@playwright/test";',
     'import { chromium } from "@playwright/test";\nimport { existsSync } from "node:fs";',
   );
