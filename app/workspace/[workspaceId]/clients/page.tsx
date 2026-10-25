@@ -7,6 +7,7 @@ import { resolveScope } from "@/lib/auth/rbac";
 import { resolveDailyEntryMode } from "@/lib/daily-entry/gate";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
 import { isClientDashboardEnabled } from "@/lib/dashboard/gate";
+import { isIifymPlansEnabled } from "@/lib/iifym/gate";
 import { isMealPlansEnabled } from "@/lib/mealplan/gate";
 import { isTrainingPlansEnabled } from "@/lib/trainingprogram/gate";
 import { isOnboardingSubmissionEnabled } from "@/lib/onboarding/submission-gate";
@@ -139,6 +140,12 @@ export default async function ClientsPage({
   const showMealPlanLinks =
     isMealPlansEnabled() &&
     (mealPlanLinkScope === "workspace" || mealPlanLinkScope === "assigned");
+  // Card 10 (#175): same cosmetic-gate shape for macro targets — flag on
+  // AND the role can read nutrition plans; the destination re-authorizes
+  // `mealPlans` server-side on every read and write.
+  const showIifymLinks =
+    isIifymPlansEnabled() &&
+    (mealPlanLinkScope === "workspace" || mealPlanLinkScope === "assigned");
   // TRAINING-I1A (PROMPT 244): same cosmetic-gate shape — flag on AND
   // the role can read training programs (workspace/assigned); the
   // destination re-authorizes `trainingPlansLogs` server-side.
@@ -183,6 +190,7 @@ export default async function ClientsPage({
               {showOnboardingLinks ? <th scope="col">Onboarding</th> : null}
               {showDashboardLinks ? <th scope="col">Dashboard</th> : null}
               {showMealPlanLinks ? <th scope="col">Meal plan</th> : null}
+              {showIifymLinks ? <th scope="col">Macro targets</th> : null}
               {showTrainingPlanLinks ? <th scope="col">Training</th> : null}
               {showCoachesLinks ? <th scope="col">Coaches</th> : null}
             </tr>
@@ -242,6 +250,17 @@ export default async function ClientsPage({
                       data-testid={`mealplan-link-${client.id}`}
                     >
                       Meal plan
+                    </Link>
+                  </td>
+                ) : null}
+                {showIifymLinks ? (
+                  <td>
+                    <Link
+                      className="roster-pagination__link"
+                      href={`${basePath}/${encodeURIComponent(client.id)}/macro-targets`}
+                      data-testid={`iifym-link-${client.id}`}
+                    >
+                      Macro targets
                     </Link>
                   </td>
                 ) : null}
