@@ -133,9 +133,10 @@ describe("system index generator", () => {
       "| `/sheets/[slug]` | `app/sheets/[slug]/page.tsx` |",
     );
     // Canary on the page count: update the literal deliberately when a PR adds or
-    // removes a page route, never by regenerating. 56 = 55 + the
-    // app/(canvas)/client page landed with the frontend 9383578 port.
-    expect(routes).toContain("Counts: 56 backend pages");
+    // removes a page route, never by regenerating. 57 = 56 + the
+    // app/workspace/[workspaceId]/clients/[clientProfileId]/macro-targets
+    // coach page landed with card 10 (#175).
+    expect(routes).toContain("Counts: 57 backend pages");
     // The same name collides inside spec/, which must be inventoried too: a
     // managed router exists for spec/ and its region carries no file counts.
     expect(
