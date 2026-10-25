@@ -2,6 +2,7 @@ import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
 import { AddressInfo } from "node:net";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, describe, expect, it } from "vitest";
@@ -11,6 +12,11 @@ import {
   captureProblem,
   expectedCaptureMarker,
 } from "../../tools/parity/capture.mjs";
+import {
+  assertCombinedRunPaths,
+  canonicalizePath,
+  prepareOwnedOutputDir,
+} from "../../tools/parity/safe-paths.mjs";
 import {
   browserCookies,
   httpsRequest,
@@ -53,6 +59,16 @@ afterEach(async () => {
 });
 
 describe("parity runner configuration", () => {
+  const spawnParity = (env: Record<string, string | undefined>) =>
+    spawnSync(
+      process.execPath,
+      [fileURLToPath(new URL("../../tools/parity/run.mjs", import.meta.url))],
+      { env: { ...process.env, ...env }, encoding: "utf8" },
+    );
+  const proposed = path.resolve("tools/parity/reference/proposed");
+  const baseline = path.resolve("tools/parity/baseline");
+  const candidate = path.resolve("tools/parity/reference/evidence/candidate");
+
   it("refuses to update a non-baseline reference directory", () => {
     const run = spawnSync(
       process.execPath,
@@ -63,6 +79,7 @@ describe("parity runner configuration", () => {
       {
         env: {
           ...process.env,
+          PARITY_COMPARER: "reference",
           PARITY_REFERENCE_DIR: "tools/parity/reference/proposed",
           PARITY_OUT_DIR: fs.mkdtempSync("/tmp/parity-out-"),
         },
@@ -70,9 +87,179 @@ describe("parity runner configuration", () => {
       },
     );
     expect(run.status).toBe(2);
-    expect(run.stderr).toContain(
-      "--update-baseline must not target PARITY_REFERENCE_DIR",
+    expect(run.stderr).toContain("--update-baseline");
+  });
+
+  it("rejects empty or whitespace path values before output setup", () => {
+    for (const out of ["", "   "]) {
+      const run = spawnParity({
+        PARITY_COMPARER: "reference",
+        PARITY_REFERENCE_DIR: proposed,
+        PARITY_OUT_DIR: out,
+      });
+      expect(run.status).toBe(2);
+      expect(run.stderr).toContain("non-empty path");
+    }
+    expect(() => canonicalizePath("   ")).toThrow(/non-empty path/);
+  });
+
+  it("rejects protected equal, nested, ancestor and symlink output aliases", () => {
+    const out = fs.mkdtempSync("/tmp/parity-protected-");
+    const alias = path.join(out, "baseline-link");
+    fs.symlinkSync(baseline, alias, "dir");
+    for (const target of [
+      baseline,
+      path.join(baseline, "nested"),
+      path.dirname(baseline),
+      alias,
+      proposed,
+      path.join(candidate, "nested"),
+    ]) {
+      expect(() =>
+        assertCombinedRunPaths({
+          root: process.cwd(),
+          referenceDir: proposed,
+          outDir: target,
+          update: false,
+        }),
+      ).toThrow(/overlaps|broad/);
+    }
+    expect(fs.existsSync(path.join(baseline, "manifest.json"))).toBe(true);
+    expect(fs.existsSync(path.join(proposed, "manifest.json"))).toBe(true);
+    expect(fs.existsSync(path.join(candidate, "manifest.json"))).toBe(true);
+
+    const root = fs.mkdtempSync("/tmp/parity-root-");
+    for (const dir of [
+      "tools/parity/reference/proposed",
+      "tools/parity/baseline",
+      "tools/parity/reference/evidence/candidate",
+    ])
+      fs.mkdirSync(path.join(root, dir), { recursive: true });
+    for (const dir of [
+      "tools/parity/reference/proposed",
+      "tools/parity/baseline",
+      "tools/parity/reference/evidence/candidate",
+    ])
+      fs.writeFileSync(path.join(root, dir, "SENTINEL"), "protected");
+    const nested = path.join(root, "tools/parity/reference/proposed/nested");
+    const disposableAlias = path.join(root, "alias");
+    fs.symlinkSync(
+      path.join(root, "tools/parity/reference/proposed"),
+      disposableAlias,
+      "dir",
     );
+    for (const target of [
+      path.join(root, "tools/parity/reference/proposed"),
+      nested,
+      path.dirname(nested),
+      disposableAlias,
+      path.join(root, "tools/parity/baseline/nested"),
+      path.join(root, "tools/parity/reference/evidence/candidate/nested"),
+    ])
+      expect(() =>
+        assertCombinedRunPaths({
+          root,
+          referenceDir: path.join(root, "tools/parity/reference/proposed"),
+          outDir: target,
+          update: false,
+        }),
+      ).toThrow(/overlaps|broad/);
+    for (const rel of [
+      "tools/parity/reference/proposed/SENTINEL",
+      "tools/parity/baseline/SENTINEL",
+      "tools/parity/reference/evidence/candidate/SENTINEL",
+    ])
+      expect(fs.readFileSync(path.join(root, rel), "utf8")).toBe("protected");
+  });
+
+  it("marks an empty output directory and refuses an unowned populated one", () => {
+    const fresh = path.join(fs.mkdtempSync("/tmp/parity-owned-"), "run");
+    const prepared = prepareOwnedOutputDir(fresh);
+    expect(fs.existsSync(prepared.ownerFile)).toBe(true);
+    const foreign = fs.mkdtempSync("/tmp/parity-foreign-");
+    fs.writeFileSync(path.join(foreign, "sentinel"), "keep");
+    expect(() => prepareOwnedOutputDir(foreign)).toThrow(/not owned|non-empty/);
+    expect(fs.readFileSync(path.join(foreign, "sentinel"), "utf8")).toBe(
+      "keep",
+    );
+  });
+
+  it("refuses unsupported modes and arbitrary capture modules before any run", () => {
+    const out = fs.mkdtempSync("/tmp/parity-safe-");
+    for (const env of [
+      {
+        PARITY_COMPARER: "bogus",
+        PARITY_REFERENCE_DIR: proposed,
+        PARITY_OUT_DIR: out,
+      },
+      {
+        PARITY_CAPTURE_MODULE: "/tmp/fake.mjs",
+        PARITY_COMPARER: "reference",
+        PARITY_REFERENCE_DIR: proposed,
+        PARITY_OUT_DIR: out,
+      },
+      { PARITY_REFERENCE_DIR: proposed, PARITY_OUT_DIR: out },
+    ]) {
+      const run = spawnParity(env);
+      expect(run.status).toBe(2);
+      expect(run.stderr).toMatch(
+        /PARITY_(COMPARER|CAPTURE_MODULE|REFERENCE_DIR)/,
+      );
+    }
+    expect(fs.readdirSync(out)).toEqual([]);
+  });
+});
+
+describe("combined-run artifact validation", () => {
+  it("rejects malformed reference manifests and fake 70-screen captures", async () => {
+    const { assertProposedReference, validateCombinedRun } =
+      await import("../../tools/parity/reference/combined-run.mjs");
+    const { CONTRACT } =
+      await import("../../tools/parity/reference/reference.mjs");
+    const bad = fs.mkdtempSync("/tmp/parity-bad-reference-");
+    fs.writeFileSync(path.join(bad, "manifest.json"), "not-json");
+    fs.writeFileSync(path.join(bad, "provenance.json"), "{}");
+    expect(() =>
+      assertProposedReference({ directory: bad, shots: [] }),
+    ).toThrow();
+
+    const shots = JSON.parse(
+      fs.readFileSync("icm/04-briefing/shots/index.json", "utf8"),
+    ).shots;
+    const screens = Array.from({ length: 70 }, (_, i) => ({ id: `fake-${i}` }));
+    expect(() =>
+      validateCombinedRun({
+        directory: "/tmp/fake-combined-run",
+        manifest: {
+          fixedNow: CONTRACT.clock,
+          timezone: CONTRACT.timezone,
+          failures: [],
+          screens,
+        },
+        shots,
+        provenance: {
+          role: "combined",
+          contract: CONTRACT,
+          inputs: { prep: { head: "0".repeat(40) } },
+          source: {
+            sha: "0".repeat(40),
+            tree: "0".repeat(40),
+            dirtyTracked: "",
+            untracked: "",
+            appLock: "0".repeat(64),
+          },
+          environment: {
+            browser: { sha256: "0".repeat(64) },
+            nodeSha256: "0".repeat(64),
+          },
+          dependencies: {
+            installedTreeSha256: "0".repeat(64),
+            mismatches: [],
+          },
+          adapter: { adapterSha256: "0".repeat(64) },
+        },
+      }),
+    ).toThrow(/unexpected|missing capture artifact/);
   });
 });
 
