@@ -37,13 +37,18 @@ import { templateSetup } from "./template-setup";
 import {
   cancelExtra,
   type CheckinInstanceRow,
+  type CheckInReviewPanelWire,
+  loadCheckInReview,
   loadCheckins,
-  loadSubmissionAnswers,
   loadTrackerContext,
   mergeCheckinLoad,
   sendFeedback,
   type TrackerContextValue,
 } from "../data/checkins";
+import {
+  CheckInReviewPanel,
+  ProgressVisual,
+} from "./check-in-review-panel";
 import {
   Avatar,
   Button,
@@ -557,9 +562,14 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
       },
     }));
   // PR-W6: answers, visuals and any sent body come from the audited detail
-  // read; the header list is answer-free on purpose. One idempotency anchor per
-  // mounted review, so a second click retries rather than double-sends.
+  // read; the header list is answer-free on purpose. Card 06/#171 slice: the
+  // one-call review read now feeds both the Submission patch and the review
+  // panel's change summary. One idempotency anchor per mounted review, so a
+  // second click retries rather than double-sends.
   const requestId = useRef(crypto.randomUUID());
+  const [reviewPanel, setReviewPanel] = useState<CheckInReviewPanelWire | null>(
+    null,
+  );
   const answersRequested = useRef(sub.answers.length > 0);
   useEffect(() => {
     if (answersRequested.current || !workspaceId || !c) return;
@@ -568,7 +578,7 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
     clientProfileIdFor(c.name)
       .then((id) =>
         id
-          ? loadSubmissionAnswers(
+          ? loadCheckInReview(
               {
                 workspaceId,
                 clientProfileId: id,
@@ -578,11 +588,14 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
             )
           : null,
       )
-      .then((detail) => {
-        if (!live || !detail) return;
+      .then((loaded) => {
+        if (!live || !loaded) return;
+        setReviewPanel(loaded.panel);
         setState((s) => ({
           ...s,
-          submissions: s.submissions.map((x) => (x.id === detail.id ? detail : x)),
+          submissions: s.submissions.map((x) =>
+            x.id === loaded.submission.id ? loaded.submission : x,
+          ),
         }));
       })
       .catch(() => {
@@ -655,41 +668,18 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
       />
       <div className="cd-review-layout">
         <div className="cd-review-main">
-          <Surface>
-            <div className="cd-review-athlete">
-              <Avatar client={c} />
-              <div>
-                <h2>In {c.name.split(" ")[0]}’s words</h2>
-                <small>{sub.type} questionnaire</small>
-              </div>
-            </div>
-            {sub.answers.map((a) => (
-              <div className="cd-answer" key={a.question}>
-                <h3>{a.question}</h3>
-                <p>{a.answer}</p>
-              </div>
-            ))}
-            {sub.note && (
-              <div className="cd-answer">
-                <h3>Athlete note</h3>
-                <p>{sub.note}</p>
-              </div>
-            )}
-            {sub.visuals.length > 0 && (
-              <>
-                <h3>Submitted visuals</h3>
-                <div className="cd-progress-visuals">
-                  {sub.visuals.map((v) => (
-                    <button type="button" key={v} onClick={() => setVisual(v)}>
-                      <ProgressVisual />
-                      <span>{v}</span>
-                      <small>Illustrative demo visual</small>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </Surface>
+          <CheckInReviewPanel
+            panel={reviewPanel}
+            submission={sub}
+            client={c}
+            draftActive={
+              draft.text.trim().length > 0 ||
+              draft.video !== undefined ||
+              draft.changes.some((x) => x.before !== x.after) ||
+              (draft.activations ?? []).length > 0
+            }
+            onOpenVisual={setVisual}
+          />
           <Surface>
             <div className="cd-subheading">
               <h2>Tracker & progress</h2>
@@ -941,6 +931,10 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
                       body: draft.text.trim(),
                       clientRequestId: requestId.current,
                     });
+                    // Re-arm the review read before the state merge re-renders:
+                    // the refetch shows the acknowledged state and the sent
+                    // feedback row instead of the stale pre-send panel.
+                    answersRequested.current = false;
                     setState((s) =>
                       submitFeedback(s, sub.id, new Date().toISOString()),
                     );
@@ -968,36 +962,6 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
     </>
   );
 }
-function ProgressVisual() {
-  return (
-    <svg
-      className="cd-progress-figure"
-      viewBox="0 0 160 190"
-      role="img"
-      aria-label="Illustrative athlete progress silhouette"
-    >
-      <rect
-        width="160"
-        height="190"
-        rx="12"
-        fill="currentColor"
-        opacity=".04"
-      />
-      <path
-        d="M80 24a14 14 0 1 0 0 28a14 14 0 0 0 0-28M63 61Q80 54 97 61L111 113Q108 121 103 115L92 85L94 122L99 168Q95 175 89 169L80 131L71 169Q65 175 61 168L66 122L68 85L57 115Q52 121 49 113Z"
-        fill="currentColor"
-        opacity=".35"
-      />
-      <path
-        d="M27 168H133M27 24H133"
-        stroke="currentColor"
-        opacity=".15"
-        strokeDasharray="3 4"
-      />
-    </svg>
-  );
-}
-
 /** The visible range for a board mode, `YYYY-MM-DD` inclusive (PR-W6: shared
  * by the render and the server read so the two can never disagree). */
 function calendarRange(mode: string, anchor: string): [string, string] {
