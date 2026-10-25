@@ -67,12 +67,7 @@ const statusPaths = git("status", "--porcelain=v1", "--untracked-files=all")
   .filter(Boolean)
   .map((line) => line.slice(3).split(" -> ").pop());
 const packageRoot = path.relative(ROOT, out);
-const status = statusPaths.flatMap((file) => {
-  const absolute = path.join(ROOT, file);
-  return fs.statSync(absolute).isDirectory()
-    ? walkFiles(absolute).map((nested) => path.join(file, nested))
-    : [file];
-});
+const status = statusPaths;
 const postCapturePaths = [
   ...new Set([
     ...committed.split("\n").filter(Boolean),

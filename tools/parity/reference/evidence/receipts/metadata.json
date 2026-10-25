@@ -5,7 +5,7 @@
     "id": "visual-reference-comparer-v2",
     "manifest": {
       "path": "tools/parity/reference/evidence/comparer.json",
-      "sha256": "aa9044056931aa2c1a601a4d7fe1405be06b41754ac5f76b3b371026919398a8"
+      "sha256": "378b2640dbef67fdf321a425965da0dcd2d0cd46b7788a715a9bfe4d1a80a347"
     },
     "components": {
       "reference": {
@@ -50,7 +50,7 @@
       },
       "packageCombined": {
         "path": "tools/parity/reference/package-combined.mjs",
-        "sha256": "1cc6f5dc3de9a51680156c4b2508ac33f44873f8dcc2d7f6431f5df871dc1387"
+        "sha256": "b24ddf2a26d9641c8ddf80862fef0c344f2d9e7c5b164bd75682b1f2f228c7fe"
       },
       "verifyCombined": {
         "path": "tools/parity/reference/verify-combined.mjs",
