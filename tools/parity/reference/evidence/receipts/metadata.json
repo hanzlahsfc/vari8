@@ -35,6 +35,9 @@
     "total": 70,
     "passed": 68,
     "failed": 2,
-    "failedIds": ["s03-checkin-review@390", "s03-checkin-review@1440"]
+    "failedIds": [
+      "s03-checkin-review@390",
+      "s03-checkin-review@1440"
+    ]
   }
 }
