@@ -965,16 +965,17 @@
   {
    "path": "receipts/server.log",
    "sha256": "f61e25d66941c8028eeb1f4737aba11af47818358599e0bb581010d59464c2fb",
-   "normalized": "trailing-whitespace-stripped copy of receipts/server.raw.log"
+   "normalized": "trailing-whitespace-stripped copy; raw bytes preserved in receipts/server.raw.log.gz"
   },
   {
    "path": "receipts/strict.json",
    "sha256": "cef4510d28f1f31c944d7c3a289657ec22b2f2171287c9f0dfcce801e3d57286"
   },
   {
-   "path": "receipts/server.raw.log",
-   "sha256": "ec5d65d2d9dac301f430b299c12a84aad425c80f4fbcccbe957d062ecb45c5e6",
-   "role": "raw original of normalized receipts/server.log"
+   "path": "receipts/server.raw.log.gz",
+   "sha256": "90f24094b1019bf8de404566ec16af4b68f9b9652e04b33ad1f219f4313e38cd",
+   "role": "gzip of original receipts/server.log bytes",
+   "rawSha256": "ec5d65d2d9dac301f430b299c12a84aad425c80f4fbcccbe957d062ecb45c5e6"
   }
  ]
 }
