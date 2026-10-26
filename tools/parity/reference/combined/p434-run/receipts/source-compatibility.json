@@ -37,6 +37,7 @@
   },
   "authority": "Git review of the listed commits/paths; package hashes bind checked-out inputs but do not prevent a coordinated rewrite of code and manifests",
   "postCapturePaths": [
+    "docs/STATUS.md",
     "tools/parity/reference/combined/p433-run/adapter/d32-capture-adapter.mjs",
     "tools/parity/reference/combined/p433-run/artifact-index.json",
     "tools/parity/reference/combined/p433-run/current/1440/s01-profile-checkins.geom.json.gz",
