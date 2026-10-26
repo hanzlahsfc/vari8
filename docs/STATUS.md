@@ -1,4 +1,4 @@
-## 2026-10-26 — w2-s1: legacy sheet fidelity — 11/11 tabs pass dark+light
+## 2026-10-26 w2-s1: legacy sheet fidelity, 11/11 tabs pass dark+light
 
 - Card `w2-s1` on branch `w2/s1` (worktree `.worktrees/w2-s1`, base
   `fp/stage-10` @ `2967bb1`). Rebuilt the sheet renderer to match the
@@ -14,7 +14,7 @@
   typography (h/v align, size, bold, ink colour), authored borders
   (dotted/thin/medium, emitted as `edges` with LO paint-order
   precedence), workbook merge ranges (overrides the curated model
-  list, even when empty), workbook `ht` row heights (ht×96/72 —
+  list, even when empty), workbook `ht` row heights (ht×96/72;
   every declared ht is a multiple of 0.75pt = integer px; the old
   measured rowPx jittered ±1px and broke boundaries).
 - LO page-window model (empirically derived): a plain cell paints
@@ -30,7 +30,7 @@
   split shadows need scroll > 2px).
 - Pipeline (rerunnable): `tools/extract_{fills,typo,borders,values}.py`,
   `sample_ink.mjs`, `patch_geom.py` (fills+typo+ink+borders+heights+
-  rowpx-fixes → styles.ts) — all under the evidence dir. `heights.json`
+  rowpx-fixes → styles.ts), all under the evidence dir. `heights.json`
   is workbook `ht`; `rowpx-fixes.json` pins the four auto-sized band
   rows (57.5px) + training row 6 (56px) measured against the refs.
 - Live check: app on :4196 behind TLS proxy :4195 (lane DB
@@ -38,7 +38,7 @@
   overview at 1700px and mobile 390px; Escape closes the dialog at
   both widths (native `<dialog>` `onCancel`).
 - Known unrelated: `frontend/` prod typecheck still fails on
-  `dialog.tsx:109` `labelHidden` — inherited dormant defect recorded
+  `dialog.tsx:109` `labelHidden`: inherited dormant defect recorded
   in the stage-10 report (fix lives on unmerged `c605b78`/`29fbb31`);
   the shipped root app builds clean.
 
@@ -211,7 +211,7 @@
   `build` — all exit 0.
 - Live proof on lane `app_fp_stage8c11` (seeded fixtures, `next start`
   127.0.0.1:3972, `APP_ENV=test ENABLE_CHECK_INS=1
-  MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
+MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
   returns both; replay start same id; re-save same set keeps one row;
   flagged note + note flag on set 3; finish → PARTIAL; skipped session
   refuses writes 409; publish v2 (week-6 boundary 4–5→12–14) → log
@@ -261,7 +261,7 @@
   all pre-existing) · `index:check` · `test` (112 files / 1334) · `build` —
   all exit 0.
 - Live proof on lane `app_fp_stage7c10` (seeded synthetic fixtures, `next
-  start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
+start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   options → own read resolves Rest day on Sun 25 Oct and Training day on Tue
   13 Oct; publish replay byte-identical (`cmp`) incl. replay of v1 after v2
   published (v1 untouched, upcoming=v2); foreign-workspace PUT/POST/GET all
@@ -373,7 +373,7 @@
   dated entry in coach gallery, same-client compare 200, cross-client
   compare 404 both directions, client→other-client list/entry/media-mint
   403/404, client cross-client compare 404, soft delete 200 + entry gone
-  + media still mintable + rows retained in db.
+  - media still mintable + rows retained in db.
 - Screenshots 1440 + 390 (client gallery incl. real UI upload of two
   dated photos, coach gallery + comparator mid-compare, roster link row)
   under `Vari8-evidence/FULL-PACKAGE/STAGE-6/card-08/` with the probe

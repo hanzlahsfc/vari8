@@ -10,15 +10,6 @@ import {
 } from "react";
 import type { SheetCells } from "./imported";
 import {
-  sheetFill,
-  sheetGeom,
-  sheetMerges,
-  sheetPage,
-  sheetSurface,
-  sheetTypo,
-} from "./styles";
-import { sheetValue } from "./workbook-values";
-import {
   cellAddress,
   colLabel,
   colWidthPx,
@@ -35,6 +26,15 @@ import {
   visibleCols,
   visibleRows,
 } from "./model";
+import {
+  sheetFill,
+  sheetGeom,
+  sheetMerges,
+  sheetPage,
+  sheetSurface,
+  sheetTypo,
+} from "./styles";
+import { sheetValue } from "./workbook-values";
 
 const keyOf = (row: number, col: number) => `${row}:${col}`;
 
@@ -373,6 +373,10 @@ export function SheetGrid({
           if (!lines?.length && !edges?.length) return null;
           const w = cols.reduce((s, c) => s + colWidthPx(tab, c), 0);
           const h = rows.reduce((s, r) => s + rowHeightPx(tab, r), 0);
+          // Coincident strokes exist in the extracted geometry, so a pure
+          // content key collides; an occurrence count keeps keys unique.
+          const edgeKeys = new Map<string, number>();
+          const lineKeys = new Map<string, number>();
           return (
             <div
               aria-hidden
@@ -382,15 +386,18 @@ export function SheetGrid({
                 gridColumn: `2 / span ${cols.length}`,
               }}
             >
-              <svg width={w} height={h}>
-                {edges?.map((e, ei) => {
+              <svg aria-hidden="true" width={w} height={h}>
+                {edges?.map((e) => {
                   const [x1, y1, x2, y2, ew, ec, dash] = e;
+                  const ek = e.join(",");
+                  const en = edgeKeys.get(ek) ?? 0;
+                  edgeKeys.set(ek, en + 1);
                   const horiz = Math.abs(y1 - y2) < 0.05;
                   const vert = Math.abs(x1 - x2) < 0.05;
                   if (!dash && (horiz || vert))
                     return (
                       <rect
-                        key={`e${ei}`}
+                        key={`e-r-${ek}#${en}`}
                         x={horiz ? Math.min(x1, x2) : x1 - ew / 2}
                         y={vert ? Math.min(y1, y2) : y1 - ew / 2}
                         width={horiz ? Math.abs(x2 - x1) : ew}
@@ -401,7 +408,7 @@ export function SheetGrid({
                     );
                   return (
                     <line
-                      key={`e${ei}`}
+                      key={`e-l-${ek}#${en}`}
                       x1={x1}
                       y1={y1}
                       x2={x2}
@@ -412,8 +419,11 @@ export function SheetGrid({
                     />
                   );
                 })}
-                {lines?.map((line, li) => {
+                {lines?.map((line) => {
                   const [lw, lc, pts] = line;
+                  const lk = line.join(",");
+                  const ln = lineKeys.get(lk) ?? 0;
+                  lineKeys.set(lk, ln + 1);
                   const [a, b] = [pts[0], pts[pts.length - 1]];
                   const horizontal = Math.abs(a[1] - b[1]) < 0.05;
                   const vertical = Math.abs(a[0] - b[0]) < 0.05;
@@ -422,7 +432,7 @@ export function SheetGrid({
                   if (horizontal || vertical)
                     return (
                       <rect
-                        key={li}
+                        key={`l-r-${lk}#${ln}`}
                         x={horizontal ? Math.min(a[0], b[0]) : a[0] - lw / 2}
                         y={vertical ? Math.min(a[1], b[1]) : a[1] - lw / 2}
                         width={horizontal ? Math.abs(b[0] - a[0]) : lw}
@@ -433,7 +443,7 @@ export function SheetGrid({
                     );
                   return (
                     <polyline
-                      key={li}
+                      key={`l-p-${lk}#${ln}`}
                       points={pts.map((p) => p.join(",")).join(" ")}
                       fill="none"
                       stroke={lc}

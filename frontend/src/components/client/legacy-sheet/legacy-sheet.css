@@ -210,7 +210,8 @@
 }
 
 .ls-grid--touched .ls-cell--active {
-  box-shadow: inset 0 0 0 var(--v8-border-width-control) var(--ls-accent, #1a73e8);
+  box-shadow: inset 0 0 0 var(--v8-border-width-control)
+    var(--ls-accent, #1a73e8);
 }
 
 .ls-grid--touched .ls-cell--sel {
