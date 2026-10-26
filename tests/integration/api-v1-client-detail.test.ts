@@ -9,7 +9,10 @@ import {
   GET as getClientDetail,
   PUT as putClientDetail,
 } from "../../app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/route";
-import { GET as getBundle } from "../../app/api/v1/workspaces/[workspaceId]/client-detail/route";
+import {
+  GET as getBundle,
+  PUT as putBundle,
+} from "../../app/api/v1/workspaces/[workspaceId]/client-detail/route";
 import {
   GET as getWorkspaceNotes,
   PUT as putWorkspaceNotes,
@@ -68,10 +71,20 @@ function notesCall(
   );
 }
 
-function bundleCall(workspaceId: string, headers: Record<string, string> = {}) {
-  return getBundle(
+function bundleCall(
+  method: "GET" | "PUT",
+  workspaceId: string,
+  headers: Record<string, string> = {},
+  body?: unknown,
+) {
+  const fn = method === "GET" ? getBundle : putBundle;
+  return fn(
     new Request(`${BASE}/api/v1/workspaces/${workspaceId}/client-detail`, {
-      headers,
+      method,
+      headers: body
+        ? { ...headers, "content-type": "application/json" }
+        : headers,
+      body: body === undefined ? undefined : JSON.stringify(body),
     }),
     { params: Promise.resolve({ workspaceId }) },
   );
@@ -327,7 +340,9 @@ describe.skipIf(!enabled)("W2-A1 client detail routes (real PG)", () => {
     });
     const token = await signInToken(email);
 
-    const res = await bundleCall(ws.id, { authorization: `Bearer ${token}` });
+    const res = await bundleCall("GET", ws.id, {
+      authorization: `Bearer ${token}`,
+    });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.clients).toHaveLength(1);
@@ -338,6 +353,77 @@ describe.skipIf(!enabled)("W2-A1 client detail routes (real PG)", () => {
     expect(body.workspaceNotes).toEqual([
       { id: expect.any(String), text: "Workspace note" },
     ]);
+  });
+
+  it("bundle PUT writes one client's detail and the bundle reads it back", async () => {
+    const { ws, email } = await staffWorkspace("COACH");
+    const cp = await prisma.clientProfile.create({
+      data: { workspaceId: ws.id, name: "Bundle Write Client" },
+    });
+    const token = await signInToken(email);
+    const authz = { authorization: `Bearer ${token}` };
+
+    const put = await bundleCall("PUT", ws.id, authz, {
+      clientProfileId: cp.id,
+      phases: [
+        {
+          id: "b-phase-a",
+          name: "Base",
+          startDate: "2026-10-01",
+          durationWeeks: 4,
+        },
+      ],
+      internalNotes: [{ id: "b-note-a", text: "Pinned bundle", pinned: true }],
+      generalNotes: [{ id: "b-note-g", text: "Bundle general" }],
+      weekNotes: { "2026-10-05": "Bundle week" },
+    });
+    expect(put.status).toBe(200);
+    const saved = await put.json();
+    expect(saved.clientProfileId).toBe(cp.id);
+    expect(saved.internalNotes).toEqual([
+      { id: "b-note-a", text: "Pinned bundle", pinned: true },
+    ]);
+
+    const read = await bundleCall("GET", ws.id, authz);
+    expect(read.status).toBe(200);
+    const bundle = await read.json();
+    const entry = bundle.clients.find(
+      (c: { clientProfileId: string }) => c.clientProfileId === cp.id,
+    );
+    expect(entry.internalNotes).toEqual([
+      { id: "b-note-a", text: "Pinned bundle", pinned: true },
+    ]);
+    expect(entry.generalNotes).toEqual([
+      { id: "b-note-g", text: "Bundle general" },
+    ]);
+    expect(entry.weekNotes).toEqual({ "2026-10-05": "Bundle week" });
+  });
+
+  it("bundle PUT denies foreign workspace 403 and unauthenticated 401", async () => {
+    const a = await staffWorkspace("COACH");
+    const b = await staffWorkspace("COACH");
+    const cp = await prisma.clientProfile.create({
+      data: { workspaceId: a.ws.id, name: "Foreign Bundle Client" },
+    });
+    const tokenB = await signInToken(b.email);
+    const payload = {
+      clientProfileId: cp.id,
+      phases: [],
+      internalNotes: [],
+      generalNotes: [],
+      weekNotes: {},
+    };
+
+    const foreign = await bundleCall(
+      "PUT",
+      a.ws.id,
+      { authorization: `Bearer ${tokenB}` },
+      payload,
+    );
+    expect(foreign.status).toBe(403);
+
+    const anon = await bundleCall("PUT", a.ws.id, {}, payload);
+    expect(anon.status).toBe(401);
   });
 
   it("denies a foreign-workspace coach with literal 403", async () => {

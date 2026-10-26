@@ -6,8 +6,9 @@
   false`, tenant-coherent FKs and indexes.
 - New service `lib/workspace/client-detail.ts`; new routes
   `GET/PUT /api/v1/workspaces/[workspaceId]/clients/[clientProfileId]`,
-  `GET/PUT /api/v1/workspaces/[workspaceId]/client-detail` (resolves the
-  caller's viewed client), `GET/PUT /api/v1/workspaces/[workspaceId]/notes`.
+  `GET/PUT /api/v1/workspaces/[workspaceId]/client-detail` (workspace
+  bundle; PUT carries `clientProfileId` in the body),
+  `GET/PUT /api/v1/workspaces/[workspaceId]/notes`.
   All via `defineApiV1Route` with `notes.write`; foreign workspace 403,
   client role denied, unauthenticated 401, bad payload 400.
 - Provider swap: `components/canvas/data/clients.ts` reads/writes
@@ -26,7 +27,7 @@
   sits in `components/canvas/coach/store.tsx` after the seed runs
   because `coach/model.ts` is outside lane A ownership.
 - Gates: `prisma migrate deploy` on fresh lane db `app_fp_w2a1` 0;
-  `tests/integration/api-v1-client-detail.test.ts` 7/7 0; `typecheck` 0;
+  `tests/integration/api-v1-client-detail.test.ts` 9/9 0; `typecheck` 0;
   `lint` 0 (88 warnings, all pre-existing); `build` 0; `index` +
   `index:check` 0; `format:check` exits 1: 56 files fail, all
   inherited at merge base `6d3a07f`, zero touched by this card
