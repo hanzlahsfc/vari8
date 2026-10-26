@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 159 modules with exports, 1581 exported symbols.
+Counts: 161 modules with exports, 1605 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -28,14 +28,17 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `frontend/src/lib/ethereal-appearance.tsx`
 
-- `export type Appearance = { mode: AppearanceMode; accent: string; font: AppearanceFont; }`
-- `export type AppearanceFont = | "sans" | "serif" | "condensed" | "mono" | "rounded"`
-- `export type AppearanceMode = "light" | "dark"`
-- `export function AppearanceProvider({ children }: { children: ReactNode })`
+- `export type { Appearance } from "./workspace-appearance"`
+- `export type { AppearanceDensity } from "./workspace-appearance"`
+- `export type { AppearanceFont } from "./workspace-appearance"`
+- `export type { AppearanceMode } from "./workspace-appearance"`
+- `export function AppearanceProvider({ children, workspace, }: { children: ReactNode; workspace?: WorkspaceAppearance | null; })`
+- `export type AppearanceThemeInput = { mode: AppearanceMode; accent: string; font: AppearanceFont; density?: Appearance["density"]; }`
+- `export type { WorkspaceAppearance } from "./workspace-appearance"`
 - `export const defaultAppearance: Appearance`
 - `export const fontOptions: { id: AppearanceFont; label: string; name: string; family: string; }[]`
-- `export function normalizeHex(value: string): string | null`
-- `export function themeVariables(appearance: Appearance): CSSProperties`
+- `export { normalizeHex } from "./workspace-appearance"`
+- `export function themeVariables(appearance: AppearanceThemeInput): CSSProperties`
 - `export function useAppearance(): AppearanceContextValue`
 
 ## `frontend/src/lib/reduced-motion.ts`
@@ -54,6 +57,18 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function contrastRatio(first: string, second: string): number`
 - `export function normalizeAccent(value: string): string | null`
 - `export function vari8Theme({ mode, accent, }: { mode: Vari8Mode; accent: string; }): Vari8Theme`
+
+## `frontend/src/lib/workspace-appearance.ts`
+
+- `export type Appearance = { mode: AppearanceMode; accent: string; font: AppearanceFont; density: AppearanceDensity; logoMediaId: string | null; }`
+- `export type AppearanceDensity = "comfortable" | "compact"`
+- `export type AppearanceFont = | "sans" | "serif" | "condensed" | "mono" | "rounded"`
+- `export type AppearanceMode = "light" | "dark"`
+- `export type WorkspaceAppearance = { mode?: AppearanceMode; accent?: string; font?: AppearanceFont; density?: AppearanceDensity; logoMediaId?: string; }`
+- `export type WorkspaceAppearanceRow = { appearanceMode: unknown; appearanceAccent: unknown; appearanceFont: unknown; appearanceDensity: unknown; logoMediaId: unknown; }`
+- `export function mergeWorkspaceAppearance(local: Appearance, workspace?: WorkspaceAppearance | null): Appearance`
+- `export function normalizeHex(value: string): string | null`
+- `export function toWorkspaceAppearance(row: WorkspaceAppearanceRow): WorkspaceAppearance`
 
 ## `lib/activity-targets/boundary.ts`
 
@@ -261,14 +276,17 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/canvas/ethereal-appearance.tsx`
 
-- `export type Appearance = { mode: AppearanceMode; accent: string; font: AppearanceFont; }`
-- `export type AppearanceFont = | "sans" | "serif" | "condensed" | "mono" | "rounded"`
-- `export type AppearanceMode = "light" | "dark"`
-- `export function AppearanceProvider({ children }: { children: ReactNode })`
+- `export type { Appearance } from "./workspace-appearance"`
+- `export type { AppearanceDensity } from "./workspace-appearance"`
+- `export type { AppearanceFont } from "./workspace-appearance"`
+- `export type { AppearanceMode } from "./workspace-appearance"`
+- `export function AppearanceProvider({ children, workspace, }: { children: ReactNode; workspace?: WorkspaceAppearance | null; })`
+- `export type AppearanceThemeInput = { mode: AppearanceMode; accent: string; font: AppearanceFont; density?: Appearance["density"]; }`
+- `export type { WorkspaceAppearance } from "./workspace-appearance"`
 - `export const defaultAppearance: Appearance`
 - `export const fontOptions: { id: AppearanceFont; label: string; name: string; family: string; }[]`
-- `export function normalizeHex(value: string): string | null`
-- `export function themeVariables(appearance: Appearance): CSSProperties`
+- `export { normalizeHex } from "./workspace-appearance"`
+- `export function themeVariables(appearance: AppearanceThemeInput): CSSProperties`
 - `export function useAppearance(): AppearanceContextValue`
 
 ## `lib/canvas/reduced-motion.ts`
@@ -287,6 +305,18 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function contrastRatio(first: string, second: string): number`
 - `export function normalizeAccent(value: string): string | null`
 - `export function vari8Theme({ mode, accent, }: { mode: Vari8Mode; accent: string; }): Vari8Theme`
+
+## `lib/canvas/workspace-appearance.ts`
+
+- `export type Appearance = { mode: AppearanceMode; accent: string; font: AppearanceFont; density: AppearanceDensity; logoMediaId: string | null; }`
+- `export type AppearanceDensity = "comfortable" | "compact"`
+- `export type AppearanceFont = | "sans" | "serif" | "condensed" | "mono" | "rounded"`
+- `export type AppearanceMode = "light" | "dark"`
+- `export type WorkspaceAppearance = { mode?: AppearanceMode; accent?: string; font?: AppearanceFont; density?: AppearanceDensity; logoMediaId?: string; }`
+- `export type WorkspaceAppearanceRow = { appearanceMode: unknown; appearanceAccent: unknown; appearanceFont: unknown; appearanceDensity: unknown; logoMediaId: unknown; }`
+- `export function mergeWorkspaceAppearance(local: Appearance, workspace?: WorkspaceAppearance | null): Appearance`
+- `export function normalizeHex(value: string): string | null`
+- `export function toWorkspaceAppearance(row: WorkspaceAppearanceRow): WorkspaceAppearance`
 
 ## `lib/catalog.ts`
 

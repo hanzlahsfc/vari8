@@ -4,6 +4,7 @@ import { ClientTracker } from "@/components/canvas/ethereal/client-tracker/clien
 import "@/components/canvas/ethereal/ethereal-shell.css";
 import { AppearanceProvider } from "@/lib/canvas/ethereal-appearance";
 
+import { readClientWorkspaceAppearance } from "./appearance";
 import { requireClientAccess } from "../require-canvas-access";
 
 export const metadata: Metadata = {
@@ -29,8 +30,11 @@ function todayIsoDate(): string {
  */
 export default async function MePage() {
   const viewer = await requireClientAccess();
+  const workspaceAppearance = await readClientWorkspaceAppearance(
+    viewer.workspace.id,
+  );
   return (
-    <AppearanceProvider>
+    <AppearanceProvider workspace={workspaceAppearance}>
       <div className="eg-shell">
         <main
           className="eg-content"

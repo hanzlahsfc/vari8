@@ -270,10 +270,18 @@
   flex: none;
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-block-size: 52px;
-  padding: 0 16px;
+  gap: var(--eg-density-gap, 10px);
+  min-block-size: var(--eg-density-topbar-block, 52px);
+  padding: 0 var(--eg-density-pad-x, 16px);
   background: var(--cd-bg);
+}
+
+.client-app-logo {
+  flex: none;
+  inline-size: 24px;
+  block-size: 24px;
+  border-radius: 6px;
+  object-fit: cover;
 }
 
 .client-app-avatar {

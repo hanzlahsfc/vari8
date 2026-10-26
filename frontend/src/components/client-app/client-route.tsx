@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { type Appearance, themeVariables } from "@/lib/ethereal-appearance";
 import { coachThemeStyle } from "../coach/coach-theme";
 import { CoachProvider, useCoach } from "../coach/store";
 import { templateSetup } from "../coach/template-setup";
@@ -29,11 +30,26 @@ function ClientRouteInner() {
   const configuration = client?.assignment
     ? templateSetup(client.assignment.snapshot, client.assignment.variantId)
     : undefined;
+  const appearance: Appearance = {
+    mode: state.preferences.mode,
+    accent: state.preferences.accent,
+    font: "sans",
+    density: "comfortable",
+    logoMediaId: null,
+  };
+  const logoUrl = state.preferences.logo?.dataUrl ?? null;
   return (
     <div
-      className="coach-root v8-theme client-app-route"
-      data-mode={state.preferences.mode}
-      style={coachThemeStyle(state.preferences)}
+      className={`coach-root v8-theme client-app-route${appearance.density === "compact" ? " eg-density-compact" : ""}`}
+      data-mode={appearance.mode}
+      style={{
+        ...themeVariables(appearance),
+        ...coachThemeStyle({
+          ...state.preferences,
+          mode: appearance.mode,
+          accent: appearance.accent,
+        }),
+      }}
     >
       {!hydrated ? (
         <div className="client-app-loading" role="status">
@@ -74,6 +90,10 @@ function ClientRouteInner() {
               aria-label="Coach workspace"
               href={`/coach?section=clients&client=${client.id}`}
             >
+              {logoUrl ? (
+                // biome-ignore lint/performance/noImgElement: workspace logo is a dynamic signed url
+                <img className="client-app-logo" src={logoUrl} alt="" />
+              ) : null}
               <span className="client-app-coach-link__full">
                 Coach workspace
               </span>
