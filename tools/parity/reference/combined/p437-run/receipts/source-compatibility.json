@@ -525,6 +525,7 @@
     "tools/parity/reference/combined/p437-run/receipts/server.raw.log.gz",
     "tools/parity/reference/combined/p437-run/receipts/source-compatibility.json",
     "tools/parity/reference/combined/p437-run/receipts/strict.json",
-    "tools/parity/reference/combined/retrieve-archived.mjs"
+    "tools/parity/reference/combined/retrieve-archived.mjs",
+    "tools/parity/reference/combined/retrieve-archived.test.mjs"
   ]
 }
