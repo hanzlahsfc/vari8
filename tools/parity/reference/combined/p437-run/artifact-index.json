@@ -956,9 +956,9 @@
   },
   {
    "path": "receipts/server.log",
-   "sha256": "cd1a738515ddc1804c6124dc98e7b37bbd1c4f2fbd67f819722db2af544dc507",
+   "sha256": "b035bc1cd38859edcac7126fb1dd8d210d40967c89f56572eb50cb22eb5275e0",
    "normalized": true,
-   "transform": "strip trailing [ \\t]+ before each newline + single trailing newline",
+   "transform": "strip trailing [ \\t]+ before each line ending + single trailing newline",
    "sourceOf": "receipts/server.raw.log.gz"
   },
   {
@@ -971,7 +971,7 @@
   },
   {
    "path": "receipts/server.raw.log.gz",
-   "sha256": "3f1855ac5a1981c97cb3b6062c9071223220b8db57bce8a534cce7979b91f86e",
+   "sha256": "45e0ef46e1c83b645c748828049428f5aba876983305878f549de2e253edbcca",
    "role": "raw original capture server log",
    "rawSha256": "cd1a738515ddc1804c6124dc98e7b37bbd1c4f2fbd67f819722db2af544dc507",
    "normalizedFrom": "receipts/server.log is this content with only trailing-whitespace stripped"
