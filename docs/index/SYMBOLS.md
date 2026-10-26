@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 159 modules with exports, 1581 exported symbols.
+Counts: 160 modules with exports, 1587 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -947,6 +947,15 @@ Imported type names are shown without their `import("...")` prefix.
 - `export const widgetStaticFieldOptions = (kind: WidgetKind) =>`
 - `export const widgetSummaryOptions = (kind: WidgetKind, source: string) =>`
 - `export const widgetTargetAvailable = (kind: WidgetKind) =>`
+
+## `lib/dashboard/first-run.ts`
+
+- `export const FIRST_RUN_TOTAL = 3`
+- `export type FirstRunChecklist = FirstRunFlags & { completed: number; total: number; visible: boolean; }`
+- `export type FirstRunFlags = { hasClient: boolean; hasForm: boolean; hasPlan: boolean; }`
+- `export function deriveFirstRunChecklist(flags: FirstRunFlags): FirstRunChecklist`
+- `export async function readFirstRunChecklist(session: SessionLike, input: { workspaceId: string }, client: PrismaClient | PrismaLike = prisma): Promise<FirstRunChecklist>`
+- `export async function readFirstRunFlags(session: SessionLike, input: { workspaceId: string }, client: PrismaLike = prisma): Promise<FirstRunFlags>`
 
 ## `lib/dashboard/gate.ts`
 

@@ -1,3 +1,68 @@
+## 2026-10-26 - Wave 2 slice T4 (branch w2/t4): coach first-run checklist (R1)
+
+- Derived flag service `lib/dashboard/first-run.ts`: `readFirstRunFlags`
+  authorizes `workspaceSettings/read` (owner/coach/assistant workspace scope,
+  client and non-members denied) then counts workspace rows: non-archived
+  `ClientProfile` (hasClient), ACTIVE `CheckInForm` or `OnboardingForm`
+  (hasForm), any `ClientPlan`/`MealPlan`/`TrainingProgram`/`IifymPlan`/
+  `SupplementPlan` (hasPlan). `deriveFirstRunChecklist` adds
+  completed/total/visible; `visible` is `completed < 3`. Nothing persisted,
+  so no migration directory was added.
+- Route `app/api/v1/workspaces/[workspaceId]/first-run/route.ts`: exported
+  method set is `GET` (function export) plus `dynamic`. Same v1 failure
+  vocabulary as `defineApiV1Route` (401 `unauthenticated`, 403 `forbidden`,
+  400 `invalid_input`, 500 `internal` via `reportV1Failure`) but hand-rolled:
+  the `Capability` enum has no workspaceSettings scope, so the wrapper would
+  deny ASSISTANT_COACH members the page's `requireWorkspaceAccess` admits.
+  The service re-authorizes on every call; the page and the route share it.
+- Card: authored in `frontend/src/components/coach/first-run-checklist.{tsx,css}`
+  and ported byte-identical into `components/canvas/coach/` (`diff -q` clean
+  both files). Client component seeds from server-derived props, then polls
+  `statusUrl` on a 15 s interval plus window focus and visibilitychange;
+  renders `null` once all three flags read true. Rows link to
+  `/client-setups`, `/checkins/forms`, `/clients`.
+- Mount: `app/workspace/[workspaceId]/page.tsx` calls
+  `readFirstRunChecklist` after the existing session + workspace guards and
+  renders the card only while `visible`; the populated-workspace lede is the
+  fallback. A CLIENT principal can never reach the call - the guard 403s
+  first (CLIENT is denied on `workspaceSettings`).
+- Sibling dependency for consolidation: hasClient derives from
+  `ClientProfile`, which the T3 invite flow (`lib/workspace/invitations.ts`)
+  creates; the invite-issue UI lands on w2-t3 (`9e6fc701`, `a461e008`). The
+  browser proof issued the invite through the reviewed invitation service
+  directly, then accepted it through the real `/invite` page.
+- T2 adoption hook points: the card hides itself by returning `null` and the
+  page's absent-state is the plain shell lede; swap in
+  `components/canvas/vari8/states.*` when w2-t2 lands. The focus/poll refresh
+  is local to the card until a shared subscription primitive exists.
+- Tests: `tests/unit/first-run.test.ts` - 9 tests covering derive truth
+  table, all-false workspace, each partial combination, all-true hidden, and
+  a denied principal refused before any count runs.
+- Gates: `npx vitest run tests/unit/first-run.test.ts` 0 (9/9) · `npm test`
+  0 (117 files, 1389 tests) · `npm run typecheck` 0 · `npm run lint` 0 (89
+  warnings, all pre-existing, none in diff files) · `npx prettier --write`
+  applied to the four new files it flagged, `format:check` now clean on the
+  diff (the repo-wide warn list is inherited) · `npm run index` regenerated
+  `docs/index/{COMPONENTS,ROUTES,SYMBOLS}.md`, `npm run index:check` 0 ·
+  `cd frontend && npm run lint` 0 (Biome, 306 files) · twin `diff -q` clean ·
+  `npm run build` 0, `/api/v1/workspaces/[workspaceId]/first-run` listed
+  dynamic · `npm run parity` exit 2 refused in both modes (spawned server
+  trips the inherited http `BETTER_AUTH_URL` boot guard; `PARITY_URL`
+  sign-in 403s on untrusted origin - same limitation stage-10 recorded).
+- Lane proof on `app_fp_w2t4` (`prisma migrate deploy`, `seed:dev` +
+  `VARI8_SEED_DEMO=1`, `next start` 127.0.0.1:4500 with `APP_ENV=test`,
+  `ENABLE_CHECK_INS=1`, `ENABLE_TRAINING_PLANS=1`): unauthenticated GET ->
+  401 `unauthenticated`, POST -> 405. Playwright 11/11: real signup -> fresh
+  workspace card shows "0 of 3" at 1440 and 390; invite accepted through
+  `/invite` -> card ticks "1 of 3" without reload; check-in form created ->
+  "2 of 3"; owner assigned to the client on the coaches page then an
+  evergreen `TrainingProgram` created -> card hides live; seeded Liliana
+  Mansfeld Coaching renders no card at 1440 or 390 (owner landing verified,
+  not a vacuous count). PNGs + scripts in the evidence dir.
+- Evidence: `~/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/FULL-PACKAGE-2/W2T4/`.
+- NOT done: owner sign-off; no push, no PR. T3 invite UI is a sibling
+  dependency for the consolidation pass.
+
 ## 2026-10-25 — Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
 
 - Verification only, no product repair. Boot gates all green: `npm ci` 0,
