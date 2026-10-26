@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 58 backend pages, 47 API routes, 14 layouts, 5 canvas pages.
+Counts: 59 backend pages, 48 API routes, 14 layouts, 6 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -70,6 +70,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/workspace/[workspaceId]/onboarding/forms/[formId]/preview` | `app/workspace/[workspaceId]/onboarding/forms/[formId]/preview/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/onboarding/forms/new` | `app/workspace/[workspaceId]/onboarding/forms/new/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/parameters` | `app/workspace/[workspaceId]/parameters/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
+| `/workspace/[workspaceId]/settings` | `app/workspace/[workspaceId]/settings/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/templates` | `app/workspace/[workspaceId]/templates/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/templates/[templateId]` | `app/workspace/[workspaceId]/templates/[templateId]/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/templates/[templateId]/preview` | `app/workspace/[workspaceId]/templates/[templateId]/preview/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
@@ -118,6 +119,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/workspaces/[workspaceId]/nutrition-logs` | `app/api/v1/workspaces/[workspaceId]/nutrition-logs/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/nutrition-logs/[entryDate]` | `app/api/v1/workspaces/[workspaceId]/nutrition-logs/[entryDate]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/session` | `app/api/v1/workspaces/[workspaceId]/session/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/settings` | `app/api/v1/workspaces/[workspaceId]/settings/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/tasks` | `app/api/v1/workspaces/[workspaceId]/tasks/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/training-logs` | `app/api/v1/workspaces/[workspaceId]/training-logs/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/training-logs/sessions` | `app/api/v1/workspaces/[workspaceId]/training-logs/sessions/route.ts` | - | none detected |
@@ -157,6 +159,7 @@ Lilly's canvas app. It is authoritative for screens and appearance; the backend 
 | `/` | `frontend/src/app/page.tsx` | server | none detected |
 | `/client` | `frontend/src/app/client/page.tsx` | server | none detected |
 | `/coach` | `frontend/src/app/coach/page.tsx` | server | none detected |
+| `/coach/settings` | `frontend/src/app/coach/settings/page.tsx` | client | none detected |
 | `/dev/design-system` | `frontend/src/app/dev/design-system/page.tsx` | server | none detected |
 | `/ethereal` | `frontend/src/app/ethereal/page.tsx` | server | none detected |
 
