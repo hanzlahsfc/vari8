@@ -6,7 +6,10 @@ import test from "node:test";
 // T3: the roster search predicate runs identically in both twins; this
 // exercises the frontend copy the same way the repo vitest exercises the
 // canvas copy.
-const source = await readFile(new URL("./roster-search.ts", import.meta.url), "utf8");
+const source = await readFile(
+  new URL("./roster-search.ts", import.meta.url),
+  "utf8",
+);
 const executableSource = stripTypeScriptTypes(source, { mode: "strip" });
 const model = await import(
   `data:text/javascript;base64,${Buffer.from(executableSource).toString("base64")}`

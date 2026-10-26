@@ -9,10 +9,10 @@ import {
   MessageCircle,
   Search,
 } from "lucide-react";
-import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { Input, SegmentedControl, Select } from "@/components/canvas/vari8/components";
+import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import {
   attentionCount,
   formatClientDate,
