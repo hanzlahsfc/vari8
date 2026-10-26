@@ -53,7 +53,7 @@ function buildItems(workspaceId: string): ChecklistItem[] {
       flag: "hasForm",
       label: "Configure a form",
       hint: "Set up a check-in or onboarding form.",
-      href: `${base}/checkins/forms`,
+      href: `${base}/onboarding/forms`,
     },
     {
       flag: "hasPlan",

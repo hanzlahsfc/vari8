@@ -1,3 +1,30 @@
+## 2026-10-26 - Wave 2 slice T4 repair round 1 (branch w2/t4): form link re-pointed
+
+- Verifier F1: the "Configure a form" item linked to `${base}/checkins/forms`,
+  which is gated by `isCheckInsEnabled()` and 404s in a production runtime
+  with `ENABLE_CHECK_INS` unset. `hasForm` already counts ACTIVE check-in
+  forms OR ACTIVE onboarding forms, and `onboarding/forms` carries no
+  notFound/feature gate anywhere in its route chain (page, new page,
+  workspace layout, root layout all checked).
+- Repair: one identical line in each twin,
+  `components/canvas/coach/first-run-checklist.tsx` and
+  `frontend/src/components/coach/first-run-checklist.tsx`, re-pointing the
+  item to `${base}/onboarding/forms`. Twins still `cmp`-identical (tsx and
+  css). `hasForm` derivation unchanged.
+- Gates (repair): cmp tsx 0, cmp css 0, prettier 0, typecheck 0,
+  lint 0 (89 warnings, inherited), frontend lint 0, build 0,
+  `npm run index` 0, `index:check` 0, `tests/unit/first-run.test.ts` 0
+  (9 tests). Added-lines dash grep on `git diff 2967bb1..HEAD`: 0.
+- Browser proof (production build, `ENABLE_CHECK_INS` unset, lane database
+  `app_fp_w2t4r1`, fresh signups): at 1440 and 390 the item's real href is
+  `/workspace/<id>/onboarding/forms`, a real click on it renders the
+  onboarding forms page (not 404), and creating an onboarding form through
+  the UI ticks the card to "1 of 3" live inside the poll window with no
+  reload. 16/16 checks, 0 console errors. Evidence under
+  `Vari8-evidence/FULL-PACKAGE-2/W2T4/` (`w2t4r1-*` screenshots + results
+  json); lane database dropped, absence proof in
+  `teardown-pg-database-r1.txt`.
+
 ## 2026-10-26 - Wave 2 slice T4 (branch w2/t4): coach first-run checklist (R1)
 
 - Derived flag service `lib/dashboard/first-run.ts`: `readFirstRunFlags`
