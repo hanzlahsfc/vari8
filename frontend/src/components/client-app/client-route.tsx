@@ -2,8 +2,13 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { type Appearance, themeVariables } from "@/lib/ethereal-appearance";
+import {
+  type Appearance,
+  themeVariables,
+  type WorkspaceAppearance,
+} from "@/lib/ethereal-appearance";
 import { coachThemeStyle } from "../coach/coach-theme";
+import type { CoachClient, Variant } from "../coach/model";
 import { CoachProvider, useCoach } from "../coach/store";
 import { templateSetup } from "../coach/template-setup";
 import { Empty } from "../coach/ui";
@@ -12,30 +17,50 @@ import { ClientApp } from "./client-app";
 import "../coach/coach.css";
 import "./client-app.css";
 
-export function ClientRoute() {
+/**
+ * A signed-in client, resolved server-side: identity, workspace brand and
+ * the coach's variant come from the session and the client's active
+ * assignment, never from the local demo store.
+ */
+export type ClientSession = {
+  clientName: string;
+  clientInitials: string;
+  workspaceName: string;
+  configuration: Variant;
+  client: CoachClient;
+  appearance?: WorkspaceAppearance;
+};
+
+export function ClientRoute({ session }: { session?: ClientSession }) {
   return (
     <CoachProvider>
-      <ClientRouteInner />
+      <ClientRouteInner session={session} />
     </CoachProvider>
   );
 }
 
-function ClientRouteInner() {
+function ClientRouteInner({ session }: { session?: ClientSession }) {
   const { state, hydrated } = useCoach();
   const params = useSearchParams();
   const clientId = params.get("client") ?? "";
-  const client = clientId
+  const demoClient = clientId
     ? state.clients.find((candidate) => candidate.id === clientId)
     : undefined;
-  const configuration = client?.assignment
-    ? templateSetup(client.assignment.snapshot, client.assignment.variantId)
-    : undefined;
+  const client = session?.client ?? demoClient;
+  const configuration =
+    session?.configuration ??
+    (demoClient?.assignment
+      ? templateSetup(
+          demoClient.assignment.snapshot,
+          demoClient.assignment.variantId,
+        )
+      : undefined);
   const appearance: Appearance = {
-    mode: state.preferences.mode,
-    accent: state.preferences.accent,
-    font: "sans",
-    density: "comfortable",
-    logoMediaId: null,
+    mode: session?.appearance?.mode ?? state.preferences.mode,
+    accent: session?.appearance?.accent ?? state.preferences.accent,
+    font: session?.appearance?.font ?? "sans",
+    density: session?.appearance?.density ?? "comfortable",
+    logoMediaId: session?.appearance?.logoMediaId ?? null,
   };
   const logoUrl = state.preferences.logo?.dataUrl ?? null;
   return (
@@ -51,7 +76,25 @@ function ClientRouteInner() {
         }),
       }}
     >
-      {!hydrated ? (
+      {session && client && configuration ? (
+        <>
+          <header className="client-app-topbar">
+            <span className="client-app-avatar" aria-hidden="true">
+              {session.clientInitials}
+            </span>
+            <strong>{session.clientName}</strong>
+            <span className="client-app-brand" title={session.workspaceName}>
+              {session.workspaceName}
+            </span>
+          </header>
+          <ClientApp
+            configuration={configuration}
+            client={client}
+            context="standalone"
+            brand={session.workspaceName}
+          />
+        </>
+      ) : !hydrated ? (
         <div className="client-app-loading" role="status">
           Loading demo…
         </div>

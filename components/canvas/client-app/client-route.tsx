@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { coachThemeStyle } from "../coach/coach-theme";
+import type { CoachClient, Variant } from "../coach/model";
 import { CoachProvider, useCoach } from "../coach/store";
 import { templateSetup } from "../coach/template-setup";
 import { Empty } from "../coach/ui";
@@ -18,32 +19,56 @@ import { ClientApp } from "./client-app";
 import "../coach/coach.css";
 import "./client-app.css";
 
+/**
+ * A signed-in client, resolved server-side: identity, workspace brand and
+ * the coach's variant come from the session and the client's active
+ * assignment, never from the local demo store.
+ */
+export type ClientSession = {
+  clientName: string;
+  clientInitials: string;
+  workspaceName: string;
+  configuration: Variant;
+  client: CoachClient;
+  appearance?: WorkspaceAppearance;
+};
+
 export function ClientRoute({
   own,
+  session,
 }: {
   own?: { workspaceId: string; clientProfileId: string };
+  session?: ClientSession;
 }) {
   return (
     <CoachProvider>
-      <ClientRouteInner own={own} />
+      <ClientRouteInner own={own} session={session} />
     </CoachProvider>
   );
 }
 
 function ClientRouteInner({
   own,
+  session,
 }: {
   own?: { workspaceId: string; clientProfileId: string };
+  session?: ClientSession;
 }) {
   const { state, hydrated } = useCoach();
   const params = useSearchParams();
   const clientId = params.get("client") ?? "";
-  const client = clientId
+  const demoClient = clientId
     ? state.clients.find((candidate) => candidate.id === clientId)
     : undefined;
-  const configuration = client?.assignment
-    ? templateSetup(client.assignment.snapshot, client.assignment.variantId)
-    : undefined;
+  const client = session?.client ?? demoClient;
+  const configuration =
+    session?.configuration ??
+    (demoClient?.assignment
+      ? templateSetup(
+          demoClient.assignment.snapshot,
+          demoClient.assignment.variantId,
+        )
+      : undefined);
   const [remoteAppearance, setRemoteAppearance] =
     useState<WorkspaceAppearance | null>(null);
   const [remoteLogoUrl, setRemoteLogoUrl] = useState<string | null>(null);
@@ -69,11 +94,21 @@ function ClientRouteInner({
   }, [own?.workspaceId]);
 
   const appearance: Appearance = {
-    mode: remoteAppearance?.mode ?? state.preferences.mode,
-    accent: remoteAppearance?.accent ?? state.preferences.accent,
-    font: remoteAppearance?.font ?? "sans",
-    density: remoteAppearance?.density ?? "comfortable",
-    logoMediaId: remoteAppearance?.logoMediaId ?? null,
+    mode:
+      remoteAppearance?.mode ??
+      session?.appearance?.mode ??
+      state.preferences.mode,
+    accent:
+      remoteAppearance?.accent ??
+      session?.appearance?.accent ??
+      state.preferences.accent,
+    font: remoteAppearance?.font ?? session?.appearance?.font ?? "sans",
+    density:
+      remoteAppearance?.density ??
+      session?.appearance?.density ??
+      "comfortable",
+    logoMediaId:
+      remoteAppearance?.logoMediaId ?? session?.appearance?.logoMediaId ?? null,
   };
   const logoUrl = remoteAppearance?.logoMediaId
     ? remoteLogoUrl
@@ -91,7 +126,26 @@ function ClientRouteInner({
         }),
       }}
     >
-      {!hydrated ? (
+      {session && client && configuration ? (
+        <>
+          <header className="client-app-topbar">
+            <span className="client-app-avatar" aria-hidden="true">
+              {session.clientInitials}
+            </span>
+            <strong>{session.clientName}</strong>
+            <span className="client-app-brand" title={session.workspaceName}>
+              {session.workspaceName}
+            </span>
+          </header>
+          <ClientApp
+            configuration={configuration}
+            client={client}
+            context="standalone"
+            brand={session.workspaceName}
+            own={own}
+          />
+        </>
+      ) : !hydrated ? (
         <div className="client-app-loading" role="status">
           Loading demo…
         </div>
@@ -102,13 +156,15 @@ function ClientRouteInner({
             action={
               <Link
                 className="client-app-coach-link"
-                href="/coach?section=clients"
+                href={own ? "/me" : "/coach?section=clients"}
               >
-                Coach workspace
+                {own ? "Your client app" : "Coach workspace"}
               </Link>
             }
           >
-            Choose a client with an assigned template in the coach workspace.
+            {own
+              ? "Your app lives at /me."
+              : "Choose a client with an assigned template in the coach workspace."}
           </Empty>
         </main>
       ) : (
