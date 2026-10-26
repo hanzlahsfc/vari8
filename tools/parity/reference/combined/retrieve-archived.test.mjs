@@ -61,7 +61,6 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "arch-test-"));
 // the real p436 check against origin already proved retrieval; here we assert
 // refusal semantics and registry discipline which are the security surface.
 const remote = makeRemote();
-const commit = git(remote, ["rev-parse", "HEAD"]);
 git(remote, ["tag", "evidence/p436-run-superseded", "HEAD"]);
 
 // 2. Invalid/traversing names refused before any operation.
@@ -82,7 +81,6 @@ ok("wrong-commit tag refused", tryRun(["p436-run", "--remote", remote2, "--out",
 ok("wrong-commit cleanup", !fs.existsSync(`${tmp}/o2`));
 
 // 5. Malformed tag/commit in registry is shape-checked (unit-level).
-const stubDir = fs.mkdtempSync(path.join(os.tmpdir(), "arch-stub-"));
 ok("no dest leak after refusals", fs.readdirSync(tmp).filter((d) => d.startsWith("o")).length <= 1);
 
 console.log(`${passed} passed`);
