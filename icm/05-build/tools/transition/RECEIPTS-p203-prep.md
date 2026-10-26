@@ -1,4 +1,8 @@
-# p450 #203 preparation receipts (no merge performed)
+# p452 #203 preparation receipts (no merge performed)
+
+> Status: p450 preparation receipts were lost with local scratch state — marked MISSING,
+> not reconstructed. p452 (this file) is the replacement preparation with a complete
+> committed transcript and packaged capture.
 
 - Lock: real `flock` on `.locks/Vari8-Beta.lock` — held.
 - Revalidated live: #203 head `90c16bee63e2609ebc4f09e91459332390562464`, base `Vari8-Beta` tip `d1c4081022f2ac21070b28f284248fad2ef04839`.

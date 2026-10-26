@@ -27,12 +27,7 @@
     },
     "expectedScreens": 70,
     "s04State": "Habits",
-    "allowances": [
-      "S11-03",
-      "D18",
-      "S11-04",
-      "S03-18"
-    ],
+    "allowances": ["S11-03", "D18", "S11-04", "S03-18"],
     "implementedAlternative": {
       "clock": "2026-10-19T10:00:00+02:00",
       "geometryPx": 0.5,
@@ -195,9 +190,7 @@
       "fullPage": true,
       "animations": "disabled",
       "caret": "hide",
-      "launchArgs": [
-        "--disable-partial-raster"
-      ],
+      "launchArgs": ["--disable-partial-raster"],
       "storageSeed": {},
       "randomSeed": "0x2545f491",
       "settle": "networkidle; fonts.ready; DOM quiet 400ms / 3000ms cap"
