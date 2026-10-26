@@ -933,7 +933,10 @@ describe("material input coverage and dirty-checkout refusal", () => {
   });
 
   it("a committed change outside the material pathspec keeps the hash", () => {
-    const root = scratchRepo({ "docs/STATUS.md": "x\n", "app/page.tsx": "y\n" });
+    const root = scratchRepo({
+      "docs/STATUS.md": "x\n",
+      "app/page.tsx": "y\n",
+    });
     const before = materialTreeSha256(root);
     amend(root, "docs/STATUS.md");
     expect(materialTreeSha256(root)).toBe(before);
