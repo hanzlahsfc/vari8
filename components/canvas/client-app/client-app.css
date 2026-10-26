@@ -154,6 +154,38 @@
     inline-size: 200px;
     padding: 16px 10px;
     background: var(--v8-surface-navigation, var(--cd-surface));
+    border-inline-end: 1px solid var(--cd-line);
+  }
+
+  .coach-root .cd-client-app-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 12px 14px;
+    margin-block-end: 6px;
+    border-block-end: 1px solid var(--cd-line);
+  }
+
+  .coach-root .cd-client-app-brand-mark {
+    font-size: 15px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    color: var(--cd-text);
+  }
+
+  .coach-root .cd-client-app-brand-period {
+    color: var(--v8-accent-text, var(--cd-accent));
+  }
+
+  .coach-root .cd-client-app-brand-name {
+    font-size: 11px;
+    font-weight: 550;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cd-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .coach-root .cd-client-app-nav {
@@ -301,6 +333,20 @@
 .client-app-topbar .v8-status {
   flex: none;
   white-space: nowrap;
+}
+
+.client-app-brand {
+  margin-left: auto;
+  flex: none;
+  max-inline-size: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--cd-muted);
+  font-size: 12px;
+  font-weight: 550;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .client-app-coach-link {
