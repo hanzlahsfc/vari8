@@ -1,3 +1,47 @@
+## 2026-10-26 — w2-s1: legacy sheet fidelity — 11/11 tabs pass dark+light
+
+- Card `w2-s1` on branch `w2/s1` (worktree `.worktrees/w2-s1`, base
+  `fp/stage-10` @ `2967bb1`). Rebuilt the sheet renderer to match the
+  sanitised PRGRSS 2.0 workbook render pixel-for-pixel.
+- Harness result (evidence `Vari8-evidence/FULL-PACKAGE-2/W2S1`,
+  `diffall.sh` vs `refcrop-*.png`): **all 11 tabs PASS in dark and
+  light**. Residual bad-blocks are sub-budget: dashboard 10/12,
+  daily-tracker 14/25, mealplan 3/19, menses 5/12, training 2/12,
+  peaking 2/25; timeline/supplementation/showday/exercise-db/
+  nutrition-db are zero.
+- What the renderer now takes from the workbook instead of guessing:
+  per-cell fills (workbook fill > row/col default > sheet surface),
+  typography (h/v align, size, bold, ink colour), authored borders
+  (dotted/thin/medium, emitted as `edges` with LO paint-order
+  precedence), workbook merge ranges (overrides the curated model
+  list, even when empty), workbook `ht` row heights (ht×96/72 —
+  every declared ht is a multiple of 0.75pt = integer px; the old
+  measured rowPx jittered ±1px and broke boundaries).
+- LO page-window model (empirically derived): a plain cell paints
+  only if its right/bottom edge fits the printable span (1577.8 ×
+  1103.3 px at 96dpi). Dead-zone cells inside the compared crop
+  emit paper-white, outside emit sheet surface, and their text is
+  suppressed via `pageR`/`pageC` in generated GEOM. Merges anchored
+  in the painted window keep their fill; vertically the box is cut
+  at the last painted row's bottom, horizontally it spills into the
+  straddling columns to the paper edge (daily-tracker week bands).
+- Chrome: initial render has no selection ring and no freeze-split
+  hairlines (both interaction-gated: selection needs a pointer/key,
+  split shadows need scroll > 2px).
+- Pipeline (rerunnable): `tools/extract_{fills,typo,borders,values}.py`,
+  `sample_ink.mjs`, `patch_geom.py` (fills+typo+ink+borders+heights+
+  rowpx-fixes → styles.ts) — all under the evidence dir. `heights.json`
+  is workbook `ht`; `rowpx-fixes.json` pins the four auto-sized band
+  rows (57.5px) + training row 6 (56px) measured against the refs.
+- Live check: app on :4196 behind TLS proxy :4195 (lane DB
+  `app_fp_w2s1` on 127.0.0.1:5433), captures via authenticated coach
+  overview at 1700px and mobile 390px; Escape closes the dialog at
+  both widths (native `<dialog>` `onCancel`).
+- Known unrelated: `frontend/` prod typecheck still fails on
+  `dialog.tsx:109` `labelHidden` — inherited dormant defect recorded
+  in the stage-10 report (fix lives on unmerged `c605b78`/`29fbb31`);
+  the shipped root app builds clean.
+
 ## 2026-10-25 — Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
 
 - Verification only, no product repair. Boot gates all green: `npm ci` 0,
