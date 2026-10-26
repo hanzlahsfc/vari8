@@ -1,0 +1,14 @@
+{
+  "status": "SUPERSEDED",
+  "supersededBy": "tools/parity/reference/combined/p437-run",
+  "reason": "comparer.json was prettier-formatted (material input); the verifier correctly invalidated p436 receipts and p437-run replaced them. Not selected as current gate evidence.",
+  "source": {
+    "commit": "a7a8a54cc3efe0aadedb34963e6fcebf8a02fd99",
+    "tree": "612bff34c8f3fcf2581f887bb378ff88abf1fa14",
+    "materialTreeSha256": "d59f4cef1a9a269958169409271ec5cb4e8b82b5e100851fa87bf463c00c7691"
+  },
+  "packageAt": "0293c69ca38549684d94ccf96a70bca8e62242d5",
+  "artifactIndexSha256": "5a8790c36439926c4033663b616f65771f0eadd2d22d147975448e9c16d9457f",
+  "archiveTag": "evidence/p436-run-superseded",
+  "retrieve": "node tools/parity/reference/combined/retrieve-archived.mjs p436-run"
+}
