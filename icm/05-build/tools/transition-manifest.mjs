@@ -26,23 +26,31 @@ export function validateTransitionManifest(m) {
   for (const key of ["mergeAuthorization", "scopedAcceptance"]) {
     const rec = az[key];
     if (!rec || typeof rec !== "object") fail(`authorization.${key} required`);
-    if (
-      typeof rec.commentUrl !== "string" ||
-      !/^https:\/\/[a-zA-Z0-9._\/-]+#issuecomment-[0-9]+$/.test(rec.commentUrl)
-    )
-      fail(`authorization.${key}.commentUrl must be a safe URL`);
-    if (!/issuecomment-\d+/.test(rec.commentUrl))
-      fail(`authorization.${key}.commentUrl must name a recorded comment`);
     if (typeof rec.author !== "string" || !rec.author.length)
       fail(`authorization.${key}.author required (identity to verify)`);
     if (typeof rec.contains !== "string" || rec.contains.length < 8)
       fail(`authorization.${key}.contains must pin recognizable content`);
+    if (rec.pendingInput !== undefined) {
+      if (typeof rec.pendingInput !== "string" || rec.pendingInput.length < 8)
+        fail(`authorization.${key}.pendingInput must name the missing input`);
+      if (typeof rec.source !== "string" || !rec.source.length)
+        fail(`authorization.${key}.source required when input is pending`);
+    } else if (
+      typeof rec.commentUrl !== "string" ||
+      !/^https:\/\/[a-zA-Z0-9._\/-]+#issuecomment-[0-9]+$/.test(rec.commentUrl)
+    )
+      fail(`authorization.${key}.commentUrl must name a recorded comment`);
   }
   if (!m.executor || typeof m.executor.role !== "string" || !m.executor.role)
     fail("executor.role required");
 
+  if (!Array.isArray(m.authorizedPRs) || m.authorizedPRs.length === 0)
+    fail("authorizedPRs allowlist required");
   if (!Array.isArray(m.items) || m.items.length === 0)
     fail("items must list authorized PRs in order");
+  for (const it of m.items)
+    if (!m.authorizedPRs.includes(it?.pr))
+      fail(`PR ${it?.pr} is not in the authorized allowlist`);
   const seen = new Set();
   m.items.forEach((it, i) => {
     if (!Number.isInteger(it?.order) || it.order !== i + 1)
@@ -93,6 +101,17 @@ export function validateTransitionManifest(m) {
     fail("gates.combined.reference must be a tools/parity path");
   if (!Number.isInteger(cg?.expectedCanonical))
     fail("gates.combined.expectedCanonical must be an integer");
+  if (cg.bundle) {
+    if (!/^[0-9a-f]{40}$/.test(cg.bundle.commit ?? ""))
+      fail("gates.combined.bundle.commit must be a 40-hex sha");
+    if (
+      typeof cg.bundle.path !== "string" ||
+      !cg.bundle.path.startsWith("tools/")
+    )
+      fail("gates.combined.bundle.path must be a tools/ path");
+    if (!/^[0-9a-f]{40}$/.test(cg.bundle.treeSha ?? ""))
+      fail("gates.combined.bundle.treeSha must be a 40-hex sha");
+  }
   if (m.baseline?.paths && !Array.isArray(m.baseline.paths))
     fail("baseline.paths must be an array of path prefixes");
   return m;

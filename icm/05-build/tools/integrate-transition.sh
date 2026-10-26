@@ -52,8 +52,10 @@ STATE="$STATE_DIR/p${WANT_PR}.json"
 
 # --- Authorization: verify the pinned records, not just their existence. ---
 verify_auth() {
-  local key url author contains id body
+  local key url author contains id body pending
   key="$1"
+  pending="$(node -e 'const a=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).authorization[process.argv[2]];console.log(a.pendingInput??"")' "$MANIFEST" "$key")"
+  [[ -z "$pending" ]] || die "authorization input pending: $pending" 4
   url="$(node -e 'const a=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).authorization[process.argv[2]];console.log(a.commentUrl)' "$MANIFEST" "$key")"
   author="$(node -e 'const a=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).authorization[process.argv[2]];console.log(a.author)' "$MANIFEST" "$key")"
   contains="$(node -e 'const a=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).authorization[process.argv[2]];console.log(a.contains)' "$MANIFEST" "$key")"
@@ -77,8 +79,14 @@ COUNT="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv
 for i in $(seq 1 "$COUNT"); do
   pf() { node -e 'const m=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));console.log(m.items[process.argv[2]-1][process.argv[3]])' "$MANIFEST" "$i" "$1"; }
   p="$(pf pr)"; h="$(pf head)"; b="$(pf base)"; d="$(pf isDraft)"
-  J="$(gh pr view "$p" -R "$REPO" --json headRefOid,baseRefName,state,isDraft,comments)"
+  J="$(gh pr view "$p" -R "$REPO" --json headRefOid,baseRefName,state,isDraft,comments,mergeCommit)"
   [[ "$(jq -r .headRefOid <<<"$J")" == "$h" ]] || die "PR #$p head moved (authorized $h) — fresh authorization required" 4
+  if [[ "$(jq -r .state <<<"$J")" == "MERGED" ]]; then
+    mc="$(jq -r '.mergeCommit.oid // ""' <<<"$J")"
+    [[ -n "$mc" ]] || die "PR #$p reports MERGED with no mergeCommit" 4
+    echo "  prerequisite PR #$p already MERGED as $mc — recorded prerequisite satisfied"
+    continue
+  fi
   [[ "$(jq -r .baseRefName <<<"$J")" == "$b" ]] || die "PR #$p base is $(jq -r .baseRefName <<<"$J"), manifest says $b — retarget is a separate step" 4
   [[ "$(jq -r .state <<<"$J")" == "OPEN" ]] || die "PR #$p not OPEN" 4
   [[ "$(jq -r .isDraft <<<"$J")" == "$d" ]] || die "PR #$p draft state changed; manifest stale — re-review" 4
@@ -91,8 +99,12 @@ if [[ -f "$STATE" ]]; then
   st="$(jq -r .status "$STATE")"
   if [[ "$st" == done ]]; then
     merged="$(gh pr view "$WANT_PR" -R "$REPO" --json state,mergeCommit --jq 'select(.state=="MERGED").mergeCommit.oid')"
-    [[ -n "$merged" ]] || die "state says done but PR #$WANT_PR is not MERGED — inspect $STATE" 4
-    echo "PR #$WANT_PR already merged as $merged; nothing to do"; exit 0
+    rec="$(jq -r '.mergeSha // ""' "$STATE")"
+    [[ -n "$merged" && "$merged" == "$rec" ]] || die "recorded merge $rec does not match remote ${merged:-none} — inspect" 4
+    mt="$(git rev-parse "$merged^{tree}" 2>/dev/null || echo unknown)"
+    rt="$(jq -r '.testedTree // ""' "$STATE")"
+    [[ "$mt" == "$rt" ]] || die "remote merge tree $mt != recorded tested tree $rt" 4
+    echo "PR #$WANT_PR already merged as $merged (parents+tree proven); nothing to do"; exit 0
   fi
   [[ "$st" == running ]] && die "interrupted attempt recorded in $STATE — inspect before retry (refusing to repeat blindly)" 4
 fi
@@ -154,12 +166,25 @@ fi
 # Runner argv comes from the manifest; missing verifier/package/inputs fails
 # before mutation — historical receipts alone are never sufficient. ---
 CG_OUT="$STATE_DIR/p${WANT_PR}.combined"; mkdir -p "$CG_OUT"
+BUNDLE_COMMIT="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).gates.combined.bundle?.commit??"")' "$MANIFEST")"
+BUNDLE_PATH="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).gates.combined.bundle?.path??"")' "$MANIFEST")"
+BUNDLE_TREE="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).gates.combined.bundle?.treeSha??"")' "$MANIFEST")"
+GATE_HOME="$STATE_DIR/gate-tools"
+if [[ -n "$BUNDLE_COMMIT" ]]; then
+  [[ "$(git rev-parse "$BUNDLE_COMMIT:$BUNDLE_PATH" 2>/dev/null)" == "$BUNDLE_TREE" ]]     || die "gate bundle tree sha mismatch for $BUNDLE_COMMIT:$BUNDLE_PATH" 5
+  mkdir -p "$GATE_HOME"
+  rm -rf "$GATE_HOME/$BUNDLE_PATH"
+  git archive "$BUNDLE_COMMIT" "$BUNDLE_PATH" | tar -x -C "$GATE_HOME"     || die "gate bundle extraction failed" 5
+  RUNNER_DIR="$GATE_HOME"
+else
+  RUNNER_DIR="$HERE"
+fi
 CG_OK=1
 RUNNER=()
 while IFS= read -r a; do RUNNER+=("$a"); done < <(node -e 'for(const a of JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).gates.combined.runner)console.log(a)' "$MANIFEST")
 [[ -f "${RUNNER[1]:-}" ]] || die "combined gate runner missing: ${RUNNER[1]:-?}" 5
 [[ -d "$COMBINED_REF" ]] || die "combined reference package missing: $COMBINED_REF" 5
-if CG_OUT="$CG_OUT" "${RUNNER[@]}" > "$CG_OUT/run.log" 2>&1; then CG_OK=0; fi
+if (cd "$RUNNER_DIR" && CG_OUT="$CG_OUT" APP_TREE="$HERE" "${RUNNER[@]}") > "$CG_OUT/run.log" 2>&1; then CG_OK=0; fi
 CG_JSON="$CG_OUT/current/manifest.json"
 CANON_N=0; STRICT_N=0
 [[ -f "$CG_OUT/proposed-canonical.json" ]] && CANON_N="$(jq -r '.passed // 0' "$CG_OUT/proposed-canonical.json")"
@@ -194,7 +219,7 @@ git fetch -q origin "$ITEM_BASE" >/dev/null 2>&1 || true
 MP="$(git cat-file -p "$MERGE_SHA" 2>/dev/null | awk '/^parent/{print $2}' | tr '\n' ' ')"
 MT="$(git rev-parse "$MERGE_SHA^{tree}" 2>/dev/null || echo unknown)"
 [[ "$MT" == "$TEST_TREE" ]] || die "remote merge tree $MT != tested $TEST_TREE — remote race, investigate" 4
-[[ "${MP% }" == "$BASE_TIP $HEAD_SHA" ]] || echo "note: merge parents $MP (expected $BASE_TIP $HEAD_SHA)"
+[[ "${MP% }" == "$BASE_TIP $HEAD_SHA" ]] || die "merge parents $MP != expected $BASE_TIP $HEAD_SHA — hard failure, investigate" 4
 
 for bp in $(node -e 'console.log((JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).baseline?.paths||["tools/parity/baseline"]).join(" "))' "$MANIFEST"); do
   want="$(printf '%s' "$BASELINE_SNAP" | tr ' ' '\n' | grep "^${bp}::" | cut -d: -f3-)"

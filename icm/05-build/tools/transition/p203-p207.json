@@ -1,13 +1,15 @@
 {
   "kind": "owner-authorized-scoped-transition",
+  "authorizedPRs": [203, 206, 207],
   "executor": {
     "role": "orchestrator executing under recorded owner authorization"
   },
   "authorization": {
     "mergeAuthorization": {
-      "commentUrl": "https://github.com/hanzlahsfc/vari8/pull/207#issuecomment-6417192584",
-      "author": "hanzlahsfc",
-      "contains": "90c16bee63e2609ebc4f09e91459332390562464"
+      "source": "owner decision delivered in task prompt P447 (2026-10-26)",
+      "author": "Hanzlah (owner)",
+      "contains": "Integrate #203, #206, #207 in order under the disclosed cross-review arrangement, conditional on reviewed tooling and real gates.",
+      "pendingInput": "human-posted GitHub comment recording this exact decision \u2014 the executor must refuse until that record is verifiable"
     },
     "scopedAcceptance": {
       "commentUrl": "https://github.com/hanzlahsfc/vari8/pull/207#issuecomment-6412128271",
@@ -51,7 +53,12 @@
       "runner": ["node", "tools/parity/run.mjs"],
       "reference": "tools/parity/reference/proposed",
       "expectedCanonical": 70,
-      "expectedStrictMin": 68
+      "expectedStrictMin": 68,
+      "bundle": {
+        "commit": "04902f1dc3d317e0959ae533f2f4c479a8fc55f9",
+        "path": "tools/parity",
+        "treeSha": "f457065f61753245b6853ac3ddb3236deb00c8bd"
+      }
     }
   },
   "baseline": {

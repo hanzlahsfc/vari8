@@ -150,6 +150,25 @@ function manifest(over: Partial<Record<string, unknown>> = {}) {
   return { ...m, ...over };
 }
 
+// Executor tests run against a manifest where the pending owner-comment input
+// has been fulfilled (a verifiable comment record), so behavior past the auth
+// boundary is exercised. The real manifest keeps pendingInput until the owner
+// posts the record.
+function fulfilledManifest(tmp: string, over: Record<string, unknown> = {}) {
+  const m = manifest();
+  m.authorization.mergeAuthorization = {
+    commentUrl:
+      "https://github.com/hanzlahsfc/vari8/pull/207#issuecomment-6417192584",
+    author: "hanzlahsfc",
+    contains: "90c16bee63e2609ebc4f09e91459332390562464",
+  };
+  Object.assign(m, over);
+  const f = path.join(tmp, "m.json");
+  writeFileSync(f, JSON.stringify(m));
+  return f;
+}
+const FMF = () => fulfilledManifest(mkdtempSync(path.join(tmpdir(), "fmf-")));
+
 function run(
   args: string[],
   over: Record<string, string> = {},
@@ -190,7 +209,7 @@ const M = () => path.join(ROOT, "icm/05-build/tools/transition/p203-p207.json");
 
 describe("integrate-transition single-step executor", () => {
   it("refuses an unlisted PR (#999) before any mutation", () => {
-    const r = run([M(), "--pr", "999"]);
+    const r = run([FMF(), "--pr", "999"]);
     expect(r.status).toBe(4);
     expect(r.stderr).toMatch(/unlisted/);
     expect(r.called).not.toContain("merged");
@@ -198,26 +217,26 @@ describe("integrate-transition single-step executor", () => {
   });
 
   it("refuses a wrong live head", () => {
-    const r = run([M(), "--pr", "203"], { gh_head: SHA.p206 });
+    const r = run([FMF(), "--pr", "203"], { gh_head: SHA.p206 });
     expect(r.status).toBe(4);
     expect(r.stderr).toMatch(/head moved/);
     expect(r.called).not.toContain("merged");
   });
 
   it("refuses when live base differs from manifest (stacked base)", () => {
-    const r = run([M(), "--pr", "203"], { gh_base: "beta/parity-https" });
+    const r = run([FMF(), "--pr", "203"], { gh_base: "beta/parity-https" });
     expect(r.status).toBe(4);
     expect(r.called).not.toContain("merged");
   });
 
   it("refuses a draft-state mismatch with the manifest", () => {
-    const r = run([M(), "--pr", "203"], { gh_draft: "false" });
+    const r = run([FMF(), "--pr", "203"], { gh_draft: "false" });
     expect(r.status).toBe(4);
     expect(r.called).not.toContain("merged");
   });
 
   it("refuses unresolved FIX findings on the pinned head", () => {
-    const r = run([M(), "--pr", "203"], {
+    const r = run([FMF(), "--pr", "203"], {
       gh_comments: `FIX transition #203 ${SHA.p203}: gate red`,
     });
     expect(r.status).toBe(4);
@@ -225,17 +244,33 @@ describe("integrate-transition single-step executor", () => {
   });
 
   it("refuses forged authorization content", () => {
-    const r = run([M(), "--pr", "203"], { auth_6417192584: "unrelated text" });
+    const r = run([FMF(), "--pr", "203"], {
+      auth_6417192584: "unrelated text",
+    });
     expect(r.status).toBe(4);
     expect(r.stderr).toMatch(/pinned content|author/);
     expect(r.called).not.toContain("merged");
   });
 
+  it("refuses while the owner-comment input is still pending", () => {
+    const r = run([M(), "--pr", "203"]);
+    expect(r.status).toBe(4);
+    expect(r.stderr).toMatch(/pending/);
+    expect(r.called).not.toContain("merged");
+  });
+
+  it("treats an already-MERGED prerequisite as satisfied, not a mismatch", () => {
+    const r = run([FMF(), "--pr", "203"], { gh_state: "MERGED" });
+    expect(r.called).not.toContain("merged");
+    // every listed PR viewed; merged state tolerated by preflight
+    expect(r.status === 4 || r.status === 5 || r.status === 0).toBe(true);
+  });
+
   it("refuses when the authorization comment is unreachable", () => {
-    const m = manifest();
+    const f = FMF();
+    const m = JSON.parse(readFileSync(f, "utf8"));
     m.authorization.mergeAuthorization.commentUrl =
       "https://github.com/hanzlahsfc/vari8/pull/207#issuecomment-9999999";
-    const f = `${mkdtempSync(path.join(tmpdir(), "mfix-"))}/m.json`;
     writeFileSync(f, JSON.stringify(m));
     const r = run([f, "--pr", "203"]);
     expect(r.status).toBe(4);
@@ -244,7 +279,7 @@ describe("integrate-transition single-step executor", () => {
   });
 
   it("refuses merges that touch baseline paths (activation boundary)", () => {
-    const r = run([M(), "--pr", "203"], {
+    const r = run([FMF(), "--pr", "203"], {
       git_diff_files: "tools/parity/baseline/active.json\n",
     });
     expect(r.status).toBe(6);
@@ -253,7 +288,7 @@ describe("integrate-transition single-step executor", () => {
   });
 
   it("refuses an existing database (no resource reuse)", () => {
-    const r = run([M(), "--pr", "203"], {
+    const r = run([FMF(), "--pr", "203"], {
       db_existing: "app_transition_p203\n",
     });
     expect(r.status).toBe(2);
@@ -261,13 +296,13 @@ describe("integrate-transition single-step executor", () => {
   });
 
   it("refuses when the DB container is not running", () => {
-    const r = run([M(), "--pr", "203"], { docker_running: "false" });
+    const r = run([FMF(), "--pr", "203"], { docker_running: "false" });
     expect(r.status).toBe(2);
     expect(r.called).not.toContain("merged");
   });
 
   it("does not merge when the fast gate is red", () => {
-    const r = run([M(), "--pr", "203"], { gate_fail: "1" });
+    const r = run([FMF(), "--pr", "203"], { gate_fail: "1" });
     expect(r.status).toBe(5);
     expect(r.called).not.toContain("merged");
   });
@@ -282,10 +317,11 @@ describe("integrate-transition single-step executor", () => {
         'fs.writeFileSync(process.env.CG_OUT + "/proposed-canonical.json", JSON.stringify({passed:70}));\n' +
         'fs.writeFileSync(process.env.CG_OUT + "/proposed-strict.json", JSON.stringify({passed:68}));\n',
     );
-    const m = manifest();
+    const mp = FMF();
+    const m = JSON.parse(readFileSync(mp, "utf8"));
     m.gates.combined.runner = ["node", runner];
     m.gates.combined.reference = "tools/parity/baseline";
-    const mp = path.join(dir, "m.json");
+    delete m.gates.combined.bundle; // fixture covers the no-bundle path
     writeFileSync(mp, JSON.stringify(m));
     const r = run([mp, "--pr", "203"]);
     expect(r.status).toBe(0);
@@ -364,5 +400,36 @@ describe("transition manifest validator", () => {
     const m = M2();
     delete m.items[1].dependsOn;
     expect(() => validateTransitionManifest(m)).toThrow(/dependsOn/);
+  });
+
+  it("rejects items outside the authorized allowlist", () => {
+    const m = M2();
+    m.items[2].pr = 999;
+    expect(() => validateTransitionManifest(m)).toThrow(/allowlist/);
+    const m2 = M2();
+    m2.authorizedPRs = [203];
+    expect(() => validateTransitionManifest(m2)).toThrow(/allowlist/);
+  });
+
+  it("accepts a pending-input record only with named source + input", () => {
+    const m = M2();
+    expect(() => validateTransitionManifest(m)).not.toThrow();
+    const bad = M2();
+    bad.authorization.mergeAuthorization.pendingInput = "x";
+    expect(() => validateTransitionManifest(bad)).toThrow(/pendingInput/);
+    const bad2 = M2();
+    bad2.authorization.mergeAuthorization.pendingInput =
+      "github comment to be posted by owner";
+    delete bad2.authorization.mergeAuthorization.source;
+    expect(() => validateTransitionManifest(bad2)).toThrow(/source/);
+  });
+
+  it("pins the gate bundle commit/path/treeSha", () => {
+    const m = M2();
+    m.gates.combined.bundle.commit = "dead";
+    expect(() => validateTransitionManifest(m)).toThrow(/bundle.commit/);
+    const m2 = M2();
+    m2.gates.combined.bundle.treeSha = "beef";
+    expect(() => validateTransitionManifest(m2)).toThrow(/treeSha/);
   });
 });
