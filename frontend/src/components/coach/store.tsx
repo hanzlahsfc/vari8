@@ -41,6 +41,15 @@ type Store = {
   dismiss: () => void;
   media: Record<string, string>;
   attach: (media: Media, blob: Blob) => void;
+  /** W2-A3: the client's backend progress photos as compare columns.
+   *  The standalone app has no backend, so it always resolves empty. */
+  physiquePhotosFor: (clientName: string) => Promise<
+    {
+      date: string;
+      submissionId?: string;
+      photos: { pose: string; src: string }[];
+    }[]
+  >;
 };
 const Context = createContext<Store | null>(null);
 export function useCoach() {
@@ -148,6 +157,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     (text: string, undo?: () => void) => setNotice({ text, undo }),
     [],
   );
+  const physiquePhotosFor = useCallback(async () => [], []);
   const attach = useCallback((item: Media, blob: Blob) => {
     const url = URL.createObjectURL(blob);
     urls.current.add(url);
@@ -174,6 +184,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
         dismiss: () => setNotice(null),
         media,
         attach,
+        physiquePhotosFor,
       }}
     >
       {children}
