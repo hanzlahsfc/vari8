@@ -1,3 +1,9 @@
+## 2026-10-26 — Prompt 438 — evidence-only closure: p436 archived, final identity published
+
+- Superseded `p436-run` preserved via pushed tag **`evidence/p436-run-superseded`** (`0293c69`, the last revision carrying the complete package) + committed `combined/p436-run/ARCHIVED.json` stub (SUPERSEDED status, reason, source commit/tree/material `a7a8a54`/`612bff3`/`d59f4ce`, artifact-index sha `5a8790c3…`) + executable check `combined/retrieve-archived.mjs` → `verified: true` (tag present on origin, index hash matches pinned). No artifact relabeling or reconstruction.
+- Material inputs byte-identical to the reviewed p437 capture (only `combined/**` evidence-path additions; `verify-combined` re-run: `verified: true`, canonical 70/70, strict 68/70). Gates: `tsc` 0 carried, `index:check` OK carried, `git diff --check 43b63ed..HEAD` **0**, prettier clean on new files. No behavioral suites repeated (none required — no code/test/config/material changes).
+- PR body updated with full final head/tree SHAs and the historical-vs-final distinction.
+
 ## 2026-10-26 — Prompt 436 — formatter compliance, raw-log metadata, transition plan
 
 - `comparer.json` reformatted with prettier (bytes changed; `metadata.json` manifest pin re-pinned — no claim of unchanged bytes). Material invalidation triggered one required replacement capture: `p437-run` supersedes p436. Capture `fe95b79d91f23c6cfb356c212966517c56d6924e` / tree `4650681eb47c9a377da50fee0ecc06860efcf707` / material `4e560cc98862a78795edce1beffae6eebaa5a1811895a4d8cdafb8e95c60f2a4`; canonical **70/70**, strict **68/70**, 242 indexed / 233 capture artifacts, `verified: true`.
