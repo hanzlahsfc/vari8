@@ -520,6 +520,7 @@
     "tools/parity/reference/combined/p436-run/receipts/combined-provenance.json",
     "tools/parity/reference/combined/p436-run/receipts/execution.json",
     "tools/parity/reference/combined/p436-run/receipts/server.log",
+    "tools/parity/reference/combined/p436-run/receipts/server.raw.log.gz",
     "tools/parity/reference/combined/p436-run/receipts/source-compatibility.json",
     "tools/parity/reference/combined/p436-run/receipts/strict.json"
   ]
