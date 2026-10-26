@@ -5,7 +5,7 @@
   "id": "visual-reference-comparer-v2",
   "manifest": {
    "path": "tools/parity/reference/evidence/comparer.json",
-   "sha256": "6fb150bdb8ab2782b94fd6d697b35daf3e31dc3ccde2aef3831a58bc2118f332"
+   "sha256": "b79c225d8f8fe3de9fefc539c0f35a7a004d76c8448875512a11ca85a1fdc407"
   },
   "components": {
    "reference": {
