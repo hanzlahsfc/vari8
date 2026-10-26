@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 159 modules with exports, 1581 exported symbols.
+Counts: 160 modules with exports, 1586 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -2023,7 +2023,6 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type InvitationStatus = "active" | "consumed" | "revoked" | "expired"`
 - `export type InvitationSummary = { id: string; targetEmail: string; intendedRole: InvitableRole; expiresAt: Date; status: InvitationStatus; }`
 - `export async function acceptWorkspaceInvitation(session: SessionLike, input: { workspaceId: string; rawToken: unknown; name?: unknown; password?: unknown; }, client: PrismaClient = prisma): Promise...`
-- `export function assertInvitationOrchestrationExternallyExposable(): never`
 - `export async function createWorkspaceInvitation(session: SessionLike, input: { workspaceId: string; targetEmail: unknown; intendedRole: unknown }, client: PrismaClient = prisma): Promise<CreatedInv...`
 - `export function invitationResource(intendedRole: InvitableRole): "membersInvitations" | "clientInvitations"`
 - `export function isExpectedUniqueRace(error: Prisma.PrismaClientKnownRequestError)`
@@ -2039,6 +2038,15 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function acceptInvitationMessage(error: unknown): string`
 - `export async function getInviteLinkState(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<InviteLinkState>`
 - `export async function getInviteShellRole(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<"client" | "staff" | null>`
+
+## `lib/workspace/invite-links.ts`
+
+- `export const INVITE_LOOKUP_RULE: RateLimitRule`
+- `export type InviteLookupOutcome = typeof NOT_FOUND | { status: 200; body: { name: string } }`
+- `export type IssueInviteLinkResult = { ok: true; link: string; expiresAt: Date } | { ok: false; message: string }`
+- `export async function issueClientInviteLink(session: SessionLike, input: { workspaceId: unknown; targetEmail: unknown }, client: PrismaClient = prisma): Promise<IssueInviteLinkResult>`
+- `export async function lookupInviteDisplayName(rawToken: unknown, client: PrismaClient = prisma): Promise<{ name: string } | null>`
+- `export async function lookupInviteForRoute(input: { rawToken: unknown; headers: Headers }, client: PrismaClient = prisma): Promise<InviteLookupOutcome>`
 
 ## `lib/workspace/retention.ts`
 
