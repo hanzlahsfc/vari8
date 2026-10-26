@@ -940,7 +940,7 @@
   },
   {
    "path": "current/manifest.json",
-   "sha256": "36d11741a302fea0d56f1502bd9c447e2ab910c894e84c773acfff8e08607136"
+   "sha256": "68519a6499968f90d53016aa8554e4f01802dc8cb30fee19058acd2df23fdc04"
   },
   {
    "path": "receipts/canonical.json",
@@ -948,20 +948,20 @@
   },
   {
    "path": "receipts/combined-provenance.json",
-   "sha256": "7b2219b05c31e05b39d2d32c4fa5e67d0a08b9a27255ff8ada664e9eeae3e826"
+   "sha256": "db1545dd60b3e2bcb055c2b5a3608f994590e8b16cb6d127cf673b35979b0f62"
   },
   {
    "path": "receipts/execution.json",
-   "sha256": "427691c402fe40eb7bbf3d6561d76662eeb2fa08c8dbe603ec56cefb91eacaa8"
+   "sha256": "26023839340ee1156a30808fb99532bfc83730fe8c9ae7e18a61eb7e8c501c5e"
   },
   {
    "path": "receipts/server.log",
-   "sha256": "74fa6dfbbfd3f699a84c5bf14f2590ac8098609fbba1793d7a1446192f479c9d",
-   "normalized": "trailing-whitespace-stripped copy; raw bytes preserved in receipts/server.raw.log.gz"
+   "sha256": "042ae6a29241a9e522ad35a29e1018cc90ad283b11e6b8b26860fd9189c006e5",
+   "normalized": "trailing-whitespace-stripped copy; raw bytes in receipts/server.raw.log.gz"
   },
   {
    "path": "receipts/source-compatibility.json",
-   "sha256": "802b6666ebca86b0f864590a37d726047acbcfff8fa9f8aa49fc1ce69895e518"
+   "sha256": "7f70d19caaa75d9bf54edca2e32876f5f6646161d02a1a028320569855041837"
   },
   {
    "path": "receipts/strict.json",
@@ -969,9 +969,9 @@
   },
   {
    "path": "receipts/server.raw.log.gz",
-   "sha256": "2fc6ad181f3a590b1fdbc31ed4319b22f71403e27852983921492df1a081af57",
-   "role": "gzip of original receipts/server.log bytes",
-   "rawSha256": "3201fcc3d87c35ab69a6ac9e41a10507fd28bfa12b3f706d9b673da67c26bc16"
+   "sha256": "7ce541f29e3e8bc688b167ae7a9cfc1643050049ff300034e0cb2539b9989fa0",
+   "role": "gzip of original server.log bytes",
+   "rawSha256": "930fc4a22b469f0580230ccb7cd6d28cafb0eed3f4b10a0e8edaf3b63bae0349"
   }
  ]
 }
