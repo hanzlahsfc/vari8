@@ -38,6 +38,9 @@ const eslintConfig = [
       "out/**",
       // Generated reference adapters and capture artifacts are runtime evidence.
       "tools/parity/out/**",
+      // Packaged combined-run evidence (adapters, logs, receipts) — generated
+      // historical artifacts preserved byte-accurately, not authored source.
+      "tools/parity/reference/combined/**",
       "build/**",
       "next-env.d.ts",
       "playwright-report/**",

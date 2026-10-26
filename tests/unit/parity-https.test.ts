@@ -6,6 +6,7 @@ import {
 } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
+import os from "node:os";
 import { AddressInfo } from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -28,9 +29,11 @@ import {
   fileHash,
 } from "../../tools/parity/reference/reference.mjs";
 import {
+  assertCleanMaterialCheckout,
   assertCommitMatchesSource,
   assertCurrentMaterialInputs,
   assertPostCaptureDelta,
+  dirtyMaterialPaths,
   materialTreeSha256,
 } from "../../tools/parity/reference/source-identity.mjs";
 import {
@@ -893,5 +896,77 @@ describe("parity HTTPS origin configuration", () => {
       expires: Date.UTC(2030, 9, 21) / 1000,
     });
     expect(cookies[3]).toMatchObject({ name: "fallback", expires: 0 });
+  });
+});
+
+describe("material input coverage and dirty-checkout refusal", () => {
+  const git = (root: string, args: string[]) =>
+    execFileSync("git", ["-C", root, ...args], { encoding: "utf8" }).trim();
+  const scratchRepo = (files: Record<string, string>) => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "vari8-material-"));
+    git(root, ["init", "-q"]);
+    git(root, ["config", "user.email", "t@t"]);
+    git(root, ["config", "user.name", "t"]);
+    for (const [file, body] of Object.entries(files)) {
+      fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+      fs.writeFileSync(path.join(root, file), body);
+    }
+    git(root, ["add", "-A"]);
+    git(root, ["commit", "-qm", "seed"]);
+    return root;
+  };
+  const amend = (root: string, file: string) => {
+    fs.appendFileSync(path.join(root, file), "\n// committed change\n");
+    git(root, ["commit", "-qam", "change"]);
+  };
+
+  it.each([
+    "auth.ts",
+    "themes/base.css",
+    "tools/local-tls-proxy.mjs",
+    "tools/parity/local-https.mjs",
+  ])("committed change to %s changes the material hash", (file) => {
+    const root = scratchRepo({ [file]: "x\n", "app/page.tsx": "y\n" });
+    const before = materialTreeSha256(root);
+    amend(root, file);
+    expect(materialTreeSha256(root)).not.toBe(before);
+  });
+
+  it("a committed change outside the material pathspec keeps the hash", () => {
+    const root = scratchRepo({ "docs/STATUS.md": "x\n", "app/page.tsx": "y\n" });
+    const before = materialTreeSha256(root);
+    amend(root, "docs/STATUS.md");
+    expect(materialTreeSha256(root)).toBe(before);
+  });
+
+  it.each([
+    "auth.ts",
+    "themes/base.css",
+    "tools/local-tls-proxy.mjs",
+    "tools/parity/local-https.mjs",
+  ])("dirty edit to %s is listed and refuses verification", (file) => {
+    const root = scratchRepo({ [file]: "x\n", "app/page.tsx": "y\n" });
+    fs.appendFileSync(path.join(root, file), "\n// dirty\n");
+    expect(dirtyMaterialPaths(root)).toContain(file);
+    expect(() => assertCleanMaterialCheckout(root)).toThrow(/dirty material/);
+  });
+
+  it("untracked material inputs are dirty; generated/excluded paths are not", () => {
+    const root = scratchRepo({ "app/page.tsx": "y\n" });
+    fs.mkdirSync(path.join(root, "themes"), { recursive: true });
+    fs.writeFileSync(path.join(root, "themes/new.css"), "x");
+    expect(dirtyMaterialPaths(root)).toEqual(["themes/new.css"]);
+    for (const file of [
+      "tools/parity/out/run-9/current/x.png",
+      "tools/parity/reference/combined/p9-run/artifact-index.json",
+      "docs/STATUS.md",
+    ]) {
+      fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+      fs.writeFileSync(path.join(root, file), "x");
+    }
+    expect(dirtyMaterialPaths(root)).toEqual(["themes/new.css"]);
+    assertCleanMaterialCheckout(
+      scratchRepo({ "tools/parity/out/r/x.png": "z\n", "docs/a.md": "z\n" }),
+    );
   });
 });

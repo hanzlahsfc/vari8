@@ -10,6 +10,7 @@ import {
   assertRecordedTooling,
 } from "./combined-pins.mjs";
 import {
+  assertCleanMaterialCheckout,
   assertCommitMatchesSource,
   assertCurrentMaterialInputs,
   assertPostCaptureDelta,
@@ -64,6 +65,7 @@ if (
 assertCommitMatchesSource(ROOT, provenance.source);
 assertCurrentMaterialInputs(ROOT, provenance.source);
 assertPostCaptureDelta(ROOT, compatibility);
+assertCleanMaterialCheckout(ROOT);
 
 assertRecordedTooling({
   root: ROOT,
