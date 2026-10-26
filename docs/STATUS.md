@@ -1,3 +1,9 @@
+## 2026-10-26 — Prompt 440 — archive retrieval helper hardened
+
+- `retrieve-archived.mjs` rewritten: trusted hardcoded `ARCHIVES` registry is the only authority (editable `ARCHIVED.json` stubs cross-checked, not obeyed); name/traversal/tag/commit-shape validation before any git/fs op; `git fetch --depth 1 <remote> refs/tags/<tag>` into a scratch `.fetch` repo inside the task-owned destination; pinned commit + `artifactIndexSha256` verified, then every indexed artifact extracted and sha256-checked; existing/unowned destinations and unsafe indexed paths refused; arg-based `execFileSync` only (no shell).
+- `retrieve-archived.test.mjs` (11 probes, all pass): traversal/absolute/unsupported names refused; wrong-commit tag refused with cleanup; existing destination refused and left untouched; no dest leaks on failures. Remote availability proven via `git ls-remote` (tag → `0293c69`); full-extract run recorded in PR body.
+- Material inputs unchanged (all files under excluded `combined/`); p437 remains the current gate (`verified: true`).
+
 ## 2026-10-26 — Prompt 438 — evidence-only closure: p436 archived, final identity published
 
 - Superseded `p436-run` preserved via pushed tag **`evidence/p436-run-superseded`** (`0293c69`, the last revision carrying the complete package) + committed `combined/p436-run/ARCHIVED.json` stub (SUPERSEDED status, reason, source commit/tree/material `a7a8a54`/`612bff3`/`d59f4ce`, artifact-index sha `5a8790c3…`) + executable check `combined/retrieve-archived.mjs` → `verified: true` (tag present on origin, index hash matches pinned). No artifact relabeling or reconstruction.
