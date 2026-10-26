@@ -259,12 +259,12 @@ describe("integrate-transition single-step executor", () => {
     expect(r.called).not.toContain("merged");
   });
 
-  it("treats an already-MERGED prerequisite as satisfied, not a mismatch", () => {
+  it("treats an already-MERGED selected step as complete, no merge", () => {
     const r = run([FMF(), "--pr", "203"], { gh_state: "MERGED" });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toMatch(/already MERGED/);
     expect(r.called).not.toContain("merged");
-    // every listed PR viewed; merged state tolerated by preflight
-    expect(r.status === 4 || r.status === 5 || r.status === 0).toBe(true);
-  });
+  }, 20000);
 
   it("refuses when the authorization comment is unreachable", () => {
     const f = FMF();
@@ -314,8 +314,8 @@ describe("integrate-transition single-step executor", () => {
     writeFileSync(
       runner,
       'import fs from "node:fs";\n' +
-        'fs.writeFileSync(process.env.CG_OUT + "/proposed-canonical.json", JSON.stringify({passed:70}));\n' +
-        'fs.writeFileSync(process.env.CG_OUT + "/proposed-strict.json", JSON.stringify({passed:68}));\n',
+        'fs.writeFileSync(process.env.PARITY_OUT_DIR + "/proposed-canonical.json", JSON.stringify({passed:70}));\n' +
+        'fs.writeFileSync(process.env.PARITY_OUT_DIR + "/proposed-strict.json", JSON.stringify({passed:68}));\n',
     );
     const mp = FMF();
     const m = JSON.parse(readFileSync(mp, "utf8"));

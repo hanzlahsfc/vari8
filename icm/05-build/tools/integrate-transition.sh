@@ -25,7 +25,7 @@ done
 [[ "$WANT_PR" =~ ^[0-9]+$ ]] || die "--pr must be an integer" 2
 
 REPO="${INTEGRATE_REPO:-hanzlahsfc/vari8}"
-DB_CONTAINER="${INTEGRATE_DB_CONTAINER:-vari8-db-1}"
+DB_CONTAINER="${INTEGRATE_DB_CONTAINER:-app-db-1}"
 TOOLS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$TOOLS/paths.sh"
 BETA="${INTEGRATE_BETA:-$BETA}"
@@ -49,6 +49,14 @@ ITEM_BRANCH="$(PR_ITEM branch)"; ITEM_DRAFT="$(PR_ITEM isDraft)"
 COMBINED_REF="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).gates.combined.reference)' "$MANIFEST")"
 STATE_DIR="$HERE/_transition"; mkdir -p "$STATE_DIR"
 STATE="$STATE_DIR/p${WANT_PR}.json"
+
+# Selected step already merged remotely → prove + exit (no merge repetition).
+SEL_J="$(gh pr view "$WANT_PR" -R "$REPO" --json state,mergeCommit)"
+if [[ "$(jq -r .state <<<"$SEL_J")" == "MERGED" ]]; then
+  mc="$(jq -r '.mergeCommit.oid // ""' <<<"$SEL_J")"
+  [[ -n "$mc" ]] || die "PR #$WANT_PR reports MERGED with no mergeCommit" 4
+  echo "PR #$WANT_PR already MERGED as $mc — nothing to do"; exit 0
+fi
 
 # --- Authorization: verify the pinned records, not just their existence. ---
 verify_auth() {
@@ -184,7 +192,7 @@ RUNNER=()
 while IFS= read -r a; do RUNNER+=("$a"); done < <(node -e 'for(const a of JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).gates.combined.runner)console.log(a)' "$MANIFEST")
 [[ -f "${RUNNER[1]:-}" ]] || die "combined gate runner missing: ${RUNNER[1]:-?}" 5
 [[ -d "$COMBINED_REF" ]] || die "combined reference package missing: $COMBINED_REF" 5
-if (cd "$RUNNER_DIR" && CG_OUT="$CG_OUT" APP_TREE="$HERE" "${RUNNER[@]}") > "$CG_OUT/run.log" 2>&1; then CG_OK=0; fi
+if (cd "$RUNNER_DIR"; unset NODE_ENV; PARITY_OUT_DIR="$CG_OUT" PARITY_COMPARER=reference PARITY_REFERENCE_DIR="$COMBINED_REF" PARITY_PORT="${PARITY_PORT:-58300}" APP_ENV=development NEXT_TELEMETRY_DISABLED=1 MEDIA_STORAGE_ADAPTER=local MEDIA_STORAGE_DIR="$STATE_DIR/media" "${RUNNER[@]}") > "$CG_OUT/run.log" 2>&1; then CG_OK=0; fi
 CG_JSON="$CG_OUT/current/manifest.json"
 CANON_N=0; STRICT_N=0
 [[ -f "$CG_OUT/proposed-canonical.json" ]] && CANON_N="$(jq -r '.passed // 0' "$CG_OUT/proposed-canonical.json")"
